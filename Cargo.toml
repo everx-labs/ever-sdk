@@ -1,8 +1,6 @@
 [package]
 name = "abi-lib"
 version = "0.1.0"
-authors = ["Alexey Vavilin <mnogoborec@mail.ru>"]
-edition = "2018"
 
 [dependencies]
 tonlabs-sdk-emulator = {  path = "../"  }
