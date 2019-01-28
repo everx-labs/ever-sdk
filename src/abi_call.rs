@@ -7,7 +7,7 @@ use tonlabs_sdk_emulator::cells_serialization::BagOfCells;
 use tonlabs_sdk_emulator::bitstring::Bitstring;
 use crate::abi_parameter::{ABIParameter, append_data};
 
-const ABI_VERSION: u8 = 0;
+pub const ABI_VERSION: u8 = 0;
 
 pub struct ABICall<TIn: ABIParameter, TOut: ABIParameter> {
     input: PhantomData<TIn>,
