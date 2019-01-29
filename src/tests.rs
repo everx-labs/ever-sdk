@@ -24,14 +24,6 @@ fn get_function_id(signature: &str) -> u32 {
 }
 
 #[test]
-fn it_works() {
-    let message = ABICall::<(i128,), (bool,)>::encode_function_call("IsEvenNumber".to_string(), 
-                            (-1123,));
-
-    dbg!(message);
-}
-
-#[test]
 fn test_one_input_and_output() {
     let message = ABICall::<(u128,), (bool,)>::encode_function_call("test_one_input_and_output".to_string(), 
                             (1123,));
