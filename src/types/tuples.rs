@@ -6,43 +6,52 @@ use super::ABIParameter;
 use super::common::prepend_data;
 
 
-impl<T1> ABIParameter for (T1,) 
-where 
-    T1: ABIParameter,
+impl ABIParameter for ()
 {
-
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
-        let destination = self.0.prepend_to(destination);
         destination
     }
 
     fn type_signature() -> String {
-        format!(
-            "({})",
-            T1::type_signature(),
-        )
+        String::from("()")
     }
 }
 
+macro_rules! tuple {
+    (@expand_prepend_to $destination:ident, $x:ident) => {{
+        $x.prepend_to($destination)
+    }};
+    (@expand_prepend_to $destination:ident, $x:ident, $($other:ident),+) => {{
+        let next = tuple!(@expand_prepend_to $destination, $($other),*);
+        $x.prepend_to(next)
+    }};
+    
+    ($($x:ident : $T:tt),*) => {
+        impl<$($T),*> ABIParameter for ($($T,)*) 
+        where
+            $($T: ABIParameter),*
+        {
+            fn prepend_to(&self, destination: BuilderData) -> BuilderData {
+                let ($($x),*) = self;
+                let destination = tuple!(@expand_prepend_to destination,  $($x),*);
+                destination
+            }
 
-impl<T1, T2> ABIParameter for (T1, T2,) 
-where 
-    T1: ABIParameter,
-    T2: ABIParameter
-{
-
-    fn prepend_to(&self, destination: BuilderData) -> BuilderData {
-        let destination = self.1.prepend_to(destination);
-        let destination = self.0.prepend_to(destination);
-        destination
-    }
-
-    fn type_signature() -> String {
-        format!(
-            "({},{})",
-            T1::type_signature(),
-            T2::type_signature()
-        )
+            fn type_signature() -> String {
+                let mut result = "".to_owned()
+                $(
+                    + "," + &$T::type_signature()
+                )*
+                    + ")";
+                result.replace_range(..1, "(");
+                result
+            }
+        }
     }
 }
+
+tuple!(a: T1);
+tuple!(a: T1, b: T2);
+tuple!(a: T1, b: T2, c: T3);
+tuple!(a: T1, b: T2, c: T3, d: T4);
 
