@@ -5,7 +5,8 @@ use std::marker::PhantomData;
 use tonlabs_sdk_emulator::stack::{BuilderData, SliceData, CellData};
 use tonlabs_sdk_emulator::cells_serialization::BagOfCells;
 use tonlabs_sdk_emulator::bitstring::Bitstring;
-use crate::abi_parameter::{ABIParameter, append_data};
+use types::ABIParameter;
+use types::common::prepend_data;
 
 const ABI_VERSION: u8 = 0;
 
@@ -16,7 +17,7 @@ pub struct ABICall<TIn: ABIParameter, TOut: ABIParameter> {
 
 impl<TIn: ABIParameter, TOut: ABIParameter> ABICall<TIn, TOut> {
 
-    fn get_function_id(fn_name: String) -> u32 {
+    fn get_function_id(fn_name: String) -> [u8; 4] {
         let signature = fn_name + &TIn::type_signature() + &TOut::type_signature();
 
         println!("{}", signature);
@@ -32,22 +33,27 @@ impl<TIn: ABIParameter, TOut: ABIParameter> ABICall<TIn, TOut> {
 
         let mut bytes = [0; 4];
         bytes.copy_from_slice(&function_hash[..4]);
-
-        u32::from_be_bytes(bytes)
+        bytes
     }
 
     pub fn encode_function_call(fn_name: String, parameters: TIn) -> Vec<u8> {
-        // make prefix with ABI version and function ID
-        let mut bitstring = Bitstring::new();
+        let builder = BuilderData::new();
+        let mut  builder = parameters.prepend_to(builder);
+        prepend_data(
+            &mut builder,
+            &{
+                // make prefix with ABI version and function ID
+                let mut bitstring = Bitstring::new();
 
-        bitstring.append_u8(ABI_VERSION);
-        bitstring.append_u32(Self::get_function_id(fn_name));
+                bitstring.append_u8(ABI_VERSION);
+                for chunk in Self::get_function_id(fn_name).iter() {
+                    bitstring.append_u8(*chunk);
+                }
+                bitstring
+            }
+        );
 
-        let mut builder = BuilderData::new();
-
-        // fill tree of cells with parameters
-        builder = append_data(builder, bitstring, Some(parameters), None);
-
+       
         // serialize tree into Vec<u8>
         let root_cell = Arc::<CellData>::from(&builder);
         let root = SliceData::from(root_cell);
