@@ -8,7 +8,7 @@ use tonlabs_sdk_emulator::bitstring::Bitstring;
 use types::ABIParameter;
 use types::common::prepend_data;
 
-const ABI_VERSION: u8 = 0;
+pub const ABI_VERSION: u8 = 0;
 
 pub struct ABICall<TIn: ABIParameter, TOut: ABIParameter> {
     input: PhantomData<TIn>,
