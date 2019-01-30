@@ -1,11 +1,9 @@
 #![allow(non_snake_case)]
 
-use tonlabs_sdk_emulator::stack::BuilderData;
 use super::ABIParameter;
+use tonlabs_sdk_emulator::stack::BuilderData;
 
-
-impl ABIParameter for ()
-{
+impl ABIParameter for () {
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
         destination
     }
@@ -23,9 +21,9 @@ macro_rules! tuple {
         let next = tuple!(@expand_prepend_to $destination, $($other),*);
         $x.prepend_to(next)
     }};
-    
+
     ($($T:tt),*) => {
-        impl<$($T),*> ABIParameter for ($($T,)*) 
+        impl<$($T),*> ABIParameter for ($($T,)*)
         where
             $($T: ABIParameter),*
         {
@@ -54,4 +52,3 @@ tuple!(T1, T2);
 tuple!(T1, T2, T3);
 tuple!(T1, T2, T3, T4);
 tuple!(T1, T2, T3, T4, T5);
-

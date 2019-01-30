@@ -1,24 +1,23 @@
-use tonlabs_sdk_emulator::stack::BuilderData;
+use super::common::prepend_array;
 use super::ABIParameter;
-use super::common::{prepend_array};
+use tonlabs_sdk_emulator::stack::BuilderData;
 
 #[macro_export]
 macro_rules! define_array_ABIParameter {
     ( $size:expr ) => {
-        impl<T> ABIParameter for [T;$size] where T: ABIParameter {
-
+        impl<T> ABIParameter for [T; $size]
+        where
+            T: ABIParameter,
+        {
             fn prepend_to(&self, destination: BuilderData) -> BuilderData {
                 prepend_array(destination, self, false)
             }
 
             fn type_signature() -> String {
-                format!(
-                    "{}[{}]",
-                    T::type_signature(),
-                    $size)
+                format!("{}[{}]", T::type_signature(), $size)
             }
         }
-    }
+    };
 }
 
 define_array_ABIParameter!(1);
@@ -53,4 +52,3 @@ define_array_ABIParameter!(29);
 define_array_ABIParameter!(30);
 define_array_ABIParameter!(31);
 define_array_ABIParameter!(32);
-
