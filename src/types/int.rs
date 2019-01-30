@@ -1,20 +1,19 @@
 use tonlabs_sdk_emulator::stack::BuilderData;
-use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
-
-
-//TODO:
-
+use tonlabs_sdk_emulator::bitstring::Bitstring;
+use super::ABIParameter;
+use super::common::prepend_data_to_chain;
 
 #[macro_export]
 macro_rules! define_int_ABIParameter {
     ( $type:ident, $str_type:expr) => {
         impl ABIParameter for $type {
-            fn write_to<T: ABIParameter>(&self, builder: BuilderData, remain_params: Option<T>) -> BuilderData {
+
+            fn prepend_to(&self, destination: BuilderData) -> BuilderData {
                 let vec = self.to_be_bytes().to_vec();
                 let size = vec.len();
-                let bitstring = Bitstring::create(vec, size * 8);
-                
-                append_data(builder, bitstring, remain_params, None)
+                let data = Bitstring::create(vec, size * 8);
+
+                prepend_data_to_chain(destination, data)
             }
 
             fn type_signature() -> String {

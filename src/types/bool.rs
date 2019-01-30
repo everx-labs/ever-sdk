@@ -1,6 +1,4 @@
-use tonlabs_sdk_emulator::stack::{
-    BuilderData, 
-};
+use tonlabs_sdk_emulator::stack::BuilderData;
 use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
 use super::ABIParameter;
 use super::common::prepend_data;

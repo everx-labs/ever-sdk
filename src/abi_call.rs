@@ -6,7 +6,7 @@ use tonlabs_sdk_emulator::stack::{BuilderData, SliceData, CellData};
 use tonlabs_sdk_emulator::cells_serialization::BagOfCells;
 use tonlabs_sdk_emulator::bitstring::Bitstring;
 use types::ABIParameter;
-use types::common::prepend_data;
+use types::common::prepend_data_to_chain;
 
 pub const ABI_VERSION: u8 = 0;
 
@@ -38,10 +38,10 @@ impl<TIn: ABIParameter, TOut: ABIParameter> ABICall<TIn, TOut> {
 
     pub fn encode_function_call(fn_name: String, parameters: TIn) -> Vec<u8> {
         let builder = BuilderData::new();
-        let mut  builder = parameters.prepend_to(builder);
-        prepend_data(
-            &mut builder,
-            &{
+        let builder = parameters.prepend_to(builder);
+        let builder = prepend_data_to_chain(
+            builder,
+            {
                 // make prefix with ABI version and function ID
                 let mut bitstring = Bitstring::new();
 

@@ -1,9 +1,7 @@
-use tonlabs_sdk_emulator::stack::{
-    BuilderData, 
-};
-use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
+#![allow(non_snake_case)]
+
+use tonlabs_sdk_emulator::stack::BuilderData;
 use super::ABIParameter;
-use super::common::prepend_data;
 
 
 impl ABIParameter for ()
@@ -32,7 +30,7 @@ macro_rules! tuple {
             $($T: ABIParameter),*
         {
             fn prepend_to(&self, destination: BuilderData) -> BuilderData {
-                let ($($T),*) = self;
+                let ($($T,)*) = self;
                 let destination = tuple!(@expand_prepend_to destination,  $($T),*);
                 destination
             }
