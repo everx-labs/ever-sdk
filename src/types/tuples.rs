@@ -26,14 +26,14 @@ macro_rules! tuple {
         $x.prepend_to(next)
     }};
     
-    ($($x:ident : $T:tt),*) => {
+    ($($T:tt),*) => {
         impl<$($T),*> ABIParameter for ($($T,)*) 
         where
             $($T: ABIParameter),*
         {
             fn prepend_to(&self, destination: BuilderData) -> BuilderData {
-                let ($($x),*) = self;
-                let destination = tuple!(@expand_prepend_to destination,  $($x),*);
+                let ($($T),*) = self;
+                let destination = tuple!(@expand_prepend_to destination,  $($T),*);
                 destination
             }
 
@@ -47,11 +47,13 @@ macro_rules! tuple {
                 result
             }
         }
-    }
+    };
+
 }
 
-tuple!(a: T1);
-tuple!(a: T1, b: T2);
-tuple!(a: T1, b: T2, c: T3);
-tuple!(a: T1, b: T2, c: T3, d: T4);
+tuple!(T1);
+tuple!(T1, T2);
+tuple!(T1, T2, T3);
+tuple!(T1, T2, T3, T4);
+tuple!(T1, T2, T3, T4, T5);
 
