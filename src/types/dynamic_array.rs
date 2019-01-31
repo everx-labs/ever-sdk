@@ -17,7 +17,9 @@ pub fn prepend_dynamic_array<T: ABIParameter>(
     }
 
     // if array doesn't fit into one cell, we put into separate chain
-    if array_size > destination.bits_capacity() {
+    // Note: Since length is one byte value any array longer than 256 
+    // must be written into a separate cell.
+    if array.len() > 256 || array_size > destination.bits_capacity() {
         destination = put_array_to_separate_branch(destination, array);
     } else {
         // if array fit into cell data, put in into main chain
