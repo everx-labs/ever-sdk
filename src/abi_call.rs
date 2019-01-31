@@ -38,6 +38,8 @@ impl<TIn: ABIParameter, TOut: ABIParameter> ABICall<TIn, TOut> {
     where
         T: Into<String>,
     {
+        println!("in cell size {}", parameters.get_in_cell_size());
+
         let fn_name = fn_name.into();
         let builder = BuilderData::new();
         let builder = parameters.prepend_to(builder);

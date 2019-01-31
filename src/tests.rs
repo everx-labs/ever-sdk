@@ -1,9 +1,12 @@
 use crate::abi_call::{ABICall, ABI_VERSION};
 use crate::types::common::prepend_reference;
+
 use crypto::digest::Digest;
 use crypto::sha2::Sha256;
+
 use std::io::Cursor;
 use std::sync::Arc;
+
 use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
 use tonlabs_sdk_emulator::cells_serialization::deserialize_cells_tree;
 use tonlabs_sdk_emulator::stack::{BuilderData, CellData, SliceData};

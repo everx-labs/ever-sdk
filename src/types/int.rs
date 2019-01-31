@@ -1,5 +1,6 @@
 use super::common::prepend_data_to_chain;
 use super::ABIParameter;
+
 use tonlabs_sdk_emulator::bitstring::Bitstring;
 use tonlabs_sdk_emulator::stack::BuilderData;
 
@@ -17,6 +18,10 @@ macro_rules! define_int_ABIParameter {
 
             fn type_signature() -> String {
                 $str_type.to_string()
+            }
+
+            fn get_in_cell_size(&self) -> usize {
+                std::mem::size_of::<$type>() * 8
             }
         }
     };

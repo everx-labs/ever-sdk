@@ -1,11 +1,19 @@
 use tonlabs_sdk_emulator::stack::BuilderData;
 
 pub trait ABIParameter {
+    // put data into chain
     fn prepend_to(&self, destination: BuilderData) -> BuilderData;
+
+    // return type signature regarding to ABI specification
     fn type_signature() -> String;
+    
+    // return size in bits that are put into main chain during serialization 
+    // (not whole parameter size - large arrays are put in separate chains and only 2 bits get into main chain)
+    fn get_in_cell_size(&self) -> usize;
 }
 
 pub mod common;
+pub mod common_arrays;
 
 mod bool;
 pub use self::bool::*;
@@ -16,11 +24,8 @@ pub use self::int::*;
 mod tuples;
 pub use self::tuples::*;
 
-mod array;
-pub use self::array::*;
+mod fixed_array;
+pub use self::fixed_array::*;
 
-mod slice;
-pub use self::slice::*;
-
-mod vec;
-pub use self::vec::*;
+mod dynamic_array;
+pub use self::dynamic_array::*;

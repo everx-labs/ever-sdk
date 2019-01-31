@@ -1,5 +1,6 @@
 use super::common::prepend_data;
 use super::ABIParameter;
+
 use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
 use tonlabs_sdk_emulator::stack::BuilderData;
 
@@ -29,5 +30,9 @@ impl ABIParameter for bool {
 
     fn type_signature() -> String {
         "bool".to_string()
+    }
+
+    fn get_in_cell_size(&self) -> usize {
+        1
     }
 }

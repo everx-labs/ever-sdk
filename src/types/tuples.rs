@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 
 use super::ABIParameter;
+
 use tonlabs_sdk_emulator::stack::BuilderData;
 
 impl ABIParameter for () {
@@ -11,6 +12,10 @@ impl ABIParameter for () {
     fn type_signature() -> String {
         String::from("()")
     }
+
+    fn get_in_cell_size(&self) -> usize {
+        0
+    }
 }
 
 macro_rules! tuple {
@@ -20,6 +25,14 @@ macro_rules! tuple {
     (@expand_prepend_to $destination:ident, $x:ident, $($other:ident),+) => {{
         let next = tuple!(@expand_prepend_to $destination, $($other),*);
         $x.prepend_to(next)
+    }};
+
+    (@expand_get_in_cell_size $x:ident) => {{
+        $x.get_in_cell_size()
+    }};
+    (@expand_get_in_cell_size $x:ident, $($other:ident),+) => {{
+        $x.get_in_cell_size() + tuple!(@expand_get_in_cell_size $($other),*)
+        
     }};
 
     ($($T:tt),*) => {
@@ -41,6 +54,11 @@ macro_rules! tuple {
                     + ")";
                 result.replace_range(..1, "(");
                 result
+            }
+
+            fn get_in_cell_size(&self) -> usize {
+                let ($($T,)*) = self;
+                tuple!(@expand_get_in_cell_size $($T),*)
             }
         }
     };

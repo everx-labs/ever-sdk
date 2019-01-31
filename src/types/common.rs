@@ -1,6 +1,5 @@
-use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
+use tonlabs_sdk_emulator::bitstring::Bitstring;
 use tonlabs_sdk_emulator::stack::BuilderData;
-use types::ABIParameter;
 
 pub fn prepend_reference(builder: &mut BuilderData, child: BuilderData) {
     builder.update_cell(
@@ -70,57 +69,4 @@ pub fn prepend_data_to_chain(mut builder: BuilderData, data: Bitstring) -> Build
     }
 
     builder
-}
-
-// put array data to chain or to separate chain depending on array size
-pub fn prepend_array<T: ABIParameter>(
-    destination: BuilderData,
-    array: &[T],
-    set_length: bool,
-) -> BuilderData {
-    let mut bitstring = Bitstring::new();
-    let mut destination = destination;
-
-    // if array doesn't fit into one cell, we put into separate chain
-    if (array.len() * std::mem::size_of::<T>() * 8) > destination.bits_capacity() {
-        let mut array_builder = BuilderData::new();
-        for i in array.iter().rev() {
-            array_builder = i.prepend_to(array_builder);
-        }
-
-        // dynamic arrays are not prepended by length when put in separate chain
-
-        // if currnet cell is filled with references (one teference is reserved for chaining cells) or data,
-        // then we append reference to next cell
-        destination = {
-            if destination.references_used() == destination.references_capacity()
-                || destination.bits_used() == destination.bits_capacity()
-            {
-                let mut next = BuilderData::new();
-                next.append_reference(destination);
-                next
-            } else {
-                destination
-            }
-        };
-
-        prepend_reference(&mut destination, array_builder);
-
-        bitstring.append_bit(&Bit::Zero);
-        bitstring.append_bit(&Bit::Zero);
-    } else {
-        // if array fit into cell data, put in into main chain
-        for i in array.iter().rev() {
-            destination = i.prepend_to(destination);
-        }
-
-        bitstring.append_bit(&Bit::One);
-        bitstring.append_bit(&Bit::Zero);
-
-        if set_length {
-            bitstring.append_u8(array.len() as u8);
-        }
-    }
-
-    prepend_data_to_chain(destination, bitstring)
 }
