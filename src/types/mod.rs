@@ -1,4 +1,12 @@
-use tonlabs_sdk_emulator::stack::BuilderData;
+use tonlabs_sdk_emulator::stack::{
+    BuilderData,
+    SliceData
+};
+
+#[derive(Debug)]
+pub struct DeserializationError {
+    pub cursor: SliceData
+}
 
 pub trait ABIParameter {
     // put data into chain
@@ -10,7 +18,20 @@ pub trait ABIParameter {
     // return size in bits that are put into main chain during serialization 
     // (not whole parameter size - large arrays are put in separate chains and only 2 bits get into main chain)
     fn get_in_cell_size(&self) -> usize;
+
+    fn read_from(cursor: SliceData) -> Result<(Self, SliceData), DeserializationError>
+        where Self: std::marker::Sized;
 }
+
+impl DeserializationError {
+    pub fn with(cursor: SliceData) -> DeserializationError {
+        DeserializationError {
+            cursor
+        }    
+    }
+}
+
+pub mod reader;
 
 pub mod common;
 pub mod common_arrays;

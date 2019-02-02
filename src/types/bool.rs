@@ -1,8 +1,14 @@
 use super::common::prepend_data;
-use super::ABIParameter;
+use super::{
+    ABIParameter,
+    DeserializationError
+};
 
 use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
-use tonlabs_sdk_emulator::stack::BuilderData;
+use tonlabs_sdk_emulator::stack::{
+    BuilderData,
+    SliceData
+};
 
 impl ABIParameter for bool {
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
@@ -34,5 +40,18 @@ impl ABIParameter for bool {
 
     fn get_in_cell_size(&self) -> usize {
         1
+    }
+
+    fn read_from(cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
+        let mut cursor = cursor;
+        while cursor.remaining_bits() == 0 && cursor.remaining_references() == 1 {
+            cursor = cursor.drain_reference();
+        }
+        if cursor.remaining_bits() > 0 {
+            let value = cursor.get_next_bit();
+            Ok((value, cursor))
+        } else {
+            Err(DeserializationError::with(cursor))
+        }
     }
 }

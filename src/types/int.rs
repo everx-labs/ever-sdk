@@ -1,8 +1,14 @@
 use super::common::prepend_data_to_chain;
-use super::ABIParameter;
+use super::{
+    ABIParameter,
+    DeserializationError
+};
 
 use tonlabs_sdk_emulator::bitstring::Bitstring;
-use tonlabs_sdk_emulator::stack::BuilderData;
+use tonlabs_sdk_emulator::stack::{
+    BuilderData,
+    SliceData
+};
 
 #[macro_export]
 macro_rules! define_int_ABIParameter {
@@ -22,6 +28,10 @@ macro_rules! define_int_ABIParameter {
 
             fn get_in_cell_size(&self) -> usize {
                 std::mem::size_of::<$type>() * 8
+            }
+            
+            fn read_from(cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
+                unimplemented!();
             }
         }
     };

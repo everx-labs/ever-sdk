@@ -1,8 +1,14 @@
 #![allow(non_snake_case)]
 
-use super::ABIParameter;
+use super::{
+    ABIParameter,
+    DeserializationError
+};
 
-use tonlabs_sdk_emulator::stack::BuilderData;
+use tonlabs_sdk_emulator::stack::{
+    BuilderData,
+    SliceData
+};
 
 impl ABIParameter for () {
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
@@ -15,6 +21,10 @@ impl ABIParameter for () {
 
     fn get_in_cell_size(&self) -> usize {
         0
+    }
+    
+    fn read_from(cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
+        Ok(((), cursor))
     }
 }
 
@@ -32,7 +42,6 @@ macro_rules! tuple {
     }};
     (@expand_get_in_cell_size $x:ident, $($other:ident),+) => {{
         $x.get_in_cell_size() + tuple!(@expand_get_in_cell_size $($other),*)
-        
     }};
 
     ($($T:tt),*) => {
@@ -59,6 +68,16 @@ macro_rules! tuple {
             fn get_in_cell_size(&self) -> usize {
                 let ($($T,)*) = self;
                 tuple!(@expand_get_in_cell_size $($T),*)
+            }
+
+            fn read_from(cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
+                let mut reader = $crate::types::reader::Reader::new(cursor);
+                Ok((
+                    ($(
+                        reader.read_next::<$T>()?,
+                    )*),
+                    reader.remainder()
+                ))
             }
         }
     };

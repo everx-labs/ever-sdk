@@ -1,5 +1,6 @@
 use crate::abi_call::{ABICall, ABI_VERSION};
 use crate::types::common::prepend_reference;
+use crate::types::ABIParameter;
 
 use crypto::digest::Digest;
 use crypto::sha2::Sha256;
@@ -513,4 +514,30 @@ fn test_tuples_with_combined_types() {
     let expected_tree = SliceData::from(root_cell);
 
     assert_eq!(test_tree, expected_tree);
+}
+
+mod decode_encoded {
+    use super::*;
+
+    fn validate<T>(input: T) 
+    where 
+        T: std::fmt::Debug + std::cmp::PartialEq + ABIParameter
+    {
+        let buffer = input.prepend_to(BuilderData::new());
+        let slice = SliceData::from(Arc::new(buffer.cell().clone()));
+        let (output, _) = <T>::read_from(slice).unwrap();
+        assert_eq!(input, output);
+    }
+
+    #[test]
+    fn boolean() {
+        validate(true);
+        validate(false);
+    }
+
+    #[test]
+    fn tuples_with_booleans() {
+        validate((true, false));
+        validate((false, (true, true)));
+    }
 }

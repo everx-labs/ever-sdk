@@ -1,8 +1,14 @@
 use super::common_arrays::*;
 use super::common::*;
-use super::ABIParameter;
+use super::{
+    ABIParameter, 
+    DeserializationError
+};
 
-use tonlabs_sdk_emulator::stack::BuilderData;
+use tonlabs_sdk_emulator::stack::{
+    BuilderData,
+    SliceData
+};
 use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
 
 // put dynamic array to chain or to separate branch depending on array size
@@ -54,8 +60,6 @@ where
             result += i.get_in_cell_size();
         }
 
-        println!("inner size {}", result);
-        
         // if array doesn't fit into cell it is put in separate chain and only 2 bits are put in main chain cell
         if result > BuilderData::new().bits_capacity() {
             2
@@ -63,6 +67,11 @@ where
             result + 2
         }
     }
+
+    fn read_from(cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
+        unimplemented!();
+    }
+
 }
 
 impl<T> ABIParameter for Vec<T>
@@ -91,5 +100,9 @@ where
         } else {
             result + 2
         }
+    }
+
+    fn read_from(cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
+        unimplemented!();
     }
 }
