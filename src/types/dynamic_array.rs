@@ -85,11 +85,9 @@ impl<T: ABIParameter> ABIParameter for Vec<T>
                 }
                 let mut array = cursor.drain_reference();
                 let mut array = Reader::new(array);
-                let mut i = 0;
                 let mut result = vec![];
                 while !array.is_empty() {
                     result.push(array.read_next::<T>()?);
-                    i += 1;
                 }
                 Ok((result, cursor))
             },

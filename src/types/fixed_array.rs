@@ -2,8 +2,7 @@ use super::common_arrays::*;
 use super::common::*;
 use super::{
     ABIParameter,
-    DeserializationError,
-    reader::Reader
+    DeserializationError
 };
 
 use tonlabs_sdk_emulator::stack::{
