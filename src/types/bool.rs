@@ -1,14 +1,8 @@
 use super::common::prepend_data;
-use super::{
-    ABIParameter,
-    DeserializationError
-};
+use super::{ABIParameter, DeserializationError};
 
 use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
-use tonlabs_sdk_emulator::stack::{
-    BuilderData,
-    SliceData
-};
+use tonlabs_sdk_emulator::stack::{BuilderData, SliceData};
 
 impl ABIParameter for bool {
     type Out = bool;

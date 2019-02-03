@@ -1,22 +1,15 @@
-use super::common_arrays::*;
 use super::common::*;
-use super::{
-    ABIParameter,
-    DeserializationError
-};
+use super::common_arrays::*;
+use super::{ABIParameter, DeserializationError};
 
-use tonlabs_sdk_emulator::stack::{
-    BuilderData,
-    SliceData
-};
 use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
+use tonlabs_sdk_emulator::stack::{BuilderData, SliceData};
 
 // put fixed array to chain or to separate branch depending on array size
 pub fn prepend_fixed_array<T: ABIParameter>(
     mut destination: BuilderData,
-    array: &[T]
+    array: &[T],
 ) -> BuilderData {
-
     let mut array_size = 0;
     for i in array {
         array_size += i.get_in_cell_size();
@@ -46,7 +39,7 @@ macro_rules! define_array_ABIParameter {
         where
             T: ABIParameter,
         {
-            type Out = Vec<T::Out>; 
+            type Out = Vec<T::Out>;
 
             fn prepend_to(&self, destination: BuilderData) -> BuilderData {
                 prepend_fixed_array(destination, self)
@@ -70,7 +63,9 @@ macro_rules! define_array_ABIParameter {
                 }
             }
 
-            fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
+            fn read_from(
+                cursor: SliceData,
+            ) -> Result<(Self::Out, SliceData), DeserializationError> {
                 if T::is_restricted_to_root() {
                     return Err(DeserializationError::with(cursor));
                 }
@@ -92,15 +87,15 @@ macro_rules! define_array_ABIParameter {
                             return Err(DeserializationError::with(array.remainder()));
                         }
                         Ok((result, cursor))
-                    },
+                    }
                     (true, false) => {
                         let mut result = vec![];
                         for _ in 0..$size {
                             result.push(cursor.read_next::<T>()?);
                         }
                         Ok((result, cursor.remainder()))
-                    },
-                    _ => Err(DeserializationError::with(cursor.remainder()))
+                    }
+                    _ => Err(DeserializationError::with(cursor.remainder())),
                 }
             }
         }

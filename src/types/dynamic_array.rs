@@ -1,30 +1,22 @@
-use super::common_arrays::*;
 use super::common::*;
-use super::{
-    ABIParameter, 
-    DeserializationError,
-    reader::Reader
-};
+use super::common_arrays::*;
+use super::{reader::Reader, ABIParameter, DeserializationError};
 
-use tonlabs_sdk_emulator::stack::{
-    BuilderData,
-    SliceData
-};
 use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
+use tonlabs_sdk_emulator::stack::{BuilderData, SliceData};
 
 // put dynamic array to chain or to separate branch depending on array size
 pub fn prepend_dynamic_array<T: ABIParameter>(
     mut destination: BuilderData,
-    array: &[T]
+    array: &[T],
 ) -> BuilderData {
-
     let mut array_size = 0;
     for i in array {
         array_size += i.get_in_cell_size();
     }
 
     // if array doesn't fit into one cell, we put into separate chain
-    // Note: Since length is one byte value any array longer than 256 
+    // Note: Since length is one byte value any array longer than 256
     // must be written into a separate cell.
     if array.len() > 256 || array_size > destination.bits_capacity() {
         destination = put_array_to_separate_branch(destination, array);
@@ -43,8 +35,7 @@ pub fn prepend_dynamic_array<T: ABIParameter>(
     destination
 }
 
-impl<T: ABIParameter> ABIParameter for Vec<T> 
-{
+impl<T: ABIParameter> ABIParameter for Vec<T> {
     type Out = Vec<T::Out>;
 
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
@@ -62,7 +53,7 @@ impl<T: ABIParameter> ABIParameter for Vec<T>
         }
 
         println!("inner size {}", result);
-        
+
         // if array doesn't fit into cell it is put in separate chain and only 2 bits are put in main chain cell
         if result > BuilderData::new().bits_capacity() {
             2
@@ -90,18 +81,16 @@ impl<T: ABIParameter> ABIParameter for Vec<T>
                     result.push(array.read_next::<T>()?);
                 }
                 Ok((result, cursor))
-            },
+            }
             (true, false) => {
                 let size = cursor.read_next::<u8>()?;
                 let mut result = vec![];
                 for _ in 0..size {
-                    result.push(
-                        cursor.read_next::<T>()? 
-                    );
-                } 
+                    result.push(cursor.read_next::<T>()?);
+                }
                 Ok((result, cursor.remainder()))
-            },
-            _ => Err(DeserializationError::with(cursor.remainder()))
-        } 
+            }
+            _ => Err(DeserializationError::with(cursor.remainder())),
+        }
     }
 }

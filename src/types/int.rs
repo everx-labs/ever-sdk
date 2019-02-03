@@ -1,14 +1,8 @@
 use super::common::prepend_data_to_chain;
-use super::{
-    ABIParameter,
-    DeserializationError
-};
+use super::{ABIParameter, DeserializationError};
 
 use tonlabs_sdk_emulator::bitstring::Bitstring;
-use tonlabs_sdk_emulator::stack::{
-    BuilderData,
-    SliceData
-};
+use tonlabs_sdk_emulator::stack::{BuilderData, SliceData};
 
 #[macro_export]
 macro_rules! define_int_ABIParameter {
@@ -31,8 +25,10 @@ macro_rules! define_int_ABIParameter {
             fn get_in_cell_size(&self) -> usize {
                 $size * 8
             }
-            
-            fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
+
+            fn read_from(
+                cursor: SliceData,
+            ) -> Result<(Self::Out, SliceData), DeserializationError> {
                 let mut cursor = cursor;
                 let mut bytes: [u8; $size] = [0x00; $size];
                 for i in 0..$size {

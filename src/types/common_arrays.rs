@@ -1,8 +1,8 @@
 use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
 use tonlabs_sdk_emulator::stack::BuilderData;
 
-use super::ABIParameter;
 use super::common::*;
+use super::ABIParameter;
 
 // put array items to provided chain
 pub fn prepend_array_items_to_chain<T: ABIParameter>(
@@ -45,6 +45,6 @@ pub fn put_array_to_separate_branch<T: ABIParameter>(
     bitstring.append_bit(&Bit::Zero);
 
     destination = prepend_data_to_chain(destination, bitstring);
-    
+
     destination
 }

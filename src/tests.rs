@@ -498,10 +498,10 @@ fn test_tuples_with_combined_types() {
 mod decode_encoded {
     use super::*;
 
-    fn validate<T>(input: T) 
-    where 
+    fn validate<T>(input: T)
+    where
         T: std::fmt::Debug + std::cmp::PartialEq + ABIParameter,
-        T::Out: Into<T>
+        T::Out: Into<T>,
     {
         let buffer = input.prepend_to(BuilderData::new());
         let slice = SliceData::from(Arc::new(buffer.cell().clone()));

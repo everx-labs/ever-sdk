@@ -1,14 +1,8 @@
 #![allow(non_snake_case)]
 
-use super::{
-    ABIParameter,
-    DeserializationError
-};
+use super::{ABIParameter, DeserializationError};
 
-use tonlabs_sdk_emulator::stack::{
-    BuilderData,
-    SliceData
-};
+use tonlabs_sdk_emulator::stack::{BuilderData, SliceData};
 
 impl ABIParameter for () {
     type Out = ();
@@ -24,7 +18,7 @@ impl ABIParameter for () {
     fn get_in_cell_size(&self) -> usize {
         0
     }
-    
+
     fn read_from(cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
         Ok(((), cursor))
     }
