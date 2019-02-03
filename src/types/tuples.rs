@@ -26,6 +26,10 @@ impl ABIParameter for () {
     fn read_from(cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
         Ok(((), cursor))
     }
+
+    fn is_restricted_to_root() -> bool {
+        true
+    }
 }
 
 macro_rules! tuple {

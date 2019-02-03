@@ -24,6 +24,18 @@ impl Reader {
         Ok(result)
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.cursor
+            .as_ref()
+            .map_or_else(
+                || true,
+                |e| {
+                    e.remaining_references() == 0
+                    && e.remaining_bits() == 0
+                }
+            )
+    }
+
     pub fn remainder(self) -> SliceData {
         self.cursor.unwrap()
     }

@@ -2,7 +2,8 @@ use super::common_arrays::*;
 use super::common::*;
 use super::{
     ABIParameter, 
-    DeserializationError
+    DeserializationError,
+    reader::Reader
 };
 
 use tonlabs_sdk_emulator::stack::{
@@ -103,6 +104,38 @@ where
     }
 
     fn read_from(cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
-        unimplemented!();
+        if T::is_restricted_to_root() {
+            return Err(DeserializationError::with(cursor));
+        }
+        let mut cursor = Reader::new(cursor);
+        let flag = cursor.read_next::<(bool, bool)>()?;
+        match flag {
+            (false, false) => {
+                let mut cursor = cursor.remainder();
+                if cursor.remaining_references() == 0 {
+                    return Err(DeserializationError::with(cursor));
+                }
+                let mut array = cursor.drain_reference();
+                let mut array = Reader::new(array);
+                let mut i = 0;
+                let mut result = vec![];
+                while !array.is_empty() {
+                    result.push(array.read_next::<T>()?);
+                    i += 1;
+                }
+                Ok((result, cursor))
+            },
+            (true, false) => {
+                let size = cursor.read_next::<u8>()?;
+                let mut result = vec![];
+                for _ in 0..size {
+                    result.push(
+                        cursor.read_next::<T>()? 
+                    );
+                } 
+                Ok((result, cursor.remainder()))
+            },
+            _ => Err(DeserializationError::with(cursor.remainder()))
+        } 
     }
 }

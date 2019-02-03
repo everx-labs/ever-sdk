@@ -21,6 +21,10 @@ pub trait ABIParameter {
 
     fn read_from(cursor: SliceData) -> Result<(Self, SliceData), DeserializationError>
         where Self: std::marker::Sized;
+
+    fn is_restricted_to_root() -> bool {
+        return false;
+    }
 }
 
 impl DeserializationError {
