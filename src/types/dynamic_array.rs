@@ -43,42 +43,10 @@ pub fn prepend_dynamic_array<T: ABIParameter>(
     destination
 }
 
-impl<T> ABIParameter for &[T]
-where
-    T: ABIParameter,
+impl<T: ABIParameter> ABIParameter for Vec<T> 
 {
-    fn prepend_to(&self, destination: BuilderData) -> BuilderData {
-        prepend_dynamic_array(destination, self)
-    }
+    type Out = Vec<T::Out>;
 
-    fn type_signature() -> String {
-        format!("{}[]", T::type_signature())
-    }
-
-    fn get_in_cell_size(&self) -> usize {
-        let mut result = 8;
-        for i in *self {
-            result += i.get_in_cell_size();
-        }
-
-        // if array doesn't fit into cell it is put in separate chain and only 2 bits are put in main chain cell
-        if result > BuilderData::new().bits_capacity() {
-            2
-        } else {
-            result + 2
-        }
-    }
-
-    fn read_from(cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
-        unimplemented!();
-    }
-
-}
-
-impl<T> ABIParameter for Vec<T>
-where
-    T: ABIParameter,
-{
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
         prepend_dynamic_array(destination, self.as_slice())
     }
@@ -103,7 +71,7 @@ where
         }
     }
 
-    fn read_from(cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
+    fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
         if T::is_restricted_to_root() {
             return Err(DeserializationError::with(cursor));
         }

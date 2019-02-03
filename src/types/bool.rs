@@ -11,6 +11,8 @@ use tonlabs_sdk_emulator::stack::{
 };
 
 impl ABIParameter for bool {
+    type Out = bool;
+
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
         let mut destination = {
             if 1 + destination.bits_used() > destination.bits_capacity() {

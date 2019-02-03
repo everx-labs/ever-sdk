@@ -219,12 +219,6 @@ fn test_small_dynamic_array() {
     );
     let test_tree_vec = deserialize(message);
 
-    let message = ABICall::<(&[u16],), ()>::encode_function_call(
-        "test_small_dynamic_array".to_string(),
-        (&input_array,),
-    );
-    let test_tree_slice = deserialize(message);
-
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
@@ -245,7 +239,6 @@ fn test_small_dynamic_array() {
     let expected_tree = SliceData::from(root_cell);
 
     assert_eq!(test_tree_vec, expected_tree);
-    assert_eq!(test_tree_slice, expected_tree);
 }
 
 fn put_data_into_chain(bilder: BuilderData, data: Bitstring) -> BuilderData {
@@ -334,12 +327,6 @@ fn test_big_dynamic_array() {
     );
     let test_tree_vec = deserialize(message);
 
-    let message = ABICall::<(&[i64],), ()>::encode_function_call(
-        "test_big_dynamic_array".to_string(),
-        (&input_array,),
-    );
-    let test_tree_slice = deserialize(message.clone());
-
     let mut data = Bitstring::new();
 
     data.append_u8(ABI_VERSION);
@@ -366,7 +353,6 @@ fn test_big_dynamic_array() {
     let expected_tree = SliceData::from(root_cell);
 
     assert_eq!(test_tree_vec, expected_tree);
-    assert_eq!(test_tree_slice, expected_tree);
 }
 
 #[test]
@@ -378,12 +364,6 @@ fn test_dynamic_array_of_tuples() {
         (input_array.clone(),),
     );
     let test_tree_vec = deserialize(message);
-
-    let message = ABICall::<(&[(u32, bool)],), ()>::encode_function_call(
-        "test_dynamic_array_of_tuples".to_string(),
-        (&input_array,),
-    );
-    let test_tree_slice = deserialize(message);
 
     let mut bitstring = Bitstring::new();
 
@@ -408,7 +388,6 @@ fn test_dynamic_array_of_tuples() {
     let expected_tree = SliceData::from(root_cell);
 
     assert_eq!(test_tree_vec, expected_tree);
-    assert_eq!(test_tree_slice, expected_tree);
 }
 
 #[test]
@@ -429,12 +408,12 @@ fn test_tuples_with_combined_types() {
     ];
 
     let message =
-        ABICall::<(u8, (Vec<(u32, bool)>, i16), (&[i64], [Vec<i64>; 5])), ()>::encode_function_call(
+        ABICall::<(u8, (Vec<(u32, bool)>, i16), (Vec<i64>, [Vec<i64>; 5])), ()>::encode_function_call(
             "test_tuples_with_combined_types".to_string(),
             (
                 18,
                 (input_array1.clone(), -290),
-                (input_array2.as_slice(), input_array3.clone()),
+                (input_array2.clone(), input_array3.clone()),
             ),
         );
     let test_tree = deserialize(message.clone());
@@ -521,12 +500,13 @@ mod decode_encoded {
 
     fn validate<T>(input: T) 
     where 
-        T: std::fmt::Debug + std::cmp::PartialEq + ABIParameter
+        T: std::fmt::Debug + std::cmp::PartialEq + ABIParameter,
+        T::Out: Into<T>
     {
         let buffer = input.prepend_to(BuilderData::new());
         let slice = SliceData::from(Arc::new(buffer.cell().clone()));
         let (output, _) = <T>::read_from(slice).unwrap();
-        assert_eq!(input, output);
+        assert_eq!(input, output.into());
     }
 
     #[test]

@@ -9,6 +9,8 @@ pub struct DeserializationError {
 }
 
 pub trait ABIParameter {
+    type Out;
+
     // put data into chain
     fn prepend_to(&self, destination: BuilderData) -> BuilderData;
 
@@ -19,8 +21,8 @@ pub trait ABIParameter {
     // (not whole parameter size - large arrays are put in separate chains and only 2 bits get into main chain)
     fn get_in_cell_size(&self) -> usize;
 
-    fn read_from(cursor: SliceData) -> Result<(Self, SliceData), DeserializationError>
-        where Self: std::marker::Sized;
+    fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError>
+        where Self::Out: std::marker::Sized;
 
     fn is_restricted_to_root() -> bool {
         return false;

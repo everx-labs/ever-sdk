@@ -2,7 +2,8 @@ use super::common_arrays::*;
 use super::common::*;
 use super::{
     ABIParameter,
-    DeserializationError
+    DeserializationError,
+    reader::Reader
 };
 
 use tonlabs_sdk_emulator::stack::{
@@ -46,6 +47,8 @@ macro_rules! define_array_ABIParameter {
         where
             T: ABIParameter,
         {
+            type Out = Vec<T::Out>; 
+
             fn prepend_to(&self, destination: BuilderData) -> BuilderData {
                 prepend_fixed_array(destination, self)
             }
@@ -68,8 +71,38 @@ macro_rules! define_array_ABIParameter {
                 }
             }
 
-            fn read_from(cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
-                unimplemented!();
+            fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
+                if T::is_restricted_to_root() {
+                    return Err(DeserializationError::with(cursor));
+                }
+                let mut cursor = $crate::types::reader::Reader::new(cursor);
+                let flag = cursor.read_next::<(bool, bool)>()?;
+                match flag {
+                    (false, false) => {
+                        let mut cursor = cursor.remainder();
+                        if cursor.remaining_references() == 0 {
+                            return Err(DeserializationError::with(cursor));
+                        }
+                        let mut array = cursor.drain_reference();
+                        let mut array = $crate::types::reader::Reader::new(array);
+                        let mut result = vec![];
+                        for _ in 0..$size {
+                            result.push(array.read_next::<T>()?);
+                        }
+                        if !array.is_empty() {
+                            return Err(DeserializationError::with(array.remainder()));
+                        }
+                        Ok((result, cursor))
+                    },
+                    (true, false) => {
+                        let mut result = vec![];
+                        for _ in 0..$size {
+                            result.push(cursor.read_next::<T>()?);
+                        }
+                        Ok((result, cursor.remainder()))
+                    },
+                    _ => Err(DeserializationError::with(cursor.remainder()))
+                }
             }
         }
     };

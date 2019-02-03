@@ -11,6 +11,8 @@ use tonlabs_sdk_emulator::stack::{
 };
 
 impl ABIParameter for () {
+    type Out = ();
+
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
         destination
     }
@@ -53,6 +55,8 @@ macro_rules! tuple {
         where
             $($T: ABIParameter),*
         {
+            type Out = ($($T::Out,)*);
+
             fn prepend_to(&self, destination: BuilderData) -> BuilderData {
                 let ($($T,)*) = self;
                 let destination = tuple!(@expand_prepend_to destination,  $($T),*);
@@ -74,7 +78,7 @@ macro_rules! tuple {
                 tuple!(@expand_get_in_cell_size $($T),*)
             }
 
-            fn read_from(cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
+            fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
                 let mut reader = $crate::types::reader::Reader::new(cursor);
                 Ok((
                     ($(

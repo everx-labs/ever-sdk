@@ -14,7 +14,7 @@ impl Reader {
         Reader { cursor: Some(cursor) }
     }
 
-    pub fn read_next<T>(&mut self) -> Result<T, DeserializationError> 
+    pub fn read_next<T>(&mut self) -> Result<T::Out, DeserializationError> 
     where
         T: ABIParameter
     {

@@ -14,6 +14,8 @@ use tonlabs_sdk_emulator::stack::{
 macro_rules! define_int_ABIParameter {
     ( $type:ident, $str_type:expr) => {
         impl ABIParameter for $type {
+            type Out = $type;
+
             fn prepend_to(&self, destination: BuilderData) -> BuilderData {
                 let vec = self.to_be_bytes().to_vec();
                 let size = vec.len();
