@@ -1,12 +1,15 @@
 #![allow(non_snake_case)]
 
-use super::{ABIParameter, DeserializationError};
+use super::{
+    ABIParameter, 
+    ABIInParameter,
+    ABIOutParameter,
+    DeserializationError
+};
 
 use tonlabs_sdk_emulator::stack::{BuilderData, SliceData};
 
-impl ABIParameter for () {
-    type Out = ();
-
+impl ABIInParameter for () {
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
         destination
     }
@@ -14,11 +17,21 @@ impl ABIParameter for () {
     fn type_signature() -> String {
         String::from("()")
     }
+}
 
+impl ABIParameter for () {
+    type Out = ();
     fn get_in_cell_size(&self) -> usize {
         0
     }
+    fn prepend_to(&self, destination: BuilderData) -> BuilderData {
+        destination
+    }
 
+    fn type_signature() -> String {
+        String::from("()")
+    }
+ 
     fn read_from(cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
         Ok(((), cursor))
     }
@@ -45,6 +58,33 @@ macro_rules! tuple {
     }};
 
     ($($T:tt),*) => {
+        impl<$($T),*> ABIOutParameter for ($($T,)*)
+        where
+            $(
+            $T: ABIParameter
+            ),*
+        {
+            type Out = <Self as ABIParameter>::Out;
+
+            fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError>
+            {
+                <Self as ABIParameter>::read_from(cursor)
+            }
+        }
+
+        impl<$($T),*> ABIInParameter for ($($T,)*) 
+        where
+            $($T: ABIParameter),*
+        {
+            fn prepend_to(&self, destination: BuilderData) -> BuilderData {
+                ABIParameter::prepend_to(self, destination)
+            }
+
+            fn type_signature() -> String {
+                <Self as ABIParameter>::type_signature()
+            }
+        }
+
         impl<$($T),*> ABIParameter for ($($T,)*)
         where
             $($T: ABIParameter),*

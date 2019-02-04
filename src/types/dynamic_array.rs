@@ -1,6 +1,11 @@
 use super::common::*;
 use super::common_arrays::*;
-use super::{reader::Reader, ABIParameter, DeserializationError};
+use super::{
+    reader::Reader,
+    ABIParameter,
+    DeserializationError,
+    ABIOutParameter
+};
 
 use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
 use tonlabs_sdk_emulator::stack::{BuilderData, SliceData};
@@ -34,6 +39,8 @@ pub fn prepend_dynamic_array<T: ABIParameter>(
 
     destination
 }
+
+makeOutParameter!(Vec, T);
 
 impl<T: ABIParameter> ABIParameter for Vec<T> {
     type Out = Vec<T::Out>;

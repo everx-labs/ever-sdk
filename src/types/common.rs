@@ -1,6 +1,35 @@
 use tonlabs_sdk_emulator::bitstring::Bitstring;
 use tonlabs_sdk_emulator::stack::BuilderData;
 
+#[macro_export]
+macro_rules! makeOutParameter {
+    ($t:tt, $($T: tt),+ ) => {
+        impl<$($T),*> ABIOutParameter for $t<$($T),*>
+        where
+            $(
+            $T: ABIParameter
+            ),*
+        {
+            type Out = <Self as ABIParameter>::Out;
+
+            fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError>
+            {
+                <Self as ABIParameter>::read_from(cursor)
+            }
+        }
+    };
+    ($t: ty) => {
+        impl ABIOutParameter for $t {
+            type Out = <Self as ABIParameter>::Out;
+
+            fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError>
+            {
+                <Self as ABIParameter>::read_from(cursor)
+            }
+        }
+    }
+}
+
 pub fn prepend_reference(builder: &mut BuilderData, child: BuilderData) {
     builder.update_cell(
         |_, children, child| {

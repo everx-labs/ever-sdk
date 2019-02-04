@@ -1,8 +1,14 @@
-use super::common::prepend_data;
-use super::{ABIParameter, DeserializationError};
+use super::common::*;
+use super::{
+    ABIParameter, 
+    ABIOutParameter,
+    DeserializationError
+};
 
 use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
 use tonlabs_sdk_emulator::stack::{BuilderData, SliceData};
+
+makeOutParameter!(bool);
 
 impl ABIParameter for bool {
     type Out = bool;
@@ -38,7 +44,7 @@ impl ABIParameter for bool {
         1
     }
 
-    fn read_from(cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
+    fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
         let mut cursor = cursor;
         while cursor.remaining_bits() == 0 && cursor.remaining_references() == 1 {
             cursor = cursor.drain_reference();

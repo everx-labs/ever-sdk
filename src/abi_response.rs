@@ -12,7 +12,7 @@ use types::{
     DeserializationError as InnerTypeDeserializationError
 };
 
-pub struct ABIResponse<TOut: ABIParameter> {
+pub struct ABIResponse<TOut: ABIOutParameter> {
     output: PhantomData<TOut>,
 }
 
@@ -24,7 +24,7 @@ pub enum Exception {
     IncompleteDeserializationError
 }
 
-impl<TOut: ABIParameter> ABICall<TOut> {
+impl<TOut: ABIOutParameter> ABICall<TOut> {
     pub fn decode_response<T>(response: &Vec<u8>) -> Result<TOut, Exception> {
         let mut cursor = Cursor::new(response);
         deserialize_cells_tree(&mut cursor)

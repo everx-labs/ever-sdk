@@ -1,5 +1,9 @@
 use super::common::prepend_data_to_chain;
-use super::{ABIParameter, DeserializationError};
+use super::{
+    ABIParameter, 
+    ABIOutParameter,
+    DeserializationError
+};
 
 use tonlabs_sdk_emulator::bitstring::Bitstring;
 use tonlabs_sdk_emulator::stack::{BuilderData, SliceData};
@@ -7,6 +11,8 @@ use tonlabs_sdk_emulator::stack::{BuilderData, SliceData};
 #[macro_export]
 macro_rules! define_int_ABIParameter {
     ( $type:ident, $str_type:expr, $size: tt) => {
+        makeOutParameter!($type);
+
         impl ABIParameter for $type {
             type Out = $type;
 

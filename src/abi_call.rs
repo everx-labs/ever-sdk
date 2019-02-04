@@ -6,16 +6,23 @@ use tonlabs_sdk_emulator::bitstring::Bitstring;
 use tonlabs_sdk_emulator::cells_serialization::BagOfCells;
 use tonlabs_sdk_emulator::stack::{BuilderData, CellData, SliceData};
 use types::common::prepend_data_to_chain;
-use types::ABIParameter;
+use types::{
+    ABIParameter,
+    ABIInParameter
+};
 
 pub const ABI_VERSION: u8 = 0;
 
-pub struct ABICall<TIn: ABIParameter, TOut: ABIParameter> {
+pub struct ABICall<TIn: ABIInParameter, TOut: ABIParameter> {
     input: PhantomData<TIn>,
     output: PhantomData<TOut>,
 }
 
-impl<TIn: ABIParameter, TOut: ABIParameter> ABICall<TIn, TOut> {
+impl<TIn, TOut> ABICall<TIn, TOut> 
+where
+    TIn: ABIInParameter,
+    TOut: ABIParameter
+{
     fn get_function_id(fn_name: String) -> [u8; 4] {
         let signature = fn_name + &TIn::type_signature() + &TOut::type_signature();
 
@@ -38,8 +45,6 @@ impl<TIn: ABIParameter, TOut: ABIParameter> ABICall<TIn, TOut> {
     where
         T: Into<String>,
     {
-        println!("in cell size {}", parameters.get_in_cell_size());
-
         let fn_name = fn_name.into();
         let builder = BuilderData::new();
         let builder = parameters.prepend_to(builder);

@@ -1,6 +1,10 @@
 use super::common::*;
 use super::common_arrays::*;
-use super::{ABIParameter, DeserializationError};
+use super::{
+    ABIParameter, 
+    DeserializationError,
+    ABIOutParameter
+};
 
 use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
 use tonlabs_sdk_emulator::stack::{BuilderData, SliceData};
@@ -35,6 +39,18 @@ pub fn prepend_fixed_array<T: ABIParameter>(
 #[macro_export]
 macro_rules! define_array_ABIParameter {
     ( $size:expr ) => {
+        impl<T> ABIOutParameter for [T; $size]
+        where
+            T: ABIParameter
+        {
+            type Out = <Self as ABIParameter>::Out;
+
+            fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError>
+            {
+                <Self as ABIParameter>::read_from(cursor)
+            }
+        }
+
         impl<T> ABIParameter for [T; $size]
         where
             T: ABIParameter,
