@@ -70,9 +70,6 @@ impl<T: ABIParameter> ABIParameter for Vec<T> {
     }
 
     fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
-        if T::is_restricted_to_root() {
-            return Err(DeserializationError::with(cursor));
-        }
         let mut cursor = Reader::new(cursor);
         let flag = cursor.read_next::<(bool, bool)>()?;
         match flag {
