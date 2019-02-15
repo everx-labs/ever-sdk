@@ -1,4 +1,7 @@
+use std::ops::Range;
+
 use tonlabs_sdk_emulator::stack::{BuilderData, SliceData};
+use tonlabs_sdk_emulator::bitstring::Bitstring;
 
 #[derive(Debug)]
 pub struct DeserializationError {
@@ -55,6 +58,26 @@ impl DeserializationError {
     }
 }
 
+
+pub trait SubString {
+    fn substring(&self, range: Range<usize>) -> Bitstring;
+}
+
+impl SubString for Bitstring {
+    fn substring(&self, range: Range<usize>) -> Bitstring {
+        let mut result = Bitstring::new();
+
+        self.bits(range)
+            .data
+            .iter()
+            .for_each(|x| {
+                result.append_bit(x);
+        });
+
+        result
+    }
+}
+
 pub mod reader;
 
 #[macro_use]
@@ -75,3 +98,18 @@ pub use self::fixed_array::*;
 
 mod dynamic_array;
 pub use self::dynamic_array::*;
+
+mod bitstring;
+pub use self::bitstring::*;
+
+mod bit;
+pub use self::bit::*;
+
+mod bits;
+pub use self::bits::*;
+
+pub mod dynamic_int;
+pub use self::dynamic_int::*;
+
+pub mod dynamic_uint;
+pub use self::dynamic_uint::*;

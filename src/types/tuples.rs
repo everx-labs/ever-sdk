@@ -19,19 +19,9 @@ impl ABIInParameter for () {
     }
 }
 
-impl ABIParameter for () {
+impl ABIOutParameter for () {
     type Out = ();
-    fn get_in_cell_size(&self) -> usize {
-        0
-    }
-    fn prepend_to(&self, destination: BuilderData) -> BuilderData {
-        destination
-    }
 
-    fn type_signature() -> String {
-        String::from("()")
-    }
- 
     fn read_from(cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
         Ok(((), cursor))
     }

@@ -1,15 +1,19 @@
 use crate::abi_call::{ABICall, ABI_VERSION};
+use crate::abi_response::{ABIResponse};
 use crate::types::common::prepend_reference;
-use crate::types::ABIParameter;
+use crate::types::{ABIParameter, ABIInParameter, ABIOutParameter};
+use crate::types::dynamic_int::Dint;
+use crate::types::dynamic_uint::Duint;
 
 use crypto::digest::Digest;
 use crypto::sha2::Sha256;
+use num_bigint::{BigUint, BigInt, Sign};
 
 use std::io::Cursor;
 use std::sync::Arc;
 
 use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
-use tonlabs_sdk_emulator::cells_serialization::deserialize_cells_tree;
+use tonlabs_sdk_emulator::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use tonlabs_sdk_emulator::stack::{BuilderData, CellData, SliceData};
 
 fn get_function_id(signature: &str) -> u32 {
@@ -33,12 +37,35 @@ fn deserialize(message: Vec<u8>) -> SliceData {
     SliceData::from(restored[0].clone())
 }
 
+fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: SliceData, expected_decode: I::Out) 
+    where
+        I: std::fmt::Debug + std::cmp::PartialEq + ABIInParameter + ABIParameter,
+        I::Out: ABIOutParameter + std::fmt::Debug + std::cmp::PartialEq,
+        (u8, u32, I::Out): ABIOutParameter,
+        O: ABIInParameter + ABIOutParameter,
+{
+    let message = ABICall::<I, O>::encode_function_call(func_name, input);
+    let mut test_tree = deserialize(message.clone());
+
+    assert_eq!(test_tree, expected_tree);
+
+    let version = test_tree.get_next_byte();
+    let function_id = test_tree.get_next_u32();
+
+    let mut data = Vec::new();
+    BagOfCells::with_root(test_tree)
+        .write_to(&mut data, false, 2, 2)
+        .unwrap();
+
+    // we can't easily remove some data from the beginning of SliceData, so decode the whole input and
+    // add version and finction ID to expected decoded parameters
+    let test_decode: (u8, u32, I::Out) = ABIResponse::<(u8, u32, I)>::decode_response(&data).unwrap();
+
+    assert_eq!(test_decode, (version, function_id, expected_decode));
+}
+
 #[test]
 fn test_one_input_and_output() {
-    let message =
-        ABICall::<(u128,), (bool,)>::encode_function_call("test_one_input_and_output", (1123,));
-    let test_tree = deserialize(message);
-
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
@@ -51,26 +78,24 @@ fn test_one_input_and_output() {
     let root_cell = Arc::<CellData>::from(&builder);
     let expected_tree = SliceData::from(root_cell);
 
-    assert_eq!(test_tree, expected_tree);
+    test_parameters_set::<(u128,), (bool,)>("test_one_input_and_output", (1123,), expected_tree, (1123,));
 }
 
 #[test]
 fn test_one_input_and_output_by_data() {
-    let message = ABICall::<(i64,), (u8,)>::encode_function_call(
-        "test_one_input_and_output_by_data",
-        (-596784153684,),
-    );
-    let test_tree = deserialize(message);
-
     let expected_tree = SliceData::new(vec![
         0x00, 0x87, 0x98, 0x73, 0xe1, 0xFF, 0xFF, 0xFF, 0x75, 0x0C, 0xE4, 0x7B, 0xAC, 0x80,
     ]);
 
-    assert_eq!(test_tree, expected_tree);
+    test_parameters_set::<(i64,), (u8,)>("test_one_input_and_output_by_data", (-596784153684,), expected_tree, (-596784153684,));
 }
 
 #[test]
 fn test_empty_params() {
+    // function test_parameters_set makes a liitle trick with decoding output parameters (see comment there)
+    // and empty type () can't be used inside of complex types, so we can't use test_parameters_set for
+    // testing () and test the only type in this way
+
     let message = ABICall::<(), ()>::encode_function_call("test_empty_params", ());
     let test_tree = deserialize(message);
 
@@ -86,14 +111,25 @@ fn test_empty_params() {
     let expected_tree = SliceData::from(root_cell);
 
     assert_eq!(test_tree, expected_tree);
+
+
+    let builder = BuilderData::new();
+
+    let root_cell = Arc::<CellData>::from(&builder);
+    let expected_tree = SliceData::from(root_cell);
+
+    let mut data = Vec::new();
+    BagOfCells::with_root(expected_tree)
+        .write_to(&mut data, false, 2, 2)
+        .unwrap();
+
+    let test_decode = ABIResponse::<()>::decode_response(&data).unwrap();
+
+    assert_eq!(test_decode, ());
 }
 
 #[test]
 fn test_two_params() {
-    let message =
-        ABICall::<(bool, i32), (u8, u64)>::encode_function_call("test_two_params", (true, 9434567));
-    let test_tree = deserialize(message);
-
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
@@ -107,7 +143,9 @@ fn test_two_params() {
     let root_cell = Arc::<CellData>::from(&builder);
     let expected_tree = SliceData::from(root_cell);
 
-    assert_eq!(test_tree, expected_tree);
+    let input_data = (true, 9434567);
+
+    test_parameters_set::<(bool, i32), (u8, u64)>("test_two_params", input_data.clone(), expected_tree, input_data);
 }
 
 #[test]
@@ -500,13 +538,13 @@ mod decode_encoded {
 
     fn validate<T>(input: T)
     where
-        T: std::fmt::Debug + std::cmp::PartialEq + ABIParameter,
-        T::Out: Into<T>,
+        T: ABIParameter,
+        T::Out: std::fmt::Debug + std::cmp::PartialEq + From<T>,
     {
         let buffer = input.prepend_to(BuilderData::new());
         let slice = SliceData::from(Arc::new(buffer.cell().clone()));
         let (output, _) = <T>::read_from(slice).unwrap();
-        assert_eq!(input, output.into());
+        assert_eq!(output, input.into());
     }
 
     #[test]
@@ -520,4 +558,29 @@ mod decode_encoded {
         validate((true, false));
         validate((false, (true, true)));
     }
+
+    #[test]
+    fn tuples_with_ints() {
+        validate((-1 as i128, 687 as u32));
+        validate((8 as u16, (97 as i8, 328 as u64)));
+    }
+
+    #[test]
+    fn dynamic_int() {
+        let num = BigInt::parse_bytes(b"b884d718567fd5fb9b0b54f2de27b5dad7c769f0024091230b7ca90c63af27035039d22b47dfc90e7e6661f435eb9e503c73ef62b803df9070af4e13366b55a795b9d862902703a9da29b71d391f93223b39fcd938a5860bfae17b7a56ccdb4ea0cd55da7c6b44d54dcc34b716455b073bf731c5547728b6a9abf7fd7d468ee7bd668f109a05625342dc67f0d295f90b6e7732b19eda0b920ea5ef51cbca25d8c8596706d93938dd4861652a53a68bca2e5082700df032272e46c471c22522d7257a8fa620f9a9e15ab72c5df0d8cd8db731064ebeadce25f04bb6ed42fb4d1b5c8e40c684eaa03ba1a2a0733e7fb9247edd20e16deab2ee095078dad3d50444", 16).unwrap();
+        validate(Dint{data: num});
+    }
+
+    #[test]
+    fn dynamic_array() {
+        validate(vec![0u8, 1, 2, 3, 4]);
+
+        let mut vec = Vec::<u64>::new();
+
+        for i in 0..100 {
+            vec.push(i);
+        }
+        validate(vec);
+    }
+
 }

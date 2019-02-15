@@ -62,7 +62,7 @@ impl<T: ABIParameter> ABIParameter for Vec<T> {
         println!("inner size {}", result);
 
         // if array doesn't fit into cell it is put in separate chain and only 2 bits are put in main chain cell
-        if result > BuilderData::new().bits_capacity() {
+        if self.len() > 256 || result > BuilderData::new().bits_capacity() {
             2
         } else {
             result + 2

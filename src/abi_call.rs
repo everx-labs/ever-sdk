@@ -8,12 +8,13 @@ use tonlabs_sdk_emulator::stack::{BuilderData, CellData, SliceData};
 use types::common::prepend_data_to_chain;
 use types::{
     ABIParameter,
-    ABIInParameter
+    ABIInParameter,
+    ABIOutParameter,
 };
 
 pub const ABI_VERSION: u8 = 0;
 
-pub struct ABICall<TIn: ABIInParameter, TOut: ABIParameter> {
+pub struct ABICall<TIn: ABIInParameter, TOut: ABIInParameter + ABIOutParameter> {
     input: PhantomData<TIn>,
     output: PhantomData<TOut>,
 }
@@ -21,7 +22,7 @@ pub struct ABICall<TIn: ABIInParameter, TOut: ABIParameter> {
 impl<TIn, TOut> ABICall<TIn, TOut> 
 where
     TIn: ABIInParameter,
-    TOut: ABIParameter
+    TOut: ABIInParameter + ABIOutParameter
 {
     fn get_function_id(fn_name: String) -> [u8; 4] {
         let signature = fn_name + &TIn::type_signature() + &TOut::type_signature();

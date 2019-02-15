@@ -5,3 +5,4 @@ version = "0.1.0"
 [dependencies]
 tonlabs-sdk-emulator = {  path = "../"  }
 rust-crypto = "^0.2"
+num-bigint = "0.2.2"

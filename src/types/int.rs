@@ -1,4 +1,6 @@
-use super::common::prepend_data_to_chain;
+use super::common::{
+    prepend_data_to_chain,
+    get_next_byte_from_chain};
 use super::{
     ABIParameter, 
     ABIOutParameter,
@@ -38,7 +40,9 @@ macro_rules! define_int_ABIParameter {
                 let mut cursor = cursor;
                 let mut bytes: [u8; $size] = [0x00; $size];
                 for i in 0..$size {
-                    bytes[i] = cursor.get_next_byte();
+                    let (byte, new_cursor) = get_next_byte_from_chain(cursor)?;
+                    cursor = new_cursor;
+                    bytes[i] = byte;
                 }
                 let decoded = Self::from_be_bytes(bytes);
                 Ok((decoded, cursor))
