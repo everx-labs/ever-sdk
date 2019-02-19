@@ -1,14 +1,12 @@
 use super::common::*;
 use super::{
-    ABIParameter, 
-    ABIOutParameter,
+    ABIParameter,
+    ABITypeSignature,
     DeserializationError
 };
 
-use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
-use tonlabs_sdk_emulator::stack::{BuilderData, SliceData};
-
-makeOutParameter!(bool);
+use tvm::bitstring::{Bit, Bitstring};
+use tvm::stack::{BuilderData, SliceData};
 
 impl ABIParameter for bool {
     type Out = bool;
@@ -36,10 +34,6 @@ impl ABIParameter for bool {
         destination
     }
 
-    fn type_signature() -> String {
-        "bool".to_string()
-    }
-
     fn get_in_cell_size(&self) -> usize {
         1
     }
@@ -55,5 +49,11 @@ impl ABIParameter for bool {
         } else {
             Err(DeserializationError::with(cursor))
         }
+    }
+}
+
+impl ABITypeSignature for bool {
+    fn type_signature() -> String {
+        "bool".to_string()
     }
 }

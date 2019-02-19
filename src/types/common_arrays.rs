@@ -1,5 +1,5 @@
-use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
-use tonlabs_sdk_emulator::stack::BuilderData;
+use tvm::bitstring::{Bit, Bitstring};
+use tvm::stack::BuilderData;
 
 use super::common::*;
 use super::ABIParameter;

@@ -1,13 +1,11 @@
 use super::common::*;
 use super::common_arrays::*;
 use super::{
-    ABIParameter, 
-    DeserializationError,
-    ABIOutParameter
+    ABIParameter
 };
 
-use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
-use tonlabs_sdk_emulator::stack::{BuilderData, SliceData};
+use tvm::bitstring::{Bit, Bitstring};
+use tvm::stack::{BuilderData, SliceData};
 
 // put fixed array to chain or to separate branch depending on array size
 pub fn prepend_fixed_array<T: ABIParameter>(
@@ -39,36 +37,20 @@ pub fn prepend_fixed_array<T: ABIParameter>(
 #[macro_export]
 macro_rules! define_array_ABIParameter {
     ( $size:expr ) => {
-        impl<T> ABIOutParameter for [T; $size]
+        impl<T> $crate::types::ABIParameter for [T; $size]
         where
-            T: ABIParameter
-        {
-            type Out = <Self as ABIParameter>::Out;
-
-            fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError>
-            {
-                <Self as ABIParameter>::read_from(cursor)
-            }
-        }
-
-        impl<T> ABIParameter for [T; $size]
-        where
-            T: ABIParameter,
+            T: $crate::types::ABIParameter,
         {
             type Out = Vec<T::Out>;
 
             fn prepend_to(&self, destination: BuilderData) -> BuilderData {
-                prepend_fixed_array(destination, self)
-            }
-
-            fn type_signature() -> String {
-                format!("{}[{}]", T::type_signature(), $size)
+                $crate::types::prepend_fixed_array(destination, self)
             }
 
             fn get_in_cell_size(&self) -> usize {
                 let mut result = 0;
-                for i in self {
-                    result += i.get_in_cell_size();
+                for i in 0..$size {
+                    result += self[i].get_in_cell_size();
                 }
 
                 // if array doesn't fit into cell it is put in separate chain and only 2 bits are put in main chain cell
@@ -81,14 +63,14 @@ macro_rules! define_array_ABIParameter {
 
             fn read_from(
                 cursor: SliceData,
-            ) -> Result<(Self::Out, SliceData), DeserializationError> {
+            ) -> Result<(Self::Out, SliceData), $crate::types::DeserializationError> {
                 let mut cursor = $crate::types::reader::Reader::new(cursor);
                 let flag = cursor.read_next::<(bool, bool)>()?;
                 match flag {
                     (false, false) => {
                         let mut cursor = cursor.remainder();
                         if cursor.remaining_references() == 0 {
-                            return Err(DeserializationError::with(cursor));
+                            return Err($crate::types::DeserializationError::with(cursor));
                         }
                         let mut array = cursor.drain_reference();
                         let mut array = $crate::types::reader::Reader::new(array);
@@ -97,7 +79,7 @@ macro_rules! define_array_ABIParameter {
                             result.push(array.read_next::<T>()?);
                         }
                         if !array.is_empty() {
-                            return Err(DeserializationError::with(array.remainder()));
+                            return Err($crate::types::DeserializationError::with(array.remainder()));
                         }
                         Ok((result, cursor))
                     }
@@ -108,8 +90,14 @@ macro_rules! define_array_ABIParameter {
                         }
                         Ok((result, cursor.remainder()))
                     }
-                    _ => Err(DeserializationError::with(cursor.remainder())),
+                    _ => Err($crate::types::DeserializationError::with(cursor.remainder())),
                 }
+            }
+        }
+
+        impl<T: $crate::types::ABITypeSignature> $crate::types::ABITypeSignature for [T; $size] {
+            fn type_signature() -> String {
+                format!("{}[{}]", T::type_signature(), $size)
             }
         }
     };

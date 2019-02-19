@@ -2,18 +2,17 @@ use super::common::{
     prepend_data_to_chain,
     get_next_byte_from_chain};
 use super::{
-    ABIParameter, 
-    ABIOutParameter,
+    ABIParameter,
+    ABITypeSignature,
     DeserializationError
 };
 
-use tonlabs_sdk_emulator::bitstring::Bitstring;
-use tonlabs_sdk_emulator::stack::{BuilderData, SliceData};
+use tvm::bitstring::Bitstring;
+use tvm::stack::{BuilderData, SliceData};
 
 #[macro_export]
 macro_rules! define_int_ABIParameter {
     ( $type:ident, $str_type:expr, $size: tt) => {
-        makeOutParameter!($type);
 
         impl ABIParameter for $type {
             type Out = $type;
@@ -24,10 +23,6 @@ macro_rules! define_int_ABIParameter {
                 let data = Bitstring::create(vec, size * 8);
 
                 prepend_data_to_chain(destination, data)
-            }
-
-            fn type_signature() -> String {
-                $str_type.to_string()
             }
 
             fn get_in_cell_size(&self) -> usize {
@@ -46,6 +41,12 @@ macro_rules! define_int_ABIParameter {
                 }
                 let decoded = Self::from_be_bytes(bytes);
                 Ok((decoded, cursor))
+            }
+        }
+
+        impl ABITypeSignature for $type {
+            fn type_signature() -> String {
+                $str_type.to_string()
             }
         }
     };

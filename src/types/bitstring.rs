@@ -1,13 +1,11 @@
 use super::{
     ABIParameter,
     DeserializationError,
-    ABIOutParameter
+    ABITypeSignature
 };
 
-use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
-use tonlabs_sdk_emulator::stack::{BuilderData, SliceData};
-
-makeOutParameter!(Bitstring);
+use tvm::bitstring::{Bit, Bitstring};
+use tvm::stack::{BuilderData, SliceData};
 
 impl ABIParameter for Bitstring {
     type Out = Bitstring;
@@ -15,10 +13,6 @@ impl ABIParameter for Bitstring {
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
         self.bits(0 .. self.length_in_bits())
             .data.prepend_to(destination)
-    }
-
-    fn type_signature() -> String {
-        "bitstring".to_string()
     }
 
     fn get_in_cell_size(&self) -> usize {
@@ -36,5 +30,11 @@ impl ABIParameter for Bitstring {
         });
 
         Ok((result, cursor))
+    }
+}
+
+impl ABITypeSignature for Bitstring {
+    fn type_signature() -> String {
+        "bitstring".to_string()
     }
 }

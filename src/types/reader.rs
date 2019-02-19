@@ -1,6 +1,6 @@
 use super::{ABIParameter, DeserializationError};
 use std::option::Option;
-use tonlabs_sdk_emulator::stack::SliceData;
+use tvm::stack::SliceData;
 
 pub struct Reader {
     cursor: Option<SliceData>,

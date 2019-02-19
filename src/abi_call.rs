@@ -2,27 +2,26 @@ use crypto::digest::Digest;
 use crypto::sha2::Sha256;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use tonlabs_sdk_emulator::bitstring::Bitstring;
-use tonlabs_sdk_emulator::cells_serialization::BagOfCells;
-use tonlabs_sdk_emulator::stack::{BuilderData, CellData, SliceData};
+use tvm::bitstring::Bitstring;
+use tvm::cells_serialization::BagOfCells;
+use tvm::stack::{BuilderData, CellData, SliceData};
 use types::common::prepend_data_to_chain;
 use types::{
-    ABIParameter,
     ABIInParameter,
-    ABIOutParameter,
+    ABITypeSignature
 };
 
 pub const ABI_VERSION: u8 = 0;
 
-pub struct ABICall<TIn: ABIInParameter, TOut: ABIInParameter + ABIOutParameter> {
+pub struct ABICall<TIn: ABIInParameter + ABITypeSignature, TOut: ABIInParameter + ABITypeSignature> {
     input: PhantomData<TIn>,
     output: PhantomData<TOut>,
 }
 
 impl<TIn, TOut> ABICall<TIn, TOut> 
 where
-    TIn: ABIInParameter,
-    TOut: ABIInParameter + ABIOutParameter
+    TIn: ABIInParameter + ABITypeSignature,
+    TOut: ABIInParameter + ABITypeSignature
 {
     fn get_function_id(fn_name: String) -> [u8; 4] {
         let signature = fn_name + &TIn::type_signature() + &TOut::type_signature();
@@ -39,10 +38,26 @@ where
 
         let mut bytes = [0; 4];
         bytes.copy_from_slice(&function_hash[..4]);
+        println!("{:X?}", bytes);
         bytes
     }
 
     pub fn encode_function_call<T>(fn_name: T, parameters: TIn) -> Vec<u8>
+    where
+        T: Into<String>,
+    {
+        let root = Self::encode_function_call_into_slice(fn_name, parameters);
+
+        // serialize tree into Vec<u8>
+        let mut data = Vec::new();
+        BagOfCells::with_root(root)
+            .write_to(&mut data, false)
+            .unwrap();
+
+        data
+    }
+
+    pub fn encode_function_call_into_slice<T>(fn_name: T, parameters: TIn) -> SliceData
     where
         T: Into<String>,
     {
@@ -62,13 +77,6 @@ where
 
         // serialize tree into Vec<u8>
         let root_cell = Arc::<CellData>::from(&builder);
-        let root = SliceData::from(root_cell);
-
-        let mut data = Vec::new();
-        BagOfCells::with_root(root)
-            .write_to(&mut data, false, 2, 2)
-            .unwrap();
-
-        data
+        SliceData::from(root_cell)
     }
 }

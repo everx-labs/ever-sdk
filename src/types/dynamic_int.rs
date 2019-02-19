@@ -1,17 +1,15 @@
 use super::common::*;
 use super::{
-    ABIParameter, 
-    ABIOutParameter,
+    ABIParameter,
+    ABITypeSignature,
     DeserializationError,
     SubString
 };
 
-use std::fmt;
-
 use num_bigint::{BigInt, Sign};
 
-use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
-use tonlabs_sdk_emulator::stack::{BuilderData, SliceData};
+use tvm::bitstring::{Bit, Bitstring};
+use tvm::stack::{BuilderData, SliceData};
 
 pub fn read_dynamic_int(cursor: SliceData, signed_padding: bool) -> Result<(Vec<u8>, SliceData), DeserializationError> {
     let mut cursor = cursor;
@@ -50,25 +48,33 @@ pub fn read_dynamic_int(cursor: SliceData, signed_padding: bool) -> Result<(Vec<
     Ok((vec, cursor))
 }
 
-#[derive(PartialEq, Eq)]
-pub struct Dint
-{
-    pub  data: BigInt,
-}
-
-makeOutParameter!(Dint);
+pub type Dint = BigInt;
 
 impl ABIParameter for Dint {
     type Out = Dint;
 
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
-        let bytes = self.data.to_signed_bytes_be();
+        let bytes = self.to_signed_bytes_be();
         let size = bytes.len() * 8;
+
+        let high_byte = bytes[0];
+        let mut crop_bits = 0;
+
+        // crop unsignificant high bits to reduce size
+        for i in (0..7).rev() {
+            if (high_byte >> 7) == (high_byte >> i & 0x01) {
+                crop_bits += 1;
+            } else {
+                break;
+            }
+        }
 
         let num_bitstring = Bitstring::create(bytes, size);
 
+        let cropped_bitstring = num_bitstring.substring(crop_bits..num_bitstring.length_in_bits());
+
         let mut result = Bitstring::new();
-        let mut remain = num_bitstring.length_in_bits();
+        let mut remain = cropped_bitstring.length_in_bits();
 
         // take gropus by 7 bits
         while remain > 0 {
@@ -81,16 +87,18 @@ impl ABIParameter for Dint {
                 prefix.append_bit(&Bit::One);
             } else {
                 prefix.append_bit(&Bit::Zero);
-                // pad last group to 7 bits according to number sign
-                let padding: u16 = match self.data.sign() {
-                    Sign::Plus => 0x0,
-                    Sign::NoSign => 0x0,
-                    Sign::Minus => 0xffff,
-                };
-                prefix.append_bits(padding, 7 - bit_count);
+                if bit_count != 7 {
+                    // pad last group to 7 bits according to number sign
+                    let padding: u16 = match self.sign() {
+                        Sign::Plus => 0x0,
+                        Sign::NoSign => 0x0,
+                        Sign::Minus => 0xffff,
+                    };
+                    prefix.append_bits(padding, 7 - bit_count);
+                }
             }
 
-            result = result + prefix + num_bitstring.substring(remain - bit_count .. remain);
+            result = result + prefix + cropped_bitstring.substring(remain - bit_count .. remain);
 
             remain -= bit_count;
         }
@@ -98,12 +106,8 @@ impl ABIParameter for Dint {
         prepend_data_to_chain(destination, result)
     }
 
-    fn type_signature() -> String {
-        "dint".to_string()
-    }
-
     fn get_in_cell_size(&self) -> usize {
-        let num_size = self.data.to_signed_bytes_be().len() * 8;
+        let num_size = self.to_signed_bytes_be().len() * 8;
         // split by groups of 7 bits with adding one bit to each group and last group pad to 8 bits
         num_size + num_size / 7 + ((num_size % 7) + 7) & !7
     }
@@ -111,12 +115,12 @@ impl ABIParameter for Dint {
     fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
         let (vec, cursor) = read_dynamic_int(cursor, true)?;
 
-        Ok((Dint{data: BigInt::from_signed_bytes_be(&vec)}, cursor))
+        Ok((Dint::from_signed_bytes_be(&vec), cursor))
     }
 }
 
-impl fmt::Debug for Dint {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.data.fmt(f)
+impl ABITypeSignature for Dint {
+    fn type_signature() -> String {
+        "dint".to_string()
     }
 }

@@ -4,11 +4,11 @@ use super::{
     reader::Reader,
     ABIParameter,
     DeserializationError,
-    ABIOutParameter
+    ABITypeSignature
 };
 
-use tonlabs_sdk_emulator::bitstring::{Bit, Bitstring};
-use tonlabs_sdk_emulator::stack::{BuilderData, SliceData};
+use tvm::bitstring::{Bit, Bitstring};
+use tvm::stack::{BuilderData, SliceData};
 
 // put dynamic array to chain or to separate branch depending on array size
 pub fn prepend_dynamic_array<T: ABIParameter>(
@@ -40,8 +40,6 @@ pub fn prepend_dynamic_array<T: ABIParameter>(
     destination
 }
 
-makeOutParameter!(Vec, T);
-
 impl<T: ABIParameter> ABIParameter for Vec<T> {
     type Out = Vec<T::Out>;
 
@@ -49,17 +47,11 @@ impl<T: ABIParameter> ABIParameter for Vec<T> {
         prepend_dynamic_array(destination, self.as_slice())
     }
 
-    fn type_signature() -> String {
-        format!("{}[]", T::type_signature())
-    }
-
     fn get_in_cell_size(&self) -> usize {
         let mut result = 8;
         for i in self {
             result += i.get_in_cell_size();
         }
-
-        println!("inner size {}", result);
 
         // if array doesn't fit into cell it is put in separate chain and only 2 bits are put in main chain cell
         if self.len() > 256 || result > BuilderData::new().bits_capacity() {
@@ -96,5 +88,11 @@ impl<T: ABIParameter> ABIParameter for Vec<T> {
             }
             _ => Err(DeserializationError::with(cursor.remainder())),
         }
+    }
+}
+
+impl<T: ABITypeSignature> ABITypeSignature for Vec<T> {
+    fn type_signature() -> String {
+        format!("{}[]", T::type_signature())
     }
 }

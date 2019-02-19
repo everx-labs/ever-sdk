@@ -1,5 +1,5 @@
-use tonlabs_sdk_emulator::bitstring::Bitstring;
-use tonlabs_sdk_emulator::stack::{BuilderData, SliceData};
+use tvm::bitstring::Bitstring;
+use tvm::stack::{BuilderData, SliceData};
 use super::DeserializationError;
 use types::ABIParameter;
 

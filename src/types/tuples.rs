@@ -4,16 +4,19 @@ use super::{
     ABIParameter, 
     ABIInParameter,
     ABIOutParameter,
+    ABITypeSignature,
     DeserializationError
 };
 
-use tonlabs_sdk_emulator::stack::{BuilderData, SliceData};
+use tvm::stack::{BuilderData, SliceData};
 
 impl ABIInParameter for () {
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
         destination
     }
+}
 
+impl ABITypeSignature for () {
     fn type_signature() -> String {
         String::from("()")
     }
@@ -65,10 +68,6 @@ macro_rules! tuple {
             fn prepend_to(&self, destination: BuilderData) -> BuilderData {
                 ABIParameter::prepend_to(self, destination)
             }
-
-            fn type_signature() -> String {
-                <Self as ABIParameter>::type_signature()
-            }
         }
 
         impl<$($T),*> ABIParameter for ($($T,)*)
@@ -83,15 +82,7 @@ macro_rules! tuple {
                 destination
             }
 
-            fn type_signature() -> String {
-                let mut result = "".to_owned()
-                $(
-                    + "," + &$T::type_signature()
-                )*
-                    + ")";
-                result.replace_range(..1, "(");
-                result
-            }
+
 
             fn get_in_cell_size(&self) -> usize {
                 let ($($T,)*) = self;
@@ -106,6 +97,21 @@ macro_rules! tuple {
                     )*),
                     reader.remainder()
                 ))
+            }
+        }
+
+        impl<$($T),*> ABITypeSignature for ($($T,)*) 
+        where
+            $($T: ABITypeSignature),*
+        {
+            fn type_signature() -> String {
+                let mut result = "".to_owned()
+                $(
+                    + "," + &$T::type_signature()
+                )*
+                    + ")";
+                result.replace_range(..1, "(");
+                result
             }
         }
     };

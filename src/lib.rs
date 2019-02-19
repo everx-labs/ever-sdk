@@ -1,9 +1,11 @@
 extern crate crypto;
 extern crate num_bigint;
-extern crate tonlabs_sdk_emulator;
+extern crate ton_block;
+extern crate tvm;
 
 pub mod abi_call;
 pub mod abi_response;
+#[macro_use]
 pub mod types;
 
 #[cfg(test)]

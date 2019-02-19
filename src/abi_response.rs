@@ -1,9 +1,9 @@
 use std::marker::PhantomData;
 use std::io::Cursor;
 
-use tonlabs_sdk_emulator::cells_serialization::deserialize_cells_tree;
-use tonlabs_sdk_emulator::stack::SliceData;
-use tonlabs_sdk_emulator::types::Exception as InnerBagOfCellsDeserializationException;
+use tvm::cells_serialization::deserialize_cells_tree;
+use tvm::stack::SliceData;
+use tvm::types::Exception as InnerBagOfCellsDeserializationException;
 
 use types::{
     ABIOutParameter,
@@ -36,16 +36,20 @@ impl<TOut: ABIOutParameter> ABIResponse<TOut> {
                     return Err(Exception::EmptyResponse);
                 }
                 let root_cell = &cells[0];
-                TOut::read_from(SliceData::from(root_cell))
-                    .map_err(|e| Exception::TypeDeserializationError(e))
-                    .and_then(|(result, remainder)| {
-                        if remainder.remaining_references() != 0 ||
-                            remainder.remaining_bits() != 0 
-                        {
-                            return Err(Exception::IncompleteDeserializationError);
-                        }
-                        Ok(result)
-                    })
+                Self::decode_response_from_slice(SliceData::from(root_cell))
+            })
+    }
+
+    pub fn decode_response_from_slice(response: SliceData) -> Result<TOut::Out, Exception> {
+        TOut::read_from(response)
+            .map_err(|e| Exception::TypeDeserializationError(e))
+            .and_then(|(result, remainder)| {
+                if remainder.remaining_references() != 0 ||
+                    remainder.remaining_bits() != 0 
+                {
+                    return Err(Exception::IncompleteDeserializationError);
+                }
+                Ok(result)
             })
     }
 }
