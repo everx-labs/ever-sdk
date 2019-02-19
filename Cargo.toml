@@ -2,8 +2,16 @@
 name = "abi-lib"
 version = "0.1.0"
 
+
 [dependencies]
 tvm = { path = "../tvm" }
 ton_block = { path = "../ton_block" }
 rust-crypto = "^0.2"
 num-bigint = "0.2.2"
+
+[dev-dependencies.compiletest_rs]
+features = ["tmp"]
+
+[features]
+stable = ["compiletest_rs/stable"]
+
