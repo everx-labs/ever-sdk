@@ -1,52 +1,74 @@
-use tvm::bitstring::Bit;
-use tvm::stack::{BuilderData, SliceData};
-
 #[macro_export]
 macro_rules! bits {
     ( $size:expr, $type:ident ) => {
 
         #[derive(Clone)]
         pub struct $type {
-            pub data: [Bit;$size],
+            pub data: [tvm::bitstring::Bit;$size],
         }
 
-        impl From<[Bit;$size]> for $type {
-            fn from(array: [Bit;$size]) -> Self {
+        
+        impl PartialEq for $type
+        {
+            fn eq(&self, other: &$type) -> bool {
+                if self.len() != other.len() {
+                    return false;
+                }
+
+                for i in 0..self.len() {
+                    if self[i] != other[i] {
+                        return false;
+                    }
+                }
+
+                true
+            }
+        }
+
+        impl std::fmt::Debug for $type
+        {
+            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                self.data.fmt(f)
+            }
+        }
+
+        impl From<[tvm::bitstring::Bit;$size]> for $type {
+            fn from(array: [tvm::bitstring::Bit;$size]) -> Self {
                 $type{ data: array}
             }
         }
 
         impl std::ops::Deref for $type {
-            type Target = [Bit; $size];
+            type Target = [tvm::bitstring::Bit; $size];
 
-            fn deref(&self) -> &[Bit; $size] {
+            fn deref(&self) -> &[tvm::bitstring::Bit; $size] {
                 &self.data
             }
         }
 
-        impl std::borrow::Borrow<[Bit]> for $type {
-            fn borrow(&self) -> &[Bit] {
+        impl std::borrow::Borrow<[tvm::bitstring::Bit]> for $type {
+            fn borrow(&self) -> &[tvm::bitstring::Bit] {
                 &self.data
             }
         }
 
-        impl std::borrow::Borrow<[Bit; $size]> for $type {
-            fn borrow(&self) -> &[Bit; $size] {
+        impl std::borrow::Borrow<[tvm::bitstring::Bit; $size]> for $type {
+            fn borrow(&self) -> &[tvm::bitstring::Bit; $size] {
                 &self.data
             }
         }
 
         impl $crate::types::ABIParameter for $type
         {
-            type Out = Vec<<Bit as $crate::types::ABIParameter>::Out>;
+            type Out = Vec<<tvm::bitstring::Bit as $crate::types::ABIParameter>::Out>;
 
-            fn prepend_to(&self, destination: BuilderData) -> BuilderData {
+            fn prepend_to(&self, destination: tvm::stack::BuilderData) -> tvm::stack::BuilderData {
                 $crate::types::prepend_fixed_array(destination, &self.data)
             }
 
             fn get_in_cell_size(&self) -> usize {
                 // if array doesn't fit into cell it is put in separate chain and only 2 bits are put in main chain cell
-                if self.len() > BuilderData::new().bits_capacity() {
+                if self.len() > tvm::stack::BuilderData::new().bits_capacity() {
                     2
                 } else {
                     self.len() + 2
@@ -54,8 +76,8 @@ macro_rules! bits {
             }
 
             fn read_from(
-                cursor: SliceData,
-            ) -> Result<(Self::Out, SliceData), $crate::types::DeserializationError> {
+                cursor: tvm::stack::SliceData,
+            ) -> Result<(Self::Out, tvm::stack::SliceData), $crate::types::DeserializationError> {
                 let mut cursor = $crate::types::reader::Reader::new(cursor);
                 let flag = cursor.read_next::<(bool, bool)>()?;
                 match flag {
@@ -68,7 +90,7 @@ macro_rules! bits {
                         let mut array = $crate::types::reader::Reader::new(array);
                         let mut result = vec![];
                         for _ in 0..$size {
-                            result.push(array.read_next::<Bit>()?);
+                            result.push(array.read_next::<tvm::bitstring::Bit>()?);
                         }
                         if !array.is_empty() {
                             return Err($crate::types::DeserializationError::with(array.remainder()));
@@ -78,7 +100,7 @@ macro_rules! bits {
                     (true, false) => {
                         let mut result = vec![];
                         for _ in 0..$size {
-                            result.push(cursor.read_next::<Bit>()?);
+                            result.push(cursor.read_next::<tvm::bitstring::Bit>()?);
                         }
                         Ok((result, cursor.remainder()))
                     }

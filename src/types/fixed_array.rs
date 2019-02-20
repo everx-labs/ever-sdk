@@ -5,7 +5,7 @@ use super::{
 };
 
 use tvm::bitstring::{Bit, Bitstring};
-use tvm::stack::{BuilderData, SliceData};
+use tvm::stack::{BuilderData};
 
 // put fixed array to chain or to separate branch depending on array size
 pub fn prepend_fixed_array<T: ABIParameter>(
@@ -35,16 +35,82 @@ pub fn prepend_fixed_array<T: ABIParameter>(
 }
 
 #[macro_export]
-macro_rules! define_array_ABIParameter {
-    ( $size:expr ) => {
-        impl<T> $crate::types::ABIParameter for [T; $size]
+macro_rules! fixed_abi_array {
+    ( $size:expr, $type:ident ) => {
+        
+        #[derive(Clone)]
+        pub struct $type<T> {
+            pub data: [T;$size],
+        }
+
+        impl<T> PartialEq for $type<T>
+        where
+            T: PartialEq,
+        {
+            fn eq(&self, other: &$type<T>) -> bool {
+                if self.len() != other.len() {
+                    return false;
+                }
+
+                for i in 0..self.len() {
+                    if self[i] != other[i] {
+                        return false;
+                    }
+                }
+
+                true
+            }
+        }
+
+        impl<T> std::fmt::Debug for $type<T>
+        where
+            T: std::fmt::Debug,
+        {
+            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                self.data.fmt(f)
+            }
+        }
+
+        impl<T> From<[T;$size]> for $type<T> {
+            fn from(array: [T;$size]) -> Self {
+                $type{ data: array }
+            }
+        }
+
+        impl<T> Into<[T;$size]> for $type<T> {
+            fn into(self) -> [T;$size] {
+                self.data
+            }
+        }
+
+        impl<T> std::ops::Deref for $type<T> {
+            type Target = [T; $size];
+
+            fn deref(&self) -> &[T; $size] {
+                &self.data
+            }
+        }
+
+        impl<T> std::borrow::Borrow<[T]> for $type<T> {
+            fn borrow(&self) -> &[T] {
+                &self.data
+            }
+        }
+
+        impl<T> std::borrow::Borrow<[T; $size]> for $type<T> {
+            fn borrow(&self) -> &[T; $size] {
+                &self.data
+            }
+        }
+
+        impl<T> $crate::types::ABIParameter for $type<T>
         where
             T: $crate::types::ABIParameter,
         {
             type Out = Vec<T::Out>;
 
-            fn prepend_to(&self, destination: BuilderData) -> BuilderData {
-                $crate::types::prepend_fixed_array(destination, self)
+            fn prepend_to(&self, destination: tvm::stack::BuilderData) -> tvm::stack::BuilderData {
+                $crate::types::prepend_fixed_array(destination, &self.data)
             }
 
             fn get_in_cell_size(&self) -> usize {
@@ -54,7 +120,7 @@ macro_rules! define_array_ABIParameter {
                 }
 
                 // if array doesn't fit into cell it is put in separate chain and only 2 bits are put in main chain cell
-                if result > BuilderData::new().bits_capacity() {
+                if result > tvm::stack::BuilderData::new().bits_capacity() {
                     2
                 } else {
                     result + 2
@@ -62,8 +128,8 @@ macro_rules! define_array_ABIParameter {
             }
 
             fn read_from(
-                cursor: SliceData,
-            ) -> Result<(Self::Out, SliceData), $crate::types::DeserializationError> {
+                cursor: tvm::stack::SliceData,
+            ) -> Result<(Self::Out, tvm::stack::SliceData), $crate::types::DeserializationError> {
                 let mut cursor = $crate::types::reader::Reader::new(cursor);
                 let flag = cursor.read_next::<(bool, bool)>()?;
                 match flag {
@@ -95,7 +161,7 @@ macro_rules! define_array_ABIParameter {
             }
         }
 
-        impl<T: $crate::types::ABITypeSignature> $crate::types::ABITypeSignature for [T; $size] {
+        impl<T: $crate::types::ABITypeSignature> $crate::types::ABITypeSignature for $type<T> {
             fn type_signature() -> String {
                 format!("{}[{}]", T::type_signature(), $size)
             }
@@ -103,35 +169,35 @@ macro_rules! define_array_ABIParameter {
     };
 }
 
-define_array_ABIParameter!(1);
-define_array_ABIParameter!(2);
-define_array_ABIParameter!(3);
-define_array_ABIParameter!(4);
-define_array_ABIParameter!(5);
-define_array_ABIParameter!(6);
-define_array_ABIParameter!(7);
-define_array_ABIParameter!(8);
-define_array_ABIParameter!(9);
-define_array_ABIParameter!(10);
-define_array_ABIParameter!(11);
-define_array_ABIParameter!(12);
-define_array_ABIParameter!(13);
-define_array_ABIParameter!(14);
-define_array_ABIParameter!(15);
-define_array_ABIParameter!(16);
-define_array_ABIParameter!(17);
-define_array_ABIParameter!(18);
-define_array_ABIParameter!(19);
-define_array_ABIParameter!(20);
-define_array_ABIParameter!(21);
-define_array_ABIParameter!(22);
-define_array_ABIParameter!(23);
-define_array_ABIParameter!(24);
-define_array_ABIParameter!(25);
-define_array_ABIParameter!(26);
-define_array_ABIParameter!(27);
-define_array_ABIParameter!(28);
-define_array_ABIParameter!(29);
-define_array_ABIParameter!(30);
-define_array_ABIParameter!(31);
-define_array_ABIParameter!(32);
+fixed_abi_array!(1, AbiArray1);
+fixed_abi_array!(2, AbiArray2);
+fixed_abi_array!(3, AbiArray3);
+fixed_abi_array!(4, AbiArray4);
+fixed_abi_array!(5, AbiArray5);
+fixed_abi_array!(6, AbiArray6);
+fixed_abi_array!(7, AbiArray7);
+fixed_abi_array!(8, AbiArray8);
+fixed_abi_array!(9, AbiArray9);
+fixed_abi_array!(10, AbiArray10);
+fixed_abi_array!(11, AbiArray11);
+fixed_abi_array!(12, AbiArray12);
+fixed_abi_array!(13, AbiArray13);
+fixed_abi_array!(14, AbiArray14);
+fixed_abi_array!(15, AbiArray15);
+fixed_abi_array!(16, AbiArray16);
+fixed_abi_array!(17, AbiArray17);
+fixed_abi_array!(18, AbiArray18);
+fixed_abi_array!(19, AbiArray19);
+fixed_abi_array!(20, AbiArray20);
+fixed_abi_array!(21, AbiArray21);
+fixed_abi_array!(22, AbiArray22);
+fixed_abi_array!(23, AbiArray23);
+fixed_abi_array!(24, AbiArray24);
+fixed_abi_array!(25, AbiArray25);
+fixed_abi_array!(26, AbiArray26);
+fixed_abi_array!(27, AbiArray27);
+fixed_abi_array!(28, AbiArray28);
+fixed_abi_array!(29, AbiArray29);
+fixed_abi_array!(30, AbiArray30);
+fixed_abi_array!(31, AbiArray31);
+fixed_abi_array!(32, AbiArray32);
