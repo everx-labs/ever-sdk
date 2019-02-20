@@ -10,8 +10,5 @@ rust-crypto = "^0.2"
 num-bigint = "0.2.2"
 
 [dev-dependencies.compiletest_rs]
-features = ["tmp"]
-
-[features]
-stable = ["compiletest_rs/stable"]
-
+features = ["tmp", "stable"]
+version = "*"
