@@ -93,6 +93,6 @@ impl<T: ABIParameter> ABIParameter for Vec<T> {
 
 impl<T: ABITypeSignature> ABITypeSignature for Vec<T> {
     fn type_signature() -> String {
-        format!("{}[]", T::type_signature())
+        T::type_dynamic_array_signature()
     }
 }

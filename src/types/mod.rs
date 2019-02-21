@@ -46,15 +46,20 @@ pub trait ABIParameter {
         Self::Out: std::marker::Sized;
 }
 
-// Note: The reason ABIInParameter is separate 
-// from ABIParameter is that we want to have
-// unique type () "empty tuple" that is only
-// acceptable as a root object (in or out)
-// and can't be used in compound types, ex.: ((),()).
 pub trait ABITypeSignature {
 
     // return type signature regarding to ABI specification
     fn type_signature() -> String;
+
+    // return type signature of fixed array of elements regarding to ABI specification
+    fn type_fixed_array_signature(size: usize) -> String {
+        format!("{}[{}]", Self::type_signature(), size)
+    }
+
+    // return type signature of dynamic array of elements regarding to ABI specification
+    fn type_dynamic_array_signature() -> String {
+        format!("{}[]", Self::type_signature())
+    }
 }
 
 impl DeserializationError {
@@ -110,10 +115,6 @@ pub use self::bitstring::*;
 
 mod bit;
 pub use self::bit::*;
-
-#[macro_use]
-mod bits;
-pub use self::bits::*;
 
 mod dynamic_int;
 pub use self::dynamic_int::*;

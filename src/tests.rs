@@ -1,3 +1,5 @@
+#![allow(non_camel_case_types)]
+
 use crate::abi_call::{ABICall, ABI_VERSION};
 use crate::abi_response::{ABIResponse};
 use crate::types::common::prepend_reference;
@@ -7,9 +9,7 @@ use crate::types::{
     ABIOutParameter,
     ABITypeSignature};
 use crate::types::{
-    Dint, Duint,
-    Bits1024,
-    AbiArray5, AbiArray8, AbiArray32};
+    Dint, Duint};
 
 use crypto::digest::Digest;
 use crypto::sha2::Sha256;
@@ -213,6 +213,8 @@ fn test_nested_tuples_with_all_simples() {
     >("test_nested_tuples_with_all_simples", input_data.clone(), expected_tree, input_data);
 }
 
+fixed_abi_array!(u32, 8, Array_u32_8);
+
 #[test]
 fn test_small_static_array() {
     let input_array: [u32; 8] = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -235,14 +237,16 @@ fn test_small_static_array() {
     let root_cell = Arc::<CellData>::from(&builder);
     let expected_tree = SliceData::from(root_cell);
 
-    let input_data = (AbiArray8::<u32>::from(input_array),);
+    let input_data = (Array_u32_8::from(input_array),);
     let expected_output = (input_array.to_vec(),);
 
     test_parameters_set::<
-        (AbiArray8<u32>,),
+        (Array_u32_8,),
         ()
     >("test_small_static_array", input_data, expected_tree, expected_output);
 }
+
+fixed_abi_array!(u16, 5, Array_u16_5);
 
 #[test]
 fn test_small_static_array_by_data() {
@@ -253,11 +257,11 @@ fn test_small_static_array_by_data() {
         0x60,
     ]);
     
-    let input_data = (AbiArray5::<u16>::from(input_array),);
+    let input_data = (Array_u16_5::from(input_array),);
     let expected_output = (input_array.to_vec(),);
 
     test_parameters_set::<
-        (AbiArray5<u16>,),
+        (Array_u16_5,),
         ()
     >("test_small_static_array_by_data", input_data, expected_tree, expected_output);
 }
@@ -358,6 +362,8 @@ fn put_data_into_chain(bilder: BuilderData, data: Bitstring) -> BuilderData {
     current_builder
 }
 
+fixed_abi_array!(u128, 32, u128_array_32);
+
 #[test]
 fn test_big_static_array() {
     let mut input_array: [u128; 32] = [0; 32];
@@ -392,16 +398,16 @@ fn test_big_static_array() {
     let expected_tree = SliceData::from(root_cell);
 
 
-    let input_data = (AbiArray32::<u128>::from(input_array),);
+    let input_data = (u128_array_32::from(input_array),);
     let expected_output = (input_array.to_vec(),);
 
     test_parameters_set::<
-        (AbiArray32<u128>,),
+        (u128_array_32,),
         ()
     >("test_big_static_array", input_data, expected_tree, expected_output);
 }
 
-fixed_abi_array!(512, AbiArray512);
+fixed_abi_array!(i32, 512, i32_array_512);
 
 #[test]
 fn test_huge_static_array() {
@@ -412,7 +418,7 @@ fn test_huge_static_array() {
 
     // since all standard operations are defined only for arrays with up to 32 elements we have to check
     // this huge array explicitly
-    let message = ABICall::<(AbiArray512<i32>,), ()>::encode_function_call("test_huge_static_array", (input_array.into(),));
+    let message = ABICall::<(i32_array_512,), ()>::encode_function_call("test_huge_static_array", (input_array.into(),));
     let test_tree = deserialize(message);
 
     let mut data = Bitstring::new();
@@ -458,7 +464,7 @@ fn test_huge_static_array() {
         .write_to(&mut data, false)
         .unwrap();
 
-    let (test_decode,) = ABIResponse::<(AbiArray512<i32>,)>::decode_response(&data).unwrap();
+    let (test_decode,) = ABIResponse::<(i32_array_512,)>::decode_response(&data).unwrap();
 
     assert_eq!(input_array.len(), test_decode.len());
 
@@ -544,6 +550,8 @@ fn test_dynamic_array_of_tuples() {
     >("test_dynamic_array_of_tuples", input_data, expected_tree, expected_output);
 }
 
+fixed_abi_array!(Vec<i64>, 5, Veci64_array_5);
+
 #[test]
 fn test_tuples_with_combined_types() {
     let input_array1: Vec<(u32, bool)> = vec![(1, true), (2, false), (3, true), (4, false)];
@@ -564,7 +572,7 @@ fn test_tuples_with_combined_types() {
     let input_data = (
         18,
         (input_array1.clone(), -290),
-        (input_array2.clone(), AbiArray5::from(input_array3.clone())),
+        (input_array2.clone(), Veci64_array_5::from(input_array3.clone())),
     );
 
     let expected_output = (
@@ -657,7 +665,7 @@ fn test_tuples_with_combined_types() {
             ),
             (
                 Vec<i64>,
-                AbiArray5<Vec<i64>>
+                Veci64_array_5
             )
         ),
         ()
@@ -791,7 +799,7 @@ fn test_big_bitstring() {
     >("test_big_bitstring", input_data, expected_tree, expected_output);
 }
 
-bits!(982, Bits982);
+fixed_abi_array!(Bit, 982, Bits982);
 
 #[test]
 fn test_small_bits() {
@@ -854,6 +862,8 @@ fn test_small_bits() {
         assert_eq!(bits[i], test_decode[i]);
     }
 }
+
+fixed_abi_array!(Bit, 1024, Bits1024);
 
 #[test]
 fn test_big_bits() {
