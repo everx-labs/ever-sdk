@@ -2,8 +2,7 @@ use super::common::*;
 use super::{
     ABIParameter,
     ABITypeSignature,
-    DeserializationError,
-    SubString
+    DeserializationError
 };
 
 use num_bigint::{BigInt, Sign};

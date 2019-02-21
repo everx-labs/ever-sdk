@@ -1,7 +1,4 @@
-use std::ops::Range;
-
 use tvm::stack::{BuilderData, SliceData};
-use tvm::bitstring::Bitstring;
 
 #[derive(Debug)]
 pub struct DeserializationError {
@@ -68,25 +65,6 @@ impl DeserializationError {
     }
 }
 
-
-pub trait SubString {
-    fn substring(&self, range: Range<usize>) -> Bitstring;
-}
-
-impl SubString for Bitstring {
-    fn substring(&self, range: Range<usize>) -> Bitstring {
-        let mut result = Bitstring::new();
-
-        self.bits(range)
-            .data
-            .iter()
-            .for_each(|x| {
-                result.append_bit(x);
-        });
-
-        result
-    }
-}
 
 pub mod reader;
 

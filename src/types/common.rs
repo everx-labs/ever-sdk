@@ -66,25 +66,10 @@ pub fn prepend_data_to_chain(mut builder: BuilderData, data: Bitstring) -> Build
         if remaining_bits > 0 {
             // data does not fit into cell - fill current cell and take remaining data
             if remaining_bits < data.length_in_bits() {
-                let mut cut = Bitstring::new();
-                // TODO: replace iteration on Bits with Bitstring::substring function
-                data.bits(data.length_in_bits() - remaining_bits..data.length_in_bits())
-                    .data
-                    .iter()
-                    .for_each(|x| {
-                        cut.append_bit(x);
-                    });
+                let cut = data.substring(data.length_in_bits() - remaining_bits..data.length_in_bits());
                 prepend_data(&mut builder, &cut);
 
-                cut.clear();
-                data.bits(0..data.length_in_bits() - remaining_bits)
-                    .data
-                    .iter()
-                    .for_each(|x| {
-                        cut.append_bit(x);
-                    });
-
-                data = cut;
+                data = data.substring(0..data.length_in_bits() - remaining_bits);
             } else {
                 // data fit into current cell - no data remaining
                 prepend_data(&mut builder, &data);
