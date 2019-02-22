@@ -13,16 +13,19 @@ use types::{
 
 pub const ABI_VERSION: u8 = 0;
 
+/// Empty struct for contract call serialization
 pub struct ABICall<TIn: ABIInParameter + ABITypeSignature, TOut: ABIInParameter + ABITypeSignature> {
     input: PhantomData<TIn>,
     output: PhantomData<TOut>,
 }
+
 
 impl<TIn, TOut> ABICall<TIn, TOut> 
 where
     TIn: ABIInParameter + ABITypeSignature,
     TOut: ABIInParameter + ABITypeSignature
 {
+    /// Computes function ID for contract function
     fn get_function_id(fn_name: String) -> [u8; 4] {
         let signature = fn_name + &TIn::type_signature() + &TOut::type_signature();
 
@@ -42,6 +45,7 @@ where
         bytes
     }
 
+    /// Encodes provided function parameters into `Vec<u8>` containing ABI contract call
     pub fn encode_function_call<T>(fn_name: T, parameters: TIn) -> Vec<u8>
     where
         T: Into<String>,
@@ -57,6 +61,7 @@ where
         data
     }
 
+    /// Encodes provided function parameters into `SliceData` containing ABI contract call
     pub fn encode_function_call_into_slice<T>(fn_name: T, parameters: TIn) -> SliceData
     where
         T: Into<String>,

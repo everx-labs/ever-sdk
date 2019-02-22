@@ -10,10 +10,12 @@ use types::{
     DeserializationError as InnerTypeDeserializationError
 };
 
+/// Empty struct for contract answer deserialization
 pub struct ABIResponse<TOut: ABIOutParameter> {
     output: PhantomData<TOut>,
 }
 
+/// Returning errors during deserialization
 #[derive(Debug)]
 pub enum Exception {
     BagOfCellsDeserializationError(InnerBagOfCellsDeserializationException),
@@ -24,6 +26,7 @@ pub enum Exception {
 }
 
 impl<TOut: ABIOutParameter> ABIResponse<TOut> {
+    /// Decodes ABI contract answer from `Vec<u8>` into type values
     pub fn decode_response(response: &Vec<u8>) -> Result<TOut::Out, Exception> {
         let mut cursor = Cursor::new(response);
         deserialize_cells_tree(&mut cursor)
@@ -40,6 +43,7 @@ impl<TOut: ABIOutParameter> ABIResponse<TOut> {
             })
     }
 
+    /// Decodes ABI contract answer from `SliceData` into type values
     pub fn decode_response_from_slice(response: SliceData) -> Result<TOut::Out, Exception> {
         TOut::read_from(response)
             .map_err(|e| Exception::TypeDeserializationError(e))
