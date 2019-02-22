@@ -101,7 +101,7 @@ macro_rules! fixed_abi_array {
 
         impl $crate::types::ABIParameter for $type
         {
-            type Out = Vec<<$inner_type as ABIParameter>::Out>;
+            type Out = Vec<<$inner_type as $crate::types::ABIParameter>::Out>;
 
             fn prepend_to(&self, destination: tvm::stack::BuilderData) -> tvm::stack::BuilderData {
                 $crate::types::prepend_fixed_array(destination, &self.data)
