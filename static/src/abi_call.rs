@@ -29,7 +29,7 @@ where
     fn get_function_id(fn_name: String) -> [u8; 4] {
         let signature = fn_name + &TIn::type_signature() + &TOut::type_signature();
 
-        println!("{}", signature);
+        //println!("{}", signature);
 
         // Sha256 hash of signature
         let mut hasher = Sha256::new();
@@ -41,7 +41,7 @@ where
 
         let mut bytes = [0; 4];
         bytes.copy_from_slice(&function_hash[..4]);
-        println!("{:X?}", bytes);
+        //println!("{:X?}", bytes);
         bytes
     }
 
