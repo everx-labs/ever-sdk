@@ -1,6 +1,5 @@
 extern crate crypto;
 extern crate num_bigint;
-extern crate ton_block;
 extern crate tvm;
 
 pub mod abi_call;
