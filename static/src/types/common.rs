@@ -32,30 +32,6 @@ macro_rules! makeOutParameter {
     }
 }
 
-pub fn prepend_reference(builder: &mut BuilderData, child: BuilderData) {
-    builder.update_cell(
-        |_, children, child| {
-            children.insert(0, child);
-        },
-        child,
-    );
-}
-
-// shifts existing cell data and put provided data at the beginning
-pub fn prepend_data(builder: &mut BuilderData, data: &Bitstring) {
-    builder.update_cell(
-        |cell_data, _, data| {
-            let mut buffer = data.clone();
-            buffer.append(&Bitstring::from_bitstring_with_completion_tag(
-                cell_data.clone(),
-            ));
-            cell_data.clear();
-            buffer.into_bitstring_with_completion_tag(cell_data);
-        },
-        data,
-    );
-}
-
 // put data to cell and make chain if data doesn't fit into cell
 pub fn prepend_data_to_chain(mut builder: BuilderData, data: Bitstring) -> BuilderData {
     let mut data = data;
@@ -67,12 +43,12 @@ pub fn prepend_data_to_chain(mut builder: BuilderData, data: Bitstring) -> Build
             // data does not fit into cell - fill current cell and take remaining data
             if remaining_bits < data.length_in_bits() {
                 let cut = data.substring(data.length_in_bits() - remaining_bits..data.length_in_bits());
-                prepend_data(&mut builder, &cut);
+                builder.prepend_data(&cut);
 
                 data = data.substring(0..data.length_in_bits() - remaining_bits);
             } else {
                 // data fit into current cell - no data remaining
-                prepend_data(&mut builder, &data);
+                builder.prepend_data(&data);
 
                 data.clear();
             }

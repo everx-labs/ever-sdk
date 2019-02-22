@@ -1,4 +1,3 @@
-use super::common::*;
 use super::{
     ABIParameter,
     ABITypeSignature,
@@ -21,8 +20,7 @@ impl ABIParameter for bool {
                 destination
             }
         };
-        prepend_data(
-            &mut destination,
+        destination.prepend_data(
             Bitstring::new().append_bit(&{
                 if *self {
                     Bit::One

@@ -38,7 +38,7 @@ pub fn put_array_to_separate_branch<T: ABIParameter>(
         }
     };
 
-    prepend_reference(&mut destination, array_builder);
+    destination.prepend_reference(array_builder);
 
     let mut bitstring = Bitstring::new();
     bitstring.append_bit(&Bit::Zero);

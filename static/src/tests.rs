@@ -2,7 +2,6 @@
 
 use crate::abi_call::{ABICall, ABI_VERSION};
 use crate::abi_response::{ABIResponse};
-use crate::types::common::prepend_reference;
 use crate::types::{
     ABIParameter,
     ABIInParameter,
@@ -639,7 +638,7 @@ fn test_tuples_with_combined_types() {
         cell_data.append_bit(&Bit::Zero);
         cell_data.append_bit(&Bit::Zero);
 
-        prepend_reference(&mut chain_builder, array_builder);
+        chain_builder.prepend_reference(array_builder);
     }
 
     bitstring.append(&cell_data);
@@ -650,7 +649,7 @@ fn test_tuples_with_combined_types() {
     let mut array_builder = BuilderData::new();
     array_builder = put_data_into_chain(array_builder, array2_data.clone());
 
-    prepend_reference(&mut chain_builder, array_builder);
+    chain_builder.prepend_reference(array_builder);
 
     let root_cell = Arc::<CellData>::from(&chain_builder);
     let expected_tree = SliceData::from(root_cell);
