@@ -8,6 +8,9 @@ tvm = { path = "../../tvm" }
 rust-crypto = "^0.2"
 num-bigint = "0.2.2"
 
-[dev-dependencies.compiletest_rs]
-features = ["tmp", "stable"]
-version = "*"
+#[dev-dependencies.compiletest_rs]
+#features = ["tmp", "stable"]
+#version = "*"
+
+[features]
+ci_run = []
