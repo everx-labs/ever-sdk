@@ -2,10 +2,10 @@
 name = "abi-lib"
 version = "0.1.0"
 
-
 [dependencies]
 tvm = { path = "../../tvm" }
 rust-crypto = "^0.2"
+pretty_assertions = "0.5.1"
 num-bigint = "0.2.2"
 
 #[dev-dependencies.compiletest_rs]
