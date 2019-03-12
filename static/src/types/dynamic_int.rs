@@ -122,7 +122,7 @@ mod tests {
     #[test]
     fn test_read_dynamic_int() {
         let mut cell = BuilderData::new();
-        cell.update_cell(|data, _, vec| {
+        cell.update_cell(|data, _, _, _, vec| {
             data.clear();
             data.extend_from_slice(vec);
         }, &[0xF8, 0xFF, 0x7F, 0xF8, 0xFF, 0x7F, 0x80]);
