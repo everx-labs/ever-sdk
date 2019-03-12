@@ -63,7 +63,7 @@ fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: SliceData
     let function_id = test_tree.get_next_u32();
 
     let mut data = Vec::new();
-    BagOfCells::with_root(test_tree.clone())
+    BagOfCells::with_root(test_tree_copy.clone())
         .write_to(&mut data, false)
         .unwrap();
 

@@ -70,7 +70,7 @@ impl<T: ABIParameter> ABIParameter for Vec<T> {
                 if cursor.remaining_references() == 0 {
                     return Err(DeserializationError::with(cursor));
                 }
-                let mut array = cursor.drain_reference();
+                let mut array = cursor.checked_drain_reference().unwrap();
                 let mut array = Reader::new(array);
                 let mut result = vec![];
                 while !array.is_empty() {
