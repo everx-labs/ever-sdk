@@ -39,7 +39,7 @@ impl ABIParameter for bool {
     fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
         let mut cursor = cursor;
         while cursor.remaining_bits() == 0 && cursor.remaining_references() == 1 {
-            cursor = cursor.drain_reference();
+            cursor = cursor.checked_drain_reference().unwrap();
         }
         if cursor.remaining_bits() > 0 {
             let value = cursor.get_next_bit();
