@@ -17,10 +17,7 @@ use std::io::Cursor;
 use tvm::bitstring::{Bit, Bitstring};
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use tvm::logger;
-use tvm::stack::{BuilderData, IntegerData, SaveList, SliceData, Stack, StackItem};
-use tvm::stack::dictionary::HashmapE;
-use tvm::assembler::compile_code;
-use tvm::executor::Engine;
+use tvm::stack::{BuilderData, SliceData};
 
 fn get_function_id(signature: &[u8]) -> u32 {
     // Sha256 hash of signature
@@ -54,7 +51,9 @@ fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: BuilderDa
 
     assert_eq!(test_tree, expected_tree);
 
-    let message_tree = ABICall::<I, O>::encode_function_call_into_slice(func_name, input);
+    let message_tree = ABICall::<I, O>::encode_function_call_into_slice(
+        BuilderData::new(), func_name, input
+    );
 
     assert_eq!(message_tree, expected_tree);
 
@@ -979,67 +978,11 @@ fn test_signed_one_input_and_output() {
 
     let func_name = "test_one_input_and_output";
     let message = ABICall::<(u128,), (bool,)>::encode_signed_function_call(func_name, (1979,), &pair);
-    let test_tree = deserialize(message.clone());
+    let mut message = SliceData::from(deserialize(message.clone()));
 
-    let func_id = get_function_id(&format!("{}(uint128)(bool)", func_name).into_bytes()[..]);
-
-    let code = format!("
-        TUCK
-        SDBEGINS x{:02X}    ; version
-        PLDUZ 32            ; func_id
-        ; check
-        ROTREV
-        PUSH s2
-        PUSHCTR C4
-        CTOS                ; where to get dict from c4?
-        PUSHINT 32
-        DICTUGET
-        THROWIFNOT 7        ; error code func_id not added to signed dictionary in c4
-        PLDI 1
-        PUSHCONT {{
-            LDREF
-            NIP
-            XCHG s0, s3
-            LDREFRTOS
-            VERIFY
-            THROWIFNOT 8    ; error check signature
-        }}
-        IF
-        LDU 128             ; argument
-        ENDS
-        NEWC
-        STSLICECONST 1      ; true
-        ENDC
-        SENDMSG             ; send true result
-        TRUE
-    ", ABI_VERSION);
-    println!("{}", code);
-    let code = compile_code(&code).unwrap();
-
-    let pub_key = pair.public.to_bytes().to_vec();
-    let len = pub_key.len() * 8;
-    let pub_key: SliceData = BuilderData::from_bitstring(Bitstring::create(pub_key, len)).into();
-
-    let mut stack = Stack::new();
-    stack
-        .push(StackItem::Slice(pub_key))    // pseudo from c4
-        .push(StackItem::Slice(test_tree.into()));
-
-    let mut registers = SaveList::new();
-    let mut auth_lib = HashmapE::with_bit_len(32);
-    auth_lib.set(func_id.into(), SliceData::new(vec![0xC0]));
-    registers.put(4, &mut StackItem::Cell(auth_lib.get_data().cell().clone())).unwrap();
-
-    let mut executor = Engine::new()
-        .setup(code.clone(), registers, stack)
-        .unwrap_or_else(|e| panic!("Cannot setup engine, error {}", e));
-
-    executor.set_trace(Engine::TRACE_CODE);
-    if let Some(e) = executor.execute() {
-        panic!("execution error: {}", e)
-    }
-    executor.eq_stack(
-        Stack::new()
-            .push(boolean!(true))
-    );
+    let mut signature = SliceData::from(message.drain_reference());
+    let signature = Signature::from_bytes(signature.get_next_bytes(64).as_slice()).unwrap();
+    let bag = BagOfCells::with_root(message);
+    let bag_hash = bag.get_repr_hash_by_index(0).unwrap();
+    pair.verify::<Sha512>(bag_hash.as_slice(), &signature).unwrap();
 }

@@ -2,10 +2,7 @@ extern crate num_bigint;
 #[cfg(test)]
 #[macro_use]
 extern crate pretty_assertions;
-#[allow(unused_imports)]
-#[macro_use]
 extern crate tvm;
-extern crate byteorder;
 extern crate ed25519_dalek;
 extern crate rand;
 extern crate sha2;

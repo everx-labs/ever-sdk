@@ -56,7 +56,7 @@ where
         T: Into<String>,
     {
         Self::serialize_message(
-            Self::encode_function_call_into_slice(fn_name, parameters).into()
+            Self::encode_function_call_into_slice(BuilderData::new(), fn_name, parameters).into()
         )
     }
 
@@ -65,24 +65,29 @@ where
     where
         T: Into<String>
     {
-        let mut builder = Self::encode_function_call_into_slice(fn_name, parameters);
-        let signature = {
-            let mut builder = builder.clone();
-            builder.prepend_reference(BuilderData::new()); // reserve ref for signature
-            let data = Self::serialize_message(builder.into());
-            pair.sign::<Sha512>(data.as_slice()).to_bytes().to_vec()
-        };
+        // prepare standard message
+        let mut builder = BuilderData::new();
+        builder.append_reference(BuilderData::new()); // reserve for signature
+        let mut builder = Self::encode_function_call_into_slice(builder, fn_name, parameters);
+        // now remove reserved reference
+        builder.update_cell(
+            |_, children, _, _, empty| assert_eq!(children.pop().unwrap(), empty),
+            BuilderData::new(),
+        );
+        let bag = BagOfCells::with_root(builder.clone().into());
+        let hash = bag.get_repr_hash_by_index(0).unwrap();
+        let signature = pair.sign::<Sha512>(hash.as_slice()).to_bytes().to_vec();
         let len = signature.len() * 8;
         builder.prepend_reference(BuilderData::with_raw(signature, len));
         Self::serialize_message(builder.into())
     }
 
     /// Encodes provided function parameters into `SliceData` containing ABI contract call
-    pub fn encode_function_call_into_slice<T>(fn_name: T, parameters: TIn) -> BuilderData
+    pub fn encode_function_call_into_slice<T>(builder: BuilderData, fn_name: T, parameters: TIn) -> BuilderData
     where
         T: Into<String>,
     {
-        let builder = parameters.prepend_to(BuilderData::new());
+        let builder = parameters.prepend_to(builder);
         prepend_data_to_chain(builder, {
             // make prefix with ABI version and function ID
             let mut vec = vec![ABI_VERSION];
