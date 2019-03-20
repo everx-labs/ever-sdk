@@ -1,15 +1,12 @@
 use crypto::digest::Digest;
 use crypto::sha2::Sha256;
+use crypto::ed25519::signature;
 use std::marker::PhantomData;
-use std::sync::Arc;
 use tvm::bitstring::Bitstring;
 use tvm::cells_serialization::BagOfCells;
-use tvm::stack::{BuilderData, CellData, SliceData};
+use tvm::stack::{BuilderData, SliceData};
 use types::common::prepend_data_to_chain;
-use types::{
-    ABIInParameter,
-    ABITypeSignature
-};
+use types::{ABIInParameter, ABITypeSignature};
 
 pub const ABI_VERSION: u8 = 0;
 
@@ -45,14 +42,8 @@ where
         bytes
     }
 
-    /// Encodes provided function parameters into `Vec<u8>` containing ABI contract call
-    pub fn encode_function_call<T>(fn_name: T, parameters: TIn) -> Vec<u8>
-    where
-        T: Into<String>,
-    {
-        let root = Self::encode_function_call_into_slice(fn_name, parameters);
-
-        // serialize tree into Vec<u8>
+    /// serializes tree into Vec<u8>
+    fn serialize_message(root: SliceData) -> Vec<u8> {
         let mut data = Vec::new();
         BagOfCells::with_root(root)
             .write_to(&mut data, false)
@@ -61,27 +52,52 @@ where
         data
     }
 
-    /// Encodes provided function parameters into `SliceData` containing ABI contract call
-    pub fn encode_function_call_into_slice<T>(fn_name: T, parameters: TIn) -> SliceData
+    /// Encodes provided function parameters into `Vec<u8>` containing ABI contract call
+    pub fn encode_function_call<T>(fn_name: T, parameters: TIn) -> Vec<u8>
     where
         T: Into<String>,
     {
+        Self::serialize_message(
+            Self::encode_function_call_into_slice(fn_name, parameters, |builder| builder)
+        )
+    }
+
+    /// Encodes provided function parameters into `Vec<u8>` containing ABI contract call
+    pub fn encode_signed_function_call<T>(fn_name: T, parameters: TIn, secret_key: &[u8]) -> Vec<u8>
+    where
+        T: Into<String>,
+    {
+        Self::serialize_message(
+            Self::encode_function_call_into_slice(fn_name, parameters, |mut builder| {
+                builder.append_reference(BuilderData::new());
+                // let bag  = BagOfCells::with_root(builder.clone().into());
+                // let data = bag.get_repr_hash_by_index(0);
+                // let data = signature(data.unwrap().as_slice(), secret_key);
+                // let len  = data.len() * 8;
+                // prepend_data_to_chain(builder, Bitstring::create(data.to_vec(), len))
+                builder
+            })
+        )
+    }
+
+    /// Encodes provided function parameters into `SliceData` containing ABI contract call
+    pub fn encode_function_call_into_slice<T, F>(fn_name: T, parameters: TIn, op: F) -> SliceData
+    where
+        T: Into<String>,
+        F: FnOnce(BuilderData) -> BuilderData
+    {
         let fn_name = fn_name.into();
-        let builder = BuilderData::new();
+        let builder = op(BuilderData::new());
         let builder = parameters.prepend_to(builder);
         let builder = prepend_data_to_chain(builder, {
             // make prefix with ABI version and function ID
-            let mut bitstring = Bitstring::new();
-
-            bitstring.append_u8(ABI_VERSION);
-            for chunk in Self::get_function_id(fn_name).iter() {
-                bitstring.append_u8(*chunk);
-            }
-            bitstring
+            let mut vec = vec![ABI_VERSION];
+            vec.extend_from_slice(&Self::get_function_id(fn_name)[..]);
+            let len = vec.len() * 8;
+            Bitstring::create(vec, len)
         });
 
         // serialize tree into Vec<u8>
-        let root_cell = Arc::<CellData>::from(&builder);
-        SliceData::from(root_cell)
+        builder.into()
     }
 }
