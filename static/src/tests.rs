@@ -9,30 +9,26 @@ use crate::types::{
     ABITypeSignature};
 use crate::types::{Dint, Duint};
 
-use crypto::digest::Digest;
-use crypto::ed25519::signature;
-use crypto::sha2::Sha256;
-use sha2::Sha512;
+use sha2::{Digest, Sha256, Sha512};
 use ed25519_dalek::*;
-use byteorder::{BigEndian, WriteBytesExt};
 use rand::rngs::OsRng;
 use std::io::Cursor;
 
 use tvm::bitstring::{Bit, Bitstring};
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
+use tvm::logger;
 use tvm::stack::{BuilderData, IntegerData, SaveList, SliceData, Stack, StackItem};
 use tvm::stack::dictionary::HashmapE;
 use tvm::assembler::compile_code;
 use tvm::executor::Engine;
 
-fn get_function_id(signature: &str) -> u32 {
+fn get_function_id(signature: &[u8]) -> u32 {
     // Sha256 hash of signature
     let mut hasher = Sha256::new();
 
-    hasher.input_str(&signature);
+    hasher.input(signature);
 
-    let mut function_hash = [0 as u8; 32];
-    hasher.result(&mut function_hash);
+    let function_hash = hasher.result();
 
     let mut bytes = [0; 4];
     bytes.copy_from_slice(&function_hash[..4]);
@@ -40,13 +36,13 @@ fn get_function_id(signature: &str) -> u32 {
     u32::from_be_bytes(bytes)
 }
 
-fn deserialize(message: Vec<u8>) -> SliceData {
+fn deserialize(message: Vec<u8>) -> BuilderData {
     let mut data_cur = Cursor::new(message);
     let restored = deserialize_cells_tree(&mut data_cur).unwrap();
-    SliceData::from(restored[0].clone())
+    BuilderData::from(&restored[0])
 }
 
-fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: SliceData, expected_decode: I::Out, _secret: &[u8]) 
+fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: BuilderData, expected_decode: I::Out) 
     where
         I: std::fmt::Debug + std::cmp::PartialEq + ABIInParameter + ABIParameter + ABITypeSignature + Clone,
         I::Out: ABIOutParameter + std::fmt::Debug + std::cmp::PartialEq + Clone,
@@ -54,14 +50,15 @@ fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: SliceData
         O: ABIInParameter + ABITypeSignature,
 {
     let message = ABICall::<I, O>::encode_function_call(func_name, input.clone());
-    let mut test_tree = deserialize(message.clone());
+    let test_tree = deserialize(message.clone());
 
     assert_eq!(test_tree, expected_tree);
 
-    let message_tree = ABICall::<I, O>::encode_function_call_into_slice(func_name, input, |b|b);
+    let message_tree = ABICall::<I, O>::encode_function_call_into_slice(func_name, input);
 
     assert_eq!(message_tree, expected_tree);
 
+    let mut test_tree = SliceData::from(test_tree);
     let test_tree_copy = test_tree.clone();
 
     let version = test_tree.get_next_byte();
@@ -89,7 +86,7 @@ fn test_one_input_and_output() {
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id("test_one_input_and_output(uint128)(bool)"));
+    bitstring.append_u32(get_function_id(b"test_one_input_and_output(uint128)(bool)"));
     bitstring.append_u128(1123);
 
     let mut builder = BuilderData::new();
@@ -98,16 +95,16 @@ fn test_one_input_and_output() {
 
     let expected_tree = builder.into();
 
-    test_parameters_set::<(u128,), (bool,)>("test_one_input_and_output", (1123,), expected_tree, (1123,), &[]);
+    test_parameters_set::<(u128,), (bool,)>("test_one_input_and_output", (1123,), expected_tree, (1123,));
 }
 
 #[test]
 fn test_one_input_and_output_by_data() {
-    let expected_tree = SliceData::new(vec![
+    let expected_tree = BuilderData::with_bitstring(vec![
         0x00, 0x87, 0x98, 0x73, 0xe1, 0xFF, 0xFF, 0xFF, 0x75, 0x0C, 0xE4, 0x7B, 0xAC, 0x80,
     ]);
 
-    test_parameters_set::<(i64,), (u8,)>("test_one_input_and_output_by_data", (-596784153684,), expected_tree, (-596784153684,), &[]);
+    test_parameters_set::<(i64,), (u8,)>("test_one_input_and_output_by_data", (-596784153684,), expected_tree, (-596784153684,));
 }
 
 #[test]
@@ -122,7 +119,7 @@ fn test_empty_params() {
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id("test_empty_params()()"));
+    bitstring.append_u32(get_function_id(b"test_empty_params()()"));
 
     let mut builder = BuilderData::new();
     builder.append_data(&bitstring);
@@ -153,7 +150,7 @@ fn test_two_params() {
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id("test_two_params(bool,int32)(uint8,uint64)"));
+    bitstring.append_u32(get_function_id(b"test_two_params(bool,int32)(uint8,uint64)"));
     bitstring.append_bit(&Bit::One);
     bitstring.append_i32(9434567);
 
@@ -165,7 +162,7 @@ fn test_two_params() {
 
     let input_data = (true, 9434567);
 
-    test_parameters_set::<(bool, i32), (u8, u64)>("test_two_params", input_data.clone(), expected_tree, input_data, &[]);
+    test_parameters_set::<(bool, i32), (u8, u64)>("test_two_params", input_data.clone(), expected_tree, input_data);
 }
 
 #[test]
@@ -173,7 +170,7 @@ fn test_nested_tuples_with_all_simples() {
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id("test_nested_tuples_with_all_simples(bool,(int8,int16,(int32,int64,int128)),(uint8,uint16,(uint32,uint64,uint128)))()"));
+    bitstring.append_u32(get_function_id(b"test_nested_tuples_with_all_simples(bool,(int8,int16,(int32,int64,int128)),(uint8,uint16,(uint32,uint64,uint128)))()"));
     bitstring.append_bit(&Bit::Zero);
     bitstring.append(&Bitstring::create((-15 as i8).to_be_bytes().to_vec(), 8));
     bitstring.append(&Bitstring::create((9845 as i16).to_be_bytes().to_vec(), 16));
@@ -214,7 +211,7 @@ fn test_nested_tuples_with_all_simples() {
             (u8, u16, (u32, u64, u128)),
         ),
         (),
-    >("test_nested_tuples_with_all_simples", input_data.clone(), expected_tree, input_data, &[]);
+    >("test_nested_tuples_with_all_simples", input_data.clone(), expected_tree, input_data);
 }
 
 fixed_abi_array!(u32, 8, Array_u32_8);
@@ -226,7 +223,7 @@ fn test_small_static_array() {
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id("test_small_static_array(uint32[8])()"));
+    bitstring.append_u32(get_function_id(b"test_small_static_array(uint32[8])()"));
 
     bitstring.append_bit(&Bit::One);
     bitstring.append_bit(&Bit::Zero);
@@ -247,7 +244,7 @@ fn test_small_static_array() {
     test_parameters_set::<
         (Array_u32_8,),
         ()
-    >("test_small_static_array", input_data, expected_tree, expected_output, &[]);
+    >("test_small_static_array", input_data, expected_tree, expected_output);
 }
 
 fixed_abi_array!(u16, 5, Array_u16_5);
@@ -256,7 +253,7 @@ fixed_abi_array!(u16, 5, Array_u16_5);
 fn test_small_static_array_by_data() {
     let input_array: [u16; 5] = [5, 4, 3, 2, 1];
 
-    let expected_tree = SliceData::new(vec![
+    let expected_tree = BuilderData::with_bitstring(vec![
         0x00, 0xd5, 0x7a, 0x4d, 0xac, 0x80, 0x01, 0x40, 0x01, 0x00, 0x00, 0xc0, 0x00, 0x80, 0x00,
         0x60,
     ]);
@@ -267,7 +264,7 @@ fn test_small_static_array_by_data() {
     test_parameters_set::<
         (Array_u16_5,),
         ()
-    >("test_small_static_array_by_data", input_data, expected_tree, expected_output, &[]);
+    >("test_small_static_array_by_data", input_data, expected_tree, expected_output);
 }
 
 #[test]
@@ -280,7 +277,7 @@ fn test_empty_dynamic_array() {
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id("test_small_dynamic_array(uint16[])()"));
+    bitstring.append_u32(get_function_id(b"test_small_dynamic_array(uint16[])()"));
 
     bitstring.append_bit(&Bit::One);
     bitstring.append_bit(&Bit::Zero);
@@ -299,7 +296,7 @@ fn test_empty_dynamic_array() {
     test_parameters_set::<
         (Vec<u16>,),
         ()
-    >("test_small_dynamic_array", input_data, expected_tree, expected_output, &[]);
+    >("test_small_dynamic_array", input_data, expected_tree, expected_output);
 }
 
 #[test]
@@ -312,7 +309,7 @@ fn test_small_dynamic_array() {
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id("test_small_dynamic_array(uint16[])()"));
+    bitstring.append_u32(get_function_id(b"test_small_dynamic_array(uint16[])()"));
 
     bitstring.append_bit(&Bit::One);
     bitstring.append_bit(&Bit::Zero);
@@ -331,7 +328,7 @@ fn test_small_dynamic_array() {
     test_parameters_set::<
         (Vec<u16>,),
         ()
-    >("test_small_dynamic_array", input_data, expected_tree, expected_output, &[]);
+    >("test_small_dynamic_array", input_data, expected_tree, expected_output);
 }
 
 fn put_data_into_chain(bilder: BuilderData, data: Bitstring) -> BuilderData {
@@ -378,7 +375,7 @@ fn test_big_static_array() {
     let mut data = Bitstring::new();
 
     data.append_u8(ABI_VERSION);
-    data.append_u32(get_function_id("test_big_static_array(uint128[32])()"));
+    data.append_u32(get_function_id(b"test_big_static_array(uint128[32])()"));
 
     data.append_bit(&Bit::Zero);
     data.append_bit(&Bit::Zero);
@@ -407,7 +404,7 @@ fn test_big_static_array() {
     test_parameters_set::<
         (u128_array_32,),
         ()
-    >("test_big_static_array", input_data, expected_tree, expected_output, &[]);
+    >("test_big_static_array", input_data, expected_tree, expected_output);
 }
 
 fixed_abi_array!(i32, 512, i32_array_512);
@@ -427,7 +424,7 @@ fn test_huge_static_array() {
     let mut data = Bitstring::new();
 
     data.append_u8(ABI_VERSION);
-    data.append_u32(get_function_id("test_huge_static_array(int32[512])()"));
+    data.append_u32(get_function_id(b"test_huge_static_array(int32[512])()"));
 
     data.append_bit(&Bit::Zero);
     data.append_bit(&Bit::Zero);
@@ -487,7 +484,7 @@ fn test_big_dynamic_array() {
     let mut data = Bitstring::new();
 
     data.append_u8(ABI_VERSION);
-    data.append_u32(get_function_id("test_big_dynamic_array(int64[])()"));
+    data.append_u32(get_function_id(b"test_big_dynamic_array(int64[])()"));
 
     data.append_bit(&Bit::Zero);
     data.append_bit(&Bit::Zero);
@@ -511,7 +508,7 @@ fn test_big_dynamic_array() {
     test_parameters_set::<
         (Vec<i64>,),
         ()
-    >("test_big_dynamic_array", input_data, expected_tree, expected_output, &[]);
+    >("test_big_dynamic_array", input_data, expected_tree, expected_output);
 }
 
 #[test]
@@ -526,7 +523,7 @@ fn test_dynamic_array_of_tuples() {
 
     bitstring.append_u8(ABI_VERSION);
     bitstring.append_u32(get_function_id(
-        "test_dynamic_array_of_tuples((uint32,bool)[])()",
+        b"test_dynamic_array_of_tuples((uint32,bool)[])()",
     ));
 
     bitstring.append_bit(&Bit::One);
@@ -547,7 +544,7 @@ fn test_dynamic_array_of_tuples() {
     test_parameters_set::<
         (Vec<(u32, bool)>,),
         ()
-    >("test_dynamic_array_of_tuples", input_data, expected_tree, expected_output, &[]);
+    >("test_dynamic_array_of_tuples", input_data, expected_tree, expected_output);
 }
 
 fixed_abi_array!(Vec<i64>, 5, Veci64_array_5);
@@ -585,7 +582,7 @@ fn test_tuples_with_combined_types() {
 
     bitstring.append_u8(ABI_VERSION);
     bitstring.append_u32(get_function_id(
-        "test_tuples_with_combined_types(uint8,((uint32,bool)[],int16),(int64[],int64[][5]))()",
+        b"test_tuples_with_combined_types(uint8,((uint32,bool)[],int16),(int64[],int64[][5]))()",
     ));
 
     // u8
@@ -667,7 +664,7 @@ fn test_tuples_with_combined_types() {
             )
         ),
         ()
-    >("test_tuples_with_combined_types", input_data, expected_tree, expected_output, &[]);
+    >("test_tuples_with_combined_types", input_data, expected_tree, expected_output);
 }
 
 #[test]
@@ -691,7 +688,7 @@ fn test_arrays_of_dint_and_duint() {
 
     bitstring.append_u8(ABI_VERSION);
     bitstring.append_u32(get_function_id(
-        "test_arrays_of_dint_and_duint(dint[],duint[])()",
+        b"test_arrays_of_dint_and_duint(dint[],duint[])()",
     ));
 
     bitstring.append_bit(&Bit::One);
@@ -719,7 +716,7 @@ fn test_arrays_of_dint_and_duint() {
     test_parameters_set::<
         (Vec<Dint>, Vec<Duint>),
         ()
-    >("test_arrays_of_dint_and_duint", input_data, expected_tree, expected_output, &[]);
+    >("test_arrays_of_dint_and_duint", input_data, expected_tree, expected_output);
 }
 
 
@@ -737,7 +734,7 @@ fn test_small_bitstring() {
 
     bitstring.append_u8(ABI_VERSION);
     bitstring.append_u32(get_function_id(
-        "test_small_bitstring(bitstring)()",
+        b"test_small_bitstring(bitstring)()",
     ));
 
     bitstring.append_bit(&Bit::One);
@@ -755,7 +752,7 @@ fn test_small_bitstring() {
     test_parameters_set::<
         (Bitstring,),
         ()
-    >("test_small_bitstring", input_data, expected_tree, expected_output, &[]);
+    >("test_small_bitstring", input_data, expected_tree, expected_output);
 }
 
 #[test]
@@ -775,7 +772,7 @@ fn test_big_bitstring() {
 
     bitstring.append_u8(ABI_VERSION);
     bitstring.append_u32(get_function_id(
-        "test_big_bitstring(bitstring)()",
+        b"test_big_bitstring(bitstring)()",
     ));
 
     bitstring.append_bit(&Bit::Zero);
@@ -794,7 +791,7 @@ fn test_big_bitstring() {
     test_parameters_set::<
         (Bitstring,),
         ()
-    >("test_big_bitstring", input_data, expected_tree, expected_output, &[]);
+    >("test_big_bitstring", input_data, expected_tree, expected_output);
 }
 
 fixed_abi_array!(Bit, 982, Bits982);
@@ -815,7 +812,7 @@ fn test_small_bits() {
     let mut data = Bitstring::new();
 
     data.append_u8(ABI_VERSION);
-    data.append_u32(get_function_id("test_small_bits(bits982)()"));
+    data.append_u32(get_function_id(b"test_small_bits(bits982)()"));
 
     data.append_bit(&Bit::One);
     data.append_bit(&Bit::Zero);
@@ -877,7 +874,7 @@ fn test_big_bits() {
     let mut data = Bitstring::new();
 
     data.append_u8(ABI_VERSION);
-    data.append_u32(get_function_id("test_big_bits(bits1024)()"));
+    data.append_u32(get_function_id(b"test_big_bits(bits1024)()"));
 
     data.append_bit(&Bit::Zero);
     data.append_bit(&Bit::Zero);
@@ -977,37 +974,35 @@ mod decode_encoded {
 
 #[test]
 fn test_signed_one_input_and_output() {
+    logger::init();
     let pair = Keypair::generate::<Sha512, _>(&mut OsRng::new().unwrap());
 
     let func_name = "test_one_input_and_output";
-    let message = ABICall::<(u128,), (bool,)>::encode_signed_function_call(func_name, (1979,), &pair.secret.to_bytes());
+    let message = ABICall::<(u128,), (bool,)>::encode_signed_function_call(func_name, (1979,), &pair);
     let test_tree = deserialize(message.clone());
 
-    let func_id = get_function_id(&format!("{}(uint128)(bool)", func_name));
-    /*
-    let test_slice: SliceData = builder.into();
-    let bag = BagOfCells::with_root(test_slice.clone());
-    let bag_hash = bag.get_repr_hash_by_index(0).unwrap();
-
-    let signature = pair.sign::<Sha512>(bag_hash.as_slice()).to_bytes().to_vec();
-    let len = signature.len() * 8;
-    let signature: SliceData = BuilderData::from_bitstring(Bitstring::create(signature, len)).into();
-    */
+    let func_id = get_function_id(&format!("{}(uint128)(bool)", func_name).into_bytes()[..]);
 
     let code = format!("
+        TUCK
         SDBEGINS x{:02X}    ; version
-        SDBEGINS x{:04X}    ; func_id
+        PLDUZ 32            ; func_id
         ; check
-        DUP
+        ROTREV
+        PUSH s2
         PUSHCTR C4
         CTOS                ; where to get dict from c4?
         PUSHINT 32
         DICTUGET
-        THROW 7             ; error code func_id not added to signed dictionary in c4
+        THROWIFNOT 7        ; error code func_id not added to signed dictionary in c4
+        PLDI 1
         PUSHCONT {{
+            LDREF
+            NIP
+            XCHG s0, s3
             LDREFRTOS
             VERIFY
-            THROW 8         ; error check signature
+            THROWIFNOT 8    ; error check signature
         }}
         IF
         LDU 128             ; argument
@@ -1017,7 +1012,7 @@ fn test_signed_one_input_and_output() {
         ENDC
         SENDMSG             ; send true result
         TRUE
-    ", ABI_VERSION, func_id);
+    ", ABI_VERSION);
     println!("{}", code);
     let code = compile_code(&code).unwrap();
 
@@ -1028,7 +1023,7 @@ fn test_signed_one_input_and_output() {
     let mut stack = Stack::new();
     stack
         .push(StackItem::Slice(pub_key))    // pseudo from c4
-        .push(StackItem::Slice(test_tree));
+        .push(StackItem::Slice(test_tree.into()));
 
     let mut registers = SaveList::new();
     let mut auth_lib = HashmapE::with_bit_len(32);
@@ -1038,9 +1033,11 @@ fn test_signed_one_input_and_output() {
     let mut executor = Engine::new()
         .setup(code.clone(), registers, stack)
         .unwrap_or_else(|e| panic!("Cannot setup engine, error {}", e));
-        println!("code: {}", code);
-        executor.set_trace(Engine::TRACE_CODE);
-    executor.execute().unwrap();
+
+    executor.set_trace(Engine::TRACE_CODE);
+    if let Some(e) = executor.execute() {
+        panic!("execution error: {}", e)
+    }
     executor.eq_stack(
         Stack::new()
             .push(boolean!(true))

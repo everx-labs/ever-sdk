@@ -1,4 +1,3 @@
-extern crate crypto;
 extern crate num_bigint;
 #[cfg(test)]
 #[macro_use]
