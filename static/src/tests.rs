@@ -979,20 +979,11 @@ mod decode_encoded {
 fn test_signed_one_input_and_output() {
     let pair = Keypair::generate::<Sha512, _>(&mut OsRng::new().unwrap());
 
-    let func_id = get_function_id("test_one_input_and_output(uint128)(bool)");
-    // let mut data = vec![];
-    // data.write_u32::<BigEndian>(func_id).unwrap();
-    // data.write_u128::<BigEndian>(1979).unwrap();
-    // let len = data.len();
-
-    // let mut signature = BuilderData::new();
-    // signature.append_data(&Bitstring::create(data.to_vec(), len * 8));
-
     let func_name = "test_one_input_and_output";
     let message = ABICall::<(u128,), (bool,)>::encode_signed_function_call(func_name, (1979,), &pair.secret.to_bytes());
     let test_tree = deserialize(message.clone());
-    // assert_eq!(expected_tree, test_tree);
 
+    let func_id = get_function_id(&format!("{}(uint128)(bool)", func_name));
     /*
     let test_slice: SliceData = builder.into();
     let bag = BagOfCells::with_root(test_slice.clone());
@@ -1021,8 +1012,11 @@ fn test_signed_one_input_and_output() {
         IF
         LDU 128             ; argument
         ENDS
-        TRUE
+        NEWC
+        STSLICECONST 1      ; true
+        ENDC
         SENDMSG             ; send true result
+        TRUE
     ", ABI_VERSION, func_id);
     println!("{}", code);
     let code = compile_code(&code).unwrap();
