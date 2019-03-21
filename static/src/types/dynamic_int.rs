@@ -79,7 +79,7 @@ impl ABIParameter for Dint {
                 prefix.append_bit(&Bit::Zero);
                 if bit_count != 7 {
                     // pad last group to 7 bits according to number sign
-                    let padding: u16 = match self.sign() {
+                    let padding = match self.sign() {
                         Sign::Plus => 0x0,
                         Sign::NoSign => 0x0,
                         Sign::Minus => 0xffff,
