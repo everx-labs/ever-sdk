@@ -51,9 +51,7 @@ fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: BuilderDa
 
     assert_eq!(test_tree, expected_tree);
 
-    let message_tree = ABICall::<I, O>::encode_function_call_into_slice(
-        BuilderData::new(), func_name, input
-    );
+    let message_tree = ABICall::<I, O>::encode_function_call_into_slice(func_name, input);
 
     assert_eq!(message_tree, expected_tree);
 

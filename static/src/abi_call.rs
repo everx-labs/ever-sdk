@@ -56,7 +56,7 @@ where
         T: Into<String>,
     {
         Self::serialize_message(
-            Self::encode_function_call_into_slice(BuilderData::new(), fn_name, parameters).into()
+            Self::encode_function_call_into_slice(fn_name, parameters).into()
         )
     }
 
@@ -65,10 +65,28 @@ where
     where
         T: Into<String>
     {
+        Self::serialize_message(
+            Self::encode_secret_function_call_into_slice(fn_name, parameters, pair).into()
+        )
+    }
+
+    /// Encodes provided function parameters into `SliceData` containing ABI contract call
+    pub fn encode_function_call_into_slice<T>(fn_name: T, parameters: TIn) -> BuilderData
+    where
+        T: Into<String>,
+    {
+        Self::encode_into_slice(BuilderData::new(), fn_name, parameters)
+    }
+
+    /// Encodes provided function parameters into `SliceData` containing ABI contract call
+    pub fn encode_secret_function_call_into_slice<T>(fn_name: T, parameters: TIn, pair: &Keypair) -> BuilderData
+    where
+        T: Into<String>,
+    {
         // prepare standard message
         let mut builder = BuilderData::new();
         builder.append_reference(BuilderData::new()); // reserve for signature
-        let mut builder = Self::encode_function_call_into_slice(builder, fn_name, parameters);
+        let mut builder = Self::encode_into_slice(builder, fn_name, parameters);
         // now remove reserved reference
         builder.update_cell(
             |_, children, _, _, empty| assert_eq!(children.pop().unwrap(), empty),
@@ -79,11 +97,10 @@ where
         let signature = pair.sign::<Sha512>(hash.as_slice()).to_bytes().to_vec();
         let len = signature.len() * 8;
         builder.prepend_reference(BuilderData::with_raw(signature, len));
-        Self::serialize_message(builder.into())
+        builder
     }
 
-    /// Encodes provided function parameters into `SliceData` containing ABI contract call
-    pub fn encode_function_call_into_slice<T>(builder: BuilderData, fn_name: T, parameters: TIn) -> BuilderData
+    fn encode_into_slice<T>(builder: BuilderData, fn_name: T, parameters: TIn) -> BuilderData
     where
         T: Into<String>,
     {
