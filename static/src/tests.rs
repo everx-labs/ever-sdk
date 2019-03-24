@@ -51,9 +51,29 @@ fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: BuilderDa
 
     assert_eq!(test_tree, expected_tree);
 
-    let message_tree = ABICall::<I, O>::encode_function_call_into_slice(func_name, input);
+    let message_tree = ABICall::<I, O>::encode_function_call_into_slice(func_name, input.clone());
 
     assert_eq!(message_tree, expected_tree);
+
+
+    // check signing
+
+    let pair = Keypair::generate::<Sha512, _>(&mut OsRng::new().unwrap());
+
+    let message = ABICall::<I, O>::encode_signed_function_call(func_name, input.clone(), &pair);
+    let mut message = SliceData::from(deserialize(message.clone()));
+
+    let mut signature = SliceData::from(message.drain_reference());
+
+    assert_eq!(SliceData::from(expected_tree), message);
+
+    let signature = Signature::from_bytes(signature.get_next_bytes(64).as_slice()).unwrap();
+    let bag = BagOfCells::with_root(message);
+    let bag_hash = bag.get_repr_hash_by_index(0).unwrap();
+    pair.verify::<Sha512>(bag_hash.as_slice(), &signature).unwrap();
+
+
+    // check output decoding
 
     let mut test_tree = SliceData::from(test_tree);
     let test_tree_copy = test_tree.clone();
@@ -983,4 +1003,65 @@ fn test_signed_one_input_and_output() {
     let bag = BagOfCells::with_root(message);
     let bag_hash = bag.get_repr_hash_by_index(0).unwrap();
     pair.verify::<Sha512>(bag_hash.as_slice(), &signature).unwrap();
+}
+
+fixed_abi_array!(Bits1024, 4, bits1024_array4);
+
+#[test]
+fn test_reserving_reference() {
+    logger::init();
+
+    let mut bits: Bits1024 = [Bit::Zero; 1024].into();
+
+    for i in 0..bits.len() {
+        if i % 2 != 0 {
+            bits.data[i] = Bit::One;
+        }        
+    }
+
+    let input_data = [bits.clone(), bits.clone(), bits.clone(), bits.clone()];
+
+    let pair = Keypair::generate::<Sha512, _>(&mut OsRng::new().unwrap());
+
+    let func_name = "test_reserving_reference";
+    let message = ABICall::<(bits1024_array4,), ()>::encode_signed_function_call(func_name, (input_data.into(),), &pair);
+    let mut message = SliceData::from(deserialize(message.clone()));
+
+    let mut signature = SliceData::from(message.drain_reference());
+    let signature = Signature::from_bytes(signature.get_next_bytes(64).as_slice()).unwrap();
+    let bag = BagOfCells::with_root(message.clone());
+    let bag_hash = bag.get_repr_hash_by_index(0).unwrap();
+    pair.verify::<Sha512>(bag_hash.as_slice(), &signature).unwrap();
+
+
+    let mut data = Bitstring::new();
+
+    data.append_u8(ABI_VERSION);
+    data.append_u32(get_function_id(b"test_reserving_reference(bits1024[4])()"));
+
+    let mut array_data = Bitstring::new();
+
+    for i in 0..bits.len() {
+        array_data.append_bit(&bits[i]);
+    }
+
+    let mut array_builder = BuilderData::new();
+    array_builder = put_data_into_chain(array_builder, array_data);
+
+    let mut root_builder = BuilderData::new();
+
+    for _ in 0..4 {
+        root_builder.append_reference(array_builder.clone());
+    }
+    root_builder.append_data(&Bitstring::create(vec![0x80,0x00], 10)); // array of 4 arrays in separate cells
+
+    let mut new_builder = BuilderData::new();
+    new_builder.append_reference(root_builder);
+    root_builder = new_builder;
+
+    root_builder.append_data(&data);
+
+    let expected_tree: SliceData = root_builder.into();
+
+    assert_eq!(expected_tree, message);
 }

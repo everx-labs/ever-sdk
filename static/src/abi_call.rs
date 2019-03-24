@@ -66,11 +66,11 @@ where
         T: Into<String>
     {
         Self::serialize_message(
-            Self::encode_secret_function_call_into_slice(fn_name, parameters, pair).into()
+            Self::encode_signed_function_call_into_slice(fn_name, parameters, pair).into()
         )
     }
 
-    /// Encodes provided function parameters into `SliceData` containing ABI contract call
+    /// Encodes provided function parameters into `BuilderData` containing ABI contract call
     pub fn encode_function_call_into_slice<T>(fn_name: T, parameters: TIn) -> BuilderData
     where
         T: Into<String>,
@@ -78,20 +78,32 @@ where
         Self::encode_into_slice(BuilderData::new(), fn_name, parameters)
     }
 
-    /// Encodes provided function parameters into `SliceData` containing ABI contract call
-    pub fn encode_secret_function_call_into_slice<T>(fn_name: T, parameters: TIn, pair: &Keypair) -> BuilderData
+    /// Encodes provided function parameters into `BuilderData` containing ABI contract call
+    pub fn encode_signed_function_call_into_slice<T>(fn_name: T, parameters: TIn, pair: &Keypair) -> BuilderData
     where
         T: Into<String>,
     {
         // prepare standard message
         let mut builder = BuilderData::new();
-        builder.append_reference(BuilderData::new()); // reserve for signature
-        let mut builder = Self::encode_into_slice(builder, fn_name, parameters);
-        // now remove reserved reference
-        builder.update_cell(
-            |_, children, _, _, empty| assert_eq!(children.pop().unwrap(), empty),
-            BuilderData::new(),
-        );
+        builder = parameters.prepend_to(builder);
+        
+        // if all references are used in root cell then expand cells chain with new root
+        // to put signature cell reference there
+        if builder.references_capacity() == builder.references_used() {
+            let mut new_builder = BuilderData::new();
+            new_builder.append_reference(builder);
+            builder = new_builder;
+        };
+
+        builder = prepend_data_to_chain(builder, {
+            // make prefix with ABI version and function ID
+            let mut vec = vec![ABI_VERSION];
+            vec.extend_from_slice(&Self::get_function_id(fn_name.into())[..]);
+            let len = vec.len() * 8;
+            Bitstring::create(vec, len)
+        });
+
+        
         let bag = BagOfCells::with_root(builder.clone().into());
         let hash = bag.get_repr_hash_by_index(0).unwrap();
         let signature = pair.sign::<Sha512>(hash.as_slice()).to_bytes().to_vec();
