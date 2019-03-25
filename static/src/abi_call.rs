@@ -1,15 +1,11 @@
-use crypto::digest::Digest;
-use crypto::sha2::Sha256;
+use sha2::{Digest, Sha256, Sha512};
+use ed25519_dalek::*;
 use std::marker::PhantomData;
-use std::sync::Arc;
 use tvm::bitstring::Bitstring;
 use tvm::cells_serialization::BagOfCells;
-use tvm::stack::{BuilderData, CellData, SliceData};
+use tvm::stack::{BuilderData, SliceData};
 use types::common::prepend_data_to_chain;
-use types::{
-    ABIInParameter,
-    ABITypeSignature
-};
+use types::{ABIInParameter, ABITypeSignature};
 
 pub const ABI_VERSION: u8 = 0;
 
@@ -34,10 +30,9 @@ where
         // Sha256 hash of signature
         let mut hasher = Sha256::new();
 
-        hasher.input_str(&signature);
+        hasher.input(&signature.into_bytes()[..]);
 
-        let mut function_hash = [0 as u8; 32];
-        hasher.result(&mut function_hash);
+        let function_hash = hasher.result();
 
         let mut bytes = [0; 4];
         bytes.copy_from_slice(&function_hash[..4]);
@@ -45,14 +40,8 @@ where
         bytes
     }
 
-    /// Encodes provided function parameters into `Vec<u8>` containing ABI contract call
-    pub fn encode_function_call<T>(fn_name: T, parameters: TIn) -> Vec<u8>
-    where
-        T: Into<String>,
-    {
-        let root = Self::encode_function_call_into_slice(fn_name, parameters);
-
-        // serialize tree into Vec<u8>
+    /// serializes tree into Vec<u8>
+    fn serialize_message(root: SliceData) -> Vec<u8> {
         let mut data = Vec::new();
         BagOfCells::with_root(root)
             .write_to(&mut data, false)
@@ -61,27 +50,79 @@ where
         data
     }
 
-    /// Encodes provided function parameters into `SliceData` containing ABI contract call
-    pub fn encode_function_call_into_slice<T>(fn_name: T, parameters: TIn) -> SliceData
+    /// Encodes provided function parameters into `Vec<u8>` containing ABI contract call
+    pub fn encode_function_call<T>(fn_name: T, parameters: TIn) -> Vec<u8>
     where
         T: Into<String>,
     {
-        let fn_name = fn_name.into();
-        let builder = BuilderData::new();
-        let builder = parameters.prepend_to(builder);
-        let builder = prepend_data_to_chain(builder, {
-            // make prefix with ABI version and function ID
-            let mut bitstring = Bitstring::new();
+        Self::serialize_message(
+            Self::encode_function_call_into_slice(fn_name, parameters).into()
+        )
+    }
 
-            bitstring.append_u8(ABI_VERSION);
-            for chunk in Self::get_function_id(fn_name).iter() {
-                bitstring.append_u8(*chunk);
-            }
-            bitstring
+    /// Encodes provided function parameters into `Vec<u8>` containing ABI contract call
+    pub fn encode_signed_function_call<T>(fn_name: T, parameters: TIn, pair: &Keypair) -> Vec<u8>
+    where
+        T: Into<String>
+    {
+        Self::serialize_message(
+            Self::encode_signed_function_call_into_slice(fn_name, parameters, pair).into()
+        )
+    }
+
+    /// Encodes provided function parameters into `BuilderData` containing ABI contract call
+    pub fn encode_function_call_into_slice<T>(fn_name: T, parameters: TIn) -> BuilderData
+    where
+        T: Into<String>,
+    {
+        Self::encode_into_slice(BuilderData::new(), fn_name, parameters)
+    }
+
+    /// Encodes provided function parameters into `BuilderData` containing ABI contract call
+    pub fn encode_signed_function_call_into_slice<T>(fn_name: T, parameters: TIn, pair: &Keypair) -> BuilderData
+    where
+        T: Into<String>,
+    {
+        // prepare standard message
+        let mut builder = BuilderData::new();
+        builder = parameters.prepend_to(builder);
+        
+        // if all references are used in root cell then expand cells chain with new root
+        // to put signature cell reference there
+        if builder.references_capacity() == builder.references_used() {
+            let mut new_builder = BuilderData::new();
+            new_builder.append_reference(builder);
+            builder = new_builder;
+        };
+
+        builder = prepend_data_to_chain(builder, {
+            // make prefix with ABI version and function ID
+            let mut vec = vec![ABI_VERSION];
+            vec.extend_from_slice(&Self::get_function_id(fn_name.into())[..]);
+            let len = vec.len() * 8;
+            Bitstring::create(vec, len)
         });
 
-        // serialize tree into Vec<u8>
-        let root_cell = Arc::<CellData>::from(&builder);
-        SliceData::from(root_cell)
+        
+        let bag = BagOfCells::with_root(builder.clone().into());
+        let hash = bag.get_repr_hash_by_index(0).unwrap();
+        let signature = pair.sign::<Sha512>(hash.as_slice()).to_bytes().to_vec();
+        let len = signature.len() * 8;
+        builder.prepend_reference(BuilderData::with_raw(signature, len));
+        builder
+    }
+
+    fn encode_into_slice<T>(builder: BuilderData, fn_name: T, parameters: TIn) -> BuilderData
+    where
+        T: Into<String>,
+    {
+        let builder = parameters.prepend_to(builder);
+        prepend_data_to_chain(builder, {
+            // make prefix with ABI version and function ID
+            let mut vec = vec![ABI_VERSION];
+            vec.extend_from_slice(&Self::get_function_id(fn_name.into())[..]);
+            let len = vec.len() * 8;
+            Bitstring::create(vec, len)
+        })
     }
 }

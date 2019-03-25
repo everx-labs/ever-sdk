@@ -7,27 +7,25 @@ use crate::types::{
     ABIInParameter,
     ABIOutParameter,
     ABITypeSignature};
-use crate::types::{
-    Dint, Duint};
+use crate::types::{Dint, Duint};
 
-use crypto::digest::Digest;
-use crypto::sha2::Sha256;
-
+use sha2::{Digest, Sha256, Sha512};
+use ed25519_dalek::*;
+use rand::rngs::OsRng;
 use std::io::Cursor;
-use std::sync::Arc;
 
 use tvm::bitstring::{Bit, Bitstring};
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
-use tvm::stack::{BuilderData, CellData, SliceData};
+use tvm::logger;
+use tvm::stack::{BuilderData, SliceData};
 
-fn get_function_id(signature: &str) -> u32 {
+fn get_function_id(signature: &[u8]) -> u32 {
     // Sha256 hash of signature
     let mut hasher = Sha256::new();
 
-    hasher.input_str(&signature);
+    hasher.input(signature);
 
-    let mut function_hash = [0 as u8; 32];
-    hasher.result(&mut function_hash);
+    let function_hash = hasher.result();
 
     let mut bytes = [0; 4];
     bytes.copy_from_slice(&function_hash[..4]);
@@ -35,13 +33,13 @@ fn get_function_id(signature: &str) -> u32 {
     u32::from_be_bytes(bytes)
 }
 
-fn deserialize(message: Vec<u8>) -> SliceData {
+fn deserialize(message: Vec<u8>) -> BuilderData {
     let mut data_cur = Cursor::new(message);
     let restored = deserialize_cells_tree(&mut data_cur).unwrap();
-    SliceData::from(restored[0].clone())
+    BuilderData::from(&restored[0])
 }
 
-fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: SliceData, expected_decode: I::Out) 
+fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: BuilderData, expected_decode: I::Out) 
     where
         I: std::fmt::Debug + std::cmp::PartialEq + ABIInParameter + ABIParameter + ABITypeSignature + Clone,
         I::Out: ABIOutParameter + std::fmt::Debug + std::cmp::PartialEq + Clone,
@@ -49,14 +47,35 @@ fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: SliceData
         O: ABIInParameter + ABITypeSignature,
 {
     let message = ABICall::<I, O>::encode_function_call(func_name, input.clone());
-    let mut test_tree = deserialize(message.clone());
+    let test_tree = deserialize(message.clone());
 
     assert_eq!(test_tree, expected_tree);
 
-    let message_tree = ABICall::<I, O>::encode_function_call_into_slice(func_name, input);
+    let message_tree = ABICall::<I, O>::encode_function_call_into_slice(func_name, input.clone());
 
     assert_eq!(message_tree, expected_tree);
 
+
+    // check signing
+
+    let pair = Keypair::generate::<Sha512, _>(&mut OsRng::new().unwrap());
+
+    let message = ABICall::<I, O>::encode_signed_function_call(func_name, input.clone(), &pair);
+    let mut message = SliceData::from(deserialize(message.clone()));
+
+    let mut signature = SliceData::from(message.drain_reference());
+
+    assert_eq!(SliceData::from(expected_tree), message);
+
+    let signature = Signature::from_bytes(signature.get_next_bytes(64).as_slice()).unwrap();
+    let bag = BagOfCells::with_root(message);
+    let bag_hash = bag.get_repr_hash_by_index(0).unwrap();
+    pair.verify::<Sha512>(bag_hash.as_slice(), &signature).unwrap();
+
+
+    // check output decoding
+
+    let mut test_tree = SliceData::from(test_tree);
     let test_tree_copy = test_tree.clone();
 
     let version = test_tree.get_next_byte();
@@ -84,21 +103,21 @@ fn test_one_input_and_output() {
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id("test_one_input_and_output(uint128)(bool)"));
+    bitstring.append_u32(get_function_id(b"test_one_input_and_output(uint128)(bool)"));
     bitstring.append_u128(1123);
 
     let mut builder = BuilderData::new();
     builder.append_data(&bitstring);
 
-    let root_cell = Arc::<CellData>::from(&builder);
-    let expected_tree = SliceData::from(root_cell);
+
+    let expected_tree = builder.into();
 
     test_parameters_set::<(u128,), (bool,)>("test_one_input_and_output", (1123,), expected_tree, (1123,));
 }
 
 #[test]
 fn test_one_input_and_output_by_data() {
-    let expected_tree = SliceData::new(vec![
+    let expected_tree = BuilderData::with_bitstring(vec![
         0x00, 0x87, 0x98, 0x73, 0xe1, 0xFF, 0xFF, 0xFF, 0x75, 0x0C, 0xE4, 0x7B, 0xAC, 0x80,
     ]);
 
@@ -117,21 +136,21 @@ fn test_empty_params() {
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id("test_empty_params()()"));
+    bitstring.append_u32(get_function_id(b"test_empty_params()()"));
 
     let mut builder = BuilderData::new();
     builder.append_data(&bitstring);
 
-    let root_cell = Arc::<CellData>::from(&builder);
-    let expected_tree = SliceData::from(root_cell);
+
+    let expected_tree = builder.into();
 
     assert_eq!(test_tree, expected_tree);
 
 
     let builder = BuilderData::new();
 
-    let root_cell = Arc::<CellData>::from(&builder);
-    let expected_tree = SliceData::from(root_cell);
+
+    let expected_tree = builder.into();
 
     let mut data = Vec::new();
     BagOfCells::with_root(expected_tree)
@@ -148,15 +167,15 @@ fn test_two_params() {
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id("test_two_params(bool,int32)(uint8,uint64)"));
+    bitstring.append_u32(get_function_id(b"test_two_params(bool,int32)(uint8,uint64)"));
     bitstring.append_bit(&Bit::One);
     bitstring.append_i32(9434567);
 
     let mut builder = BuilderData::new();
     builder.append_data(&bitstring);
 
-    let root_cell = Arc::<CellData>::from(&builder);
-    let expected_tree = SliceData::from(root_cell);
+
+    let expected_tree = builder.into();
 
     let input_data = (true, 9434567);
 
@@ -168,7 +187,7 @@ fn test_nested_tuples_with_all_simples() {
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id("test_nested_tuples_with_all_simples(bool,(int8,int16,(int32,int64,int128)),(uint8,uint16,(uint32,uint64,uint128)))()"));
+    bitstring.append_u32(get_function_id(b"test_nested_tuples_with_all_simples(bool,(int8,int16,(int32,int64,int128)),(uint8,uint16,(uint32,uint64,uint128)))()"));
     bitstring.append_bit(&Bit::Zero);
     bitstring.append(&Bitstring::create((-15 as i8).to_be_bytes().to_vec(), 8));
     bitstring.append(&Bitstring::create((9845 as i16).to_be_bytes().to_vec(), 16));
@@ -193,8 +212,8 @@ fn test_nested_tuples_with_all_simples() {
     let mut builder = BuilderData::new();
     builder.append_data(&bitstring);
 
-    let root_cell = Arc::<CellData>::from(&builder);
-    let expected_tree = SliceData::from(root_cell);
+
+    let expected_tree = builder.into();
 
     let input_data = (
         false,
@@ -221,7 +240,7 @@ fn test_small_static_array() {
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id("test_small_static_array(uint32[8])()"));
+    bitstring.append_u32(get_function_id(b"test_small_static_array(uint32[8])()"));
 
     bitstring.append_bit(&Bit::One);
     bitstring.append_bit(&Bit::Zero);
@@ -233,8 +252,8 @@ fn test_small_static_array() {
     let mut builder = BuilderData::new();
     builder.append_data(&bitstring);
 
-    let root_cell = Arc::<CellData>::from(&builder);
-    let expected_tree = SliceData::from(root_cell);
+
+    let expected_tree = builder.into();
 
     let input_data = (Array_u32_8::from(input_array),);
     let expected_output = (input_array.to_vec(),);
@@ -251,7 +270,7 @@ fixed_abi_array!(u16, 5, Array_u16_5);
 fn test_small_static_array_by_data() {
     let input_array: [u16; 5] = [5, 4, 3, 2, 1];
 
-    let expected_tree = SliceData::new(vec![
+    let expected_tree = BuilderData::with_bitstring(vec![
         0x00, 0xd5, 0x7a, 0x4d, 0xac, 0x80, 0x01, 0x40, 0x01, 0x00, 0x00, 0xc0, 0x00, 0x80, 0x00,
         0x60,
     ]);
@@ -275,7 +294,7 @@ fn test_empty_dynamic_array() {
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id("test_small_dynamic_array(uint16[])()"));
+    bitstring.append_u32(get_function_id(b"test_small_dynamic_array(uint16[])()"));
 
     bitstring.append_bit(&Bit::One);
     bitstring.append_bit(&Bit::Zero);
@@ -288,8 +307,8 @@ fn test_empty_dynamic_array() {
     let mut builder = BuilderData::new();
     builder.append_data(&bitstring);
 
-    let root_cell = Arc::<CellData>::from(&builder);
-    let expected_tree = SliceData::from(root_cell);
+
+    let expected_tree = builder.into();
 
     test_parameters_set::<
         (Vec<u16>,),
@@ -307,7 +326,7 @@ fn test_small_dynamic_array() {
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id("test_small_dynamic_array(uint16[])()"));
+    bitstring.append_u32(get_function_id(b"test_small_dynamic_array(uint16[])()"));
 
     bitstring.append_bit(&Bit::One);
     bitstring.append_bit(&Bit::Zero);
@@ -320,8 +339,8 @@ fn test_small_dynamic_array() {
     let mut builder = BuilderData::new();
     builder.append_data(&bitstring);
 
-    let root_cell = Arc::<CellData>::from(&builder);
-    let expected_tree = SliceData::from(root_cell);
+
+    let expected_tree = builder.into();
 
     test_parameters_set::<
         (Vec<u16>,),
@@ -373,7 +392,7 @@ fn test_big_static_array() {
     let mut data = Bitstring::new();
 
     data.append_u8(ABI_VERSION);
-    data.append_u32(get_function_id("test_big_static_array(uint128[32])()"));
+    data.append_u32(get_function_id(b"test_big_static_array(uint128[32])()"));
 
     data.append_bit(&Bit::Zero);
     data.append_bit(&Bit::Zero);
@@ -393,8 +412,7 @@ fn test_big_static_array() {
     root_builder.append_data(&data);
     root_builder.append_reference(array_builder);
 
-    let root_cell = Arc::<CellData>::from(&root_builder);
-    let expected_tree = SliceData::from(root_cell);
+    let expected_tree = root_builder.into();
 
 
     let input_data = (u128_array_32::from(input_array),);
@@ -423,7 +441,7 @@ fn test_huge_static_array() {
     let mut data = Bitstring::new();
 
     data.append_u8(ABI_VERSION);
-    data.append_u32(get_function_id("test_huge_static_array(int32[512])()"));
+    data.append_u32(get_function_id(b"test_huge_static_array(int32[512])()"));
 
     data.append_bit(&Bit::Zero);
     data.append_bit(&Bit::Zero);
@@ -443,8 +461,7 @@ fn test_huge_static_array() {
     root_builder.append_data(&data);
     root_builder.append_reference(array_builder.clone());
 
-    let root_cell = Arc::<CellData>::from(&root_builder);
-    let expected_tree = SliceData::from(root_cell);
+    let expected_tree = root_builder.into();
 
     assert_eq!(test_tree, expected_tree);
 
@@ -455,8 +472,7 @@ fn test_huge_static_array() {
     root_builder.append_bit(Bit::Zero);
     root_builder.append_reference(array_builder.clone());
 
-    let root_cell = Arc::<CellData>::from(&root_builder);
-    let expected_tree = SliceData::from(root_cell);
+    let expected_tree = root_builder.into();
 
     let mut data = Vec::new();
     BagOfCells::with_root(expected_tree)
@@ -485,7 +501,7 @@ fn test_big_dynamic_array() {
     let mut data = Bitstring::new();
 
     data.append_u8(ABI_VERSION);
-    data.append_u32(get_function_id("test_big_dynamic_array(int64[])()"));
+    data.append_u32(get_function_id(b"test_big_dynamic_array(int64[])()"));
 
     data.append_bit(&Bit::Zero);
     data.append_bit(&Bit::Zero);
@@ -504,8 +520,7 @@ fn test_big_dynamic_array() {
     root_builder.append_data(&data);
     root_builder.append_reference(array_builder);
 
-    let root_cell = Arc::<CellData>::from(&root_builder);
-    let expected_tree = SliceData::from(root_cell);
+    let expected_tree = root_builder.into();
 
     test_parameters_set::<
         (Vec<i64>,),
@@ -525,7 +540,7 @@ fn test_dynamic_array_of_tuples() {
 
     bitstring.append_u8(ABI_VERSION);
     bitstring.append_u32(get_function_id(
-        "test_dynamic_array_of_tuples((uint32,bool)[])()",
+        b"test_dynamic_array_of_tuples((uint32,bool)[])()",
     ));
 
     bitstring.append_bit(&Bit::One);
@@ -540,8 +555,8 @@ fn test_dynamic_array_of_tuples() {
     let mut builder = BuilderData::new();
     builder.append_data(&bitstring);
 
-    let root_cell = Arc::<CellData>::from(&builder);
-    let expected_tree = SliceData::from(root_cell);
+
+    let expected_tree = builder.into();
 
     test_parameters_set::<
         (Vec<(u32, bool)>,),
@@ -584,7 +599,7 @@ fn test_tuples_with_combined_types() {
 
     bitstring.append_u8(ABI_VERSION);
     bitstring.append_u32(get_function_id(
-        "test_tuples_with_combined_types(uint8,((uint32,bool)[],int16),(int64[],int64[][5]))()",
+        b"test_tuples_with_combined_types(uint8,((uint32,bool)[],int16),(int64[],int64[][5]))()",
     ));
 
     // u8
@@ -651,9 +666,7 @@ fn test_tuples_with_combined_types() {
 
     chain_builder.prepend_reference(array_builder);
 
-    let root_cell = Arc::<CellData>::from(&chain_builder);
-    let expected_tree = SliceData::from(root_cell);
-
+    let expected_tree = chain_builder.into();
 
     test_parameters_set::<
         (
@@ -692,7 +705,7 @@ fn test_arrays_of_dint_and_duint() {
 
     bitstring.append_u8(ABI_VERSION);
     bitstring.append_u32(get_function_id(
-        "test_arrays_of_dint_and_duint(dint[],duint[])()",
+        b"test_arrays_of_dint_and_duint(dint[],duint[])()",
     ));
 
     bitstring.append_bit(&Bit::One);
@@ -714,8 +727,8 @@ fn test_arrays_of_dint_and_duint() {
     let mut builder = BuilderData::new();
     builder.append_data(&bitstring);
 
-    let root_cell = Arc::<CellData>::from(&builder);
-    let expected_tree = SliceData::from(root_cell);
+
+    let expected_tree = builder.into();
 
     test_parameters_set::<
         (Vec<Dint>, Vec<Duint>),
@@ -738,7 +751,7 @@ fn test_small_bitstring() {
 
     bitstring.append_u8(ABI_VERSION);
     bitstring.append_u32(get_function_id(
-        "test_small_bitstring(bitstring)()",
+        b"test_small_bitstring(bitstring)()",
     ));
 
     bitstring.append_bit(&Bit::One);
@@ -750,8 +763,8 @@ fn test_small_bitstring() {
     let mut builder = BuilderData::new();
     builder.append_data(&bitstring);
 
-    let root_cell = Arc::<CellData>::from(&builder);
-    let expected_tree = SliceData::from(root_cell);
+
+    let expected_tree = builder.into();
 
     test_parameters_set::<
         (Bitstring,),
@@ -776,7 +789,7 @@ fn test_big_bitstring() {
 
     bitstring.append_u8(ABI_VERSION);
     bitstring.append_u32(get_function_id(
-        "test_big_bitstring(bitstring)()",
+        b"test_big_bitstring(bitstring)()",
     ));
 
     bitstring.append_bit(&Bit::Zero);
@@ -789,8 +802,8 @@ fn test_big_bitstring() {
     builder.append_data(&bitstring);
     builder.append_reference(array_builder);
 
-    let root_cell = Arc::<CellData>::from(&builder);
-    let expected_tree = SliceData::from(root_cell);
+
+    let expected_tree = builder.into();
 
     test_parameters_set::<
         (Bitstring,),
@@ -816,7 +829,7 @@ fn test_small_bits() {
     let mut data = Bitstring::new();
 
     data.append_u8(ABI_VERSION);
-    data.append_u32(get_function_id("test_small_bits(bits982)()"));
+    data.append_u32(get_function_id(b"test_small_bits(bits982)()"));
 
     data.append_bit(&Bit::One);
     data.append_bit(&Bit::Zero);
@@ -833,8 +846,7 @@ fn test_small_bits() {
 
     root_builder = put_data_into_chain(root_builder, data);
 
-    let root_cell = Arc::<CellData>::from(&root_builder);
-    let expected_tree = SliceData::from(root_cell);
+    let expected_tree = root_builder.into();
 
     assert_eq!(test_tree, expected_tree);
 
@@ -845,8 +857,7 @@ fn test_small_bits() {
     root_builder.append_bit(Bit::Zero);
     root_builder.append_data(&array_data);
 
-    let root_cell = Arc::<CellData>::from(&root_builder);
-    let expected_tree = SliceData::from(root_cell);
+    let expected_tree = root_builder.into();
 
     let mut data = Vec::new();
     BagOfCells::with_root(expected_tree)
@@ -880,7 +891,7 @@ fn test_big_bits() {
     let mut data = Bitstring::new();
 
     data.append_u8(ABI_VERSION);
-    data.append_u32(get_function_id("test_big_bits(bits1024)()"));
+    data.append_u32(get_function_id(b"test_big_bits(bits1024)()"));
 
     data.append_bit(&Bit::Zero);
     data.append_bit(&Bit::Zero);
@@ -899,8 +910,7 @@ fn test_big_bits() {
     root_builder.append_data(&data);
     root_builder.append_reference(array_builder.clone());
 
-    let root_cell = Arc::<CellData>::from(&root_builder);
-    let expected_tree = SliceData::from(root_cell);
+    let expected_tree = root_builder.into();
 
     assert_eq!(test_tree, expected_tree);
 
@@ -911,8 +921,7 @@ fn test_big_bits() {
     root_builder.append_bit(Bit::Zero);
     root_builder.append_reference(array_builder.clone());
 
-    let root_cell = Arc::<CellData>::from(&root_builder);
-    let expected_tree = SliceData::from(root_cell);
+    let expected_tree = root_builder.into();
 
     let mut data = Vec::new();
     BagOfCells::with_root(expected_tree)
@@ -938,7 +947,7 @@ mod decode_encoded {
         T::Out: std::fmt::Debug + std::cmp::PartialEq + From<T>,
     {
         let buffer = input.prepend_to(BuilderData::new());
-        let slice = SliceData::from(Arc::new(buffer.cell().clone()));
+        let slice = buffer.into();
         let (output, _) = <T>::read_from(slice).unwrap();
         assert_eq!(output, input.into());
     }
@@ -978,4 +987,81 @@ mod decode_encoded {
         }
         validate(vec);
     }
+}
+
+#[test]
+fn test_signed_one_input_and_output() {
+    logger::init();
+    let pair = Keypair::generate::<Sha512, _>(&mut OsRng::new().unwrap());
+
+    let func_name = "test_one_input_and_output";
+    let message = ABICall::<(u128,), (bool,)>::encode_signed_function_call(func_name, (1979,), &pair);
+    let mut message = SliceData::from(deserialize(message.clone()));
+
+    let mut signature = SliceData::from(message.drain_reference());
+    let signature = Signature::from_bytes(signature.get_next_bytes(64).as_slice()).unwrap();
+    let bag = BagOfCells::with_root(message);
+    let bag_hash = bag.get_repr_hash_by_index(0).unwrap();
+    pair.verify::<Sha512>(bag_hash.as_slice(), &signature).unwrap();
+}
+
+fixed_abi_array!(Bits1024, 4, bits1024_array4);
+
+#[test]
+fn test_reserving_reference() {
+    logger::init();
+
+    let mut bits: Bits1024 = [Bit::Zero; 1024].into();
+
+    for i in 0..bits.len() {
+        if i % 2 != 0 {
+            bits.data[i] = Bit::One;
+        }        
+    }
+
+    let input_data = [bits.clone(), bits.clone(), bits.clone(), bits.clone()];
+
+    let pair = Keypair::generate::<Sha512, _>(&mut OsRng::new().unwrap());
+
+    let func_name = "test_reserving_reference";
+    let message = ABICall::<(bits1024_array4,), ()>::encode_signed_function_call(func_name, (input_data.into(),), &pair);
+    let mut message = SliceData::from(deserialize(message.clone()));
+
+    let mut signature = SliceData::from(message.drain_reference());
+    let signature = Signature::from_bytes(signature.get_next_bytes(64).as_slice()).unwrap();
+    let bag = BagOfCells::with_root(message.clone());
+    let bag_hash = bag.get_repr_hash_by_index(0).unwrap();
+    pair.verify::<Sha512>(bag_hash.as_slice(), &signature).unwrap();
+
+
+    let mut data = Bitstring::new();
+
+    data.append_u8(ABI_VERSION);
+    data.append_u32(get_function_id(b"test_reserving_reference(bits1024[4])()"));
+
+    let mut array_data = Bitstring::new();
+
+    for i in 0..bits.len() {
+        array_data.append_bit(&bits[i]);
+    }
+
+    let mut array_builder = BuilderData::new();
+    array_builder = put_data_into_chain(array_builder, array_data);
+
+    let mut root_builder = BuilderData::new();
+
+    for _ in 0..4 {
+        root_builder.append_reference(array_builder.clone());
+    }
+    root_builder.append_data(&Bitstring::create(vec![0x80,0x00], 10)); // array of 4 arrays in separate cells
+
+    let mut new_builder = BuilderData::new();
+    new_builder.append_reference(root_builder);
+    root_builder = new_builder;
+
+    root_builder.append_data(&data);
+
+    let expected_tree: SliceData = root_builder.into();
+
+    assert_eq!(expected_tree, message);
 }
