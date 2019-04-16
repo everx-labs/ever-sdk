@@ -13,3 +13,7 @@ Cargo.lock
 *.pdb
 *.exe
 *.rlib
+
+# IDE files
+.idea
+.vscode
