@@ -3,7 +3,8 @@
 use crate::abi_call::{ABICall, ABI_VERSION};
 use crate::abi_response::{ABIResponse};
 use crate::types::{
-    ABIParameter,
+    ABISerialized,
+    ABIDeserialized,
     ABIInParameter,
     ABIOutParameter,
     ABITypeSignature};
@@ -41,7 +42,7 @@ fn deserialize(message: Vec<u8>) -> BuilderData {
 
 fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: BuilderData, expected_decode: I::Out) 
     where
-        I: std::fmt::Debug + std::cmp::PartialEq + ABIInParameter + ABIParameter + ABITypeSignature + Clone,
+        I: std::fmt::Debug + std::cmp::PartialEq + ABIInParameter + ABISerialized + ABIDeserialized + ABITypeSignature + Clone,
         I::Out: ABIOutParameter + std::fmt::Debug + std::cmp::PartialEq + Clone,
         (u8, u32, I::Out): ABIOutParameter,
         O: ABIInParameter + ABITypeSignature,
@@ -943,7 +944,7 @@ mod decode_encoded {
 
     fn validate<T>(input: T)
     where
-        T: ABIParameter,
+        T: ABISerialized + ABIDeserialized,
         T::Out: std::fmt::Debug + std::cmp::PartialEq + From<T>,
     {
         let buffer = input.prepend_to(BuilderData::new());

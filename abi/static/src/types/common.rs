@@ -1,7 +1,7 @@
 use tvm::bitstring::Bitstring;
 use tvm::stack::{BuilderData, SliceData};
 use super::DeserializationError;
-use types::ABIParameter;
+use types::ABIDeserialized;
 
 #[macro_export]
 macro_rules! makeOutParameter {
@@ -72,13 +72,40 @@ pub fn get_next_byte_from_chain(cursor: SliceData) -> Result<(u8, SliceData), De
     else {
         let mut result: u8 = 0;
         for i in (0..8).rev() {
-            let (bit, new_cursor) = <bool as ABIParameter>::read_from(cursor)?;
+            let (bit, new_cursor) = <bool as ABIDeserialized>::read_from(cursor)?;
             cursor = new_cursor;
 
             if bit {
                 result |= 1 << i;
             }
         }
+
+        Ok((result, cursor))
+    }
+}
+
+pub fn get_next_bits_from_chain(cursor: SliceData, bits: usize) -> Result<(Bitstring, SliceData), DeserializationError> {
+    let mut cursor = cursor;
+    
+    if cursor.remaining_bits() >= bits {
+        Ok((cursor.get_next_bitstring(bits), cursor))
+    }
+    else {
+        while cursor.remaining_bits() == 0 && cursor.remaining_references() == 1 {
+            cursor = cursor.checked_drain_reference().unwrap();
+        }
+
+        let remaining_bits = cursor.remaining_bits();
+
+        if remaining_bits == 0 {
+            return Err(DeserializationError::with(cursor));
+        }
+
+        let mut result = cursor.get_next_bitstring(remaining_bits);
+
+        let (remain, cursor) = get_next_bits_from_chain(cursor, bits - result.length_in_bits())?;
+
+        result.append(&remain);
 
         Ok((result, cursor))
     }

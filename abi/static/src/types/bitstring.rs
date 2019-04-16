@@ -1,14 +1,14 @@
 use super::{
-    ABIParameter,
     DeserializationError,
-    ABITypeSignature
+    ABITypeSignature,
+    ABIDeserialized,
+    ABISerialized
 };
 
 use tvm::bitstring::{Bit, Bitstring};
 use tvm::stack::{BuilderData, SliceData};
 
-impl ABIParameter for Bitstring {
-    type Out = Bitstring;
+impl ABISerialized for Bitstring {
 
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
         self.bits(0 .. self.length_in_bits())
@@ -19,9 +19,13 @@ impl ABIParameter for Bitstring {
         self.bits(0 .. self.length_in_bits())
             .data.get_in_cell_size()
     }
+}
+
+impl ABIDeserialized for Bitstring {
+    type Out = Bitstring;
 
     fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
-        let (bits, cursor) = <Vec<Bit> as ABIParameter>::read_from(cursor)?;
+        let (bits, cursor) = <Vec<Bit> as ABIDeserialized>::read_from(cursor)?;
         
         let mut result = Bitstring::new();
         bits.iter()

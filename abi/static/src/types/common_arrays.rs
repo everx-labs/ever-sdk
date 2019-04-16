@@ -2,10 +2,10 @@ use tvm::bitstring::{Bit, Bitstring};
 use tvm::stack::BuilderData;
 
 use super::common::*;
-use super::ABIParameter;
+use super::ABISerialized;
 
 // put array items to provided chain
-pub fn prepend_array_items_to_chain<T: ABIParameter>(
+pub fn prepend_array_items_to_chain<T: ABISerialized>(
     mut destination: BuilderData,
     array: &[T],
 ) -> BuilderData {
@@ -17,7 +17,7 @@ pub fn prepend_array_items_to_chain<T: ABIParameter>(
 }
 
 // create separate branch for array, put array items data there, reference that branch from provided chain and add tag of separate branch
-pub fn put_array_to_separate_branch<T: ABIParameter>(
+pub fn put_array_to_separate_branch<T: ABISerialized>(
     mut destination: BuilderData,
     array: &[T],
 ) -> BuilderData {

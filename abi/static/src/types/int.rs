@@ -2,7 +2,8 @@ use super::common::{
     prepend_data_to_chain,
     get_next_byte_from_chain};
 use super::{
-    ABIParameter,
+    ABISerialized,
+    ABIDeserialized,
     ABITypeSignature,
     DeserializationError
 };
@@ -14,8 +15,7 @@ use tvm::stack::{BuilderData, SliceData};
 macro_rules! define_int_ABIParameter {
     ( $type:ident, $str_type:expr, $size: tt) => {
 
-        impl ABIParameter for $type {
-            type Out = $type;
+        impl ABISerialized for $type {
 
             fn prepend_to(&self, destination: BuilderData) -> BuilderData {
                 let vec = self.to_be_bytes().to_vec();
@@ -28,6 +28,10 @@ macro_rules! define_int_ABIParameter {
             fn get_in_cell_size(&self) -> usize {
                 $size * 8
             }
+        }
+
+        impl ABIDeserialized for $type {
+            type Out = $type;
 
             fn read_from(
                 cursor: SliceData,

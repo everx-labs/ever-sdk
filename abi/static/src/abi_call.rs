@@ -4,8 +4,7 @@ use std::marker::PhantomData;
 use tvm::bitstring::Bitstring;
 use tvm::cells_serialization::BagOfCells;
 use tvm::stack::{BuilderData, SliceData};
-use types::common::prepend_data_to_chain;
-use types::{ABIInParameter, ABITypeSignature};
+use types::{ABIInParameter, ABITypeSignature, prepend_data_to_chain};
 
 pub const ABI_VERSION: u8 = 0;
 
@@ -25,7 +24,7 @@ where
     fn get_function_id(fn_name: String) -> [u8; 4] {
         let signature = fn_name + &TIn::type_signature() + &TOut::type_signature();
 
-        //println!("{}", signature);
+        println!("{}", signature);
 
         // Sha256 hash of signature
         let mut hasher = Sha256::new();
@@ -36,7 +35,7 @@ where
 
         let mut bytes = [0; 4];
         bytes.copy_from_slice(&function_hash[..4]);
-        //println!("{:X?}", bytes);
+        println!("{:X?}", bytes);
         bytes
     }
 

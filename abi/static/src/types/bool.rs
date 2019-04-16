@@ -1,5 +1,6 @@
 use super::{
-    ABIParameter,
+    ABISerialized,
+    ABIDeserialized,
     ABITypeSignature,
     DeserializationError
 };
@@ -7,8 +8,7 @@ use super::{
 use tvm::bitstring::{Bit, Bitstring};
 use tvm::stack::{BuilderData, SliceData};
 
-impl ABIParameter for bool {
-    type Out = bool;
+impl ABISerialized for bool {
 
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
         let mut destination = {
@@ -35,6 +35,10 @@ impl ABIParameter for bool {
     fn get_in_cell_size(&self) -> usize {
         1
     }
+}
+
+impl ABIDeserialized for bool {
+    type Out = bool;
 
     fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
         let mut cursor = cursor;

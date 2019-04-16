@@ -1,14 +1,12 @@
 use super::common::*;
 use super::common_arrays::*;
-use super::{
-    ABIParameter
-};
+use super::ABISerialized;
 
 use tvm::bitstring::{Bit, Bitstring};
 use tvm::stack::{BuilderData};
 
 // put fixed array to chain or to separate branch depending on array size
-pub fn prepend_fixed_array<T: ABIParameter>(
+pub fn prepend_fixed_array<T: ABISerialized>(
     mut destination: BuilderData,
     array: &[T],
 ) -> BuilderData {
@@ -99,10 +97,8 @@ macro_rules! fixed_abi_array {
             }
         }
 
-        impl $crate::types::ABIParameter for $type
+        impl $crate::types::ABISerialized for $type
         {
-            type Out = Vec<<$inner_type as $crate::types::ABIParameter>::Out>;
-
             fn prepend_to(&self, destination: tvm::stack::BuilderData) -> tvm::stack::BuilderData {
                 $crate::types::prepend_fixed_array(destination, &self.data)
             }
@@ -120,6 +116,11 @@ macro_rules! fixed_abi_array {
                     result + 2
                 }
             }
+        }
+
+        impl $crate::types::ABIDeserialized for $type
+        {
+            type Out = Vec<<$inner_type as $crate::types::ABIDeserialized>::Out>;
 
             fn read_from(
                 cursor: tvm::stack::SliceData,

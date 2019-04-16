@@ -1,4 +1,4 @@
-use super::{ABIParameter, DeserializationError};
+use super::{ABIDeserialized, DeserializationError};
 use std::option::Option;
 use tvm::stack::SliceData;
 
@@ -15,7 +15,7 @@ impl Reader {
 
     pub fn read_next<T>(&mut self) -> Result<T::Out, DeserializationError>
     where
-        T: ABIParameter,
+        T: ABIDeserialized,
     {
         let cursor = self.cursor.take().unwrap();
         let (result, next) = T::read_from(cursor)?;

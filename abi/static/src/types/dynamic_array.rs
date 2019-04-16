@@ -2,7 +2,8 @@ use super::common::*;
 use super::common_arrays::*;
 use super::{
     reader::Reader,
-    ABIParameter,
+    ABISerialized,
+    ABIDeserialized,
     DeserializationError,
     ABITypeSignature
 };
@@ -11,7 +12,7 @@ use tvm::bitstring::{Bit, Bitstring};
 use tvm::stack::{BuilderData, SliceData};
 
 // put dynamic array to chain or to separate branch depending on array size
-pub fn prepend_dynamic_array<T: ABIParameter>(
+pub fn prepend_dynamic_array<T: ABISerialized>(
     mut destination: BuilderData,
     array: &[T],
 ) -> BuilderData {
@@ -21,9 +22,9 @@ pub fn prepend_dynamic_array<T: ABIParameter>(
     }
 
     // if array doesn't fit into one cell, we put into separate chain
-    // Note: Since length is one byte value any array longer than 256
+    // Note: Since length is one byte value any array longer than 255
     // must be written into a separate cell.
-    if array.len() > 256 || array_size > destination.bits_capacity() {
+    if array.len() > 255 || array_size > destination.bits_capacity() {
         destination = put_array_to_separate_branch(destination, array);
     } else {
         // if array fit into cell data, put in into main chain
@@ -40,8 +41,7 @@ pub fn prepend_dynamic_array<T: ABIParameter>(
     destination
 }
 
-impl<T: ABIParameter> ABIParameter for Vec<T> {
-    type Out = Vec<T::Out>;
+impl<T: ABISerialized> ABISerialized for Vec<T> {
 
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
         prepend_dynamic_array(destination, self.as_slice())
@@ -54,12 +54,16 @@ impl<T: ABIParameter> ABIParameter for Vec<T> {
         }
 
         // if array doesn't fit into cell it is put in separate chain and only 2 bits are put in main chain cell
-        if self.len() > 256 || result > BuilderData::new().bits_capacity() {
+        if self.len() > 255 || result > BuilderData::new().bits_capacity() {
             2
         } else {
             result + 2
         }
     }
+}
+
+impl<T: ABIDeserialized> ABIDeserialized for Vec<T> {
+    type Out = Vec<T::Out>;
 
     fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
         let mut cursor = Reader::new(cursor);
