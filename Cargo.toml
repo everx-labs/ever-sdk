@@ -1,0 +1,26 @@
+[package]
+name = "ton_sdk"
+version = "0.1.0"
+
+[dependencies]
+rand = "0.6.1"
+pretty_assertions = "0.5.1"
+num-bigint = "0.2.2"
+sha2 = "^0.7"
+reql = "^0.0.26"
+reql-types = "^0.0.4"
+futures = "^0.1.26"
+serde_json = "^1.0.39"
+serde = "^1.0.90"
+serde_derive = "^1.0.90"
+error-chain = { version = "^0.12", default-features = false }
+
+abi-lib =  { path = "abi/static" }
+tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "dev", package = "tvm" }
+
+#[dev-dependencies.compiletest_rs]
+#features = ["tmp", "stable"]
+#version = "*"
+
+[features]
+ci_run = []
