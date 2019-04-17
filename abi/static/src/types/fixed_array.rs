@@ -18,7 +18,7 @@ pub fn prepend_fixed_array<T: ABIParameter>(
     }
 
     // if array doesn't fit into one cell, we put into separate chain
-    if array_size > destination.bits_capacity() {
+    if array_size > BuilderData::bits_capacity() {
         destination = put_array_to_separate_branch(destination, array);
     } else {
         // if array fit into cell data, put in into main chain

@@ -12,7 +12,7 @@ impl ABIParameter for bool {
 
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
         let mut destination = {
-            if 1 + destination.bits_used() > destination.bits_capacity() {
+            if 1 + destination.bits_used() > BuilderData::bits_capacity() {
                 let mut next = BuilderData::new();
                 next.append_reference(destination);
                 next
