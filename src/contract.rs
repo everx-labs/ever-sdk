@@ -1,7 +1,15 @@
 use crate::*;
 use std::io::Read;
+use std::marker::PhantomData;
 use tvm::stack::SliceData;
 use tvm::types::AccountId;
+use reql::{Client, Connection, Run, Document};
+use futures::stream::{Stream, Map};
+use futures::future::Future;
+use abi_lib::types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
+
+const DB_NAME: &str = "blockchain";
+const MSG_TABLE_NAME: &str = "messages";
 
 pub struct ContractCallState {
     message_id: MessageId,
@@ -27,12 +35,16 @@ impl ContractImage {
     }
 }
 
-pub struct Contract {
+pub struct Contract<TIn: ABIInParameter + ABITypeSignature, TOut: ABIOutParameter + ABITypeSignature> {
+    input: PhantomData<TIn>,
+    output: PhantomData<TOut>,
+    db_connection: Connection,
 
 }
 
-impl Contract {
-    pub fn load(id: AccountId) -> SdkResult<NodeResponce<Contract>> {
+impl<TIn: ABIInParameter + ABITypeSignature, TOut: ABIOutParameter + ABITypeSignature> Contract<TIn, TOut> {
+
+    pub fn load(id: AccountId) -> SdkResult<Box<Future<Item = Contract<TIn, TOut>, Error = SdkError>>> {
         unimplemented!()
     }
 
@@ -45,7 +57,7 @@ impl Contract {
 
     }
 
-    pub fn call() -> SdkResult<ChangesStream<ContractCallState>> {
+    pub fn call() -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
         unimplemented!()
 
         // pack params into bag of cells via ABI
@@ -58,13 +70,41 @@ impl Contract {
 
     }
 
-    fn send_message() -> SdkResult<()> {
+    fn send_message() -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
         unimplemented!()
 
         // send message by Kafka
     }
 
-    fn subscribe_updates() -> SdkResult<ChangesStream<ContractCallState>> {
-        unimplemented!()
+    fn subscribe_updates(&self, message_id: MessageId) -> 
+        SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
+
+        let r = Client::new();
+
+        let map = r.db(DB_NAME)
+            .table(MSG_TABLE_NAME)
+            .get(id_to_string(&message_id))
+            .changes()
+            .run::<reql_types::Change<MessageState, MessageState>>(self.db_connection)?
+            .map(move |change_opt| {
+                match change_opt {
+                    Some(Document::Expected(state_change)) => {
+                        ContractCallState {
+                            message_id: message_id.clone(),
+                            message_state: state_change.new_val.unwrap_or_else(|| MessageState::Unknown),
+                            transaction: None
+                        }
+                    },
+                    _ => {
+                        ContractCallState {
+                            message_id: message_id.clone(),
+                            message_state: MessageState::Unknown,
+                            transaction: None
+                        }
+                    },
+                }
+            }).map_err(|err| SdkError::from(err));
+
+        Ok(Box::new(map))
     }
 }

@@ -10,6 +10,7 @@ error_chain! {
     foreign_links {
         Io(io::Error);
         Tvm(Exception);
+        DB(reql::errors::Error);
     }
 
     errors {

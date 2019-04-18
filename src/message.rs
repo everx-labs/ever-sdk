@@ -8,12 +8,19 @@ use futures::future::Future;
 pub type MessageId = UInt256;
 
 // TODO this enum should be imported from ton_node module
+#[derive(Serialize, Deserialize, Debug)]
 pub enum MessageState {
+    Unknown,
     Queued,
     Processing,
     Proposed,
     Finalized,
     Refused,
+}
+
+// TODO need to realise to_string (or something else) for UInt256 in node
+pub fn id_to_string(id: &UInt256) -> String {
+    hex::encode(id.as_slice())
 }
 
 pub struct Message {

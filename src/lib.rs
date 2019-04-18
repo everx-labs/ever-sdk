@@ -9,6 +9,8 @@ extern crate serde;
 #[macro_use]
 extern crate serde_json;
 extern crate tvm;
+extern crate abi_lib;
+extern crate hex;
 
 #[allow(deprecated)]
 #[macro_use]
