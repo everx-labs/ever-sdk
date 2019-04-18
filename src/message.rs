@@ -5,6 +5,8 @@ use tvm::stack::SliceData;
 use futures::stream::Stream;
 use futures::future::Future;
 
+pub type MessageId = UInt256;
+
 // TODO this enum should be imported from ton_node module
 pub enum MessageState {
     Queued,
@@ -19,7 +21,11 @@ pub struct Message {
 }
 
 impl Message {
-    pub fn load(id: UInt256) -> SdkResult<NodeResponce<Message>> {
+    pub fn load(id: MessageId) -> SdkResult<NodeResponce<Message>> {
+        unimplemented!()
+    }
+
+    pub fn id(&self) -> MessageId {
         unimplemented!()
     }
 
@@ -28,7 +34,6 @@ impl Message {
     }
 
     pub fn state_changes(&self) -> SdkResult<ChangesStream<MessageState>> {
-        
         unimplemented!()
     }
 

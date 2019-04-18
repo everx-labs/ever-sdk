@@ -17,7 +17,7 @@ pub struct Transaction {
 }
 
 impl Transaction {
-    fn load(id: UInt256) -> SdkResult<NodeResponce<Transaction>> {
+    fn load(id: TransactionId) -> SdkResult<NodeResponce<Transaction>> {
         unimplemented!()
     }
 
@@ -26,7 +26,6 @@ impl Transaction {
     }
 
     pub fn state_changes(&self) -> SdkResult<ChangesStream<TransactionState>> {
-        
         unimplemented!()
     }
 
