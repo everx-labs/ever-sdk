@@ -8,7 +8,7 @@ use futures::future::Future;
 pub type MessageId = UInt256;
 
 // TODO this enum should be imported from ton_node module
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub enum MessageState {
     Unknown,
     Queued,

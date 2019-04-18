@@ -10,7 +10,14 @@ use abi_lib::types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
 
 const DB_NAME: &str = "blockchain";
 const MSG_TABLE_NAME: &str = "messages";
+const MSG_ID_FIELD_NAME: &str = "id";
+const MSG_STATE_FIELD_NAME: &str = "state";
 
+#[cfg(test)]
+#[path = "tests/test_contract.rs"]
+mod tests;
+
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct ContractCallState {
     message_id: MessageId,
     message_state: MessageState,
@@ -83,12 +90,16 @@ impl<TIn: ABIInParameter + ABITypeSignature, TOut: ABIOutParameter + ABITypeSign
 
         let map = r.db(DB_NAME)
             .table(MSG_TABLE_NAME)
-            .get(id_to_string(&message_id))
+            .get_all(id_to_string(&message_id))
+            .get_field(MSG_STATE_FIELD_NAME)
             .changes()
             .run::<reql_types::Change<MessageState, MessageState>>(self.db_connection)?
             .map(move |change_opt| {
                 match change_opt {
                     Some(Document::Expected(state_change)) => {
+
+                        // TODO get full message to extract transaction id from
+
                         ContractCallState {
                             message_id: message_id.clone(),
                             message_state: state_change.new_val.unwrap_or_else(|| MessageState::Unknown),
