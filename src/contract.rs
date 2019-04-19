@@ -1,17 +1,30 @@
 use crate::*;
-use std::io::Read;
+use std::io::{Read, Seek};
+use std::sync::Arc;
 use std::marker::PhantomData;
-use tvm::stack::SliceData;
+use tvm::stack::{SliceData, CellData};
 use tvm::types::AccountId;
+use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use reql::{Client, Connection, Run, Document};
 use futures::stream::{Stream, Map};
 use futures::future::Future;
 use abi_lib::types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
+use abi_lib::abi_call::ABICall;
+use ed25519_dalek::Keypair;
+use ton_block::{
+    Message,
+    ExternalInboundMessageHeader,
+    MsgAddressInt,
+    Serializable,
+    Deserializable,
+    StateInit,
+    GetRepresentationHash};
 
 const DB_NAME: &str = "blockchain";
 const MSG_TABLE_NAME: &str = "messages";
 const MSG_ID_FIELD_NAME: &str = "id";
 const MSG_STATE_FIELD_NAME: &str = "state";
+const CONSTRUCTOR_METHOD_NAME: &str = "constructor";
 
 #[cfg(test)]
 #[path = "tests/test_contract.rs"]
@@ -27,44 +40,76 @@ pub struct ContractCallState {
 }
 
 pub struct ContractImage {
-    code: SliceData,
-    data: SliceData,
-    lib: SliceData,
+    state_init: StateInit
 }
 
 impl ContractImage {
-    fn new(code: &Read, data: Option<&Read>, library: Option<&Read>) -> SdkResult<Self> {
-        unimplemented!()
+
+    pub fn new<T>(code: &mut T, data: Option<&mut T>, library: Option<&mut T>) -> SdkResult<Self> 
+        where T: Read + Seek {
+
+        let mut state_init = StateInit::default();
+
+        let code_roots = deserialize_cells_tree(code)?;
+        if code_roots.len() != 1 {
+            bail!(SdkErrorKind::InvalidData("Invalid code's bag of cells".into()));
+        }
+        state_init.set_code(code_roots.remove(0));
+
+        if let Some(data_) = data {
+            let data_roots = deserialize_cells_tree(data_)?;
+            if data_roots.len() != 1 {
+                bail!(SdkErrorKind::InvalidData("Invalid data's bag of cells".into()));
+            }
+            state_init.set_data(data_roots.remove(0));
+        }
+
+        if let Some(library_) = data {
+            let library_roots = deserialize_cells_tree(library_)?;
+            if library_roots.len() != 1 {
+                bail!(SdkErrorKind::InvalidData("Invalid library's bag of cells".into()));
+            }
+            state_init.set_data(library_roots.remove(0));
+        }
+
+        Ok(Self{ state_init })
     }
 
-    fn id(&self) -> AccountId {
-        unimplemented!()
+    pub fn state_init(self) -> StateInit {
+        self.state_init
     }
 }
 
-pub struct Contract<TIn: ABIInParameter + ABITypeSignature, TOut: ABIOutParameter + ABITypeSignature> {
-    input: PhantomData<TIn>,
-    output: PhantomData<TOut>,
+pub struct Contract {
     db_connection: Connection,
 
 }
 
-impl<TIn: ABIInParameter + ABITypeSignature, TOut: ABIOutParameter + ABITypeSignature> Contract<TIn, TOut> {
+impl Contract {
 
-    pub fn load(id: AccountId) -> SdkResult<Box<Future<Item = Contract<TIn, TOut>, Error = SdkError>>> {
+    pub fn load(id: AccountId) -> SdkResult<Box<Future<Item = Contract, Error = SdkError>>> {
         unimplemented!()
     }
 
-    pub fn deploy(image: ContractImage) -> SdkResult<ChangesStream<ContractCallState>> {
-        unimplemented!()
+    pub fn deploy<TIn, TOut>(input: TIn, image: ContractImage, key_pair: Option<&Keypair>)
+        -> SdkResult<ChangesStream<ContractCallState>>
+        where
+            TIn: ABIInParameter + ABITypeSignature,
+            TOut: ABIInParameter + ABITypeSignature {
 
         // Deploy is call, but special message is constructed.
         // The message contains StateInit struct with code, public key and lib
         // and body with parameters for contract special method - constructor.
 
+        let msg_body = Self::create_message_body::<TIn, TOut>(input, key_pair);
+        let (msg_id, msg) = Self::create_deploy_message(msg_body, image)?;
+        send_message()
     }
 
-    pub fn call() -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
+    pub fn call<TIn>(input: TIn, pair: &Keypair)
+        -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>>
+        where TIn: ABIInParameter + ABITypeSignature {
+
         unimplemented!()
 
         // pack params into bag of cells via ABI
@@ -77,10 +122,48 @@ impl<TIn: ABIInParameter + ABITypeSignature, TOut: ABIOutParameter + ABITypeSign
 
     }
 
+    fn create_message_body<TIn, TOut>(input: TIn, key_pair: Option<&Keypair>) -> Arc<CellData>
+        where
+            TIn: ABIInParameter + ABITypeSignature,
+            TOut: ABIInParameter + ABITypeSignature {
+
+        match key_pair {
+            Some(p) => {
+                ABICall::<TIn, TOut>::encode_signed_function_call_into_slice(
+                    CONSTRUCTOR_METHOD_NAME, input, p).into()
+            }
+            _ => {
+                ABICall::<TIn, TOut>::encode_function_call_into_slice(
+                    CONSTRUCTOR_METHOD_NAME, input).into()
+            }
+        }
+    }
+
+    fn create_deploy_message(msg_body: Arc<CellData>, image: ContractImage)
+        -> SdkResult<(MessageId, Vec<u8>)> {
+
+        let state_init = image.state_init();
+        let msg_id = state_init.hash()?;
+
+        let mut msg_header = ExternalInboundMessageHeader::default();
+        msg_header.dst = MsgAddressInt::with_standart(None, -1, msg_id.clone()).unwrap();
+
+        let mut msg = Message::with_ext_in_header(msg_header);
+        msg.body = Some(msg_body);
+        msg.init = Some(state_init);
+
+        let msg_cells = msg.write_to_new_cell()?.into();
+        let mut message_data = Vec::new();
+        BagOfCells::with_root(msg_cells).write_to(&mut message_data, false)?;
+
+        Ok((msg_id, message_data))
+    }
+
     fn send_message() -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
         unimplemented!()
 
         // send message by Kafka
+
     }
 
     fn subscribe_updates(&self, message_id: MessageId) -> 

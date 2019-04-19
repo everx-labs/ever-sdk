@@ -16,9 +16,11 @@ serde = "^1.0.90"
 serde_derive = "^1.0.90"
 error-chain = { version = "^0.12", default-features = false }
 hex = "0.3.2"
+ed25519-dalek = "^0.8"
 
 abi-lib =  { path = "abi/static" }
 tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "dev", package = "tvm" }
+ton_block = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "dev", package = "ton_block" }
 
 #[dev-dependencies.compiletest_rs]
 #features = ["tmp", "stable"]
