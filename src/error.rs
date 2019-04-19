@@ -1,5 +1,6 @@
 use std::io;
 use tvm::types::Exception;
+use rdkafka::error::RDKafkaError;
 
 error_chain! {
 
@@ -11,6 +12,7 @@ error_chain! {
         Io(io::Error);
         Tvm(Exception);
         DB(reql::errors::Error);
+        Kafka(RDKafkaError);
     }
 
     errors {
@@ -42,6 +44,9 @@ error_chain! {
         Signature(inner: ed25519_dalek::SignatureError) {
             description("Signature error"),
             display("Signature error: {}", inner)
+        }
+        Cancelled {
+            description("Oneshot canceled")
         }
     }
 

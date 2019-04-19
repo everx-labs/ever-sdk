@@ -13,6 +13,8 @@ extern crate ton_block;
 extern crate abi_lib;
 extern crate hex;
 extern crate ed25519_dalek;
+extern crate rdkafka;
+extern crate tokio;
 
 #[allow(deprecated)]
 #[macro_use]

@@ -11,6 +11,7 @@ use futures::future::Future;
 use abi_lib::types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
 use abi_lib::abi_call::ABICall;
 use ed25519_dalek::Keypair;
+use rdkafka::producer::future_producer::{FutureProducer, FutureRecord};
 use ton_block::{
     Message,
     ExternalInboundMessageHeader,
@@ -25,6 +26,7 @@ const MSG_TABLE_NAME: &str = "messages";
 const MSG_ID_FIELD_NAME: &str = "id";
 const MSG_STATE_FIELD_NAME: &str = "state";
 const CONSTRUCTOR_METHOD_NAME: &str = "constructor";
+const MESSAGES_TOPIC_NAME: &str = "external messages";
 
 #[cfg(test)]
 #[path = "tests/test_contract.rs"]
@@ -82,7 +84,7 @@ impl ContractImage {
 
 pub struct Contract {
     db_connection: Connection,
-
+    kafka_produser: FutureProducer
 }
 
 impl Contract {
@@ -102,11 +104,11 @@ impl Contract {
         // and body with parameters for contract special method - constructor.
 
         let msg_body = Self::create_message_body::<TIn, TOut>(input, key_pair);
-        let (msg_id, msg) = Self::create_deploy_message(msg_body, image)?;
-        send_message()
+        let (account_id, msg) = Self::create_deploy_message(msg_body, image)?;
+        send_message(msg)
     }
 
-    pub fn call<TIn>(input: TIn, pair: &Keypair)
+    pub fn call<TIn>(&self, input: TIn, pair: &Keypair)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>>
         where TIn: ABIInParameter + ABITypeSignature {
 
@@ -140,33 +142,58 @@ impl Contract {
     }
 
     fn create_deploy_message(msg_body: Arc<CellData>, image: ContractImage)
-        -> SdkResult<(MessageId, Vec<u8>)> {
+        -> SdkResult<(AccountId, Message)> {
 
         let state_init = image.state_init();
-        let msg_id = state_init.hash()?;
+        let account_id = state_init.hash()?;
 
         let mut msg_header = ExternalInboundMessageHeader::default();
-        msg_header.dst = MsgAddressInt::with_standart(None, -1, msg_id.clone()).unwrap();
+        msg_header.dst = MsgAddressInt::with_standart(None, -1, account_id.clone()).unwrap();
 
         let mut msg = Message::with_ext_in_header(msg_header);
         msg.body = Some(msg_body);
         msg.init = Some(state_init);
 
-        let msg_cells = msg.write_to_new_cell()?.into();
-        let mut message_data = Vec::new();
-        BagOfCells::with_root(msg_cells).write_to(&mut message_data, false)?;
-
-        Ok((msg_id, message_data))
+        Ok((account_id, msg))
     }
 
-    fn send_message() -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
-        unimplemented!()
+    fn send_message(db_connection: &Connection, kafka_produser: &FutureProducer, msg: Message)
+        -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
-        // send message by Kafka
+        // Prepare
 
+        let cells = msg.write_to_new_cell()?.into();
+        let mut data = Vec::new();
+        let bag = BagOfCells::with_root(cells);
+        let id = bag.get_repr_hash_by_index(0)
+            .ok_or(SdkErrorKind::InternalError("unexpected message's bag of cells (empty bag)".into())
+                .into())?;                
+        bag.write_to(&mut data, false)?;
+
+        // Send by Kafka
+        let record = FutureRecord::to(MESSAGES_TOPIC_NAME)
+            .key(id.as_slice())
+            .payload(&data);
+
+        let id_ = id.clone();
+        let chain = kafka_produser.send(record, 0)
+            .into_stream()
+            .map(|_| {
+                ContractCallState {
+                    message_id: id_.clone(),
+                    message_state: MessageState::Unknown,
+                    transaction: None
+                }
+            }).map_err(|_| SdkErrorKind::Cancelled.into())
+            .chain(
+                // Subscribe rethink db updates
+                Box::leak(Self::subscribe_updates(db_connection, id.clone())?)
+            );
+
+            Ok(Box::new(chain))
     }
 
-    fn subscribe_updates(&self, message_id: MessageId) -> 
+    fn subscribe_updates(db_connection: &Connection, message_id: MessageId) ->
         SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
         let r = Client::new();
@@ -176,7 +203,7 @@ impl Contract {
             .get_all(id_to_string(&message_id))
             .get_field(MSG_STATE_FIELD_NAME)
             .changes()
-            .run::<reql_types::Change<MessageState, MessageState>>(self.db_connection)?
+            .run::<reql_types::Change<MessageState, MessageState>>(db_connection)?
             .map(move |change_opt| {
                 match change_opt {
                     Some(Document::Expected(state_change)) => {
