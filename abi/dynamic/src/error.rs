@@ -1,4 +1,4 @@
-use token::TokenizeError;
+use token::{TokenizeError, DetokenizeError};
 use function::{SerializationError, DeserializationError};
 
 #[derive(Debug)]
@@ -8,5 +8,6 @@ pub enum ABIError {
 	TokenizeError(TokenizeError),
 	SerializationError(SerializationError),
 	DeserializationError(DeserializationError),
+	DetokenizeError(DetokenizeError),
 	NotImplemented,
 }

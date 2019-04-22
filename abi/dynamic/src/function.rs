@@ -103,7 +103,7 @@ impl Function {
 	}
 
 		
-		/// Parses the ABI function output to list of tokens.
+	/// Parses the ABI function output to list of tokens.
 	pub fn decode_input(&self, data: SliceData) -> Result<Vec<Token>, DeserializationError> {
 		use ParamType;
 		let mut params = self.input_params();

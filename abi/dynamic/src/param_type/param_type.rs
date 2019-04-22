@@ -4,7 +4,7 @@ use std::fmt;
 use Param;
 
 /// Function and event param types.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ParamType {
 	/// uint<M>: unsigned integer type of M bits.
 	Uint(usize),

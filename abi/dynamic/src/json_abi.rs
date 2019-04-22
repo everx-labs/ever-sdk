@@ -1,5 +1,5 @@
 use {Contract, ABIError};
-use token::Tokenizer;
+use token::{Tokenizer, Detokenizer};
 use serde_json::Value;
 use tvm::stack::{BuilderData, SliceData};
 use ed25519_dalek::*;
@@ -23,5 +23,5 @@ pub fn decode_function_responce(abi: String, function: String, responce: SliceDa
 
     let tokens = function.decode_output(responce).map_err(|err| ABIError::DeserializationError(err))?;
 
-    Err(ABIError::NotImplemented)
+    Detokenizer::detokenize(&function.input_params(), &tokens).map_err(|err| ABIError::DetokenizeError(err))
 }

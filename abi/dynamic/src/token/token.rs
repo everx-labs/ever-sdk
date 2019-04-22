@@ -334,32 +334,8 @@ impl Token {
 		}
 	}
 }
-/*
-impl serde::Serialize for Token {
-	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        match self {
-			Token::Uint(uint) => uint.prepend_to(destination),
-			Token::Int(int) => int.prepend_to(destination),
-			Token::Dint(dint) => dint.prepend_to(destination),
-			Token::Duint(duint) => duint.prepend_to(destination),
-			Token::Bool(b) => b.prepend_to(destination),
-			Token::Tuple(ref tokens) =>{
-				let mut destination = destination;
-				for token in tokens.iter().rev() {
-					destination = token.prepend_to(destination);
-				}
-				destination
-			},
-			Token::Array(ref tokens) => tokens.prepend_to(destination),
-			Token::FixedArray(ref tokens) => tokens.prepend_to(destination),
-			Token::Bits(b) => prepend_fixed_array(destination, &b.bits(0 .. b.length_in_bits()).data),
-			Token::Bitstring(bitstring) => bitstring.prepend_to(destination),
-		}
-    }
-}*/
+
+
 
 
 #[cfg(test)]

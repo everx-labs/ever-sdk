@@ -1,10 +1,10 @@
 //! Function param.
-use serde::{Deserialize, Deserializer};
+use serde::{Serialize, Serializer, Deserialize, Deserializer};
 
 use ParamType;
 
 /// Function param.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Param {
 	/// Param name.
 	pub name: String,
@@ -43,6 +43,15 @@ impl<'a> Deserialize<'a> for Param {
 		};
 
 		Ok(result)
+	}
+}
+
+impl Serialize for Param {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+	{
+		serializer.serialize_str(&self.name)
 	}
 }
 
