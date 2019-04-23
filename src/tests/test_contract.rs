@@ -2,6 +2,9 @@ use super::*;
 use reql::{Config, Client, Run};
 use serde_json::Value;
 use reql_types::WriteStatus;
+use tvm::types::AccountId;
+
+const DB_NAME: &str = "blockchain";
 
 #[test]
 #[ignore] // Rethink have to work on 127.0.0.1:32769. Run it and comment "ignore"
@@ -34,7 +37,7 @@ fn test_subscribe_updates() {
 
     // subscribe changes
     
-    let changes_stream = Contract::subscribe_updates(conn, msg_id.clone()).unwrap();
+    let changes_stream = Contract::subscribe_updates(msg_id.clone()).unwrap();
 
     // another thread - write changes into DB
     let msg_id_ = msg_id.clone();
@@ -68,4 +71,20 @@ fn test_subscribe_updates() {
     }
 
     another_thread.join().unwrap();
+}
+
+#[test]
+fn test_call_contract() {
+    //let id = AccountId::from([11; 32]);
+
+    //let contract = Contract::load(id).unwrap().wait().next();
+
+    // TODO
+
+
+}
+
+#[test]
+fn test_deploy_contract() {
+    // TODO
 }

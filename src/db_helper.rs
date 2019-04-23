@@ -21,14 +21,14 @@ lazy_static! {
             ack_timeout: 3000,
         }
     };
-    
+
     static ref RETHINK_CONN: Connection = {
         let r = Client::new();
         let mut conf = Config::default();
         for s in CONFIG.servers.iter() {
             conf.servers.push(s.parse::<SocketAddr>().expect("Error parsing address"));
         }
-         r.connect(conf).unwrap()
+        r.connect(conf).expect("error connecting to rethink-db")
     };
 }
 
@@ -51,7 +51,7 @@ pub fn subscribe_field_updates<T>(table: &str, record_id: &str, field: &str)
 
 pub fn load_record(table: &str, record_id: &str)
     -> SdkResult<Box<Stream<Item = serde_json::Value, Error = SdkError>>> {
-    
+
     let r = Client::new();
 
     let map = r.db(DB_NAME)

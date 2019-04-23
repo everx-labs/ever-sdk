@@ -85,8 +85,11 @@ pub struct Contract {
 #[allow(dead_code)]
 impl Contract {
 
-    pub fn load(_id: AccountId) -> SdkResult<Box<Stream<Item = Contract, Error = SdkError>>> {
-        unimplemented!()
+    pub fn load(id: AccountId) -> SdkResult<Box<Stream<Item = Contract, Error = SdkError>>> {
+        let map = db_helper::load_record(CONTRACTS_TABLE_NAME, &id_to_string(&id))?
+            .map(move |_val| Contract { id: id.clone() }); // TODO parse json
+
+        Ok(Box::new(map))
     }
 
     pub fn call<TIn, TOut>(&self, input: TIn, key_pair: Option<&Keypair>)
@@ -101,8 +104,10 @@ impl Contract {
         let msg = Self::create_message(self, msg_body)?;
 
         // send message by Kafka
-        // and subscribe on updates from DB and return updates stream
-        Self::send_message(msg)
+        let msg_id = Self::send_message(msg)?;
+
+        // subscribe on updates from DB and return updates stream
+        Self::subscribe_updates(msg_id)
     }
 
     pub fn call_json(&self, _func: String, _input: String, _abi: String, _key_pair: Option<&Keypair>)
@@ -114,8 +119,10 @@ impl Contract {
         let msg = Self::create_message(self, msg_body)?;
 
         // send message by Kafka
-        // and subscribe on updates from DB and return updates stream
-        Self::send_message(msg)
+        let msg_id = Self::send_message(msg)?;
+
+        // subscribe on updates from DB and return updates stream
+        Self::subscribe_updates(msg_id)
     }
 
     pub fn load_json(id: AccountId) -> SdkResult<Box<Stream<Item = String, Error = SdkError>>> {
@@ -137,20 +144,24 @@ impl Contract {
         // and body with parameters for contract special method - constructor.
 
         let msg_body = Self::create_message_body::<TIn, TOut>(input, key_pair);
-        
+
         let msg = Self::create_deploy_message(msg_body, image)?;
-        
-        Self::send_message(msg)
+
+        let msg_id = Self::send_message(msg)?;
+
+        Self::subscribe_updates(msg_id)
     }
 
     pub fn deploy_json(_func: String, _input: String, _abi: String, image: ContractImage, _key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
         let msg_body = Arc::new(CellData::default()); // TODO
-        
+
         let msg = Self::create_deploy_message(msg_body, image)?;
-        
-        Self::send_message(msg)
+
+        let msg_id = Self::send_message(msg)?;
+
+        Self::subscribe_updates(msg_id)
     }
 
     fn create_message(&self, msg_body: Arc<CellData>)
@@ -198,20 +209,19 @@ impl Contract {
         Ok(msg)
     }
 
-    fn send_message(msg: Message)
-        -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
+    fn send_message(msg: Message) -> SdkResult<MessageId> {
 
         let cells = msg.write_to_new_cell()?.into();
         let mut data = Vec::new();
         let bag = BagOfCells::with_root(cells);
         let id = bag.get_repr_hash_by_index(0)
             .ok_or::<SdkError>(SdkErrorKind::InternalError("unexpected message's bag of cells (empty bag)".into())
-                .into())?;                
+                .into())?;
         bag.write_to(&mut data, false)?;
 
         kafka_helper::send_message(&id.as_slice()[..], &data)?;
 
-        Self::subscribe_updates(id.clone())
+        Ok(id.clone())
     }
 
     fn subscribe_updates(message_id: MessageId) ->
@@ -247,4 +257,3 @@ impl Contract {
         Ok(Box::new(map))
     }
 }
-
