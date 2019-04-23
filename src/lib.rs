@@ -13,8 +13,11 @@ extern crate ton_block;
 extern crate abi_lib;
 extern crate hex;
 extern crate ed25519_dalek;
-extern crate rdkafka;
+extern crate kafka;
+//extern crate rdkafka;
 extern crate tokio;
+#[macro_use]
+extern crate lazy_static;
 
 #[allow(deprecated)]
 #[macro_use]
@@ -22,13 +25,15 @@ mod error;
 use error::*;
 
 mod contract;
-use contract::*;
+pub use contract::*;
 
 mod message;
-use message::*;
+pub use message::*;
 
 mod transaction;
-use transaction::*;
+pub use transaction::*;
 
 mod types;
-use types::*;
+pub use types::*;
+
+mod rethink_db;

@@ -23,9 +23,9 @@ fn test_subscribe_updates() {
 
     let insert_doc = r.db(DB_NAME)
         .table(MSG_TABLE_NAME)
-        .update(
+        .update( // TODO insert with "update" flag
             json!({ 
-                MSG_ID_FIELD_NAME: id_to_string(&msg_id),
+                "id": id_to_string(&msg_id),
                 MSG_STATE_FIELD_NAME: MessageState::Queued
                 })
         )
@@ -33,14 +33,9 @@ fn test_subscribe_updates() {
     println!("\n\n insert \n {:#?}", insert_doc);
 
     // subscribe changes
-    let contract = Contract::<(), ()> {
-        input: PhantomData,
-        output: PhantomData,
-        db_connection: conn.clone(),
-    };
-
-    let changes_stream = contract.subscribe_updates(msg_id.clone()).unwrap();
     
+    let changes_stream = Contract::subscribe_updates(conn, msg_id.clone()).unwrap();
+
     // another thread - write changes into DB
     let msg_id_ = msg_id.clone();
     let another_thread = std::thread::spawn(move || {
@@ -52,7 +47,7 @@ fn test_subscribe_updates() {
             let insert_doc = r.db(DB_NAME)
                 .table(MSG_TABLE_NAME)
                 .replace(json!({
-                    MSG_ID_FIELD_NAME: id_to_string(&msg_id_),
+                    "id": id_to_string(&msg_id_),
                     MSG_STATE_FIELD_NAME: state
                  }))
                 .run::<WriteStatus>(conn).unwrap().wait().next().unwrap();
@@ -72,5 +67,5 @@ fn test_subscribe_updates() {
         assert_eq!(changes_stream.next().unwrap().unwrap(), ccs);
     }
 
-    another_thread.join();
+    another_thread.join().unwrap();
 }

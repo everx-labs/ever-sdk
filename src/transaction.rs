@@ -1,6 +1,3 @@
-use crate::*;
-use std;
-use tvm::types;
 use tvm::types::UInt256;
 
 pub type TransactionId = UInt256;
@@ -15,7 +12,7 @@ pub enum TransactionState {
 pub struct Transaction {
 
 }
-
+/*
 impl Transaction {
     fn load(id: TransactionId) -> SdkResult<NodeResponce<Transaction>> {
         unimplemented!()
@@ -37,3 +34,4 @@ impl Transaction {
         unimplemented!()
     }
 }
+*/

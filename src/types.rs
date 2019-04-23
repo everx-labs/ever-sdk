@@ -1,20 +1,20 @@
-use crate::*;
-use std::marker::PhantomData;
-use futures::stream::Stream;
 
-// pub struct Change<T> {
-//     pub old: T,
-//     pub new: T
-// }
-
-pub struct NodeResponce<T> {
-    phantom: PhantomData<T>
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RethinkConfig {
+    pub servers: Vec<String>,
+    pub db_name: String,
 }
 
-//impl<T> NodeResponce<T> for Future<Item = T, Error = NodeError> {
-//
-//}
+#[derive(Debug, Deserialize, Serialize)]
+pub struct KafkaConfig {
+    pub group_id: String,
+    pub servers: Vec<String>,
+    pub topic: String,
+    pub ack_timeout: u64,
+}
 
-pub struct ChangesStream<T> {
-    phantom: PhantomData<T>
+#[derive(Debug, Deserialize, Serialize)]
+pub struct NodeClientConfig {
+    pub db_config: RethinkConfig,
+    pub kafka_config: KafkaConfig,
 }

@@ -1,9 +1,5 @@
 use crate::*;
-use std;
 use tvm::types::UInt256;
-use tvm::stack::SliceData;
-use futures::stream::Stream;
-use futures::future::Future;
 
 pub type MessageId = UInt256;
 
@@ -26,7 +22,7 @@ pub fn id_to_string(id: &UInt256) -> String {
 pub struct Message {
 
 }
-
+/*
 impl Message {
     pub fn load(id: MessageId) -> SdkResult<NodeResponce<Message>> {
         unimplemented!()
@@ -47,4 +43,4 @@ impl Message {
     pub fn body(&self) -> SliceData {
         unimplemented!()
     }
-}
+}*/

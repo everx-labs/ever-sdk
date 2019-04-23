@@ -1,36 +1,62 @@
 use crate::*;
 use std::io::{Read, Seek};
+use std::time::Duration;
 use std::sync::Arc;
-use std::marker::PhantomData;
-use tvm::stack::{SliceData, CellData};
+use std::net::SocketAddr;
+use std::sync::Mutex;
+use tvm::stack::CellData;
 use tvm::types::AccountId;
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
-use reql::{Client, Connection, Run, Document};
-use futures::stream::{Stream, Map};
-use futures::future::Future;
-use abi_lib::types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
+use reql::{Config, Client, Connection, Run, Document};
+use futures::stream::Stream;
+use abi_lib::types::{ABIInParameter, ABITypeSignature};
 use abi_lib::abi_call::ABICall;
 use ed25519_dalek::Keypair;
-use rdkafka::producer::future_producer::{FutureProducer, FutureRecord};
+//use rdkafka::producer::future_producer::{FutureProducer, FutureRecord};
+use kafka::producer::{Producer, Record, RequiredAcks};
 use ton_block::{
     Message,
     ExternalInboundMessageHeader,
     MsgAddressInt,
-    Serializable,
-    Deserializable,
+    Serializable,    
     StateInit,
     GetRepresentationHash};
 
+const COGNFIG_FILE_NAME: &str = "config.json";
 const DB_NAME: &str = "blockchain";
 const MSG_TABLE_NAME: &str = "messages";
-const MSG_ID_FIELD_NAME: &str = "id";
 const MSG_STATE_FIELD_NAME: &str = "state";
 const CONSTRUCTOR_METHOD_NAME: &str = "constructor";
-const MESSAGES_TOPIC_NAME: &str = "external messages";
 
 #[cfg(test)]
 #[path = "tests/test_contract.rs"]
 mod tests;
+
+lazy_static! {
+    static ref CONFIG: NodeClientConfig = {
+        let config_json = std::fs::read_to_string(COGNFIG_FILE_NAME).expect("Error reading config");
+        serde_json::from_str(&config_json).expect("Problem parsing config file")
+    };
+    
+    static ref RETHINK_CONN: Connection = {
+        let r = Client::new();
+        let mut conf = Config::default();
+        for s in CONFIG.db_config.servers.iter() {
+            conf.servers.push(s.parse::<SocketAddr>().expect("Error parsing address"));
+        }
+         r.connect(conf).unwrap()
+    };
+
+    static ref KAFKA_PROD: Mutex<Producer> = {
+        Mutex::new(
+            Producer::from_hosts(CONFIG.kafka_config.servers.clone())
+                .with_ack_timeout(Duration::from_millis(CONFIG.kafka_config.ack_timeout))
+                .with_required_acks(RequiredAcks::One)
+                .create()
+                .expect("Problem parsing config file")
+        )
+    };
+}
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct ContractCallState {
@@ -45,6 +71,7 @@ pub struct ContractImage {
     state_init: StateInit
 }
 
+#[allow(dead_code)]
 impl ContractImage {
 
     pub fn new<T>(code: &mut T, data: Option<&mut T>, library: Option<&mut T>) -> SdkResult<Self> 
@@ -52,22 +79,22 @@ impl ContractImage {
 
         let mut state_init = StateInit::default();
 
-        let code_roots = deserialize_cells_tree(code)?;
+        let mut code_roots = deserialize_cells_tree(code)?;
         if code_roots.len() != 1 {
             bail!(SdkErrorKind::InvalidData("Invalid code's bag of cells".into()));
         }
         state_init.set_code(code_roots.remove(0));
 
         if let Some(data_) = data {
-            let data_roots = deserialize_cells_tree(data_)?;
+            let mut data_roots = deserialize_cells_tree(data_)?;
             if data_roots.len() != 1 {
                 bail!(SdkErrorKind::InvalidData("Invalid data's bag of cells".into()));
             }
             state_init.set_data(data_roots.remove(0));
         }
 
-        if let Some(library_) = data {
-            let library_roots = deserialize_cells_tree(library_)?;
+        if let Some(library_) = library {
+            let mut library_roots = deserialize_cells_tree(library_)?;
             if library_roots.len() != 1 {
                 bail!(SdkErrorKind::InvalidData("Invalid library's bag of cells".into()));
             }
@@ -83,18 +110,56 @@ impl ContractImage {
 }
 
 pub struct Contract {
-    db_connection: Connection,
-    kafka_produser: FutureProducer
+    id: AccountId,
+
 }
 
+#[allow(dead_code)]
 impl Contract {
 
-    pub fn load(id: AccountId) -> SdkResult<Box<Future<Item = Contract, Error = SdkError>>> {
+    pub fn load(_id: AccountId) -> SdkResult<Box<Stream<Item = Contract, Error = SdkError>>> {
         unimplemented!()
     }
 
+    pub fn call<TIn, TOut>(&self, input: TIn, key_pair: Option<&Keypair>)
+        -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>>
+        where 
+            TIn: ABIInParameter + ABITypeSignature,
+            TOut: ABIInParameter + ABITypeSignature {
+
+        // pack params into bag of cells via ABI
+        let msg_body = Self::create_message_body::<TIn, TOut>(input, key_pair);
+        
+        let msg = Self::create_message(self, msg_body)?;
+
+        // send message by Kafka
+        // and subscribe on updates from DB and return updates stream
+        Self::send_message(msg)
+    }
+
+    pub fn call_json(&self, _func: String, _input: String, _abi: String, _key_pair: Option<&Keypair>)
+        -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
+
+        // pack params into bag of cells via ABI
+        let msg_body = Arc::new(CellData::default()); // TODO
+        
+        let msg = Self::create_message(self, msg_body)?;
+
+        // send message by Kafka
+        // and subscribe on updates from DB and return updates stream
+        Self::send_message(msg)
+    }
+
+    pub fn load_json(id: AccountId) -> SdkResult<Box<Stream<Item = String, Error = SdkError>>> {
+
+        let map = rethink_db::load_record(MSG_TABLE_NAME, &id_to_string(&id), RETHINK_CONN.clone())?
+            .map(|val| val.to_string());
+
+        Ok(Box::new(map))
+    }
+
     pub fn deploy<TIn, TOut>(input: TIn, image: ContractImage, key_pair: Option<&Keypair>)
-        -> SdkResult<ChangesStream<ContractCallState>>
+        -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>>
         where
             TIn: ABIInParameter + ABITypeSignature,
             TOut: ABIInParameter + ABITypeSignature {
@@ -104,24 +169,32 @@ impl Contract {
         // and body with parameters for contract special method - constructor.
 
         let msg_body = Self::create_message_body::<TIn, TOut>(input, key_pair);
-        let (account_id, msg) = Self::create_deploy_message(msg_body, image)?;
-        send_message(msg)
+        
+        let msg = Self::create_deploy_message(msg_body, image)?;
+        
+        Self::send_message(msg)
     }
 
-    pub fn call<TIn>(&self, input: TIn, pair: &Keypair)
-        -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>>
-        where TIn: ABIInParameter + ABITypeSignature {
+    pub fn deploy_json(_func: String, _input: String, _abi: String, image: ContractImage, _key_pair: Option<&Keypair>)
+        -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
-        unimplemented!()
+        let msg_body = Arc::new(CellData::default()); // TODO
+        
+        let msg = Self::create_deploy_message(msg_body, image)?;
+        
+        Self::send_message(msg)
+    }
 
-        // pack params into bag of cells via ABI
-        // message_id = message's hash
+    fn create_message(&self, msg_body: Arc<CellData>)
+        -> SdkResult<Message> {
 
-        // send message by Kafka
-        // (synchroniously - when responce will returned message will be in DB)
+        let mut msg_header = ExternalInboundMessageHeader::default();
+        msg_header.dst = MsgAddressInt::with_standart(None, -1, self.id.clone()).unwrap();
 
-        // subscribe on updates from DB and return updates stream
+        let mut msg = Message::with_ext_in_header(msg_header);
+        msg.body = Some(msg_body);        
 
+        Ok(msg)
     }
 
     fn create_message_body<TIn, TOut>(input: TIn, key_pair: Option<&Keypair>) -> Arc<CellData>
@@ -142,22 +215,22 @@ impl Contract {
     }
 
     fn create_deploy_message(msg_body: Arc<CellData>, image: ContractImage)
-        -> SdkResult<(AccountId, Message)> {
+        -> SdkResult<Message> {
 
         let state_init = image.state_init();
         let account_id = state_init.hash()?;
 
         let mut msg_header = ExternalInboundMessageHeader::default();
-        msg_header.dst = MsgAddressInt::with_standart(None, -1, account_id.clone()).unwrap();
+        msg_header.dst = MsgAddressInt::with_standart(None, -1, account_id).unwrap();
 
         let mut msg = Message::with_ext_in_header(msg_header);
         msg.body = Some(msg_body);
         msg.init = Some(state_init);
 
-        Ok((account_id, msg))
+        Ok(msg)
     }
 
-    fn send_message(db_connection: &Connection, kafka_produser: &FutureProducer, msg: Message)
+    fn send_message(msg: Message)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
         // Prepare
@@ -166,19 +239,19 @@ impl Contract {
         let mut data = Vec::new();
         let bag = BagOfCells::with_root(cells);
         let id = bag.get_repr_hash_by_index(0)
-            .ok_or(SdkErrorKind::InternalError("unexpected message's bag of cells (empty bag)".into())
+            .ok_or::<SdkError>(SdkErrorKind::InternalError("unexpected message's bag of cells (empty bag)".into())
                 .into())?;                
         bag.write_to(&mut data, false)?;
 
         // Send by Kafka
-        let record = FutureRecord::to(MESSAGES_TOPIC_NAME)
+        /*let record = FutureRecord::to(MESSAGES_TOPIC_NAME)
             .key(id.as_slice())
             .payload(&data);
 
         let id_ = id.clone();
         let chain = kafka_produser.send(record, 0)
             .into_stream()
-            .map(|_| {
+            .map(move |_| {
                 ContractCallState {
                     message_id: id_.clone(),
                     message_state: MessageState::Unknown,
@@ -190,10 +263,17 @@ impl Contract {
                 Box::leak(Self::subscribe_updates(db_connection, id.clone())?)
             );
 
-            Ok(Box::new(chain))
+        Ok(Box::new(chain))*/
+
+        {
+            let mut prod = KAFKA_PROD.lock().unwrap();
+            prod.send(&Record::from_key_value(&CONFIG.kafka_config.topic, &id.as_slice()[..], data))?;
+        }
+        
+        Self::subscribe_updates(RETHINK_CONN.clone(), id.clone())
     }
 
-    fn subscribe_updates(db_connection: &Connection, message_id: MessageId) ->
+    fn subscribe_updates(db_connection: Connection, message_id: MessageId) ->
         SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
         let r = Client::new();
@@ -229,3 +309,4 @@ impl Contract {
         Ok(Box::new(map))
     }
 }
+

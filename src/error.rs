@@ -1,6 +1,6 @@
 use std::io;
 use tvm::types::Exception;
-use rdkafka::error::RDKafkaError;
+//use rdkafka::error::RDKafkaError;
 
 error_chain! {
 
@@ -12,7 +12,8 @@ error_chain! {
         Io(io::Error);
         Tvm(Exception);
         DB(reql::errors::Error);
-        Kafka(RDKafkaError);
+        //Kafka(RDKafkaError);
+        Kafka(kafka::error::Error);
     }
 
     errors {
