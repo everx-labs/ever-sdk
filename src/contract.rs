@@ -1,19 +1,14 @@
 use crate::*;
 use std::io::{Read, Seek};
-use std::time::Duration;
 use std::sync::Arc;
-use std::net::SocketAddr;
-use std::sync::Mutex;
 use tvm::stack::CellData;
 use tvm::types::AccountId;
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
-use reql::{Config, Client, Connection, Run, Document};
+use reql::Document;
 use futures::stream::Stream;
 use abi_lib::types::{ABIInParameter, ABITypeSignature};
 use abi_lib::abi_call::ABICall;
 use ed25519_dalek::Keypair;
-//use rdkafka::producer::future_producer::{FutureProducer, FutureRecord};
-use kafka::producer::{Producer, Record, RequiredAcks};
 use ton_block::{
     Message,
     ExternalInboundMessageHeader,
@@ -22,41 +17,14 @@ use ton_block::{
     StateInit,
     GetRepresentationHash};
 
-const COGNFIG_FILE_NAME: &str = "config.json";
-const DB_NAME: &str = "blockchain";
 const MSG_TABLE_NAME: &str = "messages";
+const CONTRACTS_TABLE_NAME: &str = "contracts";
 const MSG_STATE_FIELD_NAME: &str = "state";
 const CONSTRUCTOR_METHOD_NAME: &str = "constructor";
 
 #[cfg(test)]
 #[path = "tests/test_contract.rs"]
 mod tests;
-
-lazy_static! {
-    static ref CONFIG: NodeClientConfig = {
-        let config_json = std::fs::read_to_string(COGNFIG_FILE_NAME).expect("Error reading config");
-        serde_json::from_str(&config_json).expect("Problem parsing config file")
-    };
-    
-    static ref RETHINK_CONN: Connection = {
-        let r = Client::new();
-        let mut conf = Config::default();
-        for s in CONFIG.db_config.servers.iter() {
-            conf.servers.push(s.parse::<SocketAddr>().expect("Error parsing address"));
-        }
-         r.connect(conf).unwrap()
-    };
-
-    static ref KAFKA_PROD: Mutex<Producer> = {
-        Mutex::new(
-            Producer::from_hosts(CONFIG.kafka_config.servers.clone())
-                .with_ack_timeout(Duration::from_millis(CONFIG.kafka_config.ack_timeout))
-                .with_required_acks(RequiredAcks::One)
-                .create()
-                .expect("Problem parsing config file")
-        )
-    };
-}
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct ContractCallState {
@@ -152,7 +120,7 @@ impl Contract {
 
     pub fn load_json(id: AccountId) -> SdkResult<Box<Stream<Item = String, Error = SdkError>>> {
 
-        let map = rethink_db::load_record(MSG_TABLE_NAME, &id_to_string(&id), RETHINK_CONN.clone())?
+        let map = db_helper::load_record(CONTRACTS_TABLE_NAME, &id_to_string(&id))?
             .map(|val| val.to_string());
 
         Ok(Box::new(map))
@@ -233,8 +201,6 @@ impl Contract {
     fn send_message(msg: Message)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
-        // Prepare
-
         let cells = msg.write_to_new_cell()?.into();
         let mut data = Vec::new();
         let bag = BagOfCells::with_root(cells);
@@ -243,47 +209,19 @@ impl Contract {
                 .into())?;                
         bag.write_to(&mut data, false)?;
 
-        // Send by Kafka
-        /*let record = FutureRecord::to(MESSAGES_TOPIC_NAME)
-            .key(id.as_slice())
-            .payload(&data);
+        kafka_helper::send_message(&id.as_slice()[..], &data)?;
 
-        let id_ = id.clone();
-        let chain = kafka_produser.send(record, 0)
-            .into_stream()
-            .map(move |_| {
-                ContractCallState {
-                    message_id: id_.clone(),
-                    message_state: MessageState::Unknown,
-                    transaction: None
-                }
-            }).map_err(|_| SdkErrorKind::Cancelled.into())
-            .chain(
-                // Subscribe rethink db updates
-                Box::leak(Self::subscribe_updates(db_connection, id.clone())?)
-            );
-
-        Ok(Box::new(chain))*/
-
-        {
-            let mut prod = KAFKA_PROD.lock().unwrap();
-            prod.send(&Record::from_key_value(&CONFIG.kafka_config.topic, &id.as_slice()[..], data))?;
-        }
-        
-        Self::subscribe_updates(RETHINK_CONN.clone(), id.clone())
+        Self::subscribe_updates(id.clone())
     }
 
-    fn subscribe_updates(db_connection: Connection, message_id: MessageId) ->
+    fn subscribe_updates(message_id: MessageId) ->
         SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
-        let r = Client::new();
-
-        let map = r.db(DB_NAME)
-            .table(MSG_TABLE_NAME)
-            .get_all(id_to_string(&message_id))
-            .get_field(MSG_STATE_FIELD_NAME)
-            .changes()
-            .run::<reql_types::Change<MessageState, MessageState>>(db_connection)?
+        let map = db_helper::subscribe_field_updates(
+                MSG_TABLE_NAME,
+                &id_to_string(&message_id),
+                MSG_STATE_FIELD_NAME
+            )?
             .map(move |change_opt| {
                 match change_opt {
                     Some(Document::Expected(state_change)) => {
@@ -304,7 +242,7 @@ impl Contract {
                         }
                     },
                 }
-            }).map_err(|err| SdkError::from(err));
+            });
 
         Ok(Box::new(map))
     }

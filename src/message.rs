@@ -1,5 +1,6 @@
 use crate::*;
 use tvm::types::UInt256;
+use futures::stream::Stream;
 
 pub type MessageId = UInt256;
 
@@ -19,28 +20,35 @@ pub fn id_to_string(id: &UInt256) -> String {
     hex::encode(id.as_slice())
 }
 
+const MSG_TABLE_NAME: &str = "messages";
+
 pub struct Message {
 
 }
-/*
+
+#[allow(dead_code)]
 impl Message {
-    pub fn load(id: MessageId) -> SdkResult<NodeResponce<Message>> {
+    fn load(_id: MessageId) -> SdkResult<Box<Stream<Item = Message, Error = SdkError>>> {
         unimplemented!()
     }
 
-    pub fn id(&self) -> MessageId {
+    pub fn load_json(id: MessageId) -> SdkResult<Box<Stream<Item = String, Error = SdkError>>> {
+
+        let map = db_helper::load_record(MSG_TABLE_NAME, &id_to_string(&id))?
+            .map(|val| val.to_string());
+
+        Ok(Box::new(map))
+    }
+
+    fn state(&self) -> MessageState {
         unimplemented!()
     }
 
-    pub fn state(&self) -> MessageState {
+    fn in_message_id(&self) -> UInt256 {
         unimplemented!()
     }
 
-    pub fn state_changes(&self) -> SdkResult<ChangesStream<MessageState>> {
+    fn out_messages_id(&self) -> &Iterator<Item = UInt256> {
         unimplemented!()
     }
-
-    pub fn body(&self) -> SliceData {
-        unimplemented!()
-    }
-}*/
+}

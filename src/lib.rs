@@ -36,4 +36,6 @@ pub use transaction::*;
 mod types;
 pub use types::*;
 
-mod rethink_db;
+mod db_helper;
+
+mod kafka_helper;

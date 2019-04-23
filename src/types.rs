@@ -7,7 +7,6 @@ pub struct RethinkConfig {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct KafkaConfig {
-    pub group_id: String,
     pub servers: Vec<String>,
     pub topic: String,
     pub ack_timeout: u64,
