@@ -18,7 +18,6 @@ error-chain = { version = "^0.12", default-features = false }
 hex = "0.3.2"
 ed25519-dalek = "^0.8"
 #rdkafka = "0.20.0"
-kafka = "0.7"
 tokio = "0.1.18"
 lazy_static = "1.1.0"
 
@@ -34,3 +33,7 @@ ton_block = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "d
 
 [features]
 ci_run = []
+
+[dependencies.kafka]
+version = "0.7"
+default-features = false

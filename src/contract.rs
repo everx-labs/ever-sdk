@@ -111,11 +111,12 @@ impl Contract {
         Self::subscribe_updates(msg_id)
     }
 
-    pub fn call_json(&self, func: String, input: String, abi: String, ç: Option<&Keypair>)
+    pub fn call_json(&self, func: String, input: String, abi: String, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
         // pack params into bag of cells via ABI
-        let msg_body = encode_function_call(abi, func, input, abi_lib_dynamic)?;
+        let msg_body = encode_function_call(abi, func, input, key_pair)
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
         
         let msg = Self::create_message(self, msg_body.into())?;
 
@@ -156,7 +157,8 @@ impl Contract {
     pub fn deploy_json(func: String, input: String, abi: String, image: ContractImage, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
-        let msg_body = encode_function_call(abi, func, input, abi_lib_dynamic)?;
+        let msg_body = encode_function_call(abi, func, input, key_pair)
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let msg = Self::create_deploy_message(msg_body.into(), image)?;
 
