@@ -3,6 +3,7 @@ use reql::{Config, Client, Run};
 use serde_json::Value;
 use reql_types::WriteStatus;
 use tvm::types::AccountId;
+use tvm::stack::{BuilderData, IBitstring};
 
 const DB_NAME: &str = "blockchain";
 
@@ -87,4 +88,25 @@ fn test_call_contract() {
 #[test]
 fn test_deploy_contract() {
     // TODO
+}
+
+#[test]
+fn test_send_empty_messages() {
+    let id = AccountId::from([11; 32]);
+    let contract = Contract { id };
+    
+    for i in 0..100 {
+        // fake body
+        let mut builder = BuilderData::default();
+        builder.append_u32(i).unwrap();
+        let msg_body = builder.into();
+        
+        let msg = contract.create_message(msg_body).unwrap();
+
+        // send message by Kafka
+        let msg_id = Contract::send_message(msg).unwrap();
+
+        println!("message {} sent!", hex::encode(msg_id.as_slice()));
+    }
+
 }
