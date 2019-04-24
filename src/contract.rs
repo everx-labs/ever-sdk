@@ -8,6 +8,7 @@ use reql::Document;
 use futures::stream::Stream;
 use abi_lib::types::{ABIInParameter, ABITypeSignature};
 use abi_lib::abi_call::ABICall;
+use abi_lib_dynamic::json_abi::encode_function_call;
 use ed25519_dalek::Keypair;
 use ton_block::{
     Message,
@@ -110,13 +111,13 @@ impl Contract {
         Self::subscribe_updates(msg_id)
     }
 
-    pub fn call_json(&self, _func: String, _input: String, _abi: String, _key_pair: Option<&Keypair>)
+    pub fn call_json(&self, func: String, input: String, abi: String, ç: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
         // pack params into bag of cells via ABI
-        let msg_body = Arc::new(CellData::default()); // TODO
+        let msg_body = encode_function_call(abi, func, input, abi_lib_dynamic)?;
         
-        let msg = Self::create_message(self, msg_body)?;
+        let msg = Self::create_message(self, msg_body.into())?;
 
         // send message by Kafka
         let msg_id = Self::send_message(msg)?;
@@ -152,12 +153,12 @@ impl Contract {
         Self::subscribe_updates(msg_id)
     }
 
-    pub fn deploy_json(_func: String, _input: String, _abi: String, image: ContractImage, _key_pair: Option<&Keypair>)
+    pub fn deploy_json(func: String, input: String, abi: String, image: ContractImage, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
-        let msg_body = Arc::new(CellData::default()); // TODO
+        let msg_body = encode_function_call(abi, func, input, abi_lib_dynamic)?;
 
-        let msg = Self::create_deploy_message(msg_body, image)?;
+        let msg = Self::create_deploy_message(msg_body.into(), image)?;
 
         let msg_id = Self::send_message(msg)?;
 

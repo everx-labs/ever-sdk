@@ -23,6 +23,8 @@ tokio = "0.1.18"
 lazy_static = "1.1.0"
 
 abi-lib =  { path = "abi/static" }
+abi-lib-dynamic = { git = "ssh://git@github.com/tonlabs/TON-SDK.git", branch = "feature-dynamic-abi", package = "abi-lib-dynamic" }
+
 tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "dev", package = "tvm" }
 ton_block = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "dev", package = "ton_block" }
 

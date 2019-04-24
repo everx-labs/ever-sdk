@@ -1,5 +1,6 @@
 use std::io;
 use tvm::types::Exception;
+use abi_lib_dynamic::ABIError;
 //use rdkafka::error::RDKafkaError;
 
 error_chain! {
@@ -14,6 +15,7 @@ error_chain! {
         DB(reql::errors::Error);
         //Kafka(RDKafkaError);
         Kafka(kafka::error::Error);
+        Abi(ABIError);
     }
 
     errors {
