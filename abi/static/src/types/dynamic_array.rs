@@ -24,7 +24,8 @@ pub fn prepend_dynamic_array<T: ABISerialized>(
     // if array doesn't fit into one cell, we put into separate chain
     // Note: Since length is one byte value any array longer than 255
     // must be written into a separate cell.
-    if array.len() > 255 || array_size > destination.bits_capacity() {
+
+    if array.len() > 255 || array_size > BuilderData::bits_capacity() {
         destination = put_array_to_separate_branch(destination, array);
     } else {
         // if array fit into cell data, put in into main chain
@@ -54,7 +55,7 @@ impl<T: ABISerialized> ABISerialized for Vec<T> {
         }
 
         // if array doesn't fit into cell it is put in separate chain and only 2 bits are put in main chain cell
-        if self.len() > 255 || result > BuilderData::new().bits_capacity() {
+        if self.len() > 255 || result > BuilderData::bits_capacity() {
             2
         } else {
             result + 2

@@ -27,8 +27,8 @@ pub fn put_array_to_separate_branch<T: ABISerialized>(
     // if currnet cell is filled with references (one reference is reserved for chaining cells) or data,
     // then we append reference to next cell
     destination = {
-        if destination.references_used() == destination.references_capacity()
-            || destination.bits_used() == destination.bits_capacity()
+        if destination.references_used() == BuilderData::references_capacity()
+            || destination.bits_used() == BuilderData::bits_capacity()
         {
             let mut next = BuilderData::new();
             next.append_reference(destination);

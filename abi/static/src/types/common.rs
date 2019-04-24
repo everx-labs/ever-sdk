@@ -37,7 +37,7 @@ pub fn prepend_data_to_chain(mut builder: BuilderData, data: Bitstring) -> Build
     let mut data = data;
 
     while data.length_in_bits() > 0 {
-        let remaining_bits = builder.bits_capacity() - builder.bits_used();
+        let remaining_bits = BuilderData::bits_capacity() - builder.bits_used();
 
         if remaining_bits > 0 {
             // data does not fit into cell - fill current cell and take remaining data
