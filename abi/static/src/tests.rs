@@ -353,7 +353,7 @@ fn put_data_into_chain(bilder: BuilderData, data: Bitstring) -> BuilderData {
     let mut current_builder = bilder;
 
     while size != 0 {
-        if current_builder.bits_capacity() == current_builder.bits_used() {
+        if BuilderData::bits_capacity() == current_builder.bits_used() {
             let mut temp_builder = BuilderData::new();
             temp_builder.append_reference(current_builder);
 
@@ -361,7 +361,7 @@ fn put_data_into_chain(bilder: BuilderData, data: Bitstring) -> BuilderData {
         }
 
         let adding_bits = std::cmp::min(
-            current_builder.bits_capacity() - current_builder.bits_used(),
+            BuilderData::bits_capacity() - current_builder.bits_used(),
             size,
         );
 
@@ -641,7 +641,7 @@ fn test_tuples_with_combined_types() {
 
         array_builder = put_data_into_chain(array_builder, array2_data.clone());
 
-        if chain_builder.references_capacity() == chain_builder.references_used() {
+        if BuilderData::references_capacity() == chain_builder.references_used() {
             chain_builder.append_data(&cell_data);
             cell_data.clear();
 

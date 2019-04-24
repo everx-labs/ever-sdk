@@ -18,7 +18,7 @@ pub fn prepend_fixed_array<T: ABIParameter>(
     }
 
     // if array doesn't fit into one cell, we put into separate chain
-    if array_size > destination.bits_capacity() {
+    if array_size > BuilderData::bits_capacity() {
         destination = put_array_to_separate_branch(destination, array);
     } else {
         // if array fit into cell data, put in into main chain
@@ -114,7 +114,7 @@ macro_rules! fixed_abi_array {
                 }
 
                 // if array doesn't fit into cell it is put in separate chain and only 2 bits are put in main chain cell
-                if result > tvm::stack::BuilderData::new().bits_capacity() {
+                if result > tvm::stack::BuilderData::bits_capacity() {
                     2
                 } else {
                     result + 2
