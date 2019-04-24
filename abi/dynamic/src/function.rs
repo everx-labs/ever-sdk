@@ -159,7 +159,7 @@ impl Function {
 		if self.signed {
 			// if all references are used in root cell then expand cells chain with new root
 			// to put signature cell reference there
-			if builder.references_capacity() == builder.references_used() {
+			if BuilderData::references_capacity() == builder.references_used() {
 				let mut new_builder = BuilderData::new();
 				new_builder.append_reference(builder);
 				builder = new_builder;
