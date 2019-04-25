@@ -11,7 +11,7 @@ lazy_static! {
         //serde_json::from_str(&config_json).expect("Problem parsing config file")
 
         KafkaConfig{
-            servers: vec!("127.0.0.1:9093".into()), // 172.18.0.13
+            servers: vec!("127.0.0.1:9092".into()), // 172.18.0.13
             topic: "requests".into(),
             ack_timeout: 3000,
         }

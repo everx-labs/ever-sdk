@@ -220,7 +220,7 @@ impl Contract {
         bag.write_to(&mut data, false)?;
 
         kafka_helper::send_message(&id.as_slice()[..], &data)?;
-
+        println!("msg sent");
         Ok(id.clone())
     }
 
