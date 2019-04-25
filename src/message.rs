@@ -1,6 +1,8 @@
 use crate::*;
 use tvm::types::UInt256;
 use futures::stream::Stream;
+use std::sync::Arc;
+use tvm::stack::CellData;
 
 pub type MessageId = UInt256;
 
@@ -44,11 +46,11 @@ impl Message {
         unimplemented!()
     }
 
-    fn in_message_id(&self) -> UInt256 {
+    fn id(&self) -> UInt256 {
         unimplemented!()
     }
 
-    fn out_messages_id(&self) -> &Iterator<Item = UInt256> {
+    fn body(&self) -> Arc<CellData> {
         unimplemented!()
     }
 }

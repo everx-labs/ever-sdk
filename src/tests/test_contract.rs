@@ -1,3 +1,4 @@
+use abi_lib_dynamic::json_abi::decode_function_responce;
 use super::*;
 use reql::{Config, Client, Run};
 use serde_json::Value;
@@ -76,18 +77,76 @@ fn test_subscribe_updates() {
 
 #[test]
 fn test_call_contract() {
-    //let id = AccountId::from([11; 32]);
+/*
+    let id = AccountId::from([11; 32]);
+    let func = "".to_string(); // TODO
+    let input = "".to_string(); // TODO
+    let abi = "".to_string(); // TODO
+    let key_bytes = std::fs::read("key-pair").unwrap();
+	let key_pair = Keypair::from_bytes(&key_bytes).unwrap();
 
-    //let contract = Contract::load(id).unwrap().wait().next();
+    let contract = Contract::load(id).unwrap().wait().next().unwrap().unwrap();
 
-    // TODO
+    // call needed method
+    let stream = contract.call_json(func, input, abi, Some(&key_pair)).unwrap();
+
+    // wait transaction id in message-status 
+    let mut tr_id = None;
+    for state in stream.wait() {
+        if let Err(e) = state {
+            panic!("error next state getting: {}", e);
+        }
+        if let Ok(s) = state {
+            println!("next state: {:?}", s);
+            if let Some(id) = s.transaction {
+                tr_id = Some(id);
+            }
+        }
+    }
+    
+    // OR 
+    // wait message will done and find transaction with the message
+
+    // load transaction object
+    
+
+    // take external outbound message from the transaction
+    let out_msg = tr.out_msg().find(|m| m. ) -> Option<Self::Item>
+
+    // take body from the message
+    let responce = out_msg.body().into();
+
+    // decode the body by ABI
+    let result = decode_function_responce(abi, func, responce).unwrap();
 
 
+    // this way it is need:
+    // 1. message status with transaction id or transaction object with in-message id
+    // 2. transaction object with out messages ids
+    // 3. message object with body
+*/
 }
 
 #[test]
 fn test_deploy_contract() {
     // TODO
+
+    // read image from file
+
+    // construct image
+
+    // call deploy method
+
+    // wait transaction id in message-status or 
+    // wait message will done and find transaction with the message
+
+    // load transaction object
+
+    // take external outbound message from the transaction
+
+    // take body from the message
+
+    // decode the body by ABI
 }
 
 #[test]
