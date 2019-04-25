@@ -29,7 +29,7 @@ fn test_subscribe_updates() {
     let insert_doc = r.db(DB_NAME)
         .table(MSG_TABLE_NAME)
         .update( // TODO insert with "update" flag
-            json!({ 
+            json!({
                 "id": id_to_string(&msg_id),
                 MSG_STATE_FIELD_NAME: MessageState::Queued
                 })
@@ -38,7 +38,6 @@ fn test_subscribe_updates() {
     println!("\n\n insert \n {:#?}", insert_doc);
 
     // subscribe changes
-    
     let changes_stream = Contract::subscribe_updates(msg_id.clone()).unwrap();
 
     // another thread - write changes into DB
@@ -76,19 +75,30 @@ fn test_subscribe_updates() {
 }
 
 #[test]
+#[ignore] 
 fn test_call_contract() {
-/*
+
     let id = AccountId::from([11; 32]);
     let func = "".to_string(); // TODO
     let input = "".to_string(); // TODO
     let abi = "".to_string(); // TODO
-    let key_bytes = std::fs::read("key-pair").unwrap();
-	let key_pair = Keypair::from_bytes(&key_bytes).unwrap();
+    
+    let key_bytes = std::fs::read("key-pair")
+        .expect("Problem reading keyfile");
+    
+    let key_pair = Keypair::from_bytes(&key_bytes)
+        .expect("Problem parsing keyfile");
 
-    let contract = Contract::load(id).unwrap().wait().next().unwrap().unwrap();
+    let contract = Contract::load(id)
+        .expect("Error calling load Contract")
+        .wait()
+        .next()
+        .expect("Error unwrap stream next while loading Contract")
+        .expect("Error unwrap result while loading Contract");
 
     // call needed method
-    let stream = contract.call_json(func, input, abi, Some(&key_pair)).unwrap();
+    let stream = contract.call_json(func.clone(), input, abi.clone(), Some(&key_pair))
+        .expect("Error calling contract method");
 
     // wait transaction id in message-status 
     let mut tr_id = None;
@@ -103,31 +113,46 @@ fn test_call_contract() {
             }
         }
     }
-    
+    let tr_id = tr_id.expect("Error: no transaction id");
+
     // OR 
     // wait message will done and find transaction with the message
 
     // load transaction object
-    
+    let tr = Transaction::load(tr_id)
+        .expect("Error calling load Transaction")
+        .wait()
+        .next()
+        .expect("Error unwrap stream next while loading Transaction")
+        .expect("Error unwrap result while loading Transaction");
 
     // take external outbound message from the transaction
-    let out_msg = tr.out_msg().find(|m| m. ) -> Option<Self::Item>
+    let out_msg = tr.load_out_messages()
+        .expect("Error calling load out messages")
+        .wait()
+        .find(|msg| msg.as_ref().expect("erro unwrap out message").msg_type() == MessageType::OutboundExternal)
+            .expect("erro unwrap out message 2")
+            .expect("erro unwrap out message 3");
 
     // take body from the message
     let responce = out_msg.body().into();
 
     // decode the body by ABI
-    let result = decode_function_responce(abi, func, responce).unwrap();
+    let result = decode_function_responce(abi, func, responce)
+        .expect("Error decoding result");
+
+    println!("result:/n{}", result);
 
 
     // this way it is need:
     // 1. message status with transaction id or transaction object with in-message id
     // 2. transaction object with out messages ids
     // 3. message object with body
-*/
+
 }
 
 #[test]
+#[ignore]
 fn test_deploy_contract() {
     // TODO
 
@@ -150,6 +175,7 @@ fn test_deploy_contract() {
 }
 
 #[test]
+#[ignore]
 fn test_send_empty_messages() {
     let id = AccountId::from([11; 32]);
     let contract = Contract { id };

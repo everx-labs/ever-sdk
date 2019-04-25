@@ -1,3 +1,5 @@
+#![recursion_limit="128"] // needs for error_chain
+
 extern crate reql;
 extern crate reql_types;
 extern crate futures;

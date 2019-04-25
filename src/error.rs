@@ -20,9 +20,9 @@ error_chain! {
         NotFound {
             description("Requested item not found")
         }
-        DataBaseProblem {
-            description("Database problem")
-        }        
+        NoData {
+            description("Requested item not found")
+        }
         InvalidOperation(msg: String) {
              description("Invalid operation"),
              display("Invalid operation: {}", msg)
