@@ -97,12 +97,12 @@ fn test_call_contract() {
         .expect("Error unwrap result while loading Contract");
 
     // call needed method
-    let stream = contract.call_json(func.clone(), input, abi.clone(), Some(&key_pair))
+    let changes_stream = contract.call_json(func.clone(), input, abi.clone(), Some(&key_pair))
         .expect("Error calling contract method");
 
     // wait transaction id in message-status 
     let mut tr_id = None;
-    for state in stream.wait() {
+    for state in changes_stream.wait() {
         if let Err(e) = state {
             panic!("error next state getting: {}", e);
         }
@@ -110,6 +110,9 @@ fn test_call_contract() {
             println!("next state: {:?}", s);
             if let Some(id) = s.transaction {
                 tr_id = Some(id);
+            }
+            if s.message_state == MessageState::Finalized {
+                break;
             }
         }
     }
