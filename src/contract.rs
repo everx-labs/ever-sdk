@@ -17,7 +17,9 @@ use ton_block::{
     Serializable,    
     StateInit,
     GetRepresentationHash,
-    Deserializable};
+    Deserializable,
+    Grams,
+    CurrencyCollection};
 
 const MSG_TABLE_NAME: &str = "messages";
 const CONTRACTS_TABLE_NAME: &str = "contracts";
@@ -30,11 +32,11 @@ mod tests;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct ContractCallState {
-    message_id: MessageId,
-    message_state: MessageState,
+    pub message_id: MessageId,
+    pub message_state: MessageState,
 
     // Exists with MessageState::Proposed and MessageState::Finalized
-    transaction: Option<TransactionId>
+    pub transaction: Option<TransactionId>
 }
 
 pub struct ContractImage {
@@ -182,6 +184,18 @@ impl Contract {
         let msg_id = Self::send_message(msg)?;
 
         Self::subscribe_updates(msg_id)
+    }
+
+    pub fn id(&self) -> AccountId {
+        self.id.clone()
+    }
+
+    pub fn balance_grams(&self) -> Grams {
+        unimplemented!()
+    }
+
+    pub fn balance(&self) -> CurrencyCollection {
+        unimplemented!()
     }
 
     pub fn deploy_json(func: String, input: String, abi: String, image: ContractImage, key_pair: Option<&Keypair>)

@@ -51,7 +51,7 @@ impl Transaction {
         unimplemented!()
     }
 
-    pub fn id(&self) -> MessageId {
+    pub fn id(&self) -> TransactionId {
         self.id.clone()
     }
 
