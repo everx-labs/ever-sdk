@@ -21,7 +21,7 @@ use ton_block::{
     Grams,
     CurrencyCollection};
 
-const MSG_TABLE_NAME: &str = "messages";
+const MSG_TABLE_NAME: &str = "messages_statuses";
 const CONTRACTS_TABLE_NAME: &str = "contracts";
 const MSG_STATE_FIELD_NAME: &str = "state";
 const CONSTRUCTOR_METHOD_NAME: &str = "constructor";
