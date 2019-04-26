@@ -1,13 +1,14 @@
 use crate::*;
 use std::io::{Read, Seek};
 use std::sync::Arc;
-use tvm::stack::CellData;
+use tvm::stack::{CellData, SliceData, BuilderData};
 use tvm::types::AccountId;
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use reql::Document;
 use futures::stream::Stream;
 use abi_lib::types::{ABIInParameter, ABITypeSignature};
 use abi_lib::abi_call::ABICall;
+use abi_lib_dynamic::json_abi::encode_function_call;
 use ed25519_dalek::Keypair;
 use ton_block::{
     Message,
@@ -15,7 +16,10 @@ use ton_block::{
     MsgAddressInt,
     Serializable,    
     StateInit,
-    GetRepresentationHash};
+    GetRepresentationHash,
+    Deserializable,
+    Grams,
+    CurrencyCollection};
 
 const MSG_TABLE_NAME: &str = "messages";
 const CONTRACTS_TABLE_NAME: &str = "contracts";
@@ -28,11 +32,11 @@ mod tests;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct ContractCallState {
-    message_id: MessageId,
-    message_state: MessageState,
+    pub message_id: MessageId,
+    pub message_state: MessageState,
 
     // Exists with MessageState::Proposed and MessageState::Finalized
-    transaction: Option<TransactionId>
+    pub transaction: Option<TransactionId>
 }
 
 pub struct ContractImage {
@@ -66,8 +70,37 @@ impl ContractImage {
             if library_roots.len() != 1 {
                 bail!(SdkErrorKind::InvalidData("Invalid library's bag of cells".into()));
             }
-            state_init.set_data(library_roots.remove(0));
+            state_init.set_library(library_roots.remove(0));
         }
+
+        Ok(Self{ state_init })
+    }
+
+    pub fn from_state_init_and_key<T>(state_init_bag: &mut T, key_pair: &Keypair) -> SdkResult<Self> 
+        where T: Read + Seek {
+
+        let mut si_roots = deserialize_cells_tree(state_init_bag)?;
+        if si_roots.len() != 1 {
+            bail!(SdkErrorKind::InvalidData("Invalid state init's bag of cells".into()));
+        }
+
+        let mut state_init : StateInit
+            = StateInit::construct_from(&mut SliceData::from(si_roots.remove(0)))?;
+
+        // state init's data's root cell contains zero-key
+        // need to change it by real public key
+        let mut new_data: BuilderData;
+        if let Some(ref data) = state_init.data {            
+            if data.data().len() != key_pair.public.as_bytes().len() {
+                bail!(SdkErrorKind::InvalidData("Invalid state init's bag of cells: invalid data size".into()));
+            }
+            new_data = BuilderData::from(&data); 
+            new_data.update_cell(|data, _, _, _, _| *data 
+                = Vec::from(&key_pair.public.as_bytes().clone()[..]), ());            
+        } else {
+            bail!(SdkErrorKind::InvalidData("Invalid state init's bag of cells: empty data".into()));
+        }
+        state_init.set_data(Arc::new(new_data.cell().clone()));
 
         Ok(Self{ state_init })
     }
@@ -110,13 +143,14 @@ impl Contract {
         Self::subscribe_updates(msg_id)
     }
 
-    pub fn call_json(&self, _func: String, _input: String, _abi: String, _key_pair: Option<&Keypair>)
+    pub fn call_json(&self, func: String, input: String, abi: String, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
         // pack params into bag of cells via ABI
-        let msg_body = Arc::new(CellData::default()); // TODO
+        let msg_body = encode_function_call(abi, func, input, key_pair)
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
         
-        let msg = Self::create_message(self, msg_body)?;
+        let msg = Self::create_message(self, msg_body.into())?;
 
         // send message by Kafka
         let msg_id = Self::send_message(msg)?;
@@ -152,12 +186,25 @@ impl Contract {
         Self::subscribe_updates(msg_id)
     }
 
-    pub fn deploy_json(_func: String, _input: String, _abi: String, image: ContractImage, _key_pair: Option<&Keypair>)
+    pub fn id(&self) -> AccountId {
+        self.id.clone()
+    }
+
+    pub fn balance_grams(&self) -> Grams {
+        unimplemented!()
+    }
+
+    pub fn balance(&self) -> CurrencyCollection {
+        unimplemented!()
+    }
+
+    pub fn deploy_json(func: String, input: String, abi: String, image: ContractImage, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
-        let msg_body = Arc::new(CellData::default()); // TODO
+        let msg_body = encode_function_call(abi, func, input, key_pair)
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
-        let msg = Self::create_deploy_message(msg_body, image)?;
+        let msg = Self::create_deploy_message(msg_body.into(), image)?;
 
         let msg_id = Self::send_message(msg)?;
 

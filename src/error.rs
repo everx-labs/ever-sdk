@@ -1,5 +1,6 @@
 use std::io;
 use tvm::types::Exception;
+use abi_lib_dynamic::ABIError;
 //use rdkafka::error::RDKafkaError;
 
 error_chain! {
@@ -12,7 +13,6 @@ error_chain! {
         Io(io::Error);
         Tvm(Exception);
         DB(reql::errors::Error);
-        //Kafka(RDKafkaError);
         Kafka(kafka::error::Error);
     }
 
@@ -20,9 +20,9 @@ error_chain! {
         NotFound {
             description("Requested item not found")
         }
-        DataBaseProblem {
-            description("Database problem")
-        }        
+        NoData {
+            description("Requested item not found")
+        }
         InvalidOperation(msg: String) {
              description("Invalid operation"),
              display("Invalid operation: {}", msg)
@@ -39,16 +39,13 @@ error_chain! {
             description("Internal error"),
             display("Internal error: {}", msg)
         }
-        WrongHash {
-            description("Wrong hash")
-        }
         Signature(inner: ed25519_dalek::SignatureError) {
             description("Signature error"),
             display("Signature error: {}", inner)
         }
-        Cancelled {
-            description("Oneshot canceled")
+        AbiError(inner: ABIError) {
+            description("ABI error"),
+            display("ABI error: {:?}", inner)
         }
     }
-
 }

@@ -1,3 +1,5 @@
+#![recursion_limit="128"] // needs for error_chain
+
 extern crate reql;
 extern crate reql_types;
 extern crate futures;
@@ -18,6 +20,7 @@ extern crate kafka;
 extern crate tokio;
 #[macro_use]
 extern crate lazy_static;
+extern crate abi_lib_dynamic;
 
 #[allow(deprecated)]
 #[macro_use]
