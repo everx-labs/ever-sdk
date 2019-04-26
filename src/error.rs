@@ -14,6 +14,7 @@ error_chain! {
         Tvm(Exception);
         DB(reql::errors::Error);
         Kafka(kafka::error::Error);
+        TonBlocks(ton_block::BlockError);
     }
 
     errors {
