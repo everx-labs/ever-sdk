@@ -42,3 +42,17 @@ pub use types::*;
 mod db_helper;
 
 mod kafka_helper;
+
+/// Init SKD. Connects to Kafka and Rethink DB.
+pub fn init(config: NodeClientConfig) -> SdkResult<()> {
+    kafka_helper::init(config.kafka_config)?;
+    db_helper::init(config.db_config)
+}
+pub fn init_json(config: String) -> SdkResult<()> {
+    init(serde_json::from_str(&config)
+        .map_err(|err| SdkErrorKind::InvalidArg(format!("{}", err)))?)
+}
+
+#[cfg(test)]
+#[path = "tests/test_lib.rs"]
+mod tests;

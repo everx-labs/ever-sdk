@@ -47,5 +47,8 @@ error_chain! {
             description("ABI error"),
             display("ABI error: {:?}", inner)
         }
+        NotInitialized {
+            description("SDK is not initialized")
+        }
     }
 }
