@@ -211,11 +211,60 @@ const SEND_TRANSACTION_PARAMS: &str = r#"
 	"value": 1234567890
 }"#;
 
-fn main() {
-    let contract = Contract::load(CONTRACT_ABI.as_bytes()).unwrap();
-	let function = contract.function("sendTransaction").unwrap();
+const SUBSCRIBE_CONTRACT_ABI: &str = r#"
+{
+    "ABI version": 0,
+    "functions": [{
+        "name": "constructor",
+        "inputs": [{"name": "wallet", "type": "bits256"}],
+        "outputs": []
+    }, {
+        "name": "subscribe",
+        "signed": true,
+        "inputs": [
+            {"name": "pubkey", "type": "bits256"},
+            {"name": "to",     "type": "bits256"},
+            {"name": "value",  "type": "duint"},
+            {"name": "period", "type": "duint"}
+        ],
+        "outputs": [{"name": "subscriptionHash", "type": "bits256"}]
+    }, {
+        "name": "cancel",
+        "signed": true,
+        "inputs": [{"name": "subscriptionHash", "type": "bits256"}],
+        "outputs": []
+    }, {
+        "name": "executeSubscription",
+        "inputs": [
+            {"name": "subscriptionHash","type": "bits256"},
+            {"name": "signature",       "type": "bits256"}
+        ],
+        "outputs": []
+    }, {
+        "name": "getSubscription",
+        "inputs": [{"name": "subscriptionHash","type": "bits256"}],
+        "outputs": [
+            {"name": "to", "type": "bits256"},
+            {"name": "amount", "type": "duint"},
+            {"name": "period", "type": "duint"},
+            {"name": "status", "type": "uint8"}
+        ]
+    }]
+}"#;
 
-    let v: Value = serde_json::from_str(SEND_TRANSACTION_PARAMS).unwrap();
+const SUBSCRIBE_PARAMS: &str = r#"
+{
+	"pubkey": "x0000000000000000000000000000000000000000000000000000000000000000",
+	"to": "x0000000000000000000000000000000000000000000000000000000000000000",
+	"value": 1234567890,
+	"period": 1234567890
+}"#;
+
+fn main() {
+    let contract = Contract::load(SUBSCRIBE_CONTRACT_ABI.as_bytes()).unwrap();
+	let function = contract.function("subscribe").unwrap();
+
+    let v: Value = serde_json::from_str(SUBSCRIBE_PARAMS).unwrap();
     let tokens = Tokenizer::tokenize_all(&function.input_params(), &v).unwrap();
 
 	let pair = Keypair::generate::<Sha512, _>(&mut OsRng::new().unwrap());
