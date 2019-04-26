@@ -40,7 +40,8 @@ pub struct ContractCallState {
 }
 
 pub struct ContractImage {
-    state_init: StateInit
+    state_init: StateInit,
+    id: AccountId
 }
 
 #[allow(dead_code)]
@@ -73,7 +74,9 @@ impl ContractImage {
             state_init.set_library(library_roots.remove(0));
         }
 
-        Ok(Self{ state_init })
+        let id = state_init.hash()?;
+
+        Ok(Self{ state_init, id })
     }
 
     pub fn from_state_init_and_key<T>(state_init_bag: &mut T, key_pair: &Keypair) -> SdkResult<Self> 
@@ -102,11 +105,17 @@ impl ContractImage {
         }
         state_init.set_data(Arc::new(new_data.cell().clone()));
 
-        Ok(Self{ state_init })
+        let id = state_init.hash()?;
+
+        Ok(Self{ state_init, id })
     }
 
     pub fn state_init(self) -> StateInit {
         self.state_init
+    }
+
+    pub fn account_id(&self) -> AccountId {
+        self.id.clone()
     }
 }
 
@@ -243,8 +252,8 @@ impl Contract {
     fn create_deploy_message(msg_body: Arc<CellData>, image: ContractImage)
         -> SdkResult<Message> {
 
+        let account_id = image.account_id();
         let state_init = image.state_init();
-        let account_id = state_init.hash()?;
 
         let mut msg_header = ExternalInboundMessageHeader::default();
         msg_header.dst = MsgAddressInt::with_standart(None, -1, account_id).unwrap();
