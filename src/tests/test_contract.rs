@@ -3,6 +3,9 @@ use super::*;
 use reql::{Config, Client, Run};
 use serde_json::Value;
 use reql_types::WriteStatus;
+use ed25519_dalek::Keypair;
+use rand::rngs::OsRng;
+use sha2::Sha512;
 use tvm::types::AccountId;
 use tvm::stack::{BuilderData, IBitstring};
 
@@ -162,22 +165,68 @@ connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_status
     another_thread.join().unwrap();
 }
 
-#[test]
-#[ignore] 
-fn test_call_contract() {
+const SUBSCRIBE_CONTRACT_ABI: &str = r#"
+{
+    "ABI version": 0,
+    "functions": [{
+        "name": "constructor",
+        "inputs": [{"name": "wallet", "type": "bits256"}],
+        "outputs": []
+    }, {
+        "name": "subscribe",
+        "signed": true,
+        "inputs": [
+            {"name": "pubkey", "type": "bits256"},
+            {"name": "to",     "type": "bits256"},
+            {"name": "value",  "type": "duint"},
+            {"name": "period", "type": "duint"}
+        ],
+        "outputs": [{"name": "subscriptionHash", "type": "bits256"}]
+    }, {
+        "name": "cancel",
+        "signed": true,
+        "inputs": [{"name": "subscriptionHash", "type": "bits256"}],
+        "outputs": []
+    }, {
+        "name": "executeSubscription",
+        "inputs": [
+            {"name": "subscriptionHash","type": "bits256"},
+            {"name": "signature",       "type": "bits256"}
+        ],
+        "outputs": []
+    }, {
+        "name": "getSubscription",
+        "inputs": [{"name": "subscriptionHash","type": "bits256"}],
+        "outputs": [
+            {"name": "to", "type": "bits256"},
+            {"name": "amount", "type": "duint"},
+            {"name": "period", "type": "duint"},
+            {"name": "status", "type": "uint8"}
+        ]
+    }]
+}"#;
 
-    let id = AccountId::from([11; 32]);
-    let func = "".to_string(); // TODO
-    let input = "".to_string(); // TODO
-    let abi = "".to_string(); // TODO
-    
-    let key_bytes = std::fs::read("key-pair")
-        .expect("Problem reading keyfile");
-    
-    let key_pair = Keypair::from_bytes(&key_bytes)
-        .expect("Problem parsing keyfile");
+const SUBSCRIBE_PARAMS: &str = r#"
+{
+	"pubkey": "x0000000000000000000000000000000000000000000000000000000000000001",
+	"to": "x0000000000000000000000000000000000000000000000000000000000000002",
+	"value": 1234567890,
+	"period": 1234567890
+}"#;
 
-    let contract = Contract::load(id)
+const CONSTRUCTOR_PARAMS: &str = r#"
+{
+	"wallet": "x0000000000000000000000000000000000000000000000000000000000000000"
+}"#;
+
+
+fn test_call_contract(address: AccountId, key_pair: &Keypair) {
+
+    let func = "subscribe".to_string();
+    let input = SUBSCRIBE_PARAMS.to_string();
+    let abi = SUBSCRIBE_CONTRACT_ABI.to_string();
+
+    let contract = Contract::load(address)
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -244,25 +293,52 @@ fn test_call_contract() {
 
 #[test]
 #[ignore]
-fn test_deploy_contract() {
-    // TODO
+fn test_deploy_and_call_contract() {
+    // read image from file and construct ContractImage
+    let mut state_init = std::fs::File::open("src/tests/contract.bag").expect("Unable to open contract code file");
 
-    // read image from file
+    let mut csprng = OsRng::new().unwrap();
+    let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
 
-    // construct image
+    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair).expect("Unable to parse contract code file");
+
+    let account_id = contract_image.account_id();
+
+    // before deploying contract need to transfer some funds to its address
+    println!("Account ID to take some grams {}", account_id);
 
     // call deploy method
+    let func = "constructor".to_string();
+    let input = CONSTRUCTOR_PARAMS.to_string();
+    let abi = SUBSCRIBE_CONTRACT_ABI.to_string();
+
+    let changes_stream = Contract::deploy_json(func, input, abi, contract_image, Some(&keypair))
+        .expect("Error deploying contract");
 
     // wait transaction id in message-status or 
     // wait message will done and find transaction with the message
 
-    // load transaction object
+    // wait transaction id in message-status 
+    let mut tr_id = None;
+    for state in changes_stream.wait() {
+        if let Err(e) = state {
+            panic!("error next state getting: {}", e);
+        }
+        if let Ok(s) = state {
+            println!("next state: {:?}", s);
+            if let Some(id) = s.transaction {
+                tr_id = Some(id);
+            }
+            if s.message_state == MessageState::Finalized {
+                break;
+            }
+        }
+    }
+    // contract constructor doesn't return any values so there are no output messages in transaction
+    // so just check deployment transaction created
+    let _tr_id = tr_id.expect("Error: no transaction id");
 
-    // take external outbound message from the transaction
-
-    // take body from the message
-
-    // decode the body by ABI
+    test_call_contract(account_id, &keypair);
 }
 
 #[test]
@@ -294,4 +370,16 @@ fn test_send_empty_messages() {
 
         println!("message {} sent!", hex::encode(msg_id.as_slice()));
     }
+}
+
+#[test]
+fn test_contract_image_from_file() {
+    let mut state_init = std::fs::File::open("src/tests/contract.bag").expect("Unable to open contract code file");
+
+    let mut csprng = OsRng::new().unwrap();
+    let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
+
+    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair).expect("Unable to parse contract code file");
+
+    println!("Account ID {}", contract_image.account_id());
 }

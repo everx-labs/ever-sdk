@@ -21,6 +21,8 @@ extern crate tokio;
 #[macro_use]
 extern crate lazy_static;
 extern crate abi_lib_dynamic;
+extern crate rand;
+extern crate sha2;
 
 #[allow(deprecated)]
 #[macro_use]
