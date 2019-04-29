@@ -124,9 +124,7 @@ connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_status
         std::thread::sleep(std::time::Duration::from_secs(1));
 
         for state in [MessageState::Processing, MessageState::Proposed, MessageState::Finalized].iter() {
-            let key = json!({
-                "id": id_to_string(&msg_id_),
-            }).to_string();
+            let key = format!("\"{}\"", id_to_string(&msg_id_));
             
             let doc = json!({
                 "message_id": id_to_string(&msg_id_),
