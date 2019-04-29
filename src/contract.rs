@@ -92,12 +92,18 @@ impl ContractImage {
         let mut new_data: BuilderData;
         if let Some(ref data) = state_init.data {            
             new_data = BuilderData::from(&data); 
-            new_data.update_cell(|data, _, _, _, _| *data 
-                = Vec::from(&key_pair.public.as_bytes().clone()[..]), ());            
+            new_data.update_cell(|data, _, _, _, _| {
+                let mut vec = Vec::from(&key_pair.public.as_bytes().clone()[..]); 
+                vec.push(0x80);
+                *data = vec;
+            }, ());
         } else {
             new_data = BuilderData::new();
-            new_data.update_cell(|data, _, _, _, _| *data 
-                = Vec::from(&key_pair.public.as_bytes().clone()[..]), ());
+            new_data.update_cell(|data, _, _, _, _| {
+                let mut vec = Vec::from(&key_pair.public.as_bytes().clone()[..]); 
+                vec.push(0x80);
+                *data = vec;
+            }, ());
         }
         state_init.set_data(Arc::new(new_data.cell().clone()));
 

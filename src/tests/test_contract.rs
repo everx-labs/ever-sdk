@@ -288,8 +288,23 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
 }
 
 #[test]
-#[ignore]
 fn test_deploy_and_call_contract() {
+   
+    let config_json = r#"
+        {
+            "db_config": {
+                "servers": ["142.93.137.28:28015"],
+                "db_name": "blockchain"
+            },
+            "kafka_config": {
+                "servers": ["builder.tonlabs.io:9092"],
+                "topic": "requests",
+                "ack_timeout": 1000
+            }
+        }"#;    
+    init_json(config_json.into()).unwrap();
+   
+   
     // read image from file and construct ContractImage
     let mut state_init = std::fs::File::open("src/tests/contract.tvc").expect("Unable to open contract code file");
 
@@ -302,6 +317,9 @@ fn test_deploy_and_call_contract() {
 
     // before deploying contract need to transfer some funds to its address
     println!("Account ID to take some grams {}", account_id);
+    let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), account_id.clone(), 100);
+    Contract::send_message(msg).unwrap();
+
 
     // call deploy method
     let func = "constructor".to_string();
@@ -332,7 +350,7 @@ fn test_deploy_and_call_contract() {
     // so just check deployment transaction created
     let _tr_id = tr_id.expect("Error: no transaction id");
 
-    test_call_contract(account_id, &keypair);
+    //test_call_contract(account_id, &keypair);
 }
 
 #[test]
@@ -342,7 +360,7 @@ fn test_send_empty_messages() {
     
     let config_json = r#"
     {
-        "servers": ["127.0.0.1:9092"],
+        "servers": ["builder.tonlabs.io:9092"],
         "topic": "kirill-test",
         "ack_timeout": 1000
     }"#;
