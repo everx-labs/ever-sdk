@@ -291,7 +291,7 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
 #[ignore]
 fn test_deploy_and_call_contract() {
     // read image from file and construct ContractImage
-    let mut state_init = std::fs::File::open("src/tests/contract.bag").expect("Unable to open contract code file");
+    let mut state_init = std::fs::File::open("src/tests/contract.tvc").expect("Unable to open contract code file");
 
     let mut csprng = OsRng::new().unwrap();
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
@@ -368,7 +368,7 @@ fn test_send_empty_messages() {
 
 #[test]
 fn test_contract_image_from_file() {
-    let mut state_init = std::fs::File::open("src/tests/contract.bag").expect("Unable to open contract code file");
+    let mut state_init = std::fs::File::open("src/tests/contract.tvc").expect("Unable to open contract code file");
 
     let mut csprng = OsRng::new().unwrap();
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);

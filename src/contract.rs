@@ -91,14 +91,13 @@ impl ContractImage {
         // need to change it by real public key
         let mut new_data: BuilderData;
         if let Some(ref data) = state_init.data {            
-            if data.data().len() != key_pair.public.as_bytes().len() {
-                bail!(SdkErrorKind::InvalidData("Invalid state init's bag of cells: invalid data size".into()));
-            }
             new_data = BuilderData::from(&data); 
             new_data.update_cell(|data, _, _, _, _| *data 
                 = Vec::from(&key_pair.public.as_bytes().clone()[..]), ());            
         } else {
-            bail!(SdkErrorKind::InvalidData("Invalid state init's bag of cells: empty data".into()));
+            new_data = BuilderData::new();
+            new_data.update_cell(|data, _, _, _, _| *data 
+                = Vec::from(&key_pair.public.as_bytes().clone()[..]), ());
         }
         state_init.set_data(Arc::new(new_data.cell().clone()));
 
