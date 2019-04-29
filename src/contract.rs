@@ -21,9 +21,9 @@ use ton_block::{
     Grams,
     CurrencyCollection};
 
-const MSG_TABLE_NAME: &str = "messages_statuses";
-const CONTRACTS_TABLE_NAME: &str = "contracts";
-const MSG_STATE_FIELD_NAME: &str = "state";
+const MSG_TABLE_NAME: &str = "messages";
+const CONTRACTS_TABLE_NAME: &str = "accounts";
+const MSG_STATE_FIELD_NAME: &str = "status";
 const CONSTRUCTOR_METHOD_NAME: &str = "constructor";
 
 #[cfg(test)]
@@ -34,9 +34,6 @@ mod tests;
 pub struct ContractCallState {
     pub message_id: MessageId,
     pub message_state: MessageState,
-
-    // Exists with MessageState::Proposed and MessageState::Finalized
-    pub transaction: Option<TransactionId>
 }
 
 pub struct ContractImage {
@@ -306,14 +303,12 @@ impl Contract {
                         ContractCallState {
                             message_id: message_id.clone(),
                             message_state: state_change.new_val.unwrap_or_else(|| MessageState::Unknown),
-                            transaction: None
                         }
                     },
                     _ => {
                         ContractCallState {
                             message_id: message_id.clone(),
                             message_state: MessageState::Unknown,
-                            transaction: None
                         }
                     },
                 }

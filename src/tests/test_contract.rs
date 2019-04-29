@@ -70,7 +70,6 @@ fn test_subscribe_updates() {
         let ccs = ContractCallState {
             message_id: msg_id.clone(),
             message_state: state.clone(),
-            transaction: None
         };
         
         assert_eq!(changes_stream.next().unwrap().unwrap(), ccs);
@@ -153,7 +152,6 @@ connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_status
         let ccs = ContractCallState {
             message_id: msg_id.clone(),
             message_state: state.clone(),
-            transaction: None
         };
 
         let json = serde_json::to_string(&ccs).unwrap();
@@ -245,10 +243,8 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
         }
         if let Ok(s) = state {
             println!("next state: {:?}", s);
-            if let Some(id) = s.transaction {
-                tr_id = Some(id);
-            }
             if s.message_state == MessageState::Finalized {
+                tr_id = Some(s.message_id.clone());
                 break;
             }
         }
@@ -326,10 +322,8 @@ fn test_deploy_and_call_contract() {
         }
         if let Ok(s) = state {
             println!("next state: {:?}", s);
-            if let Some(id) = s.transaction {
-                tr_id = Some(id);
-            }
             if s.message_state == MessageState::Finalized {
+                tr_id = Some(s.message_id.clone());
                 break;
             }
         }
@@ -414,10 +408,20 @@ fn test_deploy_empty_contract() {
     let mut data_cur = Cursor::new(data);
     
     let image = ContractImage::new(&mut data_cur, None, None).expect("Error creating ContractImage");
+    let acc_id = image.account_id();
+
 
 
     let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), image.account_id(), 1000);
     Contract::send_message(msg).unwrap();
+
+    Contract::load(acc_id)
+        .expect("Error calling load Contract")
+        .wait()
+        .next()
+        .expect("Error unwrap stream next while loading Contract")
+        .expect("Error unwrap result while loading Contract");
+    println!("Contract got!!!");
 
 
 
@@ -432,10 +436,8 @@ fn test_deploy_empty_contract() {
         }
         if let Ok(s) = state {
             println!("next state: {:?}", s);
-            if let Some(id) = s.transaction {
-                tr_id = Some(id);
-            }
             if s.message_state == MessageState::Finalized {
+                tr_id = Some(s.message_id.clone());
                 break;
             }
         }
@@ -443,6 +445,8 @@ fn test_deploy_empty_contract() {
     // contract constructor doesn't return any values so there are no output messages in transaction
     // so just check deployment transaction created
     let _tr_id = tr_id.expect("Error: no transaction id");
+    println!("Transaction got!!!");
+
 }
 
 
