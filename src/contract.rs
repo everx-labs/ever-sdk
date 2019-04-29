@@ -188,7 +188,7 @@ impl Contract {
 
         let msg_body = Self::create_message_body::<TIn, TOut>(input, key_pair);
 
-        let msg = Self::create_deploy_message(msg_body, image)?;
+        let msg = Self::create_deploy_message(Some(msg_body), image)?;
 
         let msg_id = Self::send_message(msg)?;
 
@@ -213,7 +213,16 @@ impl Contract {
         let msg_body = encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
-        let msg = Self::create_deploy_message(msg_body.into(), image)?;
+        let msg = Self::create_deploy_message(Some(msg_body.into()), image)?;
+
+        let msg_id = Self::send_message(msg)?;
+
+        Self::subscribe_updates(msg_id)
+    }
+
+    pub fn deploy_no_constructor(image: ContractImage)
+        -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
+        let msg = Self::create_deploy_message(None, image)?;
 
         let msg_id = Self::send_message(msg)?;
 
@@ -249,7 +258,7 @@ impl Contract {
         }
     }
 
-    fn create_deploy_message(msg_body: Arc<CellData>, image: ContractImage)
+    fn create_deploy_message(msg_body: Option<Arc<CellData>>, image: ContractImage)
         -> SdkResult<Message> {
 
         let account_id = image.account_id();
@@ -259,7 +268,7 @@ impl Contract {
         msg_header.dst = MsgAddressInt::with_standart(None, -1, account_id).unwrap();
 
         let mut msg = Message::with_ext_in_header(msg_header);
-        msg.body = Some(msg_body);
+        msg.body = msg_body;
         msg.init = Some(state_init);
 
         Ok(msg)

@@ -1,10 +1,12 @@
 use abi_lib_dynamic::json_abi::decode_function_responce;
 use super::*;
+use std::io::{Cursor};
 use reql::{Config, Client, Run};
 use serde_json::Value;
 use reql_types::WriteStatus;
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
+use rand::RngCore;
 use sha2::Sha512;
 use tvm::types::AccountId;
 use tvm::stack::{BuilderData, IBitstring};
@@ -380,4 +382,59 @@ fn test_contract_image_from_file() {
     let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair).expect("Unable to parse contract code file");
 
     println!("Account ID {}", contract_image.account_id());
+}
+
+#[test]
+fn test_deploy_empty_contract() {
+    // init SDK
+    let config_json = r#"
+        {
+            "db_config": {
+                "servers": ["builder.tonlabs.io:28015"],
+                "db_name": "blockchain"
+            },
+            "kafka_config": {
+                "servers": ["builder.tonlabs.io:9092"],
+                "topic": "requests",
+                "ack_timeout": 1000
+            }
+        }"#;    
+    init_json(config_json.into()).unwrap();
+
+
+    let mut csprng = OsRng::new().unwrap();
+
+    let mut code_builder = BuilderData::new();
+    code_builder.append_u32(csprng.next_u32()).expect("Unable to add u32");
+    let code_slice = SliceData::from(code_builder);
+
+    let mut data = Vec::new();
+    BagOfCells::with_root(code_slice.clone()).write_to(&mut data, false).expect("Error serializing BOC");
+                                        
+    let mut data_cur = Cursor::new(data);
+    
+    let image = ContractImage::new(&mut data_cur, None, None).expect("Error creating ContractImage");
+
+    let changes_stream = Contract::deploy_no_constructor(image)
+        .expect("Error deploying contract");
+
+        // wait transaction id in message-status 
+    let mut tr_id = None;
+    for state in changes_stream.wait() {
+        if let Err(e) = state {
+            panic!("error next state getting: {}", e);
+        }
+        if let Ok(s) = state {
+            println!("next state: {:?}", s);
+            if let Some(id) = s.transaction {
+                tr_id = Some(id);
+            }
+            if s.message_state == MessageState::Finalized {
+                break;
+            }
+        }
+    }
+    // contract constructor doesn't return any values so there are no output messages in transaction
+    // so just check deployment transaction created
+    let _tr_id = tr_id.expect("Error: no transaction id");
 }
