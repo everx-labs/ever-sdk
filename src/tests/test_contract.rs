@@ -297,7 +297,7 @@ fn test_deploy_and_call_contract() {
                 "db_name": "blockchain"
             },
             "kafka_config": {
-                "servers": ["builder.tonlabs.io:9092"],
+                "servers": ["142.93.137.28:9092"],
                 "topic": "requests",
                 "ack_timeout": 1000
             }
