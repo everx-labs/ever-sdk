@@ -390,7 +390,7 @@ fn test_deploy_empty_contract() {
     let config_json = r#"
         {
             "db_config": {
-                "servers": ["builder.tonlabs.io:28015"],
+                "servers": ["142.93.137.28:28015"],
                 "db_name": "blockchain"
             },
             "kafka_config": {
@@ -415,6 +415,12 @@ fn test_deploy_empty_contract() {
     
     let image = ContractImage::new(&mut data_cur, None, None).expect("Error creating ContractImage");
 
+
+    let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), image.account_id(), 1000);
+    Contract::send_message(msg).unwrap();
+
+
+
     let changes_stream = Contract::deploy_no_constructor(image)
         .expect("Error deploying contract");
 
@@ -437,4 +443,36 @@ fn test_deploy_empty_contract() {
     // contract constructor doesn't return any values so there are no output messages in transaction
     // so just check deployment transaction created
     let _tr_id = tr_id.expect("Error: no transaction id");
+}
+
+
+use rand::{thread_rng, Rng};
+use ton_block::{Message, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
+    ExternalInboundMessageHeader, CurrencyCollection, Serializable};
+use tvm::bitstring::Bitstring;
+
+// Create message "from wallet" to transfer some funds 
+// from one account to another
+fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, value: u128) -> Message {
+    
+    let mut rng = thread_rng();    
+    let mut msg = Message::with_ext_in_header(
+        ExternalInboundMessageHeader {
+            src: MsgAddressExt::with_extern(&Bitstring::from(rng.gen::<u64>())).unwrap(),
+            dst: MsgAddressInt::with_standart(None, 0, src.clone()).unwrap(),
+            import_fee: Grams::default(),
+        }
+    );
+
+    let mut balance = CurrencyCollection::default();
+    balance.grams = Grams(value.into());
+
+    let int_msg_hdr = InternalMessageHeader::with_addresses(
+            MsgAddressInt::with_standart(None, 0, src).unwrap(),
+            MsgAddressInt::with_standart(None, 0, dst).unwrap(),
+            balance);
+
+    msg.body = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
+
+    msg
 }
