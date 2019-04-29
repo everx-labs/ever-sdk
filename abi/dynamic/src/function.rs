@@ -52,8 +52,8 @@ impl Function {
 			.collect()
 	}
 
-	/// Computes function ID for contract function
-    pub fn get_function_id(&self) -> [u8; 4] {
+	/// Retruns ABI function signature
+	pub fn get_function_signature(&self) -> String {
 		let input_types = self.inputs.iter()
 			.map(|param| param.kind.type_signature())
 			.collect::<Vec<String>>()
@@ -64,9 +64,14 @@ impl Function {
 			.collect::<Vec<String>>()
 			.join(",");
 
-		let signature = format!("{}({})({})", self.name, input_types, output_types);
+		format!("{}({})({})", self.name, input_types, output_types)
+	}
 
-        println!("{}", signature);
+	/// Computes function ID for contract function
+    pub fn get_function_id(&self) -> [u8; 4] {
+		let signature = self.get_function_signature();
+
+        //println!("{}", signature);
 
         // Sha256 hash of signature
         let mut hasher = Sha256::new();
@@ -77,7 +82,7 @@ impl Function {
 
         let mut bytes = [0; 4];
         bytes.copy_from_slice(&function_hash[..4]);
-        println!("{:X?}", bytes);
+        //println!("{:X?}", bytes);
         bytes
     }
 

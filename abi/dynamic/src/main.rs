@@ -17,8 +17,95 @@ use ed25519_dalek::*;
 use rand::rngs::OsRng;
 use pretty_assertions::assert_eq;
 
-const CONTRACT_ABI: &str = r#"
+const CREATE_LIMIT_PARAMS: &str = r#"
 {
+	"type": 18,
+	"value": "1234567890",
+	"meta": "x"
+}"#;
+
+const SEND_TRANSACTION_PARAMS: &str = r#"
+{
+	"recipient": "x0000000000000000000000000000000000000000000000000000000000000000",
+	"value": 1234567890
+}"#;
+
+const SUBSCRIBE_CONTRACT_ABI: &str = r#"
+{
+    "ABI version": 0,
+    "functions": [{
+        "name": "constructor",
+        "inputs": [{"name": "wallet", "type": "bits256"}],
+        "outputs": []
+    }, {
+        "name": "subscribe",
+        "signed": true,
+        "inputs": [
+            {"name": "pubkey", "type": "bits256"},
+            {"name": "to",     "type": "bits256"},
+            {"name": "value",  "type": "duint"},
+            {"name": "period", "type": "duint"}
+        ],
+        "outputs": [{"name": "subscriptionHash", "type": "bits256"}]
+    }, {
+        "name": "cancel",
+        "signed": true,
+        "inputs": [{"name": "subscriptionHash", "type": "bits256"}],
+        "outputs": []
+    }, {
+        "name": "executeSubscription",
+        "inputs": [
+            {"name": "subscriptionHash","type": "bits256"},
+            {"name": "signature",       "type": "bits256"}
+        ],
+        "outputs": []
+    }, {
+        "name": "getSubscription",
+        "inputs": [{"name": "subscriptionHash","type": "bits256"}],
+        "outputs": [
+            {"name": "to", "type": "bits256"},
+            {"name": "amount", "type": "duint"},
+            {"name": "period", "type": "duint"},
+            {"name": "status", "type": "uint8"}
+        ]
+    }]
+}"#;
+
+const SUBSCRIBE_PARAMS: &str = r#"
+{
+	"pubkey": "x0000000000000000000000000000000000000000000000000000000000000000",
+	"to": "x0000000000000000000000000000000000000000000000000000000000000000",
+	"value": 1234567890,
+	"period": 1234567890
+}"#;
+
+const PIGGY_BANK_CONTRACT_ABI: &str = r#"
+{
+    "ABI version": 0,
+    "functions": [{
+        "name": "transfer",
+        "signed": true,
+        "inputs": [{"name": "to", "type": "bits256"}],
+        "outputs": []
+    }, {
+        "name": "getTargetAmount",
+        "inputs": [],
+        "outputs": [{"name": "amount", "type": "uint64"}]
+    }, {
+        "name": "getGoal",
+        "inputs": [],
+        "outputs": [{"name": "goal", "type": "uint8[]"}]
+    }, {
+        "name": "constructor",
+        "inputs": [
+				    {"name": "amount","type": "uint64"},
+            {"name": "goal","type": "uint8[]"}
+        ],
+        "outputs": []
+    }]
+}"#;
+
+const WALLET_ABI: &str = r#"{
 	"ABI version" : 0,
 
 	"functions" :	[
@@ -62,7 +149,7 @@ const CONTRACT_ABI: &str = r#"
 	            }
 					],
 	        "name": "createLimit",
-			"signed": true,
+					"signed": true,
 	        "outputs": [
 							{
 	                "name": "limitId",
@@ -139,15 +226,15 @@ const CONTRACT_ABI: &str = r#"
 					                "name": "meta",
 					                "type": "bitstring"
 					            }
-				]
-				},
-				{
+									]
+							},
+							{
 	                "name": "error",
 	                "type": "int8"
 	            }
 	        ]
 	    },
-		{
+			{
 	        "inputs": [],
 	        "name": "getLimits",
 	        "outputs": [
@@ -179,7 +266,7 @@ const CONTRACT_ABI: &str = r#"
 					            }
 									]
 							},
-				{
+							{
 	                "name": "error",
 	                "type": "int8"
 	            }
@@ -194,74 +281,46 @@ const CONTRACT_ABI: &str = r#"
 	                "type": "uint64"
 	            }
 	        ]
+	    },
+			{
+	        "inputs": [],
+	        "name": "constructor",
+	        "outputs": []							
+	    },
+			{
+	        "inputs": [{"name": "address", "type": "bits256" }],
+	        "name": "setSubscriptionAccount",
+					"signed": true,
+	        "outputs": []							
+	    },
+			{
+	        "inputs": [],
+	        "name": "getSubscriptionAccount",
+	        "outputs": [{"name": "address", "type": "bits256" }]							
 	    }
 	]
-}"#;
+}
+"#;
 
-const CREATE_LIMIT_PARAMS: &str = r#"
-{
-	"type": 18,
-	"value": "1234567890",
-	"meta": "x"
-}"#;
+fn print_function_singnatures(abi: &str) {
+	let contract = Contract::load(abi.as_bytes()).unwrap();
 
-const SEND_TRANSACTION_PARAMS: &str = r#"
-{
-	"recipient": "x0000000000000000000000000000000000000000000000000000000000000000",
-	"value": 1234567890
-}"#;
+	let functions = contract.functions();
 
-const SUBSCRIBE_CONTRACT_ABI: &str = r#"
-{
-    "ABI version": 0,
-    "functions": [{
-        "name": "constructor",
-        "inputs": [{"name": "wallet", "type": "bits256"}],
-        "outputs": []
-    }, {
-        "name": "subscribe",
-        "signed": true,
-        "inputs": [
-            {"name": "pubkey", "type": "bits256"},
-            {"name": "to",     "type": "bits256"},
-            {"name": "value",  "type": "duint"},
-            {"name": "period", "type": "duint"}
-        ],
-        "outputs": [{"name": "subscriptionHash", "type": "bits256"}]
-    }, {
-        "name": "cancel",
-        "signed": true,
-        "inputs": [{"name": "subscriptionHash", "type": "bits256"}],
-        "outputs": []
-    }, {
-        "name": "executeSubscription",
-        "inputs": [
-            {"name": "subscriptionHash","type": "bits256"},
-            {"name": "signature",       "type": "bits256"}
-        ],
-        "outputs": []
-    }, {
-        "name": "getSubscription",
-        "inputs": [{"name": "subscriptionHash","type": "bits256"}],
-        "outputs": [
-            {"name": "to", "type": "bits256"},
-            {"name": "amount", "type": "duint"},
-            {"name": "period", "type": "duint"},
-            {"name": "status", "type": "uint8"}
-        ]
-    }]
-}"#;
+	for function in functions {
+		//println!("{}", function.name);
+		println!("{}", function.get_function_signature());
+		let id = u32::from_be_bytes(function.get_function_id());
+		println!("{:X?}\n", id);
+	}
+}
 
-const SUBSCRIBE_PARAMS: &str = r#"
-{
-	"pubkey": "x0000000000000000000000000000000000000000000000000000000000000000",
-	"to": "x0000000000000000000000000000000000000000000000000000000000000000",
-	"value": 1234567890,
-	"period": 1234567890
-}"#;
 
 fn main() {
     let contract = Contract::load(SUBSCRIBE_CONTRACT_ABI.as_bytes()).unwrap();
+
+	print_function_singnatures(PIGGY_BANK_CONTRACT_ABI);
+
 	let function = contract.function("subscribe").unwrap();
 
     let v: Value = serde_json::from_str(SUBSCRIBE_PARAMS).unwrap();
