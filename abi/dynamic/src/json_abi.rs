@@ -23,5 +23,5 @@ pub fn decode_function_responce(abi: String, function: String, responce: SliceDa
 
     let tokens = function.decode_output(responce).map_err(|err| ABIError::DeserializationError(err))?;
 
-    Detokenizer::detokenize(&function.input_params(), &tokens).map_err(|err| ABIError::DetokenizeError(err))
+    Detokenizer::detokenize(&function.output_params(), &tokens).map_err(|err| ABIError::DetokenizeError(err))
 }
