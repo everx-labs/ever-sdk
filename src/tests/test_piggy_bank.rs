@@ -411,7 +411,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
     let account_id = contract_image.account_id();
 
     // before deploying contract need to transfer some funds to its address
-    println!("Account ID to take some grams {}", account_id);
+    println!("Account ID to take some grams {}\n", account_id);
     let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), account_id.clone(), 100);
     Contract::send_message(msg).unwrap();
 
@@ -450,7 +450,7 @@ fn full_test_piggy_bank() {
 	// connect to node
     init_node_connection();
 
-	println!("Connection to node established");
+	println!("Connection to node established\n");
 
 	// generate key pair
     let mut csprng = OsRng::new().unwrap();
@@ -459,19 +459,19 @@ fn full_test_piggy_bank() {
 	// deploy wallet
     let wallet_address = deploy_contract_and_wait("Wallet.tvc", WALLET_ABI, "{}", &keypair);
 
-	println!("Wallet contract deployed. Account address {}", wallet_address);
+	println!("Wallet contract deployed. Account address {}\n", wallet_address);
 
 	// deploy piggy bank
 	let piggy_bank_address = deploy_contract_and_wait("Piggybank.tvc", PIGGY_BANK_CONTRACT_ABI, PIGGY_BANK_CONSTRUCTOR_PARAMS, &keypair);
 
-	println!("Piggy bank contract deployed. Account address {}", piggy_bank_address);
+	println!("Piggy bank contract deployed. Account address {}\n", piggy_bank_address);
 
 	// deploy subscription
 	let wallet_address_str = hex::encode(wallet_address.as_slice());
 	let subscription_constructor_params = format!("{{ \"wallet\" : \"x{}\" }}", wallet_address_str);
 	let subscripition_address = deploy_contract_and_wait("Subscription.tvc", SUBSCRIBE_CONTRACT_ABI, &subscription_constructor_params, &keypair);
 
-	println!("Subscription contract deployed. Account address {}", subscripition_address);
+	println!("Subscription contract deployed. Account address {}\n", subscripition_address);
 
 	// call setSubscriptionAccount in wallet
 	let subscripition_address_str = hex::encode(subscripition_address.as_slice());
@@ -479,7 +479,7 @@ fn full_test_piggy_bank() {
 
 	let _set_subscription_answer = call_contract(wallet_address, "setSubscriptionAccount", &set_subscription_params, WALLET_ABI, &keypair);
 
-	println!("Subscription address added to wallet.");
+	println!("Subscription address added to wallet.\n");
 
 	// call subscribe in subscription
 	let piggy_bank_address_str = hex::encode(piggy_bank_address.as_slice());
@@ -488,7 +488,7 @@ fn full_test_piggy_bank() {
 
 	let _subscribe_answer = call_contract_and_wait(subscripition_address, "subscribe", &subscribe_params, SUBSCRIBE_CONTRACT_ABI, &keypair);
 
-	println!("New subscription added.");
+	println!("New subscription added.\n");
 }
 
 
