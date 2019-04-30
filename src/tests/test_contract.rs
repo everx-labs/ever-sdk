@@ -266,7 +266,7 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
     let out_msg = tr.load_out_messages()
         .expect("Error calling load out messages")
         .wait()
-        .find(|msg| msg.as_ref().expect("erro unwrap out message").msg_type() == MessageType::OutboundExternal)
+        .find(|msg| msg.as_ref().expect("erro unwrap out message").msg_type() == MessageType::ExternalOutbound)
             .expect("erro unwrap out message 2")
             .expect("erro unwrap out message 3");
 
@@ -350,7 +350,7 @@ fn test_deploy_and_call_contract() {
     // so just check deployment transaction created
     let _tr_id = tr_id.expect("Error: no transaction id");
 
-    //test_call_contract(account_id, &keypair);
+    test_call_contract(account_id, &keypair);
 }
 
 #[test]

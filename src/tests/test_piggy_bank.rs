@@ -364,7 +364,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
     let out_msg = tr.load_out_messages()
         .expect("Error calling load out messages")
         .wait()
-        .find(|msg| msg.as_ref().expect("erro unwrap out message").msg_type() == MessageType::OutboundExternal)
+        .find(|msg| msg.as_ref().expect("erro unwrap out message").msg_type() == MessageType::ExternalOutbound)
             .expect("erro unwrap out message 2")
             .expect("erro unwrap out message 3");
 
