@@ -276,7 +276,7 @@ impl Contract {
         Ok(msg)
     }
 
-    fn send_message(msg: Message) -> SdkResult<MessageId> {
+    pub fn send_message(msg: Message) -> SdkResult<MessageId> {
 
         let cells = msg.write_to_new_cell()?.into();
         let mut data = Vec::new();
