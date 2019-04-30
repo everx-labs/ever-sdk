@@ -356,7 +356,7 @@ fn test_deploy_and_call_contract() {
 #[test]
 fn test_send_empty_messages() {
     let id = AccountId::from([11; 32]);
-    let contract = Contract { id };
+    let contract = Contract { id, balance_grams: 0 };
     
     let config_json = r#"
     {
