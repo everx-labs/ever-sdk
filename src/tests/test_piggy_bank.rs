@@ -1,15 +1,9 @@
 use abi_lib_dynamic::json_abi::decode_function_responce;
 use super::*;
-use std::io::{Cursor};
-use reql::{Config, Client, Run};
-use serde_json::Value;
-use reql_types::WriteStatus;
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
-use rand::RngCore;
 use sha2::Sha512;
 use tvm::types::AccountId;
-use tvm::stack::{BuilderData, IBitstring};
 use futures::Stream;
 
 
@@ -52,14 +46,6 @@ const SUBSCRIBE_CONTRACT_ABI: &str = r#"
             {"name": "status", "type": "uint8"}
         ]
     }]
-}"#;
-
-const SUBSCRIBE_PARAMS: &str = r#"
-{
-	"pubkey": "x0000000000000000000000000000000000000000000000000000000000000000",
-	"to": "x0000000000000000000000000000000000000000000000000000000000000000",
-	"value": 1234567890,
-	"period": 1234567890
 }"#;
 
 const PIGGY_BANK_CONTRACT_ABI: &str = r#"
@@ -443,14 +429,14 @@ fn full_test_piggy_bank() {
 	let subscripition_address_str = hex::encode(subscripition_address.as_slice());
 	let set_subscription_params = format!("{{ \"address\" : \"x{}\" }}", subscripition_address_str);
 
-	let set_subscription_answer = call_contract_and_wait(wallet_address, "setSubscriptionAccount", &set_subscription_params, WALLET_ABI, &keypair);
+	let _set_subscription_answer = call_contract_and_wait(wallet_address, "setSubscriptionAccount", &set_subscription_params, WALLET_ABI, &keypair);
 
 	// call subscribe in subscription
 	let piggy_bank_address_str = hex::encode(piggy_bank_address.as_slice());
 	let pubkey_str = hex::encode(keypair.public.as_bytes());
 	let subscribe_params = format!("{{ \"pubkey\" : \"x{}\", \"to\": \"x{}\", \"value\" : 123, \"period\" : 456 }}", pubkey_str, piggy_bank_address_str);
 
-	let subscribe_answer = call_contract_and_wait(subscripition_address, "subscribe", &subscribe_params, SUBSCRIBE_CONTRACT_ABI, &keypair);
+	let _subscribe_answer = call_contract_and_wait(subscripition_address, "subscribe", &subscribe_params, SUBSCRIBE_CONTRACT_ABI, &keypair);
 }
 
 
