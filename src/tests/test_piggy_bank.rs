@@ -375,7 +375,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
     let result = decode_function_responce(abi.to_owned(), func.to_owned(), responce)
         .expect("Error decoding result");
 
-    println!("result:/n{}", result);
+    println!("Contract call result: {}\n", result);
 
 	result
 
