@@ -123,7 +123,7 @@ impl ContractImage {
 
 pub struct Contract {
     id: AccountId,
-
+    balance_grams: u64
 }
 
 #[allow(dead_code)]
@@ -131,7 +131,7 @@ impl Contract {
 
     pub fn load(id: AccountId) -> SdkResult<Box<Stream<Item = Contract, Error = SdkError>>> {
         let map = db_helper::load_record(CONTRACTS_TABLE_NAME, &id_to_string(&id))?
-            .map(move |_val| Contract { id: id.clone() }); // TODO parse json
+            .map(move |val| Contract { id: id.clone(), balance_grams: val["grams"].as_u64().unwrap()}); // TODO parse json
 
         Ok(Box::new(map))
     }
@@ -202,7 +202,7 @@ impl Contract {
     }
 
     pub fn balance_grams(&self) -> Grams {
-        unimplemented!()
+        self.balance_grams.into()
     }
 
     pub fn balance(&self) -> CurrencyCollection {
