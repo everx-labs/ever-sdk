@@ -58,3 +58,7 @@ pub fn init_json(config: String) -> SdkResult<()> {
 #[cfg(test)]
 #[path = "tests/test_lib.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "tests/test_piggy_bank.rs"]
+mod test_piggy_bank;
