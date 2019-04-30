@@ -20,6 +20,7 @@ ed25519-dalek = "^0.8"
 #rdkafka = "0.20.0"
 tokio = "0.1.18"
 lazy_static = "1.1.0"
+base64 = "0.10.0"
 
 abi-lib =  { path = "abi/static" }
 abi-lib-dynamic = { git = "ssh://git@github.com/tonlabs/TON-SDK.git", branch = "feature-dynamic-abi", package = "abi-lib-dynamic" }
