@@ -279,6 +279,46 @@ const WALLET_ABI: &str = r#"{
 }
 "#;
 
+fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pair: &Keypair) {
+
+    let contract = Contract::load(address)
+        .expect("Error calling load Contract")
+        .wait()
+        .next()
+        .expect("Error unwrap stream next while loading Contract")
+        .expect("Error unwrap result while loading Contract");
+
+    // call needed method
+    let changes_stream = contract.call_json(func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
+        .expect("Error calling contract method");
+
+    // wait transaction id in message-status 
+    let mut tr_id = None;
+    for state in changes_stream.wait() {
+        if let Err(e) = state {
+            panic!("error next state getting: {}", e);
+        }
+        if let Ok(s) = state {
+            println!("next state: {:?}", s);
+            if s.message_state == MessageState::Finalized {
+                tr_id = Some(s.message_id.clone());
+                break;
+            }
+        }
+    }
+    let tr_id = tr_id.expect("Error: no transaction id");
+
+    // OR 
+    // wait message will done and find transaction with the message
+
+    // load transaction object
+    let _tr = Transaction::load(tr_id)
+        .expect("Error calling load Transaction")
+        .wait()
+        .next()
+        .expect("Error unwrap stream next while loading Transaction")
+        .expect("Error unwrap result while loading Transaction");
+}
 
 fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str, key_pair: &Keypair) -> String {
 
@@ -429,7 +469,7 @@ fn full_test_piggy_bank() {
 	let subscripition_address_str = hex::encode(subscripition_address.as_slice());
 	let set_subscription_params = format!("{{ \"address\" : \"x{}\" }}", subscripition_address_str);
 
-	let _set_subscription_answer = call_contract_and_wait(wallet_address, "setSubscriptionAccount", &set_subscription_params, WALLET_ABI, &keypair);
+	let _set_subscription_answer = call_contract(wallet_address, "setSubscriptionAccount", &set_subscription_params, WALLET_ABI, &keypair);
 
 	// call subscribe in subscription
 	let piggy_bank_address_str = hex::encode(piggy_bank_address.as_slice());
