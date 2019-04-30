@@ -450,6 +450,8 @@ fn full_test_piggy_bank() {
 	// connect to node
     init_node_connection();
 
+	println!("Connection to node established");
+
 	// generate key pair
     let mut csprng = OsRng::new().unwrap();
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
@@ -457,13 +459,19 @@ fn full_test_piggy_bank() {
 	// deploy wallet
     let wallet_address = deploy_contract_and_wait("Wallet.tvc", WALLET_ABI, "{}", &keypair);
 
+	println!("Wallet contract deployed. Account address {}", wallet_address);
+
 	// deploy piggy bank
 	let piggy_bank_address = deploy_contract_and_wait("Piggybank.tvc", PIGGY_BANK_CONTRACT_ABI, PIGGY_BANK_CONSTRUCTOR_PARAMS, &keypair);
+
+	println!("Piggy bank contract deployed. Account address {}", piggy_bank_address);
 
 	// deploy subscription
 	let wallet_address_str = hex::encode(wallet_address.as_slice());
 	let subscription_constructor_params = format!("{{ \"wallet\" : \"x{}\" }}", wallet_address_str);
 	let subscripition_address = deploy_contract_and_wait("Subscription.tvc", SUBSCRIBE_CONTRACT_ABI, &subscription_constructor_params, &keypair);
+
+	println!("Subscription contract deployed. Account address {}", subscripition_address);
 
 	// call setSubscriptionAccount in wallet
 	let subscripition_address_str = hex::encode(subscripition_address.as_slice());
@@ -471,12 +479,16 @@ fn full_test_piggy_bank() {
 
 	let _set_subscription_answer = call_contract(wallet_address, "setSubscriptionAccount", &set_subscription_params, WALLET_ABI, &keypair);
 
+	println!("Subscription address added to wallet.");
+
 	// call subscribe in subscription
 	let piggy_bank_address_str = hex::encode(piggy_bank_address.as_slice());
 	let pubkey_str = hex::encode(keypair.public.as_bytes());
 	let subscribe_params = format!("{{ \"pubkey\" : \"x{}\", \"to\": \"x{}\", \"value\" : 123, \"period\" : 456 }}", pubkey_str, piggy_bank_address_str);
 
 	let _subscribe_answer = call_contract_and_wait(subscripition_address, "subscribe", &subscribe_params, SUBSCRIBE_CONTRACT_ABI, &keypair);
+
+	println!("New subscription added.");
 }
 
 
