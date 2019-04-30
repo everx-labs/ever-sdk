@@ -29,7 +29,7 @@ impl ABISerialized for Int {
             vec_padding.resize(dif / 8 + 1, padding);
 
             let mut bitstring = Bitstring::create(vec_padding, dif);
-            bitstring.append(&Bitstring::create(vec, self.size));
+            bitstring.append(&Bitstring::create(vec, self.size - dif));
             bitstring
         } else {
             Bitstring::create(vec, self.size)
