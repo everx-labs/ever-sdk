@@ -145,13 +145,27 @@ impl Contract {
         // pack params into bag of cells via ABI
         let msg_body = Self::create_message_body::<TIn, TOut>(input, key_pair);
         
-        let msg = Self::create_message(self, msg_body)?;
+        let msg = Self::create_message(self.id.clone(), msg_body)?;
 
         // send message by Kafka
         let msg_id = Self::send_message(msg)?;
 
         // subscribe on updates from DB and return updates stream
         Self::subscribe_updates(msg_id)
+    }
+
+    pub fn construct_call_message<TIn, TOut>(&self, input: TIn, key_pair: Option<&Keypair>)
+        -> SdkResult<(Vec<u8>, MessageId)>
+        where 
+            TIn: ABIInParameter + ABITypeSignature,
+            TOut: ABIInParameter + ABITypeSignature {
+
+        // pack params into bag of cells via ABI
+        let msg_body = Self::create_message_body::<TIn, TOut>(input, key_pair);
+        
+        let msg = Self::create_message(self.id.clone(), msg_body)?;
+
+        Self::serialize_message(msg)
     }
 
     pub fn call_json(&self, func: String, input: String, abi: String, key_pair: Option<&Keypair>)
@@ -161,7 +175,7 @@ impl Contract {
         let msg_body = encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
         
-        let msg = Self::create_message(self, msg_body.into())?;
+        let msg = Self::create_message(self.id.clone(), msg_body.into())?;
 
         // send message by Kafka
         let msg_id = Self::send_message(msg)?;
@@ -195,6 +209,19 @@ impl Contract {
         let msg_id = Self::send_message(msg)?;
 
         Self::subscribe_updates(msg_id)
+    }
+
+    pub fn construct_deploy_message<TIn, TOut>(input: TIn, image: ContractImage, key_pair: Option<&Keypair>)
+        -> SdkResult<(Vec<u8>, MessageId)>
+        where
+            TIn: ABIInParameter + ABITypeSignature,
+            TOut: ABIInParameter + ABITypeSignature {
+
+        let msg_body = Self::create_message_body::<TIn, TOut>(input, key_pair);
+
+        let msg = Self::create_deploy_message(Some(msg_body), image)?;
+
+        Self::serialize_message(msg)
     }
 
     pub fn id(&self) -> AccountId {
@@ -231,11 +258,11 @@ impl Contract {
         Self::subscribe_updates(msg_id)
     }
 
-    fn create_message(&self, msg_body: Arc<CellData>)
+    fn create_message(id: AccountId, msg_body: Arc<CellData>)
         -> SdkResult<Message> {
 
         let mut msg_header = ExternalInboundMessageHeader::default();
-        msg_header.dst = MsgAddressInt::with_standart(None, -1, self.id.clone()).unwrap();
+        msg_header.dst = MsgAddressInt::with_standart(None, -1, id).unwrap();
 
         let mut msg = Message::with_ext_in_header(msg_header);
         msg.body = Some(msg_body);        
@@ -277,18 +304,23 @@ impl Contract {
     }
 
     pub fn send_message(msg: Message) -> SdkResult<MessageId> {
+        let (data, id) = Self::serialize_message(msg)?;
+       
+        kafka_helper::send_message(&id.as_slice()[..], &data)?;
+        println!("msg sent");
+        Ok(id.clone())
+    }
 
+    fn serialize_message(msg: Message) -> SdkResult<(Vec<u8>, MessageId)> {
         let cells = msg.write_to_new_cell()?.into();
         let mut data = Vec::new();
         let bag = BagOfCells::with_root(cells);
         let id = bag.get_repr_hash_by_index(0)
             .ok_or::<SdkError>(SdkErrorKind::InternalError("unexpected message's bag of cells (empty bag)".into())
-                .into())?;
+                .into())?.clone();
         bag.write_to(&mut data, false)?;
 
-        kafka_helper::send_message(&id.as_slice()[..], &data)?;
-        println!("msg sent");
-        Ok(id.clone())
+        Ok((data, id))
     }
 
     fn subscribe_updates(message_id: MessageId) ->

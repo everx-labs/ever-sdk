@@ -95,8 +95,6 @@ impl Transaction {
 
 mod tests {
     
-    use super::*;
-
     #[test]
     fn test_parse() {
         let js = r#"{
