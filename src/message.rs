@@ -110,7 +110,7 @@ mod tests {
         let js = r#"
          {"id":"0000000000000000000000000000000000000000000000000000000000000000","type":"extarnal inbound","status":"Proposed","block":null,"info":{"source":null,"destination":{"type":"internal_std","anycast":null,"workchain_id":-1,"address":"0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"},"import_fee":0},"state_init":null,"body":"te6ccoEBAQEABgAGAAgAAAAD"}
             "#;
-        let m = Message::parse_json(serde_json::from_str(js).unwrap()).unwrap();
+        let m = super::Message::parse_json(serde_json::from_str(js).unwrap()).unwrap();
         println!("{:?}", m);
     }
 }

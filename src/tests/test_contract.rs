@@ -375,7 +375,7 @@ fn test_send_empty_messages() {
         builder.append_u32(i).unwrap();
         let msg_body = builder.into();
         
-        let msg = contract.create_message(msg_body).unwrap();
+        let msg = Contract::create_message(contract.id(), msg_body).unwrap();
 
         // send message by Kafka
         let msg_id = Contract::send_message(msg).unwrap();

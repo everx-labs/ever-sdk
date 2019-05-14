@@ -94,7 +94,7 @@ impl Transaction {
 }
 
 mod tests {
-    
+
     #[test]
     fn test_parse() {
         let js = r#"{
@@ -103,7 +103,7 @@ mod tests {
             "in_message": "21a0b2ea5396236e86eff6529eb89eee82653bd12421b8a10ff9c7abec2ec078",
             "out_messages": ["21a0b2ea5396236e86eff6509eb89eee82653bd12421b8a10ff9c7abec2ec078", "21a0b2ea5396236e86eff6511eb89eee82653bd12421b8a10ff9c7abec2ec078"],
             "status": "Proposed"}"#;
-        let tr = Transaction::parse_json(serde_json::from_str(js).unwrap()).unwrap();
+        let tr = super::Transaction::parse_json(serde_json::from_str(js).unwrap()).unwrap();
         println!("{:?}", tr);
     }
 }
