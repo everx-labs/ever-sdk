@@ -135,7 +135,6 @@ fn test_tokenize_arrays() {
 }
 
 #[test]
-#[ignore]
 fn test_tokenize_bitstring() {
     let input = r#"{
         "a" : "101000011101011",

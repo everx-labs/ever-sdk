@@ -89,10 +89,17 @@ impl Token {
         let mut vec = Vec::new();
         bitstring.into_bitstring_with_completion_tag(&mut vec);
 
-        // TODO: only multiple of 8 sizes are supported now
-        assert_eq!(vec.pop(), Some(0x80));
+        let set_tag = if vec[vec.len() - 1] == 0x80 {
+            vec.pop();
+            false
+        } else {
+            true
+        };
 
-        let string = "x".to_owned() + &hex::encode(vec);
+        let mut string = "x".to_owned() + &hex::encode(vec);
+        if set_tag {
+            string += "_"
+        }
 
         serializer.serialize_str(&string)
     }
