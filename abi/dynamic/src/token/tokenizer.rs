@@ -137,8 +137,8 @@ impl Tokenizer {
 		// and it works well for all values except `-2^n`. Such values can be encoded using `n` bits, but 
 		// `bits` function returns `n` (and plus one bit for sign) so we have to explicitly check such situation 
 		// by comparing bits sizes of given number and increased number
-		if	number.sign() == Sign::Minus 
-			&& number.bits() != (number + BigInt::from(1)).bits()
+		if	number.sign() == Sign::Minus &&
+			number.bits() != (number + BigInt::from(1)).bits()
 		{ 
 			number.bits() <= size
 		} else {
@@ -190,11 +190,16 @@ impl Tokenizer {
 	fn read_bitstring(value: &Value) -> Result<Bitstring, TokenizeError> {
 		let mut string = value.as_str().ok_or(TokenizeError::WrongDataFormat(value.clone()))?.to_owned();
 
+		// hexademical representation
 		let bitstring = if string.starts_with("x") {
-			let x: &[_] = &['{', '}'];
-			string = string.trim_start_matches("x").trim_matches(x).to_owned();
+			// trim additional symbols
+			let square_brackets: &[_] = &['{', '}'];
+			string = string.trim_start_matches("x").trim_matches(square_brackets).to_owned();
 
+			// if bitstring length is not divisible by 8 then it is ended by `completion tag` (see TON Blockchain spec)
 			if string.ends_with("_") {
+				// pad bitstring with zeros to parse as normal hex-string
+				// it will be trimmed by `Bitstring::from_bitstring_with_completion_tag` using `completion tag`
 				let len = string.len(); 
 				string.replace_range(len - 1 .. len, "0");
 
@@ -202,19 +207,20 @@ impl Tokenizer {
 					string.push('0');
 				}
 			} else {
+				// add `completion tag` for `Bitstring::from_bitstring_with_completion_tag` function
 				string += "80";
 			}
 
 			let vec = hex::decode(string).map_err(|_| TokenizeError::InvalidParameterValue(value.clone()))?;
 
 			Bitstring::from_bitstring_with_completion_tag(vec)
-		} else {
+		} else { // bits representation
 			let mut bitstring = Bitstring::new();
 
 			for bit in string.chars() {
 				match bit {
 					'0' => bitstring.append_bit(&Bit::Zero),
-					'1' => bitstring.append_bit(&Bit::Zero),
+					'1' => bitstring.append_bit(&Bit::One),
 					_ => return Err(TokenizeError::InvalidParameterValue(value.clone()))
 				};
 			}
@@ -243,31 +249,8 @@ impl Tokenizer {
 	
 	/// Tries to parse a value as tuple.
 	fn tokenize_tuple(params: &Vec<Param>, value: &Value) -> Result<Token, TokenizeError> {
-		let tuple_values = value.as_array().ok_or(TokenizeError::WrongDataFormat(value.clone()))?;
+		let tokens = Self::tokenize_all(params, value)?;
 
-		if params.len() != tuple_values.len() {
-			return Err(TokenizeError::WrongParametersCount);
-		}
-
-		let mut tuple_params = Vec::<Token>::new();
-
-		for (value, param) in tuple_values.iter().zip(params.iter()) {
-			tuple_params.push(Self::tokenize_parameter(&param.kind, &value)?);
-		}
-
-		Ok(Token::Tuple(tuple_params))
-	}
-}
-
-#[cfg(test)]
-mod test {
-	use super::{LenientTokenizer, Tokenizer, ParamType};
-	#[test]
-	fn single_quoted_in_array_must_error() {
-		assert!(LenientTokenizer::tokenize_array("[1,\"0,false]", &ParamType::Bool).is_err());
-		assert!(LenientTokenizer::tokenize_array("[false\"]", &ParamType::Bool).is_err());
-		assert!(LenientTokenizer::tokenize_array("[1,false\"]", &ParamType::Bool).is_err());
-		assert!(LenientTokenizer::tokenize_array("[1,\"0\",false]", &ParamType::Bool).is_err());
-		assert!(LenientTokenizer::tokenize_array("[1,0]", &ParamType::Bool).is_ok());
+		Ok(Token::Tuple(tokens))
 	}
 }

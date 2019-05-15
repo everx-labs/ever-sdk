@@ -38,8 +38,21 @@ impl<'a> Deserialize<'a> for Param {
 			kind: serde_param.kind,
 		};
 
-		if let ParamType::Tuple(_) = result.kind {
-			result.kind = ParamType::Tuple(serde_param.components);
+		result.kind = match result.kind {
+			ParamType::Tuple(_) => ParamType::Tuple(serde_param.components),
+			ParamType::Array(array_type) => 
+				if let ParamType::Tuple(_) = *array_type {
+					ParamType::Array(Box::new(ParamType::Tuple(serde_param.components)))
+				} else {
+					ParamType::Array(array_type)
+				},
+			ParamType::FixedArray(array_type, size) => 
+				if let ParamType::Tuple(_) = *array_type {
+					ParamType::FixedArray(Box::new(ParamType::Tuple(serde_param.components)), size)
+				} else {
+					ParamType::FixedArray(array_type, size)
+				},
+			_ => result.kind,
 		};
 
 		Ok(result)
@@ -54,7 +67,7 @@ impl Serialize for Param {
 		serializer.serialize_str(&self.name)
 	}
 }
-
+/*
 #[cfg(test)]
 mod tests {
 	use serde_json;
@@ -75,3 +88,4 @@ mod tests {
 		});
 	}
 }
+*/

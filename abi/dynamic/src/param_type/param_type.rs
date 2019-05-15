@@ -37,7 +37,7 @@ impl fmt::Display for ParamType {
 impl ParamType {
 	/// Returns type signature according to ABI specification
 	pub fn type_signature(&self) -> String {
-    match self {
+		match self {
 			ParamType::Uint(size) => format!("uint{}", size),
 			ParamType::Int(size) => format!("int{}", size),
 			ParamType::Dint => "dint".to_owned(),
@@ -57,24 +57,33 @@ impl ParamType {
 			ParamType::Bits(size) => format!("bits{}", size),
 			ParamType::Bitstring => "bitstring".to_owned(),
 		}
-    }
+	}
 }
 
 #[cfg(test)]
 mod tests {
 	use ParamType;
+	use Param;
 
 	#[test]
-	fn test_param_type_display() {
-		assert_eq!(format!("{}", ParamType::Address), "address".to_owned());
-		assert_eq!(format!("{}", ParamType::Bytes), "bytes".to_owned());
-		assert_eq!(format!("{}", ParamType::FixedBytes(32)), "bytes32".to_owned());
-		assert_eq!(format!("{}", ParamType::Uint(256)), "uint256".to_owned());
-		assert_eq!(format!("{}", ParamType::Int(64)), "int64".to_owned());
-		assert_eq!(format!("{}", ParamType::Bool), "bool".to_owned());
-		assert_eq!(format!("{}", ParamType::String), "string".to_owned());
-		assert_eq!(format!("{}", ParamType::Array(Box::new(ParamType::Bool))), "bool[]".to_owned());
-		assert_eq!(format!("{}", ParamType::FixedArray(Box::new(ParamType::String), 2)), "string[2]".to_owned());
-		assert_eq!(format!("{}", ParamType::FixedArray(Box::new(ParamType::Array(Box::new(ParamType::Bool))), 2)), "bool[][2]".to_owned());
+	fn test_param_type_signature() {
+		assert_eq!(ParamType::Uint(256).type_signature(), "uint256".to_owned());
+		assert_eq!(ParamType::Int(64).type_signature(), "int64".to_owned());
+		assert_eq!(ParamType::Dint.type_signature(), "dint".to_owned());
+		assert_eq!(ParamType::Duint.type_signature(), "duint".to_owned());
+		assert_eq!(ParamType::Bool.type_signature(), "bool".to_owned());
+		assert_eq!(ParamType::Array(Box::new(ParamType::Bool)).type_signature(), "bool[]".to_owned());
+		assert_eq!(ParamType::FixedArray(Box::new(ParamType::Int(33)), 2).type_signature(), "int33[2]".to_owned());
+		assert_eq!(ParamType::FixedArray(Box::new(ParamType::Array(Box::new(ParamType::Bool))), 2).type_signature(), "bool[][2]".to_owned());
+		assert_eq!(ParamType::Bits(256).type_signature(), "bits256".to_owned());
+		assert_eq!(ParamType::Bitstring.type_signature(), "bitstring".to_owned());
+
+		let mut tuple_params = vec![];
+		tuple_params.push(Param {name: "a".to_owned(), kind: ParamType::Uint(123)});
+		tuple_params.push(Param {name: "b".to_owned(), kind: ParamType::Dint});
+
+		assert_eq!(ParamType::Tuple(tuple_params.clone()).type_signature(), "(uint123,dint)".to_owned());
+		assert_eq!(ParamType::Array(Box::new(ParamType::Tuple(tuple_params.clone()))).type_signature(), "(uint123,dint)[]".to_owned());
+		assert_eq!(ParamType::FixedArray(Box::new(ParamType::Tuple(tuple_params)), 4).type_signature(), "(uint123,dint)[4]".to_owned());
 	}
 }

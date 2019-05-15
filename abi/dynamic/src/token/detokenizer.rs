@@ -11,12 +11,11 @@ pub enum DetokenizeError {
     WrongParameterType,
 }
 
-/// This trait should be used to parse string values as tokens.
 pub struct Detokenizer;
 
 impl Detokenizer {
     pub fn detokenize(params: &[Param], tokens: &[Token]) -> Result<String, DetokenizeError> {
-        println!("Params len = {}, tokens len = {}", params.len(), tokens.len());
+        //println!("Params len = {}, tokens len = {}", params.len(), tokens.len());
 
         if params.len() != tokens.len() {
             return Err(DetokenizeError::WrongParametersCount);
@@ -26,23 +25,20 @@ impl Detokenizer {
             return Err(DetokenizeError::WrongParameterType);
         }
 
-        let tokens_map = params
+        let tuples_vec = params
             .iter()
             .zip(tokens)
-            .fold(HashMap::new(), |mut map, (param, token)| {
-                map.insert(param.clone(), token.clone());
-                map
-            });
+            .collect();
 
-        serde_json::to_string(&FunctionParams{params: tokens_map}).map_err(|err| DetokenizeError::SerdeError(err))
+        serde_json::to_string(&FunctionParams{params: tuples_vec}).map_err(|err| DetokenizeError::SerdeError(err))
     }
 }
 
-pub struct FunctionParams {
-    params: HashMap<Param, Token>,
+pub struct FunctionParams<'a> {
+    params: Vec<(&'a Param, &'a Token)>,
 }
 
-impl Serialize for FunctionParams {
+impl<'a> Serialize for FunctionParams<'a> {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -52,15 +48,12 @@ impl Serialize for FunctionParams {
         for (param, token) in &self.params {
             if let ParamType::Tuple(ref tuple_params) = param.kind {
                 if let Token::Tuple(ref tuple_tokens) = token {
-                    let tokens_map = tuple_params
+                    let tuples_vec = tuple_params
                         .iter()
                         .zip(tuple_tokens)
-                        .fold(HashMap::new(), |mut map, (param, token)| {
-                            map.insert(param.clone(), token.clone());
-                            map
-                        });
+                        .collect();
 
-                    map.serialize_entry(param, &tokens_map)?;
+                    map.serialize_entry(param, &FunctionParams{params: tuples_vec})?;
                 }
             } else {
                 map.serialize_entry(param, token)?;

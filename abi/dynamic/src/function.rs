@@ -17,8 +17,10 @@ pub struct Function {
 	/// Function name.
 	pub name: String,
 	/// Function input.
+	#[serde(default)]
 	pub inputs: Vec<Param>,
 	/// Function output.
+	#[serde(default)]
 	pub outputs: Vec<Param>,
 	/// Signed function.
 	#[serde(default)]
@@ -190,7 +192,7 @@ impl Function {
         Ok(builder)
     }
 }
-
+/*
 #[cfg(test)]
 mod tests {
 	use {Token, Param, Function, ParamType};
@@ -218,3 +220,4 @@ mod tests {
 		assert_eq!(encoded, expected);
 	}
 }
+*/

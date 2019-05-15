@@ -10,7 +10,8 @@ use abi_lib::types::{
     bitstring_to_be_bytes,
 	Dint,
 	Duint,
-	prepend_fixed_array
+	prepend_fixed_array,
+	get_fixed_array_in_cell_size
 };
 
 use std::fmt;
@@ -166,7 +167,20 @@ impl ABISerialized for Token {
     }
 
     fn get_in_cell_size(&self) -> usize {
-        1
+        match self {
+			Token::Uint(uint) => uint.size,
+			Token::Int(int) => int.size,
+			Token::Dint(dint) => dint.get_in_cell_size(),
+			Token::Duint(duint) => duint.get_in_cell_size(),
+			Token::Bool(b) => 1,
+			Token::Tuple(ref tokens) =>{
+				tokens.iter().fold(0usize, |size, token| size + token.get_in_cell_size())
+			},
+			Token::Array(ref tokens) => tokens.get_in_cell_size(),
+			Token::FixedArray(ref tokens) => get_fixed_array_in_cell_size(&tokens),
+			Token::Bits(b) => get_fixed_array_in_cell_size(&b.bits(0 .. b.length_in_bits()).data),
+			Token::Bitstring(bitstring) => bitstring.get_in_cell_size(),
+		}
     }
 }
 
@@ -336,40 +350,82 @@ impl Token {
 }
 
 
-
-
 #[cfg(test)]
 mod tests {
-	use {Token, ParamType};
+	use {Token, ParamType, Param, Uint, Int};
+	use num_bigint::{BigInt, BigUint};
+	use tvm::bitstring::Bitstring;
 
 	#[test]
 	fn test_type_check() {
-		fn assert_type_check(tokens: Vec<Token>, param_types: Vec<ParamType>) {
-			assert!(Token::types_check(&tokens, &param_types))
+		fn assert_type_check(tokens: &[Token], params: &[Param]) {
+			assert!(Token::types_check(&tokens, params))
 		}
 
-		fn assert_not_type_check(tokens: Vec<Token>, param_types: Vec<ParamType>) {
-			assert!(!Token::types_check(&tokens, &param_types))
+		fn assert_not_type_check(tokens: &[Token], params: &[Param]) {
+			assert!(!Token::types_check(&tokens, params))
 		}
 
-		assert_type_check(vec![Token::Uint(0.into()), Token::Bool(false)], vec![ParamType::Uint(256), ParamType::Bool]);
-		assert_type_check(vec![Token::Uint(0.into()), Token::Bool(false)], vec![ParamType::Uint(32), ParamType::Bool]);
+		let big_int = BigInt::from(123);
+		let big_uint = BigUint::from(456u32);
 
-		assert_not_type_check(vec![Token::Uint(0.into())], vec![ParamType::Uint(32), ParamType::Bool]);
-		assert_not_type_check(vec![Token::Uint(0.into()), Token::Bool(false)], vec![ParamType::Uint(32)]);
-		assert_not_type_check(vec![Token::Bool(false), Token::Uint(0.into())], vec![ParamType::Uint(32), ParamType::Bool]);
+		let tokens = vec![
+			Token::Uint(Uint{number: big_uint.clone(), size: 32}),
+			Token::Int(Int{number: big_int.clone(), size: 64}),
+			Token::Dint(big_int.clone().into()),
+			Token::Duint(big_uint.clone().into()),
+			Token::Bool(false),
+			Token::Array(vec![Token::Bool(false), Token::Bool(true)]),
+			Token::FixedArray(vec![Token::Dint(big_int.clone().into()), Token::Dint(big_int.clone().into())]),
+			Token::Bits(Bitstring::create(vec![1, 2, 3], 15)),
+			Token::Bitstring(Bitstring::create(vec![1, 2, 3], 7)),
+			Token::Tuple(vec![Token::Bool(true), Token::Duint(big_uint.clone().into())]),
+		];
 
-		assert_type_check(vec![Token::FixedBytes(vec![0, 0, 0, 0])], vec![ParamType::FixedBytes(4)]);
-		assert_type_check(vec![Token::FixedBytes(vec![0, 0, 0])], vec![ParamType::FixedBytes(4)]);
-		assert_not_type_check(vec![Token::FixedBytes(vec![0, 0, 0, 0])], vec![ParamType::FixedBytes(3)]);
+		let tuple_params = vec![	
+			Param {name: "a".to_owned(), kind: ParamType::Bool},
+			Param {name: "b".to_owned(), kind: ParamType::Duint},
+		];
 
-		assert_type_check(vec![Token::Array(vec![Token::Bool(false), Token::Bool(true)])], vec![ParamType::Array(Box::new(ParamType::Bool))]);
-		assert_not_type_check(vec![Token::Array(vec![Token::Bool(false), Token::Uint(0.into())])], vec![ParamType::Array(Box::new(ParamType::Bool))]);
-		assert_not_type_check(vec![Token::Array(vec![Token::Bool(false), Token::Bool(true)])], vec![ParamType::Array(Box::new(ParamType::Address))]);
+		let params = vec![
+			Param {name: "a".to_owned(), kind: ParamType::Uint(32)},
+			Param {name: "b".to_owned(), kind: ParamType::Int(64)},
+			Param {name: "c".to_owned(), kind: ParamType::Dint},
+			Param {name: "d".to_owned(), kind: ParamType::Duint},			
+			Param {name: "e".to_owned(), kind: ParamType::Bool},
+			Param {name: "f".to_owned(), kind: ParamType::Array(Box::new(ParamType::Bool))},
+			Param {name: "g".to_owned(), kind: ParamType::FixedArray(Box::new(ParamType::Dint), 2)},
+			Param {name: "h".to_owned(), kind: ParamType::Bits(15)},
+			Param {name: "i".to_owned(), kind: ParamType::Bitstring},
+			Param {name: "j".to_owned(), kind: ParamType::Tuple(tuple_params)},
 
-		assert_type_check(vec![Token::FixedArray(vec![Token::Bool(false), Token::Bool(true)])], vec![ParamType::FixedArray(Box::new(ParamType::Bool), 2)]);
-		assert_not_type_check(vec![Token::FixedArray(vec![Token::Bool(false), Token::Bool(true)])], vec![ParamType::FixedArray(Box::new(ParamType::Bool), 3)]);
-		assert_not_type_check(vec![Token::FixedArray(vec![Token::Bool(false), Token::Uint(0.into())])], vec![ParamType::FixedArray(Box::new(ParamType::Bool), 2)]);
-		assert_not_type_check(vec![Token::FixedArray(vec![Token::Bool(false), Token::Bool(true)])], vec![ParamType::FixedArray(Box::new(ParamType::Address), 2)]);
+		];
+
+		assert_type_check(&tokens, &params);
+
+
+		let mut tokens_wrong_type = tokens.clone();
+		tokens_wrong_type[0] = Token::Bool(false);
+		assert_not_type_check(&tokens_wrong_type, &params);
+
+		let mut tokens_wrong_int_size = tokens.clone();
+		tokens_wrong_int_size[0] = Token::Uint(Uint{number: big_uint.clone(), size: 30});
+		assert_not_type_check(&tokens_wrong_int_size, &params);
+
+		let mut tokens_wrong_parameters_count = tokens.clone();
+		tokens_wrong_parameters_count.pop();
+		assert_not_type_check(&tokens_wrong_parameters_count, &params);
+
+		let mut tokens_wrong_fixed_array_size = tokens.clone();
+		tokens_wrong_fixed_array_size[6] = Token::FixedArray(vec![Token::Dint(big_int.clone().into())]);
+		assert_not_type_check(&tokens_wrong_fixed_array_size, &params);
+
+		let mut tokens_wrong_array_type = tokens.clone();
+		tokens_wrong_array_type[5] = Token::Array(vec![Token::Bool(false), Token::Dint(big_int.clone().into())]);
+		assert_not_type_check(&tokens_wrong_array_type, &params);
+
+		let mut tokens_wrong_tuple_type = tokens.clone();
+		tokens_wrong_tuple_type[9] = Token::Tuple(vec![Token::Int(Int{number: big_int.clone(), size: 16}), Token::Duint(big_uint.clone().into())]);
+		assert_not_type_check(&tokens_wrong_tuple_type, &params);
 	}
 }

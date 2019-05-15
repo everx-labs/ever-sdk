@@ -32,6 +32,20 @@ pub fn prepend_fixed_array<T: ABISerialized>(
     destination
 }
 
+pub fn get_fixed_array_in_cell_size<T: ABISerialized>(array: &[T]) -> usize {
+    let mut result = 0;
+    for item in array {
+        result += item.get_in_cell_size();
+    }
+
+    // if array doesn't fit into cell it is put in separate chain and only 2 bits are put in main chain cell
+    if result > tvm::stack::BuilderData::bits_capacity() {
+        2
+    } else {
+        result + 2
+    }
+}
+
 #[macro_export]
 macro_rules! fixed_abi_array {
     ( $inner_type:ty, $size:expr, $type:ident ) => {
@@ -104,17 +118,7 @@ macro_rules! fixed_abi_array {
             }
 
             fn get_in_cell_size(&self) -> usize {
-                let mut result = 0;
-                for i in 0..$size {
-                    result += self[i].get_in_cell_size();
-                }
-
-                // if array doesn't fit into cell it is put in separate chain and only 2 bits are put in main chain cell
-                if result > tvm::stack::BuilderData::bits_capacity() {
-                    2
-                } else {
-                    result + 2
-                }
+                $crate::types::get_fixed_array_in_cell_size(&self.data)
             }
         }
 
