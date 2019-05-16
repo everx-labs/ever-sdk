@@ -329,7 +329,7 @@ fn main() {
 	let pair = Keypair::generate::<Sha512, _>(&mut OsRng::new().unwrap());
 
     let input = function.encode_input(&tokens, Some(&pair)).unwrap();
-
+/*
 	let decoded_tokens = function.decode_input(SliceData::from(input)).unwrap();
 
 	assert_eq!(tokens, decoded_tokens);
@@ -340,5 +340,5 @@ fn main() {
 
 	let json_output = Detokenizer::detokenize(&function.input_params(), &decoded_tokens).unwrap();
 
-	println!("\n{}", json_output);
+	println!("\n{}", json_output);*/
 }

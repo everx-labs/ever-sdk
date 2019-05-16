@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use serde::ser::{Serialize, Serializer, SerializeMap};
-use {ParamType, Param, Uint, Int, Token};
+use {ParamType, Param, Uint, Int, Token, TokenValue};
 use num_bigint::{Sign, BigInt, BigUint};
 use tvm::bitstring::{Bitstring, Bit};
 
@@ -25,17 +25,12 @@ impl Detokenizer {
             return Err(DetokenizeError::WrongParameterType);
         }
 
-        let tuples_vec = params
-            .iter()
-            .zip(tokens)
-            .collect();
-
-        serde_json::to_string(&FunctionParams{params: tuples_vec}).map_err(|err| DetokenizeError::SerdeError(err))
+        serde_json::to_string(&FunctionParams{params: tokens}).map_err(|err| DetokenizeError::SerdeError(err))
     }
 }
 
 pub struct FunctionParams<'a> {
-    params: Vec<(&'a Param, &'a Token)>,
+    params: &'a [Token],
 }
 
 impl<'a> Serialize for FunctionParams<'a> {
@@ -45,20 +40,10 @@ impl<'a> Serialize for FunctionParams<'a> {
     {
         let mut map = serializer.serialize_map(Some(self.params.len()))?;
 
-        for (param, token) in &self.params {
-            if let ParamType::Tuple(ref tuple_params) = param.kind {
-                if let Token::Tuple(ref tuple_tokens) = token {
-                    let tuples_vec = tuple_params
-                        .iter()
-                        .zip(tuple_tokens)
-                        .collect();
-
-                    map.serialize_entry(param, &FunctionParams{params: tuples_vec})?;
-                }
-            } else {
-                map.serialize_entry(param, token)?;
+        for token in self.params {
+                map.serialize_entry(&token.name, &token.value)?;
             }
-        }
+
         map.end()
     }
 }
@@ -105,22 +90,24 @@ impl Token {
     }
 }
 
-impl Serialize for Token {
+impl Serialize for TokenValue {
 	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
 		match self {
-			Token::Uint(uint) => Token::detokenize_big_uint(&uint.number, serializer),
-			Token::Int(int) => Token::detokenize_big_int(&int.number, serializer),
-			Token::Dint(dint) => Token::detokenize_big_int(&dint, serializer),
-			Token::Duint(duint) => Token::detokenize_big_uint(&duint, serializer),
-			Token::Bool(b) => serializer.serialize_bool(b.clone()),
-			Token::Tuple(_) => panic!("Shouldn't be here! Tuple should be serialized as `map`"),
-			Token::Array(ref tokens) => tokens.serialize(serializer),
-			Token::FixedArray(ref tokens) => tokens.serialize(serializer),
-			Token::Bits(bitstring) => Token::detokenize_bitstring(&bitstring, serializer),
-			Token::Bitstring(bitstring) => Token::detokenize_bitstring(&bitstring, serializer),
+			TokenValue::Uint(uint) => Token::detokenize_big_uint(&uint.number, serializer),
+			TokenValue::Int(int) => Token::detokenize_big_int(&int.number, serializer),
+			TokenValue::Dint(dint) => Token::detokenize_big_int(&dint, serializer),
+			TokenValue::Duint(duint) => Token::detokenize_big_uint(&duint, serializer),
+			TokenValue::Bool(b) => serializer.serialize_bool(b.clone()),
+			TokenValue::Tuple(tokens) => {
+                FunctionParams {params: tokens}.serialize(serializer)
+            },
+			TokenValue::Array(ref tokens) => tokens.serialize(serializer),
+			TokenValue::FixedArray(ref tokens) => tokens.serialize(serializer),
+			TokenValue::Bits(bitstring) => Token::detokenize_bitstring(&bitstring, serializer),
+			TokenValue::Bitstring(bitstring) => Token::detokenize_bitstring(&bitstring, serializer),
 		}
     }
 }

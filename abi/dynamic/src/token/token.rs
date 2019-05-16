@@ -21,7 +21,20 @@ use num_bigint::{BigInt, BigUint};
 
 /// TON ABI params.
 #[derive(Debug, PartialEq, Clone)]
-pub enum Token {
+pub struct Token {
+	pub name: String,
+	pub value: TokenValue,
+}
+
+impl fmt::Display for Token {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(f, "{} : {}", self.name, self.value)
+	}
+}
+
+/// TON ABI param values.
+#[derive(Debug, PartialEq, Clone)]
+pub enum TokenValue {
 	/// uint<M>: unsigned integer type of M bits.
 	///
 	/// Encoded as M bits of big-endian number representation put into cell data.
@@ -49,11 +62,11 @@ pub enum Token {
 	/// T[]: dynamic array of elements of the type T.
 	///
 	/// Encoded as all array elements encodings put either to cell data or to separate cell.
-	Array(Vec<Token>),
+	Array(Vec<TokenValue>),
 	/// T[k]: dynamic array of elements of the type T.
 	///
 	/// Encoded as all array elements encodings put either to cell data or to separate cell.
-	FixedArray(Vec<Token>),
+	FixedArray(Vec<TokenValue>),
 	/// bits<M>: static sized bits sequence.
 	///
 	/// Encoding is equivalent to bool[M].
@@ -64,15 +77,15 @@ pub enum Token {
 	Bitstring(Bitstring),
 }
 
-impl fmt::Display for Token {
+impl fmt::Display for TokenValue {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
-			Token::Uint(u) => write!(f, "{}", u.number),
-			Token::Int(u) => write!(f, "{}", u.number),
-			Token::Dint(d) => write!(f, "{}", d),
-			Token::Duint(d) => write!(f, "{}", d),
-			Token::Bool(b) => write!(f, "{}", b),
-			Token::Tuple(ref arr) => {
+			TokenValue::Uint(u) => write!(f, "{}", u.number),
+			TokenValue::Int(u) => write!(f, "{}", u.number),
+			TokenValue::Dint(d) => write!(f, "{}", d),
+			TokenValue::Duint(d) => write!(f, "{}", d),
+			TokenValue::Bool(b) => write!(f, "{}", b),
+			TokenValue::Tuple(ref arr) => {
 				let s = arr.iter()
 					.map(|ref t| format!("{}", t))
 					.collect::<Vec<String>>()
@@ -80,7 +93,7 @@ impl fmt::Display for Token {
 
 				write!(f, "({})", s)
 			},
-			Token::Array(ref arr) | Token::FixedArray(ref arr) => {
+			TokenValue::Array(ref arr) | TokenValue::FixedArray(ref arr) => {
 				let s = arr.iter()
 					.map(|ref t| format!("{}", t))
 					.collect::<Vec<String>>()
@@ -88,119 +101,122 @@ impl fmt::Display for Token {
 
 				write!(f, "[{}]", s)
 			},
-			Token::Bits(b) => write!(f, "{}", b),
-			Token::Bitstring(b) => write!(f, "{}", b),
+			TokenValue::Bits(b) => write!(f, "{}", b),
+			TokenValue::Bitstring(b) => write!(f, "{}", b),
 		}
 	}
 }
 
-impl Token {
+impl TokenValue {
 	/// Check whether the type of the token matches the given parameter type.
 	///
 	/// Numeric types (`Int` and `Uint`) type check if the size of the token
 	/// type is of equal size with the provided parameter type.
 	pub fn type_check(&self, param_type: &ParamType) -> bool {
 		match self {
-			Token::Uint(uint) => *param_type == ParamType::Uint(uint.size),
-			Token::Int(int) => *param_type == ParamType::Int(int.size),
-			Token::Dint(_) => *param_type == ParamType::Dint,
-			Token::Duint(_) => *param_type == ParamType::Duint,
-			Token::Bool(_) => *param_type == ParamType::Bool,
-			Token::Tuple(ref arr) =>
+			TokenValue::Uint(uint) => *param_type == ParamType::Uint(uint.size),
+			TokenValue::Int(int) => *param_type == ParamType::Int(int.size),
+			TokenValue::Dint(_) => *param_type == ParamType::Dint,
+			TokenValue::Duint(_) => *param_type == ParamType::Duint,
+			TokenValue::Bool(_) => *param_type == ParamType::Bool,
+			TokenValue::Tuple(ref arr) =>
 				if let ParamType::Tuple(ref params) = *param_type {
-					Self::types_check(arr, &params)
+					Token::types_check(arr, &params)
 				} else {
 					false
 				},
-			Token::Array(ref tokens) =>
+			TokenValue::Array(ref tokens) =>
 				if let ParamType::Array(ref param_type) = *param_type {
 					tokens.iter().all(|t| t.type_check(param_type))
 				} else {
 					false
 				},
-			Token::FixedArray(ref tokens) =>
+			TokenValue::FixedArray(ref tokens) =>
 				if let ParamType::FixedArray(ref param_type, size) = *param_type {
 					size == tokens.len() && tokens.iter().all(|t| t.type_check(param_type))
 				} else {
 					false
 				},
-			Token::Bits(b) => 
+			TokenValue::Bits(b) => 
 				if let ParamType::Bits(size) = *param_type {
 					size == b.length_in_bits()
 				} else {
 					false
 				},
-			Token::Bitstring(_) => *param_type == ParamType::Bitstring,
+			TokenValue::Bitstring(_) => *param_type == ParamType::Bitstring,
 		}
 	}
+}
 
+impl Token {
 	/// Check if all the types of the tokens match the given parameter types.
 	pub fn types_check(tokens: &[Token], params: &[Param]) -> bool {
 		params.len() == tokens.len() && {
 			params.iter().zip(tokens).all(|(param, token)| {
-				token.type_check(&param.kind)
+				token.value.type_check(&param.kind) &&
+				token.name == param.name
 			})
 		}
 	}
 }
 
-impl ABISerialized for Token {
+impl ABISerialized for TokenValue {
 	fn prepend_to(&self, destination: BuilderData) -> BuilderData {
         match self {
-			Token::Uint(uint) => uint.prepend_to(destination),
-			Token::Int(int) => int.prepend_to(destination),
-			Token::Dint(dint) => dint.prepend_to(destination),
-			Token::Duint(duint) => duint.prepend_to(destination),
-			Token::Bool(b) => b.prepend_to(destination),
-			Token::Tuple(ref tokens) =>{
+			TokenValue::Uint(uint) => uint.prepend_to(destination),
+			TokenValue::Int(int) => int.prepend_to(destination),
+			TokenValue::Dint(dint) => dint.prepend_to(destination),
+			TokenValue::Duint(duint) => duint.prepend_to(destination),
+			TokenValue::Bool(b) => b.prepend_to(destination),
+			TokenValue::Tuple(ref tokens) =>{
 				let mut destination = destination;
 				for token in tokens.iter().rev() {
-					destination = token.prepend_to(destination);
+					destination = token.value.prepend_to(destination);
 				}
 				destination
 			},
-			Token::Array(ref tokens) => tokens.prepend_to(destination),
-			Token::FixedArray(ref tokens) => tokens.prepend_to(destination),
-			Token::Bits(b) => prepend_fixed_array(destination, &b.bits(0 .. b.length_in_bits()).data),
-			Token::Bitstring(bitstring) => bitstring.prepend_to(destination),
+			TokenValue::Array(ref tokens) => tokens.prepend_to(destination),
+			TokenValue::FixedArray(ref tokens) => tokens.prepend_to(destination),
+			TokenValue::Bits(b) => prepend_fixed_array(destination, &b.bits(0 .. b.length_in_bits()).data),
+			TokenValue::Bitstring(bitstring) => bitstring.prepend_to(destination),
 		}
     }
 
     fn get_in_cell_size(&self) -> usize {
         match self {
-			Token::Uint(uint) => uint.size,
-			Token::Int(int) => int.size,
-			Token::Dint(dint) => dint.get_in_cell_size(),
-			Token::Duint(duint) => duint.get_in_cell_size(),
-			Token::Bool(b) => 1,
-			Token::Tuple(ref tokens) =>{
-				tokens.iter().fold(0usize, |size, token| size + token.get_in_cell_size())
+			TokenValue::Uint(uint) => uint.size,
+			TokenValue::Int(int) => int.size,
+			TokenValue::Dint(dint) => dint.get_in_cell_size(),
+			TokenValue::Duint(duint) => duint.get_in_cell_size(),
+			TokenValue::Bool(b) => 1,
+			TokenValue::Tuple(ref tokens) =>{
+				tokens.iter().fold(0usize, |size, token| size + token.value.get_in_cell_size())
 			},
-			Token::Array(ref tokens) => tokens.get_in_cell_size(),
-			Token::FixedArray(ref tokens) => get_fixed_array_in_cell_size(&tokens),
-			Token::Bits(b) => get_fixed_array_in_cell_size(&b.bits(0 .. b.length_in_bits()).data),
-			Token::Bitstring(bitstring) => bitstring.get_in_cell_size(),
+			TokenValue::Array(ref tokens) => tokens.get_in_cell_size(),
+			TokenValue::FixedArray(ref tokens) => get_fixed_array_in_cell_size(&tokens),
+			TokenValue::Bits(b) => get_fixed_array_in_cell_size(&b.bits(0 .. b.length_in_bits()).data),
+			TokenValue::Bitstring(bitstring) => bitstring.get_in_cell_size(),
 		}
     }
 }
 
-impl Token {
-	/// Deserializes value from `SliceData` to `Token`
+impl TokenValue {
+	/// Deserializes value from `SliceData` to `TokenValue`
     pub fn read_from(param_type: &ParamType, cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
 		match param_type {
 			ParamType::Uint(size) => Self::read_uint(*size, cursor),
 			ParamType::Int(size) => Self::read_int(*size, cursor),
 			ParamType::Dint => {
 				let (dint, cursor) = Dint::read_from(cursor)?;
-				Ok((Token::Dint(dint), cursor))
+				Ok((TokenValue::Dint(dint), cursor))
 			},
 			ParamType::Duint => {
 				let (duint, cursor) = Duint::read_from(cursor)?;
-				Ok((Token::Duint(duint), cursor))
+				Ok((TokenValue::Duint(duint), cursor))
 			},
 			ParamType::Bool => {
 				let (b, cursor) = bool::read_from(cursor)?;
-				Ok((Token::Bool(b), cursor))
+				Ok((TokenValue::Bool(b), cursor))
 			},
 			ParamType::Tuple(tuple_params) => Self::read_tuple(tuple_params, cursor),
 			ParamType::Array(param_type) => Self::read_array(&param_type, cursor),
@@ -208,7 +224,7 @@ impl Token {
 			ParamType::Bits(size) => Self::read_bits(*size, cursor),
 			ParamType::Bitstring => {
 				let (bitstring, cursor) = Bitstring::read_from(cursor)?;
-				Ok((Token::Bitstring(bitstring), cursor))
+				Ok((TokenValue::Bitstring(bitstring), cursor))
 			},
 		}
 	}
@@ -223,7 +239,7 @@ impl Token {
             size: size
         };
 
-        Ok((Token::Uint(result), cursor))
+        Ok((TokenValue::Uint(result), cursor))
 	}
 
 	fn read_int(size: usize, cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
@@ -236,30 +252,30 @@ impl Token {
             size: size
         };
 
-        Ok((Token::Int(result), cursor))
+        Ok((TokenValue::Int(result), cursor))
 	}
 
 	fn read_tuple(tuple_params: &[Param], cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
 		let mut tokens = Vec::new();
 		let mut cursor = cursor;
 		for param in tuple_params {
-			let (token, new_cursor) = Token::read_from(&param.kind, cursor)?;
-			tokens.push(token);
+			let (token_value, new_cursor) = TokenValue::read_from(&param.kind, cursor)?;
+			tokens.push(Token { name: param.name.clone(), value: token_value });
 			cursor = new_cursor;
 		}
-		Ok((Token::Tuple(tokens), cursor))
+		Ok((TokenValue::Tuple(tokens), cursor))
 	}
 
 	fn read_bits(size: usize, cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
 		let (token, cursor) = Self::read_fixed_array(&ParamType::Bool, size, cursor)?;
 
-		if let Token::FixedArray(array) = token {
+		if let TokenValue::FixedArray(array) = token {
 			let bitstring = array
 				.iter()
 				.fold(
 					Bitstring::new(),
 					|mut bitstring, token| {
-						if let Token::Bool(b) = token {
+						if let TokenValue::Bool(b) = token {
 							bitstring.append_bit_bool(*b);
 							bitstring
 						} else {
@@ -267,7 +283,7 @@ impl Token {
 						}
 					});
 
-			Ok((Token::Bits(bitstring), cursor))
+			Ok((TokenValue::Bits(bitstring), cursor))
 		} else {
 			panic!("Can't be here");
 		}
@@ -291,7 +307,7 @@ impl Token {
 					result.push(token);
 				}
 
-				Ok((Token::Array(result), cursor))
+				Ok((TokenValue::Array(result), cursor))
 			}
 			(true, false) => {
                 let (size, mut cursor) = <u8>::read_from(cursor)?;
@@ -303,7 +319,7 @@ impl Token {
 					result.push(token);
                 }
 
-                Ok((Token::Array(result), cursor))
+                Ok((TokenValue::Array(result), cursor))
 			}
 			_ => Err(DeserializationError::with(cursor)),
 		}
@@ -331,7 +347,7 @@ impl Token {
 					return Err(DeserializationError::with(array_cursor));
 				}
 
-				Ok((Token::Array(result), cursor))
+				Ok((TokenValue::Array(result), cursor))
 			}
 			(true, false) => {
                 let mut result = vec![];
@@ -342,7 +358,7 @@ impl Token {
 					result.push(token);
                 }
 
-                Ok((Token::FixedArray(result), cursor))
+                Ok((TokenValue::FixedArray(result), cursor))
 			}
 			_ => Err(DeserializationError::with(cursor)),
 		}
@@ -352,7 +368,7 @@ impl Token {
 
 #[cfg(test)]
 mod tests {
-	use {Token, ParamType, Param, Uint, Int};
+	use {TokenValue, Token, ParamType, Param, Uint, Int};
 	use num_bigint::{BigInt, BigUint};
 	use tvm::bitstring::Bitstring;
 
@@ -370,16 +386,39 @@ mod tests {
 		let big_uint = BigUint::from(456u32);
 
 		let tokens = vec![
-			Token::Uint(Uint{number: big_uint.clone(), size: 32}),
-			Token::Int(Int{number: big_int.clone(), size: 64}),
-			Token::Dint(big_int.clone().into()),
-			Token::Duint(big_uint.clone().into()),
-			Token::Bool(false),
-			Token::Array(vec![Token::Bool(false), Token::Bool(true)]),
-			Token::FixedArray(vec![Token::Dint(big_int.clone().into()), Token::Dint(big_int.clone().into())]),
-			Token::Bits(Bitstring::create(vec![1, 2, 3], 15)),
-			Token::Bitstring(Bitstring::create(vec![1, 2, 3], 7)),
-			Token::Tuple(vec![Token::Bool(true), Token::Duint(big_uint.clone().into())]),
+			Token { 
+				name: "a".to_owned(),
+				value: TokenValue::Uint(Uint{number: big_uint.clone(), size: 32}) },
+			Token { 
+				name: "b".to_owned(),
+				value: TokenValue::Int(Int{number: big_int.clone(), size: 64}) },
+			Token { 
+				name: "c".to_owned(),
+				value: TokenValue::Dint(big_int.clone().into()) },
+			Token { 
+				name: "d".to_owned(),
+				value: TokenValue::Duint(big_uint.clone().into()) },
+			Token { 
+				name: "e".to_owned(),
+				value: TokenValue::Bool(false) },
+			Token { 
+				name: "f".to_owned(),
+				value: TokenValue::Array(vec![TokenValue::Bool(false), TokenValue::Bool(true)]) },
+			Token { 
+				name: "g".to_owned(),
+				value: TokenValue::FixedArray(vec![TokenValue::Dint(big_int.clone().into()), TokenValue::Dint(big_int.clone().into())]) },
+			Token { 
+				name: "h".to_owned(),
+				value: TokenValue::Bits(Bitstring::create(vec![1, 2, 3], 15)) },
+			Token { 
+				name: "i".to_owned(),
+				value: TokenValue::Bitstring(Bitstring::create(vec![1, 2, 3], 7)) },
+			Token { 
+				name: "j".to_owned(),
+				value: TokenValue::Tuple(vec![
+					Token { name: "a".to_owned(), value: TokenValue::Bool(true) },
+					Token { name: "b".to_owned(), value: TokenValue::Duint(big_uint.clone().into()) } 
+				]) },
 		];
 
 		let tuple_params = vec![	
@@ -405,11 +444,15 @@ mod tests {
 
 
 		let mut tokens_wrong_type = tokens.clone();
-		tokens_wrong_type[0] = Token::Bool(false);
+		tokens_wrong_type[0] = Token { 
+				name: "a".to_owned(),
+				value: TokenValue::Bool(false) };
 		assert_not_type_check(&tokens_wrong_type, &params);
 
 		let mut tokens_wrong_int_size = tokens.clone();
-		tokens_wrong_int_size[0] = Token::Uint(Uint{number: big_uint.clone(), size: 30});
+		tokens_wrong_int_size[0] = Token { 
+				name: "a".to_owned(),
+				value: TokenValue::Uint(Uint{number: big_uint.clone(), size: 30}) };
 		assert_not_type_check(&tokens_wrong_int_size, &params);
 
 		let mut tokens_wrong_parameters_count = tokens.clone();
@@ -417,15 +460,24 @@ mod tests {
 		assert_not_type_check(&tokens_wrong_parameters_count, &params);
 
 		let mut tokens_wrong_fixed_array_size = tokens.clone();
-		tokens_wrong_fixed_array_size[6] = Token::FixedArray(vec![Token::Dint(big_int.clone().into())]);
+		tokens_wrong_fixed_array_size[6] = Token { 
+				name: "g".to_owned(),
+				value: TokenValue::FixedArray(vec![TokenValue::Dint(big_int.clone().into())]) };
 		assert_not_type_check(&tokens_wrong_fixed_array_size, &params);
 
 		let mut tokens_wrong_array_type = tokens.clone();
-		tokens_wrong_array_type[5] = Token::Array(vec![Token::Bool(false), Token::Dint(big_int.clone().into())]);
+		tokens_wrong_array_type[5] = Token { 
+				name: "f".to_owned(),
+				value: TokenValue::Array(vec![TokenValue::Bool(false), TokenValue::Dint(big_int.clone().into())]) };
 		assert_not_type_check(&tokens_wrong_array_type, &params);
 
 		let mut tokens_wrong_tuple_type = tokens.clone();
-		tokens_wrong_tuple_type[9] = Token::Tuple(vec![Token::Int(Int{number: big_int.clone(), size: 16}), Token::Duint(big_uint.clone().into())]);
+		tokens_wrong_tuple_type[9] = Token { 
+				name: "f".to_owned(),
+				value: TokenValue::Tuple(vec![
+					Token { name: "a".to_owned(), value: TokenValue::Int(Int{number: big_int.clone(), size: 16}) },
+					Token { name: "b".to_owned(), value: TokenValue::Duint(big_uint.clone().into()) }])
+		};
 		assert_not_type_check(&tokens_wrong_tuple_type, &params);
 	}
 }

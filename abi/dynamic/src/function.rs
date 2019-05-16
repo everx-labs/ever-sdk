@@ -1,7 +1,7 @@
 //! Contract function call builder.
 
 use sha2::{Digest, Sha256, Sha512};
-use {Param, Token};
+use {Param, Token, TokenValue};
 use ed25519_dalek::*;
 use tvm::stack::{BuilderData, SliceData};
 use tvm::bitstring::Bitstring;
@@ -96,49 +96,15 @@ impl Function {
 		let mut cursor = data;
 
 		for param in params {
-			let (token, new_cursor) = Token::read_from(&param.kind, cursor)
+			let (token_value, new_cursor) = TokenValue::read_from(&param.kind, cursor)
 										.map_err(|err| DeserializationError::TypeDeserializationError(err))?;
 			cursor = new_cursor;
-			tokens.push(token);
+			tokens.push(Token { name: param.name, value: token_value });
 		}
 
 		if cursor.remaining_references() != 0 || cursor.remaining_bits() != 0 {
             Err(DeserializationError::IncompleteDeserializationError)
         } else {
-			Ok(tokens)
-		}
-	}
-
-		
-	/// Parses the ABI function output to list of tokens.
-	pub fn decode_input(&self, data: SliceData) -> Result<Vec<Token>, DeserializationError> {
-		use ParamType;
-		let mut params = self.input_params();
-
-		params.insert(0, Param{kind: ParamType::Int(32), name: "a".to_owned()});
-		params.insert(0, Param{kind: ParamType::Uint(8), name: "b".to_owned()});
-
-		let mut tokens = vec![];
-		let mut cursor = data;
-
-		if self.signed {
-			cursor.drain_reference();
-		}
-
-		for param in params {
-			let (token, new_cursor) = Token::read_from(&param.kind, cursor)
-										.map_err(|err| DeserializationError::TypeDeserializationError(err))?;
-			println!("{}", token);
-			cursor = new_cursor;
-			tokens.push(token);
-		}
-
-		if cursor.remaining_references() != 0 || cursor.remaining_bits() != 0 {
-            Err(DeserializationError::IncompleteDeserializationError)
-        } else {
-			tokens.remove(0);
-			tokens.remove(0);
-
 			Ok(tokens)
 		}
 	}
@@ -159,7 +125,7 @@ impl Function {
         // prepare standard message
         let mut builder = BuilderData::new();
 		for token in tokens.iter().rev() {
-			builder = token.prepend_to(builder);
+			builder = token.value.prepend_to(builder);
 			//println!("{}", builder);
 		}
 

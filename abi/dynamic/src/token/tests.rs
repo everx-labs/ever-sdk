@@ -1,5 +1,5 @@
 
-use crate::{Token, Param, ParamType, Uint, Int};
+use crate::{Token, TokenValue, Param, ParamType, Uint, Int};
 use super::{Tokenizer, Detokenizer};
 use num_bigint::{BigInt, BigUint};
 use tvm::bitstring::Bitstring;
@@ -25,12 +25,30 @@ fn test_tokenize_ints() {
     ];
 
     let expected_tokens = vec![
-        Token::Uint(Uint{number: BigUint::from(123u8), size: 8}),
-        Token::Int(Int{number: BigInt::from(-456i16), size: 16}),
-        Token::Duint(BigUint::from(0xABCDEFu32).into()),
-        Token::Dint(BigInt::from(-0xabcdef).into()),
-        Token::Uint(Uint{number: BigUint::from(789u64), size: 13}),
-        Token::Int(Int{number: BigInt::from(-12345678900987654321i128), size: 128}),
+        Token {
+            name: "a".to_owned(),
+            value: TokenValue::Uint(Uint{number: BigUint::from(123u8), size: 8})
+        },
+        Token {
+            name: "b".to_owned(),
+            value: TokenValue::Int(Int{number: BigInt::from(-456i16), size: 16})
+        },
+        Token {
+            name: "c".to_owned(),
+            value: TokenValue::Duint(BigUint::from(0xABCDEFu32).into())
+        },
+        Token {
+            name: "d".to_owned(),
+            value:  TokenValue::Dint(BigInt::from(-0xabcdef).into())
+        },
+        Token {
+            name: "e".to_owned(),
+            value: TokenValue::Uint(Uint{number: BigUint::from(789u64), size: 13})
+        },
+        Token {
+            name: "f".to_owned(),
+            value: TokenValue::Int(Int{number: BigInt::from(-12345678900987654321i128), size: 128})
+        }
     ];
 
     assert_eq!(Tokenizer::tokenize_all(&params, &serde_json::from_str(input).unwrap()).unwrap(), expected_tokens);
@@ -78,8 +96,14 @@ fn test_tokenize_bool() {
     ];
 
     let expected_tokens = vec![
-        Token::Bool(true),
-        Token::Bool(false),
+        Token {
+            name: "a".to_owned(),
+            value: TokenValue::Bool(true)
+        },
+        Token {
+            name: "b".to_owned(),
+            value: TokenValue::Bool(false)
+        }
     ];
 
     assert_eq!(Tokenizer::tokenize_all(&params, &serde_json::from_str(input).unwrap()).unwrap(), expected_tokens);
@@ -105,26 +129,32 @@ fn test_tokenize_arrays() {
     ];
 
     let dint_array = vec![
-        Token::Dint(BigInt::from(123)),
-        Token::Dint(BigInt::from(-456)),
-        Token::Dint(BigInt::from(789)),
-        Token::Dint(BigInt::from(-0x0abc)),
+        TokenValue::Dint(BigInt::from(123)),
+        TokenValue::Dint(BigInt::from(-456)),
+        TokenValue::Dint(BigInt::from(789)),
+        TokenValue::Dint(BigInt::from(-0x0abc)),
     ];
 
     let bool_array1 = vec![
-        Token::Bool(false),
-        Token::Bool(true),
+        TokenValue::Bool(false),
+        TokenValue::Bool(true),
     ];
 
     let bool_array2 = vec![
-        Token::Bool(true),
-        Token::Bool(true),
-        Token::Bool(false),
+        TokenValue::Bool(true),
+        TokenValue::Bool(true),
+        TokenValue::Bool(false),
     ];
 
     let expected_tokens = vec![
-        Token::Array(dint_array),
-        Token::FixedArray(vec![Token::Array(bool_array1), Token::Array(bool_array2)]),
+        Token {
+            name: "a".to_owned(),
+            value: TokenValue::Array(dint_array)
+        },
+        Token {
+            name: "b".to_owned(),
+            value: TokenValue::FixedArray(vec![TokenValue::Array(bool_array1), TokenValue::Array(bool_array2)])
+        }
     ];
 
     assert_eq!(Tokenizer::tokenize_all(&params, &serde_json::from_str(input).unwrap()).unwrap(), expected_tokens);
@@ -152,10 +182,22 @@ fn test_tokenize_bitstring() {
 
 
     let expected_tokens = vec![
-        Token::Bits(Bitstring::new().append_bits(0b101000011101011, 15).to_owned()),
-        Token::Bitstring(Bitstring::create(vec![0x12, 0x34, 0x56, 0x78, 0x90, 0xAB, 0xCD, 0xEF], 64)),
-        Token::Bitstring(Bitstring::create(vec![0x12, 0x34], 16)),
-        Token::Bitstring(Bitstring::from_bitstring_with_completion_tag(vec![0x12, 0x34]))
+        Token {
+            name: "a".to_owned(),
+            value: TokenValue::Bits(Bitstring::new().append_bits(0b101000011101011, 15).to_owned())
+        },
+        Token {
+            name: "b".to_owned(),
+            value: TokenValue::Bitstring(Bitstring::create(vec![0x12, 0x34, 0x56, 0x78, 0x90, 0xAB, 0xCD, 0xEF], 64))
+        },
+        Token {
+            name: "c".to_owned(),
+            value: TokenValue::Bitstring(Bitstring::create(vec![0x12, 0x34], 16))
+        },
+        Token {
+            name: "d".to_owned(),
+            value: TokenValue::Bitstring(Bitstring::from_bitstring_with_completion_tag(vec![0x12, 0x34]))
+        }
     ];
 
     assert_eq!(Tokenizer::tokenize_all(&params, &serde_json::from_str(input).unwrap()).unwrap(), expected_tokens);
@@ -166,7 +208,6 @@ fn test_tokenize_bitstring() {
 }
 
 #[test]
-#[ignore]
 fn test_tokenize_tuple() {
     let input = r#"{
         "a" : {
@@ -208,28 +249,61 @@ fn test_tokenize_tuple() {
 
 
     let expected_tokens = vec![
-        Token::Tuple(vec![
-            Token::Array(vec![
-                Token::Dint(BigInt::from(-123)),
-                Token::Dint(BigInt::from(456)),
-                Token::Dint(BigInt::from(0x789))]),
-            Token::Bool(false),
-            Token::Bits(Bitstring::create(vec![0x12, 0x34], 16))
-        ]),
-        Token::Array(vec![
-            Token::Tuple(vec![
-                Token::Bool(true),
-                Token::Bitstring(Bitstring::create(vec![0x12], 8))
+        Token {
+            name: "a".to_owned(),
+            value: TokenValue::Tuple(vec![
+                Token {
+                    name: "a".to_owned(),
+                    value: TokenValue::Array(vec![
+                        TokenValue::Dint(BigInt::from(-123)),
+                        TokenValue::Dint(BigInt::from(456)),
+                        TokenValue::Dint(BigInt::from(0x789))])
+                },
+                Token {
+                    name: "b".to_owned(),
+                    value: TokenValue::Bool(false)
+                },
+                Token {
+                    name: "c".to_owned(),
+                    value: TokenValue::Bits(Bitstring::create(vec![0x12, 0x34], 16))
+                }
+            ])
+        },
+        Token {
+            name: "b".to_owned(),
+            value: TokenValue::Array(vec![
+                TokenValue::Tuple(vec![
+                    Token {
+                        name: "a".to_owned(),
+                        value: TokenValue::Bool(true)
+                    },
+                    Token {
+                        name: "b".to_owned(),
+                        value: TokenValue::Bitstring(Bitstring::create(vec![0x12], 8))
+                    }
+                ]),
+                TokenValue::Tuple(vec![
+                    Token {
+                        name: "a".to_owned(),
+                        value: TokenValue::Bool(false)
+                    },
+                    Token {
+                        name: "b".to_owned(),
+                        value: TokenValue::Bitstring(Bitstring::create(vec![0x34], 8))
+                    }
+                ]),
+                TokenValue::Tuple(vec![
+                    Token {
+                        name: "a".to_owned(),
+                        value: TokenValue::Bool(true)
+                    },
+                    Token {
+                        name: "b".to_owned(),
+                        value: TokenValue::Bitstring(Bitstring::create(vec![0x56], 8))
+                    }
+                ]),
             ]),
-            Token::Tuple(vec![
-                Token::Bool(false),
-                Token::Bitstring(Bitstring::create(vec![0x34], 8))
-            ]),
-            Token::Tuple(vec![
-                Token::Bool(true),
-                Token::Bitstring(Bitstring::create(vec![0x56], 8))
-            ]),
-        ]),
+        }
     ];
 
     assert_eq!(Tokenizer::tokenize_all(&params, &serde_json::from_str(input).unwrap()).unwrap(), expected_tokens);

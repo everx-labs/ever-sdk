@@ -27,7 +27,7 @@ pub mod error;
 
 pub use param_type::ParamType;
 pub use contract::{Contract, Functions};
-pub use token::Token;
+pub use token::{Token, TokenValue};
 //pub use errors::{Error, ErrorKind, Result, ResultExt};
 //pub use decoder::decode;
 pub use function::Function;
