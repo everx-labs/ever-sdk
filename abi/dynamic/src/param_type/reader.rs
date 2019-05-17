@@ -63,26 +63,3 @@ impl Reader {
 		Ok(result)
 	}
 }
-
-#[cfg(test)]
-mod tests {
-	use ParamType;
-	use super::Reader;
-
-	#[test]
-	fn test_read_param() {
-		assert_eq!(Reader::read("uint256").unwrap(), ParamType::Uint(256));
-		assert_eq!(Reader::read("int64").unwrap(), ParamType::Int(64));
-		assert_eq!(Reader::read("dint").unwrap(), ParamType::Dint);
-		assert_eq!(Reader::read("duint").unwrap(), ParamType::Duint);
-		assert_eq!(Reader::read("bool").unwrap(), ParamType::Bool);
-		assert_eq!(Reader::read("bool[]").unwrap(), ParamType::Array(Box::new(ParamType::Bool)));
-		assert_eq!(Reader::read("int33[2]").unwrap(), ParamType::FixedArray(Box::new(ParamType::Int(33)), 2));
-		assert_eq!(Reader::read("bool[][2]").unwrap(), ParamType::FixedArray(Box::new(ParamType::Array(Box::new(ParamType::Bool))), 2));
-		assert_eq!(Reader::read("tuple").unwrap(), ParamType::Tuple(vec![]));
-		assert_eq!(Reader::read("tuple[]").unwrap(), ParamType::Array(Box::new(ParamType::Tuple(vec![]))));
-		assert_eq!(Reader::read("tuple[4]").unwrap(), ParamType::FixedArray(Box::new(ParamType::Tuple(vec![])), 4));
-		assert_eq!(Reader::read("bits256").unwrap(), ParamType::Bits(256));
-		assert_eq!(Reader::read("bitstring").unwrap(), ParamType::Bitstring);
-	}
-}

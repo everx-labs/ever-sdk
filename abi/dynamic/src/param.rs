@@ -59,33 +59,102 @@ impl<'a> Deserialize<'a> for Param {
 	}
 }
 
-impl Serialize for Param {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-	{
-		serializer.serialize_str(&self.name)
-	}
-}
-/*
+
 #[cfg(test)]
 mod tests {
 	use serde_json;
 	use {Param, ParamType};
 
 	#[test]
-	fn param_deserialization() {
+	fn test_simple_param_deserialization() {
 		let s = r#"{
-			"name": "foo",
-			"type": "address"
+			"name": "a",
+			"type": "int9"
 		}"#;
 
 		let deserialized: Param = serde_json::from_str(s).unwrap();
 
 		assert_eq!(deserialized, Param {
-			name: "foo".to_owned(),
-			kind: ParamType::Address,
+			name: "a".to_owned(),
+			kind: ParamType::Int(9),
+		});
+	}
+	
+	#[test]
+	fn test_tuple_param_deserialization() {
+		let s = r#"{
+			"name": "a",
+			"type": "tuple",
+			"components" : [
+				{
+					"name" : "a",
+					"type" : "bitstring"
+				},
+				{
+					"name" : "b",
+					"type" : "dint"
+				}
+			]
+		}"#;
+
+		let deserialized: Param = serde_json::from_str(s).unwrap();
+
+		assert_eq!(deserialized, Param {
+			name: "a".to_owned(),
+			kind: ParamType::Tuple(vec![
+				Param { name: "a".to_owned(), kind: ParamType::Bitstring },
+				Param { name: "b".to_owned(), kind: ParamType::Dint },
+			]),
+		});
+	}
+
+	#[test]
+	fn test_tuples_array_deserialization() {
+		let s = r#"{
+			"name": "a",
+			"type": "tuple[]",
+			"components" : [
+				{
+					"name" : "a",
+					"type" : "bool"
+				},
+				{
+					"name" : "b",
+					"type" : "tuple[5]",
+					"components" : [
+						{
+							"name" : "a",
+							"type" : "duint"
+						},
+						{
+							"name" : "b",
+							"type" : "bits15"
+						}
+					]
+				}
+			]
+		}"#;
+
+		let deserialized: Param = serde_json::from_str(s).unwrap();
+
+		assert_eq!(deserialized, Param {
+			name: "a".to_owned(),
+			kind: ParamType::Array(Box::new(ParamType::Tuple(vec![
+				Param { 
+					name: "a".to_owned(),
+					kind: ParamType::Bool
+				},
+				Param {
+					name: "b".to_owned(),
+					kind: ParamType::FixedArray(
+						Box::new(ParamType::Tuple(vec![
+							Param { name: "a".to_owned(), kind: ParamType::Duint },
+							Param { name: "b".to_owned(), kind: ParamType::Bits(15) },
+						])),
+						5
+					)
+				},
+			]))),
 		});
 	}
 }
-*/

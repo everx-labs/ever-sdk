@@ -26,30 +26,3 @@ impl<'a> Visitor<'a> for ParamTypeVisitor {
 		self.visit_str(value.as_str())
 	}
 }
-
-#[cfg(test)]
-mod tests {
-	use serde_json;
-	use ParamType;
-
-	#[test]
-	fn param_type_deserialization() {
-		let s = r#"["uint256", "int64", "dint", "duint", "bool", "bool[]", "int33[2]", "bool[][2]", "tuple", "tuple[]", "tuple[4]", "bits256", "bitstring"]"#;
-		let deserialized: Vec<ParamType> = serde_json::from_str(s).unwrap();
-		assert_eq!(deserialized, vec![
-			ParamType::Uint(256),
-			ParamType::Int(64),
-			ParamType::Dint,
-			ParamType::Duint,
-			ParamType::Bool,
-			ParamType::Array(Box::new(ParamType::Bool)),
-			ParamType::FixedArray(Box::new(ParamType::Int(33)), 2),
-			ParamType::FixedArray(Box::new(ParamType::Array(Box::new(ParamType::Bool))), 2),
-			ParamType::Tuple(vec![]),
-			ParamType::Array(Box::new(ParamType::Tuple(vec![]))),
-			ParamType::FixedArray(Box::new(ParamType::Tuple(vec![])), 4),
-			ParamType::Bits(256),
-			ParamType::Bitstring
-		]);
-	}
-}
