@@ -829,9 +829,6 @@ fn test_small_bits() {
 
     let mut data = Bitstring::new();
 
-    data.append_u8(ABI_VERSION);
-    data.append_u32(get_function_id(b"test_small_bits(bits982)()"));
-
     data.append_bit(&Bit::One);
     data.append_bit(&Bit::Zero);
 
@@ -846,6 +843,18 @@ fn test_small_bits() {
     let mut root_builder = BuilderData::new();
 
     root_builder = put_data_into_chain(root_builder, data);
+
+    // ABI version and function ID can't be splitted to several cells so create new root cell for them
+    let mut data = Bitstring::new();
+
+    data.append_u8(ABI_VERSION);
+    data.append_u32(get_function_id(b"test_small_bits(bits982)()"));
+
+    let mut new_builder = BuilderData::new();
+    new_builder.append_reference(root_builder);
+    root_builder = new_builder;
+
+    root_builder.append_data(&data);
 
     let expected_tree = root_builder.into();
 
