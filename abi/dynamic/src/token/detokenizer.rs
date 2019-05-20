@@ -1,8 +1,7 @@
-use std::collections::HashMap;
 use serde::ser::{Serialize, Serializer, SerializeMap};
-use {ParamType, Param, Uint, Int, Token, TokenValue};
-use num_bigint::{Sign, BigInt, BigUint};
-use tvm::bitstring::{Bitstring, Bit};
+use {Param, Token, TokenValue};
+use num_bigint::{BigInt, BigUint};
+use tvm::bitstring::{Bitstring};
 
 #[derive(Debug)]
 pub enum DetokenizeError {
@@ -53,7 +52,13 @@ impl Token {
     where
         S: Serializer,
     {
-        let int_str = "0x".to_owned() + &number.to_str_radix(16);
+        let mut int_str = number.to_str_radix(16);
+        
+        if int_str.starts_with("-") {
+            int_str.insert_str(1, "0x");
+        } else {
+            int_str.insert_str(0, "0x");
+        };
 
         serializer.serialize_str(&int_str)
     }

@@ -146,6 +146,22 @@ impl TokenValue {
 			TokenValue::Bitstring(_) => *param_type == ParamType::Bitstring,
 		}
 	}
+
+	/// Returns `ParamType` the token value represents
+	pub fn get_param_type(&self) -> ParamType {
+		match self {
+			TokenValue::Uint(uint) => ParamType::Uint(uint.size),
+			TokenValue::Int(int) => ParamType::Int(int.size),
+			TokenValue::Dint(_) => ParamType::Dint,
+			TokenValue::Duint(_) => ParamType::Duint,
+			TokenValue::Bool(_) => ParamType::Bool,
+			TokenValue::Tuple(ref arr) => ParamType::Tuple(arr.iter().map(|token| token.get_param()).collect()),
+			TokenValue::Array(ref tokens) => ParamType::Array(Box::new(tokens[0].get_param_type())),
+			TokenValue::FixedArray(ref tokens) => ParamType::FixedArray(Box::new(tokens[0].get_param_type()), tokens.len()),
+			TokenValue::Bits(b) => ParamType::Bits(b.length_in_bits()),
+			TokenValue::Bitstring(_) => ParamType::Bitstring,
+		}
+	}
 }
 
 impl Token {
@@ -157,6 +173,11 @@ impl Token {
 				token.name == param.name
 			})
 		}
+	}
+
+	/// Rerturns `Param` the token represents
+	pub fn get_param(&self) -> Param {
+		Param { name: self.name.clone(), kind: self.value.get_param_type()}
 	}
 }
 
@@ -176,7 +197,7 @@ impl ABISerialized for TokenValue {
 				destination
 			},
 			TokenValue::Array(ref tokens) => tokens.prepend_to(destination),
-			TokenValue::FixedArray(ref tokens) => tokens.prepend_to(destination),
+			TokenValue::FixedArray(ref tokens) => prepend_fixed_array(destination, &tokens),
 			TokenValue::Bits(b) => prepend_fixed_array(destination, &b.bits(0 .. b.length_in_bits()).data),
 			TokenValue::Bitstring(bitstring) => bitstring.prepend_to(destination),
 		}
@@ -188,7 +209,7 @@ impl ABISerialized for TokenValue {
 			TokenValue::Int(int) => int.size,
 			TokenValue::Dint(dint) => dint.get_in_cell_size(),
 			TokenValue::Duint(duint) => duint.get_in_cell_size(),
-			TokenValue::Bool(b) => 1,
+			TokenValue::Bool(_) => 1,
 			TokenValue::Tuple(ref tokens) =>{
 				tokens.iter().fold(0usize, |size, token| size + token.value.get_in_cell_size())
 			},
@@ -289,24 +310,38 @@ impl TokenValue {
 		}
 	}
 
+	fn read_array_from_branch(param_type: &ParamType, cursor: SliceData) 
+		-> Result<(Vec<Self>, SliceData), DeserializationError>
+	{
+		let mut cursor = cursor;
+
+		if cursor.remaining_references() == 0 {
+			return Err(DeserializationError::with(cursor));
+		}
+
+		let mut array_cursor = cursor.checked_drain_reference().unwrap();
+		let mut result = vec![];
+
+		while array_cursor.remaining_references() != 0 || array_cursor.remaining_bits() != 0 {
+			let (token, new_cursor) = Self::read_from(param_type, array_cursor)?;
+			array_cursor = new_cursor;
+			result.push(token);
+		}
+
+		if array_cursor.remaining_references() != 0 || array_cursor.remaining_bits() != 0 {
+			return Err(DeserializationError::with(array_cursor));
+		}
+
+		Ok((result, cursor))
+	}
+
 	fn read_array(param_type: &ParamType, cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
-		let (flag, mut cursor) = <(bool,bool)>::read_from(cursor)?;
+		let (flag, cursor) = <(bool,bool)>::read_from(cursor)?;
 
 		match flag {
 			(false, false) => {
-				if cursor.remaining_references() == 0 {
-					return Err(DeserializationError::with(cursor));
-				}
-
-				let mut array_cursor = cursor.checked_drain_reference().unwrap();
-				let mut result = vec![];
-
-				while array_cursor.remaining_references() != 0 || array_cursor.remaining_bits() != 0 {
-					let (token, new_cursor) = Self::read_from(param_type, cursor)?;
-					cursor = new_cursor;
-					result.push(token);
-				}
-
+				let (result, cursor) = Self::read_array_from_branch(param_type, cursor)?;
+				
 				Ok((TokenValue::Array(result), cursor))
 			}
 			(true, false) => {
@@ -330,24 +365,9 @@ impl TokenValue {
 
 		match flag {
 			(false, false) => {
-				if cursor.remaining_references() == 0 {
-					return Err(DeserializationError::with(cursor));
-				}
+				let (result, cursor) = Self::read_array_from_branch(param_type, cursor)?;
 
-				let mut array_cursor = cursor.checked_drain_reference().unwrap();
-				let mut result = vec![];
-
-				 for _ in 0..size {
-					let (token, new_cursor) = Self::read_from(param_type, cursor)?;
-					cursor = new_cursor;
-					result.push(token);
-				}
-
-				if array_cursor.remaining_references() != 0 || array_cursor.remaining_bits() != 0 {
-					return Err(DeserializationError::with(array_cursor));
-				}
-
-				Ok((TokenValue::Array(result), cursor))
+				Ok((TokenValue::FixedArray(result), cursor))
 			}
 			(true, false) => {
                 let mut result = vec![];

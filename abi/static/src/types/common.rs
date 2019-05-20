@@ -101,12 +101,16 @@ pub fn get_next_bits_from_chain(cursor: SliceData, bits: usize) -> Result<(Bitst
             return Err(DeserializationError::with(cursor));
         }
 
-        let mut result = cursor.get_next_bitstring(remaining_bits);
+        if remaining_bits >= bits {
+            Ok((cursor.get_next_bitstring(bits), cursor))
+        } else {
+            let mut result = cursor.get_next_bitstring(remaining_bits);
 
-        let (remain, cursor) = get_next_bits_from_chain(cursor, bits - result.length_in_bits())?;
+            let (remain, cursor) = get_next_bits_from_chain(cursor, bits - result.length_in_bits())?;
 
-        result.append(&remain);
+            result.append(&remain);
 
-        Ok((result, cursor))
+            Ok((result, cursor))
+        }
     }
 }

@@ -22,15 +22,12 @@ pub mod token;
 pub mod json_abi;
 pub mod error;
 
-//#[cfg(test)]
-//mod tests;
-
 pub use param_type::ParamType;
 pub use contract::{Contract, Functions};
 pub use token::{Token, TokenValue};
 //pub use errors::{Error, ErrorKind, Result, ResultExt};
 //pub use decoder::decode;
-pub use function::Function;
+pub use function::{Function, ABI_VERSION};
 pub use param::Param;
 pub use types::int::Int;
 pub use types::uint::Uint;
