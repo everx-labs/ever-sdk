@@ -378,6 +378,7 @@ fn call_create() {
     let wallet_address = deploy_contract_and_wait("Wallet.tvc", WALLET_ABI, "{}", &keypair);
 
     println!("Acoount created. Address {}", hex::encode(wallet_address.as_slice()));
+    println!("Key pair {:X?}", keypair);
 
 
     unsafe {
@@ -440,6 +441,8 @@ fn call_send_transaction(params: &[&str]) {
     	} else {
     		panic!("Current key pair not set");
     	};
+
+    	println!("Key pair {:X?}", pair);
 
     	answer = call_contract_and_wait(current_address.clone().unwrap(), "sendTransaction", &str_params, WALLET_ABI, &pair);
     }
