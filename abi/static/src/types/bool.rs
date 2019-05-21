@@ -5,7 +5,6 @@ use super::{
     DeserializationError
 };
 
-use tvm::bitstring::{Bit, Bitstring};
 use tvm::stack::{BuilderData, SliceData};
 
 impl ABISerialized for bool {
@@ -20,15 +19,13 @@ impl ABISerialized for bool {
                 destination
             }
         };
-        destination.prepend_data(
-            Bitstring::new().append_bit(&{
-                if *self {
-                    Bit::One
-                } else {
-                    Bit::Zero
-                }
-            }),
-        );
+
+        let vec = if *self {
+            [0x80]
+        } else {
+            [0x00]
+        };
+        destination.prepend_raw(&vec, 1).unwrap();
         destination
     }
 
