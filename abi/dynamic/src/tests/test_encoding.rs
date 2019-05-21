@@ -190,8 +190,12 @@ fn test_nested_tuples_with_all_simples() {
         128,
     ));
 
+    let mut vec = vec![];
+    bitstring.into_bitstring_with_completion_tag(&mut vec);
+
     let mut builder = BuilderData::new();
-    builder.append_data(&bitstring);
+    builder.append_bitstring(&vec).unwrap();
+    
 
     let expected_tree = builder.into();
 
@@ -237,8 +241,11 @@ fn test_small_static_array() {
         bitstring.append_u32(i);
     }
 
+    let mut vec = vec![];
+    bitstring.into_bitstring_with_completion_tag(&mut vec);
+    
     let mut builder = BuilderData::new();
-    builder.append_data(&bitstring);
+    builder.append_bitstring(&vec).unwrap();
 
     let expected_tree = builder.into();
 
@@ -281,8 +288,11 @@ fn test_empty_dynamic_array() {
     bitstring.append_bit(&Bit::Zero);
     bitstring.append_u8(0);
 
+    let mut vec = vec![];
+    bitstring.into_bitstring_with_completion_tag(&mut vec);
+    
     let mut builder = BuilderData::new();
-    builder.append_data(&bitstring);
+    builder.append_bitstring(&vec).unwrap();
 
     let expected_tree = builder.into();
 
@@ -314,8 +324,11 @@ fn test_small_dynamic_array() {
         bitstring.append_u16(i);
     }
 
+    let mut vec = vec![];
+    bitstring.into_bitstring_with_completion_tag(&mut vec);
+    
     let mut builder = BuilderData::new();
-    builder.append_data(&bitstring);
+    builder.append_bitstring(&vec).unwrap();
 
     let expected_tree = builder.into();
 
@@ -345,14 +358,12 @@ fn put_data_into_chain(bilder: BuilderData, data: Bitstring) -> BuilderData {
             size,
         );
 
-        let mut cut = Bitstring::new();
-        data.bits(size - adding_bits..size)
-            .data
-            .iter()
-            .for_each(|x| {
-                cut.append_bit(x);
-            });
-        current_builder.append_data(&cut);
+        let cut = data.substring(size - adding_bits..size);
+
+        let mut vec = vec![];
+        cut.into_bitstring_with_completion_tag(&mut vec);
+        
+        current_builder.append_bitstring(&vec).unwrap();
 
         size -= adding_bits;
     }
@@ -387,7 +398,10 @@ fn test_big_static_array() {
 
     let mut root_builder = BuilderData::new();
 
-    root_builder.append_data(&data);
+    let mut vec = vec![];
+    data.into_bitstring_with_completion_tag(&mut vec);
+    root_builder.append_bitstring(&vec).unwrap();
+
     root_builder.append_reference(array_builder);
 
     let expected_tree = root_builder.into();
@@ -428,7 +442,10 @@ fn test_huge_static_array() {
 
     let mut root_builder = BuilderData::new();
 
-    root_builder.append_data(&data);
+    let mut vec = vec![];
+    data.into_bitstring_with_completion_tag(&mut vec);
+    root_builder.append_bitstring(&vec).unwrap();
+
     root_builder.append_reference(array_builder.clone());
 
     let expected_tree = root_builder.into();
@@ -468,7 +485,10 @@ fn test_big_dynamic_array() {
 
     let mut root_builder = BuilderData::new();
 
-    root_builder.append_data(&data);
+    let mut vec = vec![];
+    data.into_bitstring_with_completion_tag(&mut vec);
+    root_builder.append_bitstring(&vec).unwrap();
+
     root_builder.append_reference(array_builder);
 
     let expected_tree = root_builder.into();
@@ -504,7 +524,10 @@ fn test_dynamic_array_of_tuples() {
     }
 
     let mut builder = BuilderData::new();
-    builder.append_data(&bitstring);
+
+    let mut vec = vec![];
+    bitstring.into_bitstring_with_completion_tag(&mut vec);
+    builder.append_bitstring(&vec).unwrap();
 
     let expected_tree = builder.into();
 
@@ -587,7 +610,10 @@ fn test_tuples_with_combined_types() {
         array_builder = put_data_into_chain(array_builder, array2_data.clone());
 
         if BuilderData::references_capacity() == chain_builder.references_used() {
-            chain_builder.append_data(&cell_data);
+            let mut vec = vec![];
+            cell_data.into_bitstring_with_completion_tag(&mut vec);
+            chain_builder.append_bitstring(&vec).unwrap();
+
             cell_data.clear();
 
             let mut temp_builder = BuilderData::new();
@@ -603,7 +629,9 @@ fn test_tuples_with_combined_types() {
 
     bitstring.append(&cell_data);
 
-    chain_builder.append_data(&bitstring);
+    let mut vec = vec![];
+    bitstring.into_bitstring_with_completion_tag(&mut vec);
+    chain_builder.append_bitstring(&vec).unwrap();
 
     // &[i64] - separate chain data
     let mut array_builder = BuilderData::new();
@@ -691,7 +719,10 @@ fn test_arrays_of_dint_and_duint() {
     }
 
     let mut builder = BuilderData::new();
-    builder.append_data(&bitstring);
+
+    let mut vec = vec![];
+    bitstring.into_bitstring_with_completion_tag(&mut vec);
+    builder.append_bitstring(&vec).unwrap();
 
     let expected_tree = builder.into();
 
@@ -727,7 +758,10 @@ fn test_small_bitstring() {
     bitstring.append(&input_bitstring);
 
     let mut builder = BuilderData::new();
-    builder.append_data(&bitstring);
+
+    let mut vec = vec![];
+    bitstring.into_bitstring_with_completion_tag(&mut vec);
+    builder.append_bitstring(&vec).unwrap();
 
     let expected_tree = builder.into();
 
@@ -763,7 +797,11 @@ fn test_big_bitstring() {
     array_builder = put_data_into_chain(array_builder, input_bitstring.clone());
 
     let mut builder = BuilderData::new();
-    builder.append_data(&bitstring);
+
+    let mut vec = vec![];
+    bitstring.into_bitstring_with_completion_tag(&mut vec);
+    builder.append_bitstring(&vec).unwrap();
+
     builder.append_reference(array_builder);
 
     let expected_tree = builder.into();
@@ -813,7 +851,9 @@ fn test_small_bits() {
     new_builder.append_reference(root_builder);
     root_builder = new_builder;
 
-    root_builder.append_data(&data);
+    let mut vec = vec![];
+    data.into_bitstring_with_completion_tag(&mut vec);
+    root_builder.append_bitstring(&vec).unwrap();
 
     let expected_tree = root_builder.into();
 
@@ -854,7 +894,10 @@ fn test_big_bits() {
 
     let mut root_builder = BuilderData::new();
 
-    root_builder.append_data(&data);
+    let mut vec = vec![];
+    data.into_bitstring_with_completion_tag(&mut vec);
+    root_builder.append_bitstring(&vec).unwrap();
+
     root_builder.append_reference(array_builder.clone());
 
     let expected_tree = root_builder.into();
@@ -897,13 +940,15 @@ fn test_reserving_reference() {
     for _ in 0..4 {
         root_builder.append_reference(array_builder.clone());
     }
-    root_builder.append_data(&Bitstring::create(vec![0x80,0x00], 10)); // array of 4 arrays in separate cells
+    root_builder.append_raw(&[0x80,0x00], 10).unwrap(); // array of 4 arrays in separate cells
 
     let mut new_builder = BuilderData::new();
     new_builder.append_reference(root_builder);
     root_builder = new_builder;
 
-    root_builder.append_data(&data);
+    let mut vec = vec![];
+    data.into_bitstring_with_completion_tag(&mut vec);
+    root_builder.append_bitstring(&vec).unwrap();
 
     let expected_tree: SliceData = root_builder.into();
 

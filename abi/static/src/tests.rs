@@ -304,7 +304,7 @@ fn test_empty_dynamic_array() {
     bitstring.into_bitstring_with_completion_tag(&mut vec);
     
     let mut builder = BuilderData::new();
-    builder.append_bitstring(&vec).unwrap();;
+    builder.append_bitstring(&vec).unwrap();
 
 
     let expected_tree = builder.into();
@@ -879,7 +879,9 @@ fn test_small_bits() {
     new_builder.append_reference(root_builder);
     root_builder = new_builder;
 
-    root_builder.append_data(&data);
+    let mut vec = vec![];
+    data.into_bitstring_with_completion_tag(&mut vec);
+    root_builder.append_bitstring(&vec).unwrap();
 
     let expected_tree = root_builder.into();
 
