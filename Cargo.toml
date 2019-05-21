@@ -25,8 +25,8 @@ base64 = "0.10.0"
 abi-lib =  { path = "abi/static" }
 abi-lib-dynamic = { git = "ssh://git@github.com/tonlabs/TON-SDK.git", branch = "feature-dynamic-abi", package = "abi-lib-dynamic" }
 
-tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "dev", package = "tvm" }
-ton_block = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "dev", package = "ton_block" }
+tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "feature-blockchain-structs-to-jsons", package = "tvm" }
+ton_block = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "feature-blockchain-structs-to-jsons", package = "ton_block" }
 
 #[dev-dependencies.compiletest_rs]
 #features = ["tmp", "stable"]

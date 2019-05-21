@@ -20,6 +20,7 @@ use ton_block::{
     Deserializable,
     Grams,
     CurrencyCollection};
+use std::convert::Into;
 
 const MSG_TABLE_NAME: &str = "messages";
 const CONTRACTS_TABLE_NAME: &str = "accounts";
@@ -242,7 +243,8 @@ impl Contract {
         let msg_body = encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
-        let msg = Self::create_deploy_message(Some(msg_body.into()), image)?;
+        let cell: std::sync::Arc<tvm::stack::CellData> = msg_body.into();
+        let msg = Self::create_deploy_message(Some(cell), image)?;
 
         let msg_id = Self::send_message(msg)?;
 
