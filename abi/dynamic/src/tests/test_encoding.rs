@@ -4,7 +4,7 @@ use num_bigint::{BigUint, BigInt};
 
 use tvm::bitstring::{Bit, Bitstring};
 use tvm::cells_serialization::{BagOfCells};
-use tvm::stack::{BuilderData, SliceData};
+use tvm::stack::{BuilderData, SliceData, IBitstring};
 use abi_lib::types::{Dint, Duint};
 
 use {
@@ -103,14 +103,10 @@ fn tokens_from_values(values: Vec<TokenValue>) -> Vec<Token> {
 
 #[test]
 fn test_one_input_and_output() {
-    let mut bitstring = Bitstring::new();
-
-    bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id(b"test_one_input_and_output(uint128)(uint128)"));
-    bitstring.append_u128(1123);
-
     let mut builder = BuilderData::new();
-    builder.append_data(&bitstring);
+    builder.append_u8(ABI_VERSION).unwrap();
+    builder.append_u32(get_function_id(b"test_one_input_and_output(uint128)(uint128)")).unwrap();
+    builder.append_u128(1123).unwrap();
 
     let expected_tree = builder.into();
 
@@ -138,14 +134,9 @@ fn test_one_input_and_output_by_data() {
 
 #[test]
 fn test_empty_params() {
-
-    let mut bitstring = Bitstring::new();
-
-    bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id(b"test_empty_params()()"));
-
     let mut builder = BuilderData::new();
-    builder.append_data(&bitstring);
+    builder.append_u8(ABI_VERSION).unwrap();
+    builder.append_u32(get_function_id(b"test_empty_params()()")).unwrap();
 
     let expected_tree = builder.into();
 
@@ -154,15 +145,11 @@ fn test_empty_params() {
 
 #[test]
 fn test_two_params() {
-    let mut bitstring = Bitstring::new();
-
-    bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id(b"test_two_params(bool,int32)(bool,int32)"));
-    bitstring.append_bit(&Bit::One);
-    bitstring.append_i32(9434567);
-
     let mut builder = BuilderData::new();
-    builder.append_data(&bitstring);
+    builder.append_u8(ABI_VERSION).unwrap();
+    builder.append_u32(get_function_id(b"test_two_params(bool,int32)(bool,int32)")).unwrap();
+    builder.append_bit_one().unwrap();
+    builder.append_i32(9434567).unwrap();
 
     let expected_tree = builder.into();
 
