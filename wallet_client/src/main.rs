@@ -376,6 +376,7 @@ fn call_create(current_address: &mut Option<AccountId>) {
 
     println!("Acoount created. Address {}", str_address);
 
+
 	std::fs::write("last", wallet_address.as_slice()).expect("Couldn't save wallet address");
 	std::fs::write(str_address, &keypair.to_bytes().to_vec()).expect("Couldn't save wallet key pair");
 
@@ -431,6 +432,7 @@ fn call_send_transaction(current_address: &Option<AccountId>, params: &[&str]) {
 	let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
 
 	let answer = call_contract_and_wait(address, "sendTransaction", &str_params, WALLET_ABI, &pair);
+
 
     let answer: SendTransactionAnswer = serde_json::from_str(&answer).unwrap();
 
