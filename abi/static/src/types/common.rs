@@ -1,5 +1,5 @@
 use tvm::bitstring::Bitstring;
-use tvm::stack::{BuilderData, SliceData};
+use tvm::stack::{BuilderData, SliceData, IBitstring};
 use super::DeserializationError;
 use types::ABIParameter;
 
@@ -43,12 +43,16 @@ pub fn prepend_data_to_chain(mut builder: BuilderData, data: Bitstring) -> Build
             // data does not fit into cell - fill current cell and take remaining data
             if remaining_bits < data.length_in_bits() {
                 let cut = data.substring(data.length_in_bits() - remaining_bits..data.length_in_bits());
-                builder.prepend_data(&cut);
+                let mut vec = vec![];
+                cut.into_bitstring_with_completion_tag(&mut vec);
+                builder.prepend_bitstring(&vec).unwrap();
 
                 data = data.substring(0..data.length_in_bits() - remaining_bits);
             } else {
                 // data fit into current cell - no data remaining
-                builder.prepend_data(&data);
+                let mut vec = vec![];
+                data.into_bitstring_with_completion_tag(&mut vec);
+                builder.prepend_bitstring(&vec).unwrap();
 
                 data.clear();
             }
