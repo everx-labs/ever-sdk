@@ -229,10 +229,6 @@ const WALLET_ABI: &str = r#"{
 }
 "#;
 
-static mut current_key_pair: Option<Keypair> = None;
-static mut current_address: Option<AccountId> = None;
-
-
 // Create message "from wallet" to transfer some funds 
 // from one account to another
 pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, value: u128) -> Message {
@@ -367,7 +363,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
     // 3. message object with body
 }
 
-fn call_create() {
+fn call_create(current_address: &mut Option<AccountId>) {
 	println!("Creating new wallet account");
 
     // generate key pair
@@ -376,24 +372,27 @@ fn call_create() {
    
 	// deploy wallet
     let wallet_address = deploy_contract_and_wait("Wallet.tvc", WALLET_ABI, "{}", &keypair);
+	let str_address = hex::encode(wallet_address.as_slice());
 
-    println!("Acoount created. Address {}", hex::encode(wallet_address.as_slice()));
+    println!("Acoount created. Address {}", str_address);
 
+	std::fs::write("last", wallet_address.as_slice()).expect("Couldn't save wallet address");
+	std::fs::write(str_address, &keypair.to_bytes().to_vec()).expect("Couldn't save wallet key pair");
 
-    unsafe {
-        current_address = Some(wallet_address);
-        current_key_pair = Some(keypair);
-    }
+	*current_address = Some(wallet_address);
 }
 
-fn call_get_balance(params: &[&str]) {
-		let address = if params.len() > 0 {
-			AccountId::from(hex::decode(params[0]).unwrap())
+fn call_get_balance(current_address: &Option<AccountId>, params: &[&str]) {
+	let address = if params.len() > 0 {
+		AccountId::from(hex::decode(params[0]).unwrap())
+	} else {
+		if let Some(addr) = current_address.clone() {
+			addr
 		} else {
-			unsafe {
-				current_address.clone().unwrap()
-			}
-		};
+			println!("Current address not set");
+			return;
+		}
+	};
 
 	let contract = Contract::load(address)
         .expect("Error calling load Contract")
@@ -409,44 +408,35 @@ fn call_get_balance(params: &[&str]) {
 
 #[derive(Deserialize)]
 struct SendTransactionAnswer {
-	transaction: u64,
-	error: i8
+	transaction: String,
+	error: String
 }
 
-fn call_send_transaction(params: &[&str]) {
+fn call_send_transaction(current_address: &Option<AccountId>, params: &[&str]) {
     if params.len() < 2 {
         println!("Not enough parameters");
         return;
     }
 
-	unsafe {
-	    if None == current_address {
-	    	println!("Current address not set");
-	    	return;
-	    }
-	}
+	let address = if let Some(addr) = current_address {
+		addr.clone()
+	} else {
+		println!("Current address not set");
+		return;
+	};
 
     let str_params = format!("{{ \"recipient\" : \"x{}\", \"value\": \"{}\" }}", params[0], params[1]);
 
-    let mut answer: String;
+	let pair = std::fs::read(hex::encode(address.as_slice())).expect("Couldn't read key pair");
+	let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
 
-    unsafe {
-    	//println!("Address {}", current_address.clone().unwrap());
-
-    	let pair = if let Some(pair) = &current_key_pair {
-    		let array = pair.to_bytes();
-
-    		Keypair::from_bytes(&array).unwrap()
-    	} else {
-    		panic!("Current key pair not set");
-    	};
-
-    	answer = call_contract_and_wait(current_address.clone().unwrap(), "sendTransaction", &str_params, WALLET_ABI, &pair);
-    }
+	let answer = call_contract_and_wait(address, "sendTransaction", &str_params, WALLET_ABI, &pair);
 
     let answer: SendTransactionAnswer = serde_json::from_str(&answer).unwrap();
 
-    println!("Transaction ID {}", answer.transaction);
+	let transaction = u64::from_str_radix(&answer.transaction[2..], 16).expect("Couldn't parse transaction number");
+
+    println!("Transaction ID {}", transaction);
 }
 
 const HELP: &str = r#"
@@ -466,8 +456,18 @@ fn main() {
     };
 
     init_json(config).expect("Couldn't establish connection");
-
     println!("Connection established");
+
+	let mut current_address: Option<AccountId> = None;
+
+	if let Ok(address) = std::fs::read("last_address") {
+		current_address = Some(AccountId::from(address));
+
+		println!("Wallet address {}", hex::encode(current_address.clone().unwrap().as_slice()));
+	} else {
+		println!("Wallet address not assigned. Create new wallet");
+	}
+
     println!("Enter command");
 
     loop {
@@ -482,9 +482,9 @@ fn main() {
 
         match params[0].as_ref() {
         	"help" => println!("{}", HELP),
-			"balance" => call_get_balance(&params[1..]),
-            "create" => call_create(),
-            "send" => call_send_transaction(&params[1..]),
+			"balance" => call_get_balance(&current_address, &params[1..]),
+            "create" => call_create(&mut current_address),
+            "send" => call_send_transaction(&current_address, &params[1..]),
             "exit" => break,
             _ => println!("Unknown command")
         }
