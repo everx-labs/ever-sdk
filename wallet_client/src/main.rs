@@ -489,6 +489,7 @@ fn call_create_limit(current_address: &Option<AccountId>, params: &[&str]) {
 	let limit_id = u8::from_str_radix(&answer.limitId[2..], 16).expect("Couldn't parse limit ID");
 
     println!("Limit ID {}", limit_id);
+
 }
 
 const HELP: &str = r#"
