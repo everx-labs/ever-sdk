@@ -426,6 +426,8 @@ fn call_send_transaction(current_address: &Option<AccountId>, params: &[&str]) {
 		return;
 	};
 
+	println!("Sending {} grams to {}", params[1], params[0]);
+
     let str_params = format!("{{ \"recipient\" : \"x{}\", \"value\": \"{}\" }}", params[0], params[1]);
 
 	let pair = std::fs::read(hex::encode(address.as_slice())).expect("Couldn't read key pair");
@@ -439,6 +441,55 @@ fn call_send_transaction(current_address: &Option<AccountId>, params: &[&str]) {
 	let transaction = u64::from_str_radix(&answer.transaction[2..], 16).expect("Couldn't parse transaction number");
 
     println!("Transaction ID {}", transaction);
+}
+
+#[derive(Deserialize)]
+struct CreateLimitAnswer {
+	limitId: String,
+	error: String
+}
+
+fn call_create_limit(current_address: &Option<AccountId>, params: &[&str]) {
+    if params.len() < 2 {
+        println!("Not enough parameters");
+        return;
+    }
+
+	let address = if let Some(addr) = current_address {
+		addr.clone()
+	} else {
+		println!("Current address not set");
+		return;
+	};
+
+    let limit_type = u8::from_str_radix(&params[0], 10).unwrap();
+
+    let meta = if limit_type == 1 {
+        if params.len() < 3
+        {
+            println!("Not enough parameters");
+            return;
+        }
+
+        let period = u8::from_str_radix(&params[2], 10).unwrap();
+        hex::encode(&[period])
+    } else {
+		String::new()
+	};
+
+    let str_params = format!(r#"{{ "type" : "{}", "value": "{}", "meta": "x{}" }}"#, params[0], params[1], meta);
+
+	let pair = std::fs::read(hex::encode(address.as_slice())).expect("Couldn't read key pair");
+	let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
+
+	let answer = call_contract_and_wait(address, "createLimit", &str_params, WALLET_ABI, &pair);
+
+
+    let answer: CreateLimitAnswer = serde_json::from_str(&answer).unwrap();
+
+	let limit_id = u8::from_str_radix(&answer.limitId[2..], 16).expect("Couldn't parse limit ID");
+
+    println!("Transaction ID {}", limit_id);
 }
 
 const HELP: &str = r#"
@@ -487,6 +538,7 @@ fn main() {
 			"balance" => call_get_balance(&current_address, &params[1..]),
             "create" => call_create(&mut current_address),
             "send" => call_send_transaction(&current_address, &params[1..]),
+			"create-limit" => call_create_limit(&current_address, &params[1..]),
             "exit" => break,
             _ => println!("Unknown command")
         }
