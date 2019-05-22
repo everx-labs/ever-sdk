@@ -26,7 +26,7 @@ const STD_CONFIG: &str = r#"
     },
     "kafka_config": {
         "servers": ["142.93.137.28:9092"],
-        "topic": "requests-1",
+        "topic": "requests",
         "ack_timeout": 1000
     }
 }"#;
@@ -485,7 +485,7 @@ fn call_get_limit_by_id(current_address: &Option<AccountId>, params: &[&str]) {
 
     let str_params = format!(r#"{{ "limitId" : "{}" }}"#, params[0]);
 
-	let answer = call_contract_and_wait(address, "getLimits", &str_params, WALLET_ABI, None);
+	let answer = call_contract_and_wait(address, "getLimitById", &str_params, WALLET_ABI, None);
 
 
     let answer: GetLimitByIdAnswer = serde_json::from_str(&answer).unwrap();
@@ -495,7 +495,7 @@ fn call_get_limit_by_id(current_address: &Option<AccountId>, params: &[&str]) {
 	let value = u64::from_str_radix(&answer.limitInfo.value[2..], 16).unwrap();
 	println!("Value - {}", value);
 	
-	if answer.limitInfo.kind == "0" {
+	if answer.limitInfo.kind == "0x0" {
 		println!("Type - Single operation limit");
 	} else {
 		println!("Type - Arbitrary limit");
@@ -525,6 +525,8 @@ fn call_get_limits(current_address: &Option<AccountId>) {
 
     let answer: GetLimitsAnswer = serde_json::from_str(&answer).unwrap();
 
+    println!("Limits count {}", answer.list.len());
+
 	for limit in answer.list {
         call_get_limit_by_id(current_address, &[&limit]);
     };
@@ -552,7 +554,7 @@ fn call_get_version(current_address: &Option<AccountId>) {
 
     let str_params = "{}".to_owned();
 
-	let answer = call_contract_and_wait(address, "getLimits", &str_params, WALLET_ABI, None);
+	let answer = call_contract_and_wait(address, "getVersion", &str_params, WALLET_ABI, None);
 
 
     let answer: GetVersionAnswer = serde_json::from_str(&answer).unwrap();
@@ -605,7 +607,8 @@ Supported commands:
         value    - new limit value in grams
         period   - new limit period in days. Only applied to limit type 1
 	remove-limit <limit ID>                 - limit ID returned by `create-limit` or `limits` function
-	limits                                  - list all existing wallet limits
+	get-limit <limit ID>                    - get one limit info
+	limits                                  - list all existing wallet limits information
 	version                                 - get version of the wallet contract
     exit                                    - exit program"#;
 
@@ -653,6 +656,7 @@ fn main() {
             "create-limit" => call_create_limit(&current_address, &params[1..]),
 			"change-limit" => call_change_limit(&current_address, &params[1..]),
 			"remove-limit" => call_remove_limit(&current_address, &params[1..]),
+			"get-limit" => call_get_limit_by_id(&current_address, &params[1..]),
 			"limits" => call_get_limits(&current_address),
 			"version" => call_get_version(&current_address),
 			"set" => set_address(&mut current_address, &params[1..]),
