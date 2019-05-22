@@ -492,12 +492,40 @@ fn call_create_limit(current_address: &Option<AccountId>, params: &[&str]) {
 
 }
 
+fn set_address(current_address: &mut Option<AccountId>, params: &[&str]) {
+    if params.len() < 1 {
+        println!("Not enough parameters");
+        return;
+    }
+
+	if let Ok(vec) = hex::decode(params[0]) {
+		if vec.len() != 32 {
+			println!("Wrong address length. Address should be 32 bytes long");
+			return;
+		}
+
+		if std::fs::read(params[0]).is_err() {
+			println!("No key pair for this address. Can't work");
+			return;
+		}
+
+		*current_address = Some(AccountId::from(vec));
+	} else {
+		println!("Couldn't parse address");
+	}
+}
+
 const HELP: &str = r#"
 Supported commands:
-    balance <address>       - get the account balance. If address is not provided current address is used
-    create                  - create new wallet account and set as current
-    send <address> <value>  - send <value> grams to <address>
-    exit                    - exit program"#;
+    balance <address>                       - get the account balance. If address is not provided current address is used
+    create                                  - create new wallet account and set as current
+    send <address> <value>                  - send <value> grams to <address>
+	create-limit <type> <value> <period>    - create limit
+	    type   - 0 for single transaction limits, 1 for period limits
+		value  - limit value in grams
+		period - limit period in days. Only applied to limit type 1
+	set                                     - set new wallet address
+    exit                                    - exit program"#;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -541,6 +569,7 @@ fn main() {
             "create" => call_create(&mut current_address),
             "send" => call_send_transaction(&current_address, &params[1..]),
             "create-limit" => call_create_limit(&current_address, &params[1..]),
+			"set" => set_address(&mut current_address, &params[1..]),
             "exit" => break,
             _ => println!("Unknown command")
         }
