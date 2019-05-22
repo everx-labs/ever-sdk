@@ -13,6 +13,7 @@ hex = "0.3.2"
 serde_json = "^1.0.39"
 serde = "^1.0.90"
 serde_derive = "^1.0.90"
+num-bigint = "0.2.2"
 
 ton_sdk = { path = "../" }
 tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "dev", package = "tvm" }

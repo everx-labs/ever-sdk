@@ -4,15 +4,17 @@ extern crate serde;
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
+extern crate num_bigint;
 
 use rand::{thread_rng, Rng};
 use ton_block::{Message, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
-    ExternalInboundMessageHeader, CurrencyCollection, Serializable};
+    ExternalInboundMessageHeader, CurrencyCollection, Serializable, GetSetValueForVarInt};
 use tvm::bitstring::Bitstring;
-use tvm::types::AccountId;
+use tvm::types::{AccountId};
 use ed25519_dalek::Keypair;
 use futures::Stream;
 use sha2::Sha512;
+use num_bigint::BigUint;
 
 use abi_lib_dynamic::json_abi::decode_function_responce;
 
@@ -128,6 +130,17 @@ const WALLET_ABI: &str = r#"{
 	]
 }
 "#;
+
+fn biguint_to_u64(number: BigUint) -> u64 {
+	let mut vec = number.to_bytes_le();
+	if vec.len() > 8 {
+		panic!("Too large number");
+	}
+	vec.resize(8, 0);
+	let mut array = [0u8; 8];
+	array.copy_from_slice(&vec);
+	u64::from_le_bytes(array)
+}
 
 // Create message "from wallet" to transfer some funds 
 // from one account to another
@@ -301,9 +314,11 @@ fn call_get_balance(current_address: &Option<AccountId>, params: &[&str]) {
         .expect("Error unwrap stream next while loading Contract")
         .expect("Error unwrap result while loading Contract");
 
-	let balance = contract.balance_grams();
+	let nanogram_balance = contract.balance_grams();
+	let nanogram_balance = biguint_to_u64(nanogram_balance.get_value());
+	let gram_balance = nanogram_balance as f64 / 1000000000f64;
 
-	println!("Account balance {}", balance.0.to_str_radix(10));
+	println!("Account balance {}", gram_balance);
 }
 
 #[derive(Deserialize)]
@@ -327,7 +342,9 @@ fn call_send_transaction(current_address: &Option<AccountId>, params: &[&str]) {
 
 	println!("Sending {} grams to {}", params[1], params[0]);
 
-    let str_params = format!("{{ \"recipient\" : \"x{}\", \"value\": \"{}\" }}", params[0], params[1]);
+	let nanogram_value = params[1].to_owned() + "000000000";
+
+    let str_params = format!("{{ \"recipient\" : \"x{}\", \"value\": \"{}\" }}", params[0], nanogram_value);
 
 	let pair = std::fs::read(hex::encode(address.as_slice())).expect("Couldn't read key pair");
 	let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
