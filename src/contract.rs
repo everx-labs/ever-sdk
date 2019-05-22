@@ -11,7 +11,7 @@ use abi_lib::abi_call::ABICall;
 use abi_lib_dynamic::json_abi::encode_function_call;
 use ed25519_dalek::Keypair;
 use ton_block::{
-    Message,
+    MessageId,    
     ExternalInboundMessageHeader,
     MsgAddressInt,
     Serializable,    
@@ -19,7 +19,8 @@ use ton_block::{
     GetRepresentationHash,
     Deserializable,
     Grams,
-    CurrencyCollection};
+    CurrencyCollection,
+    MessageProcessingStatus};
 use std::convert::Into;
 
 const MSG_TABLE_NAME: &str = "messages";
@@ -34,7 +35,7 @@ mod tests;
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct ContractCallState {
     pub message_id: MessageId,
-    pub message_state: MessageState,
+    pub message_state: MessageProcessingStatus,
 }
 
 pub struct ContractImage {
@@ -123,8 +124,7 @@ impl ContractImage {
 }
 
 pub struct Contract {
-    id: AccountId,
-    balance_grams: u64
+    acc: ton_block::Account,
 }
 
 #[allow(dead_code)]
@@ -132,12 +132,17 @@ impl Contract {
 
     pub fn load(id: AccountId) -> SdkResult<Box<Stream<Item = Contract, Error = SdkError>>> {
         let map = db_helper::load_record(CONTRACTS_TABLE_NAME, &id_to_string(&id))?
-            .map(move |val| Contract { id: id.clone(), balance_grams: val["grams"].as_u64().unwrap()}); // TODO parse json
+            .and_then(|val| {
+                let acc: ton_block::Account = serde_json::from_value(val)
+                    .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing account: {}", err)))?;
+
+                Ok(Contract { acc })
+            });
 
         Ok(Box::new(map))
     }
 
-    pub fn call<TIn, TOut>(&self, input: TIn, key_pair: Option<&Keypair>)
+    pub fn call<TIn, TOut>(id: AccountId, input: TIn, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>>
         where 
             TIn: ABIInParameter + ABITypeSignature,
@@ -146,7 +151,7 @@ impl Contract {
         // pack params into bag of cells via ABI
         let msg_body = Self::create_message_body::<TIn, TOut>(input, key_pair);
         
-        let msg = Self::create_message(self.id.clone(), msg_body)?;
+        let msg = Self::create_message(id.clone(), msg_body)?;
 
         // send message by Kafka
         let msg_id = Self::send_message(msg)?;
@@ -155,7 +160,7 @@ impl Contract {
         Self::subscribe_updates(msg_id)
     }
 
-    pub fn construct_call_message<TIn, TOut>(&self, input: TIn, key_pair: Option<&Keypair>)
+    pub fn construct_call_message<TIn, TOut>(id: AccountId, input: TIn, key_pair: Option<&Keypair>)
         -> SdkResult<(Vec<u8>, MessageId)>
         where 
             TIn: ABIInParameter + ABITypeSignature,
@@ -164,19 +169,19 @@ impl Contract {
         // pack params into bag of cells via ABI
         let msg_body = Self::create_message_body::<TIn, TOut>(input, key_pair);
         
-        let msg = Self::create_message(self.id.clone(), msg_body)?;
+        let msg = Self::create_message(id.clone(), msg_body)?;
 
         Self::serialize_message(msg)
     }
 
-    pub fn call_json(&self, func: String, input: String, abi: String, key_pair: Option<&Keypair>)
+    pub fn call_json(id: AccountId, func: String, input: String, abi: String, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
         // pack params into bag of cells via ABI
         let msg_body = encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
         
-        let msg = Self::create_message(self.id.clone(), msg_body.into())?;
+        let msg = Self::create_message(id.clone(), msg_body.into())?;
 
         // send message by Kafka
         let msg_id = Self::send_message(msg)?;
@@ -226,11 +231,11 @@ impl Contract {
     }
 
     pub fn id(&self) -> AccountId {
-        self.id.clone()
+        self.acc.get_id().unwrap().clone()
     }
 
     pub fn balance_grams(&self) -> Grams {
-        self.balance_grams.into()
+        self.acc.get_balance().unwrap().grams.clone()
     }
 
     pub fn balance(&self) -> CurrencyCollection {
@@ -261,12 +266,12 @@ impl Contract {
     }
 
     fn create_message(id: AccountId, msg_body: Arc<CellData>)
-        -> SdkResult<Message> {
+        -> SdkResult<ton_block::Message> {
 
         let mut msg_header = ExternalInboundMessageHeader::default();
         msg_header.dst = MsgAddressInt::with_standart(None, -1, id).unwrap();
 
-        let mut msg = Message::with_ext_in_header(msg_header);
+        let mut msg = ton_block::Message::with_ext_in_header(msg_header);
         msg.body = Some(msg_body);        
 
         Ok(msg)
@@ -290,7 +295,7 @@ impl Contract {
     }
 
     fn create_deploy_message(msg_body: Option<Arc<CellData>>, image: ContractImage)
-        -> SdkResult<Message> {
+        -> SdkResult<ton_block::Message> {
 
         let account_id = image.account_id();
         let state_init = image.state_init();
@@ -298,14 +303,14 @@ impl Contract {
         let mut msg_header = ExternalInboundMessageHeader::default();
         msg_header.dst = MsgAddressInt::with_standart(None, -1, account_id).unwrap();
 
-        let mut msg = Message::with_ext_in_header(msg_header);
+        let mut msg = ton_block::Message::with_ext_in_header(msg_header);
         msg.body = msg_body;
         msg.init = Some(state_init);
 
         Ok(msg)
     }
 
-    pub fn send_message(msg: Message) -> SdkResult<MessageId> {
+    pub fn send_message(msg: ton_block::Message) -> SdkResult<MessageId> {
         let (data, id) = Self::serialize_message(msg)?;
        
         kafka_helper::send_message(&id.as_slice()[..], &data)?;
@@ -313,7 +318,7 @@ impl Contract {
         Ok(id.clone())
     }
 
-    fn serialize_message(msg: Message) -> SdkResult<(Vec<u8>, MessageId)> {
+    fn serialize_message(msg: ton_block::Message) -> SdkResult<(Vec<u8>, MessageId)> {
         let cells = msg.write_to_new_cell()?.into();
         let mut data = Vec::new();
         let bag = BagOfCells::with_root(cells);
@@ -336,18 +341,15 @@ impl Contract {
             .map(move |change_opt| {
                 match change_opt {
                     Some(Document::Expected(state_change)) => {
-
-                        // TODO get full message to extract transaction id from
-
                         ContractCallState {
                             message_id: message_id.clone(),
-                            message_state: state_change.new_val.unwrap_or_else(|| MessageState::Unknown),
+                            message_state: state_change.new_val.unwrap_or_else(|| MessageProcessingStatus::Unknown),
                         }
                     },
                     _ => {
                         ContractCallState {
                             message_id: message_id.clone(),
-                            message_state: MessageState::Unknown,
+                            message_state: MessageProcessingStatus::Unknown,
                         }
                     },
                 }

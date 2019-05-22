@@ -5,7 +5,7 @@ use rand::rngs::OsRng;
 use sha2::Sha512;
 use tvm::types::AccountId;
 use futures::Stream;
-
+use ton_block::MessageProcessingStatus;
 
 const SUBSCRIBE_CONTRACT_ABI: &str = r#"
 {
@@ -289,7 +289,7 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
         .expect("Error unwrap result while loading Contract");
 
     // call needed method
-    let changes_stream = contract.call_json(func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
+    let changes_stream = Contract::call_json(contract.id(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
         .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -300,7 +300,7 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
         }
         if let Ok(s) = state {
             println!("next state: {:?}", s);
-            if s.message_state == MessageState::Finalized {
+            if s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -330,7 +330,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         .expect("Error unwrap result while loading Contract");
 
     // call needed method
-    let changes_stream = contract.call_json(func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
+    let changes_stream = Contract::call_json(contract.id(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
         .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -341,7 +341,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         }
         if let Ok(s) = state {
             println!("next state: {:?}", s);
-            if s.message_state == MessageState::Finalized {
+            if s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -369,7 +369,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
             .expect("erro unwrap out message 3");
 
     // take body from the message
-    let responce = out_msg.body().into();
+    let responce = out_msg.body().expect("erro unwrap out message body").into();
 
     // decode the body by ABI
     let result = decode_function_responce(abi.to_owned(), func.to_owned(), responce)
@@ -395,7 +395,7 @@ fn init_node_connection() {
             },
             "kafka_config": {
                 "servers": ["142.93.137.28:9092"],
-                "topic": "requests",
+                "topic": "requests-kirill",
                 "ack_timeout": 1000
             }
         }"#;    
@@ -431,7 +431,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         }
         if let Ok(s) = state {
             println!("next state: {:?}", s);
-            if s.message_state == MessageState::Finalized {
+            if s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
