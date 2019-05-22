@@ -15,6 +15,7 @@ use ed25519_dalek::Keypair;
 use futures::Stream;
 use sha2::Sha512;
 use num_bigint::BigUint;
+use std::str::FromStr;
 
 use abi_lib_dynamic::json_abi::decode_function_responce;
 
@@ -140,6 +141,12 @@ fn biguint_to_u64(number: BigUint) -> u64 {
 	let mut array = [0u8; 8];
 	array.copy_from_slice(&vec);
 	u64::from_le_bytes(array)
+}
+
+fn str_grams_to_nanorams(grams: &str) -> String {
+	let grams = f64::from_str(grams).expect("Couldn't parse number");
+	let nanograms = grams * 1000000000 as f64;
+	format!("{}", nanograms as u64)
 }
 
 // Create message "from wallet" to transfer some funds 
@@ -393,7 +400,9 @@ fn call_create_limit(current_address: &Option<AccountId>, params: &[&str]) {
 		String::new()
 	};
 
-    let str_params = format!(r#"{{ "type" : "{}", "value": "{}", "meta": "x{}" }}"#, params[0], params[1], meta);
+	let nanogram_value = str_grams_to_nanorams(params[1]);
+
+    let str_params = format!(r#"{{ "type" : "{}", "value": "{}", "meta": "x{}" }}"#, params[0], nanogram_value, meta);
 
 	let pair = std::fs::read(hex::encode(address.as_slice())).expect("Couldn't read key pair");
 	let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
@@ -434,7 +443,9 @@ fn call_change_limit(current_address: &Option<AccountId>, params: &[&str]) {
 		String::new()
 	};
 
-    let str_params = format!(r#"{{ "limitId" : "{}", "value": "{}", "meta": "x{}" }}"#, params[0], params[1], meta);
+	let nanogram_value = str_grams_to_nanorams(params[1]);
+
+    let str_params = format!(r#"{{ "limitId" : "{}", "value": "{}", "meta": "x{}" }}"#, params[0], nanogram_value, meta);
 
 	let pair = std::fs::read(hex::encode(address.as_slice())).expect("Couldn't read key pair");
 	let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
@@ -510,6 +521,7 @@ fn call_get_limit_by_id(current_address: &Option<AccountId>, params: &[&str]) {
 	println!("\nLimit info:");
 	println!("ID - {}", params[0]);
 	let value = u64::from_str_radix(&answer.limitInfo.value[2..], 16).unwrap();
+	let value = value as f64 / 1000000000 as f64;
 	println!("Value - {}", value);
 	
 	if answer.limitInfo.kind == "0x0" {
