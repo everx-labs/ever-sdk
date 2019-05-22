@@ -453,7 +453,7 @@ fn call_remove_limit(current_address: &Option<AccountId>, params: &[&str]) {
 
     let _answer: ChangeLimitAnswer = serde_json::from_str(&answer).unwrap();
 
-    println!("Limit changed successfully");
+    println!("Limit removed successfully");
 }
 
 #[derive(Deserialize)]
