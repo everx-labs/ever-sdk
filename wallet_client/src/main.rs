@@ -178,7 +178,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
 
     // before deploying contract need to transfer some funds to its address
     //println!("Account ID to take some grams {}\n", account_id);
-    let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), account_id.clone(), 100);
+    let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), account_id.clone(), 100000000000);
     Contract::send_message(msg).unwrap();
 
 
