@@ -403,7 +403,7 @@ fn call_get_balance(current_address: &Option<AccountId>, params: &[&str]) {
 
 	let balance = contract.balance_grams();
 
-	println!("Account balance {}", balance);
+	println!("Account balance {}", balance.0.to_str_radix(10));
 }
 
 #[derive(Deserialize)]
@@ -524,6 +524,8 @@ fn main() {
     println!("Enter command");
 
     loop {
+    	println!("");
+    	
         let mut input = String::new();
         std::io::stdin().read_line(&mut input).expect("error: unable to read user input");
 
