@@ -34,193 +34,93 @@ const STD_CONFIG: &str = r#"
 
 const WALLET_ABI: &str = r#"{
 	"ABI version" : 0,
-
-	"functions" :	[
-	    {
+	"functions" :	[{
 	        "inputs": [
-	            {
-	                "name": "recipient",
-	                "type": "bits256"
-	            },
-	            {
-	                "name": "value",
-	                "type": "duint"
-	            }
+                {"name": "recipient", "type": "bits256"},
+	            {"name": "value", "type": "duint"}
 	        ],
 	        "name": "sendTransaction",
-					"signed": true,
+			"signed": true,
 	        "outputs": [
-	            {
-	                "name": "transaction",
-	                "type": "uint64"
-	            },
-							{
-	                "name": "error",
-	                "type": "int8"
-	            }
+                {"name": "transaction", "type": "uint64"},
+				{"name": "error", "type": "int8"}
 	        ]
-	    },
-	    {
+        }, {
 	        "inputs": [
-						  {
-	                "name": "type",
-	                "type": "uint8"
-	            },
-							{
-	                "name": "value",
-	                "type": "duint"
-	            },
-							{
-	                "name": "meta",
-	                "type": "bitstring"
-	            }
-					],
+				{"name": "type", "type": "uint8"},
+				{"name": "value", "type": "duint"},
+				{"name": "meta", "type": "bitstring"}
+			],
 	        "name": "createLimit",
-					"signed": true,
+			"signed": true,
 	        "outputs": [
-							{
-	                "name": "limitId",
-	                "type": "uint8"
-	            },
-							{
-	                "name": "error",
-	                "type": "int8"
-	            }
+				{"name": "limitId", "type": "uint8"},
+				{"name": "error", "type": "int8"}
 	        ]
-	    },
-	    {
+	    }, {
 	        "inputs": [
-							{
-	                "name": "limitId",
-	                "type": "uint8"
-	            },
-							{
-	                "name": "value",
-	                "type": "duint"
-	            },
-							{
-	                "name": "meta",
-	                "type": "bitstring"
-	            }
+				{"name": "limitId", "type": "uint8"},
+				{"name": "value", "type": "duint"},
+				{"name": "meta", "type": "bitstring"}
 	        ],
 	        "name": "changeLimitById",
-					"signed": true,
-	        "outputs": [
-							{
-	                "name": "error",
-	                "type": "int8"
-	            }
-	        ]
-	    },
-			{
-	        "inputs": [
-							{
-	                "name": "limitId",
-	                "type": "uint8"
-	            }
-	        ],
+			"signed": true,
+	        "outputs": [{"name": "error", "type": "int8"}]
+	    }, {
+	        "inputs": [{"name": "limitId", "type": "uint8"}],
 	        "name": "removeLimit",
-					"signed": true,
-	        "outputs": [
-							{
-	                "name": "error",
-	                "type": "int8"
-	            }
-	        ]
-	    },
-			{
-	        "inputs": [
-							{
-	                "name": "limitId",
-	                "type": "uint8"
-	            }
-	        ],
+			"signed": true,
+	        "outputs": [{"name": "error", "type": "int8"}]
+	    }, {
+	        "inputs": [{"name": "limitId", "type": "uint8"}],
 	        "name": "getLimitById",
 	        "outputs": [
-							{
-									"name": "limitInfo",
-					        "type": "tuple",
-					        "components": [
-											{
-					                "name": "value",
-					                "type": "duint"
-					            },
-											{
-					                "name": "type",
-					                "type": "uint8"
-					            },
-											{
-					                "name": "meta",
-					                "type": "bitstring"
-					            }
-									]
-							},
-							{
-	                "name": "error",
-	                "type": "int8"
-	            }
+				{
+					"name": "limitInfo",
+					"type": "tuple",
+					"components": [
+						{"name": "value", "type": "duint"},
+						{"name": "type", "type": "uint8"},
+						{"name": "meta", "type": "bitstring"}
+						]
+				},
+				{"name": "error", "type": "int8"}
 	        ]
-	    },
-			{
+	    }, {
 	        "inputs": [],
 	        "name": "getLimits",
 	        "outputs": [
-							{
-									"name": "list",
-					        "type": "uint8[]"
-							},
-							{
-	                "name": "error",
-	                "type": "int8"
-	            }
+				{"name": "list", "type": "uint8[]"},
+				{"name": "error", "type": "int8"}
 	        ]
-	    },
-			{
+	    }, {
 	        "inputs": [],
 	        "name": "getVersion",
 	        "outputs": [
-							{
-									"name": "version",
-					        "type": "tuple",
-					        "components": [
-											{
-					                "name": "major",
-					                "type": "uint16"
-					            },
-											{
-					                "name": "minor",
-					                "type": "uint16"
-					            }
-									]
-							},
-							{
-	                "name": "error",
-	                "type": "int8"
-	            }
+				{
+					"name": "version",
+					"type": "tuple",
+					"components": [
+						{"name": "major", "type": "uint16"},
+						{"name": "minor", "type": "uint16"}
+					]
+				},
+				{"name": "error", "type": "int8"}
 	        ]
-	    },
-			{
+	    }, {
 	        "inputs": [],
 	        "name": "getBalance",
-	        "outputs": [
-							{
-	                "name": "balance",
-	                "type": "uint64"
-	            }
-	        ]
-	    },
-			{
+	        "outputs": [{"name": "balance", "type": "uint64"}]
+	    }, {
 	        "inputs": [],
 	        "name": "constructor",
 	        "outputs": []							
-	    },
-			{
+	    }, {
 	        "inputs": [{"name": "address", "type": "bits256" }],
 	        "name": "setSubscriptionAccount",
 					"signed": true,
 	        "outputs": []							
-	    },
-			{
+	    }, {
 	        "inputs": [],
 	        "name": "getSubscriptionAccount",
 	        "outputs": [{"name": "address", "type": "bits256" }]							
@@ -298,7 +198,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
 }
 
 
-fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str, key_pair: &Keypair) -> String {
+fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str, key_pair: Option<&Keypair>) -> String {
 
     let contract = Contract::load(address)
         .expect("Error calling load Contract")
@@ -308,7 +208,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         .expect("Error unwrap result while loading Contract");
 
     // call needed method
-    let changes_stream = contract.call_json(func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
+    let changes_stream = contract.call_json(func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
         .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -432,7 +332,7 @@ fn call_send_transaction(current_address: &Option<AccountId>, params: &[&str]) {
 	let pair = std::fs::read(hex::encode(address.as_slice())).expect("Couldn't read key pair");
 	let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
 
-	let answer = call_contract_and_wait(address, "sendTransaction", &str_params, WALLET_ABI, &pair);
+	let answer = call_contract_and_wait(address, "sendTransaction", &str_params, WALLET_ABI, Some(&pair));
 
 
     let answer: SendTransactionAnswer = serde_json::from_str(&answer).unwrap();
@@ -481,7 +381,7 @@ fn call_create_limit(current_address: &Option<AccountId>, params: &[&str]) {
 	let pair = std::fs::read(hex::encode(address.as_slice())).expect("Couldn't read key pair");
 	let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
 
-	let answer = call_contract_and_wait(address, "createLimit", &str_params, WALLET_ABI, &pair);
+	let answer = call_contract_and_wait(address, "createLimit", &str_params, WALLET_ABI, Some(&pair));
 
 
     let answer: CreateLimitAnswer = serde_json::from_str(&answer).unwrap();
@@ -490,6 +390,177 @@ fn call_create_limit(current_address: &Option<AccountId>, params: &[&str]) {
 
     println!("Limit ID {}", limit_id);
 
+}
+
+#[derive(Deserialize)]
+struct ChangeLimitAnswer {
+	error: String
+}
+
+fn call_change_limit(current_address: &Option<AccountId>, params: &[&str]) {
+    if params.len() < 2 {
+        println!("Not enough parameters");
+        return;
+    }
+
+	let address = if let Some(addr) = current_address {
+		addr.clone()
+	} else {
+		println!("Current address not set");
+		return;
+	};
+
+    let meta = if params.len() > 2 {
+        let period = u8::from_str_radix(&params[2], 10).unwrap();
+        hex::encode(&[period])
+    } else {
+		String::new()
+	};
+
+    let str_params = format!(r#"{{ "limitId" : "{}", "value": "{}", "meta": "x{}" }}"#, params[0], params[1], meta);
+
+	let pair = std::fs::read(hex::encode(address.as_slice())).expect("Couldn't read key pair");
+	let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
+
+	let answer = call_contract_and_wait(address, "changeLimitById", &str_params, WALLET_ABI, Some(&pair));
+
+
+    let _answer: ChangeLimitAnswer = serde_json::from_str(&answer).unwrap();
+
+    println!("Limit changed successfully");
+}
+
+fn call_remove_limit(current_address: &Option<AccountId>, params: &[&str]) {
+    if params.len() < 1 {
+        println!("Not enough parameters");
+        return;
+    }
+
+	let address = if let Some(addr) = current_address {
+		addr.clone()
+	} else {
+		println!("Current address not set");
+		return;
+	};
+
+    let str_params = format!(r#"{{ "limitId" : "{}" }}"#, params[0]);
+
+	let pair = std::fs::read(hex::encode(address.as_slice())).expect("Couldn't read key pair");
+	let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
+
+	let answer = call_contract_and_wait(address, "removeLimit", &str_params, WALLET_ABI, Some(&pair));
+
+
+    let _answer: ChangeLimitAnswer = serde_json::from_str(&answer).unwrap();
+
+    println!("Limit changed successfully");
+}
+
+#[derive(Deserialize)]
+struct LimitInfo {
+	value: String,
+	#[serde(rename="type")]
+	kind: String,
+	meta: String
+}
+
+#[derive(Deserialize)]
+struct GetLimitByIdAnswer {
+	limitInfo: LimitInfo,
+	error: String
+}
+
+fn call_get_limit_by_id(current_address: &Option<AccountId>, params: &[&str]) {
+	if params.len() < 1 {
+        println!("Not enough parameters");
+        return;
+    }
+
+	let address = if let Some(addr) = current_address {
+		addr.clone()
+	} else {
+		println!("Current address not set");
+		return;
+	};
+
+    let str_params = format!(r#"{{ "limitId" : "{}" }}"#, params[0]);
+
+	let answer = call_contract_and_wait(address, "getLimits", &str_params, WALLET_ABI, None);
+
+
+    let answer: GetLimitByIdAnswer = serde_json::from_str(&answer).unwrap();
+
+	println!("\nLimit info:");
+	println!("ID - {}", params[0]);
+	let value = u64::from_str_radix(&answer.limitInfo.value[2..], 16).unwrap();
+	println!("Value - {}", value);
+	
+	if answer.limitInfo.kind == "0" {
+		println!("Type - Single operation limit");
+	} else {
+		println!("Type - Arbitrary limit");
+		let period = u64::from_str_radix(&answer.limitInfo.meta[2..], 16).unwrap();
+		println!("Period - {} days", period);
+	}
+}
+
+#[derive(Deserialize)]
+struct GetLimitsAnswer {
+	list: Vec<String>,
+	error: String
+}
+
+fn call_get_limits(current_address: &Option<AccountId>) {
+	let address = if let Some(addr) = current_address {
+		addr.clone()
+	} else {
+		println!("Current address not set");
+		return;
+	};
+
+    let str_params = "{}".to_owned();
+
+	let answer = call_contract_and_wait(address, "getLimits", &str_params, WALLET_ABI, None);
+
+
+    let answer: GetLimitsAnswer = serde_json::from_str(&answer).unwrap();
+
+	for limit in answer.list {
+        call_get_limit_by_id(current_address, &[&limit]);
+    };
+}
+
+#[derive(Deserialize)]
+struct Version {
+	major: String,
+	minor: String
+}
+
+#[derive(Deserialize)]
+struct GetVersionAnswer {
+	version:Version,
+	error: String
+}
+
+fn call_get_version(current_address: &Option<AccountId>) {
+	let address = if let Some(addr) = current_address {
+		addr.clone()
+	} else {
+		println!("Current address not set");
+		return;
+	};
+
+    let str_params = "{}".to_owned();
+
+	let answer = call_contract_and_wait(address, "getLimits", &str_params, WALLET_ABI, None);
+
+
+    let answer: GetVersionAnswer = serde_json::from_str(&answer).unwrap();
+
+	let major = u16::from_str_radix(&answer.version.major[2..], 16).unwrap();
+	let minor = u16::from_str_radix(&answer.version.minor[2..], 16).unwrap();
+
+	println!("Wallet version {}.{}", major, minor);
 }
 
 fn set_address(current_address: &mut Option<AccountId>, params: &[&str]) {
@@ -523,12 +594,19 @@ const HELP: &str = r#"
 Supported commands:
     balance <address>                       - get the account balance. If address is not provided current address is used
     create                                  - create new wallet account and set as current
+	set                                     - set new wallet address
     send <address> <value>                  - send <value> grams to <address>
     create-limit <type> <value> <period>    - create limit
-        type   - 0 for single transaction limits, 1 for period limits
+        type   - 0 for single transaction limits, 1 for arbitrary limits
         value  - limit value in grams
         period - limit period in days. Only applied to limit type 1
-    set                                     - set new wallet address
+	create-limit <limit ID> <value> <period>    - change existing limit
+        limit ID - limit ID returned by `create-limit` or `limits` function
+        value    - new limit value in grams
+        period   - new limit period in days. Only applied to limit type 1
+	remove-limit <limit ID>                 - limit ID returned by `create-limit` or `limits` function
+	limits                                  - list all existing wallet limits
+	version                                 - get version of the wallet contract
     exit                                    - exit program"#;
 
 fn main() {
@@ -573,6 +651,10 @@ fn main() {
             "create" => call_create(&mut current_address),
             "send" => call_send_transaction(&current_address, &params[1..]),
             "create-limit" => call_create_limit(&current_address, &params[1..]),
+			"change-limit" => call_change_limit(&current_address, &params[1..]),
+			"remove-limit" => call_remove_limit(&current_address, &params[1..]),
+			"limits" => call_get_limits(&current_address),
+			"version" => call_get_version(&current_address),
 			"set" => set_address(&mut current_address, &params[1..]),
             "exit" => break,
             _ => println!("Unknown command")
