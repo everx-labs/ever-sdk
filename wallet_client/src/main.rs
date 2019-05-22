@@ -509,6 +509,10 @@ fn set_address(current_address: &mut Option<AccountId>, params: &[&str]) {
 			return;
 		}
 
+		std::fs::write("last_address", vec.clone()).expect("Couldn't save wallet address");
+
+		println!("New wallet address {}", params[0]);
+
 		*current_address = Some(AccountId::from(vec));
 	} else {
 		println!("Couldn't parse address");
@@ -520,11 +524,11 @@ Supported commands:
     balance <address>                       - get the account balance. If address is not provided current address is used
     create                                  - create new wallet account and set as current
     send <address> <value>                  - send <value> grams to <address>
-	create-limit <type> <value> <period>    - create limit
-	    type   - 0 for single transaction limits, 1 for period limits
-		value  - limit value in grams
-		period - limit period in days. Only applied to limit type 1
-	set                                     - set new wallet address
+    create-limit <type> <value> <period>    - create limit
+        type   - 0 for single transaction limits, 1 for period limits
+        value  - limit value in grams
+        period - limit period in days. Only applied to limit type 1
+    set                                     - set new wallet address
     exit                                    - exit program"#;
 
 fn main() {
