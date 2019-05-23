@@ -17,6 +17,7 @@ use futures::Stream;
 use sha2::Sha512;
 use num_bigint::BigUint;
 use std::str::FromStr;
+use num_traits::cast::ToPrimitive;
 
 use abi_lib_dynamic::json_abi::decode_function_responce;
 
@@ -132,17 +133,6 @@ const WALLET_ABI: &str = r#"{
 	]
 }
 "#;
-
-fn biguint_to_u64(number: BigUint) -> u64 {
-	let mut vec = number.to_bytes_le();
-	if vec.len() > 8 {
-		panic!("Too large number");
-	}
-	vec.resize(8, 0);
-	let mut array = [0u8; 8];
-	array.copy_from_slice(&vec);
-	u64::from_le_bytes(array)
-}
 
 fn str_grams_to_nanorams(grams: &str) -> String {
 	let grams = f64::from_str(grams).expect("Couldn't parse number");
@@ -324,10 +314,10 @@ fn call_get_balance(current_address: &Option<AccountId>, params: &[&str]) {
         .expect("Error unwrap result while loading Contract");
 
 	let nanogram_balance = contract.balance_grams();
-	//let nanogram_balance = biguint_to_u64(nanogram_balance.get_value());
-	//let gram_balance = nanogram_balance as f64 / 1000000000f64;
+	let nanogram_balance = nanogram_balance.get_value().to_u128().expect("error cust grams to u128");
+	let gram_balance = nanogram_balance as f64 / 1000000000f64;
 
-	println!("Account balance nanograms {}", nanogram_balance.0);
+	println!("Account balance {}", gram_balance);
 }
 
 #[derive(Deserialize)]
