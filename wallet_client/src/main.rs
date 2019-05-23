@@ -30,7 +30,7 @@ const STD_CONFIG: &str = r#"
     },
     "kafka_config": {
         "servers": ["142.93.137.28:9092"],
-        "topic": "requests",
+        "topic": "requests-1",
         "ack_timeout": 1000
     }
 }"#;
@@ -324,10 +324,10 @@ fn call_get_balance(current_address: &Option<AccountId>, params: &[&str]) {
         .expect("Error unwrap result while loading Contract");
 
 	let nanogram_balance = contract.balance_grams();
-	let nanogram_balance = biguint_to_u64(nanogram_balance.get_value());
-	let gram_balance = nanogram_balance as f64 / 1000000000f64;
+	//let nanogram_balance = biguint_to_u64(nanogram_balance.get_value());
+	//let gram_balance = nanogram_balance as f64 / 1000000000f64;
 
-	println!("Account balance {}", gram_balance);
+	println!("Account balance nanograms {}", nanogram_balance);
 }
 
 #[derive(Deserialize)]
