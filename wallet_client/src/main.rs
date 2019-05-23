@@ -8,7 +8,8 @@ extern crate num_bigint;
 
 use rand::{thread_rng, Rng};
 use ton_block::{Message, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
-    ExternalInboundMessageHeader, CurrencyCollection, Serializable, GetSetValueForVarInt};
+    ExternalInboundMessageHeader, CurrencyCollection, Serializable, GetSetValueForVarInt,
+	MessageProcessingStatus};
 use tvm::bitstring::Bitstring;
 use tvm::types::{AccountId};
 use ed25519_dalek::Keypair;
@@ -204,7 +205,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         }
         if let Ok(s) = state {
             //println!("next state: {:?}", s);
-            if s.message_state == MessageState::Finalized {
+            if s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -228,8 +229,9 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         .expect("Error unwrap result while loading Contract");
 
     // call needed method
-    let changes_stream = contract.call_json(func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
-        .expect("Error calling contract method");
+    let changes_stream = 
+        Contract::call_json(contract.id(), func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
+            .expect("Error calling contract method");
 
     // wait transaction id in message-status 
     let mut tr_id = None;
@@ -239,7 +241,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         }
         if let Ok(s) = state {
             //println!("next state: {:?}", s);
-            if s.message_state == MessageState::Finalized {
+            if s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -267,7 +269,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
             .expect("erro unwrap out message 3");
 
     // take body from the message
-    let responce = out_msg.body().into();
+    let responce = out_msg.body().expect("error unwrap out message body").into();
 
     // decode the body by ABI
     let result = decode_function_responce(abi.to_owned(), func.to_owned(), responce)
