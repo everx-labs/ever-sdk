@@ -15,7 +15,6 @@ use tvm::types::{AccountId};
 use ed25519_dalek::Keypair;
 use futures::Stream;
 use sha2::Sha512;
-use num_bigint::BigUint;
 use std::str::FromStr;
 use num_traits::cast::ToPrimitive;
 
