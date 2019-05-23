@@ -327,7 +327,7 @@ fn call_get_balance(current_address: &Option<AccountId>, params: &[&str]) {
 	//let nanogram_balance = biguint_to_u64(nanogram_balance.get_value());
 	//let gram_balance = nanogram_balance as f64 / 1000000000f64;
 
-	println!("Account balance nanograms {}", nanogram_balance);
+	println!("Account balance nanograms {}", nanogram_balance.0);
 }
 
 #[derive(Deserialize)]
