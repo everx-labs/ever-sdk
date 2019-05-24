@@ -1,4 +1,4 @@
-use abi_lib_dynamic::json_abi::decode_function_response;
+use abi_lib_dynamic::json_abi::decode_function_responce;
 use super::*;
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
@@ -375,7 +375,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
 
 
     // decode the body by ABI
-    let result = decode_function_response(abi.to_owned(), func.to_owned(), response)
+    let result = decode_function_responce(abi.to_owned(), func.to_owned(), response)
         .expect("Error decoding result");
 
     println!("Contract call result: {}\n", result);
@@ -398,7 +398,7 @@ fn init_node_connection() {
             },
             "kafka_config": {
                 "servers": ["142.93.137.28:9092"],
-                "topic": "requests-kirill",
+                "topic": "requests-ilya",
                 "ack_timeout": 1000
             }
         }"#;    
@@ -416,7 +416,23 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
     // before deploying contract need to transfer some funds to its address
     println!("Account ID to take some grams {}\n", account_id);
     let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), account_id.clone(), 100);
-    Contract::send_message(msg).unwrap();
+    let changes_stream = Contract::send_message(msg).expect("Error calling contract method");
+
+    // wait transaction id in message-status 
+    let mut tr_id = None;
+    for state in changes_stream.wait() {
+        if let Err(e) = state {
+            panic!("error next state getting: {}", e);
+        }
+        if let Ok(s) = state {
+            println!("next state: {:?}", s);
+            if s.message_state == MessageProcessingStatus::Finalized {
+                tr_id = Some(s.message_id.clone());
+                break;
+            }
+        }
+    }
+    tr_id.expect("Error: no transaction id");
 
 
     // call deploy method

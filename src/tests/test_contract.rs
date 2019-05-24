@@ -1,4 +1,4 @@
-use abi_lib_dynamic::json_abi::decode_function_response;
+use abi_lib_dynamic::json_abi::decode_function_responce;
 use super::*;
 use std::io::{Cursor};
 use reql::{Config, Client, Run};
@@ -276,7 +276,7 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
 
 
     // decode the body by ABI
-    let result = decode_function_response(abi, func, response)
+    let result = decode_function_responce(abi, func, response)
         .expect("Error decoding result");
 
     println!("result:/n{}", result);
