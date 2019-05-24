@@ -1,4 +1,4 @@
-use abi_lib_dynamic::json_abi::decode_function_responce;
+use abi_lib_dynamic::json_abi::decode_function_response;
 use super::*;
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
@@ -286,7 +286,8 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
         .wait()
         .next()
         .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract");
+        .expect("Error unwrap result while loading Contract")
+        .expect("Error unwrap contract while loading Contract");
 
     // call needed method
     let changes_stream = Contract::call_json(contract.id(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
@@ -327,7 +328,8 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         .wait()
         .next()
         .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract");
+        .expect("Error unwrap result while loading Contract")
+        .expect("Error unwrap contract while loading Contract");
 
     // call needed method
     let changes_stream = Contract::call_json(contract.id(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
@@ -369,10 +371,11 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
             .expect("erro unwrap out message 3");
 
     // take body from the message
-    let responce = out_msg.body().expect("erro unwrap out message body").into();
+    let response = out_msg.body().expect("erro unwrap out message body").into();
+
 
     // decode the body by ABI
-    let result = decode_function_responce(abi.to_owned(), func.to_owned(), responce)
+    let result = decode_function_response(abi.to_owned(), func.to_owned(), response)
         .expect("Error decoding result");
 
     println!("Contract call result: {}\n", result);
