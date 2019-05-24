@@ -271,7 +271,7 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
             .expect("erro unwrap out message 3");
 
     // take body from the message
-    let responce = out_msg.body().expect("erro unwrap out message body").into();
+    let response = out_msg.body().expect("erro unwrap out message body").into();
 
 
     // decode the body by ABI
