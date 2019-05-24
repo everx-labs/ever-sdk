@@ -229,7 +229,8 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
         .wait()
         .next()
         .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract");
+        .expect("Error unwrap result while loading Contract")
+        .expect("Error unwrap contract while loading Contract");
 
     // call needed method
     let changes_stream = Contract::call_json(contract.id(), func.clone(), input, abi.clone(), Some(&key_pair))
@@ -438,7 +439,8 @@ fn test_deploy_empty_contract() {
         .wait()
         .next()
         .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract");
+        .expect("Error unwrap result while loading Contract")
+        .expect("Error unwrap contract while loading Contract");
     println!("Contract got!!!");
 
 
@@ -497,4 +499,32 @@ fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, value:
     msg.body = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
 
     msg
+}
+
+#[test]
+fn test_load_nonexistent_contract() {
+
+        // init SDK
+    let config_json = r#"
+        {
+            "db_config": {
+                "servers": ["142.93.137.28:28015"],
+                "db_name": "blockchain"
+            },
+            "kafka_config": {
+                "servers": ["builder.tonlabs.io:9092"],
+                "topic": "requests-1",
+                "ack_timeout": 1000
+            }
+        }"#;    
+    init_json(config_json.into()).unwrap();
+
+    let c = Contract::load(AccountId::from([67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31]))
+        .expect("Error calling load Contract")
+        .wait()
+        .next()
+        .expect("Error unwrap stream next while loading Contract")
+        .expect("Error unwrap result while loading Contract");
+
+    assert!(c.is_none());
 }

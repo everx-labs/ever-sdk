@@ -286,7 +286,8 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
         .wait()
         .next()
         .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract");
+        .expect("Error unwrap result while loading Contract")
+        .expect("Error unwrap contract while loading Contract");
 
     // call needed method
     let changes_stream = Contract::call_json(contract.id(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
@@ -327,7 +328,8 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         .wait()
         .next()
         .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract");
+        .expect("Error unwrap result while loading Contract")
+        .expect("Error unwrap contract while loading Contract");
 
     // call needed method
     let changes_stream = Contract::call_json(contract.id(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))

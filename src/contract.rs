@@ -130,13 +130,17 @@ pub struct Contract {
 #[allow(dead_code)]
 impl Contract {
 
-    pub fn load(id: AccountId) -> SdkResult<Box<Stream<Item = Contract, Error = SdkError>>> {
+    pub fn load(id: AccountId) -> SdkResult<Box<Stream<Item = Option<Contract>, Error = SdkError>>> {
         let map = db_helper::load_record(CONTRACTS_TABLE_NAME, &id_to_string(&id))?
             .and_then(|val| {
+                if val == serde_json::Value::Null {
+                    Ok(None)
+                } else {
                 let acc: ton_block::Account = serde_json::from_value(val)
                     .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing account: {}", err)))?;
 
-                Ok(Contract { acc })
+                    Ok(Some(Contract { acc }))
+                }
             });
 
         Ok(Box::new(map))
