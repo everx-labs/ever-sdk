@@ -38,3 +38,6 @@ ci_run = []
 [dependencies.kafka]
 version = "0.7"
 default-features = false
+
+[patch.crates-io]
+mio = { git = "ssh://git@github.com/tokio-rs/mio.git", branch = "v0.6.x" }
