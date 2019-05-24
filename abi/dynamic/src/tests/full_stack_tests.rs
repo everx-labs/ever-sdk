@@ -3,7 +3,7 @@ use ed25519_dalek::*;
 
 use tvm::stack::{BuilderData, SliceData};
 
-use json_abi::{encode_function_call, decode_function_responce};
+use json_abi::{encode_function_call, decode_function_response};
 
 const WALLET_ABI: &str = r#"{
 	"ABI version" : 0,
@@ -115,11 +115,11 @@ fn test_constructor_call() {
     assert_eq!(test_tree, expected_tree);
 
 
-    let responce_tree = SliceData::new_empty();
+    let response_tree = SliceData::new_empty();
 
-    let responce = decode_function_responce(WALLET_ABI.to_owned(), "constructor".to_owned(), responce_tree).unwrap();
+    let response = decode_function_response(WALLET_ABI.to_owned(), "constructor".to_owned(), response_tree).unwrap();
 
-    assert_eq!(responce, params);
+    assert_eq!(response, params);
 }
 
 #[test]
@@ -144,13 +144,13 @@ fn test_signed_call() {
     assert_eq!(test_tree, SliceData::from(expected_tree));
 
 
-    let expected_responce = r#"{"limitId":"0x0","error":"-0x1"}"#;
+    let expected_response = r#"{"limitId":"0x0","error":"-0x1"}"#;
 
-    let responce_tree = SliceData::from(BuilderData::with_bitstring(vec![0x00, 0xFF, 0x80]));
+    let response_tree = SliceData::from(BuilderData::with_bitstring(vec![0x00, 0xFF, 0x80]));
 
-    let responce = decode_function_responce(WALLET_ABI.to_owned(), "createLimit".to_owned(), responce_tree).unwrap();
+    let response = decode_function_response(WALLET_ABI.to_owned(), "createLimit".to_owned(), response_tree).unwrap();
 
-    assert_eq!(responce, expected_responce);
+    assert_eq!(response, expected_response);
 }
 
 #[test]

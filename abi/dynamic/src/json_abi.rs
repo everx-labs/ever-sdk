@@ -18,12 +18,12 @@ pub fn encode_function_call(abi: String, function: String, parameters: String, p
 }
 
 /// Decodes output parameters returned by contract function call
-pub fn decode_function_responce(abi: String, function: String, responce: SliceData) -> Result<String, ABIError> {
+pub fn decode_function_response(abi: String, function: String, response: SliceData) -> Result<String, ABIError> {
     let contract = Contract::load(abi.as_bytes())?;
 
     let function = contract.function(&function)?;
 
-    let tokens = function.decode_output(responce).map_err(|err| ABIError::DeserializationError(err))?;
+    let tokens = function.decode_output(response).map_err(|err| ABIError::DeserializationError(err))?;
 
     Detokenizer::detokenize(&function.output_params(), &tokens).map_err(|err| ABIError::DetokenizeError(err))
 }
