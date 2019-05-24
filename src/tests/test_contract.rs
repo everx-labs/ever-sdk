@@ -1,4 +1,4 @@
-use abi_lib_dynamic::json_abi::decode_function_responce;
+use abi_lib_dynamic::json_abi::decode_function_response;
 use super::*;
 use std::io::{Cursor};
 use reql::{Config, Client, Run};
@@ -271,10 +271,10 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
             .expect("erro unwrap out message 3");
 
     // take body from the message
-    let responce = out_msg.body().into();
+    let response = out_msg.body().into();
 
     // decode the body by ABI
-    let result = decode_function_responce(abi, func, responce)
+    let result = decode_function_response(abi, func, response)
         .expect("Error decoding result");
 
     println!("result:/n{}", result);
