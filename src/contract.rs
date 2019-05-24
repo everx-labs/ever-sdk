@@ -158,7 +158,17 @@ impl Contract {
         let msg = Self::create_message(id.clone(), msg_body)?;
 
         // send message by Kafka
-        let msg_id = Self::send_message(msg)?;
+        let msg_id = Self::_send_message(msg)?;
+
+        // subscribe on updates from DB and return updates stream
+        Self::subscribe_updates(msg_id)
+    }
+
+    pub fn send_message(msg: ton_block::Message)
+        -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
+
+        // send message by Kafka
+        let msg_id = Self::_send_message(msg)?;
 
         // subscribe on updates from DB and return updates stream
         Self::subscribe_updates(msg_id)
@@ -188,7 +198,7 @@ impl Contract {
         let msg = Self::create_message(id.clone(), msg_body.into())?;
 
         // send message by Kafka
-        let msg_id = Self::send_message(msg)?;
+        let msg_id = Self::_send_message(msg)?;
 
         // subscribe on updates from DB and return updates stream
         Self::subscribe_updates(msg_id)
@@ -216,7 +226,7 @@ impl Contract {
 
         let msg = Self::create_deploy_message(Some(msg_body), image)?;
 
-        let msg_id = Self::send_message(msg)?;
+        let msg_id = Self::_send_message(msg)?;
 
         Self::subscribe_updates(msg_id)
     }
@@ -255,7 +265,7 @@ impl Contract {
         let cell: std::sync::Arc<tvm::stack::CellData> = msg_body.into();
         let msg = Self::create_deploy_message(Some(cell), image)?;
 
-        let msg_id = Self::send_message(msg)?;
+        let msg_id = Self::_send_message(msg)?;
 
         Self::subscribe_updates(msg_id)
     }
@@ -264,7 +274,7 @@ impl Contract {
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
         let msg = Self::create_deploy_message(None, image)?;
 
-        let msg_id = Self::send_message(msg)?;
+        let msg_id = Self::_send_message(msg)?;
 
         Self::subscribe_updates(msg_id)
     }
@@ -314,7 +324,7 @@ impl Contract {
         Ok(msg)
     }
 
-    pub fn send_message(msg: ton_block::Message) -> SdkResult<MessageId> {
+    fn _send_message(msg: ton_block::Message) -> SdkResult<MessageId> {
         let (data, id) = Self::serialize_message(msg)?;
        
         kafka_helper::send_message(&id.as_slice()[..], &data)?;
