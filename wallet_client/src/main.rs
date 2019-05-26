@@ -215,7 +215,8 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         .wait()
         .next()
         .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract");
+        .expect("Error unwrap result while loading Contract")
+        .expect("Error unwrap contract while loading Contract");
 
     // call needed method
     let changes_stream = 
@@ -264,7 +265,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
     let result = decode_function_responce(abi.to_owned(), func.to_owned(), responce)
         .expect("Error decoding result");
 
-    println!("Contract call result: {}\n", result);
+    //println!("Contract call result: {}\n", result);
 
 	result
 
@@ -310,7 +311,8 @@ fn call_get_balance(current_address: &Option<AccountId>, params: &[&str]) {
         .wait()
         .next()
         .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract");
+        .expect("Error unwrap result while loading Contract")
+        .expect("Error unwrap contract while loading Contract");
 
 	let nanogram_balance = contract.balance_grams();
 	let nanogram_balance = nanogram_balance.get_value().to_u128().expect("error cust grams to u128");
@@ -638,7 +640,11 @@ fn main() {
     let config = if args.len() > 3 && args[2] == "-config" {
         std::fs::read_to_string(&args[3]).expect("Couldn't read config file")
     } else {
-        STD_CONFIG.to_owned()
+    	if let Ok(string) = std::fs::read_to_string("config") {
+    		string
+    	} else {
+    		STD_CONFIG.to_owned()
+    	}
     };
 
     init_json(config).expect("Couldn't establish connection");
