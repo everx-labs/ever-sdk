@@ -28,9 +28,6 @@ abi-lib-dynamic = { git = "ssh://git@github.com/tonlabs/TON-SDK.git", branch = "
 tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "feature-blockchain-structs-to-jsons", package = "tvm" }
 ton_block = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "feature-blockchain-structs-to-jsons", package = "ton_block" }
 
-#[dev-dependencies.compiletest_rs]
-#features = ["tmp", "stable"]
-#version = "*"
 
 [features]
 ci_run = []
@@ -38,6 +35,3 @@ ci_run = []
 [dependencies.kafka]
 version = "0.7"
 default-features = false
-
-[patch.crates-io]
-mio = { git = "ssh://git@github.com/tokio-rs/mio.git", branch = "v0.6.x" }
