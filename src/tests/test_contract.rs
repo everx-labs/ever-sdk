@@ -311,7 +311,7 @@ fn test_deploy_and_call_contract() {
     let mut csprng = OsRng::new().unwrap();
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
 
-    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair).expect("Unable to parse contract code file");
+    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair.public).expect("Unable to parse contract code file");
 
     let account_id = contract_image.account_id();
 
@@ -391,7 +391,7 @@ fn test_contract_image_from_file() {
     let mut csprng = OsRng::new().unwrap();
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
 
-    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair).expect("Unable to parse contract code file");
+    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair.public).expect("Unable to parse contract code file");
 
     println!("Account ID {}", contract_image.account_id());
 }
