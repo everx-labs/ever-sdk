@@ -6,188 +6,188 @@ use tvm::stack::{BuilderData, SliceData};
 use json_abi::{decode_function_response, encode_function_call};
 
 const WALLET_ABI: &str = r#"{
-	"ABI version" : 0,
-	"functions" :	[{
-	        "inputs": [
+    "ABI version" : 0,
+    "functions" :    [{
+            "inputs": [
                 {"name": "recipient", "type": "bits256"},
-	            {"name": "value", "type": "duint"}
-	        ],
-	        "name": "sendTransaction",
-			"signed": true,
-	        "outputs": [
+                {"name": "value", "type": "duint"}
+            ],
+            "name": "sendTransaction",
+            "signed": true,
+            "outputs": [
                 {"name": "transaction", "type": "uint64"},
-				{"name": "error", "type": "int8"}
-	        ]
+                {"name": "error", "type": "int8"}
+            ]
         }, {
-	        "inputs": [
-				{"name": "type", "type": "uint8"},
-				{"name": "value", "type": "duint"},
-				{"name": "meta", "type": "bitstring"}
-			],
-	        "name": "createLimit",
-			"signed": true,
-	        "outputs": [
-				{"name": "limitId", "type": "uint8"},
-				{"name": "error", "type": "int8"}
-	        ]
-	    }, {
-	        "inputs": [
-				{"name": "limitId", "type": "uint8"},
-				{"name": "value", "type": "duint"},
-				{"name": "meta", "type": "bitstring"}
-	        ],
-	        "name": "changeLimitById",
-			"signed": true,
-	        "outputs": [{"name": "error", "type": "int8"}]
-	    }, {
-	        "inputs": [{"name": "limitId", "type": "uint8"}],
-	        "name": "removeLimit",
-			"signed": true,
-	        "outputs": [{"name": "error", "type": "int8"}]
-	    }, {
-	        "inputs": [{"name": "limitId", "type": "uint8"}],
-	        "name": "getLimitById",
-	        "outputs": [
-				{
-					"name": "limitInfo",
-					"type": "tuple",
-					"components": [
-						{"name": "value", "type": "duint"},
-						{"name": "type", "type": "uint8"},
-						{"name": "meta", "type": "bitstring"}
-						]
-				},
-				{"name": "error", "type": "int8"}
-	        ]
-	    }, {
-	        "inputs": [],
-	        "name": "getLimits",
-	        "outputs": [
-				{"name": "list", "type": "uint8[]"},
-				{"name": "error", "type": "int8"}
-	        ]
-	    }, {
-	        "inputs": [],
-	        "name": "getVersion",
-	        "outputs": [
-				{
-					"name": "version",
-					"type": "tuple",
-					"components": [
-						{"name": "major", "type": "uint16"},
-						{"name": "minor", "type": "uint16"}
-					]
-				},
-				{"name": "error", "type": "int8"}
-	        ]
-	    }, {
-	        "inputs": [],
-	        "name": "getBalance",
-	        "outputs": [{"name": "balance", "type": "uint64"}]
-	    }, {
-	        "inputs": [],
-	        "name": "constructor",
-	        "outputs": []							
-	    }, {
-	        "inputs": [{"name": "address", "type": "bits256" }],
-	        "name": "setSubscriptionAccount",
-					"signed": true,
-	        "outputs": []							
-	    }, {
-	        "inputs": [],
-	        "name": "getSubscriptionAccount",
-	        "outputs": [{"name": "address", "type": "bits256" }]							
-	    }
-	]
+            "inputs": [
+                {"name": "type", "type": "uint8"},
+                {"name": "value", "type": "duint"},
+                {"name": "meta", "type": "bitstring"}
+            ],
+            "name": "createLimit",
+            "signed": true,
+            "outputs": [
+                {"name": "limitId", "type": "uint8"},
+                {"name": "error", "type": "int8"}
+            ]
+        }, {
+            "inputs": [
+                {"name": "limitId", "type": "uint8"},
+                {"name": "value", "type": "duint"},
+                {"name": "meta", "type": "bitstring"}
+            ],
+            "name": "changeLimitById",
+            "signed": true,
+            "outputs": [{"name": "error", "type": "int8"}]
+        }, {
+            "inputs": [{"name": "limitId", "type": "uint8"}],
+            "name": "removeLimit",
+            "signed": true,
+            "outputs": [{"name": "error", "type": "int8"}]
+        }, {
+            "inputs": [{"name": "limitId", "type": "uint8"}],
+            "name": "getLimitById",
+            "outputs": [
+                {
+                    "name": "limitInfo",
+                    "type": "tuple",
+                    "components": [
+                        {"name": "value", "type": "duint"},
+                        {"name": "type", "type": "uint8"},
+                        {"name": "meta", "type": "bitstring"}
+                        ]
+                },
+                {"name": "error", "type": "int8"}
+            ]
+        }, {
+            "inputs": [],
+            "name": "getLimits",
+            "outputs": [
+                {"name": "list", "type": "uint8[]"},
+                {"name": "error", "type": "int8"}
+            ]
+        }, {
+            "inputs": [],
+            "name": "getVersion",
+            "outputs": [
+                {
+                    "name": "version",
+                    "type": "tuple",
+                    "components": [
+                        {"name": "major", "type": "uint16"},
+                        {"name": "minor", "type": "uint16"}
+                    ]
+                },
+                {"name": "error", "type": "int8"}
+            ]
+        }, {
+            "inputs": [],
+            "name": "getBalance",
+            "outputs": [{"name": "balance", "type": "uint64"}]
+        }, {
+            "inputs": [],
+            "name": "constructor",
+            "outputs": []                            
+        }, {
+            "inputs": [{"name": "address", "type": "bits256" }],
+            "name": "setSubscriptionAccount",
+                    "signed": true,
+            "outputs": []                            
+        }, {
+            "inputs": [],
+            "name": "getSubscriptionAccount",
+            "outputs": [{"name": "address", "type": "bits256" }]                            
+        }
+    ]
 }
 "#;
 
 #[test]
 fn test_constructor_call() {
-	let params = r#"{}"#;
+    let params = r#"{}"#;
 
-	let test_tree = encode_function_call(
-		WALLET_ABI.to_owned(),
-		"constructor".to_owned(),
-		params.to_owned(),
-		None,
-	)
-	.unwrap();
+    let test_tree = encode_function_call(
+        WALLET_ABI.to_owned(),
+        "constructor".to_owned(),
+        params.to_owned(),
+        None,
+    )
+    .unwrap();
 
-	let expected_tree = BuilderData::with_bitstring(vec![0x00, 0xAC, 0x81, 0x0A, 0x6D, 0x80]);
+    let expected_tree = BuilderData::with_bitstring(vec![0x00, 0xAC, 0x81, 0x0A, 0x6D, 0x80]);
 
-	assert_eq!(test_tree, expected_tree);
+    assert_eq!(test_tree, expected_tree);
 
-	let response_tree = SliceData::new_empty();
+    let response_tree = SliceData::new_empty();
 
-	let response = decode_function_response(
-		WALLET_ABI.to_owned(),
-		"constructor".to_owned(),
-		response_tree,
-	)
-	.unwrap();
+    let response = decode_function_response(
+        WALLET_ABI.to_owned(),
+        "constructor".to_owned(),
+        response_tree,
+    )
+    .unwrap();
 
-	assert_eq!(response, params);
+    assert_eq!(response, params);
 }
 
 #[test]
 fn test_signed_call() {
-	let params = r#"{
+    let params = r#"{
         "type": 1,
         "value": 12,
         "meta": "101"
     }"#;
 
-	let pair = Keypair::generate::<Sha512, _>(&mut rand::rngs::OsRng::new().unwrap());
+    let pair = Keypair::generate::<Sha512, _>(&mut rand::rngs::OsRng::new().unwrap());
 
-	let test_tree = encode_function_call(
-		WALLET_ABI.to_owned(),
-		"createLimit".to_owned(),
-		params.to_owned(),
-		Some(&pair),
-	)
-	.unwrap();
+    let test_tree = encode_function_call(
+        WALLET_ABI.to_owned(),
+        "createLimit".to_owned(),
+        params.to_owned(),
+        Some(&pair),
+    )
+    .unwrap();
 
-	let expected_tree = BuilderData::with_bitstring(vec![
-		0x00, 0x27, 0xEF, 0x50, 0x87, 0x01, 0x0C, 0b10000000, 0b11101100,
-	]);
+    let expected_tree = BuilderData::with_bitstring(vec![
+        0x00, 0x27, 0xEF, 0x50, 0x87, 0x01, 0x0C, 0b10000000, 0b11101100,
+    ]);
 
-	let mut test_tree = SliceData::from(test_tree);
-	test_tree.drain_reference();
+    let mut test_tree = SliceData::from(test_tree);
+    test_tree.drain_reference();
 
-	assert_eq!(test_tree, SliceData::from(expected_tree));
+    assert_eq!(test_tree, SliceData::from(expected_tree));
 
-	let expected_response = r#"{"limitId":"0x0","error":"-0x1"}"#;
+    let expected_response = r#"{"limitId":"0x0","error":"-0x1"}"#;
 
-	let response_tree = SliceData::from(BuilderData::with_bitstring(vec![0x00, 0xFF, 0x80]));
+    let response_tree = SliceData::from(BuilderData::with_bitstring(vec![0x00, 0xFF, 0x80]));
 
-	let response = decode_function_response(
-		WALLET_ABI.to_owned(),
-		"createLimit".to_owned(),
-		response_tree,
-	)
-	.unwrap();
+    let response = decode_function_response(
+        WALLET_ABI.to_owned(),
+        "createLimit".to_owned(),
+        response_tree,
+    )
+    .unwrap();
 
-	assert_eq!(response, expected_response);
+    assert_eq!(response, expected_response);
 }
 
 #[test]
 fn test_not_signed_call() {
-	let params = r#"{
+    let params = r#"{
         "limitId": "0x2"
     }"#;
 
-	let pair = Keypair::generate::<Sha512, _>(&mut rand::rngs::OsRng::new().unwrap());
+    let pair = Keypair::generate::<Sha512, _>(&mut rand::rngs::OsRng::new().unwrap());
 
-	let test_tree = encode_function_call(
-		WALLET_ABI.to_owned(),
-		"getLimitById".to_owned(),
-		params.to_owned(),
-		Some(&pair),
-	)
-	.unwrap();
+    let test_tree = encode_function_call(
+        WALLET_ABI.to_owned(),
+        "getLimitById".to_owned(),
+        params.to_owned(),
+        Some(&pair),
+    )
+    .unwrap();
 
-	let expected_tree = BuilderData::with_bitstring(vec![0x00, 0xDA, 0x37, 0x46, 0x4F, 0x02, 0x80]);
+    let expected_tree = BuilderData::with_bitstring(vec![0x00, 0xDA, 0x37, 0x46, 0x4F, 0x02, 0x80]);
 
-	assert_eq!(test_tree, expected_tree);
+    assert_eq!(test_tree, expected_tree);
 }

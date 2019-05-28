@@ -49,7 +49,7 @@ impl<'a> Serialize for FunctionParams<'a> {
 }
 
 impl Token {
-	pub fn detokenize_big_int<S>(number: &BigInt, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn detokenize_big_int<S>(number: &BigInt, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -97,23 +97,23 @@ impl Token {
 }
 
 impl Serialize for TokenValue {
-	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-		match self {
-			TokenValue::Uint(uint) => Token::detokenize_big_uint(&uint.number, serializer),
-			TokenValue::Int(int) => Token::detokenize_big_int(&int.number, serializer),
-			TokenValue::Dint(dint) => Token::detokenize_big_int(&dint, serializer),
-			TokenValue::Duint(duint) => Token::detokenize_big_uint(&duint, serializer),
-			TokenValue::Bool(b) => serializer.serialize_bool(b.clone()),
-			TokenValue::Tuple(tokens) => {
+        match self {
+            TokenValue::Uint(uint) => Token::detokenize_big_uint(&uint.number, serializer),
+            TokenValue::Int(int) => Token::detokenize_big_int(&int.number, serializer),
+            TokenValue::Dint(dint) => Token::detokenize_big_int(&dint, serializer),
+            TokenValue::Duint(duint) => Token::detokenize_big_uint(&duint, serializer),
+            TokenValue::Bool(b) => serializer.serialize_bool(b.clone()),
+            TokenValue::Tuple(tokens) => {
                 FunctionParams {params: tokens}.serialize(serializer)
             },
-			TokenValue::Array(ref tokens) => tokens.serialize(serializer),
-			TokenValue::FixedArray(ref tokens) => tokens.serialize(serializer),
-			TokenValue::Bits(bitstring) => Token::detokenize_bitstring(&bitstring, serializer),
-			TokenValue::Bitstring(bitstring) => Token::detokenize_bitstring(&bitstring, serializer),
-		}
+            TokenValue::Array(ref tokens) => tokens.serialize(serializer),
+            TokenValue::FixedArray(ref tokens) => tokens.serialize(serializer),
+            TokenValue::Bits(bitstring) => Token::detokenize_bitstring(&bitstring, serializer),
+            TokenValue::Bitstring(bitstring) => Token::detokenize_bitstring(&bitstring, serializer),
+        }
     }
 }

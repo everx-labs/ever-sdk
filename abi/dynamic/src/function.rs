@@ -9,71 +9,71 @@ use tvm::cells_serialization::BagOfCells;
 use abi_lib::types::prepend_data_to_chain;
 use abi_lib::types::{ABISerialized, DeserializationError as InnerTypeDeserializationError};
 
-pub const	ABI_VERSION: u8					= 0;
-const 		ABI_VERSION_BITS_SIZE: usize	= 8;
-const 		FUNC_ID_BITS_SIZE: usize		= 32;
+pub const   ABI_VERSION: u8                 = 0;
+const       ABI_VERSION_BITS_SIZE: usize    = 8;
+const       FUNC_ID_BITS_SIZE: usize        = 32;
 
 /// Contract function specification.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct Function {
-	/// Function name.
-	pub name: String,
-	/// Function input.
-	#[serde(default)]
-	pub inputs: Vec<Param>,
-	/// Function output.
-	#[serde(default)]
-	pub outputs: Vec<Param>,
-	/// Signed function.
-	#[serde(default)]
-	pub signed: bool,
+    /// Function name.
+    pub name: String,
+    /// Function input.
+    #[serde(default)]
+    pub inputs: Vec<Param>,
+    /// Function output.
+    #[serde(default)]
+    pub outputs: Vec<Param>,
+    /// Signed function.
+    #[serde(default)]
+    pub signed: bool,
 }
 
 #[derive(Debug)]
 pub enum SerializationError {
-	WrongParameterType,
-	KeyPairNeeded,
+    WrongParameterType,
+    KeyPairNeeded,
 }
 
 #[derive(Debug)]
 pub enum DeserializationError {
-	TypeDeserializationError(InnerTypeDeserializationError),
+    TypeDeserializationError(InnerTypeDeserializationError),
     IncompleteDeserializationError,
 }
 
 impl Function {
-	/// Returns all input params of given function.
-	pub fn input_params(&self) -> Vec<Param> {
-		self.inputs.iter()
-			.map(|p| p.clone())
-			.collect()
-	}
+    /// Returns all input params of given function.
+    pub fn input_params(&self) -> Vec<Param> {
+        self.inputs.iter()
+            .map(|p| p.clone())
+            .collect()
+    }
 
-	/// Returns all output params of given function.
-	pub fn output_params(&self) -> Vec<Param> {
-		self.outputs.iter()
-			.map(|p| p.clone())
-			.collect()
-	}
+    /// Returns all output params of given function.
+    pub fn output_params(&self) -> Vec<Param> {
+        self.outputs.iter()
+            .map(|p| p.clone())
+            .collect()
+    }
 
-	/// Retruns ABI function signature
-	pub fn get_function_signature(&self) -> String {
-		let input_types = self.inputs.iter()
-			.map(|param| param.kind.type_signature())
-			.collect::<Vec<String>>()
-			.join(",");
+    /// Retruns ABI function signature
+    pub fn get_function_signature(&self) -> String {
+        let input_types = self.inputs.iter()
+            .map(|param| param.kind.type_signature())
+            .collect::<Vec<String>>()
+            .join(",");
 
-		let output_types = self.outputs.iter()
-			.map(|param| param.kind.type_signature())
-			.collect::<Vec<String>>()
-			.join(",");
+        let output_types = self.outputs.iter()
+            .map(|param| param.kind.type_signature())
+            .collect::<Vec<String>>()
+            .join(",");
 
-		format!("{}({})({})", self.name, input_types, output_types)
-	}
+        format!("{}({})({})", self.name, input_types, output_types)
+    }
 
-	/// Computes function ID for contract function
+    /// Computes function ID for contract function
     pub fn get_function_id(&self) -> [u8; 4] {
-		let signature = self.get_function_signature();
+        let signature = self.get_function_signature();
 
         //println!("{}", signature);
 
@@ -90,60 +90,60 @@ impl Function {
         bytes
     }
 
-	/// Parses the ABI function output to list of tokens.
-	pub fn decode_output(&self, data: SliceData) -> Result<Vec<Token>, DeserializationError> {
-		let params = self.output_params();
+    /// Parses the ABI function output to list of tokens.
+    pub fn decode_output(&self, data: SliceData) -> Result<Vec<Token>, DeserializationError> {
+        let params = self.output_params();
 
-		let mut tokens = vec![];
-		let mut cursor = data;
+        let mut tokens = vec![];
+        let mut cursor = data;
 
-		for param in params {
-			let (token_value, new_cursor) = TokenValue::read_from(&param.kind, cursor)
-				.map_err(|err| DeserializationError::TypeDeserializationError(err))?;
+        for param in params {
+            let (token_value, new_cursor) = TokenValue::read_from(&param.kind, cursor)
+                .map_err(|err| DeserializationError::TypeDeserializationError(err))?;
 
-			cursor = new_cursor;
-			tokens.push(Token { name: param.name, value: token_value });
-		}
+            cursor = new_cursor;
+            tokens.push(Token { name: param.name, value: token_value });
+        }
 
-		if cursor.remaining_references() != 0 || cursor.remaining_bits() != 0 {
+        if cursor.remaining_references() != 0 || cursor.remaining_bits() != 0 {
             Err(DeserializationError::IncompleteDeserializationError)
         } else {
-			Ok(tokens)
-		}
-	}
+            Ok(tokens)
+        }
+    }
 
     /// Encodes provided function parameters into `BuilderData` containing ABI contract call
     pub fn encode_input(
-		&self,
-		tokens: &[Token],
-		pair: Option<&Keypair>
-	) -> Result<BuilderData, SerializationError> {
-		let params = self.input_params();
+        &self,
+        tokens: &[Token],
+        pair: Option<&Keypair>
+    ) -> Result<BuilderData, SerializationError> {
+        let params = self.input_params();
 
-		if !Token::types_check(tokens, params.as_slice()) {
-			return Err(SerializationError::WrongParameterType);
-		}
+        if !Token::types_check(tokens, params.as_slice()) {
+            return Err(SerializationError::WrongParameterType);
+        }
 
-		if self.signed && pair.is_none() {
-			return Err(SerializationError::KeyPairNeeded);
-		}
+        if self.signed && pair.is_none() {
+            return Err(SerializationError::KeyPairNeeded);
+        }
 
         // prepare standard message
         let mut builder = BuilderData::new();
-		for token in tokens.iter().rev() {
-			builder = token.value.prepend_to(builder);
-			//println!("{}", builder);
-		}
+        for token in tokens.iter().rev() {
+            builder = token.value.prepend_to(builder);
+            //println!("{}", builder);
+        }
 
-		// expand cells chain with new root if function are signed and all references are used 
-		// or if ABI version and function ID cannot fit into root cell
-		if	self.signed && BuilderData::references_capacity() == builder.references_used() ||
-			BuilderData::bits_capacity() < builder.bits_used() + FUNC_ID_BITS_SIZE + ABI_VERSION_BITS_SIZE
-		{
-			let mut new_builder = BuilderData::new();
-			new_builder.append_reference(builder);
-			builder = new_builder;
-		};		
+        // expand cells chain with new root if function are signed and all references are used 
+        // or if ABI version and function ID cannot fit into root cell
+        if    self.signed && BuilderData::references_capacity() == builder.references_used() ||
+            BuilderData::bits_capacity() < builder.bits_used() + FUNC_ID_BITS_SIZE + ABI_VERSION_BITS_SIZE
+        {
+            let mut new_builder = BuilderData::new();
+            new_builder.append_reference(builder);
+            builder = new_builder;
+        };        
 
         builder = prepend_data_to_chain(builder, {
             // make prefix with ABI version and function ID
@@ -153,13 +153,13 @@ impl Function {
             Bitstring::create(vec, len)
         });
 
-		if self.signed {
-			let bag = BagOfCells::with_root(builder.clone().into());
-			let hash = bag.get_repr_hash_by_index(0).unwrap();
-			let signature = pair.unwrap().sign::<Sha512>(hash.as_slice()).to_bytes().to_vec();
-			let len = signature.len() * 8;
-			builder.prepend_reference(BuilderData::with_raw(signature, len));	
-		}
+        if self.signed {
+            let bag = BagOfCells::with_root(builder.clone().into());
+            let hash = bag.get_repr_hash_by_index(0).unwrap();
+            let signature = pair.unwrap().sign::<Sha512>(hash.as_slice()).to_bytes().to_vec();
+            let len = signature.len() * 8;
+            builder.prepend_reference(BuilderData::with_raw(signature, len));
+        }
 
         Ok(builder)
     }
