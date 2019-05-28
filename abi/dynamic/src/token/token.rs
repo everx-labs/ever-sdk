@@ -322,13 +322,13 @@ impl TokenValue {
                     bitstring.append_bit_bool(*b);
                     bitstring
                 } else {
-                    panic!("Can't be here");
+                    unreachable!();
                 }
             });
 
             Ok((TokenValue::Bits(bitstring), cursor))
         } else {
-            panic!("Can't be here");
+            unreachable!();
         }
     }
 
