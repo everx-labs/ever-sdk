@@ -4,14 +4,14 @@ use std::marker::PhantomData;
 use tvm::bitstring::Bitstring;
 use tvm::cells_serialization::BagOfCells;
 use tvm::stack::{BuilderData, SliceData};
-use types::{ABIInParameter, ABITypeSignature, prepend_data_to_chain};
+use types::{ABIInParameter, ABIOutParameter, ABITypeSignature, prepend_data_to_chain};
 
 pub const   ABI_VERSION: u8                 = 0;
 const 		ABI_VERSION_BITS_SIZE: usize	= 8;
 const 		FUNC_ID_BITS_SIZE: usize		= 32;
 
 /// Empty struct for contract call serialization
-pub struct ABICall<TIn: ABIInParameter + ABITypeSignature, TOut: ABIInParameter + ABITypeSignature> {
+pub struct ABICall<TIn: ABIInParameter + ABITypeSignature, TOut: ABIOutParameter + ABITypeSignature> {
     input: PhantomData<TIn>,
     output: PhantomData<TOut>,
 }
@@ -20,7 +20,7 @@ pub struct ABICall<TIn: ABIInParameter + ABITypeSignature, TOut: ABIInParameter 
 impl<TIn, TOut> ABICall<TIn, TOut> 
 where
     TIn: ABIInParameter + ABITypeSignature,
-    TOut: ABIInParameter + ABITypeSignature
+    TOut: ABIOutParameter + ABITypeSignature
 {
     /// Computes function ID for contract function
     fn get_function_id(fn_name: String) -> [u8; 4] {
