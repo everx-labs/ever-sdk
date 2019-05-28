@@ -14,7 +14,7 @@ pub enum TokenizeError {
     NotImplemented,
 }
 
-/// This trait should be used to parse string values as tokens.
+/// This struct should be used to parse string values as tokens.
 pub struct Tokenizer;
 
 impl Tokenizer {

@@ -3,35 +3,6 @@ use tvm::stack::{BuilderData, SliceData, IBitstring};
 use super::DeserializationError;
 use types::ABIDeserialized;
 
-#[macro_export]
-macro_rules! makeOutParameter {
-    ($t:tt, $($T: tt),+ ) => {
-        impl<$($T),*> ABIOutParameter for $t<$($T),*>
-        where
-            $(
-            $T: ABIParameter
-            ),*
-        {
-            type Out = <Self as ABIParameter>::Out;
-
-            fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError>
-            {
-                <Self as ABIParameter>::read_from(cursor)
-            }
-        }
-    };
-    ($t: ty) => {
-        impl ABIOutParameter for $t {
-            type Out = <Self as ABIParameter>::Out;
-
-            fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError>
-            {
-                <Self as ABIParameter>::read_from(cursor)
-            }
-        }
-    }
-}
-
 // put data to cell and make chain if data doesn't fit into cell
 pub fn prepend_data_to_chain(mut builder: BuilderData, data: Bitstring) -> BuilderData {
     let mut data = data;
