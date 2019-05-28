@@ -31,7 +31,7 @@ impl Transaction {
     }
 
     pub fn in_message_id(&self) -> Option<MessageId> {
-        self.tr.in_message().map(|m| m.sdk_ref_unwrap().clone())
+        self.tr.in_message().map(|m| m.client_ref_unwrap().clone())
     }
 
     pub fn load_in_message(&self) -> SdkResult<Box<Stream<Item = Message, Error = SdkError>>> {
