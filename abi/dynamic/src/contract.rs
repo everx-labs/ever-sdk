@@ -15,8 +15,8 @@ pub struct Contract {
 
 impl<'a> Deserialize<'a> for Contract {
 	fn deserialize<D>(deserializer: D) -> Result<Contract, D::Error> where D: Deserializer<'a> {
-		// A little trick similar to `Param` deserialization: first deserialize JSON into temporary struct `SerdeContract`
-		// containing necessary fields and then repack functions into HashMap
+		// A little trick similar to `Param` deserialization: first deserialize JSON into temporary 
+		// struct `SerdeContract` containing necessary fields and then repack functions into HashMap
 		let serde_contract = SerdeContract::deserialize(deserializer)?;
 
 		if serde_contract.abi_version != 0 {

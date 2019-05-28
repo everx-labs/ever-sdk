@@ -99,7 +99,8 @@ impl Function {
 
 		for param in params {
 			let (token_value, new_cursor) = TokenValue::read_from(&param.kind, cursor)
-										.map_err(|err| DeserializationError::TypeDeserializationError(err))?;
+				.map_err(|err| DeserializationError::TypeDeserializationError(err))?;
+
 			cursor = new_cursor;
 			tokens.push(Token { name: param.name, value: token_value });
 		}
@@ -112,8 +113,11 @@ impl Function {
 	}
 
     /// Encodes provided function parameters into `BuilderData` containing ABI contract call
-    pub fn encode_input(&self, tokens: &[Token], pair: Option<&Keypair>) -> Result<BuilderData, SerializationError>
-    {
+    pub fn encode_input(
+		&self,
+		tokens: &[Token],
+		pair: Option<&Keypair>
+	) -> Result<BuilderData, SerializationError> {
 		let params = self.input_params();
 
 		if !Token::types_check(tokens, params.as_slice()) {

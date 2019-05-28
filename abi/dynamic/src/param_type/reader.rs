@@ -30,7 +30,9 @@ impl Reader {
 				return Ok(ParamType::Array(Box::new(subtype)));
 			} else {
 				// it's a fixed array.
-				let len = usize::from_str_radix(&num, 10).map_err(|_| ReaderError::InvalidName(name.to_owned()))?;
+				let len = usize::from_str_radix(&num, 10)
+					.map_err(|_| ReaderError::InvalidName(name.to_owned()))?;
+					
 				let subtype = Reader::read(&name[..count - num.len() - 2])?;
 				return Ok(ParamType::FixedArray(Box::new(subtype), len));
 			}
@@ -41,18 +43,22 @@ impl Reader {
 			"duint" => ParamType::Duint,
 			"bool" => ParamType::Bool,
 			"bitstring" => ParamType::Bitstring,
-			// a little trick - here we only recognize parameter as a tuple and fill it with parameters in `Param` type deserialization
+			// a little trick - here we only recognize parameter as a tuple and fill it 
+			// with parameters in `Param` type deserialization
 			"tuple" => ParamType::Tuple(Vec::new()),
 			s if s.starts_with("int") => {
-				let len = usize::from_str_radix(&s[3..], 10).map_err(|_| ReaderError::InvalidName(name.to_owned()))?;
+				let len = usize::from_str_radix(&s[3..], 10)
+					.map_err(|_| ReaderError::InvalidName(name.to_owned()))?;
 				ParamType::Int(len)
 			},
 			s if s.starts_with("uint") => {
-				let len = usize::from_str_radix(&s[4..], 10).map_err(|_| ReaderError::InvalidName(name.to_owned()))?;
+				let len = usize::from_str_radix(&s[4..], 10)
+					.map_err(|_| ReaderError::InvalidName(name.to_owned()))?;
 				ParamType::Uint(len)
 			},
 			s if s.starts_with("bits") => {
-				let len = usize::from_str_radix(&s[4..], 10).map_err(|_| ReaderError::InvalidName(name.to_owned()))?;
+				let len = usize::from_str_radix(&s[4..], 10)
+					.map_err(|_| ReaderError::InvalidName(name.to_owned()))?;
 				ParamType::Bits(len)
 			},
 			_ => {

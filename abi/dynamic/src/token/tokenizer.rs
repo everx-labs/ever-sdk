@@ -68,7 +68,10 @@ impl Tokenizer {
 	}
 
 	/// Tries to parse a value as a vector of tokens of fixed size.
-	fn tokenize_fixed_array(param: &ParamType, size: usize, value: &Value) -> Result<TokenValue, TokenizeError> {
+	fn tokenize_fixed_array(
+		param: &ParamType,
+		size: usize, value: &Value
+	) -> Result<TokenValue, TokenizeError> {
 		let vec = Self::read_array(param, value)?;
 		match vec.len() == size {
 			true => Ok(TokenValue::FixedArray(vec)),
@@ -134,10 +137,11 @@ impl Tokenizer {
 
 	/// Checks if given number can be fit into given bits count
 	fn check_int_size(number: &BigInt, size: usize) -> bool {
-		// `BigInt::bits` returns fewest bits necessary to express the number, not including the sign
-		// and it works well for all values except `-2^n`. Such values can be encoded using `n` bits, but 
-		// `bits` function returns `n` (and plus one bit for sign) so we have to explicitly check such situation 
-		// by comparing bits sizes of given number and increased number
+		// `BigInt::bits` returns fewest bits necessary to express the number, not including
+		// the sign and it works well for all values except `-2^n`. Such values can be encoded 
+		// using `n` bits, but `bits` function returns `n` (and plus one bit for sign) so we 
+		// have to explicitly check such situation by comparing bits sizes of given number 
+		// and increased number
 		if	number.sign() == Sign::Minus &&
 			number.bits() != (number + BigInt::from(1)).bits()
 		{ 
@@ -182,14 +186,19 @@ impl Tokenizer {
 	fn tokenize_duint(value: &Value) -> Result<TokenValue, TokenizeError> {
 		let big_int = Self::read_int(value)?;
 
-		let big_uint = big_int.to_biguint().ok_or(TokenizeError::InvalidParameterValue(value.clone()))?;
+		let big_uint = big_int
+			.to_biguint()
+			.ok_or(TokenizeError::InvalidParameterValue(value.clone()))?;
 
 		Ok(TokenValue::Duint(big_uint))
 	}
 
 	/// Tries to read bitstring from `Value`.
 	fn read_bitstring(value: &Value) -> Result<Bitstring, TokenizeError> {
-		let mut string = value.as_str().ok_or(TokenizeError::WrongDataFormat(value.clone()))?.to_owned();
+		let mut string = value
+			.as_str()
+			.ok_or(TokenizeError::WrongDataFormat(value.clone()))?
+			.to_owned();
 
 		// hexademical representation
 		let bitstring = if string.starts_with("x") {
@@ -197,10 +206,11 @@ impl Tokenizer {
 			let square_brackets: &[_] = &['{', '}'];
 			string = string.trim_start_matches("x").trim_matches(square_brackets).to_owned();
 
-			// if bitstring length is not divisible by 8 then it is ended by `completion tag` (see TON Blockchain spec)
+			// if bitstring length is not divisible by 8 then it is ended by `completion tag`
+			// (see TON Blockchain spec)
 			if string.ends_with("_") {
-				// pad bitstring with zeros to parse as normal hex-string
-				// it will be trimmed by `Bitstring::from_bitstring_with_completion_tag` using `completion tag`
+				// Pad bitstring with zeros to parse as normal hex-string. It will be trimmed 
+				// by `Bitstring::from_bitstring_with_completion_tag` using `completion tag`
 				let len = string.len(); 
 				string.replace_range(len - 1 .. len, "0");
 
@@ -212,7 +222,8 @@ impl Tokenizer {
 				string += "80";
 			}
 
-			let vec = hex::decode(string).map_err(|_| TokenizeError::InvalidParameterValue(value.clone()))?;
+			let vec = hex::decode(string)
+				.map_err(|_| TokenizeError::InvalidParameterValue(value.clone()))?;
 
 			Bitstring::from_bitstring_with_completion_tag(vec)
 		} else { // bits representation

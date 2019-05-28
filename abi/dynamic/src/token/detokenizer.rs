@@ -24,7 +24,8 @@ impl Detokenizer {
             return Err(DetokenizeError::WrongParameterType);
         }
 
-        serde_json::to_string(&FunctionParams{params: tokens}).map_err(|err| DetokenizeError::SerdeError(err))
+        serde_json::to_string(&FunctionParams{params: tokens})
+            .map_err(|err| DetokenizeError::SerdeError(err))
     }
 }
 

@@ -48,7 +48,8 @@ fn test_abi_parse() {
                 name: "input_and_output".to_owned(),
                 inputs: vec![
                     Param { name: "a".to_owned(), kind: ParamType::Uint(64) },
-                    Param { name: "b".to_owned(), kind: ParamType::Array(Box::new(ParamType::Uint(8))) },
+                    Param { name: "b".to_owned(), kind: ParamType::Array(
+                        Box::new(ParamType::Uint(8))) },
                     Param { name: "c".to_owned(), kind: ParamType::Bitstring },
                 ],
                 outputs: vec![

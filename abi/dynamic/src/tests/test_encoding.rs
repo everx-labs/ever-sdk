@@ -1,32 +1,29 @@
-use sha2::{Digest, Sha256, Sha512};
 use ed25519_dalek::*;
-use num_bigint::{BigUint, BigInt};
+use num_bigint::{BigInt, BigUint};
+use sha2::{Digest, Sha256, Sha512};
 
-use tvm::bitstring::{Bit, Bitstring};
-use tvm::cells_serialization::{BagOfCells};
-use tvm::stack::{BuilderData, SliceData, IBitstring};
 use abi_lib::types::{Dint, Duint};
+use tvm::bitstring::{Bit, Bitstring};
+use tvm::cells_serialization::BagOfCells;
+use tvm::stack::{BuilderData, IBitstring, SliceData};
 
-use {
-    Param,
-    ParamType,
-    Function,
-    Uint,
-    Int,
-    Token,
-    TokenValue,
-    ABI_VERSION};
+use {Function, Int, Param, ParamType, Token, TokenValue, Uint, ABI_VERSION};
 
-    
 macro_rules! int {
     ($number:expr, $size:expr) => {
-        Int { number: BigInt::from($number), size: $size}
+        Int {
+            number: BigInt::from($number),
+            size: $size,
+        }
     };
 }
 
 macro_rules! uint {
     ($number:expr, $size:expr) => {
-        Uint { number: BigUint::from($number), size: $size}
+        Uint {
+            number: BigUint::from($number),
+            size: $size,
+        }
     };
 }
 
@@ -44,24 +41,33 @@ fn get_function_id(signature: &[u8]) -> u32 {
     u32::from_be_bytes(bytes)
 }
 
-fn test_parameters_set(func_name: &str, inputs: &[Token], params: Option<&[Param]>, expected_tree: BuilderData)
-{
+fn test_parameters_set(
+    func_name: &str,
+    inputs: &[Token],
+    params: Option<&[Param]>,
+    expected_tree: BuilderData,
+) {
     let input_params: Vec<Param> = if let Some(params) = params {
         params.to_vec()
     } else {
-        inputs.clone().iter().map(|token| token.get_param()).collect()
+        inputs
+            .clone()
+            .iter()
+            .map(|token| token.get_param())
+            .collect()
     };
-    
-    let not_signed_function = Function { 
+
+    let not_signed_function = Function {
         name: func_name.to_owned(),
         inputs: input_params.clone(),
         outputs: input_params.clone(),
-        signed: false
+        signed: false,
     };
 
-    let test_tree = not_signed_function.encode_input(inputs.clone(), None).unwrap();
+    let test_tree = not_signed_function
+        .encode_input(inputs.clone(), None)
+        .unwrap();
     assert_eq!(test_tree, expected_tree);
-
 
     // check signing
 
@@ -70,7 +76,9 @@ fn test_parameters_set(func_name: &str, inputs: &[Token], params: Option<&[Param
     let mut signed_function = not_signed_function.clone();
     signed_function.signed = true;
 
-    let signed_test_tree = signed_function.encode_input(inputs.clone(), Some(&pair)).unwrap();
+    let signed_test_tree = signed_function
+        .encode_input(inputs.clone(), Some(&pair))
+        .unwrap();
     let mut message = SliceData::from(signed_test_tree);
 
     let mut signature = SliceData::from(message.drain_reference());
@@ -80,8 +88,8 @@ fn test_parameters_set(func_name: &str, inputs: &[Token], params: Option<&[Param
     let signature = Signature::from_bytes(signature.get_next_bytes(64).as_slice()).unwrap();
     let bag = BagOfCells::with_root(message);
     let bag_hash = bag.get_repr_hash_by_index(0).unwrap();
-    pair.verify::<Sha512>(bag_hash.as_slice(), &signature).unwrap();
-
+    pair.verify::<Sha512>(bag_hash.as_slice(), &signature)
+        .unwrap();
 
     // check output decoding
 
@@ -96,26 +104,45 @@ fn test_parameters_set(func_name: &str, inputs: &[Token], params: Option<&[Param
 }
 
 fn tokens_from_values(values: Vec<TokenValue>) -> Vec<Token> {
-    let param_names = vec!["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"];
+    let param_names = vec![
+        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r",
+        "s", "t", "u", "v", "w", "x", "y", "z",
+    ];
 
-    values.into_iter().zip(param_names).map(|(value, name)| Token { name: name.to_owned(), value: value }).collect()
+    values
+        .into_iter()
+        .zip(param_names)
+        .map(|(value, name)| Token {
+            name: name.to_owned(),
+            value: value,
+        })
+        .collect()
 }
 
 #[test]
 fn test_one_input_and_output() {
     let mut builder = BuilderData::new();
     builder.append_u8(ABI_VERSION).unwrap();
-    builder.append_u32(get_function_id(b"test_one_input_and_output(uint128)(uint128)")).unwrap();
+    builder
+        .append_u32(get_function_id(
+            b"test_one_input_and_output(uint128)(uint128)",
+        ))
+        .unwrap();
     builder.append_u128(1123).unwrap();
 
     let expected_tree = builder.into();
 
+    let values = vec![TokenValue::Uint(Uint {
+        number: BigUint::from(1123u128),
+        size: 128,
+    })];
 
-    let values = vec![
-        TokenValue::Uint(Uint { number: BigUint::from(1123u128), size: 128 }),
-    ];
-
-    test_parameters_set("test_one_input_and_output", &tokens_from_values(values), None, expected_tree);
+    test_parameters_set(
+        "test_one_input_and_output",
+        &tokens_from_values(values),
+        None,
+        expected_tree,
+    );
 }
 
 #[test]
@@ -124,19 +151,26 @@ fn test_one_input_and_output_by_data() {
         0x00, 0x7B, 0xE7, 0x79, 0x17, 0xFF, 0xFF, 0xFF, 0x75, 0x0C, 0xE4, 0x7B, 0xAC, 0x80,
     ]);
 
+    let values = vec![TokenValue::Int(Int {
+        number: BigInt::from(-596784153684i64),
+        size: 64,
+    })];
 
-    let values = vec![
-        TokenValue::Int(Int { number: BigInt::from(-596784153684i64), size: 64 }),
-    ];
-
-    test_parameters_set("test_one_input_and_output_by_data", &tokens_from_values(values), None, expected_tree);
+    test_parameters_set(
+        "test_one_input_and_output_by_data",
+        &tokens_from_values(values),
+        None,
+        expected_tree,
+    );
 }
 
 #[test]
 fn test_empty_params() {
     let mut builder = BuilderData::new();
     builder.append_u8(ABI_VERSION).unwrap();
-    builder.append_u32(get_function_id(b"test_empty_params()()")).unwrap();
+    builder
+        .append_u32(get_function_id(b"test_empty_params()()"))
+        .unwrap();
 
     let expected_tree = builder.into();
 
@@ -147,7 +181,9 @@ fn test_empty_params() {
 fn test_two_params() {
     let mut builder = BuilderData::new();
     builder.append_u8(ABI_VERSION).unwrap();
-    builder.append_u32(get_function_id(b"test_two_params(bool,int32)(bool,int32)")).unwrap();
+    builder
+        .append_u32(get_function_id(b"test_two_params(bool,int32)(bool,int32)"))
+        .unwrap();
     builder.append_bit_one().unwrap();
     builder.append_i32(9434567).unwrap();
 
@@ -155,12 +191,19 @@ fn test_two_params() {
 
     let values = vec![
         TokenValue::Bool(true),
-        TokenValue::Int(Int { number: BigInt::from(9434567), size: 32 })
+        TokenValue::Int(Int {
+            number: BigInt::from(9434567),
+            size: 32,
+        }),
     ];
 
-    test_parameters_set("test_two_params", &tokens_from_values(values), None, expected_tree);
+    test_parameters_set(
+        "test_two_params",
+        &tokens_from_values(values),
+        None,
+        expected_tree,
+    );
 }
-
 
 #[test]
 fn test_nested_tuples_with_all_simples() {
@@ -195,11 +238,9 @@ fn test_nested_tuples_with_all_simples() {
 
     let mut builder = BuilderData::new();
     builder.append_bitstring(&vec).unwrap();
-    
 
     let expected_tree = builder.into();
 
-    
     let values = vec![
         TokenValue::Bool(false),
         TokenValue::Tuple(tokens_from_values(vec![
@@ -222,17 +263,24 @@ fn test_nested_tuples_with_all_simples() {
         ])),
     ];
 
-    test_parameters_set("test_nested_tuples_with_all_simples", &tokens_from_values(values), None, expected_tree);
+    test_parameters_set(
+        "test_nested_tuples_with_all_simples",
+        &tokens_from_values(values),
+        None,
+        expected_tree,
+    );
 }
 
 #[test]
 fn test_small_static_array() {
     let input_array: [u32; 8] = [1, 2, 3, 4, 5, 6, 7, 8];
-  
+
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id(b"test_small_static_array(uint32[8])(uint32[8])"));
+    bitstring.append_u32(get_function_id(
+        b"test_small_static_array(uint32[8])(uint32[8])",
+    ));
 
     bitstring.append_bit(&Bit::One);
     bitstring.append_bit(&Bit::Zero);
@@ -243,19 +291,25 @@ fn test_small_static_array() {
 
     let mut vec = vec![];
     bitstring.into_bitstring_with_completion_tag(&mut vec);
-    
+
     let mut builder = BuilderData::new();
     builder.append_bitstring(&vec).unwrap();
 
     let expected_tree = builder.into();
 
+    let values = vec![TokenValue::FixedArray(
+        input_array
+            .iter()
+            .map(|i| TokenValue::Uint(uint!(i.to_owned(), 32)))
+            .collect(),
+    )];
 
-    let values = vec![
-        TokenValue::FixedArray(
-            input_array.iter().map(|i| TokenValue::Uint(uint!(i.to_owned(), 32))).collect())
-    ];
-
-    test_parameters_set("test_small_static_array", &tokens_from_values(values), None, expected_tree);
+    test_parameters_set(
+        "test_small_static_array",
+        &tokens_from_values(values),
+        None,
+        expected_tree,
+    );
 }
 
 #[test]
@@ -267,22 +321,29 @@ fn test_small_static_array_by_data() {
         0x60,
     ]);
 
+    let values = vec![TokenValue::FixedArray(
+        input_array
+            .iter()
+            .map(|i| TokenValue::Uint(uint!(i.to_owned(), 16)))
+            .collect(),
+    )];
 
-    let values = vec![
-        TokenValue::FixedArray(
-            input_array.iter().map(|i| TokenValue::Uint(uint!(i.to_owned(), 16))).collect())
-    ];
-
-    test_parameters_set("test_small_static_array_by_data", &tokens_from_values(values), None, expected_tree);
+    test_parameters_set(
+        "test_small_static_array_by_data",
+        &tokens_from_values(values),
+        None,
+        expected_tree,
+    );
 }
 
 #[test]
 fn test_empty_dynamic_array() {
-
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id(b"test_empty_dynamic_array(uint16[])(uint16[])"));
+    bitstring.append_u32(get_function_id(
+        b"test_empty_dynamic_array(uint16[])(uint16[])",
+    ));
 
     bitstring.append_bit(&Bit::One);
     bitstring.append_bit(&Bit::Zero);
@@ -290,21 +351,25 @@ fn test_empty_dynamic_array() {
 
     let mut vec = vec![];
     bitstring.into_bitstring_with_completion_tag(&mut vec);
-    
+
     let mut builder = BuilderData::new();
     builder.append_bitstring(&vec).unwrap();
 
     let expected_tree = builder.into();
 
-    let values = vec![
-        TokenValue::Array(vec![])
-    ];
+    let values = vec![TokenValue::Array(vec![])];
 
-    let params = vec![
-        Param { name: "a". to_owned(), kind: ParamType::Array(Box::new(ParamType::Uint(16)))},
-    ];
+    let params = vec![Param {
+        name: "a".to_owned(),
+        kind: ParamType::Array(Box::new(ParamType::Uint(16))),
+    }];
 
-    test_parameters_set("test_empty_dynamic_array", &tokens_from_values(values), Some(&params), expected_tree);
+    test_parameters_set(
+        "test_empty_dynamic_array",
+        &tokens_from_values(values),
+        Some(&params),
+        expected_tree,
+    );
 }
 
 #[test]
@@ -314,7 +379,9 @@ fn test_small_dynamic_array() {
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id(b"test_small_dynamic_array(uint16[])(uint16[])"));
+    bitstring.append_u32(get_function_id(
+        b"test_small_dynamic_array(uint16[])(uint16[])",
+    ));
 
     bitstring.append_bit(&Bit::One);
     bitstring.append_bit(&Bit::Zero);
@@ -326,19 +393,25 @@ fn test_small_dynamic_array() {
 
     let mut vec = vec![];
     bitstring.into_bitstring_with_completion_tag(&mut vec);
-    
+
     let mut builder = BuilderData::new();
     builder.append_bitstring(&vec).unwrap();
 
     let expected_tree = builder.into();
 
+    let values = vec![TokenValue::Array(
+        input_array
+            .iter()
+            .map(|i| TokenValue::Uint(uint!(i.to_owned(), 16)))
+            .collect(),
+    )];
 
-    let values = vec![
-        TokenValue::Array(
-            input_array.iter().map(|i| TokenValue::Uint(uint!(i.to_owned(), 16))).collect())
-    ];
-
-    test_parameters_set("test_small_dynamic_array", &tokens_from_values(values), None, expected_tree);
+    test_parameters_set(
+        "test_small_dynamic_array",
+        &tokens_from_values(values),
+        None,
+        expected_tree,
+    );
 }
 
 fn put_data_into_chain(bilder: BuilderData, data: Bitstring) -> BuilderData {
@@ -362,7 +435,7 @@ fn put_data_into_chain(bilder: BuilderData, data: Bitstring) -> BuilderData {
 
         let mut vec = vec![];
         cut.into_bitstring_with_completion_tag(&mut vec);
-        
+
         current_builder.append_bitstring(&vec).unwrap();
 
         size -= adding_bits;
@@ -381,7 +454,9 @@ fn test_big_static_array() {
     let mut data = Bitstring::new();
 
     data.append_u8(ABI_VERSION);
-    data.append_u32(get_function_id(b"test_big_static_array(uint128[32])(uint128[32])"));
+    data.append_u32(get_function_id(
+        b"test_big_static_array(uint128[32])(uint128[32])",
+    ));
 
     data.append_bit(&Bit::Zero);
     data.append_bit(&Bit::Zero);
@@ -406,13 +481,19 @@ fn test_big_static_array() {
 
     let expected_tree = root_builder.into();
 
+    let values = vec![TokenValue::FixedArray(
+        input_array
+            .iter()
+            .map(|i| TokenValue::Uint(uint!(i.to_owned(), 128)))
+            .collect(),
+    )];
 
-    let values = vec![
-        TokenValue::FixedArray(
-            input_array.iter().map(|i| TokenValue::Uint(uint!(i.to_owned(), 128))).collect())
-    ];
-
-    test_parameters_set("test_big_static_array", &tokens_from_values(values), None, expected_tree);
+    test_parameters_set(
+        "test_big_static_array",
+        &tokens_from_values(values),
+        None,
+        expected_tree,
+    );
 }
 
 #[test]
@@ -425,7 +506,9 @@ fn test_huge_static_array() {
     let mut data = Bitstring::new();
 
     data.append_u8(ABI_VERSION);
-    data.append_u32(get_function_id(b"test_huge_static_array(int32[512])(int32[512])"));
+    data.append_u32(get_function_id(
+        b"test_huge_static_array(int32[512])(int32[512])",
+    ));
 
     data.append_bit(&Bit::Zero);
     data.append_bit(&Bit::Zero);
@@ -433,7 +516,10 @@ fn test_huge_static_array() {
     let mut array_data = Bitstring::new();
 
     for i in 0..input_array.len() {
-        array_data.append(&Bitstring::create(input_array[i].to_be_bytes().to_vec(), 32));
+        array_data.append(&Bitstring::create(
+            input_array[i].to_be_bytes().to_vec(),
+            32,
+        ));
     }
 
     let mut array_builder = BuilderData::new();
@@ -450,13 +536,19 @@ fn test_huge_static_array() {
 
     let expected_tree = root_builder.into();
 
-   
-    let values = vec![
-        TokenValue::FixedArray(
-            input_array.iter().map(|i| TokenValue::Int(int!(i.to_owned(), 32))).collect())
-    ];
+    let values = vec![TokenValue::FixedArray(
+        input_array
+            .iter()
+            .map(|i| TokenValue::Int(int!(i.to_owned(), 32)))
+            .collect(),
+    )];
 
-    test_parameters_set("test_huge_static_array", &tokens_from_values(values), None, expected_tree);
+    test_parameters_set(
+        "test_huge_static_array",
+        &tokens_from_values(values),
+        None,
+        expected_tree,
+    );
 }
 
 #[test]
@@ -493,13 +585,19 @@ fn test_big_dynamic_array() {
 
     let expected_tree = root_builder.into();
 
-    
-    let values = vec![
-        TokenValue::Array(
-            input_array.iter().map(|i| TokenValue::Int(int!(i.to_owned(), 64))).collect())
-    ];
+    let values = vec![TokenValue::Array(
+        input_array
+            .iter()
+            .map(|i| TokenValue::Int(int!(i.to_owned(), 64)))
+            .collect(),
+    )];
 
-    test_parameters_set("test_big_dynamic_array", &tokens_from_values(values), None, expected_tree);
+    test_parameters_set(
+        "test_big_dynamic_array",
+        &tokens_from_values(values),
+        None,
+        expected_tree,
+    );
 }
 
 #[test]
@@ -531,19 +629,24 @@ fn test_dynamic_array_of_tuples() {
 
     let expected_tree = builder.into();
 
-    
-    let values = vec![
-        TokenValue::Array(
-            input_array
+    let values = vec![TokenValue::Array(
+        input_array
             .iter()
-            .map(|i| TokenValue::Tuple(tokens_from_values(vec![
-                TokenValue::Uint(uint!(i.0, 32)),
-                TokenValue::Bool(i.1),
-            ])))
-            .collect())
-    ];
+            .map(|i| {
+                TokenValue::Tuple(tokens_from_values(vec![
+                    TokenValue::Uint(uint!(i.0, 32)),
+                    TokenValue::Bool(i.1),
+                ]))
+            })
+            .collect(),
+    )];
 
-    test_parameters_set("test_dynamic_array_of_tuples", &tokens_from_values(values), None, expected_tree);
+    test_parameters_set(
+        "test_dynamic_array_of_tuples",
+        &tokens_from_values(values),
+        None,
+        expected_tree,
+    );
 }
 
 #[test]
@@ -554,7 +657,7 @@ fn test_tuples_with_combined_types() {
     for i in 0..73 {
         input_array2.push(i * i as i64);
     }
-/*
+    /*
     let input_array3: [Vec<i64>; 5] = [
         input_array2.clone(),
         input_array2.clone(),
@@ -641,59 +744,74 @@ fn test_tuples_with_combined_types() {
 
     let expected_tree = chain_builder.into();
 
-
-    let array1_token_value =  TokenValue::Array(input_array1
-        .iter()
-        .map(|i| TokenValue::Tuple(tokens_from_values(vec![
-            TokenValue::Uint(uint!(i.0, 32)),
-            TokenValue::Bool(i.1),
-        ])))
-        .collect());
-
-    let array2_token_value = TokenValue::Array(input_array2
-        .iter()
-        .map(|i| TokenValue::Int(int!(*i, 64)))
-        .collect());
-
-    let array3_token_value = TokenValue::FixedArray(
-        vec![
-           array2_token_value.clone(),
-           array2_token_value.clone(),
-           array2_token_value.clone(),
-           array2_token_value.clone(),
-           array2_token_value.clone() 
-        ]
+    let array1_token_value = TokenValue::Array(
+        input_array1
+            .iter()
+            .map(|i| {
+                TokenValue::Tuple(tokens_from_values(vec![
+                    TokenValue::Uint(uint!(i.0, 32)),
+                    TokenValue::Bool(i.1),
+                ]))
+            })
+            .collect(),
     );
+
+    let array2_token_value = TokenValue::Array(
+        input_array2
+            .iter()
+            .map(|i| TokenValue::Int(int!(*i, 64)))
+            .collect(),
+    );
+
+    let array3_token_value = TokenValue::FixedArray(vec![
+        array2_token_value.clone(),
+        array2_token_value.clone(),
+        array2_token_value.clone(),
+        array2_token_value.clone(),
+        array2_token_value.clone(),
+    ]);
 
     let values = vec![
         TokenValue::Uint(uint!(18u8, 8)),
         TokenValue::Tuple(tokens_from_values(vec![
             array1_token_value,
-            TokenValue::Int(int!(-290, 16))
+            TokenValue::Int(int!(-290, 16)),
         ])),
         TokenValue::Tuple(tokens_from_values(vec![
             array2_token_value,
             array3_token_value,
         ])),
-        
     ];
 
-    test_parameters_set("test_tuples_with_combined_types", &tokens_from_values(values), None, expected_tree);
+    test_parameters_set(
+        "test_tuples_with_combined_types",
+        &tokens_from_values(values),
+        None,
+        expected_tree,
+    );
 }
 
 #[test]
 fn test_arrays_of_dint_and_duint() {
-    let input_array_int: Vec<Dint> =
-        vec![Dint::from(0), Dint::from(1), Dint::from(-1), Dint::from(0x1234567890i64), Dint::from(-0x1234567890i64)];
+    let input_array_int: Vec<Dint> = vec![
+        Dint::from(0),
+        Dint::from(1),
+        Dint::from(-1),
+        Dint::from(0x1234567890i64),
+        Dint::from(-0x1234567890i64),
+    ];
 
-    let byte_array_int: Vec<u8> = 
-        vec![0x00, 0x01, 0x7F, 0x90, 0xF1, 0xD9, 0xA2, 0xA3, 0x02, 0xF0, 0x8E, 0xA6, 0xDD, 0xDC, 0x7D];
+    let byte_array_int: Vec<u8> = vec![
+        0x00, 0x01, 0x7F, 0x90, 0xF1, 0xD9, 0xA2, 0xA3, 0x02, 0xF0, 0x8E, 0xA6, 0xDD, 0xDC, 0x7D,
+    ];
 
-    let input_array_uint: Vec<Duint> =
-        vec![Duint::from(0u32), Duint::from(1u32), Duint::from(0x1234567890u64)];
+    let input_array_uint: Vec<Duint> = vec![
+        Duint::from(0u32),
+        Duint::from(1u32),
+        Duint::from(0x1234567890u64),
+    ];
 
-    let byte_array_uint: Vec<u8> = 
-        vec![0x00, 0x01, 0x90, 0xF1, 0xD9, 0xA2, 0xA3, 0x02];    
+    let byte_array_uint: Vec<u8> = vec![0x00, 0x01, 0x90, 0xF1, 0xD9, 0xA2, 0xA3, 0x02];
 
     let mut bitstring = Bitstring::new();
 
@@ -726,21 +844,32 @@ fn test_arrays_of_dint_and_duint() {
 
     let expected_tree = builder.into();
 
-
     let values = vec![
         TokenValue::Array(
-            input_array_int.iter().map(|i| TokenValue::Dint(i.clone())).collect()),
+            input_array_int
+                .iter()
+                .map(|i| TokenValue::Dint(i.clone()))
+                .collect(),
+        ),
         TokenValue::Array(
-            input_array_uint.iter().map(|i| TokenValue::Duint(i.clone())).collect()),
+            input_array_uint
+                .iter()
+                .map(|i| TokenValue::Duint(i.clone()))
+                .collect(),
+        ),
     ];
 
-    test_parameters_set("test_arrays_of_dint_and_duint", &tokens_from_values(values), None, expected_tree);
+    test_parameters_set(
+        "test_arrays_of_dint_and_duint",
+        &tokens_from_values(values),
+        None,
+        expected_tree,
+    );
 }
 
 #[test]
 fn test_small_bitstring() {
-    let byte_array: Vec<u8> = 
-        vec![0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF];
+    let byte_array: Vec<u8> = vec![0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF];
 
     let input_bitstring = Bitstring::create(byte_array.clone(), byte_array.len() * 8);
 
@@ -765,12 +894,14 @@ fn test_small_bitstring() {
 
     let expected_tree = builder.into();
 
+    let values = vec![TokenValue::Bitstring(input_bitstring)];
 
-    let values = vec![
-        TokenValue::Bitstring(input_bitstring),
-    ];
-
-    test_parameters_set("test_small_bitstring", &tokens_from_values(values), None, expected_tree);
+    test_parameters_set(
+        "test_small_bitstring",
+        &tokens_from_values(values),
+        None,
+        expected_tree,
+    );
 }
 
 #[test]
@@ -786,13 +917,11 @@ fn test_big_bitstring() {
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id(
-        b"test_big_bitstring(bitstring)(bitstring)",
-    ));
+    bitstring.append_u32(get_function_id(b"test_big_bitstring(bitstring)(bitstring)"));
 
     bitstring.append_bit(&Bit::Zero);
     bitstring.append_bit(&Bit::Zero);
-    
+
     let mut array_builder = BuilderData::new();
     array_builder = put_data_into_chain(array_builder, input_bitstring.clone());
 
@@ -806,12 +935,14 @@ fn test_big_bitstring() {
 
     let expected_tree = builder.into();
 
+    let values = vec![TokenValue::Bitstring(input_bitstring)];
 
-    let values = vec![
-        TokenValue::Bitstring(input_bitstring),
-    ];
-
-     test_parameters_set("test_big_bitstring", &tokens_from_values(values), None, expected_tree);
+    test_parameters_set(
+        "test_big_bitstring",
+        &tokens_from_values(values),
+        None,
+        expected_tree,
+    );
 }
 
 #[test]
@@ -821,7 +952,7 @@ fn test_small_bits() {
     for i in 0..bits.len() {
         if i % 2 != 0 {
             bits[i] = Bit::One;
-        }        
+        }
     }
 
     let mut data = Bitstring::new();
@@ -857,12 +988,14 @@ fn test_small_bits() {
 
     let expected_tree = root_builder.into();
 
+    let values = vec![TokenValue::Bits(array_data)];
 
-    let values = vec![
-        TokenValue::Bits(array_data),
-    ];
-
-     test_parameters_set("test_small_bits", &tokens_from_values(values), None, expected_tree);
+    test_parameters_set(
+        "test_small_bits",
+        &tokens_from_values(values),
+        None,
+        expected_tree,
+    );
 }
 
 #[test]
@@ -872,7 +1005,7 @@ fn test_big_bits() {
     for i in 0..bits.len() {
         if i % 2 != 0 {
             bits[i] = Bit::One;
-        }        
+        }
     }
 
     let mut data = Bitstring::new();
@@ -902,14 +1035,15 @@ fn test_big_bits() {
 
     let expected_tree = root_builder.into();
 
+    let values = vec![TokenValue::Bits(array_data)];
 
-    let values = vec![
-        TokenValue::Bits(array_data),
-    ];
-
-     test_parameters_set("test_big_bits", &tokens_from_values(values), None, expected_tree);
+    test_parameters_set(
+        "test_big_bits",
+        &tokens_from_values(values),
+        None,
+        expected_tree,
+    );
 }
-
 
 #[test]
 fn test_reserving_reference() {
@@ -918,13 +1052,15 @@ fn test_reserving_reference() {
     for i in 0..bits.len() {
         if i % 2 != 0 {
             bits[i] = Bit::One;
-        }        
+        }
     }
 
     let mut data = Bitstring::new();
 
     data.append_u8(ABI_VERSION);
-    data.append_u32(get_function_id(b"test_reserving_reference(bits1024[4])(bits1024[4])"));
+    data.append_u32(get_function_id(
+        b"test_reserving_reference(bits1024[4])(bits1024[4])",
+    ));
 
     let mut array_data = Bitstring::new();
 
@@ -940,7 +1076,7 @@ fn test_reserving_reference() {
     for _ in 0..4 {
         root_builder.append_reference(array_builder.clone());
     }
-    root_builder.append_raw(&[0x80,0x00], 10).unwrap(); // array of 4 arrays in separate cells
+    root_builder.append_raw(&[0x80, 0x00], 10).unwrap(); // array of 4 arrays in separate cells
 
     let mut new_builder = BuilderData::new();
     new_builder.append_reference(root_builder);
@@ -952,27 +1088,27 @@ fn test_reserving_reference() {
 
     let expected_tree: SliceData = root_builder.into();
 
-
-    let values = vec![
-        TokenValue::FixedArray(vec![
-            TokenValue::Bits(array_data.clone()),
-            TokenValue::Bits(array_data.clone()),
-            TokenValue::Bits(array_data.clone()),
-            TokenValue::Bits(array_data.clone()),
-        ]),
-    ];
+    let values = vec![TokenValue::FixedArray(vec![
+        TokenValue::Bits(array_data.clone()),
+        TokenValue::Bits(array_data.clone()),
+        TokenValue::Bits(array_data.clone()),
+        TokenValue::Bits(array_data.clone()),
+    ])];
 
     let tokens = tokens_from_values(values);
-    let params: Vec<Param> = tokens.clone().iter().map(|token| token.get_param()).collect();
+    let params: Vec<Param> = tokens
+        .clone()
+        .iter()
+        .map(|token| token.get_param())
+        .collect();
 
-    let signed_function = Function { 
+    let signed_function = Function {
         name: "test_reserving_reference".to_owned(),
         inputs: params.clone(),
         outputs: params.clone(),
-        signed: true
+        signed: true,
     };
 
-    
     let pair = Keypair::generate::<Sha512, _>(&mut rand::rngs::OsRng::new().unwrap());
 
     let signed_test_tree = signed_function.encode_input(&tokens, Some(&pair)).unwrap();
@@ -982,7 +1118,8 @@ fn test_reserving_reference() {
     let signature = Signature::from_bytes(signature.get_next_bytes(64).as_slice()).unwrap();
     let bag = BagOfCells::with_root(signed_test_tree.clone());
     let bag_hash = bag.get_repr_hash_by_index(0).unwrap();
-    pair.verify::<Sha512>(bag_hash.as_slice(), &signature).unwrap();
+    pair.verify::<Sha512>(bag_hash.as_slice(), &signature)
+        .unwrap();
 
     assert_eq!(expected_tree, signed_test_tree);
 }

@@ -53,7 +53,8 @@ impl ParamType {
 				signature + ")"
 			},
 			ParamType::Array(ref param_type) => format!("{}[]", param_type.type_signature()),
-			ParamType::FixedArray(ref param_type, size) => format!("{}[{}]", param_type.type_signature(), size),
+			ParamType::FixedArray(ref param_type, size) => 
+				format!("{}[{}]", param_type.type_signature(), size),
 			ParamType::Bits(size) => format!("bits{}", size),
 			ParamType::Bitstring => "bitstring".to_owned(),
 		}

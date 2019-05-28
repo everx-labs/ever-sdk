@@ -26,11 +26,12 @@ struct SerdeParam {
 
 impl<'a> Deserialize<'a> for Param {
 	fn deserialize<D>(deserializer: D) -> Result<Param, D::Error> where D: Deserializer<'a> {
-		// A little trick: tuple parameters is described in JSON as addition field `components` but struct `Param`
-		// doesn't have such a field and tuple components is stored inside of `ParamType::Tuple` enum.
-		// To use automated deserialization instead of manual parameters recognizing we first deserialize parameter
-		// into temp struct `SerdeParam` and then if parameter is a tuple repack tuple components 
-		// from `SerdeParam::components` into `ParamType::Tuple`
+		// A little trick: tuple parameters is described in JSON as addition field `components`
+		// but struct `Param` doesn't have such a field and tuple components is stored inside of 
+		// `ParamType::Tuple` enum. To use automated deserialization instead of manual parameters
+		// recognizing we first deserialize parameter into temp struct `SerdeParam` and then
+		// if parameter is a tuple repack tuple components from `SerdeParam::components` 
+		// into `ParamType::Tuple`
 		let serde_param = SerdeParam::deserialize(deserializer)?;
 
 		let mut result = Self {
