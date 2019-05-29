@@ -3,7 +3,8 @@
 use crate::abi_call::{ABICall, ABI_VERSION};
 use crate::abi_response::{ABIResponse};
 use crate::types::{
-    ABIParameter,
+    ABISerialized,
+    ABIDeserialized,
     ABIInParameter,
     ABIOutParameter,
     ABITypeSignature};
@@ -41,10 +42,10 @@ fn deserialize(message: Vec<u8>) -> BuilderData {
 
 fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: BuilderData, expected_decode: I::Out) 
     where
-        I: std::fmt::Debug + std::cmp::PartialEq + ABIInParameter + ABIParameter + ABITypeSignature + Clone,
+        I: std::fmt::Debug + std::cmp::PartialEq + ABIInParameter + ABISerialized + ABIDeserialized + ABITypeSignature + Clone,
         I::Out: ABIOutParameter + std::fmt::Debug + std::cmp::PartialEq + Clone,
         (u8, u32, I::Out): ABIOutParameter,
-        O: ABIInParameter + ABITypeSignature,
+        O: ABIOutParameter + ABITypeSignature,
 {
     let message = ABICall::<I, O>::encode_function_call(func_name, input.clone());
     let test_tree = deserialize(message.clone());
@@ -303,7 +304,7 @@ fn test_empty_dynamic_array() {
     bitstring.into_bitstring_with_completion_tag(&mut vec);
     
     let mut builder = BuilderData::new();
-    builder.append_bitstring(&vec).unwrap();;
+    builder.append_bitstring(&vec).unwrap();
 
 
     let expected_tree = builder.into();
@@ -853,9 +854,6 @@ fn test_small_bits() {
 
     let mut data = Bitstring::new();
 
-    data.append_u8(ABI_VERSION);
-    data.append_u32(get_function_id(b"test_small_bits(bits982)()"));
-
     data.append_bit(&Bit::One);
     data.append_bit(&Bit::Zero);
 
@@ -870,6 +868,20 @@ fn test_small_bits() {
     let mut root_builder = BuilderData::new();
 
     root_builder = put_data_into_chain(root_builder, data);
+
+    // ABI version and function ID can't be splitted to several cells so create new root cell for them
+    let mut data = Bitstring::new();
+
+    data.append_u8(ABI_VERSION);
+    data.append_u32(get_function_id(b"test_small_bits(bits982)()"));
+
+    let mut new_builder = BuilderData::new();
+    new_builder.append_reference(root_builder);
+    root_builder = new_builder;
+
+    let mut vec = vec![];
+    data.into_bitstring_with_completion_tag(&mut vec);
+    root_builder.append_bitstring(&vec).unwrap();
 
     let expected_tree = root_builder.into();
 
@@ -974,7 +986,7 @@ mod decode_encoded {
 
     fn validate<T>(input: T)
     where
-        T: ABIParameter,
+        T: ABISerialized + ABIDeserialized,
         T::Out: std::fmt::Debug + std::cmp::PartialEq + From<T>,
     {
         let buffer = input.prepend_to(BuilderData::new());

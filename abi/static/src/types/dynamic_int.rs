@@ -1,6 +1,7 @@
 use super::common::*;
 use super::{
-    ABIParameter,
+    ABISerialized,
+    ABIDeserialized,
     ABITypeSignature,
     DeserializationError
 };
@@ -16,7 +17,7 @@ pub fn read_dynamic_int(cursor: SliceData, signed_padding: bool)
     let mut bitstring = Bitstring::new();
 
     loop {
-        let (byte, new_cursor) = <u8 as ABIParameter>::read_from(cursor)?;
+        let (byte, new_cursor) = <u8 as ABIDeserialized>::read_from(cursor)?;
         cursor = new_cursor;
 
         bitstring = Bitstring::create(vec![byte << 1], 7) + bitstring;
@@ -26,6 +27,10 @@ pub fn read_dynamic_int(cursor: SliceData, signed_padding: bool)
         }
     };
 
+    Ok((bitstring_to_be_bytes(bitstring, signed_padding), cursor))
+}
+
+pub fn bitstring_to_be_bytes(bitstring: Bitstring, signed_padding: bool) -> Vec<u8> {
     // pad to 8 bits
     let padding_count = 8 - ((bitstring.length_in_bits() - 1) % 8 + 1);
     let padding_string = if signed_padding && (bitstring.bits(0..1).data[0] == Bit::One) {
@@ -33,15 +38,15 @@ pub fn read_dynamic_int(cursor: SliceData, signed_padding: bool)
     } else {
         Bitstring::create(vec![0], padding_count)
     };
-    bitstring = padding_string + bitstring;
 
-    Ok((bitstring.data().to_vec(), cursor))
+    let bitstring = padding_string + bitstring;
+
+    bitstring.data().to_vec()
 }
 
 pub type Dint = BigInt;
 
-impl ABIParameter for Dint {
-    type Out = Dint;
+impl ABISerialized for Dint {
 
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
         let bytes = self.to_signed_bytes_be();
@@ -101,6 +106,10 @@ impl ABIParameter for Dint {
         // split by groups of 7 bits with adding one bit to each group and last group pad to 8 bits
         num_size + num_size / 7 + ((num_size % 7) + 7) & !7
     }
+}
+
+impl ABIDeserialized for Dint {
+    type Out = Dint;
 
     fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
         let (vec, cursor) = read_dynamic_int(cursor, true)?;

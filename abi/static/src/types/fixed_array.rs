@@ -1,14 +1,12 @@
 use super::common::*;
 use super::common_arrays::*;
-use super::{
-    ABIParameter
-};
+use super::ABISerialized;
 
 use tvm::bitstring::{Bit, Bitstring};
 use tvm::stack::{BuilderData};
 
 // put fixed array to chain or to separate branch depending on array size
-pub fn prepend_fixed_array<T: ABIParameter>(
+pub fn prepend_fixed_array<T: ABISerialized>(
     mut destination: BuilderData,
     array: &[T],
 ) -> BuilderData {
@@ -32,6 +30,20 @@ pub fn prepend_fixed_array<T: ABIParameter>(
     }
 
     destination
+}
+
+pub fn get_fixed_array_in_cell_size<T: ABISerialized>(array: &[T]) -> usize {
+    let mut result = 0;
+    for item in array {
+        result += item.get_in_cell_size();
+    }
+
+    // if array doesn't fit into cell it is put in separate chain and only 2 bits are put in main chain cell
+    if result > tvm::stack::BuilderData::bits_capacity() {
+        2
+    } else {
+        result + 2
+    }
 }
 
 #[macro_export]
@@ -99,27 +111,20 @@ macro_rules! fixed_abi_array {
             }
         }
 
-        impl $crate::types::ABIParameter for $type
+        impl $crate::types::ABISerialized for $type
         {
-            type Out = Vec<<$inner_type as $crate::types::ABIParameter>::Out>;
-
             fn prepend_to(&self, destination: tvm::stack::BuilderData) -> tvm::stack::BuilderData {
                 $crate::types::prepend_fixed_array(destination, &self.data)
             }
 
             fn get_in_cell_size(&self) -> usize {
-                let mut result = 0;
-                for i in 0..$size {
-                    result += self[i].get_in_cell_size();
-                }
-
-                // if array doesn't fit into cell it is put in separate chain and only 2 bits are put in main chain cell
-                if result > tvm::stack::BuilderData::bits_capacity() {
-                    2
-                } else {
-                    result + 2
-                }
+                $crate::types::get_fixed_array_in_cell_size(&self.data)
             }
+        }
+
+        impl $crate::types::ABIDeserialized for $type
+        {
+            type Out = Vec<<$inner_type as $crate::types::ABIDeserialized>::Out>;
 
             fn read_from(
                 cursor: tvm::stack::SliceData,
