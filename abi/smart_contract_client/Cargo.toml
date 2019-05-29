@@ -1,15 +1,14 @@
 [package]
 name = "smart_contract_client"
 version = "0.1.0"
-authors = ["Alexey Vavilin <mnogoborec@mail.ru>"]
 edition = "2018"
 
 [dependencies]
 jsonrpc-client-http = "0.5.0"
 jsonrpc-client-core = "0.5.0"
-tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "feature-blockchain-structs-to-jsons", package = "tvm" }
-ton_block = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "feature-blockchain-structs-to-jsons", package = "ton_block" }
-abi-lib = {  path = "../static"  }
+tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "dev", package = "tvm" }
+ton_block = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "dev", package = "ton_block" }
+ton_abi_core = { path = "../abi_core" }
 base64 = "0.10.0"
 clap = "2.32.0"
 hex = "0.3.2"

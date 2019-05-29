@@ -1,5 +1,5 @@
 //! TON ABI params.
-use abi_lib::types::{
+use ton_abi_core::types::{
     bitstring_to_be_bytes, get_fixed_array_in_cell_size, get_next_bits_from_chain,
     prepend_fixed_array, ABIDeserialized, ABISerialized, DeserializationError, Dint, Duint,
 };

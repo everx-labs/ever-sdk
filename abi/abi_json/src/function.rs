@@ -6,8 +6,8 @@ use ed25519_dalek::*;
 use tvm::stack::{BuilderData, SliceData};
 use tvm::bitstring::Bitstring;
 use tvm::cells_serialization::BagOfCells;
-use abi_lib::types::prepend_data_to_chain;
-use abi_lib::types::{ABISerialized, DeserializationError as InnerTypeDeserializationError};
+use ton_abi_core::types::prepend_data_to_chain;
+use ton_abi_core::types::{ABISerialized, DeserializationError as InnerTypeDeserializationError};
 
 pub const   ABI_VERSION: u8                 = 0;
 const       ABI_VERSION_BITS_SIZE: usize    = 8;
