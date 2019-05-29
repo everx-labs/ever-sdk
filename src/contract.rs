@@ -6,7 +6,7 @@ use tvm::types::AccountId;
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use reql::Document;
 use futures::stream::Stream;
-use abi_lib::types::{ABIInParameter, ABITypeSignature};
+use abi_lib::types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
 use abi_lib::abi_call::ABICall;
 use abi_lib_dynamic::json_abi::encode_function_call;
 use ed25519_dalek::Keypair;
@@ -150,7 +150,7 @@ impl Contract {
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>>
         where 
             TIn: ABIInParameter + ABITypeSignature,
-            TOut: ABIInParameter + ABITypeSignature {
+            TOut: ABIOutParameter + ABITypeSignature {
 
         // pack params into bag of cells via ABI
         let msg_body = Self::create_message_body::<TIn, TOut>(func, input, key_pair);
@@ -178,7 +178,7 @@ impl Contract {
         -> SdkResult<(Vec<u8>, MessageId)>
         where 
             TIn: ABIInParameter + ABITypeSignature,
-            TOut: ABIInParameter + ABITypeSignature {
+            TOut: ABIOutParameter + ABITypeSignature {
 
         // pack params into bag of cells via ABI
         let msg_body = Self::create_message_body::<TIn, TOut>(func, input, key_pair);
@@ -216,7 +216,7 @@ impl Contract {
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>>
         where
             TIn: ABIInParameter + ABITypeSignature,
-            TOut: ABIInParameter + ABITypeSignature {
+            TOut: ABIOutParameter + ABITypeSignature {
 
         // Deploy is call, but special message is constructed.
         // The message contains StateInit struct with code, public key and lib
@@ -235,7 +235,7 @@ impl Contract {
         -> SdkResult<(Vec<u8>, MessageId)>
         where
             TIn: ABIInParameter + ABITypeSignature,
-            TOut: ABIInParameter + ABITypeSignature {
+            TOut: ABIOutParameter + ABITypeSignature {
 
         let msg_body = Self::create_message_body::<TIn, TOut>(CONSTRUCTOR_METHOD_NAME.to_string(), input, key_pair);
 
@@ -294,7 +294,7 @@ impl Contract {
     fn create_message_body<TIn, TOut>(func: String, input: TIn, key_pair: Option<&Keypair>) -> Arc<CellData>
         where
             TIn: ABIInParameter + ABITypeSignature,
-            TOut: ABIInParameter + ABITypeSignature {
+            TOut: ABIOutParameter + ABITypeSignature {
 
         match key_pair {
             Some(p) => {
