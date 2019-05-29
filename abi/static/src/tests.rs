@@ -44,7 +44,7 @@ fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: BuilderDa
         I: std::fmt::Debug + std::cmp::PartialEq + ABIInParameter + ABIParameter + ABITypeSignature + Clone,
         I::Out: ABIOutParameter + std::fmt::Debug + std::cmp::PartialEq + Clone,
         (u8, u32, I::Out): ABIOutParameter,
-        O: ABIInParameter + ABITypeSignature,
+        O: ABIOutParameter + ABITypeSignature,
 {
     let message = ABICall::<I, O>::encode_function_call(func_name, input.clone());
     let test_tree = deserialize(message.clone());
