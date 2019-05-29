@@ -261,15 +261,23 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
         .wait()
         .next()
         .expect("Error unwrap stream next while loading Transaction")
-        .expect("Error unwrap result while loading Transaction");
+        .expect("Error unwrap result while loading Transaction")
+        .expect("Error unwrap returned Transaction");
 
     // take external outbound message from the transaction
     let out_msg = tr.load_out_messages()
         .expect("Error calling load out messages")
         .wait()
-        .find(|msg| msg.as_ref().expect("erro unwrap out message").msg_type() == MessageType::ExternalOutbound)
+        .find(|msg| {
+            msg.as_ref()
+                .expect("error unwrap out message 1")
+                .as_ref()
+                    .expect("error unwrap out message 2")
+                    .msg_type() == MessageType::ExternalOutbound
+        })
             .expect("erro unwrap out message 2")
-            .expect("erro unwrap out message 3");
+            .expect("erro unwrap out message 3")
+            .expect("erro unwrap out message 4");
 
     // take body from the message
     let response = out_msg.body().expect("erro unwrap out message body").into();
