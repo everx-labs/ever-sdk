@@ -1,4 +1,3 @@
-use ton_abi_json::json_abi::decode_function_response;
 use super::*;
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
@@ -383,7 +382,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
 
 
     // decode the body by ABI
-    let result = decode_function_response(abi.to_owned(), func.to_owned(), response)
+    let result = Contract::decode_function_response_json(abi.to_owned(), func.to_owned(), response)
         .expect("Error decoding result");
 
     println!("Contract call result: {}\n", result);
