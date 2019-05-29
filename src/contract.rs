@@ -7,6 +7,7 @@ use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use reql::Document;
 use futures::stream::Stream;
 use ton_abi_core::types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
+use ton_abi_core::abi_response::ABIResponse;
 use ton_abi_core::abi_call::ABICall;
 use ton_abi_json::json_abi::encode_function_call;
 use ed25519_dalek::{Keypair, PublicKey};
@@ -187,6 +188,23 @@ impl Contract {
 
         // subscribe on updates from DB and return updates stream
         Self::subscribe_updates(msg_id)
+    }
+
+    /// Decodes output parameters returned by contract function call 
+    pub fn decode_function_response_json(abi: String, function: String, response: Arc<CellData>) 
+        -> Result<String, SdkError> {
+
+        ton_abi_json::json_abi::decode_function_response(abi, function, SliceData::from(response))
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
+    }
+    
+    /// Decodes ABI contract answer from `Vec<u8>` into type values
+    pub fn decode_function_response<TOut>(response: Arc<CellData>)
+        -> Result<TOut::Out, SdkError> 
+        where TOut: ABIOutParameter + ABITypeSignature {
+
+        ABIResponse::<TOut>::decode_response_from_slice(SliceData::from(response))
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError2(err)))
     }
 
     // Packs given inputs by abi into ton_block::Message struct.
