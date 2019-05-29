@@ -160,14 +160,14 @@ impl Contract {
     // Packs given inputs by abi and asynchronously calls contract.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
-    pub fn call<TIn, TOut>(id: AccountId, input: TIn, key_pair: Option<&Keypair>)
+    pub fn call<TIn, TOut>(id: AccountId, func: String, input: TIn, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>>
         where 
             TIn: ABIInParameter + ABITypeSignature,
             TOut: ABIOutParameter + ABITypeSignature {
 
         // pack params into bag of cells via ABI
-        let msg_body = Self::create_message_body::<TIn, TOut>(input, key_pair);
+        let msg_body = Self::create_message_body::<TIn, TOut>(func, input, key_pair);
         
         let msg = Self::create_message(id.clone(), msg_body)?;
 
@@ -193,14 +193,14 @@ impl Contract {
 
     // Packs given inputs by abi into ton_block::Message struct.
     // Returns message's bag of cells and identifier.
-    pub fn construct_call_message<TIn, TOut>(id: AccountId, input: TIn, key_pair: Option<&Keypair>)
+    pub fn construct_call_message<TIn, TOut>(id: AccountId, func: String, input: TIn, key_pair: Option<&Keypair>)
         -> SdkResult<(Vec<u8>, MessageId)>
         where 
             TIn: ABIInParameter + ABITypeSignature,
-            TOut: ABIInParameter + ABITypeSignature {
+            TOut: ABIOutParameter + ABITypeSignature {
 
         // pack params into bag of cells via ABI
-        let msg_body = Self::create_message_body::<TIn, TOut>(input, key_pair);
+        let msg_body = Self::create_message_body::<TIn, TOut>(func, input, key_pair);
         
         let msg = Self::create_message(id.clone(), msg_body)?;
 
@@ -244,13 +244,13 @@ impl Contract {
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>>
         where
             TIn: ABIInParameter + ABITypeSignature,
-            TOut: ABIInParameter + ABITypeSignature {
+            TOut: ABIOutParameter + ABITypeSignature {
 
         // Deploy is call, but special message is constructed.
         // The message contains StateInit struct with code, public key and lib
         // and body with parameters for contract special method - constructor.
 
-        let msg_body = Self::create_message_body::<TIn, TOut>(input, key_pair);
+        let msg_body = Self::create_message_body::<TIn, TOut>(CONSTRUCTOR_METHOD_NAME.to_string(), input, key_pair);
 
         let msg = Self::create_deploy_message(Some(msg_body), image)?;
 
@@ -265,9 +265,9 @@ impl Contract {
         -> SdkResult<(Vec<u8>, MessageId)>
         where
             TIn: ABIInParameter + ABITypeSignature,
-            TOut: ABIInParameter + ABITypeSignature {
+            TOut: ABIOutParameter + ABITypeSignature {
 
-        let msg_body = Self::create_message_body::<TIn, TOut>(input, key_pair);
+        let msg_body = Self::create_message_body::<TIn, TOut>(CONSTRUCTOR_METHOD_NAME.to_string(), input, key_pair);
 
         let msg = Self::create_deploy_message(Some(msg_body), image)?;
 
@@ -331,19 +331,19 @@ impl Contract {
         Ok(msg)
     }
 
-    fn create_message_body<TIn, TOut>(input: TIn, key_pair: Option<&Keypair>) -> Arc<CellData>
+    fn create_message_body<TIn, TOut>(func: String, input: TIn, key_pair: Option<&Keypair>) -> Arc<CellData>
         where
             TIn: ABIInParameter + ABITypeSignature,
-            TOut: ABIInParameter + ABITypeSignature {
+            TOut: ABIOutParameter + ABITypeSignature {
 
         match key_pair {
             Some(p) => {
                 ABICall::<TIn, TOut>::encode_signed_function_call_into_slice(
-                    CONSTRUCTOR_METHOD_NAME, input, p).into()
+                    func, input, p).into()
             }
             _ => {
                 ABICall::<TIn, TOut>::encode_function_call_into_slice(
-                    CONSTRUCTOR_METHOD_NAME, input).into()
+                    func, input).into()
             }
         }
     }
