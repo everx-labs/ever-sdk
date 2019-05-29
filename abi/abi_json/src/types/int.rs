@@ -1,7 +1,7 @@
 use num_bigint::{BigInt, Sign};
 use tvm::bitstring::Bitstring;
 use tvm::stack::BuilderData;
-use abi_lib::types::{
+use ton_abi_core::types::{
     ABISerialized,
     prepend_data_to_chain
 };

@@ -9,7 +9,7 @@ extern crate serde;
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
-extern crate abi_lib;
+extern crate ton_abi_core;
 extern crate ed25519_dalek;
 
 pub mod contract;

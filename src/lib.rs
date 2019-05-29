@@ -12,7 +12,7 @@ extern crate serde;
 extern crate serde_json;
 extern crate tvm;
 extern crate ton_block;
-extern crate abi_lib;
+extern crate ton_abi_core;
 extern crate hex;
 extern crate ed25519_dalek;
 extern crate kafka;
@@ -20,7 +20,7 @@ extern crate kafka;
 extern crate tokio;
 #[macro_use]
 extern crate lazy_static;
-extern crate abi_lib_dynamic;
+extern crate ton_abi_json;
 extern crate rand;
 extern crate sha2;
 

@@ -1,4 +1,4 @@
-use abi_lib_dynamic::json_abi::decode_function_response;
+use ton_abi_json::json_abi::decode_function_response;
 use super::*;
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;

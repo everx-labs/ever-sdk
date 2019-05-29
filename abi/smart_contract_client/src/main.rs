@@ -7,7 +7,7 @@ extern crate hex;
 extern crate ton_block;
 extern crate tvm;
 #[macro_use]
-extern crate abi_lib;
+extern crate ton_abi_core;
 extern crate ed25519_dalek;
 extern crate rand;
 extern crate sha2;
@@ -24,10 +24,10 @@ use std::sync::Arc;
 use std::io::Cursor;
 use std::env;
 
-use abi_lib::abi_call::ABICall;
-use abi_lib::abi_response::ABIResponse;
+use ton_abi_core::abi_call::ABICall;
+use ton_abi_core::abi_response::ABIResponse;
 
-use abi_lib::types::Duint;
+use ton_abi_core::types::Duint;
 
 use ton_block::{
     Message,

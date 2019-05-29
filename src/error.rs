@@ -1,6 +1,6 @@
 use std::io;
 use tvm::types::Exception;
-use abi_lib_dynamic::ABIError;
+use ton_abi_json::ABIError;
 //use rdkafka::error::RDKafkaError;
 
 error_chain! {

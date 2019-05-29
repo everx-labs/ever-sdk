@@ -2,7 +2,7 @@ use ed25519_dalek::*;
 use num_bigint::{BigInt, BigUint};
 use sha2::{Digest, Sha256, Sha512};
 
-use abi_lib::types::{Dint, Duint};
+use ton_abi_core::types::{Dint, Duint};
 use tvm::bitstring::{Bit, Bitstring};
 use tvm::cells_serialization::BagOfCells;
 use tvm::stack::{BuilderData, IBitstring, SliceData};

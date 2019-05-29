@@ -6,9 +6,9 @@ use tvm::types::AccountId;
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use reql::Document;
 use futures::stream::Stream;
-use abi_lib::types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
-use abi_lib::abi_call::ABICall;
-use abi_lib_dynamic::json_abi::encode_function_call;
+use ton_abi_core::types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
+use ton_abi_core::abi_call::ABICall;
+use ton_abi_json::json_abi::encode_function_call;
 use ed25519_dalek::{Keypair, PublicKey};
 use ton_block::{
     MessageId,    
