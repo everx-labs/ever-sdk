@@ -35,7 +35,7 @@ fn test_subscribe_updates() {
         .table(MSG_TABLE_NAME)
         .update( // TODO insert with "update" flag
             json!({
-                "id": id_to_string(&msg_id),
+                "id": msg_id.to_hex_string(),
                 MSG_STATE_FIELD_NAME: MessageProcessingStatus::Queued
                 })
         )
@@ -56,7 +56,7 @@ fn test_subscribe_updates() {
             let insert_doc = r.db(DB_NAME)
                 .table(MSG_TABLE_NAME)
                 .replace(json!({
-                    "id": id_to_string(&msg_id_),
+                    "id": msg_id_.to_hex_string(),
                     MSG_STATE_FIELD_NAME: state
                  }))
                 .run::<WriteStatus>(conn).unwrap().wait().next().unwrap();
@@ -128,10 +128,10 @@ connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_status
         std::thread::sleep(std::time::Duration::from_secs(1));
 
         for state in [MessageProcessingStatus::Processing, MessageProcessingStatus::Proposed, MessageProcessingStatus::Finalized].iter() {
-            let key = format!("\"{}\"", id_to_string(&msg_id_));
+            let key = format!("\"{}\"", msg_id_.to_hex_string());
             
             let doc = json!({
-                "message_id": id_to_string(&msg_id_),
+                "message_id": msg_id_.to_hex_string(),
                 MSG_STATE_FIELD_NAME: state
             }).to_string();
             

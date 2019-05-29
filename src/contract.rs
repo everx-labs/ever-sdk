@@ -6,7 +6,7 @@ use tvm::types::AccountId;
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use reql::Document;
 use futures::stream::Stream;
-use abi_lib::types::{ABIInParameter, ABITypeSignature};
+use abi_lib::types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
 use abi_lib::abi_call::ABICall;
 use abi_lib_dynamic::json_abi::encode_function_call;
 use ed25519_dalek::Keypair;
@@ -32,12 +32,14 @@ const CONSTRUCTOR_METHOD_NAME: &str = "constructor";
 #[path = "tests/test_contract.rs"]
 mod tests;
 
+// The struct represents status of message that performs contract's call
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct ContractCallState {
     pub message_id: MessageId,
     pub message_state: MessageProcessingStatus,
 }
 
+// The struct represents conract's image
 pub struct ContractImage {
     state_init: StateInit,
     id: AccountId
@@ -46,6 +48,7 @@ pub struct ContractImage {
 #[allow(dead_code)]
 impl ContractImage {
 
+    // Creating contract image from code data and library bags of cells
     pub fn new<T>(code: &mut T, data: Option<&mut T>, library: Option<&mut T>) -> SdkResult<Self> 
         where T: Read + Seek {
 
@@ -78,6 +81,8 @@ impl ContractImage {
         Ok(Self{ state_init, id })
     }
 
+    // Creating contract image from state_init's bag of cells and keypair.
+    // Usually *.tvc contract is a state_init's bag of cells.
     pub fn from_state_init_and_key<T>(state_init_bag: &mut T, key_pair: &Keypair) -> SdkResult<Self> 
         where T: Read + Seek {
 
@@ -114,15 +119,20 @@ impl ContractImage {
         Ok(Self{ state_init, id })
     }
 
+    // Returns future contract's state_init struct
     pub fn state_init(self) -> StateInit {
         self.state_init
     }
 
+    // Returns future contract's identifier
     pub fn account_id(&self) -> AccountId {
         self.id.clone()
     }
 }
 
+// The struct represents smart contract and allows 
+// to deploy and call it, to get some contract's properties.
+// Don't forget - in TON blockchain Contract and Account are the same substances.
 pub struct Contract {
     acc: ton_block::Account,
 }
@@ -130,14 +140,15 @@ pub struct Contract {
 #[allow(dead_code)]
 impl Contract {
 
+    // Asynchronously loads a Contract instance or None if contract with given id is not exists
     pub fn load(id: AccountId) -> SdkResult<Box<Stream<Item = Option<Contract>, Error = SdkError>>> {
-        let map = db_helper::load_record(CONTRACTS_TABLE_NAME, &id_to_string(&id))?
+        let map = db_helper::load_record(CONTRACTS_TABLE_NAME, &id.to_hex_string())?
             .and_then(|val| {
                 if val == serde_json::Value::Null {
                     Ok(None)
                 } else {
-                let acc: ton_block::Account = serde_json::from_value(val)
-                    .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing account: {}", err)))?;
+                    let acc: ton_block::Account = serde_json::from_value(val)
+                        .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing account: {}", err)))?;
 
                     Ok(Some(Contract { acc }))
                 }
@@ -146,11 +157,14 @@ impl Contract {
         Ok(Box::new(map))
     }
 
+    // Packs given inputs by abi and asynchronously calls contract.
+    // To get calling result - need to load message,
+    // it's id and processing status is returned by this function
     pub fn call<TIn, TOut>(id: AccountId, input: TIn, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>>
         where 
             TIn: ABIInParameter + ABITypeSignature,
-            TOut: ABIInParameter + ABITypeSignature {
+            TOut: ABIOutParameter + ABITypeSignature {
 
         // pack params into bag of cells via ABI
         let msg_body = Self::create_message_body::<TIn, TOut>(input, key_pair);
@@ -164,6 +178,9 @@ impl Contract {
         Self::subscribe_updates(msg_id)
     }
 
+    // Asynchronously calls contract by sending given message.
+    // To get calling result - need to load message,
+    // it's id and processing status is returned by this function
     pub fn send_message(msg: ton_block::Message)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
@@ -174,6 +191,8 @@ impl Contract {
         Self::subscribe_updates(msg_id)
     }
 
+    // Packs given inputs by abi into ton_block::Message struct.
+    // Returns message's bag of cells and identifier.
     pub fn construct_call_message<TIn, TOut>(id: AccountId, input: TIn, key_pair: Option<&Keypair>)
         -> SdkResult<(Vec<u8>, MessageId)>
         where 
@@ -188,6 +207,10 @@ impl Contract {
         Self::serialize_message(msg)
     }
 
+    // Packs given inputs by abi and asynchronously calls contract.
+    // Works with json representation of input and abi.
+    // To get calling result - need to load message,
+    // it's id and processing status is returned by this function
     pub fn call_json(id: AccountId, func: String, input: String, abi: String, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
@@ -204,14 +227,19 @@ impl Contract {
         Self::subscribe_updates(msg_id)
     }
 
+    // Asynchronously loads a Message's json representation 
+    // or null if message with given id is not exists
     pub fn load_json(id: AccountId) -> SdkResult<Box<Stream<Item = String, Error = SdkError>>> {
 
-        let map = db_helper::load_record(CONTRACTS_TABLE_NAME, &id_to_string(&id))?
+        let map = db_helper::load_record(CONTRACTS_TABLE_NAME, &id.to_hex_string())?
             .map(|val| val.to_string());
 
         Ok(Box::new(map))
     }
 
+    // Packs given image and input and asynchronously calls contract's constructor.
+    // To get deploying result - need to load message,
+    // it's id and processing status is returned by this function
     pub fn deploy<TIn, TOut>(input: TIn, image: ContractImage, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>>
         where
@@ -231,6 +259,8 @@ impl Contract {
         Self::subscribe_updates(msg_id)
     }
 
+    // Packs given image and input into ton_block::Message struct.
+    // Returns message's bag of cells and identifier.
     pub fn construct_deploy_message<TIn, TOut>(input: TIn, image: ContractImage, key_pair: Option<&Keypair>)
         -> SdkResult<(Vec<u8>, MessageId)>
         where
@@ -244,18 +274,25 @@ impl Contract {
         Self::serialize_message(msg)
     }
 
+    // Returns contract's identifier
     pub fn id(&self) -> AccountId {
         self.acc.get_id().unwrap().clone()
     }
 
+    // Returns contract's balance in NANO grams
     pub fn balance_grams(&self) -> Grams {
         self.acc.get_balance().unwrap().grams.clone()
     }
 
+    // Returns contract's balance 
     pub fn balance(&self) -> CurrencyCollection {
         unimplemented!()
     }
 
+    // Packs given image and input and asynchronously calls given contract's constructor method.
+    // Works with json representation of input and abi.
+    // To get calling result - need to load message,
+    // it's id and processing status is returned by this function
     pub fn deploy_json(func: String, input: String, abi: String, image: ContractImage, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
@@ -270,6 +307,9 @@ impl Contract {
         Self::subscribe_updates(msg_id)
     }
 
+    // Packs given image asynchronously send deploy message into blockchain.    
+    // To get calling result - need to load message,
+    // it's id and processing status is returned by this function
     pub fn deploy_no_constructor(image: ContractImage)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
         let msg = Self::create_deploy_message(None, image)?;
@@ -349,7 +389,7 @@ impl Contract {
 
         let map = db_helper::subscribe_field_updates(
                 MSG_TABLE_NAME,
-                &id_to_string(&message_id),
+                &message_id.to_hex_string(),
                 MSG_STATE_FIELD_NAME
             )?
             .map(move |change_opt| {

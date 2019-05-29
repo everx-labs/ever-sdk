@@ -3,16 +3,12 @@ use std::sync::Mutex;
 use kafka::producer::{Producer, Record, RequiredAcks};
 use std::time::Duration;
 
-//     KafkaConfig{
-//         servers: vec!("127.0.0.1:9092".into()),
-//         topic: "requests".into(),
-//         ack_timeout: 3000,
-//     }
 
 lazy_static! {
     static ref KAFKA_PROD: Mutex<Option<(Producer, KafkaConfig)>> = Mutex::new(None);
 }
 
+// Init global variable - kafka config
 pub fn init(config: KafkaConfig) -> SdkResult<()> {
     let mut prod_opt = KAFKA_PROD.lock().unwrap();
     *prod_opt = Some((
@@ -25,6 +21,7 @@ pub fn init(config: KafkaConfig) -> SdkResult<()> {
     Ok(())
 }
 
+// Puts message into Kafka (topic name is globally configured by init func)
 pub fn send_message(key: &[u8], value: &[u8]) -> SdkResult<()> {
     let mut prod_opt = KAFKA_PROD.lock().unwrap();
     if let Some((prod, config)) = prod_opt.as_mut() { 
@@ -35,6 +32,7 @@ pub fn send_message(key: &[u8], value: &[u8]) -> SdkResult<()> {
     }
 }
 
+// Puts message into Kafka topic eith given name
 #[allow(dead_code)]
 pub fn send_message_to_topic(key: &[u8], value: &[u8], topic: &str) -> SdkResult<()> {
     let mut prod_opt = KAFKA_PROD.lock().unwrap();
