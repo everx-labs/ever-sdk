@@ -5,7 +5,7 @@ use rand::rngs::OsRng;
 use sha2::Sha512;
 use tvm::types::AccountId;
 use futures::Stream;
-
+use ton_block::MessageProcessingStatus;
 
 const SUBSCRIBE_CONTRACT_ABI: &str = r#"
 {
@@ -286,10 +286,11 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
         .wait()
         .next()
         .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract");
+        .expect("Error unwrap result while loading Contract")
+        .expect("Error unwrap contract while loading Contract");
 
     // call needed method
-    let changes_stream = contract.call_json(func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
+    let changes_stream = Contract::call_json(contract.id(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
         .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -300,7 +301,7 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
         }
         if let Ok(s) = state {
             println!("next state: {:?}", s);
-            if s.message_state == MessageState::Finalized {
+            if s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -327,10 +328,11 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         .wait()
         .next()
         .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract");
+        .expect("Error unwrap result while loading Contract")
+        .expect("Error unwrap contract while loading Contract");
 
     // call needed method
-    let changes_stream = contract.call_json(func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
+    let changes_stream = Contract::call_json(contract.id(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
         .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -341,7 +343,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         }
         if let Ok(s) = state {
             println!("next state: {:?}", s);
-            if s.message_state == MessageState::Finalized {
+            if s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -358,18 +360,27 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         .wait()
         .next()
         .expect("Error unwrap stream next while loading Transaction")
-        .expect("Error unwrap result while loading Transaction");
+        .expect("Error unwrap result while loading Transaction")
+        .expect("Error unwrap returned Transaction");
 
     // take external outbound message from the transaction
     let out_msg = tr.load_out_messages()
         .expect("Error calling load out messages")
         .wait()
-        .find(|msg| msg.as_ref().expect("erro unwrap out message").msg_type() == MessageType::ExternalOutbound)
+        .find(|msg| {
+            msg.as_ref()
+                .expect("error unwrap out message 1")
+                .as_ref()
+                    .expect("error unwrap out message 2")
+                    .msg_type() == MessageType::ExternalOutbound
+        })
             .expect("erro unwrap out message 2")
-            .expect("erro unwrap out message 3");
+            .expect("erro unwrap out message 3")
+            .expect("erro unwrap out message 4");
 
     // take body from the message
-    let response = out_msg.body().into();
+    let response = out_msg.body().expect("erro unwrap out message body").into();
+
 
     // decode the body by ABI
     let result = decode_function_response(abi.to_owned(), func.to_owned(), response)
@@ -413,7 +424,23 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
     // before deploying contract need to transfer some funds to its address
     println!("Account ID to take some grams {}\n", account_id);
     let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), account_id.clone(), 100);
-    Contract::send_message(msg).unwrap();
+    let changes_stream = Contract::send_message(msg).expect("Error calling contract method");
+
+    // wait transaction id in message-status 
+    let mut tr_id = None;
+    for state in changes_stream.wait() {
+        if let Err(e) = state {
+            panic!("error next state getting: {}", e);
+        }
+        if let Ok(s) = state {
+            println!("next state: {:?}", s);
+            if s.message_state == MessageProcessingStatus::Finalized {
+                tr_id = Some(s.message_id.clone());
+                break;
+            }
+        }
+    }
+    tr_id.expect("Error: no transaction id");
 
 
     // call deploy method
@@ -431,7 +458,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         }
         if let Ok(s) = state {
             println!("next state: {:?}", s);
-            if s.message_state == MessageState::Finalized {
+            if s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
             }

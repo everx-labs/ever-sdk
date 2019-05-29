@@ -38,6 +38,9 @@ pub use message::*;
 mod transaction;
 pub use transaction::*;
 
+mod block;
+pub use block::*;
+
 mod types;
 pub use types::*;
 

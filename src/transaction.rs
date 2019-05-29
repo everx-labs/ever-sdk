@@ -1,84 +1,68 @@
 use crate::*;
 use tvm::types::UInt256;
 use futures::stream::Stream;
+use ton_block::{TransactionProcesingStatus, MessageId};
 
 pub type TransactionId = UInt256;
 
-// TODO this enum should be imported from ton_node module
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
-pub enum TransactionProcesingStatus {
-    Unknown,
-    Proposed,
-    Finalized,
-    Refused,
-}
-
 #[derive(Debug)]
 pub struct Transaction {
-    id: TransactionId,
-    in_msg: MessageId,
-    out_msgs: Vec<MessageId>,
-    status: TransactionProcesingStatus,
+    tr: ton_block::Transaction,
 }
 
 const TR_TABLE_NAME: &str = "transactions";
 
+// The struct represents performed transaction and allows to access their properties.
 #[allow(dead_code)]
 impl Transaction {
-    pub fn load(id: TransactionId) -> SdkResult<Box<Stream<Item = Transaction, Error = SdkError>>> {
-        let map = db_helper::load_record(TR_TABLE_NAME, &id_to_string(&id))?
-            .map(move |val| {
-                Self::parse_json(val).expect("error parsing Transaction") // TODO process error
+
+    // Asynchronously loads a Transaction instance or None if transaction with given id is not exists
+    pub fn load(id: TransactionId) -> SdkResult<Box<Stream<Item = Option<Transaction>, Error = SdkError>>> {
+        let map = db_helper::load_record(TR_TABLE_NAME, &id.to_hex_string())?
+            .and_then(|val| {
+                if val == serde_json::Value::Null {
+                    Ok(None)
+                } else {
+                    let tr: ton_block::Transaction = serde_json::from_value(val)
+                        .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing transaction: {}", err)))?;
+
+                    Ok(Some(Transaction { tr }))
+                }
             });
 
         Ok(Box::new(map))
     }
 
-    fn parse_json(val: serde_json::Value) -> SdkResult<Transaction> {
+    // Returns transaction's processing status
+    pub fn status(&self) -> TransactionProcesingStatus {
+        self.tr.processing_status()
+    }
 
-        let id: TransactionId = hex::decode(val["id"].as_str().unwrap()).unwrap().into();
-        let in_msg: MessageId = hex::decode(val["in_message"].as_str().unwrap()).unwrap().into();
+    // Returns id of transaction's input message if it exists
+    pub fn in_message_id(&self) -> Option<MessageId> {
+        self.tr.in_message().map(|m| m.client_ref_unwrap().clone())
+    }
 
-        let s = format!("\"{}\"", val["status"].as_str().unwrap());
-        let status: TransactionProcesingStatus = serde_json::from_str(&s).unwrap();
-        
-        let mut out_msgs = Vec::<MessageId>::new();
-        for msg_id in val["out_messages"].as_array().unwrap() {
-            out_msgs.push(hex::decode(msg_id.as_str().unwrap()).unwrap().into())
+    // Asynchronously loads an instance of transaction's input message
+    pub fn load_in_message(&self) -> SdkResult<Box<Stream<Item = Option<Message>, Error = SdkError>>> {
+        match self.in_message_id() {
+            Some(m) => Message::load(m),
+            None => bail!(SdkErrorKind::InvalidOperation("transaction doesn't have inbound message".into()))
         }
-
-        Ok(Transaction { id, in_msg, out_msgs, status })
     }
 
-    pub fn load_json(id: TransactionId) -> SdkResult<Box<Stream<Item = String, Error = SdkError>>> {
-
-        let map = db_helper::load_record(TR_TABLE_NAME, &id_to_string(&id))?
-            .map(|val| val.to_string());
-
-        Ok(Box::new(map))
-    }
-
-    pub fn state(&self) -> TransactionProcesingStatus {
-        self.status.clone()
-    }
-
-    pub fn in_message_id(&self) -> MessageId {
-        self.in_msg.clone()
-    }
-
-    pub fn load_in_message(&self) -> SdkResult<Box<Stream<Item = Message, Error = SdkError>>> {
-        Message::load(self.in_message_id())
-    }
-
+    // Returns id of transaction's out messages if it exists
     pub fn out_messages_id(&self) -> &Vec<MessageId> {
-        &self.out_msgs
+        &self.tr.out_msgs_sdk()
     }
 
+    // Returns message's identifier
     pub fn id(&self) -> TransactionId {
-        self.id.clone()
+        self.tr.id.clone()
     }
 
-    pub fn load_out_messages(&self) -> SdkResult<Box<Stream<Item = Message, Error = SdkError>>> {
+    // Asynchronously loads an instances of transaction's out messages
+    pub fn load_out_messages(&self) -> SdkResult<Box<Stream<Item = Option<Message>, Error = SdkError>>> {
         let mut msg_id_iter = self.out_messages_id().iter();
         if let Some(id) = msg_id_iter.next().clone() {
             let mut stream = Message::load(id.clone())?;
@@ -90,20 +74,5 @@ impl Transaction {
             // TODO how to return empty Stream?
             bail!(SdkErrorKind::NoData);
         }
-    }
-}
-
-mod tests {
-
-    #[test]
-    fn test_parse() {
-        let js = r#"{
-            "block" :null,
-            "id": "21a0b2ea5396236e86eff6529eb89eee82653bd12421b8a10ff9c7abec2ec078",
-            "in_message": "21a0b2ea5396236e86eff6529eb89eee82653bd12421b8a10ff9c7abec2ec078",
-            "out_messages": ["21a0b2ea5396236e86eff6509eb89eee82653bd12421b8a10ff9c7abec2ec078", "21a0b2ea5396236e86eff6511eb89eee82653bd12421b8a10ff9c7abec2ec078"],
-            "status": "Proposed"}"#;
-        let tr = super::Transaction::parse_json(serde_json::from_str(js).unwrap()).unwrap();
-        println!("{:?}", tr);
     }
 }

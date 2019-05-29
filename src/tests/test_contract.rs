@@ -35,8 +35,8 @@ fn test_subscribe_updates() {
         .table(MSG_TABLE_NAME)
         .update( // TODO insert with "update" flag
             json!({
-                "id": id_to_string(&msg_id),
-                MSG_STATE_FIELD_NAME: MessageState::Queued
+                "id": msg_id.to_hex_string(),
+                MSG_STATE_FIELD_NAME: MessageProcessingStatus::Queued
                 })
         )
         .run::<WriteStatus>(conn).unwrap().wait().next().unwrap();
@@ -51,12 +51,12 @@ fn test_subscribe_updates() {
 
         std::thread::sleep(std::time::Duration::from_secs(1));
 
-        for state in [MessageState::Processing, MessageState::Proposed, MessageState::Finalized].iter() {
+        for state in [MessageProcessingStatus::Processing, MessageProcessingStatus::Proposed, MessageProcessingStatus::Finalized].iter() {
 
             let insert_doc = r.db(DB_NAME)
                 .table(MSG_TABLE_NAME)
                 .replace(json!({
-                    "id": id_to_string(&msg_id_),
+                    "id": msg_id_.to_hex_string(),
                     MSG_STATE_FIELD_NAME: state
                  }))
                 .run::<WriteStatus>(conn).unwrap().wait().next().unwrap();
@@ -66,7 +66,7 @@ fn test_subscribe_updates() {
 
     // chech all changes were got    
     let mut changes_stream = changes_stream.wait();
-    for state in [MessageState::Processing, MessageState::Proposed, MessageState::Finalized].iter() {
+    for state in [MessageProcessingStatus::Processing, MessageProcessingStatus::Proposed, MessageProcessingStatus::Finalized].iter() {
         let ccs = ContractCallState {
             message_id: msg_id.clone(),
             message_state: state.clone(),
@@ -127,11 +127,11 @@ connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_status
 
         std::thread::sleep(std::time::Duration::from_secs(1));
 
-        for state in [MessageState::Processing, MessageState::Proposed, MessageState::Finalized].iter() {
-            let key = format!("\"{}\"", id_to_string(&msg_id_));
+        for state in [MessageProcessingStatus::Processing, MessageProcessingStatus::Proposed, MessageProcessingStatus::Finalized].iter() {
+            let key = format!("\"{}\"", msg_id_.to_hex_string());
             
             let doc = json!({
-                "message_id": id_to_string(&msg_id_),
+                "message_id": msg_id_.to_hex_string(),
                 MSG_STATE_FIELD_NAME: state
             }).to_string();
             
@@ -148,7 +148,7 @@ connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_status
 
     // chech all changes were got    
     let mut changes_stream = changes_stream.wait();
-    for state in [MessageState::Processing, MessageState::Proposed, MessageState::Finalized].iter() {
+    for state in [MessageProcessingStatus::Processing, MessageProcessingStatus::Proposed, MessageProcessingStatus::Finalized].iter() {
         let ccs = ContractCallState {
             message_id: msg_id.clone(),
             message_state: state.clone(),
@@ -229,10 +229,11 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
         .wait()
         .next()
         .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract");
+        .expect("Error unwrap result while loading Contract")
+        .expect("Error unwrap contract while loading Contract");
 
     // call needed method
-    let changes_stream = contract.call_json(func.clone(), input, abi.clone(), Some(&key_pair))
+    let changes_stream = Contract::call_json(contract.id(), func.clone(), input, abi.clone(), Some(&key_pair))
         .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -243,7 +244,7 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
         }
         if let Ok(s) = state {
             println!("next state: {:?}", s);
-            if s.message_state == MessageState::Finalized {
+            if s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -260,18 +261,27 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
         .wait()
         .next()
         .expect("Error unwrap stream next while loading Transaction")
-        .expect("Error unwrap result while loading Transaction");
+        .expect("Error unwrap result while loading Transaction")
+        .expect("Error unwrap returned Transaction");
 
     // take external outbound message from the transaction
     let out_msg = tr.load_out_messages()
         .expect("Error calling load out messages")
         .wait()
-        .find(|msg| msg.as_ref().expect("erro unwrap out message").msg_type() == MessageType::ExternalOutbound)
+        .find(|msg| {
+            msg.as_ref()
+                .expect("error unwrap out message 1")
+                .as_ref()
+                    .expect("error unwrap out message 2")
+                    .msg_type() == MessageType::ExternalOutbound
+        })
             .expect("erro unwrap out message 2")
-            .expect("erro unwrap out message 3");
+            .expect("erro unwrap out message 3")
+            .expect("erro unwrap out message 4");
 
     // take body from the message
-    let response = out_msg.body().into();
+    let response = out_msg.body().expect("erro unwrap out message body").into();
+
 
     // decode the body by ABI
     let result = decode_function_response(abi, func, response)
@@ -340,7 +350,7 @@ fn test_deploy_and_call_contract() {
         }
         if let Ok(s) = state {
             println!("next state: {:?}", s);
-            if s.message_state == MessageState::Finalized {
+            if s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -353,7 +363,7 @@ fn test_deploy_and_call_contract() {
     test_call_contract(account_id, &keypair);
 }
 
-#[test]
+/*#[test]
 fn test_send_empty_messages() {
     let id = AccountId::from([11; 32]);
     let contract = Contract { id, balance_grams: 0 };
@@ -382,7 +392,7 @@ fn test_send_empty_messages() {
 
         println!("message {} sent!", hex::encode(msg_id.as_slice()));
     }
-}
+}*/
 
 #[test]
 fn test_contract_image_from_file() {
@@ -438,7 +448,8 @@ fn test_deploy_empty_contract() {
         .wait()
         .next()
         .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract");
+        .expect("Error unwrap result while loading Contract")
+        .expect("Error unwrap contract while loading Contract");
     println!("Contract got!!!");
 
 
@@ -454,7 +465,7 @@ fn test_deploy_empty_contract() {
         }
         if let Ok(s) = state {
             println!("next state: {:?}", s);
-            if s.message_state == MessageState::Finalized {
+            if s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -497,4 +508,32 @@ fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, value:
     msg.body = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
 
     msg
+}
+
+#[test]
+fn test_load_nonexistent_contract() {
+
+        // init SDK
+    let config_json = r#"
+        {
+            "db_config": {
+                "servers": ["142.93.137.28:28015"],
+                "db_name": "blockchain"
+            },
+            "kafka_config": {
+                "servers": ["builder.tonlabs.io:9092"],
+                "topic": "requests-1",
+                "ack_timeout": 1000
+            }
+        }"#;    
+    init_json(config_json.into()).unwrap();
+
+    let c = Contract::load(AccountId::from([67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31]))
+        .expect("Error calling load Contract")
+        .wait()
+        .next()
+        .expect("Error unwrap stream next while loading Contract")
+        .expect("Error unwrap result while loading Contract");
+
+    assert!(c.is_none());
 }
