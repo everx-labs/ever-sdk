@@ -1,6 +1,7 @@
 use super::dynamic_int::*;
 use super::{
-    ABIParameter,
+    ABISerialized,
+    ABIDeserialized,
     ABITypeSignature,
     DeserializationError
 };
@@ -11,8 +12,7 @@ use tvm::stack::{BuilderData, SliceData};
 
 pub type Duint = BigUint;
 
-impl ABIParameter for Duint {
-    type Out = Duint;
+impl ABISerialized for Duint {
 
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
         let dynamic_int = Dint::from_biguint(Sign::Plus, self.clone());
@@ -25,6 +25,10 @@ impl ABIParameter for Duint {
         // split by groups of 7 bits with adding one bit to each group and last group pad to 8 bits
         num_size + num_size / 7 + ((num_size % 7) + 7) & !7
     }
+}
+
+impl ABIDeserialized for Duint {
+    type Out = Duint;
 
     fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
         let (vec, cursor) = read_dynamic_int(cursor, false)?;

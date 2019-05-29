@@ -9,7 +9,7 @@ use futures::stream::Stream;
 use abi_lib::types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
 use abi_lib::abi_call::ABICall;
 use abi_lib_dynamic::json_abi::encode_function_call;
-use ed25519_dalek::Keypair;
+use ed25519_dalek::{Keypair, PublicKey};
 use ton_block::{
     MessageId,    
     ExternalInboundMessageHeader,
@@ -81,9 +81,7 @@ impl ContractImage {
         Ok(Self{ state_init, id })
     }
 
-    // Creating contract image from state_init's bag of cells and keypair.
-    // Usually *.tvc contract is a state_init's bag of cells.
-    pub fn from_state_init_and_key<T>(state_init_bag: &mut T, key_pair: &Keypair) -> SdkResult<Self> 
+    pub fn from_state_init_and_key<T>(state_init_bag: &mut T, pub_key: &PublicKey) -> SdkResult<Self> 
         where T: Read + Seek {
 
         let mut si_roots = deserialize_cells_tree(state_init_bag)?;
@@ -100,14 +98,14 @@ impl ContractImage {
         if let Some(ref data) = state_init.data {            
             new_data = BuilderData::from(&data); 
             new_data.update_cell(|data, _, _, _, _| {
-                let mut vec = Vec::from(&key_pair.public.as_bytes().clone()[..]); 
+                let mut vec = Vec::from(&pub_key.as_bytes().clone()[..]); 
                 vec.push(0x80);
                 *data = vec;
             }, ());
         } else {
             new_data = BuilderData::new();
             new_data.update_cell(|data, _, _, _, _| {
-                let mut vec = Vec::from(&key_pair.public.as_bytes().clone()[..]); 
+                let mut vec = Vec::from(&pub_key.as_bytes().clone()[..]); 
                 vec.push(0x80);
                 *data = vec;
             }, ());

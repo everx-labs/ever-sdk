@@ -417,7 +417,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
     // read image from file and construct ContractImage
     let mut state_init = std::fs::File::open("src/tests/".to_owned() + code_file_name).expect("Unable to open contract code file");
 
-    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &key_pair).expect("Unable to parse contract code file");
+    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &key_pair.public).expect("Unable to parse contract code file");
 
     let account_id = contract_image.account_id();
 

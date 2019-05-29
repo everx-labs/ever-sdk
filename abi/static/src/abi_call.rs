@@ -4,10 +4,11 @@ use std::marker::PhantomData;
 use tvm::bitstring::Bitstring;
 use tvm::cells_serialization::BagOfCells;
 use tvm::stack::{BuilderData, SliceData};
-use types::common::prepend_data_to_chain;
-use types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
+use types::{ABIInParameter, ABIOutParameter, ABITypeSignature, prepend_data_to_chain};
 
-pub const ABI_VERSION: u8 = 0;
+pub const   ABI_VERSION: u8                 = 0;
+const 		ABI_VERSION_BITS_SIZE: usize	= 8;
+const 		FUNC_ID_BITS_SIZE: usize		= 32;
 
 /// Empty struct for contract call serialization
 pub struct ABICall<TIn: ABIInParameter + ABITypeSignature, TOut: ABIOutParameter + ABITypeSignature> {
@@ -87,9 +88,11 @@ where
         let mut builder = BuilderData::new();
         builder = parameters.prepend_to(builder);
         
-        // if all references are used in root cell then expand cells chain with new root
-        // to put signature cell reference there
-        if BuilderData::references_capacity() == builder.references_used() {
+        // expand cells chain with new root if function are signed and all references are used 
+		// or if ABI version and function ID cannot fit into root cell
+        if  BuilderData::references_capacity() == builder.references_used() ||
+            BuilderData::bits_capacity() < builder.bits_used() + FUNC_ID_BITS_SIZE + ABI_VERSION_BITS_SIZE
+        {
             let mut new_builder = BuilderData::new();
             new_builder.append_reference(builder);
             builder = new_builder;
@@ -116,7 +119,16 @@ where
     where
         T: Into<String>,
     {
-        let builder = parameters.prepend_to(builder);
+        let mut builder = parameters.prepend_to(builder);
+        
+        // expand cells chain with new root if ABI version and function ID cannot fit into root cell
+        if BuilderData::bits_capacity() < builder.bits_used() + FUNC_ID_BITS_SIZE + ABI_VERSION_BITS_SIZE
+        {
+            let mut new_builder = BuilderData::new();
+            new_builder.append_reference(builder);
+            builder = new_builder;
+        };
+
         prepend_data_to_chain(builder, {
             // make prefix with ABI version and function ID
             let mut vec = vec![ABI_VERSION];

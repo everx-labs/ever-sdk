@@ -37,18 +37,21 @@ pub trait ABIOutParameter {
         Self::Out: std::marker::Sized;
 }
 
-/// Trait for values that can be serialized and deserialized. `ABIInParameter` and
-/// `ABIOutParameter are` composed from `ABIParameter` values
-pub trait ABIParameter {
-    /// Value type that current type are deserialized to
-    type Out;
 
+/// Trait for values that can be serialized
+pub trait ABISerialized {
     /// Puts data to the chain beginning
     fn prepend_to(&self, destination: BuilderData) -> BuilderData;
 
     /// Returns size in bits that are put into main chain during serialization
     /// (not whole parameter size - large arrays are put in separate chains and only 2 bits get into main chain)
     fn get_in_cell_size(&self) -> usize;
+}
+
+/// Trait for values that can be deserialized.
+pub trait ABIDeserialized {
+    /// Value type that current type are deserialized to
+    type Out;
 
     /// Deserializes value from SliceData
     fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError>
@@ -83,7 +86,9 @@ impl DeserializationError {
 pub mod reader;
 
 #[macro_use]
-pub mod common;
+mod common;
+pub use self::common::*;
+
 pub mod common_arrays;
 
 mod bool;

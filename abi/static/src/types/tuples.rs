@@ -1,7 +1,8 @@
 #![allow(non_snake_case)]
 
 use super::{
-    ABIParameter, 
+    ABISerialized,
+    ABIDeserialized,
     ABIInParameter,
     ABIOutParameter,
     ABITypeSignature,
@@ -50,44 +51,48 @@ macro_rules! tuple {
         impl<$($T),*> ABIOutParameter for ($($T,)*)
         where
             $(
-            $T: ABIParameter
+            $T: ABIDeserialized
             ),*
         {
-            type Out = <Self as ABIParameter>::Out;
+            type Out = <Self as ABIDeserialized>::Out;
 
             fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError>
             {
-                <Self as ABIParameter>::read_from(cursor)
+                <Self as ABIDeserialized>::read_from(cursor)
             }
         }
 
         impl<$($T),*> ABIInParameter for ($($T,)*) 
         where
-            $($T: ABIParameter),*
+            $($T: ABISerialized),*
         {
             fn prepend_to(&self, destination: BuilderData) -> BuilderData {
-                ABIParameter::prepend_to(self, destination)
+                ABISerialized::prepend_to(self, destination)
             }
         }
 
-        impl<$($T),*> ABIParameter for ($($T,)*)
+        impl<$($T),*> ABISerialized for ($($T,)*)
         where
-            $($T: ABIParameter),*
+            $($T: ABISerialized),*
         {
-            type Out = ($($T::Out,)*);
-
             fn prepend_to(&self, destination: BuilderData) -> BuilderData {
                 let ($($T,)*) = self;
                 let destination = tuple!(@expand_prepend_to destination,  $($T),*);
                 destination
             }
 
-
-
             fn get_in_cell_size(&self) -> usize {
                 let ($($T,)*) = self;
                 tuple!(@expand_get_in_cell_size $($T),*)
             }
+
+        }
+
+        impl<$($T),*> ABIDeserialized for ($($T,)*)
+        where
+            $($T: ABIDeserialized),*
+        {
+            type Out = ($($T::Out,)*);
 
             fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
                 let mut reader = $crate::types::reader::Reader::new(cursor);
