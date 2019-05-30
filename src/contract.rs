@@ -342,6 +342,9 @@ impl Contract {
         let mut msg_header = ExternalInboundMessageHeader::default();
         msg_header.dst = MsgAddressInt::with_standart(None, -1, id).unwrap();
         
+        // TODO don't forget to delete it 
+        // This is temporary code to make all messages uniq. 
+        // In the future it will be made by replay attack protection mechanism
         let mut rng = rand::thread_rng();
         msg_header.src = ton_block::MsgAddressExt::with_extern(&tvm::bitstring::Bitstring::from(rng.gen::<u64>())).unwrap();
 
