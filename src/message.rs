@@ -1,14 +1,8 @@
 use crate::*;
-use tvm::types::UInt256;
 use futures::stream::Stream;
 use std::sync::Arc;
 use tvm::stack::CellData;
 use ton_block::{MessageId, MessageProcessingStatus};
-
-// TODO need to realise to_string (or something else) for UInt256 in node
-pub fn id_to_string(id: &UInt256) -> String {
-    hex::encode(id.as_slice())
-}
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub enum MessageType {
@@ -25,41 +19,53 @@ pub struct Message {
     msg: ton_block::Message,
 }
 
+// The struct represents sent message and allows to access their properties.
 #[allow(dead_code)]
 impl Message {
 
-    pub fn load(id: MessageId) -> SdkResult<Box<Stream<Item = Message, Error = SdkError>>> {
-        let map = db_helper::load_record(MSG_TABLE_NAME, &id_to_string(&id))?
+    // Asynchronously loads a Message instance or None if message with given id is not exists
+    pub fn load(id: MessageId) -> SdkResult<Box<Stream<Item = Option<Message>, Error = SdkError>>> {
+        let map = db_helper::load_record(MSG_TABLE_NAME, &id.to_hex_string())?
             .and_then(|val| {
-                let msg: ton_block::Message = serde_json::from_value(val)
-                    .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing message: {}", err)))?;
+                if val == serde_json::Value::Null {
+                    Ok(None)
+                } else {
+                    let msg: ton_block::Message = serde_json::from_value(val)
+                        .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing message: {}", err)))?;
 
-                Ok(Message { msg })
+                    Ok(Some(Message { msg }))
+                }
             });
 
         Ok(Box::new(map))
     }
 
+    // Asynchronously loads a Message's json representation 
+    // or null if message with given id is not exists
     pub fn load_json(id: MessageId) -> SdkResult<Box<Stream<Item = String, Error = SdkError>>> {
 
-        let map = db_helper::load_record(MSG_TABLE_NAME, &id_to_string(&id))?
+        let map = db_helper::load_record(MSG_TABLE_NAME, &id.to_hex_string())?
             .map(|val| val.to_string());
 
         Ok(Box::new(map))
     }
 
+    // Returns message's processing status
     pub fn status(&self) -> MessageProcessingStatus {
         self.msg.status.clone()
     }
 
+    // Returns message's identifier
     pub fn id(&self) -> MessageId {
         self.msg.id.clone()
     }
 
+    // Returns message's body (as tree of cells) or None if message doesn't have once
     pub fn body(&self) -> Option<Arc<CellData>> {
         self.msg.body.clone()
     }
 
+    // Returns message's type
     pub fn msg_type(&self) -> MessageType {
         match self.msg.header {
             ton_block::CommonMsgInfo::IntMsgInfo(_) => MessageType::Internal,

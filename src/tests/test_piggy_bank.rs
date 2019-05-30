@@ -1,4 +1,3 @@
-use abi_lib_dynamic::json_abi::decode_function_responce;
 use super::*;
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
@@ -360,22 +359,30 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         .wait()
         .next()
         .expect("Error unwrap stream next while loading Transaction")
-        .expect("Error unwrap result while loading Transaction");
+        .expect("Error unwrap result while loading Transaction")
+        .expect("Error unwrap returned Transaction");
 
     // take external outbound message from the transaction
     let out_msg = tr.load_out_messages()
         .expect("Error calling load out messages")
         .wait()
-        .find(|msg| msg.as_ref().expect("erro unwrap out message").msg_type() == MessageType::ExternalOutbound)
+        .find(|msg| {
+            msg.as_ref()
+                .expect("error unwrap out message 1")
+                .as_ref()
+                    .expect("error unwrap out message 2")
+                    .msg_type() == MessageType::ExternalOutbound
+        })
             .expect("erro unwrap out message 2")
-            .expect("erro unwrap out message 3");
+            .expect("erro unwrap out message 3")
+            .expect("erro unwrap out message 4");
 
     // take body from the message
     let response = out_msg.body().expect("erro unwrap out message body").into();
 
 
     // decode the body by ABI
-    let result = decode_function_responce(abi.to_owned(), func.to_owned(), response)
+    let result = Contract::decode_function_response_json(abi.to_owned(), func.to_owned(), response)
         .expect("Error decoding result");
 
     println!("Contract call result: {}\n", result);
@@ -398,7 +405,7 @@ fn init_node_connection() {
             },
             "kafka_config": {
                 "servers": ["142.93.137.28:9092"],
-                "topic": "requests-ilya",
+                "topic": "requests",
                 "ack_timeout": 1000
             }
         }"#;    
@@ -409,13 +416,13 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
     // read image from file and construct ContractImage
     let mut state_init = std::fs::File::open("src/tests/".to_owned() + code_file_name).expect("Unable to open contract code file");
 
-    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &key_pair).expect("Unable to parse contract code file");
+    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &key_pair.public).expect("Unable to parse contract code file");
 
     let account_id = contract_image.account_id();
 
     // before deploying contract need to transfer some funds to its address
     println!("Account ID to take some grams {}\n", account_id);
-    let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), account_id.clone(), 100);
+    let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), account_id.clone(), 10);
     let changes_stream = Contract::send_message(msg).expect("Error calling contract method");
 
     // wait transaction id in message-status 

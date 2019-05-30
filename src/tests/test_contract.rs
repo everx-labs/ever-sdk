@@ -1,4 +1,4 @@
-use abi_lib_dynamic::json_abi::decode_function_responce;
+use ton_abi_json::json_abi::decode_function_response;
 use super::*;
 use std::io::{Cursor};
 use reql::{Config, Client, Run};
@@ -35,7 +35,7 @@ fn test_subscribe_updates() {
         .table(MSG_TABLE_NAME)
         .update( // TODO insert with "update" flag
             json!({
-                "id": id_to_string(&msg_id),
+                "id": msg_id.to_hex_string(),
                 MSG_STATE_FIELD_NAME: MessageProcessingStatus::Queued
                 })
         )
@@ -56,7 +56,7 @@ fn test_subscribe_updates() {
             let insert_doc = r.db(DB_NAME)
                 .table(MSG_TABLE_NAME)
                 .replace(json!({
-                    "id": id_to_string(&msg_id_),
+                    "id": msg_id_.to_hex_string(),
                     MSG_STATE_FIELD_NAME: state
                  }))
                 .run::<WriteStatus>(conn).unwrap().wait().next().unwrap();
@@ -128,10 +128,10 @@ connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_status
         std::thread::sleep(std::time::Duration::from_secs(1));
 
         for state in [MessageProcessingStatus::Processing, MessageProcessingStatus::Proposed, MessageProcessingStatus::Finalized].iter() {
-            let key = format!("\"{}\"", id_to_string(&msg_id_));
+            let key = format!("\"{}\"", msg_id_.to_hex_string());
             
             let doc = json!({
-                "message_id": id_to_string(&msg_id_),
+                "message_id": msg_id_.to_hex_string(),
                 MSG_STATE_FIELD_NAME: state
             }).to_string();
             
@@ -261,22 +261,30 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
         .wait()
         .next()
         .expect("Error unwrap stream next while loading Transaction")
-        .expect("Error unwrap result while loading Transaction");
+        .expect("Error unwrap result while loading Transaction")
+        .expect("Error unwrap returned Transaction");
 
     // take external outbound message from the transaction
     let out_msg = tr.load_out_messages()
         .expect("Error calling load out messages")
         .wait()
-        .find(|msg| msg.as_ref().expect("erro unwrap out message").msg_type() == MessageType::ExternalOutbound)
+        .find(|msg| {
+            msg.as_ref()
+                .expect("error unwrap out message 1")
+                .as_ref()
+                    .expect("error unwrap out message 2")
+                    .msg_type() == MessageType::ExternalOutbound
+        })
             .expect("erro unwrap out message 2")
-            .expect("erro unwrap out message 3");
+            .expect("erro unwrap out message 3")
+            .expect("erro unwrap out message 4");
 
     // take body from the message
     let response = out_msg.body().expect("erro unwrap out message body").into();
 
 
     // decode the body by ABI
-    let result = decode_function_responce(abi, func, response)
+    let result = decode_function_response(abi, func, response)
         .expect("Error decoding result");
 
     println!("result:/n{}", result);
@@ -313,7 +321,7 @@ fn test_deploy_and_call_contract() {
     let mut csprng = OsRng::new().unwrap();
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
 
-    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair).expect("Unable to parse contract code file");
+    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair.public).expect("Unable to parse contract code file");
 
     let account_id = contract_image.account_id();
 
@@ -393,7 +401,7 @@ fn test_contract_image_from_file() {
     let mut csprng = OsRng::new().unwrap();
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
 
-    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair).expect("Unable to parse contract code file");
+    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair.public).expect("Unable to parse contract code file");
 
     println!("Account ID {}", contract_image.account_id());
 }

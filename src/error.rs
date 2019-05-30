@@ -1,6 +1,6 @@
 use std::io;
 use tvm::types::Exception;
-use abi_lib_dynamic::ABIError;
+use ton_abi_json::ABIError;
 //use rdkafka::error::RDKafkaError;
 
 error_chain! {
@@ -45,6 +45,10 @@ error_chain! {
             display("Signature error: {}", inner)
         }
         AbiError(inner: ABIError) {
+            description("ABI error"),
+            display("ABI error: {:?}", inner)
+        }
+        AbiError2(inner: ton_abi_core::abi_response::Exception) {
             description("ABI error"),
             display("ABI error: {:?}", inner)
         }

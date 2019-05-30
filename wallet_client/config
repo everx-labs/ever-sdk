@@ -5,7 +5,7 @@
     },
     "kafka_config": {
         "servers": ["142.93.137.28:9092"],
-        "topic": "requests-1",
+        "topic": "requests",
         "ack_timeout": 1000
     }
 }

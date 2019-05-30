@@ -14,6 +14,7 @@ lazy_static! {
     static ref RETHINK_CONN: Mutex<Option<Connection>> = Mutex::new(None);   
 }
 
+// Init global connection to database
 pub fn init(config: RethinkConfig) -> SdkResult<()> {
     let mut conn_opt = RETHINK_CONN.lock().unwrap();
 
@@ -40,6 +41,7 @@ fn conn() -> SdkResult<Connection> {
     }
 }
 
+// Returns Stream with updates of some field in database
 pub fn subscribe_field_updates<T>(table: &str, record_id: &str, field: &str)
     -> SdkResult<Box<dyn Stream<Item = Option<Document<Change<T, T>>>, Error = SdkError>>> 
     where T: 'static + Send + DeserializeOwned + Debug {
@@ -57,6 +59,7 @@ pub fn subscribe_field_updates<T>(table: &str, record_id: &str, field: &str)
     Ok(Box::new(map))
 }
 
+// Returns Stream with required database record
 pub fn load_record(table: &str, record_id: &str)
     -> SdkResult<Box<Stream<Item = serde_json::Value, Error = SdkError>>> {
 

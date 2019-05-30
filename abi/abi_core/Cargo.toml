@@ -1,0 +1,20 @@
+[package]
+name = "ton_abi_core"
+version = "0.1.0"
+
+[dependencies]
+tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "dev", package = "tvm" }
+pretty_assertions = "0.5.1"
+num-bigint = "0.2.2"
+ed25519-dalek = "^0.8"
+sha2 = "^0.7"
+
+[dev-dependencies.rand]
+version = "0.6.1"
+
+#[dev-dependencies.compiletest_rs]
+#features = ["tmp", "stable"]
+#version = "*"
+
+[features]
+ci_run = []
