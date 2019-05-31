@@ -44,7 +44,7 @@ pub use block::*;
 mod types;
 pub use types::*;
 
-mod db_helper;
+pub mod db_helper;
 
 mod kafka_helper;
 
