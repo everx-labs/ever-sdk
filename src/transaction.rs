@@ -38,6 +38,10 @@ impl Transaction {
         self.tr.processing_status()
     }
 
+    pub fn tr(&self) -> &ton_block::Transaction {
+        &self.tr
+    }
+
     // Returns id of transaction's input message if it exists
     pub fn in_message_id(&self) -> Option<MessageId> {
         self.tr.in_message().map(|m| m.client_ref_unwrap().clone())
