@@ -17,6 +17,7 @@ const SUBSCRIBE_CONTRACT_ABI: &str = r#"
         "name": "subscribe",
         "signed": true,
         "inputs": [
+            {"name": "subscriptionId", "type": "bits256"},
             {"name": "pubkey", "type": "bits256"},
             {"name": "to",     "type": "bits256"},
             {"name": "value",  "type": "duint"},
@@ -26,18 +27,18 @@ const SUBSCRIBE_CONTRACT_ABI: &str = r#"
     }, {
         "name": "cancel",
         "signed": true,
-        "inputs": [{"name": "subscriptionHash", "type": "bits256"}],
+        "inputs": [{"name": "subscriptionId", "type": "bits256"}],
         "outputs": []
     }, {
         "name": "executeSubscription",
         "inputs": [
-            {"name": "subscriptionHash","type": "bits256"},
+            {"name": "subscriptionId",  "type": "bits256"},
             {"name": "signature",       "type": "bits256"}
         ],
         "outputs": []
     }, {
         "name": "getSubscription",
-        "inputs": [{"name": "subscriptionHash","type": "bits256"}],
+        "inputs": [{"name": "subscriptionId","type": "bits256"}],
         "outputs": [
             {"name": "to", "type": "bits256"},
             {"name": "amount", "type": "duint"},
@@ -362,6 +363,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         .expect("Error unwrap result while loading Transaction")
         .expect("Error unwrap returned Transaction");
 
+    dbg!(&tr);
     // take external outbound message from the transaction
     let out_msg = tr.load_out_messages()
         .expect("Error calling load out messages")
@@ -508,9 +510,15 @@ fn full_test_piggy_bank() {
 	println!("Subscription address added to wallet.\n");
 
 	// call subscribe in subscription
+    let subscr_id_str = hex::encode(&[0x11, 32]);
 	let piggy_bank_address_str = hex::encode(piggy_bank_address.as_slice());
 	let pubkey_str = hex::encode(keypair.public.as_bytes());
-	let subscribe_params = format!("{{ \"pubkey\" : \"x{}\", \"to\": \"x{}\", \"value\" : 123, \"period\" : 456 }}", pubkey_str, piggy_bank_address_str);
+	let subscribe_params = format!(
+        "{{ \"subscriptionId\" : \"x{}\", \"pubkey\" : \"x{}\", \"to\": \"x{}\", \"value\" : 123, \"period\" : 456 }}", 
+        subscr_id_str,
+        pubkey_str, 
+        piggy_bank_address_str,
+    );
 
 	let _subscribe_answer = call_contract_and_wait(subscripition_address, "subscribe", &subscribe_params, SUBSCRIBE_CONTRACT_ABI, &keypair);
 
