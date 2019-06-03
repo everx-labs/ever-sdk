@@ -510,7 +510,7 @@ fn full_test_piggy_bank() {
 	println!("Subscription address added to wallet.\n");
 
 	// call subscribe in subscription
-    let subscr_id_str = hex::encode(&[0x11, 32]);
+    let subscr_id_str = hex::encode(&[0x11; 32]);
 	let piggy_bank_address_str = hex::encode(piggy_bank_address.as_slice());
 	let pubkey_str = hex::encode(keypair.public.as_bytes());
 	let subscribe_params = format!(
