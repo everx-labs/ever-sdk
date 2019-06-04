@@ -390,7 +390,7 @@ impl Contract {
         let (data, id) = Self::serialize_message(msg)?;
        
         kafka_helper::send_message(&id.as_slice()[..], &data)?;
-        println!("msg sent");
+        println!("msg is sent, id: {}", id.to_hex_string());
         Ok(id.clone())
     }
 
