@@ -49,4 +49,10 @@ impl Block {
     pub fn id(&self) -> BlockId {
         self.block.id.clone()
     }
+
+    // Returns blockchain's block struct
+    // Some node-specifed methods won't work. All TonStructVariant fields has Client variant.
+    pub fn block(&self) -> &ton_block::Block {
+         &self.block
+    }
 }

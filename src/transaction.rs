@@ -38,8 +38,10 @@ impl Transaction {
         self.tr.processing_status()
     }
 
+    // Returns blockchain's transaction struct
+    // Some node-specifed methods won't work. All TonStructVariant fields has Client variant.
     pub fn tr(&self) -> &ton_block::Transaction {
-        &self.tr
+         &self.tr
     }
 
     // Returns id of transaction's input message if it exists
