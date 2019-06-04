@@ -305,6 +305,12 @@ impl Contract {
         unimplemented!()
     }
 
+    // Returns blockchain's account struct
+    // Some node-specifed methods won't work. All TonStructVariant fields has Client variant.
+    pub fn acc(&self) -> &ton_block::Account {
+         &self.acc
+    }
+
     // Packs given image and input and asynchronously calls given contract's constructor method.
     // Works with json representation of input and abi.
     // To get calling result - need to load message,
