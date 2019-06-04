@@ -415,7 +415,7 @@ fn init_node_connection() {
             },
             "kafka_config": {
                 "servers": ["142.93.137.28:9092"],
-                "topic": "requests-nikita",
+                "topic": "requests",
                 "ack_timeout": 1000
             }
         }"#;    
