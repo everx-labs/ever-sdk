@@ -1,7 +1,7 @@
 use crate::*;
 use tvm::types::UInt256;
 use futures::stream::Stream;
-use ton_block::{TransactionProcesingStatus, MessageId};
+use ton_block::{TransactionProcessingStatus, MessageId};
 
 pub type TransactionId = UInt256;
 
@@ -34,7 +34,7 @@ impl Transaction {
     }
 
     // Returns transaction's processing status
-    pub fn status(&self) -> TransactionProcesingStatus {
+    pub fn status(&self) -> TransactionProcessingStatus {
         self.tr.processing_status()
     }
 
