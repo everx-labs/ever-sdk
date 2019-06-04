@@ -65,6 +65,12 @@ impl Message {
         self.msg.body.clone()
     }
 
+    // Returns blockchain's message struct
+    // Some node-specifed methods won't work. All TonStructVariant fields has Client variant.
+    pub fn msg(&self) -> &ton_block::Message {
+         &self.msg
+    }
+
     // Returns message's type
     pub fn msg_type(&self) -> MessageType {
         match self.msg.header {
