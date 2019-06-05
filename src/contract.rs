@@ -223,6 +223,21 @@ impl Contract {
         Self::serialize_message(msg)
     }
 
+    // Packs given inputs by abi into ton_block::Message struct.
+    // Works with json representation of input and abi.
+    // Returns message's bag of cells and identifier.
+    pub fn construct_call_message_json(id: AccountId, func: String, input: String, 
+        abi: String, key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
+
+        // pack params into bag of cells via ABI
+        let msg_body = encode_function_call(abi, func, input, key_pair)
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
+
+        let msg = Self::create_message(id.clone(), msg_body.into())?;
+
+        Self::serialize_message(msg)
+    }
+
     // Packs given inputs by abi and asynchronously calls contract.
     // Works with json representation of input and abi.
     // To get calling result - need to load message,
@@ -286,6 +301,21 @@ impl Contract {
         let msg_body = Self::create_message_body::<TIn, TOut>(CONSTRUCTOR_METHOD_NAME.to_string(), input, key_pair);
 
         let msg = Self::create_deploy_message(Some(msg_body), image)?;
+
+        Self::serialize_message(msg)
+    }
+
+    // Packs given image and input into ton_block::Message struct.
+    // Works with json representation of input and abi.
+    // Returns message's bag of cells and identifier.
+    pub fn construct_deploy_message_json(func: String, input: String, abi: String, image: ContractImage, 
+        key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
+
+        let msg_body = encode_function_call(abi, func, input, key_pair)
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
+
+        let cell: std::sync::Arc<tvm::stack::CellData> = msg_body.into();
+        let msg = Self::create_deploy_message(Some(cell), image)?;
 
         Self::serialize_message(msg)
     }
