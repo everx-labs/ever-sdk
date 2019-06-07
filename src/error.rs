@@ -1,7 +1,60 @@
 use std::io;
 use tvm::types::Exception;
 use ton_abi_json::ABIError;
-//use rdkafka::error::RDKafkaError;
+
+#[cfg(feature = "node_interaction")]
+use reql::errors::Error as DbError;
+#[cfg(feature = "node_interaction")]
+use kafka::error::Error as KafkaError;
+
+#[cfg(not(feature = "node_interaction"))]
+#[derive(Debug)]
+pub struct DbError {}
+
+#[cfg(not(feature = "node_interaction"))]
+impl std::fmt::Display for DbError {
+    fn fmt(&self, _f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        unreachable!()
+    }
+}
+
+#[cfg(not(feature = "node_interaction"))]
+impl std::error::Error for DbError {
+    fn description(&self) -> &str { 
+        unimplemented!()
+    }
+    fn cause(&self) -> Option<&dyn std::error::Error> {
+        unimplemented!()
+    }
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        unimplemented!()
+    }
+}
+
+
+#[cfg(not(feature = "node_interaction"))]
+#[derive(Debug)]
+pub struct KafkaError {}
+
+#[cfg(not(feature = "node_interaction"))]
+impl std::fmt::Display for KafkaError {
+    fn fmt(&self, _f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        unreachable!()
+    }
+}
+
+#[cfg(not(feature = "node_interaction"))]
+impl std::error::Error for KafkaError {
+    fn description(&self) -> &str { 
+        unimplemented!()
+    }
+    fn cause(&self) -> Option<&dyn std::error::Error> {
+        unimplemented!()
+    }
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        unimplemented!()
+    }
+}
 
 error_chain! {
 
@@ -12,8 +65,8 @@ error_chain! {
     foreign_links {
         Io(io::Error);
         Tvm(Exception);
-        DB(reql::errors::Error);
-        Kafka(kafka::error::Error);
+        DB(DbError);
+        Kafka(KafkaError);
         TonBlocks(ton_block::BlockError);
     }
 
