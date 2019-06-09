@@ -1,5 +1,5 @@
 use crate::*;
-use std::io::{Read, Seek};
+use std::io::{Read, Seek, Cursor};
 use std::sync::Arc;
 use tvm::stack::{CellData, SliceData, BuilderData};
 use tvm::types::AccountId;
@@ -192,7 +192,7 @@ impl Contract {
 
     /// Decodes output parameters returned by contract function call 
     pub fn decode_function_response_json(abi: String, function: String, response: Arc<CellData>) 
-        -> Result<String, SdkError> {
+        -> SdkResult<String> {
 
         ton_abi_json::json_abi::decode_function_response(abi, function, SliceData::from(response))
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
@@ -200,11 +200,38 @@ impl Contract {
     
     /// Decodes ABI contract answer from `Vec<u8>` into type values
     pub fn decode_function_response<TOut>(response: Arc<CellData>)
-        -> Result<TOut::Out, SdkError> 
-        where TOut: ABIOutParameter + ABITypeSignature {
+        -> SdkResult<TOut::Out> 
+        where TOut: ABIOutParameter{
 
         ABIResponse::<TOut>::decode_response_from_slice(SliceData::from(response))
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError2(err)))
+    }
+
+    /// Decodes output parameters returned by contract function call from serialized message
+    pub fn decode_function_response_from_message_json(abi: String, function: String, response_message: &[u8]) 
+        -> SdkResult<String> {
+
+        let mut message_cells = deserialize_cells_tree(&mut Cursor::new(response_message))?;
+
+        if message_cells.len() != 1 { 
+            return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
+        }
+
+        Self::decode_function_response_json(abi, function, message_cells.remove(0))
+    }
+
+    /// Decodes output parameters returned by contract function call from serialized message
+    pub fn decode_function_response_from_message<TOut>(response_message: &[u8]) 
+         -> SdkResult<TOut::Out>
+        where TOut: ABIOutParameter {
+
+        let mut message_cells = deserialize_cells_tree(&mut Cursor::new(response_message))?;
+
+        if message_cells.len() != 1 { 
+            return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
+        }
+
+        Self::decode_function_response::<TOut>(message_cells.remove(0))
     }
 
     // Packs given inputs by abi into ton_block::Message struct.
