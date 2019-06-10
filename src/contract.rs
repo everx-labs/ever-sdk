@@ -12,7 +12,6 @@ use ton_abi_core::abi_call::ABICall;
 use ton_abi_json::json_abi::encode_function_call;
 use ed25519_dalek::{Keypair, PublicKey};
 use ton_block::{
-    Message,
     MessageId,    
     ExternalInboundMessageHeader,
     MsgAddressInt,
@@ -208,28 +207,17 @@ impl Contract {
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError2(err)))
     }
 
-    /// Deserializes `Message` from `u8` slice and returns its body
-    fn get_message_body(message: &[u8]) -> SdkResult<Arc<CellData>> {
-        let mut message_cells = deserialize_cells_tree(&mut Cursor::new(message))?;
-
-        if message_cells.len() != 1 { 
-            return Err(SdkError::from(SdkErrorKind::InvalidData("Invalid tree config".to_owned())));
-        }
-
-        let msg: Message = Message::construct_from(&mut SliceData::from(message_cells.remove(0)))?;
-        
-        msg.body
-            .ok_or(
-                SdkError::from(SdkErrorKind::InvalidData("Message body is absent".to_owned())))
-    }
-
     /// Decodes output parameters returned by contract function call from serialized message
     pub fn decode_function_response_from_message_json(abi: String, function: String, response_message: &[u8]) 
         -> SdkResult<String> {
 
-        let body = Self::get_message_body(response_message)?;
+        let mut message_cells = deserialize_cells_tree(&mut Cursor::new(response_message))?;
 
-        Self::decode_function_response_json(abi, function, body)
+        if message_cells.len() != 1 { 
+            return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
+        }
+
+        Self::decode_function_response_json(abi, function, message_cells.remove(0))
     }
 
     /// Decodes output parameters returned by contract function call from serialized message
@@ -237,9 +225,13 @@ impl Contract {
          -> SdkResult<TOut::Out>
         where TOut: ABIOutParameter {
 
-        let body = Self::get_message_body(response_message)?;
+        let mut message_cells = deserialize_cells_tree(&mut Cursor::new(response_message))?;
 
-        Self::decode_function_response::<TOut>(body)
+        if message_cells.len() != 1 { 
+            return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
+        }
+
+        Self::decode_function_response::<TOut>(message_cells.remove(0))
     }
 
     // Packs given inputs by abi into ton_block::Message struct.
