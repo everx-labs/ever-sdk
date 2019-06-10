@@ -207,31 +207,26 @@ impl Contract {
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError2(err)))
     }
 
-    /// Decodes output parameters returned by contract function call from serialized message
-    pub fn decode_function_response_from_message_json(abi: String, function: String, response_message: &[u8]) 
+    /// Decodes output parameters returned by contract function call from serialized message body
+    pub fn decode_function_response_from_bytes_json(abi: String, function: String, response: &[u8]) 
         -> SdkResult<String> {
 
-        let mut message_cells = deserialize_cells_tree(&mut Cursor::new(response_message))?;
+        let mut response_cells = deserialize_cells_tree(&mut Cursor::new(response))?;
 
-        if message_cells.len() != 1 { 
+        if response_cells.len() != 1 { 
             return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
         }
 
-        Self::decode_function_response_json(abi, function, message_cells.remove(0))
+        Self::decode_function_response_json(abi, function, response_cells.remove(0))
     }
 
-    /// Decodes output parameters returned by contract function call from serialized message
-    pub fn decode_function_response_from_message<TOut>(response_message: &[u8]) 
+    /// Decodes output parameters returned by contract function call from serialized message body
+    pub fn decode_function_response_from_bytes<TOut>(response: &[u8]) 
          -> SdkResult<TOut::Out>
         where TOut: ABIOutParameter {
 
-        let mut message_cells = deserialize_cells_tree(&mut Cursor::new(response_message))?;
-
-        if message_cells.len() != 1 { 
-            return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
-        }
-
-        Self::decode_function_response::<TOut>(message_cells.remove(0))
+        ABIResponse::<TOut>::decode_response(&response.to_vec())
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError2(err)))
     }
 
     // Packs given inputs by abi into ton_block::Message struct.
