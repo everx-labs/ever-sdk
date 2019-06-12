@@ -6,6 +6,8 @@ use tvm::types::AccountId;
 use futures::Stream;
 use ton_block::MessageProcessingStatus;
 
+const WORKCHAIN: i32 = 0;
+
 const SUBSCRIBE_CONTRACT_ABI: &str = r#"
 {
     "ABI version": 0,
@@ -281,7 +283,7 @@ const WALLET_ABI: &str = r#"{
 
 fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pair: &Keypair) {
 
-    let contract = Contract::load(address)
+    let contract = Contract::load(address.into())
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -290,7 +292,7 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
         .expect("Error unwrap contract while loading Contract");
 
     // call needed method
-    let changes_stream = Contract::call_json(contract.id(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
+    let changes_stream = Contract::call_json(contract.id().into(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
         .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -328,7 +330,7 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
 
 fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str, key_pair: &Keypair) -> String {
 
-    let contract = Contract::load(address)
+    let contract = Contract::load(address.into())
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -337,7 +339,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         .expect("Error unwrap contract while loading Contract");
 
     // call needed method
-    let changes_stream = Contract::call_json(contract.id(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
+    let changes_stream = Contract::call_json(contract.id().into(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
         .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -419,7 +421,7 @@ fn init_node_connection() {
                 "ack_timeout": 1000
             }
         }"#;    
-    init_json(config_json.into()).unwrap(); 
+    init_json(Some(WORKCHAIN), config_json.into()).unwrap(); 
 }
 
 fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params: &str, key_pair: &Keypair) -> AccountId {
