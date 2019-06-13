@@ -12,7 +12,7 @@ use tvm::types::AccountId;
 use tvm::stack::{BuilderData, IBitstring};
 
 const DB_NAME: &str = "blockchain";
-const WORKCHAIN: i32 = 0;
+const WORKCHAIN: i32 = -1;
 
 #[test]
 #[ignore] // Rethink have to work on 127.0.0.1:32769. Run it and comment "ignore"

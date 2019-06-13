@@ -303,7 +303,9 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if s.message_state == MessageProcessingStatus::Finalized {
+            if s.message_state == MessageProcessingStatus::Preliminary || 
+                s.message_state == MessageProcessingStatus::Proposed || 
+                s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -350,7 +352,9 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if s.message_state == MessageProcessingStatus::Finalized {
+            if s.message_state == MessageProcessingStatus::Preliminary ||
+                s.message_state == MessageProcessingStatus::Proposed ||
+                s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -417,7 +421,7 @@ fn init_node_connection() {
             },
             "kafka_config": {
                 "servers": ["142.93.137.28:9092"],
-                "topic": "requests",
+                "topic": "requests-ilya",
                 "ack_timeout": 1000
             }
         }"#;    
@@ -445,7 +449,9 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if s.message_state == MessageProcessingStatus::Finalized {
+            if s.message_state == MessageProcessingStatus::Preliminary || 
+                s.message_state == MessageProcessingStatus::Proposed || 
+                s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -469,7 +475,9 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if s.message_state == MessageProcessingStatus::Finalized {
+            if s.message_state == MessageProcessingStatus::Preliminary || 
+                s.message_state == MessageProcessingStatus::Proposed || 
+                s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -494,6 +502,8 @@ fn full_test_piggy_bank() {
     let mut csprng = OsRng::new().unwrap();
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
    
+    let now = std::time::Instant::now();
+
 	// deploy wallet
     println!("Wallet contract deploying...\n");
     let wallet_address = deploy_contract_and_wait("Wallet.tvc", WALLET_ABI, "{}", &keypair);
@@ -512,7 +522,10 @@ fn full_test_piggy_bank() {
 	let subscripition_address = deploy_contract_and_wait("Subscription.tvc", SUBSCRIBE_CONTRACT_ABI, &subscription_constructor_params, &keypair);
 	println!("Subscription contract deployed. Account address {}\n", subscripition_address.to_hex_string());
 
-	// call setSubscriptionAccount in wallet
+    let t = now.elapsed();
+	println!("Time: sec={}.{:06} ", t.as_secs(), t.subsec_micros());
+
+    // call setSubscriptionAccount in wallet
     println!("Adding subscription address to the wallet...\n");
 	let subscripition_address_str = hex::encode(subscripition_address.as_slice());
 	let set_subscription_params = format!("{{ \"address\" : \"x{}\" }}", subscripition_address_str);
@@ -568,7 +581,7 @@ pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, va
     let mut msg = Message::with_ext_in_header(
         ExternalInboundMessageHeader {
             src: MsgAddressExt::with_extern(&Bitstring::from(rng.gen::<u64>())).unwrap(),
-            dst: MsgAddressInt::with_standart(None, 0, src.clone()).unwrap(),
+            dst: MsgAddressInt::with_standart(None, -1, src.clone()).unwrap(),
             import_fee: Grams::default(),
         }
     );
@@ -577,8 +590,8 @@ pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, va
     balance.grams = Grams(value.into());
 
     let int_msg_hdr = InternalMessageHeader::with_addresses(
-            MsgAddressInt::with_standart(None, 0, src).unwrap(),
-            MsgAddressInt::with_standart(None, 0, dst).unwrap(),
+            MsgAddressInt::with_standart(None, -1, src).unwrap(),
+            MsgAddressInt::with_standart(None, -1, dst).unwrap(),
             balance);
 
     msg.body = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
