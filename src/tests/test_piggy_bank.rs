@@ -568,7 +568,7 @@ pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, va
     let mut msg = Message::with_ext_in_header(
         ExternalInboundMessageHeader {
             src: MsgAddressExt::with_extern(&Bitstring::from(rng.gen::<u64>())).unwrap(),
-            dst: MsgAddressInt::with_standart(None, 0, src.clone()).unwrap(),
+            dst: MsgAddressInt::with_standart(None, WORKCHAIN as i8, src.clone()).unwrap(),
             import_fee: Grams::default(),
         }
     );
@@ -577,8 +577,8 @@ pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, va
     balance.grams = Grams(value.into());
 
     let int_msg_hdr = InternalMessageHeader::with_addresses(
-            MsgAddressInt::with_standart(None, 0, src).unwrap(),
-            MsgAddressInt::with_standart(None, 0, dst).unwrap(),
+            MsgAddressInt::with_standart(None, WORKCHAIN as i8, src).unwrap(),
+            MsgAddressInt::with_standart(None, WORKCHAIN as i8, dst).unwrap(),
             balance);
 
     msg.body = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
