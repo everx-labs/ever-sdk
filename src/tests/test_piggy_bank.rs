@@ -6,7 +6,7 @@ use tvm::types::AccountId;
 use futures::Stream;
 use ton_block::MessageProcessingStatus;
 
-const WORKCHAIN: i32 = 0;
+const WORKCHAIN: i32 = -1;
 
 const SUBSCRIBE_CONTRACT_ABI: &str = r#"
 {
@@ -303,7 +303,7 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if s.message_state == MessageProcessingStatus::Preliminary || 
+            if //s.message_state == MessageProcessingStatus::Preliminary || 
                 s.message_state == MessageProcessingStatus::Proposed || 
                 s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
@@ -352,7 +352,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if s.message_state == MessageProcessingStatus::Preliminary ||
+            if //s.message_state == MessageProcessingStatus::Preliminary ||
                 s.message_state == MessageProcessingStatus::Proposed ||
                 s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
@@ -449,7 +449,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if s.message_state == MessageProcessingStatus::Preliminary || 
+            if //s.message_state == MessageProcessingStatus::Preliminary || 
                 s.message_state == MessageProcessingStatus::Proposed || 
                 s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
@@ -475,7 +475,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if s.message_state == MessageProcessingStatus::Preliminary || 
+            if //s.message_state == MessageProcessingStatus::Preliminary || 
                 s.message_state == MessageProcessingStatus::Proposed || 
                 s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
@@ -581,7 +581,7 @@ pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, va
     let mut msg = Message::with_ext_in_header(
         ExternalInboundMessageHeader {
             src: MsgAddressExt::with_extern(&Bitstring::from(rng.gen::<u64>())).unwrap(),
-            dst: MsgAddressInt::with_standart(None, -1, src.clone()).unwrap(),
+            dst: MsgAddressInt::with_standart(None, WORKCHAIN as i8, src.clone()).unwrap(),
             import_fee: Grams::default(),
         }
     );
@@ -590,8 +590,8 @@ pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, va
     balance.grams = Grams(value.into());
 
     let int_msg_hdr = InternalMessageHeader::with_addresses(
-            MsgAddressInt::with_standart(None, -1, src).unwrap(),
-            MsgAddressInt::with_standart(None, -1, dst).unwrap(),
+            MsgAddressInt::with_standart(None, WORKCHAIN as i8, src).unwrap(),
+            MsgAddressInt::with_standart(None, WORKCHAIN as i8, dst).unwrap(),
             balance);
 
     msg.body = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
