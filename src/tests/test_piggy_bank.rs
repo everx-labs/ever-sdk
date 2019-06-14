@@ -303,7 +303,7 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if //s.message_state == MessageProcessingStatus::Preliminary || 
+            if s.message_state == MessageProcessingStatus::Preliminary || 
                 s.message_state == MessageProcessingStatus::Proposed || 
                 s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
@@ -352,7 +352,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if //s.message_state == MessageProcessingStatus::Preliminary ||
+            if s.message_state == MessageProcessingStatus::Preliminary ||
                 s.message_state == MessageProcessingStatus::Proposed ||
                 s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
@@ -416,12 +416,12 @@ fn init_node_connection() {
        let config_json = r#"
         {
             "db_config": {
-                "servers": ["142.93.137.28:28015"],
+                "servers": ["127.0.0.1:28015"],
                 "db_name": "blockchain"
             },
             "kafka_config": {
-                "servers": ["142.93.137.28:9092"],
-                "topic": "requests-ilya",
+                "servers": ["kafka:9092"],
+                "topic": "requests",
                 "ack_timeout": 1000
             }
         }"#;    
@@ -449,7 +449,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if //s.message_state == MessageProcessingStatus::Preliminary || 
+            if /*s.message_state == MessageProcessingStatus::Preliminary || */
                 s.message_state == MessageProcessingStatus::Proposed || 
                 s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
@@ -457,8 +457,67 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
             }
         }
     }
-    tr_id.expect("Error: no transaction id");
+    let tr_id = tr_id.expect("Error: no transaction id");
+    
+    let tr = Transaction::load(tr_id)
+        .expect("Error load Transaction")
+        .wait()
+        .next()
+        .expect("Error unwrap stream next while loading Transaction")
+        .expect("Error unwrap result while loading Transaction")
+        .expect("Error unwrap returned Transaction");
 
+    println!("transaction:\n\n{}", serde_json::to_string_pretty(tr.tr()).unwrap());
+
+    if tr.tr().is_aborted() {
+        panic!("transaction aborted!\n\n{}", serde_json::to_string_pretty(tr.tr()).unwrap())
+    }
+    let mut tr_id = None;
+    tr.out_messages_id().iter().for_each(|msg_id| {
+        let msg = crate::Message::load(msg_id.clone())
+            .expect("Error load message")
+            .wait()
+            .next();
+
+        if msg.is_some() {
+            let s = msg.expect("Error unwrap stream next while loading Message")
+                .expect("Error unwrap result while loading Message")
+                .expect("Error unwrap returned Message");
+            if /*s.message_state == MessageProcessingStatus::Preliminary || */
+                    s.status() == MessageProcessingStatus::Proposed || 
+                    s.status() == MessageProcessingStatus::Finalized {
+                        tr_id = Some(s.id().clone());
+                }    
+        } else {
+            for state in Contract::subscribe_updates(msg_id.clone()).unwrap().wait(){
+                if let Err(e) = state {
+                    panic!("error next state getting: {}", e);
+                }
+                if let Ok(s) = state {
+                    println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
+                    if /*s.message_state == MessageProcessingStatus::Preliminary || */
+                        s.message_state == MessageProcessingStatus::Proposed || 
+                        s.message_state == MessageProcessingStatus::Finalized {
+                        tr_id = Some(s.message_id.clone());
+                        break;
+                    }
+                }            
+            }
+        }
+    });
+    
+
+    /*let addr = AccountAddress::Full(MsgAddressInt::AddrStd(ton_block::MsgAddrStd::with_address(None, -1, account_id.clone())));
+    let acc = Contract::load(addr)
+        .expect("Error calling load Account")
+        .wait()
+        .next()
+        .expect("Error unwrap stream next while loading Account")
+        .expect("Error unwrap result while loading Account")
+        .expect("Error unwrap returned Account");
+
+    println!("Account!\n\n{}", serde_json::to_string_pretty(acc.acc()).unwrap());*/
+    
 
     // call deploy method
     let changes_stream = Contract::deploy_json("constructor".to_owned(), constructor_params.to_owned(), abi.to_owned(), contract_image, Some(key_pair))
@@ -475,7 +534,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if //s.message_state == MessageProcessingStatus::Preliminary || 
+            if /*s.message_state == MessageProcessingStatus::Preliminary || */
                 s.message_state == MessageProcessingStatus::Proposed || 
                 s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
@@ -485,7 +544,20 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
     }
     // contract constructor doesn't return any values so there are no output messages in transaction
     // so just check deployment transaction created
-    let _tr_id = tr_id.expect("Error: no transaction id");
+    let tr_id = tr_id.expect("Error: no transaction id");
+
+    let tr = Transaction::load(tr_id)
+        .expect("Error calling load Transaction")
+        .wait()
+        .next()
+        .expect("Error unwrap stream next while loading Transaction")
+        .expect("Error unwrap result while loading Transaction")
+        .expect("Error unwrap returned Transaction");
+
+    if tr.tr().is_aborted() {
+        panic!("transaction aborted!\n\n{}", serde_json::to_string_pretty(tr.tr()).unwrap())
+    }
+
 
 	account_id
 }
@@ -522,8 +594,6 @@ fn full_test_piggy_bank() {
 	let subscripition_address = deploy_contract_and_wait("Subscription.tvc", SUBSCRIBE_CONTRACT_ABI, &subscription_constructor_params, &keypair);
 	println!("Subscription contract deployed. Account address {}\n", subscripition_address.to_hex_string());
 
-    let t = now.elapsed();
-	println!("Time: sec={}.{:06} ", t.as_secs(), t.subsec_micros());
 
     // call setSubscriptionAccount in wallet
     println!("Adding subscription address to the wallet...\n");
@@ -565,6 +635,9 @@ fn full_test_piggy_bank() {
     let get_params = format!("{{ \"subscriptionId\" : \"x{}\" }}", &subscr_id_str);
     call_contract_and_wait(subscripition_address, "getSubscription", &get_params, SUBSCRIBE_CONTRACT_ABI, &keypair);
     println!("getSubscription called.\n");
+    let t = now.elapsed();
+	println!("Time: sec={}.{:06} ", t.as_secs(), t.subsec_micros());
+
 }
 
 
