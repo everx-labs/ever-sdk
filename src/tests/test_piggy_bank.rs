@@ -416,11 +416,11 @@ fn init_node_connection() {
        let config_json = r#"
         {
             "db_config": {
-                "servers": ["127.0.0.1:28015"],
+                "servers": ["142.93.137.28:28015"],
                 "db_name": "blockchain"
             },
             "kafka_config": {
-                "servers": ["kafka:9092"],
+                "servers": ["142.93.137.28:9092"],
                 "topic": "requests",
                 "ack_timeout": 1000
             }
@@ -467,7 +467,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         .expect("Error unwrap result while loading Transaction")
         .expect("Error unwrap returned Transaction");
 
-    println!("transaction:\n\n{}", serde_json::to_string_pretty(tr.tr()).unwrap());
+    //println!("transaction:\n\n{}", serde_json::to_string_pretty(tr.tr()).unwrap());
 
     if tr.tr().is_aborted() {
         panic!("transaction aborted!\n\n{}", serde_json::to_string_pretty(tr.tr()).unwrap())
@@ -483,25 +483,27 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
             let s = msg.expect("Error unwrap stream next while loading Message")
                 .expect("Error unwrap result while loading Message")
                 .expect("Error unwrap returned Message");
+            println!("{} : {:?}", s.id().to_hex_string(), s.status());
             if /*s.message_state == MessageProcessingStatus::Preliminary || */
                     s.status() == MessageProcessingStatus::Proposed || 
                     s.status() == MessageProcessingStatus::Finalized {
                         tr_id = Some(s.id().clone());
+                        return;
                 }    
-        } else {
-            for state in Contract::subscribe_updates(msg_id.clone()).unwrap().wait(){
-                if let Err(e) = state {
-                    panic!("error next state getting: {}", e);
+        }
+
+        for state in Contract::subscribe_updates(msg_id.clone()).unwrap().wait(){
+            if let Err(e) = state {
+                panic!("error next state getting: {}", e);
+            }
+            if let Ok(s) = state {
+                println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
+                if /*s.message_state == MessageProcessingStatus::Preliminary || */
+                    s.message_state == MessageProcessingStatus::Proposed || 
+                    s.message_state == MessageProcessingStatus::Finalized {
+                    tr_id = Some(s.message_id.clone());
+                    break;
                 }
-                if let Ok(s) = state {
-                    println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-                    if /*s.message_state == MessageProcessingStatus::Preliminary || */
-                        s.message_state == MessageProcessingStatus::Proposed || 
-                        s.message_state == MessageProcessingStatus::Finalized {
-                        tr_id = Some(s.message_id.clone());
-                        break;
-                    }
-                }            
             }
         }
     });
