@@ -10,7 +10,7 @@ sha2 = "^0.7"
 
 [dependencies.tvm]
 git = "ssh://git@github.com/tonlabs/sdk-emulator.git"
-branch = "feature-wasm-compile"
+branch = "dev"
 package = "tvm"
 default-features = false
 
