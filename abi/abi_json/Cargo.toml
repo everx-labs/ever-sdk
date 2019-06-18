@@ -3,7 +3,7 @@ name = "ton_abi_json"
 version = "0.1.0"
 
 [dependencies]
-tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "fix-message-serialize", package = "tvm" }
+tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "fix-message-deserialize", package = "tvm" }
 ton_abi_core = { path = "../abi_core" }
 pretty_assertions = "0.5.1"
 num-bigint = "0.2.2"
