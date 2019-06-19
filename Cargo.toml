@@ -25,8 +25,8 @@ base64 = "0.10.0"
 ton_abi_core =  { path = "abi/abi_core" }
 ton_abi_json = { path = "abi/abi_json" }
 
-tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "dev", package = "tvm" }
-ton_block = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "dev", package = "ton_block" }
+tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "fix-message-deserialize", package = "tvm" }
+ton_block = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "fix-message-deserialize", package = "ton_block" }
 
 
 [features]
