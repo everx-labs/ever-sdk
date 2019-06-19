@@ -188,7 +188,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if s.message_state == MessageProcessingStatus::Preliminary || 
+            if //s.message_state == MessageProcessingStatus::Preliminary || 
                 s.message_state == MessageProcessingStatus::Proposed || 
                 s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
@@ -223,7 +223,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
                 .expect("Error unwrap result while loading Message")
                 .expect("Error unwrap returned Message");
             println!("{} : {:?}", s.id().to_hex_string(), s.status());
-            if  s.status() == MessageProcessingStatus::Preliminary || 
+            if  //s.status() == MessageProcessingStatus::Preliminary || 
                 s.status() == MessageProcessingStatus::Proposed || 
                 s.status() == MessageProcessingStatus::Finalized {
                     tr_id = Some(s.id().clone());
@@ -237,7 +237,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
             }
             if let Ok(s) = state {
                 println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-                if s.message_state == MessageProcessingStatus::Preliminary || 
+                if //s.message_state == MessageProcessingStatus::Preliminary || 
                     s.message_state == MessageProcessingStatus::Proposed || 
                     s.message_state == MessageProcessingStatus::Finalized {
                     tr_id = Some(s.message_id.clone());
@@ -263,7 +263,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if s.message_state == MessageProcessingStatus::Preliminary || 
+            if //s.message_state == MessageProcessingStatus::Preliminary || 
                 s.message_state == MessageProcessingStatus::Proposed || 
                 s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
@@ -315,7 +315,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         }
         if let Ok(s) = state {
             //println!("next state: {:?}", s);
-            if s.message_state == MessageProcessingStatus::Preliminary ||
+            if //s.message_state == MessageProcessingStatus::Preliminary ||
                 s.message_state == MessageProcessingStatus::Proposed ||
                 s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
