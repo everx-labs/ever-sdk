@@ -1,7 +1,7 @@
 use crate::*;
 use tvm::types::UInt256;
 use futures::stream::Stream;
-use ton_block::{TransactionProcesingStatus, MessageId};
+use ton_block::{TransactionProcessingStatus, MessageId};
 
 pub type TransactionId = UInt256;
 
@@ -34,8 +34,14 @@ impl Transaction {
     }
 
     // Returns transaction's processing status
-    pub fn status(&self) -> TransactionProcesingStatus {
+    pub fn status(&self) -> TransactionProcessingStatus {
         self.tr.processing_status()
+    }
+
+    // Returns blockchain's transaction struct
+    // Some node-specifed methods won't work. All TonStructVariant fields has Client variant.
+    pub fn tr(&self) -> &ton_block::Transaction {
+         &self.tr
     }
 
     // Returns id of transaction's input message if it exists

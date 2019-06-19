@@ -6,6 +6,8 @@ use tvm::types::AccountId;
 use futures::Stream;
 use ton_block::MessageProcessingStatus;
 
+const WORKCHAIN: i32 = 0;
+
 const SUBSCRIBE_CONTRACT_ABI: &str = r#"
 {
     "ABI version": 0,
@@ -17,6 +19,7 @@ const SUBSCRIBE_CONTRACT_ABI: &str = r#"
         "name": "subscribe",
         "signed": true,
         "inputs": [
+            {"name": "subscriptionId", "type": "bits256"},
             {"name": "pubkey", "type": "bits256"},
             {"name": "to",     "type": "bits256"},
             {"name": "value",  "type": "duint"},
@@ -26,18 +29,18 @@ const SUBSCRIBE_CONTRACT_ABI: &str = r#"
     }, {
         "name": "cancel",
         "signed": true,
-        "inputs": [{"name": "subscriptionHash", "type": "bits256"}],
+        "inputs": [{"name": "subscriptionId", "type": "bits256"}],
         "outputs": []
     }, {
         "name": "executeSubscription",
         "inputs": [
-            {"name": "subscriptionHash","type": "bits256"},
+            {"name": "subscriptionId",  "type": "bits256"},
             {"name": "signature",       "type": "bits256"}
         ],
         "outputs": []
     }, {
         "name": "getSubscription",
-        "inputs": [{"name": "subscriptionHash","type": "bits256"}],
+        "inputs": [{"name": "subscriptionId","type": "bits256"}],
         "outputs": [
             {"name": "to", "type": "bits256"},
             {"name": "amount", "type": "duint"},
@@ -280,7 +283,7 @@ const WALLET_ABI: &str = r#"{
 
 fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pair: &Keypair) {
 
-    let contract = Contract::load(address)
+    let contract = Contract::load(address.into())
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -289,7 +292,7 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
         .expect("Error unwrap contract while loading Contract");
 
     // call needed method
-    let changes_stream = Contract::call_json(contract.id(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
+    let changes_stream = Contract::call_json(contract.id().into(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
         .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -299,49 +302,7 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
             panic!("error next state getting: {}", e);
         }
         if let Ok(s) = state {
-            println!("next state: {:?}", s);
-            if s.message_state == MessageProcessingStatus::Finalized {
-                tr_id = Some(s.message_id.clone());
-                break;
-            }
-        }
-    }
-    let tr_id = tr_id.expect("Error: no transaction id");
-
-    // OR 
-    // wait message will done and find transaction with the message
-
-    // load transaction object
-    let _tr = Transaction::load(tr_id)
-        .expect("Error calling load Transaction")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Transaction")
-        .expect("Error unwrap result while loading Transaction");
-}
-
-fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str, key_pair: &Keypair) -> String {
-
-    let contract = Contract::load(address)
-        .expect("Error calling load Contract")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract")
-        .expect("Error unwrap contract while loading Contract");
-
-    // call needed method
-    let changes_stream = Contract::call_json(contract.id(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
-        .expect("Error calling contract method");
-
-    // wait transaction id in message-status 
-    let mut tr_id = None;
-    for state in changes_stream.wait() {
-        if let Err(e) = state {
-            panic!("error next state getting: {}", e);
-        }
-        if let Ok(s) = state {
-            println!("next state: {:?}", s);
+            println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
             if s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
@@ -361,6 +322,57 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         .expect("Error unwrap stream next while loading Transaction")
         .expect("Error unwrap result while loading Transaction")
         .expect("Error unwrap returned Transaction");
+
+    if tr.tr().is_aborted() {
+        panic!("transaction aborted!\n\n{}", serde_json::to_string_pretty(tr.tr()).unwrap())
+    }
+}
+
+fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str, key_pair: &Keypair) -> String {
+
+    let contract = Contract::load(address.into())
+        .expect("Error calling load Contract")
+        .wait()
+        .next()
+        .expect("Error unwrap stream next while loading Contract")
+        .expect("Error unwrap result while loading Contract")
+        .expect("Error unwrap contract while loading Contract");
+
+    // call needed method
+    let changes_stream = Contract::call_json(contract.id().into(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
+        .expect("Error calling contract method");
+
+    // wait transaction id in message-status 
+    let mut tr_id = None;
+    for state in changes_stream.wait() {
+        if let Err(e) = state {
+            panic!("error next state getting: {}", e);
+        }
+        if let Ok(s) = state {
+            println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
+            if s.message_state == MessageProcessingStatus::Finalized {
+                tr_id = Some(s.message_id.clone());
+                break;
+            }
+        }
+    }
+    let tr_id = tr_id.expect("Error: no transaction id");
+
+    // OR 
+    // wait message will done and find transaction with the message
+
+    // load transaction object
+    let tr = Transaction::load(tr_id)
+        .expect("Error calling load Transaction")
+        .wait()
+        .next()
+        .expect("Error unwrap stream next while loading Transaction")
+        .expect("Error unwrap result while loading Transaction")
+        .expect("Error unwrap returned Transaction");
+
+    if tr.tr().is_aborted() {
+        panic!("transaction aborted!\n\n{}", serde_json::to_string_pretty(tr.tr()).unwrap())
+    }
 
     // take external outbound message from the transaction
     let out_msg = tr.load_out_messages()
@@ -409,7 +421,7 @@ fn init_node_connection() {
                 "ack_timeout": 1000
             }
         }"#;    
-    init_json(config_json.into()).unwrap(); 
+    init_json(Some(WORKCHAIN), config_json.into()).unwrap(); 
 }
 
 fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params: &str, key_pair: &Keypair) -> AccountId {
@@ -421,8 +433,8 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
     let account_id = contract_image.account_id();
 
     // before deploying contract need to transfer some funds to its address
-    println!("Account ID to take some grams {}\n", account_id);
-    let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), account_id.clone(), 10);
+    //println!("Account ID to take some grams {}\n", account_id.to_hex_string());
+    let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), account_id.clone(), 100);
     let changes_stream = Contract::send_message(msg).expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -432,7 +444,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
             panic!("error next state getting: {}", e);
         }
         if let Ok(s) = state {
-            println!("next state: {:?}", s);
+            println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
             if s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
@@ -456,7 +468,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
             panic!("error next state getting: {}", e);
         }
         if let Ok(s) = state {
-            println!("next state: {:?}", s);
+            println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
             if s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
@@ -483,38 +495,63 @@ fn full_test_piggy_bank() {
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
    
 	// deploy wallet
+    println!("Wallet contract deploying...\n");
     let wallet_address = deploy_contract_and_wait("Wallet.tvc", WALLET_ABI, "{}", &keypair);
-
-	println!("Wallet contract deployed. Account address {}\n", wallet_address);
+	println!("Wallet contract deployed. Account address {}\n", wallet_address.to_hex_string());
 
 	// deploy piggy bank
+    println!("Piggy bank contract deploying...\n");
 	let piggy_bank_address = deploy_contract_and_wait("Piggybank.tvc", PIGGY_BANK_CONTRACT_ABI, PIGGY_BANK_CONSTRUCTOR_PARAMS, &keypair);
-
-	println!("Piggy bank contract deployed. Account address {}\n", piggy_bank_address);
+	println!("Piggy bank contract deployed. Account address {}\n", piggy_bank_address.to_hex_string());
 
 	// deploy subscription
+
+    println!("Subscription contract deploying...\n");
 	let wallet_address_str = hex::encode(wallet_address.as_slice());
 	let subscription_constructor_params = format!("{{ \"wallet\" : \"x{}\" }}", wallet_address_str);
 	let subscripition_address = deploy_contract_and_wait("Subscription.tvc", SUBSCRIBE_CONTRACT_ABI, &subscription_constructor_params, &keypair);
-
-	println!("Subscription contract deployed. Account address {}\n", subscripition_address);
+	println!("Subscription contract deployed. Account address {}\n", subscripition_address.to_hex_string());
 
 	// call setSubscriptionAccount in wallet
+    println!("Adding subscription address to the wallet...\n");
 	let subscripition_address_str = hex::encode(subscripition_address.as_slice());
 	let set_subscription_params = format!("{{ \"address\" : \"x{}\" }}", subscripition_address_str);
 
 	let _set_subscription_answer = call_contract(wallet_address, "setSubscriptionAccount", &set_subscription_params, WALLET_ABI, &keypair);
 
-	println!("Subscription address added to wallet.\n");
+	println!("Subscription address added to the wallet.\n");
 
 	// call subscribe in subscription
+    println!("Adding subscription 1...\n");
+    let subscr_id_str = hex::encode(&[0x11; 32]);
 	let piggy_bank_address_str = hex::encode(piggy_bank_address.as_slice());
 	let pubkey_str = hex::encode(keypair.public.as_bytes());
-	let subscribe_params = format!("{{ \"pubkey\" : \"x{}\", \"to\": \"x{}\", \"value\" : 123, \"period\" : 456 }}", pubkey_str, piggy_bank_address_str);
+	let subscribe_params = format!(
+        "{{ \"subscriptionId\" : \"x{}\", \"pubkey\" : \"x{}\", \"to\": \"x{}\", \"value\" : 123, \"period\" : 456 }}", 
+        subscr_id_str,
+        &pubkey_str, 
+        &piggy_bank_address_str,
+    );
 
-	let _subscribe_answer = call_contract_and_wait(subscripition_address, "subscribe", &subscribe_params, SUBSCRIBE_CONTRACT_ABI, &keypair);
+	let _subscribe_answer = call_contract_and_wait(subscripition_address.clone(), "subscribe", &subscribe_params, SUBSCRIBE_CONTRACT_ABI, &keypair);
+	println!("Subscription 1 added.\n");
 
-	println!("New subscription added.\n");
+    	// call subscribe in subscription
+    println!("Adding subscription 2...\n");
+    let subscr_id_str = hex::encode(&[0x22; 32]);
+	let subscribe_params = format!(
+        "{{ \"subscriptionId\" : \"x{}\", \"pubkey\" : \"x{}\", \"to\": \"x{}\", \"value\" : 5000000000, \"period\" : 86400 }}", 
+        subscr_id_str,
+        &pubkey_str, 
+        &piggy_bank_address_str,
+    );
+	let _subscribe_answer = call_contract_and_wait(subscripition_address.clone(), "subscribe", &subscribe_params, SUBSCRIBE_CONTRACT_ABI, &keypair);
+	println!("Subscription 2 added.\n");
+
+    println!("Call getSubscription with id {}\n", &subscr_id_str);
+    let get_params = format!("{{ \"subscriptionId\" : \"x{}\" }}", &subscr_id_str);
+    call_contract_and_wait(subscripition_address, "getSubscription", &get_params, SUBSCRIBE_CONTRACT_ABI, &keypair);
+    println!("getSubscription called.\n");
 }
 
 
@@ -531,7 +568,7 @@ pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, va
     let mut msg = Message::with_ext_in_header(
         ExternalInboundMessageHeader {
             src: MsgAddressExt::with_extern(&Bitstring::from(rng.gen::<u64>())).unwrap(),
-            dst: MsgAddressInt::with_standart(None, 0, src.clone()).unwrap(),
+            dst: MsgAddressInt::with_standart(None, WORKCHAIN as i8, src.clone()).unwrap(),
             import_fee: Grams::default(),
         }
     );
@@ -540,8 +577,8 @@ pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, va
     balance.grams = Grams(value.into());
 
     let int_msg_hdr = InternalMessageHeader::with_addresses(
-            MsgAddressInt::with_standart(None, 0, src).unwrap(),
-            MsgAddressInt::with_standart(None, 0, dst).unwrap(),
+            MsgAddressInt::with_standart(None, WORKCHAIN as i8, src).unwrap(),
+            MsgAddressInt::with_standart(None, WORKCHAIN as i8, dst).unwrap(),
             balance);
 
     msg.body = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
