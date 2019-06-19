@@ -176,7 +176,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
     let account_id = contract_image.account_id();
 
     // before deploying contract need to transfer some funds to its address
-    //println!("Account ID to take some grams {}\n", account_id);
+    //println!("Account ID to take some grams {}\n", account_id.to_hex_string());
     let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), account_id.clone(), 100000000000);
     let changes_stream = Contract::send_message(msg).expect("Error calling contract method");
 
@@ -187,14 +187,65 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
             panic!("error next state getting: {}", e);
         }
         if let Ok(s) = state {
-            //println!("message: {}  next state: {}", s.message_id.to_hex_string(), s.state);
-            if s.message_state == MessageProcessingStatus::Finalized {
+            println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
+            if s.message_state == MessageProcessingStatus::Preliminary || 
+                s.message_state == MessageProcessingStatus::Proposed || 
+                s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
         }
     }
-    tr_id.expect("Error: no transaction id");
+    let tr_id = tr_id.expect("Error: no transaction id");
+    
+    let tr = Transaction::load(tr_id)
+        .expect("Error load Transaction")
+        .wait()
+        .next()
+        .expect("Error unwrap stream next while loading Transaction")
+        .expect("Error unwrap result while loading Transaction")
+        .expect("Error unwrap returned Transaction");
+
+    //println!("transaction:\n\n{}", serde_json::to_string_pretty(tr.tr()).unwrap());
+
+    if tr.tr().is_aborted() {
+        panic!("transaction aborted!\n\n{}", serde_json::to_string_pretty(tr.tr()).unwrap())
+    }
+    let mut tr_id = None;
+    tr.out_messages_id().iter().for_each(|msg_id| {
+        let msg = ton_sdk::Message::load(msg_id.clone())
+            .expect("Error load message")
+            .wait()
+            .next();
+
+        if msg.is_some() {
+            let s = msg.expect("Error unwrap stream next while loading Message")
+                .expect("Error unwrap result while loading Message")
+                .expect("Error unwrap returned Message");
+            println!("{} : {:?}", s.id().to_hex_string(), s.status());
+            if  s.status() == MessageProcessingStatus::Preliminary || 
+                s.status() == MessageProcessingStatus::Proposed || 
+                s.status() == MessageProcessingStatus::Finalized {
+                    tr_id = Some(s.id().clone());
+                    return;
+            }    
+        }
+
+        for state in Contract::subscribe_updates(msg_id.clone()).unwrap().wait(){
+            if let Err(e) = state {
+                panic!("error next state getting: {}", e);
+            }
+            if let Ok(s) = state {
+                println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
+                if s.message_state == MessageProcessingStatus::Preliminary || 
+                    s.message_state == MessageProcessingStatus::Proposed || 
+                    s.message_state == MessageProcessingStatus::Finalized {
+                    tr_id = Some(s.message_id.clone());
+                    break;
+                }
+            }
+        }
+    });
 
 
     // call deploy method
@@ -211,8 +262,10 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
             panic!("error next state getting: {}", e);
         }
         if let Ok(s) = state {
-            //println!("next state: {:?}", s);
-            if s.message_state == MessageProcessingStatus::Finalized {
+            println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
+            if s.message_state == MessageProcessingStatus::Preliminary || 
+                s.message_state == MessageProcessingStatus::Proposed || 
+                s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -220,7 +273,20 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
     }
     // contract constructor doesn't return any values so there are no output messages in transaction
     // so just check deployment transaction created
-    let _tr_id = tr_id.expect("Error: no transaction id");
+    let tr_id = tr_id.expect("Error: no transaction id");
+
+    let tr = Transaction::load(tr_id)
+        .expect("Error calling load Transaction")
+        .wait()
+        .next()
+        .expect("Error unwrap stream next while loading Transaction")
+        .expect("Error unwrap result while loading Transaction")
+        .expect("Error unwrap returned Transaction");
+
+    if tr.tr().is_aborted() {
+        panic!("transaction aborted!\n\n{}", serde_json::to_string_pretty(tr.tr()).unwrap())
+    }
+
 
     account_id
 }
@@ -249,7 +315,9 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         }
         if let Ok(s) = state {
             //println!("next state: {:?}", s);
-            if s.message_state == MessageProcessingStatus::Finalized {
+            if s.message_state == MessageProcessingStatus::Preliminary ||
+                s.message_state == MessageProcessingStatus::Proposed ||
+                s.message_state == MessageProcessingStatus::Finalized {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
