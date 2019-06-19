@@ -5,6 +5,7 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 extern crate num_bigint;
+extern crate clap;
 
 use rand::{thread_rng, Rng};
 use ton_block::{Message, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
@@ -17,6 +18,7 @@ use futures::Stream;
 use sha2::Sha512;
 use std::str::FromStr;
 use num_traits::cast::ToPrimitive;
+use clap::{Arg, App};
 
 use ton_sdk::*;
 
@@ -153,9 +155,11 @@ pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, va
     let mut balance = CurrencyCollection::default();
     balance.grams = Grams(value.into());
 
+    let workchain = Contract::get_default_workchain().unwrap();
+
     let int_msg_hdr = InternalMessageHeader::with_addresses(
-            MsgAddressInt::with_standart(None, 0, src).unwrap(),
-            MsgAddressInt::with_standart(None, 0, dst).unwrap(),
+            MsgAddressInt::with_standart(None, workchain as i8, src).unwrap(),
+            MsgAddressInt::with_standart(None, workchain as i8, dst).unwrap(),
             balance);
 
     msg.body = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
@@ -224,7 +228,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
 
 fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str, key_pair: Option<&Keypair>) -> String {
 
-    let contract = Contract::load(address)
+    let contract = Contract::load(address.into())
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -234,7 +238,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
 
     // call needed method
     let changes_stream = 
-        Contract::call_json(contract.id(), func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
+        Contract::call_json(contract.id().into(), func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
             .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -328,7 +332,7 @@ fn call_get_balance(current_address: &Option<AccountId>, params: &[&str]) {
         }
     };
 
-    let contract = Contract::load(address)
+    let contract = Contract::load(address.into())
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -691,7 +695,7 @@ fn cycle_test(params: &[&str]) {
 
         let str_params = format!("{{ \"recipient\" : \"x{}\", \"value\": \"{}\" }}", address_to.to_hex_string(), value);
 
-        Contract::call_json(address_from.clone(), "sendTransaction".to_owned(), str_params.to_owned(), WALLET_ABI.to_owned(), Some(&keypair))
+        Contract::call_json(address_from.clone().into(), "sendTransaction".to_owned(), str_params.to_owned(), WALLET_ABI.to_owned(), Some(&keypair))
                 .expect("Error calling contract method");
 
         std::thread::sleep(std::time::Duration::from_millis(timeout));
@@ -723,19 +727,33 @@ Supported commands:
     exit                                    - exit program"#;
 
 fn main() {
-    let args: Vec<String> = std::env::args().collect();
+    let matches = App::new("TON Wallet client")
+                        .version("0.1")
+                        .author("Tonlabs <tonlabs.io>")
+                        .arg(Arg::with_name("config")
+                            .long("config")
+                            .short("c")
+                            .value_name("FILE")
+                            .help("Sets a custom config file. Default is `config`")
+                            .takes_value(true))
+                        .arg(Arg::with_name("workchain")
+                            .long("workchain")
+                            .short("w")
+                            .value_name("NUMBER")
+                            .help("Sets a workchain. Default is `0`")
+                            .takes_value(true))
+                        .get_matches();
 
-    let config = if args.len() > 3 && args[2] == "-config" {
-        std::fs::read_to_string(&args[3]).expect("Couldn't read config file")
-    } else {
-        if let Ok(string) = std::fs::read_to_string("config") {
-            string
-        } else {
-            STD_CONFIG.to_owned()
-        }
-    };
+    // Gets a value for config if supplied by user, or defaults to "default.conf"
+    let config_file = matches.value_of("config").unwrap_or("config");
+    println!("Using config file: `{}`", config_file);
+    let config = std::fs::read_to_string(config_file).expect("Couldn't read config file");
 
-    init_json(config).expect("Couldn't establish connection");
+    let workchain = matches.value_of("workchain").unwrap_or("0");
+
+    let workchain = i32::from_str_radix(workchain, 10).expect("Couldn't parse workchain number");
+
+    init_json(Some(workchain), config).expect("Couldn't establish connection");
     println!("Connection established");
 
     let mut current_address: Option<AccountId> = None;
