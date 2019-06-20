@@ -487,7 +487,7 @@ impl Contract {
         let state_init = image.state_init();
 
         let mut msg_header = ExternalInboundMessageHeader::default();
-        msg_header.dst = MsgAddressInt::with_standart(None, -1, account_id).unwrap();
+        msg_header.dst = AccountAddress::from(account_id).get_msg_address()?;
 
         let mut msg = ton_block::Message::with_ext_in_header(msg_header);
         msg.body = msg_body;
