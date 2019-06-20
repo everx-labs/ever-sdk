@@ -303,9 +303,10 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if s.message_state == MessageProcessingStatus::Preliminary || 
+            if  s.message_state == MessageProcessingStatus::Preliminary || 
                 s.message_state == MessageProcessingStatus::Proposed || 
-                s.message_state == MessageProcessingStatus::Finalized {
+                s.message_state == MessageProcessingStatus::Finalized
+            {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -352,9 +353,10 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if s.message_state == MessageProcessingStatus::Preliminary ||
+            if  s.message_state == MessageProcessingStatus::Preliminary ||
                 s.message_state == MessageProcessingStatus::Proposed ||
-                s.message_state == MessageProcessingStatus::Finalized {
+                s.message_state == MessageProcessingStatus::Finalized
+            {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -421,7 +423,7 @@ fn init_node_connection() {
             },
             "kafka_config": {
                 "servers": ["142.93.137.28:9092"],
-                "topic": "requests",
+                "topic": "requests-alexey",
                 "ack_timeout": 1000
             }
         }"#;    
@@ -449,9 +451,10 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if /*s.message_state == MessageProcessingStatus::Preliminary || */
+            if  s.message_state == MessageProcessingStatus::Preliminary ||
                 s.message_state == MessageProcessingStatus::Proposed || 
-                s.message_state == MessageProcessingStatus::Finalized {
+                s.message_state == MessageProcessingStatus::Finalized
+            {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -484,12 +487,13 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
                 .expect("Error unwrap result while loading Message")
                 .expect("Error unwrap returned Message");
             println!("{} : {:?}", s.id().to_hex_string(), s.status());
-            if /*s.message_state == MessageProcessingStatus::Preliminary || */
-                    s.status() == MessageProcessingStatus::Proposed || 
-                    s.status() == MessageProcessingStatus::Finalized {
-                        tr_id = Some(s.id().clone());
-                        return;
-                }    
+            if  s.status() == MessageProcessingStatus::Preliminary || 
+                s.status() == MessageProcessingStatus::Proposed || 
+                s.status() == MessageProcessingStatus::Finalized
+            {
+                tr_id = Some(s.id().clone());
+                return;
+            }    
         }
 
         for state in Contract::subscribe_updates(msg_id.clone()).unwrap().wait(){
@@ -498,9 +502,10 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
             }
             if let Ok(s) = state {
                 println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-                if /*s.message_state == MessageProcessingStatus::Preliminary || */
+                if  s.message_state == MessageProcessingStatus::Preliminary ||
                     s.message_state == MessageProcessingStatus::Proposed || 
-                    s.message_state == MessageProcessingStatus::Finalized {
+                    s.message_state == MessageProcessingStatus::Finalized
+                {
                     tr_id = Some(s.message_id.clone());
                     break;
                 }
@@ -509,17 +514,6 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
     });
     
 
-    /*let addr = AccountAddress::Full(MsgAddressInt::AddrStd(ton_block::MsgAddrStd::with_address(None, -1, account_id.clone())));
-    let acc = Contract::load(addr)
-        .expect("Error calling load Account")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Account")
-        .expect("Error unwrap result while loading Account")
-        .expect("Error unwrap returned Account");
-
-    println!("Account!\n\n{}", serde_json::to_string_pretty(acc.acc()).unwrap());*/
-    
 
     // call deploy method
     let changes_stream = Contract::deploy_json("constructor".to_owned(), constructor_params.to_owned(), abi.to_owned(), contract_image, Some(key_pair))
@@ -536,9 +530,10 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if /*s.message_state == MessageProcessingStatus::Preliminary || */
+            if  s.message_state == MessageProcessingStatus::Preliminary ||
                 s.message_state == MessageProcessingStatus::Proposed || 
-                s.message_state == MessageProcessingStatus::Finalized {
+                s.message_state == MessageProcessingStatus::Finalized
+            {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
