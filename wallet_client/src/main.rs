@@ -415,6 +415,7 @@ fn call_get_balance(current_address: &Option<AccountId>, params: &[&str]) {
     println!("Account balance {}", gram_balance);
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct SendTransactionAnswer {
     transaction: String,
@@ -453,6 +454,8 @@ fn call_send_transaction(current_address: &Option<AccountId>, params: &[&str]) {
     println!("Transaction ID {}", transaction);
 }
 
+#[allow(dead_code)]
+#[allow(non_snake_case)]
 #[derive(Deserialize)]
 struct CreateLimitAnswer {
     limitId: String,
@@ -505,6 +508,7 @@ fn call_create_limit(current_address: &Option<AccountId>, params: &[&str]) {
 
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct ChangeLimitAnswer {
     error: String
@@ -579,6 +583,8 @@ struct LimitInfo {
     meta: String
 }
 
+#[allow(dead_code)]
+#[allow(non_snake_case)]
 #[derive(Deserialize)]
 struct GetLimitByIdAnswer {
     limitInfo: LimitInfo,
@@ -620,6 +626,7 @@ fn call_get_limit_by_id(current_address: &Option<AccountId>, params: &[&str]) {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct GetLimitsAnswer {
     list: Vec<String>,
@@ -654,6 +661,7 @@ struct Version {
     minor: String
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 struct GetVersionAnswer {
     version:Version,
@@ -738,6 +746,9 @@ fn cycle_test(params: &[&str]) {
         }
     };
 
+    println!("Processing {} accounts in {} messages", acc_count, msg_count);
+    let now = std::time::SystemTime::now();
+
     println!("Accounts creating...");
     let mut accounts = Vec::new();
     for _ in 0..acc_count {
@@ -753,6 +764,7 @@ fn cycle_test(params: &[&str]) {
 
     println!("Transfer cycle...");
 
+    let mut sleeps = 0;
     for i in 0..msg_count {
 
         let (address_from, keypair) = &accounts[(i % acc_count) as usize];
@@ -767,7 +779,12 @@ fn cycle_test(params: &[&str]) {
                 .expect("Error calling contract method");
 
         std::thread::sleep(std::time::Duration::from_millis(timeout));
+        sleeps += timeout;
+
     }
+
+    println!("Finished in {} ms", now.elapsed().unwrap().as_millis() - sleeps as u128);
+
 }
 
 const HELP: &str = r#"
