@@ -22,20 +22,6 @@ use clap::{Arg, App};
 
 use ton_sdk::*;
 
-const STD_CONFIG: &str = r#"
-{
-    "db_config": {
-        "servers": ["142.93.137.28:28015"],
-        "db_name": "blockchain"
-    },
-    "kafka_config": {
-        "servers": ["142.93.137.28:9092"],
-        "topic": "requests",
-        "ack_timeout": 1000
-    }
-}"#;
-
-
 const WALLET_ABI: &str = r#"{
     "ABI version" : 0,
     "functions" :	[{
