@@ -417,7 +417,7 @@ fn init_node_connection() {
             },
             "kafka_config": {
                 "servers": ["142.93.137.28:9092"],
-                "topic": "requests",
+                "topic": "requests-kirill",
                 "ack_timeout": 1000
             }
         }"#;    
@@ -484,11 +484,13 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
 
 #[test]
 fn full_test_piggy_bank() {
-    
-	// connect to node
+
+    let now = std::time::SystemTime::now();
+
+    // connect to node
     init_node_connection();
 
-	println!("Connection to node established\n");
+    println!("Connection to node established\n");
 
 	// generate key pair
     let mut csprng = OsRng::new().unwrap();
@@ -552,6 +554,7 @@ fn full_test_piggy_bank() {
     let get_params = format!("{{ \"subscriptionId\" : \"x{}\" }}", &subscr_id_str);
     call_contract_and_wait(subscripition_address, "getSubscription", &get_params, SUBSCRIBE_CONTRACT_ABI, &keypair);
     println!("getSubscription called.\n");
+    println!("Total time is {}", now.elapsed().unwrap().as_millis());
 }
 
 
