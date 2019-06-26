@@ -1,6 +1,6 @@
 use crate::*;
-use std::io::{Read, Seek};
-use std::sync::Arc;
+use std::io::{Read, Seek, Cursor};
+use std::sync::{Arc, Mutex};
 use tvm::stack::{CellData, SliceData, BuilderData};
 use tvm::types::AccountId;
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
@@ -31,6 +31,10 @@ use futures::stream::Stream;
 const CONTRACTS_TABLE_NAME: &str = "accounts";
 
 const CONSTRUCTOR_METHOD_NAME: &str = "constructor";
+
+lazy_static! {
+    static ref DEFAULT_WORKCHAIN: Mutex<Option<i32>> = Mutex::new(None);
+}
 
 #[cfg(test)]
 #[path = "tests/test_contract.rs"]
@@ -139,12 +143,65 @@ pub struct Contract {
     acc: ton_block::Account,
 }
 
-#[cfg(feature = "node_interaction")]
+/// Enum represents blockchain account address.
+/// `Short` value contains only `AccountId` value and is used for addressing contracts in default
+/// workchain. `Full` value is fully qualified account address and can be used for addressing 
+/// contracts in any workchain
+pub enum AccountAddress {
+    Short(AccountId),
+    Full(MsgAddressInt)
+}
+
+impl AccountAddress {
+    /// Returns `AccountId` from the address
+    pub fn get_account_id(&self) -> SdkResult<AccountId> {
+        match self {
+            AccountAddress::Short(account_id) => Ok(account_id.clone()),
+            AccountAddress::Full(address) => {
+                let vec = address.get_address();
+                if vec.len() == 32 {
+                    Ok(AccountId::from(vec))
+                } else {
+                    Err(SdkErrorKind::InvalidData("Address must be 32 bytes long".to_owned()).into())
+                }
+            }
+        }
+    }
+
+    /// Returns full account address as `MsgAddressInt` struct
+    pub fn get_msg_address(&self) -> SdkResult<MsgAddressInt> {
+        match self {
+            AccountAddress::Full(address) => Ok(address.clone()),
+            AccountAddress::Short(id) => {
+                let workchain = Contract::get_default_workchain()
+                    .ok_or(SdkErrorKind::DefaultWorkchainNotSet)?;
+                
+                Ok(MsgAddressInt::with_standart(None, workchain as i8, id.clone())?)
+            }
+        }
+    }
+}
+
+impl From<AccountId> for AccountAddress {
+    fn from(data: AccountId) -> Self {
+        AccountAddress::Short(data)
+    }
+}
+
+impl From<MsgAddressInt> for AccountAddress {
+    fn from(data: MsgAddressInt) -> Self {
+        AccountAddress::Full(data)
+    }
+}
+
 #[allow(dead_code)]
+#[cfg(feature = "node_interaction")]
 impl Contract {
 
     // Asynchronously loads a Contract instance or None if contract with given id is not exists
-    pub fn load(id: AccountId) -> SdkResult<Box<Stream<Item = Option<Contract>, Error = SdkError>>> {
+    pub fn load(address: AccountAddress) -> SdkResult<Box<Stream<Item = Option<Contract>, Error = SdkError>>> {
+        let id = address.get_account_id()?;
+
         let map = db_helper::load_record(CONTRACTS_TABLE_NAME, &id.to_hex_string())?
             .and_then(|val| {
                 if val == serde_json::Value::Null {
@@ -173,7 +230,7 @@ impl Contract {
     // Packs given inputs by abi and asynchronously calls contract.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
-    pub fn call<TIn, TOut>(id: AccountId, func: String, input: TIn, key_pair: Option<&Keypair>)
+    pub fn call<TIn, TOut>(address: AccountAddress, func: String, input: TIn, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>>
         where 
             TIn: ABIInParameter + ABITypeSignature,
@@ -182,7 +239,7 @@ impl Contract {
         // pack params into bag of cells via ABI
         let msg_body = Self::create_message_body::<TIn, TOut>(func, input, key_pair);
         
-        let msg = Self::create_message(id.clone(), msg_body)?;
+        let msg = Self::create_message(address, msg_body)?;
 
         // send message by Kafka
         let msg_id = Self::_send_message(msg)?;
@@ -318,7 +375,7 @@ impl Contract {
 
     /// Decodes output parameters returned by contract function call 
     pub fn decode_function_response_json(abi: String, function: String, response: Arc<CellData>) 
-        -> Result<String, SdkError> {
+        -> SdkResult<String> {
 
         ton_abi_json::json_abi::decode_function_response(abi, function, SliceData::from(response))
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
@@ -326,16 +383,38 @@ impl Contract {
     
     /// Decodes ABI contract answer from `CellData` into type values
     pub fn decode_function_response<TOut>(response: Arc<CellData>)
-        -> Result<TOut::Out, SdkError> 
-        where TOut: ABIOutParameter + ABITypeSignature {
+        -> SdkResult<TOut::Out> 
+        where TOut: ABIOutParameter{
 
         ABIResponse::<TOut>::decode_response_from_slice(SliceData::from(response))
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError2(err)))
     }
 
+    /// Decodes output parameters returned by contract function call from serialized message body
+    pub fn decode_function_response_from_bytes_json(abi: String, function: String, response: &[u8]) 
+        -> SdkResult<String> {
+
+        let mut response_cells = deserialize_cells_tree(&mut Cursor::new(response))?;
+
+        if response_cells.len() != 1 { 
+            return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
+        }
+
+        Self::decode_function_response_json(abi, function, response_cells.remove(0))
+    }
+
+    /// Decodes output parameters returned by contract function call from serialized message body
+    pub fn decode_function_response_from_bytes<TOut>(response: &[u8]) 
+         -> SdkResult<TOut::Out>
+        where TOut: ABIOutParameter {
+
+        ABIResponse::<TOut>::decode_response(&response.to_vec())
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError2(err)))
+    }
+
     // Packs given inputs by abi into ton_block::Message struct.
     // Returns message's bag of cells and identifier.
-    pub fn construct_call_message<TIn, TOut>(id: AccountId, func: String, input: TIn, key_pair: Option<&Keypair>)
+    pub fn construct_call_message<TIn, TOut>(address: AccountAddress, func: String, input: TIn, key_pair: Option<&Keypair>)
         -> SdkResult<(Vec<u8>, MessageId)>
         where 
             TIn: ABIInParameter + ABITypeSignature,
@@ -344,7 +423,7 @@ impl Contract {
         // pack params into bag of cells via ABI
         let msg_body = Self::create_message_body::<TIn, TOut>(func, input, key_pair);
         
-        let msg = Self::create_message(id.clone(), msg_body)?;
+        let msg = Self::create_message(address, msg_body)?;
 
         Self::serialize_message(msg)
     }
@@ -352,14 +431,14 @@ impl Contract {
     // Packs given inputs by abi into ton_block::Message struct.
     // Works with json representation of input and abi.
     // Returns message's bag of cells and identifier.
-    pub fn construct_call_message_json(id: AccountId, func: String, input: String, 
+    pub fn construct_call_message_json(address: AccountAddress, func: String, input: String, 
         abi: String, key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
 
         // pack params into bag of cells via ABI
         let msg_body = encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
-        let msg = Self::create_message(id.clone(), msg_body.into())?;
+        let msg = Self::create_message(address, msg_body.into())?;
 
         Self::serialize_message(msg)
     }
@@ -419,7 +498,8 @@ impl Contract {
         -> SdkResult<ton_block::Message> {
 
         let mut msg_header = ExternalInboundMessageHeader::default();
-        msg_header.dst = MsgAddressInt::with_standart(None, -1, id).unwrap();
+
+        msg_header.dst = address.get_msg_address()?;
 
         let mut msg = ton_block::Message::with_ext_in_header(msg_header);
         msg.body = Some(msg_body);        
@@ -451,7 +531,7 @@ impl Contract {
         let state_init = image.state_init();
 
         let mut msg_header = ExternalInboundMessageHeader::default();
-        msg_header.dst = MsgAddressInt::with_standart(None, -1, account_id).unwrap();
+        msg_header.dst = AccountAddress::from(account_id).get_msg_address()?;
 
         let mut msg = ton_block::Message::with_ext_in_header(msg_header);
         msg.body = msg_body;
@@ -470,5 +550,21 @@ impl Contract {
         bag.write_to(&mut data, false)?;
 
         Ok((data, id))
+    }
+
+    /// Sets new default workchain number which will be used in message destination address
+    /// construction if client provides only account ID
+    pub fn set_default_workchain(workchain: Option<i32>) {
+        let mut default = DEFAULT_WORKCHAIN.lock().unwrap();
+
+        *default = workchain;
+    }
+
+    /// Returns default workchain number which are used in message destination address
+    /// construction if client provides only account ID
+    pub fn get_default_workchain() -> Option<i32> {
+        let default = DEFAULT_WORKCHAIN.lock().unwrap();
+
+        default.clone()
     }
 }

@@ -6,6 +6,8 @@ use tvm::types::AccountId;
 use futures::Stream;
 use ton_block::MessageProcessingStatus;
 
+const WORKCHAIN: i32 = 0;
+
 const SUBSCRIBE_CONTRACT_ABI: &str = r#"
 {
     "ABI version": 0,
@@ -281,7 +283,7 @@ const WALLET_ABI: &str = r#"{
 
 fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pair: &Keypair) {
 
-    let contract = Contract::load(address)
+    let contract = Contract::load(address.into())
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -290,7 +292,7 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
         .expect("Error unwrap contract while loading Contract");
 
     // call needed method
-    let changes_stream = Contract::call_json(contract.id(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
+    let changes_stream = Contract::call_json(contract.id().into(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
         .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -328,7 +330,7 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
 
 fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str, key_pair: &Keypair) -> String {
 
-    let contract = Contract::load(address)
+    let contract = Contract::load(address.into())
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -337,7 +339,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         .expect("Error unwrap contract while loading Contract");
 
     // call needed method
-    let changes_stream = Contract::call_json(contract.id(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
+    let changes_stream = Contract::call_json(contract.id().into(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
         .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -415,11 +417,11 @@ fn init_node_connection() {
             },
             "kafka_config": {
                 "servers": ["142.93.137.28:9092"],
-                "topic": "requests",
+                "topic": "requests-kirill",
                 "ack_timeout": 1000
             }
         }"#;    
-    init_json(config_json.into()).unwrap(); 
+    init_json(Some(WORKCHAIN), config_json.into()).unwrap(); 
 }
 
 fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params: &str, key_pair: &Keypair) -> AccountId {
@@ -482,11 +484,13 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
 
 #[test]
 fn full_test_piggy_bank() {
-    
-	// connect to node
+
+    let now = std::time::SystemTime::now();
+
+    // connect to node
     init_node_connection();
 
-	println!("Connection to node established\n");
+    println!("Connection to node established\n");
 
 	// generate key pair
     let mut csprng = OsRng::new().unwrap();
@@ -550,6 +554,7 @@ fn full_test_piggy_bank() {
     let get_params = format!("{{ \"subscriptionId\" : \"x{}\" }}", &subscr_id_str);
     call_contract_and_wait(subscripition_address, "getSubscription", &get_params, SUBSCRIBE_CONTRACT_ABI, &keypair);
     println!("getSubscription called.\n");
+    println!("Total time is {}", now.elapsed().unwrap().as_millis());
 }
 
 
@@ -566,7 +571,7 @@ pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, va
     let mut msg = Message::with_ext_in_header(
         ExternalInboundMessageHeader {
             src: MsgAddressExt::with_extern(&Bitstring::from(rng.gen::<u64>())).unwrap(),
-            dst: MsgAddressInt::with_standart(None, 0, src.clone()).unwrap(),
+            dst: MsgAddressInt::with_standart(None, WORKCHAIN as i8, src.clone()).unwrap(),
             import_fee: Grams::default(),
         }
     );
@@ -575,8 +580,8 @@ pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, va
     balance.grams = Grams(value.into());
 
     let int_msg_hdr = InternalMessageHeader::with_addresses(
-            MsgAddressInt::with_standart(None, 0, src).unwrap(),
-            MsgAddressInt::with_standart(None, 0, dst).unwrap(),
+            MsgAddressInt::with_standart(None, WORKCHAIN as i8, src).unwrap(),
+            MsgAddressInt::with_standart(None, WORKCHAIN as i8, dst).unwrap(),
             balance);
 
     msg.body = Some(int_msg_hdr.write_to_new_cell().unwrap().into());

@@ -108,5 +108,8 @@ error_chain! {
         NotInitialized {
             description("SDK is not initialized")
         }
+        DefaultWorkchainNotSet {
+            description("Default workchain not set")
+        }
     }
 }

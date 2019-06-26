@@ -65,15 +65,16 @@ mod kafka_helper;
 
 /// Init SKD. Connects to Kafka and Rethink DB.
 #[cfg(feature = "node_interaction")]
-pub fn init(config: NodeClientConfig) -> SdkResult<()> {
+pub fn init(default_workchain: Option<i32>, config: NodeClientConfig) -> SdkResult<()> {
+    Contract::set_default_workchain(default_workchain);
     kafka_helper::init(config.kafka_config)?;
     db_helper::init(config.db_config)
 }
 
 /// Init SKD. Connects to Kafka and Rethink DB.
 #[cfg(feature = "node_interaction")]
-pub fn init_json(config: String) -> SdkResult<()> {
-    init(serde_json::from_str(&config)
+pub fn init_json(default_workchain: Option<i32>, config: String) -> SdkResult<()> {
+    init(default_workchain, serde_json::from_str(&config)
         .map_err(|err| SdkErrorKind::InvalidArg(format!("{}", err)))?)
 }
 
