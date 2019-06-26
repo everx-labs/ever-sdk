@@ -341,7 +341,7 @@ impl Contract {
         Ok(id.clone())
     }
 
-    fn subscribe_updates(message_id: MessageId) ->
+    pub fn subscribe_updates(message_id: MessageId) ->
         SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
         let map = db_helper::subscribe_field_updates(
