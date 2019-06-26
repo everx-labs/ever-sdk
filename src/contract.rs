@@ -259,7 +259,7 @@ impl Contract {
         let msg_body = encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
         
-        let msg = Self::create_message(id.clone(), msg_body.into())?;
+        let msg = Self::create_message(id.clone().into(), msg_body.into())?;
 
         // send message by Kafka
         let msg_id = Self::_send_message(msg)?;
@@ -494,7 +494,7 @@ impl Contract {
          &self.acc
     }
 
-    fn create_message(id: AccountId, msg_body: Arc<CellData>)
+    fn create_message(address: AccountAddress, msg_body: Arc<CellData>)
         -> SdkResult<ton_block::Message> {
 
         let mut msg_header = ExternalInboundMessageHeader::default();
