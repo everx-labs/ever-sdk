@@ -303,7 +303,9 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if s.message_state == MessageProcessingStatus::Finalized {
+            if (s.message_state == MessageProcessingStatus::Preliminary) ||
+               (s.message_state == MessageProcessingStatus::Proposed) ||
+               (s.message_state == MessageProcessingStatus::Finalized) {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -350,7 +352,9 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if s.message_state == MessageProcessingStatus::Finalized {
+            if (s.message_state == MessageProcessingStatus::Preliminary) ||
+               (s.message_state == MessageProcessingStatus::Proposed) ||
+               (s.message_state == MessageProcessingStatus::Finalized) {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -417,7 +421,7 @@ fn init_node_connection() {
             },
             "kafka_config": {
                 "servers": ["142.93.137.28:9092"],
-                "topic": "requests-kirill",
+                "topic": "requests",
                 "ack_timeout": 1000
             }
         }"#;    
@@ -445,7 +449,9 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if s.message_state == MessageProcessingStatus::Finalized {
+            if (s.message_state == MessageProcessingStatus::Preliminary) ||
+               (s.message_state == MessageProcessingStatus::Proposed) ||
+               (s.message_state == MessageProcessingStatus::Finalized) {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -469,7 +475,9 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if s.message_state == MessageProcessingStatus::Finalized {
+            if (s.message_state == MessageProcessingStatus::Preliminary) ||
+               (s.message_state == MessageProcessingStatus::Proposed) ||
+               (s.message_state == MessageProcessingStatus::Finalized) {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
