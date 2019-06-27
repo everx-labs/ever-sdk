@@ -6,7 +6,7 @@ use tvm::types::AccountId;
 use futures::Stream;
 use ton_block::{MessageProcessingStatus, MessageId};
 
-const WORKCHAIN: i32 = -1;
+const WORKCHAIN: i32 = 0;
 
 const SUBSCRIBE_CONTRACT_ABI: &str = r#"
 {
