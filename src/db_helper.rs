@@ -1,85 +1,90 @@
 use crate::*;
-use reql::{Client, Connection, Run, Document};
-use reql_types::Change;
+use graphite::client::GqlClient;
 use futures::stream::{Stream,};
 use std::fmt::Debug;
+use serde::ser::Serialize;
 use serde::de::DeserializeOwned;
-use reql::{Config};
+use serde_json::Value;
 use std::net::SocketAddr;
 use std::sync::Mutex;
 
 lazy_static! {
-    static ref RETHINK_CONN: Mutex<Option<Connection>> = Mutex::new(None);
-    static ref DB_NAME: Mutex<String> = Mutex::new("blockchain".to_string());
+    static ref HOST: Mutex<Option<String>> = Mutex::new(None);
+    static ref WS_HOST: Mutex<Option<String>> = Mutex::new(None);
 }
 
 // Init global connection to database
-pub fn init(config: RethinkConfig) -> SdkResult<()> {
-    let mut conn_opt = RETHINK_CONN.lock().unwrap();
-
-    let r = Client::new();
-    let mut re_conf = Config::default();
-    for s in config.servers.iter() {
-        re_conf.servers.push(s.parse::<SocketAddr>()
-            .map_err(|_| -> SdkError {
-                SdkErrorKind::InvalidArg("error parsing db address".into()).into()
-            })?
-        );
-    }
-    *conn_opt = Some(r.connect(re_conf)?);
-    if !config.db_name.is_empty() {
-        let mut db_name = DB_NAME.lock().unwrap();
-        *db_name = config.db_name
-    };
-
+pub fn init(config: GraphqlConfig) -> SdkResult<()> {
+    let mut host = HOST.lock().unwrap();
+    let mut ws_host = WS_HOST.lock().unwrap();
+    *host = Some(config.host.clone());
+    *ws_host = Some(config.socket_host.clone());
     Ok(())
 }
 
-pub fn connection() -> SdkResult<Connection> {
-    let conn_opt = RETHINK_CONN.lock().unwrap();
-    if let Some(conn) = conn_opt.as_ref() {
-        Ok(conn.clone())
+pub fn client() -> SdkResult<GqlClient> {
+    let host_opt = HOST.lock().unwrap();
+    let ws_host_opt = WS_HOST.lock().unwrap();
+    
+    if host_opt.is_some() && ws_host_opt.is_some() {
+        let host = host_opt.clone().unwrap();
+        let ws_host = ws_host_opt.clone().unwrap();
+        Ok(GqlClient::new(host.to_string(), ws_host.to_string()))
     } else {
         bail!(SdkErrorKind::NotInitialized)
     }
 }
 
-pub fn db() -> Client {
-    let db_name = DB_NAME.lock().unwrap();
-    Client::new().db(db_name.as_str())
-}
-
 // Returns Stream with updates of some field in database
-pub fn subscribe_field_updates<T>(table: &str, record_id: &str, field: &str)
-    -> SdkResult<Box<dyn Stream<Item = Option<Document<Change<T, T>>>, Error = SdkError>>>
-    where T: 'static + Send + DeserializeOwned + Debug {
-    let map = db()
-        .table(table)
-        .get_all(record_id)
-        .get_field(field)
-        .changes()
-        .run::<reql_types::Change<T, T>>(connection()?)?
-        .map_err(|err| SdkError::from(err));
-
-    Ok(Box::new(map))
+pub fn subscribe_field_updates(table: &str, record_id: &str)
+    -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError>>> {
+    
+    let mut client = client()?;
+    let query = generate_subscription(table, record_id)?;
+    let stream = client.subscribe(query).map_err(|err| SdkError::from(err));
+    
+    Ok(Box::new(stream))
 }
 
 // Returns Stream with required database record
 pub fn load_record(table: &str, record_id: &str)
-    -> SdkResult<Box<Stream<Item=serde_json::Value, Error=SdkError>>> {
-    let map = db()
-        .table(table)
-        .get(record_id)
-        .run::<serde_json::Value>(connection()?)?
-        .map(move |arr_opt| {
-            if let Some(reql::Document::Expected(serde_json::Value::Array(arr))) = arr_opt {
-                if let Some(val) = arr.get(0) {
-                    return val.clone();
-                }
-            }
-            return json!(null);
-        })
-        .map_err(|err| SdkError::from(err));
+    -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError>>> {
+    
+    let client = client()?;
+    let query = generate_query(table, record_id)?;
+    let stream = client.query(query).map_err(|err| SdkError::from(err));
+        
+    return Ok(Box::new(stream));    
+}
 
-    Ok(Box::new(map))
+fn generate_query(table: &str, record_id: &str) -> SdkResult<String> {
+    create_query_template(table)
+        .map(|(structure, fields)| {
+            format!("{{{structure}{{{table}(id: \"{record_id}\"){{{fields}}}}}}}", 
+                structure=structure, 
+                table=table, 
+                record_id=record_id, 
+                fields=fields)
+        })
+}
+
+fn generate_subscription(table: &str, record_id: &str) -> SdkResult<String> {
+    create_query_template(table)
+        .map(|(structure, fields)| {
+            format!("subscription {structure}{{{table}(id: \\\"{record_id}\\\"){{{fields}}}}}", 
+                structure=structure, 
+                table=table, 
+                record_id=record_id, 
+                fields=fields)
+        })
+}
+
+fn create_query_template(table: &str) -> SdkResult<(String, String)> {
+    return match table {
+        BLOCKS_TABLE_NAME => Ok(("Block".to_string(), "id, status".to_string())),
+        CONTRACTS_TABLE_NAME => Ok(("Account".to_string(), "id, storage".to_string())),
+        MESSAGES_TABLE_NAME => Ok(("Message".to_string(), "id, status, body, block".to_string())),
+        TRANSACTIONS_TABLE_NAME => Ok(("Transaction".to_string(), "id, status, in_msg, out_msgs, aborted, block, account".to_string())),
+        _ => bail!(SdkErrorKind::InvalidArg("Unknown table name".to_string()))
+    }
 }

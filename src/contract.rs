@@ -4,7 +4,6 @@ use std::sync::Arc;
 use tvm::stack::{CellData, SliceData, BuilderData};
 use tvm::types::AccountId;
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
-use reql::Document;
 use futures::stream::Stream;
 use ton_abi_core::types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
 use ton_abi_core::abi_response::ABIResponse;
@@ -24,9 +23,6 @@ use ton_block::{
     MessageProcessingStatus};
 use std::convert::Into;
 
-const MSG_TABLE_NAME: &str = "messages";
-const CONTRACTS_TABLE_NAME: &str = "accounts";
-const MSG_STATE_FIELD_NAME: &str = "status";
 const CONSTRUCTOR_METHOD_NAME: &str = "constructor";
 
 #[cfg(test)]
@@ -439,28 +435,28 @@ impl Contract {
     fn subscribe_updates(message_id: MessageId) ->
         SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
-        let map = db_helper::subscribe_field_updates(
-                MSG_TABLE_NAME,
-                &message_id.to_hex_string(),
-                MSG_STATE_FIELD_NAME
-            )?
-            .map(move |change_opt| {
-                match change_opt {
-                    Some(Document::Expected(state_change)) => {
-                        ContractCallState {
-                            message_id: message_id.clone(),
-                            message_state: state_change.new_val.unwrap_or_else(|| MessageProcessingStatus::Unknown),
-                        }
-                    },
-                    _ => {
-                        ContractCallState {
-                            message_id: message_id.clone(),
-                            message_state: MessageProcessingStatus::Unknown,
-                        }
-                    },
-                }
-            });
-
+        let stream = db_helper::subscribe_field_updates(
+                MESSAGES_TABLE_NAME,
+                &message_id.to_hex_string())?;
+        let map = stream.map(|value| {
+            let id_val = value.get("id");
+            let mut id = "";
+            if id_val.is_some() {
+                id = id_val.unwrap().as_str().unwrap().clone();
+            }
+            
+            let status_val = value.get("status");
+            let mut status = MessageProcessingStatus::Unknown;
+            if status_val.is_some() {
+                status = utils::parse_message_status(status_val.unwrap().as_str().unwrap().clone());  
+            }
+                    
+            ContractCallState {
+                message_id: tvm::types::UInt256::from(id.as_bytes()),
+                message_state: status,
+            }
+        });
+                        
         Ok(Box::new(map))
     }
 }

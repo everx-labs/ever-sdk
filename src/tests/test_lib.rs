@@ -27,18 +27,19 @@ fn test_init() {
     let config_json = r#"
         {
             "db_config": {
-                "servers": ["127.0.0.1:123"],
-                "db_name": "some name"
+                "servers": ["142.93.137.28:28015"],
+                "db_name": "blockchain"
             },
             "kafka_config": {
-                "servers": ["127.0.0.1:123"],
-                "topic": "topic",
+                "servers": ["142.93.137.28:9092"],
+                "topic": "requests",
                 "ack_timeout": 123
             }
         }"#;
     
     let res = init_json(config_json.into());
-    assert!(res.is_err());
+    panic!("{:?}", res);
+    /*assert!(res.is_err());
     match res.err().unwrap().kind() {
         SdkErrorKind::Kafka(_) => (),
         other => panic!(format!("{:?}", other))
@@ -58,5 +59,5 @@ fn test_init() {
     match res.err().unwrap().kind() {
         SdkErrorKind::DB(_) => (),
         other => panic!(format!("{:?}", other))
-    };
+    };*/
 }

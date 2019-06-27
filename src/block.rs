@@ -2,8 +2,6 @@ use crate::*;
 use futures::stream::Stream;
 use ton_block::{BlockId, BlockProcessingStatus};
 
-const BLOCKS_TABLE_NAME: &str = "blocks";
-
 #[derive(Debug)]
 pub struct Block {
     block: ton_block::Block,

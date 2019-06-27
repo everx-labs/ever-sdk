@@ -1,7 +1,6 @@
 use std::io;
 use tvm::types::Exception;
 use ton_abi_json::ABIError;
-//use rdkafka::error::RDKafkaError;
 
 error_chain! {
 
@@ -12,9 +11,9 @@ error_chain! {
     foreign_links {
         Io(io::Error);
         Tvm(Exception);
-        DB(reql::errors::Error);
         Kafka(kafka::error::Error);
         TonBlocks(ton_block::BlockError);
+        Graphql(graphite::types::GraphiteError);
     }
 
     errors {

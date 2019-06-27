@@ -1,7 +1,6 @@
 #![recursion_limit="128"] // needs for error_chain
 
-extern crate reql;
-extern crate reql_types;
+extern crate graphite;
 extern crate futures;
 #[macro_use]
 extern crate error_chain;
@@ -48,10 +47,12 @@ pub mod db_helper;
 
 mod kafka_helper;
 
+mod utils;
+
 /// Init SKD. Connects to Kafka and Rethink DB.
 pub fn init(config: NodeClientConfig) -> SdkResult<()> {
     kafka_helper::init(config.kafka_config)?;
-    db_helper::init(config.db_config)
+    db_helper::init(config.graphql_config)
 }
 pub fn init_json(config: String) -> SdkResult<()> {
     init(serde_json::from_str(&config)

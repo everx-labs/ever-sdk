@@ -1,9 +1,13 @@
+pub const MESSAGES_TABLE_NAME: &str = "messages";
+pub const CONTRACTS_TABLE_NAME: &str = "accounts";
+pub const BLOCKS_TABLE_NAME: &str = "blocks";
+pub const TRANSACTIONS_TABLE_NAME: &str = "accounts";
 
 // Represents config to connect Rethink DB
 #[derive(Debug, Deserialize, Serialize)]
-pub struct RethinkConfig {
-    pub servers: Vec<String>,
-    pub db_name: String,
+pub struct GraphqlConfig {
+    pub host: String,
+    pub socket_host: String,
 }
 
 // Represents config to connect Kafka
@@ -17,6 +21,6 @@ pub struct KafkaConfig {
 // Represents config to connect with Rethink DB and Kafka
 #[derive(Debug, Deserialize, Serialize)]
 pub struct NodeClientConfig {
-    pub db_config: RethinkConfig,
+    pub graphql_config: GraphqlConfig,
     pub kafka_config: KafkaConfig,
 }
