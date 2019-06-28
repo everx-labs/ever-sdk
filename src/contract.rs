@@ -1,5 +1,5 @@
 use crate::*;
-use std::io::{Read, Seek};
+use std::io::{Read, Seek, Cursor};
 use std::sync::{Arc, Mutex};
 use tvm::stack::{CellData, SliceData, BuilderData};
 use tvm::types::AccountId;
@@ -250,7 +250,7 @@ impl Contract {
 
     /// Decodes output parameters returned by contract function call 
     pub fn decode_function_response_json(abi: String, function: String, response: Arc<CellData>) 
-        -> Result<String, SdkError> {
+        -> SdkResult<String> {
 
         ton_abi_json::json_abi::decode_function_response(abi, function, SliceData::from(response))
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
@@ -258,10 +258,32 @@ impl Contract {
     
     /// Decodes ABI contract answer from `Vec<u8>` into type values
     pub fn decode_function_response<TOut>(response: Arc<CellData>)
-        -> Result<TOut::Out, SdkError> 
-        where TOut: ABIOutParameter + ABITypeSignature {
+        -> SdkResult<TOut::Out> 
+        where TOut: ABIOutParameter{
 
         ABIResponse::<TOut>::decode_response_from_slice(SliceData::from(response))
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError2(err)))
+    }
+
+    /// Decodes output parameters returned by contract function call from serialized message body
+    pub fn decode_function_response_from_bytes_json(abi: String, function: String, response: &[u8]) 
+        -> SdkResult<String> {
+
+        let mut response_cells = deserialize_cells_tree(&mut Cursor::new(response))?;
+
+        if response_cells.len() != 1 { 
+            return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
+        }
+
+        Self::decode_function_response_json(abi, function, response_cells.remove(0))
+    }
+
+    /// Decodes output parameters returned by contract function call from serialized message body
+    pub fn decode_function_response_from_bytes<TOut>(response: &[u8]) 
+         -> SdkResult<TOut::Out>
+        where TOut: ABIOutParameter {
+
+        ABIResponse::<TOut>::decode_response(&response.to_vec())
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError2(err)))
     }
 
@@ -474,7 +496,6 @@ impl Contract {
         let state_init = image.state_init();
 
         let mut msg_header = ExternalInboundMessageHeader::default();
-
         msg_header.dst = AccountAddress::from(account_id).get_msg_address()?;
 
         let mut msg = ton_block::Message::with_ext_in_header(msg_header);
