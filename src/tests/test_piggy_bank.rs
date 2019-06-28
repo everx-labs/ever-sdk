@@ -296,6 +296,13 @@ fn init_node_connection() {
         }"#;    
     init_json(Some(WORKCHAIN), config_json.into()).unwrap(); 
 }
+
+fn is_message_done(status: MessageProcessingStatus) -> bool {
+    (status == MessageProcessingStatus::Preliminary) ||
+    (status == MessageProcessingStatus::Proposed) ||
+    (status == MessageProcessingStatus::Finalized)
+}
+
 fn wait_message_processed(changes_stream: Box<dyn Stream<Item = ContractCallState, Error = SdkError>>) -> TransactionId {
     let mut tr_id = None;
     for state in changes_stream.wait() {
@@ -304,10 +311,7 @@ fn wait_message_processed(changes_stream: Box<dyn Stream<Item = ContractCallStat
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if (s.message_state == MessageProcessingStatus::Preliminary) ||
-               (s.message_state == MessageProcessingStatus::Proposed) ||
-               (s.message_state == MessageProcessingStatus::Finalized) 
-            {
+            if is_message_done(s.message_state) {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -327,10 +331,8 @@ fn wait_message_processed_by_id(message_id: MessageId)-> TransactionId {
             .expect("Error unwrap result while loading Message")
             .expect("Error unwrap returned Message");
         println!("{} : {:?}", s.id().to_hex_string(), s.status());
-        if  s.status() == MessageProcessingStatus::Preliminary || 
-            s.status() == MessageProcessingStatus::Proposed || 
-            s.status() == MessageProcessingStatus::Finalized {
-                return s.id().clone();
+        if is_message_done(s.message_state) {
+            return s.id().clone();
         }    
     }
 
@@ -371,7 +373,6 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         wait_message_processed_by_id(msg_id.clone());
     });
 
-
     // call deploy method
     let changes_stream = Contract::deploy_json("constructor".to_owned(), constructor_params.to_owned(), abi.to_owned(), contract_image, Some(key_pair))
         .expect("Error deploying contract");
@@ -393,7 +394,6 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         panic!("transaction aborted!\n\n{}", serde_json::to_string_pretty(tr.tr()).unwrap())
     }
 
-
     account_id
 }
 
@@ -413,7 +413,6 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
 
     // wait transaction id in message-status 
     let tr_id = wait_message_processed(changes_stream);
-
 
     // OR 
     // wait message will done and find transaction with the message
