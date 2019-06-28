@@ -304,9 +304,10 @@ fn wait_message_processed(changes_stream: Box<dyn Stream<Item = ContractCallStat
         }
         if let Ok(s) = state {
             println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if s.message_state == MessageProcessingStatus::Preliminary || 
-                s.message_state == MessageProcessingStatus::Proposed || 
-                s.message_state == MessageProcessingStatus::Finalized {
+            if (s.message_state == MessageProcessingStatus::Preliminary) ||
+               (s.message_state == MessageProcessingStatus::Proposed) ||
+               (s.message_state == MessageProcessingStatus::Finalized) 
+            {
                 tr_id = Some(s.message_id.clone());
                 break;
             }
@@ -413,6 +414,7 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
     // wait transaction id in message-status 
     let tr_id = wait_message_processed(changes_stream);
 
+
     // OR 
     // wait message will done and find transaction with the message
 
@@ -494,11 +496,13 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
 
 #[test]
 fn full_test_piggy_bank() {
-    
-	// connect to node
+
+    let now = std::time::SystemTime::now();
+
+    // connect to node
     init_node_connection();
 
-	println!("Connection to node established\n");
+    println!("Connection to node established\n");
 
 	// generate key pair
     let mut csprng = OsRng::new().unwrap();
@@ -565,9 +569,9 @@ fn full_test_piggy_bank() {
     let get_params = format!("{{ \"subscriptionId\" : \"x{}\" }}", &subscr_id_str);
     call_contract_and_wait(subscripition_address, "getSubscription", &get_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
     println!("getSubscription called.\n");
+
     let t = now.elapsed();
 	println!("Time: sec={}.{:06} ", t.as_secs(), t.subsec_micros());
-
 }
 
 
