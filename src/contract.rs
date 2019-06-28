@@ -23,6 +23,7 @@ use ton_block::{
     CurrencyCollection,
     MessageProcessingStatus};
 use std::convert::Into;
+use rand::Rng;
 
 const MSG_TABLE_NAME: &str = "messages";
 const CONTRACTS_TABLE_NAME: &str = "accounts";
@@ -456,6 +457,14 @@ impl Contract {
         let mut msg_header = ExternalInboundMessageHeader::default();
 
         msg_header.dst = address.get_msg_address()?;
+
+
+        // TODO don't forget to delete it 
+        // This is temporary code to make all messages uniq. 
+        // In the future it will be made by replay attack protection mechanism
+        let mut rng = rand::thread_rng();
+        msg_header.src = ton_block::MsgAddressExt::with_extern(&tvm::bitstring::Bitstring::from(rng.gen::<u64>())).unwrap();
+
 
         let mut msg = ton_block::Message::with_ext_in_header(msg_header);
         msg.body = Some(msg_body);        

@@ -27,7 +27,7 @@ extern crate sha2;
 #[allow(deprecated)]
 #[macro_use]
 mod error;
-use error::*;
+pub use error::*;
 
 mod contract;
 pub use contract::*;
