@@ -331,7 +331,7 @@ fn wait_message_processed_by_id(message_id: MessageId)-> TransactionId {
             .expect("Error unwrap result while loading Message")
             .expect("Error unwrap returned Message");
         println!("{} : {:?}", s.id().to_hex_string(), s.status());
-        if is_message_done(s.message_state) {
+        if is_message_done(s.status()) {
             return s.id().clone();
         }    
     }
