@@ -8,7 +8,7 @@ extern crate num_bigint;
 extern crate clap;
 
 use rand::{thread_rng, Rng};
-use ton_block::{Message, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
+use ton_block::{Message, MessageId, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
     ExternalInboundMessageHeader, CurrencyCollection, Serializable, GetSetValueForVarInt,
     MessageProcessingStatus};
 use tvm::bitstring::Bitstring;
@@ -125,6 +125,51 @@ fn str_grams_to_nanorams(grams: &str) -> String {
     format!("{}", nanograms as u64)
 }
 
+fn is_message_done(status: MessageProcessingStatus) -> bool {
+    (status == MessageProcessingStatus::Preliminary) ||
+    (status == MessageProcessingStatus::Proposed) ||
+    (status == MessageProcessingStatus::Finalized)
+}
+
+fn wait_message_processed(
+    changes_stream: Box<dyn Stream<Item = ContractCallState, Error = ton_sdk::SdkError>>
+    ) -> TransactionId
+{
+    let mut tr_id = None;
+    for state in changes_stream.wait() {
+        if let Err(e) = state {
+            panic!("error next state getting: {}", e);
+        }
+        if let Ok(s) = state {
+            println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
+            if is_message_done(s.message_state) {
+                tr_id = Some(s.message_id.clone());
+                break;
+            }
+        }
+    }
+    tr_id.expect("Error: no transaction id")
+}
+
+fn wait_message_processed_by_id(message_id: MessageId)-> TransactionId {
+    let msg = ton_sdk::Message::load(message_id.clone())
+        .expect("Error load message")
+        .wait()
+        .next();
+
+    if msg.is_some() {
+        let s = msg.expect("Error unwrap stream next while loading Message")
+            .expect("Error unwrap result while loading Message")
+            .expect("Error unwrap returned Message");
+        println!("{} : {:?}", s.id().to_hex_string(), s.status());
+        if is_message_done(s.status()) {
+            return s.id().clone();
+        }    
+    }
+
+    wait_message_processed(Contract::subscribe_updates(message_id.clone()).unwrap())
+}
+
 // Create message "from wallet" to transfer some funds 
 // from one account to another
 pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, value: u128) -> Message {
@@ -167,22 +212,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
     let changes_stream = Contract::send_message(msg).expect("Error calling contract method");
 
     // wait transaction id in message-status 
-    let mut tr_id = None;
-    for state in changes_stream.wait() {
-        if let Err(e) = state {
-            panic!("error next state getting: {}", e);
-        }
-        if let Ok(s) = state {
-            println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if s.message_state == MessageProcessingStatus::Preliminary || 
-                s.message_state == MessageProcessingStatus::Proposed || 
-                s.message_state == MessageProcessingStatus::Finalized {
-                tr_id = Some(s.message_id.clone());
-                break;
-            }
-        }
-    }
-    let tr_id = tr_id.expect("Error: no transaction id");
+    let tr_id = wait_message_processed(changes_stream);
     
     let tr = Transaction::load(tr_id)
         .expect("Error load Transaction")
@@ -197,69 +227,19 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
     if tr.tr().is_aborted() {
         panic!("transaction aborted!\n\n{}", serde_json::to_string_pretty(tr.tr()).unwrap())
     }
-    let mut tr_id = None;
+
     tr.out_messages_id().iter().for_each(|msg_id| {
-        let msg = ton_sdk::Message::load(msg_id.clone())
-            .expect("Error load message")
-            .wait()
-            .next();
-
-        if msg.is_some() {
-            let s = msg.expect("Error unwrap stream next while loading Message")
-                .expect("Error unwrap result while loading Message")
-                .expect("Error unwrap returned Message");
-            println!("{} : {:?}", s.id().to_hex_string(), s.status());
-            if  s.status() == MessageProcessingStatus::Preliminary || 
-                s.status() == MessageProcessingStatus::Proposed || 
-                s.status() == MessageProcessingStatus::Finalized {
-                    tr_id = Some(s.id().clone());
-                    return;
-            }    
-        }
-
-        for state in Contract::subscribe_updates(msg_id.clone()).unwrap().wait(){
-            if let Err(e) = state {
-                panic!("error next state getting: {}", e);
-            }
-            if let Ok(s) = state {
-                println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-                if s.message_state == MessageProcessingStatus::Preliminary || 
-                    s.message_state == MessageProcessingStatus::Proposed || 
-                    s.message_state == MessageProcessingStatus::Finalized {
-                    tr_id = Some(s.message_id.clone());
-                    break;
-                }
-            }
-        }
+        wait_message_processed_by_id(msg_id.clone());
     });
-
 
     // call deploy method
     let changes_stream = Contract::deploy_json("constructor".to_owned(), constructor_params.to_owned(), abi.to_owned(), contract_image, Some(key_pair))
         .expect("Error deploying contract");
 
-    // wait transaction id in message-status or 
-    // wait message will done and find transaction with the message
-
     // wait transaction id in message-status 
-    let mut tr_id = None;
-    for state in changes_stream.wait() {
-        if let Err(e) = state {
-            panic!("error next state getting: {}", e);
-        }
-        if let Ok(s) = state {
-            println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if s.message_state == MessageProcessingStatus::Preliminary || 
-                s.message_state == MessageProcessingStatus::Proposed || 
-                s.message_state == MessageProcessingStatus::Finalized {
-                tr_id = Some(s.message_id.clone());
-                break;
-            }
-        }
-    }
     // contract constructor doesn't return any values so there are no output messages in transaction
     // so just check deployment transaction created
-    let tr_id = tr_id.expect("Error: no transaction id");
+    let tr_id = wait_message_processed(changes_stream);
 
     let tr = Transaction::load(tr_id)
         .expect("Error calling load Transaction")
@@ -273,10 +253,8 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         panic!("transaction aborted!\n\n{}", serde_json::to_string_pretty(tr.tr()).unwrap())
     }
 
-
     account_id
 }
-
 
 fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str, key_pair: Option<&Keypair>) -> String {
 
@@ -294,22 +272,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
             .expect("Error calling contract method");
 
     // wait transaction id in message-status 
-    let mut tr_id = None;
-    for state in changes_stream.wait() {
-        if let Err(e) = state {
-            panic!("error next state getting: {}", e);
-        }
-        if let Ok(s) = state {
-            //println!("next state: {:?}", s);
-            if s.message_state == MessageProcessingStatus::Preliminary ||
-                s.message_state == MessageProcessingStatus::Proposed ||
-                s.message_state == MessageProcessingStatus::Finalized {
-                tr_id = Some(s.message_id.clone());
-                break;
-            }
-        }
-    }
-    let tr_id = tr_id.expect("Error: no transaction id");
+    let tr_id = wait_message_processed(changes_stream);
 
     // OR 
     // wait message will done and find transaction with the message

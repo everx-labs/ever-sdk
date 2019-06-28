@@ -6,8 +6,8 @@ version = "0.1.0"
 tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "dev", package = "tvm" }
 pretty_assertions = "0.5.1"
 num-bigint = "0.2.2"
-ed25519-dalek = "^0.8"
-sha2 = "^0.7"
+ed25519-dalek = "^0.9.1"
+sha2 = "^0.8"
 
 [dev-dependencies.rand]
 version = "0.6.1"
