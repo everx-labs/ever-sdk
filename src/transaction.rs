@@ -1,9 +1,6 @@
 use crate::*;
-use tvm::types::UInt256;
 use futures::stream::Stream;
-use ton_block::{TransactionProcessingStatus, MessageId};
-
-pub type TransactionId = UInt256;
+use ton_block::{TransactionProcessingStatus, MessageId, TransactionId};
 
 #[derive(Debug)]
 pub struct Transaction {

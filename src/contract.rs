@@ -558,7 +558,7 @@ impl Contract {
                 .into())?.clone();
         bag.write_to(&mut data, false)?;
 
-        Ok((data, id))
+        Ok((data, id.into()))
     }
 
     /// Sets new default workchain number which will be used in message destination address

@@ -10,7 +10,7 @@ extern crate clap;
 use rand::{thread_rng, Rng};
 use ton_block::{Message, MessageId, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
     ExternalInboundMessageHeader, CurrencyCollection, Serializable, GetSetValueForVarInt,
-    MessageProcessingStatus};
+    MessageProcessingStatus, TransactionId};
 use tvm::bitstring::Bitstring;
 use tvm::types::{AccountId};
 use ed25519_dalek::Keypair;
