@@ -15,7 +15,7 @@ ed25519-dalek = "^0.9.1"
 
 [dependencies.tvm]
 git = "ssh://git@github.com/tonlabs/sdk-emulator.git"
-branch = "feature-node""
+branch = "feature-node"
 package = "tvm"
 default-features = false
 

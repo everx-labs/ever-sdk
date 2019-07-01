@@ -26,13 +26,13 @@ rand = { version = "0.6.1", features = ["wasm-bindgen"] }
 
 [dependencies.tvm]
 git = "ssh://git@github.com/tonlabs/sdk-emulator.git"
-branch = "feature-node""
+branch = "feature-node"
 package = "tvm"
 default-features = false
 
 [dependencies.ton_block]
 git = "ssh://git@github.com/tonlabs/sdk-emulator.git"
-branch = "feature-node""
+branch = "feature-node"
 package = "ton_block"
 
 
