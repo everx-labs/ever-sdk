@@ -3,7 +3,7 @@ name = "ton_abi_core"
 version = "0.1.0"
 
 [dependencies]
-tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "dev", package = "tvm" }
+tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "feature-node", package = "tvm" }
 pretty_assertions = "0.5.1"
 num-bigint = "0.2.2"
 ed25519-dalek = "^0.9.1"

@@ -4,7 +4,7 @@ use rand::rngs::OsRng;
 use sha2::Sha512;
 use tvm::types::AccountId;
 use futures::Stream;
-use ton_block::{MessageProcessingStatus, MessageId};
+use ton_block::{MessageProcessingStatus, MessageId, TransactionId};
 
 const WORKCHAIN: i32 = 0;
 

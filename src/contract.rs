@@ -522,7 +522,7 @@ impl Contract {
                 .into())?.clone();
         bag.write_to(&mut data, false)?;
 
-        Ok((data, id))
+        Ok((data, id.into()))
     }
 
     pub fn subscribe_updates(message_id: MessageId) ->
