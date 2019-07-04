@@ -360,7 +360,7 @@ impl Contract {
             }
                         
             ContractCallState {
-                message_id: tvm::types::UInt256::from(id.as_bytes()),
+                message_id: tvm::types::UInt256::from(id.as_bytes()).into(),
                 message_state: status,
             }
         });

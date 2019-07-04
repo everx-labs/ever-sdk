@@ -96,6 +96,10 @@ impl SubscribeStream {
         let msg = OwnedMessage::Text(query.to_string());
         sender.send_message(&msg).expect("Sending message across stdin channel.");
     }
+    
+    pub fn get_id(&self) -> u64 {
+        self.id.clone()
+    }
 }
 
 impl Stream for SubscribeStream {

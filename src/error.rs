@@ -9,31 +9,6 @@ use kafka::error::Error as KafkaError;
 
 #[cfg(not(feature = "node_interaction"))]
 #[derive(Debug)]
-pub struct DbError {}
-
-#[cfg(not(feature = "node_interaction"))]
-impl std::fmt::Display for DbError {
-    fn fmt(&self, _f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        unreachable!()
-    }
-}
-
-#[cfg(not(feature = "node_interaction"))]
-impl std::error::Error for DbError {
-    fn description(&self) -> &str { 
-        unimplemented!()
-    }
-    fn cause(&self) -> Option<&dyn std::error::Error> {
-        unimplemented!()
-    }
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        unimplemented!()
-    }
-}
-
-
-#[cfg(not(feature = "node_interaction"))]
-#[derive(Debug)]
 pub struct KafkaError {}
 
 #[cfg(not(feature = "node_interaction"))]
