@@ -1,9 +1,7 @@
 use crate::types::{ResponseStream, SubscribeStream};
 
-use futures::stream::Stream;
 use reqwest::Client;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
-use serde_json::Value;
 use std::net::TcpStream;
 use websocket::ClientBuilder;
 use websocket::sender::Writer;

@@ -6,11 +6,9 @@ use futures::stream::Stream;
 use std::fmt;
 use reqwest::Response;
 use serde_json::Value;
-use std::error::Error;
 use std::net::TcpStream;
 use websocket::{ClientBuilder, OwnedMessage};
 use websocket::receiver::Reader;
-use websocket::result::WebSocketError;
 use websocket::sender::Writer;
 
 
