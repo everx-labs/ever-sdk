@@ -1,4 +1,4 @@
-use ton_abi_json::json_abi::decode_function_response;
+/*use ton_abi_json::json_abi::decode_function_response;
 use super::*;
 use std::io::{Cursor};
 use reql::{Config, Client, Run};
@@ -537,4 +537,4 @@ fn test_load_nonexistent_contract() {
         .expect("Error unwrap result while loading Contract");
 
     assert!(c.is_none());
-}
+}*/

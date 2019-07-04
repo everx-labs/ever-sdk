@@ -603,8 +603,4 @@ pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, va
     msg.body = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
 
     msg
-<<<<<<< HEAD
 }*/
-=======
-}
->>>>>>> 633e796785be2403bd2386149ec491a9364088ac

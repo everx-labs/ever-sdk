@@ -1,4 +1,4 @@
-use crate::*;
+/*use crate::*;
 
 const WORKCHAIN: i32 = 0;
 
@@ -61,4 +61,4 @@ fn test_init() {
         SdkErrorKind::DB(_) => (),
         other => panic!(format!("{:?}", other))
     };
-}
+}*/
