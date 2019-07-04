@@ -1,4 +1,4 @@
-/*use ton_abi_json::json_abi::decode_function_response;
+use ton_abi_json::json_abi::decode_function_response;
 use super::*;
 use std::io::{Cursor};
 use reql::{Config, Client, Run};
@@ -12,6 +12,7 @@ use tvm::types::AccountId;
 use tvm::stack::{BuilderData, IBitstring};
 
 const DB_NAME: &str = "blockchain";
+const WORKCHAIN: i32 = 0;
 
 #[test]
 #[ignore] // Rethink have to work on 127.0.0.1:32769. Run it and comment "ignore"
@@ -113,7 +114,7 @@ connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_status
                 "ack_timeout": 1000
             }
         }"#;    
-    init_json(config_json.into()).unwrap();
+    init_json(Some(WORKCHAIN), config_json.into()).unwrap();
 
 
     let msg_id = MessageId::default();
@@ -224,7 +225,7 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
     let input = SUBSCRIBE_PARAMS.to_string();
     let abi = SUBSCRIBE_CONTRACT_ABI.to_string();
 
-    let contract = Contract::load(address)
+    let contract = Contract::load(address.into())
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -233,7 +234,7 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
         .expect("Error unwrap contract while loading Contract");
 
     // call needed method
-    let changes_stream = Contract::call_json(contract.id(), func.clone(), input, abi.clone(), Some(&key_pair))
+    let changes_stream = Contract::call_json(contract.id().into(), func.clone(), input, abi.clone(), Some(&key_pair))
         .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -312,7 +313,7 @@ fn test_deploy_and_call_contract() {
                 "ack_timeout": 1000
             }
         }"#;    
-    init_json(config_json.into()).unwrap();
+    init_json(Some(WORKCHAIN), config_json.into()).unwrap();
    
    
     // read image from file and construct ContractImage
@@ -421,7 +422,7 @@ fn test_deploy_empty_contract() {
                 "ack_timeout": 1000
             }
         }"#;    
-    init_json(config_json.into()).unwrap();
+    init_json(Some(WORKCHAIN), config_json.into()).unwrap();
 
 
     let mut csprng = OsRng::new().unwrap();
@@ -443,7 +444,7 @@ fn test_deploy_empty_contract() {
     let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), image.account_id(), 1000);
     Contract::send_message(msg).unwrap();
 
-    Contract::load(acc_id)
+    Contract::load(acc_id.into())
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -526,9 +527,9 @@ fn test_load_nonexistent_contract() {
                 "ack_timeout": 1000
             }
         }"#;    
-    init_json(config_json.into()).unwrap();
+    init_json(Some(WORKCHAIN), config_json.into()).unwrap();
 
-    let c = Contract::load(AccountId::from([67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31]))
+    let c = Contract::load(AccountId::from([67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31]).into())
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -536,4 +537,4 @@ fn test_load_nonexistent_contract() {
         .expect("Error unwrap result while loading Contract");
 
     assert!(c.is_none());
-}*/
+}

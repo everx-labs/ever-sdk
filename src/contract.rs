@@ -1,10 +1,9 @@
 use crate::*;
-use std::io::{Read, Seek};
-use std::sync::Arc;
+use std::io::{Read, Seek, Cursor};
+use std::sync::{Arc, Mutex};
 use tvm::stack::{CellData, SliceData, BuilderData};
 use tvm::types::AccountId;
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
-use futures::stream::Stream;
 use ton_abi_core::types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
 use ton_abi_core::abi_response::ABIResponse;
 use ton_abi_core::abi_call::ABICall;
@@ -22,8 +21,19 @@ use ton_block::{
     CurrencyCollection,
     MessageProcessingStatus};
 use std::convert::Into;
+use rand::Rng;
+
+#[cfg(feature = "node_interaction")]
+use futures::stream::Stream;
+
+#[cfg(feature = "node_interaction")]
+const CONTRACTS_TABLE_NAME: &str = "accounts";
 
 const CONSTRUCTOR_METHOD_NAME: &str = "constructor";
+
+lazy_static! {
+    static ref DEFAULT_WORKCHAIN: Mutex<Option<i32>> = Mutex::new(None);
+}
 
 #[cfg(test)]
 #[path = "tests/test_contract.rs"]
@@ -132,11 +142,65 @@ pub struct Contract {
     acc: ton_block::Account,
 }
 
+/// Enum represents blockchain account address.
+/// `Short` value contains only `AccountId` value and is used for addressing contracts in default
+/// workchain. `Full` value is fully qualified account address and can be used for addressing 
+/// contracts in any workchain
+pub enum AccountAddress {
+    Short(AccountId),
+    Full(MsgAddressInt)
+}
+
+impl AccountAddress {
+    /// Returns `AccountId` from the address
+    pub fn get_account_id(&self) -> SdkResult<AccountId> {
+        match self {
+            AccountAddress::Short(account_id) => Ok(account_id.clone()),
+            AccountAddress::Full(address) => {
+                let vec = address.get_address();
+                if vec.len() == 32 {
+                    Ok(AccountId::from(vec))
+                } else {
+                    Err(SdkErrorKind::InvalidData("Address must be 32 bytes long".to_owned()).into())
+                }
+            }
+        }
+    }
+
+    /// Returns full account address as `MsgAddressInt` struct
+    pub fn get_msg_address(&self) -> SdkResult<MsgAddressInt> {
+        match self {
+            AccountAddress::Full(address) => Ok(address.clone()),
+            AccountAddress::Short(id) => {
+                let workchain = Contract::get_default_workchain()
+                    .ok_or(SdkErrorKind::DefaultWorkchainNotSet)?;
+                
+                Ok(MsgAddressInt::with_standart(None, workchain as i8, id.clone())?)
+            }
+        }
+    }
+}
+
+impl From<AccountId> for AccountAddress {
+    fn from(data: AccountId) -> Self {
+        AccountAddress::Short(data)
+    }
+}
+
+impl From<MsgAddressInt> for AccountAddress {
+    fn from(data: MsgAddressInt) -> Self {
+        AccountAddress::Full(data)
+    }
+}
+
 #[allow(dead_code)]
+#[cfg(feature = "node_interaction")]
 impl Contract {
 
     // Asynchronously loads a Contract instance or None if contract with given id is not exists
-    pub fn load(id: AccountId) -> SdkResult<Box<Stream<Item = Option<Contract>, Error = SdkError>>> {
+    pub fn load(address: AccountAddress) -> SdkResult<Box<Stream<Item = Option<Contract>, Error = SdkError>>> {
+        let id = address.get_account_id()?;
+
         let map = db_helper::load_record(CONTRACTS_TABLE_NAME, &id.to_hex_string())?
             .and_then(|val| {
                 if val == serde_json::Value::Null {
@@ -152,10 +216,20 @@ impl Contract {
         Ok(Box::new(map))
     }
 
+    // Asynchronously loads a Message's json representation 
+    // or null if message with given id is not exists
+    pub fn load_json(id: AccountId) -> SdkResult<Box<Stream<Item = String, Error = SdkError>>> {
+
+        let map = db_helper::load_record(CONTRACTS_TABLE_NAME, &id.to_hex_string())?
+            .map(|val| val.to_string());
+
+        Ok(Box::new(map))
+    }
+
     // Packs given inputs by abi and asynchronously calls contract.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
-    pub fn call<TIn, TOut>(id: AccountId, func: String, input: TIn, key_pair: Option<&Keypair>)
+    pub fn call<TIn, TOut>(address: AccountAddress, func: String, input: TIn, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>>
         where 
             TIn: ABIInParameter + ABITypeSignature,
@@ -164,74 +238,13 @@ impl Contract {
         // pack params into bag of cells via ABI
         let msg_body = Self::create_message_body::<TIn, TOut>(func, input, key_pair);
         
-        let msg = Self::create_message(id.clone(), msg_body)?;
+        let msg = Self::create_message(address, msg_body)?;
 
         // send message by Kafka
         let msg_id = Self::_send_message(msg)?;
 
         // subscribe on updates from DB and return updates stream
         Self::subscribe_updates(msg_id)
-    }
-
-    // Asynchronously calls contract by sending given message.
-    // To get calling result - need to load message,
-    // it's id and processing status is returned by this function
-    pub fn send_message(msg: ton_block::Message)
-        -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
-
-        // send message by Kafka
-        let msg_id = Self::_send_message(msg)?;
-
-        // subscribe on updates from DB and return updates stream
-        Self::subscribe_updates(msg_id)
-    }
-
-    /// Decodes output parameters returned by contract function call 
-    pub fn decode_function_response_json(abi: String, function: String, response: Arc<CellData>) 
-        -> Result<String, SdkError> {
-
-        ton_abi_json::json_abi::decode_function_response(abi, function, SliceData::from(response))
-            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
-    }
-    
-    /// Decodes ABI contract answer from `Vec<u8>` into type values
-    pub fn decode_function_response<TOut>(response: Arc<CellData>)
-        -> Result<TOut::Out, SdkError> 
-        where TOut: ABIOutParameter + ABITypeSignature {
-
-        ABIResponse::<TOut>::decode_response_from_slice(SliceData::from(response))
-            .map_err(|err| SdkError::from(SdkErrorKind::AbiError2(err)))
-    }
-
-    // Packs given inputs by abi into ton_block::Message struct.
-    // Returns message's bag of cells and identifier.
-    pub fn construct_call_message<TIn, TOut>(id: AccountId, func: String, input: TIn, key_pair: Option<&Keypair>)
-        -> SdkResult<(Vec<u8>, MessageId)>
-        where 
-            TIn: ABIInParameter + ABITypeSignature,
-            TOut: ABIOutParameter + ABITypeSignature {
-
-        // pack params into bag of cells via ABI
-        let msg_body = Self::create_message_body::<TIn, TOut>(func, input, key_pair);
-        
-        let msg = Self::create_message(id.clone(), msg_body)?;
-
-        Self::serialize_message(msg)
-    }
-
-    // Packs given inputs by abi into ton_block::Message struct.
-    // Works with json representation of input and abi.
-    // Returns message's bag of cells and identifier.
-    pub fn construct_call_message_json(id: AccountId, func: String, input: String, 
-        abi: String, key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
-
-        // pack params into bag of cells via ABI
-        let msg_body = encode_function_call(abi, func, input, key_pair)
-            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
-
-        let msg = Self::create_message(id.clone(), msg_body.into())?;
-
-        Self::serialize_message(msg)
     }
 
     // Packs given inputs by abi and asynchronously calls contract.
@@ -245,23 +258,13 @@ impl Contract {
         let msg_body = encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
         
-        let msg = Self::create_message(id.clone(), msg_body.into())?;
+        let msg = Self::create_message(id.clone().into(), msg_body.into())?;
 
         // send message by Kafka
         let msg_id = Self::_send_message(msg)?;
 
         // subscribe on updates from DB and return updates stream
         Self::subscribe_updates(msg_id)
-    }
-
-    // Asynchronously loads a Message's json representation 
-    // or null if message with given id is not exists
-    pub fn load_json(id: AccountId) -> SdkResult<Box<Stream<Item = String, Error = SdkError>>> {
-
-        let map = db_helper::load_record(CONTRACTS_TABLE_NAME, &id.to_hex_string())?
-            .map(|val| val.to_string());
-
-        Ok(Box::new(map))
     }
 
     // Packs given image and input and asynchronously calls contract's constructor.
@@ -284,6 +287,159 @@ impl Contract {
         let msg_id = Self::_send_message(msg)?;
 
         Self::subscribe_updates(msg_id)
+    }
+
+    // Packs given image and input and asynchronously calls given contract's constructor method.
+    // Works with json representation of input and abi.
+    // To get calling result - need to load message,
+    // it's id and processing status is returned by this function
+    pub fn deploy_json(func: String, input: String, abi: String, image: ContractImage, key_pair: Option<&Keypair>)
+        -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
+
+        let msg_body = encode_function_call(abi, func, input, key_pair)
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
+
+        let cell: std::sync::Arc<tvm::stack::CellData> = msg_body.into();
+        let msg = Self::create_deploy_message(Some(cell), image)?;
+
+        let msg_id = Self::_send_message(msg)?;
+
+        Self::subscribe_updates(msg_id)
+    }
+
+    // Packs given image asynchronously send deploy message into blockchain.    
+    // To get calling result - need to load message,
+    // it's id and processing status is returned by this function
+    pub fn deploy_no_constructor(image: ContractImage)
+        -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
+        let msg = Self::create_deploy_message(None, image)?;
+
+        let msg_id = Self::_send_message(msg)?;
+
+        Self::subscribe_updates(msg_id)
+    }
+
+    // Asynchronously calls contract by sending given message.
+    // To get calling result - need to load message,
+    // it's id and processing status is returned by this function
+    pub fn send_message(msg: ton_block::Message)
+        -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
+
+        // send message by Kafka
+        let msg_id = Self::_send_message(msg)?;
+
+        // subscribe on updates from DB and return updates stream
+        Self::subscribe_updates(msg_id)
+    }
+
+    fn _send_message(msg: ton_block::Message) -> SdkResult<MessageId> {
+        let (data, id) = Self::serialize_message(msg)?;
+       
+        kafka_helper::send_message(&id.as_slice()[..], &data)?;
+        println!("msg is sent, id: {}", id.to_hex_string());
+        Ok(id.clone())
+    }
+
+    pub fn subscribe_updates(message_id: MessageId) ->
+        SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
+
+        let stream = db_helper::subscribe_field_updates(
+                MESSAGES_TABLE_NAME,
+                &message_id.to_hex_string())?;
+        let map = stream.map(|value| {
+            let id_val = value.get("id");
+            let mut id = "";
+            if id_val.is_some() {
+                id = id_val.unwrap().as_str().unwrap().clone();
+            }
+                
+            let status_val = value.get("status");
+            let mut status = MessageProcessingStatus::Unknown;
+            if status_val.is_some() {
+                status = utils::parse_message_status(status_val.unwrap().as_str().unwrap().clone());  
+            }
+                        
+            ContractCallState {
+                message_id: tvm::types::UInt256::from(id.as_bytes()),
+                message_state: status,
+            }
+        });
+                            
+        Ok(Box::new(map))
+    }
+}
+
+
+impl Contract {
+
+    /// Decodes output parameters returned by contract function call 
+    pub fn decode_function_response_json(abi: String, function: String, response: Arc<CellData>) 
+        -> SdkResult<String> {
+
+        ton_abi_json::json_abi::decode_function_response(abi, function, SliceData::from(response))
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
+    }
+    
+    /// Decodes ABI contract answer from `CellData` into type values
+    pub fn decode_function_response<TOut>(response: Arc<CellData>)
+        -> SdkResult<TOut::Out> 
+        where TOut: ABIOutParameter{
+
+        ABIResponse::<TOut>::decode_response_from_slice(SliceData::from(response))
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError2(err)))
+    }
+
+    /// Decodes output parameters returned by contract function call from serialized message body
+    pub fn decode_function_response_from_bytes_json(abi: String, function: String, response: &[u8]) 
+        -> SdkResult<String> {
+
+        let mut response_cells = deserialize_cells_tree(&mut Cursor::new(response))?;
+
+        if response_cells.len() != 1 { 
+            return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
+        }
+
+        Self::decode_function_response_json(abi, function, response_cells.remove(0))
+    }
+
+    /// Decodes output parameters returned by contract function call from serialized message body
+    pub fn decode_function_response_from_bytes<TOut>(response: &[u8]) 
+         -> SdkResult<TOut::Out>
+        where TOut: ABIOutParameter {
+
+        ABIResponse::<TOut>::decode_response(&response.to_vec())
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError2(err)))
+    }
+
+    // Packs given inputs by abi into ton_block::Message struct.
+    // Returns message's bag of cells and identifier.
+    pub fn construct_call_message<TIn, TOut>(address: AccountAddress, func: String, input: TIn, key_pair: Option<&Keypair>)
+        -> SdkResult<(Vec<u8>, MessageId)>
+        where 
+            TIn: ABIInParameter + ABITypeSignature,
+            TOut: ABIOutParameter + ABITypeSignature {
+
+        // pack params into bag of cells via ABI
+        let msg_body = Self::create_message_body::<TIn, TOut>(func, input, key_pair);
+        
+        let msg = Self::create_message(address, msg_body)?;
+
+        Self::serialize_message(msg)
+    }
+
+    // Packs given inputs by abi into ton_block::Message struct.
+    // Works with json representation of input and abi.
+    // Returns message's bag of cells and identifier.
+    pub fn construct_call_message_json(address: AccountAddress, func: String, input: String, 
+        abi: String, key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
+
+        // pack params into bag of cells via ABI
+        let msg_body = encode_function_call(abi, func, input, key_pair)
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
+
+        let msg = Self::create_message(address, msg_body.into())?;
+
+        Self::serialize_message(msg)
     }
 
     // Packs given image and input into ton_block::Message struct.
@@ -337,41 +493,20 @@ impl Contract {
          &self.acc
     }
 
-    // Packs given image and input and asynchronously calls given contract's constructor method.
-    // Works with json representation of input and abi.
-    // To get calling result - need to load message,
-    // it's id and processing status is returned by this function
-    pub fn deploy_json(func: String, input: String, abi: String, image: ContractImage, key_pair: Option<&Keypair>)
-        -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
-
-        let msg_body = encode_function_call(abi, func, input, key_pair)
-            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
-
-        let cell: std::sync::Arc<tvm::stack::CellData> = msg_body.into();
-        let msg = Self::create_deploy_message(Some(cell), image)?;
-
-        let msg_id = Self::_send_message(msg)?;
-
-        Self::subscribe_updates(msg_id)
-    }
-
-    // Packs given image asynchronously send deploy message into blockchain.    
-    // To get calling result - need to load message,
-    // it's id and processing status is returned by this function
-    pub fn deploy_no_constructor(image: ContractImage)
-        -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
-        let msg = Self::create_deploy_message(None, image)?;
-
-        let msg_id = Self::_send_message(msg)?;
-
-        Self::subscribe_updates(msg_id)
-    }
-
-    fn create_message(id: AccountId, msg_body: Arc<CellData>)
+    fn create_message(address: AccountAddress, msg_body: Arc<CellData>)
         -> SdkResult<ton_block::Message> {
 
         let mut msg_header = ExternalInboundMessageHeader::default();
-        msg_header.dst = MsgAddressInt::with_standart(None, -1, id).unwrap();
+
+        msg_header.dst = address.get_msg_address()?;
+
+
+        // TODO don't forget to delete it 
+        // This is temporary code to make all messages uniq. 
+        // In the future it will be made by replay attack protection mechanism
+        let mut rng = rand::thread_rng();
+        msg_header.src = ton_block::MsgAddressExt::with_extern(&tvm::bitstring::Bitstring::from(rng.gen::<u64>())).unwrap();
+
 
         let mut msg = ton_block::Message::with_ext_in_header(msg_header);
         msg.body = Some(msg_body);        
@@ -403,21 +538,13 @@ impl Contract {
         let state_init = image.state_init();
 
         let mut msg_header = ExternalInboundMessageHeader::default();
-        msg_header.dst = MsgAddressInt::with_standart(None, -1, account_id).unwrap();
+        msg_header.dst = AccountAddress::from(account_id).get_msg_address()?;
 
         let mut msg = ton_block::Message::with_ext_in_header(msg_header);
         msg.body = msg_body;
         msg.init = Some(state_init);
 
         Ok(msg)
-    }
-
-    fn _send_message(msg: ton_block::Message) -> SdkResult<MessageId> {
-        let (data, id) = Self::serialize_message(msg)?;
-       
-        kafka_helper::send_message(&id.as_slice()[..], &data)?;
-        println!("msg is sent, id: {}", id.to_hex_string());
-        Ok(id.clone())
     }
 
     fn serialize_message(msg: ton_block::Message) -> SdkResult<(Vec<u8>, MessageId)> {
@@ -429,34 +556,22 @@ impl Contract {
                 .into())?.clone();
         bag.write_to(&mut data, false)?;
 
-        Ok((data, id))
+        Ok((data, id.into()))
     }
 
-    fn subscribe_updates(message_id: MessageId) ->
-        SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
+    /// Sets new default workchain number which will be used in message destination address
+    /// construction if client provides only account ID
+    pub fn set_default_workchain(workchain: Option<i32>) {
+        let mut default = DEFAULT_WORKCHAIN.lock().unwrap();
 
-        let stream = db_helper::subscribe_field_updates(
-                MESSAGES_TABLE_NAME,
-                &message_id.to_hex_string())?;
-        let map = stream.map(|value| {
-            let id_val = value.get("id");
-            let mut id = "";
-            if id_val.is_some() {
-                id = id_val.unwrap().as_str().unwrap().clone();
-            }
-            
-            let status_val = value.get("status");
-            let mut status = MessageProcessingStatus::Unknown;
-            if status_val.is_some() {
-                status = utils::parse_message_status(status_val.unwrap().as_str().unwrap().clone());  
-            }
-                    
-            ContractCallState {
-                message_id: tvm::types::UInt256::from(id.as_bytes()),
-                message_state: status,
-            }
-        });
-                        
-        Ok(Box::new(map))
+        *default = workchain;
     }
+
+    /// Returns default workchain number which are used in message destination address
+    /// construction if client provides only account ID
+    pub fn get_default_workchain() -> Option<i32> {
+        let default = DEFAULT_WORKCHAIN.lock().unwrap();
+
+        default.clone()
+    }  
 }
