@@ -19,14 +19,9 @@ extern crate sha2;
 extern crate error_chain;
 #[cfg(feature = "node_interaction")]
 #[cfg(feature = "node_interaction")]
-#[macro_use]
 extern crate serde_json;
 #[cfg(feature = "node_interaction")]
 extern crate kafka;
-#[cfg(feature = "node_interaction")]
-extern crate reql;
-#[cfg(feature = "node_interaction")]
-extern crate reql_types;
 #[cfg(feature = "node_interaction")]
 extern crate futures;
 #[cfg(feature = "node_interaction")]

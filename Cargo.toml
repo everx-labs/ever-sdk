@@ -19,8 +19,6 @@ base64 = "0.10.0"
 ton_abi_core =  { path = "abi/abi_core" }
 ton_abi_json = { path = "abi/abi_json" }
 
-graphite = { path = "graphite" }
-
 [target.'cfg(target_arch="wasm32")'.dependencies]
 rand = { version = "0.6.1", features = ["wasm-bindgen"] }
 
@@ -36,13 +34,8 @@ git = "ssh://git@github.com/tonlabs/sdk-emulator.git"
 branch = "dev"
 package = "ton_block"
 
-
-[dependencies.reql]
-version = "^0.0.26"
-optional = true
-
-[dependencies.reql-types]
-version = "^0.0.4"
+[dependencies.graphite]
+path = "graphite"
 optional = true
 
 [dependencies.futures]
@@ -58,4 +51,4 @@ default-features = false
 [features]
 default = ["node_interaction"]
 ci_run = []
-node_interaction = ["reql", "reql-types", "futures", "kafka"]
+node_interaction = ["graphite", "futures", "kafka"]

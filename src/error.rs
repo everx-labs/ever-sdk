@@ -3,7 +3,7 @@ use tvm::types::Exception;
 use ton_abi_json::ABIError;
 
 #[cfg(feature = "node_interaction")]
-use reql::errors::Error as DbError;
+use graphite::types::GraphiteError;
 #[cfg(feature = "node_interaction")]
 use kafka::error::Error as KafkaError;
 
@@ -67,7 +67,7 @@ error_chain! {
         Tvm(Exception);
         Kafka(KafkaError);
         TonBlocks(ton_block::BlockError);
-        Graphql(graphite::types::GraphiteError);
+        Graphql(GraphiteError);
     }
 
     errors {
