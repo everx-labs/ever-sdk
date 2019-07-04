@@ -665,8 +665,67 @@ fn set_address(current_address: &mut Option<AccountId>, params: &[&str]) {
     }
 }
 
-fn cycle_test(params: &[&str]) {
-    if params.len() < 2 {
+extern crate kafka;
+use kafka::producer::{Producer, Record, RequiredAcks};
+use std::time::Duration;
+use ton_sdk::NodeClientConfig;
+
+fn create_cycle_test_thread(config: String, accounts: Vec<(AccountId, [u8;64])>, timeout: u64, msg_count: u32, thread_number: usize) -> std::thread::JoinHandle<()> {
+    // a little delay for Kafka producer creation
+    std::thread::sleep(std::time::Duration::from_millis(10));
+
+    std::thread::spawn(move || {
+        let acc_count = accounts.len() as u32;
+
+        let accounts: Vec<(AccountId, Keypair)> = accounts.iter().cloned().map(|(id, pair_array)| (id, Keypair::from_bytes(&pair_array[..]).unwrap())).collect();
+
+        let config: NodeClientConfig = serde_json::from_str(&config).expect("Couldn't parse config");
+
+        let mut prod = Producer::from_hosts(config.kafka_config.servers)
+                .with_ack_timeout(Duration::from_millis(config.kafka_config.ack_timeout))
+                .with_required_acks(RequiredAcks::One)
+                .create()
+                .expect("Couldn't connect to Kafka");
+
+        println!("Thread {}. Transfer cycle...", thread_number);
+        let now = std::time::SystemTime::now();
+
+        let mut sleeps = 0;
+        for i in 0..msg_count {
+
+            let (address_from, keypair) = &accounts[(i % acc_count) as usize];
+            let (address_to, _) = &accounts[((i + 1) % acc_count) as usize];
+            let value = 10;
+
+            //println!("Sending {} nanograms from {} to {}", value, address_from.to_hex_string(), address_to.to_hex_string());
+
+            let str_params = format!("{{ \"recipient\" : \"x{}\", \"value\": \"{}\" }}", address_to.to_hex_string(), value);
+
+            let (msg, id) = Contract::construct_call_message_json(
+                address_from.clone().into(),
+                "sendTransaction".to_owned(),
+                str_params.to_owned(),
+                WALLET_ABI.to_owned(),
+                Some(&keypair)
+            ).expect("Error generating message");
+
+            //println!("msg id {:?}", id);
+
+            prod.send(&Record::from_key_value("requests-alexey", &id.data.as_slice()[..], msg)).expect("Couldn't send message");
+
+           // Contract::send_serialized_message(id, &msg).expect("Error sending message");
+
+            std::thread::sleep(std::time::Duration::from_millis(timeout));
+            sleeps += timeout;
+
+        }
+
+        println!("Thread {}. Finished in {} ms", thread_number, now.elapsed().unwrap().as_millis() - sleeps as u128);
+    })
+}
+
+fn cycle_test(config: String, params: &[&str]) {
+    if params.len() < 4 {
         println!("Not enough parameters");
         return;
     }
@@ -695,45 +754,40 @@ fn cycle_test(params: &[&str]) {
         }
     };
 
-    println!("Processing {} accounts in {} messages", acc_count, msg_count);
-    let now = std::time::SystemTime::now();
+    let thread_count = match usize::from_str_radix(params[3], 10) {
+        Ok(n) => n,
+        _ => {
+            println!("error parsing thread count");
+            return;
+        }
+    };
+
+    println!("Processing {} accounts in {} messages in {} threads", acc_count, msg_count, thread_count);
 
     println!("Accounts creating...");
+    let mut csprng = rand::rngs::OsRng::new().unwrap();
     let mut accounts = Vec::new();
     for _ in 0..acc_count {
         // generate key pair
-        let mut csprng = rand::rngs::OsRng::new().unwrap();
         let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
 
         // deploy wallet
         let wallet_address = deploy_contract_and_wait("Wallet.tvc", WALLET_ABI, "{}", &keypair);
 
-        accounts.push((wallet_address, keypair));
+        accounts.push((wallet_address, keypair.to_bytes()));
     }
 
-    println!("Transfer cycle...");
+    let mut threads = vec![];
 
-    let mut sleeps = 0;
-    for i in 0..msg_count {
-
-        let (address_from, keypair) = &accounts[(i % acc_count) as usize];
-        let (address_to, _) = &accounts[((i + 1) % acc_count) as usize];
-        let value = 10;
-
-        println!("Sending {} nanograms from {} to {}", value, address_from.to_hex_string(), address_to.to_hex_string());
-
-        let str_params = format!("{{ \"recipient\" : \"x{}\", \"value\": \"{}\" }}", address_to.to_hex_string(), value);
-
-        Contract::call_json(address_from.clone().into(), "sendTransaction".to_owned(), str_params.to_owned(), WALLET_ABI.to_owned(), Some(&keypair))
-                .expect("Error calling contract method");
-
-        std::thread::sleep(std::time::Duration::from_millis(timeout));
-        sleeps += timeout;
-
+    for i in 0..thread_count {
+        threads.push(create_cycle_test_thread(config.clone(), accounts.clone(), timeout, msg_count, i));
     }
 
-    println!("Finished in {} ms", now.elapsed().unwrap().as_millis() - sleeps as u128);
+    for thread in threads {
+        let _ = thread.join();
+    }
 
+    println!("The end");
 }
 
 const HELP: &str = r#"
@@ -754,10 +808,11 @@ Supported commands:
     get-limit <limit ID>                    - get one limit info
     limits                                  - list all existing wallet limits information
     version                                 - get version of the wallet contract
-    cycle-test <accounts count> <timeout> <messages count> - start a performance test - cyclically send founds between accounts
+    cycle-test <accounts count> <timeout> <messages count> <threads count> - start a performance test - cyclically send founds between accounts
         accounts count - count of accounts
         timeout        - timeout in milliseconds between messages
         messages count - count of transfer messages
+        threads count   - count of parallel working test threads
     exit                                    - exit program"#;
 
 fn main() {
@@ -787,7 +842,7 @@ fn main() {
 
     let workchain = i32::from_str_radix(workchain, 10).expect("Couldn't parse workchain number");
 
-    init_json(Some(workchain), config).expect("Couldn't establish connection");
+    init_json(Some(workchain), config.clone()).expect("Couldn't establish connection");
     println!("Connection established");
 
     let mut current_address: Option<AccountId> = None;
@@ -826,7 +881,7 @@ fn main() {
             "limits" => call_get_limits(&current_address),
             "version" => call_get_version(&current_address),
             "set" => set_address(&mut current_address, &params[1..]),
-            "cycle-test" => cycle_test(&params[1..]),
+            "cycle-test" => cycle_test(config.clone(), &params[1..]),
             "exit" => break,
             _ => println!("Unknown command")
         }

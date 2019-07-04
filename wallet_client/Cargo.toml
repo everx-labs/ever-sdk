@@ -17,6 +17,8 @@ num-bigint = "0.2.2"
 num-traits = "0.2"
 clap = "2.33.0"
 
+kafka = { version = "0.7", default-features = false }
+
 ton_sdk = { path = "../" }
 
 tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "dev", package = "tvm" }

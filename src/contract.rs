@@ -21,7 +21,6 @@ use ton_block::{
     CurrencyCollection,
     MessageProcessingStatus};
 use std::convert::Into;
-use rand::Rng;
 
 #[cfg(feature = "node_interaction")]
 use reql::Document;
@@ -342,6 +341,10 @@ impl Contract {
         Ok(id.clone())
     }
 
+    pub fn send_serialized_message(id: MessageId, msg: &[u8]) -> SdkResult<()> {
+        kafka_helper::send_message(&id.as_slice()[..], msg)
+    }
+
     pub fn subscribe_updates(message_id: MessageId) ->
         SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
@@ -506,10 +509,23 @@ impl Contract {
         // TODO don't forget to delete it 
         // This is temporary code to make all messages uniq. 
         // In the future it will be made by replay attack protection mechanism
-        let mut rng = rand::thread_rng();
-        msg_header.src = ton_block::MsgAddressExt::with_extern(&tvm::bitstring::Bitstring::from(rng.gen::<u64>())).unwrap();
+        if cfg!(target_arch="wasm32") {
+            use rand::Rng;
+            
+            let mut rng = rand::thread_rng();
+            msg_header.src = ton_block::MsgAddressExt::with_extern(&tvm::bitstring::Bitstring::from(rng.gen::<u64>())).unwrap(); 
+        } else {
+            use sha2::Digest;
 
+            let time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
 
+            let mut hasher = sha2::Sha256::new();
+            hasher.input(&time.to_be_bytes()[..]);
+            let hash = hasher.result();
+
+            msg_header.src = ton_block::MsgAddressExt::with_extern(&tvm::bitstring::Bitstring::create(hash.to_vec(), 64)).unwrap(); 
+        }
+        
         let mut msg = ton_block::Message::with_ext_in_header(msg_header);
         msg.body = Some(msg_body);        
 
