@@ -1,7 +1,7 @@
 pub const MESSAGES_TABLE_NAME: &str = "messages";
 pub const CONTRACTS_TABLE_NAME: &str = "accounts";
 pub const BLOCKS_TABLE_NAME: &str = "blocks";
-pub const TRANSACTIONS_TABLE_NAME: &str = "accounts";
+pub const TRANSACTIONS_TABLE_NAME: &str = "transactions";
 
 // Represents config to connect Rethink DB
 #[derive(Debug, Deserialize, Serialize)]

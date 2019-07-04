@@ -1,4 +1,4 @@
-use crate::*;
+/*use crate::*;
 
 #[test]
 fn test_init() {
@@ -60,4 +60,4 @@ fn test_init() {
         SdkErrorKind::DB(_) => (),
         other => panic!(format!("{:?}", other))
     };*/
-}
+}*/

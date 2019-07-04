@@ -1,11 +1,7 @@
 use crate::*;
 use graphite::client::GqlClient;
 use futures::stream::{Stream,};
-use std::fmt::Debug;
-use serde::ser::Serialize;
-use serde::de::DeserializeOwned;
 use serde_json::Value;
-use std::net::SocketAddr;
 use std::sync::Mutex;
 
 lazy_static! {
