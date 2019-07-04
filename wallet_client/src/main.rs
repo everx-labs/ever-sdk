@@ -711,7 +711,7 @@ fn create_cycle_test_thread(config: String, accounts: Vec<(AccountId, [u8;64])>,
 
             //println!("msg id {:?}", id);
 
-            prod.send(&Record::from_key_value("requests-alexey", &id.data.as_slice()[..], msg)).expect("Couldn't send message");
+            prod.send(&Record::from_key_value(&config.kafka_config.topic, &id.data.as_slice()[..], msg)).expect("Couldn't send message");
 
            // Contract::send_serialized_message(id, &msg).expect("Error sending message");
 
