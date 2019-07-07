@@ -670,14 +670,20 @@ use kafka::producer::{Producer, Record, RequiredAcks};
 use std::time::Duration;
 use ton_sdk::NodeClientConfig;
 
-fn create_cycle_test_thread(config: String, accounts: Vec<(AccountId, [u8;64])>, timeout: u64, msg_count: u32, thread_number: usize) -> std::thread::JoinHandle<()> {
+#[derive(Clone, Serialize, Deserialize)]
+struct AccountData {
+    id: AccountId,
+    keypair: Vec<u8>,
+}
+
+fn create_cycle_test_thread(config: String, accounts: Vec<AccountData>, timeout: u64, msg_count: u32, thread_number: usize) -> std::thread::JoinHandle<()> {
     // a little delay for Kafka producer creation
     std::thread::sleep(std::time::Duration::from_millis(10));
 
     std::thread::spawn(move || {
         let acc_count = accounts.len() as u32;
 
-        let accounts: Vec<(AccountId, Keypair)> = accounts.iter().cloned().map(|(id, pair_array)| (id, Keypair::from_bytes(&pair_array[..]).unwrap())).collect();
+        let accounts: Vec<(AccountId, Keypair)> = accounts.iter().cloned().map(|data| (data.id, Keypair::from_bytes(&data.keypair[..]).unwrap())).collect();
 
         let config: NodeClientConfig = serde_json::from_str(&config).expect("Couldn't parse config");
 
@@ -774,8 +780,104 @@ fn cycle_test(config: String, params: &[&str]) {
         // deploy wallet
         let wallet_address = deploy_contract_and_wait("Wallet.tvc", WALLET_ABI, "{}", &keypair);
 
-        accounts.push((wallet_address, keypair.to_bytes()));
+        accounts.push(AccountData { 
+                id: wallet_address,
+                keypair: keypair.to_bytes().to_vec() 
+            });
     }
+
+    let mut threads = vec![];
+
+    for i in 0..thread_count {
+        threads.push(create_cycle_test_thread(config.clone(), accounts.clone(), timeout, msg_count, i));
+    }
+
+    for thread in threads {
+        let _ = thread.join();
+    }
+
+    println!("The end");
+}
+
+fn cycle_test_init(params: &[&str]) {
+    if params.len() < 1 {
+        println!("Not enough parameters");
+        return;
+    }
+
+    let acc_count = match u32::from_str_radix(params[0], 10) {
+        Ok(n) => n,
+        _ => {
+            println!("error parsing accounts count");
+            return;
+        }
+    };
+
+    println!("Creating {} accounts", acc_count);
+    let mut csprng = rand::rngs::OsRng::new().unwrap();
+
+    let mut vec = Vec::new();
+
+    for _ in 0..acc_count {
+        // generate key pair
+        let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
+
+        // deploy wallet
+        let wallet_address = deploy_contract_and_wait("Wallet.tvc", WALLET_ABI, "{}", &keypair);
+
+        vec.push(AccountData { 
+                id: wallet_address,
+                keypair: keypair.to_bytes().to_vec() 
+            });
+
+        //vec.append(&mut keypair.to_bytes().to_vec());
+        //vec.append(&mut wallet_address.as_slice().to_vec());
+    }
+
+    let data = serde_json::to_string_pretty(&vec).expect("Couldn't serialize accounts data");
+
+    std::fs::write("test_accounts", data).expect("Couldn't write accounts data");
+
+    println!("\nAccounts succesfully created");
+}
+
+
+fn cycle_test_run(config: String, params: &[&str]) {
+    if params.len() < 3 {
+        println!("Not enough parameters");
+        return;
+    }
+
+    let timeout = match u64::from_str_radix(params[0], 10) {
+        Ok(n) => n,
+        _ => {
+            println!("error parsing timeout");
+            return;
+        }
+    };
+
+    let msg_count = match u32::from_str_radix(params[1], 10) {
+        Ok(n) => n,
+        _ => {
+            println!("error parsing messages count");
+            return;
+        }
+    };
+
+    let thread_count = match usize::from_str_radix(params[2], 10) {
+        Ok(n) => n,
+        _ => {
+            println!("error parsing thread count");
+            return;
+        }
+    };
+
+    let vec = std::fs::read_to_string("test_accounts").expect("Couldn't read accounts data");
+
+    let accounts: Vec<AccountData> = serde_json::from_str(&vec).expect("Couldn't deserialize accounts data");
+    let acc_count = accounts.len();
+
+    println!("Processing {} accounts in {} messages in {} threads", acc_count, msg_count, thread_count);
 
     let mut threads = vec![];
 
@@ -808,11 +910,17 @@ Supported commands:
     get-limit <limit ID>                    - get one limit info
     limits                                  - list all existing wallet limits information
     version                                 - get version of the wallet contract
-    cycle-test <accounts count> <timeout> <messages count> <threads count> - start a performance test - cyclically send founds between accounts
+    cycle-test-full <accounts count> <timeout> <messages count> <threads count> - start a performance test - cyclically send founds between accounts
         accounts count - count of accounts
         timeout        - timeout in milliseconds between messages
         messages count - count of transfer messages
-        threads count   - count of parallel working test threads
+        threads count  - count of parallel working test threads
+    cycle-test-init <accounts count>        - prepare cycle test data: deploy contracts and save accounts data
+        accounts count - count of accounts
+    cycle-test-run <timeout> <messages count> <threads count> - start a performance test - cyclically send founds between accounts prepared by `cycle-test-init` command
+        timeout        - timeout in milliseconds between messages
+        messages count - count of transfer messages
+        threads count  - count of parallel working test threads
     exit                                    - exit program"#;
 
 fn main() {
@@ -881,7 +989,9 @@ fn main() {
             "limits" => call_get_limits(&current_address),
             "version" => call_get_version(&current_address),
             "set" => set_address(&mut current_address, &params[1..]),
-            "cycle-test" => cycle_test(config.clone(), &params[1..]),
+            "cycle-test-full" => cycle_test(config.clone(), &params[1..]),
+            "cycle-test-init" => cycle_test_init(&params[1..]),
+            "cycle-test-run" => cycle_test_run(config.clone(), &params[1..]),
             "exit" => break,
             _ => println!("Unknown command")
         }
