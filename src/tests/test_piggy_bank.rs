@@ -497,7 +497,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
 #[test]
 fn full_test_piggy_bank() {
 
-    let _now = std::time::SystemTime::now();
+    let now = std::time::SystemTime::now();
 
     // connect to node
     init_node_connection();
