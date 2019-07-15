@@ -9,8 +9,7 @@ use {Param, ParamType};
 
 use num_bigint::{BigInt, BigUint};
 use std::fmt;
-use tvm::bitstring::Bitstring;
-use tvm::stack::{BuilderData, SliceData};
+use tvm::stack::{BuilderData, SliceData, IBitstring};
 
 /// TON ABI params.
 #[derive(Debug, PartialEq, Clone)]
@@ -63,11 +62,11 @@ pub enum TokenValue {
     /// bits<M>: static sized bits sequence.
     ///
     /// Encoding is equivalent to bool[M].
-    Bits(Bitstring),
+    Bits(BuilderData),
     /// bitstring: dynamic sized bits sequence.
     ///
     /// Encoding is equivalent to bool[].
-    Bitstring(Bitstring),
+    Bitstring(BuilderData),
 }
 
 impl fmt::Display for TokenValue {
@@ -204,9 +203,13 @@ impl ABISerialized for TokenValue {
             TokenValue::Array(ref tokens) => tokens.prepend_to(destination),
             TokenValue::FixedArray(ref tokens) => prepend_fixed_array(destination, &tokens),
             TokenValue::Bits(b) => {
-                prepend_fixed_array(destination, &b.bits(0..b.length_in_bits()).data)
+                prepend_fixed_array(destination, b.cell().data())
             }
-            TokenValue::Bitstring(bitstring) => bitstring.prepend_to(destination),
+            TokenValue::Bitstring(bitstring) => {
+                let mut bitstring = bitstring.clone();
+                bitstring.prepend_builder(&destination).unwrap();
+                bitstring
+            },
         }
     }
 
@@ -223,7 +226,7 @@ impl ABISerialized for TokenValue {
             TokenValue::Array(ref tokens) => tokens.get_in_cell_size(),
             TokenValue::FixedArray(ref tokens) => get_fixed_array_in_cell_size(&tokens),
             TokenValue::Bits(b) => {
-                get_fixed_array_in_cell_size(&b.bits(0..b.length_in_bits()).data)
+                get_fixed_array_in_cell_size(b.cell().data())
             }
             TokenValue::Bitstring(bitstring) => bitstring.get_in_cell_size(),
         }
@@ -258,7 +261,7 @@ impl TokenValue {
             }
             ParamType::Bits(size) => Self::read_bits(*size, cursor),
             ParamType::Bitstring => {
-                let (bitstring, cursor) = Bitstring::read_from(cursor)?;
+                let (bitstring, cursor) = BuilderData::read_from(cursor)?;
                 Ok((TokenValue::Bitstring(bitstring), cursor))
             }
         }
@@ -317,9 +320,9 @@ impl TokenValue {
         let (token, cursor) = Self::read_fixed_array(&ParamType::Bool, size, cursor)?;
 
         if let TokenValue::FixedArray(array) = token {
-            let bitstring = array.iter().fold(Bitstring::new(), |mut bitstring, token| {
+            let bitstring = array.iter().fold(BuilderData::new(), |mut bitstring, token| {
                 if let TokenValue::Bool(b) = token {
-                    bitstring.append_bit_bool(*b);
+                    bitstring.append_bit_bool(*b).unwrap();
                     bitstring
                 } else {
                     unreachable!();

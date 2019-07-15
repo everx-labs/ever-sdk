@@ -1,10 +1,9 @@
-use tvm::bitstring::Bitstring;
 use tvm::stack::{BuilderData, SliceData, IBitstring};
 use super::DeserializationError;
 use types::ABIDeserialized;
 
 // put data to cell and make chain if data doesn't fit into cell
-pub fn prepend_data_to_chain(mut builder: BuilderData, data: Bitstring) -> BuilderData {
+pub fn prepend_data_to_chain(mut builder: BuilderData, data: BuilderData) -> BuilderData {
     let mut data = data;
 
     while data.length_in_bits() > 0 {
@@ -12,20 +11,15 @@ pub fn prepend_data_to_chain(mut builder: BuilderData, data: Bitstring) -> Build
 
         if remaining_bits > 0 {
             // data does not fit into cell - fill current cell and take remaining data
-            if remaining_bits < data.length_in_bits() {
-                let cut = data.substring(data.length_in_bits() - remaining_bits..data.length_in_bits());
-                let mut vec = vec![];
-                cut.into_bitstring_with_completion_tag(&mut vec);
-                builder.prepend_bitstring(&vec).unwrap();
-
-                data = data.substring(0..data.length_in_bits() - remaining_bits);
+            let mut data: SliceData = data.clone().into();
+            data.shrink_references(0..0);
+            if remaining_bits < data.remaining_bits() {
+                let mut cut = data.clone();
+                cut.shrink_data(data.remaining_bits() - remaining_bits..data.remaining_bits());
+                builder.prepend_builder(&BuilderData::from_slice(&cut)).unwrap();
             } else {
                 // data fit into current cell - no data remaining
-                let mut vec = vec![];
-                data.into_bitstring_with_completion_tag(&mut vec);
-                builder.prepend_bitstring(&vec).unwrap();
-
-                data.clear();
+                builder.prepend_builder(&BuilderData::from_slice(&data)).unwrap();
             }
         } else {
             // current cell is full - move to next
@@ -59,7 +53,7 @@ pub fn get_next_byte_from_chain(cursor: SliceData) -> Result<(u8, SliceData), De
     }
 }
 
-pub fn get_next_bits_from_chain(cursor: SliceData, bits: usize) -> Result<(Bitstring, SliceData), DeserializationError> {
+pub fn get_next_bits_from_chain(cursor: SliceData, bits: usize) -> Result<(BuilderData, SliceData), DeserializationError> {
     let mut cursor = cursor;
     
     if cursor.remaining_bits() >= bits {
@@ -83,7 +77,7 @@ pub fn get_next_bits_from_chain(cursor: SliceData, bits: usize) -> Result<(Bitst
 
             let (remain, cursor) = get_next_bits_from_chain(cursor, bits - result.length_in_bits())?;
 
-            result.append(&remain);
+            result.append_builder(&remain);
 
             Ok((result, cursor))
         }

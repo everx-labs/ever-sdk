@@ -2,8 +2,7 @@ use super::common::*;
 use super::common_arrays::*;
 use super::ABISerialized;
 
-use tvm::bitstring::{Bit, Bitstring};
-use tvm::stack::{BuilderData};
+use tvm::stack::{BuilderData, IBitstring};
 
 // put fixed array to chain or to separate branch depending on array size
 pub fn prepend_fixed_array<T: ABISerialized>(
@@ -22,9 +21,9 @@ pub fn prepend_fixed_array<T: ABISerialized>(
         // if array fit into cell data, put in into main chain
         destination = prepend_array_items_to_chain(destination, array);
 
-        let mut bitstring = Bitstring::new();
-        bitstring.append_bit(&Bit::One);
-        bitstring.append_bit(&Bit::Zero);
+        let mut bitstring = BuilderData::new();
+        bitstring.append_bit_one().unwrap();
+        bitstring.append_bit_zero().unwrap();
 
         destination = prepend_data_to_chain(destination, bitstring);
     }

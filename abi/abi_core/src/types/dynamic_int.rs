@@ -8,19 +8,20 @@ use super::{
 
 use num_bigint::{BigInt, Sign};
 
-use tvm::bitstring::{Bit, Bitstring};
-use tvm::stack::{BuilderData, SliceData};
+use tvm::stack::{BuilderData, SliceData, IBitstring};
 
 pub fn read_dynamic_int(cursor: SliceData, signed_padding: bool)
 -> Result<(Vec<u8>, SliceData), DeserializationError> {
     let mut cursor = cursor;
-    let mut bitstring = Bitstring::new();
+    let mut bitstring = BuilderData::new();
 
     loop {
         let (byte, new_cursor) = <u8 as ABIDeserialized>::read_from(cursor)?;
         cursor = new_cursor;
 
-        bitstring = Bitstring::create(vec![byte << 1], 7) + bitstring;
+        bitstring = BuilderData::with_raw(vec![byte << 1], 7);
+        let temp = bitstring.clone();
+        bitstring.append_builder(&temp);
 
         if (byte & 0x80) == 0 {
             break;
@@ -30,18 +31,18 @@ pub fn read_dynamic_int(cursor: SliceData, signed_padding: bool)
     Ok((bitstring_to_be_bytes(bitstring, signed_padding), cursor))
 }
 
-pub fn bitstring_to_be_bytes(bitstring: Bitstring, signed_padding: bool) -> Vec<u8> {
+pub fn bitstring_to_be_bytes(mut bitstring: BuilderData, signed_padding: bool) -> Vec<u8> {
     // pad to 8 bits
     let padding_count = 8 - ((bitstring.length_in_bits() - 1) % 8 + 1);
-    let padding_string = if signed_padding && (bitstring.bits(0..1).data[0] == Bit::One) {
-        Bitstring::create(vec![0xFF], padding_count)
+    let slice = SliceData::from(bitstring.clone());
+    let padding_string = if signed_padding && (slice.get_bits(0, 1) == 1) {
+        BuilderData::with_raw(vec![0xFF], padding_count)
     } else {
-        Bitstring::create(vec![0], padding_count)
+        BuilderData::with_raw(vec![0], padding_count)
     };
 
-    let bitstring = padding_string + bitstring;
-
-    bitstring.data().to_vec()
+    bitstring.prepend_builder(&padding_string).unwrap();
+    bitstring.cell().data().to_vec()
 }
 
 pub type Dint = BigInt;
@@ -64,24 +65,26 @@ impl ABISerialized for Dint {
             }
         }
 
-        let num_bitstring = Bitstring::create(bytes, size);
+        let num_bitstring = BuilderData::with_raw(bytes, size);
 
-        let cropped_bitstring = num_bitstring.substring(crop_bits..num_bitstring.length_in_bits());
+        let mut cropped_bitstring: SliceData = num_bitstring.clone().into();
+        let len = num_bitstring.length_in_bits();
+        cropped_bitstring.shrink_data(crop_bits..len);
 
-        let mut result = Bitstring::new();
-        let mut remain = cropped_bitstring.length_in_bits();
+        let mut result = BuilderData::new();
+        let mut remain = cropped_bitstring.remaining_bits();
 
         // take gropus by 7 bits
         while remain > 0 {
             let bit_count = std::cmp::min(remain, 7);
 
-            let mut prefix = Bitstring::new();
+            let mut prefix = BuilderData::new();
 
             // add prefix (1 - more groups followed, 0 - last group)
             if remain > bit_count {
-                prefix.append_bit(&Bit::One);
+                prefix.append_bit_one().unwrap();
             } else {
-                prefix.append_bit(&Bit::Zero);
+                prefix.append_bit_zero().unwrap();
                 if bit_count != 7 {
                     // pad last group to 7 bits according to number sign
                     let padding = match self.sign() {
@@ -93,8 +96,11 @@ impl ABISerialized for Dint {
                 }
             }
 
-            result = result + prefix + cropped_bitstring.substring(remain - bit_count .. remain);
-
+            let mut slice: SliceData = cropped_bitstring.clone().into();
+            slice.shrink_references(0..0);
+            slice.shrink_data(remain - bit_count .. remain);
+            result.append_builder(&prefix);
+            result.checked_append_references_and_data(&slice).unwrap();
             remain -= bit_count;
         }
 

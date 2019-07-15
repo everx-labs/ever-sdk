@@ -37,7 +37,6 @@ use ton_block::{
     Deserializable};
 use tvm::stack::{BuilderData, CellData, SliceData};
 use tvm::cells_serialization::{BagOfCells, deserialize_cells_tree};
-use tvm::bitstring::{Bit, Bitstring};
 use tvm::types::{AccountId};
 
 use jsonrpc_client_http::{HttpHandle, HttpTransport};
@@ -100,15 +99,15 @@ fn call_contract(transport_handle: &mut  HttpHandle, abi_call: BuilderData) -> S
     SliceData::from(answer_message.body.unwrap())
 }
 
-fn call_get_limit_by_id(transport_handle: &mut  HttpHandle, limit_id: u8) -> ((u64, u8, Bitstring), i8) {
-    let message_body = ABICall::<(u8,), ((Duint, u8, Bitstring), i8)>::encode_function_call_into_slice(
+fn call_get_limit_by_id(transport_handle: &mut  HttpHandle, limit_id: u8) -> ((u64, u8, BuilderData), i8) {
+    let message_body = ABICall::<(u8,), ((Duint, u8, BuilderData), i8)>::encode_function_call_into_slice(
         "getLimitById",
         (limit_id,)
     );
 
     let answer = call_contract(transport_handle, message_body);
 
-    ABIResponse::<((u64, u8, Bitstring), i8)>::decode_response_from_slice(answer).unwrap()
+    ABIResponse::<((u64, u8, BuilderData), i8)>::decode_response_from_slice(answer).unwrap()
 }
 
 fn call_get_limits(transport_handle: &mut  HttpHandle, pair: &Keypair) {
@@ -131,9 +130,7 @@ fn call_get_limits(transport_handle: &mut  HttpHandle, pair: &Keypair) {
              println!("Type - Single operation limit");
         } else {
             println!("Type - Arbitrary limit");
-            let mut vec = Vec::new();
-            meta.into_bitstring_with_completion_tag(&mut vec);
-            let period = vec[0];
+            let period = meta.cell().data[0];
             println!("Period - {} days", period);
         }
     }
@@ -149,7 +146,7 @@ fn call_create_limit(transport_handle: &mut  HttpHandle, parameters: Vec<String>
 
     let limit_type = u8::from_str_radix(&parameters[1], 10).unwrap();
 
-    let mut meta = Bitstring::new();
+    let mut meta = BuilderData::new();
 
     if limit_type == 1 {
         if parameters.len() < 3
@@ -162,7 +159,7 @@ fn call_create_limit(transport_handle: &mut  HttpHandle, parameters: Vec<String>
         meta.append_u8(period);
     }
 
-    let message_body = ABICall::<(u8, Duint, Bitstring), (u8, i8)>::encode_signed_function_call_into_slice("createLimit", (limit_type, value, meta), pair);
+    let message_body = ABICall::<(u8, Duint, BuilderData), (u8, i8)>::encode_signed_function_call_into_slice("createLimit", (limit_type, value, meta), pair);
 
     let answer = call_contract(transport_handle, message_body);
 
@@ -206,14 +203,14 @@ fn call_change_limit(transport_handle: &mut  HttpHandle, parameters: Vec<String>
 
     let value = Duint::parse_bytes(parameters[1].as_bytes(), 10).unwrap();
 
-    let mut meta = Bitstring::new();
+    let mut meta = BuilderData::new();
 
     if parameters.len() > 2 {
         let period = u8::from_str_radix(&parameters[2], 10).unwrap();
         meta.append_u8(period);
     }
 
-    let message_body = ABICall::<(u8, Duint, Bitstring), (i8,)>::encode_signed_function_call_into_slice("changeLimitById", (limit_id, value, meta), pair);
+    let message_body = ABICall::<(u8, Duint, BuilderData), (i8,)>::encode_signed_function_call_into_slice("changeLimitById", (limit_id, value, meta), pair);
 
     let _answer = call_contract(transport_handle, message_body);
 }
@@ -231,7 +228,7 @@ fn call_send_transaction(transport_handle: &mut  HttpHandle, parameters: Vec<Str
 
     let mut bits_recipient = [Bit::Zero; 256];
 
-    bits_recipient.copy_from_slice(&Bitstring::create(recipient, 256).bits(0..256).data);
+    bits_recipient.copy_from_slice(&BuilderData::with_raw(recipient, 256).bits(0..256).data);
 
     let value = Duint::parse_bytes(parameters[1].as_bytes(), 10).unwrap();
 

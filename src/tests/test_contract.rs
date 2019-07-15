@@ -483,16 +483,17 @@ fn test_deploy_empty_contract() {
 use rand::{thread_rng, Rng};
 use ton_block::{Message, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
     ExternalInboundMessageHeader, CurrencyCollection, Serializable};
-use tvm::bitstring::Bitstring;
 
 // Create message "from wallet" to transfer some funds 
 // from one account to another
 fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, value: u128) -> Message {
     
-    let mut rng = thread_rng();    
+    let mut rng = thread_rng();
+    let mut builder = BuilderData::new();
+    builder.append_u64(rng.gen::<u64>()).unwrap();
     let mut msg = Message::with_ext_in_header(
         ExternalInboundMessageHeader {
-            src: MsgAddressExt::with_extern(&Bitstring::from(rng.gen::<u64>())).unwrap(),
+            src: MsgAddressExt::with_extern(&builder).unwrap(),
             dst: MsgAddressInt::with_standart(None, 0, src.clone()).unwrap(),
             import_fee: Grams::default(),
         }

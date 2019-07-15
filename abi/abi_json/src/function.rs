@@ -4,7 +4,6 @@ use sha2::{Digest, Sha256, Sha512};
 use {Param, Token, TokenValue};
 use ed25519_dalek::*;
 use tvm::stack::{BuilderData, SliceData};
-use tvm::bitstring::Bitstring;
 use tvm::cells_serialization::BagOfCells;
 use ton_abi_core::types::prepend_data_to_chain;
 use ton_abi_core::types::{ABISerialized, DeserializationError as InnerTypeDeserializationError};
@@ -150,7 +149,7 @@ impl Function {
             let mut vec = vec![ABI_VERSION];
             vec.extend_from_slice(&self.get_function_id()[..]);
             let len = vec.len() * 8;
-            Bitstring::create(vec, len)
+            BuilderData::with_raw(vec, len)
         });
 
         if self.signed {

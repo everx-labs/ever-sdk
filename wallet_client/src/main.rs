@@ -11,8 +11,8 @@ use rand::{thread_rng, Rng};
 use ton_block::{Message, MessageId, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
     ExternalInboundMessageHeader, CurrencyCollection, Serializable, GetSetValueForVarInt,
     MessageProcessingStatus, TransactionId};
-use tvm::bitstring::Bitstring;
 use tvm::types::{AccountId};
+use tvm::stack::{BuilderData, IBitstring};
 use ed25519_dalek::Keypair;
 use futures::Stream;
 use sha2::Sha512;
@@ -174,10 +174,12 @@ fn wait_message_processed_by_id(message_id: MessageId)-> TransactionId {
 // from one account to another
 pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, value: u128) -> Message {
     
-    let mut rng = thread_rng();    
+    let mut rng = thread_rng();
+    let mut builder = BuilderData::new();
+    builder.append_u64(rng.gen::<u64>()).unwrap();
     let mut msg = Message::with_ext_in_header(
         ExternalInboundMessageHeader {
-            src: MsgAddressExt::with_extern(&Bitstring::from(rng.gen::<u64>())).unwrap(),
+            src: MsgAddressExt::with_extern(&builder).unwrap(),
             dst: MsgAddressInt::with_standart(None, 0, src.clone()).unwrap(),
             import_fee: Grams::default(),
         }

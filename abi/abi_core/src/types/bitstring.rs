@@ -5,40 +5,33 @@ use super::{
     ABISerialized
 };
 
-use tvm::bitstring::{Bit, Bitstring};
-use tvm::stack::{BuilderData, SliceData};
+use tvm::stack::{BuilderData, SliceData, IBitstring};
 
-impl ABISerialized for Bitstring {
+impl ABISerialized for BuilderData {
 
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
-        self.bits(0 .. self.length_in_bits())
-            .data.prepend_to(destination)
+        let mut data = self.clone();
+        data.prepend_builder(&destination).unwrap();
+        data
     }
 
     fn get_in_cell_size(&self) -> usize {
-        self.bits(0 .. self.length_in_bits())
-            .data.get_in_cell_size()
+        self.cell().data().to_vec().get_in_cell_size()
     }
 }
 
-impl ABIDeserialized for Bitstring {
-    type Out = Bitstring;
+impl ABIDeserialized for BuilderData {
+    type Out = BuilderData;
 
     fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
-        let (bits, cursor) = <Vec<Bit> as ABIDeserialized>::read_from(cursor)?;
+        let (bits, cursor) = <Vec<bool> as ABIDeserialized>::read_from(cursor)?;
         
-        let mut result = Bitstring::new();
+        let mut result = BuilderData::new();
         bits.iter()
             .for_each(|x| {
-                result.append_bit(x);
+                result.append_bit_bool(x.clone()).unwrap();
         });
 
         Ok((result, cursor))
-    }
-}
-
-impl ABITypeSignature for Bitstring {
-    fn type_signature() -> String {
-        "bitstring".to_string()
     }
 }

@@ -2,7 +2,6 @@ mod tokenize_tests {
     use crate::{Int, Param, ParamType, Token, TokenValue, Uint};
     use num_bigint::{BigInt, BigUint};
     use token::{Detokenizer, Tokenizer};
-    use tvm::bitstring::Bitstring;
 
     #[test]
     fn test_tokenize_ints() {
@@ -297,25 +296,25 @@ mod tokenize_tests {
             Token {
                 name: "a".to_owned(),
                 value: TokenValue::Bits(
-                    Bitstring::new()
+                    BuilderData::new()
                         .append_bits(0b101000011101011, 15)
                         .to_owned(),
                 ),
             },
             Token {
                 name: "b".to_owned(),
-                value: TokenValue::Bitstring(Bitstring::create(
+                value: TokenValue::Bitstring(BuilderData::with_raw(
                     vec![0x12, 0x34, 0x56, 0x78, 0x90, 0xAB, 0xCD, 0xEF],
                     64,
                 )),
             },
             Token {
                 name: "c".to_owned(),
-                value: TokenValue::Bitstring(Bitstring::create(vec![0x12, 0x34], 16)),
+                value: TokenValue::Bitstring(BuilderData::with_raw(vec![0x12, 0x34], 16)),
             },
             Token {
                 name: "d".to_owned(),
-                value: TokenValue::Bitstring(Bitstring::from_bitstring_with_completion_tag(vec![
+                value: TokenValue::Bitstring(BuilderData::with_bitstring(vec![
                     0x12, 0x34,
                 ])),
             },
@@ -414,7 +413,7 @@ mod tokenize_tests {
                     },
                     Token {
                         name: "c".to_owned(),
-                        value: TokenValue::Bits(Bitstring::create(vec![0x12, 0x34], 16)),
+                        value: TokenValue::Bits(BuilderData::with_raw(vec![0x12, 0x34], 16)),
                     },
                 ]),
             },
@@ -428,7 +427,7 @@ mod tokenize_tests {
                         },
                         Token {
                             name: "b".to_owned(),
-                            value: TokenValue::Bitstring(Bitstring::create(vec![0x12], 8)),
+                            value: TokenValue::Bitstring(BuilderData::with_raw(vec![0x12], 8)),
                         },
                     ]),
                     TokenValue::Tuple(vec![
@@ -438,7 +437,7 @@ mod tokenize_tests {
                         },
                         Token {
                             name: "b".to_owned(),
-                            value: TokenValue::Bitstring(Bitstring::create(vec![0x34], 8)),
+                            value: TokenValue::Bitstring(BuilderData::with_raw(vec![0x34], 8)),
                         },
                     ]),
                     TokenValue::Tuple(vec![
@@ -448,7 +447,7 @@ mod tokenize_tests {
                         },
                         Token {
                             name: "b".to_owned(),
-                            value: TokenValue::Bitstring(Bitstring::create(vec![0x56], 8)),
+                            value: TokenValue::Bitstring(BuilderData::with_raw(vec![0x56], 8)),
                         },
                     ]),
                 ]),
@@ -472,7 +471,6 @@ mod tokenize_tests {
 
 mod types_check_tests {
     use num_bigint::{BigInt, BigUint};
-    use tvm::bitstring::Bitstring;
     use {Int, Param, ParamType, Token, TokenValue, Uint};
 
     #[test]
@@ -528,11 +526,11 @@ mod types_check_tests {
             },
             Token {
                 name: "h".to_owned(),
-                value: TokenValue::Bits(Bitstring::create(vec![1, 2, 3], 15)),
+                value: TokenValue::Bits(BuilderData::with_raw(vec![1, 2, 3], 15)),
             },
             Token {
                 name: "i".to_owned(),
-                value: TokenValue::Bitstring(Bitstring::create(vec![1, 2, 3], 7)),
+                value: TokenValue::Bitstring(BuilderData::with_raw(vec![1, 2, 3], 7)),
             },
             Token {
                 name: "j".to_owned(),

@@ -2,7 +2,7 @@
 use {ParamType, Param, Uint, Int, Token, TokenValue};
 use serde_json::Value;
 use num_bigint::{Sign, BigInt};
-use tvm::bitstring::{Bitstring, Bit};
+use tvm::stack::{BuilderData, IBitstring};
 
 /// Returning errors during deserialization
 #[derive(Debug)]
@@ -194,7 +194,7 @@ impl Tokenizer {
     }
 
     /// Tries to read bitstring from `Value`.
-    fn read_bitstring(value: &Value) -> Result<Bitstring, TokenizeError> {
+    fn read_bitstring(value: &Value) -> Result<BuilderData, TokenizeError> {
         let mut string = value
             .as_str()
             .ok_or(TokenizeError::WrongDataFormat(value.clone()))?
@@ -210,7 +210,7 @@ impl Tokenizer {
             // (see TON Blockchain spec)
             if string.ends_with("_") {
                 // Pad bitstring with zeros to parse as normal hex-string. It will be trimmed 
-                // by `Bitstring::from_bitstring_with_completion_tag` using `completion tag`
+                // using `completion tag`
                 let len = string.len(); 
                 string.replace_range(len - 1 .. len, "0");
 
@@ -218,21 +218,21 @@ impl Tokenizer {
                     string.push('0');
                 }
             } else {
-                // add `completion tag` for `Bitstring::from_bitstring_with_completion_tag` function
+                // add `completion tag`
                 string += "80";
             }
 
             let vec = hex::decode(string)
                 .map_err(|_| TokenizeError::InvalidParameterValue(value.clone()))?;
 
-            Bitstring::from_bitstring_with_completion_tag(vec)
+            BuilderData::with_bitstring(vec)
         } else { // bits representation
-            let mut bitstring = Bitstring::new();
+            let mut bitstring = BuilderData::new();
 
             for bit in string.chars() {
                 match bit {
-                    '0' => bitstring.append_bit(&Bit::Zero),
-                    '1' => bitstring.append_bit(&Bit::One),
+                    '0' => bitstring.append_bit_zero().unwrap(),
+                    '1' => bitstring.append_bit_one().unwrap(),
                     _ => return Err(TokenizeError::InvalidParameterValue(value.clone()))
                 };
             }

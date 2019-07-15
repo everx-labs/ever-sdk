@@ -1,7 +1,7 @@
 use crate::*;
 use std::io::{Read, Seek, Cursor};
 use std::sync::{Arc, Mutex};
-use tvm::stack::{CellData, SliceData, BuilderData};
+use tvm::stack::{CellData, SliceData, BuilderData, IBitstring};
 use tvm::types::AccountId;
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use ton_abi_core::types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
@@ -507,7 +507,9 @@ impl Contract {
         // This is temporary code to make all messages uniq. 
         // In the future it will be made by replay attack protection mechanism
         let mut rng = rand::thread_rng();
-        msg_header.src = ton_block::MsgAddressExt::with_extern(&tvm::bitstring::Bitstring::from(rng.gen::<u64>())).unwrap();
+        let mut builder = BuilderData::new();
+        builder.append_u64(rng.gen::<u64>()).unwrap();
+        msg_header.src = ton_block::MsgAddressExt::with_extern(&builder).unwrap();
 
 
         let mut msg = ton_block::Message::with_ext_in_header(msg_header);
