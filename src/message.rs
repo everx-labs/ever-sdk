@@ -2,7 +2,9 @@ use crate::*;
 use futures::stream::Stream;
 use std::sync::Arc;
 use tvm::stack::CellData;
-use ton_block::{MessageId, MessageProcessingStatus};
+use tvm::block::{
+    CommonMsgInfo, Message as TvmMessage, MessageId, MessageProcessingStatus
+};
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub enum MessageType {
@@ -17,7 +19,7 @@ pub const MSG_STATE_FIELD_NAME: &str = "status";
 
 #[derive(Debug)]
 pub struct Message {
-    msg: ton_block::Message,
+    msg: TvmMessage,
 }
 
 // The struct represents sent message and allows to access their properties.
@@ -31,7 +33,7 @@ impl Message {
                 if val == serde_json::Value::Null {
                     Ok(None)
                 } else {
-                    let msg: ton_block::Message = serde_json::from_value(val)
+                    let msg: TvmMessage = serde_json::from_value(val)
                         .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing message: {}", err)))?;
 
                     Ok(Some(Message { msg }))
@@ -68,16 +70,16 @@ impl Message {
 
     // Returns blockchain's message struct
     // Some node-specifed methods won't work. All TonStructVariant fields has Client variant.
-    pub fn msg(&self) -> &ton_block::Message {
+    pub fn msg(&self) -> &TvmMessage {
          &self.msg
     }
 
     // Returns message's type
     pub fn msg_type(&self) -> MessageType {
         match self.msg.header {
-            ton_block::CommonMsgInfo::IntMsgInfo(_) => MessageType::Internal,
-            ton_block::CommonMsgInfo::ExtInMsgInfo(_) => MessageType::ExternalInbound,
-            ton_block::CommonMsgInfo::ExtOutMsgInfo(_) => MessageType::ExternalOutbound,
+            CommonMsgInfo::IntMsgInfo(_) => MessageType::Internal,
+            CommonMsgInfo::ExtInMsgInfo(_) => MessageType::ExternalInbound,
+            CommonMsgInfo::ExtOutMsgInfo(_) => MessageType::ExternalOutbound,
         }
     }
 }

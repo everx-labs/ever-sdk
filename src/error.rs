@@ -67,7 +67,7 @@ error_chain! {
         Tvm(Exception);
         DB(DbError);
         Kafka(KafkaError);
-        TonBlocks(ton_block::BlockError);
+        TonBlocks(tvm::block::BlockError);
     }
 
     errors {

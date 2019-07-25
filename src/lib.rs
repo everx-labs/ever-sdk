@@ -1,7 +1,6 @@
 #![recursion_limit="128"] // needed for error_chain
 
 extern crate tvm;
-extern crate ton_block;
 extern crate ton_abi_json;
 extern crate ton_abi_core;
 

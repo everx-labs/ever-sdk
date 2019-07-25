@@ -9,9 +9,11 @@ use ton_abi_core::abi_response::ABIResponse;
 use ton_abi_core::abi_call::ABICall;
 use ton_abi_json::json_abi::encode_function_call;
 use ed25519_dalek::{Keypair, PublicKey};
-use ton_block::{
+use tvm::block::{
+    Account,
     MessageId,    
     ExternalInboundMessageHeader,
+    MsgAddressExt, 
     MsgAddressInt,
     Serializable,    
     StateInit,
@@ -19,7 +21,8 @@ use ton_block::{
     Deserializable,
     Grams,
     CurrencyCollection,
-    MessageProcessingStatus};
+    MessageProcessingStatus
+};
 use std::convert::Into;
 
 #[cfg(feature = "node_interaction")]
@@ -140,7 +143,7 @@ impl ContractImage {
 // to deploy and call it, to get some contract's properties.
 // Don't forget - in TON blockchain Contract and Account are the same substances.
 pub struct Contract {
-    acc: ton_block::Account,
+    acc: Account,
 }
 
 /// Enum represents blockchain account address.
@@ -159,8 +162,8 @@ impl AccountAddress {
             AccountAddress::Short(account_id) => Ok(account_id.clone()),
             AccountAddress::Full(address) => {
                 let vec = address.get_address();
-                if vec.len() == 32 {
-                    Ok(AccountId::from(vec))
+                if vec.remaining_bits() == 256 {
+                    Ok(AccountId::from(vec.get_bytestring(0)))
                 } else {
                     Err(SdkErrorKind::InvalidData("Address must be 32 bytes long".to_owned()).into())
                 }
@@ -207,7 +210,7 @@ impl Contract {
                 if val == serde_json::Value::Null {
                     Ok(None)
                 } else {
-                    let acc: ton_block::Account = serde_json::from_value(val)
+                    let acc: Account = serde_json::from_value(val)
                         .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing account: {}", err)))?;
 
                     Ok(Some(Contract { acc }))
@@ -323,7 +326,7 @@ impl Contract {
     // Asynchronously calls contract by sending given message.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
-    pub fn send_message(msg: ton_block::Message)
+    pub fn send_message(msg: Message)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
         // send message by Kafka
@@ -333,7 +336,7 @@ impl Contract {
         Self::subscribe_updates(msg_id)
     }
 
-    fn _send_message(msg: ton_block::Message) -> SdkResult<MessageId> {
+    fn _send_message(msg: Message) -> SdkResult<MessageId> {
         let (data, id) = Self::serialize_message(msg)?;
        
         kafka_helper::send_message(&id.as_slice()[..], &data)?;
@@ -416,7 +419,7 @@ impl Contract {
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError2(err)))
     }
 
-    // Packs given inputs by abi into ton_block::Message struct.
+    // Packs given inputs by abi into Message struct.
     // Returns message's bag of cells and identifier.
     pub fn construct_call_message<TIn, TOut>(address: AccountAddress, func: String, input: TIn, key_pair: Option<&Keypair>)
         -> SdkResult<(Vec<u8>, MessageId)>
@@ -432,7 +435,7 @@ impl Contract {
         Self::serialize_message(msg)
     }
 
-    // Packs given inputs by abi into ton_block::Message struct.
+    // Packs given inputs by abi into Message struct.
     // Works with json representation of input and abi.
     // Returns message's bag of cells and identifier.
     pub fn construct_call_message_json(address: AccountAddress, func: String, input: String, 
@@ -447,7 +450,7 @@ impl Contract {
         Self::serialize_message(msg)
     }
 
-    // Packs given image and input into ton_block::Message struct.
+    // Packs given image and input into Message struct.
     // Returns message's bag of cells and identifier.
     pub fn construct_deploy_message<TIn, TOut>(input: TIn, image: ContractImage, key_pair: Option<&Keypair>)
         -> SdkResult<(Vec<u8>, MessageId)>
@@ -462,7 +465,7 @@ impl Contract {
         Self::serialize_message(msg)
     }
 
-    // Packs given image and input into ton_block::Message struct.
+    // Packs given image and input into Message struct.
     // Works with json representation of input and abi.
     // Returns message's bag of cells and identifier.
     pub fn construct_deploy_message_json(func: String, input: String, abi: String, image: ContractImage, 
@@ -494,12 +497,12 @@ impl Contract {
 
     // Returns blockchain's account struct
     // Some node-specifed methods won't work. All TonStructVariant fields has Client variant.
-    pub fn acc(&self) -> &ton_block::Account {
+    pub fn acc(&self) -> &Account {
          &self.acc
     }
 
     fn create_message(address: AccountAddress, msg_body: Arc<CellData>)
-        -> SdkResult<ton_block::Message> {
+        -> SdkResult<Message> {
 
         let mut msg_header = ExternalInboundMessageHeader::default();
 
@@ -509,24 +512,24 @@ impl Contract {
         // TODO don't forget to delete it 
         // This is temporary code to make all messages uniq. 
         // In the future it will be made by replay attack protection mechanism
+        let mut builder = BuilderData::new();
         if cfg!(target_arch="wasm32") {
-            use rand::Rng;
-            
+            use rand::Rng;            
             let mut rng = rand::thread_rng();
-            msg_header.src = ton_block::MsgAddressExt::with_extern(&tvm::bitstring::Bitstring::from(rng.gen::<u64>())).unwrap(); 
+            builder.append_u64(rng.gen::<u64>()).unwrap();
         } else {
             use sha2::Digest;
-
-            let time = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
-
+            let time = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH).unwrap()
+                .as_nanos();
             let mut hasher = sha2::Sha256::new();
             hasher.input(&time.to_be_bytes()[..]);
             let hash = hasher.result();
-
-            msg_header.src = ton_block::MsgAddressExt::with_extern(&tvm::bitstring::Bitstring::create(hash.to_vec(), 64)).unwrap(); 
+            builder.append_raw(hash.to_vec(), 64).unwrap();
         }
+        msg_header.src = MsgAddressExt::with_extern(&builder).unwrap(); 
         
-        let mut msg = ton_block::Message::with_ext_in_header(msg_header);
+        let mut msg = Message::with_ext_in_header(msg_header);
         msg.body = Some(msg_body);        
 
         Ok(msg)
@@ -550,7 +553,7 @@ impl Contract {
     }
 
     fn create_deploy_message(msg_body: Option<Arc<CellData>>, image: ContractImage)
-        -> SdkResult<ton_block::Message> {
+        -> SdkResult<Message> {
 
         let account_id = image.account_id();
         let state_init = image.state_init();
@@ -558,14 +561,14 @@ impl Contract {
         let mut msg_header = ExternalInboundMessageHeader::default();
         msg_header.dst = AccountAddress::from(account_id).get_msg_address()?;
 
-        let mut msg = ton_block::Message::with_ext_in_header(msg_header);
+        let mut msg = Message::with_ext_in_header(msg_header);
         msg.body = msg_body;
         msg.init = Some(state_init);
 
         Ok(msg)
     }
 
-    fn serialize_message(msg: ton_block::Message) -> SdkResult<(Vec<u8>, MessageId)> {
+    fn serialize_message(msg: Message) -> SdkResult<(Vec<u8>, MessageId)> {
         let cells = msg.write_to_new_cell()?.into();
         let mut data = Vec::new();
         let bag = BagOfCells::with_root(cells);
