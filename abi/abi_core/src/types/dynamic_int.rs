@@ -45,22 +45,17 @@ impl ABISerialized for Dint {
     fn prepend_to(&self, mut destination: BuilderData) -> BuilderData {
 
         let bytes = self.to_signed_bytes_be();
-        let high_byte = bytes[0];
-        let padding = high_byte >> 7;
-        let mut skip_bits = 0;
+        let padding = match self.sign() {
+            Sign::Minus => 0xFFu8,
+            _ => 0x00u8
+        };
 
         // Skip unsignificant high bits 
-        for i in (0..7).rev() {
-            if padding == ((high_byte >> i) & 0x01) {
-                skip_bits += 1;
-            } else {
-                break;
-            }
-        }
+        let skip_bits = std::min((bytes[0] ^ padding).leading_zeros(), 7);
 
         let mut c = bytes.len() * 8 - 1;
         let mut s = 0;
-        while c > skip_bits {
+        while c >= skip_bits {
             let mut byte = bytes[c / 8];
             if s > 0 {
                 byte >>= s;
@@ -72,8 +67,13 @@ impl ABISerialized for Dint {
                 // Serialize as non-final byte
                 byte |= 0x80;
             } else {
-                // Serialize as final byte
-                if c < 7 + skip_bits  {
+                // Serialize as final byte with padding
+                (7 + skip_bits).checked_sub(c).map(|shift|
+                    if padding == 0 {
+                      
+                    } else {
+                    }
+                );
                     // Pad last byte to 7 bits according to number sign
                     let padding = match self.sign() {
                         Sign::Plus => 0x00u8,
