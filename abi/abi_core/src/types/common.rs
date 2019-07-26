@@ -1,4 +1,3 @@
-use tvm::bitstring::Bitstring;
 use tvm::stack::{BuilderData, SliceData, IBitstring};
 use super::DeserializationError;
 use types::ABIDeserialized;

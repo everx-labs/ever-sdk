@@ -6,9 +6,7 @@ use super::{
     DeserializationError
 };
 
-use num_bigint::{BigInt, Sign};
-
-use tvm::bitstring::{Bit, Bitstring};
+use num_bigint::{BigInt, Sign};
 use tvm::stack::{BuilderData, SliceData};
 
 pub fn read_dynamic_int(cursor: SliceData, signed_padding: bool)

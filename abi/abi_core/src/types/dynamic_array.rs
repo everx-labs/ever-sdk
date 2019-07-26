@@ -8,7 +8,6 @@ use super::{
     ABITypeSignature
 };
 
-use tvm::bitstring::{Bit, Bitstring};
 use tvm::stack::{BuilderData, SliceData};
 
 // put dynamic array to chain or to separate branch depending on array size

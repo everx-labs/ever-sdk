@@ -1,4 +1,3 @@
-use tvm::bitstring::{Bit, Bitstring};
 use tvm::stack::BuilderData;
 
 use super::common::*;

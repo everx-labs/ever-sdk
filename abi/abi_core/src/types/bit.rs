@@ -5,7 +5,6 @@ use super::{
     ABITypeSignature
 };
 
-use tvm::bitstring::Bit;
 use tvm::stack::{BuilderData, SliceData};
 
 impl ABISerialized for Bit {

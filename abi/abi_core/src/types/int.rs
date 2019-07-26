@@ -8,7 +8,6 @@ use super::{
     DeserializationError
 };
 
-use tvm::bitstring::Bitstring;
 use tvm::stack::{BuilderData, SliceData};
 
 #[macro_export]

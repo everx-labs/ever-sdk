@@ -5,7 +5,6 @@ use super::{
     ABISerialized
 };
 
-use tvm::bitstring::{Bit, Bitstring};
 use tvm::stack::{BuilderData, SliceData};
 
 impl ABISerialized for Bitstring {

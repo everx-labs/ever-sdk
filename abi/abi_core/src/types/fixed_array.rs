@@ -2,7 +2,6 @@ use super::common::*;
 use super::common_arrays::*;
 use super::ABISerialized;
 
-use tvm::bitstring::{Bit, Bitstring};
 use tvm::stack::{BuilderData};
 
 // put fixed array to chain or to separate branch depending on array size
