@@ -7,7 +7,7 @@ use super::{
 
 use tvm::stack::{BuilderData, SliceData};
 
-impl ABISerialized for Bitstring {
+impl ABISerialized for BuilderData {
 
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
         self.bits(0 .. self.length_in_bits())
@@ -20,13 +20,13 @@ impl ABISerialized for Bitstring {
     }
 }
 
-impl ABIDeserialized for Bitstring {
-    type Out = Bitstring;
+impl ABIDeserialized for BuilderData {
+    type Out = BuilderData;
 
     fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
         let (bits, cursor) = <Vec<Bit> as ABIDeserialized>::read_from(cursor)?;
         
-        let mut result = Bitstring::new();
+        let mut result = BuilderData::new();
         bits.iter()
             .for_each(|x| {
                 result.append_bit(x);
@@ -36,7 +36,7 @@ impl ABIDeserialized for Bitstring {
     }
 }
 
-impl ABITypeSignature for Bitstring {
+impl ABITypeSignature for BuilderData {
     fn type_signature() -> String {
         "bitstring".to_string()
     }

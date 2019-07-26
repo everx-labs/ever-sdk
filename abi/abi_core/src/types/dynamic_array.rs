@@ -30,10 +30,10 @@ pub fn prepend_dynamic_array<T: ABISerialized>(
         // if array fit into cell data, put in into main chain
         destination = prepend_array_items_to_chain(destination, array);
 
-        let mut bitstring = Bitstring::new();
-        bitstring.append_bit(&Bit::One);
-        bitstring.append_bit(&Bit::Zero);
-        bitstring.append_u8(array.len() as u8);
+        let mut bitstring = BuilderData::new();
+        bitstring.append_bit_one().unwrap();
+        bitstring.append_bit_zero().unwrap();
+        bitstring.append_u8(array.len() as u8).unwrap();
 
         destination = prepend_data_to_chain(destination, bitstring);
     }
