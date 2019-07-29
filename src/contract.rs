@@ -1,7 +1,7 @@
 use crate::*;
 use std::io::{Read, Seek, Cursor};
 use std::sync::{Arc, Mutex};
-use tvm::stack::{CellData, SliceData, BuilderData};
+use tvm::stack::{BuilderData, CellData, IBitstring, SliceData};
 use tvm::types::AccountId;
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use ton_abi_core::types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
@@ -11,6 +11,7 @@ use ton_abi_json::json_abi::encode_function_call;
 use ed25519_dalek::{Keypair, PublicKey};
 use tvm::block::{
     Account,
+    Message as TvmMessage, 
     MessageId,    
     ExternalInboundMessageHeader,
     MsgAddressExt, 
@@ -326,17 +327,16 @@ impl Contract {
     // Asynchronously calls contract by sending given message.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
-    pub fn send_message(msg: Message)
-        -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
-
+    pub fn send_message(msg: TvmMessage)
+        -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> 
+    {
         // send message by Kafka
         let msg_id = Self::_send_message(msg)?;
-
         // subscribe on updates from DB and return updates stream
         Self::subscribe_updates(msg_id)
     }
 
-    fn _send_message(msg: Message) -> SdkResult<MessageId> {
+    fn _send_message(msg: TvmMessage) -> SdkResult<MessageId> {
         let (data, id) = Self::serialize_message(msg)?;
        
         kafka_helper::send_message(&id.as_slice()[..], &data)?;
@@ -501,11 +501,9 @@ impl Contract {
          &self.acc
     }
 
-    fn create_message(address: AccountAddress, msg_body: Arc<CellData>)
-        -> SdkResult<Message> {
+    fn create_message(address: AccountAddress, msg_body: Arc<CellData>) -> SdkResult<TvmMessage> {
 
         let mut msg_header = ExternalInboundMessageHeader::default();
-
         msg_header.dst = address.get_msg_address()?;
 
 
@@ -525,11 +523,11 @@ impl Contract {
             let mut hasher = sha2::Sha256::new();
             hasher.input(&time.to_be_bytes()[..]);
             let hash = hasher.result();
-            builder.append_raw(hash.to_vec(), 64).unwrap();
+            builder.append_raw(&hash.to_vec()[..], 64).unwrap();
         }
-        msg_header.src = MsgAddressExt::with_extern(&builder).unwrap(); 
+        msg_header.src = MsgAddressExt::with_extern(builder.into()).unwrap(); 
         
-        let mut msg = Message::with_ext_in_header(msg_header);
+        let mut msg = TvmMessage::with_ext_in_header(msg_header);
         msg.body = Some(msg_body);        
 
         Ok(msg)
@@ -552,31 +550,33 @@ impl Contract {
         }
     }
 
-    fn create_deploy_message(msg_body: Option<Arc<CellData>>, image: ContractImage)
-        -> SdkResult<Message> {
-
+    fn create_deploy_message(
+        msg_body: Option<Arc<CellData>>, 
+        image: ContractImage
+    ) -> SdkResult<TvmMessage> {
         let account_id = image.account_id();
         let state_init = image.state_init();
-
         let mut msg_header = ExternalInboundMessageHeader::default();
         msg_header.dst = AccountAddress::from(account_id).get_msg_address()?;
-
-        let mut msg = Message::with_ext_in_header(msg_header);
+        let mut msg = TvmMessage::with_ext_in_header(msg_header);
         msg.body = msg_body;
         msg.init = Some(state_init);
-
         Ok(msg)
     }
 
-    fn serialize_message(msg: Message) -> SdkResult<(Vec<u8>, MessageId)> {
+    fn serialize_message(msg: TvmMessage) -> SdkResult<(Vec<u8>, MessageId)> {
         let cells = msg.write_to_new_cell()?.into();
         let mut data = Vec::new();
         let bag = BagOfCells::with_root(cells);
         let id = bag.get_repr_hash_by_index(0)
-            .ok_or::<SdkError>(SdkErrorKind::InternalError("unexpected message's bag of cells (empty bag)".into())
-                .into())?.clone();
+            .ok_or::<SdkError>(
+                SdkErrorKind::InternalError(
+                    "unexpected message's bag of cells (empty bag)".into()
+                )
+                .into()
+            )?
+            .clone();
         bag.write_to(&mut data, false)?;
-
         Ok((data, id.into()))
     }
 
@@ -584,7 +584,6 @@ impl Contract {
     /// construction if client provides only account ID
     pub fn set_default_workchain(workchain: Option<i32>) {
         let mut default = DEFAULT_WORKCHAIN.lock().unwrap();
-
         *default = workchain;
     }
 

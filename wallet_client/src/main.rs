@@ -7,20 +7,21 @@ extern crate serde_derive;
 extern crate num_bigint;
 extern crate clap;
 
-use rand::{thread_rng, Rng};
-use ton_block::{Message, MessageId, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
-    ExternalInboundMessageHeader, CurrencyCollection, Serializable, GetSetValueForVarInt,
-    MessageProcessingStatus, TransactionId};
-use tvm::bitstring::Bitstring;
-use tvm::types::{AccountId};
+use clap::{Arg, App};
 use ed25519_dalek::Keypair;
 use futures::Stream;
+use num_traits::cast::ToPrimitive;
+use rand::{thread_rng, Rng};
 use sha2::Sha512;
 use std::str::FromStr;
-use num_traits::cast::ToPrimitive;
-use clap::{Arg, App};
-
 use ton_sdk::*;
+use tvm::block::{
+    Message, MessageId, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
+    ExternalInboundMessageHeader, CurrencyCollection, Serializable, GetSetValueForVarInt,
+    MessageProcessingStatus, TransactionId
+};
+use tvm::stack::{BuilderData, IBitstring};
+use tvm::types::{AccountId};
 
 const WALLET_ABI: &str = r#"{
     "ABI version" : 0,
@@ -175,9 +176,11 @@ fn wait_message_processed_by_id(message_id: MessageId)-> TransactionId {
 pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, value: u128) -> Message {
     
     let mut rng = thread_rng();    
+    let mut builder = BuilderData::new();
+    builder.append_u64(rng.gen::<u64>()).unwrap();    
     let mut msg = Message::with_ext_in_header(
         ExternalInboundMessageHeader {
-            src: MsgAddressExt::with_extern(&Bitstring::from(rng.gen::<u64>())).unwrap(),
+            src: MsgAddressExt::with_extern(builder.into()).unwrap(),
             dst: MsgAddressInt::with_standart(None, 0, src.clone()).unwrap(),
             import_fee: Grams::default(),
         }
@@ -358,7 +361,7 @@ fn call_get_balance(current_address: &Option<AccountId>, params: &[&str]) {
         .expect("Error unwrap contract while loading Contract");
 
     let nanogram_balance = contract.balance_grams();
-    let nanogram_balance = nanogram_balance.get_value().to_u128().expect("error cust grams to u128");
+    let nanogram_balance = nanogram_balance.value().to_u128().expect("error cust grams to u128");
     let gram_balance = nanogram_balance as f64 / 1000000000f64;
 
     println!("Account balance {}", gram_balance);

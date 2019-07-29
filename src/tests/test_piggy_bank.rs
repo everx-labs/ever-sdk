@@ -1,13 +1,18 @@
 use super::*;
 use ed25519_dalek::Keypair;
+use futures::Stream;
+use rand::{thread_rng, Rng};
 use rand::rngs::OsRng;
 use sha2::Sha512;
+use tvm::block::{
+    Message, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
+    MessageProcessingStatus, MessageId, TransactionId,
+    ExternalInboundMessageHeader, CurrencyCollection, Serializable
+};
+use tvm::stack::{BuilderData, IBitstring};
 use tvm::types::AccountId;
-use futures::Stream;
-use ton_block::{MessageProcessingStatus, MessageId, TransactionId};
 
 const WORKCHAIN: i32 = 0;
-
 const SUBSCRIBE_CONTRACT_ABI: &str = r#"
 {
     "ABI version": 0,
@@ -496,8 +501,6 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
 #[test]
 fn full_test_piggy_bank() {
 
-    let now = std::time::SystemTime::now();
-
     // connect to node
     init_node_connection();
 
@@ -573,20 +576,16 @@ fn full_test_piggy_bank() {
 	println!("Time: sec={}.{:06} ", t.as_secs(), t.subsec_micros());
 }
 
-
-use rand::{thread_rng, Rng};
-use ton_block::{Message, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
-    ExternalInboundMessageHeader, CurrencyCollection, Serializable};
-use tvm::bitstring::Bitstring;
-
 // Create message "from wallet" to transfer some funds 
 // from one account to another
 pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, value: u128) -> Message {
     
     let mut rng = thread_rng();    
+    let mut builder = BuilderData::new();
+    builder.append_u64(rng.gen::<u64>()).unwrap();
     let mut msg = Message::with_ext_in_header(
         ExternalInboundMessageHeader {
-            src: MsgAddressExt::with_extern(&Bitstring::from(rng.gen::<u64>())).unwrap(),
+            src: MsgAddressExt::with_extern(builder.into()).unwrap(),
             dst: MsgAddressInt::with_standart(None, WORKCHAIN as i8, src.clone()).unwrap(),
             import_fee: Grams::default(),
         }
@@ -596,11 +595,12 @@ pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, va
     balance.grams = Grams(value.into());
 
     let int_msg_hdr = InternalMessageHeader::with_addresses(
-            MsgAddressInt::with_standart(None, WORKCHAIN as i8, src).unwrap(),
-            MsgAddressInt::with_standart(None, WORKCHAIN as i8, dst).unwrap(),
-            balance);
+        MsgAddressInt::with_standart(None, WORKCHAIN as i8, src).unwrap(),
+        MsgAddressInt::with_standart(None, WORKCHAIN as i8, dst).unwrap(),
+        balance
+    );
 
     msg.body = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
-
     msg
+
 }

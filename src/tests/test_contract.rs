@@ -6,8 +6,12 @@ use serde_json::Value;
 use reql_types::WriteStatus;
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
-use rand::RngCore;
+use rand::{Rng, RngCore, thread_rng};
 use sha2::Sha512;
+use tvm::block::{
+    Message, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
+    ExternalInboundMessageHeader, CurrencyCollection, Serializable
+};
 use tvm::types::AccountId;
 use tvm::stack::{BuilderData, IBitstring};
 
@@ -479,20 +483,16 @@ fn test_deploy_empty_contract() {
 
 }
 
-
-use rand::{thread_rng, Rng};
-use ton_block::{Message, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
-    ExternalInboundMessageHeader, CurrencyCollection, Serializable};
-use tvm::bitstring::Bitstring;
-
 // Create message "from wallet" to transfer some funds 
 // from one account to another
 fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, value: u128) -> Message {
     
     let mut rng = thread_rng();    
+    let mut builder = BuilderData::new();
+    builder.append_u64(rng.gen::<u64>()).unwrap();    
     let mut msg = Message::with_ext_in_header(
         ExternalInboundMessageHeader {
-            src: MsgAddressExt::with_extern(&Bitstring::from(rng.gen::<u64>())).unwrap(),
+            src: MsgAddressExt::with_extern(builder.into()).unwrap(),
             dst: MsgAddressInt::with_standart(None, 0, src.clone()).unwrap(),
             import_fee: Grams::default(),
         }
@@ -502,13 +502,14 @@ fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, value:
     balance.grams = Grams(value.into());
 
     let int_msg_hdr = InternalMessageHeader::with_addresses(
-            MsgAddressInt::with_standart(None, 0, src).unwrap(),
-            MsgAddressInt::with_standart(None, 0, dst).unwrap(),
-            balance);
+        MsgAddressInt::with_standart(None, 0, src).unwrap(),
+        MsgAddressInt::with_standart(None, 0, dst).unwrap(),
+        balance
+    );
 
     msg.body = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
-
     msg
+
 }
 
 #[test]

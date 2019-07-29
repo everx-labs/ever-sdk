@@ -2,7 +2,7 @@ use super::common::*;
 use super::common_arrays::*;
 use super::ABISerialized;
 
-use tvm::stack::{BuilderData};
+use tvm::stack::{BuilderData, IBitstring};
 
 // put fixed array to chain or to separate branch depending on array size
 pub fn prepend_fixed_array<T: ABISerialized>(

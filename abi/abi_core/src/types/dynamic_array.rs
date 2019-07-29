@@ -8,7 +8,7 @@ use super::{
     ABITypeSignature
 };
 
-use tvm::stack::{BuilderData, SliceData};
+use tvm::stack::{BuilderData, IBitstring, SliceData};
 
 // put dynamic array to chain or to separate branch depending on array size
 pub fn prepend_dynamic_array<T: ABISerialized>(
@@ -74,7 +74,7 @@ impl<T: ABIDeserialized> ABIDeserialized for Vec<T> {
                 if cursor.remaining_references() == 0 {
                     return Err(DeserializationError::with(cursor));
                 }
-                let mut array = cursor.checked_drain_reference().unwrap();
+                let array = cursor.checked_drain_reference().unwrap();
                 let mut array = Reader::new(array);
                 let mut result = vec![];
                 while !array.is_empty() {

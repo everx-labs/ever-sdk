@@ -7,42 +7,62 @@ use super::{
 };
 
 use num_bigint::{BigInt, Sign};
-use tvm::stack::{BuilderData, SliceData};
+use tvm::stack::{BuilderData, IBitstring, SliceData};
 
-pub fn read_dynamic_int(cursor: SliceData, signed_padding: bool)
--> Result<(Vec<u8>, SliceData), DeserializationError> {
+pub fn read_dynamic_int(
+    cursor: SliceData, 
+    signed_padding: bool
+) -> Result<(Vec<u8>, SliceData), DeserializationError> {
     let mut cursor = cursor;
     let mut bitstring = BuilderData::new();
-
     loop {
         let (byte, new_cursor) = <u8 as ABIDeserialized>::read_from(cursor)?;
         cursor = new_cursor;
-        bitstring.prepend_raw(&[byte << 1], 7)?;
+        bitstring
+            .prepend_raw(&[byte << 1], 7)
+            .map_err(|_| DeserializationError{ cursor: cursor.clone() })?;
         if (byte & 0x80) == 0 {
             break;
         }
     };
-
-    Ok((bitstring_to_be_bytes(bitstring, signed_padding), cursor))
+    Ok((bitstring_to_be_bytes(bitstring.into(), signed_padding)?, cursor))
 }
 
-pub fn bitstring_to_be_bytes(mut bitstring: BuilderData, signed_padding: bool) -> Vec<u8> {
-    // pad to 8 bits
-    let padding_count = 8 - ((bitstring.length_in_bits() - 1) % 8 + 1);
-    let slice = SliceData::from(bitstring.clone());
-    let padding_string = if signed_padding && (slice.get_bits(0, 1) == 1) {
-        bitstring.prepend_raw(&[0xFF], padding_count).unwrap()
+pub fn bitstring_to_be_bytes(
+    bitstring: SliceData, 
+    signed_padding: bool
+) -> Result<Vec<u8>, DeserializationError> {
+    let total_bits = bitstring.remaining_bits();
+    let padding = 8 - total_bits % 8;
+    if padding < 8 {    
+        let mut ret = Vec::new();
+        let mut bits = 8 - padding;
+        let mut byte = bitstring
+            .get_bits(0, bits)
+            .map_err(|_| DeserializationError { cursor: bitstring.clone() })?;
+        if signed_padding && (byte & (1 << (bits - 1)) != 0) {
+            byte |= 0xFFu8 << bits;
+        }
+        ret.push(byte);
+        while bits < total_bits {
+            ret.push(
+                bitstring
+                    .get_bits(bits, 8)
+                    .map_err(|_| DeserializationError { cursor: bitstring.clone() })?
+            );
+            bits += 8;
+        }
+        Ok(ret)
     } else {
-        bitstring.prepend_raw(&[0x00], padding_count).unwrap()
-    };
-    bitstring.cell().data().to_vec()
+        Ok(bitstring.cell().data().to_vec())
+    }
 }
 
 pub type Dint = BigInt;
 
 impl ABISerialized for Dint {
 
-    fn prepend_to(&self, mut destination: BuilderData) -> BuilderData {
+    fn prepend_to(&self, destination: BuilderData) -> BuilderData {
 
         let bytes = self.to_signed_bytes_be();
         let padding = match self.sign() {
@@ -51,10 +71,11 @@ impl ABISerialized for Dint {
         };
 
         // Skip unsignificant high bits 
-        let skip_bits = std::min((bytes[0] ^ padding).leading_zeros(), 7);
-
+        let skip_bits = std::cmp::min((bytes[0] ^ padding).leading_zeros(), 7) as usize;
         let mut c = bytes.len() * 8 - 1;
-        let mut s = 0;
+        let mut s = 0usize;
+        let mut b = BuilderData::new();
+
         while c >= skip_bits {
             let mut byte = bytes[c / 8];
             if s > 0 {
@@ -68,36 +89,19 @@ impl ABISerialized for Dint {
                 byte |= 0x80;
             } else {
                 // Serialize as final byte with padding
-                (7 + skip_bits).checked_sub(c).map(|shift|
-                    if padding == 0 {
-                      
-                    } else {
-                    }
-                );
-                    // Pad last byte to 7 bits according to number sign
-                    let padding = match self.sign() {
-                        Sign::Plus => 0x00u8,
-                        Sign::NoSign => 0x00u8,
-                        Sign::Minus => 0xffu8,
-                    };
-                    byte |= padding << (7 + skip_bits - c);
+                if padding != 0 {
+                    (7 + skip_bits).checked_sub(c).map(|shift|
+                        byte |= padding << shift
+                    );
+                    byte &= 0x7F;
                 }
-                byte &= 0x7F;
             }
-            destination.prepend_raw(&[byte], 8).unwrap();
-            if c < 7 {
-                c = 0
-            } else {
-                c -= 7
-            }
-            if s > 0 {
-                s -= 1
-            } else {
-                s = 7
-            }
+            b.append_u8(byte).unwrap();
+            c = c.checked_sub(7).unwrap_or(0);
+            s = s.checked_sub(1).unwrap_or(7);
         }
 
-        destination
+        prepend_data_to_chain(destination, b)
 
 /*
         let bytes = self.to_signed_bytes_be();

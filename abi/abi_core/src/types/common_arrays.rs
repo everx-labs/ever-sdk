@@ -1,4 +1,4 @@
-use tvm::stack::BuilderData;
+use tvm::stack::{BuilderData, IBitstring};
 
 use super::common::*;
 use super::ABISerialized;
