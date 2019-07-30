@@ -5,7 +5,8 @@ use super::{
     ABISerialized,
     ABIDeserialized,
     ABITypeSignature,
-    DeserializationError
+    DeserializationError,
+    Bitstring
 };
 
 use tvm::stack::{BuilderData, SliceData};
@@ -19,7 +20,8 @@ macro_rules! define_int_ABIParameter {
             fn prepend_to(&self, destination: BuilderData) -> BuilderData {
                 let vec = self.to_be_bytes().to_vec();
                 let size = vec.len();
-                let data = BuilderData::with_raw(vec, size * 8);
+                let data = Bitstring::create(vec, size * 8);
+
                 prepend_data_to_chain(destination, data)
             }
 

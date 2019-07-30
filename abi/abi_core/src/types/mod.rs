@@ -110,6 +110,9 @@ pub use self::dynamic_array::*;
 mod bitstring;
 pub use self::bitstring::*;
 
+mod bit;
+pub use self::bit::*;
+
 mod dynamic_int;
 pub use self::dynamic_int::*;
 

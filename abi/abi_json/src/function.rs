@@ -5,7 +5,7 @@ use {Param, Token, TokenValue};
 use ed25519_dalek::*;
 use tvm::stack::{BuilderData, SliceData};
 use tvm::cells_serialization::BagOfCells;
-use ton_abi_core::types::prepend_data_to_chain;
+use ton_abi_core::types::{Bitstring, prepend_data_to_chain};
 use ton_abi_core::types::{ABISerialized, DeserializationError as InnerTypeDeserializationError};
 
 pub const   ABI_VERSION: u8                 = 0;
@@ -149,7 +149,7 @@ impl Function {
             let mut vec = vec![ABI_VERSION];
             vec.extend_from_slice(&self.get_function_id()[..]);
             let len = vec.len() * 8;
-            BuilderData::with_raw(vec, len)
+            Bitstring::create(vec, len)
         });
 
         if self.signed {

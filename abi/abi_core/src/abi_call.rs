@@ -3,11 +3,11 @@ use ed25519_dalek::*;
 use std::marker::PhantomData;
 use tvm::cells_serialization::BagOfCells;
 use tvm::stack::{BuilderData, SliceData};
-use types::{ABIInParameter, ABIOutParameter, ABITypeSignature, prepend_data_to_chain};
+use types::{ABIInParameter, ABIOutParameter, ABITypeSignature, prepend_data_to_chain, Bitstring};
 
 pub const   ABI_VERSION: u8                 = 0;
-const ABI_VERSION_BITS_SIZE: usize = 8;
-const FUNC_ID_BITS_SIZE: usize = 32;
+const 		ABI_VERSION_BITS_SIZE: usize	= 8;
+const 		FUNC_ID_BITS_SIZE: usize		= 32;
 
 /// Empty struct for contract call serialization
 pub struct ABICall<TIn: ABIInParameter + ABITypeSignature, TOut: ABIOutParameter + ABITypeSignature> {
@@ -102,7 +102,7 @@ where
             let mut vec = vec![ABI_VERSION];
             vec.extend_from_slice(&Self::get_function_id(fn_name.into())[..]);
             let len = vec.len() * 8;
-            BuilderData::with_raw(vec, len)
+            Bitstring::create(vec, len)
         });
 
         
@@ -133,7 +133,7 @@ where
             let mut vec = vec![ABI_VERSION];
             vec.extend_from_slice(&Self::get_function_id(fn_name.into())[..]);
             let len = vec.len() * 8;
-            BuilderData::with_raw(vec, len)
+            Bitstring::create(vec, len)
         })
     }
 }

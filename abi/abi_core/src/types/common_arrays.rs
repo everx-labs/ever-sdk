@@ -1,7 +1,8 @@
-use tvm::stack::{BuilderData, IBitstring};
+use tvm::stack::BuilderData;
 
 use super::common::*;
 use super::ABISerialized;
+use types::{Bit, Bitstring};
 
 // put array items to provided chain
 pub fn prepend_array_items_to_chain<T: ABISerialized>(
@@ -39,9 +40,9 @@ pub fn put_array_to_separate_branch<T: ABISerialized>(
 
     destination.prepend_reference(array_builder);
 
-    let mut bitstring = BuilderData::new();
-    bitstring.append_bit_zero().unwrap();
-    bitstring.append_bit_zero().unwrap();
+    let mut bitstring = Bitstring::new();
+    bitstring.append_bit(&Bit::Zero);
+    bitstring.append_bit(&Bit::Zero);
 
     destination = prepend_data_to_chain(destination, bitstring);
 

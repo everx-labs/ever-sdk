@@ -1,25 +1,30 @@
 use tvm::stack::{BuilderData, SliceData, IBitstring};
 use super::DeserializationError;
-use types::ABIDeserialized;
+use types::{ABIDeserialized, Bitstring};
 
 // put data to cell and make chain if data doesn't fit into cell
-pub fn prepend_data_to_chain(mut builder: BuilderData, data: BuilderData) -> BuilderData {
-    let mut data: SliceData = data.into();
-    data.shrink_references(0..0);
-    while data.remaining_bits() > 0 {
+pub fn prepend_data_to_chain(mut builder: BuilderData, data: Bitstring) -> BuilderData {
+    let mut data = data;
+
+    while data.length_in_bits() > 0 {
         let remaining_bits = BuilderData::bits_capacity() - builder.bits_used();
+
         if remaining_bits > 0 {
-            let data_bits = data.remaining_bits();
-            if remaining_bits < data_bits {
-                // data does not fit into cell - fill current cell and take remaining data
-                let mut cut = data.clone();
-                cut.shrink_data(data_bits - remaining_bits..data_bits);
-                builder.prepend_builder(&BuilderData::from_slice(&cut)).unwrap();
-                data.shrink_data(0..data_bits - remaining_bits);
+            // data does not fit into cell - fill current cell and take remaining data
+            if remaining_bits < data.length_in_bits() {
+                let cut = data.substring(data.length_in_bits() - remaining_bits..data.length_in_bits());
+                let mut vec = vec![];
+                cut.into_bitstring_with_completion_tag(&mut vec);
+                builder.prepend_bitstring(&vec).unwrap();
+
+                data = data.substring(0..data.length_in_bits() - remaining_bits);
             } else {
                 // data fit into current cell - no data remaining
-                builder.prepend_builder(&BuilderData::from_slice(&data)).unwrap();
-                data.shrink_data(0..0);
+                let mut vec = vec![];
+                data.into_bitstring_with_completion_tag(&mut vec);
+                builder.prepend_bitstring(&vec).unwrap();
+
+                data.clear();
             }
         } else {
             // current cell is full - move to next
@@ -28,6 +33,7 @@ pub fn prepend_data_to_chain(mut builder: BuilderData, data: BuilderData) -> Bui
             builder = next_builder;
         }
     }
+
     builder
 }
 
@@ -57,10 +63,11 @@ pub fn get_next_byte_from_chain(
     }
 }
 
-macro_rules! next_slice {
+macro_rules! next_bitstring {
     ( $cursor:ident, $bits:ident ) => {
         $cursor
             .get_next_slice($bits)
+            .map(|slice| Bitstring::create(slice.get_bytestring(0), $bits))
             .map_err(|_| DeserializationError { cursor: $cursor.clone() })?
     }
 }
@@ -68,10 +75,10 @@ macro_rules! next_slice {
 pub fn get_next_bits_from_chain(
     cursor: SliceData, 
     bits: usize
-) -> Result<(SliceData, SliceData), DeserializationError> {
+) -> Result<(Bitstring, SliceData), DeserializationError> {
     let mut cursor = cursor;    
     if cursor.remaining_bits() >= bits {
-        Ok((next_slice!(cursor, bits), cursor))
+        Ok((next_bitstring!(cursor, bits), cursor))
     }
     else {
         while (cursor.remaining_bits() == 0) && (cursor.remaining_references() == 1) {
@@ -82,18 +89,16 @@ pub fn get_next_bits_from_chain(
             return Err(DeserializationError::with(cursor));
         }
         if remaining_bits >= bits {
-            Ok((next_slice!(cursor, bits), cursor))
+            Ok((next_bitstring!(cursor, bits), cursor))
         } else {
-            let result = next_slice!(cursor, remaining_bits);
+            let mut result = next_bitstring!(cursor, remaining_bits);
             let (remain, cursor) = get_next_bits_from_chain(
                 cursor, 
-                bits - result.remaining_bits()
+                bits - result.length_in_bits()
             )?;
-            let mut builder = BuilderData::from_slice(&result);
-            builder
-                .checked_append_references_and_data(&remain)
-                .map_err(|_| DeserializationError { cursor: cursor.clone() })?;
-            Ok((builder.into(), cursor))
+
+            result.append(&remain);
+            Ok((result, cursor))
         }
     }
 }

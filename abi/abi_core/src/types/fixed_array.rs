@@ -2,7 +2,8 @@ use super::common::*;
 use super::common_arrays::*;
 use super::ABISerialized;
 
-use tvm::stack::{BuilderData, IBitstring};
+use types::{Bit, Bitstring};
+use tvm::stack::{BuilderData};
 
 // put fixed array to chain or to separate branch depending on array size
 pub fn prepend_fixed_array<T: ABISerialized>(
@@ -21,9 +22,9 @@ pub fn prepend_fixed_array<T: ABISerialized>(
         // if array fit into cell data, put in into main chain
         destination = prepend_array_items_to_chain(destination, array);
 
-        let mut bitstring = BuilderData::new();
-        bitstring.append_bit_one().unwrap();
-        bitstring.append_bit_zero().unwrap();
+        let mut bitstring = Bitstring::new();
+        bitstring.append_bit(&Bit::One);
+        bitstring.append_bit(&Bit::Zero);
 
         destination = prepend_data_to_chain(destination, bitstring);
     }
@@ -136,7 +137,7 @@ macro_rules! fixed_abi_array {
                         if cursor.remaining_references() == 0 {
                             return Err($crate::types::DeserializationError::with(cursor));
                         }
-                        let mut array = cursor.checked_drain_reference().unwrap();
+                        let array = cursor.checked_drain_reference().unwrap();
                         let mut array = $crate::types::reader::Reader::new(array);
                         let mut result = vec![];
                         for _ in 0..$size {

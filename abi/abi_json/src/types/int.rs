@@ -1,8 +1,9 @@
 use num_bigint::{BigInt, Sign};
-use tvm::stack::{BuilderData, SliceData};
+use tvm::stack::BuilderData;
 use ton_abi_core::types::{
     ABISerialized,
-    prepend_data_to_chain
+    prepend_data_to_chain,
+    Bitstring
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -28,14 +29,12 @@ impl ABISerialized for Int {
             let mut vec_padding = Vec::new();
             vec_padding.resize(dif / 8 + 1, padding);
 
-            let mut bitstring = BuilderData::with_raw(vec_padding, dif);
-            bitstring.append_raw(&vec[..], self.size - dif).unwrap();
+            let mut bitstring = Bitstring::create(vec_padding, dif);
+            bitstring.append(&Bitstring::create(vec, self.size - dif));
             bitstring
         } else {
             let offset = vec_bits_length - self.size;
-            let mut slice = SliceData::from_raw(vec, vec_bits_length);
-            slice.shrink_data(offset..);
-            BuilderData::from_slice(&slice)
+            Bitstring::create(vec, vec_bits_length).substring(offset..)
         };
 
         prepend_data_to_chain(destination, bitstring)

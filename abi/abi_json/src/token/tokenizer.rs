@@ -2,7 +2,7 @@
 use {ParamType, Param, Uint, Int, Token, TokenValue};
 use serde_json::Value;
 use num_bigint::{Sign, BigInt};
-use tvm::stack::{BuilderData, IBitstring};
+use ton_abi_core::types::{Bitstring, Bit};
 
 /// Returning errors during deserialization
 #[derive(Debug)]
@@ -194,7 +194,7 @@ impl Tokenizer {
     }
 
     /// Tries to read bitstring from `Value`.
-    fn read_bitstring(value: &Value) -> Result<BuilderData, TokenizeError> {
+    fn read_bitstring(value: &Value) -> Result<Bitstring, TokenizeError> {
         let mut string = value
             .as_str()
             .ok_or(TokenizeError::WrongDataFormat(value.clone()))?
@@ -225,14 +225,14 @@ impl Tokenizer {
             let vec = hex::decode(string)
                 .map_err(|_| TokenizeError::InvalidParameterValue(value.clone()))?;
 
-            BuilderData::with_bitstring(vec)
+            Bitstring::from_bitstring_with_completion_tag(vec)
         } else { // bits representation
-            let mut bitstring = BuilderData::new();
+            let mut bitstring = Bitstring::new();
 
             for bit in string.chars() {
                 match bit {
-                    '0' => bitstring.append_bit_zero().unwrap(),
-                    '1' => bitstring.append_bit_one().unwrap(),
+                    '0' => bitstring.append_bit(&Bit::Zero),
+                    '1' => bitstring.append_bit(&Bit::One),
                     _ => return Err(TokenizeError::InvalidParameterValue(value.clone()))
                 };
             }

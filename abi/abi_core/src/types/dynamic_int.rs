@@ -3,59 +3,46 @@ use super::{
     ABISerialized,
     ABIDeserialized,
     ABITypeSignature,
-    DeserializationError
+    DeserializationError,
+    Bit,
+    Bitstring
 };
 
-use num_bigint::{BigInt, Sign};
-use tvm::stack::{BuilderData, IBitstring, SliceData};
+use num_bigint::{BigInt, Sign};
 
-pub fn read_dynamic_int(
-    cursor: SliceData, 
-    signed_padding: bool
-) -> Result<(Vec<u8>, SliceData), DeserializationError> {
+use tvm::stack::{BuilderData, SliceData};
+
+pub fn read_dynamic_int(cursor: SliceData, signed_padding: bool)
+-> Result<(Vec<u8>, SliceData), DeserializationError> {
     let mut cursor = cursor;
-    let mut bitstring = BuilderData::new();
+    let mut bitstring = Bitstring::new();
+
     loop {
         let (byte, new_cursor) = <u8 as ABIDeserialized>::read_from(cursor)?;
         cursor = new_cursor;
-        bitstring
-            .prepend_raw(&[byte << 1], 7)
-            .map_err(|_| DeserializationError{ cursor: cursor.clone() })?;
+
+        bitstring = Bitstring::create(vec![byte << 1], 7) + bitstring;
+
         if (byte & 0x80) == 0 {
             break;
         }
     };
-    Ok((bitstring_to_be_bytes(bitstring.into(), signed_padding)?, cursor))
+
+    Ok((bitstring_to_be_bytes(bitstring, signed_padding), cursor))
 }
 
-pub fn bitstring_to_be_bytes(
-    bitstring: SliceData, 
-    signed_padding: bool
-) -> Result<Vec<u8>, DeserializationError> {
-    let total_bits = bitstring.remaining_bits();
-    let padding = 8 - total_bits % 8;
-    if padding < 8 {    
-        let mut ret = Vec::new();
-        let mut bits = 8 - padding;
-        let mut byte = bitstring
-            .get_bits(0, bits)
-            .map_err(|_| DeserializationError { cursor: bitstring.clone() })?;
-        if signed_padding && (byte & (1 << (bits - 1)) != 0) {
-            byte |= 0xFFu8 << bits;
-        }
-        ret.push(byte);
-        while bits < total_bits {
-            ret.push(
-                bitstring
-                    .get_bits(bits, 8)
-                    .map_err(|_| DeserializationError { cursor: bitstring.clone() })?
-            );
-            bits += 8;
-        }
-        Ok(ret)
+pub fn bitstring_to_be_bytes(bitstring: Bitstring, signed_padding: bool) -> Vec<u8> {
+    // pad to 8 bits
+    let padding_count = 8 - ((bitstring.length_in_bits() - 1) % 8 + 1);
+    let padding_string = if signed_padding && (bitstring.bits(0..1).data[0] == Bit::One) {
+        Bitstring::create(vec![0xFF], padding_count)
     } else {
-        Ok(bitstring.cell().data().to_vec())
-    }
+        Bitstring::create(vec![0], padding_count)
+    };
+
+    let bitstring = padding_string + bitstring;
+
+    bitstring.data().to_vec()
 }
 
 pub type Dint = BigInt;
@@ -63,47 +50,6 @@ pub type Dint = BigInt;
 impl ABISerialized for Dint {
 
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
-
-        let bytes = self.to_signed_bytes_be();
-        let padding = match self.sign() {
-            Sign::Minus => 0xFFu8,
-            _ => 0x00u8
-        };
-
-        // Skip unsignificant high bits 
-        let skip_bits = std::cmp::min((bytes[0] ^ padding).leading_zeros(), 7) as usize;
-        let mut c = bytes.len() * 8 - 1;
-        let mut s = 0usize;
-        let mut b = BuilderData::new();
-
-        while c >= skip_bits {
-            let mut byte = bytes[c / 8];
-            if s > 0 {
-                byte >>= s;
-                if c > 8 {
-                    byte |= bytes[c / 8 - 1] << (8 - s);
-                }
-            }
-            if c >= 8 + skip_bits {
-                // Serialize as non-final byte
-                byte |= 0x80;
-            } else {
-                // Serialize as final byte with padding
-                if padding != 0 {
-                    (7 + skip_bits).checked_sub(c).map(|shift|
-                        byte |= padding << shift
-                    );
-                    byte &= 0x7F;
-                }
-            }
-            b.append_u8(byte).unwrap();
-            c = c.checked_sub(7).unwrap_or(0);
-            s = s.checked_sub(1).unwrap_or(7);
-        }
-
-        prepend_data_to_chain(destination, b)
-
-/*
         let bytes = self.to_signed_bytes_be();
         let size = bytes.len() * 8;
 
@@ -119,23 +65,24 @@ impl ABISerialized for Dint {
             }
         }
 
-        let cropped_bitstring = SliceData::from_raw(bytes, size);
-        cropped_bitstring.shrink_data(crop_bits..size);
+        let num_bitstring = Bitstring::create(bytes, size);
 
-        let mut result = BuilderData::new();
-        let mut remain = cropped_bitstring.remaining_bits();
+        let cropped_bitstring = num_bitstring.substring(crop_bits..num_bitstring.length_in_bits());
 
-        // take groups by 7 bits
+        let mut result = Bitstring::new();
+        let mut remain = cropped_bitstring.length_in_bits();
+
+        // take gropus by 7 bits
         while remain > 0 {
-
             let bit_count = std::cmp::min(remain, 7);
-            let mut prefix = 0u8;
+
+            let mut prefix = Bitstring::new();
 
             // add prefix (1 - more groups followed, 0 - last group)
             if remain > bit_count {
-                prefix.append_bit_one().unwrap();
+                prefix.append_bit(&Bit::One);
             } else {
-                prefix.append_bit_zero().unwrap();
+                prefix.append_bit(&Bit::Zero);
                 if bit_count != 7 {
                     // pad last group to 7 bits according to number sign
                     let padding = match self.sign() {
@@ -143,7 +90,7 @@ impl ABISerialized for Dint {
                         Sign::NoSign => 0x0,
                         Sign::Minus => 0xffff,
                     };
-                    prefix.append_bits(padding, 7 - bit_count).unwrap();
+                    prefix.append_bits(padding, 7 - bit_count);
                 }
             }
 
@@ -153,7 +100,6 @@ impl ABISerialized for Dint {
         }
 
         prepend_data_to_chain(destination, result)
-*/
     }
 
     fn get_in_cell_size(&self) -> usize {

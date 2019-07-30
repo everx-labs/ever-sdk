@@ -5,10 +5,12 @@ use super::{
     ABISerialized,
     ABIDeserialized,
     DeserializationError,
-    ABITypeSignature
+    ABITypeSignature,
+    Bit,
+    Bitstring
 };
 
-use tvm::stack::{BuilderData, IBitstring, SliceData};
+use tvm::stack::{BuilderData, SliceData};
 
 // put dynamic array to chain or to separate branch depending on array size
 pub fn prepend_dynamic_array<T: ABISerialized>(
@@ -30,10 +32,10 @@ pub fn prepend_dynamic_array<T: ABISerialized>(
         // if array fit into cell data, put in into main chain
         destination = prepend_array_items_to_chain(destination, array);
 
-        let mut bitstring = BuilderData::new();
-        bitstring.append_bit_one().unwrap();
-        bitstring.append_bit_zero().unwrap();
-        bitstring.append_u8(array.len() as u8).unwrap();
+        let mut bitstring = Bitstring::new();
+        bitstring.append_bit(&Bit::One);
+        bitstring.append_bit(&Bit::Zero);
+        bitstring.append_u8(array.len() as u8);
 
         destination = prepend_data_to_chain(destination, bitstring);
     }
