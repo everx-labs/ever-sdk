@@ -19,6 +19,7 @@ extern crate sha2;
 extern crate error_chain;
 #[cfg(feature = "node_interaction")]
 #[cfg(feature = "node_interaction")]
+#[macro_use]
 extern crate serde_json;
 #[cfg(feature = "node_interaction")]
 extern crate kafka;
@@ -67,7 +68,8 @@ mod utils;
 pub fn init(default_workchain: Option<i32>, config: NodeClientConfig) -> SdkResult<()> {
     Contract::set_default_workchain(default_workchain);
     kafka_helper::init(config.kafka_config)?;
-    db_helper::init(config.graphql_config)
+    db_helper::init(config.graphql_config);
+    Ok(())
 }
 
 /// Init SKD. Connects to Kafka and Rethink DB.

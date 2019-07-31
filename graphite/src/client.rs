@@ -1,4 +1,4 @@
-use crate::types::{ResponseStream, SubscribeStream};
+use crate::types::{ResponseStream, SubscribeRequest, SubscribeStream};
 
 use reqwest::Client;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
@@ -16,8 +16,10 @@ pub struct GqlClient {
 }
 
 impl GqlClient {
-    pub fn new(graphql_host: String, graphql_socket_host: String) -> Self {
-        let client = ClientBuilder::new(&graphql_socket_host)
+    pub fn new(server: String) -> Self {
+        let host = "http://".to_owned()+&server;
+        let ws_host = "ws://".to_owned()+&server;
+        let client = ClientBuilder::new(&ws_host)
             .unwrap()
             .add_protocol("graphql-ws")
             .connect_insecure()
@@ -27,8 +29,8 @@ impl GqlClient {
         Self {
             client: Client::new(),
             socket_sender: sender,
-            graphql_host: graphql_host,
-            graphql_socket_host: graphql_socket_host,
+            graphql_host: host,
+            graphql_socket_host: ws_host.to_string(),
             incremented_id: 0
         }
     }
@@ -48,11 +50,11 @@ impl GqlClient {
             .send());
     }
     
-    pub fn subscribe(&mut self, query: String) -> SubscribeStream {
+    pub fn subscribe(&mut self, request: SubscribeRequest) -> SubscribeStream {
         self.incremented_id = self.incremented_id+1;
         let id = self.incremented_id;
                 
-        return SubscribeStream::new(id, query, &self.graphql_socket_host.clone());
+        return SubscribeStream::new(id, request, &self.graphql_socket_host.clone());
     }
     
     pub fn unsubscribe(&mut self, id: u64) {

@@ -12,13 +12,6 @@ fn test_init() {
         other => panic!(format!("{:?}", other))
     };
 
-    let res = db_helper::load_record("table", "record_id");
-    assert!(res.is_err());
-    match res.err().unwrap().kind() {
-        SdkErrorKind::NotInitialized => (),
-        other => panic!(format!("{:?}", other))
-    };
-
     let res = init_json(Some(WORKCHAIN), "{}".into());
     assert!(res.is_err());
     match res.err().unwrap().kind() {
@@ -28,12 +21,11 @@ fn test_init() {
 
     let config_json = r#"
         {
-            "db_config": {
-                "servers": ["142.93.137.28:28015"],
-                "db_name": "blockchain"
+            "graphql_config": {
+                "server": "services.tonlabs.io:4000/graphql"
             },
             "kafka_config": {
-                "servers": ["142.93.137.28:9092"],
+                "servers": ["services.tonlabs.io:8082"],
                 "topic": "requests",
                 "ack_timeout": 123
             }
@@ -55,10 +47,5 @@ fn test_init() {
         other => panic!(format!("{:?}", other))
     };
 
-    let res = db_helper::init(config.db_config);
-    assert!(res.is_err());
-    match res.err().unwrap().kind() {
-        SdkErrorKind::DB(_) => (),
-        other => panic!(format!("{:?}", other))
-    };
+    db_helper::init(config.graphql_config)
 }*/

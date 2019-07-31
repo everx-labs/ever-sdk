@@ -31,6 +31,27 @@ impl fmt::Display for GraphiteError {
 
 impl std::error::Error for GraphiteError {}
 
+pub struct SubscribeRequest {
+    query: String,
+    variables: Option<String>
+}
+
+impl SubscribeRequest {
+    pub fn new(query: String, variables: Option<String>) -> Self {
+        Self {
+            query, variables
+        }
+    }
+    
+    pub fn get_query(&self) -> String {
+        self.query.clone()
+    }
+    
+    pub fn get_variables(&self) -> Option<String> {
+        self.variables.clone()
+    }
+}
+
 pub struct ResponseStream {
     response: Result<Response, reqwest::Error>
 }
@@ -60,13 +81,13 @@ impl Stream for ResponseStream {
 
 pub struct SubscribeStream {
     id: u64,
-    query: String,
+    request: SubscribeRequest,
     receiver: Reader<TcpStream>,
     sender: Writer<TcpStream>
 }
 
 impl SubscribeStream {
-    pub fn new(id: u64, query: String, host: &str) -> Self {  
+    pub fn new(id: u64, request: SubscribeRequest, host: &str) -> Self {  
         let client = ClientBuilder::new(host)
             .unwrap()
             .add_protocol("graphql-ws")
@@ -76,7 +97,7 @@ impl SubscribeStream {
                
         let mut future = Self {
             id: id,
-            query: query,
+            request: request,
             receiver: receiver,
             sender: sender
         };
@@ -86,8 +107,17 @@ impl SubscribeStream {
     }
     
     pub fn subscribe(&mut self) {
-        let query = format!("{{\"id\":{}, \"type\": \"start\", \"payload\":{{ \"query\": \"{}\" }}}}", &self.id, &self.query);
-        let msg = OwnedMessage::Text(query.to_string());
+        let query = &self.request.get_query().clone();
+        let variables = &self.request.get_variables().clone();
+        let request: String;
+        
+        if let Some(vars) = variables {
+            request = format!("{{\"id\":{}, \"type\": \"start\", \"payload\":{{ \"query\": \"{}\", \"variables\": {} }}}}", &self.id, &query, &vars);
+        } else {
+            request = format!("{{\"id\":{}, \"type\": \"start\", \"payload\":{{ \"query\": \"{}\" }}}}", &self.id, &query);
+        }
+        
+        let msg = OwnedMessage::Text(request);
         self.sender.send_message(&msg).expect("Sending message across stdin channel.");
     }
     

@@ -6,8 +6,7 @@ pub const TRANSACTIONS_TABLE_NAME: &str = "transactions";
 // Represents config to connect Rethink DB
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GraphqlConfig {
-    pub host: String,
-    pub socket_host: String,
+    pub server: String,
 }
 
 // Represents config to connect Kafka

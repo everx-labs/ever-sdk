@@ -1,9 +1,8 @@
-/*use ton_abi_json::json_abi::decode_function_response;
+/*
+use ton_abi_json::json_abi::decode_function_response;
 use super::*;
 use std::io::{Cursor};
-use reql::{Config, Client, Run};
 use serde_json::Value;
-use reql_types::WriteStatus;
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
 use rand::RngCore;
@@ -13,7 +12,19 @@ use tvm::stack::{BuilderData, IBitstring};
 
 const DB_NAME: &str = "blockchain";
 const WORKCHAIN: i32 = 0;
-
+const CONFIG_JSON: &str = r#"
+    {
+        "graphql_config": {
+            "host": "http://services.tonlabs.io",
+            "socket_host": "ws://services.tonlabs.io""
+        },
+        "kafka_config": {
+            "servers": ["http://services.tonlabs.io:9092"],
+            "topic": "requests",
+            "ack_timeout": 123
+        }
+    }"#;  
+/*
 #[test]
 #[ignore] // Rethink have to work on 127.0.0.1:32769. Run it and comment "ignore"
 fn test_subscribe_updates() {
@@ -78,7 +89,7 @@ fn test_subscribe_updates() {
 
     another_thread.join().unwrap();
 }
-
+*/
 #[test]
 #[ignore] 
 fn test_subscribe_updates_kafka_connector() {
@@ -102,18 +113,7 @@ connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_status
 
 
     // init SDK
-    let config_json = r#"
-        {
-            "db_config": {
-                "servers": ["127.0.0.1:28015"],
-                "db_name": "some name"
-            },
-            "kafka_config": {
-                "servers": ["127.0.0.1:9092"],
-                "topic": "requests",
-                "ack_timeout": 1000
-            }
-        }"#;    
+    let config_json = CONFIG_JSON.clone();    
     init_json(Some(WORKCHAIN), config_json.into()).unwrap();
 
 
@@ -301,18 +301,7 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
 #[test]
 fn test_deploy_and_call_contract() {
    
-    let config_json = r#"
-        {
-            "db_config": {
-                "servers": ["142.93.137.28:28015"],
-                "db_name": "blockchain"
-            },
-            "kafka_config": {
-                "servers": ["142.93.137.28:9092"],
-                "topic": "requests",
-                "ack_timeout": 1000
-            }
-        }"#;    
+    let config_json = CONFIG_JSON.clone();    
     init_json(Some(WORKCHAIN), config_json.into()).unwrap();
    
    
@@ -363,18 +352,13 @@ fn test_deploy_and_call_contract() {
 
     test_call_contract(account_id, &keypair);
 }
-
+*/
 /*#[test]
 fn test_send_empty_messages() {
     let id = AccountId::from([11; 32]);
     let contract = Contract { id, balance_grams: 0 };
     
-    let config_json = r#"
-    {
-        "servers": ["builder.tonlabs.io:9092"],
-        "topic": "kirill-test",
-        "ack_timeout": 1000
-    }"#;
+    let config_json = CONFIG_JSON.clone();
 
     let config : KafkaConfig = serde_json::from_str(&config_json).unwrap();
 
@@ -393,7 +377,7 @@ fn test_send_empty_messages() {
 
         println!("message {} sent!", hex::encode(msg_id.as_slice()));
     }
-}*/
+}
 
 #[test]
 fn test_contract_image_from_file() {
@@ -410,18 +394,7 @@ fn test_contract_image_from_file() {
 #[test]
 fn test_deploy_empty_contract() {
     // init SDK
-    let config_json = r#"
-        {
-            "db_config": {
-                "servers": ["142.93.137.28:28015"],
-                "db_name": "blockchain"
-            },
-            "kafka_config": {
-                "servers": ["builder.tonlabs.io:9092"],
-                "topic": "requests",
-                "ack_timeout": 1000
-            }
-        }"#;    
+    let config_json = CONFIG_JSON.clone();    
     init_json(Some(WORKCHAIN), config_json.into()).unwrap();
 
 
@@ -515,18 +488,7 @@ fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, value:
 fn test_load_nonexistent_contract() {
 
         // init SDK
-    let config_json = r#"
-        {
-            "db_config": {
-                "servers": ["142.93.137.28:28015"],
-                "db_name": "blockchain"
-            },
-            "kafka_config": {
-                "servers": ["builder.tonlabs.io:9092"],
-                "topic": "requests-1",
-                "ack_timeout": 1000
-            }
-        }"#;    
+    let config_json = CONFIG_JSON.clone();    
     init_json(Some(WORKCHAIN), config_json.into()).unwrap();
 
     let c = Contract::load(AccountId::from([67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31]).into())

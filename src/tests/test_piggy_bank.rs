@@ -1,4 +1,4 @@
-/*use super::*;
+use super::*;
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
 use sha2::Sha512;
@@ -282,18 +282,17 @@ const WALLET_ABI: &str = r#"{
 "#;
 
 fn init_node_connection() {
-       let config_json = r#"
+    let config_json = r#"
         {
-            "db_config": {
-                "servers": ["142.93.137.28:28015"],
-                "db_name": "blockchain"
+            "graphql_config": {
+                "server": "services.tonlabs.io:4000/graphql"
             },
             "kafka_config": {
-                "servers": ["142.93.137.28:9092"],
-                "topic": "requests",
-                "ack_timeout": 1000
+                "servers": ["13.251.24.10:8082"],
+                "topic": "awdawdawd",
+                "ack_timeout": 123
             }
-        }"#;    
+        }"#;
     init_json(Some(WORKCHAIN), config_json.into()).unwrap(); 
 }
 
@@ -603,4 +602,4 @@ pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, va
     msg.body = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
 
     msg
-}*/
+}
