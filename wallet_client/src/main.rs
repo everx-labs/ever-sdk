@@ -704,7 +704,7 @@ fn create_cycle_test_thread(config: String, accounts: Vec<AccountData>, timeout:
 
             let (address_from, keypair) = &accounts[(i % acc_count) as usize];
             let (address_to, _) = &accounts[((i + 1) % acc_count) as usize];
-            let value = 10;
+            let value = 1000000;
 
             //println!("Sending {} nanograms from {} to {}", value, address_from.to_hex_string(), address_to.to_hex_string());
 
