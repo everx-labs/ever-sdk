@@ -17,7 +17,6 @@ use std::io::Cursor;
 
 use tvm::bitstring::{Bit, Bitstring};
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
-use tvm::logger;
 use tvm::stack::{BuilderData, SliceData, IBitstring};
 
 fn get_function_id(signature: &[u8]) -> u32 {
@@ -47,14 +46,17 @@ fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: BuilderDa
         (u8, u32, I::Out): ABIOutParameter,
         O: ABIOutParameter + ABITypeSignature,
 {
+    let mut expected_tree_with_ref = expected_tree.clone();
+    expected_tree_with_ref.prepend_reference(BuilderData::new());
+
     let message = ABICall::<I, O>::encode_function_call(func_name, input.clone());
     let test_tree = deserialize(message.clone());
 
-    assert_eq!(test_tree, expected_tree);
+    assert_eq!(test_tree, expected_tree_with_ref);
 
     let message_tree = ABICall::<I, O>::encode_function_call_into_slice(func_name, input.clone());
 
-    assert_eq!(message_tree, expected_tree);
+    assert_eq!(message_tree, expected_tree_with_ref);
 
 
     // check signing
@@ -68,15 +70,19 @@ fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: BuilderDa
 
     assert_eq!(SliceData::from(expected_tree), message);
 
-    let signature = Signature::from_bytes(signature.get_next_bytes(64).as_slice()).unwrap();
+    let signature_data = Signature::from_bytes(signature.get_next_bytes(64).as_slice()).unwrap();
     let bag = BagOfCells::with_root(message);
     let bag_hash = bag.get_repr_hash_by_index(0).unwrap();
-    pair.verify::<Sha512>(bag_hash.as_slice(), &signature).unwrap();
+    pair.verify::<Sha512>(bag_hash.as_slice(), &signature_data).unwrap();
+
+    let public_key = signature.get_next_bytes(32);
+    assert_eq!(public_key, pair.public.to_bytes());
 
 
     // check output decoding
 
     let mut test_tree = SliceData::from(test_tree);
+    test_tree.drain_reference();
     let test_tree_copy = test_tree.clone();
 
     let version = test_tree.get_next_byte();
@@ -135,6 +141,7 @@ fn test_empty_params() {
     builder.append_u8(ABI_VERSION).unwrap();
     builder.append_u32(get_function_id(b"test_empty_params()()")).unwrap();
 
+    builder.prepend_reference(BuilderData::new());
 
     let expected_tree = builder.into();
 
@@ -466,6 +473,8 @@ fn test_huge_static_array() {
     root_builder.append_bitstring(&vec).unwrap();
 
     root_builder.append_reference(array_builder.clone());
+
+    root_builder.prepend_reference(BuilderData::new());
 
     let expected_tree = root_builder.into();
 
@@ -883,6 +892,8 @@ fn test_small_bits() {
     data.into_bitstring_with_completion_tag(&mut vec);
     root_builder.append_bitstring(&vec).unwrap();
 
+    root_builder.prepend_reference(BuilderData::new());
+
     let expected_tree = root_builder.into();
 
     assert_eq!(test_tree, expected_tree);
@@ -952,6 +963,8 @@ fn test_big_bits() {
     root_builder.append_bitstring(&vec).unwrap();
 
     root_builder.append_reference(array_builder.clone());
+
+    root_builder.prepend_reference(BuilderData::new());
 
     let expected_tree = root_builder.into();
 
@@ -1034,7 +1047,6 @@ mod decode_encoded {
 
 #[test]
 fn test_signed_one_input_and_output() {
-    logger::init();
     let pair = Keypair::generate::<Sha512, _>(&mut OsRng::new().unwrap());
 
     let func_name = "test_one_input_and_output";
@@ -1052,7 +1064,6 @@ fixed_abi_array!(Bits1024, 4, bits1024_array4);
 
 #[test]
 fn test_reserving_reference() {
-    logger::init();
 
     let mut bits: Bits1024 = [Bit::Zero; 1024].into();
 

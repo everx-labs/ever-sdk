@@ -114,7 +114,8 @@ fn test_constructor_call() {
     )
     .unwrap();
 
-    let expected_tree = BuilderData::with_bitstring(vec![0x00, 0xAC, 0x81, 0x0A, 0x6D, 0x80]);
+    let mut expected_tree = BuilderData::with_bitstring(vec![0x00, 0xAC, 0x81, 0x0A, 0x6D, 0x80]);
+    expected_tree.prepend_reference(BuilderData::new());
 
     assert_eq!(test_tree, expected_tree);
 
@@ -177,17 +178,16 @@ fn test_not_signed_call() {
         "limitId": "0x2"
     }"#;
 
-    let pair = Keypair::generate::<Sha512, _>(&mut rand::rngs::OsRng::new().unwrap());
-
     let test_tree = encode_function_call(
         WALLET_ABI.to_owned(),
         "getLimitById".to_owned(),
         params.to_owned(),
-        Some(&pair),
+        None,
     )
     .unwrap();
 
-    let expected_tree = BuilderData::with_bitstring(vec![0x00, 0xDA, 0x37, 0x46, 0x4F, 0x02, 0x80]);
+    let mut expected_tree = BuilderData::with_bitstring(vec![0x00, 0xDA, 0x37, 0x46, 0x4F, 0x02, 0x80]);
+    expected_tree.prepend_reference(BuilderData::new());
 
     assert_eq!(test_tree, expected_tree);
 }

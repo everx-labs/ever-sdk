@@ -76,7 +76,11 @@ where
     where
         T: Into<String>,
     {
-        Self::encode_into_slice(BuilderData::new(), fn_name, parameters)
+        let mut builder = Self::encode_into_slice(BuilderData::new(), fn_name, parameters);
+
+        builder.prepend_reference(BuilderData::new());
+
+        builder
     }
 
     /// Encodes provided function parameters into `BuilderData` containing ABI contract call
@@ -84,45 +88,34 @@ where
     where
         T: Into<String>,
     {
-        // prepare standard message
-        let mut builder = BuilderData::new();
-        builder = parameters.prepend_to(builder);
-        
-        // expand cells chain with new root if function are signed and all references are used 
-		// or if ABI version and function ID cannot fit into root cell
-        if  BuilderData::references_capacity() == builder.references_used() ||
-            BuilderData::bits_capacity() < builder.bits_used() + FUNC_ID_BITS_SIZE + ABI_VERSION_BITS_SIZE
-        {
-            let mut new_builder = BuilderData::new();
-            new_builder.append_reference(builder);
-            builder = new_builder;
-        };
+        // encode parameters
+        let mut builder = Self::encode_into_slice(BuilderData::new(), fn_name, parameters);
 
-        builder = prepend_data_to_chain(builder, {
-            // make prefix with ABI version and function ID
-            let mut vec = vec![ABI_VERSION];
-            vec.extend_from_slice(&Self::get_function_id(fn_name.into())[..]);
-            let len = vec.len() * 8;
-            Bitstring::create(vec, len)
-        });
-
-        
+        // add signature and public key to first reference
         let bag = BagOfCells::with_root(builder.clone().into());
         let hash = bag.get_repr_hash_by_index(0).unwrap();
-        let signature = pair.sign::<Sha512>(hash.as_slice()).to_bytes().to_vec();
+        let mut signature = pair.sign::<Sha512>(hash.as_slice()).to_bytes().to_vec();
+
+        signature.extend_from_slice(&pair.public.to_bytes());
+    
         let len = signature.len() * 8;
+
         builder.prepend_reference(BuilderData::with_raw(signature, len));
         builder
     }
 
+    /// Encodes function parameters into `BuilderData` and reserves reference for signature
+    /// (or for empty cell if function is not signed)
     fn encode_into_slice<T>(builder: BuilderData, fn_name: T, parameters: TIn) -> BuilderData
     where
         T: Into<String>,
     {
         let mut builder = parameters.prepend_to(builder);
         
-        // expand cells chain with new root if ABI version and function ID cannot fit into root cell
-        if BuilderData::bits_capacity() < builder.bits_used() + FUNC_ID_BITS_SIZE + ABI_VERSION_BITS_SIZE
+        // expand cells chain with new root all references are used 
+		// or if ABI version and function ID cannot fit into root cell
+        if  BuilderData::references_capacity() == builder.references_used() ||
+            BuilderData::bits_capacity() < builder.bits_used() + FUNC_ID_BITS_SIZE + ABI_VERSION_BITS_SIZE
         {
             let mut new_builder = BuilderData::new();
             new_builder.append_reference(builder);
