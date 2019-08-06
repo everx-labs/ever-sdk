@@ -124,10 +124,6 @@ impl Function {
             return Err(SerializationError::WrongParameterType);
         }
 
-        if self.signed && pair.is_none() {
-            return Err(SerializationError::KeyPairNeeded);
-        }
-
         // prepare standard message
         let mut builder = BuilderData::new();
         for token in tokens.iter().rev() {
