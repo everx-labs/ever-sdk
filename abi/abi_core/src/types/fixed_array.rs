@@ -137,7 +137,7 @@ macro_rules! fixed_abi_array {
                         if cursor.remaining_references() == 0 {
                             return Err($crate::types::DeserializationError::with(cursor));
                         }
-                        let mut array = cursor.checked_drain_reference().unwrap();
+                        let array = cursor.checked_drain_reference().unwrap();
                         let mut array = $crate::types::reader::Reader::new(array);
                         let mut result = vec![];
                         for _ in 0..$size {
