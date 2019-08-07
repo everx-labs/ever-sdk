@@ -30,11 +30,6 @@ branch = "dev"
 package = "tvm"
 default-features = false
 
-[dependencies.ton_block]
-git = "ssh://git@github.com/tonlabs/sdk-emulator.git"
-branch = "dev"
-package = "ton_block"
-
 
 [dependencies.reql]
 version = "^0.0.26"

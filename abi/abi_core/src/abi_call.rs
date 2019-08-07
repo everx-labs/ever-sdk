@@ -1,8 +1,9 @@
 use sha2::{Digest, Sha256, Sha512};
 use ed25519_dalek::*;
 use std::marker::PhantomData;
+use std::sync::Arc;
 use tvm::cells_serialization::BagOfCells;
-use tvm::stack::{BuilderData, SliceData};
+use tvm::stack::{BuilderData, SliceData, CellData};
 use types::{ABIInParameter, ABIOutParameter, ABITypeSignature, prepend_data_to_chain, Bitstring};
 
 pub const   ABI_VERSION: u8                 = 0;
@@ -42,8 +43,10 @@ where
 
     /// serializes tree into Vec<u8>
     fn serialize_message(root: SliceData) -> Vec<u8> {
+        assert!(root.pos() == 0);
+
         let mut data = Vec::new();
-        BagOfCells::with_root(root)
+        BagOfCells::with_root(&root.cell())
             .write_to(&mut data, false)
             .unwrap();
 
@@ -91,8 +94,7 @@ where
         let mut builder = Self::encode_into_slice(BuilderData::new(), fn_name, parameters);
 
         // add signature and public key to first reference
-        let bag = BagOfCells::with_root(builder.clone().into());
-        let hash = bag.get_repr_hash_by_index(0).unwrap();
+        let hash = (&Arc::<CellData>::from(&builder)).repr_hash();
         let mut signature = pair.sign::<Sha512>(hash.as_slice()).to_bytes().to_vec();
 
         signature.extend_from_slice(&pair.public.to_bytes());

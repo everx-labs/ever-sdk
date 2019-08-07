@@ -1,10 +1,10 @@
 //! Contract function call builder.
 
+use std::sync::Arc;
 use sha2::{Digest, Sha256, Sha512};
 use {Param, Token, TokenValue};
 use ed25519_dalek::*;
-use tvm::stack::{BuilderData, SliceData};
-use tvm::cells_serialization::BagOfCells;
+use tvm::stack::{BuilderData, SliceData, CellData};
 use ton_abi_core::types::{Bitstring, prepend_data_to_chain};
 use ton_abi_core::types::{ABISerialized, DeserializationError as InnerTypeDeserializationError};
 
@@ -150,8 +150,7 @@ impl Function {
 
         match pair {
             Some(pair) => {
-                let bag = BagOfCells::with_root(builder.clone().into());
-                let hash = bag.get_repr_hash_by_index(0).unwrap();
+                let hash = (&Arc::<CellData>::from(&builder)).repr_hash();
                 let mut signature = pair.sign::<Sha512>(hash.as_slice()).to_bytes().to_vec();
                         
                 signature.extend_from_slice(&pair.public.to_bytes());

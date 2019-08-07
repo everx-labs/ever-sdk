@@ -1,10 +1,10 @@
+use std::sync::Arc;
 use ed25519_dalek::*;
 use num_bigint::{BigInt, BigUint};
 use sha2::{Digest, Sha256, Sha512};
 
 use ton_abi_core::types::{Dint, Duint, Bitstring, Bit};
-use tvm::cells_serialization::BagOfCells;
-use tvm::stack::{BuilderData, IBitstring, SliceData};
+use tvm::stack::{BuilderData, IBitstring, SliceData, CellData};
 
 use {Function, Int, Param, ParamType, Token, TokenValue, Uint, ABI_VERSION};
 
@@ -88,11 +88,10 @@ fn test_parameters_set(
     assert_eq!(SliceData::from(expected_tree), message);
 
     let signature_data = Signature::from_bytes(signature.get_next_bytes(64).unwrap().as_slice()).unwrap();
-    let bag = BagOfCells::with_root(message);
-    let bag_hash = bag.get_repr_hash_by_index(0).unwrap();
+    let bag_hash = (&Arc::<CellData>::from(&BuilderData::from_slice(&message))).repr_hash();
     pair.verify::<Sha512>(bag_hash.as_slice(), &signature_data).unwrap();
 
-    let public_key = signature.get_next_bytes(32);
+    let public_key = signature.get_next_bytes(32).unwrap();
     assert_eq!(public_key, pair.public.to_bytes());
 
     // check output decoding
@@ -1121,8 +1120,7 @@ fn test_reserving_reference() {
 
     let mut signature = SliceData::from(signed_test_tree.drain_reference());
     let signature = Signature::from_bytes(signature.get_next_bytes(64).unwrap().as_slice()).unwrap();
-    let bag = BagOfCells::with_root(signed_test_tree.clone());
-    let bag_hash = bag.get_repr_hash_by_index(0).unwrap();
+    let bag_hash = (&Arc::<CellData>::from(&BuilderData::from_slice(&signed_test_tree))).repr_hash();
     pair.verify::<Sha512>(bag_hash.as_slice(), &signature)
         .unwrap();
 

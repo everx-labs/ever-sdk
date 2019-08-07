@@ -14,9 +14,10 @@ use sha2::{Digest, Sha256, Sha512};
 use ed25519_dalek::*;
 use rand::rngs::OsRng;
 use std::io::Cursor;
+use std::sync::Arc;
 
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
-use tvm::stack::{BuilderData, SliceData, IBitstring};
+use tvm::stack::{BuilderData, SliceData, CellData, IBitstring};
 
 fn get_function_id(signature: &[u8]) -> u32 {
     // Sha256 hash of signature
@@ -70,11 +71,12 @@ fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: BuilderDa
     assert_eq!(SliceData::from(expected_tree), message);
 
     let signature_data = Signature::from_bytes(signature.get_next_bytes(64).unwrap().as_slice()).unwrap();
-    let bag = BagOfCells::with_root(message);
-    let bag_hash = bag.get_repr_hash_by_index(0).unwrap();
+
+
+    let bag_hash = (&Arc::<CellData>::from(&BuilderData::from_slice(&message))).repr_hash();
     pair.verify::<Sha512>(bag_hash.as_slice(), &signature_data).unwrap();
 
-    let public_key = signature.get_next_bytes(32);
+    let public_key = signature.get_next_bytes(32).unwrap();
     assert_eq!(public_key, pair.public.to_bytes());
 
 
@@ -88,7 +90,7 @@ fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: BuilderDa
     let function_id = test_tree.get_next_u32().unwrap();
 
     let mut data = Vec::new();
-    BagOfCells::with_root(test_tree_copy.clone())
+    BagOfCells::with_root(&Arc::<CellData>::from(&BuilderData::from_slice(&test_tree_copy)))
         .write_to(&mut data, false)
         .unwrap();
 
@@ -149,11 +151,8 @@ fn test_empty_params() {
 
     let builder = BuilderData::new();
 
-
-    let expected_tree = builder.into();
-
     let mut data = Vec::new();
-    BagOfCells::with_root(expected_tree)
+    BagOfCells::with_root(&Arc::<CellData>::from(&builder))
         .write_to(&mut data, false)
         .unwrap();
 
@@ -486,10 +485,8 @@ fn test_huge_static_array() {
     root_builder.append_bit_zero().unwrap();
     root_builder.append_reference(array_builder.clone());
 
-    let expected_tree = root_builder.into();
-
     let mut data = Vec::new();
-    BagOfCells::with_root(expected_tree)
+    BagOfCells::with_root(&Arc::<CellData>::from(&root_builder))
         .write_to(&mut data, false)
         .unwrap();
 
@@ -907,10 +904,8 @@ fn test_small_bits() {
     array_data.into_bitstring_with_completion_tag(&mut vec);
     root_builder.append_bitstring(&vec).unwrap();
 
-    let expected_tree = root_builder.into();
-
     let mut data = Vec::new();
-    BagOfCells::with_root(expected_tree)
+    BagOfCells::with_root(&Arc::<CellData>::from(&root_builder))
         .write_to(&mut data, false)
         .unwrap();
 
@@ -976,10 +971,8 @@ fn test_big_bits() {
     root_builder.append_bit_zero().unwrap();
     root_builder.append_reference(array_builder.clone());
 
-    let expected_tree = root_builder.into();
-
     let mut data = Vec::new();
-    BagOfCells::with_root(expected_tree)
+    BagOfCells::with_root(&Arc::<CellData>::from(&root_builder))
         .write_to(&mut data, false)
         .unwrap();
 
@@ -1054,8 +1047,7 @@ fn test_signed_one_input_and_output() {
 
     let mut signature = SliceData::from(message.drain_reference());
     let signature = Signature::from_bytes(signature.get_next_bytes(64).unwrap().as_slice()).unwrap();
-    let bag = BagOfCells::with_root(message);
-    let bag_hash = bag.get_repr_hash_by_index(0).unwrap();
+    let bag_hash = (&Arc::<CellData>::from(&BuilderData::from_slice(&message))).repr_hash();
     pair.verify::<Sha512>(bag_hash.as_slice(), &signature).unwrap();
 }
 
@@ -1082,8 +1074,7 @@ fn test_reserving_reference() {
 
     let mut signature = SliceData::from(message.drain_reference());
     let signature = Signature::from_bytes(signature.get_next_bytes(64).unwrap().as_slice()).unwrap();
-    let bag = BagOfCells::with_root(message.clone());
-    let bag_hash = bag.get_repr_hash_by_index(0).unwrap();
+    let bag_hash = (&Arc::<CellData>::from(&BuilderData::from_slice(&message))).repr_hash();
     pair.verify::<Sha512>(bag_hash.as_slice(), &signature).unwrap();
 
 
