@@ -433,10 +433,9 @@ fn test_deploy_empty_contract() {
 
     let mut code_builder = BuilderData::new();
     code_builder.append_u32(csprng.next_u32()).expect("Unable to add u32");
-    let code_slice = SliceData::from(code_builder);
 
     let mut data = Vec::new();
-    BagOfCells::with_root(code_slice.clone()).write_to(&mut data, false).expect("Error serializing BOC");
+    BagOfCells::with_root(&Arc::<CellData>::from(&code_builder)).write_to(&mut data, false).expect("Error serializing BOC");
                                         
     let mut data_cur = Cursor::new(data);
     
@@ -507,7 +506,7 @@ fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, value:
         balance
     );
 
-    msg.body = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
+    *msg.body_mut() = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
     msg
 
 }

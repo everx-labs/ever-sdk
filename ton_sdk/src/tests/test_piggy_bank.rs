@@ -600,7 +600,7 @@ pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, va
         balance
     );
 
-    msg.body = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
+    *msg.body_mut() = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
     msg
 
 }
