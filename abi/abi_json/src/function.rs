@@ -123,10 +123,6 @@ impl Function {
             return Err(SerializationError::WrongParameterType);
         }
 
-        if self.signed && pair.is_none() {
-            return Err(SerializationError::KeyPairNeeded);
-        }
-
         // prepare standard message
         let mut builder = BuilderData::new();
         for token in tokens.iter().rev() {
@@ -134,9 +130,9 @@ impl Function {
             //println!("{}", builder);
         }
 
-        // expand cells chain with new root if function are signed and all references are used 
+        // expand cells chain with new root if all references are used 
         // or if ABI version and function ID cannot fit into root cell
-        if    self.signed && BuilderData::references_capacity() == builder.references_used() ||
+        if  BuilderData::references_capacity() == builder.references_used() ||
             BuilderData::bits_capacity() < builder.bits_used() + FUNC_ID_BITS_SIZE + ABI_VERSION_BITS_SIZE
         {
             let mut new_builder = BuilderData::new();
@@ -152,12 +148,19 @@ impl Function {
             Bitstring::create(vec, len)
         });
 
-        if self.signed {
-            let bag = BagOfCells::with_root(builder.clone().into());
-            let hash = bag.get_repr_hash_by_index(0).unwrap();
-            let signature = pair.unwrap().sign::<Sha512>(hash.as_slice()).to_bytes().to_vec();
-            let len = signature.len() * 8;
-            builder.prepend_reference(BuilderData::with_raw(signature, len));
+        match pair {
+            Some(pair) => {
+                let bag = BagOfCells::with_root(builder.clone().into());
+                let hash = bag.get_repr_hash_by_index(0).unwrap();
+                let mut signature = pair.sign::<Sha512>(hash.as_slice()).to_bytes().to_vec();
+                        
+                signature.extend_from_slice(&pair.public.to_bytes());
+    
+                let len = signature.len() * 8;
+
+                builder.prepend_reference(BuilderData::with_raw(signature, len));
+            },
+            None => builder.prepend_reference(BuilderData::new())
         }
 
         Ok(builder)

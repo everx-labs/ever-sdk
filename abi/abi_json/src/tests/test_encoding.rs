@@ -46,6 +46,9 @@ fn test_parameters_set(
     params: Option<&[Param]>,
     expected_tree: BuilderData,
 ) {
+    let mut expected_tree_with_ref = expected_tree.clone();
+    expected_tree_with_ref.prepend_reference(BuilderData::new());
+
     let input_params: Vec<Param> = if let Some(params) = params {
         params.to_vec()
     } else {
@@ -66,7 +69,7 @@ fn test_parameters_set(
     let test_tree = not_signed_function
         .encode_input(inputs.clone(), None)
         .unwrap();
-    assert_eq!(test_tree, expected_tree);
+    assert_eq!(test_tree, expected_tree_with_ref);
 
     // check signing
 
@@ -84,15 +87,18 @@ fn test_parameters_set(
 
     assert_eq!(SliceData::from(expected_tree), message);
 
-    let signature = Signature::from_bytes(signature.get_next_bytes(64).unwrap().as_slice()).unwrap();
+    let signature_data = Signature::from_bytes(signature.get_next_bytes(64).unwrap().as_slice()).unwrap();
     let bag = BagOfCells::with_root(message);
     let bag_hash = bag.get_repr_hash_by_index(0).unwrap();
-    pair.verify::<Sha512>(bag_hash.as_slice(), &signature)
-        .unwrap();
+    pair.verify::<Sha512>(bag_hash.as_slice(), &signature_data).unwrap();
+
+    let public_key = signature.get_next_bytes(32);
+    assert_eq!(public_key, pair.public.to_bytes());
 
     // check output decoding
 
     let mut test_tree = SliceData::from(test_tree);
+    test_tree.drain_reference();
 
     let _version = test_tree.get_next_byte();
     let _function_id = test_tree.get_next_u32();
