@@ -17,9 +17,9 @@ default-features = false
 [dev-dependencies.rand]
 version = "0.6.1"
 
-#[dev-dependencies.compiletest_rs]
-#features = ["tmp", "stable"]
-#version = "*"
+[dev-dependencies.compiletest_rs]
+features = ["tmp", "stable"]
+version = "*"
 
 [features]
 ci_run = []
