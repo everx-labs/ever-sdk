@@ -24,7 +24,7 @@ pub fn init(config: KafkaConfig) -> SdkResult<()> {
 // Puts message into Kafka (topic name is globally configured by init func)
 pub fn send_message(key: &[u8], value: &[u8]) -> SdkResult<()> {
     let mut prod_opt = KAFKA_PROD.lock().unwrap();
-    if let Some((prod, config)) = prod_opt.as_mut() { 
+    if let Some((prod, config)) = prod_opt.as_mut() {
         prod.send(&Record::from_key_value(&config.topic, key, value))
             .map_err(|err| err.into())
     } else {
@@ -36,7 +36,7 @@ pub fn send_message(key: &[u8], value: &[u8]) -> SdkResult<()> {
 #[allow(dead_code)]
 pub fn send_message_to_topic(key: &[u8], value: &[u8], topic: &str) -> SdkResult<()> {
     let mut prod_opt = KAFKA_PROD.lock().unwrap();
-    if let Some((prod, _)) = prod_opt.as_mut() { 
+    if let Some((prod, _)) = prod_opt.as_mut() {
         prod.send(&Record::from_key_value(topic, key, value))
             .map_err(|err| err.into())
     } else {
@@ -65,6 +65,7 @@ extern crate base64;
 use self::reqwest::Client;
 use self::reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use serde_json::json;
+use std::io::Read;
 
 lazy_static! {
     static ref CONFIG: Mutex<Option<KafkaConfig>> = Mutex::new(None);
@@ -76,14 +77,14 @@ pub fn init(kafka_config: KafkaConfig) -> SdkResult<()> {
     let mut client = CLIENT.lock().unwrap();
     *config = Some(kafka_config);
     *client = Some(Client::new());
-    
+
     Ok(())
 }
 
 // Puts message into Kafka (topic name is globally configured by init func)
 pub fn send_message(key: &[u8], value: &[u8]) -> SdkResult<()> {
     let client = Client::new();
-    
+
     let mut headers = HeaderMap::new();
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
     let key_encoded = base64::encode(key);
@@ -96,19 +97,28 @@ pub fn send_message(key: &[u8], value: &[u8]) -> SdkResult<()> {
         .headers(headers)
         .body(body.to_string())
         .send();
-        
-    if result.is_err() {
-        bail!(SdkErrorKind::InternalError("Kafka send error".to_string()));
-    } else {    
-        Ok(())
-    }   
+    match result {
+        Ok(result) => {
+            if result.status().is_success() {
+                Ok(())
+            } else {
+                let bytes: Vec<u8> = result.bytes().map(|b| if let Ok(b) = b { b } else { 0 }).collect();
+                let text = match String::from_utf8(bytes.clone()) {
+                    Ok(text) => text,
+                    Err(_) => hex::encode(bytes)
+                };
+                bail!(SdkErrorKind::InternalError(format!("Request failed: {}", text)))
+            }
+        }
+        Err(err) => bail!(SdkErrorKind::InternalError(format!("Can not send request: {}", err)))
+    }
 }
 
 // Puts message into Kafka topic eith given name
 #[allow(dead_code)]
 pub fn send_message_to_topic(key: &[u8], value: &[u8], topic: &str) -> SdkResult<()> {
     let client = Client::new();
-    
+
     let mut headers = HeaderMap::new();
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
     let key_encoded = base64::encode(key);
@@ -122,11 +132,11 @@ pub fn send_message_to_topic(key: &[u8], value: &[u8], topic: &str) -> SdkResult
         .headers(headers)
         .body(body.to_string())
         .send();
-        
+
     if result.is_err() {
         bail!(SdkErrorKind::InternalError("Kafka send error".to_string()));
-    } else {    
+    } else {
         Ok(())
-    }   
+    }
 }
 

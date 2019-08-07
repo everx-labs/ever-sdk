@@ -10,10 +10,10 @@ use ton_abi_core::abi_call::ABICall;
 use ton_abi_json::json_abi::encode_function_call;
 use ed25519_dalek::{Keypair, PublicKey};
 use ton_block::{
-    MessageId,    
+    MessageId,
     ExternalInboundMessageHeader,
     MsgAddressInt,
-    Serializable,    
+    Serializable,
     StateInit,
     GetRepresentationHash,
     Deserializable,
@@ -56,7 +56,7 @@ pub struct ContractImage {
 impl ContractImage {
 
     // Creating contract image from code data and library bags of cells
-    pub fn new<T>(code: &mut T, data: Option<&mut T>, library: Option<&mut T>) -> SdkResult<Self> 
+    pub fn new<T>(code: &mut T, data: Option<&mut T>, library: Option<&mut T>) -> SdkResult<Self>
         where T: Read + Seek {
 
         let mut state_init = StateInit::default();
@@ -88,7 +88,7 @@ impl ContractImage {
         Ok(Self{ state_init, id })
     }
 
-    pub fn from_state_init_and_key<T>(state_init_bag: &mut T, pub_key: &PublicKey) -> SdkResult<Self> 
+    pub fn from_state_init_and_key<T>(state_init_bag: &mut T, pub_key: &PublicKey) -> SdkResult<Self>
         where T: Read + Seek {
 
         let mut si_roots = deserialize_cells_tree(state_init_bag)?;
@@ -102,17 +102,17 @@ impl ContractImage {
         // state init's data's root cell contains zero-key
         // need to change it by real public key
         let mut new_data: BuilderData;
-        if let Some(ref data) = state_init.data {            
-            new_data = BuilderData::from(&data); 
+        if let Some(ref data) = state_init.data {
+            new_data = BuilderData::from(&data);
             new_data.update_cell(|data, _, _, _, _| {
-                let mut vec = Vec::from(&pub_key.as_bytes().clone()[..]); 
+                let mut vec = Vec::from(&pub_key.as_bytes().clone()[..]);
                 vec.push(0x80);
                 *data = vec;
             }, ());
         } else {
             new_data = BuilderData::new();
             new_data.update_cell(|data, _, _, _, _| {
-                let mut vec = Vec::from(&pub_key.as_bytes().clone()[..]); 
+                let mut vec = Vec::from(&pub_key.as_bytes().clone()[..]);
                 vec.push(0x80);
                 *data = vec;
             }, ());
@@ -135,7 +135,7 @@ impl ContractImage {
     }
 }
 
-// The struct represents smart contract and allows 
+// The struct represents smart contract and allows
 // to deploy and call it, to get some contract's properties.
 // Don't forget - in TON blockchain Contract and Account are the same substances.
 pub struct Contract {
@@ -144,7 +144,7 @@ pub struct Contract {
 
 /// Enum represents blockchain account address.
 /// `Short` value contains only `AccountId` value and is used for addressing contracts in default
-/// workchain. `Full` value is fully qualified account address and can be used for addressing 
+/// workchain. `Full` value is fully qualified account address and can be used for addressing
 /// contracts in any workchain
 pub enum AccountAddress {
     Short(AccountId),
@@ -174,7 +174,7 @@ impl AccountAddress {
             AccountAddress::Short(id) => {
                 let workchain = Contract::get_default_workchain()
                     .ok_or(SdkErrorKind::DefaultWorkchainNotSet)?;
-                
+
                 Ok(MsgAddressInt::with_standart(None, workchain as i8, id.clone())?)
             }
         }
@@ -216,7 +216,7 @@ impl Contract {
         Ok(Box::new(map))
     }
 
-    // Asynchronously loads a Message's json representation 
+    // Asynchronously loads a Message's json representation
     // or null if message with given id is not exists
     pub fn load_json(id: AccountId) -> SdkResult<Box<Stream<Item = String, Error = SdkError>>> {
 
@@ -231,13 +231,13 @@ impl Contract {
     // it's id and processing status is returned by this function
     pub fn call<TIn, TOut>(address: AccountAddress, func: String, input: TIn, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>>
-        where 
+        where
             TIn: ABIInParameter + ABITypeSignature,
             TOut: ABIOutParameter + ABITypeSignature {
 
         // pack params into bag of cells via ABI
         let msg_body = Self::create_message_body::<TIn, TOut>(func, input, key_pair);
-        
+
         let msg = Self::create_message(address, msg_body)?;
 
         // send message by Kafka
@@ -257,7 +257,7 @@ impl Contract {
         // pack params into bag of cells via ABI
         let msg_body = encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
-        
+
         let msg = Self::create_message(id.clone().into(), msg_body.into())?;
 
         // send message by Kafka
@@ -307,7 +307,7 @@ impl Contract {
         Self::subscribe_updates(msg_id)
     }
 
-    // Packs given image asynchronously send deploy message into blockchain.    
+    // Packs given image asynchronously send deploy message into blockchain.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
     pub fn deploy_no_constructor(image: ContractImage)
@@ -334,7 +334,7 @@ impl Contract {
 
     fn _send_message(msg: ton_block::Message) -> SdkResult<MessageId> {
         let (data, id) = Self::serialize_message(msg)?;
-       
+
         kafka_helper::send_message(&id.as_slice()[..], &data)?;
         println!("msg is sent, id: {}", id.to_hex_string());
         Ok(id.clone())
@@ -347,24 +347,25 @@ impl Contract {
                 MESSAGES_TABLE_NAME,
                 &message_id.to_hex_string())?;
         let map = stream.map(|value| {
+            println!("{}", value);
             let id_val = value.get("id");
             let mut id = "";
             if id_val.is_some() {
                 id = id_val.unwrap().as_str().unwrap().clone();
             }
-                
+
             let status_val = value.get("status");
             let mut status = MessageProcessingStatus::Unknown;
             if status_val.is_some() {
-                status = utils::parse_message_status(status_val.unwrap().as_str().unwrap().clone());  
+                status = utils::parse_message_status(status_val.unwrap().as_str().unwrap().clone());
             }
-                        
+
             ContractCallState {
                 message_id: tvm::types::UInt256::from(id.as_bytes()).into(),
                 message_state: status,
             }
         });
-                            
+
         Ok(Box::new(map))
     }
 }
@@ -372,17 +373,17 @@ impl Contract {
 
 impl Contract {
 
-    /// Decodes output parameters returned by contract function call 
-    pub fn decode_function_response_json(abi: String, function: String, response: Arc<CellData>) 
+    /// Decodes output parameters returned by contract function call
+    pub fn decode_function_response_json(abi: String, function: String, response: Arc<CellData>)
         -> SdkResult<String> {
 
         ton_abi_json::json_abi::decode_function_response(abi, function, SliceData::from(response))
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
     }
-    
+
     /// Decodes ABI contract answer from `CellData` into type values
     pub fn decode_function_response<TOut>(response: Arc<CellData>)
-        -> SdkResult<TOut::Out> 
+        -> SdkResult<TOut::Out>
         where TOut: ABIOutParameter{
 
         ABIResponse::<TOut>::decode_response_from_slice(SliceData::from(response))
@@ -390,12 +391,12 @@ impl Contract {
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
-    pub fn decode_function_response_from_bytes_json(abi: String, function: String, response: &[u8]) 
+    pub fn decode_function_response_from_bytes_json(abi: String, function: String, response: &[u8])
         -> SdkResult<String> {
 
         let mut response_cells = deserialize_cells_tree(&mut Cursor::new(response))?;
 
-        if response_cells.len() != 1 { 
+        if response_cells.len() != 1 {
             return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
         }
 
@@ -403,7 +404,7 @@ impl Contract {
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
-    pub fn decode_function_response_from_bytes<TOut>(response: &[u8]) 
+    pub fn decode_function_response_from_bytes<TOut>(response: &[u8])
          -> SdkResult<TOut::Out>
         where TOut: ABIOutParameter {
 
@@ -415,13 +416,13 @@ impl Contract {
     // Returns message's bag of cells and identifier.
     pub fn construct_call_message<TIn, TOut>(address: AccountAddress, func: String, input: TIn, key_pair: Option<&Keypair>)
         -> SdkResult<(Vec<u8>, MessageId)>
-        where 
+        where
             TIn: ABIInParameter + ABITypeSignature,
             TOut: ABIOutParameter + ABITypeSignature {
 
         // pack params into bag of cells via ABI
         let msg_body = Self::create_message_body::<TIn, TOut>(func, input, key_pair);
-        
+
         let msg = Self::create_message(address, msg_body)?;
 
         Self::serialize_message(msg)
@@ -430,7 +431,7 @@ impl Contract {
     // Packs given inputs by abi into ton_block::Message struct.
     // Works with json representation of input and abi.
     // Returns message's bag of cells and identifier.
-    pub fn construct_call_message_json(address: AccountAddress, func: String, input: String, 
+    pub fn construct_call_message_json(address: AccountAddress, func: String, input: String,
         abi: String, key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
 
         // pack params into bag of cells via ABI
@@ -460,7 +461,7 @@ impl Contract {
     // Packs given image and input into ton_block::Message struct.
     // Works with json representation of input and abi.
     // Returns message's bag of cells and identifier.
-    pub fn construct_deploy_message_json(func: String, input: String, abi: String, image: ContractImage, 
+    pub fn construct_deploy_message_json(func: String, input: String, abi: String, image: ContractImage,
         key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
 
         let msg_body = encode_function_call(abi, func, input, key_pair)
@@ -482,7 +483,7 @@ impl Contract {
         self.acc.get_balance().unwrap().grams.clone()
     }
 
-    // Returns contract's balance 
+    // Returns contract's balance
     pub fn balance(&self) -> CurrencyCollection {
         unimplemented!()
     }
@@ -501,15 +502,15 @@ impl Contract {
         msg_header.dst = address.get_msg_address()?;
 
 
-        // TODO don't forget to delete it 
-        // This is temporary code to make all messages uniq. 
+        // TODO don't forget to delete it
+        // This is temporary code to make all messages uniq.
         // In the future it will be made by replay attack protection mechanism
         let mut rng = rand::thread_rng();
         msg_header.src = ton_block::MsgAddressExt::with_extern(&tvm::bitstring::Bitstring::from(rng.gen::<u64>())).unwrap();
 
 
         let mut msg = ton_block::Message::with_ext_in_header(msg_header);
-        msg.body = Some(msg_body);        
+        msg.body = Some(msg_body);
 
         Ok(msg)
     }
@@ -573,5 +574,5 @@ impl Contract {
         let default = DEFAULT_WORKCHAIN.lock().unwrap();
 
         default.clone()
-    }  
+    }
 }

@@ -264,18 +264,18 @@ const WALLET_ABI: &str = r#"{
 			{
 	        "inputs": [],
 	        "name": "constructor",
-	        "outputs": []							
+	        "outputs": []
 	    },
 			{
 	        "inputs": [{"name": "address", "type": "bits256" }],
 	        "name": "setSubscriptionAccount",
 					"signed": true,
-	        "outputs": []							
+	        "outputs": []
 	    },
 			{
 	        "inputs": [],
 	        "name": "getSubscriptionAccount",
-	        "outputs": [{"name": "address", "type": "bits256" }]							
+	        "outputs": [{"name": "address", "type": "bits256" }]
 	    }
 	]
 }
@@ -293,7 +293,7 @@ fn init_node_connection() {
                 "ack_timeout": 123
             }
         }"#;
-    init_json(Some(WORKCHAIN), config_json.into()).unwrap(); 
+    init_json(Some(WORKCHAIN), config_json.into()).unwrap();
 }
 
 fn is_message_done(status: MessageProcessingStatus) -> bool {
@@ -332,7 +332,7 @@ fn wait_message_processed_by_id(message_id: MessageId)-> TransactionId {
         println!("{} : {:?}", s.id().to_hex_string(), s.status());
         if is_message_done(s.status()) {
             return s.id().clone();
-        }    
+        }
     }
 
     wait_message_processed(Contract::subscribe_updates(message_id.clone()).unwrap())
@@ -351,9 +351,9 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
     let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), account_id.clone(), 100000000000);
     let changes_stream = Contract::send_message(msg).expect("Error calling contract method");
 
-    // wait transaction id in message-status 
+    // wait transaction id in message-status
     let tr_id = wait_message_processed(changes_stream);
-    
+
     let tr = Transaction::load(tr_id)
         .expect("Error load Transaction")
         .wait()
@@ -376,7 +376,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
     let changes_stream = Contract::deploy_json("constructor".to_owned(), constructor_params.to_owned(), abi.to_owned(), contract_image, Some(key_pair))
         .expect("Error deploying contract");
 
-    // wait transaction id in message-status 
+    // wait transaction id in message-status
     // contract constructor doesn't return any values so there are no output messages in transaction
     // so just check deployment transaction created
     let tr_id = wait_message_processed(changes_stream);
@@ -410,10 +410,10 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
     let changes_stream = Contract::call_json(contract.id().into(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
         .expect("Error calling contract method");
 
-    // wait transaction id in message-status 
+    // wait transaction id in message-status
     let tr_id = wait_message_processed(changes_stream);
 
-    // OR 
+    // OR
     // wait message will done and find transaction with the message
 
     // load transaction object
@@ -441,14 +441,14 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         .expect("Error unwrap contract while loading Contract");
 
     // call needed method
-    let changes_stream = 
+    let changes_stream =
         Contract::call_json(contract.id().into(), func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
             .expect("Error calling contract method");
 
-    // wait transaction id in message-status 
+    // wait transaction id in message-status
     let tr_id = wait_message_processed(changes_stream);
 
-    // OR 
+    // OR
     // wait message will done and find transaction with the message
 
     // load transaction object
@@ -505,7 +505,7 @@ fn full_test_piggy_bank() {
 	// generate key pair
     let mut csprng = OsRng::new().unwrap();
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
-   
+
     let now = std::time::Instant::now();
 
 	// deploy wallet
@@ -542,9 +542,9 @@ fn full_test_piggy_bank() {
 	let piggy_bank_address_str = hex::encode(piggy_bank_address.as_slice());
 	let pubkey_str = hex::encode(keypair.public.as_bytes());
 	let subscribe_params = format!(
-        "{{ \"subscriptionId\" : \"x{}\", \"pubkey\" : \"x{}\", \"to\": \"x{}\", \"value\" : 123, \"period\" : 456 }}", 
+        "{{ \"subscriptionId\" : \"x{}\", \"pubkey\" : \"x{}\", \"to\": \"x{}\", \"value\" : 123, \"period\" : 456 }}",
         subscr_id_str,
-        &pubkey_str, 
+        &pubkey_str,
         &piggy_bank_address_str,
     );
 
@@ -555,9 +555,9 @@ fn full_test_piggy_bank() {
     println!("Adding subscription 2...\n");
     let subscr_id_str = hex::encode(&[0x22; 32]);
 	let subscribe_params = format!(
-        "{{ \"subscriptionId\" : \"x{}\", \"pubkey\" : \"x{}\", \"to\": \"x{}\", \"value\" : 5000000000, \"period\" : 86400 }}", 
+        "{{ \"subscriptionId\" : \"x{}\", \"pubkey\" : \"x{}\", \"to\": \"x{}\", \"value\" : 5000000000, \"period\" : 86400 }}",
         subscr_id_str,
-        &pubkey_str, 
+        &pubkey_str,
         &piggy_bank_address_str,
     );
 	let _subscribe_answer = call_contract_and_wait(subscripition_address.clone(), "subscribe", &subscribe_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
@@ -574,15 +574,15 @@ fn full_test_piggy_bank() {
 
 
 use rand::{thread_rng, Rng};
-use ton_block::{Message, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
+use ton_block::{Message, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams,
     ExternalInboundMessageHeader, CurrencyCollection, Serializable};
 use tvm::bitstring::Bitstring;
 
-// Create message "from wallet" to transfer some funds 
+// Create message "from wallet" to transfer some funds
 // from one account to another
 pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, value: u128) -> Message {
-    
-    let mut rng = thread_rng();    
+
+    let mut rng = thread_rng();
     let mut msg = Message::with_ext_in_header(
         ExternalInboundMessageHeader {
             src: MsgAddressExt::with_extern(&Bitstring::from(rng.gen::<u64>())).unwrap(),
