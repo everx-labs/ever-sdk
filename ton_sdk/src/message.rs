@@ -1,7 +1,6 @@
 use crate::*;
 use futures::stream::Stream;
-use std::sync::Arc;
-use tvm::stack::CellData;
+use tvm::stack::SliceData;
 use tvm::block::{
     CommonMsgInfo, Message as TvmMessage, MessageId, MessageProcessingStatus
 };
@@ -64,8 +63,8 @@ impl Message {
     }
 
     // Returns message's body (as tree of cells) or None if message doesn't have once
-    pub fn body(&self) -> Option<Arc<CellData>> {
-        self.msg.body.clone()
+    pub fn body(&self) -> Option<SliceData> {
+        self.msg.body().into()
     }
 
     // Returns blockchain's message struct
@@ -76,7 +75,7 @@ impl Message {
 
     // Returns message's type
     pub fn msg_type(&self) -> MessageType {
-        match self.msg.header {
+        match self.msg.header() {
             CommonMsgInfo::IntMsgInfo(_) => MessageType::Internal,
             CommonMsgInfo::ExtInMsgInfo(_) => MessageType::ExternalInbound,
             CommonMsgInfo::ExtOutMsgInfo(_) => MessageType::ExternalOutbound,

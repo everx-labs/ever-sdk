@@ -122,7 +122,7 @@ impl ContractImage {
                 *data = vec;
             }, ());
         }
-        state_init.set_data(Arc::new(new_data.cell().clone()));
+        state_init.set_data(Arc::<CellData>::from(&new_data));
 
         let id = state_init.hash()?;
 
@@ -381,19 +381,19 @@ impl Contract {
 impl Contract {
 
     /// Decodes output parameters returned by contract function call 
-    pub fn decode_function_response_json(abi: String, function: String, response: Arc<CellData>) 
+    pub fn decode_function_response_json(abi: String, function: String, response: SliceData) 
         -> SdkResult<String> {
 
-        ton_abi_json::json_abi::decode_function_response(abi, function, SliceData::from(response))
+        ton_abi_json::json_abi::decode_function_response(abi, function, response)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
     }
     
     /// Decodes ABI contract answer from `CellData` into type values
-    pub fn decode_function_response<TOut>(response: Arc<CellData>)
+    pub fn decode_function_response<TOut>(response: SliceData)
         -> SdkResult<TOut::Out> 
         where TOut: ABIOutParameter{
 
-        ABIResponse::<TOut>::decode_response_from_slice(SliceData::from(response))
+        ABIResponse::<TOut>::decode_response_from_slice(response)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError2(err)))
     }
 
@@ -407,7 +407,7 @@ impl Contract {
             return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
         }
 
-        Self::decode_function_response_json(abi, function, response_cells.remove(0))
+        Self::decode_function_response_json(abi, function, response_cells.remove(0).into())
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
@@ -528,7 +528,7 @@ impl Contract {
         msg_header.src = MsgAddressExt::with_extern(builder.into()).unwrap(); 
         
         let mut msg = TvmMessage::with_ext_in_header(msg_header);
-        msg.body = Some(msg_body);        
+        *msg.body_mut() = Some(msg_body);
 
         Ok(msg)
     }
@@ -559,24 +559,19 @@ impl Contract {
         let mut msg_header = ExternalInboundMessageHeader::default();
         msg_header.dst = AccountAddress::from(account_id).get_msg_address()?;
         let mut msg = TvmMessage::with_ext_in_header(msg_header);
-        msg.body = msg_body;
-        msg.init = Some(state_init);
+        *msg.body_mut() = msg_body;
+        *msg.state_init_mut() = Some(state_init);
         Ok(msg)
     }
 
     fn serialize_message(msg: TvmMessage) -> SdkResult<(Vec<u8>, MessageId)> {
-        let cells = msg.write_to_new_cell()?.into();
+        let cells = &Arc::<CellData>::from(msg.write_to_new_cell()?);
+        let id = cells.repr_hash();
+
         let mut data = Vec::new();
         let bag = BagOfCells::with_root(cells);
-        let id = bag.get_repr_hash_by_index(0)
-            .ok_or::<SdkError>(
-                SdkErrorKind::InternalError(
-                    "unexpected message's bag of cells (empty bag)".into()
-                )
-                .into()
-            )?
-            .clone();
         bag.write_to(&mut data, false)?;
+
         Ok((data, id.into()))
     }
 

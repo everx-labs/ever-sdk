@@ -196,7 +196,7 @@ pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, va
             MsgAddressInt::with_standart(None, workchain as i8, dst).unwrap(),
             balance);
 
-    msg.body = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
+    *msg.body_mut() = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
 
     msg
 }
@@ -305,7 +305,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
             .expect("erro unwrap out message 4");
 
     // take body from the message
-    let responce = out_msg.body().expect("error unwrap out message body").into();
+    let responce = out_msg.body().expect("error unwrap out message body");
 
     // decode the body by ABI
     let result = Contract::decode_function_response_json(abi.to_owned(), func.to_owned(), responce)
