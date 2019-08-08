@@ -1,14 +1,13 @@
 use crate::*;
 use std::io::{Read, Seek, Cursor};
 use std::sync::{Arc, Mutex};
+use ed25519_dalek::{Keypair, PublicKey};
 use tvm::stack::{BuilderData, CellData, IBitstring, SliceData};
 use tvm::types::AccountId;
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use ton_abi_core::types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
 use ton_abi_core::abi_response::ABIResponse;
 use ton_abi_core::abi_call::ABICall;
-use ton_abi_json::json_abi::encode_function_call;
-use ed25519_dalek::{Keypair, PublicKey};
 use tvm::block::{
     Account,
     Message as TvmMessage, 
@@ -260,7 +259,7 @@ impl Contract {
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
         // pack params into bag of cells via ABI
-        let msg_body = encode_function_call(abi, func, input, key_pair)
+        let msg_body = ton_abi_json::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
         
         let msg = Self::create_message(id.clone().into(), msg_body.into())?;
@@ -301,7 +300,7 @@ impl Contract {
     pub fn deploy_json(func: String, input: String, abi: String, image: ContractImage, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
-        let msg_body = encode_function_call(abi, func, input, key_pair)
+        let msg_body = ton_abi_json::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let cell: std::sync::Arc<tvm::stack::CellData> = msg_body.into();
@@ -377,6 +376,10 @@ impl Contract {
     }
 }
 
+pub struct MessageToSign {
+    pub message: Vec<u8>,
+    pub data_to_sign: Vec<u8>
+}
 
 impl Contract {
 
@@ -442,12 +445,30 @@ impl Contract {
         abi: String, key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
 
         // pack params into bag of cells via ABI
-        let msg_body = encode_function_call(abi, func, input, key_pair)
+        let msg_body = ton_abi_json::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let msg = Self::create_message(address, msg_body.into())?;
 
         Self::serialize_message(msg)
+    }
+
+    // Packs given inputs by abi into Message struct without sign and returns data to sign.
+    // Sign should be then added with `add_sign_to_message` function
+    // Works with json representation of input and abi.
+    pub fn get_run_message_bytes_for_signing(address: AccountAddress, func: String, input: String, 
+        abi: String) -> SdkResult<MessageToSign> {
+        
+        // pack params into bag of cells via ABI
+        let (msg_body, data_to_sign) = ton_abi_json::prepare_function_call_for_sign(abi, func, input)
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
+
+        let msg = Self::create_message(address, msg_body.into())?;
+
+        Self::serialize_message(msg).map(|(msg_data, _id)| {
+                MessageToSign { message: msg_data, data_to_sign } 
+            }
+        )
     }
 
     // Packs given image and input into Message struct.
@@ -471,13 +492,57 @@ impl Contract {
     pub fn construct_deploy_message_json(func: String, input: String, abi: String, image: ContractImage, 
         key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
 
-        let msg_body = encode_function_call(abi, func, input, key_pair)
+        let msg_body = ton_abi_json::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let cell: std::sync::Arc<tvm::stack::CellData> = msg_body.into();
         let msg = Self::create_deploy_message(Some(cell), image)?;
 
         Self::serialize_message(msg)
+    }
+    
+    // Packs given image and input into Message struct without sign and returns data to sign.
+    // Sign should be then added with `add_sign_to_message` function
+    // Works with json representation of input and abi.
+    pub fn get_deploy_message_bytes_for_signing(func: String, input: String, abi: String,
+        image: ContractImage) -> SdkResult<MessageToSign> {
+
+        let (msg_body, data_to_sign) = ton_abi_json::prepare_function_call_for_sign(abi, func, input)
+                .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
+
+        let cell: std::sync::Arc<tvm::stack::CellData> = msg_body.into();
+        let msg = Self::create_deploy_message(Some(cell), image)?;
+
+        Self::serialize_message(msg).map(|(msg_data, _id)| {
+                MessageToSign { message: msg_data, data_to_sign } 
+            }
+        )
+    }
+
+    // Add sign to message, returned by `get_deploy_message_bytes_for_signing` or 
+    // `get_run_message_bytes_for_signing` function.
+    // Returns serialized message and identifier.
+    pub fn add_sign_to_message(signature: &[u8], public_key: &[u8], message: &[u8]) 
+        -> SdkResult<(Vec<u8>, MessageId)> {
+        
+        let mut root_cells = deserialize_cells_tree(&mut Cursor::new(message))?;
+
+        if root_cells.len() != 1 { 
+            return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
+        }
+
+        let mut message: TvmMessage = TvmMessage::construct_from(&mut root_cells.remove(0).into())?;
+
+        let body = message.body()
+            .ok_or(SdkError::from(SdkErrorKind::InvalidData("No message body".to_owned())))?;
+
+        let signed_body = ton_abi_json::add_sign_to_function_call(signature, public_key, body)
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
+
+        *message.body_mut() = Some(Arc::<CellData>::from(&signed_body));
+            
+
+        Self::serialize_message(message)
     }
 
     // Returns contract's identifier
