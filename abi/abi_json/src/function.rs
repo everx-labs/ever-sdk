@@ -38,6 +38,7 @@ pub enum SerializationError {
 pub enum DeserializationError {
     TypeDeserializationError(InnerTypeDeserializationError),
     IncompleteDeserializationError,
+    InvalidInputData(String)
 }
 
 impl Function {
@@ -117,6 +118,29 @@ impl Function {
         tokens: &[Token],
         pair: Option<&Keypair>
     ) -> Result<BuilderData, SerializationError> {
+        let (mut builder, hash) = self.prepare_input_for_sign(tokens)?;
+
+        match pair {
+            Some(pair) => {
+                let mut signature = pair.sign::<Sha512>(&hash).to_bytes().to_vec();
+                signature.extend_from_slice(&pair.public.to_bytes());
+    
+                let len = signature.len() * 8;
+
+                builder.prepend_reference(BuilderData::with_raw(signature, len));
+            },
+            None => builder.prepend_reference(BuilderData::new())
+        }
+
+        Ok(builder)
+    }
+
+    /// Encodes provided function parameters into `BuilderData` containing ABI contract call.
+    /// `BuilderData` is prepared for signing. Sign should be the added by `add_sign_to_function_call` function
+    pub fn prepare_input_for_sign(
+        &self,
+        tokens: &[Token]
+    ) -> Result<(BuilderData, Vec<u8>), SerializationError> {
         let params = self.input_params();
 
         if !Token::types_check(tokens, params.as_slice()) {
@@ -148,19 +172,35 @@ impl Function {
             Bitstring::create(vec, len)
         });
 
-        match pair {
-            Some(pair) => {
-                let hash = (&Arc::<CellData>::from(&builder)).repr_hash();
-                let mut signature = pair.sign::<Sha512>(hash.as_slice()).to_bytes().to_vec();
-                        
-                signature.extend_from_slice(&pair.public.to_bytes());
-    
-                let len = signature.len() * 8;
+        let hash = (&Arc::<CellData>::from(&builder)).repr_hash().as_slice().to_vec();
 
-                builder.prepend_reference(BuilderData::with_raw(signature, len));
-            },
-            None => builder.prepend_reference(BuilderData::new())
+        Ok((builder, hash))
+    }
+
+    /// Add sign to messsage body returned by `prepare_input_for_sign` function
+    pub fn add_sign_to_encoded_input(
+        signature: &[u8],
+        public_key: &[u8],
+        mut function_call: SliceData
+    ) -> Result<BuilderData, DeserializationError> {
+        if 0 == function_call.remaining_references() {
+             return Err(DeserializationError::InvalidInputData("No signature cell".to_owned()));
         }
+
+        let signature_cell = function_call.drain_reference();
+
+        if 0 != signature_cell.calc_bit_length() {
+             return Err(DeserializationError::InvalidInputData("Signature cell is not empty".to_owned()));
+        }
+
+        let mut builder = BuilderData::from_slice(&function_call);
+
+        let mut signature = signature.to_vec();
+        signature.extend_from_slice(public_key);
+
+        let len = signature.len() * 8;
+
+        builder.prepend_reference(BuilderData::with_raw(signature, len));
 
         Ok(builder)
     }
