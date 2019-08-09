@@ -38,6 +38,7 @@ pub enum SerializationError {
 pub enum DeserializationError {
     TypeDeserializationError(InnerTypeDeserializationError),
     IncompleteDeserializationError,
+    InvalidInputData(String)
 }
 
 impl Function {
@@ -180,10 +181,17 @@ impl Function {
     pub fn add_sign_to_encoded_input(
         signature: &[u8],
         public_key: &[u8],
-        function_call: SliceData
-    ) -> Result<BuilderData, SerializationError> {
-        let mut function_call = function_call;
-        function_call.drain_reference();
+        mut function_call: SliceData
+    ) -> Result<BuilderData, DeserializationError> {
+        if 0 == function_call.remaining_references() {
+             return Err(DeserializationError::InvalidInputData("No signature cell".to_owned()));
+        }
+
+        let signature_cell = function_call.drain_reference();
+
+        if 0 != signature_cell.calc_bit_length() {
+             return Err(DeserializationError::InvalidInputData("Signature cell is not empty".to_owned()));
+        }
 
         let mut builder = BuilderData::from_slice(&function_call);
 

@@ -456,7 +456,7 @@ impl Contract {
     // Packs given inputs by abi into Message struct without sign and returns data to sign.
     // Sign should be then added with `add_sign_to_message` function
     // Works with json representation of input and abi.
-    pub fn get_run_message_bytes_for_signing(address: AccountAddress, func: String, input: String, 
+    pub fn get_call_message_bytes_for_signing(address: AccountAddress, func: String, input: String, 
         abi: String) -> SdkResult<MessageToSign> {
         
         // pack params into bag of cells via ABI

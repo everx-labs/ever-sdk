@@ -55,7 +55,7 @@ pub fn add_sign_to_function_call(
     function_call: SliceData
 ) -> Result<BuilderData, ABIError> {
     Function::add_sign_to_encoded_input(signature, public_key, function_call)
-        .map_err(|err| ABIError::SerializationError(err))
+        .map_err(|err| ABIError::DeserializationError(err))
 }
 
 /// Decodes output parameters returned by contract function call
