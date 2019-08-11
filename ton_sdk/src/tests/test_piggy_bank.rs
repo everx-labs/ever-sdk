@@ -484,6 +484,8 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
     // take body from the message
     let responce = out_msg.body().expect("error unwrap out message body").into();
 
+    //println!("response {}", responce);
+
     // decode the body by ABI
     let result = Contract::decode_function_response_json(abi.to_owned(), func.to_owned(), responce)
         .expect("Error decoding result");
@@ -521,6 +523,11 @@ fn full_test_piggy_bank() {
     println!("Piggy bank contract deploying...\n");
 	let piggy_bank_address = deploy_contract_and_wait("Piggybank.tvc", PIGGY_BANK_CONTRACT_ABI, PIGGY_BANK_CONSTRUCTOR_PARAMS, &keypair);
 	println!("Piggy bank contract deployed. Account address {}\n", piggy_bank_address.to_hex_string());
+
+    // get goal from piggy
+    println!("Get goal from piggy...\n");
+    let get_goal_answer = call_contract_and_wait(piggy_bank_address.clone(), "getGoal", "{}", PIGGY_BANK_CONTRACT_ABI, None);
+    println!("piggy answer {}", get_goal_answer);
 
 	// deploy subscription
 
