@@ -1,5 +1,4 @@
 use std::io;
-use tvm::types::Exception;
 use ton_abi_json::ABIError;
 
 #[cfg(feature = "node_interaction")]
@@ -20,7 +19,7 @@ impl std::fmt::Display for DbError {
 
 #[cfg(not(feature = "node_interaction"))]
 impl std::error::Error for DbError {
-    fn description(&self) -> &str { 
+    fn description(&self) -> &str {
         unimplemented!()
     }
     fn cause(&self) -> Option<&dyn std::error::Error> {
@@ -45,7 +44,7 @@ impl std::fmt::Display for KafkaError {
 
 #[cfg(not(feature = "node_interaction"))]
 impl std::error::Error for KafkaError {
-    fn description(&self) -> &str { 
+    fn description(&self) -> &str {
         unimplemented!()
     }
     fn cause(&self) -> Option<&dyn std::error::Error> {
@@ -64,7 +63,7 @@ error_chain! {
 
     foreign_links {
         Io(io::Error);
-        Tvm(Exception);
+        Tvm(tvm::error::TvmError);
         DB(DbError);
         Kafka(KafkaError);
         TonBlocks(tvm::block::BlockError);

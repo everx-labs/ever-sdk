@@ -3,7 +3,7 @@ use std::io::Cursor;
 
 use tvm::cells_serialization::deserialize_cells_tree;
 use tvm::stack::SliceData;
-use tvm::types::Exception as InnerBagOfCellsDeserializationException;
+use tvm::error::TvmError as InnerBagOfCellsDeserializationException;
 
 use types::{
     ABIOutParameter,
@@ -49,7 +49,7 @@ impl<TOut: ABIOutParameter> ABIResponse<TOut> {
             .map_err(|e| Exception::TypeDeserializationError(e))
             .and_then(|(result, remainder)| {
                 if remainder.remaining_references() != 0 ||
-                    remainder.remaining_bits() != 0 
+                    remainder.remaining_bits() != 0
                 {
                     return Err(Exception::IncompleteDeserializationError);
                 }
