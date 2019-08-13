@@ -1,5 +1,4 @@
 use std::io;
-use tvm::types::Exception;
 use ton_abi_json::ABIError;
 
 #[cfg(feature = "node_interaction")]
@@ -64,7 +63,7 @@ error_chain! {
 
     foreign_links {
         Io(io::Error);
-        Tvm(Exception);
+        Tvm(tvm::error::TvmError);
         DB(DbError);
         Kafka(KafkaError);
         TonBlocks(tvm::block::BlockError);

@@ -330,11 +330,11 @@ fn call_create(current_address: &mut Option<AccountId>) {
    
     // deploy wallet
     let wallet_address = deploy_contract_and_wait("Wallet.tvc", WALLET_ABI, "{}", &keypair);
-    let str_address = hex::encode(wallet_address.as_slice());
+    let str_address = wallet_address.to_hex_string();
 
     println!("Acoount created. Address {}", str_address);
 
-    std::fs::write("last_address", wallet_address.as_slice()).expect("Couldn't save wallet address");
+    std::fs::write("last_address", wallet_address.get_bytestring(0)).expect("Couldn't save wallet address");
     std::fs::write(str_address, &keypair.to_bytes().to_vec()).expect("Couldn't save wallet key pair");
 
     *current_address = Some(wallet_address);
@@ -342,14 +342,12 @@ fn call_create(current_address: &mut Option<AccountId>) {
 
 fn call_get_balance(current_address: &Option<AccountId>, params: &[&str]) {
     let address = if params.len() > 0 {
-        AccountId::from(hex::decode(params[0]).unwrap())
+        AccountId::from_str(params[0]).unwrap()
+    } else if let Some(addr) = current_address {
+        addr.clone()
     } else {
-        if let Some(addr) = current_address.clone() {
-            addr
-        } else {
-            println!("Current address not set");
-            return;
-        }
+        println!("Current address not set");
+        return;
     };
 
     let contract = Contract::load(address.into())
@@ -393,7 +391,7 @@ fn call_send_transaction(current_address: &Option<AccountId>, params: &[&str]) {
 
     let str_params = format!("{{ \"recipient\" : \"x{}\", \"value\": \"{}\" }}", params[0], nanogram_value);
 
-    let pair = std::fs::read(hex::encode(address.as_slice())).expect("Couldn't read key pair");
+    let pair = std::fs::read(address.to_hex_string()).expect("Couldn't read key pair");
     let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
 
     let answer = call_contract_and_wait(address, "sendTransaction", &str_params, WALLET_ABI, Some(&pair));
@@ -446,7 +444,7 @@ fn call_create_limit(current_address: &Option<AccountId>, params: &[&str]) {
 
     let str_params = format!(r#"{{ "type" : "{}", "value": "{}", "meta": "x{}" }}"#, params[0], nanogram_value, meta);
 
-    let pair = std::fs::read(hex::encode(address.as_slice())).expect("Couldn't read key pair");
+    let pair = std::fs::read(address.to_hex_string()).expect("Couldn't read key pair");
     let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
 
     let answer = call_contract_and_wait(address, "createLimit", &str_params, WALLET_ABI, Some(&pair));
@@ -490,7 +488,7 @@ fn call_change_limit(current_address: &Option<AccountId>, params: &[&str]) {
 
     let str_params = format!(r#"{{ "limitId" : "{}", "value": "{}", "meta": "x{}" }}"#, params[0], nanogram_value, meta);
 
-    let pair = std::fs::read(hex::encode(address.as_slice())).expect("Couldn't read key pair");
+    let pair = std::fs::read(address.to_hex_string()).expect("Couldn't read key pair");
     let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
 
     let answer = call_contract_and_wait(address, "changeLimitById", &str_params, WALLET_ABI, Some(&pair));
@@ -516,7 +514,7 @@ fn call_remove_limit(current_address: &Option<AccountId>, params: &[&str]) {
 
     let str_params = format!(r#"{{ "limitId" : "{}" }}"#, params[0]);
 
-    let pair = std::fs::read(hex::encode(address.as_slice())).expect("Couldn't read key pair");
+    let pair = std::fs::read(address.to_hex_string()).expect("Couldn't read key pair");
     let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
 
     let answer = call_contract_and_wait(address, "removeLimit", &str_params, WALLET_ABI, Some(&pair));
@@ -956,15 +954,14 @@ fn main() {
     init_json(Some(workchain), config.clone()).expect("Couldn't establish connection");
     println!("Connection established");
 
-    let mut current_address: Option<AccountId> = None;
-
-    if let Ok(address) = std::fs::read("last_address") {
-        current_address = Some(AccountId::from(address));
-
-        println!("Wallet address {}", hex::encode(current_address.clone().unwrap().as_slice()));
+    let mut current_address = if let Ok(address) = std::fs::read("last_address") {
+        let address = AccountId::from(address);
+        println!("Wallet address {}", address.to_hex_string());
+        Some(address)
     } else {
         println!("Wallet address not assigned. Create new wallet");
-    }
+        None
+    };
 
     println!("Enter command");
 

@@ -3,7 +3,7 @@ use std::io::Cursor;
 
 use tvm::cells_serialization::deserialize_cells_tree;
 use tvm::stack::SliceData;
-use tvm::types::Exception as InnerBagOfCellsDeserializationException;
+use tvm::error::TvmError as InnerBagOfCellsDeserializationException;
 
 use types::{
     ABIOutParameter,

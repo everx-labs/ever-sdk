@@ -285,7 +285,7 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
             .expect("erro unwrap out message 4");
 
     // take body from the message
-    let response = out_msg.body().expect("erro unwrap out message body").into();
+    let response = out_msg.body().expect("erro unwrap out message body");
 
 
     // decode the body by ABI
@@ -332,7 +332,7 @@ fn test_deploy_and_call_contract() {
 
     // before deploying contract need to transfer some funds to its address
     println!("Account ID to take some grams {}", account_id);
-    let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), account_id.clone(), 100);
+    let msg = create_external_transfer_funds_message(AccountId::from([0; 32]), account_id.clone(), 100);
     Contract::send_message(msg).unwrap();
 
 
@@ -444,7 +444,7 @@ fn test_deploy_empty_contract() {
 
 
 
-    let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), image.account_id(), 1000);
+    let msg = create_external_transfer_funds_message(AccountId::from([0; 32]), image.account_id(), 1000);
     Contract::send_message(msg).unwrap();
 
     Contract::load(acc_id.into())

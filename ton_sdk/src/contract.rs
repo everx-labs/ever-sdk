@@ -87,7 +87,7 @@ impl ContractImage {
             state_init.set_library(library_roots.remove(0));
         }
 
-        let id = state_init.hash()?;
+        let id = state_init.hash()?.into();
 
         Ok(Self{ state_init, id })
     }
@@ -121,9 +121,9 @@ impl ContractImage {
                 *data = vec;
             }, ());
         }
-        state_init.set_data(Arc::<CellData>::from(&new_data));
+        state_init.set_data(new_data.into());
 
-        let id = state_init.hash()?;
+        let id = state_init.hash()?.into();
 
         Ok(Self{ state_init, id })
     }
@@ -163,7 +163,7 @@ impl AccountAddress {
             AccountAddress::Full(address) => {
                 let vec = address.get_address();
                 if vec.remaining_bits() == 256 {
-                    Ok(AccountId::from(vec.get_bytestring(0)))
+                    Ok(vec)
                 } else {
                     Err(SdkErrorKind::InvalidData("Address must be 32 bytes long".to_owned()).into())
                 }
@@ -303,7 +303,7 @@ impl Contract {
         let msg_body = ton_abi_json::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
-        let cell: std::sync::Arc<tvm::stack::CellData> = msg_body.into();
+        let cell = msg_body.into();
         let msg = Self::create_deploy_message(Some(cell), image)?;
 
         let msg_id = Self::_send_message(msg)?;
@@ -495,7 +495,7 @@ impl Contract {
         let msg_body = ton_abi_json::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
-        let cell: std::sync::Arc<tvm::stack::CellData> = msg_body.into();
+        let cell = msg_body.into();
         let msg = Self::create_deploy_message(Some(cell), image)?;
 
         Self::serialize_message(msg)
@@ -510,7 +510,7 @@ impl Contract {
         let (msg_body, data_to_sign) = ton_abi_json::prepare_function_call_for_sign(abi, func, input)
                 .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
-        let cell: std::sync::Arc<tvm::stack::CellData> = msg_body.into();
+        let cell = msg_body.into();
         let msg = Self::create_deploy_message(Some(cell), image)?;
 
         Self::serialize_message(msg).map(|(msg_data, _id)| {
@@ -539,7 +539,7 @@ impl Contract {
         let signed_body = ton_abi_json::add_sign_to_function_call(signature, public_key, body)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
-        *message.body_mut() = Some(Arc::<CellData>::from(&signed_body));
+        *message.body_mut() = Some(signed_body.into());
             
 
         Self::serialize_message(message)
@@ -566,7 +566,7 @@ impl Contract {
          &self.acc
     }
 
-    fn create_message(address: AccountAddress, msg_body: Arc<CellData>) -> SdkResult<TvmMessage> {
+    fn create_message(address: AccountAddress, msg_body: SliceData) -> SdkResult<TvmMessage> {
 
         let mut msg_header = ExternalInboundMessageHeader::default();
         msg_header.dst = address.get_msg_address()?;
@@ -598,7 +598,7 @@ impl Contract {
         Ok(msg)
     }
 
-    fn create_message_body<TIn, TOut>(func: String, input: TIn, key_pair: Option<&Keypair>) -> Arc<CellData>
+    fn create_message_body<TIn, TOut>(func: String, input: TIn, key_pair: Option<&Keypair>) -> SliceData
         where
             TIn: ABIInParameter + ABITypeSignature,
             TOut: ABIOutParameter + ABITypeSignature {
@@ -616,7 +616,7 @@ impl Contract {
     }
 
     fn create_deploy_message(
-        msg_body: Option<Arc<CellData>>, 
+        msg_body: Option<SliceData>,
         image: ContractImage
     ) -> SdkResult<TvmMessage> {
         let account_id = image.account_id();
@@ -630,11 +630,11 @@ impl Contract {
     }
 
     fn serialize_message(msg: TvmMessage) -> SdkResult<(Vec<u8>, MessageId)> {
-        let cells = &Arc::<CellData>::from(msg.write_to_new_cell()?);
+        let cells = Arc::<CellData>::from(msg.write_to_new_cell()?);
         let id = cells.repr_hash();
 
         let mut data = Vec::new();
-        let bag = BagOfCells::with_root(cells);
+        let bag = BagOfCells::with_root(&cells);
         bag.write_to(&mut data, false)?;
 
         Ok((data, id.into()))

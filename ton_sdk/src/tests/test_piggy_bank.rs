@@ -354,7 +354,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
 
     // before deploying contract need to transfer some funds to its address
     //println!("Account ID to take some grams {}\n", account_id.to_hex_string());
-    let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), account_id.clone(), 100000000000);
+    let msg = create_external_transfer_funds_message(AccountId::from([0; 32]), account_id.clone(), 100000000000);
     let changes_stream = Contract::send_message(msg).expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -532,7 +532,7 @@ fn full_test_piggy_bank() {
 	// deploy subscription
 
     println!("Subscription contract deploying...\n");
-	let wallet_address_str = hex::encode(wallet_address.as_slice());
+	let wallet_address_str = wallet_address.to_hex_string();
 	let subscription_constructor_params = format!("{{ \"wallet\" : \"x{}\" }}", wallet_address_str);
 	let subscripition_address = deploy_contract_and_wait("Subscription.tvc", SUBSCRIBE_CONTRACT_ABI, &subscription_constructor_params, &keypair);
 	println!("Subscription contract deployed. Account address {}\n", subscripition_address.to_hex_string());
@@ -540,7 +540,7 @@ fn full_test_piggy_bank() {
 
     // call setSubscriptionAccount in wallet
     println!("Adding subscription address to the wallet...\n");
-	let subscripition_address_str = hex::encode(subscripition_address.as_slice());
+	let subscripition_address_str = subscripition_address.to_hex_string();
 	let set_subscription_params = format!("{{ \"address\" : \"x{}\" }}", subscripition_address_str);
 
 	let _set_subscription_answer = call_contract(wallet_address, "setSubscriptionAccount", &set_subscription_params, WALLET_ABI, &keypair);
@@ -550,7 +550,7 @@ fn full_test_piggy_bank() {
 	// call subscribe in subscription
     println!("Adding subscription 1...\n");
     let subscr_id_str = hex::encode(&[0x11; 32]);
-	let piggy_bank_address_str = hex::encode(piggy_bank_address.as_slice());
+	let piggy_bank_address_str = piggy_bank_address.to_hex_string();
 	let pubkey_str = hex::encode(keypair.public.as_bytes());
 	let subscribe_params = format!(
         "{{ \"subscriptionId\" : \"x{}\", \"pubkey\" : \"x{}\", \"to\": \"x{}\", \"value\" : 123, \"period\" : 456 }}", 

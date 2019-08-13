@@ -15,7 +15,7 @@ use std::ops::{Add, Range, RangeBounds};
 use std::ops::Bound::{Excluded, Included, Unbounded};
 use byteorder::ByteOrder;
 use byteorder::{BigEndian, WriteBytesExt};
-use tvm::types::UInt256;
+use tvm::types::AccountId;
 
 
 #[derive(Default, PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord)]
@@ -551,23 +551,23 @@ impl From<Bitstring> for u64 {
     }
 }
 
-impl From<UInt256> for Bitstring
+impl From<AccountId> for Bitstring
 {
-    fn from(value: UInt256) -> Bitstring {
-        let vec = value.as_slice().to_vec();
+    fn from(value: AccountId) -> Bitstring {
+        let vec = value.get_bytestring(0);
         let len = vec.len() * 8;
         Bitstring::create(vec, len)
     }
 }
 
-impl From<Bitstring> for UInt256
+impl From<Bitstring> for AccountId
 {
-    fn from(value: Bitstring) -> UInt256 {
+    fn from(value: Bitstring) -> AccountId {
         let len = value.data().len();
         if len >= 32 {
-            UInt256::from(value.data().clone())
+            AccountId::from(&value.data()[0..32])
         } else {
-            UInt256::from([0; 32])
+            AccountId::from(&value.data()[..])
         }
     }
 }
