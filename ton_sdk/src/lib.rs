@@ -1,5 +1,6 @@
 #![recursion_limit="128"] // needed for error_chain
 
+#[macro_use]
 extern crate tvm;
 extern crate ton_abi_json;
 extern crate ton_abi_core;
@@ -61,6 +62,8 @@ pub use types::*;
 pub mod db_helper;
 #[cfg(feature = "node_interaction")]
 mod kafka_helper;
+#[cfg(feature = "node_interaction")]
+mod local_tvm;
 
 /// Init SKD. Connects to Kafka and Rethink DB.
 #[cfg(feature = "node_interaction")]
