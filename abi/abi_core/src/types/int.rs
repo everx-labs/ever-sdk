@@ -5,10 +5,10 @@ use super::{
     ABISerialized,
     ABIDeserialized,
     ABITypeSignature,
-    DeserializationError
+    DeserializationError,
+    Bitstring
 };
 
-use tvm::bitstring::Bitstring;
 use tvm::stack::{BuilderData, SliceData};
 
 #[macro_export]

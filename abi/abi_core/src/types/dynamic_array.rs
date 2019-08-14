@@ -5,10 +5,11 @@ use super::{
     ABISerialized,
     ABIDeserialized,
     DeserializationError,
-    ABITypeSignature
+    ABITypeSignature,
+    Bit,
+    Bitstring
 };
 
-use tvm::bitstring::{Bit, Bitstring};
 use tvm::stack::{BuilderData, SliceData};
 
 // put dynamic array to chain or to separate branch depending on array size
@@ -75,7 +76,7 @@ impl<T: ABIDeserialized> ABIDeserialized for Vec<T> {
                 if cursor.remaining_references() == 0 {
                     return Err(DeserializationError::with(cursor));
                 }
-                let mut array = cursor.checked_drain_reference().unwrap();
+                let array = cursor.checked_drain_reference().unwrap();
                 let mut array = Reader::new(array);
                 let mut result = vec![];
                 while !array.is_empty() {

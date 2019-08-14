@@ -43,7 +43,9 @@ impl ABIDeserialized for bool {
             cursor = cursor.checked_drain_reference().unwrap();
         }
         if cursor.remaining_bits() > 0 {
-            let value = cursor.get_next_bit();
+            let value = cursor
+                .get_next_bit()
+                .map_err(|_| DeserializationError { cursor: cursor.clone() })?;
             Ok((value, cursor))
         } else {
             Err(DeserializationError::with(cursor))

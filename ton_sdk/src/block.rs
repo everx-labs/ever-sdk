@@ -1,10 +1,10 @@
 use crate::*;
 use futures::stream::Stream;
-use ton_block::{BlockId, BlockProcessingStatus};
+use tvm::block::{Block as TvmBlock, BlockId, BlockProcessingStatus};
 
 #[derive(Debug)]
 pub struct Block {
-    block: ton_block::Block,
+    block: TvmBlock,
 }
 
 // The struct represents block and allows to access their properties.
@@ -18,7 +18,7 @@ impl Block {
                 if val == serde_json::Value::Null {
                     Ok(None)
                 } else {
-                    let block: ton_block::Block = serde_json::from_value(val)
+                    let block: TvmBlock = serde_json::from_value(val)
                         .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing message: {}", err)))?;
 
                     Ok(Some(Block { block }))
@@ -50,7 +50,7 @@ impl Block {
 
     // Returns blockchain's block struct
     // Some node-specifed methods won't work. All TonStructVariant fields has Client variant.
-    pub fn block(&self) -> &ton_block::Block {
+    pub fn block(&self) -> &TvmBlock {
          &self.block
     }
 }

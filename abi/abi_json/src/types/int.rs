@@ -1,9 +1,9 @@
 use num_bigint::{BigInt, Sign};
-use tvm::bitstring::Bitstring;
 use tvm::stack::BuilderData;
 use ton_abi_core::types::{
     ABISerialized,
-    prepend_data_to_chain
+    prepend_data_to_chain,
+    Bitstring
 };
 
 #[derive(Clone, Debug, PartialEq)]

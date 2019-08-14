@@ -1,11 +1,35 @@
 use std::io;
-use tvm::types::Exception;
 use ton_abi_json::ABIError;
 
 #[cfg(feature = "node_interaction")]
 use graphite::types::GraphiteError;
 #[cfg(feature = "node_interaction")]
 use kafka::error::Error as KafkaError;
+
+#[cfg(not(feature = "node_interaction"))]
+#[derive(Debug)]
+pub struct GraphiteError {}
+
+#[cfg(not(feature = "node_interaction"))]
+impl std::fmt::Display for GraphiteError {
+    fn fmt(&self, _f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        unreachable!()
+    }
+}
+
+#[cfg(not(feature = "node_interaction"))]
+impl std::error::Error for GraphiteError {
+    fn description(&self) -> &str {
+        unimplemented!()
+    }
+    fn cause(&self) -> Option<&dyn std::error::Error> {
+        unimplemented!()
+    }
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        unimplemented!()
+    }
+}
+
 
 #[cfg(not(feature = "node_interaction"))]
 #[derive(Debug)]
@@ -20,7 +44,7 @@ impl std::fmt::Display for KafkaError {
 
 #[cfg(not(feature = "node_interaction"))]
 impl std::error::Error for KafkaError {
-    fn description(&self) -> &str { 
+    fn description(&self) -> &str {
         unimplemented!()
     }
     fn cause(&self) -> Option<&dyn std::error::Error> {
@@ -39,9 +63,9 @@ error_chain! {
 
     foreign_links {
         Io(io::Error);
-        Tvm(Exception);
+        Tvm(tvm::error::TvmError);
         Kafka(KafkaError);
-        TonBlocks(ton_block::BlockError);
+        TonBlocks(tvm::block::BlockError);
         Graphql(GraphiteError);
     }
 

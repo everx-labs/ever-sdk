@@ -1,7 +1,7 @@
 use serde::ser::{Serialize, Serializer, SerializeMap};
 use {Param, Token, TokenValue};
 use num_bigint::{BigInt, BigUint};
-use tvm::bitstring::{Bitstring};
+use ton_abi_core::types::Bitstring;
 
 #[derive(Debug)]
 pub enum DetokenizeError {

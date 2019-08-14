@@ -1,10 +1,13 @@
 use crate::*;
 use futures::stream::Stream;
-use ton_block::{TransactionProcessingStatus, MessageId, TransactionId};
+use tvm::block::{
+    Transaction as TvmTransaction, TransactionProcessingStatus, MessageId, 
+    TransactionId
+};
 
 #[derive(Debug)]
 pub struct Transaction {
-    tr: ton_block::Transaction,
+    tr: TvmTransaction,
 }
 
 // The struct represents performed transaction and allows to access their properties.
@@ -18,9 +21,7 @@ impl Transaction {
                 if val == serde_json::Value::Null {
                     Ok(None)
                 } else {
-                    println!("tramsaction {}", val);
-
-                    let tr: ton_block::Transaction = serde_json::from_value(val)
+                    let tr: TvmTransaction = serde_json::from_value(val)
                         .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing transaction: {}", err)))?;
 
                     Ok(Some(Transaction { tr }))
@@ -37,7 +38,7 @@ impl Transaction {
 
     // Returns blockchain's transaction struct
     // Some node-specifed methods won't work. All TonStructVariant fields has Client variant.
-    pub fn tr(&self) -> &ton_block::Transaction {
+    pub fn tr(&self) -> &TvmTransaction {
          &self.tr
     }
 

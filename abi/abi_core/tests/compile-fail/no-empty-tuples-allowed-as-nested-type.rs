@@ -1,6 +1,6 @@
 // error-pattern: the trait `ton_abi_core::types::ABIParameter` is not implemented for `()`
 
-extern crate abi_lib;
+extern crate ton_abi_core;
 
 use ton_abi_core::abi_call::ABICall;
 

@@ -5,8 +5,27 @@ use super::{
     ABITypeSignature
 };
 
-use tvm::bitstring::Bit;
 use tvm::stack::{BuilderData, SliceData};
+
+#[derive(PartialEq, Eq, Copy, Clone)]
+pub enum Bit {
+    Zero,
+    One,
+}
+
+impl From<bool> for Bit {
+    fn from(b: bool) -> Bit {
+        if b {
+            Bit::One
+        } else {
+            Bit::Zero
+        }
+    }
+}
+
+pub struct Bits {
+    pub data: Vec<Bit>,
+}
 
 impl ABISerialized for Bit {
     fn get_in_cell_size(&self) -> usize {

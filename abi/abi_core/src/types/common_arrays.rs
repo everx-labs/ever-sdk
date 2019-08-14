@@ -1,8 +1,8 @@
-use tvm::bitstring::{Bit, Bitstring};
 use tvm::stack::BuilderData;
 
 use super::common::*;
 use super::ABISerialized;
+use types::{Bit, Bitstring};
 
 // put array items to provided chain
 pub fn prepend_array_items_to_chain<T: ABISerialized>(

@@ -2,7 +2,7 @@ mod tokenize_tests {
     use crate::{Int, Param, ParamType, Token, TokenValue, Uint};
     use num_bigint::{BigInt, BigUint};
     use token::{Detokenizer, Tokenizer};
-    use tvm::bitstring::Bitstring;
+    use ton_abi_core::types::Bitstring;
 
     #[test]
     fn test_tokenize_ints() {
@@ -472,7 +472,7 @@ mod tokenize_tests {
 
 mod types_check_tests {
     use num_bigint::{BigInt, BigUint};
-    use tvm::bitstring::Bitstring;
+    use ton_abi_core::types::Bitstring;
     use {Int, Param, ParamType, Token, TokenValue, Uint};
 
     #[test]

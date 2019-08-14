@@ -1,6 +1,6 @@
 //! TON ABI params.
 use ton_abi_core::types::{
-    bitstring_to_be_bytes, get_fixed_array_in_cell_size, get_next_bits_from_chain,
+    bitstring_to_be_bytes, get_fixed_array_in_cell_size, get_next_bits_from_chain, Bitstring,
     prepend_fixed_array, ABIDeserialized, ABISerialized, DeserializationError, Dint, Duint,
 };
 use types::int::Int;
@@ -9,7 +9,6 @@ use {Param, ParamType};
 
 use num_bigint::{BigInt, BigUint};
 use std::fmt;
-use tvm::bitstring::Bitstring;
 use tvm::stack::{BuilderData, SliceData};
 
 /// TON ABI params.

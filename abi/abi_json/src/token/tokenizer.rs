@@ -2,7 +2,7 @@
 use {ParamType, Param, Uint, Int, Token, TokenValue};
 use serde_json::Value;
 use num_bigint::{Sign, BigInt};
-use tvm::bitstring::{Bitstring, Bit};
+use ton_abi_core::types::{Bitstring, Bit};
 
 /// Returning errors during deserialization
 #[derive(Debug)]
