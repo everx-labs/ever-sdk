@@ -49,4 +49,4 @@ optional = true
 [features]
 default = ["node_interaction"]
 ci_run = []
-node_interaction = ["graphite", "futures", "kafka"]
+node_interaction = ["graphite", "futures", "kafka", "tvm/full"]
