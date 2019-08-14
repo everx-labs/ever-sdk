@@ -62,6 +62,7 @@ pub use types::*;
 pub mod db_helper;
 #[cfg(feature = "node_interaction")]
 mod kafka_helper;
+#[cfg(feature = "node_interaction")]
 mod local_tvm;
 
 /// Init SKD. Connects to Kafka and Rethink DB.
