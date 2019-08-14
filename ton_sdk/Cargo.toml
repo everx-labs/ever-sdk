@@ -52,4 +52,4 @@ default-features = false
 [features]
 default = ["node_interaction"]
 ci_run = []
-node_interaction = ["reql", "reql-types", "futures", "kafka"]
+node_interaction = ["reql", "reql-types", "futures", "kafka", "tvm/full"]
