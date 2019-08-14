@@ -343,30 +343,38 @@ impl Contract {
     pub fn subscribe_updates(message_id: MessageId) ->
         SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
+        let load_stream = Message::load(message_id.clone())?
+            .filter_map(|msg_option| {
+                msg_option.map(|msg| {
+                    ContractCallState {message_id: msg.id(), message_state: msg.status()}
+                })
+            });
+
         let stream = db_helper::subscribe_field_updates(
                 MESSAGES_TABLE_NAME,
                 &message_id.to_hex_string())?;
         let map = stream.map(|value| {
             println!("{}", value);
-            let id_val = value.get("id");
+            let message = &value["payload"]["data"]["messages"];
+            let id_val = message.get("id");
             let mut id = "";
             if id_val.is_some() {
                 id = id_val.unwrap().as_str().unwrap().clone();
             }
 
-            let status_val = value.get("status");
+            let status_val = message.get("status");
             let mut status = MessageProcessingStatus::Unknown;
             if status_val.is_some() {
                 status = utils::parse_message_status(status_val.unwrap().as_str().unwrap().clone());
             }
 
             ContractCallState {
-                message_id: tvm::types::UInt256::from(id.as_bytes()).into(),
+                message_id: tvm::types::UInt256::from(hex::decode(id).unwrap()).into(),
                 message_state: status,
             }
         });
 
-        Ok(Box::new(map))
+        Ok(Box::new(load_stream.chain(map)))
     }
 }
 

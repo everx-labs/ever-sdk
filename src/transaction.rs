@@ -18,6 +18,8 @@ impl Transaction {
                 if val == serde_json::Value::Null {
                     Ok(None)
                 } else {
+                    println!("tramsaction {}", val);
+
                     let tr: ton_block::Transaction = serde_json::from_value(val)
                         .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing transaction: {}", err)))?;
 

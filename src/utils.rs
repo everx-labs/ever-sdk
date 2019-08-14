@@ -7,6 +7,7 @@ pub fn parse_message_status(status: &str) -> MessageProcessingStatus {
         "Unknown" => MessageProcessingStatus::Unknown,
         "Queued" => MessageProcessingStatus::Queued,
         "Processing" => MessageProcessingStatus::Processing,
+        "Preliminary" => MessageProcessingStatus::Preliminary,
         "Proposed" => MessageProcessingStatus::Proposed,
         "Finalized" => MessageProcessingStatus::Finalized,
         "Refused" => MessageProcessingStatus::Refused,

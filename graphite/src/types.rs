@@ -31,12 +31,12 @@ impl fmt::Display for GraphiteError {
 
 impl std::error::Error for GraphiteError {}
 
-pub struct SubscribeRequest {
+pub struct VariableRequest {
     query: String,
     variables: Option<String>
 }
 
-impl SubscribeRequest {
+impl VariableRequest {
     pub fn new(query: String, variables: Option<String>) -> Self {
         Self {
             query, variables
@@ -81,13 +81,13 @@ impl Stream for ResponseStream {
 
 pub struct SubscribeStream {
     id: u64,
-    request: SubscribeRequest,
+    request: VariableRequest,
     receiver: Reader<TcpStream>,
     sender: Writer<TcpStream>
 }
 
 impl SubscribeStream {
-    pub fn new(id: u64, request: SubscribeRequest, host: &str) -> Self {
+    pub fn new(id: u64, request: VariableRequest, host: &str) -> Self {
         let client = ClientBuilder::new(host)
             .unwrap()
             .add_protocol("graphql-ws")
@@ -116,6 +116,8 @@ impl SubscribeStream {
         } else {
             request = format!("{{\"id\":{}, \"type\": \"start\", \"payload\":{{ \"query\": \"{}\" }}}}", &self.id, &query);
         }
+
+        println!("request {}", request);
 
         let msg = OwnedMessage::Text(request);
         self.sender.send_message(&msg).expect("Sending message across stdin channel.");

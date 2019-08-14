@@ -1,4 +1,4 @@
-use crate::types::{ResponseStream, SubscribeRequest, SubscribeStream};
+use crate::types::{ResponseStream, VariableRequest, SubscribeStream};
 
 use reqwest::Client;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
@@ -37,8 +37,14 @@ impl GqlClient {
     
     pub fn query(&self, query: String) -> ResponseStream {        
         let request = format!("{}?query={}", self.graphql_host, query);
+        println!("request {}", request);
         return ResponseStream::new(self.client.get(&request).send());
     }
+
+   /* pub fn query_vars(&self, request: VariableRequest) -> ResponseStream {        
+        let request = format!("{}?query={}", self.graphql_host, query);
+        return ResponseStream::new(self.client.get(&request).send());
+    }*/
     
     pub fn mutation(&self, query: String) -> ResponseStream {
         let mut headers = HeaderMap::new();
@@ -50,7 +56,7 @@ impl GqlClient {
             .send());
     }
     
-    pub fn subscribe(&mut self, request: SubscribeRequest) -> SubscribeStream {
+    pub fn subscribe(&mut self, request: VariableRequest) -> SubscribeStream {
         self.incremented_id = self.incremented_id+1;
         let id = self.incremented_id;
                 

@@ -31,6 +31,7 @@ impl Message {
                 if val == serde_json::Value::Null {
                     Ok(None)
                 } else {
+                    println!("message {}", serde_json::to_string_pretty(&val).unwrap());
                     let msg: ton_block::Message = serde_json::from_value(val)
                         .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing message: {}", err)))?;
 
