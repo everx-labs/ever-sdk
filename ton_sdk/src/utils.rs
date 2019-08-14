@@ -1,4 +1,4 @@
-use ton_block::MessageProcessingStatus;
+use tvm::block::MessageProcessingStatus;
 
 
 pub fn parse_message_status(status: &str) -> MessageProcessingStatus {
