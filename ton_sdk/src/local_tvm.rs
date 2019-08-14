@@ -1,13 +1,12 @@
 use std::sync::Arc;
 use tvm::executor::Engine;
-use tvm::executor::gas::gas_state::Gas;
 use tvm::block::{
     BlockResult,
     Message,
     Serializable,
     Deserializable,
 };
-use tvm::stack::{CellData, IntegerData, SliceData, Stack, StackItem};
+use tvm::stack::{CellData, IntegerData, SaveList, SliceData, Stack, StackItem};
 
 #[cfg(test)]
 #[path = "tests/test_local_tvm.rs"]
@@ -24,9 +23,10 @@ pub fn local_contract_call(code: SliceData, data: Arc<CellData>, msg: &Message)
         .push(StackItem::Cell(msg_cell))                        // message
         .push(StackItem::Slice(msg.body().unwrap_or_default())) // message body
         .push(int!(0));                                         // external inbound message flag
-    let mut engine = Engine::new().setup(code, stack, Gas::test());
-    engine.put_ctrl(4, StackItem::Cell(data))?;
-    engine.execute()?;
+    let mut ctrls = SaveList::new();
+    ctrls.put(4, &mut StackItem::Cell(data)).unwrap();
+    let mut engine = Engine::new().setup(code, Some(ctrls), Some(stack), None);
+    let _result = engine.execute()?;
     let mut slice = SliceData::from(engine.get_actions().as_cell()?.clone());
 
     let mut msgs = vec![];
