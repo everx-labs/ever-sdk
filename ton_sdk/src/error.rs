@@ -67,6 +67,7 @@ error_chain! {
         Kafka(KafkaError);
         TonBlocks(tvm::block::BlockError);
         Graphql(GraphiteError);
+        SerdeJson(serde_json::Error);
     }
 
     errors {

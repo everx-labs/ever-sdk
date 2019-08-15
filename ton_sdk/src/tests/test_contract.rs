@@ -84,8 +84,8 @@ fn test_subscribe_updates() {
     let mut changes_stream = changes_stream.wait();
     for state in [MessageProcessingStatus::Processing, MessageProcessingStatus::Proposed, MessageProcessingStatus::Finalized].iter() {
         let ccs = ContractCallState {
-            message_id: msg_id.clone(),
-            message_state: state.clone(),
+            id: msg_id.clone(),
+            status: state.clone(),
         };
         
         assert_eq!(changes_stream.next().unwrap().unwrap(), ccs);
@@ -111,7 +111,7 @@ name=rethink-sink
 value.converter.schemas.enable=false
 value.converter=org.apache.kafka.connect.json.JsonConverter
 key.converter=org.apache.kafka.connect.json.JsonConverter
-connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_statuses AUTOCREATE PK message_id
+connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_statuses AUTOCREATE PK id
 
     */
 
@@ -136,7 +136,7 @@ connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_status
             let key = format!("\"{}\"", msg_id_.to_hex_string());
             
             let doc = json!({
-                "message_id": msg_id_.to_hex_string(),
+                "id": msg_id_.to_hex_string(),
                 MSG_STATE_FIELD_NAME: state
             }).to_string();
             
@@ -155,8 +155,8 @@ connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_status
     let mut changes_stream = changes_stream.wait();
     for state in [MessageProcessingStatus::Processing, MessageProcessingStatus::Proposed, MessageProcessingStatus::Finalized].iter() {
         let ccs = ContractCallState {
-            message_id: msg_id.clone(),
-            message_state: state.clone(),
+            id: msg_id.clone(),
+            status: state.clone(),
         };
 
         let json = serde_json::to_string(&ccs).unwrap();
@@ -249,8 +249,8 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
         }
         if let Ok(s) = state {
             println!("next state: {:?}", s);
-            if s.message_state == MessageProcessingStatus::Finalized {
-                tr_id = Some(s.message_id.clone());
+            if s.status == MessageProcessingStatus::Finalized {
+                tr_id = Some(s.id.clone());
                 break;
             }
         }
@@ -344,8 +344,8 @@ fn test_deploy_and_call_contract() {
         }
         if let Ok(s) = state {
             println!("next state: {:?}", s);
-            if s.message_state == MessageProcessingStatus::Finalized {
-                tr_id = Some(s.message_id.clone());
+            if s.status == MessageProcessingStatus::Finalized {
+                tr_id = Some(s.id.clone());
                 break;
             }
         }
@@ -442,8 +442,8 @@ fn test_deploy_empty_contract() {
         }
         if let Ok(s) = state {
             println!("next state: {:?}", s);
-            if s.message_state == MessageProcessingStatus::Finalized {
-                tr_id = Some(s.message_id.clone());
+            if s.status == MessageProcessingStatus::Finalized {
+                tr_id = Some(s.id.clone());
                 break;
             }
         }

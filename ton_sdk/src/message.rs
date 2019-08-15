@@ -13,9 +13,6 @@ pub enum MessageType {
     ExternalOutbound
 }
 
-pub const MSG_TABLE_NAME: &str = "messages";
-pub const MSG_STATE_FIELD_NAME: &str = "status";
-
 #[derive(Debug)]
 pub struct Message {
     msg: TvmMessage,

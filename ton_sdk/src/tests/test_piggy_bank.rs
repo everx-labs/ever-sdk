@@ -314,9 +314,9 @@ fn wait_message_processed(changes_stream: Box<dyn Stream<Item = ContractCallStat
             panic!("error next state getting: {}", e);
         }
         if let Ok(s) = state {
-            println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if is_message_done(s.message_state) {
-                tr_id = Some(s.message_id.clone());
+            println!("{} : {:?}", s.id.to_hex_string(), s.status);
+            if is_message_done(s.status) {
+                tr_id = Some(s.id.clone());
                 break;
             }
         }
@@ -324,8 +324,8 @@ fn wait_message_processed(changes_stream: Box<dyn Stream<Item = ContractCallStat
     tr_id.expect("Error: no transaction id")
 }
 
-fn wait_message_processed_by_id(message_id: MessageId)-> TransactionId {
-    let msg = crate::Message::load(message_id.clone())
+fn wait_message_processed_by_id(id: MessageId)-> TransactionId {
+    let msg = crate::Message::load(id.clone())
         .expect("Error load message")
         .wait()
         .next();
@@ -340,7 +340,7 @@ fn wait_message_processed_by_id(message_id: MessageId)-> TransactionId {
         }
     }
 
-    wait_message_processed(Contract::subscribe_updates(message_id.clone()).unwrap())
+    wait_message_processed(Contract::subscribe_updates(id.clone()).unwrap())
 }
 
 fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params: &str, key_pair: &Keypair) -> AccountId {
@@ -506,6 +506,14 @@ fn full_test_piggy_bank() {
     init_node_connection();
 
     println!("Connection to node established\n");
+
+    /*let contract = Contract::load(AccountId::from([0; 32]).into())
+        .expect("Error calling load Contract")
+        .wait()
+        .next()
+        .expect("Error unwrap stream next while loading Contract")
+        .expect("Error unwrap result while loading Contract")
+        .expect("Error unwrap contract while loading Contract");*/
 
 	// generate key pair
     let mut csprng = OsRng::new().unwrap();

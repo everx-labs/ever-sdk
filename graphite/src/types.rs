@@ -53,12 +53,12 @@ impl VariableRequest {
 }
 
 pub struct ResponseStream {
-    response: Result<Response, reqwest::Error>
+    response: Option<Result<Response, reqwest::Error>>
 }
 
 impl ResponseStream {
     pub fn new(response: Result<Response, reqwest::Error>) -> Self {
-        Self { response }
+        Self { response: Some(response) }
     }
 }
 
@@ -67,14 +67,29 @@ impl Stream for ResponseStream {
     type Error = GraphiteError;
 
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        match &mut self.response {
-            Ok(res) => {
-                match res.text() {
-                    Ok(res_str) => Ok(Async::Ready(Some(Value::from(res_str.clone())))),
+        match &mut self.response.take() {
+            Some(response) => {
+                match response {
+                    Ok(res) => {
+                        match res.text() {
+                            Ok(res_str) => {
+                                println!("res_str {}", res_str);
+                                if let Ok(value) = serde_json::from_str(res_str.as_str()) {
+                                    if let Some(error) = try_extract_error(&value) {
+                                        return Err(error);
+                                    }
+                                    Ok(Async::Ready(Some(value)))
+                                } else {
+                                    Err(GraphiteError::new("Invalid JSON".to_string()))
+                                }
+                            },
+                            Err(err) => Err(GraphiteError::new(err.to_string().clone()))
+                        }
+                    },
                     Err(err) => Err(GraphiteError::new(err.to_string().clone()))
                 }
             },
-            Err(err) => Err(GraphiteError::new(err.to_string().clone()))
+            None => Ok(Async::Ready(None))
         }
     }
 }

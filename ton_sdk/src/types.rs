@@ -3,6 +3,10 @@ pub const CONTRACTS_TABLE_NAME: &str = "accounts";
 pub const BLOCKS_TABLE_NAME: &str = "blocks";
 pub const TRANSACTIONS_TABLE_NAME: &str = "transactions";
 
+pub const CONTRACT_CALL_STATE_FIELDS: &str = "id status";
+
+pub const MSG_STATE_FIELD_NAME: &str = "status";
+
 // Represents config to connect Rethink DB
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GraphqlConfig {

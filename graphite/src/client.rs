@@ -41,10 +41,14 @@ impl GqlClient {
         return ResponseStream::new(self.client.get(&request).send());
     }
 
-   /* pub fn query_vars(&self, request: VariableRequest) -> ResponseStream {        
-        let request = format!("{}?query={}", self.graphql_host, query);
+    pub fn query_vars(&self, request: VariableRequest) -> ResponseStream {
+        let request = match request.get_variables() {
+            Some(vars) =>  format!("{}?query={}&variables={}", self.graphql_host, request.get_query(), vars),
+            None =>  format!("{}?query={}", self.graphql_host, request.get_query())
+        };
+
         return ResponseStream::new(self.client.get(&request).send());
-    }*/
+    }
     
     pub fn mutation(&self, query: String) -> ResponseStream {
         let mut headers = HeaderMap::new();

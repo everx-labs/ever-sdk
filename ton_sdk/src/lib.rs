@@ -63,7 +63,6 @@ mod kafka_helper;
 #[cfg(feature = "node_interaction")]
 mod local_tvm;
 
-mod utils;
 
 /// Init SKD. Connects to Kafka and Rethink DB.
 #[cfg(feature = "node_interaction")]

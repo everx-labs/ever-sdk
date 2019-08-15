@@ -142,9 +142,9 @@ fn wait_message_processed(
             panic!("error next state getting: {}", e);
         }
         if let Ok(s) = state {
-            println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if is_message_done(s.message_state) {
-                tr_id = Some(s.message_id.clone());
+            println!("{} : {:?}", s.id.to_hex_string(), s.status);
+            if is_message_done(s.status) {
+                tr_id = Some(s.id.clone());
                 break;
             }
         }
