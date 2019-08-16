@@ -7,23 +7,9 @@ pub const CONTRACT_CALL_STATE_FIELDS: &str = "id status";
 
 pub const MSG_STATE_FIELD_NAME: &str = "status";
 
-// Represents config to connect Rethink DB
-#[derive(Debug, Deserialize, Serialize)]
-pub struct GraphqlConfig {
-    pub server: String,
-}
-
-// Represents config to connect Kafka
-#[derive(Debug, Deserialize, Serialize)]
-pub struct KafkaConfig {
-    pub servers: Vec<String>,
-    pub topic: String,
-    pub ack_timeout: u64,
-}
-
 // Represents config to connect with Rethink DB and Kafka
 #[derive(Debug, Deserialize, Serialize)]
 pub struct NodeClientConfig {
-    pub graphql_config: GraphqlConfig,
-    pub kafka_config: KafkaConfig,
+    pub queries_server: String,
+    pub requests_server: String,
 }

@@ -68,49 +68,48 @@ use serde_json::json;
 use std::io::Read;
 
 lazy_static! {
-    static ref CONFIG: Mutex<Option<KafkaConfig>> = Mutex::new(None);
-    static ref CLIENT: Mutex<Option<Client>> = Mutex::new(None);
+    static ref SERVER: Mutex<Option<String>> = Mutex::new(None);
 }
 
-pub fn init(kafka_config: KafkaConfig) -> SdkResult<()> {
-    let mut config = CONFIG.lock().unwrap();
-    let mut client = CLIENT.lock().unwrap();
-    *config = Some(kafka_config);
-    *client = Some(Client::new());
-
-    Ok(())
+pub fn init(server: &str) {
+    let mut config = SERVER.lock().unwrap();
+    *config = Some("https://".to_owned() + server);
 }
 
 // Puts message into Kafka (topic name is globally configured by init func)
 pub fn send_message(key: &[u8], value: &[u8]) -> SdkResult<()> {
     let client = Client::new();
 
-    let mut headers = HeaderMap::new();
-    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-    let key_encoded = base64::encode(key);
-    let value_encoded = base64::encode(value);
-    let body = json!({
-        "records": [{ "key": key_encoded, "value": value_encoded }]
-    });
+    if let Some(server) = SERVER.lock().unwrap().as_ref() {
+        let mut headers = HeaderMap::new();
+        headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+        let key_encoded = base64::encode(key);
+        let value_encoded = base64::encode(value);
+        let body = json!({
+            "records": [{ "key": key_encoded, "value": value_encoded }]
+        });
 
-    let result = client.post("https://services.tonlabs.io/topics/requests")
-        .headers(headers)
-        .body(body.to_string())
-        .send();
-    match result {
-        Ok(result) => {
-            if result.status().is_success() {
-                Ok(())
-            } else {
-                let bytes: Vec<u8> = result.bytes().map(|b| if let Ok(b) = b { b } else { 0 }).collect();
-                let text = match String::from_utf8(bytes.clone()) {
-                    Ok(text) => text,
-                    Err(_) => hex::encode(bytes)
-                };
-                bail!(SdkErrorKind::InternalError(format!("Request failed: {}", text)))
+        let result = client.post(server.as_str())
+            .headers(headers)
+            .body(body.to_string())
+            .send();
+        match result {
+            Ok(result) => {
+                if result.status().is_success() {
+                    Ok(())
+                } else {
+                    let bytes: Vec<u8> = result.bytes().map(|b| if let Ok(b) = b { b } else { 0 }).collect();
+                    let text = match String::from_utf8(bytes.clone()) {
+                        Ok(text) => text,
+                        Err(_) => hex::encode(bytes)
+                    };
+                    bail!(SdkErrorKind::InternalError(format!("Request failed: {}", text)))
+                }
             }
+            Err(err) => bail!(SdkErrorKind::InternalError(format!("Can not send request: {}", err)))
         }
-        Err(err) => bail!(SdkErrorKind::InternalError(format!("Can not send request: {}", err)))
+    } else {
+        bail!(SdkErrorKind::NotInitialized);
     }
 }
 

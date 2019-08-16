@@ -10,9 +10,9 @@ lazy_static! {
 }
 
 // Init global connection to database
-pub fn init(config: GraphqlConfig) {
+pub fn init(server: &str) {
     let mut host = HOST.lock().unwrap();
-    *host = Some(config.server.clone());
+    *host = Some(server.to_owned());
 }
 
 pub fn client() -> SdkResult<GqlClient> {
@@ -26,9 +26,12 @@ pub fn client() -> SdkResult<GqlClient> {
     }
 }
 
-// Returns Stream with updates of some field in database
+// Returns Stream with updates of some field in database. First stream item is current value
 pub fn subscribe_record_updates(table: &'static str, record_id: &str, fields: &str)
     -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError>>> {
+
+    let load_stream = load_record_fields(table, record_id, fields)?
+        .filter(|value| !value.is_null());
 
     let mut client = client()?;
     let request = generate_subscription(table, record_id, fields);
@@ -50,7 +53,7 @@ pub fn subscribe_record_updates(table: &'static str, record_id: &str, fields: &s
             }
         });
 
-    Ok(Box::new(stream))
+    Ok(Box::new(load_stream.chain(stream)))
 }
 
 fn rename_key_to_id(value: serde_json::Value) -> SdkResult<serde_json::Value> {
@@ -117,10 +120,11 @@ pub fn load_record_fields(table: &'static str, record_id: &str, fields: &str)
                 Ok(value) => {
                     // try to extract the record value from the answer
                     //let select_answer: SelectAnswer = serde_json::from_value(value)?;
-                    let records_array = value["data"][table].as_array()
-                            .ok_or(SdkError::from(SdkErrorKind::InvalidData(
-                                format!("Invalid select answer: {}", value))))?;
-
+                    let records_array = &value["data"][table];
+                    if records_array.is_null() {
+                        bail!(SdkErrorKind::InvalidData(format!("Invalid select answer: {}", value)))
+                    }
+                    
                     Ok(records_array[0].clone())
                 }
             }

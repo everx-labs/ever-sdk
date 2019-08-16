@@ -68,15 +68,15 @@ mod local_tvm;
 #[cfg(feature = "node_interaction")]
 pub fn init(default_workchain: Option<i32>, config: NodeClientConfig) -> SdkResult<()> {
     Contract::set_default_workchain(default_workchain);
-    kafka_helper::init(config.kafka_config)?;
-    db_helper::init(config.graphql_config);
+    kafka_helper::init(&config.requests_server);
+    db_helper::init(&config.queries_server);
     Ok(())
 }
 
 /// Init SKD. Connects to Kafka and Rethink DB.
 #[cfg(feature = "node_interaction")]
-pub fn init_json(default_workchain: Option<i32>, config: String) -> SdkResult<()> {
-    init(default_workchain, serde_json::from_str(&config)
+pub fn init_json(default_workchain: Option<i32>, config: &str) -> SdkResult<()> {
+    init(default_workchain, serde_json::from_str(config)
         .map_err(|err| SdkErrorKind::InvalidArg(format!("{}", err)))?)
 }
 

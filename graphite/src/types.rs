@@ -73,7 +73,6 @@ impl Stream for ResponseStream {
                     Ok(res) => {
                         match res.text() {
                             Ok(res_str) => {
-                                println!("res_str {}", res_str);
                                 if let Ok(value) = serde_json::from_str(res_str.as_str()) {
                                     if let Some(error) = try_extract_error(&value) {
                                         return Err(error);

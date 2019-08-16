@@ -345,38 +345,15 @@ impl Contract {
     pub fn subscribe_updates(message_id: MessageId) ->
         SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
-        /*let load_stream = Message::load(message_id.clone())?
-            .filter_map(|msg_option| {
-                msg_option.map(|msg| {
-                    ContractCallState {message_id: msg.id(), status: msg.status()}
-                })
-            });*/
-
-        let load_stream = db_helper::load_record_fields(
-            MESSAGES_TABLE_NAME,
-            &message_id.to_hex_string(), 
-            CONTRACT_CALL_STATE_FIELDS)?;
-
         let subscribe_stream = db_helper::subscribe_record_updates(
             MESSAGES_TABLE_NAME,
             &message_id.to_hex_string(), 
-            CONTRACT_CALL_STATE_FIELDS)?;
-
-        let subscribe_stream = load_stream.chain(subscribe_stream);
-
-        let subscribe_stream = subscribe_stream
-            .then(|result| {
-                match result {
-                    Err(err) => Err(SdkError::from(err)),
-                    Ok(value) => {
-                        println!("{}", value);
-                        Ok(serde_json::from_value::<ContractCallState>(value)?)
-                    }
-                }
-        });
+            CONTRACT_CALL_STATE_FIELDS)?
+                .and_then(|value| {
+                    Ok(serde_json::from_value::<ContractCallState>(value)?)
+                });
 
         Ok(Box::new(subscribe_stream))
-        //Ok(Box::new(load_stream.chain(subscribe_stream)))
     }
 }
 
