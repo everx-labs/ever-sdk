@@ -83,7 +83,7 @@ fn test_parameters_set(
         .unwrap();
     let mut message = SliceData::from(signed_test_tree);
 
-    let mut signature = SliceData::from(message.drain_reference());
+    let mut signature = SliceData::from(message.checked_drain_reference().unwrap());
 
     assert_eq!(SliceData::from(expected_tree), message);
 
@@ -97,7 +97,7 @@ fn test_parameters_set(
     // check output decoding
 
     let mut test_tree = SliceData::from(test_tree);
-    test_tree.drain_reference();
+    test_tree.checked_drain_reference().unwrap();
 
     let _version = test_tree.get_next_byte();
     let _function_id = test_tree.get_next_u32();
@@ -1118,7 +1118,7 @@ fn test_reserving_reference() {
     let signed_test_tree = signed_function.encode_input(&tokens, Some(&pair)).unwrap();
     let mut signed_test_tree = SliceData::from(signed_test_tree);
 
-    let mut signature = SliceData::from(signed_test_tree.drain_reference());
+    let mut signature = SliceData::from(signed_test_tree.checked_drain_reference().unwrap());
     let signature = Signature::from_bytes(signature.get_next_bytes(64).unwrap().as_slice()).unwrap();
     let bag_hash = (&Arc::<CellData>::from(&BuilderData::from_slice(&signed_test_tree))).repr_hash();
     pair.verify::<Sha512>(bag_hash.as_slice(), &signature)

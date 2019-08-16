@@ -341,7 +341,7 @@ impl TokenValue {
             return Err(DeserializationError::with(cursor));
         }
 
-        let mut array_cursor = cursor.checked_drain_reference().unwrap();
+        let mut array_cursor: SliceData = cursor.checked_drain_reference().unwrap().into();
         let mut result = vec![];
 
         while array_cursor.remaining_references() != 0 || array_cursor.remaining_bits() != 0 {

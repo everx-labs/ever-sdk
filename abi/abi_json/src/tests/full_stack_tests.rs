@@ -154,7 +154,7 @@ fn test_signed_call() {
     ]);
 
     let mut test_tree = SliceData::from(test_tree);
-    test_tree.drain_reference();
+    test_tree.checked_drain_reference().unwrap();
 
     assert_eq!(test_tree, SliceData::from(expected_tree));
 

@@ -40,7 +40,7 @@ impl ABIDeserialized for bool {
     fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
         let mut cursor = cursor;
         while cursor.remaining_bits() == 0 && cursor.remaining_references() == 1 {
-            cursor = cursor.checked_drain_reference().unwrap();
+            cursor = cursor.checked_drain_reference().unwrap().into();
         }
         if cursor.remaining_bits() > 0 {
             let value = cursor
