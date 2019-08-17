@@ -101,7 +101,7 @@ where
     
         let len = signature.len() * 8;
 
-        builder.prepend_reference(BuilderData::with_raw(signature, len));
+        builder.prepend_reference(BuilderData::with_raw(signature, len).unwrap());
         builder
     }
 

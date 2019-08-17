@@ -124,7 +124,7 @@ fn test_one_input_and_output() {
 fn test_one_input_and_output_by_data() {
     let expected_tree = BuilderData::with_bitstring(vec![
         0x00, 0x87, 0x98, 0x73, 0xe1, 0xFF, 0xFF, 0xFF, 0x75, 0x0C, 0xE4, 0x7B, 0xAC, 0x80,
-    ]);
+    ]).unwrap();
 
     test_parameters_set::<(i64,), (u8,)>("test_one_input_and_output_by_data", (-596784153684,), expected_tree, (-596784153684,));
 }
@@ -274,7 +274,7 @@ fn test_small_static_array_by_data() {
     let expected_tree = BuilderData::with_bitstring(vec![
         0x00, 0xd5, 0x7a, 0x4d, 0xac, 0x80, 0x01, 0x40, 0x01, 0x00, 0x00, 0xc0, 0x00, 0x80, 0x00,
         0x60,
-    ]);
+    ]).unwrap();
     
     let input_data = (Array_u16_5::from(input_array),);
     let expected_output = (input_array.to_vec(),);

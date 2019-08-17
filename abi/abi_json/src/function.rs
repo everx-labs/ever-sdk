@@ -127,7 +127,7 @@ impl Function {
     
                 let len = signature.len() * 8;
 
-                builder.prepend_reference(BuilderData::with_raw(signature, len));
+                builder.prepend_reference(BuilderData::with_raw(signature, len).unwrap());
             },
             None => builder.prepend_reference(BuilderData::new())
         }
@@ -200,7 +200,7 @@ impl Function {
 
         let len = signature.len() * 8;
 
-        builder.prepend_reference(BuilderData::with_raw(signature, len));
+        builder.prepend_reference(BuilderData::with_raw(signature, len).unwrap());
 
         Ok(builder)
     }
