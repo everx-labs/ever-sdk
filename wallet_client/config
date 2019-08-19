@@ -1,4 +1,9 @@
 {
-    "queries_server": "azp007.tonlabs.io:4000/graphql",
-    "requests_server": "azp007.tonlabs.io/topics/requests"
+    "queries_config": {
+        "queries_server": "http://services.tonlabs.io:4000/graphql",
+        "subscriptions_server": "ws://services.tonlabs.io:4000/graphql"
+    },
+    "requests_config": {
+        "requests_server": "https://services.tonlabs.io/topics/requests"
+    }
 }

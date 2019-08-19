@@ -671,8 +671,7 @@ extern crate kafka;
 extern crate reqwest;
 extern crate base64;
 
-use kafka::producer::{Producer, Record, RequiredAcks};
-use std::time::Duration;
+//use kafka::producer::{Producer, Record, RequiredAcks};
 use ton_sdk::NodeClientConfig;
 use self::reqwest::Client;
 use self::reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
@@ -731,8 +730,6 @@ fn create_cycle_test_thread(config: String, accounts: Vec<AccountData>, timeout:
                 .create()
                 .expect("Couldn't connect to Kafka");*/
 
-        let client = Client::new();
-
         println!("Thread {}. Transfer cycle...", thread_number);
         let now = std::time::SystemTime::now();
 
@@ -759,7 +756,7 @@ fn create_cycle_test_thread(config: String, accounts: Vec<AccountData>, timeout:
 
             //prod.send(&Record::from_key_value(&config.kafka_config.topic, &id.data.as_slice()[..], msg)).expect("Couldn't send message");
 
-            send_message(&config.requests_server, &id.data.as_slice()[..], &msg);
+            send_message(&config.requests_config.requests_server, &id.data.as_slice()[..], &msg);
 
            // Contract::send_serialized_message(id, &msg).expect("Error sending message");
 

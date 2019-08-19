@@ -131,8 +131,6 @@ impl SubscribeStream {
             request = format!("{{\"id\":{}, \"type\": \"start\", \"payload\":{{ \"query\": \"{}\" }}}}", &self.id, &query);
         }
 
-        println!("request {}", request);
-
         let msg = OwnedMessage::Text(request);
         self.sender.send_message(&msg).expect("Sending message across stdin channel.");
     }

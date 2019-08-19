@@ -16,10 +16,8 @@ pub struct GqlClient {
 }
 
 impl GqlClient {
-    pub fn new(server: String) -> Self {
-        let host = "http://".to_owned()+&server;
-        let ws_host = "ws://".to_owned()+&server;
-        let client = ClientBuilder::new(&ws_host)
+    pub fn new(queries_server: &str, subscriptions_server: &str) -> Self {
+        let client = ClientBuilder::new(subscriptions_server)
             .unwrap()
             .add_protocol("graphql-ws")
             .connect_insecure()
@@ -29,15 +27,14 @@ impl GqlClient {
         Self {
             client: Client::new(),
             socket_sender: sender,
-            graphql_host: host,
-            graphql_socket_host: ws_host.to_string(),
+            graphql_host: queries_server.to_owned(),
+            graphql_socket_host: subscriptions_server.to_owned(),
             incremented_id: 0
         }
     }
     
     pub fn query(&self, query: String) -> ResponseStream {        
         let request = format!("{}?query={}", self.graphql_host, query);
-        println!("request {}", request);
         return ResponseStream::new(self.client.get(&request).send());
     }
 

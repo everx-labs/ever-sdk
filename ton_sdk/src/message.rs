@@ -24,7 +24,7 @@ impl Message {
 
     // Asynchronously loads a Message instance or None if message with given id is not exists
     pub fn load(id: MessageId) -> SdkResult<Box<Stream<Item = Option<Message>, Error = SdkError>>> {
-        let map = db_helper::load_record(MESSAGES_TABLE_NAME, &id.to_hex_string())?
+        let map = queries_helper::load_record(MESSAGES_TABLE_NAME, &id.to_hex_string())?
             .and_then(|val| {
                 if val == serde_json::Value::Null {
                     Ok(None)
@@ -43,7 +43,7 @@ impl Message {
     // or null if message with given id is not exists
     pub fn load_json(id: MessageId) -> SdkResult<Box<Stream<Item = String, Error = SdkError>>> {
 
-        let map = db_helper::load_record(MESSAGES_TABLE_NAME, &id.to_hex_string())?
+        let map = queries_helper::load_record(MESSAGES_TABLE_NAME, &id.to_hex_string())?
             .map(|val| val.to_string());
 
         Ok(Box::new(map))

@@ -6,21 +6,20 @@ use serde_json::Value;
 use std::sync::Mutex;
 
 lazy_static! {
-    static ref HOST: Mutex<Option<String>> = Mutex::new(None);
+    static ref CONFIG: Mutex<Option<QueriesConfig>> = Mutex::new(None);
 }
 
 // Init global connection to database
-pub fn init(server: &str) {
-    let mut host = HOST.lock().unwrap();
-    *host = Some(server.to_owned());
+pub fn init(config: QueriesConfig) {
+    let mut my_config = CONFIG.lock().unwrap();
+    *my_config = Some(config);
 }
 
 pub fn client() -> SdkResult<GqlClient> {
-    let host_opt = HOST.lock().unwrap();
-
-    if host_opt.is_some() {
-        let host = host_opt.clone().unwrap();
-        Ok(GqlClient::new(host.to_string()))
+    if let Some(config) = CONFIG.lock().unwrap().as_ref() {
+        Ok(GqlClient::new(
+            &config.queries_server,
+            &config.subscriptions_server))
     } else {
         bail!(SdkErrorKind::NotInitialized)
     }
@@ -91,7 +90,6 @@ pub fn load_record(table: &str, record_id: &str)
                     let records_array: serde_json::Value = serde_json::from_str(records_array_str)?;
 
                     let record_value = &records_array[0];
-                    println!("value {}", record_value);
 
                     // `null` is Ok - it means that query execution was succeded but no record found
                     if record_value.is_null() {
@@ -112,7 +110,6 @@ pub fn load_record_fields(table: &'static str, record_id: &str, fields: &str)
 
     let client = client()?;
     let query = generate_query(table, record_id, fields);
-    //println!("query {}", query);
     let stream = client.query(query)
         .then(move |result| {
             match result {
@@ -147,8 +144,6 @@ fn generate_select(table: &str, record_id: &str) -> VariableRequest {
 
     let variables = json!({"query" : db_query,"bindVarsJson": "{}"});
 
-    println!("variables {}", variables.to_string());
-
     VariableRequest::new(query, Some(variables.to_string()))
 }
 
@@ -157,12 +152,8 @@ fn generate_subscription(table: &str, record_id: &str, fields: &str) -> Variable
         table=table,
         fields=fields);
 
-    println!("query {}", query);
-
     let variables = format!("{{\"match\":\"{{\\\"id\\\":\\\"{record_id}\\\"}}\"}}",
         record_id=record_id);
-
-    println!("variables {}", variables);
 
     VariableRequest::new(query, Some(variables))
 }

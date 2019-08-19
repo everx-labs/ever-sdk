@@ -57,9 +57,9 @@ mod types;
 pub use types::*;
 
 #[cfg(feature = "node_interaction")]
-pub mod db_helper;
+pub mod queries_helper;
 #[cfg(feature = "node_interaction")]
-mod kafka_helper;
+mod requests_helper;
 #[cfg(feature = "node_interaction")]
 mod local_tvm;
 
@@ -68,8 +68,8 @@ mod local_tvm;
 #[cfg(feature = "node_interaction")]
 pub fn init(default_workchain: Option<i32>, config: NodeClientConfig) -> SdkResult<()> {
     Contract::set_default_workchain(default_workchain);
-    kafka_helper::init(&config.requests_server);
-    db_helper::init(&config.queries_server);
+    requests_helper::init(config.requests_config);
+    queries_helper::init(config.queries_config);
     Ok(())
 }
 

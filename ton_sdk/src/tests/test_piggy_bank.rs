@@ -289,8 +289,13 @@ const WALLET_ABI: &str = r#"{
 fn init_node_connection() {
     let config_json = r#"
         {
-            "queries_server": "services.tonlabs.io:4000/graphql",
-            "requests_server": "services.tonlabs.io/topics/requests"
+            "queries_config": {
+                "queries_server": "http://services.tonlabs.io:4000/graphql",
+                "subscriptions_server": "ws://services.tonlabs.io:4000/graphql"
+            },
+            "requests_config": {
+                "requests_server": "https://services.tonlabs.io/topics/requests"
+            }
         }"#;
     init_json(Some(WORKCHAIN), config_json.into()).unwrap();
 }
@@ -495,6 +500,8 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
 
 #[test]
 fn full_test_piggy_bank() {
+
+    //tvm::logger::init();
 
     // connect to node
     init_node_connection();

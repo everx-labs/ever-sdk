@@ -16,7 +16,7 @@ impl Transaction {
 
     // Asynchronously loads a Transaction instance or None if transaction with given id is not exists
     pub fn load(id: TransactionId) -> SdkResult<Box<Stream<Item = Option<Transaction>, Error = SdkError>>> {
-        let map = db_helper::load_record(TRANSACTIONS_TABLE_NAME, &id.to_hex_string())?
+        let map = queries_helper::load_record(TRANSACTIONS_TABLE_NAME, &id.to_hex_string())?
             .and_then(|val| {
                 if val == serde_json::Value::Null {
                     Ok(None)

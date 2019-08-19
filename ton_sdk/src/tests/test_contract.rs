@@ -140,7 +140,7 @@ connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_status
                 MSG_STATE_FIELD_NAME: state
             }).to_string();
             
-            kafka_helper::send_message_to_topic(
+            requests_helper::send_message_to_topic(
                     key.as_bytes(),
                     doc.as_bytes(),
                     "messages_statuses"
@@ -366,7 +366,7 @@ fn test_send_empty_messages() {
 
     let config : KafkaConfig = serde_json::from_str(&config_json).unwrap();
 
-    kafka_helper::init(config).unwrap();
+    requests_helper::init(config).unwrap();
 
     for i in 0..10 {
         // fake body

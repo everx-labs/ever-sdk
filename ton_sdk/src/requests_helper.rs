@@ -68,19 +68,19 @@ use serde_json::json;
 use std::io::Read;
 
 lazy_static! {
-    static ref SERVER: Mutex<Option<String>> = Mutex::new(None);
+    static ref CONFIG: Mutex<Option<RequestsConfig>> = Mutex::new(None);
 }
 
-pub fn init(server: &str) {
-    let mut config = SERVER.lock().unwrap();
-    *config = Some("https://".to_owned() + server);
+pub fn init(config: RequestsConfig) {
+    let mut my_config = CONFIG.lock().unwrap();
+    *my_config = Some(config);
 }
 
 // Puts message into Kafka (topic name is globally configured by init func)
 pub fn send_message(key: &[u8], value: &[u8]) -> SdkResult<()> {
     let client = Client::new();
 
-    if let Some(server) = SERVER.lock().unwrap().as_ref() {
+    if let Some(config) = CONFIG.lock().unwrap().as_ref() {
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
         let key_encoded = base64::encode(key);
@@ -89,7 +89,7 @@ pub fn send_message(key: &[u8], value: &[u8]) -> SdkResult<()> {
             "records": [{ "key": key_encoded, "value": value_encoded }]
         });
 
-        let result = client.post(server.as_str())
+        let result = client.post(&config.requests_server)
             .headers(headers)
             .body(body.to_string())
             .send();

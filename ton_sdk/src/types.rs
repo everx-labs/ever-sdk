@@ -9,7 +9,20 @@ pub const MSG_STATE_FIELD_NAME: &str = "status";
 
 // Represents config to connect with Rethink DB and Kafka
 #[derive(Debug, Deserialize, Serialize)]
-pub struct NodeClientConfig {
+pub struct QueriesConfig {
     pub queries_server: String,
+    pub subscriptions_server: String,
+}
+
+// Represents config to connect with Rethink DB and Kafka
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RequestsConfig {
     pub requests_server: String,
+}
+
+// Represents config to connect with Rethink DB and Kafka
+#[derive(Debug, Deserialize, Serialize)]
+pub struct NodeClientConfig {
+    pub queries_config: QueriesConfig,
+    pub requests_config: RequestsConfig,
 }

@@ -200,7 +200,7 @@ impl Contract {
     pub fn load(address: AccountAddress) -> SdkResult<Box<Stream<Item = Option<Contract>, Error = SdkError>>> {
         let id = address.get_account_id()?;
 
-        let map = db_helper::load_record(CONTRACTS_TABLE_NAME, &id.to_hex_string())?
+        let map = queries_helper::load_record(CONTRACTS_TABLE_NAME, &id.to_hex_string())?
             .and_then(|val| {
                 if val == serde_json::Value::Null {
                     Ok(None)
@@ -219,7 +219,7 @@ impl Contract {
     // or null if message with given id is not exists
     pub fn load_json(id: AccountId) -> SdkResult<Box<Stream<Item = String, Error = SdkError>>> {
 
-        let map = db_helper::load_record(CONTRACTS_TABLE_NAME, &id.to_hex_string())?
+        let map = queries_helper::load_record(CONTRACTS_TABLE_NAME, &id.to_hex_string())?
             .map(|val| val.to_string());
 
         Ok(Box::new(map))
@@ -333,19 +333,19 @@ impl Contract {
     fn _send_message(msg: TvmMessage) -> SdkResult<MessageId> {
         let (data, id) = Self::serialize_message(msg)?;
 
-        kafka_helper::send_message(&id.as_slice()[..], &data)?;
-        println!("msg is sent, id: {}", id.to_hex_string());
+        requests_helper::send_message(&id.as_slice()[..], &data)?;
+        //println!("msg is sent, id: {}", id.to_hex_string());
         Ok(id.clone())
     }
 
     pub fn send_serialized_message(id: MessageId, msg: &[u8]) -> SdkResult<()> {
-        kafka_helper::send_message(&id.as_slice()[..], msg)
+        requests_helper::send_message(&id.as_slice()[..], msg)
     }
 
     pub fn subscribe_updates(message_id: MessageId) ->
         SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
-        let subscribe_stream = db_helper::subscribe_record_updates(
+        let subscribe_stream = queries_helper::subscribe_record_updates(
             MESSAGES_TABLE_NAME,
             &message_id.to_hex_string(), 
             CONTRACT_CALL_STATE_FIELDS)?
