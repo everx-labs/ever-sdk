@@ -5,9 +5,17 @@ use rand::{thread_rng, Rng};
 use rand::rngs::OsRng;
 use sha2::Sha512;
 use tvm::block::{
-    Message, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
-    MessageProcessingStatus, MessageId, TransactionId,
-    ExternalInboundMessageHeader, CurrencyCollection, Serializable
+    Message,
+    MsgAddressExt,
+    MsgAddressInt,
+    InternalMessageHeader,
+    Grams,
+    MessageId,
+    TransactionId,
+    ExternalInboundMessageHeader,
+    CurrencyCollection,
+    Serializable,
+    TransactionProcessingStatus
 };
 use tvm::stack::{BuilderData, IBitstring};
 use tvm::types::AccountId;
@@ -288,22 +296,34 @@ const WALLET_ABI: &str = r#"{
 
 fn init_node_connection() {
     let config_json = r#"
-        {
-            "queries_config": {
-                "queries_server": "http://services.tonlabs.io:4000/graphql",
-                "subscriptions_server": "ws://services.tonlabs.io:4000/graphql"
-            },
-            "requests_config": {
-                "requests_server": "https://services.tonlabs.io/topics/requests"
-            }
-        }"#;
+    {
+        "queries_config": {
+            "queries_server": "http://services.tonlabs.io:4000/graphql",
+            "subscriptions_server": "ws://services.tonlabs.io:4000/graphql"
+        },
+        "requests_config": {
+            "requests_server": "https://services.tonlabs.io/topics/requests"
+        }
+    }"#;
+
+    /*let config_json = r#"
+    {
+        "queries_config": {
+            "queries_server": "http://192.168.99.100/graphql",
+            "subscriptions_server": "ws://192.168.99.100/graphql"
+        },
+        "requests_config": {
+            "requests_server": "http://192.168.99.100/topics/requests"
+        }
+    }"#;*/
+        
     init_json(Some(WORKCHAIN), config_json.into()).unwrap();
 }
 
-fn is_message_done(status: MessageProcessingStatus) -> bool {
-    (status == MessageProcessingStatus::Preliminary) ||
-    (status == MessageProcessingStatus::Proposed) ||
-    (status == MessageProcessingStatus::Finalized)
+fn is_message_done(status: TransactionProcessingStatus) -> bool {
+    (status == TransactionProcessingStatus::Preliminary) ||
+    (status == TransactionProcessingStatus::Proposed) ||
+    (status == TransactionProcessingStatus::Finalized)
 }
 
 fn wait_message_processed(changes_stream: Box<dyn Stream<Item = ContractCallState, Error = SdkError>>) -> TransactionId {
@@ -324,21 +344,6 @@ fn wait_message_processed(changes_stream: Box<dyn Stream<Item = ContractCallStat
 }
 
 fn wait_message_processed_by_id(id: MessageId)-> TransactionId {
-    let msg = crate::Message::load(id.clone())
-        .expect("Error load message")
-        .wait()
-        .next();
-
-    if msg.is_some() {
-        let s = msg.expect("Error unwrap stream next while loading Message")
-            .expect("Error unwrap result while loading Message")
-            .expect("Error unwrap returned Message");
-        println!("{} : {:?}", s.id().to_hex_string(), s.status());
-        if is_message_done(s.status()) {
-            return s.id().clone();
-        }
-    }
-
     wait_message_processed(Contract::subscribe_updates(id.clone()).unwrap())
 }
 

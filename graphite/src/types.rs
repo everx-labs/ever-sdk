@@ -6,10 +6,9 @@ use futures::stream::Stream;
 use std::fmt;
 use reqwest::Response;
 use serde_json::Value;
-use std::net::TcpStream;
 use websocket::{ClientBuilder, OwnedMessage};
-use websocket::receiver::Reader;
-use websocket::sender::Writer;
+use websocket::client::sync::Client;
+use websocket::stream::sync::NetworkStream;
 
 
 #[derive(Debug, Clone)]
@@ -96,24 +95,21 @@ impl Stream for ResponseStream {
 pub struct SubscribeStream {
     id: u64,
     request: VariableRequest,
-    receiver: Reader<TcpStream>,
-    sender: Writer<TcpStream>
+    client: Client<Box<dyn NetworkStream + Send>>
 }
 
 impl SubscribeStream {
-    pub fn new(id: u64, request: VariableRequest, host: &str) -> Self {
+    pub fn new(id: u64, request: VariableRequest, host:&str) -> Self {
         let client = ClientBuilder::new(host)
             .unwrap()
             .add_protocol("graphql-ws")
-            .connect_insecure()
+            .connect(None)
             .unwrap();
-        let (receiver, sender) = client.split().unwrap();
 
         let mut future = Self {
             id: id,
             request: request,
-            receiver: receiver,
-            sender: sender
+            client
         };
 
         future.subscribe();
@@ -132,13 +128,13 @@ impl SubscribeStream {
         }
 
         let msg = OwnedMessage::Text(request);
-        self.sender.send_message(&msg).expect("Sending message across stdin channel.");
+        self.client.send_message(&msg).expect("Sending message across stdin channel.");
     }
 
-    pub fn unsubscribe(id: u64, sender: &mut Writer<TcpStream>) {
+    pub fn unsubscribe(id: u64, client: &mut Client<Box<dyn NetworkStream + Send>>) {
         let query = format!("{{\"id\":{}, \"type\": \"stop\", \"payload\":{{}}}}", &id);
         let msg = OwnedMessage::Text(query.to_string());
-        sender.send_message(&msg).expect("Sending message across stdin channel.");
+        client.send_message(&msg).expect("Sending message across stdin channel.");
     }
 
     pub fn get_id(&self) -> u64 {
@@ -171,7 +167,7 @@ impl Stream for SubscribeStream {
 
 
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        if let Some(result) = self.receiver.incoming_messages().next() {
+        if let Some(result) = self.client.incoming_messages().next() {
             match result {
                 Ok(message) => {
                     match message {

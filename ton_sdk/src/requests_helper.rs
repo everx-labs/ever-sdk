@@ -1,63 +1,5 @@
 use crate::*;
 use std::sync::Mutex;
-/*use kafka::producer::{Producer, Record, RequiredAcks};
-use std::time::Duration;
-
-
-lazy_static! {
-    static ref KAFKA_PROD: Mutex<Option<(Producer, KafkaConfig)>> = Mutex::new(None);
-}
-
-// Init global variable - kafka config
-pub fn init(config: KafkaConfig) -> SdkResult<()> {
-    let mut prod_opt = KAFKA_PROD.lock().unwrap();
-    *prod_opt = Some((
-            Producer::from_hosts(config.servers.clone())
-                .with_ack_timeout(Duration::from_millis(config.ack_timeout))
-                .with_required_acks(RequiredAcks::One)
-                .create()?,
-            config
-        ));
-    Ok(())
-}
-
-// Puts message into Kafka (topic name is globally configured by init func)
-pub fn send_message(key: &[u8], value: &[u8]) -> SdkResult<()> {
-    let mut prod_opt = KAFKA_PROD.lock().unwrap();
-    if let Some((prod, config)) = prod_opt.as_mut() {
-        prod.send(&Record::from_key_value(&config.topic, key, value))
-            .map_err(|err| err.into())
-    } else {
-        bail!(SdkErrorKind::NotInitialized);
-    }
-}
-
-// Puts message into Kafka topic eith given name
-#[allow(dead_code)]
-pub fn send_message_to_topic(key: &[u8], value: &[u8], topic: &str) -> SdkResult<()> {
-    let mut prod_opt = KAFKA_PROD.lock().unwrap();
-    if let Some((prod, _)) = prod_opt.as_mut() {
-        prod.send(&Record::from_key_value(topic, key, value))
-            .map_err(|err| err.into())
-    } else {
-        bail!(SdkErrorKind::NotInitialized);
-    }
-}
-*/
-/*
-// Init global variable - kafka config
-lazy_static! {
-    static ref KAFKA_PROD: Mutex<Option<KafkaConfig>> = Mutex::new(None);
-}
-
-pub fn init(config: KafkaConfig) -> SdkResult<()> {
-    let mut prod_opt = KAFKA_PROD.lock().unwrap();
-    *prod_opt = config;
-    Ok(())
-}
-*/
-
-//Using kafka via HTTP REST PROXY!!!
 
 extern crate reqwest;
 extern crate base64;
@@ -68,19 +10,18 @@ use serde_json::json;
 use std::io::Read;
 
 lazy_static! {
-    static ref CONFIG: Mutex<Option<RequestsConfig>> = Mutex::new(None);
+    static ref CLIENT: Mutex<Option<(Client, RequestsConfig)>> = Mutex::new(None);
 }
 
+// Globally initializes client with server address
 pub fn init(config: RequestsConfig) {
-    let mut my_config = CONFIG.lock().unwrap();
-    *my_config = Some(config);
+    let mut client = CLIENT.lock().unwrap();
+    *client = Some((Client::new(), config));
 }
 
-// Puts message into Kafka (topic name is globally configured by init func)
+// Sends message to node
 pub fn send_message(key: &[u8], value: &[u8]) -> SdkResult<()> {
-    let client = Client::new();
-
-    if let Some(config) = CONFIG.lock().unwrap().as_ref() {
+    if let Some((client, config)) = CLIENT.lock().unwrap().as_ref() {
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
         let key_encoded = base64::encode(key);
@@ -89,10 +30,16 @@ pub fn send_message(key: &[u8], value: &[u8]) -> SdkResult<()> {
             "records": [{ "key": key_encoded, "value": value_encoded }]
         });
 
+        let now = std::time::Instant::now();
+
         let result = client.post(&config.requests_server)
             .headers(headers)
             .body(body.to_string())
             .send();
+
+        let t = now.elapsed();
+	    println!("send time: sec={}.{:06} ", t.as_secs(), t.subsec_micros());
+
         match result {
             Ok(result) => {
                 if result.status().is_success() {
@@ -112,30 +59,3 @@ pub fn send_message(key: &[u8], value: &[u8]) -> SdkResult<()> {
         bail!(SdkErrorKind::NotInitialized);
     }
 }
-
-// Puts message into Kafka topic eith given name
-#[allow(dead_code)]
-pub fn send_message_to_topic(key: &[u8], value: &[u8], topic: &str) -> SdkResult<()> {
-    let client = Client::new();
-
-    let mut headers = HeaderMap::new();
-    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-    let key_encoded = base64::encode(key);
-    let value_encoded = base64::encode(value);
-    let body = json!({
-        "records": [{ "key": key_encoded, "value": value_encoded }]
-    });
-
-    let url = format!("https://services.tonlabs.io/topics/{}", &topic);
-    let result = client.post(&url)
-        .headers(headers)
-        .body(body.to_string())
-        .send();
-
-    if result.is_err() {
-        bail!(SdkErrorKind::InternalError("Kafka send error".to_string()));
-    } else {
-        Ok(())
-    }
-}
-

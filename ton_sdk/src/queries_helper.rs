@@ -6,23 +6,13 @@ use serde_json::Value;
 use std::sync::Mutex;
 
 lazy_static! {
-    static ref CONFIG: Mutex<Option<QueriesConfig>> = Mutex::new(None);
+    static ref CLIENT: Mutex<Option<GqlClient>> = Mutex::new(None);
 }
 
-// Init global connection to database
+// Globally initializes client with server address
 pub fn init(config: QueriesConfig) {
-    let mut my_config = CONFIG.lock().unwrap();
-    *my_config = Some(config);
-}
-
-pub fn client() -> SdkResult<GqlClient> {
-    if let Some(config) = CONFIG.lock().unwrap().as_ref() {
-        Ok(GqlClient::new(
-            &config.queries_server,
-            &config.subscriptions_server))
-    } else {
-        bail!(SdkErrorKind::NotInitialized)
-    }
+    let mut client = CLIENT.lock().unwrap();
+    *client = Some(GqlClient::new(&config.queries_server,&config.subscriptions_server));
 }
 
 // Returns Stream with updates of some field in database. First stream item is current value
@@ -32,27 +22,31 @@ pub fn subscribe_record_updates(table: &'static str, record_id: &str, fields: &s
     let load_stream = load_record_fields(table, record_id, fields)?
         .filter(|value| !value.is_null());
 
-    let mut client = client()?;
     let request = generate_subscription(table, record_id, fields);
-    let stream = client.subscribe(request)
-        .then(move |result| {
-            match result {
-                Err(err) => Err(SdkError::from(err)),
-                Ok(value) => {
-                    // try to extract the record value from the answer
-                    let record_value = &value["payload"]["data"][table];
-                    
-                    if record_value.is_null() {
-                        Err(SdkError::from(SdkErrorKind::InvalidData(
-                            format!("Invalid subscription answer: {}", value))))
-                    } else {
-                        Ok(record_value.clone())
+
+    if let Some(client) = CLIENT.lock().unwrap().as_mut() {
+        let stream = client.subscribe(request)
+            .then(move |result| {
+                match result {
+                    Err(err) => Err(SdkError::from(err)),
+                    Ok(value) => {
+                        // try to extract the record value from the answer
+                        let record_value = &value["payload"]["data"][table];
+                        
+                        if record_value.is_null() {
+                            Err(SdkError::from(SdkErrorKind::InvalidData(
+                                format!("Invalid subscription answer: {}", value))))
+                        } else {
+                            Ok(record_value.clone())
+                        }
                     }
                 }
-            }
-        });
+            });
 
-    Ok(Box::new(load_stream.chain(stream)))
+        Ok(Box::new(load_stream.chain(stream)))
+    } else {
+        bail!(SdkErrorKind::NotInitialized)
+    }
 }
 
 fn rename_key_to_id(value: serde_json::Value) -> SdkResult<serde_json::Value> {
@@ -74,8 +68,11 @@ fn rename_key_to_id(value: serde_json::Value) -> SdkResult<serde_json::Value> {
 pub fn load_record(table: &str, record_id: &str)
     -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError>>> {
 
-    let client = client()?;
     let query = generate_select(table, record_id);
+
+    let mut client = CLIENT.lock().unwrap();
+    let client = client.as_mut().ok_or(SdkError::from(SdkErrorKind::NotInitialized))?;
+
     let stream = client.query_vars(query)
         .then(|result| {
             match result {
@@ -108,8 +105,11 @@ pub fn load_record(table: &str, record_id: &str)
 pub fn load_record_fields(table: &'static str, record_id: &str, fields: &str)
     -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError>>> {
 
-    let client = client()?;
     let query = generate_query(table, record_id, fields);
+
+    let mut client = CLIENT.lock().unwrap();
+    let client = client.as_mut().ok_or(SdkError::from(SdkErrorKind::NotInitialized))?;
+
     let stream = client.query(query)
         .then(move |result| {
             match result {

@@ -12,6 +12,7 @@ use tvm::block::{
     Account,
     Message as TvmMessage, 
     MessageId,
+    TransactionId,
     ExternalInboundMessageHeader,
     MsgAddressExt, 
     MsgAddressInt,
@@ -21,7 +22,7 @@ use tvm::block::{
     Deserializable,
     Grams,
     CurrencyCollection,
-    MessageProcessingStatus
+    TransactionProcessingStatus
 };
 use std::convert::Into;
 
@@ -41,8 +42,8 @@ mod tests;
 // The struct represents status of message that performs contract's call
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct ContractCallState {
-    pub id: MessageId,
-    pub status: MessageProcessingStatus,
+    pub id: TransactionId,
+    pub status: TransactionProcessingStatus,
 }
 
 // The struct represents conract's image
@@ -346,7 +347,7 @@ impl Contract {
         SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
         let subscribe_stream = queries_helper::subscribe_record_updates(
-            MESSAGES_TABLE_NAME,
+            TRANSACTIONS_TABLE_NAME,
             &message_id.to_hex_string(), 
             CONTRACT_CALL_STATE_FIELDS)?
                 .and_then(|value| {
