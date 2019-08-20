@@ -30,15 +30,10 @@ pub fn send_message(key: &[u8], value: &[u8]) -> SdkResult<()> {
             "records": [{ "key": key_encoded, "value": value_encoded }]
         });
 
-        let now = std::time::Instant::now();
-
         let result = client.post(&config.requests_server)
             .headers(headers)
             .body(body.to_string())
             .send();
-
-        let t = now.elapsed();
-	    println!("send time: sec={}.{:06} ", t.as_secs(), t.subsec_micros());
 
         match result {
             Ok(result) => {
