@@ -66,7 +66,7 @@ pub fn subscribe_field_updates<T>(table: &str, record_id: &str, field: &str)
 
 // Returns Stream with required database record
 pub fn load_record(table: &str, record_id: &str)
-    -> SdkResult<Box<Stream<Item=serde_json::Value, Error=SdkError>>> {
+    -> SdkResult<Box<dyn Stream<Item=serde_json::Value, Error=SdkError>>> {
     let map = db()
         .table(table)
         .get(record_id)

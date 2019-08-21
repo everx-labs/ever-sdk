@@ -391,10 +391,10 @@ impl Bitstring {
         let mut vec = vec![];
         match bits {
             0 => (),
-            1...7 => vec.push((value as u8) << (8 - bits)),
-            8...15 => vec.write_u16::<BigEndian>((value as u16) << (16 - bits)).unwrap(),
-            16...31 => vec.write_u32::<BigEndian>((value as u32) << (32 - bits)).unwrap(),
-            32...63 => vec.write_u64::<BigEndian>((value as u64) << (64 - bits)).unwrap(),
+            1..=7 => vec.push((value as u8) << (8 - bits)),
+            8..=15 => vec.write_u16::<BigEndian>((value as u16) << (16 - bits)).unwrap(),
+            16..=31 => vec.write_u32::<BigEndian>((value as u32) << (32 - bits)).unwrap(),
+            32..=63 => vec.write_u64::<BigEndian>((value as u64) << (64 - bits)).unwrap(),
             bits @ _ => unimplemented!("bits: {}", bits)
         }
         self.append(&Bitstring::create(vec, bits))
