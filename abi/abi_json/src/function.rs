@@ -127,7 +127,7 @@ impl Function {
     
                 let len = signature.len() * 8;
 
-                builder.prepend_reference(BuilderData::with_raw(signature, len));
+                builder.prepend_reference(BuilderData::with_raw(signature, len).unwrap());
             },
             None => builder.prepend_reference(BuilderData::new())
         }
@@ -187,7 +187,7 @@ impl Function {
              return Err(DeserializationError::InvalidInputData("No signature cell".to_owned()));
         }
 
-        let signature_cell = function_call.drain_reference();
+        let signature_cell = function_call.checked_drain_reference().unwrap();
 
         if 0 != signature_cell.calc_bit_length() {
              return Err(DeserializationError::InvalidInputData("Signature cell is not empty".to_owned()));
@@ -200,7 +200,7 @@ impl Function {
 
         let len = signature.len() * 8;
 
-        builder.prepend_reference(BuilderData::with_raw(signature, len));
+        builder.prepend_reference(BuilderData::with_raw(signature, len).unwrap());
 
         Ok(builder)
     }

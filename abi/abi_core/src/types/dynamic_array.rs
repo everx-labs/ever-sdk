@@ -76,7 +76,7 @@ impl<T: ABIDeserialized> ABIDeserialized for Vec<T> {
                 if cursor.remaining_references() == 0 {
                     return Err(DeserializationError::with(cursor));
                 }
-                let array = cursor.checked_drain_reference().unwrap();
+                let array = cursor.checked_drain_reference().unwrap().into();
                 let mut array = Reader::new(array);
                 let mut result = vec![];
                 while !array.is_empty() {

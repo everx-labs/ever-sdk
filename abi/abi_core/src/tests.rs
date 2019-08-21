@@ -66,7 +66,7 @@ fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: BuilderDa
     let message = ABICall::<I, O>::encode_signed_function_call(func_name, input.clone(), &pair);
     let mut message = SliceData::from(deserialize(message.clone()));
 
-    let mut signature = SliceData::from(message.drain_reference());
+    let mut signature = SliceData::from(message.checked_drain_reference().unwrap());
 
     assert_eq!(SliceData::from(expected_tree), message);
 
@@ -83,7 +83,7 @@ fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: BuilderDa
     // check output decoding
 
     let mut test_tree = SliceData::from(test_tree);
-    test_tree.drain_reference();
+    test_tree.checked_drain_reference().unwrap();
     let test_tree_copy = test_tree.clone();
 
     let version = test_tree.get_next_byte().unwrap();
@@ -124,7 +124,7 @@ fn test_one_input_and_output() {
 fn test_one_input_and_output_by_data() {
     let expected_tree = BuilderData::with_bitstring(vec![
         0x00, 0x87, 0x98, 0x73, 0xe1, 0xFF, 0xFF, 0xFF, 0x75, 0x0C, 0xE4, 0x7B, 0xAC, 0x80,
-    ]);
+    ]).unwrap();
 
     test_parameters_set::<(i64,), (u8,)>("test_one_input_and_output_by_data", (-596784153684,), expected_tree, (-596784153684,));
 }
@@ -274,7 +274,7 @@ fn test_small_static_array_by_data() {
     let expected_tree = BuilderData::with_bitstring(vec![
         0x00, 0xd5, 0x7a, 0x4d, 0xac, 0x80, 0x01, 0x40, 0x01, 0x00, 0x00, 0xc0, 0x00, 0x80, 0x00,
         0x60,
-    ]);
+    ]).unwrap();
     
     let input_data = (Array_u16_5::from(input_array),);
     let expected_output = (input_array.to_vec(),);
@@ -1045,7 +1045,7 @@ fn test_signed_one_input_and_output() {
     let message = ABICall::<(u128,), (bool,)>::encode_signed_function_call(func_name, (1979,), &pair);
     let mut message = SliceData::from(deserialize(message.clone()));
 
-    let mut signature = SliceData::from(message.drain_reference());
+    let mut signature = SliceData::from(message.checked_drain_reference().unwrap());
     let signature = Signature::from_bytes(signature.get_next_bytes(64).unwrap().as_slice()).unwrap();
     let bag_hash = (&Arc::<CellData>::from(&BuilderData::from_slice(&message))).repr_hash();
     pair.verify::<Sha512>(bag_hash.as_slice(), &signature).unwrap();
@@ -1072,7 +1072,7 @@ fn test_reserving_reference() {
     let message = ABICall::<(bits1024_array4,), ()>::encode_signed_function_call(func_name, (input_data.into(),), &pair);
     let mut message = SliceData::from(deserialize(message.clone()));
 
-    let mut signature = SliceData::from(message.drain_reference());
+    let mut signature = SliceData::from(message.checked_drain_reference().unwrap());
     let signature = Signature::from_bytes(signature.get_next_bytes(64).unwrap().as_slice()).unwrap();
     let bag_hash = (&Arc::<CellData>::from(&BuilderData::from_slice(&message))).repr_hash();
     pair.verify::<Sha512>(bag_hash.as_slice(), &signature).unwrap();
