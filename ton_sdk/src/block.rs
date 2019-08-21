@@ -14,7 +14,7 @@ pub struct Block {
 impl Block {
 
     // Asynchronously loads a Block instance or None if block with given id is not exists
-    pub fn load(id: BlockId) -> SdkResult<Box<Stream<Item = Option<Block>, Error = SdkError>>> {
+    pub fn load(id: BlockId) -> SdkResult<Box<dyn Stream<Item = Option<Block>, Error = SdkError>>> {
         let map = db_helper::load_record(BLOCKS_TABLE_NAME, &id.to_hex_string())?
             .and_then(|val| {
                 if val == serde_json::Value::Null {
@@ -32,7 +32,7 @@ impl Block {
 
     // Asynchronously loads a Block's json representation 
     // or null if block with given id is not exists
-    pub fn load_json(id: BlockId) -> SdkResult<Box<Stream<Item = String, Error = SdkError>>> {
+    pub fn load_json(id: BlockId) -> SdkResult<Box<dyn Stream<Item = String, Error = SdkError>>> {
 
         let map = db_helper::load_record(BLOCKS_TABLE_NAME, &id.to_hex_string())?
             .map(|val| val.to_string());

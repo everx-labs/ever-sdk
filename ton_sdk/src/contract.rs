@@ -202,7 +202,7 @@ impl From<MsgAddressInt> for AccountAddress {
 impl Contract {
 
     // Asynchronously loads a Contract instance or None if contract with given id is not exists
-    pub fn load(address: AccountAddress) -> SdkResult<Box<Stream<Item = Option<Contract>, Error = SdkError>>> {
+    pub fn load(address: AccountAddress) -> SdkResult<Box<dyn Stream<Item = Option<Contract>, Error = SdkError>>> {
         let id = address.get_account_id()?;
 
         let map = db_helper::load_record(CONTRACTS_TABLE_NAME, &id.to_hex_string())?
@@ -222,7 +222,7 @@ impl Contract {
 
     // Asynchronously loads a Message's json representation 
     // or null if message with given id is not exists
-    pub fn load_json(id: AccountId) -> SdkResult<Box<Stream<Item = String, Error = SdkError>>> {
+    pub fn load_json(id: AccountId) -> SdkResult<Box<dyn Stream<Item = String, Error = SdkError>>> {
 
         let map = db_helper::load_record(CONTRACTS_TABLE_NAME, &id.to_hex_string())?
             .map(|val| val.to_string());

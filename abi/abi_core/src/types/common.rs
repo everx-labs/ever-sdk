@@ -82,7 +82,7 @@ pub fn get_next_bits_from_chain(
     }
     else {
         while (cursor.remaining_bits() == 0) && (cursor.remaining_references() == 1) {
-            cursor = cursor.checked_drain_reference().unwrap();
+            cursor = cursor.checked_drain_reference().unwrap().into();
         }
         let remaining_bits = cursor.remaining_bits();
         if remaining_bits == 0 {
