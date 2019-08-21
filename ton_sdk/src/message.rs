@@ -2,7 +2,7 @@ use crate::*;
 use futures::stream::Stream;
 use tvm::stack::SliceData;
 use tvm::block::{
-    CommonMsgInfo, Message as TvmMessage, MessageId, MessageProcessingStatus
+    CommonMsgInfo, Message as TvmMessage, MessageId, MessageProcessingStatus, GenericId
 };
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
@@ -59,7 +59,8 @@ impl Message {
 
     // Returns message's identifier
     pub fn id(&self) -> MessageId {
-        self.msg.id.clone()
+        // On client side id is ready allways. It is never be calculated, just returned.
+        self.msg.calc_id().unwrap()
     }
 
     // Returns message's body (as tree of cells) or None if message doesn't have once
