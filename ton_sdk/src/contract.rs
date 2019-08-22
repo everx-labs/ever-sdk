@@ -2,7 +2,7 @@ use crate::*;
 use std::io::{Read, Seek, Cursor};
 use std::sync::{Arc, Mutex};
 use ed25519_dalek::{Keypair, PublicKey};
-use tvm::stack::{BuilderData, CellData, IBitstring, SliceData};
+use tvm::stack::{BuilderData, CellData, IBitstring, SliceData, find_tag};
 use tvm::types::AccountId;
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use ton_abi_core::types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
@@ -102,19 +102,21 @@ impl ContractImage {
         // state init's data's root cell contains zero-key
         // need to change it by real public key
         let mut new_data: BuilderData;
-        if let Some(ref data) = state_init.data {
-            new_data = BuilderData::from(&data);
-            new_data.update_cell(|data, _, _, _, _| {
-                let mut vec = Vec::from(&pub_key.as_bytes().clone()[..]);
+        if let Some(ref data) = state_init.data {            
+            new_data = BuilderData::from(&data); 
+            new_data.update_cell(|data, len, _, _| {
+                let mut vec = Vec::from(&pub_key.as_bytes().clone()[..]); 
                 vec.push(0x80);
                 *data = vec;
+                *len = find_tag(data);
             }, ());
         } else {
             new_data = BuilderData::new();
-            new_data.update_cell(|data, _, _, _, _| {
-                let mut vec = Vec::from(&pub_key.as_bytes().clone()[..]);
+            new_data.update_cell(|data, len, _, _| {
+                let mut vec = Vec::from(&pub_key.as_bytes().clone()[..]); 
                 vec.push(0x80);
                 *data = vec;
+                *len = find_tag(data);
             }, ());
         }
         state_init.set_data(new_data.into());
