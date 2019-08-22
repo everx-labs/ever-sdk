@@ -119,12 +119,13 @@ fn test_constructor_call() {
 
     assert_eq!(test_tree, expected_tree);
 
-    let response_tree = SliceData::new_empty();
+    let mut test_tree = SliceData::from(test_tree);
+    test_tree.checked_drain_reference().unwrap();
 
     let response = decode_function_response(
         WALLET_ABI.to_owned(),
         "constructor".to_owned(),
-        response_tree,
+        test_tree,
     )
     .unwrap();
 
@@ -160,7 +161,7 @@ fn test_signed_call() {
 
     let expected_response = r#"{"limitId":"0x0","error":"-0x1"}"#;
 
-    let response_tree = SliceData::from(BuilderData::with_bitstring(vec![0x00, 0xFF, 0x80]).unwrap());
+    let response_tree = SliceData::from(BuilderData::with_bitstring(vec![0x00, 0x27, 0xEF, 0x50, 0x87, 0x00, 0xFF, 0x80]).unwrap());
 
     let response = decode_function_response(
         WALLET_ABI.to_owned(),

@@ -6,7 +6,10 @@ use {Param, Token, TokenValue};
 use ed25519_dalek::*;
 use tvm::stack::{BuilderData, SliceData, CellData};
 use ton_abi_core::types::{Bitstring, prepend_data_to_chain};
-use ton_abi_core::types::{ABISerialized, DeserializationError as InnerTypeDeserializationError};
+use ton_abi_core::types::{
+    ABISerialized,
+    ABIDeserialized,
+    DeserializationError as InnerTypeDeserializationError};
 
 pub const   ABI_VERSION: u8                 = 0;
 const       ABI_VERSION_BITS_SIZE: usize    = 8;
@@ -26,6 +29,9 @@ pub struct Function {
     /// Signed function.
     #[serde(default)]
     pub signed: bool,
+
+    #[serde(skip_deserializing)]
+    pub id: u32
 }
 
 #[derive(Debug)]
@@ -38,7 +44,9 @@ pub enum SerializationError {
 pub enum DeserializationError {
     TypeDeserializationError(InnerTypeDeserializationError),
     IncompleteDeserializationError,
-    InvalidInputData(String)
+    InvalidInputData(String),
+    WrongVersion(u8),
+    WrongId(u32)
 }
 
 impl Function {
@@ -71,23 +79,27 @@ impl Function {
         format!("{}({})({})", self.name, input_types, output_types)
     }
 
+    pub fn calc_function_id(signature: &str) -> u32 {
+        // Sha256 hash of signature
+        let mut hasher = Sha256::new();
+
+        hasher.input(&signature.as_bytes()[..]);
+
+        let function_hash = hasher.result();
+
+        let mut bytes: [u8; 4] = [0; 4];
+        bytes.copy_from_slice(&function_hash[..4]);
+
+        u32::from_be_bytes(bytes)
+    }
+
     /// Computes function ID for contract function
-    pub fn get_function_id(&self) -> [u8; 4] {
+    pub fn get_function_id(&self) -> u32 {
         let signature = self.get_function_signature();
 
         //println!("{}", signature);
 
-        // Sha256 hash of signature
-        let mut hasher = Sha256::new();
-
-        hasher.input(&signature.into_bytes()[..]);
-
-        let function_hash = hasher.result();
-
-        let mut bytes = [0; 4];
-        bytes.copy_from_slice(&function_hash[..4]);
-        //println!("{:X?}", bytes);
-        bytes
+        Self::calc_function_id(&signature)
     }
 
     /// Parses the ABI function output to list of tokens.
@@ -95,7 +107,16 @@ impl Function {
         let params = self.output_params();
 
         let mut tokens = vec![];
-        let mut cursor = data;
+
+        let (version, cursor) = u8::read_from(data)
+            .map_err(|err| DeserializationError::TypeDeserializationError(err))?;
+
+        if version != ABI_VERSION { Err(DeserializationError::WrongVersion(version))? }
+
+        let (id, mut cursor) = u32::read_from(cursor)
+            .map_err(|err| DeserializationError::TypeDeserializationError(err))?;
+
+        if id != self.id { Err(DeserializationError::WrongId(id))? }
 
         for param in params {
             let (token_value, new_cursor) = TokenValue::read_from(&param.kind, cursor)
@@ -109,6 +130,21 @@ impl Function {
             Err(DeserializationError::IncompleteDeserializationError)
         } else {
             Ok(tokens)
+        }
+    }
+
+    /// Decodes function id from contract answer
+    pub fn decode_id(data: SliceData) -> Result<u32, DeserializationError> {
+        let (version, new_cursor) = u8::read_from(data)
+            .map_err(|err| DeserializationError::TypeDeserializationError(err))?;
+
+        let (id, _) = u32::read_from(new_cursor)
+            .map_err(|err| DeserializationError::TypeDeserializationError(err))?;
+
+        if version == ABI_VERSION {
+            Ok(id)
+        } else {
+            Err(DeserializationError::WrongVersion(version))
         }
     }
 
@@ -167,7 +203,7 @@ impl Function {
         builder = prepend_data_to_chain(builder, {
             // make prefix with ABI version and function ID
             let mut vec = vec![ABI_VERSION];
-            vec.extend_from_slice(&self.get_function_id()[..]);
+            vec.extend_from_slice(&self.get_function_id().to_be_bytes()[..]);
             let len = vec.len() * 8;
             Bitstring::create(vec, len)
         });

@@ -377,7 +377,7 @@ impl Contract {
 
     /// Decodes ABI contract answer from `CellData` into type values
     pub fn decode_function_response<TOut>(response: SliceData)
-        -> SdkResult<TOut::Out>
+        -> SdkResult<(u8, u32, TOut::Out)> 
         where TOut: ABIOutParameter{
 
         ABIResponse::<TOut>::decode_response_from_slice(response)
@@ -398,8 +398,8 @@ impl Contract {
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
-    pub fn decode_function_response_from_bytes<TOut>(response: &[u8])
-         -> SdkResult<TOut::Out>
+    pub fn decode_function_response_from_bytes<TOut>(response: &[u8]) 
+         -> SdkResult<(u8, u32, TOut::Out)>
         where TOut: ABIOutParameter {
 
         ABIResponse::<TOut>::decode_response(&response.to_vec())

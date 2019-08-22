@@ -4,7 +4,9 @@ use std::collections::hash_map::Values;
 use serde::{Deserialize, Deserializer};
 use serde::de::{Unexpected, Error as SerdeError};
 use serde_json;
-use {Function, ABIError};
+use {Function, ABIError, Token, Param};
+use tvm::stack::SliceData;
+
 
 /// API building calls to contracts ABI.
 #[derive(Clone, Debug, PartialEq)]
@@ -30,7 +32,8 @@ impl<'a> Deserialize<'a> for Contract {
             functions: HashMap::new(),
         };
 
-        for function in serde_contract.functions {
+        for mut function in serde_contract.functions {
+            function.id = function.get_function_id();
             result.functions.insert(function.name.clone(), function);
         }
 
@@ -47,20 +50,56 @@ struct SerdeContract {
     pub functions: Vec<Function>,
 }
 
+pub struct DecodeOutputResult {
+    pub function_name: String,
+    pub tokens: Vec<Token>,
+    pub params: Vec<Param>
+}
+
 impl Contract {
     /// Loads contract from json.
     pub fn load<T: io::Read>(reader: T) -> Result<Self, ABIError> {
         serde_json::from_reader(reader).map_err(|serde_error| ABIError::SerdeError(serde_error))
     }
 
-    /// Creates function call builder.
+    /// Returns `Function` struct with provided function name.
     pub fn function(&self, name: &str) -> Result<&Function, ABIError> {
         self.functions.get(name).ok_or_else(|| ABIError::InvalidName(name.to_owned()))
+    }
+
+    /// Returns `Function` struct with provided function id.
+    pub fn function_by_id(&self, id: u32) -> Result<&Function, ABIError> {
+        for (_, func) in &self.functions {
+            if func.id == id {
+                return Ok(func);
+            }
+        }
+
+        Err(ABIError::InvalidFunctionId(id))
     }
 
     /// Iterate over all functions of the contract in arbitrary order.
     pub fn functions(&self) -> Functions {
         Functions(self.functions.values())
+    }
+
+    /// Decodes contract answer and returns name of the function called
+    pub fn decode_output(&self, data: SliceData) -> Result<DecodeOutputResult, ABIError> {
+        let original_data = data.clone();
+        
+        let func_id = Function::decode_id(data)
+            .map_err(|err| ABIError::DeserializationError(err))?;
+
+        let func = self.function_by_id(func_id)?;
+
+        let tokens = func.decode_output(original_data)
+            .map_err(|err| ABIError::DeserializationError(err))?;
+
+        Ok( DecodeOutputResult {
+            function_name: func.name.clone(),
+            tokens: tokens,
+            params: func.output_params()
+        })
     }
 }
 

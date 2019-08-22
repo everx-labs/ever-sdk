@@ -1,4 +1,4 @@
-// error-pattern: the trait `ton_abi_core::types::ABIParameter` is not implemented for `()`
+// error-pattern: the trait bound `(): ton_abi_core::types::ABISerialized` is not satisfied
 
 extern crate ton_abi_core;
 

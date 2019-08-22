@@ -139,7 +139,7 @@ mod tests {
             *len = find_tag(data);
         }, &[0xF8, 0xFF, 0x7F, 0xF8, 0xFF, 0x7F, 0x80]);
         dbg!(cell.clone());
-        let cursor = cell.into();
+        let cursor = SliceData::from(cell);
         // check signed
         let (vec, new_cursor) = read_dynamic_int(cursor, true).unwrap();
         assert_eq!(vec, vec![0xFF, 0xFF, 0xF8]);

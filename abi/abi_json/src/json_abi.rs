@@ -76,6 +76,29 @@ pub fn decode_function_response(
         .map_err(|err| ABIError::DetokenizeError(err))
 }
 
+pub struct DecodeResponseResult {
+    pub function_name: String,
+    pub output: String
+}
+
+/// Decodes output parameters returned by some function call. Returns parametes and function name
+pub fn decode_unknown_function_response(
+    abi: String,
+    response: SliceData,
+) -> Result<DecodeResponseResult, ABIError> {
+    let contract = Contract::load(abi.as_bytes())?;
+
+    let result = contract.decode_output(response)?;
+
+    let output = Detokenizer::detokenize(&result.params, &result.tokens)
+        .map_err(|err| ABIError::DetokenizeError(err))?;
+
+    Ok(DecodeResponseResult {
+        function_name: result.function_name,
+        output: output
+    })
+}
+
 #[cfg(test)]
 #[path = "tests/full_stack_tests.rs"]
 mod tests;
