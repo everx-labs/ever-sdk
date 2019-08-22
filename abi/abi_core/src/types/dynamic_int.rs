@@ -128,13 +128,15 @@ impl ABITypeSignature for Dint {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tvm::stack::find_tag;
 
     #[test]
     fn test_read_dynamic_int() {
         let mut cell = BuilderData::new();
-        cell.update_cell(|data, _, _, _, vec| {
+        cell.update_cell(|data, len, _, vec| {
             data.clear();
             data.extend_from_slice(vec);
+            *len = find_tag(data);
         }, &[0xF8, 0xFF, 0x7F, 0xF8, 0xFF, 0x7F, 0x80]);
         dbg!(cell.clone());
         let cursor = cell.into();
