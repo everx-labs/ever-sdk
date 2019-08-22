@@ -298,8 +298,8 @@ fn init_node_connection() {
     let config_json = r#"
     {
         "queries_config": {
-            "queries_server": "http://services.tonlabs.io:4000/graphql",
-            "subscriptions_server": "ws://services.tonlabs.io:4000/graphql"
+            "queries_server": "https://services.tonlabs.io/graphql",
+            "subscriptions_server": "wss://services.tonlabs.io/graphql"
         },
         "requests_config": {
             "requests_server": "https://services.tonlabs.io/topics/requests"
