@@ -41,9 +41,8 @@ fn deserialize(message: Vec<u8>) -> BuilderData {
 
 fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: BuilderData, expected_decode: I::Out) 
     where
-        I: std::fmt::Debug + std::cmp::PartialEq + ABIInParameter + ABISerialized + ABIDeserialized + ABITypeSignature + Clone,
-        I::Out: ABIOutParameter + std::fmt::Debug + std::cmp::PartialEq + Clone,
-        (u8, u32, I::Out): ABIOutParameter,
+        I: std::fmt::Debug + std::cmp::PartialEq + ABIInParameter + ABIOutParameter + ABITypeSignature + Clone,
+        I::Out: std::fmt::Debug + std::cmp::PartialEq + Clone,
         O: ABIOutParameter + ABITypeSignature,
 {
     let mut expected_tree_with_ref = expected_tree.clone();
@@ -96,12 +95,12 @@ fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: BuilderDa
 
     // we can't easily remove some data from the beginning of SliceData, so decode the whole input and
     // add version and finction ID to expected decoded parameters
-    let test_decode: (u8, u32, I::Out) = ABIResponse::<(u8, u32, I)>::decode_response(&data).unwrap();
+    let test_decode: (u8, u32, I::Out) = ABIResponse::<I>::decode_response(&data).unwrap();
 
     assert_eq!(test_decode, (version, function_id, expected_decode.clone()));
 
 
-    let test_decode: (u8, u32, I::Out) = ABIResponse::<(u8, u32, I)>::decode_response_from_slice(test_tree_copy).unwrap();
+    let test_decode: (u8, u32, I::Out) = ABIResponse::<I>::decode_response_from_slice(test_tree_copy).unwrap();
 
     assert_eq!(test_decode, (version, function_id, expected_decode));
 }
@@ -138,27 +137,25 @@ fn test_empty_params() {
     let message = ABICall::<(), ()>::encode_function_call("test_empty_params", ());
     let test_tree = deserialize(message);
 
+    let func_id = get_function_id(b"test_empty_params()()");
+
     let mut builder = BuilderData::new();
     builder.append_u8(ABI_VERSION).unwrap();
-    builder.append_u32(get_function_id(b"test_empty_params()()")).unwrap();
+    builder.append_u32(func_id).unwrap();
 
     builder.prepend_reference(BuilderData::new());
 
-    let expected_tree = builder.into();
+    let expected_tree = builder.clone().into();
 
     assert_eq!(test_tree, expected_tree);
 
 
-    let builder = BuilderData::new();
+    let mut slice = SliceData::from(builder);
+    slice.checked_drain_reference().unwrap();
 
-    let mut data = Vec::new();
-    BagOfCells::with_root(&Arc::<CellData>::from(&builder))
-        .write_to(&mut data, false)
-        .unwrap();
+    let test_decode = ABIResponse::<()>::decode_response_from_slice(slice).unwrap();
 
-    let test_decode = ABIResponse::<()>::decode_response(&data).unwrap();
-
-    assert_eq!(test_decode, ());
+    assert_eq!(test_decode, (ABI_VERSION, func_id, ()));
 }
 
 #[test]
@@ -474,23 +471,15 @@ fn test_huge_static_array() {
 
     root_builder.prepend_reference(BuilderData::new());
 
-    let expected_tree = root_builder.into();
+    let expected_tree = root_builder.clone().into();
 
     assert_eq!(test_tree, expected_tree);
 
 
-    let mut root_builder = BuilderData::new();
+    let mut slice = SliceData::from(root_builder);
+    slice.checked_drain_reference().unwrap();
 
-    root_builder.append_bit_zero().unwrap();
-    root_builder.append_bit_zero().unwrap();
-    root_builder.append_reference(array_builder.clone());
-
-    let mut data = Vec::new();
-    BagOfCells::with_root(&Arc::<CellData>::from(&root_builder))
-        .write_to(&mut data, false)
-        .unwrap();
-
-    let (test_decode,) = ABIResponse::<(i32_array_512,)>::decode_response(&data).unwrap();
+    let (_version, _func_id, (test_decode,)) = ABIResponse::<(i32_array_512,)>::decode_response_from_slice(slice).unwrap();
 
     assert_eq!(input_array.len(), test_decode.len());
 
@@ -890,26 +879,15 @@ fn test_small_bits() {
 
     root_builder.prepend_reference(BuilderData::new());
 
-    let expected_tree = root_builder.into();
+    let expected_tree = root_builder.clone().into();
 
     assert_eq!(test_tree, expected_tree);
 
 
-    let mut root_builder = BuilderData::new();
+    let mut slice = SliceData::from(root_builder);
+    slice.checked_drain_reference().unwrap();
 
-    root_builder.append_bit_one().unwrap();
-    root_builder.append_bit_zero().unwrap();
-
-    let mut vec = vec![];
-    array_data.into_bitstring_with_completion_tag(&mut vec);
-    root_builder.append_bitstring(&vec).unwrap();
-
-    let mut data = Vec::new();
-    BagOfCells::with_root(&Arc::<CellData>::from(&root_builder))
-        .write_to(&mut data, false)
-        .unwrap();
-
-    let (test_decode,) = ABIResponse::<(Bits982,)>::decode_response(&data).unwrap();
+    let (_version, _func_id, (test_decode,)) = ABIResponse::<(Bits982,)>::decode_response_from_slice(slice).unwrap();
 
     assert_eq!(bits.len(), test_decode.len());
 
@@ -960,23 +938,15 @@ fn test_big_bits() {
 
     root_builder.prepend_reference(BuilderData::new());
 
-    let expected_tree = root_builder.into();
+    let expected_tree = root_builder.clone().into();
 
     assert_eq!(test_tree, expected_tree);
 
 
-    let mut root_builder = BuilderData::new();
+    let mut slice = SliceData::from(root_builder);
+    slice.checked_drain_reference().unwrap();
 
-    root_builder.append_bit_zero().unwrap();
-    root_builder.append_bit_zero().unwrap();
-    root_builder.append_reference(array_builder.clone());
-
-    let mut data = Vec::new();
-    BagOfCells::with_root(&Arc::<CellData>::from(&root_builder))
-        .write_to(&mut data, false)
-        .unwrap();
-
-    let (test_decode,) = ABIResponse::<(Bits1024,)>::decode_response(&data).unwrap();
+    let (_version, _func_id, (test_decode,)) = ABIResponse::<(Bits1024,)>::decode_response_from_slice(slice).unwrap();
 
     assert_eq!(bits.len(), test_decode.len());
 

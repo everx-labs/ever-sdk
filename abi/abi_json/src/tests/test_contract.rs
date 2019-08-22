@@ -56,8 +56,10 @@ fn test_abi_parse() {
                     Param { name: "a".to_owned(), kind: ParamType::Dint },
                     Param { name: "b".to_owned(), kind: ParamType::Bits(8) },
                 ],
-                signed: false
+                signed: false,
+                id: Function::calc_function_id("input_and_output(uint64,uint8[],bitstring)(dint,bits8)")
         });
+
 
     functions.insert(
         "no_output".to_owned(),
@@ -67,7 +69,8 @@ fn test_abi_parse() {
                     Param { name: "a".to_owned(), kind: ParamType::Uint(15) },
                 ],
                 outputs: vec![],
-                signed: false
+                signed: false,
+                id: Function::calc_function_id("no_output(uint15)()")
         });
 
     functions.insert(
@@ -78,7 +81,8 @@ fn test_abi_parse() {
                 outputs: vec![
                     Param { name: "a".to_owned(), kind: ParamType::Duint },
                 ],
-                signed: false
+                signed: false,
+                id: Function::calc_function_id("no_input()(duint)")
         });
 
     functions.insert(
@@ -87,7 +91,8 @@ fn test_abi_parse() {
                 name: "constructor".to_owned(),
                 inputs: vec![],
                 outputs: vec![],
-                signed: false
+                signed: false,
+                id: Function::calc_function_id("constructor()()")
         });
 
     functions.insert(
@@ -98,7 +103,8 @@ fn test_abi_parse() {
                     Param { name: "a".to_owned(), kind: ParamType::Bool },
                 ],
                 outputs: vec![],
-                signed: true
+                signed: true,
+                id: Function::calc_function_id("signed(bool)()")
         });
 
     let expected_contract = Contract { functions };
@@ -115,7 +121,7 @@ fn print_function_singnatures() {
     for function in functions {
         //println!("{}", function.name);
         println!("{}", function.get_function_signature());
-        let id = u32::from_be_bytes(function.get_function_id());
+        let id = function.get_function_id();
         println!("{:X?}\n", id);
     }
 }
