@@ -5,6 +5,7 @@ use function::{SerializationError, DeserializationError};
 pub enum ABIError {
     SerdeError(serde_json::Error),
     InvalidName(String),
+    InvalidFunctionId(u32),
     TokenizeError(TokenizeError),
     SerializationError(SerializationError),
     DeserializationError(DeserializationError),
