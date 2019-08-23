@@ -100,13 +100,13 @@ fn test_parameters_set(
     // check output decoding
 
     let mut test_tree = SliceData::from(test_tree);
+
+    let test_inputs = not_signed_function.decode_input(test_tree.clone()).unwrap();
+    assert_eq!(test_inputs, inputs);
+
     test_tree.checked_drain_reference().unwrap();
 
-    //let _version = test_tree.get_next_byte();
-    //let _function_id = test_tree.get_next_u32();
-
     let test_outputs = not_signed_function.decode_output(test_tree).unwrap();
-
     assert_eq!(test_outputs, inputs);
 }
 

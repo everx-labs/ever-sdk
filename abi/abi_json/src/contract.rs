@@ -50,7 +50,7 @@ struct SerdeContract {
     pub functions: Vec<Function>,
 }
 
-pub struct DecodeOutputResult {
+pub struct DecodedMessage {
     pub function_name: String,
     pub tokens: Vec<Token>,
     pub params: Vec<Param>
@@ -84,7 +84,7 @@ impl Contract {
     }
 
     /// Decodes contract answer and returns name of the function called
-    pub fn decode_output(&self, data: SliceData) -> Result<DecodeOutputResult, ABIError> {
+    pub fn decode_output(&self, data: SliceData) -> Result<DecodedMessage, ABIError> {
         let original_data = data.clone();
         
         let func_id = Function::decode_id(data)
@@ -95,10 +95,29 @@ impl Contract {
         let tokens = func.decode_output(original_data)
             .map_err(|err| ABIError::DeserializationError(err))?;
 
-        Ok( DecodeOutputResult {
+        Ok( DecodedMessage {
             function_name: func.name.clone(),
             tokens: tokens,
             params: func.output_params()
+        })
+    }
+
+    /// Decodes contract answer and returns name of the function called
+    pub fn decode_input(&self, data: SliceData) -> Result<DecodedMessage, ABIError> {
+        let original_data = data.clone();
+        
+        let func_id = Function::decode_id(data)
+            .map_err(|err| ABIError::DeserializationError(err))?;
+
+        let func = self.function_by_id(func_id)?;
+
+        let tokens = func.decode_input(original_data)
+            .map_err(|err| ABIError::DeserializationError(err))?;
+
+        Ok( DecodedMessage {
+            function_name: func.name.clone(),
+            tokens: tokens,
+            params: func.input_params()
         })
     }
 }

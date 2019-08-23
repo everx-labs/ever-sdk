@@ -102,10 +102,8 @@ impl Function {
         Self::calc_function_id(&signature)
     }
 
-    /// Parses the ABI function output to list of tokens.
-    pub fn decode_output(&self, data: SliceData) -> Result<Vec<Token>, DeserializationError> {
-        let params = self.output_params();
-
+    /// Decodes provided params from SliceData
+    fn decode_params(&self, params: Vec<Param>, data: SliceData) -> Result<Vec<Token>, DeserializationError> {
         let mut tokens = vec![];
 
         let (version, cursor) = u8::read_from(data)
@@ -131,6 +129,19 @@ impl Function {
         } else {
             Ok(tokens)
         }
+    }
+
+    /// Parses the ABI function output to list of tokens.
+    pub fn decode_output(&self, data: SliceData) -> Result<Vec<Token>, DeserializationError> {
+        self.decode_params(self.output_params(), data)
+    }
+
+    /// Parses the ABI function call to list of tokens.
+    pub fn decode_input(&self, mut data: SliceData) -> Result<Vec<Token>, DeserializationError> {
+        data.checked_drain_reference()
+            .map_err(|err| DeserializationError::InvalidInputData(err.to_string()))?;
+
+        self.decode_params(self.input_params(), data)
     }
 
     /// Decodes function id from contract answer

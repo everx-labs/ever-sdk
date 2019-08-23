@@ -85,7 +85,7 @@ fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: BuilderDa
     test_tree.checked_drain_reference().unwrap();
     let test_tree_copy = test_tree.clone();
 
-    let version = test_tree.get_next_byte().unwrap();
+    let _version = test_tree.get_next_byte().unwrap();
     let function_id = test_tree.get_next_u32().unwrap();
 
     let mut data = Vec::new();
@@ -95,14 +95,14 @@ fn test_parameters_set<I, O>(func_name: &str, input: I, expected_tree: BuilderDa
 
     // we can't easily remove some data from the beginning of SliceData, so decode the whole input and
     // add version and finction ID to expected decoded parameters
-    let test_decode: (u8, u32, I::Out) = ABIResponse::<I>::decode_response(&data).unwrap();
+    let test_decode: (u32, I::Out) = ABIResponse::<I>::decode_response(&data).unwrap();
 
-    assert_eq!(test_decode, (version, function_id, expected_decode.clone()));
+    assert_eq!(test_decode, (function_id, expected_decode.clone()));
 
 
-    let test_decode: (u8, u32, I::Out) = ABIResponse::<I>::decode_response_from_slice(test_tree_copy).unwrap();
+    let test_decode: (u32, I::Out) = ABIResponse::<I>::decode_response_from_slice(test_tree_copy).unwrap();
 
-    assert_eq!(test_decode, (version, function_id, expected_decode));
+    assert_eq!(test_decode, (function_id, expected_decode));
 }
 
 #[test]
@@ -155,7 +155,7 @@ fn test_empty_params() {
 
     let test_decode = ABIResponse::<()>::decode_response_from_slice(slice).unwrap();
 
-    assert_eq!(test_decode, (ABI_VERSION, func_id, ()));
+    assert_eq!(test_decode, (func_id, ()));
 }
 
 #[test]
@@ -479,7 +479,7 @@ fn test_huge_static_array() {
     let mut slice = SliceData::from(root_builder);
     slice.checked_drain_reference().unwrap();
 
-    let (_version, _func_id, (test_decode,)) = ABIResponse::<(i32_array_512,)>::decode_response_from_slice(slice).unwrap();
+    let (_func_id, (test_decode,)) = ABIResponse::<(i32_array_512,)>::decode_response_from_slice(slice).unwrap();
 
     assert_eq!(input_array.len(), test_decode.len());
 
@@ -887,7 +887,7 @@ fn test_small_bits() {
     let mut slice = SliceData::from(root_builder);
     slice.checked_drain_reference().unwrap();
 
-    let (_version, _func_id, (test_decode,)) = ABIResponse::<(Bits982,)>::decode_response_from_slice(slice).unwrap();
+    let (_func_id, (test_decode,)) = ABIResponse::<(Bits982,)>::decode_response_from_slice(slice).unwrap();
 
     assert_eq!(bits.len(), test_decode.len());
 
@@ -946,7 +946,7 @@ fn test_big_bits() {
     let mut slice = SliceData::from(root_builder);
     slice.checked_drain_reference().unwrap();
 
-    let (_version, _func_id, (test_decode,)) = ABIResponse::<(Bits1024,)>::decode_response_from_slice(slice).unwrap();
+    let (_func_id, (test_decode,)) = ABIResponse::<(Bits1024,)>::decode_response_from_slice(slice).unwrap();
 
     assert_eq!(bits.len(), test_decode.len());
 

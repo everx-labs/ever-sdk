@@ -76,16 +76,16 @@ pub fn decode_function_response(
         .map_err(|err| ABIError::DetokenizeError(err))
 }
 
-pub struct DecodeResponseResult {
+pub struct DecodedMessage {
     pub function_name: String,
-    pub output: String
+    pub params: String
 }
 
 /// Decodes output parameters returned by some function call. Returns parametes and function name
 pub fn decode_unknown_function_response(
     abi: String,
     response: SliceData,
-) -> Result<DecodeResponseResult, ABIError> {
+) -> Result<DecodedMessage, ABIError> {
     let contract = Contract::load(abi.as_bytes())?;
 
     let result = contract.decode_output(response)?;
@@ -93,9 +93,27 @@ pub fn decode_unknown_function_response(
     let output = Detokenizer::detokenize(&result.params, &result.tokens)
         .map_err(|err| ABIError::DetokenizeError(err))?;
 
-    Ok(DecodeResponseResult {
+    Ok(DecodedMessage {
         function_name: result.function_name,
-        output: output
+        params: output
+    })
+}
+
+/// Decodes output parameters returned by some function call. Returns parametes and function name
+pub fn decode_unknown_function_call(
+    abi: String,
+    response: SliceData,
+) -> Result<DecodedMessage, ABIError> {
+    let contract = Contract::load(abi.as_bytes())?;
+
+    let result = contract.decode_input(response)?;
+
+    let input = Detokenizer::detokenize(&result.params, &result.tokens)
+        .map_err(|err| ABIError::DetokenizeError(err))?;
+
+    Ok(DecodedMessage {
+        function_name: result.function_name,
+        params: input
     })
 }
 
