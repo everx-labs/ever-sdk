@@ -220,7 +220,7 @@ impl Contract {
         Ok(Box::new(map))
     }
 
-    // Asynchronously loads a Message's json representation
+    // Asynchronously loads a Contract's json representation
     // or null if message with given id is not exists
     pub fn load_json(id: AccountId) -> SdkResult<Box<dyn Stream<Item = String, Error = SdkError>>> {
 
@@ -368,16 +368,29 @@ pub struct MessageToSign {
 }
 
 impl Contract {
-
-    fn deserialize_tree_to_slice(data: &[u8]) -> SdkResult<SliceData> {
-        let mut response_cells = deserialize_cells_tree(&mut Cursor::new(data))?;
-
-        if response_cells.len() != 1 {
-            return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
-        }
-
-        Ok(response_cells.remove(0).into())
+    /// Returns contract's identifier
+    pub fn id(&self) -> AccountId {
+        self.acc.get_id().unwrap().clone()
     }
+
+    /// Returns contract's balance in NANO grams
+    pub fn balance_grams(&self) -> Grams {
+        self.acc.get_balance().unwrap().grams.clone()
+    }
+
+    /// Returns contract's balance
+    pub fn balance(&self) -> CurrencyCollection {
+        unimplemented!()
+    }
+
+    /// Returns blockchain's account struct
+    /// Some node-specifed methods won't work. All TonStructVariant fields has Client variant.
+    pub fn acc(&self) -> &Account {
+         &self.acc
+    }
+
+
+    // ------- Decoding functions -------
 
     /// Decodes output parameters returned by contract function call 
     pub fn decode_function_response_json(abi: String, function: String, response: SliceData) 
@@ -448,6 +461,8 @@ impl Contract {
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError2(err)))
     }
 
+    // ------- Call constructing functions -------
+
     // Packs given inputs by abi into Message struct.
     // Returns message's bag of cells and identifier.
     pub fn construct_call_message<TIn, TOut>(address: AccountAddress, func: String, input: TIn, key_pair: Option<&Keypair>)
@@ -479,6 +494,16 @@ impl Contract {
         Self::serialize_message(msg)
     }
 
+    // Creates Message struct with provided body and account address
+    // Returns message's bag of cells and identifier.
+    pub fn construct_call_message_with_body(address: AccountAddress, body: &[u8]) -> SdkResult<(Vec<u8>, MessageId)> {
+        let body_cell = Self::deserialize_tree_to_slice(body)?;
+
+        let msg = Self::create_message(address, body_cell)?;
+
+        Self::serialize_message(msg)
+    }
+
     // Packs given inputs by abi into Message struct without sign and returns data to sign.
     // Sign should be then added with `add_sign_to_message` function
     // Works with json representation of input and abi.
@@ -496,6 +521,8 @@ impl Contract {
             }
         )
     }
+
+     // ------- Deploy constructing functions -------
 
     // Packs given image and input into Message struct.
     // Returns message's bag of cells and identifier.
@@ -526,6 +553,19 @@ impl Contract {
 
         Self::serialize_message(msg)
     }
+
+    // Packs given image and body into Message struct.
+    // Returns message's bag of cells and identifier.
+    pub fn construct_deploy_message_with_body(image: ContractImage, body: Option<&[u8]>) -> SdkResult<(Vec<u8>, MessageId)> {
+        let body_cell = match body {
+            None => None,
+            Some(data) => Some(Self::deserialize_tree_to_slice(data)?)
+        };
+
+        let msg = Self::create_deploy_message(body_cell, image)?;
+
+        Self::serialize_message(msg)
+    }
     
     // Packs given image and input into Message struct without sign and returns data to sign.
     // Sign should be then added with `add_sign_to_message` function
@@ -545,19 +585,16 @@ impl Contract {
         )
     }
 
+
     // Add sign to message, returned by `get_deploy_message_bytes_for_signing` or 
     // `get_run_message_bytes_for_signing` function.
     // Returns serialized message and identifier.
     pub fn add_sign_to_message(signature: &[u8], public_key: &[u8], message: &[u8]) 
         -> SdkResult<(Vec<u8>, MessageId)> {
         
-        let mut root_cells = deserialize_cells_tree(&mut Cursor::new(message))?;
+        let mut slice = Self::deserialize_tree_to_slice(message)?;
 
-        if root_cells.len() != 1 { 
-            return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
-        }
-
-        let mut message: TvmMessage = TvmMessage::construct_from(&mut root_cells.remove(0).into())?;
+        let mut message: TvmMessage = TvmMessage::construct_from(&mut slice)?;
 
         let body = message.body()
             .ok_or(SdkError::from(SdkErrorKind::InvalidData("No message body".to_owned())))?;
@@ -569,27 +606,6 @@ impl Contract {
             
 
         Self::serialize_message(message)
-    }
-
-    // Returns contract's identifier
-    pub fn id(&self) -> AccountId {
-        self.acc.get_id().unwrap().clone()
-    }
-
-    // Returns contract's balance in NANO grams
-    pub fn balance_grams(&self) -> Grams {
-        self.acc.get_balance().unwrap().grams.clone()
-    }
-
-    // Returns contract's balance
-    pub fn balance(&self) -> CurrencyCollection {
-        unimplemented!()
-    }
-
-    // Returns blockchain's account struct
-    // Some node-specifed methods won't work. All TonStructVariant fields has Client variant.
-    pub fn acc(&self) -> &Account {
-         &self.acc
     }
 
     fn create_message(address: AccountAddress, msg_body: SliceData) -> SdkResult<TvmMessage> {
@@ -664,6 +680,17 @@ impl Contract {
         bag.write_to(&mut data, false)?;
 
         Ok((data, id.into()))
+    }
+
+    /// Deserializes tree of cells from byte array into `SliceData`
+    fn deserialize_tree_to_slice(data: &[u8]) -> SdkResult<SliceData> {
+        let mut response_cells = deserialize_cells_tree(&mut Cursor::new(data))?;
+
+        if response_cells.len() != 1 {
+            return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
+        }
+
+        Ok(response_cells.remove(0).into())
     }
 
     /// Sets new default workchain number which will be used in message destination address
