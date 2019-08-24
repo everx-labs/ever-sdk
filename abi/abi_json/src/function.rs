@@ -251,6 +251,10 @@ impl Function {
 
         Ok(builder)
     }
+
+    pub fn is_my_message(&self, data: SliceData) -> Result<bool, DeserializationError> {
+        Ok(self.id == Self::decode_id(data)?)
+    }
 }
 
 #[cfg(test)]
