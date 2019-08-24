@@ -469,7 +469,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         .expect("Error unwrap result while loading Transaction")
         .expect("Error unwrap got Transaction");
 
-    let abi_contract = ton_abi_json::Contract::load(abi.as_bytes()).expect("Couldn't parse ABI");
+    let abi_contract = AbiContract::load(abi.as_bytes()).expect("Couldn't parse ABI");
     let abi_function = abi_contract.function(func).expect("Couldn't find function");
 
     // take external outbound message from the transaction
