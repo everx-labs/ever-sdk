@@ -36,9 +36,7 @@ pub use error::*;
 mod contract;
 pub use contract::*;
 
-#[cfg(feature = "node_interaction")]
 mod message;
-#[cfg(feature = "node_interaction")]
 pub use message::*;
 
 #[cfg(feature = "node_interaction")]

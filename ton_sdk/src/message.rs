@@ -23,6 +23,7 @@ pub struct Message {
 impl Message {
 
     // Asynchronously loads a Message instance or None if message with given id is not exists
+    #[cfg(feature = "node_interaction")]
     pub fn load(id: MessageId) -> SdkResult<Box<dyn Stream<Item = Option<Message>, Error = SdkError>>> {
         let map = queries_helper::load_record(MESSAGES_TABLE_NAME, &id.to_hex_string())?
             .and_then(|val| {
@@ -41,12 +42,18 @@ impl Message {
 
     // Asynchronously loads a Message's json representation 
     // or null if message with given id is not exists
+    #[cfg(feature = "node_interaction")]
     pub fn load_json(id: MessageId) -> SdkResult<Box<dyn Stream<Item = String, Error = SdkError>>> {
 
         let map = queries_helper::load_record(MESSAGES_TABLE_NAME, &id.to_hex_string())?
             .map(|val| val.to_string());
 
         Ok(Box::new(map))
+    }
+
+    // Create `Message` struct with provided `TvmMessage`
+    pub fn with_msg(msg: TvmMessage) -> Self {
+        Message { msg }
     }
 
     // Returns message's processing status

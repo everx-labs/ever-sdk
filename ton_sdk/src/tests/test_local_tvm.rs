@@ -57,7 +57,10 @@ fn test_local_contract_call() {
         PUSHINT 0
         SENDRAWMSG
     ").unwrap();
-    let data = SliceData::from_raw(vec![1, 2, 3, 4], 32).cell();
+    let code = code.cell();
+
+    let data = SliceData::from_raw(vec![1, 2, 3, 4], 32);
+    let data = data.cell();
     let mut msg = Message::with_ext_in_header(ExternalInboundMessageHeader {
         src: MsgAddressExt::with_extern(SliceData::from_raw(vec![11; 32], 256)).unwrap(),
         dst: MsgAddressInt::AddrNone,
@@ -65,7 +68,7 @@ fn test_local_contract_call() {
     });
     *msg.body_mut() = Some(SliceData::from_raw(vec![1], 8));
 
-    let msgs = local_contract_call(code.clone(), data.clone(), &msg).unwrap();
+    let msgs = local_contract_call(code.clone(), Some(data.clone()), &msg).unwrap();
     assert_eq!(msgs.len(), 2);
 
     assert_eq!(msgs[0].body(), Some(SliceData::from_raw(vec![2], 8)));
@@ -73,7 +76,7 @@ fn test_local_contract_call() {
 
     *msg.body_mut() = Some(SliceData::from_raw(vec![2], 8));
 
-    let msgs = local_contract_call(code.clone(), data.clone(), &msg).unwrap();
+    let msgs = local_contract_call(code.clone(), Some(data.clone()), &msg).unwrap();
     assert_eq!(msgs.len(), 2);
 
     assert_eq!(msgs[0].body(), Some(SliceData::from_raw(vec![3], 8)));
