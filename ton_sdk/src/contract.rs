@@ -502,6 +502,16 @@ impl Contract {
 
         Self::serialize_message(msg)
     }
+
+    // Packs given image into Message struct.
+    // Returns message's bag of cells and identifier.
+    pub fn construct_deploy_message_no_constructor(image: ContractImage)
+        -> SdkResult<(Vec<u8>, MessageId)>
+    {
+        let msg = Self::create_deploy_message(None, image)?;
+
+        Self::serialize_message(msg)
+    }
     
     // Packs given image and input into Message struct without sign and returns data to sign.
     // Sign should be then added with `add_sign_to_message` function
