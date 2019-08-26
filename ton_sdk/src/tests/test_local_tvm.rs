@@ -128,7 +128,11 @@ fn test_local_piggy_call() {
     let messages = crate::Contract::local_contract_call_by_data(state_init, msg).expect("Error calling contract");
 
     println!("messages count {}", messages.len());
-    for out_message in messages {
-        println!("{}", serde_json::to_string_pretty(&out_message).expect("Error serializing message"));
-    }
+    assert!(messages.len() > 0);
+    
+    let answer = crate::Contract::decode_function_response_json(
+        PIGGY_BANK_CONTRACT_ABI.to_owned(), "getGoal".to_owned(), messages[0].body().expect("Message has no body"))
+            .expect("Error decoding result");
+
+    println!("answer {}", answer)
 }
