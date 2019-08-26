@@ -89,10 +89,6 @@ error_chain! {
             description("Invalid argument"),
             display("Invalid argument: {}", msg)
         }
-        InvalidState(msg: String) {
-            description("Invalid state"),
-            display("Invalid state: {}", msg)
-        }
         InternalError(msg: String) {
             description("Internal error"),
             display("Internal error: {}", msg)

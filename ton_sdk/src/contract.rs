@@ -397,7 +397,7 @@ impl Contract {
         if let AccountState::AccountActive(state) = state {
             Self::local_contract_call_by_data(state, message)
         } else {
-            bail!(SdkErrorKind::InvalidState(format!("Account is not active. State: {}", state)))
+            bail!(SdkErrorKind::InvalidData(format!("Account is not active. State: {}", state)))
         }
     }
 
