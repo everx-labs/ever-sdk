@@ -59,8 +59,6 @@ fn test_local_contract_call() {
         PUSHINT 0
         SENDRAWMSG
     ").unwrap();
-    let code = code.cell();
-
     let data = SliceData::from_raw(vec![1, 2, 3, 4], 32);
     let data = data.cell();
     let mut msg = Message::with_ext_in_header(ExternalInboundMessageHeader {

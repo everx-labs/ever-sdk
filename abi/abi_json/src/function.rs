@@ -6,7 +6,10 @@ use {Param, Token, TokenValue};
 use ed25519_dalek::*;
 use tvm::stack::{BuilderData, SliceData, CellData};
 use ton_abi_core::types::{Bitstring, prepend_data_to_chain};
-use ton_abi_core::types::{ABISerialized, DeserializationError as InnerTypeDeserializationError};
+use ton_abi_core::types::{
+    ABISerialized,
+    ABIDeserialized,
+    DeserializationError as InnerTypeDeserializationError};
 
 pub const   ABI_VERSION: u8                 = 0;
 const       ABI_VERSION_BITS_SIZE: usize    = 8;
@@ -38,7 +41,9 @@ pub enum SerializationError {
 pub enum DeserializationError {
     TypeDeserializationError(InnerTypeDeserializationError),
     IncompleteDeserializationError,
-    InvalidInputData(String)
+    InvalidInputData(String),
+    WrongVersion(u8),
+    WrongId(u32)
 }
 
 impl Function {
@@ -109,6 +114,55 @@ impl Function {
             Err(DeserializationError::IncompleteDeserializationError)
         } else {
             Ok(tokens)
+        }
+    }
+
+    /// Parses the ABI function call to list of tokens.
+    pub fn decode_input(&self, mut data: SliceData) -> Result<Vec<Token>, DeserializationError> {
+        let params = self.output_params();
+
+        data.checked_drain_reference()
+            .map_err(|err| DeserializationError::InvalidInputData(err.to_string()))?;
+
+        let mut tokens = vec![];
+
+        let (version, cursor) = u8::read_from(data)
+            .map_err(|err| DeserializationError::TypeDeserializationError(err))?;
+
+        if version != ABI_VERSION { Err(DeserializationError::WrongVersion(version))? }
+
+        let (id, mut cursor) = u32::read_from(cursor)
+            .map_err(|err| DeserializationError::TypeDeserializationError(err))?;
+
+        if id.to_be_bytes() != self.get_function_id() { Err(DeserializationError::WrongId(id))? }
+
+        for param in params {
+            let (token_value, new_cursor) = TokenValue::read_from(&param.kind, cursor)
+                .map_err(|err| DeserializationError::TypeDeserializationError(err))?;
+
+            cursor = new_cursor;
+            tokens.push(Token { name: param.name, value: token_value });
+        }
+
+        if cursor.remaining_references() != 0 || cursor.remaining_bits() != 0 {
+            Err(DeserializationError::IncompleteDeserializationError)
+        } else {
+            Ok(tokens)
+        }
+    }
+
+    /// Decodes function id from contract answer
+    pub fn decode_id(data: SliceData) -> Result<u32, DeserializationError> {
+        let (version, new_cursor) = u8::read_from(data)
+            .map_err(|err| DeserializationError::TypeDeserializationError(err))?;
+
+         let (id, _) = u32::read_from(new_cursor)
+            .map_err(|err| DeserializationError::TypeDeserializationError(err))?;
+
+         if version == ABI_VERSION {
+            Ok(id)
+        } else {
+            Err(DeserializationError::WrongVersion(version))
         }
     }
 

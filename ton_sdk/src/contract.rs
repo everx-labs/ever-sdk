@@ -27,6 +27,8 @@ use tvm::block::{
 };
 use std::convert::Into;
 
+pub use ton_abi_json::json_abi::DecodedMessage;
+
 #[cfg(feature = "node_interaction")]
 use futures::stream::Stream;
 
@@ -443,6 +445,34 @@ impl Contract {
         Self::decode_function_response_json(abi, function, response_cells.remove(0).into())
     }
 
+    /// Deserializes tree of cells from byte array into `SliceData`
+    fn deserialize_tree_to_slice(data: &[u8]) -> SdkResult<SliceData> {
+        let mut response_cells = deserialize_cells_tree(&mut Cursor::new(data))?;
+
+         if response_cells.len() != 1 {
+            return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
+        }
+
+         Ok(response_cells.remove(0).into())
+    }
+
+    /// Decodes output parameters returned by contract function call 
+    pub fn decode_unknown_function_call_json(abi: String, response: SliceData) 
+        -> SdkResult<DecodedMessage> {
+
+        ton_abi_json::json_abi::decode_unknown_function_call(abi, response)
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
+    }
+
+    /// Decodes output parameters returned by contract function call from serialized message body
+    pub fn decode_unknown_function_call_from_bytes_json(abi: String, response: &[u8])
+        -> SdkResult<DecodedMessage> {
+
+        let slice = Self::deserialize_tree_to_slice(response)?;
+
+        Self::decode_unknown_function_call_json(abi, slice)
+    }
+
     /// Decodes output parameters returned by contract function call from serialized message body
     pub fn decode_function_response_from_bytes<TOut>(response: &[u8])
          -> SdkResult<TOut::Out>
@@ -527,6 +557,16 @@ impl Contract {
 
         let cell = msg_body.into();
         let msg = Self::create_deploy_message(Some(cell), image)?;
+
+        Self::serialize_message(msg)
+    }
+
+    // Packs given image into Message struct.
+    // Returns message's bag of cells and identifier.
+    pub fn construct_deploy_message_no_constructor(image: ContractImage)
+        -> SdkResult<(Vec<u8>, MessageId)>
+    {
+        let msg = Self::create_deploy_message(None, image)?;
 
         Self::serialize_message(msg)
     }
