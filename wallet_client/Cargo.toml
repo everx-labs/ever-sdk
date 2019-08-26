@@ -18,6 +18,8 @@ num-traits = "0.2"
 clap = "2.33.0"
 
 kafka = { version = "0.7", default-features = false }
+reqwest = "0.9.18"
+base64 = "0.10.0"
 
 ton_sdk = { path = "../ton_sdk" }
 

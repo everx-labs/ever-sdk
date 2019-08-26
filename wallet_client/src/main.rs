@@ -1,6 +1,7 @@
 extern crate ton_sdk;
 extern crate hex;
 extern crate serde;
+#[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
@@ -18,7 +19,7 @@ use ton_sdk::*;
 use tvm::block::{
     Message, MessageId, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
     ExternalInboundMessageHeader, CurrencyCollection, Serializable, GetSetValueForVarInt,
-    MessageProcessingStatus, TransactionId
+    TransactionProcessingStatus, TransactionId
 };
 use tvm::stack::{BuilderData, IBitstring};
 use tvm::types::{AccountId};
@@ -126,10 +127,10 @@ fn str_grams_to_nanorams(grams: &str) -> String {
     format!("{}", nanograms as u64)
 }
 
-fn is_message_done(status: MessageProcessingStatus) -> bool {
-    (status == MessageProcessingStatus::Preliminary) ||
-    (status == MessageProcessingStatus::Proposed) ||
-    (status == MessageProcessingStatus::Finalized)
+fn is_message_done(status: TransactionProcessingStatus) -> bool {
+    (status == TransactionProcessingStatus::Preliminary) ||
+    (status == TransactionProcessingStatus::Proposed) ||
+    (status == TransactionProcessingStatus::Finalized)
 }
 
 fn wait_message_processed(
@@ -142,9 +143,9 @@ fn wait_message_processed(
             panic!("error next state getting: {}", e);
         }
         if let Ok(s) = state {
-            println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if is_message_done(s.message_state) {
-                tr_id = Some(s.message_id.clone());
+            println!("{} : {:?}", s.id.to_hex_string(), s.status);
+            if is_message_done(s.status) {
+                tr_id = Some(s.id.clone());
                 break;
             }
         }
@@ -153,21 +154,6 @@ fn wait_message_processed(
 }
 
 fn wait_message_processed_by_id(message_id: MessageId)-> TransactionId {
-    let msg = ton_sdk::Message::load(message_id.clone())
-        .expect("Error load message")
-        .wait()
-        .next();
-
-    if msg.is_some() {
-        let s = msg.expect("Error unwrap stream next while loading Message")
-            .expect("Error unwrap result while loading Message")
-            .expect("Error unwrap returned Message");
-        println!("{} : {:?}", s.id().to_hex_string(), s.status());
-        if is_message_done(s.status()) {
-            return s.id().clone();
-        }    
-    }
-
     wait_message_processed(Contract::subscribe_updates(message_id.clone()).unwrap())
 }
 
@@ -667,14 +653,47 @@ fn set_address(current_address: &mut Option<AccountId>, params: &[&str]) {
 }
 
 extern crate kafka;
-use kafka::producer::{Producer, Record, RequiredAcks};
-use std::time::Duration;
+extern crate reqwest;
+extern crate base64;
+
+//use kafka::producer::{Producer, Record, RequiredAcks};
 use ton_sdk::NodeClientConfig;
+use self::reqwest::Client;
+use self::reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
+use std::io::Read;
 
 #[derive(Clone, Serialize, Deserialize)]
 struct AccountData {
     id: AccountId,
     keypair: Vec<u8>,
+}
+
+pub fn send_message(client: &Client, server: &str, key: &[u8], value: &[u8]) {
+    let mut headers = HeaderMap::new();
+    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+    let key_encoded = base64::encode(key);
+    let value_encoded = base64::encode(value);
+    let body = json!({
+        "records": [{ "key": key_encoded, "value": value_encoded }]
+    });
+
+    let result = client.post(server)
+        .headers(headers)
+        .body(body.to_string())
+        .send();
+    match result {
+        Ok(result) => {
+            if !result.status().is_success() {
+                let bytes: Vec<u8> = result.bytes().map(|b| if let Ok(b) = b { b } else { 0 }).collect();
+                let text = match String::from_utf8(bytes.clone()) {
+                    Ok(text) => text,
+                    Err(_) => hex::encode(bytes)
+                };
+                panic!(format!("Request failed: {}", text));
+            }
+        }
+        Err(err) => panic!(format!("Can not send request: {}", err))
+    }
 }
 
 fn create_cycle_test_thread(config: String, accounts: Vec<AccountData>, timeout: u64, msg_count: u32, thread_number: usize) -> std::thread::JoinHandle<()> {
@@ -688,11 +707,13 @@ fn create_cycle_test_thread(config: String, accounts: Vec<AccountData>, timeout:
 
         let config: NodeClientConfig = serde_json::from_str(&config).expect("Couldn't parse config");
 
-        let mut prod = Producer::from_hosts(config.kafka_config.servers)
+       /* let mut prod = Producer::from_hosts(config.)
                 .with_ack_timeout(Duration::from_millis(config.kafka_config.ack_timeout))
                 .with_required_acks(RequiredAcks::One)
                 .create()
-                .expect("Couldn't connect to Kafka");
+                .expect("Couldn't connect to Kafka");*/
+
+        let client = Client::new();
 
         println!("Thread {}. Transfer cycle...", thread_number);
         let now = std::time::SystemTime::now();
@@ -718,7 +739,9 @@ fn create_cycle_test_thread(config: String, accounts: Vec<AccountData>, timeout:
 
             //println!("msg id {:?}", id);
 
-            prod.send(&Record::from_key_value(&config.kafka_config.topic, &id.data.as_slice()[..], msg)).expect("Couldn't send message");
+            //prod.send(&Record::from_key_value(&config.kafka_config.topic, &id.data.as_slice()[..], msg)).expect("Couldn't send message");
+
+            send_message(&client, &config.requests_config.requests_server, &id.data.as_slice()[..], &msg);
 
            // Contract::send_serialized_message(id, &msg).expect("Error sending message");
 
@@ -951,7 +974,7 @@ fn main() {
 
     let workchain = i32::from_str_radix(workchain, 10).expect("Couldn't parse workchain number");
 
-    init_json(Some(workchain), config.clone()).expect("Couldn't establish connection");
+    init_json(Some(workchain), &config).expect("Couldn't establish connection");
     println!("Connection established");
 
     let mut current_address = if let Ok(address) = std::fs::read("last_address") {

@@ -2,8 +2,6 @@ use crate::*;
 use futures::stream::Stream;
 use tvm::block::{Block as TvmBlock, BlockId, BlockProcessingStatus};
 
-const BLOCKS_TABLE_NAME: &str = "blocks";
-
 #[derive(Debug)]
 pub struct Block {
     block: TvmBlock,
@@ -15,7 +13,7 @@ impl Block {
 
     // Asynchronously loads a Block instance or None if block with given id is not exists
     pub fn load(id: BlockId) -> SdkResult<Box<dyn Stream<Item = Option<Block>, Error = SdkError>>> {
-        let map = db_helper::load_record(BLOCKS_TABLE_NAME, &id.to_hex_string())?
+        let map = queries_helper::load_record(BLOCKS_TABLE_NAME, &id.to_hex_string())?
             .and_then(|val| {
                 if val == serde_json::Value::Null {
                     Ok(None)
@@ -34,7 +32,7 @@ impl Block {
     // or null if block with given id is not exists
     pub fn load_json(id: BlockId) -> SdkResult<Box<dyn Stream<Item = String, Error = SdkError>>> {
 
-        let map = db_helper::load_record(BLOCKS_TABLE_NAME, &id.to_hex_string())?
+        let map = queries_helper::load_record(BLOCKS_TABLE_NAME, &id.to_hex_string())?
             .map(|val| val.to_string());
 
         Ok(Box::new(map))

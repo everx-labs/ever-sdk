@@ -1,22 +1,28 @@
+pub const MESSAGES_TABLE_NAME: &str = "messages";
+pub const CONTRACTS_TABLE_NAME: &str = "accounts";
+pub const BLOCKS_TABLE_NAME: &str = "blocks";
+pub const TRANSACTIONS_TABLE_NAME: &str = "transactions";
 
-// Represents config to connect Rethink DB
+pub const CONTRACT_CALL_STATE_FIELDS: &str = "id status";
+
+pub const MSG_STATE_FIELD_NAME: &str = "status";
+
+// Represents config to connect with Rethink DB and Kafka
 #[derive(Debug, Deserialize, Serialize)]
-pub struct RethinkConfig {
-    pub servers: Vec<String>,
-    pub db_name: String,
+pub struct QueriesConfig {
+    pub queries_server: String,
+    pub subscriptions_server: String,
 }
 
-// Represents config to connect Kafka
+// Represents config to connect with Rethink DB and Kafka
 #[derive(Debug, Deserialize, Serialize)]
-pub struct KafkaConfig {
-    pub servers: Vec<String>,
-    pub topic: String,
-    pub ack_timeout: u64,
+pub struct RequestsConfig {
+    pub requests_server: String,
 }
 
 // Represents config to connect with Rethink DB and Kafka
 #[derive(Debug, Deserialize, Serialize)]
 pub struct NodeClientConfig {
-    pub db_config: RethinkConfig,
-    pub kafka_config: KafkaConfig,
+    pub queries_config: QueriesConfig,
+    pub requests_config: RequestsConfig,
 }

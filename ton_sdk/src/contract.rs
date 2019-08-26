@@ -11,27 +11,25 @@ use ton_abi_core::abi_call::ABICall;
 use tvm::block::{
     Account,
     Message as TvmMessage, 
-    MessageId,    
+    MessageId,
+    TransactionId,
     ExternalInboundMessageHeader,
     MsgAddressExt, 
     MsgAddressInt,
-    Serializable,    
+    Serializable,
     StateInit,
     GetRepresentationHash,
     Deserializable,
     Grams,
     CurrencyCollection,
-    MessageProcessingStatus
+    TransactionProcessingStatus
 };
 use std::convert::Into;
 
-#[cfg(feature = "node_interaction")]
-use reql::Document;
-#[cfg(feature = "node_interaction")]
-use futures::stream::Stream;
+pub use ton_abi_json::json_abi::DecodedMessage;
 
 #[cfg(feature = "node_interaction")]
-const CONTRACTS_TABLE_NAME: &str = "accounts";
+use futures::stream::Stream;
 
 const CONSTRUCTOR_METHOD_NAME: &str = "constructor";
 
@@ -46,8 +44,8 @@ mod tests;
 // The struct represents status of message that performs contract's call
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct ContractCallState {
-    pub message_id: MessageId,
-    pub message_state: MessageProcessingStatus,
+    pub id: TransactionId,
+    pub status: TransactionProcessingStatus,
 }
 
 // The struct represents conract's image
@@ -60,7 +58,7 @@ pub struct ContractImage {
 impl ContractImage {
 
     // Creating contract image from code data and library bags of cells
-    pub fn new<T>(code: &mut T, data: Option<&mut T>, library: Option<&mut T>) -> SdkResult<Self> 
+    pub fn new<T>(code: &mut T, data: Option<&mut T>, library: Option<&mut T>) -> SdkResult<Self>
         where T: Read + Seek {
 
         let mut state_init = StateInit::default();
@@ -92,7 +90,7 @@ impl ContractImage {
         Ok(Self{ state_init, id })
     }
 
-    pub fn from_state_init_and_key<T>(state_init_bag: &mut T, pub_key: &PublicKey) -> SdkResult<Self> 
+    pub fn from_state_init_and_key<T>(state_init_bag: &mut T, pub_key: &PublicKey) -> SdkResult<Self>
         where T: Read + Seek {
 
         let mut si_roots = deserialize_cells_tree(state_init_bag)?;
@@ -141,7 +139,7 @@ impl ContractImage {
     }
 }
 
-// The struct represents smart contract and allows 
+// The struct represents smart contract and allows
 // to deploy and call it, to get some contract's properties.
 // Don't forget - in TON blockchain Contract and Account are the same substances.
 pub struct Contract {
@@ -150,7 +148,7 @@ pub struct Contract {
 
 /// Enum represents blockchain account address.
 /// `Short` value contains only `AccountId` value and is used for addressing contracts in default
-/// workchain. `Full` value is fully qualified account address and can be used for addressing 
+/// workchain. `Full` value is fully qualified account address and can be used for addressing
 /// contracts in any workchain
 pub enum AccountAddress {
     Short(AccountId),
@@ -180,7 +178,7 @@ impl AccountAddress {
             AccountAddress::Short(id) => {
                 let workchain = Contract::get_default_workchain()
                     .ok_or(SdkErrorKind::DefaultWorkchainNotSet)?;
-                
+
                 Ok(MsgAddressInt::with_standart(None, workchain as i8, id.clone())?)
             }
         }
@@ -207,7 +205,7 @@ impl Contract {
     pub fn load(address: AccountAddress) -> SdkResult<Box<dyn Stream<Item = Option<Contract>, Error = SdkError>>> {
         let id = address.get_account_id()?;
 
-        let map = db_helper::load_record(CONTRACTS_TABLE_NAME, &id.to_hex_string())?
+        let map = queries_helper::load_record(CONTRACTS_TABLE_NAME, &id.to_hex_string())?
             .and_then(|val| {
                 if val == serde_json::Value::Null {
                     Ok(None)
@@ -222,11 +220,11 @@ impl Contract {
         Ok(Box::new(map))
     }
 
-    // Asynchronously loads a Message's json representation 
+    // Asynchronously loads a Message's json representation
     // or null if message with given id is not exists
     pub fn load_json(id: AccountId) -> SdkResult<Box<dyn Stream<Item = String, Error = SdkError>>> {
 
-        let map = db_helper::load_record(CONTRACTS_TABLE_NAME, &id.to_hex_string())?
+        let map = queries_helper::load_record(CONTRACTS_TABLE_NAME, &id.to_hex_string())?
             .map(|val| val.to_string());
 
         Ok(Box::new(map))
@@ -237,13 +235,13 @@ impl Contract {
     // it's id and processing status is returned by this function
     pub fn call<TIn, TOut>(address: AccountAddress, func: String, input: TIn, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>>
-        where 
+        where
             TIn: ABIInParameter + ABITypeSignature,
             TOut: ABIOutParameter + ABITypeSignature {
 
         // pack params into bag of cells via ABI
         let msg_body = Self::create_message_body::<TIn, TOut>(func, input, key_pair);
-        
+
         let msg = Self::create_message(address, msg_body)?;
 
         // send message by Kafka
@@ -263,7 +261,7 @@ impl Contract {
         // pack params into bag of cells via ABI
         let msg_body = ton_abi_json::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
-        
+
         let msg = Self::create_message(id.clone().into(), msg_body.into())?;
 
         // send message by Kafka
@@ -313,7 +311,7 @@ impl Contract {
         Self::subscribe_updates(msg_id)
     }
 
-    // Packs given image asynchronously send deploy message into blockchain.    
+    // Packs given image asynchronously send deploy message into blockchain.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
     pub fn deploy_no_constructor(image: ContractImage)
@@ -339,42 +337,28 @@ impl Contract {
 
     fn _send_message(msg: TvmMessage) -> SdkResult<MessageId> {
         let (data, id) = Self::serialize_message(msg)?;
-       
-        kafka_helper::send_message(&id.as_slice()[..], &data)?;
-        println!("msg is sent, id: {}", id.to_hex_string());
+
+        requests_helper::send_message(&id.as_slice()[..], &data)?;
+        //println!("msg is sent, id: {}", id.to_hex_string());
         Ok(id.clone())
     }
 
     pub fn send_serialized_message(id: MessageId, msg: &[u8]) -> SdkResult<()> {
-        kafka_helper::send_message(&id.as_slice()[..], msg)
+        requests_helper::send_message(&id.as_slice()[..], msg)
     }
 
     pub fn subscribe_updates(message_id: MessageId) ->
         SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
-        let map = db_helper::subscribe_field_updates(
-                message::MSG_TABLE_NAME,
-                &message_id.to_hex_string(),
-                message::MSG_STATE_FIELD_NAME
-            )?
-            .map(move |change_opt| {
-                match change_opt {
-                    Some(Document::Expected(state_change)) => {
-                        ContractCallState {
-                            message_id: message_id.clone(),
-                            message_state: state_change.new_val.unwrap_or_else(|| MessageProcessingStatus::Unknown),
-                        }
-                    },
-                    _ => {
-                        ContractCallState {
-                            message_id: message_id.clone(),
-                            message_state: MessageProcessingStatus::Unknown,
-                        }
-                    },
-                }
-            });
+        let subscribe_stream = queries_helper::subscribe_record_updates(
+            TRANSACTIONS_TABLE_NAME,
+            &message_id.to_hex_string(), 
+            CONTRACT_CALL_STATE_FIELDS)?
+                .and_then(|value| {
+                    Ok(serde_json::from_value::<ContractCallState>(value)?)
+                });
 
-        Ok(Box::new(map))
+        Ok(Box::new(subscribe_stream))
     }
 }
 
@@ -392,10 +376,10 @@ impl Contract {
         ton_abi_json::json_abi::decode_function_response(abi, function, response)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
     }
-    
+
     /// Decodes ABI contract answer from `CellData` into type values
     pub fn decode_function_response<TOut>(response: SliceData)
-        -> SdkResult<TOut::Out> 
+        -> SdkResult<TOut::Out>
         where TOut: ABIOutParameter{
 
         ABIResponse::<TOut>::decode_response_from_slice(response)
@@ -403,20 +387,48 @@ impl Contract {
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
-    pub fn decode_function_response_from_bytes_json(abi: String, function: String, response: &[u8]) 
+    pub fn decode_function_response_from_bytes_json(abi: String, function: String, response: &[u8])
         -> SdkResult<String> {
 
         let mut response_cells = deserialize_cells_tree(&mut Cursor::new(response))?;
 
-        if response_cells.len() != 1 { 
+        if response_cells.len() != 1 {
             return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
         }
 
         Self::decode_function_response_json(abi, function, response_cells.remove(0).into())
     }
 
+    /// Deserializes tree of cells from byte array into `SliceData`
+    fn deserialize_tree_to_slice(data: &[u8]) -> SdkResult<SliceData> {
+        let mut response_cells = deserialize_cells_tree(&mut Cursor::new(data))?;
+
+         if response_cells.len() != 1 {
+            return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
+        }
+
+         Ok(response_cells.remove(0).into())
+    }
+
+    /// Decodes output parameters returned by contract function call 
+    pub fn decode_unknown_function_call_json(abi: String, response: SliceData) 
+        -> SdkResult<DecodedMessage> {
+
+        ton_abi_json::json_abi::decode_unknown_function_call(abi, response)
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
+    }
+
     /// Decodes output parameters returned by contract function call from serialized message body
-    pub fn decode_function_response_from_bytes<TOut>(response: &[u8]) 
+    pub fn decode_unknown_function_call_from_bytes_json(abi: String, response: &[u8])
+        -> SdkResult<DecodedMessage> {
+
+        let slice = Self::deserialize_tree_to_slice(response)?;
+
+        Self::decode_unknown_function_call_json(abi, slice)
+    }
+
+    /// Decodes output parameters returned by contract function call from serialized message body
+    pub fn decode_function_response_from_bytes<TOut>(response: &[u8])
          -> SdkResult<TOut::Out>
         where TOut: ABIOutParameter {
 
@@ -428,13 +440,13 @@ impl Contract {
     // Returns message's bag of cells and identifier.
     pub fn construct_call_message<TIn, TOut>(address: AccountAddress, func: String, input: TIn, key_pair: Option<&Keypair>)
         -> SdkResult<(Vec<u8>, MessageId)>
-        where 
+        where
             TIn: ABIInParameter + ABITypeSignature,
             TOut: ABIOutParameter + ABITypeSignature {
 
         // pack params into bag of cells via ABI
         let msg_body = Self::create_message_body::<TIn, TOut>(func, input, key_pair);
-        
+
         let msg = Self::create_message(address, msg_body)?;
 
         Self::serialize_message(msg)
@@ -443,7 +455,7 @@ impl Contract {
     // Packs given inputs by abi into Message struct.
     // Works with json representation of input and abi.
     // Returns message's bag of cells and identifier.
-    pub fn construct_call_message_json(address: AccountAddress, func: String, input: String, 
+    pub fn construct_call_message_json(address: AccountAddress, func: String, input: String,
         abi: String, key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
 
         // pack params into bag of cells via ABI
@@ -491,7 +503,7 @@ impl Contract {
     // Packs given image and input into Message struct.
     // Works with json representation of input and abi.
     // Returns message's bag of cells and identifier.
-    pub fn construct_deploy_message_json(func: String, input: String, abi: String, image: ContractImage, 
+    pub fn construct_deploy_message_json(func: String, input: String, abi: String, image: ContractImage,
         key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
 
         let msg_body = ton_abi_json::encode_function_call(abi, func, input, key_pair)
@@ -567,7 +579,7 @@ impl Contract {
         self.acc.get_balance().unwrap().grams.clone()
     }
 
-    // Returns contract's balance 
+    // Returns contract's balance
     pub fn balance(&self) -> CurrencyCollection {
         unimplemented!()
     }
@@ -584,8 +596,8 @@ impl Contract {
         msg_header.dst = address.get_msg_address()?;
 
 
-        // TODO don't forget to delete it 
-        // This is temporary code to make all messages uniq. 
+        // TODO don't forget to delete it
+        // This is temporary code to make all messages uniq.
         // In the future it will be made by replay attack protection mechanism
         let mut builder = BuilderData::new();
         if cfg!(target_arch="wasm32") {

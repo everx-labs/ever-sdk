@@ -5,9 +5,17 @@ use rand::{thread_rng, Rng};
 use rand::rngs::OsRng;
 use sha2::Sha512;
 use tvm::block::{
-    Message, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
-    MessageProcessingStatus, MessageId, TransactionId,
-    ExternalInboundMessageHeader, CurrencyCollection, Serializable
+    Message,
+    MsgAddressExt,
+    MsgAddressInt,
+    InternalMessageHeader,
+    Grams,
+    MessageId,
+    TransactionId,
+    ExternalInboundMessageHeader,
+    CurrencyCollection,
+    Serializable,
+    TransactionProcessingStatus
 };
 use tvm::stack::{BuilderData, IBitstring};
 use tvm::types::AccountId;
@@ -269,43 +277,53 @@ const WALLET_ABI: &str = r#"{
 			{
 	        "inputs": [],
 	        "name": "constructor",
-	        "outputs": []							
+	        "outputs": []
 	    },
 			{
 	        "inputs": [{"name": "address", "type": "bits256" }],
 	        "name": "setSubscriptionAccount",
 					"signed": true,
-	        "outputs": []							
+	        "outputs": []
 	    },
 			{
 	        "inputs": [],
 	        "name": "getSubscriptionAccount",
-	        "outputs": [{"name": "address", "type": "bits256" }]							
+	        "outputs": [{"name": "address", "type": "bits256" }]
 	    }
 	]
 }
 "#;
 
 fn init_node_connection() {
-       let config_json = r#"
-        {
-            "db_config": {
-                "servers": ["142.93.137.28:28015"],
-                "db_name": "blockchain"
-            },
-            "kafka_config": {
-                "servers": ["142.93.137.28:9092"],
-                "topic": "requests",
-                "ack_timeout": 1000
-            }
-        }"#;    
-    init_json(Some(WORKCHAIN), config_json.into()).unwrap(); 
+    let config_json = r#"
+    {
+        "queries_config": {
+            "queries_server": "https://services.tonlabs.io/graphql",
+            "subscriptions_server": "wss://services.tonlabs.io/graphql"
+        },
+        "requests_config": {
+            "requests_server": "https://services.tonlabs.io/topics/requests"
+        }
+    }"#;
+
+    /*let config_json = r#"
+    {
+        "queries_config": {
+            "queries_server": "http://192.168.99.100/graphql",
+            "subscriptions_server": "ws://192.168.99.100/graphql"
+        },
+        "requests_config": {
+            "requests_server": "http://192.168.99.100/topics/requests"
+        }
+    }"#;*/
+        
+    init_json(Some(WORKCHAIN), config_json.into()).unwrap();
 }
 
-fn is_message_done(status: MessageProcessingStatus) -> bool {
-    (status == MessageProcessingStatus::Preliminary) ||
-    (status == MessageProcessingStatus::Proposed) ||
-    (status == MessageProcessingStatus::Finalized)
+fn is_message_done(status: TransactionProcessingStatus) -> bool {
+    (status == TransactionProcessingStatus::Preliminary) ||
+    (status == TransactionProcessingStatus::Proposed) ||
+    (status == TransactionProcessingStatus::Finalized)
 }
 
 fn wait_message_processed(changes_stream: Box<dyn Stream<Item = ContractCallState, Error = SdkError>>) -> TransactionId {
@@ -315,9 +333,9 @@ fn wait_message_processed(changes_stream: Box<dyn Stream<Item = ContractCallStat
             panic!("error next state getting: {}", e);
         }
         if let Ok(s) = state {
-            println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if is_message_done(s.message_state) {
-                tr_id = Some(s.message_id.clone());
+            println!("{} : {:?}", s.id.to_hex_string(), s.status);
+            if is_message_done(s.status) {
+                tr_id = Some(s.id.clone());
                 break;
             }
         }
@@ -325,23 +343,8 @@ fn wait_message_processed(changes_stream: Box<dyn Stream<Item = ContractCallStat
     tr_id.expect("Error: no transaction id")
 }
 
-fn wait_message_processed_by_id(message_id: MessageId)-> TransactionId {
-    let msg = crate::Message::load(message_id.clone())
-        .expect("Error load message")
-        .wait()
-        .next();
-
-    if msg.is_some() {
-        let s = msg.expect("Error unwrap stream next while loading Message")
-            .expect("Error unwrap result while loading Message")
-            .expect("Error unwrap returned Message");
-        println!("{} : {:?}", s.id().to_hex_string(), s.status());
-        if is_message_done(s.status()) {
-            return s.id().clone();
-        }    
-    }
-
-    wait_message_processed(Contract::subscribe_updates(message_id.clone()).unwrap())
+fn wait_message_processed_by_id(id: MessageId)-> TransactionId {
+    wait_message_processed(Contract::subscribe_updates(id.clone()).unwrap())
 }
 
 fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params: &str, key_pair: &Keypair) -> AccountId {
@@ -357,9 +360,9 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
     let msg = create_external_transfer_funds_message(AccountId::from([0; 32]), account_id.clone(), 100000000000);
     let changes_stream = Contract::send_message(msg).expect("Error calling contract method");
 
-    // wait transaction id in message-status 
+    // wait transaction id in message-status
     let tr_id = wait_message_processed(changes_stream);
-    
+
     let tr = Transaction::load(tr_id)
         .expect("Error load Transaction")
         .wait()
@@ -382,7 +385,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
     let changes_stream = Contract::deploy_json("constructor".to_owned(), constructor_params.to_owned(), abi.to_owned(), contract_image, Some(key_pair))
         .expect("Error deploying contract");
 
-    // wait transaction id in message-status 
+    // wait transaction id in message-status
     // contract constructor doesn't return any values so there are no output messages in transaction
     // so just check deployment transaction created
     let tr_id = wait_message_processed(changes_stream);
@@ -416,10 +419,10 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
     let changes_stream = Contract::call_json(contract.id().into(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
         .expect("Error calling contract method");
 
-    // wait transaction id in message-status 
+    // wait transaction id in message-status
     let tr_id = wait_message_processed(changes_stream);
 
-    // OR 
+    // OR
     // wait message will done and find transaction with the message
 
     // load transaction object
@@ -447,14 +450,14 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
         .expect("Error unwrap contract while loading Contract");
 
     // call needed method
-    let changes_stream = 
+    let changes_stream =
         Contract::call_json(contract.id().into(), func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
             .expect("Error calling contract method");
 
-    // wait transaction id in message-status 
+    // wait transaction id in message-status
     let tr_id = wait_message_processed(changes_stream);
 
-    // OR 
+    // OR
     // wait message will done and find transaction with the message
 
     // load transaction object
@@ -503,15 +506,25 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
 #[test]
 fn full_test_piggy_bank() {
 
+    //tvm::logger::init();
+
     // connect to node
     init_node_connection();
 
     println!("Connection to node established\n");
 
+    /*let contract = Contract::load(AccountId::from([0; 32]).into())
+        .expect("Error calling load Contract")
+        .wait()
+        .next()
+        .expect("Error unwrap stream next while loading Contract")
+        .expect("Error unwrap result while loading Contract")
+        .expect("Error unwrap contract while loading Contract");*/
+
 	// generate key pair
     let mut csprng = OsRng::new().unwrap();
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
-   
+
     let now = std::time::Instant::now();
 
 	// deploy wallet
@@ -553,9 +566,9 @@ fn full_test_piggy_bank() {
 	let piggy_bank_address_str = piggy_bank_address.to_hex_string();
 	let pubkey_str = hex::encode(keypair.public.as_bytes());
 	let subscribe_params = format!(
-        "{{ \"subscriptionId\" : \"x{}\", \"pubkey\" : \"x{}\", \"to\": \"x{}\", \"value\" : 123, \"period\" : 456 }}", 
+        "{{ \"subscriptionId\" : \"x{}\", \"pubkey\" : \"x{}\", \"to\": \"x{}\", \"value\" : 123, \"period\" : 456 }}",
         subscr_id_str,
-        &pubkey_str, 
+        &pubkey_str,
         &piggy_bank_address_str,
     );
 
@@ -566,9 +579,9 @@ fn full_test_piggy_bank() {
     println!("Adding subscription 2...\n");
     let subscr_id_str = hex::encode(&[0x22; 32]);
 	let subscribe_params = format!(
-        "{{ \"subscriptionId\" : \"x{}\", \"pubkey\" : \"x{}\", \"to\": \"x{}\", \"value\" : 5000000000, \"period\" : 86400 }}", 
+        "{{ \"subscriptionId\" : \"x{}\", \"pubkey\" : \"x{}\", \"to\": \"x{}\", \"value\" : 5000000000, \"period\" : 86400 }}",
         subscr_id_str,
-        &pubkey_str, 
+        &pubkey_str,
         &piggy_bank_address_str,
     );
 	let _subscribe_answer = call_contract_and_wait(subscripition_address.clone(), "subscribe", &subscribe_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));

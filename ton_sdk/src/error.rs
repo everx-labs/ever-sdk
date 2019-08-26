@@ -2,23 +2,23 @@ use std::io;
 use ton_abi_json::ABIError;
 
 #[cfg(feature = "node_interaction")]
-use reql::errors::Error as DbError;
+use graphite::types::GraphiteError;
 #[cfg(feature = "node_interaction")]
 use kafka::error::Error as KafkaError;
 
 #[cfg(not(feature = "node_interaction"))]
 #[derive(Debug)]
-pub struct DbError {}
+pub struct GraphiteError {}
 
 #[cfg(not(feature = "node_interaction"))]
-impl std::fmt::Display for DbError {
+impl std::fmt::Display for GraphiteError {
     fn fmt(&self, _f: &mut std::fmt::Formatter) -> std::fmt::Result {
         unreachable!()
     }
 }
 
 #[cfg(not(feature = "node_interaction"))]
-impl std::error::Error for DbError {
+impl std::error::Error for GraphiteError {
     fn description(&self) -> &str {
         unimplemented!()
     }
@@ -64,9 +64,10 @@ error_chain! {
     foreign_links {
         Io(io::Error);
         Tvm(tvm::error::TvmError);
-        DB(DbError);
         Kafka(KafkaError);
         TonBlocks(tvm::block::BlockError);
+        Graphql(GraphiteError);
+        SerdeJson(serde_json::Error);
     }
 
     errors {
@@ -106,6 +107,9 @@ error_chain! {
         }
         NotInitialized {
             description("SDK is not initialized")
+        }
+        InitializeError {
+            description("SDK initialize error")
         }
         DefaultWorkchainNotSet {
             description("Default workchain not set")

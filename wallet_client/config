@@ -1,11 +1,9 @@
 {
-    "db_config": {
-        "servers": ["142.93.137.28:28015"],
-        "db_name": "blockchain"
+    "queries_config": {
+        "queries_server": "https://services.tonlabs.io/graphql",
+        "subscriptions_server": "wss://services.tonlabs.io/graphql"
     },
-    "kafka_config": {
-        "servers": ["142.93.137.28:9092"],
-        "topic": "requests",
-        "ack_timeout": 1000
+    "requests_config": {
+        "requests_server": "https://services.tonlabs.io/topics/requests"
     }
 }

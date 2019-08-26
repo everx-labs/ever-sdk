@@ -15,6 +15,7 @@ hex = "0.3.2"
 ed25519-dalek = "^0.9.1"
 lazy_static = "1.1.0"
 base64 = "0.10.0"
+reqwest = "0.9.18"
 
 ton_abi_core =  { path = "../abi/abi_core" }
 ton_abi_json = { path = "../abi/abi_json" }
@@ -31,14 +32,6 @@ package = "tvm"
 default-features = false
 
 
-[dependencies.reql]
-version = "^0.0.26"
-optional = true
-
-[dependencies.reql-types]
-version = "^0.0.4"
-optional = true
-
 [dependencies.futures]
 version = "^0.1.26"
 optional = true
@@ -48,8 +41,12 @@ version = "0.7"
 optional = true
 default-features = false
 
+[dependencies.graphite]
+path = "../graphite"
+optional = true
+
 
 [features]
 default = ["node_interaction"]
 ci_run = []
-node_interaction = ["reql", "reql-types", "futures", "kafka", "tvm/full"]
+node_interaction = ["graphite", "futures", "kafka", "tvm/full"]
