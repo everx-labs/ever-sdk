@@ -26,7 +26,7 @@ pub fn local_contract_call(code: Arc<CellData>, data: Option<Arc<CellData>>, msg
         .push(int!(0))                                          // gram balance of msg
         .push(StackItem::Cell(msg_cell))                        // message
         .push(StackItem::Slice(msg.body().unwrap_or_default())) // message body
-        .push(int!(0));                                         // external inbound message flag
+        .push(int!(-1));                                        // external inbound message flag
     
     let mut ctrls = SaveList::new();
     ctrls.put(4, &mut StackItem::Cell(data.unwrap_or_default()))
