@@ -1,7 +1,6 @@
 [package]
 name = "graphite"
 version = "0.1.0"
-authors = ["vladislav.a <vladyaaifree@gmail.com>"]
 edition = "2018"
 
 [lib]
