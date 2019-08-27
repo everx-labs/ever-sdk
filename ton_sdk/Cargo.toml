@@ -36,11 +36,6 @@ default-features = false
 version = "^0.1.26"
 optional = true
 
-[dependencies.kafka]
-version = "0.7"
-optional = true
-default-features = false
-
 [dependencies.graphite]
 path = "../graphite"
 optional = true
@@ -49,4 +44,4 @@ optional = true
 [features]
 default = ["node_interaction"]
 ci_run = []
-node_interaction = ["graphite", "futures", "kafka", "tvm/full"]
+node_interaction = ["graphite", "futures"]

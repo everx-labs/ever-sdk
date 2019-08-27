@@ -22,8 +22,6 @@ extern crate error_chain;
 #[macro_use]
 extern crate serde_json;
 #[cfg(feature = "node_interaction")]
-extern crate kafka;
-#[cfg(feature = "node_interaction")]
 extern crate futures;
 #[cfg(feature = "node_interaction")]
 extern crate graphite;
