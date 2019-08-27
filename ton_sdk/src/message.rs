@@ -1,9 +1,11 @@
 use crate::*;
-use futures::stream::Stream;
 use tvm::stack::SliceData;
 use tvm::block::{
     CommonMsgInfo, Message as TvmMessage, MessageId, MessageProcessingStatus
 };
+
+#[cfg(feature = "node_interaction")]
+use futures::stream::Stream;
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub enum MessageType {

@@ -39,6 +39,8 @@ pub use contract::*;
 mod message;
 pub use message::*;
 
+mod local_tvm;
+
 #[cfg(feature = "node_interaction")]
 mod transaction;
 #[cfg(feature = "node_interaction")]
@@ -58,8 +60,6 @@ pub use types::*;
 pub mod queries_helper;
 #[cfg(feature = "node_interaction")]
 mod requests_helper;
-#[cfg(feature = "node_interaction")]
-mod local_tvm;
 
 
 /// Init SKD. Connects to Kafka and Rethink DB.
