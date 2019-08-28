@@ -33,7 +33,7 @@ fn test() {
         println!("result: {}", version.result_json.to_string());
 
         let deployed = json_request(context, "setup",
-            json!({"base_url": "http://0.0.0.0"}));
+            json!({"baseUrl": "http://0.0.0.0"}));
 
         let deployed = json_request(context, "contracts.deploy",
             json!({

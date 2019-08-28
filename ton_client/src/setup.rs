@@ -40,6 +40,7 @@ fn setup(context: &mut Context, config: SetupParams) -> ApiResult<()> {
         }
     }
 
+    println!("{:?}", config.base_url);
     let base_url = resolve_url(
         config.base_url.as_ref(),
         "services.tonlabs.io",
@@ -66,7 +67,7 @@ fn setup(context: &mut Context, config: SetupParams) -> ApiResult<()> {
         }
     );
 
-    ton_sdk::init(config.default_workchain, NodeClientConfig {
+    let internal_config = NodeClientConfig {
         requests_config: RequestsConfig {
             requests_server: requests_url,
         },
@@ -74,5 +75,7 @@ fn setup(context: &mut Context, config: SetupParams) -> ApiResult<()> {
             queries_server: queries_url,
             subscriptions_server: subscriptions_url
         }
-    }).map_err(|err|ApiError::config_init_failed(err))
+    };
+    println!("{:?}", internal_config);
+    ton_sdk::init(config.default_workchain, internal_config).map_err(|err|ApiError::config_init_failed(err))
 }
