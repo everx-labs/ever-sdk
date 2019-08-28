@@ -2,6 +2,7 @@
 name = "ton_client"
 version = "0.9.50"
 authors = ["Michael Vlasov"]
+rpath = true
 
 [lib]
 name = "tonclient"

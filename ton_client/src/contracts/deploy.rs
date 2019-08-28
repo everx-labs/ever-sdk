@@ -65,7 +65,7 @@ pub(crate) struct ParamsOfSendGrams {
     pub amount: u128,
 }
 
-pub(crate) fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<ResultOfDeploy> {
+pub(crate) fn deploy(_context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<ResultOfDeploy> {
     debug!("-> contracts.deploy({})", params.constructorParams.to_string());
 
     let key_pair = params.keyPair.decode()?;
@@ -91,14 +91,14 @@ pub(crate) fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) -> Api
     })
 }
 
-pub(crate) fn get_address(context: &mut ClientContext, params: ParamsOfGetDeployAddress) -> ApiResult<String> {
+pub(crate) fn get_address(_context: &mut ClientContext, params: ParamsOfGetDeployAddress) -> ApiResult<String> {
     let key_pair = params.keyPair.decode()?;
     let contract_image = create_image(&params.imageBase64, &key_pair.public)?;
     let account_id = contract_image.account_id();
     Ok(account_encode(&account_id))
 }
 
-pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<ResultOfEncodeDeployMessage> {
+pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<ResultOfEncodeDeployMessage> {
     debug!("-> contracts.deploy.message({})", params.constructorParams.to_string());
 
     let keys = params.keyPair.decode()?;
@@ -138,7 +138,7 @@ fn serialize_message(msg: tvm::block::Message) -> ApiResult<(Vec<u8>, MessageId)
     Ok((data, id.into()))
 }
 
-pub(crate) fn encode_unsigned_message(context: &mut ClientContext, params: ParamsOfEncodeUnsignedDeployMessage) -> ApiResult<ResultOfEncodeUnsignedDeployMessage> {
+pub(crate) fn encode_unsigned_message(_context: &mut ClientContext, params: ParamsOfEncodeUnsignedDeployMessage) -> ApiResult<ResultOfEncodeUnsignedDeployMessage> {
     let public = decode_public_key(&params.publicKeyHex)?;
     let image = create_image(&params.imageBase64, &public)?;
     let address_hex = image.account_id().to_hex_string();
@@ -157,7 +157,7 @@ pub(crate) fn encode_unsigned_message(context: &mut ClientContext, params: Param
     })
 }
 
-pub(crate) fn encode_send_grams_message(context: &mut ClientContext, params: ParamsOfSendGrams) -> ApiResult<EncodedMessage> {
+pub(crate) fn encode_send_grams_message(_context: &mut ClientContext, params: ParamsOfSendGrams) -> ApiResult<EncodedMessage> {
     let msg = create_external_transfer_funds_message(
         &account_decode(&params.fromAccount)?,
         &account_decode(&params.toAccount)?,

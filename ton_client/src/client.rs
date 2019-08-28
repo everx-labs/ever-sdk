@@ -60,7 +60,7 @@ impl Client {
     }
 
     pub fn destroy_context(&mut self, handle: InteropContext) {
-        self.required_context(handle);
+        self.required_context(handle).unwrap();
         self.contexts.remove(&handle);
     }
 

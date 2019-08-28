@@ -22,7 +22,7 @@ pub(crate) struct SetupParams {
 }
 
 
-fn setup(context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
+fn setup(_context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
     fn replace_prefix(s: &String, prefix: &str, new_prefix: &str) -> String {
         format!("{}{}", new_prefix, s[prefix.len()..].to_string())
     }

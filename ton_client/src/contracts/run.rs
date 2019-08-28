@@ -57,7 +57,7 @@ pub(crate) struct ResultOfRun {
     pub output: serde_json::Value
 }
 
-pub(crate) fn run(context: &mut ClientContext, params: ParamsOfRun) -> ApiResult<ResultOfRun> {
+pub(crate) fn run(_context: &mut ClientContext, params: ParamsOfRun) -> ApiResult<ResultOfRun> {
     debug!("-> contracts.run({}, {}, {})",
         params.address.clone(),
         params.functionName.clone(),
@@ -102,14 +102,14 @@ pub(crate) fn run(context: &mut ClientContext, params: ParamsOfRun) -> ApiResult
     }
 }
 
-pub(crate) fn local_run(context: &mut ClientContext, params: ParamsOfLocalRun) -> ApiResult<ResultOfRun> {
+pub(crate) fn local_run(_context: &mut ClientContext, params: ParamsOfLocalRun) -> ApiResult<ResultOfRun> {
     debug!("-> contracts.run.local({}, {}, {})",
         params.address.clone(),
         params.functionName.clone(),
         params.input.to_string()
     );
 
-    let address = account_decode(&params.address)?;
+    let _address = account_decode(&params.address)?;
 
     let key_pair = match params.keyPair {
         None => None,
@@ -160,7 +160,7 @@ pub(crate) fn local_run(context: &mut ClientContext, params: ParamsOfLocalRun) -
     return Ok(ResultOfRun { output: serde_json::Value::default() });
 }
 
-pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfRun) -> ApiResult<EncodedMessage> {
+pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfRun) -> ApiResult<EncodedMessage> {
     debug!("-> contracts.run.message({}, {}, {})",
         params.address.clone(),
         params.functionName.clone(),
@@ -186,7 +186,7 @@ pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfRun) -
     })
 }
 
-pub(crate) fn encode_unsigned_message(context: &mut ClientContext, params: ParamsOfEncodeUnsignedRunMessage) -> ApiResult<EncodedUnsignedMessage> {
+pub(crate) fn encode_unsigned_message(_context: &mut ClientContext, params: ParamsOfEncodeUnsignedRunMessage) -> ApiResult<EncodedUnsignedMessage> {
     let encoded = ton_sdk::Contract::get_call_message_bytes_for_signing(
         ton_sdk::AccountAddress::Short(account_decode(&params.address)?),
         params.functionName,
@@ -199,7 +199,7 @@ pub(crate) fn encode_unsigned_message(context: &mut ClientContext, params: Param
     })
 }
 
-pub(crate) fn decode_output(context: &mut ClientContext, params: ParamsOfDecodeRunOutput) -> ApiResult<ResultOfRun> {
+pub(crate) fn decode_output(_context: &mut ClientContext, params: ParamsOfDecodeRunOutput) -> ApiResult<ResultOfRun> {
     let body = base64_decode(&params.bodyBase64)?;
     let result = Contract::decode_function_response_from_bytes_json(
         params.abi.to_string().to_owned(),

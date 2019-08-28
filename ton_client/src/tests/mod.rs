@@ -1,14 +1,14 @@
 use ::{InteropContext, JsonResponse};
 use ::{tc_json_request, InteropString};
 use ::{tc_read_json_response, tc_destroy_json_response};
-use ::{tc_create_context, tc_destroy_context};
 use serde_json::Value;
-use log::{Metadata, Level, Record, LevelFilter};
+use log::{Metadata, Record, LevelFilter};
+use tc_create_context;
 
 struct SimpleLogger;
 
 impl log::Log for SimpleLogger {
-    fn enabled(&self, metadata: &Metadata) -> bool {
+    fn enabled(&self, _metadata: &Metadata) -> bool {
         true
     }
 
