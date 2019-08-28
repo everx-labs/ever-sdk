@@ -114,9 +114,9 @@ fn print_function_singnatures() {
 
     for function in functions {
         //println!("{}", function.name);
-        debug!("{}", function.get_function_signature());
+        println!("{}", function.get_function_signature());
         let id = u32::from_be_bytes(function.get_function_id());
-        debug!("{:X?}\n", id);
+        println!("{:X?}\n", id);
     }
 }
 

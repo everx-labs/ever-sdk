@@ -11,6 +11,7 @@ use tvm::block::{
 use tvm::types::AccountId;
 
 #[test]
+#[ignore]
 fn test_local_contract_call() {
     // sample contract
     let code = compile_code("

@@ -118,7 +118,7 @@ fn call_get_limits(transport_handle: &mut  HttpHandle, pair: &Keypair) {
 
     let (limits_id, _) = ABIResponse::<(Vec<u8>, i8)>::decode_response_from_slice(answer).unwrap();
 
-    debug!("Limits count {}", limits_id.len());
+    println!("Limits count {}", limits_id.len());
 
     for limit in limits_id {
         let ((value, limit_type, meta), _) = call_get_limit_by_id(transport_handle, limit);
