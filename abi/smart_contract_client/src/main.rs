@@ -81,7 +81,7 @@ fn call_contract(transport_handle: &mut  HttpHandle, abi_call: BuilderData) -> S
     let mut params = HashMap::<String, String>::new();
     params.insert("message".to_string(), str_message);
 
-    let result: String = jsonrpc_client_core::call_method(transport_handle, String::from("call"), params).call().unwrap(); 
+    let result: String = jsonrpc_client_core::call_method(transport_handle, String::from("call"), params).call().unwrap();
 
     let answer: Vec<u8> = base64::decode(&result).unwrap();
 
@@ -96,7 +96,7 @@ fn call_contract(transport_handle: &mut  HttpHandle, abi_call: BuilderData) -> S
     answer_message.read_from(&mut SliceData::from(roots[0].clone())).unwrap();
 
     //println!("Answer body {:X?}", SliceData::from(answer_message.clone().body.unwrap()));
-    
+
     SliceData::from(answer_message.body.unwrap())
 }
 
@@ -113,12 +113,12 @@ fn call_get_limit_by_id(transport_handle: &mut  HttpHandle, limit_id: u8) -> ((u
 
 fn call_get_limits(transport_handle: &mut  HttpHandle, pair: &Keypair) {
     let message_body = ABICall::<(), (Vec<u8>, i8)>::encode_signed_function_call_into_slice("getLimits", (), pair);
-    
+
     let answer = call_contract(transport_handle, message_body);
 
     let (limits_id, _) = ABIResponse::<(Vec<u8>, i8)>::decode_response_from_slice(answer).unwrap();
 
-    println!("Limits count {}", limits_id.len());
+    debug!("Limits count {}", limits_id.len());
 
     for limit in limits_id {
         let ((value, limit_type, meta), _) = call_get_limit_by_id(transport_handle, limit);
@@ -126,7 +126,7 @@ fn call_get_limits(transport_handle: &mut  HttpHandle, pair: &Keypair) {
         println!("\nLimit info:");
         println!("ID - {}", limit);
         println!("Value - {}", value);
-        
+
         if limit_type == 0 {
              println!("Type - Single operation limit");
         } else {
@@ -201,7 +201,7 @@ fn call_change_limit(transport_handle: &mut  HttpHandle, parameters: Vec<String>
         return;
     }
 
-    
+
     let limit_id = u8::from_str_radix(&parameters[0], 10).unwrap();
 
     let value = Duint::parse_bytes(parameters[1].as_bytes(), 10).unwrap();
@@ -259,7 +259,7 @@ fn call_get_balance(transport_handle: &mut  HttpHandle, pair: &Keypair) {
 #[test]
 fn test_function_with_right_key() {
     let right_pair = Keypair {
-        secret: SecretKey::from_bytes(&hex::decode(SECRET_KEY).unwrap()[..]).unwrap(), 
+        secret: SecretKey::from_bytes(&hex::decode(SECRET_KEY).unwrap()[..]).unwrap(),
         public: PublicKey::from_bytes(&hex::decode(PUBLIC_KEY).unwrap()[..]).unwrap(),
     };
 
@@ -304,7 +304,7 @@ fn main() {
         Keypair::generate::<Sha512, _>(&mut OsRng::new().unwrap())
     } else {
         Keypair {
-            secret: SecretKey::from_bytes(&hex::decode(SECRET_KEY).unwrap()[..]).unwrap(), 
+            secret: SecretKey::from_bytes(&hex::decode(SECRET_KEY).unwrap()[..]).unwrap(),
             public: PublicKey::from_bytes(&hex::decode(PUBLIC_KEY).unwrap()[..]).unwrap(),
         }
     };
