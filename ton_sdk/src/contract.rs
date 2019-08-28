@@ -395,7 +395,7 @@ impl Contract {
             SdkError::from(SdkErrorKind::InvalidData("Account has no state".to_owned())))?;
 
         if let AccountState::AccountActive(state) = state {
-            Self::local_contract_call_by_data(state, message)
+            Self::local_contract_call_by_data(state.clone(), message)
         } else {
             bail!(SdkErrorKind::InvalidData(format!("Account is not active. State: {}", state)))
         }
