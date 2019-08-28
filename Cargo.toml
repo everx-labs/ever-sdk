@@ -3,5 +3,6 @@ members = [
 	"abi/abi_core",
 	"abi/abi_json",
     "ton_sdk",
-    "wallet_client"
+    "wallet_client",
+    "ton_client"
 ]
