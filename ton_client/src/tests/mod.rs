@@ -34,7 +34,6 @@ fn test() {
 
         let deployed = json_request(context, "setup",
             json!({"base_url": "http://0.0.0.0"}));
-        println!("{}", deployed.error_json);
 
         let deployed = json_request(context, "contracts.deploy",
             json!({
@@ -47,7 +46,8 @@ fn test() {
                 },
             }),
         );
-        println!("{}", deployed.result_json);
+        println!("deploy result: {}", deployed.result_json);
+        println!("deploy error: {}", deployed.error_json);
 
         tc_destroy_context(context);
     }
