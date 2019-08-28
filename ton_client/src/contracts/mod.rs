@@ -32,10 +32,10 @@ pub(crate) struct ParamsOfEncodeMessageWithSign {
 use ton_sdk;
 use tvm::types::UInt256;
 use dispatch::DispatchTable;
-use client::Context;
+use client::ClientContext;
 use contracts::deploy::ParamsOfDeploy;
 
-pub(crate) fn encode_message_with_sign(context: &mut Context, params: ParamsOfEncodeMessageWithSign) -> ApiResult<EncodedMessage> {
+pub(crate) fn encode_message_with_sign(context: &mut ClientContext, params: ParamsOfEncodeMessageWithSign) -> ApiResult<EncodedMessage> {
     let (body, id) = ton_sdk::Contract::add_sign_to_message(
         &base64_decode(&params.signBytesBase64)?,
         &hex_decode(&params.publicKeyHex)?,
@@ -82,4 +82,6 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         deploy::encode_send_grams_message);
     handlers.spawn("contracts.encode_message_with_sign",
         encode_message_with_sign);
+    handlers.spawn("contracts.run.local",
+        run::local_run);
 }

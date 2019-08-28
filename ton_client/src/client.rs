@@ -18,17 +18,17 @@ lazy_static! {
 }
 
 
-fn sync_request(context: &mut Context, method: String, params_json: String) -> JsonResponse {
+fn sync_request(context: &mut ClientContext, method: String, params_json: String) -> JsonResponse {
     HANDLERS.sync_dispatch(context, method, params_json)
 }
 
-pub(crate) struct Context {
+pub(crate) struct ClientContext {
     pub handle: u32
 }
 
 pub(crate) struct Client {
     next_context_handle: InteropContext,
-    contexts: HashMap<InteropContext, Context>,
+    contexts: HashMap<InteropContext, ClientContext>,
 }
 
 
@@ -53,7 +53,7 @@ impl Client {
     pub fn create_context(&mut self) -> InteropContext {
         let handle = self.next_context_handle;
         self.next_context_handle = handle.wrapping_add(1);
-        self.contexts.insert(handle, Context {
+        self.contexts.insert(handle, ClientContext {
             handle
         });
         handle
@@ -64,7 +64,7 @@ impl Client {
         self.contexts.remove(&handle);
     }
 
-    pub fn required_context(&mut self, context: InteropContext) -> ApiResult<&mut Context> {
+    pub fn required_context(&mut self, context: InteropContext) -> ApiResult<&mut ClientContext> {
         self.contexts.get_mut(&context).ok_or(
             ApiError::invalid_context_handle(context)
         )

@@ -1,30 +1,41 @@
-use ton_sdk::Contract;
+use ton_sdk::{Contract, Message, MessageType};
 use crypto::keys::{KeyPair, u256_encode, account_decode};
 use types::{ApiResult, ApiError, base64_decode};
 
-use ton_sdk::{Transaction, MessageType, Message};
-use tvm::block::{MessageProcessingStatus, TransactionId, TransactionProcessingStatus};
+use ton_sdk::Transaction;
+use tvm::block::{TransactionProcessingStatus, TransactionId};
 use tvm::types::AccountId;
 use ed25519_dalek::Keypair;
 use futures::Stream;
 use tvm::block::TrComputePhase::*;
 use contracts::{EncodedMessage, EncodedUnsignedMessage};
-use client::Context;
+use client::ClientContext;
 
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
-pub struct ParamsOfRun {
+pub(crate) struct ParamsOfRun {
     pub address: String,
     pub abi: serde_json::Value,
     pub functionName: String,
     pub input: serde_json::Value,
-    pub keyPair: KeyPair,
+    pub keyPair: Option<KeyPair>,
 }
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
-pub struct ParamsOfEncodeUnsignedRunMessage {
+pub(crate) struct ParamsOfLocalRun {
+    pub address: String,
+    pub account: Option<serde_json::Value>,
+    pub abi: serde_json::Value,
+    pub functionName: String,
+    pub input: serde_json::Value,
+    pub keyPair: Option<KeyPair>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct ParamsOfEncodeUnsignedRunMessage {
     pub address: String,
     pub abi: serde_json::Value,
     pub functionName: String,
@@ -33,7 +44,7 @@ pub struct ParamsOfEncodeUnsignedRunMessage {
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
-pub struct ParamsOfDecodeRunOutput {
+pub(crate) struct ParamsOfDecodeRunOutput {
     pub abi: serde_json::Value,
     pub functionName: String,
     pub bodyBase64: String,
@@ -42,11 +53,11 @@ pub struct ParamsOfDecodeRunOutput {
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize)]
-pub struct ResultOfRun {
+pub(crate) struct ResultOfRun {
     pub output: serde_json::Value
 }
 
-pub(crate) fn run(context: &mut Context, params: ParamsOfRun) -> ApiResult<ResultOfRun> {
+pub(crate) fn run(context: &mut ClientContext, params: ParamsOfRun) -> ApiResult<ResultOfRun> {
     debug!("-> contracts.run({}, {}, {})",
         params.address.clone(),
         params.functionName.clone(),
@@ -54,13 +65,13 @@ pub(crate) fn run(context: &mut Context, params: ParamsOfRun) -> ApiResult<Resul
     );
 
     let address = account_decode(&params.address)?;
-    let key_pair = params.keyPair.decode()?;
+    let key_pair = if let Some(ref keys) = params.keyPair { Some(keys.decode()?) } else { None };
 
     debug!("load contract");
     let contract = load_contract(&address)?;
 
     debug!("run contract");
-    let tr_id = call_contract(&contract.id(), &params, &key_pair)?;
+    let tr_id = call_contract(&contract.id(), &params, key_pair.as_ref())?;
     let tr_id_hex = tr_id.to_hex_string();
 
     debug!("load transaction {}", tr_id_hex);
@@ -91,7 +102,65 @@ pub(crate) fn run(context: &mut Context, params: ParamsOfRun) -> ApiResult<Resul
     }
 }
 
-pub(crate) fn encode_message(context: &mut Context, params: ParamsOfRun) -> ApiResult<EncodedMessage> {
+pub(crate) fn local_run(context: &mut ClientContext, params: ParamsOfLocalRun) -> ApiResult<ResultOfRun> {
+    debug!("-> contracts.run.local({}, {}, {})",
+        params.address.clone(),
+        params.functionName.clone(),
+        params.input.to_string()
+    );
+
+    let address = account_decode(&params.address)?;
+
+    let key_pair = match params.keyPair {
+        None => None,
+        Some(pair) => Some(pair.decode()?)
+    };
+
+    let contract = match params.account {
+        // load contract data from node manually
+        #[cfg(feature = "node_interaction")]
+        None => {
+            debug!("load contract");
+            load_contract(&address)?
+        }
+        // can't load
+        #[cfg(not(feature = "node_interaction"))]
+        None => {
+            debug!("no account provided");
+            return Err(ApiError::contracts_run_contract_not_found());
+        }
+
+        Some(account) => {
+            Contract::from_json(&account.to_string())
+                .map_err(|err| ApiError::invalid_params(&account.to_string(), err))?
+        }
+    };
+
+    let messages = contract.local_call_json(
+        params.functionName.clone(),
+        params.input.to_string(),
+        params.abi.to_string(),
+        key_pair.as_ref())
+        .expect("Error calling locally");
+
+    for msg in messages {
+        let msg = Message::with_msg(msg);
+        if msg.msg_type() == MessageType::ExternalOutbound {
+            let output = Contract::decode_function_response_json(
+                params.abi.to_string(), params.functionName, msg.body().expect("Message has no body"))
+                .expect("Error decoding result");
+
+            let output: serde_json::Value = serde_json::from_str(&output)
+                .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?;
+
+            return Ok(ResultOfRun { output });
+        }
+    }
+
+    return Ok(ResultOfRun { output: serde_json::Value::default() });
+}
+
+pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfRun) -> ApiResult<EncodedMessage> {
     debug!("-> contracts.run.message({}, {}, {})",
         params.address.clone(),
         params.functionName.clone(),
@@ -99,14 +168,14 @@ pub(crate) fn encode_message(context: &mut Context, params: ParamsOfRun) -> ApiR
     );
 
     let address = account_decode(&params.address)?;
-    let key_pair = params.keyPair.decode()?;
+    let key_pair = if let Some(keys) = params.keyPair { Some(keys.decode()?) } else { None };
 
     let (body, id) = Contract::construct_call_message_json(
         ton_sdk::AccountAddress::Short(address),
         params.functionName.to_owned(),
         params.input.to_string().to_owned(),
         params.abi.to_string().to_owned(),
-        Some(&key_pair))
+        key_pair.as_ref())
         .map_err(|err| ApiError::contracts_create_run_message_failed(err))?;
 
     debug!("<-");
@@ -117,7 +186,7 @@ pub(crate) fn encode_message(context: &mut Context, params: ParamsOfRun) -> ApiR
     })
 }
 
-pub(crate) fn encode_unsigned_message(context: &mut Context, params: ParamsOfEncodeUnsignedRunMessage) -> ApiResult<EncodedUnsignedMessage> {
+pub(crate) fn encode_unsigned_message(context: &mut ClientContext, params: ParamsOfEncodeUnsignedRunMessage) -> ApiResult<EncodedUnsignedMessage> {
     let encoded = ton_sdk::Contract::get_call_message_bytes_for_signing(
         ton_sdk::AccountAddress::Short(account_decode(&params.address)?),
         params.functionName,
@@ -130,12 +199,12 @@ pub(crate) fn encode_unsigned_message(context: &mut Context, params: ParamsOfEnc
     })
 }
 
-pub(crate) fn decode_output(context: &mut Context, params: ParamsOfDecodeRunOutput) -> ApiResult<ResultOfRun> {
+pub(crate) fn decode_output(context: &mut ClientContext, params: ParamsOfDecodeRunOutput) -> ApiResult<ResultOfRun> {
     let body = base64_decode(&params.bodyBase64)?;
     let result = Contract::decode_function_response_from_bytes_json(
         params.abi.to_string().to_owned(),
         params.functionName.to_owned(),
-        &body).map_err(|err|ApiError::contracts_decode_run_output_failed(err))?;
+        &body).map_err(|err| ApiError::contracts_decode_run_output_failed(err))?;
     Ok(ResultOfRun {
         output: serde_json::from_str(result.as_str())
             .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?
@@ -217,14 +286,14 @@ fn load_contract(address: &AccountId) -> ApiResult<Contract> {
 fn call_contract(
     address: &AccountId,
     params: &ParamsOfRun,
-    key_pair: &Keypair,
+    key_pair: Option<&Keypair>,
 ) -> ApiResult<TransactionId> {
     let changes_stream = Contract::call_json(
         address.clone().into(),
         params.functionName.to_owned(),
         params.input.to_string().to_owned(),
         params.abi.to_string().to_owned(),
-        Some(&key_pair))
+        key_pair)
         .expect("Error calling contract method");
 
     let mut tr_id = None;

@@ -4,7 +4,7 @@ use ton_sdk::{Contract, ContractImage};
 use tvm::cells_serialization::BagOfCells;
 use tvm::stack::{CellData, SliceData};
 
-use tvm::block::{TransactionId, TransactionProcessingStatus};
+use tvm::block::TransactionId;
 use ton_sdk::Transaction;
 use futures::Stream;
 use contracts::{EncodedUnsignedMessage, EncodedMessage};
@@ -65,25 +65,25 @@ pub(crate) struct ParamsOfSendGrams {
     pub amount: u128,
 }
 
-pub(crate) fn deploy(context: &mut Context, params: ParamsOfDeploy) -> ApiResult<ResultOfDeploy> {
+pub(crate) fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<ResultOfDeploy> {
     debug!("-> contracts.deploy({})", params.constructorParams.to_string());
 
     let key_pair = params.keyPair.decode()?;
 
     let contract_image = create_image(&params.imageBase64, &key_pair.public)?;
     let account_id = contract_image.account_id();
-    debug!("image prepared with address: {}", account_encode(&account_id));
+    debug!("-> -> image prepared with address: {}", account_encode(&account_id));
 
-    debug!("send 100 nano grams from zero account");
+    debug!("-> -> send 100 nano grams from zero account");
     let msg = create_external_transfer_funds_message(
         &AccountId::from([0_u8; 32]),
         &account_id,
-        100);
+        1_000_000);
     send_message(msg)?;
 
-    debug!("deploy");
+    debug!("-> -> deploy");
     let tr_id = deploy_contract(&params, contract_image, &key_pair)?;
-    debug!("deploy transaction: {}", u256_encode(&tr_id.into()));
+    debug!("-> -> deploy transaction: {}", u256_encode(&tr_id.into()));
 
     debug!("<-");
     Ok(ResultOfDeploy {
@@ -91,14 +91,14 @@ pub(crate) fn deploy(context: &mut Context, params: ParamsOfDeploy) -> ApiResult
     })
 }
 
-pub(crate) fn get_address(context: &mut Context, params: ParamsOfGetDeployAddress) -> ApiResult<String> {
+pub(crate) fn get_address(context: &mut ClientContext, params: ParamsOfGetDeployAddress) -> ApiResult<String> {
     let key_pair = params.keyPair.decode()?;
     let contract_image = create_image(&params.imageBase64, &key_pair.public)?;
     let account_id = contract_image.account_id();
     Ok(account_encode(&account_id))
 }
 
-pub(crate) fn encode_message(context: &mut Context, params: ParamsOfDeploy) -> ApiResult<ResultOfEncodeDeployMessage> {
+pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<ResultOfEncodeDeployMessage> {
     debug!("-> contracts.deploy.message({})", params.constructorParams.to_string());
 
     let keys = params.keyPair.decode()?;
@@ -138,7 +138,7 @@ fn serialize_message(msg: tvm::block::Message) -> ApiResult<(Vec<u8>, MessageId)
     Ok((data, id.into()))
 }
 
-pub(crate) fn encode_unsigned_message(context: &mut Context, params: ParamsOfEncodeUnsignedDeployMessage) -> ApiResult<ResultOfEncodeUnsignedDeployMessage> {
+pub(crate) fn encode_unsigned_message(context: &mut ClientContext, params: ParamsOfEncodeUnsignedDeployMessage) -> ApiResult<ResultOfEncodeUnsignedDeployMessage> {
     let public = decode_public_key(&params.publicKeyHex)?;
     let image = create_image(&params.imageBase64, &public)?;
     let address_hex = image.account_id().to_hex_string();
@@ -157,7 +157,7 @@ pub(crate) fn encode_unsigned_message(context: &mut Context, params: ParamsOfEnc
     })
 }
 
-pub(crate) fn encode_send_grams_message(context: &mut Context, params: ParamsOfSendGrams) -> ApiResult<EncodedMessage> {
+pub(crate) fn encode_send_grams_message(context: &mut ClientContext, params: ParamsOfSendGrams) -> ApiResult<EncodedMessage> {
     let msg = create_external_transfer_funds_message(
         &account_decode(&params.fromAccount)?,
         &account_decode(&params.toAccount)?,
@@ -190,10 +190,9 @@ use std::io::Cursor;
 use ed25519_dalek::PublicKey;
 use types::{ApiResult, ApiError};
 
-use tvm::block::MessageProcessingStatus;
+use tvm::block::TransactionProcessingStatus;
 use ed25519_dalek::Keypair;
-use client::Context;
-use log::Level::Trace;
+use client::ClientContext;
 
 fn create_image(image_base64: &String, public_key: &PublicKey) -> ApiResult<ContractImage> {
     let bytes = base64::decode(image_base64)
@@ -218,7 +217,7 @@ fn deploy_contract(params: &ParamsOfDeploy, image: ContractImage, keys: &Keypair
             panic!("error next state getting: {}", e);
         }
         if let Ok(state) = state {
-            debug!("deploy: {:?}", state.status);
+            debug!("-> -> deploy: {:?}", state.status);
             if state.status == TransactionProcessingStatus::Preliminary ||
                 state.status == TransactionProcessingStatus::Proposed ||
                 state.status == TransactionProcessingStatus::Finalized
@@ -231,7 +230,7 @@ fn deploy_contract(params: &ParamsOfDeploy, image: ContractImage, keys: &Keypair
     tr_id.ok_or(ApiError::contracts_deploy_transaction_missing())
 }
 
-pub fn create_external_transfer_funds_message(src: &AccountId, dst: &AccountId, value: u128) -> Message {
+pub(crate) fn create_external_transfer_funds_message(src: &AccountId, dst: &AccountId, value: u128) -> Message {
     let mut rng = thread_rng();
     let mut random = [0u8;8];
     rng.fill_bytes(&mut random);
@@ -256,9 +255,11 @@ pub fn create_external_transfer_funds_message(src: &AccountId, dst: &AccountId, 
     msg
 }
 
-pub fn send_message(msg: Message) -> ApiResult<TransactionId> {
+pub(crate) fn send_message(msg: Message) -> ApiResult<TransactionId> {
+    debug!("-> send message");
     let changes_stream = Contract::send_message(msg)
         .map_err(|err| ApiError::contracts_send_message_failed(err))?;
+    debug!("-> wait for status");
     let mut tr_id = None;
     for state in changes_stream.wait() {
         match state {
@@ -269,15 +270,19 @@ pub fn send_message(msg: Message) -> ApiResult<TransactionId> {
                     state.status == TransactionProcessingStatus::Finalized
                 {
                     tr_id = Some(state.id.clone());
+                    break;
                 }
             }
-            Err(err) => return Err(ApiError::contracts_send_message_failed(err))
+            Err(err) => {
+                debug!("-> send message failed");
+                return Err(ApiError::contracts_send_message_failed(err))
+            }
         }
     }
 
     let tr_id = tr_id.expect("Error: no transaction id");
 
-    let transaction = Transaction::load(tr_id)
+    let transaction = Transaction::load(tr_id.clone())
         .expect("Error calling load Transaction")
         .wait()
         .next()
@@ -293,27 +298,10 @@ pub fn send_message(msg: Message) -> ApiResult<TransactionId> {
         wait_message_processed_by_id(msg_id.clone());
     });
 
-    Err(ApiError::contracts_send_message_failed("Missing message"))
+    Ok(tr_id)
 }
 
 fn wait_message_processed_by_id(message_id: MessageId) -> TransactionId {
-    let msg = ton_sdk::Message::load(message_id.clone())
-        .expect("Error load message")
-        .wait()
-        .next();
-
-    if msg.is_some() {
-        let s = msg.expect("Error unwrap stream next while loading Message")
-            .expect("Error unwrap result while loading Message")
-            .expect("Error unwrap returned Message");
-        println!("{} : {:?}", s.id().to_hex_string(), s.status());
-        if s.status() == MessageProcessingStatus::Preliminary ||
-            s.status() == MessageProcessingStatus::Proposed ||
-            s.status() == MessageProcessingStatus::Finalized {
-            return s.id().clone();
-        }
-    }
-
     let mut tr_id = None;
     for state in Contract::subscribe_updates(message_id.clone()).unwrap().wait() {
         if let Err(e) = state {

@@ -104,10 +104,7 @@ pub fn u256_encode(value: &UInt256) -> String {
 }
 
 pub fn u256_from_slice_data(slice: &tvm::stack::SliceData) -> UInt256 {
-
-    let mut result = [0u8; 32];
-    result.copy_from_slice(slice.storage());
-    UInt256::from(result)
+    UInt256::from(slice.storage().as_slice())
 }
 
 pub fn account_encode(value: &tvm::types::AccountId) -> String {

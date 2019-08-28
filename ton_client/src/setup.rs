@@ -1,4 +1,4 @@
-use client::Context;
+use client::ClientContext;
 use dispatch::DispatchTable;
 use types::{ApiResult, ApiError};
 use ton_sdk::{NodeClientConfig, RequestsConfig, QueriesConfig};
@@ -22,7 +22,7 @@ pub(crate) struct SetupParams {
 }
 
 
-fn setup(context: &mut Context, config: SetupParams) -> ApiResult<()> {
+fn setup(context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
     fn replace_prefix(s: &String, prefix: &str, new_prefix: &str) -> String {
         format!("{}{}", new_prefix, s[prefix.len()..].to_string())
     }
@@ -77,5 +77,5 @@ fn setup(context: &mut Context, config: SetupParams) -> ApiResult<()> {
         }
     };
     println!("{:?}", internal_config);
-    ton_sdk::init(config.default_workchain, internal_config).map_err(|err|ApiError::config_init_failed(err))
+    ton_sdk::init(Some(config.default_workchain.unwrap_or(0)), internal_config).map_err(|err|ApiError::config_init_failed(err))
 }

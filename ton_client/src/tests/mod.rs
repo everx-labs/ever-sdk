@@ -3,6 +3,21 @@ use ::{tc_json_request, InteropString};
 use ::{tc_read_json_response, tc_destroy_json_response};
 use ::{tc_create_context, tc_destroy_context};
 use serde_json::Value;
+use log::{Metadata, Level, Record, LevelFilter};
+
+struct SimpleLogger;
+
+impl log::Log for SimpleLogger {
+    fn enabled(&self, metadata: &Metadata) -> bool {
+        true
+    }
+
+    fn log(&self, record: &Record) {
+        println!("{} - {}", record.level(), record.args());
+    }
+
+    fn flush(&self) {}
+}
 
 fn json_request(
     context: InteropContext,
@@ -26,6 +41,8 @@ fn json_request(
 
 #[test]
 fn test() {
+    log::set_boxed_logger(Box::new(SimpleLogger))
+        .map(|()| log::set_max_level(LevelFilter::Debug));
     unsafe {
         let context = tc_create_context();
 
@@ -35,9 +52,10 @@ fn test() {
         let deployed = json_request(context, "setup",
             json!({"baseUrl": "http://0.0.0.0"}));
 
+        let abi: Value = serde_json::from_str(WALLET_ABI).unwrap();
         let deployed = json_request(context, "contracts.deploy",
             json!({
-                "abi": WALLET_ABI,
+                "abi": abi.clone(),
                 "constructorParams": json!({}),
                 "imageBase64": WALLET_CODE_BASE64,
                 "keyPair": {
@@ -46,8 +64,24 @@ fn test() {
                 },
             }),
         );
-        println!("deploy result: {}", deployed.result_json);
-        println!("deploy error: {}", deployed.error_json);
+
+        assert_eq!("{\"address\":\"0e2bee9393b06d12874d359f763a09cbc13041f29ce8fd434289cdd5085794d7\"}",
+            deployed.result_json);
+
+        let result = json_request(context, "contracts.run",
+            json!({
+                "address": "0e2bee9393b06d12874d359f763a09cbc13041f29ce8fd434289cdd5085794d7",
+                "abi": abi.clone(),
+                "functionName": "getVersion",
+                "input": json!({}),
+                "keyPair": {
+                    "public": "d59bdd49a40013f6335753eb19b34b37f42ca25df8a44bd7388882ab57019dd1",
+                    "secret": "4f255abd8da7dcf1fbc94ae2e2742d350621a99a4bd53592661f22ec25bf1d23"
+                },
+            }),
+        );
+        assert_eq!("{\"output\":{\"error\":\"-0x1\",\"version\":{\"major\":\"0x0\",\"minor\":\"0x1\"}}}",
+            result.result_json);
 
         tc_destroy_context(context);
     }
