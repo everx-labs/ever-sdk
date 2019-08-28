@@ -308,7 +308,7 @@ fn wait_message_processed_by_id(message_id: MessageId) -> TransactionId {
             panic!("error next state getting: {}", e);
         }
         if let Ok(s) = state {
-            println!("{} : {:?}", s.id.to_hex_string(), s.status);
+            debug!("{} : {:?}", s.id.to_hex_string(), s.status);
             if s.status == TransactionProcessingStatus::Preliminary ||
                 s.status == TransactionProcessingStatus::Proposed ||
                 s.status == TransactionProcessingStatus::Finalized {
