@@ -2,12 +2,12 @@ use dispatch::DispatchTable;
 use ::{JsonResponse, InteropContext};
 use std::collections::HashMap;
 use std::sync::{Mutex, MutexGuard};
-use error::{ClientResult, ClientError};
+use types::{ApiResult, ApiError};
 
 fn create_handlers() -> DispatchTable {
     let mut handlers = DispatchTable::new();
     crate::setup::register(&mut handlers);
-    crate::crypto::register(&mut handlers);
+    crate::crypto::CryptoApi::register(&mut handlers);
     crate::contracts::register(&mut handlers);
     crate::queries::register(&mut handlers);
     handlers
@@ -64,9 +64,9 @@ impl Client {
         self.contexts.remove(&handle);
     }
 
-    pub fn required_context(&mut self, context: InteropContext) -> ClientResult<&mut Context> {
+    pub fn required_context(&mut self, context: InteropContext) -> ApiResult<&mut Context> {
         self.contexts.get_mut(&context).ok_or(
-            ClientError::invalid_context_handle(context)
+            ApiError::invalid_context_handle(context)
         )
     }
 

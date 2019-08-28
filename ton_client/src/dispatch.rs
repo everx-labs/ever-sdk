@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use ::{JsonResponse};
-use error::{ClientError, ClientResult};
+use types::{ApiError, ApiResult};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use client::Context;
@@ -14,7 +14,7 @@ impl JsonResponse {
         }
     }
 
-    pub(crate) fn from_error(err: ClientError) -> Self {
+    pub(crate) fn from_error(err: ApiError) -> Self {
         JsonResponse {
             result_json: String::new(),
             error_json: serde_json::to_string(&err)
@@ -32,12 +32,12 @@ pub(crate) struct DispatchTable {
     sync_runners: HashMap<String, Box<SyncHandler + Sync>>
 }
 
-fn parse_params<P: DeserializeOwned + 'static>(params_json: &str) -> ClientResult<P> {
-    serde_json::from_str(params_json).map_err(|err| ClientError::invalid_params(params_json, err))
+fn parse_params<P: DeserializeOwned + 'static>(params_json: &str) -> ApiResult<P> {
+    serde_json::from_str(params_json).map_err(|err| ApiError::invalid_params(params_json, err))
 }
 
 struct CallHandler<P: Send + DeserializeOwned, R: Send + Serialize> {
-    handler: fn(context: &mut Context, params: P) -> ClientResult<R>,
+    handler: fn(context: &mut Context, params: P) -> ApiResult<R>,
 }
 
 impl<P: Send + DeserializeOwned + 'static, R: Send + Serialize> SyncHandler for CallHandler<P, R> {
@@ -59,7 +59,7 @@ impl<P: Send + DeserializeOwned + 'static, R: Send + Serialize> SyncHandler for 
 }
 
 struct CallNoArgsHandler<R: Send + Serialize> {
-    handler: fn(context: &mut Context) -> ClientResult<R>,
+    handler: fn(context: &mut Context) -> ApiResult<R>,
 }
 
 impl<R: Send + Serialize> SyncHandler for CallNoArgsHandler<R> {
@@ -82,25 +82,25 @@ impl DispatchTable {
         }
     }
 
-    pub fn spawn<P, R>(&mut self, method: &str, handler: fn(context: &mut Context, params: P) -> ClientResult<R>)
+    pub fn spawn<P, R>(&mut self, method: &str, handler: fn(context: &mut Context, params: P) -> ApiResult<R>)
         where P: Send + DeserializeOwned + 'static, R: Send + Serialize + 'static
     {
         self.sync_runners.insert(method.to_string(), Box::new(CallHandler { handler }));
     }
 
-    pub fn spawn_no_args<R>(&mut self, method: &str, handler: fn(context: &mut Context) -> ClientResult<R>)
+    pub fn spawn_no_args<R>(&mut self, method: &str, handler: fn(context: &mut Context) -> ApiResult<R>)
         where R: Send + Serialize + 'static
     {
         self.sync_runners.insert(method.to_string(), Box::new(CallNoArgsHandler { handler }));
     }
 
-    pub fn call<P, R>(&mut self, method: &str, handler: fn(context: &mut Context, params: P) -> ClientResult<R>)
+    pub fn call<P, R>(&mut self, method: &str, handler: fn(context: &mut Context, params: P) -> ApiResult<R>)
         where P: Send + DeserializeOwned + 'static, R: Send + Serialize + 'static
     {
         self.sync_runners.insert(method.to_string(), Box::new(CallHandler { handler }));
     }
 
-    pub fn call_no_args<R>(&mut self, method: &str, handler: fn(context: &mut Context) -> ClientResult<R>)
+    pub fn call_no_args<R>(&mut self, method: &str, handler: fn(context: &mut Context) -> ApiResult<R>)
         where R: Send + Serialize + 'static
     {
         self.sync_runners.insert(method.to_string(), Box::new(CallNoArgsHandler { handler }));
@@ -109,7 +109,7 @@ impl DispatchTable {
     pub fn sync_dispatch(&self, context: &mut Context, method: String, params_json: String) -> JsonResponse {
         match self.sync_runners.get(&method) {
             Some(handler) => handler.handle(context, params_json.as_str()),
-            None => JsonResponse::from_error(ClientError::unknown_method(&method))
+            None => JsonResponse::from_error(ApiError::unknown_method(&method))
         }
     }
 }

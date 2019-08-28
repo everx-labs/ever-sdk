@@ -1,6 +1,6 @@
 use client::Context;
 use dispatch::DispatchTable;
-use error::{ClientResult, ClientError};
+use types::{ApiResult, ApiError};
 use ton_sdk::{NodeClientConfig, RequestsConfig, QueriesConfig};
 
 const VERSION: &str = "0.10.0";
@@ -12,16 +12,17 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 
 
 #[derive(Deserialize)]
+#[serde(rename_all="camelCase")]
 pub(crate) struct SetupParams {
-    pub defaultWorkchain: Option<i32>,
-    pub baseUrl: Option<String>,
-    pub requestsUrl: Option<String>,
-    pub queriesUrl: Option<String>,
-    pub subscriptionsUrl: Option<String>,
+    pub default_workchain: Option<i32>,
+    pub base_url: Option<String>,
+    pub requests_url: Option<String>,
+    pub queries_url: Option<String>,
+    pub subscriptions_url: Option<String>,
 }
 
 
-fn setup(context: &mut Context, config: SetupParams) -> ClientResult<()> {
+fn setup(context: &mut Context, config: SetupParams) -> ApiResult<()> {
     fn replace_prefix(s: &String, prefix: &str, new_prefix: &str) -> String {
         format!("{}{}", new_prefix, s[prefix.len()..].to_string())
     }
@@ -40,24 +41,24 @@ fn setup(context: &mut Context, config: SetupParams) -> ClientResult<()> {
     }
 
     let base_url = resolve_url(
-        config.baseUrl.as_ref(),
+        config.base_url.as_ref(),
         "services.tonlabs.io",
     );
 
     let requests_url = resolve_url(
-        config.requestsUrl.as_ref(),
+        config.requests_url.as_ref(),
         &format!("{}/topics/requests", base_url),
     );
 
 
     let queries_url = resolve_url(
-        config.queriesUrl.as_ref(),
+        config.queries_url.as_ref(),
         &format!("{}/graphql", base_url),
     );
 
 
     let subscriptions_url = resolve_url(
-        config.subscriptionsUrl.as_ref(),
+        config.subscriptions_url.as_ref(),
         &if queries_url.starts_with("https://") {
             replace_prefix(&queries_url, "https://", "wss://")
         } else {
@@ -65,7 +66,7 @@ fn setup(context: &mut Context, config: SetupParams) -> ClientResult<()> {
         }
     );
 
-    ton_sdk::init(config.defaultWorkchain, NodeClientConfig {
+    ton_sdk::init(config.default_workchain, NodeClientConfig {
         requests_config: RequestsConfig {
             requests_server: requests_url,
         },
@@ -73,5 +74,5 @@ fn setup(context: &mut Context, config: SetupParams) -> ClientResult<()> {
             queries_server: queries_url,
             subscriptions_server: subscriptions_url
         }
-    }).map_err(|err|ClientError::setup_failed(err))
+    }).map_err(|err|ApiError::config_init_failed(err))
 }
