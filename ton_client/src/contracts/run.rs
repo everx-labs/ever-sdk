@@ -2,17 +2,11 @@ use ton_sdk::Contract;
 use crypto::keys::{KeyPair, u256_encode, account_decode};
 use types::{ApiResult, ApiError, base64_decode};
 
-#[cfg(feature = "node_interaction")]
 use ton_sdk::{Transaction, MessageType, Message};
-#[cfg(feature = "node_interaction")]
-use tvm::block::{MessageProcessingStatus, TransactionId};
-#[cfg(feature = "node_interaction")]
+use tvm::block::{MessageProcessingStatus, TransactionId, TransactionProcessingStatus};
 use tvm::types::AccountId;
-#[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
-#[cfg(feature = "node_interaction")]
 use futures::Stream;
-#[cfg(feature = "node_interaction")]
 use tvm::block::TrComputePhase::*;
 use contracts::{EncodedMessage, EncodedUnsignedMessage};
 use client::Context;
@@ -20,7 +14,7 @@ use client::Context;
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
-pub(crate) struct ParamsOfRun {
+pub struct ParamsOfRun {
     pub address: String,
     pub abi: serde_json::Value,
     pub functionName: String,
@@ -30,7 +24,7 @@ pub(crate) struct ParamsOfRun {
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
-pub(crate) struct ParamsOfEncodeUnsignedRunMessage {
+pub struct ParamsOfEncodeUnsignedRunMessage {
     pub address: String,
     pub abi: serde_json::Value,
     pub functionName: String,
@@ -39,7 +33,7 @@ pub(crate) struct ParamsOfEncodeUnsignedRunMessage {
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
-pub(crate) struct ParamsOfDecodeRunOutput {
+pub struct ParamsOfDecodeRunOutput {
     pub abi: serde_json::Value,
     pub functionName: String,
     pub bodyBase64: String,
@@ -48,13 +42,12 @@ pub(crate) struct ParamsOfDecodeRunOutput {
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize)]
-pub(crate) struct ResultOfRun {
+pub struct ResultOfRun {
     pub output: serde_json::Value
 }
 
-#[cfg(feature = "node_interaction")]
 pub(crate) fn run(context: &mut Context, params: ParamsOfRun) -> ApiResult<ResultOfRun> {
-    verbose!("-> contracts.run({}, {}, {})",
+    debug!("-> contracts.run({}, {}, {})",
         params.address.clone(),
         params.functionName.clone(),
         params.input.to_string()
@@ -63,34 +56,34 @@ pub(crate) fn run(context: &mut Context, params: ParamsOfRun) -> ApiResult<Resul
     let address = account_decode(&params.address)?;
     let key_pair = params.keyPair.decode()?;
 
-    verbose!("load contract");
+    debug!("load contract");
     let contract = load_contract(&address)?;
 
-    verbose!("run contract");
+    debug!("run contract");
     let tr_id = call_contract(&contract.id(), &params, &key_pair)?;
     let tr_id_hex = tr_id.to_hex_string();
 
-    verbose!("load transaction {}", tr_id_hex);
+    debug!("load transaction {}", tr_id_hex);
     let tr = load_transaction(&tr_id);
 
     if tr.out_messages_id().len() == 0 {
-        verbose!("out messages missing");
+        debug!("out messages missing");
         let block_transaction = tr.tr();
-        verbose!("block transaction: {}", serde_json::to_string(block_transaction).unwrap());
+        debug!("block transaction: {}", serde_json::to_string(block_transaction).unwrap());
         get_result_from_block_transaction(&block_transaction)
     } else {
-        verbose!("load out messages");
+        debug!("load out messages");
         let out_msg = load_out_message(&tr);
         let response = out_msg.body().expect("error unwrap out message body").into();
 
-        verbose!("decode output");
+        debug!("decode output");
         let result = Contract::decode_function_response_json(
             params.abi.to_string().to_owned(),
             params.functionName.to_owned(),
             response)
             .expect("Error decoding result");
 
-        verbose!("<-");
+        debug!("<-");
         Ok(ResultOfRun {
             output: serde_json::from_str(result.as_str())
                 .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?
@@ -151,7 +144,6 @@ pub(crate) fn decode_output(context: &mut Context, params: ParamsOfDecodeRunOutp
 
 // Internals
 
-#[cfg(feature = "node_interaction")]
 fn ok_null() -> ApiResult<ResultOfRun> {
     Ok(ResultOfRun {
         output: serde_json::Value::Null
@@ -159,35 +151,33 @@ fn ok_null() -> ApiResult<ResultOfRun> {
 }
 
 
-#[cfg(feature = "node_interaction")]
 fn get_result_from_block_transaction(transaction: &tvm::block::Transaction) -> ApiResult<ResultOfRun> {
     match transaction.compute_phase_ref() {
         Some(compute_phase) => {
             match compute_phase {
                 Skipped(skipped) => {
-                    verbose!("VM compute phase was skipped");
+                    debug!("VM compute phase was skipped");
                     let reason: u8 = skipped.reason.clone() as u8;
                     Err(ApiError::tvm_execution_skipped(reason))
                 }
                 Vm(vm) => {
                     if vm.success {
-                        verbose!("VM compute phase was succeeded");
+                        debug!("VM compute phase was succeeded");
                         ok_null()
                     } else {
-                        verbose!("VM compute phase was not succeeded");
+                        debug!("VM compute phase was not succeeded");
                         Err(ApiError::tvm_execution_failed(vm.exit_code))
                     }
                 }
             }
         }
         None => {
-            verbose!("VM compute phase have missing!");
+            debug!("VM compute phase have missing!");
             ok_null()
         }
     }
 }
 
-#[cfg(feature = "node_interaction")]
 fn load_transaction(id: &TransactionId) -> Transaction {
     Transaction::load(id.clone())
         .expect("Error calling load Transaction")
@@ -198,7 +188,6 @@ fn load_transaction(id: &TransactionId) -> Transaction {
         .expect("Error unwrap returned Transaction")
 }
 
-#[cfg(feature = "node_interaction")]
 fn load_out_message(tr: &Transaction) -> Message {
     tr.load_out_messages()
         .expect("Error calling load out messages")
@@ -215,7 +204,6 @@ fn load_out_message(tr: &Transaction) -> Message {
         .expect("error unwrap out message 4")
 }
 
-#[cfg(feature = "node_interaction")]
 fn load_contract(address: &AccountId) -> ApiResult<Contract> {
     Contract::load(address.clone().into())
         .expect("Error calling load Contract")
@@ -226,7 +214,6 @@ fn load_contract(address: &AccountId) -> ApiResult<Contract> {
         .ok_or(ApiError::contracts_run_contract_not_found())
 }
 
-#[cfg(feature = "node_interaction")]
 fn call_contract(
     address: &AccountId,
     params: &ParamsOfRun,
@@ -246,12 +233,12 @@ fn call_contract(
             panic!("error next state getting: {}", e);
         }
         if let Ok(state) = state {
-            verbose!("run: {:?}", state.message_state);
-            if state.message_state == MessageProcessingStatus::Preliminary ||
-                state.message_state == MessageProcessingStatus::Proposed ||
-                state.message_state == MessageProcessingStatus::Finalized
+            debug!("run: {:?}", state.status);
+            if state.status == TransactionProcessingStatus::Preliminary ||
+                state.status == TransactionProcessingStatus::Proposed ||
+                state.status == TransactionProcessingStatus::Finalized
             {
-                tr_id = Some(state.message_id.clone());
+                tr_id = Some(state.id.clone());
                 break;
             }
         }

@@ -3,7 +3,7 @@ use dispatch::DispatchTable;
 use types::{ApiResult, ApiError};
 use ton_sdk::{NodeClientConfig, RequestsConfig, QueriesConfig};
 
-const VERSION: &str = "0.10.0";
+const VERSION: &str = "0.10.1";
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
     handlers.call("setup", setup);

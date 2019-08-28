@@ -7,7 +7,7 @@ use types::{ApiResult, ApiError};
 fn create_handlers() -> DispatchTable {
     let mut handlers = DispatchTable::new();
     crate::setup::register(&mut handlers);
-    crate::crypto::CryptoApi::register(&mut handlers);
+    crate::crypto::register(&mut handlers);
     crate::contracts::register(&mut handlers);
     crate::queries::register(&mut handlers);
     handlers

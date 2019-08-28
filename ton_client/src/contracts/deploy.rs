@@ -4,11 +4,8 @@ use ton_sdk::{Contract, ContractImage};
 use tvm::cells_serialization::BagOfCells;
 use tvm::stack::{CellData, SliceData};
 
-#[cfg(feature = "node_interaction")]
-use tvm::block::TransactionId;
-#[cfg(feature = "node_interaction")]
+use tvm::block::{TransactionId, TransactionProcessingStatus};
 use ton_sdk::Transaction;
-#[cfg(feature = "node_interaction")]
 use futures::Stream;
 use contracts::{EncodedUnsignedMessage, EncodedMessage};
 
@@ -68,28 +65,27 @@ pub(crate) struct ParamsOfSendGrams {
     pub amount: u128,
 }
 
-#[cfg(feature = "node_interaction")]
 pub(crate) fn deploy(context: &mut Context, params: ParamsOfDeploy) -> ApiResult<ResultOfDeploy> {
-    verbose!("-> contracts.deploy({})", params.constructorParams.to_string());
+    debug!("-> contracts.deploy({})", params.constructorParams.to_string());
 
     let key_pair = params.keyPair.decode()?;
 
     let contract_image = create_image(&params.imageBase64, &key_pair.public)?;
     let account_id = contract_image.account_id();
-    verbose!("image prepared with address: {}", account_encode(&account_id));
+    debug!("image prepared with address: {}", account_encode(&account_id));
 
-    verbose!("send 100 nano grams from zero account");
+    debug!("send 100 nano grams from zero account");
     let msg = create_external_transfer_funds_message(
         &AccountId::from([0_u8; 32]),
         &account_id,
         100);
     send_message(msg)?;
 
-    verbose!("deploy");
+    debug!("deploy");
     let tr_id = deploy_contract(&params, contract_image, &key_pair)?;
-    verbose!("deploy transaction: {}", u256_encode(&tr_id.into()));
+    debug!("deploy transaction: {}", u256_encode(&tr_id.into()));
 
-    verbose!("<-");
+    debug!("<-");
     Ok(ResultOfDeploy {
         address: account_encode(&account_id)
     })
@@ -194,11 +190,10 @@ use std::io::Cursor;
 use ed25519_dalek::PublicKey;
 use types::{ApiResult, ApiError};
 
-#[cfg(feature = "node_interaction")]
 use tvm::block::MessageProcessingStatus;
-#[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
 use client::Context;
+use log::Level::Trace;
 
 fn create_image(image_base64: &String, public_key: &PublicKey) -> ApiResult<ContractImage> {
     let bytes = base64::decode(image_base64)
@@ -208,7 +203,6 @@ fn create_image(image_base64: &String, public_key: &PublicKey) -> ApiResult<Cont
         .map_err(|err| ApiError::contracts_deploy_image_creation_failed(err))
 }
 
-#[cfg(feature = "node_interaction")]
 fn deploy_contract(params: &ParamsOfDeploy, image: ContractImage, keys: &Keypair) -> ApiResult<TransactionId> {
     let changes_stream = Contract::deploy_json(
         "constructor".to_owned(),
@@ -224,12 +218,12 @@ fn deploy_contract(params: &ParamsOfDeploy, image: ContractImage, keys: &Keypair
             panic!("error next state getting: {}", e);
         }
         if let Ok(state) = state {
-            verbose!("deploy: {:?}", state.message_state);
-            if state.message_state == MessageProcessingStatus::Preliminary ||
-                state.message_state == MessageProcessingStatus::Proposed ||
-                state.message_state == MessageProcessingStatus::Finalized
+            debug!("deploy: {:?}", state.status);
+            if state.status == TransactionProcessingStatus::Preliminary ||
+                state.status == TransactionProcessingStatus::Proposed ||
+                state.status == TransactionProcessingStatus::Finalized
             {
-                tr_id = Some(state.message_id.clone());
+                tr_id = Some(state.id.clone());
                 break;
             }
         }
@@ -237,7 +231,7 @@ fn deploy_contract(params: &ParamsOfDeploy, image: ContractImage, keys: &Keypair
     tr_id.ok_or(ApiError::contracts_deploy_transaction_missing())
 }
 
-pub(crate) fn create_external_transfer_funds_message(src: &AccountId, dst: &AccountId, value: u128) -> Message {
+pub fn create_external_transfer_funds_message(src: &AccountId, dst: &AccountId, value: u128) -> Message {
     let mut rng = thread_rng();
     let mut random = [0u8;8];
     rng.fill_bytes(&mut random);
@@ -262,20 +256,19 @@ pub(crate) fn create_external_transfer_funds_message(src: &AccountId, dst: &Acco
     msg
 }
 
-#[cfg(feature = "node_interaction")]
-pub(crate) fn send_message(msg: Message) -> ApiResult<TransactionId> {
+pub fn send_message(msg: Message) -> ApiResult<TransactionId> {
     let changes_stream = Contract::send_message(msg)
         .map_err(|err| ApiError::contracts_send_message_failed(err))?;
     let mut tr_id = None;
     for state in changes_stream.wait() {
         match state {
             Ok(state) => {
-                verbose!("send message: {:?}", state.message_state);
-                if state.message_state == MessageProcessingStatus::Preliminary ||
-                    state.message_state == MessageProcessingStatus::Proposed ||
-                    state.message_state == MessageProcessingStatus::Finalized
+                debug!("send message: {:?}", state.status);
+                if state.status == TransactionProcessingStatus::Preliminary ||
+                    state.status == TransactionProcessingStatus::Proposed ||
+                    state.status == TransactionProcessingStatus::Finalized
                 {
-                    tr_id = Some(state.message_id.clone());
+                    tr_id = Some(state.id.clone());
                 }
             }
             Err(err) => return Err(ApiError::contracts_send_message_failed(err))
@@ -303,7 +296,6 @@ pub(crate) fn send_message(msg: Message) -> ApiResult<TransactionId> {
     Err(ApiError::contracts_send_message_failed("Missing message"))
 }
 
-#[cfg(feature = "node_interaction")]
 fn wait_message_processed_by_id(message_id: MessageId) -> TransactionId {
     let msg = ton_sdk::Message::load(message_id.clone())
         .expect("Error load message")
@@ -328,11 +320,11 @@ fn wait_message_processed_by_id(message_id: MessageId) -> TransactionId {
             panic!("error next state getting: {}", e);
         }
         if let Ok(s) = state {
-            println!("{} : {:?}", s.message_id.to_hex_string(), s.message_state);
-            if s.message_state == MessageProcessingStatus::Preliminary ||
-                s.message_state == MessageProcessingStatus::Proposed ||
-                s.message_state == MessageProcessingStatus::Finalized {
-                tr_id = Some(s.message_id.clone());
+            println!("{} : {:?}", s.id.to_hex_string(), s.status);
+            if s.status == TransactionProcessingStatus::Preliminary ||
+                s.status == TransactionProcessingStatus::Proposed ||
+                s.status == TransactionProcessingStatus::Finalized {
+                tr_id = Some(s.id.clone());
                 break;
             }
         }

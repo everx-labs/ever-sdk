@@ -4,7 +4,6 @@ pub(crate) mod types;
 pub(crate) mod deploy;
 pub(crate) mod run;
 
-#[cfg(feature = "node_interaction")]
 pub(crate) mod load;
 
 #[allow(non_snake_case)]
@@ -53,13 +52,11 @@ pub(crate) fn encode_message_with_sign(context: &mut Context, params: ParamsOfEn
 pub(crate) fn register(handlers: &mut DispatchTable) {
     // Load
 
-    #[cfg(feature = "node_interaction")]
     handlers.spawn("contracts.load", load::load);
 
     // Deploy
 
-    #[cfg(feature = "node_interaction")]
-        handlers.spawn("contracts.deploy",
+    handlers.spawn("contracts.deploy",
         deploy::deploy);
     handlers.spawn("contracts.deploy.message",
         deploy::encode_message);
@@ -70,8 +67,7 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 
     // Run
 
-    #[cfg(feature = "node_interaction")]
-        handlers.spawn("contracts.run",
+    handlers.spawn("contracts.run",
         run::run);
     handlers.spawn("contracts.run.message",
         run::encode_message);

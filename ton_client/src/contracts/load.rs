@@ -2,21 +2,22 @@ use ton_sdk::Contract;
 use futures::Stream;
 use types::{ApiResult, ApiError};
 use crypto::keys::{account_encode, account_decode};
+use client::Context;
 
 #[derive(Deserialize)]
 #[allow(non_snake_case)]
-pub struct LoadParams {
+pub(crate) struct LoadParams {
     pub address: String,
 }
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize)]
-pub struct LoadResult {
+pub(crate) struct LoadResult {
     pub id: Option<String>,
     pub balanceGrams: Option<String>,
 }
 
-pub fn load(context: &mut Context, params: LoadParams) -> ApiResult<LoadResult> {
+pub(crate) fn load(context: &mut Context, params: LoadParams) -> ApiResult<LoadResult> {
     let address = params.address;
     let loaded = Contract::load(ton_sdk::AccountAddress::Short(account_decode(&address)?))
         .map_err(|err|ApiError::contracts_load_failed(err, &address))?
