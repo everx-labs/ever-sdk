@@ -1,3 +1,5 @@
+#[cfg(test)]
+#[macro_use]
 extern crate serde_json;
 
 #[macro_use]
@@ -23,7 +25,6 @@ extern crate secp256k1;
 extern crate ton_sdk;
 extern crate tvm;
 
-mod tests;
 mod types;
 mod dispatch;
 mod client;
@@ -33,6 +34,9 @@ mod crypto;
 mod queries;
 
 mod interop;
+
+#[cfg(test)]
+mod tests;
 
 pub use self::interop::*;
 

@@ -3,7 +3,7 @@ use ::{tc_json_request, InteropString};
 use ::{tc_read_json_response, tc_destroy_json_response};
 use serde_json::Value;
 use log::{Metadata, Record, LevelFilter};
-use tc_create_context;
+use {tc_create_context, tc_destroy_context};
 
 struct SimpleLogger;
 
@@ -42,14 +42,14 @@ fn json_request(
 #[test]
 fn test() {
     log::set_boxed_logger(Box::new(SimpleLogger))
-        .map(|()| log::set_max_level(LevelFilter::Debug));
+        .map(|()| log::set_max_level(LevelFilter::Debug)).unwrap();
     unsafe {
         let context = tc_create_context();
 
         let version = json_request(context, "version", Value::Null);
         println!("result: {}", version.result_json.to_string());
 
-        let deployed = json_request(context, "setup",
+        let _deployed = json_request(context, "setup",
             json!({"baseUrl": "http://0.0.0.0"}));
 
         let abi: Value = serde_json::from_str(WALLET_ABI).unwrap();
