@@ -119,7 +119,7 @@ impl Function {
 
     /// Parses the ABI function call to list of tokens.
     pub fn decode_input(&self, mut data: SliceData) -> Result<Vec<Token>, DeserializationError> {
-        let params = self.output_params();
+        let params = self.input_params();
 
         data.checked_drain_reference()
             .map_err(|err| DeserializationError::InvalidInputData(err.to_string()))?;
