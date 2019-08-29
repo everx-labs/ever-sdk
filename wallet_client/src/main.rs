@@ -652,7 +652,6 @@ fn set_address(current_address: &mut Option<AccountId>, params: &[&str]) {
     }
 }
 
-extern crate kafka;
 extern crate reqwest;
 extern crate base64;
 
