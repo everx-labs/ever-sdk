@@ -15,6 +15,11 @@ pub fn init(config: QueriesConfig) {
     *client = Some(GqlClient::new(&config.queries_server,&config.subscriptions_server));
 }
 
+pub fn uninit() {
+    let mut client = CLIENT.lock().unwrap();
+    *client = None;
+}
+
 // Returns Stream with updates of some field in database. First stream item is current value
 pub fn subscribe_record_updates(table: &'static str, record_id: &str, fields: &str)
     -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError>>> {

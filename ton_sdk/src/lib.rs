@@ -14,6 +14,8 @@ extern crate hex;
 extern crate ed25519_dalek;
 extern crate rand;
 extern crate sha2;
+#[macro_use]
+extern crate log;
 
 #[macro_use]
 extern crate error_chain;
@@ -60,7 +62,7 @@ pub mod queries_helper;
 mod requests_helper;
 
 
-/// Init SKD. Connects to Kafka and Rethink DB.
+/// Init SKD. Globally saves queries and requests server URLs
 #[cfg(feature = "node_interaction")]
 pub fn init(default_workchain: Option<i32>, config: NodeClientConfig) -> SdkResult<()> {
     Contract::set_default_workchain(default_workchain);
@@ -69,11 +71,18 @@ pub fn init(default_workchain: Option<i32>, config: NodeClientConfig) -> SdkResu
     Ok(())
 }
 
-/// Init SKD. Connects to Kafka and Rethink DB.
+/// Init SKD. Globally saves queries and requests server URLs
 #[cfg(feature = "node_interaction")]
 pub fn init_json(default_workchain: Option<i32>, config: &str) -> SdkResult<()> {
     init(default_workchain, serde_json::from_str(config)
         .map_err(|err| SdkErrorKind::InvalidArg(format!("{}", err)))?)
+}
+
+/// Uninit SKD. Should be called before process
+#[cfg(feature = "node_interaction")]
+pub fn uninit() {
+    requests_helper::uninit();
+    queries_helper::uninit();
 }
 
 #[cfg(test)]

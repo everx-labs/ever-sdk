@@ -61,6 +61,9 @@ impl Client {
 
     pub fn destroy_context(&mut self, handle: InteropContext) {
         self.required_context(handle).unwrap();
+        if self.contexts.len() == 1 {
+            self.json_request(handle, "uninit".to_owned(), "{}".to_owned());
+        }
         self.contexts.remove(&handle);
     }
 

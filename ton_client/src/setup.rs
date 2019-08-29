@@ -8,6 +8,7 @@ const VERSION: &str = "0.10.1";
 pub(crate) fn register(handlers: &mut DispatchTable) {
     handlers.call("setup", setup);
     handlers.call_no_args("version", |_|Ok(VERSION));
+    handlers.call_no_args("uninit", |_| Ok(ton_sdk::uninit()));
 }
 
 
