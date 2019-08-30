@@ -3,7 +3,7 @@
 extern crate serde_json;
 
 #[macro_use]
-extern crate serde;
+extern crate serde_derive;
 
 #[macro_use]
 extern crate lazy_static;
@@ -11,6 +11,7 @@ extern crate lazy_static;
 #[macro_use]
 extern crate log;
 
+extern crate serde;
 extern crate rand;
 extern crate futures;
 extern crate ed25519_dalek;

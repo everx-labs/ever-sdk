@@ -4,10 +4,14 @@ use ton_sdk::{Contract, ContractImage};
 use tvm::cells_serialization::BagOfCells;
 use tvm::stack::{CellData, SliceData};
 
-use tvm::block::TransactionId;
-use ton_sdk::Transaction;
-use futures::Stream;
 use contracts::{EncodedUnsignedMessage, EncodedMessage};
+
+#[cfg(feature = "node_interaction")]
+use ton_sdk::Transaction;
+#[cfg(feature = "node_interaction")]
+use tvm::block::TransactionId;
+#[cfg(feature = "node_interaction")]
+use futures::Stream;
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
@@ -65,6 +69,7 @@ pub(crate) struct ParamsOfSendGrams {
     pub amount: u128,
 }
 
+#[cfg(feature = "node_interaction")]
 pub(crate) fn deploy(_context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<ResultOfDeploy> {
     debug!("-> contracts.deploy({})", params.constructorParams.to_string());
 
@@ -190,9 +195,13 @@ use std::io::Cursor;
 use ed25519_dalek::PublicKey;
 use types::{ApiResult, ApiError};
 
-use tvm::block::TransactionProcessingStatus;
-use ed25519_dalek::Keypair;
 use client::ClientContext;
+
+#[cfg(feature = "node_interaction")]
+use ed25519_dalek::Keypair;
+
+#[cfg(feature = "node_interaction")]
+use tvm::block::TransactionProcessingStatus;
 
 fn create_image(image_base64: &String, public_key: &PublicKey) -> ApiResult<ContractImage> {
     let bytes = base64::decode(image_base64)
@@ -202,6 +211,7 @@ fn create_image(image_base64: &String, public_key: &PublicKey) -> ApiResult<Cont
         .map_err(|err| ApiError::contracts_deploy_image_creation_failed(err))
 }
 
+#[cfg(feature = "node_interaction")]
 fn deploy_contract(params: &ParamsOfDeploy, image: ContractImage, keys: &Keypair) -> ApiResult<TransactionId> {
     let changes_stream = Contract::deploy_json(
         "constructor".to_owned(),
@@ -255,6 +265,7 @@ pub(crate) fn create_external_transfer_funds_message(src: &AccountId, dst: &Acco
     msg
 }
 
+#[cfg(feature = "node_interaction")]
 pub(crate) fn send_message(msg: Message) -> ApiResult<TransactionId> {
     debug!("-> send message");
     let changes_stream = Contract::send_message(msg)
@@ -301,6 +312,7 @@ pub(crate) fn send_message(msg: Message) -> ApiResult<TransactionId> {
     Ok(tr_id)
 }
 
+#[cfg(feature = "node_interaction")]
 fn wait_message_processed_by_id(message_id: MessageId) -> TransactionId {
     let mut tr_id = None;
     for state in Contract::subscribe_updates(message_id.clone()).unwrap().wait() {

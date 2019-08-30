@@ -4,6 +4,7 @@ pub(crate) mod types;
 pub(crate) mod deploy;
 pub(crate) mod run;
 
+#[cfg(feature = "node_interaction")]
 pub(crate) mod load;
 
 #[allow(non_snake_case)]
@@ -50,13 +51,14 @@ pub(crate) fn encode_message_with_sign(_context: &mut ClientContext, params: Par
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
     // Load
-
+    #[cfg(feature = "node_interaction")]
     handlers.spawn("contracts.load", load::load);
 
     // Deploy
-
+    #[cfg(feature = "node_interaction")]
     handlers.spawn("contracts.deploy",
         deploy::deploy);
+
     handlers.spawn("contracts.deploy.message",
         deploy::encode_message);
     handlers.spawn("contracts.deploy.encode_unsigned_message",
@@ -65,9 +67,10 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         deploy::get_address);
 
     // Run
-
+    #[cfg(feature = "node_interaction")]
     handlers.spawn("contracts.run",
         run::run);
+
     handlers.spawn("contracts.run.message",
         run::encode_message);
     handlers.spawn("contracts.run.encode_unsigned_message",
@@ -76,7 +79,6 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         run::decode_output);
 
     // Contracts
-
     handlers.spawn("contracts.send.grams.message",
         deploy::encode_send_grams_message);
     handlers.spawn("contracts.encode_message_with_sign",

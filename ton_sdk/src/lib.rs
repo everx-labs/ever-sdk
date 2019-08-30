@@ -18,7 +18,6 @@ extern crate sha2;
 #[macro_use]
 extern crate error_chain;
 #[cfg(feature = "node_interaction")]
-#[cfg(feature = "node_interaction")]
 #[macro_use]
 extern crate serde_json;
 #[cfg(feature = "node_interaction")]

@@ -1,14 +1,22 @@
 use client::ClientContext;
 use dispatch::DispatchTable;
-use types::{ApiResult, ApiError};
+use types::ApiResult;
+#[cfg(feature = "node_interaction")]
+use types::ApiError;
+
+#[cfg(feature = "node_interaction")]
 use ton_sdk::{NodeClientConfig, RequestsConfig, QueriesConfig};
 
 const VERSION: &str = "0.10.1";
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
+    #[cfg(feature = "node_interaction")]
+    handlers.call_no_args("uninit", |_| Ok(ton_sdk::uninit()));
+    #[cfg(not(feature = "node_interaction"))]
+    handlers.call_no_args("uninit", |_| Ok(()));
+
     handlers.call("setup", setup);
     handlers.call_no_args("version", |_|Ok(VERSION));
-    handlers.call_no_args("uninit", |_| Ok(ton_sdk::uninit()));
 }
 
 
@@ -22,7 +30,7 @@ pub(crate) struct SetupParams {
     pub subscriptions_url: Option<String>,
 }
 
-
+#[cfg(feature = "node_interaction")]
 fn setup(_context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
     fn replace_prefix(s: &String, prefix: &str, new_prefix: &str) -> String {
         format!("{}{}", new_prefix, s[prefix.len()..].to_string())
@@ -77,4 +85,10 @@ fn setup(_context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
         }
     };
     ton_sdk::init(Some(config.default_workchain.unwrap_or(0)), internal_config).map_err(|err|ApiError::config_init_failed(err))
+}
+
+
+#[cfg(not(feature = "node_interaction"))]
+fn setup(_context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
+    Ok(ton_sdk::Contract::set_default_workchain(Some(config.default_workchain.unwrap_or(0))))
 }
