@@ -514,8 +514,6 @@ fn local_contract_call(address: AccountId, func: &str, input: &str, abi: &str, k
 #[test]
 fn full_test_piggy_bank() {
 
-    //tvm::logger::init();
-
     // connect to node
     init_node_connection();
 
@@ -603,6 +601,8 @@ fn full_test_piggy_bank() {
 
     let t = now.elapsed();
 	println!("Time: sec={}.{:06} ", t.as_secs(), t.subsec_micros());
+
+    uninit();
 }
 
 // Create message "from wallet" to transfer some funds 

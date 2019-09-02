@@ -19,6 +19,11 @@ pub fn init(config: RequestsConfig) {
     *client = Some((Client::new(), config));
 }
 
+pub fn uninit() {
+    let mut client = CLIENT.lock().unwrap();
+    *client = None;
+}
+
 // Sends message to node
 pub fn send_message(key: &[u8], value: &[u8]) -> SdkResult<()> {
     if let Some((client, config)) = CLIENT.lock().unwrap().as_ref() {
