@@ -5,8 +5,8 @@ authors = ["Michael Vlasov"]
 rpath = true
 
 [lib]
-name = "tonclient"
-crate-type = ["cdylib"]
+name = "ton_client"
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 rand = "0.6.1"
@@ -31,7 +31,7 @@ byteorder = "1.3.2"
 libsecp256k1 = "0.2.2"
 log = "0.4.6"
 
-ton_sdk = { path = "../ton_sdk", default-features = false }
+ton_sdk = { path = "../../ton_sdk", default-features = false }
 
 [dependencies.tvm]
 git = "ssh://git@github.com/tonlabs/sdk-emulator.git"

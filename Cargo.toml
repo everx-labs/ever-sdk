@@ -4,5 +4,11 @@ members = [
 	"abi/abi_json",
     "ton_sdk",
     "wallet_client",
-    "ton_client"
+    "ton_client/client"
+]
+
+exclude = [
+    "ton_client/platforms/ton-client-node-js",
+    "ton_client/platforms/ton-client-web",
+    "ton_client/platforms/ton-client-react-native/sdk"
 ]

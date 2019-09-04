@@ -62,7 +62,7 @@ impl Client {
     pub fn destroy_context(&mut self, handle: InteropContext) {
         self.required_context(handle).unwrap();
         if self.contexts.len() == 1 {
-            self.json_request(handle, "uninit".to_owned(), "{}".to_owned());
+            self.json_sync_request(handle, "uninit".to_owned(), "{}".to_owned());
         }
         self.contexts.remove(&handle);
     }
@@ -73,7 +73,7 @@ impl Client {
         )
     }
 
-    pub fn json_request(&mut self, context: InteropContext, method_name: String, params_json: String) -> JsonResponse {
+    pub fn json_sync_request(&mut self, context: InteropContext, method_name: String, params_json: String) -> JsonResponse {
         let context = self.required_context(context);
         match context {
             Ok(context) => sync_request(context, method_name, params_json),

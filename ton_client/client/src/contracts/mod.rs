@@ -77,6 +77,8 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         run::encode_unsigned_message);
     handlers.spawn("contracts.run.output",
         run::decode_output);
+    handlers.spawn("contracts.run.unknown.input",
+        run::decode_unknown_input);
 
     // Contracts
     handlers.spawn("contracts.send.grams.message",

@@ -1,16 +1,37 @@
 use client::*;
 use std::ptr::null;
 
-// Functions
+// Rust exported functions
+
+pub fn create_context() -> InteropContext {
+    Client::shared().create_context()
+}
+
+pub fn destroy_context(context: InteropContext) {
+    Client::shared().destroy_context(context)
+}
+
+pub fn json_sync_request(
+    context: InteropContext,
+    method_name: String,
+    params_json: String,
+) -> JsonResponse {
+    Client::shared().json_sync_request(
+        context,
+        method_name,
+        params_json)
+}
+
+// C-library exported functions
 
 #[no_mangle]
 pub unsafe extern "C" fn tc_create_context() -> InteropContext {
-    Client::shared().create_context()
+    create_context()
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn tc_destroy_context(context: InteropContext) {
-    Client::shared().destroy_context(context)
+    destroy_context(context)
 }
 
 #[no_mangle]
@@ -19,7 +40,7 @@ pub unsafe extern "C" fn tc_json_request(
     method_name: InteropString,
     params_json: InteropString,
 ) -> *const JsonResponse {
-    let response = Client::shared().json_request(
+    let response = json_sync_request(
         context,
         method_name.to_string(),
         params_json.to_string());
@@ -65,6 +86,7 @@ pub struct InteropJsonResponse {
     pub error_json: InteropString,
 }
 
+#[derive(Serialize)]
 pub struct JsonResponse {
     pub result_json: String,
     pub error_json: String,

@@ -295,7 +295,7 @@ const WALLET_ABI: &str = r#"{
 "#;
 
 fn init_node_connection() {
-    /*let config_json = r#"
+    let config_json = r#"
     {
         "queries_config": {
             "queries_server": "https://services.tonlabs.io/graphql",
@@ -304,9 +304,9 @@ fn init_node_connection() {
         "requests_config": {
             "requests_server": "https://services.tonlabs.io/topics/requests"
         }
-    }"#;*/
+    }"#;
 
-    let config_json = r#"
+    /*let config_json = r#"
     {
         "queries_config": {
             "queries_server": "http://192.168.99.100/graphql",
@@ -315,7 +315,7 @@ fn init_node_connection() {
         "requests_config": {
             "requests_server": "http://192.168.99.100/topics/requests"
         }
-    }"#;
+    }"#;*/
         
     init_json(Some(WORKCHAIN), config_json.into()).unwrap();
 }

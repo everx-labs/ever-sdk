@@ -1,0 +1,17 @@
+.DS_Store
+.idea/
+android/.gradle/
+android/gradle/
+android/build/
+android/gradlew
+android/gradlew.*
+android/android.iml
+android/local.properties
+NDK/
+node_modules/
+sdk/target/
+sdk/Cargo.lock
+package-json.lock
+*.xcuserdatad/
+*.xcworkspacedata
+package-lock.json

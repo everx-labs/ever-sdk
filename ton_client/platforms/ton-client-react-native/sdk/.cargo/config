@@ -1,0 +1,9 @@
+[target.aarch64-linux-android]
+ar = "../NDK/arm64/bin/aarch64-linux-android-ar"
+linker = "../NDK/arm64/bin/aarch64-linux-android-gcc"
+[target.armv7-linux-androideabi]
+ar = "../NDK/arm/bin/arm-linux-androideabi-ar"
+linker = "../NDK/arm/bin/arm-linux-androideabi-gcc"
+[target.i686-linux-android]
+ar = "../NDK/x86/bin/i686-linux-android-ar"
+linker = "../NDK/x86/bin/i686-linux-android-gcc"

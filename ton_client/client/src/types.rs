@@ -232,6 +232,11 @@ impl ApiError {
         sdk_err!(ContractsDecodeRunOutputFailed,
             "Decode run output failed: {}", err)
     }
+   
+    pub fn contracts_decode_run_input_failed<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsDecodeRunInputFailed,
+            "Decode run intput failed: {}", err)
+    }
 
     pub fn contracts_run_transaction_missing() -> ApiError {
         Self::sdk(ContractsRunTransactionMissing, "Transaction missing".into())
@@ -315,6 +320,7 @@ pub enum ApiSdkErrorCode {
     ContractsDeployImageCreationFailed = 3003,
     ContractsDeployTransactionMissing = 3004,
     ContractsDecodeRunOutputFailed = 3005,
+    ContractsDecodeRunInputFailed = 3006,
     ContractsRunContractNotFound = 3008,
     ContractsRunTransactionMissing = 3009,
     ContractsSendMessageFailed = 3010,

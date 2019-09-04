@@ -56,9 +56,23 @@ pub(crate) struct ParamsOfDecodeRunOutput {
     pub bodyBase64: String,
 }
 
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub struct ParamsOfDecodeUnknownRun {
+    pub abi: serde_json::Value,
+    pub bodyBase64: String,
+}
+
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfRun {
+    pub output: serde_json::Value
+}
+
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize)]
+pub struct ResultOfDecodeUnknownRun {
+    pub function: String,
     pub output: serde_json::Value
 }
 
@@ -215,6 +229,18 @@ pub(crate) fn decode_output(_context: &mut ClientContext, params: ParamsOfDecode
     Ok(ResultOfRun {
         output: serde_json::from_str(result.as_str())
             .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?
+    })
+}
+
+pub(crate) fn decode_unknown_input(_context: &mut ClientContext, params: ParamsOfDecodeUnknownRun) -> ApiResult<ResultOfDecodeUnknownRun> {
+    let body = base64_decode(&params.bodyBase64)?;
+    let result = Contract::decode_unknown_function_call_from_bytes_json(
+        params.abi.to_string().to_owned(),
+        &body).map_err(|err|ApiError::contracts_decode_run_input_failed(err))?;
+    Ok(ResultOfDecodeUnknownRun {
+        function: result.function_name,
+        output: serde_json::from_str(result.params.as_str())
+            .map_err(|err| ApiError::contracts_decode_run_input_failed(err))?
     })
 }
 
