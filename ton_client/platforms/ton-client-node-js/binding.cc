@@ -4,7 +4,7 @@
 #include <node_api.h>
 #include <uv.h>
 #include <stdio.h>
-#include "tonsdk.h"
+#include "ton_client.h"
 
 #define CHECK(status) assert((status) == napi_ok)
 
