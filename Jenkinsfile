@@ -103,12 +103,14 @@ pipeline {
                             when { branch 'master' }
                             steps {
                                 sh 'cd bin'
-                                withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
-                                    identity = awsIdentity()
-                                    s3Upload \
-                                        bucket: 'sdkbinaries.tonlabs.io', \
-                                        path:'.', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.svg'
-                                    }
+                                script {
+                                    withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
+                                        identity = awsIdentity()
+                                        s3Upload \
+                                            bucket: 'sdkbinaries.tonlabs.io', \
+                                            path:'.', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.svg'
+                                        }
+                                }
                             }
                             post {
                                 failure {
