@@ -3,8 +3,11 @@ const path = require('path');
 const os = require('os');
 const root = __dirname;
 
+const platform = require('os').platform();
+const version = '0.11.0'.split('.').join('_');
+
 function dylibext() {
-    switch (require('os').platform()) {
+    switch (platform) {
     case "win32":
         return "dll";
     case "darwin":
@@ -15,8 +18,8 @@ function dylibext() {
 }
 
 const dev = {
-    lib: 'libton_client_node_js.a',
-    dylib: `libton_client_node_js.${dylibext()}`,
+    lib: 'libtonclientnodejs.a',
+    dylib: `libtonclientnodejs.${dylibext()}`,
     addon: 'tonclient.node',
 };
 // const release = JSON.parse(JSON.stringify(dev));
@@ -56,6 +59,14 @@ function spawnProcess(name, args) {
 }
 
 
+async function gz(src, dst) {
+    const src_path = path.join(root, ...src);
+    const dst_path = path.join(root, 'bin', dst);
+    fs.copyFileSync(src_path, dst_path);
+    await spawnProcess('gzip', ['-9', dst_path]);
+    fs.chmodSync(dst_path + '.gz', 0o666);
+}
+
 async function buildNodeJsAddon() {
     // clean up and restore environment
     const deleteFolderRecursive = (dir) => {
@@ -74,25 +85,21 @@ async function buildNodeJsAddon() {
     };
     deleteFolderRecursive(path.join(root, 'bin'));
     // build sdk release
-    await spawnProcess('cargo', ['clean']);
-    await spawnProcess('cargo', ['update']);
+    // await spawnProcess('cargo', ['clean']);
+    // await spawnProcess('cargo', ['update']);
     await spawnProcess('cargo', ['build', '--release']);
     // build addon
     if (os.platform() !== "win32") {
-        await spawnProcess('node-gyp', ['rebuild']);
+        await spawnProcess('npm', ['run', 'build']);
     } else {
         await spawnProcess('cmd', ['/c', 'node-gyp', 'rebuild']);
     }
     // collect files
-    let dir = path.join(root, 'bin'); 
+    let dir = path.join(root, 'bin');
     fs.mkdirSync(dir);
-    let src = path.join(root, 'build', 'Release', config.addon);
-    let dst = path.join(root, 'bin', config.addon);
-    fs.copyFileSync(src, dst);
-    if(os.platform() === 'darwin') {
-        src = path.join(root, 'target', 'release', config.dylib);
-        dst = path.join(root, 'bin', config.dylib);
-        fs.copyFileSync(src, dst);
+    await gz(['build', 'Release', config.addon], `tonclient_${version}_nodejs_addon_${platform}`);
+    if(platform === 'darwin') {
+        await gz(['target', 'release', config.dylib], `tonclient_${version}_nodejs_dylib_${platform}`);
     }
 }
 

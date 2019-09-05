@@ -7,7 +7,7 @@ use types::ApiError;
 #[cfg(feature = "node_interaction")]
 use ton_sdk::{NodeClientConfig, RequestsConfig, QueriesConfig};
 
-const VERSION: &str = "0.10.1";
+const VERSION: &str = "0.11.0";
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
     #[cfg(feature = "node_interaction")]

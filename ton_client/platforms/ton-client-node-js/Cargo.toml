@@ -1,10 +1,10 @@
 [package]
-name = "ton_client_node_js"
+name = "tonclientnodejs"
 version = "0.10.0"
 authors = ["Michael Vlasov"]
 
 [lib]
-name = "ton_client_node_js"
+name = "tonclientnodejs"
 crate-type = ["staticlib", "cdylib"]
 
 [dependencies]

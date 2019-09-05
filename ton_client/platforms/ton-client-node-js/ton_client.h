@@ -50,7 +50,7 @@ void ton_sdk_json_rpc_request(
         auto libpath = std::string(info.dli_fname);
         auto slash_pos = libpath.find_last_of("/\\");
         if (slash_pos != std::string::npos) {
-            libpath = libpath.substr(0, slash_pos) + "/libtonsdk.dylib";
+            libpath = libpath.substr(0, slash_pos) + "/libtonclientnodejs.dylib";
         }
 
         void* lib_handle = dlopen(libpath.c_str(), RTLD_LOCAL);
