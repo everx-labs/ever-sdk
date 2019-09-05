@@ -3,7 +3,6 @@ name = "ton_client_web"
 version = "0.10.0"
 edition = "2018"
 description = "tonsdk WASM binding"
-license = "MIT"
 
 [lib]
 name = "ton_client_web"
