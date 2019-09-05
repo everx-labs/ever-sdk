@@ -15,8 +15,8 @@ function dylibext() {
 }
 
 const dev = {
-    lib: 'libtonsdk.a',
-    dylib: `libtonsdk.${dylibext()}`,
+    lib: 'libton_client_node_js.a',
+    dylib: `libton_client_node_js.${dylibext()}`,
     addon: 'tonclient.node',
 };
 // const release = JSON.parse(JSON.stringify(dev));
