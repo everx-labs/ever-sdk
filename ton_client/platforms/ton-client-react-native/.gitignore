@@ -1,6 +1,5 @@
 .DS_Store
 .idea/
-android/gradlew.*
 NDK/
 target/
 Cargo.lock
