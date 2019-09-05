@@ -1,10 +1,15 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const zlib = require('zlib');
 const root = __dirname;
 
 const platform = require('os').platform();
-const version = '0.11.0'.split('.').join('_');
+const version = JSON.parse(
+    fs.readFileSync(
+        path.join(root,'package.json')
+    )
+).version.split('.').join('_');
 
 function dylibext() {
     switch (platform) {
@@ -25,7 +30,6 @@ const dev = {
 // const release = JSON.parse(JSON.stringify(dev));
 
 const config = dev;
-const sdkDir = root;
 const spawnEnv = {
     ...process.env,
 };
@@ -59,11 +63,12 @@ function spawnProcess(name, args) {
 }
 
 
-async function gz(src, dst) {
+function gz(src, dst) {
     const src_path = path.join(root, ...src);
     const dst_path = path.join(root, 'bin', dst);
-    fs.copyFileSync(src_path, dst_path);
-    await spawnProcess('gzip', ['-9', dst_path]);
+    fs.createReadStream(src_path)
+    .pipe(zlib.createGzip({ level: 9 }))
+    .pipe(fs.createWriteStream(dst_path + '.gz'));
     fs.chmodSync(dst_path + '.gz', 0o666);
 }
 
@@ -86,7 +91,7 @@ async function buildNodeJsAddon() {
     deleteFolderRecursive(path.join(root, 'bin'));
     // build sdk release
     // await spawnProcess('cargo', ['clean']);
-    // await spawnProcess('cargo', ['update']);
+    await spawnProcess('cargo', ['update']);
     await spawnProcess('cargo', ['build', '--release']);
     // build addon
     if (os.platform() !== "win32") {
@@ -97,9 +102,9 @@ async function buildNodeJsAddon() {
     // collect files
     let dir = path.join(root, 'bin');
     fs.mkdirSync(dir);
-    await gz(['build', 'Release', config.addon], `tonclient_${version}_nodejs_addon_${platform}`);
+    gz(['build', 'Release', config.addon], `tonclient_${version}_nodejs_addon_${platform}`);
     if(platform === 'darwin') {
-        await gz(['target', 'release', config.dylib], `tonclient_${version}_nodejs_dylib_${platform}`);
+        gz(['target', 'release', config.dylib], `tonclient_${version}_nodejs_dylib_${platform}`);
     }
 }
 
