@@ -164,9 +164,6 @@ async function buildReactNativeIosLibrary() {
 	]);
 
 	if(fs.existsSync(dest)) {
-		const dst = path.join(iosDir, config.ios.lib);
-		fs.copyFileSync(dest, dst);
-
 		const header_src = path.join(sdkDir, config.ios.header);
 		const header_dst = path.join(iosDir, config.ios.header);
 		fs.copyFileSync(header_src, header_dst);
