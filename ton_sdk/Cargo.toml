@@ -41,6 +41,7 @@ optional = true
 
 [dependencies.reqwest]
 version = "0.9.18"
+features = ["default-tls-vendored"]
 optional = true
 
 [features]

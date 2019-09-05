@@ -28,7 +28,7 @@ fn rust_string(env: &JNIEnv, from: JString) -> String {
     env.get_string(from).unwrap().into()
 }
 
-impl ResultHandler for JniResultHandler {
+impl JniResultHandler {
     fn on_result(&self, result_json: String, error_json: String, flags: i32) {
         let env = self.jvm.attach_current_thread().unwrap();
         let handler = self.handler.as_obj();
@@ -55,15 +55,12 @@ pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_request(
 ) {
     let response = json_sync_request(
         create_context(),//context,
-        String::from((*method).as_str()),
-        String::from((*params_json).as_str()),
+        rust_string(&env, method),
+        rust_string(&env, params_json),
     );
-
-    let result = TonSdkUtf8String::from(response.result_json.as_str());
-    let error = TonSdkUtf8String::from(response.error_json.as_str());
 
     let handler = JniResultHandler::new(env, on_result);
 
-    handler.on_result(result, error, flags);
+    handler.on_result(response.result_json, response.error_json, 0);
 }
 

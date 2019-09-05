@@ -12,12 +12,13 @@ const ndkDirName = 'android-ndk-r17c';
 const dev = {
 	ios: {
 		archs: ['x86_64-apple-ios'],
-		lib: 'libtonsdk.a',
+		lib: 'libton_client_react_native.a',
+		header: 'ton_client.h'
 	},
 	android: {
 		archs: ['i686-linux-android'],
 		jniArchs: ['x86'],
-		lib: 'libtonsdk.so',
+		lib: 'libton_client_react_native.so',
 	},
 };
 const release = JSON.parse(JSON.stringify(dev));
@@ -37,7 +38,7 @@ const cargoTargets = [
 ];
 
 const config = release;
-const sdkDir = path.join(root, 'sdk');
+const sdkDir = root;
 const iosDir = path.join(root, 'bin', 'ios');
 const androidDir = path.join(root, 'bin', 'android');
 const androidNDKs = ['arm64', 'arm', 'x86'];
@@ -153,6 +154,7 @@ async function buildReactNativeIosLibrary() {
 	process.chdir(sdkDir);
 
 	await cargoBuild(config.ios.archs);
+	mkdir(iosDir);
 	const dest = path.join(iosDir, config.ios.lib);
 	const getIosOutput = x => path.join('target', x, 'release', config.ios.lib);
 	await spawnProcess('lipo', [
@@ -161,11 +163,14 @@ async function buildReactNativeIosLibrary() {
 		...config.ios.archs.map(getIosOutput),
 	]);
 
-	mkdir(iosDir);
-	const dst = path.join(iosDir, config.ios.lib);
-	fs.copyFileSync(getIosOutput, dst);
-
 	if(fs.existsSync(dest)) {
+		const dst = path.join(iosDir, config.ios.lib);
+		fs.copyFileSync(dest, dst);
+
+		const header_src = path.join(sdkDir, config.ios.header);
+		const header_dst = path.join(iosDir, config.ios.header);
+		fs.copyFileSync(header_src, header_dst);
+
 		const outGZip = path.join(outDir, `${path.parse(dest).name}-ios${path.parse(dest).ext}.gz`);
 		fs.createReadStream(dest).pipe(zlib.createGzip()).pipe(fs.createWriteStream(outGZip));
 	}
@@ -183,7 +188,7 @@ async function buildReactNativeAndroidLibrary() {
 	process.chdir(sdkDir);
 
 	await cargoBuild(config.android.archs);
-	const jniLibsDir = path.join(androidDir, 'src', 'main', 'jniLibs');
+	const jniLibsDir = androidDir;
 	mkdir(jniLibsDir);
 
 	config.android.archs.forEach((arch, index) => {
