@@ -33,8 +33,8 @@ function spawnProcess(name, args) {
 
 
 async function buildWasm() {
-    //await spawnProcess('cargo', ['clean']);
-    //await spawnProcess('cargo', ['update']);
+    await spawnProcess('cargo', ['clean']);
+    await spawnProcess('cargo', ['update']);
     await spawnProcess('wasm-pack', ['build', '--release']);
 }
 

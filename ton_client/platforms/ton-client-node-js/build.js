@@ -74,8 +74,8 @@ async function buildNodeJsAddon() {
     };
     deleteFolderRecursive(path.join(root, 'bin'));
     // build sdk release
-    //await spawnProcess('cargo', ['clean']);
-    //await spawnProcess('cargo', ['update']);
+    await spawnProcess('cargo', ['clean']);
+    await spawnProcess('cargo', ['update']);
     await spawnProcess('cargo', ['build', '--release']);
     // build addon
     if (os.platform() !== "win32") {

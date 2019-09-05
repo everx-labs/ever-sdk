@@ -220,6 +220,8 @@ async function buildReactNativeAndroidLibrary() {
 	try {
 		await checkNDK();
 		await spawnProcess('rustup', ['target', 'add'].concat(cargoTargets));
+		await spawnProcess('cargo', ['clean']);
+		await spawnProcess('cargo', ['update']);
 		await buildReactNativeIosLibrary();
 		await buildReactNativeAndroidLibrary();
 	} catch (error) {
