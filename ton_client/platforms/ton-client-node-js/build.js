@@ -66,7 +66,8 @@ function spawnProcess(name, args) {
 function gz(src, dst) {
     const src_path = path.join(root, ...src);
     const dst_path = path.join(root, 'bin', dst);
-    fs.createReadStream(src_path)
+    fs.copyFileSync(src_path, dst_path);
+    fs.createReadStream(dst_path)
     .pipe(zlib.createGzip({ level: 9 }))
     .pipe(fs.createWriteStream(dst_path + '.gz'));
     fs.chmodSync(dst_path + '.gz', 0o666);

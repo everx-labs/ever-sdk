@@ -105,14 +105,15 @@ pipeline {
                         stage('Deploy') {
                             // when { branch 'master' }
                             steps {
-                                sh 'cd bin'
-                                script {
-                                    withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
-                                        identity = awsIdentity()
-                                        s3Upload \
-                                            bucket: 'sdkbinaries.tonlabs.io', \
-                                            path:'.', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
-                                        }
+                                dir('ton_client/platforms/ton-client-node-js/bin') {
+                                    script {
+                                        withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
+                                            identity = awsIdentity()
+                                            s3Upload \
+                                                bucket: 'sdkbinaries.tonlabs.io', \
+                                                path:'.', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
+                                            }
+                                    }
                                 }
                             }
                             post {
@@ -154,14 +155,15 @@ pipeline {
                         stage('Deploy') {
                             // when { branch 'master' }
                             steps {
-                                bat 'cd bin'
-                                script {
-                                    withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
-                                        identity = awsIdentity()
-                                        s3Upload \
-                                            bucket: 'sdkbinaries.tonlabs.io', \
-                                            path:'.', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
-                                        }
+                                dir('ton_client/platforms/ton-client-node-js/bin') {
+                                    script {
+                                        withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
+                                            identity = awsIdentity()
+                                            s3Upload \
+                                                bucket: 'sdkbinaries.tonlabs.io', \
+                                                path:'.', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
+                                            }
+                                    }
                                 }
                             }
                             post {
@@ -205,14 +207,82 @@ pipeline {
                         stage('Deploy') {
                             // when { branch 'master' }
                             steps {
-                                sh 'cd bin'
-                                script {
-                                    withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
-                                        identity = awsIdentity()
-                                        s3Upload \
-                                            bucket: 'sdkbinaries.tonlabs.io', \
-                                            path:'.', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
+                                dir('ton_client/platforms/ton-client-node-js/bin') {
+                                    script {
+                                        withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
+                                            identity = awsIdentity()
+                                            s3Upload \
+                                                bucket: 'sdkbinaries.tonlabs.io', \
+                                                path:'.', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
+                                            }
+                                    }
+                                }
+                            }
+                            post {
+                                failure {
+                                    script { G_tsnj_deploy = false }
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('sdk-web') {
+                    agent {
+                        docker {
+                            image G_container
+                        }
+                    }
+                    stages {
+                        stage('Report versions') {
+                            steps {
+                                sh '''
+                                rustc --version
+                                cargo --version
+                                '''
+                            }
+                        }
+                        stage('Build') {
+                            steps {
+                                echo 'Install...'
+                                environment {
+                                    X86_64_UNKNOWN_LINUX_GNU_OPENSSL_LIB_DIR='/usr/lib/x86_64-linux-gnu'
+                                    X86_64_UNKNOWN_LINUX_GNU_OPENSSL_INCLUDE_DIR='/usr/include/openssl'
+                                    X86_64_UNKNOWN_LINUX_GNU_OPENSSL_DIR='/usr/bin/openssl'
+                                    OPENSSL_DIR='/usr/bin/openssl'
+                                }
+                                steps {
+
+                                    sshagent([G_gitcred]) {
+                                        dir('ton_client/platforms/ton-client-web') {
+                                            sh 'npm install'
                                         }
+                                    }
+                                }
+                                echo 'Build ...'
+                                sshagent([G_gitcred]) {
+                                    dir('ton_client/platforms/ton-client-web') {
+                                        sh 'node build.js'
+                                    }
+                                }
+                            }
+                            post {
+                                failure {
+                                    script { G_tsnj_build = false }
+                                }
+                            }
+                        }
+                        stage('Deploy') {
+                            // when { branch 'master' }
+                            steps {
+                                dir('ton_client/platforms/ton-client-web/output') {
+                                    script {
+                                        withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
+                                            identity = awsIdentity()
+                                            s3Upload \
+                                                bucket: 'sdkbinaries.tonlabs.io', \
+                                                path:'.', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
+                                            }
+                                    }
                                 }
                             }
                             post {
