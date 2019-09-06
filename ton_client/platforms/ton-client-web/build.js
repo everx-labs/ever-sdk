@@ -3,7 +3,7 @@ const {gz, spawnProcess, deleteFolderRecursive, main, version, root_path} = requ
 
 
 main(async() => {
-    await spawnProcess('cargo', ['clean']);
+    // await spawnProcess('cargo', ['clean']);
     await spawnProcess('cargo', ['update']);
     await spawnProcess('wasm-pack', ['build', '--release']);
     deleteFolderRecursive(root_path('bin'));

@@ -35,7 +35,7 @@ const config = dev;
 async function buildNodeJsAddon() {
     deleteFolderRecursive(root_path('bin'));
     // build sdk release
-    await spawnProcess('cargo', ['clean']);
+    // await spawnProcess('cargo', ['clean']);
     await spawnProcess('cargo', ['update']);
     await spawnProcess('cargo', ['build', '--release']);
     // build addon
