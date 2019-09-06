@@ -69,8 +69,9 @@ function gz(src, dst) {
     fs.copyFileSync(src_path, dst_path);
     fs.createReadStream(dst_path)
     .pipe(zlib.createGzip({ level: 9 }))
-    .pipe(fs.createWriteStream(dst_path + '.gz'));
-    fs.chmodSync(dst_path + '.gz', 0o666);
+    .pipe(fs.createWriteStream(dst_path + '.gz')).on('end', () => {
+        fs.chmodSync(dst_path + '.gz', 0o666);
+    });
 }
 
 async function buildNodeJsAddon() {
