@@ -228,9 +228,7 @@ pipeline {
                 }
                 stage('react-native') {
                     agent {
-                        docker {
-                            image G_container
-                        }
+                        label "ios"
                     }
                     stages {
                         stage('Report versions') {
