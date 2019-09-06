@@ -242,20 +242,17 @@ pipeline {
                             }
                         }
                         stage('Build') {
+                            environment {
+                                X86_64_UNKNOWN_LINUX_GNU_OPENSSL_LIB_DIR='/usr/lib/x86_64-linux-gnu'
+                                X86_64_UNKNOWN_LINUX_GNU_OPENSSL_INCLUDE_DIR='/usr/include/openssl'
+                                X86_64_UNKNOWN_LINUX_GNU_OPENSSL_DIR='/usr/bin/openssl'
+                                OPENSSL_DIR='/usr/bin/openssl'
+                            }
                             steps {
                                 echo 'Install...'
-                                environment {
-                                    X86_64_UNKNOWN_LINUX_GNU_OPENSSL_LIB_DIR='/usr/lib/x86_64-linux-gnu'
-                                    X86_64_UNKNOWN_LINUX_GNU_OPENSSL_INCLUDE_DIR='/usr/include/openssl'
-                                    X86_64_UNKNOWN_LINUX_GNU_OPENSSL_DIR='/usr/bin/openssl'
-                                    OPENSSL_DIR='/usr/bin/openssl'
-                                }
-                                steps {
-
-                                    sshagent([G_gitcred]) {
-                                        dir('ton_client/platforms/ton-client-web') {
-                                            sh 'npm install'
-                                        }
+                                sshagent([G_gitcred]) {
+                                    dir('ton_client/platforms/ton-client-web') {
+                                        sh 'npm install'
                                     }
                                 }
                                 echo 'Build ...'
