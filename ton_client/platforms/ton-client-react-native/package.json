@@ -1,0 +1,8 @@
+{
+	"name": "ton-sdk-react-native",
+	"version": "0.9.50",
+	"description": "TON SDK Library for React Native",
+	"scripts": {
+		"build": "node build.js"
+	}
+}
