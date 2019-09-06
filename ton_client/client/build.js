@@ -1,6 +1,6 @@
 const fs = require('fs');
 const os = require('os');
-const {gz, spawnProcess, deleteFolderRecursive, main, version, root_path} = require('../build-lib');
+const {gz, spawnProcess, deleteFolderRecursive, main, version, root_path} = require('../platforms/build-lib');
 
 
 main(async() => {

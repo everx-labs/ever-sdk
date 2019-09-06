@@ -131,15 +131,15 @@ pipeline {
                     stages {
                         stage('Report versions') {
                             steps {
-                                sh 'rustc --version'
-                                sh 'cargo --version'
+                                bat 'rustc --version'
+                                bat 'cargo --version'
                             }
                         }
                         stage('Build') {
                             steps {
                                 dir('ton_client/client') {
                                     sshagent([G_gitcred]) {
-                                        sh 'node build.js'
+                                        bat 'node build.js'
                                     }
                                 }
                             }
