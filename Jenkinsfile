@@ -226,7 +226,59 @@ pipeline {
                         }
                     }
                 }
-                stage('sdk-web') {
+                stage('react-native') {
+                    agent {
+                        docker {
+                            image G_container
+                        }
+                    }
+                    stages {
+                        stage('Report versions') {
+                            steps {
+                                sh '''
+                                rustc --version
+                                cargo --version
+                                '''
+                            }
+                        }
+                        stage('Build') {
+                            steps {
+                                echo 'Build ...'
+                                sshagent([G_gitcred]) {
+                                    dir('ton_client/platforms/ton-client-react-native') {
+                                        sh 'node build.js'
+                                    }
+                                }
+                            }
+                            post {
+                                failure {
+                                    script { G_tsnj_build = false }
+                                }
+                            }
+                        }
+                        stage('Deploy') {
+                            // when { branch 'master' }
+                            steps {
+                                dir('ton_client/platforms/ton-client-react-native/output') {
+                                    script {
+                                        withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
+                                            identity = awsIdentity()
+                                            s3Upload \
+                                                bucket: 'sdkbinaries.tonlabs.io', \
+                                                path:'.', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
+                                            }
+                                    }
+                                }
+                            }
+                            post {
+                                failure {
+                                    script { G_tsnj_deploy = false }
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('web') {
                     agent {
                         docker {
                             image G_container
@@ -271,7 +323,7 @@ pipeline {
                         stage('Deploy') {
                             // when { branch 'master' }
                             steps {
-                                dir('ton_client/platforms/ton-client-web/output') {
+                                dir('ton_client/platforms/ton-client-web/bin') {
                                     script {
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
