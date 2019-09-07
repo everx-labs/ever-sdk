@@ -1,0 +1,11 @@
+{
+  "name": "ton-sdk-wasm",
+  "version": "0.10.0",
+  "description": "TON SDK Library for WebAssembly",
+  "scripts": {
+    "postinstall": "node install.js",
+    "webpack": "webpack",
+    "serve": "webpack-dev-server",
+    "build": "node build.js"
+  }
+}

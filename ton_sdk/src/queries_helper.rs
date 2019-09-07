@@ -15,6 +15,11 @@ pub fn init(config: QueriesConfig) {
     *client = Some(GqlClient::new(&config.queries_server,&config.subscriptions_server));
 }
 
+pub fn uninit() {
+    let mut client = CLIENT.lock().unwrap();
+    *client = None;
+}
+
 // Returns Stream with updates of some field in database. First stream item is current value
 pub fn subscribe_record_updates(table: &'static str, record_id: &str, fields: &str)
     -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError>>> {
@@ -25,7 +30,7 @@ pub fn subscribe_record_updates(table: &'static str, record_id: &str, fields: &s
     let request = generate_subscription(table, record_id, fields);
 
     if let Some(client) = CLIENT.lock().unwrap().as_mut() {
-        let stream = client.subscribe(request)
+        let stream = client.subscribe(request)?
             .then(move |result| {
                 match result {
                     Err(err) => Err(SdkError::from(err)),
@@ -73,13 +78,12 @@ pub fn load_record(table: &str, record_id: &str)
     let mut client = CLIENT.lock().unwrap();
     let client = client.as_mut().ok_or(SdkError::from(SdkErrorKind::NotInitialized))?;
 
-    let stream = client.query_vars(query)
+    let stream = client.query_vars(query)?
         .then(|result| {
             match result {
                 Err(err) => Err(SdkError::from(err)),
                 Ok(value) => {
                     // try to extract the record value from the answer
-                    //let select_answer: SelectAnswer = serde_json::from_value(value)?;
                     let records_array_str = value["data"]["select"].as_str()
                             .ok_or(SdkError::from(SdkErrorKind::InvalidData(
                                 format!("Invalid select answer: {}", value))))?;
@@ -110,13 +114,12 @@ pub fn load_record_fields(table: &'static str, record_id: &str, fields: &str)
     let mut client = CLIENT.lock().unwrap();
     let client = client.as_mut().ok_or(SdkError::from(SdkErrorKind::NotInitialized))?;
 
-    let stream = client.query(query)
+    let stream = client.query(query)?
         .then(move |result| {
             match result {
                 Err(err) => Err(SdkError::from(err)),
                 Ok(value) => {
                     // try to extract the record value from the answer
-                    //let select_answer: SelectAnswer = serde_json::from_value(value)?;
                     let records_array = &value["data"][table];
                     if records_array.is_null() {
                         bail!(SdkErrorKind::InvalidData(format!("Invalid select answer: {}", value)))

@@ -56,8 +56,8 @@ pub struct ResponseStream {
 }
 
 impl ResponseStream {
-    pub fn new(response: Result<Response, reqwest::Error>) -> Self {
-        Self { response: Some(response) }
+    pub fn new(response: Result<Response, reqwest::Error>) -> Result<Self, GraphiteError> {
+        Ok(Self { response: Some(response) })
     }
 }
 
@@ -99,12 +99,16 @@ pub struct SubscribeStream {
 }
 
 impl SubscribeStream {
-    pub fn new(id: u64, request: VariableRequest, host:&str) -> Self {
+    pub fn new(id: u64, request: VariableRequest, host:&str) -> Result<Self, GraphiteError> {
         let client = ClientBuilder::new(host)
-            .unwrap()
+            .map_err(|err| 
+                GraphiteError::new(
+                    format!("Can't create websocket client with address {}. Error {}", host, err)))?
             .add_protocol("graphql-ws")
             .connect(None)
-            .unwrap();
+            .map_err(|err|
+                GraphiteError::new(
+                    format!("Can't connect to websocket server {}. Error {}", host, err)))?;
 
         let mut future = Self {
             id: id,
@@ -112,11 +116,11 @@ impl SubscribeStream {
             client
         };
 
-        future.subscribe();
-        return future;
+        future.subscribe()?;
+        Ok(future)
     }
 
-    pub fn subscribe(&mut self) {
+    pub fn subscribe(&mut self) -> Result<(), GraphiteError> {
         let query = &self.request.get_query().clone();
         let variables = &self.request.get_variables().clone();
         let request: String;
@@ -128,13 +132,23 @@ impl SubscribeStream {
         }
 
         let msg = OwnedMessage::Text(request);
-        self.client.send_message(&msg).expect("Sending message across stdin channel.");
+        self.client.send_message(&msg)
+            .map_err(|err| 
+                GraphiteError::new(
+                    format!("Sending message across stdin channel failed. Error: {}", err)))?;
+
+        Ok(())
     }
 
-    pub fn unsubscribe(id: u64, client: &mut Client<Box<dyn NetworkStream + Send>>) {
+    pub fn unsubscribe(id: u64, client: &mut Client<Box<dyn NetworkStream + Send>>) -> Result<(), GraphiteError> {
         let query = format!("{{\"id\":{}, \"type\": \"stop\", \"payload\":{{}}}}", &id);
         let msg = OwnedMessage::Text(query.to_string());
-        client.send_message(&msg).expect("Sending message across stdin channel.");
+        client.send_message(&msg)
+            .map_err(|err| 
+                GraphiteError::new(
+                    format!("Sending message across stdin channel failed. Error: {}", err)))?;
+
+        Ok(())
     }
 
     pub fn get_id(&self) -> u64 {

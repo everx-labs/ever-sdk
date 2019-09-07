@@ -409,17 +409,8 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
 }
 
 fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pair: &Keypair) {
-
-    let contract = Contract::load(address.into())
-        .expect("Error calling load Contract")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract")
-        .expect("Error unwrap contract while loading Contract");
-
     // call needed method
-    let changes_stream = Contract::call_json(contract.id().into(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
+    let changes_stream = Contract::call_json(address.into(), func.to_owned(), input.to_owned(), abi.to_owned(), Some(&key_pair))
         .expect("Error calling contract method");
 
     // wait transaction id in message-status
@@ -443,18 +434,9 @@ fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pai
 }
 
 fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str, key_pair: Option<&Keypair>) -> String {
-
-    let contract = Contract::load(address.into())
-        .expect("Error calling load Contract")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract")
-        .expect("Error unwrap contract while loading Contract");
-
     // call needed method
     let changes_stream =
-        Contract::call_json(contract.id().into(), func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
+        Contract::call_json(address.into(), func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
             .expect("Error calling contract method");
 
     // wait transaction id in message-status
@@ -511,10 +493,34 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
     // 3. message object with body
 }
 
+fn local_contract_call(address: AccountId, func: &str, input: &str, abi: &str, key_pair: Option<&Keypair>) -> String {
+
+    let contract = Contract::load(address.into())
+        .expect("Error calling load Contract")
+        .wait()
+        .next()
+        .expect("Error unwrap stream next while loading Contract")
+        .expect("Error unwrap result while loading Contract")
+        .expect("Error unwrap contract while loading Contract");
+
+    // call needed method
+    let messages = contract.local_call_json(func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
+        .expect("Error calling locally");
+
+    for msg in messages {
+        let msg = crate::Message::with_msg(msg);
+        if msg.msg_type() == MessageType::ExternalOutbound {
+            return Contract::decode_function_response_json(
+                abi.to_owned(), func.to_owned(), msg.body().expect("Message has no body"))
+                    .expect("Error decoding result");
+        }
+    }
+
+    panic!("No output messages")
+}
+
 #[test]
 fn full_test_piggy_bank() {
-
-    //tvm::logger::init();
 
     // connect to node
     init_node_connection();
@@ -547,7 +553,8 @@ fn full_test_piggy_bank() {
 
     // get goal from piggy
     println!("Get goal from piggy...\n");
-    let get_goal_answer = call_contract_and_wait(piggy_bank_address.clone(), "getGoal", "{}", PIGGY_BANK_CONTRACT_ABI, None);
+    //let get_goal_answer = call_contract_and_wait(piggy_bank_address.clone(), "getGoal", "{}", PIGGY_BANK_CONTRACT_ABI, None);
+    let get_goal_answer = local_contract_call(piggy_bank_address.clone(), "getGoal", "{}", PIGGY_BANK_CONTRACT_ABI, None);
     println!("piggy answer {}", get_goal_answer);
 
 	// deploy subscription
@@ -602,6 +609,8 @@ fn full_test_piggy_bank() {
 
     let t = now.elapsed();
 	println!("Time: sec={}.{:06} ", t.as_secs(), t.subsec_micros());
+
+    uninit();
 }
 
 // Create message "from wallet" to transfer some funds 

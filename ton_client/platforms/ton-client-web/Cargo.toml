@@ -1,0 +1,26 @@
+[package]
+name = "ton_client_web"
+version = "0.10.0"
+edition = "2018"
+description = "tonsdk WASM binding"
+
+[lib]
+name = "ton_client_web"
+crate-type = ["staticlib", "cdylib"]
+
+[dependencies]
+js-sys = "0.3.24"
+wasm-bindgen = "0.2.47"
+serde_json = "1.0.39"
+
+[dependencies.ton_client]
+path = "../../client"
+default-features = false
+
+# The recrypt Ed25519 library that we use (https://github.com/dalek-cryptography/ed25519-dalek) depends on this clear_on_drop
+# crate (https://github.com/cesarb/clear_on_drop). That crate, by default, implements code via C to clear memory. That doesn't
+# work in WASM. However, they have a feature to turn off requiring C which we're enabling here. This allows our WASM bindings to enable
+# this feature without having to change the default for our recrypt-rust crate.
+[dependencies.clear_on_drop]
+version = "0.2" #This version should match the version that the ed25519-dalek crate depends on.
+features = ["no_cc"]

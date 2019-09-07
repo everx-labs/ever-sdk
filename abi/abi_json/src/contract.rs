@@ -7,7 +7,6 @@ use serde_json;
 use {Function, ABIError, Token, Param};
 use tvm::stack::SliceData;
 
-
 /// API building calls to contracts ABI.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Contract {
