@@ -80,7 +80,7 @@ pipeline {
                                             identity = awsIdentity()
                                             s3Upload \
                                                 bucket: 'sdkbinaries.tonlabs.io', \
-                                                path:'', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
+                                                includePathPattern:'*.gz', workingDir:'.'
                                             }
                                     }
                                 }
@@ -116,7 +116,7 @@ pipeline {
                                             identity = awsIdentity()
                                             s3Upload \
                                                 bucket: 'sdkbinaries.tonlabs.io', \
-                                                path:'', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
+                                                includePathPattern:'*.gz', workingDir:'.'
                                             }
                                     }
                                 }
@@ -152,7 +152,7 @@ pipeline {
                                             identity = awsIdentity()
                                             s3Upload \
                                                 bucket: 'sdkbinaries.tonlabs.io', \
-                                                path:'', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
+                                                includePathPattern:'*.gz', workingDir:'.'
                                             }
                                     }
                                 }
@@ -191,13 +191,13 @@ pipeline {
                         stage('Deploy') {
                             // when { branch 'master' }
                             steps {
-                                dir('ton_client/platforms/ton-client-react-native/bin') {
+                                dir('ton_client/platforms/ton-client-react-native/output') {
                                     script {
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
                                             s3Upload \
                                                 bucket: 'sdkbinaries.tonlabs.io', \
-                                                path:'', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
+                                                includePathPattern:'*.gz', workingDir:'.'
                                             }
                                     }
                                 }
@@ -247,7 +247,7 @@ pipeline {
                                             identity = awsIdentity()
                                             s3Upload \
                                                 bucket: 'sdkbinaries.tonlabs.io', \
-                                                path:'', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
+                                                includePathPattern:'*.gz', workingDir:'.'
                                             }
                                     }
                                 }
@@ -297,7 +297,7 @@ pipeline {
                                             identity = awsIdentity()
                                             s3Upload \
                                                 bucket: 'sdkbinaries.tonlabs.io', \
-                                                path:'', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
+                                                includePathPattern:'*.gz', workingDir:'.'
                                             }
                                     }
                                 }
@@ -349,7 +349,7 @@ pipeline {
                                             identity = awsIdentity()
                                             s3Upload \
                                                 bucket: 'sdkbinaries.tonlabs.io', \
-                                                path:'', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
+                                                includePathPattern:'*.gz', workingDir:'.'
                                             }
                                     }
                                 }
@@ -413,7 +413,7 @@ pipeline {
                                             identity = awsIdentity()
                                             s3Upload \
                                                 bucket: 'sdkbinaries.tonlabs.io', \
-                                                path:'', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
+                                                includePathPattern:'*.gz', workingDir:'.'
                                             }
                                     }
                                 }
