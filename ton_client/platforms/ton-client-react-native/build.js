@@ -1,8 +1,8 @@
 const fs = require('fs');
+const path = require('path');
 const {gz, deleteFolderRecursive, version, root_path} = require('../build-lib');
 const url = require('url');
 const http=require('http');
-const zlib = require('zlib');
 const outDir = root_path('output');
 const ndkURLstr = 'http://dl.google.com/android/repository/android-ndk-r17c-darwin-x86_64.zip';
 const ndkZipFile = (parts = ndkURLstr.split('/')).length < 1 ? null : parts[parts.length-1];
@@ -102,7 +102,7 @@ async function getNDK() {
 			if(!fs.existsSync(ndkZipFile)) await downloadNDK();
 			ndkHomeDir = root_path(ndkDirName);
 			console.log('Unzipping android NDK...');
-			await spawnProcess('unzip', ['-q', '-d', root, ndkZipFile]);
+			await spawnProcess('unzip', ['-q', '-d', root_path(''), ndkZipFile]);
 			process.env.NDK_HOME = ndkHomeDir;
 		} catch (err) {
 			throw err;
@@ -168,7 +168,7 @@ async function buildReactNativeIosLibrary() {
 		fs.copyFileSync(header_src, header_dst);
 
 		const outGZip = path.join(outDir, `${path.parse(dest).name}-ios-${version}.gz`);
-		fs.createReadStream(dest).pipe(zlib.createGzip()).pipe(fs.createWriteStream(outGZip));
+		await gz(dest, outGZip);
 	}
 }
 
@@ -187,7 +187,7 @@ async function buildReactNativeAndroidLibrary() {
 	const jniLibsDir = androidDir;
 	mkdir(jniLibsDir);
 
-	config.android.archs.forEach((arch, index) => {
+	config.android.archs.forEach(async (arch, index) => {
 		const jniArch = config.android.jniArchs[index];
 		const jniArchDir = path.join(jniLibsDir, jniArch);
 		mkdir(jniArchDir);
@@ -197,7 +197,7 @@ async function buildReactNativeAndroidLibrary() {
 			fs.copyFileSync(src, dst);
 			process.stdout.write(`Android library for [${arch}] copied to "${dst}".\n`);
 			const outGZip = path.join(outDir, `${path.parse(dst).name}-${arch}-${version}.gz`);
-			fs.createReadStream(dst).pipe(zlib.createGzip()).pipe(fs.createWriteStream(outGZip));
+			await gz(dst, outGZip);
 		} else {
 			process.stderr.write(`Android library for [${arch}] does not exists. Skipped.\n`);
 		}
