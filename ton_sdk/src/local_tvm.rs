@@ -16,9 +16,6 @@ mod tests;
 #[allow(dead_code)]
 pub fn local_contract_call(code: Arc<CellData>, data: Option<Arc<CellData>>, msg: &Message)
 -> BlockResult<Vec<Message>> {
-    //println!("code {}", code);
-    //println!("data {}", data.clone().unwrap());
-    //println!("msg {}", msg.body().unwrap());
     let msg_cell = msg.write_to_new_cell()?.into();
     let mut stack = Stack::new();
     stack
@@ -35,7 +32,6 @@ pub fn local_contract_call(code: Arc<CellData>, data: Option<Arc<CellData>>, msg
     
     let mut engine = Engine::new().setup(SliceData::from(code), Some(ctrls), Some(stack), None);
     let _result = engine.execute()?;
-    //println!("result {}", _result);
     let mut slice = SliceData::from(engine.get_actions().as_cell()?.clone());
 
     let mut msgs = vec![];

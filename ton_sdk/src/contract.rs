@@ -34,6 +34,52 @@ use futures::stream::Stream;
 
 const CONSTRUCTOR_METHOD_NAME: &str = "constructor";
 
+const ACCOUNT_FIELDS: &str = r#"
+    id
+    addr {
+        ...on MsgAddressIntAddrNoneVariant {
+            AddrNone {
+                dummy
+            }
+        }
+        ...on MsgAddressIntAddrStdVariant {
+            AddrStd {
+                workchain_id
+                address
+            }
+        }
+        ...on MsgAddressIntAddrVarVariant {
+            AddrVar {
+                workchain_id
+                address
+            }
+        }
+    }
+    storage {
+        balance {
+            Grams
+        }
+        state {
+            ...on AccountStorageStateAccountUninitVariant {
+                AccountUninit {
+                    dummy
+                }
+            }
+            ...on AccountStorageStateAccountActiveVariant {
+                AccountActive {
+                    code
+                    data
+                }
+            }
+            ...on AccountStorageStateAccountFrozenVariant {
+                AccountFrozen {
+                    dummy
+                }
+            }
+        }
+    }
+"#;
+
 lazy_static! {
     static ref DEFAULT_WORKCHAIN: Mutex<Option<i32>> = Mutex::new(None);
 }
@@ -207,16 +253,19 @@ impl Contract {
     pub fn load(address: AccountAddress) -> SdkResult<Box<dyn Stream<Item = Option<Contract>, Error = SdkError>>> {
         let id = address.get_account_id()?;
 
-        let map = queries_helper::load_record(CONTRACTS_TABLE_NAME, &id.to_hex_string())?
-            .and_then(|val| {
-                if val == serde_json::Value::Null {
-                    Ok(None)
-                } else {
-                    let acc: Account = serde_json::from_value(val)
-                        .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing account: {}", err)))?;
+        let map = queries_helper::load_record_fields(
+            CONTRACTS_TABLE_NAME,
+            &id.to_hex_string(),
+            ACCOUNT_FIELDS)?
+                .and_then(|val| {
+                    if val == serde_json::Value::Null {
+                        Ok(None)
+                    } else {
+                        let acc: Account = serde_json::from_value(val)
+                            .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing account: {}", err)))?;
 
-                    Ok(Some(Contract { acc }))
-                }
+                        Ok(Some(Contract { acc }))
+                    }
             });
 
         Ok(Box::new(map))
@@ -226,7 +275,7 @@ impl Contract {
     // or null if message with given id is not exists
     pub fn load_json(id: AccountId) -> SdkResult<Box<dyn Stream<Item = String, Error = SdkError>>> {
 
-        let map = queries_helper::load_record(CONTRACTS_TABLE_NAME, &id.to_hex_string())?
+        let map = queries_helper::load_record_fields(CONTRACTS_TABLE_NAME, &id.to_hex_string(), ACCOUNT_FIELDS)?
             .map(|val| val.to_string());
 
         Ok(Box::new(map))
@@ -354,6 +403,7 @@ impl Contract {
 
         let subscribe_stream = queries_helper::subscribe_record_updates(
             TRANSACTIONS_TABLE_NAME,
+            TRANSACTIONS_FILTER_NAME,
             &message_id.to_hex_string(), 
             CONTRACT_CALL_STATE_FIELDS)?
                 .and_then(|value| {

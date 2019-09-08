@@ -4,7 +4,7 @@ extern crate websocket;
 use futures::{Async, Poll};
 use futures::stream::Stream;
 use std::fmt;
-use reqwest::Response;
+use reqwest::{Response, RequestBuilder};
 use serde_json::Value;
 use websocket::{ClientBuilder, OwnedMessage};
 use websocket::client::sync::Client;
@@ -51,6 +51,47 @@ impl VariableRequest {
     }
 }
 
+pub struct PeriodicRequestStream {
+    request: RequestBuilder,
+    timeout: u32
+}
+
+impl PeriodicRequestStream {
+    pub fn new(request: RequestBuilder) -> Result<Self, GraphiteError> {
+        Ok(Self { request, timeout: 0 })
+    }
+}
+
+impl Stream for PeriodicRequestStream {
+    type Item = Value;
+    type Error = GraphiteError;
+
+    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
+        std::thread::sleep_ms(self.timeout);
+        self.timeout = 1000;
+
+        match  self.request.try_clone().unwrap().send() {
+            Ok(mut res) => {
+                match res.text() {
+                    Ok(res_str) => {
+                        if let Ok(value) = serde_json::from_str(res_str.as_str()) {
+                            if let Some(error) = try_extract_error(&value) {
+                                return Err(error);
+                            }
+                            Ok(Async::Ready(Some(value)))
+                        } else {
+                            Err(GraphiteError::new(format!(
+                                        "Invalid JSON: {}", res_str)))
+                        }
+                    },
+                    Err(err) => Err(GraphiteError::new(err.to_string().clone()))
+                }
+            },
+            Err(err) => Err(GraphiteError::new(err.to_string().clone()))
+        }
+    }
+}
+
 pub struct ResponseStream {
     response: Option<Result<Response, reqwest::Error>>
 }
@@ -78,7 +119,8 @@ impl Stream for ResponseStream {
                                     }
                                     Ok(Async::Ready(Some(value)))
                                 } else {
-                                    Err(GraphiteError::new("Invalid JSON".to_string()))
+                                    Err(GraphiteError::new(format!(
+                                        "Invalid JSON: {}", res_str)))
                                 }
                             },
                             Err(err) => Err(GraphiteError::new(err.to_string().clone()))
@@ -193,7 +235,8 @@ impl Stream for SubscribeStream {
                                 Ok(Async::Ready(Some(value)))
 
                             } else {
-                                Err(GraphiteError::new("Invalid JSON".to_string()))
+                                Err(GraphiteError::new(format!(
+                                        "Invalid JSON: {}", text)))
                             }
                         },
                         _ => Ok(Async::NotReady)
