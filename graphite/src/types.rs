@@ -53,7 +53,7 @@ impl VariableRequest {
 
 pub struct PeriodicRequestStream {
     request: RequestBuilder,
-    timeout: u32
+    timeout: u64
 }
 
 impl PeriodicRequestStream {
@@ -67,7 +67,7 @@ impl Stream for PeriodicRequestStream {
     type Error = GraphiteError;
 
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        std::thread::sleep_ms(self.timeout);
+        std::thread::sleep(std::time::Duration::from_millis(self.timeout));
         self.timeout = 1000;
 
         match  self.request.try_clone().unwrap().send() {

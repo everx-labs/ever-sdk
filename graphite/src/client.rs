@@ -1,4 +1,4 @@
-use crate::types::{ResponseStream, VariableRequest, SubscribeStream, GraphiteError, PeriodicRequestStream};
+use crate::types::{ResponseStream, VariableRequest, SubscribeStream, GraphiteError};
 
 use reqwest::Client as HttpClient;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
