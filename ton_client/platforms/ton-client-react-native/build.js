@@ -1,10 +1,9 @@
 const fs = require('fs');
 const path = require('path');
+const {gz, deleteFolderRecursive, version, root_path} = require('../build-lib');
 const url = require('url');
 const http=require('http');
-const zlib = require('zlib');
-const root = __dirname;
-const outDir = path.join(root, 'output');
+const outDir = root_path('output');
 const ndkURLstr = 'http://dl.google.com/android/repository/android-ndk-r17c-darwin-x86_64.zip';
 const ndkZipFile = (parts = ndkURLstr.split('/')).length < 1 ? null : parts[parts.length-1];
 const ndkDirName = 'android-ndk-r17c';
@@ -38,15 +37,15 @@ const cargoTargets = [
 ];
 
 const config = release;
-const sdkDir = root;
-const iosDir = path.join(root, 'bin', 'ios');
-const androidDir = path.join(root, 'bin', 'android');
+const sdkDir = root_path('');
+const iosDir = root_path('bin', 'ios');
+const androidDir = root_path('bin', 'android');
 const androidNDKs = ['arm64', 'arm', 'x86'];
 const spawnEnv = {
 	...process.env,
 	PATH: [
 		(process.env.PATH || ''),
-		...androidNDKs.map(x => path.join(root, 'NDK', x, 'bin'))
+		...androidNDKs.map(x => root_path('NDK', x, 'bin'))
 	].join(':'),
 };
 
@@ -101,9 +100,9 @@ async function getNDK() {
 	if(ndkHomeDir === '' || !fs.existsSync(ndkHomeDir)) {
 		try {
 			if(!fs.existsSync(ndkZipFile)) await downloadNDK();
-			ndkHomeDir = path.join(root,ndkDirName);
+			ndkHomeDir = root_path(ndkDirName);
 			console.log('Unzipping android NDK...');
-			await spawnProcess('unzip', ['-q', '-d', root, ndkZipFile]);
+			await spawnProcess('unzip', ['-q', '-d', root_path(''), ndkZipFile]);
 			process.env.NDK_HOME = ndkHomeDir;
 		} catch (err) {
 			throw err;
@@ -123,7 +122,7 @@ async function spawnAll(items, getArgs) {
 
 
 async function checkNDK() {
-	const ndkDir = path.join(root, 'NDK');
+	const ndkDir = root_path('NDK');
 	if (fs.existsSync(ndkDir)) {
 		console.log('Standalone NDK already exists...');
 		return;
@@ -168,8 +167,8 @@ async function buildReactNativeIosLibrary() {
 		const header_dst = path.join(iosDir, config.ios.header);
 		fs.copyFileSync(header_src, header_dst);
 
-		const outGZip = path.join(outDir, `${path.parse(dest).name}-ios${path.parse(dest).ext}.gz`);
-		fs.createReadStream(dest).pipe(zlib.createGzip()).pipe(fs.createWriteStream(outGZip));
+		const outGZip = path.join(outDir, `${path.parse(dest).name}-ios-${version}.gz`);
+		await gz(dest, outGZip);
 	}
 }
 
@@ -188,7 +187,7 @@ async function buildReactNativeAndroidLibrary() {
 	const jniLibsDir = androidDir;
 	mkdir(jniLibsDir);
 
-	config.android.archs.forEach((arch, index) => {
+	config.android.archs.forEach(async (arch, index) => {
 		const jniArch = config.android.jniArchs[index];
 		const jniArchDir = path.join(jniLibsDir, jniArch);
 		mkdir(jniArchDir);
@@ -197,8 +196,8 @@ async function buildReactNativeAndroidLibrary() {
 			const dst = path.join(jniArchDir, config.android.lib);
 			fs.copyFileSync(src, dst);
 			process.stdout.write(`Android library for [${arch}] copied to "${dst}".\n`);
-			const outGZip = path.join(outDir, `${path.parse(dst).name}-${arch}${path.parse(dst).ext}.gz`);
-			fs.createReadStream(dst).pipe(zlib.createGzip()).pipe(fs.createWriteStream(outGZip));
+			const outGZip = path.join(outDir, `${path.parse(dst).name}-${arch}-${version}.gz`);
+			await gz(dst, outGZip);
 		} else {
 			process.stderr.write(`Android library for [${arch}] does not exists. Skipped.\n`);
 		}
@@ -210,14 +209,11 @@ async function buildReactNativeAndroidLibrary() {
 	if(!fs.existsSync(outDir)) {
 		fs.mkdirSync(outDir);
 	} else {
-		fs.readdirSync(outDir).forEach(item => {
-			fs.unlinkSync(path.join(outDir, item));
-		});
+		deleteFolderRecursive(outDir);
 	}
 	try {
 		await checkNDK();
 		await spawnProcess('rustup', ['target', 'add'].concat(cargoTargets));
-		await spawnProcess('cargo', ['clean']);
 		await spawnProcess('cargo', ['update']);
 		await buildReactNativeIosLibrary();
 		await buildReactNativeAndroidLibrary();

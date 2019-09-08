@@ -16,7 +16,6 @@ fn run_mode(mode: &'static str) {
 }
 
 #[test]
-#[should_panic]
 fn expect_compilation_failures() {
     run_mode("compile-fail");
 }

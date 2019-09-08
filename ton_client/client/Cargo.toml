@@ -1,6 +1,6 @@
 [package]
 name = "ton_client"
-version = "0.9.50"
+version = "0.11.0"
 authors = ["Michael Vlasov"]
 rpath = true
 

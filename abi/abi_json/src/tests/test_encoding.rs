@@ -59,12 +59,15 @@ fn test_parameters_set(
             .collect()
     };
 
-    let not_signed_function = Function {
+    let mut not_signed_function = Function {
         name: func_name.to_owned(),
         inputs: input_params.clone(),
         outputs: input_params.clone(),
         signed: false,
+        id: 0
     };
+
+    not_signed_function.id = not_signed_function.get_function_id();
 
     let test_tree = not_signed_function
         .encode_input(inputs.clone(), None)
@@ -97,13 +100,13 @@ fn test_parameters_set(
     // check output decoding
 
     let mut test_tree = SliceData::from(test_tree);
+
+    let test_inputs = not_signed_function.decode_input(test_tree.clone()).unwrap();
+    assert_eq!(test_inputs, inputs);
+
     test_tree.checked_drain_reference().unwrap();
 
-    let _version = test_tree.get_next_byte();
-    let _function_id = test_tree.get_next_u32();
-
     let test_outputs = not_signed_function.decode_output(test_tree).unwrap();
-
     assert_eq!(test_outputs, inputs);
 }
 
@@ -1111,6 +1114,7 @@ fn test_reserving_reference() {
         inputs: params.clone(),
         outputs: params.clone(),
         signed: true,
+        id: 0
     };
 
     let pair = Keypair::generate::<Sha512, _>(&mut rand::rngs::OsRng::new().unwrap());

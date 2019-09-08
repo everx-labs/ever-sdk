@@ -50,7 +50,7 @@ pipeline {
         stage('Building...') {
             failFast true
             parallel {
-                stage('Build client') {
+                stage('Client linux') {
                     agent {
                         docker {
                             image G_container
@@ -63,12 +63,148 @@ pipeline {
                                 sh 'cargo --version'
                             }
                         }
-                        stage('Build client') {
+                        stage('Build') {
                             steps {
+                                dir('ton_client/client') {
+                                    sshagent([G_gitcred]) {
+                                        sh 'node build.js'
+                                    }
+                                }
+                            }
+                        }
+                        stage('Deploy') {
+                            steps {
+                                dir('ton_client/client/bin') {
+                                    script {
+                                        withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
+                                            identity = awsIdentity()
+                                            s3Upload \
+                                                bucket: 'sdkbinaries.tonlabs.io', \
+                                                includePathPattern:'*.gz', workingDir:'.'
+                                            }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('Client macOS') {
+                    agent {
+                        label "ios"
+                    }
+                    stages {
+                        stage('Report versions') {
+                            steps {
+                                sh 'rustc --version'
+                                sh 'cargo --version'
+                            }
+                        }
+                        stage('Build') {
+                            steps {
+                                dir('ton_client/client') {
+                                    sshagent([G_gitcred]) {
+                                        sh 'node build.js'
+                                    }
+                                }
+                            }
+                        }
+                        stage('Deploy') {
+                            steps {
+                                dir('ton_client/client/bin') {
+                                    script {
+                                        withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
+                                            identity = awsIdentity()
+                                            s3Upload \
+                                                bucket: 'sdkbinaries.tonlabs.io', \
+                                                includePathPattern:'*.gz', workingDir:'.'
+                                            }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('Client Windows') {
+                    agent {
+                        label "Win"
+                    }
+                    stages {
+                        stage('Report versions') {
+                            steps {
+                                bat 'rustc --version'
+                                bat 'cargo --version'
+                            }
+                        }
+                        stage('Build') {
+                            steps {
+                                dir('ton_client/client') {
+                                    sshagent([G_gitcred]) {
+                                        bat 'node build.js'
+                                    }
+                                }
+                            }
+                        }
+                        stage('Deploy') {
+                            steps {
+                                dir('ton_client/client/bin') {
+                                    script {
+                                        withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
+                                            identity = awsIdentity()
+                                            s3Upload \
+                                                bucket: 'sdkbinaries.tonlabs.io', \
+                                                includePathPattern:'*.gz', workingDir:'.'
+                                            }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('react-native') {
+                    agent {
+                        label "ios"
+                    }
+                    stages {
+                        stage('Report versions') {
+                            steps {
+                                sh '''
+                                rustc --version
+                                cargo --version
+                                '''
+                            }
+                        }
+                        stage('Build') {
+                            steps {
+                                echo 'Build ...'
                                 sshagent([G_gitcred]) {
-                                    sh '''cd ton_client/client
-                                        cargo update
-                                        cargo build --release'''
+                                    dir('ton_client/platforms/ton-client-react-native') {
+                                        sh 'node build.js'
+                                    }
+                                }
+                            }
+                            post {
+                                failure {
+                                    script { G_tsnj_build = false }
+                                }
+                            }
+                        }
+                        stage('Deploy') {
+                            // when { branch 'master' }
+                            steps {
+                                dir('ton_client/platforms/ton-client-react-native/output') {
+                                    script {
+                                        withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
+                                            identity = awsIdentity()
+                                            s3Upload \
+                                                bucket: 'sdkbinaries.tonlabs.io', \
+                                                includePathPattern:'*.gz', workingDir:'.'
+                                            }
+                                    }
+                                }
+                            }
+                            post {
+                                failure {
+                                    script { G_tsnj_deploy = false }
                                 }
                             }
                         }
@@ -111,7 +247,7 @@ pipeline {
                                             identity = awsIdentity()
                                             s3Upload \
                                                 bucket: 'sdkbinaries.tonlabs.io', \
-                                                path:'.', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
+                                                includePathPattern:'*.gz', workingDir:'.'
                                             }
                                     }
                                 }
@@ -161,7 +297,7 @@ pipeline {
                                             identity = awsIdentity()
                                             s3Upload \
                                                 bucket: 'sdkbinaries.tonlabs.io', \
-                                                path:'.', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
+                                                includePathPattern:'*.gz', workingDir:'.'
                                             }
                                     }
                                 }
@@ -213,57 +349,7 @@ pipeline {
                                             identity = awsIdentity()
                                             s3Upload \
                                                 bucket: 'sdkbinaries.tonlabs.io', \
-                                                path:'.', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
-                                            }
-                                    }
-                                }
-                            }
-                            post {
-                                failure {
-                                    script { G_tsnj_deploy = false }
-                                }
-                            }
-                        }
-                    }
-                }
-                stage('react-native') {
-                    agent {
-                        label "ios"
-                    }
-                    stages {
-                        stage('Report versions') {
-                            steps {
-                                sh '''
-                                rustc --version
-                                cargo --version
-                                '''
-                            }
-                        }
-                        stage('Build') {
-                            steps {
-                                echo 'Build ...'
-                                sshagent([G_gitcred]) {
-                                    dir('ton_client/platforms/ton-client-react-native') {
-                                        sh 'node build.js'
-                                    }
-                                }
-                            }
-                            post {
-                                failure {
-                                    script { G_tsnj_build = false }
-                                }
-                            }
-                        }
-                        stage('Deploy') {
-                            // when { branch 'master' }
-                            steps {
-                                dir('ton_client/platforms/ton-client-react-native/output') {
-                                    script {
-                                        withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
-                                            identity = awsIdentity()
-                                            s3Upload \
-                                                bucket: 'sdkbinaries.tonlabs.io', \
-                                                path:'.', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
+                                                includePathPattern:'*.gz', workingDir:'.'
                                             }
                                     }
                                 }
@@ -327,7 +413,7 @@ pipeline {
                                             identity = awsIdentity()
                                             s3Upload \
                                                 bucket: 'sdkbinaries.tonlabs.io', \
-                                                path:'.', includePathPattern:'**/*', workingDir:'.', excludePathPattern:'**/*.gz'
+                                                includePathPattern:'*.gz', workingDir:'.'
                                             }
                                     }
                                 }

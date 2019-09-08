@@ -25,6 +25,10 @@ extern crate futures;
 #[cfg(feature = "node_interaction")]
 extern crate graphite;
 
+pub use ton_abi_json::json_abi;
+pub use ton_abi_json::Contract as AbiContract;
+pub use ton_abi_json::Function as AbiFunction;
+
 #[allow(deprecated)]
 #[macro_use]
 mod error;

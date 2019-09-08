@@ -96,7 +96,7 @@ impl Message {
 
     // Returns message's body (as tree of cells) or None if message doesn't have once
     pub fn body(&self) -> Option<SliceData> {
-        self.msg.body().into()
+        self.msg.body()
     }
 
     // Returns blockchain's message struct

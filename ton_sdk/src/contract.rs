@@ -271,7 +271,7 @@ impl Contract {
         Ok(Box::new(map))
     }
 
-    // Asynchronously loads a Message's json representation
+    // Asynchronously loads a Contract's json representation
     // or null if message with given id is not exists
     pub fn load_json(id: AccountId) -> SdkResult<Box<dyn Stream<Item = String, Error = SdkError>>> {
 
@@ -420,6 +420,30 @@ pub struct MessageToSign {
 }
 
 impl Contract {
+    /// Returns contract's identifier
+    pub fn id(&self) -> AccountId {
+        self.acc.get_id().unwrap().clone()
+    }
+
+    /// Returns contract's balance in NANO grams
+    pub fn balance_grams(&self) -> Grams {
+        self.acc.get_balance().unwrap().grams.clone()
+    }
+
+    /// Returns contract's balance
+    pub fn balance(&self) -> CurrencyCollection {
+        unimplemented!()
+    }
+
+    /// Returns blockchain's account struct
+    /// Some node-specifed methods won't work. All TonStructVariant fields has Client variant.
+    pub fn acc(&self) -> &Account {
+         &self.acc
+    }
+
+
+    // ------- Decoding functions -------
+
     /// Creates `Contract` struct by data from database
     pub fn from_json(json: &str) -> SdkResult<Self> {
         let acc: Account = serde_json::from_str(json)?;
@@ -475,7 +499,7 @@ impl Contract {
 
     /// Decodes ABI contract answer from `CellData` into type values
     pub fn decode_function_response<TOut>(response: SliceData)
-        -> SdkResult<TOut::Out>
+        -> SdkResult<(u32, TOut::Out)> 
         where TOut: ABIOutParameter{
 
         ABIResponse::<TOut>::decode_response_from_slice(response)
@@ -486,24 +510,26 @@ impl Contract {
     pub fn decode_function_response_from_bytes_json(abi: String, function: String, response: &[u8])
         -> SdkResult<String> {
 
-        let mut response_cells = deserialize_cells_tree(&mut Cursor::new(response))?;
+        let slice = Self::deserialize_tree_to_slice(response)?;
 
-        if response_cells.len() != 1 {
-            return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
-        }
-
-        Self::decode_function_response_json(abi, function, response_cells.remove(0).into())
+        Self::decode_function_response_json(abi, function, slice)
     }
 
-    /// Deserializes tree of cells from byte array into `SliceData`
-    fn deserialize_tree_to_slice(data: &[u8]) -> SdkResult<SliceData> {
-        let mut response_cells = deserialize_cells_tree(&mut Cursor::new(data))?;
+    /// Decodes output parameters returned by contract function call 
+    pub fn decode_unknown_function_response_json(abi: String, response: SliceData) 
+        -> SdkResult<DecodedMessage> {
 
-         if response_cells.len() != 1 {
-            return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
-        }
+        ton_abi_json::json_abi::decode_unknown_function_response(abi, response)
+            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
+    }
 
-         Ok(response_cells.remove(0).into())
+    /// Decodes output parameters returned by contract function call from serialized message body
+    pub fn decode_unknown_function_response_from_bytes_json(abi: String, response: &[u8])
+        -> SdkResult<DecodedMessage> {
+
+        let slice = Self::deserialize_tree_to_slice(response)?;
+
+        Self::decode_unknown_function_response_json(abi, slice)
     }
 
     /// Decodes output parameters returned by contract function call 
@@ -524,13 +550,15 @@ impl Contract {
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
-    pub fn decode_function_response_from_bytes<TOut>(response: &[u8])
-         -> SdkResult<TOut::Out>
+    pub fn decode_function_response_from_bytes<TOut>(response: &[u8]) 
+         -> SdkResult<(u32, TOut::Out)>
         where TOut: ABIOutParameter {
 
         ABIResponse::<TOut>::decode_response(&response.to_vec())
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError2(err)))
     }
+
+    // ------- Call constructing functions -------
 
     // Packs given inputs by abi into Message struct.
     // Returns message's bag of cells and identifier.
@@ -563,6 +591,16 @@ impl Contract {
         Self::serialize_message(msg)
     }
 
+    // Creates Message struct with provided body and account address
+    // Returns message's bag of cells and identifier.
+    pub fn construct_call_message_with_body(address: AccountAddress, body: &[u8]) -> SdkResult<(Vec<u8>, MessageId)> {
+        let body_cell = Self::deserialize_tree_to_slice(body)?;
+
+        let msg = Self::create_message(address, body_cell)?;
+
+        Self::serialize_message(msg)
+    }
+
     // Packs given inputs by abi into Message struct without sign and returns data to sign.
     // Sign should be then added with `add_sign_to_message` function
     // Works with json representation of input and abi.
@@ -580,6 +618,8 @@ impl Contract {
             }
         )
     }
+
+     // ------- Deploy constructing functions -------
 
     // Packs given image and input into Message struct.
     // Returns message's bag of cells and identifier.
@@ -611,6 +651,19 @@ impl Contract {
         Self::serialize_message(msg)
     }
 
+    // Packs given image and body into Message struct.
+    // Returns message's bag of cells and identifier.
+    pub fn construct_deploy_message_with_body(image: ContractImage, body: Option<&[u8]>) -> SdkResult<(Vec<u8>, MessageId)> {
+        let body_cell = match body {
+            None => None,
+            Some(data) => Some(Self::deserialize_tree_to_slice(data)?)
+        };
+
+        let msg = Self::create_deploy_message(body_cell, image)?;
+        
+        Self::serialize_message(msg)
+    }
+
     // Packs given image into Message struct.
     // Returns message's bag of cells and identifier.
     pub fn construct_deploy_message_no_constructor(image: ContractImage)
@@ -639,19 +692,16 @@ impl Contract {
         )
     }
 
+
     // Add sign to message, returned by `get_deploy_message_bytes_for_signing` or 
     // `get_run_message_bytes_for_signing` function.
     // Returns serialized message and identifier.
     pub fn add_sign_to_message(signature: &[u8], public_key: &[u8], message: &[u8]) 
         -> SdkResult<(Vec<u8>, MessageId)> {
         
-        let mut root_cells = deserialize_cells_tree(&mut Cursor::new(message))?;
+        let mut slice = Self::deserialize_tree_to_slice(message)?;
 
-        if root_cells.len() != 1 { 
-            return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
-        }
-
-        let mut message: TvmMessage = TvmMessage::construct_from(&mut root_cells.remove(0).into())?;
+        let mut message: TvmMessage = TvmMessage::construct_from(&mut slice)?;
 
         let body = message.body()
             .ok_or(SdkError::from(SdkErrorKind::InvalidData("No message body".to_owned())))?;
@@ -663,27 +713,6 @@ impl Contract {
             
 
         Self::serialize_message(message)
-    }
-
-    // Returns contract's identifier
-    pub fn id(&self) -> AccountId {
-        self.acc.get_id().unwrap().clone()
-    }
-
-    // Returns contract's balance in NANO grams
-    pub fn balance_grams(&self) -> Grams {
-        self.acc.get_balance().unwrap().grams.clone()
-    }
-
-    // Returns contract's balance
-    pub fn balance(&self) -> CurrencyCollection {
-        unimplemented!()
-    }
-
-    // Returns blockchain's account struct
-    // Some node-specifed methods won't work. All TonStructVariant fields has Client variant.
-    pub fn acc(&self) -> &Account {
-         &self.acc
     }
 
     fn create_message(address: AccountAddress, msg_body: SliceData) -> SdkResult<TvmMessage> {
@@ -760,6 +789,18 @@ impl Contract {
         Ok((data, id.into()))
     }
 
+    /// Deserializes tree of cells from byte array into `SliceData`
+    fn deserialize_tree_to_slice(data: &[u8]) -> SdkResult<SliceData> {
+        let mut response_cells = deserialize_cells_tree(&mut Cursor::new(data))?;
+
+        if response_cells.len() != 1 {
+            return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
+        }
+
+        Ok(response_cells.remove(0).into())
+    }
+
+    /// Deserializes TvmMessage from byte array
     pub fn deserialize_message(message: &[u8]) -> SdkResult<TvmMessage> {
         let mut root_cells = deserialize_cells_tree(&mut Cursor::new(message))?;
 

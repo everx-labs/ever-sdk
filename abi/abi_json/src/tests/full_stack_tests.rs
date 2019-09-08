@@ -3,7 +3,7 @@ use sha2::Sha512;
 
 use tvm::stack::{BuilderData, SliceData};
 
-use json_abi::{decode_function_response, encode_function_call};
+use json_abi::*;
 
 const WALLET_ABI: &str = r#"{
     "ABI version" : 0,
@@ -119,12 +119,35 @@ fn test_constructor_call() {
 
     assert_eq!(test_tree, expected_tree);
 
-    let response_tree = SliceData::new_empty();
+
+    let mut test_tree = SliceData::from(test_tree);
+
+    let response = decode_unknown_function_call(
+        WALLET_ABI.to_owned(),
+        test_tree.clone(),
+    )
+    .unwrap();
+
+    assert_eq!(response.params, params);
+    assert_eq!(response.function_name, "constructor");
+
+
+    test_tree.checked_drain_reference().unwrap();
+
+    let response = decode_unknown_function_response(
+        WALLET_ABI.to_owned(),
+        test_tree.clone(),
+    )
+    .unwrap();
+
+    assert_eq!(response.params, params);
+    assert_eq!(response.function_name, "constructor");
+
 
     let response = decode_function_response(
         WALLET_ABI.to_owned(),
         "constructor".to_owned(),
-        response_tree,
+        test_tree,
     )
     .unwrap();
 
@@ -133,11 +156,14 @@ fn test_constructor_call() {
 
 #[test]
 fn test_signed_call() {
-    let params = r#"{
+    let params = r#"
+    {
         "type": 1,
         "value": 12,
         "meta": "101"
     }"#;
+
+    let expected_params = r#"{"type":"0x1","value":"0xc","meta":"xb0_"}"#;
 
     let pair = Keypair::generate::<Sha512, _>(&mut rand::rngs::OsRng::new().unwrap());
 
@@ -149,27 +175,50 @@ fn test_signed_call() {
     )
     .unwrap();
 
+    let mut test_tree = SliceData::from(test_tree);
+
+    let response = decode_unknown_function_call(
+        WALLET_ABI.to_owned(),
+        test_tree.clone(),
+    )
+    .unwrap();
+
+    assert_eq!(response.params, expected_params);
+    assert_eq!(response.function_name, "createLimit");
+
     let expected_tree = BuilderData::with_bitstring(vec![
         0x00, 0x27, 0xEF, 0x50, 0x87, 0x01, 0x0C, 0b10000000, 0b11101100,
     ]).unwrap();
 
-    let mut test_tree = SliceData::from(test_tree);
     test_tree.checked_drain_reference().unwrap();
-
     assert_eq!(test_tree, SliceData::from(expected_tree));
+
 
     let expected_response = r#"{"limitId":"0x0","error":"-0x1"}"#;
 
-    let response_tree = SliceData::from(BuilderData::with_bitstring(vec![0x00, 0xFF, 0x80]).unwrap());
+    let response_tree = SliceData::from(
+        BuilderData::with_bitstring(
+            vec![0x00, 0x27, 0xEF, 0x50, 0x87, 0x00, 0xFF, 0x80])
+        .unwrap());
 
     let response = decode_function_response(
         WALLET_ABI.to_owned(),
         "createLimit".to_owned(),
-        response_tree,
+        response_tree.clone(),
     )
     .unwrap();
 
     assert_eq!(response, expected_response);
+
+
+    let response = decode_unknown_function_response(
+        WALLET_ABI.to_owned(),
+        response_tree,
+    )
+    .unwrap();
+
+    assert_eq!(response.params, expected_response);
+    assert_eq!(response.function_name, "createLimit");
 }
 
 #[test]

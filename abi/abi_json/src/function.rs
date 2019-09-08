@@ -29,6 +29,9 @@ pub struct Function {
     /// Signed function.
     #[serde(default)]
     pub signed: bool,
+
+    #[serde(skip_deserializing)]
+    pub id: u32
 }
 
 #[derive(Debug)]
@@ -76,54 +79,31 @@ impl Function {
         format!("{}({})({})", self.name, input_types, output_types)
     }
 
+    pub fn calc_function_id(signature: &str) -> u32 {
+        // Sha256 hash of signature
+        let mut hasher = Sha256::new();
+
+        hasher.input(&signature.as_bytes()[..]);
+
+        let function_hash = hasher.result();
+
+        let mut bytes: [u8; 4] = [0; 4];
+        bytes.copy_from_slice(&function_hash[..4]);
+
+        u32::from_be_bytes(bytes)
+    }
+
     /// Computes function ID for contract function
-    pub fn get_function_id(&self) -> [u8; 4] {
+    pub fn get_function_id(&self) -> u32 {
         let signature = self.get_function_signature();
 
         //println!("{}", signature);
 
-        // Sha256 hash of signature
-        let mut hasher = Sha256::new();
-
-        hasher.input(&signature.into_bytes()[..]);
-
-        let function_hash = hasher.result();
-
-        let mut bytes = [0; 4];
-        bytes.copy_from_slice(&function_hash[..4]);
-        //println!("{:X?}", bytes);
-        bytes
+        Self::calc_function_id(&signature)
     }
 
-    /// Parses the ABI function output to list of tokens.
-    pub fn decode_output(&self, data: SliceData) -> Result<Vec<Token>, DeserializationError> {
-        let params = self.output_params();
-
-        let mut tokens = vec![];
-        let mut cursor = data;
-
-        for param in params {
-            let (token_value, new_cursor) = TokenValue::read_from(&param.kind, cursor)
-                .map_err(|err| DeserializationError::TypeDeserializationError(err))?;
-
-            cursor = new_cursor;
-            tokens.push(Token { name: param.name, value: token_value });
-        }
-
-        if cursor.remaining_references() != 0 || cursor.remaining_bits() != 0 {
-            Err(DeserializationError::IncompleteDeserializationError)
-        } else {
-            Ok(tokens)
-        }
-    }
-
-    /// Parses the ABI function call to list of tokens.
-    pub fn decode_input(&self, mut data: SliceData) -> Result<Vec<Token>, DeserializationError> {
-        let params = self.input_params();
-
-        data.checked_drain_reference()
-            .map_err(|err| DeserializationError::InvalidInputData(err.to_string()))?;
-
+    /// Decodes provided params from SliceData
+    fn decode_params(&self, params: Vec<Param>, data: SliceData) -> Result<Vec<Token>, DeserializationError> {
         let mut tokens = vec![];
 
         let (version, cursor) = u8::read_from(data)
@@ -134,7 +114,7 @@ impl Function {
         let (id, mut cursor) = u32::read_from(cursor)
             .map_err(|err| DeserializationError::TypeDeserializationError(err))?;
 
-        if id.to_be_bytes() != self.get_function_id() { Err(DeserializationError::WrongId(id))? }
+        if id != self.id { Err(DeserializationError::WrongId(id))? }
 
         for param in params {
             let (token_value, new_cursor) = TokenValue::read_from(&param.kind, cursor)
@@ -151,15 +131,28 @@ impl Function {
         }
     }
 
+    /// Parses the ABI function output to list of tokens.
+    pub fn decode_output(&self, data: SliceData) -> Result<Vec<Token>, DeserializationError> {
+        self.decode_params(self.output_params(), data)
+    }
+
+    /// Parses the ABI function call to list of tokens.
+    pub fn decode_input(&self, mut data: SliceData) -> Result<Vec<Token>, DeserializationError> {
+        data.checked_drain_reference()
+            .map_err(|err| DeserializationError::InvalidInputData(err.to_string()))?;
+
+        self.decode_params(self.input_params(), data)
+    }
+
     /// Decodes function id from contract answer
     pub fn decode_id(data: SliceData) -> Result<u32, DeserializationError> {
         let (version, new_cursor) = u8::read_from(data)
             .map_err(|err| DeserializationError::TypeDeserializationError(err))?;
 
-         let (id, _) = u32::read_from(new_cursor)
+        let (id, _) = u32::read_from(new_cursor)
             .map_err(|err| DeserializationError::TypeDeserializationError(err))?;
 
-         if version == ABI_VERSION {
+        if version == ABI_VERSION {
             Ok(id)
         } else {
             Err(DeserializationError::WrongVersion(version))
@@ -221,7 +214,7 @@ impl Function {
         builder = prepend_data_to_chain(builder, {
             // make prefix with ABI version and function ID
             let mut vec = vec![ABI_VERSION];
-            vec.extend_from_slice(&self.get_function_id()[..]);
+            vec.extend_from_slice(&self.get_function_id().to_be_bytes()[..]);
             let len = vec.len() * 8;
             Bitstring::create(vec, len)
         });
@@ -257,6 +250,10 @@ impl Function {
         builder.prepend_reference(BuilderData::with_raw(signature, len).unwrap());
 
         Ok(builder)
+    }
+
+    pub fn is_my_message(&self, data: SliceData) -> Result<bool, DeserializationError> {
+        Ok(self.id == Self::decode_id(data)?)
     }
 }
 
