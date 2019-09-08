@@ -20,6 +20,29 @@ pub struct Message {
     msg: TvmMessage,
 }
 
+const MESSAGE_FIELDS: &str = r#"
+    id
+    status
+    body
+    header {
+        ...on MessageHeaderIntMsgInfoVariant {
+            IntMsgInfo {
+                created_lt
+            }
+        }
+        ...on MessageHeaderExtInMsgInfoVariant {
+            ExtInMsgInfo {
+                import_fee
+            }
+        }
+        ...on MessageHeaderExtOutMsgInfoVariant {
+            ExtOutMsgInfo {
+                created_lt
+            }
+        }
+    }
+"#;
+
 // The struct represents sent message and allows to access their properties.
 #[allow(dead_code)]
 impl Message {
@@ -27,16 +50,19 @@ impl Message {
     // Asynchronously loads a Message instance or None if message with given id is not exists
     #[cfg(feature = "node_interaction")]
     pub fn load(id: MessageId) -> SdkResult<Box<dyn Stream<Item = Option<Message>, Error = SdkError>>> {
-        let map = queries_helper::load_record(MESSAGES_TABLE_NAME, &id.to_hex_string())?
-            .and_then(|val| {
-                if val == serde_json::Value::Null {
-                    Ok(None)
-                } else {
-                    let msg: TvmMessage = serde_json::from_value(val)
-                        .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing message: {}", err)))?;
+        let map = queries_helper::load_record_fields(
+            MESSAGES_TABLE_NAME,
+            &id.to_hex_string(),
+            MESSAGE_FIELDS)?
+                .and_then(|val| {
+                    if val == serde_json::Value::Null {
+                        Ok(None)
+                    } else {
+                        let msg: TvmMessage = serde_json::from_value(val)
+                            .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing message: {}", err)))?;
 
-                    Ok(Some(Message { msg }))
-                }
+                        Ok(Some(Message { msg }))
+                    }
             });
 
         Ok(Box::new(map))

@@ -1,7 +1,12 @@
 pub const MESSAGES_TABLE_NAME: &str = "messages";
+pub const MESSAGES_FILTER_NAME: &str = "MessageFilter";
 pub const CONTRACTS_TABLE_NAME: &str = "accounts";
+pub const CONTRACTS_FILTER_NAME: &str = "AccountFilter";
 pub const BLOCKS_TABLE_NAME: &str = "blocks";
+pub const BLOCKS_FILTER_NAME: &str = "BlockFilter";
 pub const TRANSACTIONS_TABLE_NAME: &str = "transactions";
+pub const TRANSACTIONS_FILTER_NAME: &str = "TransactionFilter";
+
 
 pub const CONTRACT_CALL_STATE_FIELDS: &str = "id status";
 

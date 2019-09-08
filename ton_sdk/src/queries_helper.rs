@@ -21,16 +21,13 @@ pub fn uninit() {
 }
 
 // Returns Stream with updates of some field in database. First stream item is current value
-pub fn subscribe_record_updates(table: &'static str, record_id: &str, fields: &str)
+pub fn subscribe_record_updates(table: &'static str, filter_name: &str, record_id: &str, fields: &str)
     -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError>>> {
 
-    let load_stream = load_record_fields(table, record_id, fields)?
-        .filter(|value| !value.is_null());
+    let request = generate_subscription(table, filter_name, record_id, fields);
 
-    let request = generate_subscription(table, record_id, fields);
-
-    if let Some(client) = CLIENT.lock().unwrap().as_mut() {
-        let stream = client.subscribe(request)?
+    let stream = if let Some(client) = CLIENT.lock().unwrap().as_mut() {
+         client.subscribe(request)?
             .then(move |result| {
                 match result {
                     Err(err) => Err(SdkError::from(err)),
@@ -46,27 +43,15 @@ pub fn subscribe_record_updates(table: &'static str, record_id: &str, fields: &s
                         }
                     }
                 }
-            });
-
-        Ok(Box::new(load_stream.chain(stream)))
+            })
     } else {
         bail!(SdkErrorKind::NotInitialized)
-    }
-}
+    };
 
-fn rename_key_to_id(value: serde_json::Value) -> SdkResult<serde_json::Value> {
-    if let serde_json::Value::Object(mut obj) = value {
-        let id = obj.get("_key").map(|v| v.clone());
-        if let Some(id) = id {
-            obj.insert("id".to_string(), id);
-            obj.remove("_key");
-            Ok(serde_json::Value::Object(obj))
-        } else {
-            bail!(SdkErrorKind::InvalidData("rename_key_to_id: id not found".into()))
-        }
-    } else {
-        bail!(SdkErrorKind::InvalidData("rename_key_to_id: invalid json value".into()))
-    }
+    let load_stream = load_record_fields(table, record_id, fields)?
+        .filter(|value| !value.is_null());
+
+    Ok(Box::new(load_stream.chain(stream)))
 }
 
 // Returns Stream with required database record
@@ -96,7 +81,7 @@ pub fn load_record(table: &str, record_id: &str)
                     if record_value.is_null() {
                         Ok(record_value.clone())
                     } else {
-                        Ok(rename_key_to_id(record_value.clone())?)
+                        Ok(record_value.clone())
                     }
                 }
             }
@@ -134,7 +119,7 @@ pub fn load_record_fields(table: &'static str, record_id: &str, fields: &str)
 }
 
 fn generate_query(table: &str, record_id: &str, fields: &str) -> String {
-    format!("query {table} {{ {table}(filter: \"{{ \\\"match\\\": {{ \\\"id\\\": \\\"{record_id}\\\" }} }}\") {{ {fields} }} }}",
+    format!("query {{ {table}(filter: {{ id: {{eq: \"{record_id}\" }} }}) {{ {fields} }} }}",
         table=table,
         record_id=record_id,
         fields=fields)
@@ -150,12 +135,13 @@ fn generate_select(table: &str, record_id: &str) -> VariableRequest {
     VariableRequest::new(query, Some(variables.to_string()))
 }
 
-fn generate_subscription(table: &str, record_id: &str, fields: &str) -> VariableRequest {
-    let query = format!("subscription {table}($match: String) {{ {table}(match: $match) {{ {fields} }} }}",
+fn generate_subscription(table: &str, scheme_type: &str, record_id: &str, fields: &str) -> VariableRequest {
+    let query = format!("subscription {table}($filter: {type}) {{ {table}(filter: $filter) {{ {fields} }} }}",
+        type=scheme_type,
         table=table,
         fields=fields);
 
-    let variables = format!("{{\"match\":\"{{\\\"id\\\":\\\"{record_id}\\\"}}\"}}",
+    let variables = format!("{{\"filter\":{{\"id\":{{\"eq\":\"{record_id}\"}}}}}}",
         record_id=record_id);
 
     VariableRequest::new(query, Some(variables))

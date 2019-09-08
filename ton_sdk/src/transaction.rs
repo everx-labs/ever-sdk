@@ -16,16 +16,19 @@ impl Transaction {
 
     // Asynchronously loads a Transaction instance or None if transaction with given id is not exists
     pub fn load(id: TransactionId) -> SdkResult<Box<dyn Stream<Item = Option<Transaction>, Error = SdkError>>> {
-        let map = queries_helper::load_record(TRANSACTIONS_TABLE_NAME, &id.to_hex_string())?
-            .and_then(|val| {
-                if val == serde_json::Value::Null {
-                    Ok(None)
-                } else {
-                    let tr: TvmTransaction = serde_json::from_value(val)
-                        .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing transaction: {}", err)))?;
+        let map = queries_helper::load_record_fields(
+            TRANSACTIONS_TABLE_NAME,
+            &id.to_hex_string(),
+            TRANSACTION_FIELDS_MESSAGES)?
+                .and_then(|val| {
+                    if val == serde_json::Value::Null {
+                        Ok(None)
+                    } else {
+                        let tr: TvmTransaction = serde_json::from_value(val)
+                            .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing transaction: {}", err)))?;
 
-                    Ok(Some(Transaction { tr }))
-                }
+                        Ok(Some(Transaction { tr }))
+                    }
             });
 
         Ok(Box::new(map))
@@ -80,3 +83,207 @@ impl Transaction {
         }
     }
 }
+
+
+const TRANSACTION_FIELDS_MESSAGES: &str = r#"
+    id
+    account_addr
+    in_msg
+    out_msgs
+    outmsg_cnt
+    status
+"#;
+
+#[allow(dead_code)]
+const TRANSACTION_FIELDS_ORDINARY: &str = r#"
+    id
+    account_addr
+    block_id
+    description {
+        ...on TransactionDescriptionOrdinaryVariant {
+            Ordinary {
+                aborted
+                compute_ph {
+                    ...on TrComputePhaseVmVariant {
+                        Vm {
+                            exit_code
+                            gas_credit
+                            gas_fees
+                            gas_limit
+                            gas_used
+                            success
+                        }
+                    }
+                    ...on TrComputePhaseSkippedVariant {
+                        Skipped {
+                            reason
+                        }
+                    }
+                }
+            }
+        }
+    }
+    end_status
+    in_msg
+    now
+    orig_status
+    out_msgs
+    outmsg_cnt
+    status
+    total_fees
+"#;
+
+#[allow(dead_code)]
+const TRANSACTION_FIELDS_FULL: &str = r#"
+    id
+    account_addr
+    block_id
+    description {
+        ...on TransactionDescriptionOrdinaryVariant {
+            Ordinary {
+                aborted
+                compute_ph {
+                    ...on TrComputePhaseVmVariant {
+                        Vm {
+                            exit_code
+                            gas_credit
+                            gas_fees
+                            gas_limit
+                            gas_used
+                            success
+                        }
+                    }
+                    ...on TrComputePhaseSkippedVariant {
+                        Skipped {
+                            reason
+                        }
+                    }
+                }
+            }
+        }
+        ...on TransactionDescriptionStorageVariant {
+            Storage {
+                storage_fees_collected
+                storage_fees_due
+                status_change
+            }
+        }
+        ...on TransactionDescriptionTickTockVariant {
+            TickTock {
+                tt
+                aborted
+                compute_ph {
+                    ...on TrComputePhaseVmVariant {
+                        Vm {
+                            exit_code
+                            gas_credit
+                            gas_fees
+                            gas_limit
+                            gas_used
+                            success
+                        }
+                    }
+                    ...on TrComputePhaseSkippedVariant {
+                        Skipped {
+                            reason
+                        }
+                    }
+                }
+            }
+        }
+        ...on TransactionDescriptionSplitPrepareVariant {
+            SplitPrepare {
+                aborted
+                split_info {
+                    cur_shard_pfx_len
+                    acc_split_depth
+                    this_addr
+                    sibling_addr
+                }
+                compute_ph {
+                    ...on TrComputePhaseVmVariant {
+                        Vm {
+                            exit_code
+                            gas_credit
+                            gas_fees
+                            gas_limit
+                            gas_used
+                            success
+                        }
+                    }
+                    ...on TrComputePhaseSkippedVariant {
+                        Skipped {
+                            reason
+                        }
+                    }
+                }
+            }
+        }
+        ...on TransactionDescriptionSplitInstallVariant {
+            SplitInstall {
+                split_info {
+                    cur_shard_pfx_len
+                    acc_split_depth
+                    this_addr
+                    sibling_addr
+                }
+                prepare_transaction
+                installed
+            }
+        }
+        ...on TransactionDescriptionMergePrepareVariant {
+            MergePrepare {
+                split_info {
+                    cur_shard_pfx_len
+                    acc_split_depth
+                    this_addr
+                    sibling_addr
+                }
+                storage_ph {
+                    storage_fees_collected
+                    storage_fees_due
+                    status_change
+                }
+                aborted
+            }
+        }
+        ...on TransactionDescriptionMergeInstallVariant {
+            MergeInstall {
+                split_info {
+                    cur_shard_pfx_len
+                    acc_split_depth
+                    this_addr
+                    sibling_addr
+                }
+                compute_ph {
+                    ...on TrComputePhaseVmVariant {
+                        Vm {
+                            exit_code
+                            gas_credit
+                            gas_fees
+                            gas_limit
+                            gas_used
+                            success
+                        }
+                    }
+                    ...on TrComputePhaseSkippedVariant {
+                        Skipped {
+                            reason
+                        }
+                    }
+                }
+                prepare_transaction
+                aborted
+            }
+        }
+
+    }
+    end_status
+    in_msg
+    now
+    orig_status
+    out_msgs
+    outmsg_cnt
+    status
+    total_fees
+"#;

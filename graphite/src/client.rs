@@ -23,16 +23,25 @@ impl GqlClient {
     
     pub fn query(&self, query: String) -> Result<ResponseStream, GraphiteError> {        
         let request = format!("{}?query={}", self.graphql_host, query);
+        //Ok(PeriodicRequestStream::new(self.client_htpp.get(&request))?)
         Ok(ResponseStream::new(self.client_htpp.get(&request).send())?)
     }
 
     pub fn query_vars(&self, request: VariableRequest) -> Result<ResponseStream, GraphiteError> {
         let request = match request.get_variables() {
-            Some(vars) =>  format!("{}?query={}&variables={}", self.graphql_host, request.get_query(), vars),
-            None =>  format!("{}?query={}", self.graphql_host, request.get_query())
+            Some(vars) =>  format!("{{ \"query\": \"{}\", \"variables\": \"{}\" }}", request.get_query(), vars),
+            None =>  format!("{{ \"query\": \"{}\" }}", request.get_query())
         };
 
-        Ok(ResponseStream::new(self.client_htpp.get(&request).send())?)
+        println!("request {}", request);
+
+        let mut headers = HeaderMap::new();
+        headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+
+        Ok(ResponseStream::new(self.client_htpp.get(&self.graphql_host)
+            .headers(headers)
+            .body(request)
+            .send())?)
     }
     
     pub fn mutation(&self, query: String) -> Result<ResponseStream, GraphiteError> {

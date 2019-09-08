@@ -16,9 +16,6 @@ mod tests;
 #[allow(dead_code)]
 pub fn local_contract_call(code: Arc<CellData>, data: Option<Arc<CellData>>, msg: &Message)
 -> BlockResult<Vec<Message>> {
-    //println!("code {}", code);
-    //println!("data {}", data.clone().unwrap());
-    //println!("msg {}", msg.body().unwrap());
     let msg_cell = msg.write_to_new_cell()?.into();
     let mut stack = Stack::new();
     stack
@@ -35,13 +32,14 @@ pub fn local_contract_call(code: Arc<CellData>, data: Option<Arc<CellData>>, msg
     
     let mut engine = Engine::new().setup(SliceData::from(code), Some(ctrls), Some(stack), None);
     let _result = engine.execute()?;
-    //println!("result {}", _result);
     let mut slice = SliceData::from(engine.get_actions().as_cell()?.clone());
 
     let mut msgs = vec![];
-    while &slice.get_bytestring(0) == &[0x0e, 0xc3, 0xc8, 0x6d, 0x00] && slice.remaining_references() == 2 {
+    while slice.remaining_references() != 0 {
         let next = slice.checked_drain_reference()?.into();
-        msgs.push(Message::construct_from::<Message>(&mut slice.checked_drain_reference()?.into())?);
+        if Ok(0x0ec3c86d) == slice.get_next_u32() && slice.remaining_references() == 1 {
+            msgs.push(Message::construct_from::<Message>(&mut slice.checked_drain_reference()?.into())?);
+        }
         slice = next;
     }
     msgs.reverse();
