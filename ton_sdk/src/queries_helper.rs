@@ -21,16 +21,13 @@ pub fn uninit() {
 }
 
 // Returns Stream with updates of some field in database. First stream item is current value
-pub fn subscribe_record_updates(table: &'static str, scheme_type: &str, record_id: &str, fields: &str)
+pub fn subscribe_record_updates(table: &'static str, filter_name: &str, record_id: &str, fields: &str)
     -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError>>> {
 
-    let load_stream = load_record_fields(table, record_id, fields)?
-        .filter(|value| !value.is_null());
+    let request = generate_subscription(table, filter_name, record_id, fields);
 
-    let request = generate_subscription(table, scheme_type, record_id, fields);
-
-    if let Some(client) = CLIENT.lock().unwrap().as_mut() {
-        let stream = client.subscribe(request)?
+    let stream = if let Some(client) = CLIENT.lock().unwrap().as_mut() {
+         client.subscribe(request)?
             .then(move |result| {
                 match result {
                     Err(err) => Err(SdkError::from(err)),
@@ -46,12 +43,15 @@ pub fn subscribe_record_updates(table: &'static str, scheme_type: &str, record_i
                         }
                     }
                 }
-            });
-
-        Ok(Box::new(stream))
+            })
     } else {
         bail!(SdkErrorKind::NotInitialized)
-    }
+    };
+
+    let load_stream = load_record_fields(table, record_id, fields)?
+        .filter(|value| !value.is_null());
+
+    Ok(Box::new(load_stream.chain(stream)))
 }
 
 // Returns Stream with required database record
