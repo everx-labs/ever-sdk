@@ -1,12 +1,13 @@
 const fs = require('fs');
 const path = require('path');
-const {gz, deleteFolderRecursive, version, root_path} = require('../build-lib');
+const {deleteFolderRecursive, version, root_path} = require('../build-lib');
 const url = require('url');
 const http=require('http');
+const zlib = require('zlib');
 const outDir = root_path('output');
 const ndkURLstr = 'http://dl.google.com/android/repository/android-ndk-r17c-darwin-x86_64.zip';
-const ndkZipFile = (parts = ndkURLstr.split('/')).length < 1 ? null : parts[parts.length-1];
-const ndkDirName = 'android-ndk-r17c';
+const ndkZipFile = root_path(((parts = ndkURLstr.split('/')).length < 1 ? null : parts[parts.length-1]));
+const ndkDirName = root_path('android-ndk-r17c');
 
 const dev = {
 	ios: {
@@ -49,6 +50,20 @@ const spawnEnv = {
 	].join(':'),
 };
 
+async function gz(src, dst){
+	return(new Promise((resolve, reject) => {
+		fs.createReadStream(src)
+		.pipe(zlib.createGzip({ level: 9}))
+		.pipe(fs.createWriteStream(dst))
+		.on('error', (err) => {
+			reject(err);
+		})
+		.on('finish', () => {
+			console.log(`GZipped ${src} -> ${dst}`);
+			resolve();
+		})
+	}));
+}
 
 function spawnProcess(name, args) {
 	return new Promise((resolve, reject) => {
@@ -100,9 +115,9 @@ async function getNDK() {
 	if(ndkHomeDir === '' || !fs.existsSync(ndkHomeDir)) {
 		try {
 			if(!fs.existsSync(ndkZipFile)) await downloadNDK();
-			ndkHomeDir = root_path(ndkDirName);
 			console.log('Unzipping android NDK...');
 			await spawnProcess('unzip', ['-q', '-d', root_path(''), ndkZipFile]);
+			ndkHomeDir = ndkDirName;
 			process.env.NDK_HOME = ndkHomeDir;
 		} catch (err) {
 			throw err;
@@ -206,11 +221,10 @@ async function buildReactNativeAndroidLibrary() {
 
 
 (async () => {
-	if(!fs.existsSync(outDir)) {
-		fs.mkdirSync(outDir);
-	} else {
+	if(fs.existsSync(outDir)) {
 		deleteFolderRecursive(outDir);
 	}
+	fs.mkdirSync(outDir);
 	try {
 		await checkNDK();
 		await spawnProcess('rustup', ['target', 'add'].concat(cargoTargets));
