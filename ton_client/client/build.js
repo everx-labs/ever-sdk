@@ -14,8 +14,8 @@ main(async() => {
             await gz(['..', '..', 'target', 'release', 'libton_client.so'], `tonclient_${version}_${platform}`);
             break;
         case 'win32':
-            await gz(['..', '..', 'target', 'release', 'ton_client.dll.lib'], `tonclient_${version}_${platform}.lib`);
-            await gz(['..', '..', 'target', 'release', 'ton_client.dll'], `tonclient_${version}_${platform}.dll`);
+            await gz(['..', '..', 'target', 'release', 'ton_client.dll.lib'], `tonclient_${version}_${platform}_lib`);
+            await gz(['..', '..', 'target', 'release', 'ton_client.dll'], `tonclient_${version}_${platform}_dll`);
             break;
         case 'darwin':
             await gz(['..', '..', 'target', 'release', 'libton_client.dylib'], `tonclient_${version}_${platform}`);
