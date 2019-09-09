@@ -182,7 +182,7 @@ async function buildReactNativeIosLibrary() {
 		const header_dst = path.join(iosDir, config.ios.header);
 		fs.copyFileSync(header_src, header_dst);
 
-		const outGZip = path.join(outDir, `${path.parse(dest).name}-ios-${version}.gz`);
+		const outGZip = path.join(outDir, `tonclient_${version}_react_native_ios.gz`);
 		await gz(dest, outGZip);
 	}
 }
@@ -211,7 +211,7 @@ async function buildReactNativeAndroidLibrary() {
 			const dst = path.join(jniArchDir, config.android.lib);
 			fs.copyFileSync(src, dst);
 			process.stdout.write(`Android library for [${arch}] copied to "${dst}".\n`);
-			const outGZip = path.join(outDir, `${path.parse(dst).name}-${arch}-${version}.gz`);
+			const outGZip = path.join(outDir, `tonclient_${version}_react_native_${arch}.gz`);
 			await gz(dst, outGZip);
 		} else {
 			process.stderr.write(`Android library for [${arch}] does not exists. Skipped.\n`);
