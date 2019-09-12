@@ -189,7 +189,7 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            // when { branch 'master' }
+                            when { branch 'master' }
                             steps {
                                 dir('ton_client/platforms/ton-client-react-native/output') {
                                     script {
@@ -239,7 +239,7 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            // when { branch 'master' }
+                            when { branch 'master' }
                             steps {
                                 dir('ton_client/platforms/ton-client-node-js/bin') {
                                     script {
@@ -289,7 +289,7 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            // when { branch 'master' }
+                            when { branch 'master' }
                             steps {
                                 dir('ton_client/platforms/ton-client-node-js/bin') {
                                     script {
@@ -341,7 +341,7 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            // when { branch 'master' }
+                            when { branch 'master' }
                             steps {
                                 dir('ton_client/platforms/ton-client-node-js/bin') {
                                     script {
@@ -405,7 +405,7 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            // when { branch 'master' }
+                            when { branch 'master' }
                             steps {
                                 dir('ton_client/platforms/ton-client-web/bin') {
                                     script {
