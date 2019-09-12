@@ -64,6 +64,16 @@ impl Function {
             .collect()
     }
 
+    /// Returns true if function has input parameters, false in not
+    pub fn has_input(&self) -> bool {
+        self.inputs.len() != 0
+    }
+
+    /// Returns true if function has output parameters, false in not
+    pub fn has_output(&self) -> bool {
+        self.outputs.len() != 0
+    }
+
     /// Retruns ABI function signature
     pub fn get_function_signature(&self) -> String {
         let input_types = self.inputs.iter()
@@ -254,6 +264,103 @@ impl Function {
 
     pub fn is_my_message(&self, data: SliceData) -> Result<bool, DeserializationError> {
         Ok(self.id == Self::decode_id(data)?)
+    }
+}
+
+
+/// Contract event specification.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct Event {
+    /// Event name.
+    pub name: String,
+    /// Event input.
+    #[serde(default)]
+    pub inputs: Vec<Param>,
+
+    #[serde(skip_deserializing)]
+    pub id: u32
+}
+
+
+impl Event {
+    /// Returns all input params of given function.
+    pub fn input_params(&self) -> Vec<Param> {
+        self.inputs.iter()
+            .map(|p| p.clone())
+            .collect()
+    }
+
+    /// Returns true if function has input parameters, false in not
+    pub fn has_input(&self) -> bool {
+        self.inputs.len() != 0
+    }
+
+    /// Retruns ABI function signature
+    pub fn get_function_signature(&self) -> String {
+        let input_types = self.inputs.iter()
+            .map(|param| param.kind.type_signature())
+            .collect::<Vec<String>>()
+            .join(",");
+
+        format!("{}({})", self.name, input_types)
+    }
+
+    /// Computes function ID for contract function
+    pub fn get_function_id(&self) -> u32 {
+        let signature = self.get_function_signature();
+
+        //println!("{}", signature);
+
+        Function::calc_function_id(&signature)
+    }
+
+    /// Decodes provided params from SliceData
+    fn decode_params(&self, params: Vec<Param>, data: SliceData) -> Result<Vec<Token>, DeserializationError> {
+        let mut tokens = vec![];
+
+        let (version, cursor) = u8::read_from(data)
+            .map_err(|err| DeserializationError::TypeDeserializationError(err))?;
+
+        if version != ABI_VERSION { Err(DeserializationError::WrongVersion(version))? }
+
+        let (id, mut cursor) = u32::read_from(cursor)
+            .map_err(|err| DeserializationError::TypeDeserializationError(err))?;
+
+        if id != self.id { Err(DeserializationError::WrongId(id))? }
+
+        for param in params {
+            let (token_value, new_cursor) = TokenValue::read_from(&param.kind, cursor)
+                .map_err(|err| DeserializationError::TypeDeserializationError(err))?;
+
+            cursor = new_cursor;
+            tokens.push(Token { name: param.name, value: token_value });
+        }
+
+        if cursor.remaining_references() != 0 || cursor.remaining_bits() != 0 {
+            Err(DeserializationError::IncompleteDeserializationError)
+        } else {
+            Ok(tokens)
+        }
+    }
+
+    /// Parses the ABI function call to list of tokens.
+    pub fn decode_input(&self, data: SliceData) -> Result<Vec<Token>, DeserializationError> {
+        self.decode_params(self.input_params(), data)
+    }
+
+    /// Decodes function id from contract answer
+    pub fn decode_id(data: SliceData) -> Result<u32, DeserializationError> {
+        let (version, new_cursor) = u8::read_from(data)
+            .map_err(|err| DeserializationError::TypeDeserializationError(err))?;
+
+        let (id, _) = u32::read_from(new_cursor)
+            .map_err(|err| DeserializationError::TypeDeserializationError(err))?;
+
+        if version == ABI_VERSION {
+            Ok(id)
+        } else {
+            Err(DeserializationError::WrongVersion(version))
+        }
     }
 }
 

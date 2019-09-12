@@ -1,10 +1,9 @@
 use std::io;
 use std::collections::HashMap;
-use std::collections::hash_map::Values;
 use serde::{Deserialize, Deserializer};
 use serde::de::{Unexpected, Error as SerdeError};
 use serde_json;
-use {Function, ABIError, Token, Param};
+use {Function, Event, ABIError, Token, Param};
 use tvm::stack::SliceData;
 
 /// API building calls to contracts ABI.
@@ -12,6 +11,8 @@ use tvm::stack::SliceData;
 pub struct Contract {
     /// Contract functions.
     pub functions: HashMap<String, Function>,
+    /// Contract events.
+    pub events: HashMap<String, Event>,
 }
 
 impl<'a> Deserialize<'a> for Contract {
@@ -29,11 +30,17 @@ impl<'a> Deserialize<'a> for Contract {
 
         let mut result = Self {
             functions: HashMap::new(),
+            events: HashMap::new()
         };
 
         for mut function in serde_contract.functions {
             function.id = function.get_function_id();
             result.functions.insert(function.name.clone(), function);
+        }
+
+        for mut event in serde_contract.events {
+            event.id = event.get_function_id();
+            result.events.insert(event.name.clone(), event);
         }
 
         Ok(result)
@@ -47,6 +54,9 @@ struct SerdeContract {
     pub abi_version: u8,
     /// Contract functions.
     pub functions: Vec<Function>,
+    /// Contract events.
+    #[serde(default)]
+    pub events: Vec<Event>,
 }
 
 pub struct DecodedMessage {
@@ -77,9 +87,25 @@ impl Contract {
         Err(ABIError::InvalidFunctionId(id))
     }
 
-    /// Iterate over all functions of the contract in arbitrary order.
-    pub fn functions(&self) -> Functions {
-        Functions(self.functions.values())
+    /// Returns `Event` struct with provided function id.
+    pub fn event_by_id(&self, id: u32) -> Result<&Event, ABIError> {
+        for (_, event) in &self.events {
+            if event.id == id {
+                return Ok(event);
+            }
+        }
+
+        Err(ABIError::InvalidFunctionId(id))
+    }
+
+    /// Returns functions collection
+    pub fn functions(&self) -> &HashMap<String, Function> {
+        &self.functions
+    }
+
+    /// Returns events collection
+    pub fn events(&self) -> &HashMap<String, Event> {
+        &self.events
     }
 
     /// Decodes contract answer and returns name of the function called
@@ -89,16 +115,26 @@ impl Contract {
         let func_id = Function::decode_id(data)
             .map_err(|err| ABIError::DeserializationError(err))?;
 
-        let func = self.function_by_id(func_id)?;
+        if let Ok(func) = self.function_by_id(func_id){
+            let tokens = func.decode_output(original_data)
+                .map_err(|err| ABIError::DeserializationError(err))?;
 
-        let tokens = func.decode_output(original_data)
-            .map_err(|err| ABIError::DeserializationError(err))?;
+            Ok( DecodedMessage {
+                function_name: func.name.clone(),
+                tokens: tokens,
+                params: func.output_params()
+            })
+        } else {
+            let event = self.event_by_id(func_id)?;
+            let tokens = event.decode_input(original_data)
+                .map_err(|err| ABIError::DeserializationError(err))?;
 
-        Ok( DecodedMessage {
-            function_name: func.name.clone(),
-            tokens: tokens,
-            params: func.output_params()
-        })
+            Ok( DecodedMessage {
+                function_name: event.name.clone(),
+                tokens: tokens,
+                params: event.input_params()
+            })
+        }
     }
 
     /// Decodes contract answer and returns name of the function called
@@ -118,17 +154,6 @@ impl Contract {
             tokens: tokens,
             params: func.input_params()
         })
-    }
-}
-
-/// Contract functions interator.
-pub struct Functions<'a>(Values<'a, String, Function>);
-
-impl<'a> Iterator for Functions<'a> {
-    type Item = &'a Function;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.next()
     }
 }
 

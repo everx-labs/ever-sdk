@@ -19,7 +19,7 @@ impl Transaction {
         let map = queries_helper::load_record_fields(
             TRANSACTIONS_TABLE_NAME,
             &id.to_hex_string(),
-            TRANSACTION_FIELDS_MESSAGES)?
+            TRANSACTION_FIELDS_ORDINARY)?
                 .and_then(|val| {
                     if val == serde_json::Value::Null {
                         Ok(None)
@@ -85,6 +85,7 @@ impl Transaction {
 }
 
 
+#[allow(dead_code)]
 const TRANSACTION_FIELDS_MESSAGES: &str = r#"
     id
     account_addr
@@ -94,7 +95,6 @@ const TRANSACTION_FIELDS_MESSAGES: &str = r#"
     status
 "#;
 
-#[allow(dead_code)]
 const TRANSACTION_FIELDS_ORDINARY: &str = r#"
     id
     account_addr
@@ -107,10 +107,6 @@ const TRANSACTION_FIELDS_ORDINARY: &str = r#"
                     ...on TrComputePhaseVmVariant {
                         Vm {
                             exit_code
-                            gas_credit
-                            gas_fees
-                            gas_limit
-                            gas_used
                             success
                         }
                     }
@@ -130,7 +126,6 @@ const TRANSACTION_FIELDS_ORDINARY: &str = r#"
     out_msgs
     outmsg_cnt
     status
-    total_fees
 "#;
 
 #[allow(dead_code)]

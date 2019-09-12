@@ -1,6 +1,6 @@
 {
 	"name": "ton-sdk-node-js",
-	"version": "0.11.0",
+	"version": "0.11.1",
 	"description": "TON SDK Library for Node.Js",
 	"scripts": {
 		"build": "node-gyp rebuild"

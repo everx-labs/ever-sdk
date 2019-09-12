@@ -18,7 +18,7 @@ use std::str::FromStr;
 use ton_sdk::*;
 use tvm::block::{
     Message, MessageId, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
-    ExternalInboundMessageHeader, CurrencyCollection, Serializable, GetSetValueForVarInt,
+    ExternalInboundMessageHeader, CurrencyCollection, Serializable, 
     TransactionProcessingStatus, TransactionId
 };
 use tvm::stack::{BuilderData, IBitstring};

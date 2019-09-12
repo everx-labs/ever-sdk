@@ -107,7 +107,7 @@ fn test_abi_parse() {
                 id: Function::calc_function_id("signed(bool)()")
         });
 
-    let expected_contract = Contract { functions };
+    let expected_contract = Contract { functions, events: HashMap::new() };
 
     assert_eq!(parsed_contract, expected_contract);
 }
@@ -116,12 +116,25 @@ fn test_abi_parse() {
 fn print_function_singnatures() {
     let contract = Contract::load(TEST_ABI.as_bytes()).unwrap();
 
+    println!("Functions\n");
+
     let functions = contract.functions();
 
-    for function in functions {
+    for (_, function) in functions {
         //println!("{}", function.name);
         println!("{}", function.get_function_signature());
         let id = function.get_function_id();
+        println!("{:X?}\n", id);
+    }
+
+    println!("Events\n");
+
+    let events = contract.events();
+
+    for (_, event) in events {
+        //println!("{}", function.name);
+        println!("{}", event.get_function_signature());
+        let id = event.get_function_id();
         println!("{:X?}\n", id);
     }
 }

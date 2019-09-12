@@ -1,4 +1,4 @@
-use ton_sdk::{Contract, Message, MessageType};
+use ton_sdk::{Contract, Message, MessageType, AbiContract, AbiFunction};
 use crypto::keys::{KeyPair, u256_encode, account_decode};
 use types::{ApiResult, ApiError, base64_decode};
 
@@ -87,24 +87,26 @@ pub(crate) fn run(_context: &mut ClientContext, params: ParamsOfRun) -> ApiResul
     let address = account_decode(&params.address)?;
     let key_pair = if let Some(ref keys) = params.keyPair { Some(keys.decode()?) } else { None };
 
-    debug!("load contract");
-    let contract = load_contract(&address)?;
-
     debug!("run contract");
-    let tr_id = call_contract(&contract.id(), &params, key_pair.as_ref())?;
+    let tr_id = call_contract(&address, &params, key_pair.as_ref())?;
     let tr_id_hex = tr_id.to_hex_string();
 
     debug!("load transaction {}", tr_id_hex);
     let tr = load_transaction(&tr_id);
 
-    if tr.out_messages_id().len() == 0 {
+    let abi_contract = AbiContract::load(params.abi.to_string().as_bytes()).expect("Couldn't parse ABI");
+    let abi_function = abi_contract.function(&params.functionName).expect("Couldn't find function");
+
+    if  tr.out_messages_id().len() == 0 ||
+        !abi_function.has_output()
+    {
         debug!("out messages missing");
         let block_transaction = tr.tr();
         debug!("block transaction: {}", serde_json::to_string(block_transaction).unwrap());
         get_result_from_block_transaction(&block_transaction)
     } else {
         debug!("load out messages");
-        let out_msg = load_out_message(&tr);
+        let out_msg = load_out_message(&tr, abi_function);
         let response = out_msg.body().expect("error unwrap out message body").into();
 
         debug!("decode output");
@@ -164,9 +166,14 @@ pub(crate) fn local_run(_context: &mut ClientContext, params: ParamsOfLocalRun) 
         key_pair.as_ref())
         .expect("Error calling locally");
 
+    let abi_contract = AbiContract::load(params.abi.to_string().as_bytes()).expect("Couldn't parse ABI");
+    let abi_function = abi_contract.function(&params.functionName).expect("Couldn't find function");
+
     for msg in messages {
         let msg = Message::with_msg(msg);
-        if msg.msg_type() == MessageType::ExternalOutbound {
+        if msg.msg_type() == MessageType::ExternalOutbound &&
+            abi_function.is_my_message(msg.body().expect("Message has no body")).expect("Error is_my_message")
+        {
             let output = Contract::decode_function_response_json(
                 params.abi.to_string(), params.functionName, msg.body().expect("Message has no body"))
                 .expect("Error decoding result");
@@ -244,6 +251,18 @@ pub(crate) fn decode_unknown_input(_context: &mut ClientContext, params: ParamsO
     })
 }
 
+pub(crate) fn decode_unknown_output(_context: &mut ClientContext, params: ParamsOfDecodeUnknownRun) -> ApiResult<ResultOfDecodeUnknownRun> {
+    let body = base64_decode(&params.bodyBase64)?;
+    let result = Contract::decode_unknown_function_response_from_bytes_json(
+        params.abi.to_string().to_owned(),
+        &body).map_err(|err|ApiError::contracts_decode_run_output_failed(err))?;
+    Ok(ResultOfDecodeUnknownRun {
+        function: result.function_name,
+        output: serde_json::from_str(result.params.as_str())
+            .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?
+    })
+}
+
 // Internals
 #[cfg(feature = "node_interaction")]
 fn ok_null() -> ApiResult<ResultOfRun> {
@@ -292,20 +311,22 @@ fn load_transaction(id: &TransactionId) -> Transaction {
 }
 
 #[cfg(feature = "node_interaction")]
-fn load_out_message(tr: &Transaction) -> Message {
+fn load_out_message(tr: &Transaction, abi_function: &AbiFunction) -> Message {
     tr.load_out_messages()
         .expect("Error calling load out messages")
         .wait()
         .find(|msg| {
-            msg.as_ref()
+            let msg = msg.as_ref()
                 .expect("error unwrap out message 1")
                 .as_ref()
-                .expect("error unwrap out message 2")
-                .msg_type() == MessageType::ExternalOutbound
+                    .expect("error unwrap out message 2");
+            msg.msg_type() == MessageType::ExternalOutbound
+            && msg.body().is_some()
+            && abi_function.is_my_message(msg.body().expect("No body")).expect("error is_my_message")
         })
-        .expect("error unwrap out message 2")
         .expect("error unwrap out message 3")
         .expect("error unwrap out message 4")
+        .expect("error unwrap out message 5")
 }
 
 #[cfg(feature = "node_interaction")]
