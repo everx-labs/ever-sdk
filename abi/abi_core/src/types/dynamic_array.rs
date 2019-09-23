@@ -1,19 +1,17 @@
-use super::common::*;
 use super::common_arrays::*;
 use super::{
     reader::Reader,
     ABISerialized,
     ABIDeserialized,
     DeserializationError,
-    ABITypeSignature,
-    Bit,
-    Bitstring
+    ABITypeSignature
 };
 
 use tvm::stack::{BuilderData, SliceData};
+use tvm::stack::dictionary::{HashmapE, HashmapType};
 
 // put dynamic array to chain or to separate branch depending on array size
-pub fn prepend_dynamic_array<T: ABISerialized>(
+/*pub fn prepend_dynamic_array<T: ABISerialized>(
     mut destination: BuilderData,
     array: &[T],
 ) -> BuilderData {
@@ -41,6 +39,14 @@ pub fn prepend_dynamic_array<T: ABISerialized>(
     }
 
     destination
+}*/
+
+// put dynamic array to chain
+pub fn prepend_dynamic_array<T: ABISerialized>(
+    destination: BuilderData,
+    array: &[T],
+) -> BuilderData {
+    put_array_as_dictionary(destination, array)
 }
 
 impl<T: ABISerialized> ABISerialized for Vec<T> {
@@ -50,7 +56,9 @@ impl<T: ABISerialized> ABISerialized for Vec<T> {
     }
 
     fn get_in_cell_size(&self) -> usize {
-        let mut result = 8;
+        1
+
+        /*let mut result = 8;
         for i in self {
             result += i.get_in_cell_size();
         }
@@ -60,7 +68,7 @@ impl<T: ABISerialized> ABISerialized for Vec<T> {
             2
         } else {
             result + 2
-        }
+        }*/
     }
 }
 
@@ -83,6 +91,22 @@ impl<T: ABIDeserialized> ABIDeserialized for Vec<T> {
                     result.push(array.read_next::<T>()?);
                 }
                 Ok((result, cursor))
+            }
+            (false, true) => {
+                let size = cursor.read_next::<u32>()?;
+                let map = HashmapE::with_data(32, cursor.read_next::<HashmapE>()?);
+                let mut result = vec![];
+                for i in 0..size {
+                    let mut index = BuilderData::new();
+                    index = (i as u32).prepend_to(index);
+
+                    let item_slice = map.get(index.into())
+                        .map_err(|_| DeserializationError::with(map.get_data()))?
+                        .ok_or(DeserializationError::with(map.get_data()))?;
+
+                    result.push(Reader::new(item_slice).read_next::<T>()?);
+                }
+                Ok((result, cursor.remainder()))
             }
             (true, false) => {
                 let size = cursor.read_next::<u8>()?;

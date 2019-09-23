@@ -1,6 +1,7 @@
 use super::common::{
     prepend_data_to_chain,
-    get_next_byte_from_chain};
+    get_next_byte_from_chain
+};
 use super::{
     ABISerialized,
     ABIDeserialized,

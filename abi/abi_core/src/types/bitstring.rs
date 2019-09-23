@@ -498,12 +498,6 @@ impl Add for Bitstring {
     }
 }
 
-impl From<i8> for Bitstring {
-    fn from(value: i8) -> Bitstring {
-        Bitstring::create(vec![value as u8], 8)
-    }
-}
-
 impl From<Vec<u8>> for Bitstring {
     fn from(value: Vec<u8>) -> Bitstring {
         let len = value.len() * 8;
@@ -511,43 +505,32 @@ impl From<Vec<u8>> for Bitstring {
     }
 }
 
-impl From<u32> for Bitstring {
-    fn from(value: u32) -> Bitstring {
-        let mut vec = vec![];
-        vec.write_u32::<BigEndian>(value).unwrap();
-        let len = vec.len() * 8;
-        Bitstring::create(vec, len)
-    }
-}
-
-impl From<Bitstring> for u32 {
-    fn from(value: Bitstring) -> u32 {
-        let len = value.data().len();
-        if len >= 4 {
-            byteorder::BigEndian::read_u32(value.data().as_slice())
-        } else {
-            0
+macro_rules! bitstring_from_integer {
+    ($inner_type:ty) => {
+        impl From<$inner_type> for Bitstring {
+            fn from(value: $inner_type) -> Bitstring {
+                let vec = value.to_be_bytes().to_vec();
+                let len = vec.len() * 8;
+                Bitstring::create(vec, len)
+            }
         }
-    }
+    };
 }
 
-impl From<u64> for Bitstring {
-    fn from(value: u64) -> Bitstring {
-        let mut vec = vec![];
-        vec.write_u64::<BigEndian>(value).unwrap();
-        let len = vec.len() * 8;
-        Bitstring::create(vec, len)
-    }
-}
+bitstring_from_integer!(u8);
+bitstring_from_integer!(u16);
+bitstring_from_integer!(u32);
+bitstring_from_integer!(u64);
+bitstring_from_integer!(u128);
+bitstring_from_integer!(i8);
+bitstring_from_integer!(i16);
+bitstring_from_integer!(i32);
+bitstring_from_integer!(i64);
+bitstring_from_integer!(i128);
 
-impl From<Bitstring> for u64 {
-    fn from(value: Bitstring) -> u64 {
-        let len = value.data().len();
-        if len >= 8 {
-            byteorder::BigEndian::read_u64(value.data().as_slice())
-        } else {
-            0
-        }
+impl From<Bit> for Bitstring {
+    fn from(value: Bit) -> Bitstring {
+        Bitstring::new().append_bit(&value).to_owned()
     }
 }
 
@@ -571,27 +554,6 @@ impl From<Bitstring> for AccountId
         }
     }
 }
-
-impl From<i32> for Bitstring {
-    fn from(value: i32) -> Bitstring {
-        let mut vec = vec![];
-        vec.write_u32::<BigEndian>(value as u32).unwrap();
-        let len = vec.len() * 8;
-        Bitstring::create(vec, len)
-    }
-}
-
-impl From<Bitstring> for i32 {
-    fn from(value: Bitstring) -> i32 {
-        let len = value.data().len();
-        if len >= 4 {
-            byteorder::BigEndian::read_u32(value.data().as_slice()) as i32
-        } else {
-            0
-        }
-    }
-}
-
 
 
 impl ABISerialized for Bitstring {

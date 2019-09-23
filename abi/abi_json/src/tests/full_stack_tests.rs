@@ -160,10 +160,10 @@ fn test_signed_call() {
     {
         "type": 1,
         "value": 12,
-        "meta": "101"
+        "meta": ""
     }"#;
 
-    let expected_params = r#"{"type":"0x1","value":"0xc","meta":"xb0_"}"#;
+    let expected_params = r#"{"type":"0x1","value":"0xc","meta":"x"}"#;
 
     let pair = Keypair::generate::<Sha512, _>(&mut rand::rngs::OsRng::new().unwrap());
 
@@ -187,7 +187,7 @@ fn test_signed_call() {
     assert_eq!(response.function_name, "createLimit");
 
     let expected_tree = BuilderData::with_bitstring(vec![
-        0x00, 0x27, 0xEF, 0x50, 0x87, 0x01, 0x0C, 0b10000000, 0b11101100,
+        0x00, 0x27, 0xEF, 0x50, 0x87, 0x01, 0x0C, 0b01000000, 0x00, 0x00, 0x00, 0b00010000
     ]).unwrap();
 
     test_tree.checked_drain_reference().unwrap();
