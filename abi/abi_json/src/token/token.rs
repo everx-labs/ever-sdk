@@ -10,6 +10,7 @@ use {Param, ParamType};
 use num_bigint::{BigInt, BigUint};
 use std::fmt;
 use tvm::stack::{BuilderData, SliceData};
+use tvm::stack::dictionary::{HashmapE, HashmapType};
 
 /// TON ABI params.
 #[derive(Debug, PartialEq, Clone)]
@@ -357,6 +358,36 @@ impl TokenValue {
         Ok((result, cursor))
     }
 
+    fn read_array_from_map(
+        param_type: &ParamType,
+        cursor: SliceData,
+    ) -> Result<(Vec<Self>, SliceData), DeserializationError> {
+
+        let (size, cursor) = <u32>::read_from(cursor)?;
+        let (slice, cursor) = <HashmapE>::read_from(cursor)?;
+        let map = HashmapE::with_data(32, slice);
+
+        let mut result = vec![];
+        for i in 0..size {
+            let mut index = BuilderData::new();
+            index = (i as u32).prepend_to(index);
+
+            let item_slice = map.get(index.into())
+                .map_err(|_| DeserializationError::with(map.get_data()))?
+                .ok_or(DeserializationError::with(map.get_data()))?;
+
+            let (token, item_slice) = Self::read_from(param_type, item_slice)?;
+
+            if item_slice.remaining_references() != 0 || item_slice.remaining_bits() != 0 {
+                return Err(DeserializationError::with(item_slice));
+            }
+
+            result.push(token);
+        }
+
+        Ok((result, cursor))
+    }
+
     fn read_array(
         param_type: &ParamType,
         cursor: SliceData,
@@ -366,6 +397,11 @@ impl TokenValue {
         match flag {
             (false, false) => {
                 let (result, cursor) = Self::read_array_from_branch(param_type, cursor)?;
+
+                Ok((TokenValue::Array(result), cursor))
+            }
+            (false, true) => {
+                let (result, cursor) = Self::read_array_from_map(param_type, cursor)?;
 
                 Ok((TokenValue::Array(result), cursor))
             }

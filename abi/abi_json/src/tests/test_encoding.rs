@@ -5,6 +5,7 @@ use sha2::{Digest, Sha256, Sha512};
 
 use ton_abi_core::types::{Dint, Duint, Bitstring, Bit};
 use tvm::stack::{BuilderData, IBitstring, SliceData, CellData};
+use tvm::stack::dictionary::{HashmapE, HashmapType};
 
 use {Function, Int, Param, ParamType, Token, TokenValue, Uint, ABI_VERSION};
 
@@ -38,6 +39,40 @@ fn get_function_id(signature: &[u8]) -> u32 {
     bytes.copy_from_slice(&function_hash[..4]);
 
     u32::from_be_bytes(bytes)
+}
+
+fn put_array_into_map<T: Into<Bitstring> + Clone>(array: &[T]) -> HashmapE {
+    let mut map = HashmapE::with_bit_len(32);
+
+    for i in 0..array.len() {
+        let mut index = BuilderData::new();
+        index.append_u32(i as u32).unwrap();
+
+        let bitstring: Bitstring = array[i].clone().into();
+
+        let data = BuilderData::with_raw(bitstring.data().clone(), bitstring.length_in_bits()).unwrap();
+
+        map.set(index.into(), &data.into()).unwrap();
+    }
+
+    map
+}
+
+fn add_array_as_map<T: Into<Bitstring> + Clone>(builder: &mut BuilderData, array: &[T]) {
+    let mut bitstring = Bitstring::new();
+
+    bitstring.append_bit(&Bit::Zero);
+    bitstring.append_bit(&Bit::One);
+    bitstring.append_u32(array.len() as u32);
+
+
+    let mut vec = vec![];
+    bitstring.into_bitstring_with_completion_tag(&mut vec);
+    builder.append_bitstring(&vec).unwrap();
+
+
+    let map = put_array_into_map(array);
+    builder.checked_append_references_and_data(&map.get_data()).unwrap();
 }
 
 fn test_parameters_set(
@@ -348,17 +383,16 @@ fn test_empty_dynamic_array() {
     let mut bitstring = Bitstring::new();
 
     bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id(
-        b"test_empty_dynamic_array(uint16[])(uint16[])",
-    ));
+    bitstring.append_u32(get_function_id(b"test_empty_dynamic_array(uint16[])(uint16[])"));
 
-    bitstring.append_bit(&Bit::One);
     bitstring.append_bit(&Bit::Zero);
-    bitstring.append_u8(0);
+    bitstring.append_bit(&Bit::One);
+    bitstring.append_u32(0);
+    bitstring.append_bit(&Bit::Zero);
 
     let mut vec = vec![];
     bitstring.into_bitstring_with_completion_tag(&mut vec);
-
+    
     let mut builder = BuilderData::new();
     builder.append_bitstring(&vec).unwrap();
 
@@ -390,19 +424,13 @@ fn test_small_dynamic_array() {
         b"test_small_dynamic_array(uint16[])(uint16[])",
     ));
 
-    bitstring.append_bit(&Bit::One);
-    bitstring.append_bit(&Bit::Zero);
-    bitstring.append_u8(input_array.len() as u8);
-
-    for &i in &input_array {
-        bitstring.append_u16(i);
-    }
-
     let mut vec = vec![];
     bitstring.into_bitstring_with_completion_tag(&mut vec);
-
+    
     let mut builder = BuilderData::new();
     builder.append_bitstring(&vec).unwrap();
+
+    add_array_as_map(&mut builder, &input_array);
 
     let expected_tree = builder.into();
 
@@ -570,25 +598,13 @@ fn test_big_dynamic_array() {
     data.append_u8(ABI_VERSION);
     data.append_u32(get_function_id(b"test_big_dynamic_array(int64[])(int64[])"));
 
-    data.append_bit(&Bit::Zero);
-    data.append_bit(&Bit::Zero);
-
-    let mut array_data = Bitstring::new();
-
-    for &i in &input_array {
-        array_data.append(&Bitstring::create(i.to_be_bytes().to_vec(), 64));
-    }
-
-    let mut array_builder = BuilderData::new();
-    array_builder = put_data_into_chain(array_builder, array_data);
-
     let mut root_builder = BuilderData::new();
 
     let mut vec = vec![];
     data.into_bitstring_with_completion_tag(&mut vec);
     root_builder.append_bitstring(&vec).unwrap();
 
-    root_builder.append_reference(array_builder);
+    add_array_as_map(&mut root_builder, &input_array);
 
     let expected_tree = root_builder.into();
 
@@ -619,20 +635,22 @@ fn test_dynamic_array_of_tuples() {
         b"test_dynamic_array_of_tuples((uint32,bool)[])((uint32,bool)[])",
     ));
 
-    bitstring.append_bit(&Bit::One);
-    bitstring.append_bit(&Bit::Zero);
-    bitstring.append_u8(input_array.len() as u8);
-
-    for &i in &input_array {
-        bitstring.append_u32(i.0);
-        bitstring.append_bit(if i.1 { &Bit::One } else { &Bit::Zero });
-    }
-
     let mut builder = BuilderData::new();
-
+     
     let mut vec = vec![];
     bitstring.into_bitstring_with_completion_tag(&mut vec);
     builder.append_bitstring(&vec).unwrap();
+
+
+    let bitstring_array: Vec<Bitstring> = input_array
+        .iter()
+        .cloned()
+        .map(|(u, b)| {
+            Bitstring::new().append_u32(u).append_bit_bool(b).to_owned()
+        })
+        .collect();
+
+    add_array_as_map(&mut builder, &bitstring_array);
 
     let expected_tree = builder.into();
 
@@ -660,6 +678,14 @@ fn test_dynamic_array_of_tuples() {
 fn test_tuples_with_combined_types() {
     let input_array1: Vec<(u32, bool)> = vec![(1, true), (2, false), (3, true), (4, false)];
 
+    let bitstring_array1: Vec<Bitstring> = input_array1
+        .iter()
+        .cloned()
+        .map(|(u, b)| {
+            Bitstring::new().append_u32(u).append_bit_bool(b).to_owned()
+        })
+        .collect();
+
     let mut input_array2 = Vec::<i64>::new();
     for i in 0..73 {
         input_array2.push(i * i as i64);
@@ -680,74 +706,43 @@ fn test_tuples_with_combined_types() {
         b"test_tuples_with_combined_types(uint8,((uint32,bool)[],int16),(int64[],int64[][5]))(uint8,((uint32,bool)[],int16),(int64[],int64[][5]))",
     ));
 
-    // u8
-    bitstring.append_u8(18);
-
-    // Vec<(u32, bool)>
-    bitstring.append_bit(&Bit::One);
-    bitstring.append_bit(&Bit::Zero);
-    bitstring.append_u8(input_array1.len() as u8);
-
-    for i in &input_array1 {
-        bitstring.append_u32(i.0);
-        bitstring.append_bit(if i.1 { &Bit::One } else { &Bit::Zero });
-    }
-
-    // i16
-    bitstring.append(&Bitstring::create((-290 as i16).to_be_bytes().to_vec(), 16));
-
-    // data of input_array2 is used several times
-    let mut array2_data = Bitstring::new();
-
-    for i in &input_array2 {
-        array2_data.append(&Bitstring::create(i.to_be_bytes().to_vec(), 64));
-    }
-
-    // &[i64] - in-cell data
-    bitstring.append_bit(&Bit::Zero);
-    bitstring.append_bit(&Bit::Zero);
-
-    // [Vec<i64>; 5]
-    bitstring.append_bit(&Bit::One);
-    bitstring.append_bit(&Bit::Zero);
 
     let mut chain_builder = BuilderData::new();
-    let mut cell_data = Bitstring::new();
 
-    for _i in 0..5 {
-        let mut array_builder = BuilderData::new();
+    // u8
+    chain_builder.append_u8(18).unwrap();
 
-        array_builder = put_data_into_chain(array_builder, array2_data.clone());
 
-        if BuilderData::references_capacity() == chain_builder.references_used() {
-            let mut vec = vec![];
-            cell_data.into_bitstring_with_completion_tag(&mut vec);
-            chain_builder.append_bitstring(&vec).unwrap();
+    // Vec<(u32, bool)>
+    add_array_as_map(&mut chain_builder, &bitstring_array1);
 
-            cell_data.clear();
+    // i16
+    chain_builder.append_i16(-290 as i16).unwrap();
 
-            let mut temp_builder = BuilderData::new();
-            temp_builder.append_reference(chain_builder);
-            chain_builder = temp_builder;
-        }
+    // input_array2
+    add_array_as_map(&mut chain_builder, &input_array2);
 
-        cell_data.append_bit(&Bit::Zero);
-        cell_data.append_bit(&Bit::Zero);
+    // [Vec<i64>; 5]
+    chain_builder.append_bit_one().unwrap();
+    chain_builder.append_bit_zero().unwrap();
 
-        chain_builder.prepend_reference(array_builder);
+    add_array_as_map(&mut chain_builder, &input_array2);
+
+    let mut second_builder = BuilderData::new();
+
+    for _i in 1..5 {
+        add_array_as_map(&mut second_builder, &input_array2);
     }
 
-    bitstring.append(&cell_data);
+    chain_builder.append_reference(second_builder);
+
+    second_builder = chain_builder;
+    chain_builder = BuilderData::new();
+    chain_builder.append_reference(second_builder);
 
     let mut vec = vec![];
     bitstring.into_bitstring_with_completion_tag(&mut vec);
     chain_builder.append_bitstring(&vec).unwrap();
-
-    // &[i64] - separate chain data
-    let mut array_builder = BuilderData::new();
-    array_builder = put_data_into_chain(array_builder, array2_data.clone());
-
-    chain_builder.prepend_reference(array_builder);
 
     let expected_tree = chain_builder.into();
 
@@ -808,9 +803,14 @@ fn test_arrays_of_dint_and_duint() {
         Dint::from(-0x1234567890i64),
     ];
 
-    let byte_array_int: Vec<u8> = vec![
-        0x00, 0x01, 0x7F, 0x90, 0xF1, 0xD9, 0xA2, 0xA3, 0x02, 0xF0, 0x8E, 0xA6, 0xDD, 0xDC, 0x7D,
-    ];
+    let byte_array_int: Vec<Vec<u8>> = 
+        vec![
+            vec![0x00],
+            vec![0x01],
+            vec![0x7F],
+            vec![0x90, 0xF1, 0xD9, 0xA2, 0xA3, 0x02],
+            vec![0xF0, 0x8E, 0xA6, 0xDD, 0xDC, 0x7D]
+        ];
 
     let input_array_uint: Vec<Duint> = vec![
         Duint::from(0u32),
@@ -818,7 +818,12 @@ fn test_arrays_of_dint_and_duint() {
         Duint::from(0x1234567890u64),
     ];
 
-    let byte_array_uint: Vec<u8> = vec![0x00, 0x01, 0x90, 0xF1, 0xD9, 0xA2, 0xA3, 0x02];
+    let byte_array_uint: Vec<Vec<u8>> = 
+        vec![
+            vec![0x00],
+            vec![0x01],
+            vec![0x90, 0xF1, 0xD9, 0xA2, 0xA3, 0x02]
+        ];
 
     let mut bitstring = Bitstring::new();
 
@@ -827,27 +832,14 @@ fn test_arrays_of_dint_and_duint() {
         b"test_arrays_of_dint_and_duint(dint[],duint[])(dint[],duint[])",
     ));
 
-    bitstring.append_bit(&Bit::One);
-    bitstring.append_bit(&Bit::Zero);
-    bitstring.append_u8(input_array_int.len() as u8);
-
-    for i in byte_array_int {
-        bitstring.append(&Bitstring::create(i.to_be_bytes().to_vec(), 8));
-    }
-
-    bitstring.append_bit(&Bit::One);
-    bitstring.append_bit(&Bit::Zero);
-    bitstring.append_u8(input_array_uint.len() as u8);
-
-    for i in byte_array_uint {
-        bitstring.append(&Bitstring::create(i.to_be_bytes().to_vec(), 8));
-    }
-
     let mut builder = BuilderData::new();
 
     let mut vec = vec![];
     bitstring.into_bitstring_with_completion_tag(&mut vec);
     builder.append_bitstring(&vec).unwrap();
+
+    add_array_as_map(&mut builder, &byte_array_int);
+    add_array_as_map(&mut builder, &byte_array_uint);
 
     let expected_tree = builder.into();
 
@@ -887,17 +879,14 @@ fn test_small_bitstring() {
         b"test_small_bitstring(bitstring)(bitstring)",
     ));
 
-    bitstring.append_bit(&Bit::One);
-    bitstring.append_bit(&Bit::Zero);
-    bitstring.append_u8(input_bitstring.length_in_bits() as u8);
-
-    bitstring.append(&input_bitstring);
-
     let mut builder = BuilderData::new();
 
     let mut vec = vec![];
     bitstring.into_bitstring_with_completion_tag(&mut vec);
     builder.append_bitstring(&vec).unwrap();
+
+    add_array_as_map(&mut builder, &input_bitstring.bits(0..input_bitstring.length_in_bits()).data);
+
 
     let expected_tree = builder.into();
 
@@ -926,19 +915,13 @@ fn test_big_bitstring() {
     bitstring.append_u8(ABI_VERSION);
     bitstring.append_u32(get_function_id(b"test_big_bitstring(bitstring)(bitstring)"));
 
-    bitstring.append_bit(&Bit::Zero);
-    bitstring.append_bit(&Bit::Zero);
-
-    let mut array_builder = BuilderData::new();
-    array_builder = put_data_into_chain(array_builder, input_bitstring.clone());
-
     let mut builder = BuilderData::new();
 
     let mut vec = vec![];
     bitstring.into_bitstring_with_completion_tag(&mut vec);
     builder.append_bitstring(&vec).unwrap();
 
-    builder.append_reference(array_builder);
+    add_array_as_map(&mut builder, &input_bitstring.bits(0..input_bitstring.length_in_bits()).data);
 
     let expected_tree = builder.into();
 

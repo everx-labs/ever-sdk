@@ -72,6 +72,18 @@ macro_rules! next_bitstring {
     }
 }
 
+pub fn find_next_bit(mut cursor: SliceData) -> Result<SliceData, DeserializationError> {
+    while (cursor.remaining_bits() == 0) && (cursor.remaining_references() == 1) {
+            cursor = cursor.checked_drain_reference().unwrap().into();
+    }
+
+    if cursor.remaining_bits() != 0 {
+        Ok(cursor)
+    } else {
+        Err(DeserializationError::with(cursor))
+    }
+}
+
 pub fn get_next_bits_from_chain(
     cursor: SliceData, 
     bits: usize
@@ -81,9 +93,8 @@ pub fn get_next_bits_from_chain(
         Ok((next_bitstring!(cursor, bits), cursor))
     }
     else {
-        while (cursor.remaining_bits() == 0) && (cursor.remaining_references() == 1) {
-            cursor = cursor.checked_drain_reference().unwrap().into();
-        }
+        cursor = find_next_bit(cursor)?;
+
         let remaining_bits = cursor.remaining_bits();
         if remaining_bits == 0 {
             return Err(DeserializationError::with(cursor));
@@ -100,5 +111,19 @@ pub fn get_next_bits_from_chain(
             result.append(&remain);
             Ok((result, cursor))
         }
+    }
+}
+
+// if currnet cell is filled with references (one reference is reserved for chaining cells) or data,
+// then we append reference to next cell
+pub fn provide_empty_reference(destination: BuilderData) -> BuilderData {
+    if destination.references_used() == BuilderData::references_capacity()
+        || destination.bits_used() == BuilderData::bits_capacity()
+    {
+        let mut next = BuilderData::new();
+        next.append_reference(destination);
+        next
+    } else {
+        destination
     }
 }

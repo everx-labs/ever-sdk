@@ -118,3 +118,6 @@ pub use self::dynamic_int::*;
 
 mod dynamic_uint;
 pub use self::dynamic_uint::*;
+
+mod hashmape;
+pub use self::hashmape::*;
