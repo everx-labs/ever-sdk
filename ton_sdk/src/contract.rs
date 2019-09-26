@@ -34,6 +34,7 @@ use futures::stream::Stream;
 
 const CONSTRUCTOR_METHOD_NAME: &str = "constructor";
 
+#[cfg(feature = "node_interaction")]
 const ACCOUNT_FIELDS: &str = r#"
     id
     addr {

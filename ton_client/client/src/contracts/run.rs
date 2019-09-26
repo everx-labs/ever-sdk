@@ -1,4 +1,4 @@
-use ton_sdk::{Contract, Message, MessageType, AbiContract, AbiFunction};
+use ton_sdk::{Contract, Message, MessageType, AbiContract};
 use crypto::keys::{KeyPair, u256_encode, account_decode};
 use types::{ApiResult, ApiError, base64_decode};
 
@@ -6,7 +6,7 @@ use contracts::{EncodedMessage, EncodedUnsignedMessage};
 use client::ClientContext;
 
 #[cfg(feature = "node_interaction")]
-use ton_sdk::Transaction;
+use ton_sdk::{Transaction, AbiFunction};
 #[cfg(feature = "node_interaction")]
 use tvm::block::{TransactionProcessingStatus, TransactionId};
 #[cfg(feature = "node_interaction")]

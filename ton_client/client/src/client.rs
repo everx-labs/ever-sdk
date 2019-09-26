@@ -9,7 +9,10 @@ fn create_handlers() -> DispatchTable {
     crate::setup::register(&mut handlers);
     crate::crypto::register(&mut handlers);
     crate::contracts::register(&mut handlers);
+    
+    #[cfg(feature = "node_interaction")]
     crate::queries::register(&mut handlers);
+
     handlers
 }
 

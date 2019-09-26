@@ -13,7 +13,6 @@ use std::cmp;
 use std::fmt;
 use std::ops::{Add, Range, RangeBounds};
 use std::ops::Bound::{Excluded, Included, Unbounded};
-use byteorder::ByteOrder;
 use byteorder::{BigEndian, WriteBytesExt};
 use tvm::types::AccountId;
 

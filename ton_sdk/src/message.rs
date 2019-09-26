@@ -1,9 +1,10 @@
-use crate::*;
 use tvm::stack::SliceData;
 use tvm::block::{
     CommonMsgInfo, Message as TvmMessage, MessageId, MessageProcessingStatus
 };
 
+#[cfg(feature = "node_interaction")]
+use crate::*;
 #[cfg(feature = "node_interaction")]
 use futures::stream::Stream;
 
@@ -20,6 +21,7 @@ pub struct Message {
     msg: TvmMessage,
 }
 
+#[cfg(feature = "node_interaction")]
 const MESSAGE_FIELDS: &str = r#"
     id
     status
