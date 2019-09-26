@@ -5,6 +5,20 @@ use futures::stream::Stream;
 use serde_json::Value;
 use std::sync::Mutex;
 
+#[derive(Serialize, Deserialize)]
+pub enum SortDirection {
+    #[serde(rename = "ASC")]
+    Ascending,
+    #[serde(rename = "DESC")]
+    Descending
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct OrderBy {
+    path: String,
+    direction: SortDirection
+}
+
 lazy_static! {
     static ref CLIENT: Mutex<Option<GqlClient>> = Mutex::new(None);
 }
@@ -21,10 +35,27 @@ pub fn uninit() {
 }
 
 // Returns Stream with updates of some field in database. First stream item is current value
-pub fn subscribe_record_updates(table: &'static str, filter_name: &str, record_id: &str, fields: &str)
+pub fn subscribe_record_updates(table: &str, record_id: &str, fields: &str)
     -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError>>> {
 
-    let request = generate_subscription(table, filter_name, record_id, fields);
+    let subscription_stream = subscribe(
+        table,
+        &format!("{{ \"id\": {{\"eq\": \"{record_id}\" }} }}", record_id=record_id),
+        fields)?;
+
+    let load_stream = load_record_fields(table, record_id, fields)?
+        .filter(|value| !value.is_null());
+
+    Ok(Box::new(load_stream.chain(subscription_stream)))
+}
+
+// Returns Stream with updates database fileds by provided filter
+pub fn subscribe(table: &str, filter: &str, fields: &str)
+    -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError> + Send>> {
+
+    let request = generate_subscription(table, filter, fields)?;
+
+    let closure_table = table.to_owned();
 
     let stream = if let Some(client) = CLIENT.lock().unwrap().as_mut() {
          client.subscribe(request)?
@@ -33,7 +64,7 @@ pub fn subscribe_record_updates(table: &'static str, filter_name: &str, record_i
                     Err(err) => Err(SdkError::from(err)),
                     Ok(value) => {
                         // try to extract the record value from the answer
-                        let record_value = &value["payload"]["data"][table];
+                        let record_value = &value["payload"]["data"][&closure_table];
                         
                         if record_value.is_null() {
                             Err(SdkError::from(SdkErrorKind::InvalidData(
@@ -48,69 +79,52 @@ pub fn subscribe_record_updates(table: &'static str, filter_name: &str, record_i
         bail!(SdkErrorKind::NotInitialized)
     };
 
-    let load_stream = load_record_fields(table, record_id, fields)?
-        .filter(|value| !value.is_null());
-
-    Ok(Box::new(load_stream.chain(stream)))
+    Ok(Box::new(stream))
 }
 
-// Returns Stream with required database record
-pub fn load_record(table: &str, record_id: &str)
+// Returns Stream with required database record fields
+pub fn load_record_fields(table: &str, record_id: &str, fields: &str)
     -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError>>> {
-
-    let query = generate_select(table, record_id);
-
-    let mut client = CLIENT.lock().unwrap();
-    let client = client.as_mut().ok_or(SdkError::from(SdkErrorKind::NotInitialized))?;
-
-    let stream = client.query_vars(query)?
-        .then(|result| {
-            match result {
-                Err(err) => Err(SdkError::from(err)),
-                Ok(value) => {
-                    // try to extract the record value from the answer
-                    let records_array_str = value["data"]["select"].as_str()
-                            .ok_or(SdkError::from(SdkErrorKind::InvalidData(
-                                format!("Invalid select answer: {}", value))))?;
-
-                    let records_array: serde_json::Value = serde_json::from_str(records_array_str)?;
-
-                    let record_value = &records_array[0];
-
-                    // `null` is Ok - it means that query execution was succeded but no record found
-                    if record_value.is_null() {
-                        Ok(record_value.clone())
-                    } else {
-                        Ok(record_value.clone())
-                    }
-                }
-            }
+    let stream = query(
+        table,
+        &format!("{{ \"id\": {{\"eq\": \"{record_id}\" }} }}", record_id=record_id),
+        fields,
+        None,
+        None)?
+        .and_then(|value| {
+            Ok(value[0].clone())
         });
 
     Ok(Box::new(stream))
 }
 
-// Returns Stream with required database record fields
-pub fn load_record_fields(table: &'static str, record_id: &str, fields: &str)
+// Returns Stream with GraphQL query answer 
+pub fn query(table: &str, filter: &str, fields: &str, order_by: Option<OrderBy>, limit: Option<u32>)
     -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError>>> {
-
-    let query = generate_query(table, record_id, fields);
+    let query = generate_query_var(
+        table,
+        filter,
+        fields,
+        order_by,
+        limit)?;
 
     let mut client = CLIENT.lock().unwrap();
     let client = client.as_mut().ok_or(SdkError::from(SdkErrorKind::NotInitialized))?;
 
-    let stream = client.query(query)?
+    let table = table.to_owned();
+
+    let stream = client.query_vars(query)?
         .then(move |result| {
             match result {
                 Err(err) => Err(SdkError::from(err)),
                 Ok(value) => {
                     // try to extract the record value from the answer
-                    let records_array = &value["data"][table];
+                    let records_array = &value["data"][&table];
                     if records_array.is_null() {
-                        bail!(SdkErrorKind::InvalidData(format!("Invalid select answer: {}", value)))
+                        bail!(SdkErrorKind::InvalidData(format!("Invalid query answer: {}", value)))
                     }
                     
-                    Ok(records_array[0].clone())
+                    Ok(records_array.clone())
                 }
             }
         });
@@ -118,32 +132,67 @@ pub fn load_record_fields(table: &'static str, record_id: &str, fields: &str)
     Ok(Box::new(stream))
 }
 
-fn generate_query(table: &str, record_id: &str, fields: &str) -> String {
-    format!("query {{ {table}(filter: {{ id: {{eq: \"{record_id}\" }} }}) {{ {fields} }} }}",
+// Executes GraphQL query, waits for result and returns recieved value
+pub fn wait_for(table: &str, filter: &str, fields: &str) 
+    -> SdkResult<Value> {
+    let subscription_stream = subscribe(
+        table,
+        filter,
+        fields)?;
+
+    let load_stream = query(table, filter, fields, None, None)?
+        .filter(|value| !value.is_null())
+        .and_then(|value| {
+            Ok(value[0].clone())
+        });
+
+    Ok(load_stream
+        .chain(subscription_stream)
+        .wait()
+        .next()
+        .ok_or(SdkErrorKind::InvalidData("None value".to_owned()))??)
+}
+
+fn generate_query_var(table: &str, filter: &str, fields: &str, order_by: Option<OrderBy>, limit: Option<u32>)
+    -> SdkResult<VariableRequest>
+{
+    let mut scheme_type = (&table[0 .. table.len() - 1]).to_owned() + "Filter";
+    scheme_type[..1].make_ascii_uppercase();
+
+    let mut query = format!(
+        "query {table}($filter: {scheme_type}, $orderBy: [QueryOrderBy], $limit: Int) {{ {table}(filter: $filter, orderBy: $orderBy, limit: $limit) {{ {fields} }}}}",
         table=table,
-        record_id=record_id,
-        fields=fields)
+        scheme_type=scheme_type,
+        fields=fields
+    );
+    query = query.split_whitespace().collect::<Vec<&str>>().join(" ");
+
+    let variables = json!({
+        "filter" : serde_json::from_str::<Value>(filter)?,
+        "orderBy": order_by,
+        "limit": limit
+    });
+
+    let variables = variables.to_string().split_whitespace().collect::<Vec<&str>>().join(" ");
+
+    Ok(VariableRequest::new(query, Some(variables)))
 }
 
-fn generate_select(table: &str, record_id: &str) -> VariableRequest {
-    let query = "query select($query: String!, $bindVarsJson: String!) {select(query: $query, bindVarsJson: $bindVarsJson)}".to_owned();
+fn generate_subscription(table: &str, filter: &str, fields: &str) -> SdkResult<VariableRequest> {
+    let mut scheme_type = (&table[0 .. table.len() - 1]).to_owned() + "Filter";
+    scheme_type[..1].make_ascii_uppercase();
 
-    let db_query = format!("RETURN DOCUMENT(\"{table}/{record_id}\")", table=table, record_id=record_id);
-
-    let variables = json!({"query" : db_query,"bindVarsJson": "{}"});
-
-    VariableRequest::new(query, Some(variables.to_string()))
-}
-
-fn generate_subscription(table: &str, scheme_type: &str, record_id: &str, fields: &str) -> VariableRequest {
     let query = format!("subscription {table}($filter: {type}) {{ {table}(filter: $filter) {{ {fields} }} }}",
         type=scheme_type,
         table=table,
         fields=fields);
+    let query = query.split_whitespace().collect::<Vec<&str>>().join(" ");
 
-    let variables = format!("{{\"filter\":{{\"id\":{{\"eq\":\"{record_id}\"}}}}}}",
-        record_id=record_id);
+    let variables = json!({
+        "filter" : serde_json::from_str::<Value>(filter)?
+    });
+    let variables = variables.to_string().split_whitespace().collect::<Vec<&str>>().join(" ");
 
-    VariableRequest::new(query, Some(variables))
+    Ok(VariableRequest::new(query, Some(variables)))
 }
 

@@ -266,6 +266,28 @@ impl ApiError {
             "Encoding message with sign failed: {}", err)
     }
 
+    // SDK queries
+
+    pub fn queries_query_failed<E: Display>(err: E) -> Self {
+        sdk_err!(QueriesQueryFailed,
+            "Query failed: {}", err)
+    }
+
+    pub fn queries_subscribe_failed<E: Display>(err: E) -> Self {
+        sdk_err!(QueriesSubscribeFailed,
+            "Subscribe failed: {}", err)
+    }
+
+    pub fn queries_wait_for_failed<E: Display>(err: E) -> Self {
+        sdk_err!(QueriesWaitForFailed,
+            "WaitFor failed: {}", err)
+    }
+
+    pub fn queries_get_next_failed<E: Display>(err: E) -> Self {
+        sdk_err!(QueriesGetNextFailed,
+            "Get next failed: {}", err)
+    }
+
     // TVM
 
     pub fn tvm_execution_skipped(reason: u8) -> ApiError {
@@ -329,7 +351,10 @@ pub enum ApiSdkErrorCode {
     ContractsCreateSendGramsMessageFailed = 3013,
     ContractsEncodeMessageWithSignFailed = 3014,
 
-    Requests = 4000,
+    QueriesQueryFailed = 4001,
+    QueriesSubscribeFailed = 4002,
+    QueriesWaitForFailed = 4003,
+    QueriesGetNextFailed = 4004,
 
     Wallet = 5000,
 

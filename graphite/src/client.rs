@@ -29,16 +29,14 @@ impl GqlClient {
 
     pub fn query_vars(&self, request: VariableRequest) -> Result<ResponseStream, GraphiteError> {
         let request = match request.get_variables() {
-            Some(vars) =>  format!("{{ \"query\": \"{}\", \"variables\": \"{}\" }}", request.get_query(), vars),
+            Some(vars) =>  format!("{{ \"query\": \"{}\", \"variables\": {} }}", request.get_query(), vars),
             None =>  format!("{{ \"query\": \"{}\" }}", request.get_query())
         };
-
-        println!("request {}", request);
 
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
-        Ok(ResponseStream::new(self.client_htpp.get(&self.graphql_host)
+        Ok(ResponseStream::new(self.client_htpp.post(&self.graphql_host)
             .headers(headers)
             .body(request)
             .send())?)

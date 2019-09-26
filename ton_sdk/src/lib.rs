@@ -46,12 +46,12 @@ mod local_tvm;
 mod transaction;
 #[cfg(feature = "node_interaction")]
 pub use transaction::*;
-
+/*
 #[cfg(feature = "node_interaction")]
 mod block;
 #[cfg(feature = "node_interaction")]
 pub use block::*;
-
+*/
 #[cfg(feature = "node_interaction")]
 mod types;
 #[cfg(feature = "node_interaction")]

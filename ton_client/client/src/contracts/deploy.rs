@@ -83,7 +83,7 @@ pub(crate) fn deploy(_context: &mut ClientContext, params: ParamsOfDeploy) -> Ap
     let msg = create_external_transfer_funds_message(
         &AccountId::from([0_u8; 32]),
         &account_id,
-        1_000_000);
+        10_000_000_000);
     send_message(msg)?;
 
     debug!("-> -> deploy");

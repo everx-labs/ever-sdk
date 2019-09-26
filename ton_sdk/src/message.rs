@@ -53,7 +53,8 @@ impl Message {
         let map = queries_helper::load_record_fields(
             MESSAGES_TABLE_NAME,
             &id.to_hex_string(),
-            MESSAGE_FIELDS)?
+            MESSAGE_FIELDS
+            )?
                 .and_then(|val| {
                     if val == serde_json::Value::Null {
                         Ok(None)
@@ -73,7 +74,11 @@ impl Message {
     #[cfg(feature = "node_interaction")]
     pub fn load_json(id: MessageId) -> SdkResult<Box<dyn Stream<Item = String, Error = SdkError>>> {
 
-        let map = queries_helper::load_record(MESSAGES_TABLE_NAME, &id.to_hex_string())?
+        let map = queries_helper::load_record_fields(
+            MESSAGES_TABLE_NAME,
+            &id.to_hex_string(),
+            MESSAGE_FIELDS
+            )?
             .map(|val| val.to_string());
 
         Ok(Box::new(map))

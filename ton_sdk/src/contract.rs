@@ -403,7 +403,6 @@ impl Contract {
 
         let subscribe_stream = queries_helper::subscribe_record_updates(
             TRANSACTIONS_TABLE_NAME,
-            TRANSACTIONS_FILTER_NAME,
             &message_id.to_hex_string(), 
             CONTRACT_CALL_STATE_FIELDS)?
                 .and_then(|value| {

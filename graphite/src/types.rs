@@ -182,10 +182,10 @@ impl SubscribeStream {
         Ok(())
     }
 
-    pub fn unsubscribe(id: u64, client: &mut Client<Box<dyn NetworkStream + Send>>) -> Result<(), GraphiteError> {
-        let query = format!("{{\"id\":{}, \"type\": \"stop\", \"payload\":{{}}}}", &id);
+    pub fn unsubscribe(&mut self) -> Result<(), GraphiteError> {
+        let query = format!("{{\"id\":{}, \"type\": \"stop\", \"payload\":{{}}}}", &self.id);
         let msg = OwnedMessage::Text(query.to_string());
-        client.send_message(&msg)
+        self.client.send_message(&msg)
             .map_err(|err| 
                 GraphiteError::new(
                     format!("Sending message across stdin channel failed. Error: {}", err)))?;
@@ -195,6 +195,12 @@ impl SubscribeStream {
 
     pub fn get_id(&self) -> u64 {
         self.id.clone()
+    }
+}
+
+impl Drop for SubscribeStream {
+    fn drop(&mut self) {
+        let _ = self.unsubscribe();
     }
 }
 
