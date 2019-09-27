@@ -101,8 +101,8 @@ impl<T: ABIDeserialized> ABIDeserialized for Vec<T> {
                     index = (i as u32).prepend_to(index);
 
                     let item_slice = map.get(index.into())
-                        .map_err(|_| DeserializationError::with(map.get_data()))?
-                        .ok_or(DeserializationError::with(map.get_data()))?;
+                        .map_err(|_| DeserializationError::with(cursor.clone().remainder()))?
+                        .ok_or(DeserializationError::with(cursor.clone().remainder()))?;
 
                     result.push(Reader::new(item_slice).read_next::<T>()?);
                 }

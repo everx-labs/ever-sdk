@@ -373,8 +373,8 @@ impl TokenValue {
             index = (i as u32).prepend_to(index);
 
             let item_slice = map.get(index.into())
-                .map_err(|_| DeserializationError::with(map.get_data()))?
-                .ok_or(DeserializationError::with(map.get_data()))?;
+                .map_err(|_| DeserializationError::with(cursor.clone()))?
+                .ok_or(DeserializationError::with(cursor.clone()))?;
 
             let (token, item_slice) = Self::read_from(param_type, item_slice)?;
 

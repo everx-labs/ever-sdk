@@ -2,6 +2,7 @@ use super::{ABIDeserialized, DeserializationError};
 use std::option::Option;
 use tvm::stack::SliceData;
 
+#[derive(Clone)]
 pub struct Reader {
     cursor: Option<SliceData>,
 }

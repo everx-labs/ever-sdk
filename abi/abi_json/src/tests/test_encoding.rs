@@ -72,7 +72,14 @@ fn add_array_as_map<T: Into<Bitstring> + Clone>(builder: &mut BuilderData, array
 
 
     let map = put_array_into_map(array);
-    builder.checked_append_references_and_data(&map.get_data()).unwrap();
+
+    match map.data() {
+        Some(cell) => {
+            builder.append_bit_one().unwrap();
+            builder.append_reference_cell(cell.clone());
+        }
+        None => { builder.append_bit_zero().unwrap(); }
+    }
 }
 
 fn test_parameters_set(

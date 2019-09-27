@@ -15,10 +15,14 @@ impl ABISerialized for HashmapE {
     fn prepend_to(&self, mut destination: BuilderData) -> BuilderData {
         destination = provide_empty_reference(destination);
 
-        let mut slice = self.get_data();
-        destination.prepend_builder(&BuilderData::from_slice(&slice)).unwrap();
-        if let Ok(cell) = slice.checked_drain_reference() {
-            destination.prepend_reference(BuilderData::from(cell));
+        match self.data() {
+            Some(cell) => {
+                destination.prepend_bitstring(&[0b11000000]).unwrap();
+                destination.prepend_reference(BuilderData::from(cell));    
+            }
+            None => {
+                destination.prepend_bitstring(&[0b01000000]).unwrap();
+            }
         };
 
         destination
