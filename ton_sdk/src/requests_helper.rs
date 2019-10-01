@@ -2,7 +2,6 @@ use crate::*;
 use std::sync::Mutex;
 
 extern crate reqwest;
-extern crate base64;
 
 use self::reqwest::Client;
 use self::reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};

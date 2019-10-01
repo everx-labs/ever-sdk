@@ -1,31 +1,23 @@
-/*
 use ton_abi_json::json_abi::decode_function_response;
 use super::*;
 use std::io::{Cursor};
-use serde_json::Value;
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
-use rand::{Rng, RngCore, thread_rng};
+use rand::RngCore;
 use sha2::Sha512;
-use tvm::block::{
-    Message, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
-    ExternalInboundMessageHeader, CurrencyCollection, Serializable
-};
+use tvm::block::TransactionProcessingStatus;
 use tvm::types::AccountId;
 use tvm::stack::{BuilderData, IBitstring};
 
-const DB_NAME: &str = "blockchain";
 const WORKCHAIN: i32 = 0;
 const CONFIG_JSON: &str = r#"
     {
-        "graphql_config": {
-            "host": "http://services.tonlabs.io",
-            "socket_host": "ws://services.tonlabs.io""
+        "queries_config": {
+            "queries_server": "http://0.0.0.0/graphql",
+            "subscriptions_server": "ws://0.0.0.0/graphql"
         },
-        "kafka_config": {
-            "servers": ["http://services.tonlabs.io:9092"],
-            "topic": "requests",
-            "ack_timeout": 123
+        "requests_config": {
+            "requests_server": "http://0.0.0.0/topics/requests"
         }
     }"#;  
 /*
@@ -93,7 +85,7 @@ fn test_subscribe_updates() {
 
     another_thread.join().unwrap();
 }
-*/
+
 #[test]
 #[ignore] 
 fn test_subscribe_updates_kafka_connector() {
@@ -167,50 +159,11 @@ connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_status
 
     another_thread.join().unwrap();
 }
-
-const SUBSCRIBE_CONTRACT_ABI: &str = r#"
-{
-    "ABI version": 0,
-    "functions": [{
-        "name": "constructor",
-        "inputs": [{"name": "wallet", "type": "bits256"}],
-        "outputs": []
-    }, {
-        "name": "subscribe",
-        "signed": true,
-        "inputs": [
-            {"name": "pubkey", "type": "bits256"},
-            {"name": "to",     "type": "bits256"},
-            {"name": "value",  "type": "duint"},
-            {"name": "period", "type": "duint"}
-        ],
-        "outputs": [{"name": "subscriptionHash", "type": "bits256"}]
-    }, {
-        "name": "cancel",
-        "signed": true,
-        "inputs": [{"name": "subscriptionHash", "type": "bits256"}],
-        "outputs": []
-    }, {
-        "name": "executeSubscription",
-        "inputs": [
-            {"name": "subscriptionHash","type": "bits256"},
-            {"name": "signature",       "type": "bits256"}
-        ],
-        "outputs": []
-    }, {
-        "name": "getSubscription",
-        "inputs": [{"name": "subscriptionHash","type": "bits256"}],
-        "outputs": [
-            {"name": "to", "type": "bits256"},
-            {"name": "amount", "type": "duint"},
-            {"name": "period", "type": "duint"},
-            {"name": "status", "type": "uint8"}
-        ]
-    }]
-}"#;
+*/
 
 const SUBSCRIBE_PARAMS: &str = r#"
 {
+    "subscriptionId": "x0000000000000000000000000000000000000000000000000000000000000001",
 	"pubkey": "x0000000000000000000000000000000000000000000000000000000000000001",
 	"to": "x0000000000000000000000000000000000000000000000000000000000000002",
 	"value": 1234567890,
@@ -227,7 +180,7 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
 
     let func = "subscribe".to_string();
     let input = SUBSCRIBE_PARAMS.to_string();
-    let abi = SUBSCRIBE_CONTRACT_ABI.to_string();
+    let abi = test_piggy_bank::SUBSCRIBE_CONTRACT_ABI.to_string();
 
     let contract = Contract::load(address.into())
         .expect("Error calling load Contract")
@@ -249,7 +202,7 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
         }
         if let Ok(s) = state {
             println!("next state: {:?}", s);
-            if s.status == MessageProcessingStatus::Finalized {
+            if s.status == TransactionProcessingStatus::Finalized {
                 tr_id = Some(s.id.clone());
                 break;
             }
@@ -310,7 +263,7 @@ fn test_deploy_and_call_contract() {
    
    
     // read image from file and construct ContractImage
-    let mut state_init = std::fs::File::open("src/tests/contract.tvc").expect("Unable to open contract code file");
+    let mut state_init = std::fs::File::open("src/tests/Subscription.tvc").expect("Unable to open contract code file");
 
     let mut csprng = OsRng::new().unwrap();
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
@@ -321,14 +274,14 @@ fn test_deploy_and_call_contract() {
 
     // before deploying contract need to transfer some funds to its address
     println!("Account ID to take some grams {}", account_id);
-    let msg = create_external_transfer_funds_message(AccountId::from([0; 32]), account_id.clone(), 100);
-    Contract::send_message(msg).unwrap();
+    
+    test_piggy_bank::get_grams_from_giver(account_id.clone());
 
 
     // call deploy method
     let func = "constructor".to_string();
     let input = CONSTRUCTOR_PARAMS.to_string();
-    let abi = SUBSCRIBE_CONTRACT_ABI.to_string();
+    let abi = test_piggy_bank::SUBSCRIBE_CONTRACT_ABI.to_string();
 
     let changes_stream = Contract::deploy_json(func, input, abi, contract_image, Some(&keypair))
         .expect("Error deploying contract");
@@ -344,7 +297,7 @@ fn test_deploy_and_call_contract() {
         }
         if let Ok(s) = state {
             println!("next state: {:?}", s);
-            if s.status == MessageProcessingStatus::Finalized {
+            if s.status == TransactionProcessingStatus::Finalized {
                 tr_id = Some(s.id.clone());
                 break;
             }
@@ -356,36 +309,10 @@ fn test_deploy_and_call_contract() {
 
     test_call_contract(account_id, &keypair);
 }
-*/
-/*#[test]
-fn test_send_empty_messages() {
-    let id = AccountId::from([11; 32]);
-    let contract = Contract { id, balance_grams: 0 };
-    
-    let config_json = CONFIG_JSON.clone();
-
-    let config : KafkaConfig = serde_json::from_str(&config_json).unwrap();
-
-    requests_helper::init(config).unwrap();
-
-    for i in 0..10 {
-        // fake body
-        let mut builder = BuilderData::default();
-        builder.append_u32(i).unwrap();
-        let msg_body = builder.into();
-        
-        let msg = Contract::create_message(contract.id(), msg_body).unwrap();
-
-        // send message by Kafka
-        let msg_id = Contract::send_message(msg).unwrap();
-
-        println!("message {} sent!", hex::encode(msg_id.as_slice()));
-    }
-}
 
 #[test]
 fn test_contract_image_from_file() {
-    let mut state_init = std::fs::File::open("src/tests/contract.tvc").expect("Unable to open contract code file");
+    let mut state_init = std::fs::File::open("src/tests/Subscription.tvc").expect("Unable to open contract code file");
 
     let mut csprng = OsRng::new().unwrap();
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
@@ -415,10 +342,9 @@ fn test_deploy_empty_contract() {
     let image = ContractImage::new(&mut data_cur, None, None).expect("Error creating ContractImage");
     let acc_id = image.account_id();
 
+    test_piggy_bank::get_grams_from_giver(acc_id.clone());
 
-
-    let msg = create_external_transfer_funds_message(AccountId::from([0; 32]), image.account_id(), 1000);
-    Contract::send_message(msg).unwrap();
+    println!("Account ID {}", acc_id);
 
     Contract::load(acc_id.into())
         .expect("Error calling load Contract")
@@ -442,7 +368,7 @@ fn test_deploy_empty_contract() {
         }
         if let Ok(s) = state {
             println!("next state: {:?}", s);
-            if s.status == MessageProcessingStatus::Finalized {
+            if s.status == TransactionProcessingStatus::Finalized {
                 tr_id = Some(s.id.clone());
                 break;
             }
@@ -452,35 +378,6 @@ fn test_deploy_empty_contract() {
     // so just check deployment transaction created
     let _tr_id = tr_id.expect("Error: no transaction id");
     println!("Transaction got!!!");
-
-}
-
-// Create message "from wallet" to transfer some funds 
-// from one account to another
-fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, value: u128) -> Message {
-    
-    let mut rng = thread_rng();    
-    let mut builder = BuilderData::new();
-    builder.append_u64(rng.gen::<u64>()).unwrap();    
-    let mut msg = Message::with_ext_in_header(
-        ExternalInboundMessageHeader {
-            src: MsgAddressExt::with_extern(builder.into()).unwrap(),
-            dst: MsgAddressInt::with_standart(None, 0, src.clone()).unwrap(),
-            import_fee: Grams::default(),
-        }
-    );
-
-    let mut balance = CurrencyCollection::default();
-    balance.grams = Grams(value.into());
-
-    let int_msg_hdr = InternalMessageHeader::with_addresses(
-        MsgAddressInt::with_standart(None, 0, src).unwrap(),
-        MsgAddressInt::with_standart(None, 0, dst).unwrap(),
-        balance
-    );
-
-    *msg.body_mut() = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
-    msg
 
 }
 
@@ -499,4 +396,21 @@ fn test_load_nonexistent_contract() {
         .expect("Error unwrap result while loading Contract");
 
     assert!(c.is_none());
-}*/
+}
+
+#[test]
+fn test_address_parsing() {
+    Contract::set_default_workchain(Some(-1));
+
+    let short = "fcb91a3a3816d0f7b8c2c76108b8a9bc5a6b7a55bd79f8ab101c52db29232260";
+    let full_std = "-1:fcb91a3a3816d0f7b8c2c76108b8a9bc5a6b7a55bd79f8ab101c52db29232260";
+    let base64 = "kf/8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15+KsQHFLbKSMiYIny";
+    let base64_url = "kf_8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15-KsQHFLbKSMiYIny";
+
+    let address = tvm::block::MsgAddressInt::with_standart(None, -1, hex::decode(short).unwrap().into()).unwrap();
+
+    assert_eq!(address, AccountAddress::from_str(short).expect("Couldn't parse short address").get_msg_address().unwrap());
+    assert_eq!(address, AccountAddress::from_str(full_std).expect("Couldn't parse full_std address").get_msg_address().unwrap());
+    assert_eq!(address, AccountAddress::from_str(base64).expect("Couldn't parse base64 address").get_msg_address().unwrap());
+    assert_eq!(address, AccountAddress::from_str(base64_url).expect("Couldn't parse base64_url address").get_msg_address().unwrap());
+}

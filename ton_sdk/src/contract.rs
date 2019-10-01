@@ -26,6 +26,8 @@ use tvm::block::{
     TransactionProcessingStatus
 };
 use std::convert::Into;
+use crc16::*;
+use std::convert::TryFrom;
 
 pub use ton_abi_json::json_abi::DecodedMessage;
 
@@ -191,6 +193,7 @@ impl ContractImage {
 /// `Short` value contains only `AccountId` value and is used for addressing contracts in default
 /// workchain. `Full` value is fully qualified account address and can be used for addressing
 /// contracts in any workchain
+#[derive(Clone)]
 pub enum AccountAddress {
     Short(AccountId),
     Full(MsgAddressInt)
@@ -222,6 +225,51 @@ impl AccountAddress {
 
                 Ok(MsgAddressInt::with_standart(None, workchain as i8, id.clone())?)
             }
+        }
+    }
+    
+    fn decode_std_base64(data: &str) -> SdkResult<Self> {
+        // conversion from base64url
+        let data = data.replace('_', "/").replace('-', "+");
+
+        let vec = base64::decode(&data)?;
+
+        // check CRC and address tag
+        if State::<XMODEM>::calculate(&vec[..34]) != u16::from_be_bytes(<[u8; 2]>::try_from(&vec[34..36])?)
+            || vec[0] & 0x3f != 0x11
+        {
+            bail!(SdkErrorKind::InvalidArg(data.to_owned()));
+        };
+
+        Ok(MsgAddressInt::with_standart(
+                None,
+                i8::from_be_bytes(<[u8; 1]>::try_from(&vec[1..2])?),
+                vec[2..34].into())?
+            .into())
+    }
+
+    fn decode_std_hex(data: &str) -> SdkResult<Self> {
+        let vec: Vec<&str> = data.split(':').collect();
+
+        if vec.len() != 2 {
+            bail!(SdkErrorKind::InvalidArg(data.to_owned()));
+        }
+
+        Ok(MsgAddressInt::with_standart(
+                None,
+                i8::from_str_radix(vec[0], 10)?,
+                hex::decode(vec[1])?.into())?
+            .into())
+    }
+    
+    /// Retrieves account address from `str` in Telegram lite-client format
+    pub fn from_str(data: &str) -> SdkResult<Self> {
+        if data.len() == 64 {
+            Ok(AccountAddress::Short(hex::decode(data)?.into()))
+        } else if data.len() == 48 {
+            Self::decode_std_base64(data)
+        } else {
+            Self::decode_std_hex(data)
         }
     }
 }
@@ -307,14 +355,14 @@ impl Contract {
     // Works with json representation of input and abi.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
-    pub fn call_json(id: AccountId, func: String, input: String, abi: String, key_pair: Option<&Keypair>)
+    pub fn call_json(id: AccountAddress, func: String, input: String, abi: String, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
         // pack params into bag of cells via ABI
         let msg_body = ton_abi_json::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
-        let msg = Self::create_message(id.clone().into(), msg_body.into())?;
+        let msg = Self::create_message(id.clone(), msg_body.into())?;
 
         // send message by Kafka
         let msg_id = Self::_send_message(msg)?;

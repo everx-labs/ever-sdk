@@ -10,8 +10,6 @@ use ton_sdk::{Transaction, AbiFunction};
 #[cfg(feature = "node_interaction")]
 use tvm::block::{TransactionProcessingStatus, TransactionId};
 #[cfg(feature = "node_interaction")]
-use tvm::types::AccountId;
-#[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
 use futures::Stream;
@@ -199,7 +197,7 @@ pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfRun) 
     let key_pair = if let Some(keys) = params.keyPair { Some(keys.decode()?) } else { None };
 
     let (body, id) = Contract::construct_call_message_json(
-        ton_sdk::AccountAddress::Short(address),
+        address,
         params.functionName.to_owned(),
         params.input.to_string().to_owned(),
         params.abi.to_string().to_owned(),
@@ -216,7 +214,7 @@ pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfRun) 
 
 pub(crate) fn encode_unsigned_message(_context: &mut ClientContext, params: ParamsOfEncodeUnsignedRunMessage) -> ApiResult<EncodedUnsignedMessage> {
     let encoded = ton_sdk::Contract::get_call_message_bytes_for_signing(
-        ton_sdk::AccountAddress::Short(account_decode(&params.address)?),
+        account_decode(&params.address)?,
         params.functionName,
         params.input.to_string(),
         params.abi.to_string(),
@@ -330,8 +328,8 @@ fn load_out_message(tr: &Transaction, abi_function: &AbiFunction) -> Message {
 }
 
 #[cfg(feature = "node_interaction")]
-fn load_contract(address: &AccountId) -> ApiResult<Contract> {
-    Contract::load(address.clone().into())
+fn load_contract(address: &ton_sdk::AccountAddress) -> ApiResult<Contract> {
+    Contract::load(address.clone())
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -342,12 +340,12 @@ fn load_contract(address: &AccountId) -> ApiResult<Contract> {
 
 #[cfg(feature = "node_interaction")]
 fn call_contract(
-    address: &AccountId,
+    address: &ton_sdk::AccountAddress,
     params: &ParamsOfRun,
     key_pair: Option<&Keypair>,
 ) -> ApiResult<TransactionId> {
     let changes_stream = Contract::call_json(
-        address.clone().into(),
+        address.clone(),
         params.functionName.to_owned(),
         params.input.to_string().to_owned(),
         params.abi.to_string().to_owned(),

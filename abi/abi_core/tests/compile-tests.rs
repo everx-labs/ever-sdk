@@ -1,5 +1,5 @@
 //extern crate compiletest_rs as compiletest;
-
+/*
 use std::path::PathBuf;
 
 fn run_mode(mode: &'static str) {
@@ -14,7 +14,7 @@ fn run_mode(mode: &'static str) {
 
     compiletest::run_tests(&config);
 }
-/*
+
 #[test]
 fn expect_compilation_failures() {
     run_mode("compile-fail");
