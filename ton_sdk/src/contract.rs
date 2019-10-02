@@ -40,7 +40,7 @@ const ACCOUNT_FIELDS: &str = r#"
     addr {
         ...on MsgAddressIntAddrNoneVariant {
             AddrNone {
-                dummy
+                None
             }
         }
         ...on MsgAddressIntAddrStdVariant {
@@ -63,7 +63,7 @@ const ACCOUNT_FIELDS: &str = r#"
         state {
             ...on AccountStorageStateAccountUninitVariant {
                 AccountUninit {
-                    dummy
+                    None
                 }
             }
             ...on AccountStorageStateAccountActiveVariant {
@@ -74,7 +74,7 @@ const ACCOUNT_FIELDS: &str = r#"
             }
             ...on AccountStorageStateAccountFrozenVariant {
                 AccountFrozen {
-                    dummy
+                    None
                 }
             }
         }
