@@ -4,12 +4,21 @@ use serde::{Deserialize, Deserializer};
 use ParamType;
 
 /// Function param.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Param {
     /// Param name.
     pub name: String,
     /// Param type.
     pub kind: ParamType,
+}
+
+impl Param {
+    pub fn new(name: &str, kind: ParamType) -> Self {
+        Self {
+            name: name.to_string(),
+            kind
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]

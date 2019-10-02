@@ -2,6 +2,8 @@ use serde::ser::{Serialize, Serializer, SerializeMap};
 use {Param, Token, TokenValue};
 use num_bigint::{BigInt, BigUint};
 use ton_abi_core::types::Bitstring;
+use tvm::block::MsgAddressInt;
+use tvm::stack::dictionary::{HashmapE, HashmapType};
 
 #[derive(Debug)]
 pub enum DetokenizeError {
@@ -94,6 +96,29 @@ impl Token {
 
         serializer.serialize_str(&string)
     }
+
+    pub fn detokenize_hashmap<S>(hashmap: &HashmapE, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match hashmap.data() {
+            Some(_cell) => {
+                unimplemented!()
+            }
+            None => serializer.serialize_str("None"),
+        }
+    }
+
+    pub fn detokenize_address<S>(address: &MsgAddressInt, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match address {
+            MsgAddressInt::AddrNone => serializer.serialize_str("None"),
+            MsgAddressInt::AddrStd(adr) => adr.serialize(serializer),
+            MsgAddressInt::AddrVar(adr) => adr.serialize(serializer),
+        }
+    }
 }
 
 impl Serialize for TokenValue {
@@ -112,8 +137,10 @@ impl Serialize for TokenValue {
             },
             TokenValue::Array(ref tokens) => tokens.serialize(serializer),
             TokenValue::FixedArray(ref tokens) => tokens.serialize(serializer),
-            TokenValue::Bits(bitstring) => Token::detokenize_bitstring(&bitstring, serializer),
-            TokenValue::Bitstring(bitstring) => Token::detokenize_bitstring(&bitstring, serializer),
+            TokenValue::Bits(ref bitstring) => Token::detokenize_bitstring(bitstring, serializer),
+            TokenValue::Bitstring(ref bitstring) => Token::detokenize_bitstring(bitstring, serializer),
+            TokenValue::Map(ref hashmap) => Token::detokenize_hashmap(hashmap, serializer),
+            TokenValue::MsgAddress(ref address) => Token::detokenize_address(address, serializer),
         }
     }
 }

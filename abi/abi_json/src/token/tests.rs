@@ -1,8 +1,13 @@
 mod tokenize_tests {
     use crate::{Int, Param, ParamType, Token, TokenValue, Uint};
     use num_bigint::{BigInt, BigUint};
+    // use serde::Serialize;
     use token::{Detokenizer, Tokenizer};
     use ton_abi_core::types::Bitstring;
+    use tvm::block::MsgAddressInt;
+    use tvm::stack::dictionary::HashmapE;
+    use tvm::stack::{SliceData};
+    use tvm::types::AccountId;
 
     #[test]
     fn test_tokenize_ints() {
@@ -465,6 +470,88 @@ mod tokenize_tests {
         println!("{}", input);
         assert_eq!(
             Tokenizer::tokenize_all(&params, &serde_json::from_str(&input).unwrap()).unwrap(),
+            expected_tokens
+        );
+    }
+
+    #[test]
+    fn test_tokenize_hashmap() {
+        let input = r#"{
+            "a": {
+                "-1": 42,
+                "12": 37
+                }
+            },
+        }"#;
+
+        let params = vec![
+            Param::new("a", ParamType::Map(8, true, Box::new(ParamType::Dint))),
+        ];
+
+        let mut hashmap = HashmapE::with_bit_len(8);
+        hashmap.set_serializable(&-1i8, &42u32).unwrap();
+        hashmap.set_serializable(&12i8, &37u32).unwrap();
+
+        let expected_tokens = vec![
+            Token {
+                name: "a".to_owned(),
+                value: TokenValue::Map(hashmap)
+            }
+        ];
+
+        assert_eq!(
+            Tokenizer::tokenize_all(&params, &serde_json::from_str(input).unwrap()).unwrap(),
+            expected_tokens
+        );
+    }
+
+    #[test]
+    fn test_tokenize_address() {
+
+        let addr = MsgAddressInt::with_standart(None, -17, AccountId::from([0x55; 32])).unwrap();
+        let j = serde_json::to_string_pretty(&addr).unwrap();
+        println!("{}", j);
+
+        // let j = serde_json::to_string_pretty(&AccountId::from([0x55; 32])).unwrap();
+        // println!("{}", j);
+
+        let addr = MsgAddressInt::with_variant(None, -177, SliceData::new(vec![0x55, 0x58])).unwrap();
+        let j = serde_json::to_string_pretty(&addr).unwrap();
+        println!("{}", j);
+
+        let input = r#"{
+            "std": {
+                "anycast": null,
+                "workchain_id": -17,
+                "address": "5555555555555555555555555555555555555555555555555555555555555555"
+            },
+            "var": {
+                "anycast": null,
+                "workchain_id": -177,
+                "address": "555"
+            }
+        }"#;
+
+        let params = vec![
+            Param::new("std", ParamType::StdAddress),
+            Param::new("var", ParamType::VarAddress),
+        ];
+
+        let expected_tokens = vec![
+            Token {
+                name: "std".to_owned(),
+                value: TokenValue::MsgAddress(MsgAddressInt::with_standart(
+                    None, -17, AccountId::from([0x55; 32])).unwrap())
+            },
+            Token {
+                name: "std".to_owned(),
+                value: TokenValue::MsgAddress(MsgAddressInt::with_variant(
+                    None, -177, SliceData::new(vec![0x55, 0x58])).unwrap())
+            },
+        ];
+
+        assert_eq!(
+            Tokenizer::tokenize_all(&params, &serde_json::from_str(input).unwrap()).unwrap(),
             expected_tokens
         );
     }

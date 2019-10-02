@@ -461,17 +461,14 @@ fn put_data_into_chain(bilder: BuilderData, data: Bitstring) -> BuilderData {
     let mut current_builder = bilder;
 
     while size != 0 {
-        if BuilderData::bits_capacity() == current_builder.bits_used() {
+        if 0 == current_builder.bits_free() {
             let mut temp_builder = BuilderData::new();
             temp_builder.append_reference(current_builder);
 
             current_builder = temp_builder;
         }
 
-        let adding_bits = std::cmp::min(
-            BuilderData::bits_capacity() - current_builder.bits_used(),
-            size,
-        );
+        let adding_bits = std::cmp::min(current_builder.bits_free(), size);
 
         let cut = data.substring(size - adding_bits..size);
 

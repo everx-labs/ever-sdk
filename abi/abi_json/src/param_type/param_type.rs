@@ -4,8 +4,9 @@ use std::fmt;
 use Param;
 
 /// Function and event param types.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParamType {
+    Unknown,
     /// uint<M>: unsigned integer type of M bits.
     Uint(usize),
     /// int<M>: signed integer type of M bits.
@@ -26,6 +27,10 @@ pub enum ParamType {
     Bits(usize),
     /// bitstring: dynamic sized bits sequence.
     Bitstring,
+    /// hashmap
+    Map(usize, bool, Box<ParamType>),
+    StdAddress,
+    VarAddress,
 }
 
 impl fmt::Display for ParamType {
@@ -38,6 +43,7 @@ impl ParamType {
     /// Returns type signature according to ABI specification
     pub fn type_signature(&self) -> String {
         match self {
+            ParamType::Unknown => format!("unknown"),
             ParamType::Uint(size) => format!("uint{}", size),
             ParamType::Int(size) => format!("int{}", size),
             ParamType::Dint => "dint".to_owned(),
@@ -57,6 +63,9 @@ impl ParamType {
                 format!("{}[{}]", param_type.type_signature(), size),
             ParamType::Bits(size) => format!("bits{}", size),
             ParamType::Bitstring => "bitstring".to_owned(),
+            ParamType::Map(bit_len, signed, typ) => format!("map bit_len: {}, signed: {}, type: {}", bit_len, signed, typ),
+            ParamType::StdAddress => format!("std msg address"),
+            ParamType::VarAddress => format!("var msg address"),
         }
     }
 }

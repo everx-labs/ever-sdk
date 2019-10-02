@@ -115,8 +115,8 @@ where
         
         // expand cells chain with new root all references are used 
 		// or if ABI version and function ID cannot fit into root cell
-        if  BuilderData::references_capacity() == builder.references_used() ||
-            BuilderData::bits_capacity() < builder.bits_used() + FUNC_ID_BITS_SIZE + ABI_VERSION_BITS_SIZE
+        if  builder.references_free() == 0 ||
+            builder.bits_free() < FUNC_ID_BITS_SIZE + ABI_VERSION_BITS_SIZE
         {
             let mut new_builder = BuilderData::new();
             new_builder.append_reference(builder);

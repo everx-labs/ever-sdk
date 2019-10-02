@@ -11,7 +11,7 @@ impl ABISerialized for bool {
 
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
         let mut destination = {
-            if 1 + destination.bits_used() > BuilderData::bits_capacity() {
+            if destination.bits_free() == 0 {
                 let mut next = BuilderData::new();
                 next.append_reference(destination);
                 next

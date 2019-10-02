@@ -31,6 +31,7 @@ pub fn mnemonic_is_valid(phrase: &String) -> ApiResult<bool> {
     Ok(Mnemonic::validate(phrase.as_str(), English).is_ok())
 }
 
+#[allow(dead_code)]
 pub fn mnemonic_seed_from_phrase_and_salt(phrase: &String, salt: &String) -> ApiResult<String> {
     let mnemonic = Mnemonic::from_phrase(phrase, English)
         .map_err(|err| ApiError::crypto_bip39_invalid_phrase(err))?;
@@ -41,6 +42,7 @@ pub fn mnemonic_seed_from_phrase_and_salt(phrase: &String, salt: &String) -> Api
     Ok(hex::encode(seed))
 }
 
+#[allow(dead_code)]
 pub fn mnemonic_entropy_from_phrase(phrase: &String) -> ApiResult<String> {
     let mnemonic = Mnemonic::from_phrase(phrase, English)
         .map_err(|err| ApiError::crypto_bip39_invalid_phrase(err))?;

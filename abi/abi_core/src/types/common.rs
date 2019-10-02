@@ -7,7 +7,7 @@ pub fn prepend_data_to_chain(mut builder: BuilderData, data: Bitstring) -> Build
     let mut data = data;
 
     while data.length_in_bits() > 0 {
-        let remaining_bits = BuilderData::bits_capacity() - builder.bits_used();
+        let remaining_bits = builder.bits_free();
 
         if remaining_bits > 0 {
             // data does not fit into cell - fill current cell and take remaining data
@@ -117,9 +117,7 @@ pub fn get_next_bits_from_chain(
 // if currnet cell is filled with references (one reference is reserved for chaining cells) or data,
 // then we append reference to next cell
 pub fn provide_empty_reference(destination: BuilderData) -> BuilderData {
-    if destination.references_used() == BuilderData::references_capacity()
-        || destination.bits_used() == BuilderData::bits_capacity()
-    {
+    if destination.references_free() == 0 || destination.bits_free() == 0 {
         let mut next = BuilderData::new();
         next.append_reference(destination);
         next
