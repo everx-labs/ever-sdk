@@ -87,7 +87,10 @@ pipeline {
                             }
                         }
                     }
-                }
+					post {
+						cleanup {script{cleanWs notFailBuild: true}}
+					}
+				}
                 stage('Client macOS') {
                     agent {
                         label "ios"
@@ -123,7 +126,10 @@ pipeline {
                             }
                         }
                     }
-                }
+					post {
+						cleanup {script{cleanWs notFailBuild: true}}
+					}
+				}
                 stage('Client Windows') {
                     agent {
                         label "Win"
@@ -159,7 +165,10 @@ pipeline {
                             }
                         }
                     }
-                }
+					post {
+						cleanup {script{cleanWs notFailBuild: true}}
+					}                
+				}
                 stage('react-native') {
                     agent {
                         label "ios"
@@ -209,7 +218,10 @@ pipeline {
                             }
                         }
                     }
-                }
+					post {
+						cleanup {script{cleanWs notFailBuild: true}}
+					}                
+				}
                 stage('node-js for iOS') {
                     agent {
                         label "ios"
@@ -259,7 +271,10 @@ pipeline {
                             }
                         }
                     }
-                }
+					post {
+						cleanup {script{cleanWs notFailBuild: true}}
+					}                
+				}
                 stage('node-js for Windows') {
                     agent {
                         label "Win"
@@ -309,7 +324,10 @@ pipeline {
                             }
                         }
                     }
-                }
+					post {
+						cleanup {script{cleanWs notFailBuild: true}}
+					}                
+				}
                 stage('node-js for Linux') {
                     agent {
                         docker {
@@ -361,7 +379,10 @@ pipeline {
                             }
                         }
                     }
-                }
+					post {
+						cleanup {script{cleanWs notFailBuild: true}}
+					}                
+				}
                 stage('web') {
                     agent {
                         docker {
@@ -425,7 +446,10 @@ pipeline {
                             }
                         }
                     }
-                }
+					post {
+						cleanup {script{cleanWs notFailBuild: true}}
+					}                
+				}
             }
         }
     }
