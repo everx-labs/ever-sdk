@@ -83,9 +83,12 @@ error_chain! {
         }
         InitializeError {
             description("SDK initialize error")
-        }
+        }        
         DefaultWorkchainNotSet {
             description("Default workchain not set")
+        }
+        WrongJson {
+            description("Json document does not correspond to the value built from BOC")
         }
     }
 }

@@ -62,6 +62,8 @@ pub mod queries_helper;
 #[cfg(feature = "node_interaction")]
 mod requests_helper;
 
+#[cfg(feature = "node_interaction")]
+mod check_proofs;
 
 /// Init SKD. Globally saves queries and requests server URLs
 #[cfg(feature = "node_interaction")]

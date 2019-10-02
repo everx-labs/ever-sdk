@@ -27,6 +27,8 @@ impl Transaction {
                         let tr: TvmTransaction = serde_json::from_value(val)
                             .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing transaction: {}", err)))?;
 
+                        //check_proofs::check_transaction()?;
+
                         Ok(Some(Transaction { tr }))
                     }
             });
