@@ -141,7 +141,7 @@ pub fn wait_for(table: &str, filter: &str, fields: &str)
         fields)?;
 
     let load_stream = query(table, filter, fields, None, None)?
-        .filter(|value| !value.is_null())
+        .filter(|value| !value[0].is_null())
         .and_then(|value| {
             Ok(value[0].clone())
         });
