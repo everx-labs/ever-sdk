@@ -22,4 +22,4 @@ base64 = "0.10.0"
 
 ton_sdk = { path = "../ton_sdk" }
 
-tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "feature-dev", package = "tvm" }
+tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "feature-merkle-updates", package = "tvm" }

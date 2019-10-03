@@ -6,7 +6,7 @@ edition = "2018"
 [dependencies]
 jsonrpc-client-http = "0.5.0"
 jsonrpc-client-core = "0.5.0"
-tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "feature-dev", package = "tvm" }
+tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "feature-merkle-updates", package = "tvm" }
 ton_abi_core = { path = "../abi_core" }
 base64 = "0.10.0"
 clap = "2.32.0"

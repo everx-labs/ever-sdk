@@ -1,19 +1,64 @@
 use crate::*;
 use serde_json::Value;
-use tvm::block::{ Transaction as TvmTransaction };
+use tvm::block::{ Transaction as TvmTransaction, TransactionProcessingStatus,
+    deserialize_tree_of_cells_from_base64};
 
 #[cfg(test)]
 #[path = "tests/test_check_proofs.rs"]
 mod tests;
 
-pub fn check_transaction(tr_val: Value) -> SdkResult<()> {
-    // build transaction
+pub fn check_transaction(tr_val: &Value) -> SdkResult<()> {
 
-    // build full transaction from BOC
+    // extracting boc and proof
+
+    if !tr_val.is_object() {
+        bail!(SdkErrorKind::InvalidData("Invalid transaction json"));
+    }
+
+    let tr_val_obj = tr_val.as_object().unwrap();
+    let boc_val = tr_val_obj.get("boc");
+    let proof_val = tr_val_obj.get("proof");
+
+    if boc_val.is_none() || proof_val.is_none() ||
+        boc_val.unwrap().is_null() || proof_val.unwrap().is_null() {
+        if let Some(status_val) = tr_val_obj.get("status") {
+            let status: TransactionProcessingStatus = serde_json::from_value(status_val)
+                .map_err(|err| {
+                    SdkErrorKind::InvalidData(format!("error parsing transaction's status: {}", err))
+                })?;
+            if status == TransactionProcessingStatus::Finalized 
+                || status == TransactionProcessingStatus::Proposed {
+                bail!(SdkErrorKind::InvalidData(
+                    "Finalized or Proposed transactions must contain both proof and boc fields"));
+            } else {
+                return Ok(tr);
+            }
+        } else {
+            bail!(SdkErrorKind::InvalidData(
+                "Transaction JSON must contain both proof and boc fields or not Finalized or Proposed status"));
+        }
+    }
+
+    // build full transaction from BOC, extract boc & proof
+    let mut boc = deserialize_tree_of_cells_from_base64(&str::from(boc_val.unwrap()))
+        .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing boc: {}", err)))?;
+    let mut proof = deserialize_tree_of_cells_from_base64(&str::from(proof_val.unwrap()))
+        .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing boc: {}", err)))?;
+    let mut full_tr = TvmTransaction::construct_from(&mut tr.boc.unwrap().clone());
+
 
     // check given transaction's JSON
+    let complete_json = serde_json::to_value(full_tr)
+        .map_err(|err| {
+            SdkErrorKind::InvalidData(format!("error serializing (to json) full transaction: {}", err))
+        })?;
+    check_incomplete_json()
 
     // check merkle proof
+
+
+
+
 
     unimplemented!()
 }
