@@ -83,8 +83,6 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         run::decode_unknown_output);
 
     // Contracts
-    handlers.spawn("contracts.send.grams.message",
-        deploy::encode_send_grams_message);
     handlers.spawn("contracts.encode_message_with_sign",
         encode_message_with_sign);
     handlers.spawn("contracts.run.local",

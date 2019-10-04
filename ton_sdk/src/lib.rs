@@ -14,6 +14,9 @@ extern crate hex;
 extern crate ed25519_dalek;
 extern crate rand;
 extern crate sha2;
+extern crate base64;
+extern crate crc;
+extern crate crc16;
 
 #[macro_use]
 extern crate error_chain;
