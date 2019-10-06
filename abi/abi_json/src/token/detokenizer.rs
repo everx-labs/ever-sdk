@@ -2,30 +2,23 @@ use serde::ser::{Serialize, Serializer, SerializeMap};
 use {Param, Token, TokenValue};
 use num_bigint::{BigInt, BigUint};
 use ton_abi_core::types::Bitstring;
-
-#[derive(Debug)]
-pub enum DetokenizeError {
-    WrongParametersCount,
-    SerdeError(serde_json::Error),
-    WrongParameterType,
-}
+use crate::error::*;
 
 pub struct Detokenizer;
 
 impl Detokenizer {
-    pub fn detokenize(params: &[Param], tokens: &[Token]) -> Result<String, DetokenizeError> {
+    pub fn detokenize(params: &[Param], tokens: &[Token]) -> AbiResult<String> {
         //println!("Params len = {}, tokens len = {}", params.len(), tokens.len());
 
         if params.len() != tokens.len() {
-            return Err(DetokenizeError::WrongParametersCount);
+            bail!(AbiErrorKind::WrongParametersCount(params.len(), tokens.len()));
         }
 
         if !Token::types_check(tokens, params) {
-            return Err(DetokenizeError::WrongParameterType);
+             bail!(AbiErrorKind::WrongParameterType);
         }
 
-        serde_json::to_string(&FunctionParams{params: tokens})
-            .map_err(|err| DetokenizeError::SerdeError(err))
+        Ok(serde_json::to_string(&FunctionParams{params: tokens})?)
     }
 }
 

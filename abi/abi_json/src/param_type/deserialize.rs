@@ -19,7 +19,7 @@ impl<'a> Visitor<'a> for ParamTypeVisitor {
     }
 
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E> where E: SerdeError {
-        Reader::read(value).map_err(|e| SerdeError::custom(format!("{:?}", e).as_str()))
+        Reader::read(value).map_err(|e| SerdeError::custom(e.to_string()))
     }
 
     fn visit_string<E>(self, value: String) -> Result<Self::Value, E> where E: SerdeError {

@@ -11,6 +11,8 @@ extern crate serde_json;
 extern crate serde_derive;
 extern crate ton_abi_core;
 extern crate ed25519_dalek;
+#[macro_use]
+extern crate error_chain;
 
 pub mod contract;
 pub mod function;
@@ -30,4 +32,4 @@ pub use json_abi::*;
 pub use param::Param;
 pub use types::int::Int;
 pub use types::uint::Uint;
-pub use error::ABIError;
+pub use error::*;

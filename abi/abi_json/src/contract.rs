@@ -3,8 +3,9 @@ use std::collections::HashMap;
 use serde::{Deserialize, Deserializer};
 use serde::de::{Unexpected, Error as SerdeError};
 use serde_json;
-use {Function, Event, ABIError, Token, Param};
+use {Function, Event, Token, Param};
 use tvm::stack::SliceData;
+use crate::error::*;
 
 /// API building calls to contracts ABI.
 #[derive(Clone, Debug, PartialEq)]
@@ -67,35 +68,35 @@ pub struct DecodedMessage {
 
 impl Contract {
     /// Loads contract from json.
-    pub fn load<T: io::Read>(reader: T) -> Result<Self, ABIError> {
-        serde_json::from_reader(reader).map_err(|serde_error| ABIError::SerdeError(serde_error))
+    pub fn load<T: io::Read>(reader: T) -> AbiResult<Self> {
+        Ok(serde_json::from_reader(reader)?)
     }
 
     /// Returns `Function` struct with provided function name.
-    pub fn function(&self, name: &str) -> Result<&Function, ABIError> {
-        self.functions.get(name).ok_or_else(|| ABIError::InvalidName(name.to_owned()))
+    pub fn function(&self, name: &str) -> AbiResult<&Function> {
+        self.functions.get(name).ok_or_else(|| AbiErrorKind::InvalidName(name.to_owned()).into())
     }
 
     /// Returns `Function` struct with provided function id.
-    pub fn function_by_id(&self, id: u32) -> Result<&Function, ABIError> {
+    pub fn function_by_id(&self, id: u32) -> AbiResult<&Function> {
         for (_, func) in &self.functions {
             if func.id == id {
                 return Ok(func);
             }
         }
 
-        Err(ABIError::InvalidFunctionId(id))
+        bail!(AbiErrorKind::InvalidFunctionId(id))
     }
 
     /// Returns `Event` struct with provided function id.
-    pub fn event_by_id(&self, id: u32) -> Result<&Event, ABIError> {
+    pub fn event_by_id(&self, id: u32) -> AbiResult<&Event> {
         for (_, event) in &self.events {
             if event.id == id {
                 return Ok(event);
             }
         }
 
-        Err(ABIError::InvalidFunctionId(id))
+        bail!(AbiErrorKind::InvalidFunctionId(id))
     }
 
     /// Returns functions collection
@@ -109,15 +110,13 @@ impl Contract {
     }
 
     /// Decodes contract answer and returns name of the function called
-    pub fn decode_output(&self, data: SliceData) -> Result<DecodedMessage, ABIError> {
+    pub fn decode_output(&self, data: SliceData) -> AbiResult<DecodedMessage> {
         let original_data = data.clone();
         
-        let func_id = Function::decode_id(data)
-            .map_err(|err| ABIError::DeserializationError(err))?;
+        let func_id = Function::decode_id(data)?;
 
         if let Ok(func) = self.function_by_id(func_id){
-            let tokens = func.decode_output(original_data)
-                .map_err(|err| ABIError::DeserializationError(err))?;
+            let tokens = func.decode_output(original_data)?;
 
             Ok( DecodedMessage {
                 function_name: func.name.clone(),
@@ -126,8 +125,7 @@ impl Contract {
             })
         } else {
             let event = self.event_by_id(func_id)?;
-            let tokens = event.decode_input(original_data)
-                .map_err(|err| ABIError::DeserializationError(err))?;
+            let tokens = event.decode_input(original_data)?;
 
             Ok( DecodedMessage {
                 function_name: event.name.clone(),
@@ -138,16 +136,14 @@ impl Contract {
     }
 
     /// Decodes contract answer and returns name of the function called
-    pub fn decode_input(&self, data: SliceData) -> Result<DecodedMessage, ABIError> {
+    pub fn decode_input(&self, data: SliceData) -> AbiResult<DecodedMessage> {
         let original_data = data.clone();
         
-        let func_id = Function::decode_id(data)
-            .map_err(|err| ABIError::DeserializationError(err))?;
+        let func_id = Function::decode_id(data)?;
 
         let func = self.function_by_id(func_id)?;
 
-        let tokens = func.decode_input(original_data)
-            .map_err(|err| ABIError::DeserializationError(err))?;
+        let tokens = func.decode_input(original_data)?;
 
         Ok( DecodedMessage {
             function_name: func.name.clone(),

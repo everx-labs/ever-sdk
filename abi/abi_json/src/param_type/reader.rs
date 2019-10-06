@@ -1,16 +1,12 @@
 use {ParamType};
+use crate::error::*;
 
 /// Used to convert param type represented as a string to rust structure.
 pub struct Reader;
 
-#[derive(Debug)]
-pub enum ReaderError{
-    InvalidName(String),
-}
-
 impl Reader {
     /// Converts string to param type.
-    pub fn read(name: &str) -> Result<ParamType, ReaderError> {
+    pub fn read(name: &str) -> AbiResult<ParamType> {
         // check if it is a fixed or dynamic array.
         if let Some(']') = name.chars().last() {
             // take number part
@@ -31,7 +27,7 @@ impl Reader {
             } else {
                 // it's a fixed array.
                 let len = usize::from_str_radix(&num, 10)
-                    .map_err(|_| ReaderError::InvalidName(name.to_owned()))?;
+                    .map_err(|_| AbiErrorKind::InvalidName(name.to_owned()))?;
                     
                 let subtype = Reader::read(&name[..count - num.len() - 2])?;
                 return Ok(ParamType::FixedArray(Box::new(subtype), len));
@@ -48,23 +44,23 @@ impl Reader {
             "tuple" => ParamType::Tuple(Vec::new()),
             s if s.starts_with("int") => {
                 let len = usize::from_str_radix(&s[3..], 10)
-                    .map_err(|_| ReaderError::InvalidName(name.to_owned()))?;
+                    .map_err(|_| AbiErrorKind::InvalidName(name.to_owned()))?;
                 ParamType::Int(len)
             },
             s if s.starts_with("uint") => {
                 let len = usize::from_str_radix(&s[4..], 10)
-                    .map_err(|_| ReaderError::InvalidName(name.to_owned()))?;
+                    .map_err(|_| AbiErrorKind::InvalidName(name.to_owned()))?;
                 ParamType::Uint(len)
             },
             s if s.starts_with("bits") => {
                 let len = usize::from_str_radix(&s[4..], 10)
-                    .map_err(|_| ReaderError::InvalidName(name.to_owned()))?;
+                    .map_err(|_| AbiErrorKind::InvalidName(name.to_owned()))?;
                 ParamType::Bits(len)
             },
             s if s.starts_with("map(") && s.ends_with(")") => {
                 let types: Vec<&str> = name[5..name.len() - 1].split(",").collect();
                 if types.len() != 2 {
-                    return Err(ReaderError::InvalidName(name.to_owned()));
+                    bail!(AbiErrorKind::InvalidName(name.to_owned()));
                 }
 
                 let key_type = Reader::read(types[0])?;
@@ -74,12 +70,12 @@ impl Reader {
                 {
                     ParamType::Int(_) | ParamType::Uint(_) =>
                         ParamType::Map(Box::new(key_type), Box::new(value_type)),
-                    _ => return Err(ReaderError::InvalidName(
+                    _ => bail!(AbiErrorKind::InvalidName(
                             "Only int and uint types can be map keys".to_owned())),
                 }
             },
             _ => {
-                return Err(ReaderError::InvalidName(name.to_owned()));
+                bail!(AbiErrorKind::InvalidName(name.to_owned()));
             }
         };
 

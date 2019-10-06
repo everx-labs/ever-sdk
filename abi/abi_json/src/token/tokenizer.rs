@@ -5,22 +5,14 @@ use serde::Deserialize;
 use num_bigint::{Sign, BigInt};
 use ton_abi_core::types::{Bitstring, Bit};
 use tvm::block::{MsgAddressInt};
-/// Returning errors during deserialization
-#[derive(Debug)]
-pub enum TokenizeError {
-    WrongDataFormat(Value),
-    WrongParametersCount,
-    InvalidParameterLength(Value),
-    InvalidParameterValue(Value),
-    NotImplemented,
-}
+use crate::error::*;
 
 /// This struct should be used to parse string values as tokens.
 pub struct Tokenizer;
 
 impl Tokenizer {
     /// Tries to parse a JSON value as a token of given type.
-    fn tokenize_parameter(param: &ParamType, value: &Value) -> Result<TokenValue, TokenizeError> {
+    fn tokenize_parameter(param: &ParamType, value: &Value) -> AbiResult<TokenValue> {
         match param {
             ParamType::Uint(size) => Self::tokenize_uint(*size, value),
             ParamType::Int(size) => Self::tokenize_int(*size, value),
@@ -35,17 +27,17 @@ impl Tokenizer {
             ParamType::Map(key_type, value_type) => Self::tokenize_hashmap(key_type, value_type, value),
             ParamType::Address => {
                 let address = MsgAddressInt::deserialize(value)
-                    .map_err(|_| TokenizeError::WrongDataFormat(value.clone()))?;
+                    .map_err(|_| AbiErrorKind::WrongDataFormat(value.clone()))?;
                 Ok(TokenValue::Address(address))
             }
         }
     }
 
     /// Tries to parse parameters from JSON values to tokens.
-    pub fn tokenize_all(params: &[Param], values: &Value) -> Result<Vec<Token>, TokenizeError> {
+    pub fn tokenize_all(params: &[Param], values: &Value) -> AbiResult<Vec<Token>> {
         if let Value::Object(map) = values {
             if map.len() != params.len() {
-                return Err(TokenizeError::WrongParametersCount);
+                bail!(AbiErrorKind::WrongParametersCount(params.len(), map.len()))
             }
 
             let mut tokens = Vec::new();
@@ -56,12 +48,12 @@ impl Tokenizer {
 
             Ok(tokens)
         } else {
-            Err(TokenizeError::WrongDataFormat(values.clone()))
+            bail!(AbiErrorKind::WrongDataFormat(values.clone()))
         }
     }
 
     /// Tries to read tokens array from `Value`
-    fn read_array(param: &ParamType, value: &Value) -> Result<Vec<TokenValue>, TokenizeError> {
+    fn read_array(param: &ParamType, value: &Value) -> AbiResult<Vec<TokenValue>> {
         if let Value::Array(array) = value {
             let mut tokens = Vec::new();
             for value in array {
@@ -70,7 +62,7 @@ impl Tokenizer {
             
             Ok(tokens)
         } else {
-            Err(TokenizeError::WrongDataFormat(value.clone()))
+            bail!(AbiErrorKind::WrongDataFormat(value.clone()))
         }
     }
 
@@ -78,38 +70,38 @@ impl Tokenizer {
     fn tokenize_fixed_array(
         param: &ParamType,
         size: usize, value: &Value
-    ) -> Result<TokenValue, TokenizeError> {
+    ) -> AbiResult<TokenValue> {
         let vec = Self::read_array(param, value)?;
         match vec.len() == size {
             true => Ok(TokenValue::FixedArray(vec)),
-            false => Err(TokenizeError::InvalidParameterLength(value.clone())),
+            false => bail!(AbiErrorKind::InvalidParameterLength(value.clone())),
         }
     }
 
     /// Tries to parse a value as a vector of tokens.
-    fn tokenize_array(param: &ParamType, value: &Value) -> Result<TokenValue, TokenizeError> {
+    fn tokenize_array(param: &ParamType, value: &Value) -> AbiResult<TokenValue> {
         let vec = Self::read_array(param, value)?;
 
         Ok(TokenValue::Array(vec))
     }
 
     /// Tries to parse a value as a bool.
-    fn tokenize_bool(value: &Value) -> Result<TokenValue, TokenizeError> {
+    fn tokenize_bool(value: &Value) -> AbiResult<TokenValue> {
         match value {
             Value::Bool(value) => Ok(TokenValue::Bool(value.to_owned())),
             Value::String(string) => {
                 match string.as_str() {
                     "true" => Ok(TokenValue::Bool(true)),
                     "false" => Ok(TokenValue::Bool(false)),
-                    _ => Err(TokenizeError::InvalidParameterValue(value.clone())),
+                    _ => bail!(AbiErrorKind::InvalidParameterValue(value.clone())),
                 }
             }
-            _ => Err(TokenizeError::InvalidParameterValue(value.clone())),
+            _ => bail!(AbiErrorKind::InvalidParameterValue(value.clone())),
         }
     }
 
     /// Tries to read integer number from `Value`
-    fn read_int(value: &Value) -> Result<BigInt, TokenizeError> {
+    fn read_int(value: &Value) -> AbiResult<BigInt> {
         if value.is_i64() {
             let number = value.as_i64().unwrap();
 
@@ -134,11 +126,11 @@ impl Tokenizer {
             };
 
             let number = BigInt::parse_bytes(string.as_bytes(), radix)
-                            .ok_or(TokenizeError::InvalidParameterValue(value.clone()))?;
+                            .ok_or(AbiErrorKind::InvalidParameterValue(value.clone()))?;
 
             Ok(number)
         } else {
-            Err(TokenizeError::WrongDataFormat(value.clone()))
+            bail!(AbiErrorKind::WrongDataFormat(value.clone()))
         }
     }
 
@@ -159,52 +151,52 @@ impl Tokenizer {
     }
 
     /// Tries to parse a value as unsigned integer.
-    fn tokenize_uint(size: usize, value: &Value) -> Result<TokenValue, TokenizeError> {
+    fn tokenize_uint(size: usize, value: &Value) -> AbiResult<TokenValue> {
         let big_int = Self::read_int(value)?;
 
-        let number = big_int.to_biguint().ok_or(TokenizeError::InvalidParameterValue(value.clone()))?;
+        let number = big_int.to_biguint().ok_or(AbiErrorKind::InvalidParameterValue(value.clone()))?;
 
         if !Self::check_int_size(&big_int, size + 1) {
-            Err(TokenizeError::InvalidParameterValue(value.clone()))
+            bail!(AbiErrorKind::InvalidParameterValue(value.clone()))
         } else {
             Ok(TokenValue::Uint(Uint{number, size}))
         }
     }
 
     /// Tries to parse a value as signed integer.
-    fn tokenize_int(size: usize, value: &Value) -> Result<TokenValue, TokenizeError> {
+    fn tokenize_int(size: usize, value: &Value) -> AbiResult<TokenValue> {
         let number = Self::read_int(value)?;
 
         if !Self::check_int_size(&number, size) {
-            Err(TokenizeError::InvalidParameterValue(value.clone()))
+            bail!(AbiErrorKind::InvalidParameterValue(value.clone()))
         } else {
             Ok(TokenValue::Int(Int{number, size}))
         }
     }
 
     /// Tries to parse a value as a dynamic int.
-    fn tokenize_dint(value: &Value) -> Result<TokenValue, TokenizeError> {
+    fn tokenize_dint(value: &Value) -> AbiResult<TokenValue> {
         let big_int = Self::read_int(value)?;
 
         Ok(TokenValue::Dint(big_int))
     }
 
     /// Tries to parse a value as a dynamic insigned int.
-    fn tokenize_duint(value: &Value) -> Result<TokenValue, TokenizeError> {
+    fn tokenize_duint(value: &Value) -> AbiResult<TokenValue> {
         let big_int = Self::read_int(value)?;
 
         let big_uint = big_int
             .to_biguint()
-            .ok_or(TokenizeError::InvalidParameterValue(value.clone()))?;
+            .ok_or(AbiErrorKind::InvalidParameterValue(value.clone()))?;
 
         Ok(TokenValue::Duint(big_uint))
     }
 
     /// Tries to read bitstring from `Value`.
-    fn read_bitstring(value: &Value) -> Result<Bitstring, TokenizeError> {
+    fn read_bitstring(value: &Value) -> AbiResult<Bitstring> {
         let mut string = value
             .as_str()
-            .ok_or(TokenizeError::WrongDataFormat(value.clone()))?
+            .ok_or(AbiErrorKind::WrongDataFormat(value.clone()))?
             .to_owned();
 
         // hexademical representation
@@ -230,7 +222,7 @@ impl Tokenizer {
             }
 
             let vec = hex::decode(string)
-                .map_err(|_| TokenizeError::InvalidParameterValue(value.clone()))?;
+                .map_err(|_| AbiErrorKind::InvalidParameterValue(value.clone()))?;
 
             Bitstring::from_bitstring_with_completion_tag(vec)
         } else { // bits representation
@@ -240,7 +232,7 @@ impl Tokenizer {
                 match bit {
                     '0' => bitstring.append_bit(&Bit::Zero),
                     '1' => bitstring.append_bit(&Bit::One),
-                    _ => return Err(TokenizeError::InvalidParameterValue(value.clone()))
+                    _ => bail!(AbiErrorKind::InvalidParameterValue(value.clone()))
                 };
             }
 
@@ -251,18 +243,18 @@ impl Tokenizer {
     }
 
     /// Tries to parse a value as bitstring.
-    fn tokenize_bitstring(value: &Value) -> Result<TokenValue, TokenizeError> {
+    fn tokenize_bitstring(value: &Value) -> AbiResult<TokenValue> {
         Self::read_bitstring(value).map(|bitstring| TokenValue::Bitstring(bitstring))
     }
 
-    fn tokenize_hashmap(key_type: &ParamType, value_type: &ParamType, map_value: &Value) -> Result<TokenValue, TokenizeError> {
+    fn tokenize_hashmap(key_type: &ParamType, value_type: &ParamType, map_value: &Value) -> AbiResult<TokenValue> {
         if let Value::Object(map) = map_value {
             let mut vec = vec![];
             for (key, value) in map.iter() {
                 let key_token = Self::tokenize_parameter(
                     key_type,
                     &serde_json::from_str(key)
-                        .map_err(|_| TokenizeError::InvalidParameterValue(map_value.clone()))?)?;
+                        .map_err(|_| AbiErrorKind::InvalidParameterValue(map_value.clone()))?)?;
                 let value_token = Self::tokenize_parameter(
                         value_type,
                         value)?;
@@ -271,23 +263,23 @@ impl Tokenizer {
             }
             Ok(TokenValue::Map(vec))
         } else {
-            Err(TokenizeError::WrongDataFormat(map_value.clone()))
+            bail!(AbiErrorKind::WrongDataFormat(map_value.clone()))
         }
     }
 
     /// Tries to parse a value as fixed sized bits sequence.
-    fn tokenize_bits(size: usize, value: &Value) -> Result<TokenValue, TokenizeError> {
+    fn tokenize_bits(size: usize, value: &Value) -> AbiResult<TokenValue> {
         let bitstring = Self::read_bitstring(value)?;
 
         if bitstring.length_in_bits() != size {
-            Err(TokenizeError::InvalidParameterLength(value.clone()))
+            bail!(AbiErrorKind::InvalidParameterLength(value.clone()))
         } else {
             Ok(TokenValue::Bits(bitstring))
         }
     }
     
     /// Tries to parse a value as tuple.
-    fn tokenize_tuple(params: &Vec<Param>, value: &Value) -> Result<TokenValue, TokenizeError> {
+    fn tokenize_tuple(params: &Vec<Param>, value: &Value) -> AbiResult<TokenValue> {
         let tokens = Self::tokenize_all(params, value)?;
 
         Ok(TokenValue::Tuple(tokens))
