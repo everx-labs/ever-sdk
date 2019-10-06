@@ -414,3 +414,29 @@ fn test_address_parsing() {
     assert_eq!(address, AccountAddress::from_str(base64).expect("Couldn't parse base64 address").get_msg_address().unwrap());
     assert_eq!(address, AccountAddress::from_str(base64_url).expect("Couldn't parse base64_url address").get_msg_address().unwrap());
 }
+
+
+#[test]
+fn test_store_pubkey() {
+    let mut test_map = HashmapE::with_bit_len(DATA_MAP_KEYLEN);
+    let test_pubkey = vec![11u8; 32];
+    test_map.set(
+        0u64.write_to_new_cell().unwrap().into(),
+        &BuilderData::with_raw(vec![0u8; 32], 256).unwrap().into(),
+    ).unwrap();
+
+    let mut data = BuilderData::new();
+    data.append_bit_one().unwrap()
+        .checked_append_reference(test_map.data().unwrap()).unwrap();
+
+    let new_data = insert_pubkey(Some(data.into()), &test_pubkey).unwrap();
+
+    let new_map = HashmapE::with_data(DATA_MAP_KEYLEN, new_data.into());
+    let key_slice = new_map.get(
+        0u64.write_to_new_cell().unwrap().into(),
+    )
+    .unwrap()
+    .unwrap();
+
+    assert_eq!(key_slice.get_bytestring(0), test_pubkey);
+}
