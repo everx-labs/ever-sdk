@@ -2,8 +2,6 @@ use serde::ser::{Serialize, Serializer, SerializeMap};
 use {Param, Token, TokenValue};
 use num_bigint::{BigInt, BigUint};
 use ton_abi_core::types::Bitstring;
-use tvm::block::MsgAddressInt;
-use tvm::stack::dictionary::{HashmapE, HashmapType};
 
 #[derive(Debug)]
 pub enum DetokenizeError {
@@ -97,27 +95,15 @@ impl Token {
         serializer.serialize_str(&string)
     }
 
-    pub fn detokenize_hashmap<S>(hashmap: &HashmapE, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn detokenize_hashmap<S>(values: &Vec<(TokenValue, TokenValue)>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        match hashmap.data() {
-            Some(_cell) => {
-                unimplemented!()
-            }
-            None => serializer.serialize_str("None"),
+        let mut map = serializer.serialize_map(Some(values.len()))?;
+        for (k, v) in values {
+            map.serialize_entry(k, v)?;
         }
-    }
-
-    pub fn detokenize_address<S>(address: &MsgAddressInt, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match address {
-            MsgAddressInt::AddrNone => serializer.serialize_str("None"),
-            MsgAddressInt::AddrStd(adr) => adr.serialize(serializer),
-            MsgAddressInt::AddrVar(adr) => adr.serialize(serializer),
-        }
+        map.end()
     }
 }
 
@@ -139,8 +125,8 @@ impl Serialize for TokenValue {
             TokenValue::FixedArray(ref tokens) => tokens.serialize(serializer),
             TokenValue::Bits(ref bitstring) => Token::detokenize_bitstring(bitstring, serializer),
             TokenValue::Bitstring(ref bitstring) => Token::detokenize_bitstring(bitstring, serializer),
-            TokenValue::Map(ref hashmap) => Token::detokenize_hashmap(hashmap, serializer),
-            TokenValue::MsgAddress(ref address) => Token::detokenize_address(address, serializer),
+            TokenValue::Map(ref vec) => Token::detokenize_hashmap(vec, serializer),
+            TokenValue::Address(ref address) => address.serialize(serializer),
         }
     }
 }

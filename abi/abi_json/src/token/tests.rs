@@ -480,22 +480,28 @@ mod tokenize_tests {
             "a": {
                 "-1": 42,
                 "12": 37
-                }
-            },
+            }
         }"#;
 
         let params = vec![
-            Param::new("a", ParamType::Map(8, true, Box::new(ParamType::Dint))),
+            Param::new("a", ParamType::Map(Box::new(ParamType::Int(8)), Box::new(ParamType::Uint(32)))),
         ];
 
-        let mut hashmap = HashmapE::with_bit_len(8);
-        hashmap.set_serializable(&-1i8, &42u32).unwrap();
-        hashmap.set_serializable(&12i8, &37u32).unwrap();
+        let mut vec = vec![];
+
+        vec.push((
+            TokenValue::Int(Int { number: BigInt::from(-1i8), size: 8 }),
+            TokenValue::Uint(Uint { number: BigUint::from(42u32), size: 32 })
+            ));
+        vec.push((
+            TokenValue::Int(Int { number: BigInt::from(12i8), size: 8 }),
+            TokenValue::Uint(Uint { number: BigUint::from(37u32), size: 32 })
+            ));
 
         let expected_tokens = vec![
             Token {
                 name: "a".to_owned(),
-                value: TokenValue::Map(hashmap)
+                value: TokenValue::Map(vec)
             }
         ];
 
@@ -520,32 +526,24 @@ mod tokenize_tests {
         println!("{}", j);
 
         let input = r#"{
-            "std": {
-                "anycast": null,
-                "workchain_id": -17,
-                "address": "5555555555555555555555555555555555555555555555555555555555555555"
-            },
-            "var": {
-                "anycast": null,
-                "workchain_id": -177,
-                "address": "555"
-            }
+            "std": "-17:5555555555555555555555555555555555555555555555555555555555555555",
+            "var": "-177:555"
         }"#;
 
         let params = vec![
-            Param::new("std", ParamType::StdAddress),
-            Param::new("var", ParamType::VarAddress),
+            Param::new("std", ParamType::Address),
+            Param::new("var", ParamType::Address),
         ];
 
         let expected_tokens = vec![
             Token {
                 name: "std".to_owned(),
-                value: TokenValue::MsgAddress(MsgAddressInt::with_standart(
+                value: TokenValue::Address(MsgAddressInt::with_standart(
                     None, -17, AccountId::from([0x55; 32])).unwrap())
             },
             Token {
-                name: "std".to_owned(),
-                value: TokenValue::MsgAddress(MsgAddressInt::with_variant(
+                name: "var".to_owned(),
+                value: TokenValue::Address(MsgAddressInt::with_variant(
                     None, -177, SliceData::new(vec![0x55, 0x58])).unwrap())
             },
         ];

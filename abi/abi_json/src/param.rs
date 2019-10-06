@@ -62,6 +62,12 @@ impl<'a> Deserialize<'a> for Param {
                 } else {
                     ParamType::FixedArray(array_type, size)
                 },
+            ParamType::Map(key_type, value_type) => 
+                if let ParamType::Tuple(_) = *value_type {
+                    ParamType::Map(key_type, Box::new(ParamType::Tuple(serde_param.components)))
+                } else {
+                   ParamType::Map(key_type, value_type)
+                },
             _ => result.kind,
         };
 

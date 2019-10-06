@@ -61,6 +61,23 @@ impl Reader {
                     .map_err(|_| ReaderError::InvalidName(name.to_owned()))?;
                 ParamType::Bits(len)
             },
+            s if s.starts_with("map(") && s.ends_with(")") => {
+                let types: Vec<&str> = name[5..name.len() - 1].split(",").collect();
+                if types.len() != 2 {
+                    return Err(ReaderError::InvalidName(name.to_owned()));
+                }
+
+                let key_type = Reader::read(types[0])?;
+                let value_type = Reader::read(types[1])?;
+
+                match key_type
+                {
+                    ParamType::Int(_) | ParamType::Uint(_) =>
+                        ParamType::Map(Box::new(key_type), Box::new(value_type)),
+                    _ => return Err(ReaderError::InvalidName(
+                            "Only int and uint types can be map keys".to_owned())),
+                }
+            },
             _ => {
                 return Err(ReaderError::InvalidName(name.to_owned()));
             }

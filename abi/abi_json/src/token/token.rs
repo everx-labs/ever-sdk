@@ -10,7 +10,7 @@ use {Param, ParamType};
 use num_bigint::{BigInt, BigUint};
 use std::fmt;
 use tvm::stack::{BuilderData, IBitstring, SliceData};
-use tvm::stack::dictionary::{HashmapE, HashmapType};
+use tvm::stack::dictionary::{HashmapE};
 use tvm::block::MsgAddressInt;
 use tvm::block::Serializable;
 
@@ -73,8 +73,8 @@ pub enum TokenValue {
     /// MsgAddressInt
     ///
     /// Encoding is equivalent to bool[].
-    Map(HashmapE),
-    MsgAddress(MsgAddressInt),
+    Map(Vec<(TokenValue, TokenValue)>),
+    Address(MsgAddressInt),
 }
 
 impl fmt::Display for TokenValue {
@@ -105,8 +105,16 @@ impl fmt::Display for TokenValue {
             }
             TokenValue::Bits(b) => write!(f, "{}", b),
             TokenValue::Bitstring(b) => write!(f, "{}", b),
-            TokenValue::Map(h) => write!(f, "{}", h),
-            TokenValue::MsgAddress(a) => write!(f, "{}", a),
+            TokenValue::Map(map) => {
+                let s = map
+                    .iter()
+                    .map(|ref t| format!("{}:{}", t.0, t.1))
+                    .collect::<Vec<String>>()
+                    .join(",");
+
+                write!(f, "{{{}}}", s)
+            }
+            TokenValue::Address(a) => write!(f, "{}", serde_json::to_string(a).map_err(|_| fmt::Error)?),
         }
     }
 }
@@ -152,10 +160,14 @@ impl TokenValue {
                 }
             }
             TokenValue::Bitstring(_) => *param_type == ParamType::Bitstring,
-            TokenValue::Map(hashmap) => *param_type == ParamType::Map(hashmap.bit_len(), true, Box::new(ParamType::Unknown)),
-            TokenValue::MsgAddress(MsgAddressInt::AddrStd(_)) => *param_type == ParamType::StdAddress,
-            TokenValue::MsgAddress(MsgAddressInt::AddrVar(_)) => *param_type == ParamType::VarAddress,
-            TokenValue::MsgAddress(MsgAddressInt::AddrNone) => false,
+            TokenValue::Map(ref values) =>{
+                if let ParamType::Map(ref key_type, ref value_type) = *param_type {
+                    values.iter().all(|t| t.0.type_check(key_type) && t.1.type_check(value_type))
+                } else {
+                    false
+                }
+            },
+            TokenValue::Address(_) => *param_type == ParamType::Address,
         }
     }
 
@@ -176,10 +188,9 @@ impl TokenValue {
             }
             TokenValue::Bits(b) => ParamType::Bits(b.length_in_bits()),
             TokenValue::Bitstring(_) => ParamType::Bitstring,
-            TokenValue::Map(map) => ParamType::Map(map.bit_len(), true, Box::new(ParamType::Unknown)),
-            TokenValue::MsgAddress(MsgAddressInt::AddrStd(_)) => ParamType::StdAddress,
-            TokenValue::MsgAddress(MsgAddressInt::AddrVar(_)) => ParamType::VarAddress,
-            TokenValue::MsgAddress(MsgAddressInt::AddrNone) => ParamType::Unknown,
+            TokenValue::Map(values) => ParamType::Map(
+                Box::new(values[0].0.get_param_type()), Box::new(values[0].1.get_param_type())),
+            TokenValue::Address(_) => ParamType::Address,
         }
     }
 }
@@ -224,13 +235,10 @@ impl ABISerialized for TokenValue {
                 prepend_fixed_array(destination, &b.bits(0..b.length_in_bits()).data)
             }
             TokenValue::Bitstring(bitstring) => bitstring.prepend_to(destination),
-            TokenValue::Map(map) => {
-                let mut builder = BuilderData::new();
-                map.write_to(&mut builder).unwrap();
-                destination.prepend_builder(&builder).unwrap();
-                destination
+            TokenValue::Map(values) => {
+                unimplemented!()
             }
-            TokenValue::MsgAddress(address) => {
+            TokenValue::Address(address) => {
                 let builder = address.write_to_new_cell().unwrap();
                 destination.prepend_builder(&builder).unwrap();
                 destination
@@ -255,7 +263,7 @@ impl ABISerialized for TokenValue {
             }
             TokenValue::Bitstring(bitstring) => bitstring.get_in_cell_size(),
             TokenValue::Map(_) => 1,
-            TokenValue::MsgAddress(addr) => addr.write_to_new_cell().unwrap().length_in_bits(),
+            TokenValue::Address(addr) => addr.write_to_new_cell().unwrap().length_in_bits(),
         }
     }
 }
@@ -267,7 +275,6 @@ impl TokenValue {
         cursor: SliceData,
     ) -> Result<(Self, SliceData), DeserializationError> {
         match param_type {
-            ParamType::Unknown => Err(DeserializationError { cursor }),
             ParamType::Uint(size) => Self::read_uint(*size, cursor),
             ParamType::Int(size) => Self::read_int(*size, cursor),
             ParamType::Dint => {
@@ -292,16 +299,13 @@ impl TokenValue {
                 let (bitstring, cursor) = Bitstring::read_from(cursor)?;
                 Ok((TokenValue::Bitstring(bitstring), cursor))
             }
-            ParamType::Map(bit_len, _sign, _typ) => {
-                let (slice, cursor) = <HashmapE>::read_from(cursor)?;
-                let hashmap = HashmapE::with_data(*bit_len, slice);
-                Ok((TokenValue::Map(hashmap), cursor))
+            ParamType::Map(key_type, value_type) => {
+                unimplemented!()
             }
-            ParamType::StdAddress => {
+            ParamType::Address => {
                 unimplemented!() // TODO: deserialize MsgAddressInt
                 // Ok((TokenValue::MsgAddress(address), cursor))
             }
-            ParamType::VarAddress => unimplemented!() // TODO: deserialize MsgAddressInt
         }
     }
 

@@ -4,10 +4,7 @@ use serde_json::Value;
 use serde::Deserialize;
 use num_bigint::{Sign, BigInt};
 use ton_abi_core::types::{Bitstring, Bit};
-use tvm::block::{MsgAddressInt, MsgAddrStd, MsgAddrVar};
-use tvm::stack::{BuilderData, IBitstring, SliceData};
-use tvm::stack::dictionary::HashmapE;
-
+use tvm::block::{MsgAddressInt};
 /// Returning errors during deserialization
 #[derive(Debug)]
 pub enum TokenizeError {
@@ -25,7 +22,6 @@ impl Tokenizer {
     /// Tries to parse a JSON value as a token of given type.
     fn tokenize_parameter(param: &ParamType, value: &Value) -> Result<TokenValue, TokenizeError> {
         match param {
-            ParamType::Unknown => Err(TokenizeError::WrongDataFormat(value.clone())),
             ParamType::Uint(size) => Self::tokenize_uint(*size, value),
             ParamType::Int(size) => Self::tokenize_int(*size, value),
             ParamType::Dint => Self::tokenize_dint(value),
@@ -36,16 +32,11 @@ impl Tokenizer {
             ParamType::FixedArray(param_type, size) => Self::tokenize_fixed_array(&param_type, *size, value),
             ParamType::Bits(size) => Self::tokenize_bits(*size, value),
             ParamType::Bitstring => Self::tokenize_bitstring(value),
-            ParamType::Map(bit_len, signed, typ) => Self::tokenize_hashmap(*bit_len, *signed, typ, value),
-            ParamType::StdAddress => {
-                let address = MsgAddrStd::deserialize(value)
+            ParamType::Map(key_type, value_type) => Self::tokenize_hashmap(key_type, value_type, value),
+            ParamType::Address => {
+                let address = MsgAddressInt::deserialize(value)
                     .map_err(|_| TokenizeError::WrongDataFormat(value.clone()))?;
-                Ok(TokenValue::MsgAddress(MsgAddressInt::AddrStd(address)))
-            }
-            ParamType::VarAddress => {
-                let address = MsgAddrVar::deserialize(value)
-                    .map_err(|_| TokenizeError::WrongDataFormat(value.clone()))?;
-                Ok(TokenValue::MsgAddress(MsgAddressInt::AddrVar(address)))
+                Ok(TokenValue::Address(address))
             }
         }
     }
@@ -264,25 +255,23 @@ impl Tokenizer {
         Self::read_bitstring(value).map(|bitstring| TokenValue::Bitstring(bitstring))
     }
 
-    fn tokenize_hashmap(bit_len: usize, _signed: bool, _typ: &ParamType, values: &Value) -> Result<TokenValue, TokenizeError> {
-        debug_assert!(bit_len < 64);
-        if let Value::Object(map) = values {
-            let mut hashmap = HashmapE::with_bit_len(bit_len);
-            for (key, _value) in map.iter() {
-                let key = match key.parse::<i64>() {
-                    Ok(key) => key,
-                    Err(_) => continue
-                };
-                // TODO: convert Value to BuilderData
-                // tokenize_all(params: &[Param], values: &Value) hashmap value
-                let mut builder = BuilderData::new();
-                builder.append_bits(key as usize, bit_len).map(|_|())
-                .and(hashmap.set(SliceData::from(&builder), &BuilderData::default().into()))
-                .map_err(|_| TokenizeError::WrongDataFormat(values.clone()))?;
+    fn tokenize_hashmap(key_type: &ParamType, value_type: &ParamType, map_value: &Value) -> Result<TokenValue, TokenizeError> {
+        if let Value::Object(map) = map_value {
+            let mut vec = vec![];
+            for (key, value) in map.iter() {
+                let key_token = Self::tokenize_parameter(
+                    key_type,
+                    &serde_json::from_str(key)
+                        .map_err(|_| TokenizeError::InvalidParameterValue(map_value.clone()))?)?;
+                let value_token = Self::tokenize_parameter(
+                        value_type,
+                        value)?;
+                
+                vec.push((key_token, value_token));
             }
-            Ok(TokenValue::Map(hashmap))
+            Ok(TokenValue::Map(vec))
         } else {
-            Err(TokenizeError::WrongDataFormat(values.clone()))
+            Err(TokenizeError::WrongDataFormat(map_value.clone()))
         }
     }
 
