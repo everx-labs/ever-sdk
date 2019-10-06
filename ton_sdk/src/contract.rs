@@ -1,30 +1,19 @@
 use crate::*;
-use std::io::{Read, Seek, Cursor};
-use std::sync::{Arc, Mutex};
-use ed25519_dalek::{Keypair, PublicKey};
-use tvm::stack::{BuilderData, CellData, SliceData, find_tag};
-use tvm::types::AccountId;
-use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
-use tvm::block::{
-    Account,
-    AccountState,
-    Message as TvmMessage, 
-    MessageId,
-    TransactionId,
-    ExternalInboundMessageHeader,
-    MsgAddressInt,
-    Serializable,
-    StateInit,
-    GetRepresentationHash,
-    Deserializable,
-    Grams,
-    CurrencyCollection,
-    TransactionProcessingStatus
-};
-use serde_json::Value;
-use std::convert::Into;
 use crc16::*;
+use ed25519_dalek::{Keypair, PublicKey};
+use std::convert::Into;
 use std::convert::TryFrom;
+use std::io::{Cursor, Read, Seek};
+use std::sync::{Arc, Mutex};
+use tvm::block::{
+    Account, AccountState, CurrencyCollection, Deserializable, ExternalInboundMessageHeader,
+    GetRepresentationHash, Grams, Message as TvmMessage, MessageId, MsgAddressExt, MsgAddressInt,
+    Serializable, StateInit, TransactionId, TransactionProcessingStatus,
+};
+use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
+use tvm::stack::dictionary::{HashmapE, HashmapType};
+use tvm::stack::{BuilderData, CellData, IBitstring, SliceData};
+use tvm::types::AccountId;
 
 pub use ton_abi::json_abi::DecodedMessage;
 pub use ton_abi::token::{Token, TokenValue, Tokenizer};
@@ -130,25 +119,8 @@ impl ContractImage {
 
         // state init's data's root cell contains zero-key
         // need to change it by real public key
-        let mut new_data: BuilderData;
-        if let Some(ref data) = state_init.data {            
-            new_data = BuilderData::from(&data); 
-            new_data.update_cell(|data, len, _, _| {
-                let mut vec = Vec::from(&pub_key.as_bytes().clone()[..]); 
-                vec.push(0x80);
-                *data = vec;
-                *len = find_tag(data);
-            }, ());
-        } else {
-            new_data = BuilderData::new();
-            new_data.update_cell(|data, len, _, _| {
-                let mut vec = Vec::from(&pub_key.as_bytes().clone()[..]); 
-                vec.push(0x80);
-                *data = vec;
-                *len = find_tag(data);
-            }, ());
-        }
-        state_init.set_data(new_data.into());
+        let new_data = insert_pubkey(state_init.data.clone(), pub_key.as_bytes())?;
+        state_init.set_data(new_data);
 
         let id = state_init.hash()?.into();
 
@@ -196,6 +168,30 @@ impl ContractImage {
 
         ok!()
     }
+}
+
+const DATA_MAP_KEYLEN: usize = 64;
+fn insert_pubkey(data: Option<Arc<CellData>>, pubkey: &[u8]) -> SdkResult<Arc<CellData>> {
+    let mut map = HashmapE::with_data(
+        DATA_MAP_KEYLEN, 
+        data.clone().map(|c| c.into()).unwrap_or_default(),
+    );
+    let pubkey_vec = pubkey.to_vec();
+    let pubkey_len = pubkey_vec.len() * 8;
+    map.set(
+        //DATA_MAP_KEYLEN
+        0u64.write_to_new_cell().unwrap().into(), // key 0 contains public key
+        &BuilderData::with_raw(pubkey_vec, pubkey_len)
+            .unwrap_or(BuilderData::new()).into(), 
+    ).map_err(|e| {
+        SdkErrorKind::InternalError(
+            format!("failed to update public key in data map: {}", e)
+        )
+    })?;
+    let mut new_data = BuilderData::new();
+    new_data.append_bit_one().unwrap()
+        .checked_append_reference(map.data().unwrap()).unwrap();
+    Ok(new_data.into())
 }
 
 /// Enum represents blockchain account address.

@@ -400,3 +400,28 @@ fn test_print_base64_address_from_hex() {
 
     println!("{}", address.as_base64(false, false, false).unwrap());
 }
+
+#[test]
+fn test_store_pubkey() {
+    let mut test_map = HashmapE::with_bit_len(DATA_MAP_KEYLEN);
+    let test_pubkey = vec![11u8; 32];
+    test_map.set(
+        0u64.write_to_new_cell().unwrap().into(),
+        &BuilderData::with_raw(vec![0u8; 32], 256).unwrap().into(),
+    ).unwrap();
+
+    let mut data = BuilderData::new();
+    data.append_bit_one().unwrap()
+        .checked_append_reference(test_map.data().unwrap()).unwrap();
+
+    let new_data = insert_pubkey(Some(data.into()), &test_pubkey).unwrap();
+
+    let new_map = HashmapE::with_data(DATA_MAP_KEYLEN, new_data.into());
+    let key_slice = new_map.get(
+        0u64.write_to_new_cell().unwrap().into(),
+    )
+    .unwrap()
+    .unwrap();
+
+    assert_eq!(key_slice.get_bytestring(0), test_pubkey);
+}
