@@ -3,6 +3,8 @@ use std::collections::BTreeMap;
 use {Param, ParamType, Token, TokenValue};
 use num_bigint::{BigInt, BigUint};
 use ton_abi_core::types::Bitstring;
+use tvm::cells_serialization::serialize_tree_of_cells;
+use tvm::stack::SliceData;
 use crate::error::*;
 
 pub struct Detokenizer;
@@ -99,6 +101,18 @@ impl Token {
         }
         map.end()
     }
+
+    pub fn detokenize_cell<S>(cell: &SliceData, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut data = vec![];
+        serialize_tree_of_cells(&cell.into_cell(), &mut data)
+            .map_err(|err| serde::ser::Error::custom(err.to_string()))?;
+
+        let data = base64::encode(&data);
+        serializer.serialize_str(&data)
+    }
 }
 
 impl Serialize for TokenValue {
@@ -119,6 +133,7 @@ impl Serialize for TokenValue {
             TokenValue::FixedArray(ref tokens) => tokens.serialize(serializer),
             TokenValue::Bits(ref bitstring) => Token::detokenize_bitstring(bitstring, serializer),
             TokenValue::Bitstring(ref bitstring) => Token::detokenize_bitstring(bitstring, serializer),
+            TokenValue::Cell(ref cell) => Token::detokenize_cell(cell, serializer),
             TokenValue::Map(key_type, ref map) => Token::detokenize_hashmap(key_type, map, serializer),
             TokenValue::Address(ref address) => address.serialize(serializer),
         }

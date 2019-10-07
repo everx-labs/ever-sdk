@@ -9,6 +9,7 @@ use {Param, ParamType};
 use std::collections::BTreeMap;
 use std::fmt;
 use tvm::block::MsgAddress;
+use tvm::stack::SliceData;
 
 mod tokenizer;
 mod detokenizer;
@@ -28,6 +29,12 @@ mod tests;
 pub struct Token {
     pub name: String,
     pub value: TokenValue,
+}
+
+impl Token {
+    pub fn new(name: &str, value: TokenValue) -> Self {
+        Self { name: name.to_string(), value }
+    }
 }
 
 impl fmt::Display for Token {
@@ -79,6 +86,9 @@ pub enum TokenValue {
     ///
     /// Encoding is equivalent to bool[].
     Bitstring(Bitstring),
+    /// TVM Cell in SliceData adapter
+    ///
+    Cell(SliceData),
     /// Dictionary of values
     ///
     Map(ParamType, BTreeMap<String, TokenValue>),
@@ -115,6 +125,7 @@ impl fmt::Display for TokenValue {
             }
             TokenValue::Bits(b) => write!(f, "{}", b),
             TokenValue::Bitstring(b) => write!(f, "{}", b),
+            TokenValue::Cell(c) => write!(f, "{:?}", c.into_cell()),
             TokenValue::Map(_key_type, map) => {
                 let s = map
                     .iter()
@@ -170,10 +181,11 @@ impl TokenValue {
                 }
             }
             TokenValue::Bitstring(_) => *param_type == ParamType::Bitstring,
+            TokenValue::Cell(_) => *param_type == ParamType::Cell,
             TokenValue::Map(map_key_type, ref values) =>{
                 if let ParamType::Map(ref key_type, ref value_type) = *param_type {
                     let key_type: &ParamType = key_type;
-                    map_key_type == key_type || values.iter().all(|t| t.1.type_check(value_type))
+                    map_key_type == key_type && values.iter().all(|t| t.1.type_check(value_type))
                 } else {
                     false
                 }
@@ -199,6 +211,7 @@ impl TokenValue {
             }
             TokenValue::Bits(b) => ParamType::Bits(b.length_in_bits()),
             TokenValue::Bitstring(_) => ParamType::Bitstring,
+            TokenValue::Cell(_) => ParamType::Cell,
             TokenValue::Map(key_type, values) => ParamType::Map(Box::new(key_type.clone()), 
                 Box::new(match values.iter().next() {
                     Some((_, value)) => value.get_param_type(),

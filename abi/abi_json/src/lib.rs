@@ -13,6 +13,7 @@ extern crate ton_abi_core;
 extern crate ed25519_dalek;
 #[macro_use]
 extern crate error_chain;
+extern crate base64;
 
 pub mod contract;
 pub mod function;

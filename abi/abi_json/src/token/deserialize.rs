@@ -44,6 +44,9 @@ impl TokenValue {
                 let (bitstring, cursor) = Bitstring::read_from(cursor)?;
                 Ok((TokenValue::Bitstring(bitstring), cursor))
             }
+            ParamType::Cell => {
+                unimplemented!()
+            }
             ParamType::Map(_key_type, _value_type) => {
                 unimplemented!()
             }

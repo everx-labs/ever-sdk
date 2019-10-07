@@ -27,6 +27,8 @@ pub enum ParamType {
     Bits(usize),
     /// bitstring: dynamic sized bits sequence.
     Bitstring,
+    /// cell - tree of cells
+    Cell,
     /// hashmap - values dictionary
     Map(Box<ParamType>, Box<ParamType>),
     /// TON message address
@@ -63,6 +65,7 @@ impl ParamType {
                 format!("{}[{}]", param_type.type_signature(), size),
             ParamType::Bits(size) => format!("bits{}", size),
             ParamType::Bitstring => "bitstring".to_owned(),
+            ParamType::Cell => "tree of cells".to_owned(),
             ParamType::Map(key_type, value_type) => 
                 format!("map({},{})", key_type.type_signature(), value_type.type_signature()),
             ParamType::Address => format!("address"),

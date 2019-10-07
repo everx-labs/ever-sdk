@@ -3,6 +3,7 @@ name = "ton_abi_json"
 version = "0.1.0"
 
 [dependencies]
+base64 = "0.10.0"
 ton_abi_core = { path = "../abi_core" }
 pretty_assertions = "0.5.1"
 num-bigint = "0.2.2"

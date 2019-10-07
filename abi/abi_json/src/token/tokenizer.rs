@@ -3,9 +3,11 @@ use {ParamType, Param, Uint, Int, Token, TokenValue};
 use serde_json::Value;
 use serde::Deserialize;
 use std::collections::BTreeMap;
+use std::io::Cursor;
 use num_bigint::{Sign, BigInt};
 use ton_abi_core::types::{Bitstring, Bit};
 use tvm::block::{MsgAddress};
+use tvm::cells_serialization::deserialize_tree_of_cells;
 use crate::error::*;
 
 /// This struct should be used to parse string values as tokens.
@@ -26,6 +28,7 @@ impl Tokenizer {
             ParamType::FixedArray(param_type, size) => Self::tokenize_fixed_array(&param_type, *size, value),
             ParamType::Bits(size) => Self::tokenize_bits(*size, value),
             ParamType::Bitstring => Self::tokenize_bitstring(value),
+            ParamType::Cell => Self::tokenize_cell(value),
             ParamType::Map(key_type, value_type) => Self::tokenize_hashmap(key_type, value_type, value),
             ParamType::Address => {
                 let address = MsgAddress::deserialize(value)
@@ -247,6 +250,18 @@ impl Tokenizer {
     /// Tries to parse a value as bitstring.
     fn tokenize_bitstring(value: &Value) -> AbiResult<TokenValue> {
         Self::read_bitstring(value).map(|bitstring| TokenValue::Bitstring(bitstring))
+    }
+
+    fn tokenize_cell(value: &Value) -> AbiResult<TokenValue> {
+        let string = value
+            .as_str()
+            .ok_or(AbiErrorKind::WrongDataFormat(value.clone()))?
+            .to_owned();
+        let data = base64::decode(&string)
+            .map_err(|_| AbiErrorKind::InvalidData(string.clone()))?;
+        let cell = deserialize_tree_of_cells(&mut Cursor::new(data))
+            .map_err(|_| AbiErrorKind::InvalidData(string.clone()))?;
+        Ok(TokenValue::Cell(cell.into()))
     }
 
     fn tokenize_hashmap(key_type: &ParamType, value_type: &ParamType, map_value: &Value) -> AbiResult<TokenValue> {

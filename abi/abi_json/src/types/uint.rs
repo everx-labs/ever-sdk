@@ -10,6 +10,12 @@ pub struct Uint {
     pub size: usize,
 }
 
+impl Uint {
+    pub fn new(number: u64, size: usize) -> Self {
+        Self { number: BigUint::from(number), size }
+    }
+}
+
 impl ABISerialized for Uint {
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
         let int = Int{

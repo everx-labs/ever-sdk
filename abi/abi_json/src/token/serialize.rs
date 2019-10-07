@@ -27,6 +27,7 @@ impl ABISerialized for TokenValue {
                 prepend_fixed_array(destination, &b.bits(0..b.length_in_bits()).data)
             }
             TokenValue::Bitstring(bitstring) => bitstring.prepend_to(destination),
+            TokenValue::Cell(_cell) => unimplemented!(),
             TokenValue::Map(_key_type, _values) => {
                 unimplemented!()
             }
@@ -54,6 +55,7 @@ impl ABISerialized for TokenValue {
                 get_fixed_array_in_cell_size(&b.bits(0..b.length_in_bits()).data)
             }
             TokenValue::Bitstring(bitstring) => bitstring.get_in_cell_size(),
+            TokenValue::Cell(cell) => cell.remaining_bits(),
             TokenValue::Map(_, _) => 1,
             TokenValue::Address(addr) => addr.write_to_new_cell().unwrap().length_in_bits(),
         }

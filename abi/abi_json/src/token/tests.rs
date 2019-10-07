@@ -6,7 +6,7 @@ mod tokenize_tests {
     use token::{Detokenizer, Tokenizer};
     use ton_abi_core::types::Bitstring;
     use tvm::block::MsgAddress;
-    use tvm::stack::{SliceData};
+    use tvm::stack::{BuilderData, SliceData};
     use tvm::types::AccountId;
 
     #[test]
@@ -475,6 +475,36 @@ mod tokenize_tests {
     }
 
     #[test]
+    fn test_tokenize_cell() {
+        let input = r#"{
+            "a": "te6ccgEBAwEAIAACEAECAwQFBgcIAgEAEBUWFxgZGhscABALDA0ODxAREg=="
+        }"#;
+
+        let params = vec![
+            Param::new("a", ParamType::Cell),
+        ];
+
+        let mut expected_tokens = vec![];
+        let mut builder = BuilderData::with_bitstring(vec![1, 2, 3, 4, 5, 6, 7, 8, 0x80]).unwrap();
+        builder.append_reference(BuilderData::with_bitstring(vec![11, 12, 13, 14, 15, 16, 17, 18, 0x80]).unwrap());
+        builder.append_reference(BuilderData::with_bitstring(vec![21, 22, 23, 24, 25, 26, 27, 28, 0x80]).unwrap());
+        expected_tokens.push(Token::new("a", TokenValue::Cell(builder.into())));
+
+        assert_eq!(
+            Tokenizer::tokenize_all(&params, &serde_json::from_str(input).unwrap()).unwrap(),
+            expected_tokens
+        );
+
+        // check that detokenizer gives the same result
+        let input = Detokenizer::detokenize(&params, &expected_tokens).unwrap();
+        println!("{}", input);
+        assert_eq!(
+            Tokenizer::tokenize_all(&params, &serde_json::from_str(&input).unwrap()).unwrap(),
+            expected_tokens
+        );
+    }
+
+    #[test]
     fn test_tokenize_hashmap() {
         let input = r#"{
             "a": {
@@ -485,12 +515,25 @@ mod tokenize_tests {
             "b": {
                 "4294967295": 777,
                 "65535": 0
+            },
+            "c": {
+                "1": {
+                    "q1" : 314,
+                    "q2" : 15
+                },
+                "2": {
+                    "q1" : 92,
+                    "q2" : 6
+                }
             }
         }"#;
 
         let params = vec![
             Param::new("a", ParamType::Map(Box::new(ParamType::Int(8)), Box::new(ParamType::Uint(32)))),
             Param::new("b", ParamType::Map(Box::new(ParamType::Uint(32)), Box::new(ParamType::Uint(32)))),
+            Param::new("c", ParamType::Map(Box::new(ParamType::Int(8)), Box::new(ParamType::Tuple(vec![
+                Param::new("q1", ParamType::Uint(32)), Param::new("q2", ParamType::Int(8))
+            ])))),
         ];
 
         let mut expected_tokens = vec![];
@@ -498,18 +541,24 @@ mod tokenize_tests {
         map.insert(format!("{}",  -12i8), TokenValue::Uint(Uint { number: BigUint::from(42u32), size: 32 }));
         map.insert(format!("{}",  127i8), TokenValue::Uint(Uint { number: BigUint::from(37u32), size: 32 }));
         map.insert(format!("{}", -128i8), TokenValue::Uint(Uint { number: BigUint::from(56u32), size: 32 }));
-        expected_tokens.push(Token {
-            name: "a".to_owned(),
-            value: TokenValue::Map(ParamType::Int(8), map)
-        });
+        expected_tokens.push(Token::new("a", TokenValue::Map(ParamType::Int(8), map)));
 
         let mut map = BTreeMap::<String, TokenValue>::new();
         map.insert(format!("{}", 0xFFFFFFFFu32), TokenValue::Uint(Uint { number: BigUint::from(777u64), size: 32 }));
         map.insert(format!("{}", 0x0000FFFFu32), TokenValue::Uint(Uint { number: BigUint::from(0u64), size: 32 }));
-        expected_tokens.push(Token {
-            name: "b".to_owned(),
-            value: TokenValue::Map(ParamType::Uint(32), map)
-        });
+        expected_tokens.push(Token::new("b", TokenValue::Map(ParamType::Uint(32), map)));
+
+
+        let mut map = BTreeMap::<String, TokenValue>::new();
+        map.insert(format!("{}", 1i8), TokenValue::Tuple(vec![
+            Token::new("q1", TokenValue::Uint(Uint::new(314, 32))),
+            Token::new("q2", TokenValue::Int(Int::new(15, 8))),
+        ]));
+        map.insert(format!("{}", 2i8), TokenValue::Tuple(vec![
+            Token::new("q1", TokenValue::Uint(Uint::new(92, 32))),
+            Token::new("q2", TokenValue::Int(Int::new(6, 8))),
+        ]));
+        expected_tokens.push(Token::new("c", TokenValue::Map(ParamType::Int(8), map)));
 
         assert_eq!(
             Tokenizer::tokenize_all(&params, &serde_json::from_str(input).unwrap()).unwrap(),
@@ -569,6 +618,9 @@ mod types_check_tests {
     use num_bigint::{BigInt, BigUint};
     use ton_abi_core::types::Bitstring;
     use {Int, Param, ParamType, Token, TokenValue, Uint};
+    use tvm::stack::BuilderData;
+    use tvm::block::MsgAddress;
+    use std::collections::BTreeMap;
 
     #[test]
     fn test_type_check() {
@@ -582,6 +634,8 @@ mod types_check_tests {
 
         let big_int = BigInt::from(123);
         let big_uint = BigUint::from(456u32);
+        let mut map = BTreeMap::<String, TokenValue>::new();
+        map.insert("1".to_string(), TokenValue::Uint(Uint::new(17, 32)));
 
         let tokens = vec![
             Token {
@@ -642,6 +696,22 @@ mod types_check_tests {
                     },
                 ]),
             },
+            Token {
+                name: "k".to_owned(),
+                value: TokenValue::Cell(BuilderData::new().into()),
+            },
+            Token {
+                name: "l".to_owned(),
+                value: TokenValue::Address(MsgAddress::AddrNone)
+            },
+            Token {
+                name: "m1".to_owned(),
+                value: TokenValue::Map(ParamType::Int(8), BTreeMap::<String, TokenValue>::new())
+            },
+            Token {
+                name: "m2".to_owned(),
+                value: TokenValue::Map(ParamType::Int(8), map)
+            },
         ];
 
         let tuple_params = vec![
@@ -695,6 +765,22 @@ mod types_check_tests {
             Param {
                 name: "j".to_owned(),
                 kind: ParamType::Tuple(tuple_params),
+            },
+            Param {
+                name: "k".to_owned(),
+                kind: ParamType::Cell,
+            },
+            Param {
+                name: "l".to_owned(),
+                kind: ParamType::Address,
+            },
+            Param {
+                name: "m1".to_owned(),
+                kind: ParamType::Map(Box::new(ParamType::Int(8)), Box::new(ParamType::Unknown)),
+            },
+            Param {
+                name: "m2".to_owned(),
+                kind: ParamType::Map(Box::new(ParamType::Int(8)), Box::new(ParamType::Uint(32))),
             },
         ];
 

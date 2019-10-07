@@ -12,6 +12,12 @@ pub struct Int {
     pub size: usize,
 }
 
+impl Int {
+    pub fn new(number: i64, size: usize) -> Self {
+        Self { number: BigInt::from(number), size }
+    }
+}
+
 impl ABISerialized for Int {
     fn prepend_to(&self, destination: BuilderData) -> BuilderData {
         let vec = self.number.to_signed_bytes_be();
