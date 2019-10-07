@@ -11,11 +11,11 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 rand = "0.6.1"
 hex = "0.3.2"
-serde_json = "1.0.39"
+serde_json = "1.0.41"
 serde_derive = "1.0.91"
 serde = "1.0.91"
 ed25519-dalek = "^0.9.1"
-sha2 = "^0.8"
+sha2 = "0.8"
 futures = "^0.1.26"
 base64 = "0.10.0"
 lazy_static = "1.1.0"

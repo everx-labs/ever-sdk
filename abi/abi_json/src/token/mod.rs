@@ -6,7 +6,7 @@ use types::int::Int;
 use types::uint::Uint;
 use {Param, ParamType};
 
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::fmt;
 use tvm::block::MsgAddress;
 use tvm::stack::SliceData;
@@ -91,7 +91,7 @@ pub enum TokenValue {
     Cell(SliceData),
     /// Dictionary of values
     ///
-    Map(ParamType, BTreeMap<String, TokenValue>),
+    Map(ParamType, HashMap<String, TokenValue>),
     /// MsgAddress
     ///
     Address(MsgAddress),

@@ -2,7 +2,7 @@ mod tokenize_tests {
     use crate::{Int, Param, ParamType, Token, TokenValue, Uint};
     use num_bigint::{BigInt, BigUint};
     // use serde::Serialize;
-    use std::collections::BTreeMap;
+    use std::collections::HashMap;
     use token::{Detokenizer, Tokenizer};
     use ton_abi_core::types::Bitstring;
     use tvm::block::MsgAddress;
@@ -537,19 +537,19 @@ mod tokenize_tests {
         ];
 
         let mut expected_tokens = vec![];
-        let mut map = BTreeMap::<String, TokenValue>::new();
+        let mut map = HashMap::<String, TokenValue>::new();
         map.insert(format!("{}",  -12i8), TokenValue::Uint(Uint { number: BigUint::from(42u32), size: 32 }));
         map.insert(format!("{}",  127i8), TokenValue::Uint(Uint { number: BigUint::from(37u32), size: 32 }));
         map.insert(format!("{}", -128i8), TokenValue::Uint(Uint { number: BigUint::from(56u32), size: 32 }));
         expected_tokens.push(Token::new("a", TokenValue::Map(ParamType::Int(8), map)));
 
-        let mut map = BTreeMap::<String, TokenValue>::new();
+        let mut map = HashMap::<String, TokenValue>::new();
         map.insert(format!("{}", 0xFFFFFFFFu32), TokenValue::Uint(Uint { number: BigUint::from(777u64), size: 32 }));
         map.insert(format!("{}", 0x0000FFFFu32), TokenValue::Uint(Uint { number: BigUint::from(0u64), size: 32 }));
         expected_tokens.push(Token::new("b", TokenValue::Map(ParamType::Uint(32), map)));
 
 
-        let mut map = BTreeMap::<String, TokenValue>::new();
+        let mut map = HashMap::<String, TokenValue>::new();
         map.insert(format!("{}", 1i8), TokenValue::Tuple(vec![
             Token::new("q1", TokenValue::Uint(Uint::new(314, 32))),
             Token::new("q2", TokenValue::Int(Int::new(15, 8))),
@@ -620,7 +620,7 @@ mod types_check_tests {
     use {Int, Param, ParamType, Token, TokenValue, Uint};
     use tvm::stack::BuilderData;
     use tvm::block::MsgAddress;
-    use std::collections::BTreeMap;
+    use std::collections::HashMap;
 
     #[test]
     fn test_type_check() {
@@ -634,7 +634,7 @@ mod types_check_tests {
 
         let big_int = BigInt::from(123);
         let big_uint = BigUint::from(456u32);
-        let mut map = BTreeMap::<String, TokenValue>::new();
+        let mut map = HashMap::<String, TokenValue>::new();
         map.insert("1".to_string(), TokenValue::Uint(Uint::new(17, 32)));
 
         let tokens = vec![
@@ -706,7 +706,7 @@ mod types_check_tests {
             },
             Token {
                 name: "m1".to_owned(),
-                value: TokenValue::Map(ParamType::Int(8), BTreeMap::<String, TokenValue>::new())
+                value: TokenValue::Map(ParamType::Int(8), HashMap::<String, TokenValue>::new())
             },
             Token {
                 name: "m2".to_owned(),

@@ -2,7 +2,7 @@
 use {ParamType, Param, Uint, Int, Token, TokenValue};
 use serde_json::Value;
 use serde::Deserialize;
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::io::Cursor;
 use num_bigint::{Sign, BigInt};
 use ton_abi_core::types::{Bitstring, Bit};
@@ -266,7 +266,7 @@ impl Tokenizer {
 
     fn tokenize_hashmap(key_type: &ParamType, value_type: &ParamType, map_value: &Value) -> AbiResult<TokenValue> {
         if let Value::Object(map) = map_value {
-            let mut new_map = BTreeMap::<String, TokenValue>::new();
+            let mut new_map = HashMap::<String, TokenValue>::new();
             for (key, value) in map.iter() {
                 let value = Self::tokenize_parameter(value_type, value)?;
                 new_map.insert(key.to_string(), value);

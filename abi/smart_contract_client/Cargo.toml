@@ -6,12 +6,12 @@ edition = "2018"
 [dependencies]
 jsonrpc-client-http = "0.5.0"
 jsonrpc-client-core = "0.5.0"
-tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "feature-dev", package = "tvm" }
+tvm = { git = "ssh://git@github.com/tonlabs/sdk-emulator.git", branch = "feature-address-serialize", package = "tvm" }
 ton_abi_core = { path = "../abi_core" }
 base64 = "0.10.0"
 clap = "2.32.0"
 hex = "0.3.2"
 ed25519-dalek = "^0.8"
-sha2 = "^0.7"
+sha2 = "0.8"
 rand = "0.6.1"
 lazy_static = "1.1.0"

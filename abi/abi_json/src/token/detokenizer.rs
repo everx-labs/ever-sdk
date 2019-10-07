@@ -1,5 +1,5 @@
 use serde::ser::{Serialize, Serializer, SerializeMap};
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 use {Param, ParamType, Token, TokenValue};
 use num_bigint::{BigInt, BigUint};
 use ton_abi_core::types::Bitstring;
@@ -91,7 +91,7 @@ impl Token {
         serializer.serialize_str(&string)
     }
 
-    pub fn detokenize_hashmap<S>(_key_type: &ParamType, values: &BTreeMap<String, TokenValue>, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn detokenize_hashmap<S>(_key_type: &ParamType, values: &HashMap<String, TokenValue>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
