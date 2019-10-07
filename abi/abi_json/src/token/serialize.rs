@@ -38,6 +38,7 @@ impl ABISerialized for TokenValue {
             }
             TokenValue::Bytes(ref _arr) => unimplemented!(),
             TokenValue::FixedBytes(ref _arr) => unimplemented!(),
+            TokenValue::Gram(_gram) => unimplemented!(),
         }
     }
 
@@ -62,6 +63,7 @@ impl ABISerialized for TokenValue {
             TokenValue::Address(addr) => addr.write_to_new_cell().unwrap().length_in_bits(),
             TokenValue::Bytes(ref _arr) => unimplemented!(),
             TokenValue::FixedBytes(ref _arr) => unimplemented!(),
+            TokenValue::Gram(_gram) => unimplemented!(),
         }
     }
 }

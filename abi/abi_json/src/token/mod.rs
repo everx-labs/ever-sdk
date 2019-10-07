@@ -1,4 +1,5 @@
 //! TON ABI params.
+use num_bigint::BigUint;
 use ton_abi_core::types::{
     Bitstring, Dint, Duint,
 };
@@ -101,6 +102,9 @@ pub enum TokenValue {
     /// Fixed Bytes
     ///
     FixedBytes(Vec<u8>),
+    /// Nanograms
+    /// 
+    Gram(BigUint)
 }
 
 impl fmt::Display for TokenValue {
@@ -143,6 +147,7 @@ impl fmt::Display for TokenValue {
             }
             TokenValue::Address(a) => write!(f, "{}", serde_json::to_string(a).map_err(|_| fmt::Error)?),
             TokenValue::Bytes(ref arr) | TokenValue::FixedBytes(ref arr) => write!(f, "{:?}", arr),
+            TokenValue::Gram(g) => write!(f, "{}", g),
         }
     }
 }
@@ -200,6 +205,7 @@ impl TokenValue {
             TokenValue::Address(_) => *param_type == ParamType::Address,
             TokenValue::Bytes(_) => *param_type == ParamType::Bytes,
             TokenValue::FixedBytes(ref arr) => *param_type == ParamType::FixedBytes(arr.len()),
+            TokenValue::Gram(_) => *param_type == ParamType::Gram,
         }
     }
 
@@ -229,6 +235,7 @@ impl TokenValue {
             TokenValue::Address(_) => ParamType::Address,
             TokenValue::Bytes(_) => ParamType::Bytes,
             TokenValue::FixedBytes(ref arr) => ParamType::FixedBytes(arr.len()),
+            TokenValue::Gram(_) => ParamType::Gram,
         }
     }
 }

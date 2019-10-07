@@ -37,6 +37,8 @@ pub enum ParamType {
     Bytes,
     /// fixed size byte array
     FixedBytes(usize),
+    /// Nanograms
+    Gram
 }
 
 impl fmt::Display for ParamType {
@@ -75,6 +77,7 @@ impl ParamType {
             ParamType::Address => format!("address"),
             ParamType::Bytes => format!("bytes"),
             ParamType::FixedBytes(size) => format!("fixedbytes<{}>", size),
+            ParamType::Gram => format!("gram"),
         }
     }
 }

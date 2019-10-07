@@ -11,13 +11,15 @@ mod tokenize_tests {
 
     #[test]
     fn test_tokenize_ints() {
+        let max_gram = 0x007F_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFFu128; // 2^120 - 1
         let input = r#"{
             "a" : 123,
             "b" : -456,
             "c" : "0xabcdef",
             "d" : "-0xABCDEF",
             "e" : "789",
-            "f" : "-12345678900987654321"
+            "f" : "-12345678900987654321",
+            "g" : "664613997892457936451903530140172287"
         }"#;
 
         let params = vec![
@@ -44,6 +46,10 @@ mod tokenize_tests {
             Param {
                 name: "f".to_owned(),
                 kind: ParamType::Int(128),
+            },
+            Param {
+                name: "g".to_owned(),
+                kind: ParamType::Gram,
             },
         ];
 
@@ -84,6 +90,7 @@ mod tokenize_tests {
                     size: 128,
                 }),
             },
+            Token::new("g", TokenValue::Gram(max_gram.into())),
         ];
 
         assert_eq!(
@@ -754,6 +761,10 @@ mod types_check_tests {
                 name: "o".to_owned(),
                 value: TokenValue::FixedBytes(vec![1, 2, 3])
             },
+            Token {
+                name: "p".to_owned(),
+                value: TokenValue::Gram(17u16.into())
+            },
         ];
 
         let tuple_params = vec![
@@ -831,6 +842,10 @@ mod types_check_tests {
             Param {
                 name: "o".to_owned(),
                 kind: ParamType::FixedBytes(3),
+            },
+            Param {
+                name: "p".to_owned(),
+                kind: ParamType::Gram,
             },
         ];
 

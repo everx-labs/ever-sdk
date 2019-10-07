@@ -4,7 +4,7 @@ use serde_json::Value;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::io::Cursor;
-use num_bigint::{Sign, BigInt};
+use num_bigint::{Sign, BigInt, BigUint};
 use ton_abi_core::types::{Bitstring, Bit};
 use tvm::block::{MsgAddress};
 use tvm::cells_serialization::deserialize_tree_of_cells;
@@ -37,6 +37,7 @@ impl Tokenizer {
             }
             ParamType::Bytes => Self::tokenize_bytes(value, None),
             ParamType::FixedBytes(size) => Self::tokenize_bytes(value, Some(*size)),
+            ParamType::Gram => Self::tokenize_gram(value),
         }
     }
 
@@ -109,33 +110,40 @@ impl Tokenizer {
 
     /// Tries to read integer number from `Value`
     fn read_int(value: &Value) -> AbiResult<BigInt> {
-        if value.is_i64() {
-            let number = value.as_i64().unwrap();
-
+        if let Some(number) = value.as_i64() {
             Ok(BigInt::from(number))
-        } else if value.is_string() {
-            let mut string = value.as_str().unwrap();
-
-            let radix = if string.starts_with("-") {
-                if string.starts_with("-0x") {
-                    string.replace_range(1..3, "");
-                    16
-                } else {
-                    10
-                }
+        } else if let Some(string) = value.as_str() {
+            let result = if string.starts_with("-0x") {
+                BigInt::parse_bytes(&string.as_bytes()[3..], 16)
+                .map(|number| -number)
+            } else if string.starts_with("0x") {
+                BigInt::parse_bytes(&string.as_bytes()[2..], 16)
             } else {
-                if string.starts_with("0x") {
-                    string.replace_range(0..2, "");
-                    16
-                } else {
-                    10
-                }
+                BigInt::parse_bytes(string.as_bytes(), 10)
             };
+            match result {
+                Some(number) => Ok(number),
+                None => bail!(AbiErrorKind::InvalidParameterValue(value.clone()))
+            }
+        } else {
+            bail!(AbiErrorKind::WrongDataFormat(value.clone()))
+        }
+    }
 
-            let number = BigInt::parse_bytes(string.as_bytes(), radix)
-                            .ok_or(AbiErrorKind::InvalidParameterValue(value.clone()))?;
-
-            Ok(number)
+    /// Tries to read integer number from `Value`
+    fn read_uint(value: &Value) -> AbiResult<BigUint> {
+        if let Some(number) = value.as_u64() {
+            Ok(BigUint::from(number))
+        } else if let Some(string) = value.as_str() {
+            let result = if string.starts_with("0x") {
+                BigUint::parse_bytes(&string.as_bytes()[2..], 16)
+            } else {
+                BigUint::parse_bytes(string.as_bytes(), 10)
+            };
+            match result {
+                Some(number) => Ok(number),
+                None => bail!(AbiErrorKind::InvalidParameterValue(value.clone()))
+            }
         } else {
             bail!(AbiErrorKind::WrongDataFormat(value.clone()))
         }
@@ -148,22 +156,34 @@ impl Tokenizer {
         // using `n` bits, but `bits` function returns `n` (and plus one bit for sign) so we 
         // have to explicitly check such situation by comparing bits sizes of given number 
         // and increased number
-        if    number.sign() == Sign::Minus &&
-            number.bits() != (number + BigInt::from(1)).bits()
-        { 
+        if number.sign() == Sign::Minus && number.bits() != (number + BigInt::from(1)).bits() {
             number.bits() <= size
         } else {
             number.bits() < size
         }
     }
 
+    /// Checks if given number can be fit into given bits count
+    fn check_uint_size(number: &BigUint, size: usize) -> bool {
+        number.bits() < size
+    }
+
+    /// Tries to parse a value as grams.
+    fn tokenize_gram(value: &Value) -> AbiResult<TokenValue> {
+        let number = Self::read_uint(value)?;
+
+        if !Self::check_uint_size(&number, 120) {
+            bail!(AbiErrorKind::InvalidParameterValue(value.clone()))
+        } else {
+            Ok(TokenValue::Gram(number))
+        }
+    }
+
     /// Tries to parse a value as unsigned integer.
     fn tokenize_uint(size: usize, value: &Value) -> AbiResult<TokenValue> {
-        let big_int = Self::read_int(value)?;
+        let number = Self::read_uint(value)?;
 
-        let number = big_int.to_biguint().ok_or(AbiErrorKind::InvalidParameterValue(value.clone()))?;
-
-        if !Self::check_int_size(&big_int, size + 1) {
+        if !Self::check_uint_size(&number, size + 1) {
             bail!(AbiErrorKind::InvalidParameterValue(value.clone()))
         } else {
             Ok(TokenValue::Uint(Uint{number, size}))
