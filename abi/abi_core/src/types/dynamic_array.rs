@@ -8,7 +8,7 @@ use super::{
 };
 
 use tvm::stack::{BuilderData, SliceData};
-use tvm::stack::dictionary::{HashmapE, HashmapType};
+use tvm::stack::dictionary::HashmapE;
 
 // put dynamic array to chain or to separate branch depending on array size
 /*pub fn prepend_dynamic_array<T: ABISerialized>(

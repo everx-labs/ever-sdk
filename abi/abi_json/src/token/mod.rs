@@ -6,8 +6,9 @@ use types::int::Int;
 use types::uint::Uint;
 use {Param, ParamType};
 
+use std::collections::BTreeMap;
 use std::fmt;
-use tvm::block::MsgAddressInt;
+use tvm::block::MsgAddress;
 
 mod tokenizer;
 mod detokenizer;
@@ -78,11 +79,12 @@ pub enum TokenValue {
     ///
     /// Encoding is equivalent to bool[].
     Bitstring(Bitstring),
-    /// MsgAddressInt
+    /// Dictionary of values
     ///
-    /// Encoding is equivalent to bool[].
-    Map(Vec<(TokenValue, TokenValue)>),
-    Address(MsgAddressInt),
+    Map(ParamType, BTreeMap<String, TokenValue>),
+    /// MsgAddress
+    ///
+    Address(MsgAddress),
 }
 
 impl fmt::Display for TokenValue {
@@ -113,7 +115,7 @@ impl fmt::Display for TokenValue {
             }
             TokenValue::Bits(b) => write!(f, "{}", b),
             TokenValue::Bitstring(b) => write!(f, "{}", b),
-            TokenValue::Map(map) => {
+            TokenValue::Map(_key_type, map) => {
                 let s = map
                     .iter()
                     .map(|ref t| format!("{}:{}", t.0, t.1))
@@ -168,9 +170,10 @@ impl TokenValue {
                 }
             }
             TokenValue::Bitstring(_) => *param_type == ParamType::Bitstring,
-            TokenValue::Map(ref values) =>{
+            TokenValue::Map(map_key_type, ref values) =>{
                 if let ParamType::Map(ref key_type, ref value_type) = *param_type {
-                    values.iter().all(|t| t.0.type_check(key_type) && t.1.type_check(value_type))
+                    let key_type: &ParamType = key_type;
+                    map_key_type == key_type || values.iter().all(|t| t.1.type_check(value_type))
                 } else {
                     false
                 }
@@ -196,8 +199,11 @@ impl TokenValue {
             }
             TokenValue::Bits(b) => ParamType::Bits(b.length_in_bits()),
             TokenValue::Bitstring(_) => ParamType::Bitstring,
-            TokenValue::Map(values) => ParamType::Map(
-                Box::new(values[0].0.get_param_type()), Box::new(values[0].1.get_param_type())),
+            TokenValue::Map(key_type, values) => ParamType::Map(Box::new(key_type.clone()), 
+                Box::new(match values.iter().next() {
+                    Some((_, value)) => value.get_param_type(),
+                    None => ParamType::Unknown
+            })),
             TokenValue::Address(_) => ParamType::Address,
         }
     }

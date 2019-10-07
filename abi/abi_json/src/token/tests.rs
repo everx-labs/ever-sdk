@@ -2,10 +2,10 @@ mod tokenize_tests {
     use crate::{Int, Param, ParamType, Token, TokenValue, Uint};
     use num_bigint::{BigInt, BigUint};
     // use serde::Serialize;
+    use std::collections::BTreeMap;
     use token::{Detokenizer, Tokenizer};
     use ton_abi_core::types::Bitstring;
-    use tvm::block::MsgAddressInt;
-    use tvm::stack::dictionary::HashmapE;
+    use tvm::block::MsgAddress;
     use tvm::stack::{SliceData};
     use tvm::types::AccountId;
 
@@ -478,56 +478,58 @@ mod tokenize_tests {
     fn test_tokenize_hashmap() {
         let input = r#"{
             "a": {
-                "-1": 42,
-                "12": 37
+                "-12": 42,
+                "127": 37,
+                "-128": 56
+            },
+            "b": {
+                "4294967295": 777,
+                "65535": 0
             }
         }"#;
 
         let params = vec![
             Param::new("a", ParamType::Map(Box::new(ParamType::Int(8)), Box::new(ParamType::Uint(32)))),
+            Param::new("b", ParamType::Map(Box::new(ParamType::Uint(32)), Box::new(ParamType::Uint(32)))),
         ];
 
-        let mut vec = vec![];
+        let mut expected_tokens = vec![];
+        let mut map = BTreeMap::<String, TokenValue>::new();
+        map.insert(format!("{}",  -12i8), TokenValue::Uint(Uint { number: BigUint::from(42u32), size: 32 }));
+        map.insert(format!("{}",  127i8), TokenValue::Uint(Uint { number: BigUint::from(37u32), size: 32 }));
+        map.insert(format!("{}", -128i8), TokenValue::Uint(Uint { number: BigUint::from(56u32), size: 32 }));
+        expected_tokens.push(Token {
+            name: "a".to_owned(),
+            value: TokenValue::Map(ParamType::Int(8), map)
+        });
 
-        vec.push((
-            TokenValue::Int(Int { number: BigInt::from(-1i8), size: 8 }),
-            TokenValue::Uint(Uint { number: BigUint::from(42u32), size: 32 })
-            ));
-        vec.push((
-            TokenValue::Int(Int { number: BigInt::from(12i8), size: 8 }),
-            TokenValue::Uint(Uint { number: BigUint::from(37u32), size: 32 })
-            ));
-
-        let expected_tokens = vec![
-            Token {
-                name: "a".to_owned(),
-                value: TokenValue::Map(vec)
-            }
-        ];
+        let mut map = BTreeMap::<String, TokenValue>::new();
+        map.insert(format!("{}", 0xFFFFFFFFu32), TokenValue::Uint(Uint { number: BigUint::from(777u64), size: 32 }));
+        map.insert(format!("{}", 0x0000FFFFu32), TokenValue::Uint(Uint { number: BigUint::from(0u64), size: 32 }));
+        expected_tokens.push(Token {
+            name: "b".to_owned(),
+            value: TokenValue::Map(ParamType::Uint(32), map)
+        });
 
         assert_eq!(
             Tokenizer::tokenize_all(&params, &serde_json::from_str(input).unwrap()).unwrap(),
+            expected_tokens
+        );
+
+        // check that detokenizer gives the same result
+        let input = Detokenizer::detokenize(&params, &expected_tokens).unwrap();
+        println!("{}", input);
+        assert_eq!(
+            Tokenizer::tokenize_all(&params, &serde_json::from_str(&input).unwrap()).unwrap(),
             expected_tokens
         );
     }
 
     #[test]
     fn test_tokenize_address() {
-
-        let addr = MsgAddressInt::with_standart(None, -17, AccountId::from([0x55; 32])).unwrap();
-        let j = serde_json::to_string_pretty(&addr).unwrap();
-        println!("{}", j);
-
-        // let j = serde_json::to_string_pretty(&AccountId::from([0x55; 32])).unwrap();
-        // println!("{}", j);
-
-        let addr = MsgAddressInt::with_variant(None, -177, SliceData::new(vec![0x55, 0x58])).unwrap();
-        let j = serde_json::to_string_pretty(&addr).unwrap();
-        println!("{}", j);
-
         let input = r#"{
             "std": "-17:5555555555555555555555555555555555555555555555555555555555555555",
-            "var": "-177:555"
+            "var": "-177:555_"
         }"#;
 
         let params = vec![
@@ -538,18 +540,26 @@ mod tokenize_tests {
         let expected_tokens = vec![
             Token {
                 name: "std".to_owned(),
-                value: TokenValue::Address(MsgAddressInt::with_standart(
+                value: TokenValue::Address(MsgAddress::with_standart(
                     None, -17, AccountId::from([0x55; 32])).unwrap())
             },
             Token {
                 name: "var".to_owned(),
-                value: TokenValue::Address(MsgAddressInt::with_variant(
-                    None, -177, SliceData::new(vec![0x55, 0x58])).unwrap())
+                value: TokenValue::Address(MsgAddress::with_variant(
+                    None, -177, SliceData::new(vec![0x55, 0x50])).unwrap())
             },
         ];
 
         assert_eq!(
             Tokenizer::tokenize_all(&params, &serde_json::from_str(input).unwrap()).unwrap(),
+            expected_tokens
+        );
+
+        // check that detokenizer gives the same result
+        let input = Detokenizer::detokenize(&params, &expected_tokens).unwrap();
+        println!("{}", input);
+        assert_eq!(
+            Tokenizer::tokenize_all(&params, &serde_json::from_str(&input).unwrap()).unwrap(),
             expected_tokens
         );
     }

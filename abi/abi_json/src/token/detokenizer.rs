@@ -1,5 +1,6 @@
 use serde::ser::{Serialize, Serializer, SerializeMap};
-use {Param, Token, TokenValue};
+use std::collections::BTreeMap;
+use {Param, ParamType, Token, TokenValue};
 use num_bigint::{BigInt, BigUint};
 use ton_abi_core::types::Bitstring;
 use crate::error::*;
@@ -88,7 +89,7 @@ impl Token {
         serializer.serialize_str(&string)
     }
 
-    pub fn detokenize_hashmap<S>(values: &Vec<(TokenValue, TokenValue)>, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn detokenize_hashmap<S>(_key_type: &ParamType, values: &BTreeMap<String, TokenValue>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -118,7 +119,7 @@ impl Serialize for TokenValue {
             TokenValue::FixedArray(ref tokens) => tokens.serialize(serializer),
             TokenValue::Bits(ref bitstring) => Token::detokenize_bitstring(bitstring, serializer),
             TokenValue::Bitstring(ref bitstring) => Token::detokenize_bitstring(bitstring, serializer),
-            TokenValue::Map(ref vec) => Token::detokenize_hashmap(vec, serializer),
+            TokenValue::Map(key_type, ref map) => Token::detokenize_hashmap(key_type, map, serializer),
             TokenValue::Address(ref address) => address.serialize(serializer),
         }
     }

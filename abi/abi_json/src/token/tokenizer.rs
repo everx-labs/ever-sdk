@@ -2,9 +2,10 @@
 use {ParamType, Param, Uint, Int, Token, TokenValue};
 use serde_json::Value;
 use serde::Deserialize;
+use std::collections::BTreeMap;
 use num_bigint::{Sign, BigInt};
 use ton_abi_core::types::{Bitstring, Bit};
-use tvm::block::{MsgAddressInt};
+use tvm::block::{MsgAddress};
 use crate::error::*;
 
 /// This struct should be used to parse string values as tokens.
@@ -14,6 +15,7 @@ impl Tokenizer {
     /// Tries to parse a JSON value as a token of given type.
     fn tokenize_parameter(param: &ParamType, value: &Value) -> AbiResult<TokenValue> {
         match param {
+            ParamType::Unknown => bail!(AbiErrorKind::NotImplemented),
             ParamType::Uint(size) => Self::tokenize_uint(*size, value),
             ParamType::Int(size) => Self::tokenize_int(*size, value),
             ParamType::Dint => Self::tokenize_dint(value),
@@ -26,7 +28,7 @@ impl Tokenizer {
             ParamType::Bitstring => Self::tokenize_bitstring(value),
             ParamType::Map(key_type, value_type) => Self::tokenize_hashmap(key_type, value_type, value),
             ParamType::Address => {
-                let address = MsgAddressInt::deserialize(value)
+                let address = MsgAddress::deserialize(value)
                     .map_err(|_| AbiErrorKind::WrongDataFormat(value.clone()))?;
                 Ok(TokenValue::Address(address))
             }
@@ -249,19 +251,12 @@ impl Tokenizer {
 
     fn tokenize_hashmap(key_type: &ParamType, value_type: &ParamType, map_value: &Value) -> AbiResult<TokenValue> {
         if let Value::Object(map) = map_value {
-            let mut vec = vec![];
+            let mut new_map = BTreeMap::<String, TokenValue>::new();
             for (key, value) in map.iter() {
-                let key_token = Self::tokenize_parameter(
-                    key_type,
-                    &serde_json::from_str(key)
-                        .map_err(|_| AbiErrorKind::InvalidParameterValue(map_value.clone()))?)?;
-                let value_token = Self::tokenize_parameter(
-                        value_type,
-                        value)?;
-                
-                vec.push((key_token, value_token));
+                let value = Self::tokenize_parameter(value_type, value)?;
+                new_map.insert(key.to_string(), value);
             }
-            Ok(TokenValue::Map(vec))
+            Ok(TokenValue::Map(key_type.clone(), new_map))
         } else {
             bail!(AbiErrorKind::WrongDataFormat(map_value.clone()))
         }

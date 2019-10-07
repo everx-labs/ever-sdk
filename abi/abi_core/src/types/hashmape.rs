@@ -13,12 +13,11 @@ use tvm::stack::dictionary::{HashmapE, HashmapType};
 
 impl ABISerialized for HashmapE {
     fn prepend_to(&self, mut destination: BuilderData) -> BuilderData {
-        destination = provide_empty_reference(destination);
-
         match self.data() {
             Some(cell) => {
+                destination = provide_empty_reference(destination);
                 destination.prepend_bitstring(&[0b11000000]).unwrap();
-                destination.prepend_reference(BuilderData::from(cell));    
+                destination.prepend_reference(BuilderData::from(cell));
             }
             None => {
                 destination.prepend_bitstring(&[0b01000000]).unwrap();

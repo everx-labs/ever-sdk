@@ -121,3 +121,6 @@ pub use self::dynamic_uint::*;
 
 mod hashmape;
 pub use self::hashmape::*;
+
+mod address;
+pub use self::address::*;

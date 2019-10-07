@@ -19,6 +19,7 @@ impl TokenValue {
         cursor: SliceData,
     ) -> Result<(Self, SliceData), DeserializationError> {
         match param_type {
+            ParamType::Unknown => Err(DeserializationError{cursor}),
             ParamType::Uint(size) => Self::read_uint(*size, cursor),
             ParamType::Int(size) => Self::read_int(*size, cursor),
             ParamType::Dint => {
@@ -43,7 +44,7 @@ impl TokenValue {
                 let (bitstring, cursor) = Bitstring::read_from(cursor)?;
                 Ok((TokenValue::Bitstring(bitstring), cursor))
             }
-            ParamType::Map(key_type, value_type) => {
+            ParamType::Map(_key_type, _value_type) => {
                 unimplemented!()
             }
             ParamType::Address => {

@@ -6,6 +6,7 @@ use Param;
 /// Function and event param types.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParamType {
+    Unknown,
     /// uint<M>: unsigned integer type of M bits.
     Uint(usize),
     /// int<M>: signed integer type of M bits.
@@ -42,6 +43,7 @@ impl ParamType {
     /// Returns type signature according to ABI specification
     pub fn type_signature(&self) -> String {
         match self {
+            ParamType::Unknown => format!("unknown"),
             ParamType::Uint(size) => format!("uint{}", size),
             ParamType::Int(size) => format!("int{}", size),
             ParamType::Dint => "dint".to_owned(),
