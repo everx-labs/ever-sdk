@@ -113,6 +113,14 @@ impl Token {
         let data = base64::encode(&data);
         serializer.serialize_str(&data)
     }
+
+    pub fn detokenize_bytes<S>(arr: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let data = hex::encode(arr);
+        serializer.serialize_str(&data)
+    }
 }
 
 impl Serialize for TokenValue {
@@ -136,6 +144,8 @@ impl Serialize for TokenValue {
             TokenValue::Cell(ref cell) => Token::detokenize_cell(cell, serializer),
             TokenValue::Map(key_type, ref map) => Token::detokenize_hashmap(key_type, map, serializer),
             TokenValue::Address(ref address) => address.serialize(serializer),
+            TokenValue::Bytes(ref arr) => Token::detokenize_bytes(arr, serializer),
+            TokenValue::FixedBytes(ref arr) => Token::detokenize_bytes(arr, serializer),
         }
     }
 }

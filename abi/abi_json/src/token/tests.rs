@@ -612,6 +612,40 @@ mod tokenize_tests {
             expected_tokens
         );
     }
+
+    #[test]
+    fn test_tokenize_bytes() {
+        let input = r#"{
+            "a": "ABCDEF",
+            "b": "ABCDEF0102",
+            "c": "55555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555"
+        }"#;
+
+        let params = vec![
+            Param::new("a", ParamType::Bytes),
+            Param::new("b", ParamType::FixedBytes(3)),
+            Param::new("c", ParamType::Bytes),
+        ];
+
+        let expected_tokens = vec![
+            Token::new("a", TokenValue::Bytes(vec![0xAB, 0xCD, 0xEF])),
+            Token::new("b", TokenValue::FixedBytes(vec![0xAB, 0xCD, 0xEF])),
+            Token::new("c", TokenValue::Bytes(vec![0x55; 160])),
+        ];
+
+        assert_eq!(
+            Tokenizer::tokenize_all(&params, &serde_json::from_str(input).unwrap()).unwrap(),
+            expected_tokens
+        );
+
+        // check that detokenizer gives the same result
+        let input = Detokenizer::detokenize(&params, &expected_tokens).unwrap();
+        println!("{}", input);
+        assert_eq!(
+            Tokenizer::tokenize_all(&params, &serde_json::from_str(&input).unwrap()).unwrap(),
+            expected_tokens
+        );
+    }
 }
 
 mod types_check_tests {
@@ -712,6 +746,14 @@ mod types_check_tests {
                 name: "m2".to_owned(),
                 value: TokenValue::Map(ParamType::Int(8), map)
             },
+            Token {
+                name: "n".to_owned(),
+                value: TokenValue::Bytes(vec![1])
+            },
+            Token {
+                name: "o".to_owned(),
+                value: TokenValue::FixedBytes(vec![1, 2, 3])
+            },
         ];
 
         let tuple_params = vec![
@@ -781,6 +823,14 @@ mod types_check_tests {
             Param {
                 name: "m2".to_owned(),
                 kind: ParamType::Map(Box::new(ParamType::Int(8)), Box::new(ParamType::Uint(32))),
+            },
+            Param {
+                name: "n".to_owned(),
+                kind: ParamType::Bytes,
+            },
+            Param {
+                name: "o".to_owned(),
+                kind: ParamType::FixedBytes(3),
             },
         ];
 

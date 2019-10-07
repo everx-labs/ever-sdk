@@ -33,6 +33,10 @@ pub enum ParamType {
     Map(Box<ParamType>, Box<ParamType>),
     /// TON message address
     Address,
+    /// byte array
+    Bytes,
+    /// fixed size byte array
+    FixedBytes(usize),
 }
 
 impl fmt::Display for ParamType {
@@ -69,6 +73,8 @@ impl ParamType {
             ParamType::Map(key_type, value_type) => 
                 format!("map({},{})", key_type.type_signature(), value_type.type_signature()),
             ParamType::Address => format!("address"),
+            ParamType::Bytes => format!("bytes"),
+            ParamType::FixedBytes(size) => format!("fixedbytes<{}>", size),
         }
     }
 }

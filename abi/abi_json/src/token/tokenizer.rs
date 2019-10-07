@@ -35,6 +35,8 @@ impl Tokenizer {
                     .map_err(|_| AbiErrorKind::WrongDataFormat(value.clone()))?;
                 Ok(TokenValue::Address(address))
             }
+            ParamType::Bytes => Self::tokenize_bytes(value, None),
+            ParamType::FixedBytes(size) => Self::tokenize_bytes(value, Some(*size)),
         }
     }
 
@@ -112,7 +114,7 @@ impl Tokenizer {
 
             Ok(BigInt::from(number))
         } else if value.is_string() {
-            let mut string = value.as_str().unwrap().to_owned();
+            let mut string = value.as_str().unwrap();
 
             let radix = if string.starts_with("-") {
                 if string.starts_with("-0x") {
@@ -255,12 +257,11 @@ impl Tokenizer {
     fn tokenize_cell(value: &Value) -> AbiResult<TokenValue> {
         let string = value
             .as_str()
-            .ok_or(AbiErrorKind::WrongDataFormat(value.clone()))?
-            .to_owned();
-        let data = base64::decode(&string)
-            .map_err(|_| AbiErrorKind::InvalidData(string.clone()))?;
+            .ok_or(AbiErrorKind::WrongDataFormat(value.clone()))?;
+        let data = base64::decode(string)
+            .map_err(|_| AbiErrorKind::InvalidParameterValue(value.clone()))?;
         let cell = deserialize_tree_of_cells(&mut Cursor::new(data))
-            .map_err(|_| AbiErrorKind::InvalidData(string.clone()))?;
+            .map_err(|_| AbiErrorKind::InvalidParameterValue(value.clone()))?;
         Ok(TokenValue::Cell(cell.into()))
     }
 
@@ -274,6 +275,23 @@ impl Tokenizer {
             Ok(TokenValue::Map(key_type.clone(), new_map))
         } else {
             bail!(AbiErrorKind::WrongDataFormat(map_value.clone()))
+        }
+    }
+
+    fn tokenize_bytes(value: &Value, size: Option<usize>) -> AbiResult<TokenValue> {
+        let string = value
+            .as_str()
+            .ok_or(AbiErrorKind::WrongDataFormat(value.clone()))?;
+        let mut data = hex::decode(string)
+            .map_err(|_| AbiErrorKind::InvalidParameterValue(value.clone()))?;
+        match size {
+            Some(size) => if data.len() >= size {
+                data.split_off(size);
+                Ok(TokenValue::FixedBytes(data))
+            } else {
+                bail!(AbiErrorKind::InvalidParameterValue(value.clone()))
+            }
+            None => Ok(TokenValue::Bytes(data))
         }
     }
 

@@ -36,6 +36,8 @@ impl ABISerialized for TokenValue {
                 destination.prepend_builder(&builder).unwrap();
                 destination
             }
+            TokenValue::Bytes(ref _arr) => unimplemented!(),
+            TokenValue::FixedBytes(ref _arr) => unimplemented!(),
         }
     }
 
@@ -58,6 +60,8 @@ impl ABISerialized for TokenValue {
             TokenValue::Cell(cell) => cell.remaining_bits(),
             TokenValue::Map(_, _) => 1,
             TokenValue::Address(addr) => addr.write_to_new_cell().unwrap().length_in_bits(),
+            TokenValue::Bytes(ref _arr) => unimplemented!(),
+            TokenValue::FixedBytes(ref _arr) => unimplemented!(),
         }
     }
 }

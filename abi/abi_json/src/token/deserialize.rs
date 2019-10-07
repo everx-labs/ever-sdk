@@ -54,6 +54,8 @@ impl TokenValue {
                 unimplemented!() // TODO: deserialize MsgAddressInt
                 // Ok((TokenValue::MsgAddress(address), cursor))
             }
+            ParamType::Bytes => unimplemented!(),
+            ParamType::FixedBytes(_size) => unimplemented!(),
         }
     }
 
