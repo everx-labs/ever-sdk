@@ -191,10 +191,14 @@ impl Function {
 
         // prepare standard message
         let mut builder = BuilderData::new();
-        for token in tokens.iter().rev() {
-            builder = token.value.prepend_to(builder);
+
+        // TODO use TokenValue::pack_values_into_chain function
+
+        /*for token in tokens.iter().rev() {
+            
+            //builder = token.value.prepend_to(builder);
             //println!("{}", builder);
-        }
+        }*/
 
         // expand cells chain with new root if all references are used 
         // or if ABI version and function ID cannot fit into root cell

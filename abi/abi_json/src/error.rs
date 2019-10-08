@@ -11,6 +11,7 @@ error_chain! {
         BlockError(tvm::block::BlockError);
         TvmError(tvm::error::TvmError);
         SerdeError(serde_json::Error);
+        TvmException(tvm::types::Exception);
     }
 
     errors {

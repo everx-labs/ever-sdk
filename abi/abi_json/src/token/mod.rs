@@ -96,11 +96,13 @@ pub enum TokenValue {
     /// MsgAddress
     ///
     Address(MsgAddress),
-    /// Bytes
-    ///
+    /// Raw byte array
+    /// 
+    /// Encoded as separate cells chain
     Bytes(Vec<u8>),
-    /// Fixed Bytes
-    ///
+    /// Fixed sized raw byte array
+    /// 
+    /// Encoded as separate cells chain
     FixedBytes(Vec<u8>),
     /// Nanograms
     /// 

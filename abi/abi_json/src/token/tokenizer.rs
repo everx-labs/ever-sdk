@@ -15,7 +15,7 @@ pub struct Tokenizer;
 
 impl Tokenizer {
     /// Tries to parse a JSON value as a token of given type.
-    fn tokenize_parameter(param: &ParamType, value: &Value) -> AbiResult<TokenValue> {
+    pub fn tokenize_parameter(param: &ParamType, value: &Value) -> AbiResult<TokenValue> {
         match param {
             ParamType::Unknown => bail!(AbiErrorKind::NotImplemented),
             ParamType::Uint(size) => Self::tokenize_uint(*size, value),
