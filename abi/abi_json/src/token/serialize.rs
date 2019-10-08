@@ -88,9 +88,12 @@ impl TokenValue {
             TokenValue::Address(address) => {
                 Ok(vec![address.write_to_new_cell()?])
             }
-            TokenValue::Bytes(ref _arr) => unimplemented!(),
-            TokenValue::FixedBytes(ref _arr) => unimplemented!(),
-            TokenValue::Gram(_gram) => unimplemented!(),
+            TokenValue::Bytes(ref _arr) | TokenValue::FixedBytes(ref _arr) => {
+                unimplemented!()
+            }
+            TokenValue::Gram(gram) => {
+                Ok(vec![gram.write_to_new_cell()?])
+            },
             _ => unimplemented!(),
         }
     }

@@ -1,5 +1,4 @@
 //! TON ABI params.
-use num_bigint::BigUint;
 use ton_abi_core::types::{
     Bitstring, Dint, Duint,
 };
@@ -10,7 +9,7 @@ use {Param, ParamType};
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
-use tvm::block::MsgAddress;
+use tvm::block::{Grams, MsgAddress};
 use tvm::stack::CellData;
 
 mod tokenizer;
@@ -107,7 +106,7 @@ pub enum TokenValue {
     FixedBytes(Vec<u8>),
     /// Nanograms
     /// 
-    Gram(BigUint)
+    Gram(Grams)
 }
 
 impl fmt::Display for TokenValue {

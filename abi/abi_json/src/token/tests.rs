@@ -122,7 +122,7 @@ mod tokenize_tests {
         let input = r#"{ "a" : 12345678900987654321 }"#;
         let params = vec![Param {
             name: "a".to_owned(),
-            kind: ParamType::Uint(128),
+            kind: ParamType::Int(64),
         }];
 
         assert!(Tokenizer::tokenize_all(&params, &serde_json::from_str(input).unwrap()).is_err());

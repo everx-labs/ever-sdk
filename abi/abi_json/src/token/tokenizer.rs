@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::io::Cursor;
 use num_bigint::{Sign, BigInt, BigUint};
 use ton_abi_core::types::{Bitstring, Bit};
-use tvm::block::{MsgAddress};
+use tvm::block::{Grams, MsgAddress};
 use tvm::cells_serialization::deserialize_tree_of_cells;
 use crate::error::*;
 
@@ -175,7 +175,7 @@ impl Tokenizer {
         if !Self::check_uint_size(&number, 120) {
             bail!(AbiErrorKind::InvalidParameterValue(value.clone()))
         } else {
-            Ok(TokenValue::Gram(number))
+            Ok(TokenValue::Gram(Grams::from(number)))
         }
     }
 

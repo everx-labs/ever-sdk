@@ -61,7 +61,7 @@ impl TokenValue {
             ParamType::Gram => {
                 let original = cursor.clone();
                 <Grams as tvm::block::Deserializable>::construct_from(&mut cursor.clone())
-                    .map(|gram: Grams| (TokenValue::Gram(gram.value().to_biguint().unwrap()), cursor))
+                    .map(|gram: Grams| (TokenValue::Gram(gram), cursor))
                     .map_err(|_| DeserializationError::with(original))
             }
         }

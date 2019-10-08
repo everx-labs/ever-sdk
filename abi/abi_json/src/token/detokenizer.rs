@@ -147,7 +147,7 @@ impl Serialize for TokenValue {
             TokenValue::Address(ref address) => address.serialize(serializer),
             TokenValue::Bytes(ref arr) => Token::detokenize_bytes(arr, serializer),
             TokenValue::FixedBytes(ref arr) => Token::detokenize_bytes(arr, serializer),
-            TokenValue::Gram(gram) => Token::detokenize_big_uint(gram, serializer),
+            TokenValue::Gram(gram) => Token::detokenize_big_int(gram.value(), serializer),
         }
     }
 }
