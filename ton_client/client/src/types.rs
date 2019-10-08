@@ -261,6 +261,11 @@ impl ApiError {
         "Deploy failed: transaction missing".into())
     }
 
+    pub fn contracts_deploy_transaction_aborted() -> Self {
+        ApiError::sdk(ContractsDeployTransactionAborted,
+        "Deploy failed: transaction aborted".into())
+    }
+
     pub fn contracts_encode_message_with_sign_failed<E: Display>(err: E) -> Self {
         sdk_err!(ContractsEncodeMessageWithSignFailed,
             "Encoding message with sign failed: {}", err)
@@ -290,7 +295,7 @@ impl ApiError {
 
     // TVM
 
-    pub fn tvm_execution_skipped(reason: u8) -> ApiError {
+    pub fn tvm_execution_skipped(reason: &String) -> ApiError {
         ApiError::new(
             ApiErrorSource::TVM,
             &ApiTvmErrorCode::ExecutionSkipped,
@@ -350,6 +355,7 @@ pub enum ApiSdkErrorCode {
     ContractsCreateRunMessageFailed = 3012,
     ContractsCreateSendGramsMessageFailed = 3013,
     ContractsEncodeMessageWithSignFailed = 3014,
+    ContractsDeployTransactionAborted = 3015,
 
     QueriesQueryFailed = 4001,
     QueriesSubscribeFailed = 4002,

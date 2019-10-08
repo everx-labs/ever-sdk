@@ -42,7 +42,7 @@ const ACCOUNT_FIELDS: &str = r#"
     addr {
         ...on MsgAddressIntAddrNoneVariant {
             AddrNone {
-                dummy
+                None
             }
         }
         ...on MsgAddressIntAddrStdVariant {
@@ -65,7 +65,7 @@ const ACCOUNT_FIELDS: &str = r#"
         state {
             ...on AccountStorageStateAccountUninitVariant {
                 AccountUninit {
-                    dummy
+                    None
                 }
             }
             ...on AccountStorageStateAccountActiveVariant {
@@ -76,7 +76,7 @@ const ACCOUNT_FIELDS: &str = r#"
             }
             ...on AccountStorageStateAccountFrozenVariant {
                 AccountFrozen {
-                    dummy
+                    None
                 }
             }
         }
@@ -270,6 +270,44 @@ impl AccountAddress {
             Self::decode_std_base64(data)
         } else {
             Self::decode_std_hex(data)
+        }
+    }
+
+    fn get_std_address(&self) -> SdkResult<(i8, Vec<u8>)> {
+        match self {
+            AccountAddress::Full(address) => {
+                match address {
+                    MsgAddressInt::AddrStd(msg_address) => {
+                        if msg_address.address.remaining_bits() != 256 {
+                            bail!(SdkErrorKind::InvalidData("Address must be 32 bytes long".to_owned()));
+                        }
+                        Ok((msg_address.workchain_id, msg_address.address.get_bytestring(0)))
+                    },
+                    _ => bail!(SdkErrorKind::InvalidData("Non-std address".to_owned()))
+                }
+            },
+            _ => bail!(SdkErrorKind::InvalidData("Non-std address".to_owned()))
+        }
+    }
+
+    /// Returns base64 address representation
+    pub fn as_base64(&self, bounceable: bool, test: bool, as_url: bool) -> SdkResult<String> {
+        let (worckchain, mut address) = self.get_std_address()?;
+
+        let mut tag = if bounceable { 0x11 } else { 0x51 };
+        if test { tag |= 0x80 };
+        let mut vec = vec![tag];
+        vec.append(&mut worckchain.to_be_bytes().to_vec());
+        vec.append(&mut address);
+        
+        vec.append(&mut State::<XMODEM>::calculate(&vec[..]).to_be_bytes().to_vec());
+
+        let result = base64::encode(&vec);
+
+        if as_url {
+            Ok(result.replace('/', "_").replace('+', "-"))
+        } else {
+            Ok(result)
         }
     }
 }

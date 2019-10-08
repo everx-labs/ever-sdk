@@ -68,12 +68,23 @@ pub(crate) fn deploy(_context: &mut ClientContext, params: ParamsOfDeploy) -> Ap
 
     debug!("-> -> deploy");
     let tr_id = deploy_contract(&params, contract_image, &key_pair)?;
-    debug!("-> -> deploy transaction: {}", u256_encode(&tr_id.into()));
+    debug!("-> -> deploy transaction: {}", u256_encode(&tr_id.clone().into()));
+
+    let tr_id_hex = tr_id.to_hex_string();
+
+    debug!("load transaction {}", tr_id_hex);
+    let tr = super::run::load_transaction(&tr_id);
 
     debug!("<-");
-    Ok(ResultOfDeploy {
-        address: account_encode(&account_id)
-    })
+    if tr.tr().is_aborted() {
+        debug!("Transaction aborted");
+        super::run::get_result_from_block_transaction(tr.tr())?;
+        Err(ApiError::contracts_deploy_transaction_aborted())
+    } else {
+        Ok(ResultOfDeploy {
+            address: account_encode(&account_id)
+        })
+    }
 }
 
 pub(crate) fn get_address(_context: &mut ClientContext, params: ParamsOfGetDeployAddress) -> ApiResult<String> {
