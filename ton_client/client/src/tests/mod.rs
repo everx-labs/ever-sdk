@@ -50,7 +50,7 @@ fn test() {
         println!("result: {}", version.result_json.to_string());
 
         let _deployed = json_request(context, "setup",
-            json!({"baseUrl": "http://192.168.99.100"}));
+            json!({"baseUrl": "http://0.0.0.0"}));
 
 		let giver_abi: Value = serde_json::from_str(GIVER_ABI).unwrap();
 
