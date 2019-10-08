@@ -1,19 +1,17 @@
 //! Contract function call builder.
 
 use std::sync::Arc;
+use std::convert::TryFrom;
+use chrono::prelude::*;
 use sha2::{Digest, Sha256, Sha512};
 use {Param, Token, TokenValue};
 use ed25519_dalek::*;
-use tvm::stack::{BuilderData, SliceData, CellData};
-use ton_abi_core::types::{Bitstring, prepend_data_to_chain};
+use tvm::stack::{BuilderData, SliceData, CellData, IBitstring};
 use ton_abi_core::types::{
-    ABISerialized,
     ABIDeserialized};
 use crate::error::*;
 
-pub const   ABI_VERSION: u8                 = 0;
-const       ABI_VERSION_BITS_SIZE: usize    = 8;
-const       FUNC_ID_BITS_SIZE: usize        = 32;
+pub const   ABI_VERSION: u8 = 0;
 
 /// Contract function specification.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -26,10 +24,11 @@ pub struct Function {
     /// Function output.
     #[serde(default)]
     pub outputs: Vec<Param>,
-    /// Signed function.
-    #[serde(default)]
-    pub signed: bool,
 
+    /// Signed function.
+    #[serde(skip_deserializing)]
+    pub set_time: bool,
+    /// Calculated function ID
     #[serde(skip_deserializing)]
     pub id: u32
 }
@@ -97,27 +96,38 @@ impl Function {
         Self::calc_function_id(&signature)
     }
 
+    /// Returns ID for call message
+    pub fn get_input_id(&self) -> u32 {
+            self.id & 0x7FFFFFFF
+    }
+
+    /// Returns ID for response message
+    pub fn get_output_id(&self) -> u32 {
+            self.id | 0x80000000
+    }
+
     /// Decodes provided params from SliceData
-    fn decode_params(&self, params: Vec<Param>, data: SliceData) -> AbiResult<Vec<Token>> {
+    fn decode_params(&self, params: Vec<Param>, data: SliceData, expected_id: u32, exctract_time: bool
+        ) -> AbiResult<Vec<Token>> {
         let mut tokens = vec![];
+        let mut cursor = data;
+        
+        let id = cursor.get_next_u32()?;
 
-        let (version, cursor) = u8::read_from(data)
-            .map_err(|err| AbiErrorKind::DeserializationError(err))?;
+        if id != expected_id { Err(AbiErrorKind::WrongId(id))? }
 
-        if version != ABI_VERSION { Err(AbiErrorKind::WrongVersion(version))? }
+        if exctract_time {
+            cursor.get_next_u64()?;
+        }
 
-        let (id, mut cursor) = u32::read_from(cursor)
-            .map_err(|err| AbiErrorKind::DeserializationError(err))?;
-
-        if id != self.id { Err(AbiErrorKind::WrongId(id))? }
-
-        for param in params {
+        // TODO: deserialize
+        /*for param in params {
             let (token_value, new_cursor) = TokenValue::read_from(&param.kind, cursor)
                 .map_err(|err| AbiErrorKind::DeserializationError(err))?;
 
             cursor = new_cursor;
             tokens.push(Token { name: param.name, value: token_value });
-        }
+        }*/
 
         if cursor.remaining_references() != 0 || cursor.remaining_bits() != 0 {
             bail!(AbiErrorKind::IncompleteDeserializationError)
@@ -128,7 +138,7 @@ impl Function {
 
     /// Parses the ABI function output to list of tokens.
     pub fn decode_output(&self, data: SliceData) -> AbiResult<Vec<Token>> {
-        self.decode_params(self.output_params(), data)
+        self.decode_params(self.output_params(), data, self.get_output_id(), false)
     }
 
     /// Parses the ABI function call to list of tokens.
@@ -136,22 +146,12 @@ impl Function {
         data.checked_drain_reference()
             .map_err(|err| AbiErrorKind::InvalidInputData(err.to_string()))?;
 
-        self.decode_params(self.input_params(), data)
+        self.decode_params(self.input_params(), data, self.get_input_id(), self.set_time)
     }
 
     /// Decodes function id from contract answer
-    pub fn decode_id(data: SliceData) -> AbiResult<u32> {
-        let (version, new_cursor) = u8::read_from(data)
-            .map_err(|err| AbiErrorKind::DeserializationError(err))?;
-
-        let (id, _) = u32::read_from(new_cursor)
-            .map_err(|err| AbiErrorKind::DeserializationError(err))?;
-
-        if version == ABI_VERSION {
-            Ok(id)
-        } else {
-            bail!(AbiErrorKind::WrongVersion(version))
-        }
+    pub fn decode_id(mut data: SliceData) -> AbiResult<u32> {
+        Ok(data.get_next_u32()?)
     }
 
     /// Encodes provided function parameters into `BuilderData` containing ABI contract call
@@ -191,32 +191,18 @@ impl Function {
 
         // prepare standard message
         let mut builder = BuilderData::new();
+        builder.append_u32(self.get_input_id())?;
 
-        // TODO use TokenValue::pack_values_into_chain function
+        if self.set_time {
+            let time = Utc::now().timestamp_millis();
+            builder.append_i64(time)?;
+        }
+        
+        // reserve reference for sign
+        builder.append_reference(BuilderData::new().into());
 
-        /*for token in tokens.iter().rev() {
-            
-            //builder = token.value.prepend_to(builder);
-            //println!("{}", builder);
-        }*/
-
-        // expand cells chain with new root if all references are used 
-        // or if ABI version and function ID cannot fit into root cell
-        if builder.references_free() == 0
-            || builder.bits_used() < FUNC_ID_BITS_SIZE + ABI_VERSION_BITS_SIZE
-        {
-            let mut new_builder = BuilderData::new();
-            new_builder.append_reference(builder);
-            builder = new_builder;
-        };        
-
-        builder = prepend_data_to_chain(builder, {
-            // make prefix with ABI version and function ID
-            let mut vec = vec![ABI_VERSION];
-            vec.extend_from_slice(&self.get_function_id().to_be_bytes()[..]);
-            let len = vec.len() * 8;
-            Bitstring::create(vec, len)
-        });
+        // encoding itself
+        let builder = TokenValue::pack_values_into_chain(tokens, vec![builder])?;
 
         let hash = (&Arc::<CellData>::from(&builder)).repr_hash().as_slice().to_vec();
 
@@ -306,24 +292,20 @@ impl Event {
     /// Decodes provided params from SliceData
     fn decode_params(&self, params: Vec<Param>, data: SliceData) -> AbiResult<Vec<Token>> {
         let mut tokens = vec![];
-
-        let (version, cursor) = u8::read_from(data)
-            .map_err(|err| AbiErrorKind::DeserializationError(err))?;
-
-        if version != ABI_VERSION { Err(AbiErrorKind::WrongVersion(version))? }
-
-        let (id, mut cursor) = u32::read_from(cursor)
-            .map_err(|err| AbiErrorKind::DeserializationError(err))?;
+        let mut cursor = data;
+        
+        let id = cursor.get_next_u32()?;
 
         if id != self.id { Err(AbiErrorKind::WrongId(id))? }
 
-        for param in params {
+        // TODO: deserialize
+        /*for param in params {
             let (token_value, new_cursor) = TokenValue::read_from(&param.kind, cursor)
                 .map_err(|err| AbiErrorKind::DeserializationError(err))?;
 
             cursor = new_cursor;
             tokens.push(Token { name: param.name, value: token_value });
-        }
+        }*/
 
         if cursor.remaining_references() != 0 || cursor.remaining_bits() != 0 {
             bail!(AbiErrorKind::IncompleteDeserializationError)
@@ -338,18 +320,8 @@ impl Event {
     }
 
     /// Decodes function id from contract answer
-    pub fn decode_id(data: SliceData) -> Result<u32, AbiErrorKind> {
-        let (version, new_cursor) = u8::read_from(data)
-            .map_err(|err| AbiErrorKind::DeserializationError(err))?;
-
-        let (id, _) = u32::read_from(new_cursor)
-            .map_err(|err| AbiErrorKind::DeserializationError(err))?;
-
-        if version == ABI_VERSION {
-            Ok(id)
-        } else {
-            Err(AbiErrorKind::WrongVersion(version))
-        }
+    pub fn decode_id(mut data: SliceData) -> AbiResult<u32> {
+        Ok(data.get_next_u32()?)
     }
 }
 

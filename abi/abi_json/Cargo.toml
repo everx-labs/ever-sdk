@@ -14,6 +14,7 @@ serde_derive = "1.0.91"
 sha2 = "0.8"
 ed25519-dalek = "^0.9.1"
 error-chain = "0.12.1"
+chrono = "0.4.9"
 
 [dependencies.tvm]
 git = "ssh://git@github.com/tonlabs/sdk-emulator.git"

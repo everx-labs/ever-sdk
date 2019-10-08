@@ -101,17 +101,17 @@ fn test_parameters_set(
             .collect()
     };
 
-    let mut not_signed_function = Function {
+    let mut function = Function {
         name: func_name.to_owned(),
         inputs: input_params.clone(),
         outputs: input_params.clone(),
-        signed: false,
+        set_time: true,
         id: 0
     };
 
-    not_signed_function.id = not_signed_function.get_function_id();
+    function.id = function.get_function_id();
 
-    let test_tree = not_signed_function
+    let test_tree = function
         .encode_input(inputs.clone(), None)
         .unwrap();
     assert_eq!(test_tree, expected_tree_with_ref);
@@ -120,10 +120,7 @@ fn test_parameters_set(
 
     let pair = Keypair::generate::<Sha512, _>(&mut rand::rngs::OsRng::new().unwrap());
 
-    let mut signed_function = not_signed_function.clone();
-    signed_function.signed = true;
-
-    let signed_test_tree = signed_function
+    let signed_test_tree = function
         .encode_input(inputs.clone(), Some(&pair))
         .unwrap();
     let mut message = SliceData::from(signed_test_tree);
@@ -143,12 +140,12 @@ fn test_parameters_set(
 
     let mut test_tree = SliceData::from(test_tree);
 
-    let test_inputs = not_signed_function.decode_input(test_tree.clone()).unwrap();
+    let test_inputs = function.decode_input(test_tree.clone()).unwrap();
     assert_eq!(test_inputs, inputs);
 
     test_tree.checked_drain_reference().unwrap();
 
-    let test_outputs = not_signed_function.decode_output(test_tree).unwrap();
+    let test_outputs = function.decode_output(test_tree).unwrap();
     assert_eq!(test_outputs, inputs);
 }
 
@@ -1100,7 +1097,7 @@ fn test_reserving_reference() {
         name: "test_reserving_reference".to_owned(),
         inputs: params.clone(),
         outputs: params.clone(),
-        signed: true,
+        set_time: true,
         id: 0
     };
 

@@ -12,6 +12,7 @@ error_chain! {
         TvmError(tvm::error::TvmError);
         SerdeError(serde_json::Error);
         TvmException(tvm::types::Exception);
+        TryFromIntError(std::num::TryFromIntError);
     }
 
     errors {

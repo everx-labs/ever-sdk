@@ -36,6 +36,7 @@ impl<'a> Deserialize<'a> for Contract {
 
         for mut function in serde_contract.functions {
             function.id = function.get_function_id();
+            function.set_time = serde_contract.set_time;
             result.functions.insert(function.name.clone(), function);
         }
 
@@ -53,6 +54,10 @@ struct SerdeContract {
     /// ABI version.
     #[serde(rename="ABI version")]
     pub abi_version: u8,
+    /// Set timestamp in message.
+    #[serde(rename="setTime")]
+    #[serde(default)]
+    pub set_time: bool,
     /// Contract functions.
     pub functions: Vec<Function>,
     /// Contract events.

@@ -8,9 +8,9 @@ use tvm::stack::dictionary::HashmapE;
 use num_bigint::{BigInt, Sign};
 
 impl TokenValue {
-    pub fn pack_values_into_chain(values: Vec<TokenValue>, mut cells: Vec<BuilderData>) -> AbiResult<BuilderData> {
-        for value in values {
-            cells.append(&mut value.write_to_cells()?);
+    pub fn pack_values_into_chain(tokens: &[Token], mut cells: Vec<BuilderData>) -> AbiResult<BuilderData> {
+        for token in tokens {
+            cells.append(&mut token.value.write_to_cells()?);
         }
 
         Self::pack_cells_into_chain(cells)
