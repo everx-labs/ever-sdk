@@ -238,19 +238,13 @@ impl Function {
     pub fn add_sign_to_encoded_input(
         signature: &[u8],
         public_key: &[u8],
-        mut function_call: SliceData
+        function_call: SliceData
     ) -> Result<BuilderData, DeserializationError> {
-        if 0 == function_call.remaining_references() {
-             return Err(DeserializationError::InvalidInputData("No signature cell".to_owned()));
-        }
-
-        let signature_cell = function_call.checked_drain_reference().unwrap();
-
-        if 0 != signature_cell.calc_bit_length() {
-             return Err(DeserializationError::InvalidInputData("Signature cell is not empty".to_owned()));
-        }
-
         let mut builder = BuilderData::from_slice(&function_call);
+
+        if builder.references_free() == 0 {
+            return Err(DeserializationError::InvalidInputData("No free reference for signature".to_owned()));
+        }
 
         let mut signature = signature.to_vec();
         signature.extend_from_slice(public_key);

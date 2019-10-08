@@ -21,7 +21,7 @@ use tvm::stack::{BuilderData, IBitstring};
 use tvm::types::AccountId;
 
 const WORKCHAIN: i32 = 0;
-const SUBSCRIBE_CONTRACT_ABI: &str = r#"
+pub const SUBSCRIBE_CONTRACT_ABI: &str = r#"
 {
     "ABI version": 0,
     "functions": [{
@@ -310,11 +310,11 @@ fn init_node_connection() {
         r#"
         {
             "queries_config": {
-                "queries_server": "http://192.168.99.100/graphql",
-                "subscriptions_server": "ws://192.168.99.100/graphql"
+                "queries_server": "http://0.0.0.0/graphql",
+                "subscriptions_server": "ws://0.0.0.0/graphql"
             },
             "requests_config": {
-                "requests_server": "http://192.168.99.100/topics/requests"
+                "requests_server": "http://0.0.0.0/topics/requests"
             }
         }"#
     };
@@ -350,17 +350,10 @@ fn wait_message_processed_by_id(id: MessageId)-> TransactionId {
     wait_message_processed(Contract::subscribe_updates(id.clone()).unwrap())
 }
 
-fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params: &str, key_pair: &Keypair) -> AccountId {
-    // read image from file and construct ContractImage
-    let mut state_init = std::fs::File::open("src/tests/".to_owned() + code_file_name).expect("Unable to open contract code file");
-
-    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &key_pair.public).expect("Unable to parse contract code file");
-
-    let account_id = contract_image.account_id();
-
+pub fn get_grams_from_giver(account_id: AccountId) {
     // before deploying contract need to transfer some funds to its address
     //println!("Account ID to take some grams {}\n", account_id.to_hex_string());
-    let msg = create_external_transfer_funds_message(AccountId::from([0; 32]), account_id.clone(), 100000000000);
+    let msg = create_external_transfer_funds_message(AccountId::from([0; 32]), account_id, 100000000000);
     let changes_stream = Contract::send_message(msg).expect("Error calling contract method");
 
     // wait transaction id in message-status
@@ -383,6 +376,17 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
     tr.out_messages_id().iter().for_each(|msg_id| {
         wait_message_processed_by_id(msg_id.clone());
     });
+}
+
+fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params: &str, key_pair: &Keypair) -> AccountId {
+    // read image from file and construct ContractImage
+    let mut state_init = std::fs::File::open("src/tests/".to_owned() + code_file_name).expect("Unable to open contract code file");
+
+    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &key_pair.public).expect("Unable to parse contract code file");
+
+    let account_id = contract_image.account_id();
+
+    get_grams_from_giver(account_id.clone());
 
     // call deploy method
     let changes_stream = Contract::deploy_json("constructor".to_owned(), constructor_params.to_owned(), abi.to_owned(), contract_image, Some(key_pair))

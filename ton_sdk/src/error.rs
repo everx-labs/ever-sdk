@@ -41,6 +41,10 @@ error_chain! {
         TonBlocks(tvm::block::BlockError);
         Graphql(GraphiteError);
         SerdeJson(serde_json::Error);
+        TryFromSliceError(std::array::TryFromSliceError);
+        ParseIntError(std::num::ParseIntError);
+        FromHexError(hex::FromHexError);
+        Base64DecodeError(base64::DecodeError);
     }
 
     errors {
