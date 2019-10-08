@@ -1,10 +1,11 @@
 use serde::ser::{Serialize, Serializer, SerializeMap};
 use std::collections::HashMap;
+use std::sync::Arc;
 use {Param, ParamType, Token, TokenValue};
 use num_bigint::{BigInt, BigUint};
 use ton_abi_core::types::Bitstring;
 use tvm::cells_serialization::serialize_tree_of_cells;
-use tvm::stack::SliceData;
+use tvm::stack::CellData;
 use crate::error::*;
 
 pub struct Detokenizer;
@@ -102,12 +103,12 @@ impl Token {
         map.end()
     }
 
-    pub fn detokenize_cell<S>(cell: &SliceData, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn detokenize_cell<S>(cell: &Arc<CellData>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         let mut data = vec![];
-        serialize_tree_of_cells(&cell.into_cell(), &mut data)
+        serialize_tree_of_cells(cell, &mut data)
             .map_err(|err| serde::ser::Error::custom(err.to_string()))?;
 
         let data = base64::encode(&data);

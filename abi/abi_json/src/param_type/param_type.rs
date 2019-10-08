@@ -80,4 +80,13 @@ impl ParamType {
             ParamType::Gram => format!("gram"),
         }
     }
+
+    /// Returns type bit_len for hashmap key
+    pub fn bit_len(&self) -> usize {
+        match self {
+            ParamType::Uint(size) => *size,
+            ParamType::Int(size) => *size,
+            _ => 0
+        }
+    }
 }

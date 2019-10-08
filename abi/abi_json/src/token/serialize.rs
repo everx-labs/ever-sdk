@@ -141,10 +141,10 @@ impl TokenValue {
         Ok(vec![builder])
     }
 
-    fn write_cell(value: &SliceData) -> AbiResult<Vec<BuilderData>> {
+    fn write_cell(cell: &Arc<CellData>) -> AbiResult<Vec<BuilderData>> {
         let mut builder = BuilderData::new();
-        builder.checked_append_reference(&value.cell())?;
-         Ok(vec![builder])
+        builder.append_reference_cell(cell.clone());
+        Ok(vec![builder])
     }
 
     // creates dictionary with indexes of an array items as keys and items as values

@@ -5,21 +5,24 @@ use ton_abi_core::types::{
 use types::int::Int;
 use types::uint::Uint;
 use {Param, ParamType};
+use serde_json;
+use std::sync::Arc;
 use super::*;
 
 use num_bigint::{BigInt, BigUint};
-use tvm::stack::{BuilderData, SliceData};
-use tvm::stack::dictionary::{HashmapE};
-
+use tvm::stack::{CellData, BuilderData, SliceData};
+use tvm::stack::dictionary::{HashmapE, HashmapType};
+use tvm::block::BlockResult;
+use tvm::block::types::Grams;
 
 impl TokenValue {
     /// Deserializes value from `SliceData` to `TokenValue`
     pub fn read_from(
         param_type: &ParamType,
-        cursor: SliceData,
+        mut cursor: SliceData,
     ) -> Result<(Self, SliceData), DeserializationError> {
         match param_type {
-            ParamType::Unknown => Err(DeserializationError{cursor}),
+            ParamType::Unknown => Err(DeserializationError::with(cursor)),
             ParamType::Uint(size) => Self::read_uint(*size, cursor),
             ParamType::Int(size) => Self::read_int(*size, cursor),
             ParamType::Dint => {
@@ -44,19 +47,23 @@ impl TokenValue {
                 let (bitstring, cursor) = Bitstring::read_from(cursor)?;
                 Ok((TokenValue::Bitstring(bitstring), cursor))
             }
-            ParamType::Cell => {
-                unimplemented!()
-            }
-            ParamType::Map(_key_type, _value_type) => {
-                unimplemented!()
-            }
+            ParamType::Cell => Self::read_cell(cursor)
+                .map(|(cell, cursor)| (TokenValue::Cell(cell), cursor)),
+            ParamType::Map(key_type, value_type) => Self::read_hashmap(key_type, value_type, cursor),
             ParamType::Address => {
-                unimplemented!() // TODO: deserialize MsgAddress
-                // Ok((TokenValue::MsgAddress(address), cursor))
+                let original = cursor.clone();
+                <MsgAddress as tvm::block::Deserializable>::construct_from(&mut cursor)
+                    .map(|address| (TokenValue::Address(address), cursor))
+                    .map_err(|_| DeserializationError::with(original))
             }
-            ParamType::Bytes => unimplemented!(),
-            ParamType::FixedBytes(_size) => unimplemented!(),
-            ParamType::Gram => unimplemented!(),
+            ParamType::Bytes => Self::read_bytes(None, cursor),
+            ParamType::FixedBytes(size) => Self::read_bytes(Some(*size), cursor),
+            ParamType::Gram => {
+                let original = cursor.clone();
+                <Grams as tvm::block::Deserializable>::construct_from(&mut cursor.clone())
+                    .map(|gram: Grams| (TokenValue::Gram(gram.value().to_biguint().unwrap()), cursor))
+                    .map_err(|_| DeserializationError::with(original))
+            }
         }
     }
 
@@ -242,6 +249,63 @@ impl TokenValue {
                 Ok((TokenValue::FixedArray(result), cursor))
             }
             _ => Err(DeserializationError::with(cursor)),
+        }
+    }
+
+    fn read_cell(mut cursor: SliceData) -> Result<(Arc<CellData>, SliceData), DeserializationError> {
+        let original = cursor.clone();
+        let cell = match cursor.remaining_references() {
+            0 => return Err(DeserializationError::with(original)),
+            1 => {
+                cursor = SliceData::from(cursor.reference(0).unwrap());
+                cursor.checked_drain_reference()
+                    .map_err(|_| DeserializationError::with(original))?
+            }
+            _ => cursor.checked_drain_reference().unwrap()
+        };
+        Ok((cell.clone(), cursor))
+    }
+
+    fn read_hashmap(key_type: &ParamType, value_type: &ParamType, cursor: SliceData)
+    -> Result<(Self, SliceData), DeserializationError> {
+        let original = cursor.clone();
+        let (flag, mut cursor) = <bool>::read_from(cursor)?;
+        let mut new_map = HashMap::new();
+        if flag {
+            let cell = cursor.checked_drain_reference()
+                .map_err(|_| DeserializationError::with(original.clone()))?;
+            let hashmap = HashmapE::with_hashmap(key_type.bit_len(), Some(cell));
+            hashmap.iterate(&mut |key, value| -> BlockResult<bool> {
+                let key = Self::read_from(key_type, key).unwrap().0;
+                let value = Self::read_from(value_type, value).unwrap().0;
+                let key = serde_json::to_string(&key).unwrap();
+                new_map.insert(key, value);
+                Ok(true)
+            }).map_err(|_| DeserializationError::with(original))?;
+        }
+        Ok((TokenValue::Map(value_type.clone(), new_map), cursor))
+    }
+
+    fn read_bytes(size: Option<usize>, cursor: SliceData)
+    -> Result<(Self, SliceData), DeserializationError> {
+        let original = cursor.clone();
+        let (mut cell, cursor) = Self::read_cell(cursor)?;
+
+        let mut data = vec![];
+        loop {
+            data.extend_from_slice(cell.data());
+            cell = match cell.reference(0) {
+                Ok(cell) => cell.clone(),
+                Err(_) => break
+            };
+        }
+        match size {
+            Some(size) => if size == data.len() {
+                Ok((TokenValue::FixedBytes(data), cursor))
+            } else {
+                Err(DeserializationError::with(original))
+            }
+            None => Ok((TokenValue::Bytes(data), cursor))
         }
     }
 }

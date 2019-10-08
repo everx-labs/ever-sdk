@@ -282,7 +282,7 @@ impl Tokenizer {
             .map_err(|_| AbiErrorKind::InvalidParameterValue(value.clone()))?;
         let cell = deserialize_tree_of_cells(&mut Cursor::new(data))
             .map_err(|_| AbiErrorKind::InvalidParameterValue(value.clone()))?;
-        Ok(TokenValue::Cell(cell.into()))
+        Ok(TokenValue::Cell(cell))
     }
 
     fn tokenize_hashmap(key_type: &ParamType, value_type: &ParamType, map_value: &Value) -> AbiResult<TokenValue> {

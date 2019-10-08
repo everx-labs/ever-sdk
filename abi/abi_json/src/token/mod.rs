@@ -9,8 +9,9 @@ use {Param, ParamType};
 
 use std::collections::HashMap;
 use std::fmt;
+use std::sync::Arc;
 use tvm::block::MsgAddress;
-use tvm::stack::SliceData;
+use tvm::stack::CellData;
 
 mod tokenizer;
 mod detokenizer;
@@ -87,9 +88,9 @@ pub enum TokenValue {
     ///
     /// Encoding is equivalent to bool[].
     Bitstring(Bitstring),
-    /// TVM Cell in SliceData adapter
+    /// TVM Cell
     ///
-    Cell(SliceData),
+    Cell(Arc<CellData>),
     /// Dictionary of values
     ///
     Map(ParamType, HashMap<String, TokenValue>),
@@ -137,7 +138,7 @@ impl fmt::Display for TokenValue {
             }
             TokenValue::Bits(b) => write!(f, "{}", b),
             TokenValue::Bitstring(b) => write!(f, "{}", b),
-            TokenValue::Cell(c) => write!(f, "{:?}", c.into_cell()),
+            TokenValue::Cell(c) => write!(f, "{:?}", c),
             TokenValue::Map(_key_type, map) => {
                 let s = map
                     .iter()
