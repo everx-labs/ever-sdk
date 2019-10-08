@@ -270,14 +270,14 @@ fn ok_null() -> ApiResult<ResultOfRun> {
 }
 
 #[cfg(feature = "node_interaction")]
-fn get_result_from_block_transaction(transaction: &tvm::block::Transaction) -> ApiResult<ResultOfRun> {
+pub(crate) fn get_result_from_block_transaction(transaction: &tvm::block::Transaction) -> ApiResult<ResultOfRun> {
     match transaction.compute_phase_ref() {
         Some(compute_phase) => {
             match compute_phase {
                 Skipped(skipped) => {
                     debug!("VM compute phase was skipped");
-                    let reason: u8 = skipped.reason.clone() as u8;
-                    Err(ApiError::tvm_execution_skipped(reason))
+                    let reason = format!("{:?}", skipped.reason.clone());
+                    Err(ApiError::tvm_execution_skipped(&reason))
                 }
                 Vm(vm) => {
                     if vm.success {
@@ -298,7 +298,7 @@ fn get_result_from_block_transaction(transaction: &tvm::block::Transaction) -> A
 }
 
 #[cfg(feature = "node_interaction")]
-fn load_transaction(id: &TransactionId) -> Transaction {
+pub(crate) fn load_transaction(id: &TransactionId) -> Transaction {
     Transaction::load(id.clone())
         .expect("Error calling load Transaction")
         .wait()
