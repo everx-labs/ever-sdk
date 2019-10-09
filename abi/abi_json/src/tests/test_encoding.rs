@@ -3,7 +3,7 @@ use ed25519_dalek::*;
 use num_bigint::{BigInt, BigUint};
 use sha2::{Digest, Sha256, Sha512};
 
-use ton_abi_core::types::{Bitstring, Bit};
+use types::{Bitstring, Bit};
 use tvm::stack::{BuilderData, IBitstring, SliceData, CellData};
 use tvm::stack::dictionary::{HashmapE, HashmapType};
 

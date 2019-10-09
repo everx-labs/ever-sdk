@@ -1,4 +1,4 @@
-use ton_abi_core::types::{
+use types::{
     get_next_bits_from_chain,
     ABIDeserialized, ABISerialized, DeserializationError,
 };

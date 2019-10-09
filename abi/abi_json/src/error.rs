@@ -1,4 +1,4 @@
-use ton_abi_core::types::DeserializationError;
+use types::DeserializationError;
 
 error_chain! {
 

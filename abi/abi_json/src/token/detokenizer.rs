@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use {Param, ParamType, Token, TokenValue};
 use num_bigint::{BigInt, BigUint};
-use ton_abi_core::types::Bitstring;
+use types::Bitstring;
 use tvm::cells_serialization::serialize_tree_of_cells;
 use tvm::stack::CellData;
 use crate::error::*;

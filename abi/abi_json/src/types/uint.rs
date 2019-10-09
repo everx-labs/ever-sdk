@@ -2,7 +2,7 @@ use types::int::Int;
 
 use num_bigint::{BigUint, BigInt, Sign};
 use tvm::stack::BuilderData;
-use ton_abi_core::types::ABISerialized;
+use types::ABISerialized;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Uint {

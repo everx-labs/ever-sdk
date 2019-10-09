@@ -9,7 +9,6 @@ extern crate serde;
 extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
-extern crate ton_abi_core;
 extern crate ed25519_dalek;
 #[macro_use]
 extern crate error_chain;
@@ -35,3 +34,13 @@ pub use param::Param;
 pub use types::int::Int;
 pub use types::uint::Uint;
 pub use error::*;
+
+#[cfg(test)]
+extern crate rand;
+extern crate byteorder;
+
+pub mod abi_call;
+pub mod abi_response;
+
+#[cfg(test)]
+mod tests;

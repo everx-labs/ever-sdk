@@ -2,8 +2,7 @@
 
 #[macro_use]
 extern crate tvm;
-extern crate ton_abi_json;
-extern crate ton_abi_core;
+extern crate ton_abi;
 
 #[macro_use]
 extern crate lazy_static;
@@ -25,9 +24,9 @@ extern crate futures;
 #[cfg(feature = "node_interaction")]
 extern crate graphite;
 
-pub use ton_abi_json::json_abi;
-pub use ton_abi_json::Contract as AbiContract;
-pub use ton_abi_json::Function as AbiFunction;
+pub use ton_abi::json_abi;
+pub use ton_abi::Contract as AbiContract;
+pub use ton_abi::Function as AbiFunction;
 
 #[allow(deprecated)]
 #[macro_use]

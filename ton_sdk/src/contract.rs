@@ -5,9 +5,9 @@ use ed25519_dalek::{Keypair, PublicKey};
 use tvm::stack::{BuilderData, CellData, IBitstring, SliceData, find_tag};
 use tvm::types::AccountId;
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
-use ton_abi_core::types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
-use ton_abi_core::abi_response::ABIResponse;
-use ton_abi_core::abi_call::ABICall;
+use ton_abi::types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
+use ton_abi::abi_response::ABIResponse;
+use ton_abi::abi_call::ABICall;
 use tvm::block::{
     Account,
     AccountState,
@@ -27,7 +27,7 @@ use tvm::block::{
 };
 use std::convert::Into;
 
-pub use ton_abi_json::json_abi::DecodedMessage;
+pub use ton_abi::json_abi::DecodedMessage;
 
 #[cfg(feature = "node_interaction")]
 use futures::stream::Stream;
@@ -311,7 +311,7 @@ impl Contract {
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
         // pack params into bag of cells via ABI
-        let msg_body = ton_abi_json::encode_function_call(abi, func, input, key_pair)
+        let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let msg = Self::create_message(id.clone().into(), msg_body.into())?;
@@ -352,7 +352,7 @@ impl Contract {
     pub fn deploy_json(func: String, input: String, abi: String, image: ContractImage, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
-        let msg_body = ton_abi_json::encode_function_call(abi, func, input, key_pair)
+        let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let cell = msg_body.into();
@@ -481,7 +481,7 @@ impl Contract {
          -> SdkResult<Vec<TvmMessage>>
     {
         // pack params into bag of cells via ABI
-        let msg_body = ton_abi_json::encode_function_call(abi, func, input, key_pair)
+        let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let msg = Self::create_message(self.id().into(), msg_body.into())?;
@@ -493,7 +493,7 @@ impl Contract {
     pub fn decode_function_response_json(abi: String, function: String, response: SliceData) 
         -> SdkResult<String> {
 
-        ton_abi_json::json_abi::decode_function_response(abi, function, response)
+        ton_abi::json_abi::decode_function_response(abi, function, response)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
     }
 
@@ -519,7 +519,7 @@ impl Contract {
     pub fn decode_unknown_function_response_json(abi: String, response: SliceData) 
         -> SdkResult<DecodedMessage> {
 
-        ton_abi_json::json_abi::decode_unknown_function_response(abi, response)
+        ton_abi::json_abi::decode_unknown_function_response(abi, response)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
     }
 
@@ -536,7 +536,7 @@ impl Contract {
     pub fn decode_unknown_function_call_json(abi: String, response: SliceData) 
         -> SdkResult<DecodedMessage> {
 
-        ton_abi_json::json_abi::decode_unknown_function_call(abi, response)
+        ton_abi::json_abi::decode_unknown_function_call(abi, response)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
     }
 
@@ -583,7 +583,7 @@ impl Contract {
         abi: String, key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
 
         // pack params into bag of cells via ABI
-        let msg_body = ton_abi_json::encode_function_call(abi, func, input, key_pair)
+        let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let msg = Self::create_message(address, msg_body.into())?;
@@ -608,7 +608,7 @@ impl Contract {
         abi: String) -> SdkResult<MessageToSign> {
         
         // pack params into bag of cells via ABI
-        let (msg_body, data_to_sign) = ton_abi_json::prepare_function_call_for_sign(abi, func, input)
+        let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(abi, func, input)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let msg = Self::create_message(address, msg_body.into())?;
@@ -642,7 +642,7 @@ impl Contract {
     pub fn construct_deploy_message_json(func: String, input: String, abi: String, image: ContractImage,
         key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
 
-        let msg_body = ton_abi_json::encode_function_call(abi, func, input, key_pair)
+        let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let cell = msg_body.into();
@@ -680,7 +680,7 @@ impl Contract {
     pub fn get_deploy_message_bytes_for_signing(func: String, input: String, abi: String,
         image: ContractImage) -> SdkResult<MessageToSign> {
 
-        let (msg_body, data_to_sign) = ton_abi_json::prepare_function_call_for_sign(abi, func, input)
+        let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(abi, func, input)
                 .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let cell = msg_body.into();
@@ -706,7 +706,7 @@ impl Contract {
         let body = message.body()
             .ok_or(SdkError::from(SdkErrorKind::InvalidData("No message body".to_owned())))?;
 
-        let signed_body = ton_abi_json::add_sign_to_function_call(signature, public_key, body)
+        let signed_body = ton_abi::add_sign_to_function_call(signature, public_key, body)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         *message.body_mut() = Some(signed_body.into());

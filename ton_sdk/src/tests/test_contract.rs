@@ -1,5 +1,5 @@
 /*
-use ton_abi_json::json_abi::decode_function_response;
+use ton_abi::json_abi::decode_function_response;
 use super::*;
 use std::io::{Cursor};
 use serde_json::Value;
