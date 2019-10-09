@@ -8,18 +8,8 @@ use sha2::Sha512;
 use tvm::block::TransactionProcessingStatus;
 use tvm::types::AccountId;
 use tvm::stack::{BuilderData, IBitstring};
-
-const WORKCHAIN: i32 = 0;
-const CONFIG_JSON: &str = r#"
-    {
-        "queries_config": {
-            "queries_server": "http://0.0.0.0/graphql",
-            "subscriptions_server": "ws://0.0.0.0/graphql"
-        },
-        "requests_config": {
-            "requests_server": "http://0.0.0.0/topics/requests"
-        }
-    }"#;  
+use tests_common::*;
+ 
 /*
 #[test]
 #[ignore] // Rethink have to work on 127.0.0.1:32769. Run it and comment "ignore"
@@ -258,9 +248,7 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
 #[test]
 fn test_deploy_and_call_contract() {
    
-    let config_json = CONFIG_JSON.clone();    
-    init_json(Some(WORKCHAIN), config_json.into()).unwrap();
-   
+    tests_common::init_node_connection();   
    
     // read image from file and construct ContractImage
     let mut state_init = std::fs::File::open("src/tests/Subscription.tvc").expect("Unable to open contract code file");
@@ -275,7 +263,7 @@ fn test_deploy_and_call_contract() {
     // before deploying contract need to transfer some funds to its address
     println!("Account ID to take some grams {}", account_id);
     
-    test_piggy_bank::get_grams_from_giver(account_id.clone());
+    tests_common::get_grams_from_giver(account_id.clone());
 
 
     // call deploy method
@@ -324,10 +312,7 @@ fn test_contract_image_from_file() {
 
 #[test]
 fn test_deploy_empty_contract() {
-    // init SDK
-    let config_json = CONFIG_JSON.clone();    
-    init_json(Some(WORKCHAIN), config_json.into()).unwrap();
-
+    init_node_connection();
 
     let mut csprng = OsRng::new().unwrap();
 
@@ -342,7 +327,7 @@ fn test_deploy_empty_contract() {
     let image = ContractImage::new(&mut data_cur, None, None).expect("Error creating ContractImage");
     let acc_id = image.account_id();
 
-    test_piggy_bank::get_grams_from_giver(acc_id.clone());
+    tests_common::get_grams_from_giver(acc_id.clone());
 
     println!("Account ID {}", acc_id);
 
@@ -383,10 +368,7 @@ fn test_deploy_empty_contract() {
 
 #[test]
 fn test_load_nonexistent_contract() {
-
-        // init SDK
-    let config_json = CONFIG_JSON.clone();    
-    init_json(Some(WORKCHAIN), config_json.into()).unwrap();
+    init_node_connection();
 
     let c = Contract::load(AccountId::from([67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31]).into())
         .expect("Error calling load Contract")

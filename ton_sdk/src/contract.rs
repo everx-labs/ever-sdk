@@ -227,6 +227,12 @@ impl AccountAddress {
             }
         }
     }
+
+    /// Creates full account address from `AccountId` and workchain number
+    pub fn with_account_id_and_workchain(workchain: i8, account_id: AccountId) -> SdkResult<Self> {
+        Ok(AccountAddress::Full(MsgAddressInt::with_standart(None, workchain, account_id)?))
+    }
+
     
     fn decode_std_base64(data: &str) -> SdkResult<Self> {
         // conversion from base64url
@@ -348,6 +354,7 @@ impl Contract {
                     if val == serde_json::Value::Null {
                         Ok(None)
                     } else {
+                        println!("val {}", val);
                         let acc: Account = serde_json::from_value(val)
                             .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing account: {}", err)))?;
 
@@ -477,7 +484,7 @@ impl Contract {
         let (data, id) = Self::serialize_message(msg)?;
 
         requests_helper::send_message(&id.as_slice()[..], &data)?;
-        //println!("msg is sent, id: {}", id.to_hex_string());
+        println!("msg is sent, id: {}", id.to_hex_string());
         Ok(id.clone())
     }
 

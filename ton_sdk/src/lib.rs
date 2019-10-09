@@ -95,3 +95,7 @@ mod tests;
 #[cfg(test)]
 #[path = "tests/test_piggy_bank.rs"]
 mod test_piggy_bank;
+
+#[cfg(test)]
+#[path = "tests/tests_common.rs"]
+mod tests_common;
