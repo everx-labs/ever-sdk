@@ -4,6 +4,7 @@ use super::{
     ABITypeSignature,
     DeserializationError
 };
+use super::common::find_next_bits;
 
 use tvm::stack::{BuilderData, SliceData};
 
@@ -37,19 +38,9 @@ impl ABISerialized for bool {
 impl ABIDeserialized for bool {
     type Out = bool;
 
-    fn read_from(cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
-        let mut cursor = cursor;
-        while cursor.remaining_bits() == 0 && cursor.remaining_references() == 1 {
-            cursor = cursor.checked_drain_reference().unwrap().into();
-        }
-        if cursor.remaining_bits() > 0 {
-            let value = cursor
-                .get_next_bit()
-                .map_err(|_| DeserializationError { cursor: cursor.clone() })?;
-            Ok((value, cursor))
-        } else {
-            Err(DeserializationError::with(cursor))
-        }
+    fn read_from(mut cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
+        cursor = find_next_bits(cursor, 1)?;
+        Ok((cursor.get_next_bit().unwrap(), cursor))
     }
 }
 

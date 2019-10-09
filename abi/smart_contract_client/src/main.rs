@@ -218,7 +218,7 @@ fn call_change_limit(transport_handle: &mut  HttpHandle, parameters: Vec<String>
     let _answer = call_contract(transport_handle, message_body);
 }
 
-fixed_abi_array!(Bit, 256, Bits256);
+fixed_abi_array!(u8, 32, Bits256);
 
 fn call_send_transaction(transport_handle: &mut  HttpHandle, parameters: Vec<String>, pair: &Keypair) {
     if parameters.len() < 2 {

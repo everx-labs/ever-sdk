@@ -8,7 +8,7 @@ use crate::types::{
     ABIInParameter,
     ABIOutParameter,
     ABITypeSignature};
-use crate::types::{Dint, Duint, Bit, Bitstring};
+use crate::types::{Bit, Bitstring};
 
 use sha2::{Digest, Sha256, Sha512};
 use ed25519_dalek::*;
@@ -691,254 +691,6 @@ fn test_tuples_with_combined_types() {
     >("test_tuples_with_combined_types", input_data, expected_tree, expected_output);
 }
 
-#[test]
-fn test_arrays_of_dint_and_duint() {
-    let input_array_int: Vec<Dint> =
-        vec![Dint::from(0), Dint::from(1), Dint::from(-1), Dint::from(0x1234567890i64), Dint::from(-0x1234567890i64)];
-
-    let byte_array_int: Vec<Vec<u8>> = 
-        vec![
-            vec![0x00],
-            vec![0x01],
-            vec![0x7F],
-            vec![0x90, 0xF1, 0xD9, 0xA2, 0xA3, 0x02],
-            vec![0xF0, 0x8E, 0xA6, 0xDD, 0xDC, 0x7D]
-        ];
-
-    let input_array_uint: Vec<Duint> =
-        vec![Duint::from(0u32), Duint::from(1u32), Duint::from(0x1234567890u64)];
-
-    let byte_array_uint: Vec<Vec<u8>> = 
-        vec![
-            vec![0x00],
-            vec![0x01],
-            vec![0x90, 0xF1, 0xD9, 0xA2, 0xA3, 0x02]
-        ];
-
-    let input_data = (input_array_int.clone(), input_array_uint.clone());
-    let expected_output = input_data.clone();
-
-    let mut bitstring = Bitstring::new();
-
-    bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id(
-        b"test_arrays_of_dint_and_duint(dint[],duint[])()",
-    ));
-
-    let mut builder = BuilderData::new();
-
-    let mut vec = vec![];
-    bitstring.into_bitstring_with_completion_tag(&mut vec);
-    builder.append_bitstring(&vec).unwrap();
-
-    add_array_as_map(&mut builder, &byte_array_int);
-    add_array_as_map(&mut builder, &byte_array_uint);
-
-
-    let expected_tree = builder.into();
-
-    test_parameters_set::<
-        (Vec<Dint>, Vec<Duint>),
-        ()
-    >("test_arrays_of_dint_and_duint", input_data, expected_tree, expected_output);
-}
-
-#[test]
-fn test_small_bitstring() {
-    let byte_array: Vec<u8> = 
-        vec![0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF];
-
-    let input_bitstring = Bitstring::create(byte_array.clone(), byte_array.len() * 8);
-
-    let input_data = (input_bitstring.clone(), );
-    let expected_output = input_data.clone();
-
-    let mut bitstring = Bitstring::new();
-
-    bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id(
-        b"test_small_bitstring(bitstring)()",
-    ));
-
-    let mut builder = BuilderData::new();
-
-    let mut vec = vec![];
-    bitstring.into_bitstring_with_completion_tag(&mut vec);
-    builder.append_bitstring(&vec).unwrap();
-
-    add_array_as_map(&mut builder, &input_bitstring.bits(0..input_bitstring.length_in_bits()).data);
-
-
-    let expected_tree = builder.into();
-
-    test_parameters_set::<
-        (Bitstring,),
-        ()
-    >("test_small_bitstring", input_data, expected_tree, expected_output);
-}
-
-#[test]
-fn test_big_bitstring() {
-    let mut byte_array: Vec<u8> = Vec::new();
-
-    for i in 0..33 {
-        byte_array.push(i as u8);
-    }
-
-    let input_bitstring = Bitstring::create(byte_array.clone(), byte_array.len() * 8);
-
-    let input_data = (input_bitstring.clone(), );
-    let expected_output = input_data.clone();
-
-    let mut bitstring = Bitstring::new();
-
-    bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id(
-        b"test_big_bitstring(bitstring)()",
-    ));
-
-    let mut builder = BuilderData::new();
-
-    let mut vec = vec![];
-    bitstring.into_bitstring_with_completion_tag(&mut vec);
-    builder.append_bitstring(&vec).unwrap();
-
-    add_array_as_map(&mut builder, &input_bitstring.bits(0..input_bitstring.length_in_bits()).data);
-    
-
-    let expected_tree = builder.into();
-
-    test_parameters_set::<
-        (Bitstring,),
-        ()
-    >("test_big_bitstring", input_data, expected_tree, expected_output);
-}
-
-fixed_abi_array!(Bit, 982, Bits982);
-
-#[test]
-fn test_small_bits() {
-    let mut bits: Bits982 = [Bit::Zero; 982].into();
-
-    for i in 0..bits.len() {
-        if i % 2 != 0 {
-            bits.data[i] = Bit::One;
-        }        
-    }
-
-    let message = ABICall::<(Bits982,), ()>::encode_function_call("test_small_bits", (bits.clone(),));
-    let test_tree = deserialize(message);
-
-    let mut data = Bitstring::new();
-
-    data.append_bit(&Bit::One);
-    data.append_bit(&Bit::Zero);
-
-    let mut array_data = Bitstring::new();
-
-    for i in 0..bits.len() {
-        array_data.append_bit(&bits[i]);
-    }
-
-    data.append(&array_data);
-
-    let mut root_builder = BuilderData::new();
-
-    root_builder = put_data_into_chain(root_builder, data);
-
-    // ABI version and function ID can't be splitted to several cells so create new root cell for them
-    let mut data = Bitstring::new();
-
-    data.append_u8(ABI_VERSION);
-    data.append_u32(get_function_id(b"test_small_bits(bits982)()"));
-
-    let mut new_builder = BuilderData::new();
-    new_builder.append_reference(root_builder);
-    root_builder = new_builder;
-
-    let mut vec = vec![];
-    data.into_bitstring_with_completion_tag(&mut vec);
-    root_builder.append_bitstring(&vec).unwrap();
-
-    root_builder.prepend_reference(BuilderData::new());
-
-    let expected_tree = root_builder.clone().into();
-
-    assert_eq!(test_tree, expected_tree);
-
-
-    let mut slice = SliceData::from(root_builder);
-    slice.checked_drain_reference().unwrap();
-
-    let (_func_id, (test_decode,)) = ABIResponse::<(Bits982,)>::decode_response_from_slice(slice).unwrap();
-
-    assert_eq!(bits.len(), test_decode.len());
-
-    for i in 0..bits.len(){
-        assert_eq!(bits[i], test_decode[i]);
-    }
-}
-
-fixed_abi_array!(Bit, 1024, Bits1024);
-
-#[test]
-fn test_big_bits() {
-    let mut bits: Bits1024 = [Bit::Zero; 1024].into();
-
-    for i in 0..bits.len() {
-        if i % 2 != 0 {
-            bits.data[i] = Bit::One;
-        }        
-    }
-
-    let message = ABICall::<(Bits1024,), ()>::encode_function_call("test_big_bits", (bits.clone(),));
-    let test_tree = deserialize(message);
-
-    let mut data = Bitstring::new();
-
-    data.append_u8(ABI_VERSION);
-    data.append_u32(get_function_id(b"test_big_bits(bits1024)()"));
-
-    data.append_bit(&Bit::Zero);
-    data.append_bit(&Bit::Zero);
-
-    let mut array_data = Bitstring::new();
-
-    for i in 0..bits.len() {
-        array_data.append_bit(&bits[i]);
-    }
-
-    let mut array_builder = BuilderData::new();
-    array_builder = put_data_into_chain(array_builder, array_data);
-
-    let mut root_builder = BuilderData::new();
-
-    let mut vec = vec![];
-    data.into_bitstring_with_completion_tag(&mut vec);
-    root_builder.append_bitstring(&vec).unwrap();
-
-    root_builder.append_reference(array_builder.clone());
-
-    root_builder.prepend_reference(BuilderData::new());
-
-    let expected_tree = root_builder.clone().into();
-
-    assert_eq!(test_tree, expected_tree);
-
-
-    let mut slice = SliceData::from(root_builder);
-    slice.checked_drain_reference().unwrap();
-
-    let (_func_id, (test_decode,)) = ABIResponse::<(Bits1024,)>::decode_response_from_slice(slice).unwrap();
-
-    assert_eq!(bits.len(), test_decode.len());
-
-    for i in 0..bits.len(){
-        assert_eq!(bits[i], test_decode[i]);
-    }
-}
-
-
 mod decode_encoded {
     use super::*;
 
@@ -972,12 +724,6 @@ mod decode_encoded {
     }
 
     #[test]
-    fn dynamic_int() {
-        let num = Dint::parse_bytes(b"b884d718567fd5fb9b0b54f2de27b5dad7c769f0024091230b7ca90c63af27035039d22b47dfc90e7e6661f435eb9e503c73ef62b803df9070af4e13366b55a795b9d862902703a9da29b71d391f93223b39fcd938a5860bfae17b7a56ccdb4ea0cd55da7c6b44d54dcc34b716455b073bf731c5547728b6a9abf7fd7d468ee7bd668f109a05625342dc67f0d295f90b6e7732b19eda0b920ea5ef51cbca25d8c8596706d93938dd4861652a53a68bca2e5082700df032272e46c471c22522d7257a8fa620f9a9e15ab72c5df0d8cd8db731064ebeadce25f04bb6ed42fb4d1b5c8e40c684eaa03ba1a2a0733e7fb9247edd20e16deab2ee095078dad3d50444", 16).unwrap();
-        validate(num);
-    }
-
-    #[test]
     fn dynamic_array() {
         validate(vec![0u8, 1, 2, 3, 4]);
 
@@ -1004,18 +750,13 @@ fn test_signed_one_input_and_output() {
     pair.verify::<Sha512>(bag_hash.as_slice(), &signature).unwrap();
 }
 
+fixed_abi_array!(u8, 128, Bits1024);
 fixed_abi_array!(Bits1024, 4, bits1024_array4);
 
 #[test]
 fn test_reserving_reference() {
 
-    let mut bits: Bits1024 = [Bit::Zero; 1024].into();
-
-    for i in 0..bits.len() {
-        if i % 2 != 0 {
-            bits.data[i] = Bit::One;
-        }        
-    }
+    let bits: Bits1024 = [0x55u8; 128].into();
 
     let input_data = [bits.clone(), bits.clone(), bits.clone(), bits.clone()];
 
@@ -1039,7 +780,7 @@ fn test_reserving_reference() {
     let mut array_data = Bitstring::new();
 
     for i in 0..bits.len() {
-        array_data.append_bit(&bits[i]);
+        array_data.append_u8(bits[i]);
     }
 
     let mut array_builder = BuilderData::new();

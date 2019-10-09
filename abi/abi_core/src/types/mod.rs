@@ -82,7 +82,6 @@ impl DeserializationError {
     }
 }
 
-
 pub mod reader;
 
 #[macro_use]
@@ -113,14 +112,5 @@ pub use self::bitstring::*;
 mod bit;
 pub use self::bit::*;
 
-mod dynamic_int;
-pub use self::dynamic_int::*;
-
-mod dynamic_uint;
-pub use self::dynamic_uint::*;
-
 mod hashmape;
 pub use self::hashmape::*;
-
-mod address;
-pub use self::address::*;

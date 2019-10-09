@@ -11,10 +11,6 @@ pub enum ParamType {
     Uint(usize),
     /// int<M>: signed integer type of M bits.
     Int(usize),
-    /// dint: dynamic sized signed integer value.
-    Dint,
-    /// duint: dynamic sized unsigned integer value.
-    Duint,
     /// bool: boolean value.
     Bool,
     /// Tuple: several values combined into tuple.
@@ -23,10 +19,6 @@ pub enum ParamType {
     Array(Box<ParamType>),
     /// T[k]: dynamic array of elements of the type T.
     FixedArray(Box<ParamType>, usize),
-    /// bits<M>: static sized bits sequence.
-    Bits(usize),
-    /// bitstring: dynamic sized bits sequence.
-    Bitstring,
     /// cell - tree of cells
     Cell,
     /// hashmap - values dictionary
@@ -54,8 +46,6 @@ impl ParamType {
             ParamType::Unknown => format!("unknown"),
             ParamType::Uint(size) => format!("uint{}", size),
             ParamType::Int(size) => format!("int{}", size),
-            ParamType::Dint => "dint".to_owned(),
-            ParamType::Duint => "duint".to_owned(),
             ParamType::Bool => "bool".to_owned(),
             ParamType::Tuple(params) => {
                 let mut signature = "".to_owned();
@@ -69,8 +59,6 @@ impl ParamType {
             ParamType::Array(ref param_type) => format!("{}[]", param_type.type_signature()),
             ParamType::FixedArray(ref param_type, size) => 
                 format!("{}[{}]", param_type.type_signature(), size),
-            ParamType::Bits(size) => format!("bits{}", size),
-            ParamType::Bitstring => "bitstring".to_owned(),
             ParamType::Cell => "tree of cells".to_owned(),
             ParamType::Map(key_type, value_type) => 
                 format!("map({},{})", key_type.type_signature(), value_type.type_signature()),

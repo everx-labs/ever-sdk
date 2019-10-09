@@ -1,10 +1,8 @@
 mod tokenize_tests {
     use crate::{Int, Param, ParamType, Token, TokenValue, Uint};
-    use num_bigint::{BigInt, BigUint};
     // use serde::Serialize;
     use std::collections::HashMap;
     use token::{Detokenizer, Tokenizer};
-    use ton_abi_core::types::Bitstring;
     use tvm::block::MsgAddress;
     use tvm::stack::{BuilderData, SliceData};
     use tvm::types::AccountId;
@@ -15,8 +13,6 @@ mod tokenize_tests {
         let input = r#"{
             "a" : 123,
             "b" : -456,
-            "c" : "0xabcdef",
-            "d" : "-0xABCDEF",
             "e" : "789",
             "f" : "-12345678900987654321",
             "g" : "664613997892457936451903530140172287"
@@ -30,14 +26,6 @@ mod tokenize_tests {
             Param {
                 name: "b".to_owned(),
                 kind: ParamType::Int(16),
-            },
-            Param {
-                name: "c".to_owned(),
-                kind: ParamType::Duint,
-            },
-            Param {
-                name: "d".to_owned(),
-                kind: ParamType::Dint,
             },
             Param {
                 name: "e".to_owned(),
@@ -56,39 +44,19 @@ mod tokenize_tests {
         let expected_tokens = vec![
             Token {
                 name: "a".to_owned(),
-                value: TokenValue::Uint(Uint {
-                    number: BigUint::from(123u8),
-                    size: 8,
-                }),
+                value: TokenValue::Uint(Uint::new(123, 8)),
             },
             Token {
                 name: "b".to_owned(),
-                value: TokenValue::Int(Int {
-                    number: BigInt::from(-456i16),
-                    size: 16,
-                }),
-            },
-            Token {
-                name: "c".to_owned(),
-                value: TokenValue::Duint(BigUint::from(0xABCDEFu32).into()),
-            },
-            Token {
-                name: "d".to_owned(),
-                value: TokenValue::Dint(BigInt::from(-0xabcdef).into()),
+                value: TokenValue::Int(Int::new(-456, 16)),
             },
             Token {
                 name: "e".to_owned(),
-                value: TokenValue::Uint(Uint {
-                    number: BigUint::from(789u64),
-                    size: 13,
-                }),
+                value: TokenValue::Uint(Uint::new(789, 13)),
             },
             Token {
                 name: "f".to_owned(),
-                value: TokenValue::Int(Int {
-                    number: BigInt::from(-12345678900987654321i128),
-                    size: 128,
-                }),
+                value: TokenValue::Int(Int::new(-12345678900987654321i128, 128)),
             },
             Token::new("g", TokenValue::Gram(max_gram.into())),
         ];
@@ -223,7 +191,7 @@ mod tokenize_tests {
         let params = vec![
             Param {
                 name: "a".to_owned(),
-                kind: ParamType::Array(Box::new(ParamType::Dint)),
+                kind: ParamType::Array(Box::new(ParamType::Int(16))),
             },
             Param {
                 name: "b".to_owned(),
@@ -235,10 +203,10 @@ mod tokenize_tests {
         ];
 
         let dint_array = vec![
-            TokenValue::Dint(BigInt::from(123)),
-            TokenValue::Dint(BigInt::from(-456)),
-            TokenValue::Dint(BigInt::from(789)),
-            TokenValue::Dint(BigInt::from(-0x0abc)),
+            TokenValue::Int(Int::new(123, 16)),
+            TokenValue::Int(Int::new(-456, 16)),
+            TokenValue::Int(Int::new(789, 16)),
+            TokenValue::Int(Int::new(-0x0abc, 16)),
         ];
 
         let bool_array1 = vec![TokenValue::Bool(false), TokenValue::Bool(true)];
@@ -278,95 +246,25 @@ mod tokenize_tests {
     }
 
     #[test]
-    fn test_tokenize_bitstring() {
-        let input = r#"{
-            "a" : "101000011101011",
-            "b" : "x1234567890ABCDEF",
-            "c" : "x1234",
-            "d" : "x1234_"
-        }"#;
-
-        let params = vec![
-            Param {
-                name: "a".to_owned(),
-                kind: ParamType::Bits(15),
-            },
-            Param {
-                name: "b".to_owned(),
-                kind: ParamType::Bitstring,
-            },
-            Param {
-                name: "c".to_owned(),
-                kind: ParamType::Bitstring,
-            },
-            Param {
-                name: "d".to_owned(),
-                kind: ParamType::Bitstring,
-            },
-        ];
-
-        let expected_tokens = vec![
-            Token {
-                name: "a".to_owned(),
-                value: TokenValue::Bits(
-                    Bitstring::new()
-                        .append_bits(0b101000011101011, 15)
-                        .to_owned(),
-                ),
-            },
-            Token {
-                name: "b".to_owned(),
-                value: TokenValue::Bitstring(Bitstring::create(
-                    vec![0x12, 0x34, 0x56, 0x78, 0x90, 0xAB, 0xCD, 0xEF],
-                    64,
-                )),
-            },
-            Token {
-                name: "c".to_owned(),
-                value: TokenValue::Bitstring(Bitstring::create(vec![0x12, 0x34], 16)),
-            },
-            Token {
-                name: "d".to_owned(),
-                value: TokenValue::Bitstring(Bitstring::from_bitstring_with_completion_tag(vec![
-                    0x12, 0x34,
-                ])),
-            },
-        ];
-
-        assert_eq!(
-            Tokenizer::tokenize_all(&params, &serde_json::from_str(input).unwrap()).unwrap(),
-            expected_tokens
-        );
-
-        // check that detokenizer gives the same result
-        let input = Detokenizer::detokenize(&params, &expected_tokens).unwrap();
-        println!("{}", input);
-        assert_eq!(
-            Tokenizer::tokenize_all(&params, &serde_json::from_str(&input).unwrap()).unwrap(),
-            expected_tokens
-        );
-    }
-
-    #[test]
     fn test_tokenize_tuple() {
         let input = r#"{
-            "a" : {
+            "t1" : {
                 "a" : [-123, "456", "0x789"],
                 "b" : "false",
-                "c" : "x1234"
+                "c" : "0x1234"
             },
-            "b" : [
+            "t2" : [
                 {
                     "a" : true,
-                    "b" : "x12"
+                    "b" : "0x12"
                 },
                 {
                     "a" : false,
-                    "b" : "x34"
+                    "b" : "0x34"
                 },
                 {
                     "a" : true,
-                    "b" : "x56"
+                    "b" : "0x56"
                 }
             ]
         }"#;
@@ -374,7 +272,7 @@ mod tokenize_tests {
         let tuple_params1 = vec![
             Param {
                 name: "a".to_owned(),
-                kind: ParamType::Array(Box::new(ParamType::Dint)),
+                kind: ParamType::Array(Box::new(ParamType::Int(16))),
             },
             Param {
                 name: "b".to_owned(),
@@ -382,7 +280,7 @@ mod tokenize_tests {
             },
             Param {
                 name: "c".to_owned(),
-                kind: ParamType::Bits(16),
+                kind: ParamType::Int(16),
             },
         ];
 
@@ -393,31 +291,31 @@ mod tokenize_tests {
             },
             Param {
                 name: "b".to_owned(),
-                kind: ParamType::Bitstring,
+                kind: ParamType::Int(8),
             },
         ];
 
         let params = vec![
             Param {
-                name: "a".to_owned(),
+                name: "t1".to_owned(),
                 kind: ParamType::Tuple(tuple_params1),
             },
             Param {
-                name: "b".to_owned(),
+                name: "t2".to_owned(),
                 kind: ParamType::Array(Box::new(ParamType::Tuple(tuple_params2))),
             },
         ];
 
         let expected_tokens = vec![
             Token {
-                name: "a".to_owned(),
+                name: "t1".to_owned(),
                 value: TokenValue::Tuple(vec![
                     Token {
                         name: "a".to_owned(),
                         value: TokenValue::Array(vec![
-                            TokenValue::Dint(BigInt::from(-123)),
-                            TokenValue::Dint(BigInt::from(456)),
-                            TokenValue::Dint(BigInt::from(0x789)),
+                            TokenValue::Int(Int::new(-123,  16)),
+                            TokenValue::Int(Int::new(456,   16)),
+                            TokenValue::Int(Int::new(0x789, 16)),
                         ]),
                     },
                     Token {
@@ -426,12 +324,12 @@ mod tokenize_tests {
                     },
                     Token {
                         name: "c".to_owned(),
-                        value: TokenValue::Bits(Bitstring::create(vec![0x12, 0x34], 16)),
+                        value: TokenValue::Int(Int::new(0x1234, 16)),
                     },
                 ]),
             },
             Token {
-                name: "b".to_owned(),
+                name: "t2".to_owned(),
                 value: TokenValue::Array(vec![
                     TokenValue::Tuple(vec![
                         Token {
@@ -440,7 +338,7 @@ mod tokenize_tests {
                         },
                         Token {
                             name: "b".to_owned(),
-                            value: TokenValue::Bitstring(Bitstring::create(vec![0x12], 8)),
+                            value: TokenValue::Int(Int::new(0x12, 8)),
                         },
                     ]),
                     TokenValue::Tuple(vec![
@@ -450,7 +348,7 @@ mod tokenize_tests {
                         },
                         Token {
                             name: "b".to_owned(),
-                            value: TokenValue::Bitstring(Bitstring::create(vec![0x34], 8)),
+                            value: TokenValue::Int(Int::new(0x34, 8)),
                         },
                     ]),
                     TokenValue::Tuple(vec![
@@ -460,7 +358,7 @@ mod tokenize_tests {
                         },
                         Token {
                             name: "b".to_owned(),
-                            value: TokenValue::Bitstring(Bitstring::create(vec![0x56], 8)),
+                            value: TokenValue::Int(Int::new(0x56, 8)),
                         },
                     ]),
                 ]),
@@ -545,14 +443,14 @@ mod tokenize_tests {
 
         let mut expected_tokens = vec![];
         let mut map = HashMap::<String, TokenValue>::new();
-        map.insert(format!("{}",  -12i8), TokenValue::Uint(Uint { number: BigUint::from(42u32), size: 32 }));
-        map.insert(format!("{}",  127i8), TokenValue::Uint(Uint { number: BigUint::from(37u32), size: 32 }));
-        map.insert(format!("{}", -128i8), TokenValue::Uint(Uint { number: BigUint::from(56u32), size: 32 }));
+        map.insert(format!("{}",  -12i8), TokenValue::Uint(Uint::new(42, 32)));
+        map.insert(format!("{}",  127i8), TokenValue::Uint(Uint::new(37, 32)));
+        map.insert(format!("{}", -128i8), TokenValue::Uint(Uint::new(56, 32)));
         expected_tokens.push(Token::new("a", TokenValue::Map(ParamType::Int(8), map)));
 
         let mut map = HashMap::<String, TokenValue>::new();
-        map.insert(format!("{}", 0xFFFFFFFFu32), TokenValue::Uint(Uint { number: BigUint::from(777u64), size: 32 }));
-        map.insert(format!("{}", 0x0000FFFFu32), TokenValue::Uint(Uint { number: BigUint::from(0u64), size: 32 }));
+        map.insert(format!("{}", 0xFFFFFFFFu32), TokenValue::Uint(Uint::new(777, 32)));
+        map.insert(format!("{}", 0x0000FFFFu32), TokenValue::Uint(Uint::new(  0, 32)));
         expected_tokens.push(Token::new("b", TokenValue::Map(ParamType::Uint(32), map)));
 
 
@@ -656,8 +554,6 @@ mod tokenize_tests {
 }
 
 mod types_check_tests {
-    use num_bigint::{BigInt, BigUint};
-    use ton_abi_core::types::Bitstring;
     use {Int, Param, ParamType, Token, TokenValue, Uint};
     use tvm::stack::BuilderData;
     use tvm::block::MsgAddress;
@@ -673,33 +569,19 @@ mod types_check_tests {
             assert!(!Token::types_check(&tokens, params))
         }
 
-        let big_int = BigInt::from(123);
-        let big_uint = BigUint::from(456u32);
+        let big_int = Int::new(123, 64);
+        let big_uint = Uint::new(456, 32);
         let mut map = HashMap::<String, TokenValue>::new();
         map.insert("1".to_string(), TokenValue::Uint(Uint::new(17, 32)));
 
         let tokens = vec![
             Token {
                 name: "a".to_owned(),
-                value: TokenValue::Uint(Uint {
-                    number: big_uint.clone(),
-                    size: 32,
-                }),
+                value: TokenValue::Uint(big_uint.clone()),
             },
             Token {
                 name: "b".to_owned(),
-                value: TokenValue::Int(Int {
-                    number: big_int.clone(),
-                    size: 64,
-                }),
-            },
-            Token {
-                name: "c".to_owned(),
-                value: TokenValue::Dint(big_int.clone().into()),
-            },
-            Token {
-                name: "d".to_owned(),
-                value: TokenValue::Duint(big_uint.clone().into()),
+                value: TokenValue::Int(big_int.clone()),
             },
             Token {
                 name: "e".to_owned(),
@@ -712,17 +594,9 @@ mod types_check_tests {
             Token {
                 name: "g".to_owned(),
                 value: TokenValue::FixedArray(vec![
-                    TokenValue::Dint(big_int.clone().into()),
-                    TokenValue::Dint(big_int.clone().into()),
+                    TokenValue::Int(big_int.clone()),
+                    TokenValue::Int(big_int.clone()),
                 ]),
-            },
-            Token {
-                name: "h".to_owned(),
-                value: TokenValue::Bits(Bitstring::create(vec![1, 2, 3], 15)),
-            },
-            Token {
-                name: "i".to_owned(),
-                value: TokenValue::Bitstring(Bitstring::create(vec![1, 2, 3], 7)),
             },
             Token {
                 name: "j".to_owned(),
@@ -733,7 +607,7 @@ mod types_check_tests {
                     },
                     Token {
                         name: "b".to_owned(),
-                        value: TokenValue::Duint(big_uint.clone().into()),
+                        value: TokenValue::Uint(big_uint.clone()),
                     },
                 ]),
             },
@@ -774,7 +648,7 @@ mod types_check_tests {
             },
             Param {
                 name: "b".to_owned(),
-                kind: ParamType::Duint,
+                kind: ParamType::Uint(32),
             },
         ];
 
@@ -788,14 +662,6 @@ mod types_check_tests {
                 kind: ParamType::Int(64),
             },
             Param {
-                name: "c".to_owned(),
-                kind: ParamType::Dint,
-            },
-            Param {
-                name: "d".to_owned(),
-                kind: ParamType::Duint,
-            },
-            Param {
                 name: "e".to_owned(),
                 kind: ParamType::Bool,
             },
@@ -805,15 +671,7 @@ mod types_check_tests {
             },
             Param {
                 name: "g".to_owned(),
-                kind: ParamType::FixedArray(Box::new(ParamType::Dint), 2),
-            },
-            Param {
-                name: "h".to_owned(),
-                kind: ParamType::Bits(15),
-            },
-            Param {
-                name: "i".to_owned(),
-                kind: ParamType::Bitstring,
+                kind: ParamType::FixedArray(Box::new(ParamType::Int(64)), 2),
             },
             Param {
                 name: "j".to_owned(),
@@ -861,10 +719,7 @@ mod types_check_tests {
         let mut tokens_wrong_int_size = tokens.clone();
         tokens_wrong_int_size[0] = Token {
             name: "a".to_owned(),
-            value: TokenValue::Uint(Uint {
-                number: big_uint.clone(),
-                size: 30,
-            }),
+            value: TokenValue::Uint(Uint::new(456, 30)),
         };
         assert_not_type_check(&tokens_wrong_int_size, &params);
 
@@ -875,7 +730,7 @@ mod types_check_tests {
         let mut tokens_wrong_fixed_array_size = tokens.clone();
         tokens_wrong_fixed_array_size[6] = Token {
             name: "g".to_owned(),
-            value: TokenValue::FixedArray(vec![TokenValue::Dint(big_int.clone().into())]),
+            value: TokenValue::FixedArray(vec![TokenValue::Int(big_int.clone())]),
         };
         assert_not_type_check(&tokens_wrong_fixed_array_size, &params);
 
@@ -884,7 +739,7 @@ mod types_check_tests {
             name: "f".to_owned(),
             value: TokenValue::Array(vec![
                 TokenValue::Bool(false),
-                TokenValue::Dint(big_int.clone().into()),
+                TokenValue::Int(big_int.clone()),
             ]),
         };
         assert_not_type_check(&tokens_wrong_array_type, &params);
@@ -895,14 +750,11 @@ mod types_check_tests {
             value: TokenValue::Tuple(vec![
                 Token {
                     name: "a".to_owned(),
-                    value: TokenValue::Int(Int {
-                        number: big_int.clone(),
-                        size: 16,
-                    }),
+                    value: TokenValue::Int(big_int.clone()),
                 },
                 Token {
                     name: "b".to_owned(),
-                    value: TokenValue::Duint(big_uint.clone().into()),
+                    value: TokenValue::Uint(big_uint.clone()),
                 },
             ]),
         };

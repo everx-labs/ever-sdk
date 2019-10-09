@@ -1,7 +1,4 @@
 //! TON ABI params.
-use ton_abi_core::types::{
-    Bitstring, Dint, Duint,
-};
 use types::int::Int;
 use types::uint::Uint;
 use {Param, ParamType};
@@ -55,14 +52,6 @@ pub enum TokenValue {
     ///
     /// Encoded as M bits of big-endian number representation put into cell data.
     Int(Int),
-    /// dint: dynamic sized signed integer value.
-    ///
-    /// Encoded as Google Base 128 Varints put into cell data.
-    Dint(Dint),
-    /// duint: dynamic sized unsigned integer value.
-    ///
-    /// Encoded as Google Base 128 Varints put into cell data.
-    Duint(Duint),
     /// bool: boolean value.
     ///
     /// Encoded as one bit put into cell data.
@@ -79,14 +68,6 @@ pub enum TokenValue {
     ///
     /// Encoded as all array elements encodings put either to cell data or to separate cell.
     FixedArray(Vec<TokenValue>),
-    /// bits<M>: static sized bits sequence.
-    ///
-    /// Encoding is equivalent to bool[M].
-    Bits(Bitstring),
-    /// bitstring: dynamic sized bits sequence.
-    ///
-    /// Encoding is equivalent to bool[].
-    Bitstring(Bitstring),
     /// TVM Cell
     ///
     Cell(Arc<CellData>),
@@ -114,8 +95,6 @@ impl fmt::Display for TokenValue {
         match self {
             TokenValue::Uint(u) => write!(f, "{}", u.number),
             TokenValue::Int(u) => write!(f, "{}", u.number),
-            TokenValue::Dint(d) => write!(f, "{}", d),
-            TokenValue::Duint(d) => write!(f, "{}", d),
             TokenValue::Bool(b) => write!(f, "{}", b),
             TokenValue::Tuple(ref arr) => {
                 let s = arr
@@ -135,8 +114,6 @@ impl fmt::Display for TokenValue {
 
                 write!(f, "[{}]", s)
             }
-            TokenValue::Bits(b) => write!(f, "{}", b),
-            TokenValue::Bitstring(b) => write!(f, "{}", b),
             TokenValue::Cell(c) => write!(f, "{:?}", c),
             TokenValue::Map(_key_type, map) => {
                 let s = map
@@ -163,8 +140,6 @@ impl TokenValue {
         match self {
             TokenValue::Uint(uint) => *param_type == ParamType::Uint(uint.size),
             TokenValue::Int(int) => *param_type == ParamType::Int(int.size),
-            TokenValue::Dint(_) => *param_type == ParamType::Dint,
-            TokenValue::Duint(_) => *param_type == ParamType::Duint,
             TokenValue::Bool(_) => *param_type == ParamType::Bool,
             TokenValue::Tuple(ref arr) => {
                 if let ParamType::Tuple(ref params) = *param_type {
@@ -187,14 +162,6 @@ impl TokenValue {
                     false
                 }
             }
-            TokenValue::Bits(b) => {
-                if let ParamType::Bits(size) = *param_type {
-                    size == b.length_in_bits()
-                } else {
-                    false
-                }
-            }
-            TokenValue::Bitstring(_) => *param_type == ParamType::Bitstring,
             TokenValue::Cell(_) => *param_type == ParamType::Cell,
             TokenValue::Map(map_key_type, ref values) =>{
                 if let ParamType::Map(ref key_type, ref value_type) = *param_type {
@@ -216,8 +183,6 @@ impl TokenValue {
         match self {
             TokenValue::Uint(uint) => ParamType::Uint(uint.size),
             TokenValue::Int(int) => ParamType::Int(int.size),
-            TokenValue::Dint(_) => ParamType::Dint,
-            TokenValue::Duint(_) => ParamType::Duint,
             TokenValue::Bool(_) => ParamType::Bool,
             TokenValue::Tuple(ref arr) => {
                 ParamType::Tuple(arr.iter().map(|token| token.get_param()).collect())
@@ -226,8 +191,6 @@ impl TokenValue {
             TokenValue::FixedArray(ref tokens) => {
                 ParamType::FixedArray(Box::new(tokens[0].get_param_type()), tokens.len())
             }
-            TokenValue::Bits(b) => ParamType::Bits(b.length_in_bits()),
-            TokenValue::Bitstring(_) => ParamType::Bitstring,
             TokenValue::Cell(_) => ParamType::Cell,
             TokenValue::Map(key_type, values) => ParamType::Map(Box::new(key_type.clone()), 
                 Box::new(match values.iter().next() {
@@ -247,6 +210,7 @@ impl Token {
     pub fn types_check(tokens: &[Token], params: &[Param]) -> bool {
         params.len() == tokens.len() && {
             params.iter().zip(tokens).all(|(param, token)| {
+                // println!("{} {} {}", token.name, token.value, param.kind);
                 token.value.type_check(&param.kind) && token.name == param.name
             })
         }

@@ -1,5 +1,5 @@
 use super::common::{
-    find_next_bit,
+    find_next_bits,
     provide_empty_reference
 };
 use super::{
@@ -36,11 +36,11 @@ impl ABIDeserialized for HashmapE {
     type Out = SliceData;
 
     fn read_from(mut cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
-        cursor = find_next_bit(cursor)?;
-
-        let value = cursor
-            .get_dictionary()
-            .map_err(|_| DeserializationError { cursor: cursor.clone() })?;
-        Ok((value, cursor))
+        let original = cursor.clone();
+        cursor = find_next_bits(cursor, 1)?;
+        match cursor.get_dictionary() {
+            Ok(value) => Ok((value, cursor)),
+            Err(_) => Err(DeserializationError::with(original))
+        }
     }
 }

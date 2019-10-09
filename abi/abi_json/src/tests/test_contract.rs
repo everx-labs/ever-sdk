@@ -12,7 +12,7 @@ const TEST_ABI: &str = r#"
                 {"name": "c","type": "bitstring"}
             ],
             "outputs": [
-                {"name": "a","type": "dint"},
+                {"name": "a","type": "int16"},
                 {"name": "b","type": "bits8"}
             ]
         }, {
@@ -50,14 +50,14 @@ fn test_abi_parse() {
                     Param { name: "a".to_owned(), kind: ParamType::Uint(64) },
                     Param { name: "b".to_owned(), kind: ParamType::Array(
                         Box::new(ParamType::Uint(8))) },
-                    Param { name: "c".to_owned(), kind: ParamType::Bitstring },
+                    Param { name: "c".to_owned(), kind: ParamType::Bool },
                 ],
                 outputs: vec![
-                    Param { name: "a".to_owned(), kind: ParamType::Dint },
-                    Param { name: "b".to_owned(), kind: ParamType::Bits(8) },
+                    Param { name: "a".to_owned(), kind: ParamType::Int(16) },
+                    Param { name: "b".to_owned(), kind: ParamType::Int(8) },
                 ],
                 set_time: true,
-                id: Function::calc_function_id("input_and_output(uint64,uint8[],bitstring)(dint,bits8)")
+                id: Function::calc_function_id("input_and_output(uint64,uint8[],bool)(int16,int8)")
         });
 
 
@@ -79,10 +79,10 @@ fn test_abi_parse() {
                 name: "no_input".to_owned(),
                 inputs: vec![],
                 outputs: vec![
-                    Param { name: "a".to_owned(), kind: ParamType::Duint },
+                    Param { name: "a".to_owned(), kind: ParamType::Uint(8) },
                 ],
                 set_time: true,
-                id: Function::calc_function_id("no_input()(duint)")
+                id: Function::calc_function_id("no_input()(uint8)")
         });
 
     functions.insert(

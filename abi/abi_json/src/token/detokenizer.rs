@@ -132,16 +132,12 @@ impl Serialize for TokenValue {
         match self {
             TokenValue::Uint(uint) => Token::detokenize_big_uint(&uint.number, serializer),
             TokenValue::Int(int) => Token::detokenize_big_int(&int.number, serializer),
-            TokenValue::Dint(dint) => Token::detokenize_big_int(&dint, serializer),
-            TokenValue::Duint(duint) => Token::detokenize_big_uint(&duint, serializer),
             TokenValue::Bool(b) => serializer.serialize_bool(b.clone()),
             TokenValue::Tuple(tokens) => {
                 FunctionParams {params: tokens}.serialize(serializer)
             },
             TokenValue::Array(ref tokens) => tokens.serialize(serializer),
             TokenValue::FixedArray(ref tokens) => tokens.serialize(serializer),
-            TokenValue::Bits(ref bitstring) => Token::detokenize_bitstring(bitstring, serializer),
-            TokenValue::Bitstring(ref bitstring) => Token::detokenize_bitstring(bitstring, serializer),
             TokenValue::Cell(ref cell) => Token::detokenize_cell(cell, serializer),
             TokenValue::Map(key_type, ref map) => Token::detokenize_hashmap(key_type, map, serializer),
             TokenValue::Address(ref address) => address.serialize(serializer),

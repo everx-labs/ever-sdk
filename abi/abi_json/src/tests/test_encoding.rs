@@ -3,7 +3,7 @@ use ed25519_dalek::*;
 use num_bigint::{BigInt, BigUint};
 use sha2::{Digest, Sha256, Sha512};
 
-use ton_abi_core::types::{Dint, Duint, Bitstring, Bit};
+use ton_abi_core::types::{Bitstring, Bit};
 use tvm::stack::{BuilderData, IBitstring, SliceData, CellData};
 use tvm::stack::dictionary::{HashmapE, HashmapType};
 
@@ -795,272 +795,17 @@ fn test_tuples_with_combined_types() {
 }
 
 #[test]
-fn test_arrays_of_dint_and_duint() {
-    let input_array_int: Vec<Dint> = vec![
-        Dint::from(0),
-        Dint::from(1),
-        Dint::from(-1),
-        Dint::from(0x1234567890i64),
-        Dint::from(-0x1234567890i64),
-    ];
-
-    let byte_array_int: Vec<Vec<u8>> = 
-        vec![
-            vec![0x00],
-            vec![0x01],
-            vec![0x7F],
-            vec![0x90, 0xF1, 0xD9, 0xA2, 0xA3, 0x02],
-            vec![0xF0, 0x8E, 0xA6, 0xDD, 0xDC, 0x7D]
-        ];
-
-    let input_array_uint: Vec<Duint> = vec![
-        Duint::from(0u32),
-        Duint::from(1u32),
-        Duint::from(0x1234567890u64),
-    ];
-
-    let byte_array_uint: Vec<Vec<u8>> = 
-        vec![
-            vec![0x00],
-            vec![0x01],
-            vec![0x90, 0xF1, 0xD9, 0xA2, 0xA3, 0x02]
-        ];
-
-    let mut bitstring = Bitstring::new();
-
-    bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id(
-        b"test_arrays_of_dint_and_duint(dint[],duint[])(dint[],duint[])",
-    ));
-
-    let mut builder = BuilderData::new();
-
-    let mut vec = vec![];
-    bitstring.into_bitstring_with_completion_tag(&mut vec);
-    builder.append_bitstring(&vec).unwrap();
-
-    add_array_as_map(&mut builder, &byte_array_int);
-    add_array_as_map(&mut builder, &byte_array_uint);
-
-    let expected_tree = builder.into();
-
-    let values = vec![
-        TokenValue::Array(
-            input_array_int
-                .iter()
-                .map(|i| TokenValue::Dint(i.clone()))
-                .collect(),
-        ),
-        TokenValue::Array(
-            input_array_uint
-                .iter()
-                .map(|i| TokenValue::Duint(i.clone()))
-                .collect(),
-        ),
-    ];
-
-    test_parameters_set(
-        "test_arrays_of_dint_and_duint",
-        &tokens_from_values(values),
-        None,
-        expected_tree,
-    );
-}
-
-#[test]
-fn test_small_bitstring() {
-    let byte_array: Vec<u8> = vec![0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF];
-
-    let input_bitstring = Bitstring::create(byte_array.clone(), byte_array.len() * 8);
-
-    let mut bitstring = Bitstring::new();
-
-    bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id(
-        b"test_small_bitstring(bitstring)(bitstring)",
-    ));
-
-    let mut builder = BuilderData::new();
-
-    let mut vec = vec![];
-    bitstring.into_bitstring_with_completion_tag(&mut vec);
-    builder.append_bitstring(&vec).unwrap();
-
-    add_array_as_map(&mut builder, &input_bitstring.bits(0..input_bitstring.length_in_bits()).data);
-
-
-    let expected_tree = builder.into();
-
-    let values = vec![TokenValue::Bitstring(input_bitstring)];
-
-    test_parameters_set(
-        "test_small_bitstring",
-        &tokens_from_values(values),
-        None,
-        expected_tree,
-    );
-}
-
-#[test]
-fn test_big_bitstring() {
-    let mut byte_array: Vec<u8> = Vec::new();
-
-    for i in 0..33 {
-        byte_array.push(i as u8);
-    }
-
-    let input_bitstring = Bitstring::create(byte_array.clone(), byte_array.len() * 8);
-
-    let mut bitstring = Bitstring::new();
-
-    bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id(b"test_big_bitstring(bitstring)(bitstring)"));
-
-    let mut builder = BuilderData::new();
-
-    let mut vec = vec![];
-    bitstring.into_bitstring_with_completion_tag(&mut vec);
-    builder.append_bitstring(&vec).unwrap();
-
-    add_array_as_map(&mut builder, &input_bitstring.bits(0..input_bitstring.length_in_bits()).data);
-
-    let expected_tree = builder.into();
-
-    let values = vec![TokenValue::Bitstring(input_bitstring)];
-
-    test_parameters_set(
-        "test_big_bitstring",
-        &tokens_from_values(values),
-        None,
-        expected_tree,
-    );
-}
-
-#[test]
-fn test_small_bits() {
-    let mut bits = [Bit::Zero; 982];
-
-    for i in 0..bits.len() {
-        if i % 2 != 0 {
-            bits[i] = Bit::One;
-        }
-    }
-
-    let mut data = Bitstring::new();
-
-    data.append_bit(&Bit::One);
-    data.append_bit(&Bit::Zero);
-
-    let mut array_data = Bitstring::new();
-
-    for i in 0..bits.len() {
-        array_data.append_bit(&bits[i]);
-    }
-
-    data.append(&array_data);
-
-    let mut root_builder = BuilderData::new();
-
-    root_builder = put_data_into_chain(root_builder, data);
-
-    // ABI version and function ID can't be splitted to several cells so create new root cell for them
-    let mut data = Bitstring::new();
-
-    data.append_u8(ABI_VERSION);
-    data.append_u32(get_function_id(b"test_small_bits(bits982)(bits982)"));
-
-    let mut new_builder = BuilderData::new();
-    new_builder.append_reference(root_builder);
-    root_builder = new_builder;
-
-    let mut vec = vec![];
-    data.into_bitstring_with_completion_tag(&mut vec);
-    root_builder.append_bitstring(&vec).unwrap();
-
-    let expected_tree = root_builder.into();
-
-    let values = vec![TokenValue::Bits(array_data)];
-
-    test_parameters_set(
-        "test_small_bits",
-        &tokens_from_values(values),
-        None,
-        expected_tree,
-    );
-}
-
-#[test]
-fn test_big_bits() {
-    let mut bits = [Bit::Zero; 1024];
-
-    for i in 0..bits.len() {
-        if i % 2 != 0 {
-            bits[i] = Bit::One;
-        }
-    }
-
-    let mut data = Bitstring::new();
-
-    data.append_u8(ABI_VERSION);
-    data.append_u32(get_function_id(b"test_big_bits(bits1024)(bits1024)"));
-
-    data.append_bit(&Bit::Zero);
-    data.append_bit(&Bit::Zero);
-
-    let mut array_data = Bitstring::new();
-
-    for i in 0..bits.len() {
-        array_data.append_bit(&bits[i]);
-    }
-
-    let mut array_builder = BuilderData::new();
-    array_builder = put_data_into_chain(array_builder, array_data.clone());
-
-    let mut root_builder = BuilderData::new();
-
-    let mut vec = vec![];
-    data.into_bitstring_with_completion_tag(&mut vec);
-    root_builder.append_bitstring(&vec).unwrap();
-
-    root_builder.append_reference(array_builder.clone());
-
-    let expected_tree = root_builder.into();
-
-    let values = vec![TokenValue::Bits(array_data)];
-
-    test_parameters_set(
-        "test_big_bits",
-        &tokens_from_values(values),
-        None,
-        expected_tree,
-    );
-}
-
-#[test]
 fn test_reserving_reference() {
-    let mut bits = [Bit::Zero; 1024];
-
-    for i in 0..bits.len() {
-        if i % 2 != 0 {
-            bits[i] = Bit::One;
-        }
-    }
-
     let mut data = Bitstring::new();
 
     data.append_u8(ABI_VERSION);
     data.append_u32(get_function_id(
-        b"test_reserving_reference(bits1024[4])(bits1024[4])",
+        b"test_reserving_reference(bytes)(bytes)",
     ));
 
-    let mut array_data = Bitstring::new();
-
-    for i in 0..bits.len() {
-        array_data.append_bit(&bits[i]);
-    }
-
+    let array_data = vec![1, 2, 3, 4];
     let mut array_builder = BuilderData::new();
-    array_builder = put_data_into_chain(array_builder, array_data.clone());
+    array_builder = put_data_into_chain(array_builder, Bitstring::create(array_data.clone(), 32));
 
     let mut root_builder = BuilderData::new();
 
@@ -1080,10 +825,10 @@ fn test_reserving_reference() {
     let expected_tree: SliceData = root_builder.into();
 
     let values = vec![TokenValue::FixedArray(vec![
-        TokenValue::Bits(array_data.clone()),
-        TokenValue::Bits(array_data.clone()),
-        TokenValue::Bits(array_data.clone()),
-        TokenValue::Bits(array_data.clone()),
+        TokenValue::Bytes(array_data.clone()),
+        TokenValue::Bytes(array_data.clone()),
+        TokenValue::Bytes(array_data.clone()),
+        TokenValue::Bytes(array_data.clone()),
     ])];
 
     let tokens = tokens_from_values(values);

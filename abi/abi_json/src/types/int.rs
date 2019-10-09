@@ -13,7 +13,7 @@ pub struct Int {
 }
 
 impl Int {
-    pub fn new(number: i64, size: usize) -> Self {
+    pub fn new(number: i128, size: usize) -> Self {
         Self { number: BigInt::from(number), size }
     }
 }

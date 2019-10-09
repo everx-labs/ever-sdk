@@ -24,11 +24,11 @@ fn test_tuple_param_deserialization() {
         "components" : [
             {
                 "name" : "a",
-                "type" : "bitstring"
+                "type" : "int8"
             },
             {
                 "name" : "b",
-                "type" : "dint"
+                "type" : "int8"
             }
         ]
     }"#;
@@ -38,8 +38,8 @@ fn test_tuple_param_deserialization() {
     assert_eq!(deserialized, Param {
         name: "a".to_owned(),
         kind: ParamType::Tuple(vec![
-            Param { name: "a".to_owned(), kind: ParamType::Bitstring },
-            Param { name: "b".to_owned(), kind: ParamType::Dint },
+            Param { name: "a".to_owned(), kind: ParamType::Int(8) },
+            Param { name: "b".to_owned(), kind: ParamType::Int(8) },
         ]),
     });
 }
@@ -60,11 +60,11 @@ fn test_tuples_array_deserialization() {
                 "components" : [
                     {
                         "name" : "a",
-                        "type" : "duint"
+                        "type" : "uint8"
                     },
                     {
                         "name" : "b",
-                        "type" : "bits15"
+                        "type" : "int15"
                     }
                 ]
             }
@@ -84,8 +84,8 @@ fn test_tuples_array_deserialization() {
                 name: "b".to_owned(),
                 kind: ParamType::FixedArray(
                     Box::new(ParamType::Tuple(vec![
-                        Param { name: "a".to_owned(), kind: ParamType::Duint },
-                        Param { name: "b".to_owned(), kind: ParamType::Bits(15) },
+                        Param { name: "a".to_owned(), kind: ParamType::Uint(8) },
+                        Param { name: "b".to_owned(), kind: ParamType::Int(15) },
                     ])),
                     5
                 )

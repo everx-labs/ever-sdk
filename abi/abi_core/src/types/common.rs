@@ -63,55 +63,23 @@ pub fn get_next_byte_from_chain(
     }
 }
 
-macro_rules! next_bitstring {
-    ( $cursor:ident, $bits:ident ) => {
-        $cursor
-            .get_next_slice($bits)
-            .map(|slice| Bitstring::create(slice.get_bytestring(0), $bits))
-            .map_err(|_| DeserializationError { cursor: $cursor.clone() })?
+pub fn find_next_bits(mut cursor: SliceData, bits: usize) -> Result<SliceData, DeserializationError> {
+    let original = cursor.clone();
+    if cursor.remaining_bits() == 0 {
+        cursor = cursor.reference(0)
+            .map(|cell| cell.into())
+            .map_err(|_| DeserializationError::with(cursor))?;
+    }
+    match cursor.remaining_bits() >= bits  {
+        true => Ok(cursor),
+        false => Err(DeserializationError::with(original))
     }
 }
 
-pub fn find_next_bit(mut cursor: SliceData) -> Result<SliceData, DeserializationError> {
-    while (cursor.remaining_bits() == 0) && (cursor.remaining_references() == 1) {
-            cursor = cursor.checked_drain_reference().unwrap().into();
-    }
-
-    if cursor.remaining_bits() != 0 {
-        Ok(cursor)
-    } else {
-        Err(DeserializationError::with(cursor))
-    }
-}
-
-pub fn get_next_bits_from_chain(
-    cursor: SliceData, 
-    bits: usize
-) -> Result<(Bitstring, SliceData), DeserializationError> {
-    let mut cursor = cursor;    
-    if cursor.remaining_bits() >= bits {
-        Ok((next_bitstring!(cursor, bits), cursor))
-    }
-    else {
-        cursor = find_next_bit(cursor)?;
-
-        let remaining_bits = cursor.remaining_bits();
-        if remaining_bits == 0 {
-            return Err(DeserializationError::with(cursor));
-        }
-        if remaining_bits >= bits {
-            Ok((next_bitstring!(cursor, bits), cursor))
-        } else {
-            let mut result = next_bitstring!(cursor, remaining_bits);
-            let (remain, cursor) = get_next_bits_from_chain(
-                cursor, 
-                bits - result.length_in_bits()
-            )?;
-
-            result.append(&remain);
-            Ok((result, cursor))
-        }
-    }
+pub fn get_next_bits_from_chain(mut cursor: SliceData, bits: usize)
+-> Result<(Vec<u8>, SliceData), DeserializationError> {
+    cursor = find_next_bits(cursor, bits)?;
+    Ok((cursor.get_next_bits(bits).unwrap(), cursor))
 }
 
 // if currnet cell is filled with references (one reference is reserved for chaining cells) or data,

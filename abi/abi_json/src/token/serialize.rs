@@ -85,19 +85,11 @@ impl TokenValue {
             TokenValue::FixedArray(ref tokens) => Self::write_fixed_array(tokens),
             TokenValue::Cell(cell) => Self::write_cell(cell),
             TokenValue::Map(key_type, value) => Self::write_map(key_type, value),
-            TokenValue::Address(address) => {
-                Ok(vec![address.write_to_new_cell()?])
-            }
-            TokenValue::Bytes(ref _arr) | TokenValue::FixedBytes(ref _arr) => {
-                unimplemented!()
-            }
-            TokenValue::Gram(gram) => {
-                Ok(vec![gram.write_to_new_cell()?])
-            },
-            _ => unimplemented!(),
+            TokenValue::Address(address) => Ok(vec![address.write_to_new_cell()?]),
+            TokenValue::Bytes(ref arr) | TokenValue::FixedBytes(ref arr) => Self::write_bytes(arr),
+            TokenValue::Gram(gram) => Ok(vec![gram.write_to_new_cell()?]),
         }
     }
-
 
     fn write_int(value: &Int) -> AbiResult<Vec<BuilderData>> {
         let vec = value.number.to_signed_bytes_be();
@@ -181,6 +173,20 @@ impl TokenValue {
         let map = Self::put_array_into_dictionary(value)?;
 
         Ok(vec![map.write_to_new_cell()?])
+    }
+
+    fn write_bytes(data: &Vec<u8>) -> AbiResult<Vec<BuilderData>> {
+        let mut len = data.len();
+        let mut builder = BuilderData::new();
+        while len > 127 {
+            builder.append_raw(&data[len - 127..len], 127 * 8).unwrap();
+            let cell = builder.into();
+            builder = BuilderData::new();
+            builder.append_reference_cell(cell);
+            len -= 127;
+        }
+        builder.append_raw(&data[..len], len * 8).unwrap();
+        Ok(vec![builder])
     }
 
     fn write_map(key_type: &ParamType, value: &HashMap<String, TokenValue>) -> AbiResult<Vec<BuilderData>> {

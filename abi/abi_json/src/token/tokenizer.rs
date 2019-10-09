@@ -5,7 +5,6 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::io::Cursor;
 use num_bigint::{Sign, BigInt, BigUint};
-use ton_abi_core::types::{Bitstring, Bit};
 use tvm::block::{Grams, MsgAddress};
 use tvm::cells_serialization::deserialize_tree_of_cells;
 use crate::error::*;
@@ -20,14 +19,10 @@ impl Tokenizer {
             ParamType::Unknown => bail!(AbiErrorKind::NotImplemented),
             ParamType::Uint(size) => Self::tokenize_uint(*size, value),
             ParamType::Int(size) => Self::tokenize_int(*size, value),
-            ParamType::Dint => Self::tokenize_dint(value),
-            ParamType::Duint => Self::tokenize_duint(value),
             ParamType::Bool => Self::tokenize_bool(value),
             ParamType::Tuple(tuple_params) => Self::tokenize_tuple(tuple_params, value),
             ParamType::Array(param_type) => Self::tokenize_array(&param_type, value),
             ParamType::FixedArray(param_type, size) => Self::tokenize_fixed_array(&param_type, *size, value),
-            ParamType::Bits(size) => Self::tokenize_bits(*size, value),
-            ParamType::Bitstring => Self::tokenize_bitstring(value),
             ParamType::Cell => Self::tokenize_cell(value),
             ParamType::Map(key_type, value_type) => Self::tokenize_hashmap(key_type, value_type, value),
             ParamType::Address => {
@@ -201,79 +196,6 @@ impl Tokenizer {
         }
     }
 
-    /// Tries to parse a value as a dynamic int.
-    fn tokenize_dint(value: &Value) -> AbiResult<TokenValue> {
-        let big_int = Self::read_int(value)?;
-
-        Ok(TokenValue::Dint(big_int))
-    }
-
-    /// Tries to parse a value as a dynamic insigned int.
-    fn tokenize_duint(value: &Value) -> AbiResult<TokenValue> {
-        let big_int = Self::read_int(value)?;
-
-        let big_uint = big_int
-            .to_biguint()
-            .ok_or(AbiErrorKind::InvalidParameterValue(value.clone()))?;
-
-        Ok(TokenValue::Duint(big_uint))
-    }
-
-    /// Tries to read bitstring from `Value`.
-    fn read_bitstring(value: &Value) -> AbiResult<Bitstring> {
-        let mut string = value
-            .as_str()
-            .ok_or(AbiErrorKind::WrongDataFormat(value.clone()))?
-            .to_owned();
-
-        // hexademical representation
-        let bitstring = if string.starts_with("x") {
-            // trim additional symbols
-            let square_brackets: &[_] = &['{', '}'];
-            string = string.trim_start_matches("x").trim_matches(square_brackets).to_owned();
-
-            // if bitstring length is not divisible by 8 then it is ended by `completion tag`
-            // (see TON Blockchain spec)
-            if string.ends_with("_") {
-                // Pad bitstring with zeros to parse as normal hex-string. It will be trimmed 
-                // by `Bitstring::from_bitstring_with_completion_tag` using `completion tag`
-                let len = string.len(); 
-                string.replace_range(len - 1 .. len, "0");
-
-                if string.len() % 2 != 0 {
-                    string.push('0');
-                }
-            } else {
-                // add `completion tag` for `Bitstring::from_bitstring_with_completion_tag` function
-                string += "80";
-            }
-
-            let vec = hex::decode(string)
-                .map_err(|_| AbiErrorKind::InvalidParameterValue(value.clone()))?;
-
-            Bitstring::from_bitstring_with_completion_tag(vec)
-        } else { // bits representation
-            let mut bitstring = Bitstring::new();
-
-            for bit in string.chars() {
-                match bit {
-                    '0' => bitstring.append_bit(&Bit::Zero),
-                    '1' => bitstring.append_bit(&Bit::One),
-                    _ => bail!(AbiErrorKind::InvalidParameterValue(value.clone()))
-                };
-            }
-
-            bitstring
-        };
-
-        Ok(bitstring)
-    }
-
-    /// Tries to parse a value as bitstring.
-    fn tokenize_bitstring(value: &Value) -> AbiResult<TokenValue> {
-        Self::read_bitstring(value).map(|bitstring| TokenValue::Bitstring(bitstring))
-    }
-
     fn tokenize_cell(value: &Value) -> AbiResult<TokenValue> {
         let string = value
             .as_str()
@@ -315,17 +237,6 @@ impl Tokenizer {
         }
     }
 
-    /// Tries to parse a value as fixed sized bits sequence.
-    fn tokenize_bits(size: usize, value: &Value) -> AbiResult<TokenValue> {
-        let bitstring = Self::read_bitstring(value)?;
-
-        if bitstring.length_in_bits() != size {
-            bail!(AbiErrorKind::InvalidParameterLength(value.clone()))
-        } else {
-            Ok(TokenValue::Bits(bitstring))
-        }
-    }
-    
     /// Tries to parse a value as tuple.
     fn tokenize_tuple(params: &Vec<Param>, value: &Value) -> AbiResult<TokenValue> {
         let tokens = Self::tokenize_all(params, value)?;

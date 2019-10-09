@@ -1,14 +1,11 @@
 //! Contract function call builder.
 
 use std::sync::Arc;
-use std::convert::TryFrom;
 use chrono::prelude::*;
 use sha2::{Digest, Sha256, Sha512};
 use {Param, Token, TokenValue};
 use ed25519_dalek::*;
 use tvm::stack::{BuilderData, SliceData, CellData, IBitstring};
-use ton_abi_core::types::{
-    ABIDeserialized};
 use crate::error::*;
 
 pub const   ABI_VERSION: u8 = 0;
@@ -107,9 +104,9 @@ impl Function {
     }
 
     /// Decodes provided params from SliceData
-    fn decode_params(&self, params: Vec<Param>, data: SliceData, expected_id: u32, exctract_time: bool
+    fn decode_params(&self, _params: Vec<Param>, data: SliceData, expected_id: u32, exctract_time: bool
         ) -> AbiResult<Vec<Token>> {
-        let mut tokens = vec![];
+        let tokens = vec![];
         let mut cursor = data;
         
         let id = cursor.get_next_u32()?;
@@ -290,8 +287,8 @@ impl Event {
     }
 
     /// Decodes provided params from SliceData
-    fn decode_params(&self, params: Vec<Param>, data: SliceData) -> AbiResult<Vec<Token>> {
-        let mut tokens = vec![];
+    fn decode_params(&self, _params: Vec<Param>, data: SliceData) -> AbiResult<Vec<Token>> {
+        let tokens = vec![];
         let mut cursor = data;
         
         let id = cursor.get_next_u32()?;

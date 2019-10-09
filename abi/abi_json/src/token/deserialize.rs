@@ -1,6 +1,6 @@
 use ton_abi_core::types::{
-    bitstring_to_be_bytes, get_next_bits_from_chain, Bitstring,
-    ABIDeserialized, ABISerialized, DeserializationError, Dint, Duint,
+    get_next_bits_from_chain,
+    ABIDeserialized, ABISerialized, DeserializationError,
 };
 use types::int::Int;
 use types::uint::Uint;
@@ -25,14 +25,6 @@ impl TokenValue {
             ParamType::Unknown => Err(DeserializationError::with(cursor)),
             ParamType::Uint(size) => Self::read_uint(*size, cursor),
             ParamType::Int(size) => Self::read_int(*size, cursor),
-            ParamType::Dint => {
-                let (dint, cursor) = Dint::read_from(cursor)?;
-                Ok((TokenValue::Dint(dint), cursor))
-            }
-            ParamType::Duint => {
-                let (duint, cursor) = Duint::read_from(cursor)?;
-                Ok((TokenValue::Duint(duint), cursor))
-            }
             ParamType::Bool => {
                 let (b, cursor) = bool::read_from(cursor)?;
                 Ok((TokenValue::Bool(b), cursor))
@@ -41,11 +33,6 @@ impl TokenValue {
             ParamType::Array(param_type) => Self::read_array(&param_type, cursor),
             ParamType::FixedArray(param_type, size) => {
                 Self::read_fixed_array(&param_type, *size, cursor)
-            }
-            ParamType::Bits(size) => Self::read_bits(*size, cursor),
-            ParamType::Bitstring => {
-                let (bitstring, cursor) = Bitstring::read_from(cursor)?;
-                Ok((TokenValue::Bitstring(bitstring), cursor))
             }
             ParamType::Cell => Self::read_cell(cursor)
                 .map(|(cell, cursor)| (TokenValue::Cell(cell), cursor)),
@@ -71,29 +58,15 @@ impl TokenValue {
         size: usize,
         cursor: SliceData,
     ) -> Result<(Self, SliceData), DeserializationError> {
-        let (bitstring, cursor) = get_next_bits_from_chain(cursor, size)?;
-
-        let vec = bitstring_to_be_bytes(bitstring, false);
-
-        let result = Uint {
-            number: BigUint::from_bytes_be(&vec),
-            size: size,
-        };
-
-        Ok((TokenValue::Uint(result), cursor))
+        let (vec, cursor) = get_next_bits_from_chain(cursor, size)?;
+        let number = BigUint::from_bytes_be(&vec) >> (vec.len() * 8 - size);
+        Ok((TokenValue::Uint(Uint { number, size }), cursor))
     }
 
     fn read_int(size: usize, cursor: SliceData) -> Result<(Self, SliceData), DeserializationError> {
-        let (bitstring, cursor) = get_next_bits_from_chain(cursor, size)?;
-
-        let vec = bitstring_to_be_bytes(bitstring, true);
-
-        let result = Int {
-            number: BigInt::from_signed_bytes_be(&vec),
-            size: size,
-        };
-
-        Ok((TokenValue::Int(result), cursor))
+        let (vec, cursor) = get_next_bits_from_chain(cursor, size)?;
+        let number = BigInt::from_signed_bytes_be(&vec) >> (vec.len() * 8 - size);
+        Ok((TokenValue::Int(Int { number, size }), cursor))
     }
 
     fn read_tuple(
@@ -111,28 +84,6 @@ impl TokenValue {
             cursor = new_cursor;
         }
         Ok((TokenValue::Tuple(tokens), cursor))
-    }
-
-    fn read_bits(
-        size: usize,
-        cursor: SliceData,
-    ) -> Result<(Self, SliceData), DeserializationError> {
-        let (token, cursor) = Self::read_fixed_array(&ParamType::Bool, size, cursor)?;
-
-        if let TokenValue::FixedArray(array) = token {
-            let bitstring = array.iter().fold(Bitstring::new(), |mut bitstring, token| {
-                if let TokenValue::Bool(b) = token {
-                    bitstring.append_bit_bool(*b);
-                    bitstring
-                } else {
-                    unreachable!();
-                }
-            });
-
-            Ok((TokenValue::Bits(bitstring), cursor))
-        } else {
-            unreachable!();
-        }
     }
 
     fn read_array_from_branch(
@@ -294,6 +245,7 @@ impl TokenValue {
         let mut data = vec![];
         loop {
             data.extend_from_slice(cell.data());
+            data.pop();
             cell = match cell.reference(0) {
                 Ok(cell) => cell.clone(),
                 Err(_) => break

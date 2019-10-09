@@ -35,10 +35,7 @@ impl Reader {
         }
 
         let result = match name {
-            "dint" => ParamType::Dint,
-            "duint" => ParamType::Duint,
             "bool" => ParamType::Bool,
-            "bitstring" => ParamType::Bitstring,
             // a little trick - here we only recognize parameter as a tuple and fill it 
             // with parameters in `Param` type deserialization
             "tuple" => ParamType::Tuple(Vec::new()),
@@ -51,11 +48,6 @@ impl Reader {
                 let len = usize::from_str_radix(&s[4..], 10)
                     .map_err(|_| AbiErrorKind::InvalidName(name.to_owned()))?;
                 ParamType::Uint(len)
-            },
-            s if s.starts_with("bits") => {
-                let len = usize::from_str_radix(&s[4..], 10)
-                    .map_err(|_| AbiErrorKind::InvalidName(name.to_owned()))?;
-                ParamType::Bits(len)
             },
             s if s.starts_with("map(") && s.ends_with(")") => {
                 let types: Vec<&str> = name[5..name.len() - 1].split(",").collect();
