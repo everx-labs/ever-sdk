@@ -2,6 +2,7 @@ use std::sync::Arc;
 use ed25519_dalek::*;
 use num_bigint::{BigInt, BigUint};
 use sha2::{Digest, Sha256, Sha512};
+use chrono::prelude::*;
 
 use types::{Bitstring, Bit};
 use tvm::stack::{BuilderData, IBitstring, SliceData, CellData};
@@ -84,69 +85,102 @@ fn add_array_as_map<T: Into<Bitstring> + Clone>(builder: &mut BuilderData, array
 
 fn test_parameters_set(
     func_name: &str,
+    func_signature: &[u8],
     inputs: &[Token],
     params: Option<&[Param]>,
-    expected_tree: BuilderData,
+    params_tree: BuilderData,
 ) {
-    let mut expected_tree_with_ref = expected_tree.clone();
-    expected_tree_with_ref.prepend_reference(BuilderData::new());
+    let params_slice = SliceData::from(&params_tree);
+    let func_id = get_function_id(func_signature);
 
     let input_params: Vec<Param> = if let Some(params) = params {
         params.to_vec()
     } else {
-        inputs
-            .clone()
-            .iter()
-            .map(|token| token.get_param())
-            .collect()
+        params_from_tokens(inputs)
     };
 
     let mut function = Function {
         name: func_name.to_owned(),
         inputs: input_params.clone(),
         outputs: input_params.clone(),
-        set_time: true,
+        set_time: false,
         id: 0
     };
 
     function.id = function.get_function_id();
 
+    let mut timed_function = function.clone();
+    timed_function.set_time = true;
+
+    // simple tree check
     let test_tree = function
         .encode_input(inputs.clone(), None)
         .unwrap();
-    assert_eq!(test_tree, expected_tree_with_ref);
+
+    let mut test_tree = SliceData::from(&test_tree);
+    assert_eq!(test_tree.get_next_u32().unwrap(), func_id & 0x7FFFFFFF);
+    assert_eq!(test_tree.checked_drain_reference().unwrap(), SliceData::new_empty().cell());
+    assert_eq!(test_tree, params_slice);
+/*
+    // timed tree check
+    let test_tree = timed_function
+        .encode_input(inputs.clone(), None)
+        .unwrap();
+
+    let test_tree = SliceData::from(&test_tree);
+    assert_eq!(test_tree.get_next_u32().unwrap(), func_id & 0x7FFFFFFF);
+    
+    // check time is correct
+    let tree_time = test_tree.get_next_u64().unwrap();
+    let now = Utc::now().timestamp_millis() as u64;
+    assert!(tree_time <= now && tree_time >= now - 1000);
+
+    assert_eq!(test_tree.checked_drain_reference().unwrap(), SliceData::new_empty().cell());
+    assert_eq!(test_tree, params_slice);*/
+    
 
     // check signing
 
     let pair = Keypair::generate::<Sha512, _>(&mut rand::rngs::OsRng::new().unwrap());
 
-    let signed_test_tree = function
+    let test_tree = function
         .encode_input(inputs.clone(), Some(&pair))
         .unwrap();
-    let mut message = SliceData::from(signed_test_tree);
+    let mut test_tree = SliceData::from(test_tree);
+    let input_copy = test_tree.clone();
 
-    let mut signature = SliceData::from(message.checked_drain_reference().unwrap());
-
-    assert_eq!(SliceData::from(expected_tree), message);
-
+    let mut signature = SliceData::from(test_tree.checked_drain_reference().unwrap());
     let signature_data = Signature::from_bytes(signature.get_next_bytes(64).unwrap().as_slice()).unwrap();
-    let bag_hash = (&Arc::<CellData>::from(&BuilderData::from_slice(&message))).repr_hash();
+    let bag_hash = (&Arc::<CellData>::from(&BuilderData::from_slice(&test_tree))).repr_hash();
     pair.verify::<Sha512>(bag_hash.as_slice(), &signature_data).unwrap();
 
     let public_key = signature.get_next_bytes(32).unwrap();
     assert_eq!(public_key, pair.public.to_bytes());
 
-    // check output decoding
+    assert_eq!(test_tree.get_next_u32().unwrap(), func_id & 0x7FFFFFFF);
+    assert_eq!(test_tree, params_slice);
 
-    let mut test_tree = SliceData::from(test_tree);
+    // check inputs decoding
 
-    let test_inputs = function.decode_input(test_tree.clone()).unwrap();
+    let test_inputs = function.decode_input(input_copy).unwrap();
     assert_eq!(test_inputs, inputs);
 
-    test_tree.checked_drain_reference().unwrap();
+    // check outputs decoding
 
-    let test_outputs = function.decode_output(test_tree).unwrap();
+    let mut test_tree = BuilderData::new();
+    test_tree.append_u32(func_id | 0x80000000).unwrap();
+    test_tree.checked_append_references_and_data(&params_slice).unwrap();
+
+    let test_outputs = function.decode_output(SliceData::from(test_tree)).unwrap();
     assert_eq!(test_outputs, inputs);
+}
+
+fn params_from_tokens(tokens: &[Token]) -> Vec<Param> {
+     tokens
+        .clone()
+        .iter()
+        .map(|token| token.get_param())
+        .collect()
 }
 
 fn tokens_from_values(values: Vec<TokenValue>) -> Vec<Token> {
@@ -168,15 +202,7 @@ fn tokens_from_values(values: Vec<TokenValue>) -> Vec<Token> {
 #[test]
 fn test_one_input_and_output() {
     let mut builder = BuilderData::new();
-    builder.append_u8(ABI_VERSION).unwrap();
-    builder
-        .append_u32(get_function_id(
-            b"test_one_input_and_output(uint128)(uint128)",
-        ))
-        .unwrap();
     builder.append_u128(1123).unwrap();
-
-    let expected_tree = builder.into();
 
     let values = vec![TokenValue::Uint(Uint {
         number: BigUint::from(1123u128),
@@ -185,16 +211,17 @@ fn test_one_input_and_output() {
 
     test_parameters_set(
         "test_one_input_and_output",
+        b"test_one_input_and_output(uint128)(uint128)",
         &tokens_from_values(values),
         None,
-        expected_tree,
+        builder,
     );
 }
 
 #[test]
 fn test_one_input_and_output_by_data() {
     let expected_tree = BuilderData::with_bitstring(vec![
-        0x00, 0x7B, 0xE7, 0x79, 0x17, 0xFF, 0xFF, 0xFF, 0x75, 0x0C, 0xE4, 0x7B, 0xAC, 0x80,
+        0xFF, 0xFF, 0xFF, 0x75, 0x0C, 0xE4, 0x7B, 0xAC, 0x80,
     ]).unwrap();
 
     let values = vec![TokenValue::Int(Int {
@@ -204,6 +231,7 @@ fn test_one_input_and_output_by_data() {
 
     test_parameters_set(
         "test_one_input_and_output_by_data",
+        b"test_one_input_and_output_by_data(int64)(int64)",
         &tokens_from_values(values),
         None,
         expected_tree,
@@ -212,28 +240,19 @@ fn test_one_input_and_output_by_data() {
 
 #[test]
 fn test_empty_params() {
-    let mut builder = BuilderData::new();
-    builder.append_u8(ABI_VERSION).unwrap();
-    builder
-        .append_u32(get_function_id(b"test_empty_params()()"))
-        .unwrap();
-
-    let expected_tree = builder.into();
-
-    test_parameters_set("test_empty_params", &[], None, expected_tree);
+    test_parameters_set(
+        "test_empty_params",
+        b"test_empty_params()()",
+        &[],
+        None,
+        BuilderData::new());
 }
 
 #[test]
 fn test_two_params() {
     let mut builder = BuilderData::new();
-    builder.append_u8(ABI_VERSION).unwrap();
-    builder
-        .append_u32(get_function_id(b"test_two_params(bool,int32)(bool,int32)"))
-        .unwrap();
     builder.append_bit_one().unwrap();
     builder.append_i32(9434567).unwrap();
-
-    let expected_tree = builder.into();
 
     let values = vec![
         TokenValue::Bool(true),
@@ -245,12 +264,13 @@ fn test_two_params() {
 
     test_parameters_set(
         "test_two_params",
+        b"test_two_params(bool,int32)(bool,int32)",
         &tokens_from_values(values),
         None,
-        expected_tree,
+        builder,
     );
 }
-
+/*
 #[test]
 fn test_nested_tuples_with_all_simples() {
     let mut bitstring = Bitstring::new();
@@ -839,3 +859,28 @@ fn test_reserving_reference() {
     println!("{:#.2}", signed_test_tree.into_cell());
     assert_eq!(expected_tree, signed_test_tree);
 }
+
+#[test]
+fn test_add_signature() {
+    let tokens = tokens_from_values(vec![TokenValue::Uint(uint!(456u32, 32))]);
+
+    let mut function = Function {
+        name: "test_add_signature".to_owned(),
+        inputs: params_from_tokens(&tokens),
+        outputs: vec![],
+        signed: false,
+        id: 0
+    };
+
+    function.id = function.get_function_id();
+
+    let (msg, data_to_sign) = function.prepare_input_for_sign(&tokens).unwrap();
+
+    let pair = Keypair::generate::<Sha512, _>(&mut rand::rngs::OsRng::new().unwrap());
+    let signature = pair.sign::<Sha512>(&data_to_sign).to_bytes().to_vec();
+
+    let msg = Function::add_sign_to_encoded_input(&signature, &pair.public.to_bytes(), msg.into()).unwrap();
+
+    assert_eq!(function.decode_input(msg.into()).unwrap(), tokens);
+}
+*/
