@@ -90,7 +90,9 @@ fn test_parameters_set(
     params: Option<&[Param]>,
     params_tree: BuilderData,
 ) {
-    let params_slice = SliceData::from(&params_tree);
+    let mut params_slice = SliceData::from(&params_tree);
+    params_slice.get_next_u32().unwrap();
+    params_slice.checked_drain_reference().unwrap();
     let func_id = get_function_id(func_signature);
 
     let input_params: Vec<Param> = if let Some(params) = params {
@@ -201,7 +203,11 @@ fn tokens_from_values(values: Vec<TokenValue>) -> Vec<Token> {
 
 #[test]
 fn test_one_input_and_output() {
+    // builder with reserved signature reference and function ID
     let mut builder = BuilderData::new();
+    builder.append_u32(0).unwrap();
+    builder.append_reference(BuilderData::new());
+
     builder.append_u128(1123).unwrap();
 
     let values = vec![TokenValue::Uint(Uint {
@@ -220,9 +226,11 @@ fn test_one_input_and_output() {
 
 #[test]
 fn test_one_input_and_output_by_data() {
-    let expected_tree = BuilderData::with_bitstring(vec![
-        0xFF, 0xFF, 0xFF, 0x75, 0x0C, 0xE4, 0x7B, 0xAC, 0x80,
+    // builder with reserved signature reference and function ID
+    let mut expected_tree = BuilderData::with_bitstring(vec![
+        0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0x75, 0x0C, 0xE4, 0x7B, 0xAC, 0x80,
     ]).unwrap();
+    expected_tree.append_reference(BuilderData::new());
 
     let values = vec![TokenValue::Int(Int {
         number: BigInt::from(-596784153684i64),
@@ -240,17 +248,26 @@ fn test_one_input_and_output_by_data() {
 
 #[test]
 fn test_empty_params() {
+    // builder with reserved signature reference and function ID
+    let mut builder = BuilderData::new();
+    builder.append_u32(0).unwrap();
+    builder.append_reference(BuilderData::new());
+
     test_parameters_set(
         "test_empty_params",
         b"test_empty_params()()",
         &[],
         None,
-        BuilderData::new());
+        builder);
 }
 
 #[test]
 fn test_two_params() {
+    // builder with reserved signature reference and function ID
     let mut builder = BuilderData::new();
+    builder.append_u32(0).unwrap();
+    builder.append_reference(BuilderData::new());
+
     builder.append_bit_one().unwrap();
     builder.append_i32(9434567).unwrap();
 
