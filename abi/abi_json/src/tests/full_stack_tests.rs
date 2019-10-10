@@ -109,7 +109,7 @@ fn test_constructor_call() {
     )
     .unwrap();
 
-    let mut expected_tree = BuilderData::with_bitstring(vec![0x00, 0xAC, 0x81, 0x0A, 0x6D, 0x80]).unwrap();
+    let mut expected_tree = BuilderData::with_bitstring(vec![0x2C, 0x81, 0x0A, 0x6D, 0x80]).unwrap();
     expected_tree.prepend_reference(BuilderData::new());
 
     assert_eq!(test_tree, expected_tree);
@@ -230,7 +230,7 @@ fn test_not_signed_call() {
     )
     .unwrap();
 
-    let mut expected_tree = BuilderData::with_bitstring(vec![0x00, 0xDA, 0x37, 0x46, 0x4F, 0x02, 0x80]).unwrap();
+    let mut expected_tree = BuilderData::with_bitstring(vec![0x49, 0x32, 0xA1, 0xC1, 0x02, 0x80]).unwrap();
     expected_tree.prepend_reference(BuilderData::new());
 
     assert_eq!(test_tree, expected_tree);
