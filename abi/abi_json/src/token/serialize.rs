@@ -116,7 +116,7 @@ impl TokenValue {
             let first_byte = vec[offset / 8] << offset % 8;
 
             builder.append_raw(&[first_byte], 8 - offset % 8)?;
-            builder.append_raw(&vec[offset + 1..], vec[offset + 1..].len() * 8)?;
+            builder.append_raw(&vec[offset / 8 + 1..], vec[offset / 8 + 1..].len() * 8)?;
         };
 
         Ok(vec![builder])

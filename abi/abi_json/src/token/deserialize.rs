@@ -115,9 +115,8 @@ impl TokenValue {
     fn read_array_from_map(
         param_type: &ParamType,
         cursor: SliceData,
+        size: usize
     ) -> Result<(Vec<Self>, SliceData), DeserializationError> {
-
-        let (size, cursor) = <u32>::read_from(cursor)?;
         let (slice, cursor) = <HashmapE>::read_from(cursor)?;
         let map = HashmapE::with_data(32, slice);
 
@@ -146,33 +145,10 @@ impl TokenValue {
         param_type: &ParamType,
         cursor: SliceData,
     ) -> Result<(Self, SliceData), DeserializationError> {
-        let (flag, cursor) = <(bool, bool)>::read_from(cursor)?;
+        let (size, cursor) = <u32>::read_from(cursor)?;
+        let (result, cursor) = Self::read_array_from_map(param_type, cursor, size as usize)?;
 
-        match flag {
-            (false, false) => {
-                let (result, cursor) = Self::read_array_from_branch(param_type, cursor)?;
-
-                Ok((TokenValue::Array(result), cursor))
-            }
-            (false, true) => {
-                let (result, cursor) = Self::read_array_from_map(param_type, cursor)?;
-
-                Ok((TokenValue::Array(result), cursor))
-            }
-            (true, false) => {
-                let (size, mut cursor) = <u8>::read_from(cursor)?;
-                let mut result = vec![];
-
-                for _ in 0..size {
-                    let (token, new_cursor) = Self::read_from(param_type, cursor)?;
-                    cursor = new_cursor;
-                    result.push(token);
-                }
-
-                Ok((TokenValue::Array(result), cursor))
-            }
-            _ => Err(DeserializationError::with(cursor)),
-        }
+        Ok((TokenValue::Array(result), cursor))
     }
 
     fn read_fixed_array(
@@ -180,27 +156,9 @@ impl TokenValue {
         size: usize,
         cursor: SliceData,
     ) -> Result<(Self, SliceData), DeserializationError> {
-        let (flag, mut cursor) = <(bool, bool)>::read_from(cursor)?;
+        let (result, cursor) = Self::read_array_from_map(param_type, cursor, size)?;
 
-        match flag {
-            (false, false) => {
-                let (result, cursor) = Self::read_array_from_branch(param_type, cursor)?;
-
-                Ok((TokenValue::FixedArray(result), cursor))
-            }
-            (true, false) => {
-                let mut result = vec![];
-
-                for _ in 0..size {
-                    let (token, new_cursor) = Self::read_from(param_type, cursor)?;
-                    cursor = new_cursor;
-                    result.push(token);
-                }
-
-                Ok((TokenValue::FixedArray(result), cursor))
-            }
-            _ => Err(DeserializationError::with(cursor)),
-        }
+        Ok((TokenValue::FixedArray(result), cursor))
     }
 
     fn read_cell(mut cursor: SliceData) -> Result<(Arc<CellData>, SliceData), DeserializationError> {
