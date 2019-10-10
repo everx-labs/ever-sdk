@@ -199,7 +199,13 @@ impl Function {
         builder.append_reference(BuilderData::new().into());
 
         // encoding itself
-        let builder = TokenValue::pack_values_into_chain(tokens, vec![builder])?;
+        let mut builder = TokenValue::pack_values_into_chain(tokens, vec![builder])?;
+        
+        // delete sign reference before hash
+        builder.update_cell(|_, _, refs, _| {
+                        refs.remove(0)
+                    },
+                    ());
 
         let hash = (&Arc::<CellData>::from(&builder)).repr_hash().as_slice().to_vec();
 
@@ -210,18 +216,8 @@ impl Function {
     pub fn add_sign_to_encoded_input(
         signature: &[u8],
         public_key: &[u8],
-        mut function_call: SliceData
+        function_call: SliceData
     ) -> AbiResult<BuilderData> {
-        if 0 == function_call.remaining_references() {
-            bail!(AbiErrorKind::InvalidInputData("No signature cell".to_owned()));
-        }
-
-        let signature_cell = function_call.checked_drain_reference().unwrap();
-
-        if 0 != signature_cell.calc_bit_length() {
-            bail!(AbiErrorKind::InvalidInputData("Signature cell is not empty".to_owned()));
-        }
-
         let mut builder = BuilderData::from_slice(&function_call);
 
         let mut signature = signature.to_vec();
