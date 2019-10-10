@@ -223,6 +223,10 @@ impl Function {
     ) -> AbiResult<BuilderData> {
         let mut builder = BuilderData::from_slice(&function_call);
 
+        if builder.references_free() == 0 {
+            bail!(AbiErrorKind::InvalidInputData("No free reference for signature".to_owned()));
+        }
+
         let mut signature = signature.to_vec();
         signature.extend_from_slice(public_key);
 

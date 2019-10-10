@@ -23,6 +23,8 @@ use tvm::block::{
     TransactionProcessingStatus
 };
 use std::convert::Into;
+use crc16::*;
+use std::convert::TryFrom;
 
 pub use ton_abi::json_abi::DecodedMessage;
 
@@ -35,7 +37,7 @@ const ACCOUNT_FIELDS: &str = r#"
     addr {
         ...on MsgAddressIntAddrNoneVariant {
             AddrNone {
-                dummy
+                None
             }
         }
         ...on MsgAddressIntAddrStdVariant {
@@ -58,7 +60,7 @@ const ACCOUNT_FIELDS: &str = r#"
         state {
             ...on AccountStorageStateAccountUninitVariant {
                 AccountUninit {
-                    dummy
+                    None
                 }
             }
             ...on AccountStorageStateAccountActiveVariant {
@@ -69,7 +71,7 @@ const ACCOUNT_FIELDS: &str = r#"
             }
             ...on AccountStorageStateAccountFrozenVariant {
                 AccountFrozen {
-                    dummy
+                    None
                 }
             }
         }
@@ -186,6 +188,7 @@ impl ContractImage {
 /// `Short` value contains only `AccountId` value and is used for addressing contracts in default
 /// workchain. `Full` value is fully qualified account address and can be used for addressing
 /// contracts in any workchain
+#[derive(Clone)]
 pub enum AccountAddress {
     Short(AccountId),
     Full(MsgAddressInt)
@@ -217,6 +220,95 @@ impl AccountAddress {
 
                 Ok(MsgAddressInt::with_standart(None, workchain as i8, id.clone())?)
             }
+        }
+    }
+
+    /// Creates full account address from `AccountId` and workchain number
+    pub fn with_account_id_and_workchain(workchain: i8, account_id: AccountId) -> SdkResult<Self> {
+        Ok(AccountAddress::Full(MsgAddressInt::with_standart(None, workchain, account_id)?))
+    }
+
+    
+    fn decode_std_base64(data: &str) -> SdkResult<Self> {
+        // conversion from base64url
+        let data = data.replace('_', "/").replace('-', "+");
+
+        let vec = base64::decode(&data)?;
+
+        // check CRC and address tag
+        if State::<XMODEM>::calculate(&vec[..34]) != u16::from_be_bytes(<[u8; 2]>::try_from(&vec[34..36])?)
+            || vec[0] & 0x3f != 0x11
+        {
+            bail!(SdkErrorKind::InvalidArg(data.to_owned()));
+        };
+
+        Ok(MsgAddressInt::with_standart(
+                None,
+                i8::from_be_bytes(<[u8; 1]>::try_from(&vec[1..2])?),
+                vec[2..34].into())?
+            .into())
+    }
+
+    fn decode_std_hex(data: &str) -> SdkResult<Self> {
+        let vec: Vec<&str> = data.split(':').collect();
+
+        if vec.len() != 2 {
+            bail!(SdkErrorKind::InvalidArg(data.to_owned()));
+        }
+
+        Ok(MsgAddressInt::with_standart(
+                None,
+                i8::from_str_radix(vec[0], 10)?,
+                hex::decode(vec[1])?.into())?
+            .into())
+    }
+    
+    /// Retrieves account address from `str` in Telegram lite-client format
+    pub fn from_str(data: &str) -> SdkResult<Self> {
+        if data.len() == 64 {
+            Ok(AccountAddress::Short(hex::decode(data)?.into()))
+        } else if data.len() == 48 {
+            Self::decode_std_base64(data)
+        } else {
+            Self::decode_std_hex(data)
+        }
+    }
+
+    fn get_std_address(&self) -> SdkResult<(i8, Vec<u8>)> {
+        match self {
+            AccountAddress::Full(address) => {
+                match address {
+                    MsgAddressInt::AddrStd(msg_address) => {
+                        if msg_address.address.remaining_bits() != 256 {
+                            bail!(SdkErrorKind::InvalidData("Address must be 32 bytes long".to_owned()));
+                        }
+                        Ok((msg_address.workchain_id, msg_address.address.get_bytestring(0)))
+                    },
+                    _ => bail!(SdkErrorKind::InvalidData("Non-std address".to_owned()))
+                }
+            },
+            _ => bail!(SdkErrorKind::InvalidData("Non-std address".to_owned()))
+        }
+    }
+
+    /// Returns base64 address representation
+    pub fn as_base64(&self, bounceable: bool, test: bool, as_url: bool) -> SdkResult<String> {
+        let (worckchain, mut address) = self.get_std_address()?;
+
+        let mut tag = if bounceable { 0x11 } else { 0x51 };
+        if test { tag |= 0x80 };
+        let mut vec = vec![tag];
+        vec.append(&mut worckchain.to_be_bytes().to_vec());
+        vec.append(&mut address);
+        
+        vec.append(&mut State::<XMODEM>::calculate(&vec[..]).to_be_bytes().to_vec());
+
+        let result = base64::encode(&vec);
+
+        if as_url {
+            Ok(result.replace('/', "_").replace('+', "-"))
+        } else {
+            Ok(result)
         }
     }
 }
@@ -257,6 +349,7 @@ impl Contract {
                     if val == serde_json::Value::Null {
                         Ok(None)
                     } else {
+                        println!("val {}", val);
                         let acc: Account = serde_json::from_value(val)
                             .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing account: {}", err)))?;
 
@@ -281,14 +374,14 @@ impl Contract {
     // Works with json representation of input and abi.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
-    pub fn call_json(id: AccountId, func: String, input: String, abi: String, key_pair: Option<&Keypair>)
+    pub fn call_json(id: AccountAddress, func: String, input: String, abi: String, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
         // pack params into bag of cells via ABI
         let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
-        let msg = Self::create_message(id.clone().into(), msg_body.into())?;
+        let msg = Self::create_message(id.clone(), msg_body.into())?;
 
         // send message by Kafka
         let msg_id = Self::_send_message(msg)?;
@@ -343,7 +436,7 @@ impl Contract {
         let (data, id) = Self::serialize_message(msg)?;
 
         requests_helper::send_message(&id.as_slice()[..], &data)?;
-        //println!("msg is sent, id: {}", id.to_hex_string());
+        println!("msg is sent, id: {}", id.to_hex_string());
         Ok(id.clone())
     }
 

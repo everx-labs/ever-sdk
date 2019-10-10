@@ -13,6 +13,8 @@ extern crate hex;
 extern crate ed25519_dalek;
 extern crate rand;
 extern crate sha2;
+extern crate base64;
+extern crate crc16;
 
 #[macro_use]
 extern crate error_chain;
@@ -92,3 +94,7 @@ mod tests;
 #[cfg(test)]
 #[path = "tests/test_piggy_bank.rs"]
 mod test_piggy_bank;
+
+#[cfg(test)]
+#[path = "tests/tests_common.rs"]
+mod tests_common;

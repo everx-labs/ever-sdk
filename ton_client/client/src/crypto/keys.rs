@@ -114,7 +114,7 @@ pub fn account_encode(value: &tvm::types::AccountId) -> String {
 pub fn generic_id_encode(value: &tvm::block::GenericId) -> String {
     u256_encode(&value.data)
 }
-
+/*
 pub fn u256_decode(string: &String) -> ApiResult<UInt256> {
     match string.len() {
         0 => Ok(u256_zero()),
@@ -131,9 +131,13 @@ pub fn u256_decode(string: &String) -> ApiResult<UInt256> {
 pub fn account_from_u256(u: &UInt256) -> tvm::types::AccountId {
     tvm::types::AccountId::from_raw(u.as_slice().to_vec(), 256)
 }
-
-pub fn account_decode(string: &String) -> ApiResult<tvm::types::AccountId> {
-    Ok(account_from_u256(&u256_decode(string)?))
+*/
+pub fn account_decode(string: &String) -> ApiResult<ton_sdk::AccountAddress> {
+    ton_sdk::AccountAddress::from_str(&string)
+        .map_err(|err| {
+                let err = format!("{:?}", err);
+                ApiError::crypto_invalid_address(err, string)
+            })
 }
 
 // Internals
