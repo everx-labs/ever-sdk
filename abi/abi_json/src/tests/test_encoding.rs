@@ -7,7 +7,8 @@ use sha2::{Digest, Sha256, Sha512};
 use types::{Bitstring};
 use tvm::stack::{BuilderData, IBitstring, SliceData, CellData};
 use tvm::stack::dictionary::{HashmapE, HashmapType};
-use tvm::block::{Grams, Serializable};
+use tvm::block::{AnycastInfo, Grams, MsgAddress, Serializable};
+use tvm::types::AccountId;
 
 use {Function, Int, Param, ParamType, Token, TokenValue, Uint, ABI_VERSION};
 
@@ -235,8 +236,8 @@ fn test_with_grams() {
     let values = vec![TokenValue::Gram(grams)];
 
     test_parameters_set(
-        "test_one_input_and_output",
-        b"test_one_input_and_output(gram)(gram)",
+        "test_with_grams",
+        b"test_with_grams(gram)(gram)",
         &tokens_from_values(values),
         None,
         builder,
@@ -250,14 +251,26 @@ fn test_with_address() {
     builder.append_u32(0).unwrap();
     builder.append_reference(BuilderData::new());
 
-    let grams = Grams::from(173742);
-    grams.write_to(&mut builder).unwrap();
-
-    let values = vec![TokenValue::Gram(grams)];
+    let anycast = AnycastInfo::with_rewrite_pfx(SliceData::new(vec![0x77, 0x78, 0x79, 0x80])).unwrap();
+    let addresses = vec![
+        MsgAddress::AddrNone,
+        MsgAddress::with_extern(SliceData::new(vec![0x55, 0x80])).unwrap(),
+        MsgAddress::with_standart(Some(anycast.clone()), -1, AccountId::from([0x11; 32])).unwrap(),
+        MsgAddress::with_standart(Some(anycast.clone()), -1, AccountId::from([0x11; 32])).unwrap(),
+        MsgAddress::with_variant(Some(anycast.clone()), -128, SliceData::new(vec![0x66, 0x67, 0x68, 0x69, 0x80])).unwrap(),
+        MsgAddress::with_standart(Some(anycast.clone()), -1, AccountId::from([0x11; 32])).unwrap(),
+    ];
+    let mut values = vec![];
+    // we don't know about serilization changes in MsgAddress if them don't fit in one cell - split to references
+    addresses.iter().take(5).for_each(|address| address.write_to(&mut builder).unwrap());
+    builder.append_reference(addresses.last().unwrap().write_to_new_cell().unwrap());
+    addresses.iter().for_each(|address| {
+        values.push(TokenValue::Address(address.clone()));
+    });
 
     test_parameters_set(
-        "test_one_input_and_output",
-        b"test_one_input_and_output(gram)(gram)",
+        "test_with_address",
+        b"test_with_address(address,address,address,address,address,address)(address,address,address,address,address,address)",
         &tokens_from_values(values),
         None,
         builder,
