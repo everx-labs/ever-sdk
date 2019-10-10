@@ -9,11 +9,11 @@ const TEST_ABI: &str = r#"
             "inputs": [
                 {"name": "a","type": "uint64"},
                 {"name": "b","type": "uint8[]"},
-                {"name": "c","type": "bitstring"}
+                {"name": "c","type": "bytes"}
             ],
             "outputs": [
                 {"name": "a","type": "int16"},
-                {"name": "b","type": "bits8"}
+                {"name": "b","type": "uint8"}
             ]
         }, {
             "name": "no_output",
@@ -22,7 +22,7 @@ const TEST_ABI: &str = r#"
         }, {
             "name": "no_input",
             "inputs": [],
-            "outputs": [{"name": "a", "type": "duint"}]
+            "outputs": [{"name": "a", "type": "uint8"}]
         }, {
             "name": "constructor",
             "inputs": [],
@@ -50,16 +50,15 @@ fn test_abi_parse() {
                     Param { name: "a".to_owned(), kind: ParamType::Uint(64) },
                     Param { name: "b".to_owned(), kind: ParamType::Array(
                         Box::new(ParamType::Uint(8))) },
-                    Param { name: "c".to_owned(), kind: ParamType::Bool },
+                    Param { name: "c".to_owned(), kind: ParamType::Bytes },
                 ],
                 outputs: vec![
                     Param { name: "a".to_owned(), kind: ParamType::Int(16) },
-                    Param { name: "b".to_owned(), kind: ParamType::Int(8) },
+                    Param { name: "b".to_owned(), kind: ParamType::Uint(8) },
                 ],
-                set_time: true,
-                id: Function::calc_function_id("input_and_output(uint64,uint8[],bool)(int16,int8)")
+                set_time: false,
+                id: Function::calc_function_id("input_and_output(uint64,uint8[],bytes)(int16,uint8)")
         });
-
 
     functions.insert(
         "no_output".to_owned(),
@@ -69,7 +68,7 @@ fn test_abi_parse() {
                     Param { name: "a".to_owned(), kind: ParamType::Uint(15) },
                 ],
                 outputs: vec![],
-                set_time: true,
+                set_time: false,
                 id: Function::calc_function_id("no_output(uint15)()")
         });
 
@@ -81,7 +80,7 @@ fn test_abi_parse() {
                 outputs: vec![
                     Param { name: "a".to_owned(), kind: ParamType::Uint(8) },
                 ],
-                set_time: true,
+                set_time: false,
                 id: Function::calc_function_id("no_input()(uint8)")
         });
 
@@ -91,7 +90,7 @@ fn test_abi_parse() {
                 name: "constructor".to_owned(),
                 inputs: vec![],
                 outputs: vec![],
-                set_time: true,
+                set_time: false,
                 id: Function::calc_function_id("constructor()()")
         });
 
@@ -103,7 +102,7 @@ fn test_abi_parse() {
                     Param { name: "a".to_owned(), kind: ParamType::Bool },
                 ],
                 outputs: vec![],
-                set_time: true,
+                set_time: false,
                 id: Function::calc_function_id("signed(bool)()")
         });
 
