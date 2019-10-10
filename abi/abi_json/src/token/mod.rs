@@ -1,6 +1,5 @@
 //! TON ABI params.
-use types::int::Int;
-use types::uint::Uint;
+use types::int::{Int, Uint};
 use {Param, ParamType};
 
 use std::collections::HashMap;

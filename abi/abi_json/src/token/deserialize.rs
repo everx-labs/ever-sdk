@@ -2,8 +2,7 @@ use types::{
     get_next_bits_from_chain,
     ABIDeserialized, ABISerialized, DeserializationError,
 };
-use types::int::Int;
-use types::uint::Uint;
+use types::int::{Int, Uint};
 use {Param, ParamType};
 use serde_json;
 use std::sync::Arc;
@@ -84,32 +83,6 @@ impl TokenValue {
             cursor = new_cursor;
         }
         Ok((TokenValue::Tuple(tokens), cursor))
-    }
-
-    fn read_array_from_branch(
-        param_type: &ParamType,
-        cursor: SliceData,
-    ) -> Result<(Vec<Self>, SliceData), DeserializationError> {
-        let mut cursor = cursor;
-
-        if cursor.remaining_references() == 0 {
-            return Err(DeserializationError::with(cursor));
-        }
-
-        let mut array_cursor: SliceData = cursor.checked_drain_reference().unwrap().into();
-        let mut result = vec![];
-
-        while array_cursor.remaining_references() != 0 || array_cursor.remaining_bits() != 0 {
-            let (token, new_cursor) = Self::read_from(param_type, array_cursor)?;
-            array_cursor = new_cursor;
-            result.push(token);
-        }
-
-        if array_cursor.remaining_references() != 0 || array_cursor.remaining_bits() != 0 {
-            return Err(DeserializationError::with(array_cursor));
-        }
-
-        Ok((result, cursor))
     }
 
     fn read_array_from_map(

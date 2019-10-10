@@ -1,9 +1,8 @@
-use num_bigint::{BigInt, Sign};
+use num_bigint::{BigInt, BigUint};
 use tvm::stack::{BuilderData, SliceData};
 use types::{
     ABIDeserialized,
     ABISerialized,
-    ABITypeSignature,
     Bitstring,
     prepend_data_to_chain,
 };
@@ -16,42 +15,23 @@ pub struct Int {
     pub size: usize,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct Uint {
+    pub number: BigUint,
+    pub size: usize,
+}
+
+
 impl Int {
     pub fn new(number: i128, size: usize) -> Self {
         Self { number: BigInt::from(number), size }
     }
 }
 
-impl ABISerialized for Int {
-    fn prepend_to(&self, destination: BuilderData) -> BuilderData {
-        let vec = self.number.to_signed_bytes_be();
-        let vec_bits_length = vec.len() * 8;
 
-        let bitstring = if self.size > vec_bits_length {
-            let padding = if self.number.sign() == Sign::Minus {
-                0xFFu8
-            } else {
-                0u8
-            };
-
-            let dif = self.size - vec_bits_length;
-
-            let mut vec_padding = Vec::new();
-            vec_padding.resize(dif / 8 + 1, padding);
-
-            let mut bitstring = Bitstring::create(vec_padding, dif);
-            bitstring.append(&Bitstring::create(vec, self.size - dif));
-            bitstring
-        } else {
-            let offset = vec_bits_length - self.size;
-            Bitstring::create(vec, vec_bits_length).substring(offset..)
-        };
-
-        prepend_data_to_chain(destination, bitstring)
-    }
-
-    fn get_in_cell_size(&self) -> usize {
-        self.size
+impl Uint {
+    pub fn new(number: u128, size: usize) -> Self {
+        Self { number: BigUint::from(number), size }
     }
 }
 
@@ -89,12 +69,6 @@ macro_rules! define_int_ABIParameter {
                 }
                 let decoded = Self::from_be_bytes(bytes);
                 Ok((decoded, cursor))
-            }
-        }
-
-        impl ABITypeSignature for $type {
-            fn type_signature() -> String {
-                $str_type.to_string()
             }
         }
     };

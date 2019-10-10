@@ -1,7 +1,6 @@
 use super::{
     ABISerialized,
     ABIDeserialized,
-    ABITypeSignature,
     DeserializationError
 };
 use super::common::find_next_bits;
@@ -41,11 +40,5 @@ impl ABIDeserialized for bool {
     fn read_from(mut cursor: SliceData) -> Result<(Self::Out, SliceData), DeserializationError> {
         cursor = find_next_bits(cursor, 1)?;
         Ok((cursor.get_next_bit().unwrap(), cursor))
-    }
-}
-
-impl ABITypeSignature for bool {
-    fn type_signature() -> String {
-        "bool".to_string()
     }
 }

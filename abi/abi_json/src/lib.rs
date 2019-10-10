@@ -31,16 +31,9 @@ pub use token::{Token, TokenValue};
 pub use function::{Function, Event, ABI_VERSION};
 pub use json_abi::*;
 pub use param::Param;
-pub use types::int::Int;
-pub use types::uint::Uint;
+pub use types::int::{Int, Uint};
 pub use error::*;
 
 #[cfg(test)]
 extern crate rand;
 extern crate byteorder;
-
-pub mod abi_call;
-pub mod abi_response;
-
-#[cfg(test)]
-mod tests;
