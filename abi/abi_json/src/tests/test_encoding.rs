@@ -12,24 +12,6 @@ use tvm::types::AccountId;
 
 use {Function, Int, Param, ParamType, Token, TokenValue, Uint, ABI_VERSION};
 
-macro_rules! int {
-    ($number:expr, $size:expr) => {
-        Int {
-            number: BigInt::from($number),
-            size: $size,
-        }
-    };
-}
-
-macro_rules! uint {
-    ($number:expr, $size:expr) => {
-        Uint {
-            number: BigUint::from($number),
-            size: $size,
-        }
-    };
-}
-
 fn get_function_id(signature: &[u8]) -> u32 {
     // Sha256 hash of signature
     let mut hasher = Sha256::new();
@@ -265,7 +247,8 @@ fn test_with_address() {
         MsgAddress::with_variant(Some(anycast.clone()), -128, SliceData::new(vec![0x66, 0x67, 0x68, 0x69, 0x80])).unwrap(),
         MsgAddress::with_standart(Some(anycast.clone()), -1, AccountId::from([0x11; 32])).unwrap(),
     ];
-    let mut values = vec![];
+    builder.append_reference(BuilderData::with_bitstring(vec![1, 2, 3, 0x80]).unwrap());
+    let mut values = vec![TokenValue::Cell(BuilderData::with_bitstring(vec![1, 2, 3, 0x80]).unwrap().into())];
     // we don't know about serilization changes in MsgAddress if them don't fit in one cell - split to references
     addresses.iter().take(5).for_each(|address| address.write_to(&mut builder).unwrap());
     builder.append_reference(addresses.last().unwrap().write_to_new_cell().unwrap());
@@ -275,7 +258,7 @@ fn test_with_address() {
 
     test_parameters_set(
         "test_with_address",
-        b"test_with_address(address,address,address,address,address,address)(address,address,address,address,address,address)",
+        b"test_with_address(cell,address,address,address,address,address,address)(cell,address,address,address,address,address,address)",
         &tokens_from_values(values),
         None,
         builder,
@@ -403,21 +386,21 @@ fn test_nested_tuples_with_all_simples() {
     let values = vec![
         TokenValue::Bool(false),
         TokenValue::Tuple(tokens_from_values(vec![
-            TokenValue::Int(int!(-15, 8)),
-            TokenValue::Int(int!(9845, 16)),
+            TokenValue::Int(Int::new(-15, 8)),
+            TokenValue::Int(Int::new(9845, 16)),
             TokenValue::Tuple(tokens_from_values(vec![
-                TokenValue::Int(int!(-1, 32)),
-                TokenValue::Int(int!(12345678, 64)),
-                TokenValue::Int(int!(-12345678, 128)),
+                TokenValue::Int(Int::new(-1, 32)),
+                TokenValue::Int(Int::new(12345678, 64)),
+                TokenValue::Int(Int::new(-12345678, 128)),
             ])),
         ])),
         TokenValue::Tuple(tokens_from_values(vec![
-            TokenValue::Uint(uint!(255u8, 8)),
-            TokenValue::Uint(uint!(0u16, 16)),
+            TokenValue::Uint(Uint::new(255, 8)),
+            TokenValue::Uint(Uint::new(0, 16)),
             TokenValue::Tuple(tokens_from_values(vec![
-                TokenValue::Uint(uint!(256u32, 32)),
-                TokenValue::Uint(uint!(123u64, 64)),
-                TokenValue::Uint(uint!(1234567890u128, 128)),
+                TokenValue::Uint(Uint::new(256, 32)),
+                TokenValue::Uint(Uint::new(123, 64)),
+                TokenValue::Uint(Uint::new(1234567890, 128)),
             ])),
         ])),
     ];
@@ -445,7 +428,7 @@ fn test_static_array_of_ints() {
     let values = vec![TokenValue::FixedArray(
         input_array
             .iter()
-            .map(|i| TokenValue::Uint(uint!(i.to_owned(), 32)))
+            .map(|i| TokenValue::Uint(Uint::new(i.to_owned() as u128, 32)))
             .collect(),
     )];
 
@@ -497,7 +480,7 @@ fn test_dynamic_array_of_ints() {
     let values = vec![TokenValue::Array(
         input_array
             .iter()
-            .map(|i| TokenValue::Uint(uint!(i.to_owned(), 16)))
+            .map(|i| TokenValue::Uint(Uint::new(i.to_owned() as u128, 16)))
             .collect(),
     )];
 
@@ -544,7 +527,7 @@ fn test_dynamic_array_of_tuples() {
             .iter()
             .map(|i| {
                 TokenValue::Tuple(tokens_from_values(vec![
-                    TokenValue::Uint(uint!(i.0, 32)),
+                    TokenValue::Uint(Uint::new(i.0 as u128, 32)),
                     TokenValue::Bool(i.1),
                 ]))
             })
@@ -619,7 +602,7 @@ fn test_tuples_with_combined_types() {
             .iter()
             .map(|i| {
                 TokenValue::Tuple(tokens_from_values(vec![
-                    TokenValue::Uint(uint!(i.0, 32)),
+                    TokenValue::Uint(Uint::new(i.0 as u128, 32)),
                     TokenValue::Bool(i.1),
                 ]))
             })
@@ -629,7 +612,7 @@ fn test_tuples_with_combined_types() {
     let array2_token_value = TokenValue::Array(
         input_array2
             .iter()
-            .map(|i| TokenValue::Int(int!(*i, 64)))
+            .map(|i| TokenValue::Int(Int::new(*i as i128, 64)))
             .collect(),
     );
 
@@ -642,10 +625,10 @@ fn test_tuples_with_combined_types() {
     ]);
 
     let values = vec![
-        TokenValue::Uint(uint!(18u8, 8)),
+        TokenValue::Uint(Uint::new(18, 8)),
         TokenValue::Tuple(tokens_from_values(vec![
             array1_token_value,
-            TokenValue::Int(int!(-290, 16)),
+            TokenValue::Int(Int::new(-290, 16)),
         ])),
         TokenValue::Tuple(tokens_from_values(vec![
             array2_token_value,
@@ -664,7 +647,7 @@ fn test_tuples_with_combined_types() {
 
 #[test]
 fn test_add_signature() {
-    let tokens = tokens_from_values(vec![TokenValue::Uint(uint!(456u32, 32))]);
+    let tokens = tokens_from_values(vec![TokenValue::Uint(Uint::new(456, 32))]);
 
     let mut function = Function {
         name: "test_add_signature".to_owned(),
