@@ -186,6 +186,9 @@ impl TokenValue {
             len -= 127;
         }
         builder.append_raw(&data[..len], len * 8).unwrap();
+        let cell = builder.into();
+        builder = BuilderData::new();
+        builder.append_reference_cell(cell);
         Ok(vec![builder])
     }
 

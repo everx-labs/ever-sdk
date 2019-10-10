@@ -384,9 +384,9 @@ fn test_small_dynamic_array() {
     >("test_small_dynamic_array", input_data, expected_tree, expected_output);
 }
 
-fn put_data_into_chain(bilder: BuilderData, data: Bitstring) -> BuilderData {
+fn put_data_into_chain(builder: BuilderData, data: Bitstring) -> BuilderData {
     let mut size = data.length_in_bits();
-    let mut current_builder = bilder;
+    let mut current_builder = builder;
 
     while size != 0 {
         if current_builder.bits_free() == 0 {

@@ -26,38 +26,36 @@ const SUBSCRIBE_CONTRACT_ABI: &str = r#"
     "ABI version": 0,
     "functions": [{
         "name": "constructor",
-        "inputs": [{"name": "wallet", "type": "bits256"}],
+        "inputs": [{"name": "wallet", "type": "fixedbytes32"}],
         "outputs": []
     }, {
         "name": "subscribe",
-        "signed": true,
         "inputs": [
-            {"name": "subscriptionId", "type": "bits256"},
-            {"name": "pubkey", "type": "bits256"},
-            {"name": "to",     "type": "bits256"},
-            {"name": "value",  "type": "duint"},
-            {"name": "period", "type": "duint"}
+            {"name": "subscriptionId", "type": "fixedbytes32"},
+            {"name": "pubkey", "type": "fixedbytes32"},
+            {"name": "to",     "type": "fixedbytes32"},
+            {"name": "value",  "type": "gram"},
+            {"name": "period", "type": "uint20"}
         ],
-        "outputs": [{"name": "subscriptionHash", "type": "bits256"}]
+        "outputs": [{"name": "subscriptionHash", "type": "fixedbytes32"}]
     }, {
         "name": "cancel",
-        "signed": true,
-        "inputs": [{"name": "subscriptionId", "type": "bits256"}],
+        "inputs": [{"name": "subscriptionId", "type": "fixedbytes32"}],
         "outputs": []
     }, {
         "name": "executeSubscription",
         "inputs": [
-            {"name": "subscriptionId",  "type": "bits256"},
-            {"name": "signature",       "type": "bits256"}
+            {"name": "subscriptionId",  "type": "fixedbytes32"},
+            {"name": "signature",       "type": "fixedbytes32"}
         ],
         "outputs": []
     }, {
         "name": "getSubscription",
-        "inputs": [{"name": "subscriptionId","type": "bits256"}],
+        "inputs": [{"name": "subscriptionId","type": "fixedbytes32"}],
         "outputs": [
-            {"name": "to", "type": "bits256"},
-            {"name": "amount", "type": "duint"},
-            {"name": "period", "type": "duint"},
+            {"name": "to", "type": "fixedbytes32"},
+            {"name": "amount", "type": "gram"},
+            {"name": "period", "type": "uint20"},
             {"name": "status", "type": "uint8"}
         ]
     }]
@@ -68,8 +66,7 @@ const PIGGY_BANK_CONTRACT_ABI: &str = r#"
     "ABI version": 0,
     "functions": [{
         "name": "transfer",
-        "signed": true,
-        "inputs": [{"name": "to", "type": "bits256"}],
+        "inputs": [{"name": "to", "type": "fixedbytes32"}],
         "outputs": []
     }, {
         "name": "getTargetAmount",
@@ -105,21 +102,20 @@ const WALLET_ABI: &str = r#"{
 	        "inputs": [
 	            {
 	                "name": "recipient",
-	                "type": "bits256"
+	                "type": "fixedbytes32"
 	            },
 	            {
 	                "name": "value",
-	                "type": "duint"
+	                "type": "gram"
 	            }
 	        ],
 	        "name": "sendTransaction",
-					"signed": true,
 	        "outputs": [
 	            {
 	                "name": "transaction",
 	                "type": "uint64"
 	            },
-							{
+	            {
 	                "name": "error",
 	                "type": "int8"
 	            }
@@ -127,21 +123,20 @@ const WALLET_ABI: &str = r#"{
 	    },
 	    {
 	        "inputs": [
-						  {
+	            {
 	                "name": "type",
 	                "type": "uint8"
 	            },
 							{
 	                "name": "value",
-	                "type": "duint"
+	                "type": "gram"
 	            },
 							{
 	                "name": "meta",
-	                "type": "bitstring"
+	                "type": "bytes"
 	            }
 					],
 	        "name": "createLimit",
-					"signed": true,
 	        "outputs": [
 							{
 	                "name": "limitId",
@@ -161,15 +156,14 @@ const WALLET_ABI: &str = r#"{
 	            },
 							{
 	                "name": "value",
-	                "type": "duint"
+	                "type": "gram"
 	            },
 							{
 	                "name": "meta",
-	                "type": "bitstring"
+	                "type": "bytes"
 	            }
 	        ],
 	        "name": "changeLimitById",
-					"signed": true,
 	        "outputs": [
 							{
 	                "name": "error",
@@ -185,9 +179,8 @@ const WALLET_ABI: &str = r#"{
 	            }
 	        ],
 	        "name": "removeLimit",
-					"signed": true,
 	        "outputs": [
-							{
+				{
 	                "name": "error",
 	                "type": "int8"
 	            }
@@ -208,7 +201,7 @@ const WALLET_ABI: &str = r#"{
 					        "components": [
 											{
 					                "name": "value",
-					                "type": "duint"
+					                "type": "gram"
 					            },
 											{
 					                "name": "type",
@@ -216,7 +209,7 @@ const WALLET_ABI: &str = r#"{
 					            },
 											{
 					                "name": "meta",
-					                "type": "bitstring"
+					                "type": "bytes"
 					            }
 									]
 							},
@@ -280,15 +273,14 @@ const WALLET_ABI: &str = r#"{
 	        "outputs": []
 	    },
 			{
-	        "inputs": [{"name": "address", "type": "bits256" }],
+	        "inputs": [{"name": "address", "type": "fixedbytes32" }],
 	        "name": "setSubscriptionAccount",
-					"signed": true,
 	        "outputs": []
 	    },
 			{
 	        "inputs": [],
 	        "name": "getSubscriptionAccount",
-	        "outputs": [{"name": "address", "type": "bits256" }]
+	        "outputs": [{"name": "address", "type": "fixedbytes32" }]
 	    }
 	]
 }

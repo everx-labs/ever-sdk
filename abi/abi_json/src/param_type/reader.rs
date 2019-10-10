@@ -66,6 +66,23 @@ impl Reader {
                             "Only int and uint types can be map keys".to_owned())),
                 }
             },
+            "cell" => {
+                ParamType::Cell
+            }
+            "address" => {
+                ParamType::Address
+            }
+            "gram" => {
+                ParamType::Gram
+            }
+            "bytes" => {
+                ParamType::Bytes
+            }
+            s if s.starts_with("fixedbytes") => {
+                let len = usize::from_str_radix(&s[10..], 10)
+                    .map_err(|_| AbiErrorKind::InvalidName(name.to_owned()))?;
+                ParamType::FixedBytes(len)
+            }
             _ => {
                 bail!(AbiErrorKind::InvalidName(name.to_owned()));
             }

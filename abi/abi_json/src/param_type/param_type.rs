@@ -59,12 +59,12 @@ impl ParamType {
             ParamType::Array(ref param_type) => format!("{}[]", param_type.type_signature()),
             ParamType::FixedArray(ref param_type, size) => 
                 format!("{}[{}]", param_type.type_signature(), size),
-            ParamType::Cell => "tree of cells".to_owned(),
+            ParamType::Cell => "cell".to_owned(),
             ParamType::Map(key_type, value_type) => 
                 format!("map({},{})", key_type.type_signature(), value_type.type_signature()),
             ParamType::Address => format!("address"),
             ParamType::Bytes => format!("bytes"),
-            ParamType::FixedBytes(size) => format!("fixedbytes<{}>", size),
+            ParamType::FixedBytes(size) => format!("fixedbytes{}", size),
             ParamType::Gram => format!("gram"),
         }
     }

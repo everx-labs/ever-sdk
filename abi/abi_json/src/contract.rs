@@ -79,7 +79,7 @@ impl Contract {
 
     /// Returns `Function` struct with provided function name.
     pub fn function(&self, name: &str) -> AbiResult<&Function> {
-        self.functions.get(name).ok_or_else(|| AbiErrorKind::InvalidName(name.to_owned()).into())
+        self.functions.get(name).ok_or(AbiErrorKind::InvalidName(name.to_owned()).into())
     }
 
     /// Returns `Function` struct with provided function id.

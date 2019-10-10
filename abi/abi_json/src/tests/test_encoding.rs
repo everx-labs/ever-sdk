@@ -453,9 +453,9 @@ fn test_small_dynamic_array() {
     );
 }
 
-fn put_data_into_chain(bilder: BuilderData, data: Bitstring) -> BuilderData {
+fn put_data_into_chain(builder: BuilderData, data: Bitstring) -> BuilderData {
     let mut size = data.length_in_bits();
-    let mut current_builder = bilder;
+    let mut current_builder = builder;
 
     while size != 0 {
         if 0 == current_builder.bits_free() {
@@ -796,40 +796,19 @@ fn test_tuples_with_combined_types() {
 
 #[test]
 fn test_reserving_reference() {
-    let mut data = Bitstring::new();
-
-    data.append_u8(ABI_VERSION);
-    data.append_u32(get_function_id(
+    let mut root_builder = BuilderData::new();
+    root_builder.append_u8(ABI_VERSION).unwrap();
+    root_builder.append_u32(get_function_id(
         b"test_reserving_reference(bytes)(bytes)",
-    ));
+    )).unwrap();
 
     let array_data = vec![1, 2, 3, 4];
-    let mut array_builder = BuilderData::new();
-    array_builder = put_data_into_chain(array_builder, Bitstring::create(array_data.clone(), 32));
-
-    let mut root_builder = BuilderData::new();
-
-    for _ in 0..4 {
-        root_builder.append_reference(array_builder.clone());
-    }
-    root_builder.append_raw(&[0x80, 0x00], 10).unwrap(); // array of 4 arrays in separate cells
-
-    let mut new_builder = BuilderData::new();
-    new_builder.append_reference(root_builder);
-    root_builder = new_builder;
-
-    let mut vec = vec![];
-    data.into_bitstring_with_completion_tag(&mut vec);
-    root_builder.append_bitstring(&vec).unwrap();
+    let array_builder = BuilderData::with_raw(array_data.clone(), array_data.len() * 8).unwrap();
+    root_builder.append_reference(array_builder);
 
     let expected_tree: SliceData = root_builder.into();
 
-    let values = vec![TokenValue::FixedArray(vec![
-        TokenValue::Bytes(array_data.clone()),
-        TokenValue::Bytes(array_data.clone()),
-        TokenValue::Bytes(array_data.clone()),
-        TokenValue::Bytes(array_data.clone()),
-    ])];
+    let values = vec![TokenValue::Bytes(array_data.clone())];
 
     let tokens = tokens_from_values(values);
     let params: Vec<Param> = tokens
@@ -853,9 +832,10 @@ fn test_reserving_reference() {
 
     let mut signature = SliceData::from(signed_test_tree.checked_drain_reference().unwrap());
     let signature = Signature::from_bytes(signature.get_next_bytes(64).unwrap().as_slice()).unwrap();
-    let bag_hash = (&Arc::<CellData>::from(&BuilderData::from_slice(&signed_test_tree))).repr_hash();
-    pair.verify::<Sha512>(bag_hash.as_slice(), &signature)
-        .unwrap();
+    let bag_hash = signed_test_tree.into_cell().repr_hash();
+    pair.verify::<Sha512>(bag_hash.as_slice(), &signature).unwrap();
 
+    println!("{:#.2}", expected_tree.into_cell());
+    println!("{:#.2}", signed_test_tree.into_cell());
     assert_eq!(expected_tree, signed_test_tree);
 }

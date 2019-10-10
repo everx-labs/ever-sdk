@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use {Param, ParamType, Token, TokenValue};
 use num_bigint::{BigInt, BigUint};
-use types::Bitstring;
 use tvm::cells_serialization::serialize_tree_of_cells;
 use tvm::stack::CellData;
 use crate::error::*;
@@ -68,28 +67,6 @@ impl Token {
         let uint_str = "0x".to_owned() + &number.to_str_radix(16);
 
         serializer.serialize_str(&uint_str)
-    }
-
-    pub fn detokenize_bitstring<S>(bitstring: &Bitstring, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut vec = Vec::new();
-        bitstring.into_bitstring_with_completion_tag(&mut vec);
-
-        let set_tag = if vec[vec.len() - 1] == 0x80 {
-            vec.pop();
-            false
-        } else {
-            true
-        };
-
-        let mut string = "x".to_owned() + &hex::encode(vec);
-        if set_tag {
-            string += "_"
-        }
-
-        serializer.serialize_str(&string)
     }
 
     pub fn detokenize_hashmap<S>(_key_type: &ParamType, values: &HashMap<String, TokenValue>, serializer: S) -> Result<S::Ok, S::Error>

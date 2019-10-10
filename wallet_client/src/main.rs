@@ -28,11 +28,10 @@ const WALLET_ABI: &str = r#"{
     "ABI version" : 0,
     "functions" :	[{
             "inputs": [
-                {"name": "recipient", "type": "bits256"},
-                {"name": "value", "type": "duint"}
+                {"name": "recipient", "type": "fixedbytes32"},
+                {"name": "value", "type": "gram"}
             ],
             "name": "sendTransaction",
-            "signed": true,
             "outputs": [
                 {"name": "transaction", "type": "uint64"},
                 {"name": "error", "type": "int8"}
@@ -40,11 +39,10 @@ const WALLET_ABI: &str = r#"{
         }, {
             "inputs": [
                 {"name": "type", "type": "uint8"},
-                {"name": "value", "type": "duint"},
-                {"name": "meta", "type": "bitstring"}
+                {"name": "value", "type": "gram"},
+                {"name": "meta", "type": "bytes"}
             ],
             "name": "createLimit",
-            "signed": true,
             "outputs": [
                 {"name": "limitId", "type": "uint8"},
                 {"name": "error", "type": "int8"}
@@ -52,16 +50,14 @@ const WALLET_ABI: &str = r#"{
         }, {
             "inputs": [
                 {"name": "limitId", "type": "uint8"},
-                {"name": "value", "type": "duint"},
-                {"name": "meta", "type": "bitstring"}
+                {"name": "value", "type": "gram"},
+                {"name": "meta", "type": "bytes"}
             ],
             "name": "changeLimitById",
-            "signed": true,
             "outputs": [{"name": "error", "type": "int8"}]
         }, {
             "inputs": [{"name": "limitId", "type": "uint8"}],
             "name": "removeLimit",
-            "signed": true,
             "outputs": [{"name": "error", "type": "int8"}]
         }, {
             "inputs": [{"name": "limitId", "type": "uint8"}],
@@ -71,9 +67,9 @@ const WALLET_ABI: &str = r#"{
                     "name": "limitInfo",
                     "type": "tuple",
                     "components": [
-                        {"name": "value", "type": "duint"},
+                        {"name": "value", "type": "gram"},
                         {"name": "type", "type": "uint8"},
-                        {"name": "meta", "type": "bitstring"}
+                        {"name": "meta", "type": "bytes"}
                         ]
                 },
                 {"name": "error", "type": "int8"}
@@ -106,16 +102,15 @@ const WALLET_ABI: &str = r#"{
         }, {
             "inputs": [],
             "name": "constructor",
-            "outputs": []							
+            "outputs": []
         }, {
-            "inputs": [{"name": "address", "type": "bits256" }],
+            "inputs": [{"name": "address", "type": "fixedbytes32" }],
             "name": "setSubscriptionAccount",
-                    "signed": true,
-            "outputs": []							
+            "outputs": []
         }, {
             "inputs": [],
             "name": "getSubscriptionAccount",
-            "outputs": [{"name": "address", "type": "bits256" }]							
+            "outputs": [{"name": "address", "type": "fixedbytes32" }]
         }
     ]
 }

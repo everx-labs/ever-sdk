@@ -2,7 +2,6 @@
 name = "ton_client"
 version = "0.12.1"
 authors = ["Michael Vlasov"]
-rpath = true
 
 [lib]
 name = "ton_client"

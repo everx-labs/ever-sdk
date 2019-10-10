@@ -95,11 +95,11 @@ pub const WALLET_ABI: &str = r#"{
 			"inputs": [
 				{
 					"name": "recipient",
-					"type": "bits256"
+					"type": "fixedbytes32"
 				},
 				{
 					"name": "value",
-					"type": "duint"
+					"type": "gram"
 				}
 			],
 			"name": "sendTransaction",
@@ -122,11 +122,11 @@ pub const WALLET_ABI: &str = r#"{
 				},
 				{
 					"name": "value",
-					"type": "duint"
+					"type": "gram"
 				},
 				{
 					"name": "meta",
-					"type": "bitstring"
+					"type": "bytes"
 				}
 			],
 			"name": "createLimit",
@@ -149,11 +149,11 @@ pub const WALLET_ABI: &str = r#"{
 				},
 				{
 					"name": "value",
-					"type": "duint"
+					"type": "gram"
 				},
 				{
 					"name": "meta",
-					"type": "bitstring"
+					"type": "bytes"
 				}
 			],
 			"name": "changeLimitById",
@@ -194,7 +194,7 @@ pub const WALLET_ABI: &str = r#"{
 					"components": [
 						{
 							"name": "value",
-							"type": "duint"
+							"type": "gram"
 						},
 						{
 							"name": "type",
@@ -202,7 +202,7 @@ pub const WALLET_ABI: &str = r#"{
 						},
 						{
 							"name": "meta",
-							"type": "bitstring"
+							"type": "bytes"
 						}
 					]
 				},
@@ -244,11 +244,11 @@ pub const WALLET_ABI: &str = r#"{
 						},
 						{
 							"name": "value",
-							"type": "duint"
+							"type": "gram"
 						},
 						{
 							"name": "meta",
-							"type": "bitstring"
+							"type": "bytes"
 						}
 					]
 				}
@@ -297,7 +297,7 @@ pub const WALLET_ABI: &str = r#"{
 			"inputs": [
 				{
 					"name": "address",
-					"type": "bits256"
+					"type": "fixedbytes32"
 				}
 			],
 			"name": "setSubscriptionAccount",
@@ -309,7 +309,7 @@ pub const WALLET_ABI: &str = r#"{
 			"outputs": [
 				{
 					"name": "address",
-					"type": "bits256"
+					"type": "fixedbytes32"
 				}
 			]
 		}
