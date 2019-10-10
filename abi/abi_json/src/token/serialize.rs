@@ -12,62 +12,34 @@ impl TokenValue {
         for token in tokens {
             cells.append(&mut token.value.write_to_cells()?);
         }
-
         Self::pack_cells_into_chain(cells)
     }
 
+    // first cell is resulting builder
+    // every next cell: put data to root
     fn pack_cells_into_chain(mut cells: Vec<BuilderData>) -> AbiResult<BuilderData> {
-        if cells.len() == 0 { bail!(AbiErrorKind::InvalidData("No cells".to_owned())) };
-
-        let mut packed_cells = vec![cells.remove(0)];
-
         cells.reverse();
-
+        let mut packed_cells = match cells.pop() {
+            Some(cell) => vec![cell],
+            None => bail!(AbiErrorKind::InvalidData("No cells".to_owned()))
+        };
         while let Some(cell) = cells.pop() {
-            let len = packed_cells.len();
-            let mut builder = &mut packed_cells[len - 1];
-
-            let need_new_cell = if builder.bits_free() < cell.bits_used(){
-                true
+            let ref mut builder = &mut packed_cells.last_mut().unwrap();
+            if builder.bits_free() < cell.bits_used() || builder.references_free() - 1 < cell.references_used() {
+                packed_cells.push(cell);
             } else {
-                if builder.references_free() > cell.references_used() {
-                    false
-                } else if builder.references_free() == cell.references_used() {
-                    let (remaining_bits, remaining_refs) = Self::get_required_storage(&cells);
-
-                    remaining_refs == 0 && remaining_bits <= builder.bits_free()
-                }
-                else {
-                    true
-                }
-            };
-
-            if need_new_cell {
-                packed_cells.push(BuilderData::new());
-                let len = packed_cells.len();
-                builder = &mut packed_cells[len - 1];
+                builder.append_builder(&cell).unwrap();
             }
-
-            builder.checked_append_references_and_data(&cell.into())?;
         }
-
-        while packed_cells.len() > 1 {
-            let len = packed_cells.len();
+        loop {
             let cell = packed_cells.pop().unwrap();
-            packed_cells[len - 2]
-                .checked_append_reference(&cell.into())?;
+            match packed_cells.last_mut() {
+                Some(builder) => builder.append_reference(cell),
+                None => return Ok(cell)
+            }
         }
-
-        Ok(packed_cells.pop().unwrap())
     }
 
-    fn get_required_storage(cells: &[BuilderData]) -> (usize, usize) {
-        cells
-            .iter()
-            .fold(
-                (0, 0),
-                |(bits, refs), cell| (bits + cell.bits_used(), refs + cell.references_used()))
-    }
 
     fn write_to_cells(&self) -> AbiResult<Vec<BuilderData>> {
         match self {
