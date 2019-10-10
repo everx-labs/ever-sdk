@@ -74,10 +74,6 @@ error_chain! {
             description("ABI error"),
             display("ABI error: {:?}", inner)
         }
-        AbiError2(inner: ton_abi::abi_response::Exception) {
-            description("ABI error"),
-            display("ABI error: {:?}", inner)
-        }
         NotInitialized {
             description("SDK is not initialized")
         }
