@@ -235,3 +235,24 @@ fn test_not_signed_call() {
 
     assert_eq!(test_tree, expected_tree);
 }
+
+#[test]
+fn test_add_signature_full() {
+    let params = r#"{"limitId":"0x2"}"#;
+
+    let (msg, data_to_sign) = prepare_function_call_for_sign(
+        WALLET_ABI.to_owned(),
+        "getLimitById".to_owned(),
+        params.to_owned()
+    )
+    .unwrap();
+
+    let pair = Keypair::generate::<Sha512, _>(&mut rand::rngs::OsRng::new().unwrap());
+    let signature = pair.sign::<Sha512>(&data_to_sign).to_bytes().to_vec();
+
+    let msg = add_sign_to_function_call(&signature, &pair.public.to_bytes(), msg.into()).unwrap();
+
+    let decoded = decode_unknown_function_call(WALLET_ABI.to_owned(), msg.into()).unwrap();
+
+    assert_eq!(decoded.params, params);
+}
