@@ -83,9 +83,10 @@ impl Contract {
     }
 
     /// Returns `Function` struct with provided function id.
-    pub fn function_by_id(&self, id: u32) -> AbiResult<&Function> {
+    pub fn function_by_id(&self, id: u32, input: bool) -> AbiResult<&Function> {
         for (_, func) in &self.functions {
-            if func.id == id {
+            let func_id = if input { func.get_input_id() } else { func.get_output_id() };
+            if func_id == id {
                 return Ok(func);
             }
         }
@@ -120,7 +121,7 @@ impl Contract {
         
         let func_id = Function::decode_id(data)?;
 
-        if let Ok(func) = self.function_by_id(func_id){
+        if let Ok(func) = self.function_by_id(func_id, false){
             let tokens = func.decode_output(original_data)?;
 
             Ok( DecodedMessage {
@@ -146,7 +147,7 @@ impl Contract {
         
         let func_id = Function::decode_id(data)?;
 
-        let func = self.function_by_id(func_id)?;
+        let func = self.function_by_id(func_id, true)?;
 
         let tokens = func.decode_input(original_data)?;
 

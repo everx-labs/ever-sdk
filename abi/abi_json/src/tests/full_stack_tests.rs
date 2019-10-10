@@ -111,10 +111,8 @@ fn test_constructor_call() {
     let mut expected_tree = BuilderData::with_bitstring(vec![0x2C, 0x81, 0x0A, 0x6D, 0x80]).unwrap();
     expected_tree.prepend_reference(BuilderData::new());
 
-    let mut test_tree = SliceData::from(test_tree);
+    let test_tree = SliceData::from(test_tree);
     let expected_tree = SliceData::from(expected_tree);
-    println!("{:#.2}", test_tree.into_cell());
-    println!("{:#.2}", expected_tree.into_cell());
     assert_eq!(test_tree, expected_tree);
 
     let response = decode_unknown_function_call(
@@ -126,7 +124,7 @@ fn test_constructor_call() {
     assert_eq!(response.function_name, "constructor");
 
 
-    test_tree.checked_drain_reference().unwrap();
+    let test_tree = SliceData::from_raw(vec![0xAC, 0x81, 0x0A, 0x6D], 32);
 
     let response = decode_unknown_function_response(
         WALLET_ABI.to_owned(),
@@ -157,7 +155,7 @@ fn test_signed_call() {
         "meta": ""
     }"#;
 
-    let expected_params = r#"{"type":"0x1","value":"0xc","meta":"x"}"#;
+    let expected_params = r#"{"type":"0x1","value":"0xc","meta":""}"#;
 
     let pair = Keypair::generate::<Sha512, _>(&mut rand::rngs::OsRng::new().unwrap());
 
@@ -180,9 +178,10 @@ fn test_signed_call() {
     assert_eq!(response.params, expected_params);
     assert_eq!(response.function_name, "createLimit");
 
-    let expected_tree = BuilderData::with_bitstring(vec![
-        0x00, 0x27, 0xEF, 0x50, 0x87, 0x01, 0x0C, 0b01000000, 0x00, 0x00, 0x00, 0b00010000
+    let mut expected_tree = BuilderData::with_bitstring(vec![
+        0x37, 0x67, 0xf6, 0x3c, 0x01, 0x10, 0xc8
     ]).unwrap();
+    expected_tree.append_reference(BuilderData::new());
 
     test_tree.checked_drain_reference().unwrap();
     assert_eq!(test_tree, SliceData::from(expected_tree));
@@ -192,7 +191,7 @@ fn test_signed_call() {
 
     let response_tree = SliceData::from(
         BuilderData::with_bitstring(
-            vec![0x00, 0x27, 0xEF, 0x50, 0x87, 0x00, 0xFF, 0x80])
+            vec![0xb7, 0x67, 0xf6, 0x3c, 0x00, 0xFF, 0x80])
         .unwrap());
 
     let response = decode_function_response(
