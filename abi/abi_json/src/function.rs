@@ -104,9 +104,9 @@ impl Function {
     }
 
     /// Decodes provided params from SliceData
-    fn decode_params(&self, _params: Vec<Param>, data: SliceData, expected_id: u32, exctract_time: bool
+    fn decode_params(&self, params: Vec<Param>, data: SliceData, expected_id: u32, exctract_time: bool
         ) -> AbiResult<Vec<Token>> {
-        let tokens = vec![];
+        let mut tokens = vec![];
         let mut cursor = data;
         
         let id = cursor.get_next_u32()?;
@@ -117,14 +117,13 @@ impl Function {
             cursor.get_next_u64()?;
         }
 
-        // TODO: deserialize
-        /*for param in params {
+        for param in params {
             let (token_value, new_cursor) = TokenValue::read_from(&param.kind, cursor)
                 .map_err(|err| AbiErrorKind::DeserializationError(err))?;
 
             cursor = new_cursor;
             tokens.push(Token { name: param.name, value: token_value });
-        }*/
+        }
 
         if cursor.remaining_references() != 0 || cursor.remaining_bits() != 0 {
             bail!(AbiErrorKind::IncompleteDeserializationError)
@@ -283,22 +282,21 @@ impl Event {
     }
 
     /// Decodes provided params from SliceData
-    fn decode_params(&self, _params: Vec<Param>, data: SliceData) -> AbiResult<Vec<Token>> {
-        let tokens = vec![];
+    fn decode_params(&self, params: Vec<Param>, data: SliceData) -> AbiResult<Vec<Token>> {
+        let mut tokens = vec![];
         let mut cursor = data;
         
         let id = cursor.get_next_u32()?;
 
         if id != self.id { Err(AbiErrorKind::WrongId(id))? }
 
-        // TODO: deserialize
-        /*for param in params {
+        for param in params {
             let (token_value, new_cursor) = TokenValue::read_from(&param.kind, cursor)
                 .map_err(|err| AbiErrorKind::DeserializationError(err))?;
 
             cursor = new_cursor;
             tokens.push(Token { name: param.name, value: token_value });
-        }*/
+        }
 
         if cursor.remaining_references() != 0 || cursor.remaining_bits() != 0 {
             bail!(AbiErrorKind::IncompleteDeserializationError)
