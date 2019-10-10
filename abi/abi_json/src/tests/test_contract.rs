@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 const TEST_ABI: &str = r#"
 {
-    "ABI version": 0,
+    "ABI version": 1,
     "functions": [{
             "name": "input_and_output",
             "inputs": [
@@ -56,7 +56,7 @@ fn test_abi_parse() {
                     Param { name: "a".to_owned(), kind: ParamType::Int(16) },
                     Param { name: "b".to_owned(), kind: ParamType::Uint(8) },
                 ],
-                set_time: false,
+                set_time: true,
                 id: Function::calc_function_id("input_and_output(uint64,uint8[],bytes)(int16,uint8)")
         });
 
@@ -68,7 +68,7 @@ fn test_abi_parse() {
                     Param { name: "a".to_owned(), kind: ParamType::Uint(15) },
                 ],
                 outputs: vec![],
-                set_time: false,
+                set_time: true,
                 id: Function::calc_function_id("no_output(uint15)()")
         });
 
@@ -80,7 +80,7 @@ fn test_abi_parse() {
                 outputs: vec![
                     Param { name: "a".to_owned(), kind: ParamType::Uint(8) },
                 ],
-                set_time: false,
+                set_time: true,
                 id: Function::calc_function_id("no_input()(uint8)")
         });
 
@@ -90,7 +90,7 @@ fn test_abi_parse() {
                 name: "constructor".to_owned(),
                 inputs: vec![],
                 outputs: vec![],
-                set_time: false,
+                set_time: true,
                 id: Function::calc_function_id("constructor()()")
         });
 
@@ -102,7 +102,7 @@ fn test_abi_parse() {
                     Param { name: "a".to_owned(), kind: ParamType::Bool },
                 ],
                 outputs: vec![],
-                set_time: false,
+                set_time: true,
                 id: Function::calc_function_id("signed(bool)()")
         });
 
@@ -140,7 +140,7 @@ fn print_function_singnatures() {
 
 const TEST_ABI_WRONG_VERSION: &str = r#"
 {
-    "ABI version": 1,
+    "ABI version": 0,
     "functions": [{
             "name": "constructor",
             "inputs": [],

@@ -8,7 +8,7 @@ use ed25519_dalek::*;
 use tvm::stack::{BuilderData, SliceData, CellData, IBitstring};
 use crate::error::*;
 
-pub const   ABI_VERSION: u8 = 0;
+pub const   ABI_VERSION: u8 = 1;
 
 /// Contract function specification.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -74,13 +74,16 @@ impl Function {
         // Sha256 hash of signature
         let mut hasher = Sha256::new();
 
-        hasher.input(&signature.as_bytes()[..]);
+        let mut bytes = signature.as_bytes().to_vec();
+        bytes.push(ABI_VERSION);
+
+        hasher.input(&bytes);
 
         let function_hash = hasher.result();
 
         let mut bytes: [u8; 4] = [0; 4];
         bytes.copy_from_slice(&function_hash[..4]);
-        // println!("{}: {:X}", signature, u32::from_be_bytes(bytes));
+        //println!("{}: {:X}", signature, u32::from_be_bytes(bytes));
 
         u32::from_be_bytes(bytes)
     }

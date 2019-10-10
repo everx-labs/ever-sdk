@@ -6,6 +6,7 @@ use serde_json;
 use {Function, Event, Token, Param};
 use tvm::stack::SliceData;
 use crate::error::*;
+use super::function::ABI_VERSION;
 
 /// API building calls to contracts ABI.
 #[derive(Clone, Debug, PartialEq)]
@@ -22,10 +23,11 @@ impl<'a> Deserialize<'a> for Contract {
         // struct `SerdeContract` containing necessary fields and then repack functions into HashMap
         let serde_contract = SerdeContract::deserialize(deserializer)?;
 
-        if serde_contract.abi_version != 0 {
+        if serde_contract.abi_version != ABI_VERSION {
             return Err(
                 <D::Error as SerdeError>::invalid_value(
-                    Unexpected::Unsigned(serde_contract.abi_version as u64), &"ABI version `0`")
+                    Unexpected::Unsigned(serde_contract.abi_version as u64),
+                    &format!("ABI version `{}`", ABI_VERSION).as_str())
             );
         }
 
@@ -49,6 +51,10 @@ impl<'a> Deserialize<'a> for Contract {
     }
 }
 
+fn bool_true() -> bool {
+    true
+}
+
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 struct SerdeContract {
     /// ABI version.
@@ -56,7 +62,7 @@ struct SerdeContract {
     pub abi_version: u8,
     /// Set timestamp in message.
     #[serde(rename="setTime")]
-    #[serde(default)]
+    #[serde(default="bool_true")]
     pub set_time: bool,
     /// Contract functions.
     pub functions: Vec<Function>,

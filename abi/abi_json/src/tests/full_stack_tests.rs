@@ -6,7 +6,8 @@ use tvm::stack::{BuilderData, SliceData};
 use json_abi::*;
 
 const WALLET_ABI: &str = r#"{
-    "ABI version" : 0,
+    "ABI version" : 1,
+    "setTime": false,
     "functions" :    [{
             "inputs": [
                 {"name": "recipient", "type": "fixedbytes32"},
@@ -108,7 +109,7 @@ fn test_constructor_call() {
         None,
     ).unwrap();
 
-    let mut expected_tree = BuilderData::with_bitstring(vec![0x2C, 0x81, 0x0A, 0x6D, 0x80]).unwrap();
+    let mut expected_tree = BuilderData::with_bitstring(vec![0x0b, 0xef, 0xab, 0xe2, 0x80]).unwrap();
     expected_tree.prepend_reference(BuilderData::new());
 
     let test_tree = SliceData::from(test_tree);
@@ -124,7 +125,7 @@ fn test_constructor_call() {
     assert_eq!(response.function_name, "constructor");
 
 
-    let test_tree = SliceData::from_raw(vec![0xAC, 0x81, 0x0A, 0x6D], 32);
+    let test_tree = SliceData::from_raw(vec![0x8b, 0xef, 0xab, 0xe2], 32);
 
     let response = decode_unknown_function_response(
         WALLET_ABI.to_owned(),
@@ -179,7 +180,7 @@ fn test_signed_call() {
     assert_eq!(response.function_name, "createLimit");
 
     let mut expected_tree = BuilderData::with_bitstring(vec![
-        0x37, 0x67, 0xf6, 0x3c, 0x01, 0x10, 0xc8
+        0x35, 0x99, 0x10, 0xa5, 0x01, 0x10, 0xc8
     ]).unwrap();
     expected_tree.append_reference(BuilderData::new());
 
@@ -191,7 +192,7 @@ fn test_signed_call() {
 
     let response_tree = SliceData::from(
         BuilderData::with_bitstring(
-            vec![0xb7, 0x67, 0xf6, 0x3c, 0x00, 0xFF, 0x80])
+            vec![0xB5, 0x99, 0x10, 0xa5, 0x00, 0xFF, 0x80])
         .unwrap());
 
     let response = decode_function_response(
@@ -228,7 +229,7 @@ fn test_not_signed_call() {
     )
     .unwrap();
 
-    let mut expected_tree = BuilderData::with_bitstring(vec![0x49, 0x32, 0xA1, 0xC1, 0x02, 0x80]).unwrap();
+    let mut expected_tree = BuilderData::with_bitstring(vec![0x47, 0x70, 0x76, 0xBC, 0x02, 0x80]).unwrap();
     expected_tree.prepend_reference(BuilderData::new());
 
     assert_eq!(test_tree, expected_tree);

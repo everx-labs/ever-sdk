@@ -2,7 +2,7 @@ use std::sync::Arc;
 use ed25519_dalek::*;
 use num_bigint::{BigInt, BigUint};
 use sha2::{Digest, Sha256, Sha512};
-// use chrono::prelude::*;
+use chrono::prelude::*;
 
 use types::{Bitstring};
 use tvm::stack::{BuilderData, IBitstring, SliceData, CellData};
@@ -34,7 +34,10 @@ fn get_function_id(signature: &[u8]) -> u32 {
     // Sha256 hash of signature
     let mut hasher = Sha256::new();
 
-    hasher.input(signature);
+    let mut bytes = signature.to_vec();
+    bytes.push(ABI_VERSION);
+
+    hasher.input(&bytes);
 
     let function_hash = hasher.result();
 
@@ -84,6 +87,8 @@ fn test_parameters_set(
     params: Option<&[Param]>,
     params_tree: BuilderData,
 ) {
+    let check_time = params_tree.bits_free() > 64;
+
     let mut params_slice = SliceData::from(&params_tree);
     params_slice.get_next_u32().unwrap();
     params_slice.checked_drain_reference().unwrap();
@@ -116,16 +121,15 @@ fn test_parameters_set(
     let mut test_tree = SliceData::from(&test_tree);
     assert_eq!(test_tree.get_next_u32().unwrap(), func_id & 0x7FFFFFFF);
     assert_eq!(test_tree.checked_drain_reference().unwrap(), SliceData::new_empty().cell());
-    println!("{:#.2}", test_tree.into_cell());
-    println!("{:#.2}", params_slice.into_cell());
     assert_eq!(test_tree, params_slice);
-/*
+
+    if check_time {
     // timed tree check
     let test_tree = timed_function
         .encode_input(inputs.clone(), None)
         .unwrap();
 
-    let test_tree = SliceData::from(&test_tree);
+        let mut test_tree = SliceData::from(&test_tree);
     assert_eq!(test_tree.get_next_u32().unwrap(), func_id & 0x7FFFFFFF);
     
     // check time is correct
@@ -134,7 +138,8 @@ fn test_parameters_set(
     assert!(tree_time <= now && tree_time >= now - 1000);
 
     assert_eq!(test_tree.checked_drain_reference().unwrap(), SliceData::new_empty().cell());
-    assert_eq!(test_tree, params_slice);*/
+        assert_eq!(test_tree, params_slice);
+    }
     
 
     // check signing
@@ -656,52 +661,6 @@ fn test_tuples_with_combined_types() {
         chain_builder,
     );
 }
-/*
-#[test]
-fn test_reserving_reference() {
-    let mut root_builder = BuilderData::new();
-    root_builder.append_u8(ABI_VERSION).unwrap();
-    root_builder.append_u32(get_function_id(
-        b"test_reserving_reference(bytes)(bytes)",
-    )).unwrap();
-
-    let array_data = vec![1, 2, 3, 4];
-    let array_builder = BuilderData::with_raw(array_data.clone(), array_data.len() * 8).unwrap();
-    root_builder.append_reference(array_builder);
-
-    let expected_tree: SliceData = root_builder.into();
-
-    let values = vec![TokenValue::Bytes(array_data.clone())];
-
-    let tokens = tokens_from_values(values);
-    let params: Vec<Param> = tokens
-        .clone()
-        .iter()
-        .map(|token| token.get_param())
-        .collect();
-
-    let signed_function = Function {
-        name: "test_reserving_reference".to_owned(),
-        inputs: params.clone(),
-        outputs: params.clone(),
-        set_time: true,
-        id: 0
-    };
-
-    let pair = Keypair::generate::<Sha512, _>(&mut rand::rngs::OsRng::new().unwrap());
-
-    let signed_test_tree = signed_function.encode_input(&tokens, Some(&pair)).unwrap();
-    let mut signed_test_tree = SliceData::from(signed_test_tree);
-
-    let mut signature = SliceData::from(signed_test_tree.checked_drain_reference().unwrap());
-    let signature = Signature::from_bytes(signature.get_next_bytes(64).unwrap().as_slice()).unwrap();
-    let bag_hash = signed_test_tree.into_cell().repr_hash();
-    pair.verify::<Sha512>(bag_hash.as_slice(), &signature).unwrap();
-
-    println!("{:#.2}", expected_tree.into_cell());
-    println!("{:#.2}", signed_test_tree.into_cell());
-    assert_eq!(expected_tree, signed_test_tree);
-}
 
 #[test]
 fn test_add_signature() {
@@ -711,7 +670,7 @@ fn test_add_signature() {
         name: "test_add_signature".to_owned(),
         inputs: params_from_tokens(&tokens),
         outputs: vec![],
-        signed: false,
+        set_time: false,
         id: 0
     };
 
@@ -726,4 +685,3 @@ fn test_add_signature() {
 
     assert_eq!(function.decode_input(msg.into()).unwrap(), tokens);
 }
-*/
