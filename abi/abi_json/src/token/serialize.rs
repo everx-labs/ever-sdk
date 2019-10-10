@@ -19,18 +19,21 @@ impl TokenValue {
     // every next cell: put data to root
     fn pack_cells_into_chain(mut cells: Vec<BuilderData>) -> AbiResult<BuilderData> {
         cells.reverse();
+        
         let mut packed_cells = match cells.pop() {
             Some(cell) => vec![cell],
             None => bail!(AbiErrorKind::InvalidData("No cells".to_owned()))
         };
+
         while let Some(cell) = cells.pop() {
             let ref mut builder = &mut packed_cells.last_mut().unwrap();
-            if builder.bits_free() < cell.bits_used() || builder.references_free() - 1 < cell.references_used() {
+            if builder.bits_free() < cell.bits_used() || builder.references_free() <= cell.references_used() {
                 packed_cells.push(cell);
             } else {
                 builder.append_builder(&cell).unwrap();
             }
         }
+
         loop {
             let cell = packed_cells.pop().unwrap();
             match packed_cells.last_mut() {

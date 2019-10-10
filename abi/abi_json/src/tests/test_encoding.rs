@@ -4,7 +4,7 @@ use num_bigint::{BigInt, BigUint};
 use sha2::{Digest, Sha256, Sha512};
 use chrono::prelude::*;
 
-use types::{Bitstring};
+use types::{Bitstring, Bit};
 use tvm::stack::{BuilderData, IBitstring, SliceData, CellData};
 use tvm::stack::dictionary::{HashmapE, HashmapType};
 
@@ -495,7 +495,7 @@ fn test_dynamic_array_of_tuples() {
         expected_tree,
     );
 }
-/*
+
 #[test]
 fn test_tuples_with_combined_types() {
     let input_array1: Vec<(u32, bool)> = vec![(1, true), (2, false), (3, true), (4, false)];
@@ -531,26 +531,24 @@ fn test_tuples_with_combined_types() {
     // input_array2
     add_array_as_map(&mut chain_builder, &input_array2, false);
 
+    let mut map = HashmapE::with_bit_len(32);
+
     // [Vec<i64>; 5]
-    add_array_as_map(&mut chain_builder, &input_array2, true);
+    for i in 0..5 {
+        let mut builder = BuilderData::new();
+        add_array_as_map(&mut builder, &input_array2, false);
 
-    let mut second_builder = BuilderData::new();
+        let mut index = BuilderData::new();
+        index.append_u32(i).unwrap();
 
-    for _i in 1..5 {
-        add_array_as_map(&mut second_builder, &input_array2);
+        map.set(index.into(), &builder.into()).unwrap();
     }
 
+    let mut second_builder = BuilderData::new();
+    second_builder.append_bit_one().unwrap();
+    second_builder.append_reference(BuilderData::from(map.data().unwrap()));
+
     chain_builder.append_reference(second_builder);
-
-    second_builder = chain_builder;
-    chain_builder = BuilderData::new();
-    chain_builder.append_reference(second_builder);
-
-    let mut vec = vec![];
-    bitstring.into_bitstring_with_completion_tag(&mut vec);
-    chain_builder.append_bitstring(&vec).unwrap();
-
-    let expected_tree = chain_builder.into();
 
     let array1_token_value = TokenValue::Array(
         input_array1
@@ -596,10 +594,10 @@ fn test_tuples_with_combined_types() {
         b"test_tuples_with_combined_types(uint8,((uint32,bool)[],int16),(int64[],int64[][5]))(uint8,((uint32,bool)[],int16),(int64[],int64[][5]))",
         &tokens_from_values(values),
         None,
-        expected_tree,
+        chain_builder,
     );
 }
-
+/*
 #[test]
 fn test_reserving_reference() {
     let mut root_builder = BuilderData::new();
