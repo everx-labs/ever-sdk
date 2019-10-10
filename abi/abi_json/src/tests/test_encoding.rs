@@ -7,6 +7,7 @@ use sha2::{Digest, Sha256, Sha512};
 use types::{Bitstring};
 use tvm::stack::{BuilderData, IBitstring, SliceData, CellData};
 use tvm::stack::dictionary::{HashmapE, HashmapType};
+use tvm::block::{Grams, Serializable};
 
 use {Function, Int, Param, ParamType, Token, TokenValue, Uint, ABI_VERSION};
 
@@ -215,6 +216,48 @@ fn test_one_input_and_output() {
     test_parameters_set(
         "test_one_input_and_output",
         b"test_one_input_and_output(uint128)(uint128)",
+        &tokens_from_values(values),
+        None,
+        builder,
+    );
+}
+
+#[test]
+fn test_with_grams() {
+    // builder with reserved signature reference and function ID
+    let mut builder = BuilderData::new();
+    builder.append_u32(0).unwrap();
+    builder.append_reference(BuilderData::new());
+
+    let grams = Grams::from(173742);
+    grams.write_to(&mut builder).unwrap();
+
+    let values = vec![TokenValue::Gram(grams)];
+
+    test_parameters_set(
+        "test_one_input_and_output",
+        b"test_one_input_and_output(gram)(gram)",
+        &tokens_from_values(values),
+        None,
+        builder,
+    );
+}
+
+#[test]
+fn test_with_address() {
+    // builder with reserved signature reference and function ID
+    let mut builder = BuilderData::new();
+    builder.append_u32(0).unwrap();
+    builder.append_reference(BuilderData::new());
+
+    let grams = Grams::from(173742);
+    grams.write_to(&mut builder).unwrap();
+
+    let values = vec![TokenValue::Gram(grams)];
+
+    test_parameters_set(
+        "test_one_input_and_output",
+        b"test_one_input_and_output(gram)(gram)",
         &tokens_from_values(values),
         None,
         builder,

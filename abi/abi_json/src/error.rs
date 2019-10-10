@@ -1,4 +1,4 @@
-use types::DeserializationError;
+use tvm::stack::SliceData;
 
 error_chain! {
 
@@ -28,9 +28,9 @@ error_chain! {
             description("Invalid function id"),
             display("Invalid function id: {}", id)
         }
-        DeserializationError(err: DeserializationError) {
+        DeserializationError(cursor: SliceData) {
             description("Deserialization error"),
-            display("Deserialization error: {:?}", err)
+            display("Deserialization error: {}", cursor)
         }
         NotImplemented {
             description("Not implemented"),

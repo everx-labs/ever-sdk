@@ -80,6 +80,7 @@ impl Function {
 
         let mut bytes: [u8; 4] = [0; 4];
         bytes.copy_from_slice(&function_hash[..4]);
+        // println!("{}: {:X}", signature, u32::from_be_bytes(bytes));
 
         u32::from_be_bytes(bytes)
     }
@@ -95,12 +96,12 @@ impl Function {
 
     /// Returns ID for call message
     pub fn get_input_id(&self) -> u32 {
-            self.id & 0x7FFFFFFF
+        self.id & 0x7FFFFFFF
     }
 
     /// Returns ID for response message
     pub fn get_output_id(&self) -> u32 {
-            self.id | 0x80000000
+        self.id | 0x80000000
     }
 
     /// Decodes provided params from SliceData
@@ -118,9 +119,8 @@ impl Function {
         }
 
         for param in params {
-            println!("{:?}", param);
-            let (token_value, new_cursor) = TokenValue::read_from(&param.kind, cursor)
-                .map_err(|err| AbiErrorKind::DeserializationError(err))?;
+            // println!("{:?}", param);
+            let (token_value, new_cursor) = TokenValue::read_from(&param.kind, cursor)?;
 
             cursor = new_cursor;
             tokens.push(Token { name: param.name, value: token_value });
@@ -292,8 +292,7 @@ impl Event {
         if id != self.id { Err(AbiErrorKind::WrongId(id))? }
 
         for param in params {
-            let (token_value, new_cursor) = TokenValue::read_from(&param.kind, cursor)
-                .map_err(|err| AbiErrorKind::DeserializationError(err))?;
+            let (token_value, new_cursor) = TokenValue::read_from(&param.kind, cursor)?;
 
             cursor = new_cursor;
             tokens.push(Token { name: param.name, value: token_value });

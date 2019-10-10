@@ -11,9 +11,9 @@ use crate::error::*;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Contract {
     /// Contract functions.
-    pub functions: HashMap<String, Function>,
+    functions: HashMap<String, Function>,
     /// Contract events.
-    pub events: HashMap<String, Event>,
+    events: HashMap<String, Event>,
 }
 
 impl<'a> Deserialize<'a> for Contract {
