@@ -118,6 +118,7 @@ impl Function {
         }
 
         for param in params {
+            println!("{:?}", param);
             let (token_value, new_cursor) = TokenValue::read_from(&param.kind, cursor)
                 .map_err(|err| AbiErrorKind::DeserializationError(err))?;
 

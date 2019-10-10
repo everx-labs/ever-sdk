@@ -106,22 +106,21 @@ fn test_constructor_call() {
         "constructor".to_owned(),
         params.to_owned(),
         None,
-    )
-    .unwrap();
+    ).unwrap();
 
     let mut expected_tree = BuilderData::with_bitstring(vec![0x2C, 0x81, 0x0A, 0x6D, 0x80]).unwrap();
     expected_tree.prepend_reference(BuilderData::new());
 
-    assert_eq!(test_tree, expected_tree);
-
-
     let mut test_tree = SliceData::from(test_tree);
+    let expected_tree = SliceData::from(expected_tree);
+    println!("{:#.2}", test_tree.into_cell());
+    println!("{:#.2}", expected_tree.into_cell());
+    assert_eq!(test_tree, expected_tree);
 
     let response = decode_unknown_function_call(
         WALLET_ABI.to_owned(),
         test_tree.clone(),
-    )
-    .unwrap();
+    ).unwrap();
 
     assert_eq!(response.params, params);
     assert_eq!(response.function_name, "constructor");

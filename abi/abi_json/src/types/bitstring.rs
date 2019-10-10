@@ -1,13 +1,25 @@
-use super::{
-    Bit,
-};
-
 use std::cmp;
 use std::fmt;
 use std::ops::{Add, Range, RangeBounds};
 use std::ops::Bound::{Excluded, Included, Unbounded};
 use byteorder::{BigEndian, WriteBytesExt};
 use tvm::types::AccountId;
+
+#[derive(PartialEq, Eq, Copy, Clone)]
+pub enum Bit {
+    Zero,
+    One,
+}
+
+impl From<bool> for Bit {
+    fn from(b: bool) -> Bit {
+        if b {
+            Bit::One
+        } else {
+            Bit::Zero
+        }
+    }
+}
 
 struct Bits {
     pub data: Vec<Bit>,

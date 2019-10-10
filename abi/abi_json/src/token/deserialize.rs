@@ -1,7 +1,4 @@
-use types::{
-    get_next_bits_from_chain,
-    ABIDeserialized, ABISerialized, DeserializationError,
-};
+use types::DeserializationError;
 use types::int::{Int, Uint};
 use {Param, ParamType};
 use serde_json;
@@ -9,24 +6,22 @@ use std::sync::Arc;
 use super::*;
 
 use num_bigint::{BigInt, BigUint};
-use tvm::stack::{CellData, BuilderData, SliceData};
+use tvm::stack::{CellData, BuilderData, SliceData, IBitstring};
 use tvm::stack::dictionary::{HashmapE, HashmapType};
 use tvm::block::BlockResult;
 use tvm::block::types::Grams;
 
 impl TokenValue {
     /// Deserializes value from `SliceData` to `TokenValue`
-    pub fn read_from(
-        param_type: &ParamType,
-        mut cursor: SliceData,
-    ) -> Result<(Self, SliceData), DeserializationError> {
+    pub fn read_from(param_type: &ParamType, mut cursor: SliceData)
+    -> Result<(Self, SliceData), DeserializationError> {
         match param_type {
             ParamType::Unknown => Err(DeserializationError::with(cursor)),
             ParamType::Uint(size) => Self::read_uint(*size, cursor),
             ParamType::Int(size) => Self::read_int(*size, cursor),
             ParamType::Bool => {
-                let (b, cursor) = bool::read_from(cursor)?;
-                Ok((TokenValue::Bool(b), cursor))
+                cursor = find_next_bits(cursor, 1)?;
+                Ok((TokenValue::Bool(cursor.get_next_bit().unwrap()), cursor))
             }
             ParamType::Tuple(tuple_params) => Self::read_tuple(tuple_params, cursor),
             ParamType::Array(param_type) => Self::read_array(&param_type, cursor),
@@ -85,19 +80,18 @@ impl TokenValue {
         Ok((TokenValue::Tuple(tokens), cursor))
     }
 
-    fn read_array_from_map(
-        param_type: &ParamType,
-        cursor: SliceData,
-        size: usize
-    ) -> Result<(Vec<Self>, SliceData), DeserializationError> {
-        let (slice, cursor) = <HashmapE>::read_from(cursor)?;
-        let map = HashmapE::with_data(32, slice);
-
+    fn read_array_from_map(param_type: &ParamType, mut cursor: SliceData, size: usize)
+    -> Result<(Vec<Self>, SliceData), DeserializationError> {
+        let original = cursor.clone();
+        cursor = find_next_bits(cursor, 1)?;
+        let map = match cursor.get_dictionary() {
+            Ok(data) => HashmapE::with_data(32, data),
+            Err(_) => Err(DeserializationError::with(original))?
+        };
         let mut result = vec![];
         for i in 0..size {
             let mut index = BuilderData::new();
-            index = (i as u32).prepend_to(index);
-
+            index.append_u32(i as u32).unwrap();
             let item_slice = map.get(index.into())
                 .map_err(|_| DeserializationError::with(cursor.clone()))?
                 .ok_or(DeserializationError::with(cursor.clone()))?;
@@ -114,11 +108,10 @@ impl TokenValue {
         Ok((result, cursor))
     }
 
-    fn read_array(
-        param_type: &ParamType,
-        cursor: SliceData,
-    ) -> Result<(Self, SliceData), DeserializationError> {
-        let (size, cursor) = <u32>::read_from(cursor)?;
+    fn read_array(param_type: &ParamType, mut cursor: SliceData)
+    -> Result<(Self, SliceData), DeserializationError> {
+        cursor = find_next_bits(cursor, 32)?;
+        let size = cursor.get_next_u32().unwrap();
         let (result, cursor) = Self::read_array_from_map(param_type, cursor, size as usize)?;
 
         Ok((TokenValue::Array(result), cursor))
@@ -138,22 +131,21 @@ impl TokenValue {
         let original = cursor.clone();
         let cell = match cursor.remaining_references() {
             0 => return Err(DeserializationError::with(original)),
-            1 => {
+            1 if cursor.cell().references_used() == BuilderData::references_capacity() => {
                 cursor = SliceData::from(cursor.reference(0).unwrap());
-                cursor.checked_drain_reference()
-                    .map_err(|_| DeserializationError::with(original))?
+                cursor.checked_drain_reference().map_err(|_| DeserializationError::with(original))?
             }
             _ => cursor.checked_drain_reference().unwrap()
         };
         Ok((cell.clone(), cursor))
     }
 
-    fn read_hashmap(key_type: &ParamType, value_type: &ParamType, cursor: SliceData)
+    fn read_hashmap(key_type: &ParamType, value_type: &ParamType, mut cursor: SliceData)
     -> Result<(Self, SliceData), DeserializationError> {
         let original = cursor.clone();
-        let (flag, mut cursor) = <bool>::read_from(cursor)?;
+        cursor = find_next_bits(cursor, 1)?;
         let mut new_map = HashMap::new();
-        if flag {
+        if cursor.get_next_bit().unwrap() {
             let cell = cursor.checked_drain_reference()
                 .map_err(|_| DeserializationError::with(original.clone()))?;
             let hashmap = HashmapE::with_hashmap(key_type.bit_len(), Some(cell));
@@ -190,5 +182,24 @@ impl TokenValue {
             }
             None => Ok((TokenValue::Bytes(data), cursor))
         }
+    }
+}
+
+fn get_next_bits_from_chain(mut cursor: SliceData, bits: usize)
+-> Result<(Vec<u8>, SliceData), DeserializationError> {
+    cursor = find_next_bits(cursor, bits)?;
+    Ok((cursor.get_next_bits(bits).unwrap(), cursor))
+}
+
+fn find_next_bits(mut cursor: SliceData, bits: usize) -> Result<SliceData, DeserializationError> {
+    let original = cursor.clone();
+    if cursor.remaining_bits() == 0 {
+        cursor = cursor.reference(0)
+            .map(|cell| cell.into())
+            .map_err(|_| DeserializationError::with(cursor))?;
+    }
+    match cursor.remaining_bits() >= bits  {
+        true => Ok(cursor),
+        false => Err(DeserializationError::with(original))
     }
 }

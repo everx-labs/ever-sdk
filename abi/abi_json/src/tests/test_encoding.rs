@@ -2,9 +2,9 @@ use std::sync::Arc;
 use ed25519_dalek::*;
 use num_bigint::{BigInt, BigUint};
 use sha2::{Digest, Sha256, Sha512};
-use chrono::prelude::*;
+// use chrono::prelude::*;
 
-use types::{Bitstring, Bit};
+use types::{Bitstring};
 use tvm::stack::{BuilderData, IBitstring, SliceData, CellData};
 use tvm::stack::dictionary::{HashmapE, HashmapType};
 
@@ -164,10 +164,13 @@ fn test_parameters_set(
     // check outputs decoding
 
     let mut test_tree = BuilderData::new();
+    test_tree.append_reference(BuilderData::new());
     test_tree.append_u32(func_id | 0x80000000).unwrap();
     test_tree.checked_append_references_and_data(&params_slice).unwrap();
+    let mut test_tree = SliceData::from(test_tree);
+    test_tree.checked_drain_reference().unwrap();
 
-    let test_outputs = function.decode_output(SliceData::from(test_tree)).unwrap();
+    let test_outputs = function.decode_output(test_tree).unwrap();
     assert_eq!(test_outputs, inputs);
 }
 
