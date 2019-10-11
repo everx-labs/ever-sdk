@@ -426,7 +426,11 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            when { branch 'master' }
+                            when { 
+                                expression {
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == ""
+                                }
+                            }
                             steps {
                                 dir('ton_client/platforms/ton-client-web/bin') {
                                     script {
