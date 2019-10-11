@@ -15,6 +15,7 @@ extern crate rand;
 extern crate sha2;
 extern crate base64;
 extern crate crc16;
+extern crate chrono;
 
 #[macro_use]
 extern crate error_chain;

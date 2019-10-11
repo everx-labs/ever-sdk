@@ -1,5 +1,6 @@
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use chrono::prelude::*;
+use std::convert::TryFrom;
 use tvm::executor::Engine;
 use tvm::block::{
     BlockResult,
@@ -33,7 +34,9 @@ pub fn local_contract_call(code: Arc<CellData>, data: Option<Arc<CellData>>, msg
             format!("Cannot put data to register: {}", err))))?;
 
     let mut sci = SmartContractInfo::default();
-    *sci.unix_time_mut() = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as u32;
+    *sci.unix_time_mut() = <u32>::try_from(Utc::now().timestamp())
+        .map_err(|_| BlockError::from(BlockErrorKind::Other(
+            format!("Wrong time: {}", Utc::now().timestamp()))))?;
     ctrls.put(7, &mut sci.into_temp_data()?)
         .map_err(|err| BlockError::from(BlockErrorKind::Other(
             format!("Cannot put data to register: {}", err))))?;;

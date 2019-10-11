@@ -16,6 +16,7 @@ ed25519-dalek = "^0.9.1"
 lazy_static = "1.1.0"
 base64 = "0.10.0"
 crc16 = "0.4.0"
+chrono = "0.4.9"
 
 ton_abi = { path = "../ton_abi" }
 
