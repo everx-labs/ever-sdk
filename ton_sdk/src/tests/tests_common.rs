@@ -13,7 +13,7 @@ use tvm::types::AccountId;
 pub const WORKCHAIN: i32 = 0;
 const NODE_SE: bool = false;
 
-const WALLET_ADDRESS_STR: &str =  "UQAizw8ps+9a/Q9DVsiMTS5rM+GhNI/9UtHE8j2xrXgT5Xgt";//"UQC7oawjsBAYgInWIBDdsA1ZTADw4hd5Tz8rU6gYlOxxRrJ6";
+const WALLET_ADDRESS_STR: &str =  "UQC7oawjsBAYgInWIBDdsA1ZTADw4hd5Tz8rU6gYlOxxRrJ6";//"UQAizw8ps+9a/Q9DVsiMTS5rM+GhNI/9UtHE8j2xrXgT5Xgt";//
 
 lazy_static! {
     static ref GIVER_ADDRESS: AccountAddress = 
@@ -25,8 +25,8 @@ lazy_static! {
     static ref WALLET_ADDRESS_STR_HEX: String = WALLET_ADDRESS.get_account_id().unwrap().to_hex_string();
 
     static ref WALLET_KEYS: Keypair = Keypair::from_bytes(&hex::decode(
-            //"2245e4f44af8af6bbd15c4a53eb67a8f211d541ddc7c197f74d7830dba6d27fed542f44146f169c6726c8cf70e4cbb3d33d8d842a4afd799ac122c5808d81ba3"
-            "a95e8560f28fb38ada7fa7c9504ccbb8248f09dfe0479bbcfdeee3f8306250b91ae42edc068af25b62896cd756ea7f958666b91aa862f01cda87d538e173dd43"
+            "2245e4f44af8af6bbd15c4a53eb67a8f211d541ddc7c197f74d7830dba6d27fed542f44146f169c6726c8cf70e4cbb3d33d8d842a4afd799ac122c5808d81ba3"
+            //"a95e8560f28fb38ada7fa7c9504ccbb8248f09dfe0479bbcfdeee3f8306250b91ae42edc068af25b62896cd756ea7f958666b91aa862f01cda87d538e173dd43"
         ).unwrap()).unwrap();
 }
 
