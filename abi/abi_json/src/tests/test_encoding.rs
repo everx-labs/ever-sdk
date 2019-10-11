@@ -10,16 +10,13 @@ use tvm::stack::dictionary::{HashmapE, HashmapType};
 use tvm::block::{AnycastInfo, Grams, MsgAddress, Serializable};
 use tvm::types::AccountId;
 
-use {Function, Int, Param, ParamType, Token, TokenValue, Uint, ABI_VERSION};
+use {Function, Int, Param, ParamType, Token, TokenValue, Uint};
 
 fn get_function_id(signature: &[u8]) -> u32 {
     // Sha256 hash of signature
     let mut hasher = Sha256::new();
 
-    let mut bytes = signature.to_vec();
-    bytes.push(ABI_VERSION);
-
-    hasher.input(&bytes);
+    hasher.input(signature);
 
     let function_hash = hasher.result();
 
@@ -65,6 +62,7 @@ fn add_array_as_map<T: Into<Bitstring> + Clone>(builder: &mut BuilderData, array
 fn test_parameters_set(
     func_name: &str,
     func_signature: &[u8],
+    timed_signature: &[u8],
     inputs: &[Token],
     params: Option<&[Param]>,
     params_tree: BuilderData,
@@ -94,6 +92,7 @@ fn test_parameters_set(
 
     let mut timed_function = function.clone();
     timed_function.set_time = true;
+    timed_function.id = timed_function.get_function_id();
 
     // simple tree check
     let test_tree = function
@@ -106,20 +105,21 @@ fn test_parameters_set(
     assert_eq!(test_tree, params_slice);
 
     if check_time {
-    // timed tree check
-    let test_tree = timed_function
-        .encode_input(inputs.clone(), None)
-        .unwrap();
+        // timed tree check
+        let test_tree = timed_function
+            .encode_input(inputs.clone(), None)
+            .unwrap();
 
         let mut test_tree = SliceData::from(&test_tree);
-    assert_eq!(test_tree.get_next_u32().unwrap(), func_id & 0x7FFFFFFF);
-    
-    // check time is correct
-    let tree_time = test_tree.get_next_u64().unwrap();
-    let now = Utc::now().timestamp_millis() as u64;
-    assert!(tree_time <= now && tree_time >= now - 1000);
+        let func_id = get_function_id(timed_signature);
+        assert_eq!(test_tree.get_next_u32().unwrap(), func_id & 0x7FFFFFFF);
+        
+        // check time is correct
+        let tree_time = test_tree.get_next_u64().unwrap();
+        let now = Utc::now().timestamp_millis() as u64;
+        assert!(tree_time <= now && tree_time >= now - 1000);
 
-    assert_eq!(test_tree.checked_drain_reference().unwrap(), SliceData::new_empty().cell());
+        assert_eq!(test_tree.checked_drain_reference().unwrap(), SliceData::new_empty().cell());
         assert_eq!(test_tree, params_slice);
     }
     
@@ -203,7 +203,8 @@ fn test_one_input_and_output() {
 
     test_parameters_set(
         "test_one_input_and_output",
-        b"test_one_input_and_output(uint128)(uint128)",
+        b"test_one_input_and_output(uint128)(uint128)v1",
+        b"test_one_input_and_output(time,uint128)(uint128)v1",
         &tokens_from_values(values),
         None,
         builder,
@@ -224,7 +225,8 @@ fn test_with_grams() {
 
     test_parameters_set(
         "test_with_grams",
-        b"test_with_grams(gram)(gram)",
+        b"test_with_grams(gram)(gram)v1",
+        b"test_with_grams(time,gram)(gram)v1",
         &tokens_from_values(values),
         None,
         builder,
@@ -258,7 +260,8 @@ fn test_with_address() {
 
     test_parameters_set(
         "test_with_address",
-        b"test_with_address(cell,address,address,address,address,address,address)(cell,address,address,address,address,address,address)",
+        b"test_with_address(cell,address,address,address,address,address,address)(cell,address,address,address,address,address,address)v1",
+        b"test_with_address(time,cell,address,address,address,address,address,address)(cell,address,address,address,address,address,address)v1",
         &tokens_from_values(values),
         None,
         builder,
@@ -280,7 +283,8 @@ fn test_one_input_and_output_by_data() {
 
     test_parameters_set(
         "test_one_input_and_output_by_data",
-        b"test_one_input_and_output_by_data(int64)(int64)",
+        b"test_one_input_and_output_by_data(int64)(int64)v1",
+        b"test_one_input_and_output_by_data(time,int64)(int64)v1",
         &tokens_from_values(values),
         None,
         expected_tree,
@@ -296,7 +300,8 @@ fn test_empty_params() {
 
     test_parameters_set(
         "test_empty_params",
-        b"test_empty_params()()",
+        b"test_empty_params()()v1",
+        b"test_empty_params(time)()v1",
         &[],
         None,
         builder);
@@ -322,7 +327,8 @@ fn test_two_params() {
 
     test_parameters_set(
         "test_two_params",
-        b"test_two_params(bool,int32)(bool,int32)",
+        b"test_two_params(bool,int32)(bool,int32)v1",
+        b"test_two_params(time,bool,int32)(bool,int32)v1",
         &tokens_from_values(values),
         None,
         builder,
@@ -356,7 +362,8 @@ fn test_four_refs() {
 
     test_parameters_set(
         "test_four_refs",
-        b"test_four_refs(bool,bytes,bytes,bytes,bytes,int32)(bool,bytes,bytes,bytes,bytes,int32)",
+        b"test_four_refs(bool,bytes,bytes,bytes,bytes,int32)(bool,bytes,bytes,bytes,bytes,int32)v1",
+        b"test_four_refs(time,bool,bytes,bytes,bytes,bytes,int32)(bool,bytes,bytes,bytes,bytes,int32)v1",
         &tokens_from_values(values),
         None,
         builder,
@@ -407,7 +414,8 @@ fn test_nested_tuples_with_all_simples() {
 
     test_parameters_set(
         "test_nested_tuples_with_all_simples",
-        b"test_nested_tuples_with_all_simples(bool,(int8,int16,(int32,int64,int128)),(uint8,uint16,(uint32,uint64,uint128)))(bool,(int8,int16,(int32,int64,int128)),(uint8,uint16,(uint32,uint64,uint128)))",
+        b"test_nested_tuples_with_all_simples(bool,(int8,int16,(int32,int64,int128)),(uint8,uint16,(uint32,uint64,uint128)))(bool,(int8,int16,(int32,int64,int128)),(uint8,uint16,(uint32,uint64,uint128)))v1",
+        b"test_nested_tuples_with_all_simples(time,bool,(int8,int16,(int32,int64,int128)),(uint8,uint16,(uint32,uint64,uint128)))(bool,(int8,int16,(int32,int64,int128)),(uint8,uint16,(uint32,uint64,uint128)))v1",
         &tokens_from_values(values),
         None,
         builder,
@@ -434,7 +442,8 @@ fn test_static_array_of_ints() {
 
     test_parameters_set(
         "test_static_array_of_ints",
-        b"test_static_array_of_ints(uint32[8])(uint32[8])",
+        b"test_static_array_of_ints(uint32[8])(uint32[8])v1",
+        b"test_static_array_of_ints(time,uint32[8])(uint32[8])v1",
         &tokens_from_values(values),
         None,
         builder,
@@ -459,7 +468,8 @@ fn test_empty_dynamic_array() {
 
     test_parameters_set(
         "test_empty_dynamic_array",
-        b"test_empty_dynamic_array(uint16[])(uint16[])",
+        b"test_empty_dynamic_array(uint16[])(uint16[])v1",
+        b"test_empty_dynamic_array(time,uint16[])(uint16[])v1",
         &tokens_from_values(values),
         Some(&params),
         builder,
@@ -486,7 +496,8 @@ fn test_dynamic_array_of_ints() {
 
     test_parameters_set(
         "test_dynamic_array_of_ints",
-        b"test_dynamic_array_of_ints(uint16[])(uint16[])",
+        b"test_dynamic_array_of_ints(uint16[])(uint16[])v1",
+        b"test_dynamic_array_of_ints(time,uint16[])(uint16[])v1",
         &tokens_from_values(values),
         None,
         builder,
@@ -502,13 +513,6 @@ fn test_dynamic_array_of_tuples() {
     let mut builder = BuilderData::new();
     builder.append_u32(0).unwrap();
     builder.append_reference(BuilderData::new());
-
-    let mut bitstring = Bitstring::new();
-
-    bitstring.append_u8(ABI_VERSION);
-    bitstring.append_u32(get_function_id(
-        b"test_dynamic_array_of_tuples((uint32,bool)[])((uint32,bool)[])",
-    ));
 
     let bitstring_array: Vec<Bitstring> = input_array
         .iter()
@@ -536,7 +540,8 @@ fn test_dynamic_array_of_tuples() {
 
     test_parameters_set(
         "test_dynamic_array_of_tuples",
-        b"test_dynamic_array_of_tuples((uint32,bool)[])((uint32,bool)[])",
+        b"test_dynamic_array_of_tuples((uint32,bool)[])((uint32,bool)[])v1",
+        b"test_dynamic_array_of_tuples(time,(uint32,bool)[])((uint32,bool)[])v1",
         &tokens_from_values(values),
         None,
         expected_tree,
@@ -638,7 +643,8 @@ fn test_tuples_with_combined_types() {
 
     test_parameters_set(
         "test_tuples_with_combined_types",
-        b"test_tuples_with_combined_types(uint8,((uint32,bool)[],int16),(int64[],int64[][5]))(uint8,((uint32,bool)[],int16),(int64[],int64[][5]))",
+        b"test_tuples_with_combined_types(uint8,((uint32,bool)[],int16),(int64[],int64[][5]))(uint8,((uint32,bool)[],int16),(int64[],int64[][5]))v1",
+        b"test_tuples_with_combined_types(time,uint8,((uint32,bool)[],int16),(int64[],int64[][5]))(uint8,((uint32,bool)[],int16),(int64[],int64[][5]))v1",
         &tokens_from_values(values),
         None,
         chain_builder,
