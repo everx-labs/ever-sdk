@@ -1,4 +1,4 @@
-use ton_abi_json::json_abi::decode_function_response;
+use ton_abi::json_abi::decode_function_response;
 use super::*;
 use std::io::{Cursor};
 use ed25519_dalek::Keypair;
@@ -8,18 +8,8 @@ use sha2::Sha512;
 use tvm::block::TransactionProcessingStatus;
 use tvm::types::AccountId;
 use tvm::stack::{BuilderData, IBitstring};
-
-const WORKCHAIN: i32 = 0;
-const CONFIG_JSON: &str = r#"
-    {
-        "queries_config": {
-            "queries_server": "http://0.0.0.0/graphql",
-            "subscriptions_server": "ws://0.0.0.0/graphql"
-        },
-        "requests_config": {
-            "requests_server": "http://0.0.0.0/topics/requests"
-        }
-    }"#;  
+use tests_common::*;
+ 
 /*
 #[test]
 #[ignore] // Rethink have to work on 127.0.0.1:32769. Run it and comment "ignore"
@@ -182,16 +172,8 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
     let input = SUBSCRIBE_PARAMS.to_string();
     let abi = test_piggy_bank::SUBSCRIBE_CONTRACT_ABI.to_string();
 
-    let contract = Contract::load(address.into())
-        .expect("Error calling load Contract")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract")
-        .expect("Error unwrap contract while loading Contract");
-
     // call needed method
-    let changes_stream = Contract::call_json(contract.id().into(), func.clone(), input, abi.clone(), Some(&key_pair))
+    let changes_stream = Contract::call_json(address.into(), func.clone(), input, abi.clone(), Some(&key_pair))
         .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -258,9 +240,7 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
 #[test]
 fn test_deploy_and_call_contract() {
    
-    let config_json = CONFIG_JSON.clone();    
-    init_json(Some(WORKCHAIN), config_json.into()).unwrap();
-   
+    tests_common::init_node_connection();   
    
     // read image from file and construct ContractImage
     let mut state_init = std::fs::File::open("src/tests/Subscription.tvc").expect("Unable to open contract code file");
@@ -275,7 +255,7 @@ fn test_deploy_and_call_contract() {
     // before deploying contract need to transfer some funds to its address
     println!("Account ID to take some grams {}", account_id);
     
-    test_piggy_bank::get_grams_from_giver(account_id.clone());
+    tests_common::get_grams_from_giver(account_id.clone());
 
 
     // call deploy method
@@ -324,10 +304,7 @@ fn test_contract_image_from_file() {
 
 #[test]
 fn test_deploy_empty_contract() {
-    // init SDK
-    let config_json = CONFIG_JSON.clone();    
-    init_json(Some(WORKCHAIN), config_json.into()).unwrap();
-
+    init_node_connection();
 
     let mut csprng = OsRng::new().unwrap();
 
@@ -342,7 +319,7 @@ fn test_deploy_empty_contract() {
     let image = ContractImage::new(&mut data_cur, None, None).expect("Error creating ContractImage");
     let acc_id = image.account_id();
 
-    test_piggy_bank::get_grams_from_giver(acc_id.clone());
+    tests_common::get_grams_from_giver(acc_id.clone());
 
     println!("Account ID {}", acc_id);
 
@@ -383,10 +360,7 @@ fn test_deploy_empty_contract() {
 
 #[test]
 fn test_load_nonexistent_contract() {
-
-        // init SDK
-    let config_json = CONFIG_JSON.clone();    
-    init_json(Some(WORKCHAIN), config_json.into()).unwrap();
+    init_node_connection();
 
     let c = Contract::load(AccountId::from([67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31]).into())
         .expect("Error calling load Contract")
@@ -420,7 +394,7 @@ fn test_address_parsing() {
 
 #[test]
 fn test_print_base64_address_from_hex() {
-    let hex_address = "0:ce709b5bfca589eb621b5a5786d0b562761144ac48f59e0b0d35ad0973bcdb86";
+    let hex_address = "0:9f2bc8a81da52c6b8cb1878352120f21e254138fff0b897f44fb6ff2b8cae256";
 
     let address = AccountAddress::from_str(hex_address).unwrap();
 

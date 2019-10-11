@@ -57,7 +57,7 @@ macro_rules! sdk_err {
 }
 
 impl ApiError {
-    fn new(source: ApiErrorSource, code: &ApiErrorCode, message: String) -> Self {
+    fn new(source: ApiErrorSource, code: &dyn ApiErrorCode, message: String) -> Self {
         Self {
             source: source.to_string(),
             code: code.as_number(),

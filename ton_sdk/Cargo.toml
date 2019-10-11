@@ -6,10 +6,10 @@ version = "0.1.0"
 rand = "0.6.1"
 pretty_assertions = "0.5.1"
 num-bigint = "0.2.2"
-sha2 = "^0.8"
-serde_json = "^1.0.39"
-serde = "^1.0.90"
-serde_derive = "^1.0.90"
+sha2 = "0.8"
+serde_json = "1.0.41"
+serde = "1.0.91"
+serde_derive = "1.0.91"
 error-chain = { version = "^0.12", default-features = false }
 hex = "0.3.2"
 ed25519-dalek = "^0.9.1"
@@ -17,8 +17,7 @@ lazy_static = "1.1.0"
 base64 = "0.10.0"
 crc16 = "0.4.0"
 
-ton_abi_core =  { path = "../abi/abi_core" }
-ton_abi_json = { path = "../abi/abi_json" }
+ton_abi = { path = "../ton_abi" }
 
 
 [target.'cfg(target_arch="wasm32")'.dependencies]
@@ -27,10 +26,9 @@ rand = { version = "0.6.1", features = ["wasm-bindgen"] }
 
 [dependencies.tvm]
 git = "ssh://git@github.com/tonlabs/sdk-emulator.git"
-branch = "feature-dev"
+branch = "feature-address-serialize"
 package = "tvm"
 default-features = false
-
 
 [dependencies.futures]
 version = "^0.1.26"
@@ -49,3 +47,6 @@ optional = true
 default = ["node_interaction"]
 ci_run = []
 node_interaction = ["graphite", "futures", "reqwest"]
+
+[dev-dependencies.rand]
+version = "0.6.1"

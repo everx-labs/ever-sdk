@@ -133,6 +133,7 @@ impl InteropJsonResponse {
         }
     }
 
+    #[allow(dead_code)]
     pub(crate) fn to_response(&self) -> JsonResponse {
         JsonResponse {
             result_json: self.result_json.to_string(),

@@ -29,7 +29,7 @@ trait SyncHandler {
 
 
 pub(crate) struct DispatchTable {
-    sync_runners: HashMap<String, Box<SyncHandler + Sync>>
+    sync_runners: HashMap<String, Box<dyn SyncHandler + Sync>>
 }
 
 fn parse_params<P: DeserializeOwned + 'static>(params_json: &str) -> ApiResult<P> {

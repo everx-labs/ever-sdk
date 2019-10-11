@@ -1,5 +1,5 @@
 use std::io;
-use ton_abi_json::ABIError;
+use ton_abi::AbiError;
 
 #[cfg(feature = "node_interaction")]
 use graphite::types::GraphiteError;
@@ -74,11 +74,7 @@ error_chain! {
             description("Signature error"),
             display("Signature error: {}", inner)
         }
-        AbiError(inner: ABIError) {
-            description("ABI error"),
-            display("ABI error: {:?}", inner)
-        }
-        AbiError2(inner: ton_abi_core::abi_response::Exception) {
+        AbiError(inner: AbiError) {
             description("ABI error"),
             display("ABI error: {:?}", inner)
         }

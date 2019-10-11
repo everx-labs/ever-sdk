@@ -61,6 +61,7 @@ impl Message {
                     if val == serde_json::Value::Null {
                         Ok(None)
                     } else {
+                        println!("msg {}", val);
                         let msg: TvmMessage = serde_json::from_value(val)
                             .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing message: {}", err)))?;
 

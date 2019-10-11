@@ -28,11 +28,10 @@ const WALLET_ABI: &str = r#"{
     "ABI version" : 0,
     "functions" :	[{
             "inputs": [
-                {"name": "recipient", "type": "bits256"},
-                {"name": "value", "type": "duint"}
+                {"name": "recipient", "type": "fixedbytes32"},
+                {"name": "value", "type": "gram"}
             ],
             "name": "sendTransaction",
-            "signed": true,
             "outputs": [
                 {"name": "transaction", "type": "uint64"},
                 {"name": "error", "type": "int8"}
@@ -40,11 +39,10 @@ const WALLET_ABI: &str = r#"{
         }, {
             "inputs": [
                 {"name": "type", "type": "uint8"},
-                {"name": "value", "type": "duint"},
-                {"name": "meta", "type": "bitstring"}
+                {"name": "value", "type": "gram"},
+                {"name": "meta", "type": "bytes"}
             ],
             "name": "createLimit",
-            "signed": true,
             "outputs": [
                 {"name": "limitId", "type": "uint8"},
                 {"name": "error", "type": "int8"}
@@ -52,16 +50,14 @@ const WALLET_ABI: &str = r#"{
         }, {
             "inputs": [
                 {"name": "limitId", "type": "uint8"},
-                {"name": "value", "type": "duint"},
-                {"name": "meta", "type": "bitstring"}
+                {"name": "value", "type": "gram"},
+                {"name": "meta", "type": "bytes"}
             ],
             "name": "changeLimitById",
-            "signed": true,
             "outputs": [{"name": "error", "type": "int8"}]
         }, {
             "inputs": [{"name": "limitId", "type": "uint8"}],
             "name": "removeLimit",
-            "signed": true,
             "outputs": [{"name": "error", "type": "int8"}]
         }, {
             "inputs": [{"name": "limitId", "type": "uint8"}],
@@ -71,9 +67,9 @@ const WALLET_ABI: &str = r#"{
                     "name": "limitInfo",
                     "type": "tuple",
                     "components": [
-                        {"name": "value", "type": "duint"},
+                        {"name": "value", "type": "gram"},
                         {"name": "type", "type": "uint8"},
-                        {"name": "meta", "type": "bitstring"}
+                        {"name": "meta", "type": "bytes"}
                         ]
                 },
                 {"name": "error", "type": "int8"}
@@ -106,16 +102,15 @@ const WALLET_ABI: &str = r#"{
         }, {
             "inputs": [],
             "name": "constructor",
-            "outputs": []							
+            "outputs": []
         }, {
-            "inputs": [{"name": "address", "type": "bits256" }],
+            "inputs": [{"name": "address", "type": "fixedbytes32" }],
             "name": "setSubscriptionAccount",
-                    "signed": true,
-            "outputs": []							
+            "outputs": []
         }, {
             "inputs": [],
             "name": "getSubscriptionAccount",
-            "outputs": [{"name": "address", "type": "bits256" }]							
+            "outputs": [{"name": "address", "type": "fixedbytes32" }]
         }
     ]
 }
@@ -246,18 +241,9 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
 }
 
 fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str, key_pair: Option<&Keypair>) -> String {
-
-    let contract = Contract::load(address.into())
-        .expect("Error calling load Contract")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract")
-        .expect("Error unwrap contract while loading Contract");
-
     // call needed method
     let changes_stream = 
-        Contract::call_json(contract.id().into(), func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
+        Contract::call_json(address.into(), func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
             .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -345,7 +331,7 @@ fn call_get_balance(current_address: &Option<AccountId>, params: &[&str]) {
         .expect("Error unwrap contract while loading Contract");
 
     let nanogram_balance = contract.balance_grams();
-    let nanogram_balance = nanogram_balance.value().to_u128().expect("error cust grams to u128");
+    let nanogram_balance = nanogram_balance.unwrap().value().to_u128().expect("error cast grams to u128");
     let gram_balance = nanogram_balance as f64 / 1000000000f64;
 
     println!("Account balance {}", gram_balance);

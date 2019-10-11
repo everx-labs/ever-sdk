@@ -2,12 +2,9 @@ use crate::*;
 use std::io::{Read, Seek, Cursor};
 use std::sync::{Arc, Mutex};
 use ed25519_dalek::{Keypair, PublicKey};
-use tvm::stack::{BuilderData, CellData, IBitstring, SliceData, find_tag};
+use tvm::stack::{BuilderData, CellData, SliceData, find_tag};
 use tvm::types::AccountId;
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
-use ton_abi_core::types::{ABIInParameter, ABIOutParameter, ABITypeSignature};
-use ton_abi_core::abi_response::ABIResponse;
-use ton_abi_core::abi_call::ABICall;
 use tvm::block::{
     Account,
     AccountState,
@@ -15,7 +12,6 @@ use tvm::block::{
     MessageId,
     TransactionId,
     ExternalInboundMessageHeader,
-    MsgAddressExt, 
     MsgAddressInt,
     Serializable,
     StateInit,
@@ -29,35 +25,14 @@ use std::convert::Into;
 use crc16::*;
 use std::convert::TryFrom;
 
-pub use ton_abi_json::json_abi::DecodedMessage;
+pub use ton_abi::json_abi::DecodedMessage;
 
 #[cfg(feature = "node_interaction")]
 use futures::stream::Stream;
 
-const CONSTRUCTOR_METHOD_NAME: &str = "constructor";
-
 #[cfg(feature = "node_interaction")]
 const ACCOUNT_FIELDS: &str = r#"
     id
-    addr {
-        ...on MsgAddressIntAddrNoneVariant {
-            AddrNone {
-                None
-            }
-        }
-        ...on MsgAddressIntAddrStdVariant {
-            AddrStd {
-                workchain_id
-                address
-            }
-        }
-        ...on MsgAddressIntAddrVarVariant {
-            AddrVar {
-                workchain_id
-                address
-            }
-        }
-    }
     storage {
         balance {
             Grams
@@ -227,6 +202,12 @@ impl AccountAddress {
             }
         }
     }
+
+    /// Creates full account address from `AccountId` and workchain number
+    pub fn with_account_id_and_workchain(workchain: i8, account_id: AccountId) -> SdkResult<Self> {
+        Ok(AccountAddress::Full(MsgAddressInt::with_standart(None, workchain, account_id)?))
+    }
+
     
     fn decode_std_base64(data: &str) -> SdkResult<Self> {
         // conversion from base64url
@@ -348,6 +329,7 @@ impl Contract {
                     if val == serde_json::Value::Null {
                         Ok(None)
                     } else {
+                        println!("val {}", val);
                         let acc: Account = serde_json::from_value(val)
                             .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing account: {}", err)))?;
 
@@ -369,27 +351,6 @@ impl Contract {
     }
 
     // Packs given inputs by abi and asynchronously calls contract.
-    // To get calling result - need to load message,
-    // it's id and processing status is returned by this function
-    pub fn call<TIn, TOut>(address: AccountAddress, func: String, input: TIn, key_pair: Option<&Keypair>)
-        -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>>
-        where
-            TIn: ABIInParameter + ABITypeSignature,
-            TOut: ABIOutParameter + ABITypeSignature {
-
-        // pack params into bag of cells via ABI
-        let msg_body = Self::create_message_body::<TIn, TOut>(func, input, key_pair);
-
-        let msg = Self::create_message(address, msg_body)?;
-
-        // send message by Kafka
-        let msg_id = Self::_send_message(msg)?;
-
-        // subscribe on updates from DB and return updates stream
-        Self::subscribe_updates(msg_id)
-    }
-
-    // Packs given inputs by abi and asynchronously calls contract.
     // Works with json representation of input and abi.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
@@ -397,7 +358,7 @@ impl Contract {
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
         // pack params into bag of cells via ABI
-        let msg_body = ton_abi_json::encode_function_call(abi, func, input, key_pair)
+        let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let msg = Self::create_message(id.clone(), msg_body.into())?;
@@ -409,28 +370,6 @@ impl Contract {
         Self::subscribe_updates(msg_id)
     }
 
-    // Packs given image and input and asynchronously calls contract's constructor.
-    // To get deploying result - need to load message,
-    // it's id and processing status is returned by this function
-    pub fn deploy<TIn, TOut>(input: TIn, image: ContractImage, key_pair: Option<&Keypair>)
-        -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>>
-        where
-            TIn: ABIInParameter + ABITypeSignature,
-            TOut: ABIOutParameter + ABITypeSignature {
-
-        // Deploy is call, but special message is constructed.
-        // The message contains StateInit struct with code, public key and lib
-        // and body with parameters for contract special method - constructor.
-
-        let msg_body = Self::create_message_body::<TIn, TOut>(CONSTRUCTOR_METHOD_NAME.to_string(), input, key_pair);
-
-        let msg = Self::create_deploy_message(Some(msg_body), image)?;
-
-        let msg_id = Self::_send_message(msg)?;
-
-        Self::subscribe_updates(msg_id)
-    }
-
     // Packs given image and input and asynchronously calls given contract's constructor method.
     // Works with json representation of input and abi.
     // To get calling result - need to load message,
@@ -438,7 +377,7 @@ impl Contract {
     pub fn deploy_json(func: String, input: String, abi: String, image: ContractImage, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
-        let msg_body = ton_abi_json::encode_function_call(abi, func, input, key_pair)
+        let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let cell = msg_body.into();
@@ -477,7 +416,7 @@ impl Contract {
         let (data, id) = Self::serialize_message(msg)?;
 
         requests_helper::send_message(&id.as_slice()[..], &data)?;
-        //println!("msg is sent, id: {}", id.to_hex_string());
+        println!("msg is sent, id: {}", id.to_hex_string());
         Ok(id.clone())
     }
 
@@ -507,17 +446,22 @@ pub struct MessageToSign {
 
 impl Contract {
     /// Returns contract's identifier
-    pub fn id(&self) -> AccountId {
-        self.acc.get_id().unwrap().clone()
+    pub fn id(&self) -> SdkResult<AccountId> {
+        Ok(self.acc.get_id()
+            .ok_or(SdkErrorKind::InvalidData("No account ID".to_owned()))?
+            .clone())
     }
 
     /// Returns contract's balance in NANO grams
-    pub fn balance_grams(&self) -> Grams {
-        self.acc.get_balance().unwrap().grams.clone()
+    pub fn balance_grams(&self) -> SdkResult<Grams> {
+        Ok(self.acc.get_balance()
+            .ok_or(SdkErrorKind::InvalidData("No balance in account".to_owned()))?
+            .grams
+            .clone())
     }
 
     /// Returns contract's balance
-    pub fn balance(&self) -> CurrencyCollection {
+    pub fn balance(&self) -> SdkResult<CurrencyCollection> {
         unimplemented!()
     }
 
@@ -567,10 +511,12 @@ impl Contract {
          -> SdkResult<Vec<TvmMessage>>
     {
         // pack params into bag of cells via ABI
-        let msg_body = ton_abi_json::encode_function_call(abi, func, input, key_pair)
+        let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
-        let msg = Self::create_message(self.id().into(), msg_body.into())?;
+        let address = self.id().unwrap_or(AccountId::from([0; 32])).into();
+
+        let msg = Self::create_message(address, msg_body.into())?;
 
         self.local_call(msg)
     }
@@ -579,17 +525,8 @@ impl Contract {
     pub fn decode_function_response_json(abi: String, function: String, response: SliceData) 
         -> SdkResult<String> {
 
-        ton_abi_json::json_abi::decode_function_response(abi, function, response)
+        ton_abi::json_abi::decode_function_response(abi, function, response)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
-    }
-
-    /// Decodes ABI contract answer from `CellData` into type values
-    pub fn decode_function_response<TOut>(response: SliceData)
-        -> SdkResult<(u32, TOut::Out)> 
-        where TOut: ABIOutParameter{
-
-        ABIResponse::<TOut>::decode_response_from_slice(response)
-            .map_err(|err| SdkError::from(SdkErrorKind::AbiError2(err)))
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
@@ -605,7 +542,7 @@ impl Contract {
     pub fn decode_unknown_function_response_json(abi: String, response: SliceData) 
         -> SdkResult<DecodedMessage> {
 
-        ton_abi_json::json_abi::decode_unknown_function_response(abi, response)
+        ton_abi::json_abi::decode_unknown_function_response(abi, response)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
     }
 
@@ -622,7 +559,7 @@ impl Contract {
     pub fn decode_unknown_function_call_json(abi: String, response: SliceData) 
         -> SdkResult<DecodedMessage> {
 
-        ton_abi_json::json_abi::decode_unknown_function_call(abi, response)
+        ton_abi::json_abi::decode_unknown_function_call(abi, response)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
     }
 
@@ -635,32 +572,7 @@ impl Contract {
         Self::decode_unknown_function_call_json(abi, slice)
     }
 
-    /// Decodes output parameters returned by contract function call from serialized message body
-    pub fn decode_function_response_from_bytes<TOut>(response: &[u8]) 
-         -> SdkResult<(u32, TOut::Out)>
-        where TOut: ABIOutParameter {
-
-        ABIResponse::<TOut>::decode_response(&response.to_vec())
-            .map_err(|err| SdkError::from(SdkErrorKind::AbiError2(err)))
-    }
-
     // ------- Call constructing functions -------
-
-    // Packs given inputs by abi into Message struct.
-    // Returns message's bag of cells and identifier.
-    pub fn construct_call_message<TIn, TOut>(address: AccountAddress, func: String, input: TIn, key_pair: Option<&Keypair>)
-        -> SdkResult<(Vec<u8>, MessageId)>
-        where
-            TIn: ABIInParameter + ABITypeSignature,
-            TOut: ABIOutParameter + ABITypeSignature {
-
-        // pack params into bag of cells via ABI
-        let msg_body = Self::create_message_body::<TIn, TOut>(func, input, key_pair);
-
-        let msg = Self::create_message(address, msg_body)?;
-
-        Self::serialize_message(msg)
-    }
 
     // Packs given inputs by abi into Message struct.
     // Works with json representation of input and abi.
@@ -669,7 +581,7 @@ impl Contract {
         abi: String, key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
 
         // pack params into bag of cells via ABI
-        let msg_body = ton_abi_json::encode_function_call(abi, func, input, key_pair)
+        let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let msg = Self::create_message(address, msg_body.into())?;
@@ -694,7 +606,7 @@ impl Contract {
         abi: String) -> SdkResult<MessageToSign> {
         
         // pack params into bag of cells via ABI
-        let (msg_body, data_to_sign) = ton_abi_json::prepare_function_call_for_sign(abi, func, input)
+        let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(abi, func, input)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let msg = Self::create_message(address, msg_body.into())?;
@@ -708,27 +620,12 @@ impl Contract {
      // ------- Deploy constructing functions -------
 
     // Packs given image and input into Message struct.
-    // Returns message's bag of cells and identifier.
-    pub fn construct_deploy_message<TIn, TOut>(input: TIn, image: ContractImage, key_pair: Option<&Keypair>)
-        -> SdkResult<(Vec<u8>, MessageId)>
-        where
-            TIn: ABIInParameter + ABITypeSignature,
-            TOut: ABIOutParameter + ABITypeSignature {
-
-        let msg_body = Self::create_message_body::<TIn, TOut>(CONSTRUCTOR_METHOD_NAME.to_string(), input, key_pair);
-
-        let msg = Self::create_deploy_message(Some(msg_body), image)?;
-
-        Self::serialize_message(msg)
-    }
-
-    // Packs given image and input into Message struct.
     // Works with json representation of input and abi.
     // Returns message's bag of cells and identifier.
     pub fn construct_deploy_message_json(func: String, input: String, abi: String, image: ContractImage,
         key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
 
-        let msg_body = ton_abi_json::encode_function_call(abi, func, input, key_pair)
+        let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let cell = msg_body.into();
@@ -766,7 +663,7 @@ impl Contract {
     pub fn get_deploy_message_bytes_for_signing(func: String, input: String, abi: String,
         image: ContractImage) -> SdkResult<MessageToSign> {
 
-        let (msg_body, data_to_sign) = ton_abi_json::prepare_function_call_for_sign(abi, func, input)
+        let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(abi, func, input)
                 .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let cell = msg_body.into();
@@ -792,7 +689,7 @@ impl Contract {
         let body = message.body()
             .ok_or(SdkError::from(SdkErrorKind::InvalidData("No message body".to_owned())))?;
 
-        let signed_body = ton_abi_json::add_sign_to_function_call(signature, public_key, body)
+        let signed_body = ton_abi::add_sign_to_function_call(signature, public_key, body)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         *message.body_mut() = Some(signed_body.into());
@@ -805,49 +702,11 @@ impl Contract {
 
         let mut msg_header = ExternalInboundMessageHeader::default();
         msg_header.dst = address.get_msg_address()?;
-
-
-        // TODO don't forget to delete it
-        // This is temporary code to make all messages uniq.
-        // In the future it will be made by replay attack protection mechanism
-        let mut builder = BuilderData::new();
-        if cfg!(target_arch="wasm32") {
-            use rand::Rng;            
-            let mut rng = rand::thread_rng();
-            builder.append_u64(rng.gen::<u64>()).unwrap();
-        } else {
-            use sha2::Digest;
-            let time = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH).unwrap()
-                .as_nanos();
-            let mut hasher = sha2::Sha256::new();
-            hasher.input(&time.to_be_bytes()[..]);
-            let hash = hasher.result();
-            builder.append_raw(&hash.to_vec()[..], 64).unwrap();
-        }
-        msg_header.src = MsgAddressExt::with_extern(builder.into()).unwrap(); 
         
         let mut msg = TvmMessage::with_ext_in_header(msg_header);
         *msg.body_mut() = Some(msg_body);
 
         Ok(msg)
-    }
-
-    fn create_message_body<TIn, TOut>(func: String, input: TIn, key_pair: Option<&Keypair>) -> SliceData
-        where
-            TIn: ABIInParameter + ABITypeSignature,
-            TOut: ABIOutParameter + ABITypeSignature {
-
-        match key_pair {
-            Some(p) => {
-                ABICall::<TIn, TOut>::encode_signed_function_call_into_slice(
-                    func, input, p).into()
-            }
-            _ => {
-                ABICall::<TIn, TOut>::encode_function_call_into_slice(
-                    func, input).into()
-            }
-        }
     }
 
     fn create_deploy_message(

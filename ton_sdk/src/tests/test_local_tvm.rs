@@ -91,7 +91,6 @@ const PIGGY_BANK_CONTRACT_ABI: &str = r#"
     "ABI version": 0,
     "functions": [{
         "name": "transfer",
-        "signed": true,
         "inputs": [{"name": "to", "type": "bits256"}],
         "outputs": []
     }, {
