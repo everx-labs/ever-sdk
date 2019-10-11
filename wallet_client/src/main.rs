@@ -241,18 +241,9 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
 }
 
 fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str, key_pair: Option<&Keypair>) -> String {
-
-    let contract = Contract::load(address.into())
-        .expect("Error calling load Contract")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract")
-        .expect("Error unwrap contract while loading Contract");
-
     // call needed method
     let changes_stream = 
-        Contract::call_json(contract.id().into(), func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
+        Contract::call_json(address.into(), func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
             .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -340,7 +331,7 @@ fn call_get_balance(current_address: &Option<AccountId>, params: &[&str]) {
         .expect("Error unwrap contract while loading Contract");
 
     let nanogram_balance = contract.balance_grams();
-    let nanogram_balance = nanogram_balance.value().to_u128().expect("error cust grams to u128");
+    let nanogram_balance = nanogram_balance.unwrap().value().to_u128().expect("error cast grams to u128");
     let gram_balance = nanogram_balance as f64 / 1000000000f64;
 
     println!("Account balance {}", gram_balance);

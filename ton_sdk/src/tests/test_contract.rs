@@ -172,16 +172,8 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
     let input = SUBSCRIBE_PARAMS.to_string();
     let abi = test_piggy_bank::SUBSCRIBE_CONTRACT_ABI.to_string();
 
-    let contract = Contract::load(address.into())
-        .expect("Error calling load Contract")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract")
-        .expect("Error unwrap contract while loading Contract");
-
     // call needed method
-    let changes_stream = Contract::call_json(contract.id().into(), func.clone(), input, abi.clone(), Some(&key_pair))
+    let changes_stream = Contract::call_json(address.into(), func.clone(), input, abi.clone(), Some(&key_pair))
         .expect("Error calling contract method");
 
     // wait transaction id in message-status 

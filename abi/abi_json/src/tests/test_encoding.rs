@@ -187,14 +187,6 @@ fn tokens_from_values(values: Vec<TokenValue>) -> Vec<Token> {
         .collect()
 }
 
-fn params_from_tokens(tokens: &[Token]) -> Vec<Param> {
-     tokens
-        .clone()
-        .iter()
-        .map(|token| token.get_param())
-        .collect()
-}
-
 #[test]
 fn test_one_input_and_output() {
     // builder with reserved signature reference and function ID
@@ -668,30 +660,6 @@ fn test_add_signature() {
         inputs: params_from_tokens(&tokens),
         outputs: vec![],
         set_time: false,
-        id: 0
-    };
-
-    function.id = function.get_function_id();
-
-    let (msg, data_to_sign) = function.prepare_input_for_sign(&tokens).unwrap();
-
-    let pair = Keypair::generate::<Sha512, _>(&mut rand::rngs::OsRng::new().unwrap());
-    let signature = pair.sign::<Sha512>(&data_to_sign).to_bytes().to_vec();
-
-    let msg = Function::add_sign_to_encoded_input(&signature, &pair.public.to_bytes(), msg.into()).unwrap();
-
-    assert_eq!(function.decode_input(msg.into()).unwrap(), tokens);
-}
-
-#[test]
-fn test_add_signature() {
-    let tokens = tokens_from_values(vec![TokenValue::Uint(uint!(456u32, 32))]);
-
-    let mut function = Function {
-        name: "test_add_signature".to_owned(),
-        inputs: params_from_tokens(&tokens),
-        outputs: vec![],
-        signed: false,
         id: 0
     };
 
