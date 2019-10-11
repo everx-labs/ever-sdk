@@ -19,28 +19,25 @@ impl TokenValue {
     // every next cell: put data to root
     fn pack_cells_into_chain(mut cells: Vec<BuilderData>) -> AbiResult<BuilderData> {
         cells.reverse();
-        
         let mut packed_cells = match cells.pop() {
             Some(cell) => vec![cell],
             None => bail!(AbiErrorKind::InvalidData("No cells".to_owned()))
         };
-
         while let Some(cell) = cells.pop() {
-            let ref mut builder = &mut packed_cells.last_mut().unwrap();
+            let builder = packed_cells.last_mut().unwrap();
             if builder.bits_free() < cell.bits_used() || builder.references_free() <= cell.references_used() {
                 packed_cells.push(cell);
             } else {
-                builder.append_builder(&cell).unwrap();
+                builder.append_builder(&cell)?;
             }
         }
-
-        loop {
-            let cell = packed_cells.pop().unwrap();
+        while let Some(cell) = packed_cells.pop() {
             match packed_cells.last_mut() {
                 Some(builder) => builder.append_reference(cell),
                 None => return Ok(cell)
             }
         }
+        bail!(AbiErrorKind::NotImplemented)
     }
 
 
@@ -61,7 +58,7 @@ impl TokenValue {
             TokenValue::Cell(cell) => Self::write_cell(cell),
             TokenValue::Map(key_type, value) => Self::write_map(key_type, value),
             TokenValue::Address(address) => Ok(vec![address.write_to_new_cell()?]),
-            TokenValue::Bytes(ref arr) | TokenValue::FixedBytes(ref arr) => Self::write_bytes(arr),
+            TokenValue::Bytes(ref arr) | TokenValue::FixedBytes(ref arr) => Self::write_bytes(arr.to_vec()),
             TokenValue::Gram(gram) => Ok(vec![gram.write_to_new_cell()?]),
         }
     }
@@ -150,17 +147,18 @@ impl TokenValue {
         Ok(vec![map.write_to_new_cell()?])
     }
 
-    fn write_bytes(data: &Vec<u8>) -> AbiResult<Vec<BuilderData>> {
+    fn write_bytes(mut data: Vec<u8>) -> AbiResult<Vec<BuilderData>> {
+        let cell_len = BuilderData::bits_capacity() / 8;
         let mut len = data.len();
         let mut builder = BuilderData::new();
-        while len > 127 {
-            builder.append_raw(&data[len - 127..len], 127 * 8).unwrap();
+        while len > cell_len {
+            len -= cell_len;
+            builder.append_raw(&data.split_off(len), cell_len * 8)?;
             let cell = builder.into();
             builder = BuilderData::new();
             builder.append_reference_cell(cell);
-            len -= 127;
         }
-        builder.append_raw(&data[..len], len * 8).unwrap();
+        builder.append_raw(&data, len * 8)?;
         let cell = builder.into();
         builder = BuilderData::new();
         builder.append_reference_cell(cell);
@@ -187,9 +185,31 @@ impl TokenValue {
             hashmap.set(key_vec.pop().unwrap().into(), &data.into())?;
         }
 
-        let mut builder = BuilderData::new();        
+        let mut builder = BuilderData::new();
         hashmap.write_to(&mut builder)?;
 
         Ok(vec![builder])
     }
+}
+
+#[test]
+fn test_pack_cells() {
+    let cells = vec![
+        BuilderData::with_bitstring(vec![1, 2, 0x80]).unwrap(),
+        BuilderData::with_bitstring(vec![3, 4, 0x80]).unwrap(),
+    ];
+    let builder = BuilderData::with_bitstring(vec![1, 2, 3, 4, 0x80]).unwrap();
+    assert_eq!(TokenValue::pack_cells_into_chain(cells).unwrap(), builder);
+
+    let cells = vec![
+        BuilderData::with_raw(vec![0x55; 100], 100 * 8).unwrap(),
+        BuilderData::with_raw(vec![0x55; 127], 127 * 8).unwrap(),
+        BuilderData::with_raw(vec![0x55; 127], 127 * 8).unwrap(),
+    ];
+    
+    let builder = BuilderData::with_raw(vec![0x55; 127], 127 * 8).unwrap();
+    let builder = BuilderData::with_raw_and_refs(vec![0x55; 127], 127 * 8, vec![builder.into()]).unwrap();
+    let builder = BuilderData::with_raw_and_refs(vec![0x55; 100], 100 * 8, vec![builder.into()]).unwrap();
+    let tree = TokenValue::pack_cells_into_chain(cells).unwrap();
+    assert_eq!(tree, builder);
 }

@@ -17,7 +17,7 @@ lazy_static = "1.1.0"
 base64 = "0.10.0"
 crc16 = "0.4.0"
 
-ton_abi = { path = "../abi/abi_json" }
+ton_abi = { path = "../ton_abi" }
 
 
 [target.'cfg(target_arch="wasm32")'.dependencies]

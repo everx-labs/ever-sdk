@@ -17,8 +17,7 @@ extern crate chrono;
 
 pub mod contract;
 pub mod function;
-#[macro_use]
-pub mod types;
+pub mod int;
 pub mod param;
 pub mod param_type;
 pub mod token;
@@ -31,7 +30,7 @@ pub use token::{Token, TokenValue};
 pub use function::{Function, Event, ABI_VERSION};
 pub use json_abi::*;
 pub use param::Param;
-pub use types::int::{Int, Uint};
+pub use int::{Int, Uint};
 pub use error::*;
 
 #[cfg(test)]
