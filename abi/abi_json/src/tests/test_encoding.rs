@@ -94,6 +94,8 @@ fn test_parameters_set(
     let mut test_tree = SliceData::from(&test_tree);
     assert_eq!(test_tree.get_next_u32().unwrap(), func_id & 0x7FFFFFFF);
     assert_eq!(test_tree.checked_drain_reference().unwrap(), SliceData::new_empty().cell());
+    println!("{:#.2}", test_tree.into_cell());
+    println!("{:#.2}", params_slice.into_cell());
     assert_eq!(test_tree, params_slice);
 
     if check_time {
@@ -326,25 +328,31 @@ fn test_two_params() {
 #[test]
 fn test_four_refs() {
     // builder with reserved signature reference and function ID
+    let bytes = vec![0x55; 300]; // 300 = 127 + 127 + 46
+    let mut builder = BuilderData::with_raw(vec![0x55; 127], 127 * 8).unwrap();
+    builder.append_reference(BuilderData::with_raw(vec![0x55; 127], 127 * 8).unwrap());
+    let mut bytes_builder = BuilderData::with_raw(vec![0x55; 46], 46 * 8).unwrap();
+    bytes_builder.append_reference(builder);
+
     let mut builder = BuilderData::new();
     builder.append_u32(0).unwrap();
     builder.append_bit_one().unwrap();
     builder.append_reference(BuilderData::new());
-    builder.append_reference(BuilderData::with_bitstring(vec![1, 2, 0x80]).unwrap());
-    builder.append_reference(BuilderData::with_bitstring(vec![1, 2, 0x80]).unwrap());
+    builder.append_reference(bytes_builder.clone());
+    builder.append_reference(bytes_builder.clone());
 
     let mut new_builder = BuilderData::new();
     new_builder.append_i32(9434567).unwrap();
-    new_builder.append_reference(BuilderData::with_bitstring(vec![1, 2, 0x80]).unwrap());
-    new_builder.append_reference(BuilderData::with_bitstring(vec![1, 2, 0x80]).unwrap());
+    new_builder.append_reference(bytes_builder.clone());
+    new_builder.append_reference(bytes_builder.clone());
     builder.append_reference(new_builder);
 
     let values = vec![
         TokenValue::Bool(true),
-        TokenValue::Bytes(vec![1, 2]),
-        TokenValue::Bytes(vec![1, 2]),
-        TokenValue::Bytes(vec![1, 2]),
-        TokenValue::Bytes(vec![1, 2]),
+        TokenValue::Bytes(bytes.clone()),
+        TokenValue::Bytes(bytes.clone()),
+        TokenValue::Bytes(bytes.clone()),
+        TokenValue::Bytes(bytes.clone()),
         TokenValue::Int(Int::new(9434567, 32)),
     ];
 
