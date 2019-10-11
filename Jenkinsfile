@@ -45,6 +45,8 @@ pipeline {
                         returnStdout: true).trim()
                 }
                 echo "Version: ${getVar(G_binversion)}."
+                echo "Branch: ${GIT_BRANCH}"
+                echo "Possible RC: ${getVar(G_binversion)}-rc"
             }
         }
         stage('Building...') {
@@ -428,7 +430,7 @@ pipeline {
                         stage('Deploy') {
                             when { 
                                 expression {
-                                    GIT_BRANCH == 'master' || GIT_BRANCH == ""
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
                                 }
                             }
                             steps {
