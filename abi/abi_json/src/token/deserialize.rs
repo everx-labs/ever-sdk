@@ -1,4 +1,4 @@
-use types::int::{Int, Uint};
+use int::{Int, Uint};
 use {Param, ParamType};
 use serde_json;
 use std::sync::Arc;
@@ -8,7 +8,6 @@ use crate::error::*;
 use num_bigint::{BigInt, BigUint};
 use tvm::stack::{CellData, BuilderData, SliceData, IBitstring};
 use tvm::stack::dictionary::{HashmapE, HashmapType};
-use tvm::block::BlockResult;
 use tvm::block::types::Grams;
 
 impl TokenValue {
@@ -20,7 +19,7 @@ impl TokenValue {
             ParamType::Int(size) => Self::read_int(*size, cursor),
             ParamType::Bool => {
                 cursor = find_next_bits(cursor, 1)?;
-                Ok((TokenValue::Bool(cursor.get_next_bit().unwrap()), cursor))
+                Ok((TokenValue::Bool(cursor.get_next_bit()?), cursor))
             }
             ParamType::Tuple(tuple_params) => Self::read_tuple(tuple_params, cursor),
             ParamType::Array(param_type) => Self::read_array(&param_type, cursor),
@@ -88,7 +87,7 @@ impl TokenValue {
         let mut result = vec![];
         for i in 0..size {
             let mut index = BuilderData::new();
-            index.append_u32(i as u32).unwrap();
+            index.append_u32(i as u32)?;
             match map.get(index.into()) {
                 Ok(Some(item_slice)) => {
                     let (token, item_slice) = Self::read_from(param_type, item_slice)?;
@@ -107,7 +106,7 @@ impl TokenValue {
     fn read_array(param_type: &ParamType, mut cursor: SliceData)
     -> AbiResult<(Self, SliceData)> {
         cursor = find_next_bits(cursor, 32)?;
-        let size = cursor.get_next_u32().unwrap();
+        let size = cursor.get_next_u32()?;
         let (result, cursor) = Self::read_array_from_map(param_type, cursor, size as usize)?;
 
         Ok((TokenValue::Array(result), cursor))
@@ -128,13 +127,13 @@ impl TokenValue {
         let cell = match cursor.remaining_references() {
             0 => bail!(AbiErrorKind::DeserializationError(original)),
             1 if cursor.cell().references_used() == BuilderData::references_capacity() => {
-                cursor = SliceData::from(cursor.reference(0).unwrap());
+                cursor = SliceData::from(cursor.reference(0)?);
                 match cursor.checked_drain_reference() {
                     Ok(cell) => cell,
                     Err(_) => bail!(AbiErrorKind::DeserializationError(original))
                 }
             }
-            _ => cursor.checked_drain_reference().unwrap()
+            _ => cursor.checked_drain_reference()?
         };
         Ok((cell.clone(), cursor))
     }
@@ -144,22 +143,19 @@ impl TokenValue {
         let original = cursor.clone();
         cursor = find_next_bits(cursor, 1)?;
         let mut new_map = HashMap::new();
-        if cursor.get_next_bit().unwrap() {
+        if cursor.get_next_bit()? {
             let cell = match cursor.checked_drain_reference() {
                 Ok(cell) => cell,
                 Err(_) => bail!(AbiErrorKind::DeserializationError(original))
             };
             let hashmap = HashmapE::with_hashmap(key_type.bit_len(), Some(cell));
-            let result = hashmap.iterate(&mut |key, value| -> BlockResult<bool> {
-                let key = Self::read_from(key_type, key).unwrap().0;
-                let value = Self::read_from(value_type, value).unwrap().0;
-                let key = serde_json::to_string(&key).unwrap();
+            hashmap.iterate(&mut |key, value| -> AbiResult<bool> {
+                let key = Self::read_from(key_type, key)?.0;
+                let key = serde_json::to_string(&key)?;
+                let value = Self::read_from(value_type, value)?.0;
                 new_map.insert(key, value);
                 Ok(true)
-            });
-            if result.is_err() {
-                bail!(AbiErrorKind::DeserializationError(original))
-            }
+            })?;
         }
         Ok((TokenValue::Map(value_type.clone(), new_map), cursor))
     }
@@ -192,7 +188,7 @@ impl TokenValue {
 fn get_next_bits_from_chain(mut cursor: SliceData, bits: usize)
 -> AbiResult<(Vec<u8>, SliceData)> {
     cursor = find_next_bits(cursor, bits)?;
-    Ok((cursor.get_next_bits(bits).unwrap(), cursor))
+    Ok((cursor.get_next_bits(bits)?, cursor))
 }
 
 fn find_next_bits(mut cursor: SliceData, bits: usize) -> AbiResult<SliceData> {

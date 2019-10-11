@@ -4,10 +4,9 @@ use num_bigint::{BigInt, BigUint};
 use sha2::{Digest, Sha256, Sha512};
 use chrono::prelude::*;
 
-use types::{Bitstring};
 use tvm::stack::{BuilderData, IBitstring, SliceData, CellData};
 use tvm::stack::dictionary::{HashmapE, HashmapType};
-use tvm::block::{AnycastInfo, Grams, MsgAddress, Serializable};
+use tvm::block::{AnycastInfo, BlockResult, Grams, MsgAddress, Serializable};
 use tvm::types::AccountId;
 
 use {Function, Int, Param, ParamType, Token, TokenValue, Uint};
@@ -26,24 +25,17 @@ fn get_function_id(signature: &[u8]) -> u32 {
     u32::from_be_bytes(bytes)
 }
 
-fn put_array_into_map<T: Into<Bitstring> + Clone>(array: &[T]) -> HashmapE {
+fn put_array_into_map<T: Serializable>(array: &[T]) -> HashmapE {
     let mut map = HashmapE::with_bit_len(32);
 
     for i in 0..array.len() {
-        let mut index = BuilderData::new();
-        index.append_u32(i as u32).unwrap();
-
-        let bitstring: Bitstring = array[i].clone().into();
-
-        let data = BuilderData::with_raw(bitstring.data().clone(), bitstring.length_in_bits()).unwrap();
-
-        map.set(index.into(), &data.into()).unwrap();
+        map.set_serializable(&(i as u32), &array[i]).unwrap();
     }
 
     map
 }
 
-fn add_array_as_map<T: Into<Bitstring> + Clone>(builder: &mut BuilderData, array: &[T], fixed: bool) {
+fn add_array_as_map<T: Serializable>(builder: &mut BuilderData, array: &[T], fixed: bool) {
     if !fixed {
         builder.append_u32(array.len() as u32).unwrap();
     }
@@ -164,11 +156,7 @@ fn test_parameters_set(
 }
 
 fn params_from_tokens(tokens: &[Token]) -> Vec<Param> {
-     tokens
-        .clone()
-        .iter()
-        .map(|token| token.get_param())
-        .collect()
+     tokens.iter().map(|ref token| token.get_param()).collect()
 }
 
 fn tokens_from_values(values: Vec<TokenValue>) -> Vec<Token> {
@@ -504,6 +492,22 @@ fn test_dynamic_array_of_ints() {
     );
 }
 
+struct TupleDwordBool(u32, bool);
+
+impl Serializable for TupleDwordBool {
+    fn write_to(&self, cell: &mut BuilderData) -> BlockResult<()> {
+        self.0.write_to(cell)?;
+        self.1.write_to(cell)?;
+        Ok(())
+    }
+}
+
+impl From<&(u32, bool)> for TupleDwordBool {
+    fn from(a: &(u32, bool)) -> Self {
+        TupleDwordBool(a.0, a.1)
+    }
+}
+
 #[test]
 fn test_dynamic_array_of_tuples() {
     let input_array: Vec<(u32, bool)> =
@@ -514,12 +518,9 @@ fn test_dynamic_array_of_tuples() {
     builder.append_u32(0).unwrap();
     builder.append_reference(BuilderData::new());
 
-    let bitstring_array: Vec<Bitstring> = input_array
+    let bitstring_array: Vec<TupleDwordBool> = input_array
         .iter()
-        .cloned()
-        .map(|(u, b)| {
-            Bitstring::new().append_u32(u).append_bit_bool(b).to_owned()
-        })
+        .map(|a| TupleDwordBool::from(a))
         .collect();
 
     add_array_as_map(&mut builder, &bitstring_array, false);
@@ -552,17 +553,14 @@ fn test_dynamic_array_of_tuples() {
 fn test_tuples_with_combined_types() {
     let input_array1: Vec<(u32, bool)> = vec![(1, true), (2, false), (3, true), (4, false)];
 
-    let bitstring_array1: Vec<Bitstring> = input_array1
+    let bitstring_array1: Vec<TupleDwordBool> = input_array1
         .iter()
-        .cloned()
-        .map(|(u, b)| {
-            Bitstring::new().append_u32(u).append_bit_bool(b).to_owned()
-        })
+        .map(|a| TupleDwordBool::from(a))
         .collect();
 
-    let mut input_array2 = Vec::<i64>::new();
+    let mut input_array2 = Vec::<u64>::new();
     for i in 0..73 {
-        input_array2.push(i * i as i64);
+        input_array2.push(i * i);
     }
 
     // builder with reserved signature reference and function ID

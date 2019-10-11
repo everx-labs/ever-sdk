@@ -24,7 +24,6 @@ use std::sync::Arc;
 use std::io::Cursor;
 use std::env;
 
-use ton_abi::abi_call::ABICall;
 use ton_abi::abi_response::ABIResponse;
 
 use ton_abi::types::Duint;
@@ -37,7 +36,6 @@ use ton_block::{
     Deserializable};
 use tvm::stack::{BuilderData, CellData, SliceData};
 use tvm::cells_serialization::{BagOfCells, deserialize_cells_tree};
-use tvm::bitstring::{Bit, Bitstring};
 use tvm::types::{AccountId};
 
 use jsonrpc_client_http::{HttpHandle, HttpTransport};
@@ -98,162 +96,6 @@ fn call_contract(transport_handle: &mut  HttpHandle, abi_call: BuilderData) -> S
     //println!("Answer body {:X?}", SliceData::from(answer_message.clone().body.unwrap()));
 
     SliceData::from(answer_message.body.unwrap())
-}
-
-fn call_get_limit_by_id(transport_handle: &mut  HttpHandle, limit_id: u8) -> ((u64, u8, Bitstring), i8) {
-    let message_body = ABICall::<(u8,), ((Duint, u8, Bitstring), i8)>::encode_function_call_into_slice(
-        "getLimitById",
-        (limit_id,)
-    );
-
-    let answer = call_contract(transport_handle, message_body);
-
-    ABIResponse::<((u64, u8, Bitstring), i8)>::decode_response_from_slice(answer).unwrap()
-}
-
-fn call_get_limits(transport_handle: &mut  HttpHandle, pair: &Keypair) {
-    let message_body = ABICall::<(), (Vec<u8>, i8)>::encode_signed_function_call_into_slice("getLimits", (), pair);
-
-    let answer = call_contract(transport_handle, message_body);
-
-    let (limits_id, _) = ABIResponse::<(Vec<u8>, i8)>::decode_response_from_slice(answer).unwrap();
-
-    println!("Limits count {}", limits_id.len());
-
-    for limit in limits_id {
-        let ((value, limit_type, meta), _) = call_get_limit_by_id(transport_handle, limit);
-
-        println!("\nLimit info:");
-        println!("ID - {}", limit);
-        println!("Value - {}", value);
-
-        if limit_type == 0 {
-             println!("Type - Single operation limit");
-        } else {
-            println!("Type - Arbitrary limit");
-            let mut vec = Vec::new();
-            meta.into_bitstring_with_completion_tag(&mut vec);
-            let period = vec[0];
-            println!("Period - {} days", period);
-        }
-    }
-}
-
-fn call_create_limit(transport_handle: &mut  HttpHandle, parameters: Vec<String>, pair: &Keypair) {
-    if parameters.len() < 2 {
-        println!("Not enough parameters");
-        return;
-    }
-
-    let value = Duint::parse_bytes(parameters[0].as_bytes(), 10).unwrap();
-
-    let limit_type = u8::from_str_radix(&parameters[1], 10).unwrap();
-
-    let mut meta = Bitstring::new();
-
-    if limit_type == 1 {
-        if parameters.len() < 3
-        {
-            println!("Not enough parameters");
-            return;
-        }
-
-        let period = u8::from_str_radix(&parameters[2], 10).unwrap();
-        meta.append_u8(period);
-    }
-
-    let message_body = ABICall::<(u8, Duint, Bitstring), (u8, i8)>::encode_signed_function_call_into_slice("createLimit", (limit_type, value, meta), pair);
-
-    let answer = call_contract(transport_handle, message_body);
-
-    let (limit_id, _) = ABIResponse::<(u8, i8)>::decode_response_from_slice(answer).unwrap();
-
-    println!("New limit ID {}", limit_id);
-}
-
-fn call_remove_limit(transport_handle: &mut  HttpHandle, parameters: Vec<String>, pair: &Keypair) {
-    if parameters.len() < 1 {
-        println!("Not enough parameters");
-        return;
-    }
-
-    let limit_id = u8::from_str_radix(&parameters[0], 10).unwrap();
-
-    let message_body = ABICall::<(u8,), (i8,)>::encode_signed_function_call_into_slice("removeLimit", (limit_id,), pair);
-
-    let _answer = call_contract(transport_handle, message_body);
-}
-
-fn call_get_version(transport_handle: &mut  HttpHandle) {
-
-    let message_body = ABICall::<(), ((u16, u16), i8)>::encode_function_call_into_slice("getVersion", ());
-
-    let answer = call_contract(transport_handle, message_body);
-
-    let ((major, minor), _) = ABIResponse::<((u16, u16), i8)>::decode_response_from_slice(answer).unwrap();
-
-    println!("Version {}.{}", major, minor);
-}
-
-fn call_change_limit(transport_handle: &mut  HttpHandle, parameters: Vec<String>, pair: &Keypair) {
-    if parameters.len() < 2 {
-        println!("Not enough parameters");
-        return;
-    }
-
-
-    let limit_id = u8::from_str_radix(&parameters[0], 10).unwrap();
-
-    let value = Duint::parse_bytes(parameters[1].as_bytes(), 10).unwrap();
-
-    let mut meta = Bitstring::new();
-
-    if parameters.len() > 2 {
-        let period = u8::from_str_radix(&parameters[2], 10).unwrap();
-        meta.append_u8(period);
-    }
-
-    let message_body = ABICall::<(u8, Duint, Bitstring), (i8,)>::encode_signed_function_call_into_slice("changeLimitById", (limit_id, value, meta), pair);
-
-    let _answer = call_contract(transport_handle, message_body);
-}
-
-fixed_abi_array!(u8, 32, Bits256);
-
-fn call_send_transaction(transport_handle: &mut  HttpHandle, parameters: Vec<String>, pair: &Keypair) {
-    if parameters.len() < 2 {
-        println!("Not enough parameters");
-        return;
-    }
-
-    let mut recipient = hex::decode(parameters[0].clone()).unwrap();
-    recipient.resize(32, 0);
-
-    let mut bits_recipient = [Bit::Zero; 256];
-
-    bits_recipient.copy_from_slice(&Bitstring::create(recipient, 256).bits(0..256).data);
-
-    let value = Duint::parse_bytes(parameters[1].as_bytes(), 10).unwrap();
-
-    let message_body = ABICall::<(Bits256, Duint), (i8,)>::encode_signed_function_call_into_slice("sendTransaction", (bits_recipient.into(), value), pair);
-
-    let answer = call_contract(transport_handle, message_body);
-
-    let (transaction_id, _) = ABIResponse::<(u64, i8)>::decode_response_from_slice(answer).unwrap();
-
-    println!("Transaction ID {}", transaction_id);
-
-}
-
-fn call_get_balance(transport_handle: &mut  HttpHandle, pair: &Keypair) {
-
-    let message_body = ABICall::<(), (u64,)>::encode_signed_function_call_into_slice("getBalance", (), pair);
-
-    let answer = call_contract(transport_handle, message_body);
-
-    let (balance,) = ABIResponse::<(u64,)>::decode_response_from_slice(answer).unwrap();
-
-    println!("Current balance {} Gram", balance);
 }
 
 #[test]
