@@ -28,9 +28,9 @@ error_chain! {
             description("Invalid function id"),
             display("Invalid function id: {}", id)
         }
-        DeserializationError(cursor: SliceData) {
+        DeserializationError(description: &'static str, cursor: SliceData) {
             description("Deserialization error"),
-            display("Deserialization error: {}", cursor)
+            display("Deserialization error {}: {}", description, cursor)
         }
         NotImplemented {
             description("Not implemented"),
@@ -56,9 +56,9 @@ error_chain! {
             description("Invalid parameter value"),
             display("Invalid parameter value:\n{}", val)
         }
-        IncompleteDeserializationError {
+        IncompleteDeserializationError(cursor: SliceData) {
             description("Incomplete deserialization error"),
-            display("Incomplete deserialization error")
+            display("Incomplete deserialization error: {}", cursor)
         }
         InvalidInputData(msg: String) {
             description("Invalid input data"),

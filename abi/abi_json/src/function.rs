@@ -110,11 +110,11 @@ impl Function {
     }
 
     /// Decodes provided params from SliceData
-    fn decode_params(&self, params: Vec<Param>, data: SliceData, expected_id: u32, exctract_time: bool
+    fn decode_params(&self, params: Vec<Param>, mut cursor: SliceData, expected_id: u32, exctract_time: bool
         ) -> AbiResult<Vec<Token>> {
         let mut tokens = vec![];
-        let mut cursor = data;
-        
+        let original = cursor.clone();
+
         let id = cursor.get_next_u32()?;
 
         if id != expected_id { Err(AbiErrorKind::WrongId(id))? }
@@ -132,7 +132,7 @@ impl Function {
         }
 
         if cursor.remaining_references() != 0 || cursor.remaining_bits() != 0 {
-            bail!(AbiErrorKind::IncompleteDeserializationError)
+            bail!(AbiErrorKind::IncompleteDeserializationError(original))
         } else {
             Ok(tokens)
         }
@@ -288,10 +288,10 @@ impl Event {
     }
 
     /// Decodes provided params from SliceData
-    fn decode_params(&self, params: Vec<Param>, data: SliceData) -> AbiResult<Vec<Token>> {
+    fn decode_params(&self, params: Vec<Param>, mut cursor: SliceData) -> AbiResult<Vec<Token>> {
         let mut tokens = vec![];
-        let mut cursor = data;
-        
+        let original = cursor.clone();
+
         let id = cursor.get_next_u32()?;
 
         if id != self.id { Err(AbiErrorKind::WrongId(id))? }
@@ -304,7 +304,7 @@ impl Event {
         }
 
         if cursor.remaining_references() != 0 || cursor.remaining_bits() != 0 {
-            bail!(AbiErrorKind::IncompleteDeserializationError)
+            bail!(AbiErrorKind::IncompleteDeserializationError(original))
         } else {
             Ok(tokens)
         }
