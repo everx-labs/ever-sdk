@@ -37,8 +37,8 @@ impl<'a> Deserialize<'a> for Contract {
         };
 
         for mut function in serde_contract.functions {
-            function.id = function.get_function_id();
             function.set_time = serde_contract.set_time;
+            function.id = function.get_function_id();
             result.functions.insert(function.name.clone(), function);
         }
 

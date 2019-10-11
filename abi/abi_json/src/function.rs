@@ -57,33 +57,35 @@ impl Function {
 
     /// Retruns ABI function signature
     pub fn get_function_signature(&self) -> String {
-        let input_types = self.inputs.iter()
+        let mut input_types = self.inputs.iter()
             .map(|param| param.kind.type_signature())
-            .collect::<Vec<String>>()
-            .join(",");
+            .collect::<Vec<String>>();
+
+        if self.set_time {
+            input_types.insert(0, "time".to_owned())
+        }
+        
+        let input_types = input_types.join(",");
 
         let output_types = self.outputs.iter()
             .map(|param| param.kind.type_signature())
             .collect::<Vec<String>>()
             .join(",");
 
-        format!("{}({})({})", self.name, input_types, output_types)
+        format!("{}({})({})v{}", self.name, input_types, output_types, ABI_VERSION)
     }
 
     pub fn calc_function_id(signature: &str) -> u32 {
         // Sha256 hash of signature
         let mut hasher = Sha256::new();
 
-        let mut bytes = signature.as_bytes().to_vec();
-        bytes.push(ABI_VERSION);
-
-        hasher.input(&bytes);
+        hasher.input(&signature.as_bytes());
 
         let function_hash = hasher.result();
 
         let mut bytes: [u8; 4] = [0; 4];
         bytes.copy_from_slice(&function_hash[..4]);
-        //println!("{}: {:X}", signature, u32::from_be_bytes(bytes));
+        println!("{}: {:X}", signature, u32::from_be_bytes(bytes));
 
         u32::from_be_bytes(bytes)
     }
@@ -277,7 +279,7 @@ impl Event {
             .collect::<Vec<String>>()
             .join(",");
 
-        format!("{}({})", self.name, input_types)
+        format!("{}({})v{}", self.name, input_types, ABI_VERSION)
     }
 
     /// Computes function ID for contract function

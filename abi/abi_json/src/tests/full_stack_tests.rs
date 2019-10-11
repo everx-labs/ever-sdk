@@ -109,7 +109,7 @@ fn test_constructor_call() {
         None,
     ).unwrap();
 
-    let mut expected_tree = BuilderData::with_bitstring(vec![0x0b, 0xef, 0xab, 0xe2, 0x80]).unwrap();
+    let mut expected_tree = BuilderData::with_bitstring(vec![0x54, 0xc1, 0xf4, 0x0f, 0x80]).unwrap();
     expected_tree.prepend_reference(BuilderData::new());
 
     let test_tree = SliceData::from(test_tree);
@@ -125,7 +125,7 @@ fn test_constructor_call() {
     assert_eq!(response.function_name, "constructor");
 
 
-    let test_tree = SliceData::from_raw(vec![0x8b, 0xef, 0xab, 0xe2], 32);
+    let test_tree = SliceData::from_raw(vec![0xd4, 0xc1, 0xf4, 0x0f, 0x80], 32);
 
     let response = decode_unknown_function_response(
         WALLET_ABI.to_owned(),
@@ -180,7 +180,7 @@ fn test_signed_call() {
     assert_eq!(response.function_name, "createLimit");
 
     let mut expected_tree = BuilderData::with_bitstring(vec![
-        0x35, 0x99, 0x10, 0xa5, 0x01, 0x10, 0xc8
+        0x79, 0x63, 0xc9, 0x74, 0x01, 0x10, 0xc8
     ]).unwrap();
     expected_tree.append_reference(BuilderData::new());
 
@@ -192,7 +192,7 @@ fn test_signed_call() {
 
     let response_tree = SliceData::from(
         BuilderData::with_bitstring(
-            vec![0xB5, 0x99, 0x10, 0xa5, 0x00, 0xFF, 0x80])
+            vec![0xf9, 0x63, 0xc9, 0x74, 0x00, 0xFF, 0x80])
         .unwrap());
 
     let response = decode_function_response(
@@ -229,7 +229,7 @@ fn test_not_signed_call() {
     )
     .unwrap();
 
-    let mut expected_tree = BuilderData::with_bitstring(vec![0x47, 0x70, 0x76, 0xBC, 0x02, 0x80]).unwrap();
+    let mut expected_tree = BuilderData::with_bitstring(vec![0x0F, 0xEF, 0x4E, 0x34, 0x02, 0x80]).unwrap();
     expected_tree.prepend_reference(BuilderData::new());
 
     assert_eq!(test_tree, expected_tree);

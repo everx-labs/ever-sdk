@@ -26,13 +26,11 @@ const TEST_ABI: &str = r#"
         }, {
             "name": "constructor",
             "inputs": [],
-            "outputs": [],
-            "signed": false
+            "outputs": []
         }, {
             "name": "signed",
             "inputs": [{"name": "a", "type": "bool"}],
-            "outputs": [],
-            "signed": true
+            "outputs": []
         }]
 }"#;
 
@@ -57,7 +55,7 @@ fn test_abi_parse() {
                     Param { name: "b".to_owned(), kind: ParamType::Uint(8) },
                 ],
                 set_time: true,
-                id: Function::calc_function_id("input_and_output(uint64,uint8[],bytes)(int16,uint8)")
+                id: Function::calc_function_id("input_and_output(time,uint64,uint8[],bytes)(int16,uint8)v1")
         });
 
     functions.insert(
@@ -69,7 +67,7 @@ fn test_abi_parse() {
                 ],
                 outputs: vec![],
                 set_time: true,
-                id: Function::calc_function_id("no_output(uint15)()")
+                id: Function::calc_function_id("no_output(time,uint15)()v1")
         });
 
     functions.insert(
@@ -81,7 +79,7 @@ fn test_abi_parse() {
                     Param { name: "a".to_owned(), kind: ParamType::Uint(8) },
                 ],
                 set_time: true,
-                id: Function::calc_function_id("no_input()(uint8)")
+                id: Function::calc_function_id("no_input(time)(uint8)v1")
         });
 
     functions.insert(
@@ -91,7 +89,7 @@ fn test_abi_parse() {
                 inputs: vec![],
                 outputs: vec![],
                 set_time: true,
-                id: Function::calc_function_id("constructor()()")
+                id: Function::calc_function_id("constructor(time)()v1")
         });
 
     functions.insert(
@@ -103,7 +101,7 @@ fn test_abi_parse() {
                 ],
                 outputs: vec![],
                 set_time: true,
-                id: Function::calc_function_id("signed(bool)()")
+                id: Function::calc_function_id("signed(time,bool)()v1")
         });
 
     let expected_contract = Contract { functions, events: HashMap::new() };
