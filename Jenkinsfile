@@ -75,6 +75,11 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
+                            when { 
+                                expression {
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                }
+                            }
                             steps {
                                 dir('ton_client/client/bin') {
                                     script {
@@ -114,6 +119,11 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
+                            when { 
+                                expression {
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                }
+                            }
                             steps {
                                 dir('ton_client/client/bin') {
                                     script {
@@ -153,6 +163,11 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
+                            when { 
+                                expression {
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                }
+                            }
                             steps {
                                 dir('ton_client/client/bin') {
                                     script {
@@ -200,7 +215,11 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            when { branch 'master' }
+                            when { 
+                                expression {
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                }
+                            }
                             steps {
                                 dir('ton_client/platforms/ton-client-react-native/output') {
                                     script {
@@ -253,7 +272,11 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            when { branch 'master' }
+                            when { 
+                                expression {
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                }
+                            }
                             steps {
                                 dir('ton_client/platforms/ton-client-node-js/bin') {
                                     script {
@@ -306,7 +329,11 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            when { branch 'master' }
+                            when { 
+                                expression {
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                }
+                            }
                             steps {
                                 dir('ton_client/platforms/ton-client-node-js/bin') {
                                     script {
@@ -361,7 +388,11 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            when { branch 'master' }
+                            when { 
+                                expression {
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                }
+                            }
                             steps {
                                 dir('ton_client/platforms/ton-client-node-js/bin') {
                                     script {
