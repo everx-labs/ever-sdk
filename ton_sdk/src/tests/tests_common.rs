@@ -17,7 +17,7 @@ const WALLET_ADDRESS_STR: &str =  "UQC7oawjsBAYgInWIBDdsA1ZTADw4hd5Tz8rU6gYlOxxR
 
 lazy_static! {
     static ref GIVER_ADDRESS: AccountAddress = 
-        AccountAddress::from_str("ce709b5bfca589eb621b5a5786d0b562761144ac48f59e0b0d35ad0973bcdb86")
+        AccountAddress::from_str("a46af093b38fcae390e9af5104a93e22e82c29bcb35bf88160e4478417028884")
             .unwrap();
 
     static ref WALLET_ADDRESS: AccountAddress = AccountAddress::from_str(WALLET_ADDRESS_STR).unwrap();
@@ -207,7 +207,7 @@ fn check_giver() {
     if u64::from_str_radix(
             result[0]["storage"]["balance"]["Grams"].as_str().unwrap(),
             10)
-        .unwrap() < 1_000_000_000u64
+        .unwrap() < 500_000_000u64
     {
         panic!(format!(
             "Giver has no money. Send some grams to {} ({})",
@@ -238,7 +238,7 @@ pub fn get_grams_from_giver(account_id: AccountId) {
             "sendGrams",
             &json!({
             "dest": format!("0x{:x}", account_id),
-            "amount": 1_000_000_000u64
+            "amount": 500_000_000u64
             }).to_string(),
             GIVER_ABI,
             None)
@@ -255,7 +255,7 @@ pub fn get_grams_from_giver(account_id: AccountId) {
             "sendTransaction",
             &json!({
                 "dest": format!("0x{:x}", account_id),
-                "value": 1_000_000_000u64,
+                "value": 500_000_000u64,
                 "bounce": false
             }).to_string(),
             SIMPLE_WALLET_ABI,
@@ -422,22 +422,29 @@ pub fn local_contract_call(address: AccountId, func: &str, input: &str, abi: &st
 
 const GIVER_ABI: &str = r#"
 {
-	"ABI version": 0,
-	"functions": [{
-		"name": "constructor",
-		"inputs": [
-		],
-		"outputs": [
-		]
-	}, {
-		"name": "sendGrams",
-		"inputs": [
-			{"name":"dest","type":"uint256"},
-			{"name":"amount","type":"uint64"}
-		],
-		"outputs": [
-		]
-	}]
+	"ABI version": 1,
+	"functions": [
+		{
+			"name": "constructor",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "sendGrams",
+			"inputs": [
+				{"name":"dest","type":"uint256"},
+				{"name":"amount","type":"uint64"}
+			],
+			"outputs": [
+			]
+		}
+	],
+	"events": [
+	],
+	"data": [
+	]
 }"#;
 
 const SIMPLE_WALLET_ABI: &str = r#"
