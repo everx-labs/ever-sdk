@@ -85,7 +85,7 @@ impl Function {
 
         let mut bytes: [u8; 4] = [0; 4];
         bytes.copy_from_slice(&function_hash[..4]);
-        println!("{}: {:X}", signature, u32::from_be_bytes(bytes));
+        //println!("{}: {:X}", signature, u32::from_be_bytes(bytes));
 
         u32::from_be_bytes(bytes)
     }
@@ -240,7 +240,8 @@ impl Function {
     }
 
     pub fn is_my_message(&self, data: SliceData) -> Result<bool, AbiErrorKind> {
-        Ok(self.id == Self::decode_id(data)?)
+        let decoded_id = Self::decode_id(data)?;
+        Ok(self.get_input_id() == decoded_id || self.get_output_id() == decoded_id)
     }
 }
 

@@ -394,7 +394,7 @@ fn test_address_parsing() {
 
 #[test]
 fn test_print_base64_address_from_hex() {
-    let hex_address = "0:ce709b5bfca589eb621b5a5786d0b562761144ac48f59e0b0d35ad0973bcdb86";
+    let hex_address = "0:9f2bc8a81da52c6b8cb1878352120f21e254138fff0b897f44fb6ff2b8cae256";
 
     let address = AccountAddress::from_str(hex_address).unwrap();
 
