@@ -8,6 +8,10 @@ use tvm::stack::SliceData;
 use crate::error::*;
 use super::function::ABI_VERSION;
 
+struct Object {
+
+}
+
 /// API building calls to contracts ABI.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Contract {
@@ -15,6 +19,8 @@ pub struct Contract {
     functions: HashMap<String, Function>,
     /// Contract events.
     events: HashMap<String, Event>,
+    /// Contract initila data.
+    data: HashMap<String, Data>,
 }
 
 impl<'a> Deserialize<'a> for Contract {
@@ -33,7 +39,8 @@ impl<'a> Deserialize<'a> for Contract {
 
         let mut result = Self {
             functions: HashMap::new(),
-            events: HashMap::new()
+            events: HashMap::new(),
+            data: HashMap::new(),
         };
 
         for mut function in serde_contract.functions {
@@ -45,6 +52,10 @@ impl<'a> Deserialize<'a> for Contract {
         for mut event in serde_contract.events {
             event.id = event.get_function_id();
             result.events.insert(event.name.clone(), event);
+        }
+
+        for mut data in serde_contract.data {
+            result.data.insert(data.value.name.to_string(), data);
         }
 
         Ok(result)
@@ -69,6 +80,9 @@ struct SerdeContract {
     /// Contract events.
     #[serde(default)]
     pub events: Vec<Event>,
+    /// Contract initial data.
+    pub data: Vec<Data>,
+
 }
 
 pub struct DecodedMessage {
