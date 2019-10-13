@@ -327,7 +327,7 @@ impl Event {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
-struct Data {
+pub struct DataItem {
     pub key: u64,
     pub value: Param,
 }

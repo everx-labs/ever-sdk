@@ -3,14 +3,10 @@ use std::collections::HashMap;
 use serde::{Deserialize, Deserializer};
 use serde::de::{Unexpected, Error as SerdeError};
 use serde_json;
-use {Function, Event, Token, Param};
+use {DataItem, Function, Event, Token, Param};
 use tvm::stack::SliceData;
 use crate::error::*;
 use super::function::ABI_VERSION;
-
-struct Object {
-
-}
 
 /// API building calls to contracts ABI.
 #[derive(Clone, Debug, PartialEq)]
@@ -20,7 +16,7 @@ pub struct Contract {
     /// Contract events.
     events: HashMap<String, Event>,
     /// Contract initila data.
-    data: HashMap<String, Data>,
+    data: HashMap<String, DataItem>,
 }
 
 impl<'a> Deserialize<'a> for Contract {
@@ -54,8 +50,8 @@ impl<'a> Deserialize<'a> for Contract {
             result.events.insert(event.name.clone(), event);
         }
 
-        for mut data in serde_contract.data {
-            result.data.insert(data.value.name.to_string(), data);
+        for data in serde_contract.data {
+            result.data.insert(data.value.name.clone(), data);
         }
 
         Ok(result)
@@ -81,7 +77,7 @@ struct SerdeContract {
     #[serde(default)]
     pub events: Vec<Event>,
     /// Contract initial data.
-    pub data: Vec<Data>,
+    pub data: Vec<DataItem>,
 
 }
 
@@ -133,6 +129,10 @@ impl Contract {
     /// Returns events collection
     pub fn events(&self) -> &HashMap<String, Event> {
         &self.events
+    }
+
+    pub fn data(&self) -> &HashMap<String, DataItem> {
+        &self.data
     }
 
     /// Decodes contract answer and returns name of the function called

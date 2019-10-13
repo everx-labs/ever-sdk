@@ -21,11 +21,13 @@ use tvm::block::{
     CurrencyCollection,
     TransactionProcessingStatus
 };
+use serde_json::Value;
 use std::convert::Into;
 use crc16::*;
 use std::convert::TryFrom;
 
 pub use ton_abi::json_abi::DecodedMessage;
+pub use ton_abi::token::{Token, TokenValue, Tokenizer};
 
 #[cfg(feature = "node_interaction")]
 use futures::stream::Stream;
@@ -161,6 +163,38 @@ impl ContractImage {
     // Returns future contract's identifier
     pub fn account_id(&self) -> AccountId {
         self.id.clone()
+    }
+
+    pub fn update_data(&mut self, data_json: &str, abi_json: &str) -> SdkResult<()> {
+        let contract = ton_abi::Contract::load(abi_json.as_bytes())
+            .map_err(|err| SdkErrorKind::AbiError(err))?;
+
+        let v: Value = serde_json::from_str::<Value>(&data_json)
+            .map_err(|err| SdkErrorKind::SerdeJson(err))?;
+
+        let params: Vec<_> = contract
+            .data()
+            .values()
+            .map(|item| item.value.clone())
+            .collect();
+
+        let tokens = Tokenizer::tokenize_all(&params[..], &v)
+            .map_err(|err| SdkErrorKind::AbiError(err))?;
+
+        let mut new_data = self.state_init.data.clone().unwrap_or_default();
+        //let mut data_map = HashmapE::from_data();
+        for token in tokens {
+            let builder = token.value.pack_into_chain()
+                .map_err(|err| SdkErrorKind::AbiError(err))?;
+            let key = contract
+                .data()
+                .get(&token.name)
+                .ok_or(
+                    SdkErrorKind::InvalidArg(format!("data item {} not found in contract ABI", token.name))
+                )?.key;
+        }
+
+        ok!()
     }
 }
 

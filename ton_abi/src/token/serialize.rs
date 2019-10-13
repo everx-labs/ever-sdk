@@ -15,6 +15,10 @@ impl TokenValue {
         Self::pack_cells_into_chain(cells)
     }
 
+    pub fn pack_into_chain(&self) -> AbiResult<BuilderData> {
+        Self::pack_cells_into_chain(self.write_to_cells()?)
+    }
+
     // first cell is resulting builder
     // every next cell: put data to root
     fn pack_cells_into_chain(mut cells: Vec<BuilderData>) -> AbiResult<BuilderData> {
