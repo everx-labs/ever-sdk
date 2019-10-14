@@ -416,7 +416,7 @@ impl Contract {
         let (data, id) = Self::serialize_message(msg)?;
 
         requests_helper::send_message(&id.as_slice()[..], &data)?;
-        println!("msg is sent, id: {}", id.to_hex_string());
+        //println!("msg is sent, id: {}", id.to_hex_string());
         Ok(id.clone())
     }
 
