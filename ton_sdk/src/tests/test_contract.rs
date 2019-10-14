@@ -425,3 +425,39 @@ fn test_store_pubkey() {
 
     assert_eq!(key_slice.get_bytestring(0), test_pubkey);
 }
+
+#[test]
+fn test_update_contract_data() {
+    // read image from file and construct ContractImage
+    let mut state_init = std::fs::File::open("src/tests/Subscription.tvc")
+        .expect("Unable to open Subscription contract file");
+
+    let mut csprng = OsRng::new().unwrap();
+    let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
+
+    let mut contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair.public)
+        .expect("Unable to parse contract code file");
+
+    let new_data = r#"
+        { "mywallet": "0x1111111111111111111111111111111111111111111111111111111111111111" }
+    "#;
+
+    contract_image.update_data(new_data, test_piggy_bank::SUBSCRIBE_CONTRACT_ABI).unwrap();
+    let init = contract_image.state_init();
+    let new_map = HashmapE::with_data(DATA_MAP_KEYLEN, init.data.unwrap().into());
+
+    let key_slice = new_map.get(
+        0u64.write_to_new_cell().unwrap().into(),
+    )
+    .unwrap()
+    .unwrap();
+
+    assert_eq!(key_slice.get_bytestring(0), keypair.public.as_bytes().to_vec());
+    let mywallet_slice = new_map.get(
+        100u64.write_to_new_cell().unwrap().into(),
+    )
+    .unwrap()
+    .unwrap();
+
+    assert_eq!(mywallet_slice.get_bytestring(0), vec![0x11; 32]);
+}

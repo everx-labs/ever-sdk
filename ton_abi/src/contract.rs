@@ -77,6 +77,7 @@ struct SerdeContract {
     #[serde(default)]
     pub events: Vec<Event>,
     /// Contract initial data.
+    #[serde(default)]
     pub data: Vec<DataItem>,
 
 }

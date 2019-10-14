@@ -141,6 +141,7 @@ impl ContractImage {
         self.id.clone()
     }
 
+    ///Allows to change initial values for public contract variables
     pub fn update_data(&mut self, data_json: &str, abi_json: &str) -> SdkResult<()> {
         let contract = ton_abi::Contract::load(abi_json.as_bytes())
             .map_err(|err| SdkErrorKind::AbiError(err))?;

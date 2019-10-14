@@ -329,6 +329,7 @@ impl Event {
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct DataItem {
     pub key: u64,
+    #[serde(flatten)]
     pub value: Param,
 }
 
