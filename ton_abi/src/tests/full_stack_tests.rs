@@ -8,6 +8,7 @@ use json_abi::*;
 const WALLET_ABI: &str = r#"{
     "ABI version" : 1,
     "setTime": false,
+    "data" : [],
     "functions" :    [{
             "inputs": [
                 {"name": "recipient", "type": "fixedbytes32"},

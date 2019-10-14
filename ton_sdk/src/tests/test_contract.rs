@@ -414,7 +414,7 @@ fn test_store_pubkey() {
     data.append_bit_one().unwrap()
         .checked_append_reference(test_map.data().unwrap()).unwrap();
 
-    let new_data = insert_pubkey(Some(data.into()), &test_pubkey).unwrap();
+    let new_data = insert_pubkey(data.into(), &test_pubkey).unwrap();
 
     let new_map = HashmapE::with_data(DATA_MAP_KEYLEN, new_data.into());
     let key_slice = new_map.get(
