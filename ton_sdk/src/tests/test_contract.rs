@@ -413,4 +413,16 @@ fn test_address_parsing() {
     assert_eq!(address, AccountAddress::from_str(full_std).expect("Couldn't parse full_std address").get_msg_address().unwrap());
     assert_eq!(address, AccountAddress::from_str(base64).expect("Couldn't parse base64 address").get_msg_address().unwrap());
     assert_eq!(address, AccountAddress::from_str(base64_url).expect("Couldn't parse base64_url address").get_msg_address().unwrap());
+
+    assert_eq!(AccountAddress::from(address.clone()).as_base64(true, true, false).unwrap(), base64);
+    assert_eq!(AccountAddress::from(address).as_base64(true, true, true).unwrap(), base64_url);
+}
+
+#[test]
+fn test_print_base64_address_from_hex() {
+    let hex_address = "0:ce709b5bfca589eb621b5a5786d0b562761144ac48f59e0b0d35ad0973bcdb86";
+
+    let address = AccountAddress::from_str(hex_address).unwrap();
+
+    println!("{}", address.as_base64(false, false, false).unwrap());
 }

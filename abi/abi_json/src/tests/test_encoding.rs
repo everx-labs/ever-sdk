@@ -94,11 +94,7 @@ fn test_parameters_set(
     let input_params: Vec<Param> = if let Some(params) = params {
         params.to_vec()
     } else {
-        inputs
-            .clone()
-            .iter()
-            .map(|token| token.get_param())
-            .collect()
+        params_from_tokens(inputs)
     };
 
     let mut not_signed_function = Function {
@@ -165,6 +161,14 @@ fn tokens_from_values(values: Vec<TokenValue>) -> Vec<Token> {
             name: name.to_owned(),
             value: value,
         })
+        .collect()
+}
+
+fn params_from_tokens(tokens: &[Token]) -> Vec<Param> {
+     tokens
+        .clone()
+        .iter()
+        .map(|token| token.get_param())
         .collect()
 }
 
@@ -1119,4 +1123,28 @@ fn test_reserving_reference() {
         .unwrap();
 
     assert_eq!(expected_tree, signed_test_tree);
+}
+
+#[test]
+fn test_add_signature() {
+    let tokens = tokens_from_values(vec![TokenValue::Uint(uint!(456u32, 32))]);
+
+    let mut function = Function {
+        name: "test_add_signature".to_owned(),
+        inputs: params_from_tokens(&tokens),
+        outputs: vec![],
+        signed: false,
+        id: 0
+    };
+
+    function.id = function.get_function_id();
+
+    let (msg, data_to_sign) = function.prepare_input_for_sign(&tokens).unwrap();
+
+    let pair = Keypair::generate::<Sha512, _>(&mut rand::rngs::OsRng::new().unwrap());
+    let signature = pair.sign::<Sha512>(&data_to_sign).to_bytes().to_vec();
+
+    let msg = Function::add_sign_to_encoded_input(&signature, &pair.public.to_bytes(), msg.into()).unwrap();
+
+    assert_eq!(function.decode_input(msg.into()).unwrap(), tokens);
 }

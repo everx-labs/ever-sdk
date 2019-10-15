@@ -45,6 +45,8 @@ pipeline {
                         returnStdout: true).trim()
                 }
                 echo "Version: ${getVar(G_binversion)}."
+                echo "Branch: ${GIT_BRANCH}"
+                echo "Possible RC: ${getVar(G_binversion)}-rc"
             }
         }
         stage('Building...') {
@@ -73,6 +75,11 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
+                            when { 
+                                expression {
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                }
+                            }
                             steps {
                                 dir('ton_client/client/bin') {
                                     script {
@@ -87,7 +94,10 @@ pipeline {
                             }
                         }
                     }
-                }
+					post {
+						cleanup {script{cleanWs notFailBuild: true}}
+					}
+				}
                 stage('Client macOS') {
                     agent {
                         label "ios"
@@ -109,6 +119,11 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
+                            when { 
+                                expression {
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                }
+                            }
                             steps {
                                 dir('ton_client/client/bin') {
                                     script {
@@ -123,7 +138,10 @@ pipeline {
                             }
                         }
                     }
-                }
+					post {
+						cleanup {script{cleanWs notFailBuild: true}}
+					}
+				}
                 stage('Client Windows') {
                     agent {
                         label "Win"
@@ -145,6 +163,11 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
+                            when { 
+                                expression {
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                }
+                            }
                             steps {
                                 dir('ton_client/client/bin') {
                                     script {
@@ -159,7 +182,10 @@ pipeline {
                             }
                         }
                     }
-                }
+					post {
+						cleanup {script{cleanWs notFailBuild: true}}
+					}                
+				}
                 stage('react-native') {
                     agent {
                         label "ios"
@@ -189,7 +215,11 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            when { branch 'master' }
+                            when { 
+                                expression {
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                }
+                            }
                             steps {
                                 dir('ton_client/platforms/ton-client-react-native/output') {
                                     script {
@@ -209,7 +239,10 @@ pipeline {
                             }
                         }
                     }
-                }
+					post {
+						cleanup {script{cleanWs notFailBuild: true}}
+					}                
+				}
                 stage('node-js for iOS') {
                     agent {
                         label "ios"
@@ -239,7 +272,11 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            when { branch 'master' }
+                            when { 
+                                expression {
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                }
+                            }
                             steps {
                                 dir('ton_client/platforms/ton-client-node-js/bin') {
                                     script {
@@ -259,7 +296,10 @@ pipeline {
                             }
                         }
                     }
-                }
+					post {
+						cleanup {script{cleanWs notFailBuild: true}}
+					}                
+				}
                 stage('node-js for Windows') {
                     agent {
                         label "Win"
@@ -289,7 +329,11 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            when { branch 'master' }
+                            when { 
+                                expression {
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                }
+                            }
                             steps {
                                 dir('ton_client/platforms/ton-client-node-js/bin') {
                                     script {
@@ -309,7 +353,10 @@ pipeline {
                             }
                         }
                     }
-                }
+					post {
+						cleanup {script{cleanWs notFailBuild: true}}
+					}                
+				}
                 stage('node-js for Linux') {
                     agent {
                         docker {
@@ -341,7 +388,11 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            when { branch 'master' }
+                            when { 
+                                expression {
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                }
+                            }
                             steps {
                                 dir('ton_client/platforms/ton-client-node-js/bin') {
                                     script {
@@ -361,7 +412,10 @@ pipeline {
                             }
                         }
                     }
-                }
+					post {
+						cleanup {script{cleanWs notFailBuild: true}}
+					}                
+				}
                 stage('web') {
                     agent {
                         docker {
@@ -405,7 +459,11 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            when { branch 'master' }
+                            when { 
+                                expression {
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                }
+                            }
                             steps {
                                 dir('ton_client/platforms/ton-client-web/bin') {
                                     script {
@@ -425,7 +483,10 @@ pipeline {
                             }
                         }
                     }
-                }
+					post {
+						cleanup {script{cleanWs notFailBuild: true}}
+					}                
+				}
             }
         }
     }
