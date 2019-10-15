@@ -1,7 +1,6 @@
 use crate::*;
 use crc16::*;
 use ed25519_dalek::{Keypair, PublicKey};
-use serde_json::Value;
 use std::convert::Into;
 use std::convert::TryFrom;
 use std::io::{Cursor, Read, Seek};
@@ -146,7 +145,7 @@ impl ContractImage {
         let contract = ton_abi::Contract::load(abi_json.as_bytes())
             .map_err(|err| SdkErrorKind::AbiError(err))?;
 
-        let v: Value = serde_json::from_str::<Value>(&data_json)
+        let v: serde_json::Value = serde_json::from_str(&data_json)
             .map_err(|err| SdkErrorKind::SerdeJson(err))?;
 
         let params: Vec<_> = contract
