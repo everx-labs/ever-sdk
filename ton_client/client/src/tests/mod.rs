@@ -50,7 +50,28 @@ fn test() {
         println!("result: {}", version.result_json.to_string());
 
         let _deployed = json_request(context, "setup",
-            json!({"baseUrl": "http://0.0.0.0"}));
+            json!({"baseUrl": "http://192.168.99.100"}));
+
+		let keys = json_request(context, "crypto.ed25519.keypair", json!({}));
+
+		assert_eq!(keys.error_json, "");
+
+		let abi: Value = serde_json::from_str(WALLET_ABI).unwrap();
+		let keys: Value = serde_json::from_str(&keys.result_json).unwrap();
+
+		let address = json_request(context, "contracts.deploy.message",
+            json!({
+                "abi": abi.clone(),
+                "constructorParams": json!({}),
+                "imageBase64": WALLET_CODE_BASE64,
+                "keyPair": keys,
+            }),
+        );
+
+		assert_eq!(address.error_json, "");
+
+		let address = serde_json::from_str::<Value>(&address.result_json).unwrap()["address"].clone();
+		let address = address.as_str().unwrap();
 
 		let giver_abi: Value = serde_json::from_str(GIVER_ABI).unwrap();
 
@@ -60,298 +81,192 @@ fn test() {
                 "abi": giver_abi,
                 "functionName": "sendGrams",
                 "input": &json!({
-					"dest": format!("0x{}", WALLET_ADDRESS),
+					"dest": format!("0x{}", address),
 					"amount": 10_000_000_000u64
 					}),
-                "keyPair": {
-                    "public": "d59bdd49a40013f6335753eb19b34b37f42ca25df8a44bd7388882ab57019dd1",
-                    "secret": "4f255abd8da7dcf1fbc94ae2e2742d350621a99a4bd53592661f22ec25bf1d23"
-                },
             }),
         );
 
 		assert_eq!(result.error_json, "");
 
-        let abi: Value = serde_json::from_str(WALLET_ABI).unwrap();
+		let wait_result = json_request(context, "queries.wait.for",
+            json!({
+                "table": "accounts".to_owned(),
+                "filter": json!({
+					"id": { "eq": address },
+					"storage": {
+						"balance": {
+							"Grams": { "gt": "0" }
+						}
+					}
+				}).to_string(),
+				"result": "id storage {balance {Grams}}".to_owned()
+            }),
+        );
+
+		assert_eq!(wait_result.error_json, "");
+
         let deployed = json_request(context, "contracts.deploy",
             json!({
                 "abi": abi.clone(),
                 "constructorParams": json!({}),
                 "imageBase64": WALLET_CODE_BASE64,
-                "keyPair": {
-                    "public": "d59bdd49a40013f6335753eb19b34b37f42ca25df8a44bd7388882ab57019dd1",
-                    "secret": "4f255abd8da7dcf1fbc94ae2e2742d350621a99a4bd53592661f22ec25bf1d23"
-                },
+                "keyPair": keys,
             }),
         );
 
-        assert_eq!("{\"address\":\"bbc3fbdb18379635480bbe3a0c520a2183e13b2cf1541a35a29446b72b331ed0\"}",
-            deployed.result_json);
+        assert_eq!(format!("{{\"address\":\"{}\"}}", address), deployed.result_json);
 
         let result = json_request(context, "contracts.run",
             json!({
-                "address": WALLET_ADDRESS,
+                "address": address,
                 "abi": abi.clone(),
-                "functionName": "getVersion",
+                "functionName": "getLimitCount",
                 "input": json!({}),
-                "keyPair": {
-                    "public": "d59bdd49a40013f6335753eb19b34b37f42ca25df8a44bd7388882ab57019dd1",
-                    "secret": "4f255abd8da7dcf1fbc94ae2e2742d350621a99a4bd53592661f22ec25bf1d23"
-                },
+                "keyPair": keys,
             }),
         );
-        assert_eq!("{\"output\":{\"error\":\"-0x1\",\"version\":{\"major\":\"0x0\",\"minor\":\"0x1\"}}}",
+        assert_eq!("{\"output\":{\"value0\":\"0x0\"}}",
             result.result_json);
 
         tc_destroy_context(context);
     }
 }
 
-const GIVER_ADDRESS: &str = "ce709b5bfca589eb621b5a5786d0b562761144ac48f59e0b0d35ad0973bcdb86";
+const GIVER_ADDRESS: &str = "a46af093b38fcae390e9af5104a93e22e82c29bcb35bf88160e4478417028884";
 const GIVER_ABI: &str = r#"
 {
-    "ABI version": 0,
-    "functions": [{
-        "name": "constructor",
-        "inputs": [],
-        "outputs": []
-    }, {
-        "name": "sendGrams",
-        "inputs": [
-            {"name":"dest","type":"uint256"},
-            {"name":"amount","type":"uint64"}
-        ],
-        "outputs": []
-    }]
-}"#;
-
-pub const WALLET_ADDRESS: &str = "bbc3fbdb18379635480bbe3a0c520a2183e13b2cf1541a35a29446b72b331ed0";
-pub const WALLET_CODE_BASE64: &str = r#"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"#;
-pub const WALLET_ABI: &str = r#"{
-	"ABI version": 0,
+	"ABI version": 1,
 	"functions": [
 		{
-			"inputs": [
-				{
-					"name": "recipient",
-					"type": "fixedbytes32"
-				},
-				{
-					"name": "value",
-					"type": "gram"
-				}
-			],
-			"name": "sendTransaction",
-			"outputs": [
-				{
-					"name": "transaction",
-					"type": "uint64"
-				},
-				{
-					"name": "error",
-					"type": "int8"
-				}
-			]
-		},
-		{
-			"inputs": [
-				{
-					"name": "type",
-					"type": "uint8"
-				},
-				{
-					"name": "value",
-					"type": "gram"
-				},
-				{
-					"name": "meta",
-					"type": "bytes"
-				}
-			],
-			"name": "createLimit",
-			"outputs": [
-				{
-					"name": "limitId",
-					"type": "uint8"
-				},
-				{
-					"name": "error",
-					"type": "int8"
-				}
-			]
-		},
-		{
-			"inputs": [
-				{
-					"name": "limitId",
-					"type": "uint8"
-				},
-				{
-					"name": "value",
-					"type": "gram"
-				},
-				{
-					"name": "meta",
-					"type": "bytes"
-				}
-			],
-			"name": "changeLimitById",
-			"outputs": [
-				{
-					"name": "error",
-					"type": "int8"
-				}
-			]
-		},
-		{
-			"inputs": [
-				{
-					"name": "limitId",
-					"type": "uint8"
-				}
-			],
-			"name": "removeLimit",
-			"outputs": [
-				{
-					"name": "error",
-					"type": "int8"
-				}
-			]
-		},
-		{
-			"inputs": [
-				{
-					"name": "limitId",
-					"type": "uint8"
-				}
-			],
-			"name": "getLimitById",
-			"outputs": [
-				{
-					"name": "limitInfo",
-					"type": "tuple",
-					"components": [
-						{
-							"name": "value",
-							"type": "gram"
-						},
-						{
-							"name": "type",
-							"type": "uint8"
-						},
-						{
-							"name": "meta",
-							"type": "bytes"
-						}
-					]
-				},
-				{
-					"name": "error",
-					"type": "int8"
-				}
-			]
-		},
-		{
-			"inputs": [],
-			"name": "getLimits",
-			"outputs": [
-				{
-					"name": "list",
-					"type": "uint8[]"
-				},
-				{
-					"name": "error",
-					"type": "int8"
-				}
-			]
-		},
-		{
-			"inputs": [],
-			"name": "getLimitsEx",
-			"outputs": [
-				{
-					"name": "list",
-					"type": "tuple[]",
-					"components": [
-						{
-							"name": "id",
-							"type": "uint8"
-						},
-						{
-							"name": "type",
-							"type": "uint8"
-						},
-						{
-							"name": "value",
-							"type": "gram"
-						},
-						{
-							"name": "meta",
-							"type": "bytes"
-						}
-					]
-				}
-			]
-		},
-		{
-			"inputs": [],
-			"name": "getVersion",
-			"outputs": [
-				{
-					"name": "version",
-					"type": "tuple",
-					"components": [
-						{
-							"name": "major",
-							"type": "uint16"
-						},
-						{
-							"name": "minor",
-							"type": "uint16"
-						}
-					]
-				},
-				{
-					"name": "error",
-					"type": "int8"
-				}
-			]
-		},
-		{
-			"inputs": [],
-			"name": "getBalance",
-			"outputs": [
-				{
-					"name": "balance",
-					"type": "uint64"
-				}
-			]
-		},
-		{
-			"inputs": [],
 			"name": "constructor",
-			"outputs": []
-		},
-		{
 			"inputs": [
-				{
-					"name": "address",
-					"type": "fixedbytes32"
-				}
 			],
-			"name": "setSubscriptionAccount",
-			"outputs": []
+			"outputs": [
+			]
 		},
 		{
-			"inputs": [],
-			"name": "getSubscriptionAccount",
+			"name": "sendGrams",
+			"inputs": [
+				{"name":"dest","type":"uint256"},
+				{"name":"amount","type":"uint64"}
+			],
 			"outputs": [
-				{
-					"name": "address",
-					"type": "fixedbytes32"
-				}
 			]
 		}
+	],
+	"events": [
+	],
+	"data": [
+	]
+}"#;
+
+pub const WALLET_CODE_BASE64: &str = r#"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"#;
+pub const WALLET_ABI: &str = r#"{
+	"ABI version": 1,
+	"functions": [
+		{
+			"name": "constructor",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "sendTransaction",
+			"inputs": [
+				{"name":"dest","type":"uint256"},
+				{"name":"value","type":"uint128"},
+				{"name":"bounce","type":"bool"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setSubscriptionAccount",
+			"inputs": [
+				{"name":"addr","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getSubscriptionAccount",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"value0","type":"uint256"}
+			]
+		},
+		{
+			"name": "createOperationLimit",
+			"inputs": [
+				{"name":"value","type":"uint256"}
+			],
+			"outputs": [
+				{"name":"value0","type":"uint256"}
+			]
+		},
+		{
+			"name": "createArbitraryLimit",
+			"inputs": [
+				{"name":"value","type":"uint256"},
+				{"name":"period","type":"uint32"}
+			],
+			"outputs": [
+				{"name":"value0","type":"uint64"}
+			]
+		},
+		{
+			"name": "changeLimit",
+			"inputs": [
+				{"name":"limitId","type":"uint64"},
+				{"name":"value","type":"uint256"},
+				{"name":"period","type":"uint32"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "deleteLimit",
+			"inputs": [
+				{"name":"limitId","type":"uint64"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getLimit",
+			"inputs": [
+				{"name":"limitId","type":"uint64"}
+			],
+			"outputs": [
+				{"components":[{"name":"value","type":"uint256"},{"name":"period","type":"uint32"},{"name":"ltype","type":"uint8"},{"name":"spent","type":"uint256"},{"name":"start","type":"uint32"}],"name":"value0","type":"tuple"}
+			]
+		},
+		{
+			"name": "getLimitCount",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"value0","type":"uint64"}
+			]
+		},
+		{
+			"name": "getLimits",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"value0","type":"uint64[]"}
+			]
+		}
+	],
+	"events": [
+	],
+	"data": [
+		{"key":102,"name":"MAX_LIMIT_COUNT","type":"uint8"},
+		{"key":103,"name":"SECONDS_IN_DAY","type":"uint32"},
+		{"key":104,"name":"MAX_LIMIT_PERIOD","type":"uint32"}
 	]
 }
 "#;

@@ -11,7 +11,7 @@ use tvm::block::{
 use tvm::types::AccountId;
 
 pub const WORKCHAIN: i32 = 0;
-const NODE_SE: bool = false;
+const NODE_SE: bool = true;
 
 const WALLET_ADDRESS_STR: &str =  "UQC7oawjsBAYgInWIBDdsA1ZTADw4hd5Tz8rU6gYlOxxRrJ6";//"UQAizw8ps+9a/Q9DVsiMTS5rM+GhNI/9UtHE8j2xrXgT5Xgt";//
 
@@ -72,13 +72,13 @@ fn print_wallet_address(key_pair: &Keypair) {
 }
 
 #[test]
-//#[ignore]
+#[ignore]
 fn test_print_address() {
     print_wallet_address(&WALLET_KEYS);
 }
 
 #[test]
-//#[ignore]
+#[ignore]
 fn test_generate_keypair_and_address() {
     // generate key pair
     let mut csprng = OsRng::new().unwrap();
@@ -90,7 +90,7 @@ fn test_generate_keypair_and_address() {
 }
 
 #[test]
-//#[ignore]
+#[ignore]
 fn test_send_grams_from_giver() {
     init_node_connection();
 
