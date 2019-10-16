@@ -131,7 +131,7 @@ impl Contract {
     pub fn events(&self) -> &HashMap<String, Event> {
         &self.events
     }
-
+    /// Returns data collection
     pub fn data(&self) -> &HashMap<String, DataItem> {
         &self.data
     }
