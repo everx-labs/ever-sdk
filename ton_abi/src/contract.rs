@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Deserializer};
 use serde::de::{Unexpected, Error as SerdeError};
 use serde_json;
-use {Function, Event, Token, Param};
+use {DataItem, Function, Event, Token, Param};
 use tvm::stack::SliceData;
 use crate::error::*;
 use super::function::ABI_VERSION;
@@ -15,6 +15,8 @@ pub struct Contract {
     functions: HashMap<String, Function>,
     /// Contract events.
     events: HashMap<String, Event>,
+    /// Contract initila data.
+    data: HashMap<String, DataItem>,
 }
 
 impl<'a> Deserialize<'a> for Contract {
@@ -33,7 +35,8 @@ impl<'a> Deserialize<'a> for Contract {
 
         let mut result = Self {
             functions: HashMap::new(),
-            events: HashMap::new()
+            events: HashMap::new(),
+            data: HashMap::new(),
         };
 
         for mut function in serde_contract.functions {
@@ -45,6 +48,10 @@ impl<'a> Deserialize<'a> for Contract {
         for mut event in serde_contract.events {
             event.id = event.get_function_id();
             result.events.insert(event.name.clone(), event);
+        }
+
+        for data in serde_contract.data {
+            result.data.insert(data.value.name.clone(), data);
         }
 
         Ok(result)
@@ -69,6 +76,10 @@ struct SerdeContract {
     /// Contract events.
     #[serde(default)]
     pub events: Vec<Event>,
+    /// Contract initial data.
+    #[serde(default)]
+    pub data: Vec<DataItem>,
+
 }
 
 pub struct DecodedMessage {
@@ -119,6 +130,10 @@ impl Contract {
     /// Returns events collection
     pub fn events(&self) -> &HashMap<String, Event> {
         &self.events
+    }
+    /// Returns data collection
+    pub fn data(&self) -> &HashMap<String, DataItem> {
+        &self.data
     }
 
     /// Decodes contract answer and returns name of the function called

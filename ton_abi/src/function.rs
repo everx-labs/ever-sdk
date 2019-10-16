@@ -326,6 +326,13 @@ impl Event {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct DataItem {
+    pub key: u64,
+    #[serde(flatten)]
+    pub value: Param,
+}
+
 #[cfg(test)]
 #[path = "tests/test_encoding.rs"]
 mod tests;
