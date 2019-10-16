@@ -11,8 +11,8 @@ use tvm::block::{
     Serializable, StateInit, TransactionId, TransactionProcessingStatus,
 };
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
-use tvm::stack::dictionary::{HashmapE, HashmapType};
-use tvm::stack::{BuilderData, CellData, IBitstring, SliceData};
+use tvm::stack::dictionary::HashmapE;
+use tvm::stack::{BuilderData, CellData, SliceData};
 use tvm::types::AccountId;
 
 pub use ton_abi::json_abi::DecodedMessage;
@@ -119,7 +119,7 @@ impl ContractImage {
 
         // state init's data's root cell contains zero-key
         // need to change it by real public key
-        let new_data = insert_pubkey(
+        let new_data = Self::insert_pubkey(
             state_init.data.clone().unwrap_or_default(),
             pub_key.as_bytes(),
         )?;
@@ -142,11 +142,9 @@ impl ContractImage {
 
     ///Allows to change initial values for public contract variables
     pub fn update_data(&mut self, data_json: &str, abi_json: &str) -> SdkResult<()> {
-        let contract = ton_abi::Contract::load(abi_json.as_bytes())
-            .map_err(|err| SdkErrorKind::AbiError(err))?;
+        let contract = ton_abi::Contract::load(abi_json.as_bytes())?;
 
-        let v: serde_json::Value = serde_json::from_str(&data_json)
-            .map_err(|err| SdkErrorKind::SerdeJson(err))?;
+        let data_json: serde_json::Value = serde_json::from_str(&data_json)?;
 
         let params: Vec<_> = contract
             .data()
@@ -154,57 +152,50 @@ impl ContractImage {
             .map(|item| item.value.clone())
             .collect();
 
-        let tokens = Tokenizer::tokenize_all(&params[..], &v)
-            .map_err(|err| SdkErrorKind::AbiError(err))?;
+        let tokens = Tokenizer::tokenize_all(&params[..], &data_json)?;
 
         let mut new_data = self.state_init.data.clone().unwrap_or_default();
+
         for token in tokens {
-            let builder = token.value.pack_into_chain()
-                .map_err(|err| SdkErrorKind::AbiError(err))?;
+            let builder = token.value.pack_into_chain()?;
             let key = contract
                 .data()
                 .get(&token.name)
                 .ok_or(
                     SdkErrorKind::InvalidArg(format!("data item {} not found in contract ABI", token.name))
                 )?.key;
-            new_data = insert_data_item(new_data, key, builder)?;
+
+            new_data = Self::insert_data_item(new_data, key, builder)?;
         }
-        self.state_init.set_data(new_data);
+        self.state_init.set_data(new_data.into());
         self.id = self.state_init.hash()?.into();
 
         ok!()
     }
+
+    fn insert_pubkey(data: Arc<CellData>, pubkey: &[u8]) -> SdkResult<Arc<CellData>> {
+        let pubkey_vec = pubkey.to_vec();
+        let pubkey_len = pubkey_vec.len() * 8;
+        let value = BuilderData::with_raw(pubkey_vec, pubkey_len)
+                .unwrap_or(BuilderData::new()).into();
+        Self::insert_data_item(data, 0, value)
+    }
+
+    const DATA_MAP_KEYLEN: usize = 64;
+
+    fn insert_data_item(data: Arc<CellData>, key: u64, value: BuilderData) -> SdkResult<Arc<CellData>> {
+        let mut map = HashmapE::with_data(
+            Self::DATA_MAP_KEYLEN, 
+            data.into(),
+        );
+        map.set(
+            key.write_to_new_cell().unwrap().into(), 
+            &value.into(), 
+        )?;
+        Ok(map.write_to_new_cell()?.into())
+    }
 }
 
-
-fn insert_pubkey(data: Arc<CellData>, pubkey: &[u8]) -> SdkResult<Arc<CellData>> {
-    let pubkey_vec = pubkey.to_vec();
-    let pubkey_len = pubkey_vec.len() * 8;
-    let value = BuilderData::with_raw(pubkey_vec, pubkey_len)
-            .unwrap_or(BuilderData::new()).into();
-    insert_data_item(data, 0, value)
-}
-
-const DATA_MAP_KEYLEN: usize = 64;
-fn insert_data_item(data: Arc<CellData>, key: u64, value: BuilderData) -> SdkResult<Arc<CellData>> {
-    let mut map = HashmapE::with_data(
-        DATA_MAP_KEYLEN, 
-        data.into(),
-    );
-    map.set(
-        //DATA_MAP_KEYLEN
-        key.write_to_new_cell().unwrap().into(), 
-        &value.into(), 
-    ).map_err(|e| {
-        SdkErrorKind::InternalError(
-            format!("failed to update data item in data map: {}", e)
-        )
-    })?;
-    let mut new_data = BuilderData::new();
-    new_data.append_bit_one().unwrap()
-        .checked_append_reference(map.data().unwrap()).unwrap();
-    Ok(new_data.into())
-}
 
 /// Enum represents blockchain account address.
 /// `Short` value contains only `AccountId` value and is used for addressing contracts in default

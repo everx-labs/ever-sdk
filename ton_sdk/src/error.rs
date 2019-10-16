@@ -1,5 +1,4 @@
 use std::io;
-use ton_abi::AbiError;
 
 #[cfg(feature = "node_interaction")]
 use graphite::types::GraphiteError;
@@ -38,6 +37,7 @@ error_chain! {
     foreign_links {
         Io(io::Error);
         Tvm(tvm::error::TvmError);
+        TvmException(tvm::types::Exception);
         TonBlocks(tvm::block::BlockError);
         Graphql(GraphiteError);
         SerdeJson(serde_json::Error);
@@ -45,6 +45,7 @@ error_chain! {
         ParseIntError(std::num::ParseIntError);
         FromHexError(hex::FromHexError);
         Base64DecodeError(base64::DecodeError);
+        AbiError(ton_abi::error::AbiError);
     }
 
     errors {
@@ -73,10 +74,6 @@ error_chain! {
         Signature(inner: ed25519_dalek::SignatureError) {
             description("Signature error"),
             display("Signature error: {}", inner)
-        }
-        AbiError(inner: AbiError) {
-            description("ABI error"),
-            display("ABI error: {:?}", inner)
         }
         NotInitialized {
             description("SDK is not initialized")

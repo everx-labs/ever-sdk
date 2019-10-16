@@ -1,5 +1,6 @@
 use ton_abi::json_abi::decode_function_response;
 use super::*;
+use contract::ContractImage;
 use std::io::{Cursor};
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
@@ -8,6 +9,7 @@ use sha2::Sha512;
 use tvm::block::TransactionProcessingStatus;
 use tvm::types::AccountId;
 use tvm::stack::{BuilderData, IBitstring};
+use tvm::stack::dictionary::HashmapType;
 use tests_common::*;
  
 /*
@@ -403,7 +405,7 @@ fn test_print_base64_address_from_hex() {
 
 #[test]
 fn test_store_pubkey() {
-    let mut test_map = HashmapE::with_bit_len(DATA_MAP_KEYLEN);
+    let mut test_map = HashmapE::with_bit_len(ContractImage::DATA_MAP_KEYLEN);
     let test_pubkey = vec![11u8; 32];
     test_map.set(
         0u64.write_to_new_cell().unwrap().into(),
@@ -414,9 +416,9 @@ fn test_store_pubkey() {
     data.append_bit_one().unwrap()
         .checked_append_reference(test_map.data().unwrap()).unwrap();
 
-    let new_data = insert_pubkey(data.into(), &test_pubkey).unwrap();
+    let new_data = ContractImage::insert_pubkey(data.into(), &test_pubkey).unwrap();
 
-    let new_map = HashmapE::with_data(DATA_MAP_KEYLEN, new_data.into());
+    let new_map = HashmapE::with_data(ContractImage::DATA_MAP_KEYLEN, new_data.into());
     let key_slice = new_map.get(
         0u64.write_to_new_cell().unwrap().into(),
     )
@@ -444,7 +446,7 @@ fn test_update_contract_data() {
 
     contract_image.update_data(new_data, test_piggy_bank::SUBSCRIBE_CONTRACT_ABI).unwrap();
     let init = contract_image.state_init();
-    let new_map = HashmapE::with_data(DATA_MAP_KEYLEN, init.data.unwrap().into());
+    let new_map = HashmapE::with_data(ContractImage::DATA_MAP_KEYLEN, init.data.unwrap().into());
 
     let key_slice = new_map.get(
         0u64.write_to_new_cell().unwrap().into(),
