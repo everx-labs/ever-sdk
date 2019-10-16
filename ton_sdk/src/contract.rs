@@ -1,6 +1,7 @@
 use crate::*;
 use std::io::{Read, Seek, Cursor};
 use std::sync::{Arc, Mutex};
+use std::fmt;
 use ed25519_dalek::{Keypair, PublicKey};
 use tvm::stack::{BuilderData, CellData, SliceData, find_tag};
 use tvm::types::AccountId;
@@ -76,7 +77,7 @@ pub struct ContractCallState {
 // The struct represents conract's image
 pub struct ContractImage {
     state_init: StateInit,
-    id: AccountId
+    id: AccountAddress
 }
 
 #[allow(dead_code)]
@@ -110,7 +111,7 @@ impl ContractImage {
             state_init.set_library(library_roots.remove(0));
         }
 
-        let id = state_init.hash()?.into();
+        let id = AccountAddress::from(AccountId::from(state_init.hash()?));
 
         Ok(Self{ state_init, id })
     }
@@ -148,7 +149,7 @@ impl ContractImage {
         }
         state_init.set_data(new_data.into());
 
-        let id = state_init.hash()?.into();
+        let id = AccountAddress::from(AccountId::from(state_init.hash()?));
 
         Ok(Self{ state_init, id })
     }
@@ -159,7 +160,7 @@ impl ContractImage {
     }
 
     // Returns future contract's identifier
-    pub fn account_id(&self) -> AccountId {
+    pub fn account_id(&self) -> AccountAddress { // TODO: make reference
         self.id.clone()
     }
 }
@@ -168,7 +169,7 @@ impl ContractImage {
 /// `Short` value contains only `AccountId` value and is used for addressing contracts in default
 /// workchain. `Full` value is fully qualified account address and can be used for addressing
 /// contracts in any workchain
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 pub enum AccountAddress {
     Short(AccountId),
     Full(MsgAddressInt)
@@ -244,11 +245,6 @@ impl AccountAddress {
         }
     }
 
-    pub fn read_keypair(&self) -> Vec<u8> {
-        let file_name = self.get_account_id().unwrap().to_hex_string();
-        std::fs::read(file_name).expect("Couldn't read key pair")
-    }
-
     fn get_std_address(&self) -> SdkResult<(i8, Vec<u8>)> {
         match self {
             AccountAddress::Full(address) => {
@@ -285,6 +281,13 @@ impl AccountAddress {
         } else {
             Ok(result)
         }
+    }
+}
+
+impl fmt::Display for AccountAddress {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        println!("{}", serde_json::to_string(&self.get_msg_address()).unwrap_or_default());
+        write!(f, "{}", serde_json::to_string(&self.get_msg_address()).unwrap_or_default())
     }
 }
 
@@ -355,6 +358,8 @@ impl Contract {
         // pack params into bag of cells via ABI
         let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
+
+        println!("{}", msg_body);
 
         let msg = Self::create_message(address, msg_body.into())?;
 

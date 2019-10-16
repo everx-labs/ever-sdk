@@ -154,7 +154,7 @@ fn wait_message_processed_by_id(message_id: MessageId)-> TransactionId {
 
 // Create message "from wallet" to transfer some funds 
 // from one account to another
-pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, value: u128) -> Message {
+pub fn create_external_transfer_funds_message(src: AccountId, dst: MsgAddressInt, value: u128) -> Message {
     
     let mut rng = thread_rng();    
     let mut builder = BuilderData::new();
@@ -174,7 +174,7 @@ pub fn create_external_transfer_funds_message(src: AccountId, dst: AccountId, va
 
     let int_msg_hdr = InternalMessageHeader::with_addresses(
             MsgAddressInt::with_standart(None, workchain as i8, src).unwrap(),
-            MsgAddressInt::with_standart(None, workchain as i8, dst).unwrap(),
+            dst,
             balance);
 
     *msg.body_mut() = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
@@ -192,7 +192,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
 
     // before deploying contract need to transfer some funds to its address
     //println!("Account ID to take some grams {}\n", account_id.to_hex_string());
-    let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), account_id.clone(), 100000000000);
+    let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), account_id.get_msg_address(), 100000000000);
     let changes_stream = Contract::send_message(msg).expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -237,13 +237,13 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         panic!("transaction aborted!\n\n{}", serde_json::to_string_pretty(tr.tr()).unwrap())
     }
 
-    account_id
+    account_id.get_account_id().unwrap()
 }
 
-fn call_contract_and_wait(address: &AccountAddress, func: &str, input: &str, abi: &str, key_pair: Option<&Keypair>) -> String {
+fn call_contract_and_wait(address: &AccountAddress, func: &str, input: String, abi: &str, key_pair: Option<&Keypair>) -> String {
     // call needed method
     let changes_stream = 
-        Contract::call_json(address.get_msg_address(), func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
+        Contract::call_json(address.get_msg_address(), func.to_owned(), input, abi.to_owned(), key_pair)
             .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -344,6 +344,11 @@ struct SendTransactionAnswer {
     error: String
 }
 
+fn read_keypair(address: &AccountAddress) -> Vec<u8> {
+    let file_name = address.get_account_id().unwrap().to_hex_string();
+    std::fs::read(file_name).expect("Couldn't read key pair")
+}
+
 fn call_send_transaction(current_address: &Option<AccountAddress>, params: &[&str]) {
     if params.len() < 2 {
         println!("Not enough parameters");
@@ -363,10 +368,10 @@ fn call_send_transaction(current_address: &Option<AccountAddress>, params: &[&st
 
     let str_params = format!("{{ \"recipient\" : \"x{}\", \"value\": \"{}\" }}", params[0], nanogram_value);
 
-    let pair = address.read_keypair();
+    let pair = read_keypair(&address);
     let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
 
-    let answer = call_contract_and_wait(&address, "sendTransaction", &str_params, WALLET_ABI, Some(&pair));
+    let answer = call_contract_and_wait(&address, "sendTransaction", str_params, WALLET_ABI, Some(&pair));
 
 
     let answer: SendTransactionAnswer = serde_json::from_str(&answer).unwrap();
@@ -416,10 +421,10 @@ fn call_create_limit(current_address: &Option<AccountAddress>, params: &[&str]) 
 
     let str_params = format!(r#"{{ "type" : "{}", "value": "{}", "meta": "x{}" }}"#, params[0], nanogram_value, meta);
 
-    let pair = address.read_keypair();
+    let pair = read_keypair(&address);
     let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
 
-    let answer = call_contract_and_wait(&address, "createLimit", &str_params, WALLET_ABI, Some(&pair));
+    let answer = call_contract_and_wait(&address, "createLimit", str_params, WALLET_ABI, Some(&pair));
 
 
     let answer: CreateLimitAnswer = serde_json::from_str(&answer).unwrap();
@@ -460,10 +465,10 @@ fn call_change_limit(current_address: &Option<AccountAddress>, params: &[&str]) 
 
     let str_params = format!(r#"{{ "limitId" : "{}", "value": "{}", "meta": "x{}" }}"#, params[0], nanogram_value, meta);
 
-    let pair = address.read_keypair();
+    let pair = read_keypair(&address);
     let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
 
-    let answer = call_contract_and_wait(&address, "changeLimitById", &str_params, WALLET_ABI, Some(&pair));
+    let answer = call_contract_and_wait(&address, "changeLimitById", str_params, WALLET_ABI, Some(&pair));
 
 
     let _answer: ChangeLimitAnswer = serde_json::from_str(&answer).unwrap();
@@ -486,10 +491,10 @@ fn call_remove_limit(current_address: &Option<AccountAddress>, params: &[&str]) 
 
     let str_params = format!(r#"{{ "limitId" : "{}" }}"#, params[0]);
 
-    let pair = address.read_keypair();
+    let pair = read_keypair(&address);
     let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
 
-    let answer = call_contract_and_wait(&address, "removeLimit", &str_params, WALLET_ABI, Some(&pair));
+    let answer = call_contract_and_wait(&address, "removeLimit", str_params, WALLET_ABI, Some(&pair));
 
 
     let _answer: ChangeLimitAnswer = serde_json::from_str(&answer).unwrap();
@@ -528,7 +533,7 @@ fn call_get_limit_by_id(current_address: &Option<AccountAddress>, params: &[&str
 
     let str_params = format!(r#"{{ "limitId" : "{}" }}"#, params[0]);
 
-    let answer = call_contract_and_wait(&address, "getLimitById", &str_params, WALLET_ABI, None);
+    let answer = call_contract_and_wait(&address, "getLimitById", str_params, WALLET_ABI, None);
 
 
     let answer: GetLimitByIdAnswer = serde_json::from_str(&answer).unwrap();
@@ -565,7 +570,7 @@ fn call_get_limits(current_address: &Option<AccountAddress>) {
 
     let str_params = "{}".to_owned();
 
-    let answer = call_contract_and_wait(&address, "getLimits", &str_params, WALLET_ABI, None);
+    let answer = call_contract_and_wait(&address, "getLimits", str_params, WALLET_ABI, None);
 
 
     let answer: GetLimitsAnswer = serde_json::from_str(&answer).unwrap();
@@ -600,7 +605,7 @@ fn call_get_version(current_address: &Option<AccountAddress>) {
 
     let str_params = "{}".to_owned();
 
-    let answer = call_contract_and_wait(&address, "getVersion", &str_params, WALLET_ABI, None);
+    let answer = call_contract_and_wait(&address, "getVersion", str_params, WALLET_ABI, None);
 
 
     let answer: GetVersionAnswer = serde_json::from_str(&answer).unwrap();

@@ -14,12 +14,18 @@ pub fn encode_function_call(
     pair: Option<&Keypair>,
 ) -> AbiResult<BuilderData> {
     let contract = Contract::load(abi.as_bytes())?;
+    dbg!(1);
 
     let function = contract.function(&function)?;
+    dbg!(2);
 
     let v: Value = serde_json::from_str(&parameters).map_err(|err| AbiErrorKind::SerdeError(err))?;
+    dbg!(3);
 
+    dbg!(&function.input_params());
+    dbg!(&v);
     let tokens = Tokenizer::tokenize_all(&function.input_params(), &v)?;
+    dbg!(4);
 
     function.encode_input(&tokens, pair)
 }

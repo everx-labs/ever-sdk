@@ -247,7 +247,7 @@ fn test_deploy_and_call_contract() {
     // before deploying contract need to transfer some funds to its address
     println!("Account ID to take some grams {}", account_id);
     
-    tests_common::get_grams_from_giver(account_id.clone());
+    tests_common::get_grams_from_giver(&account_id);
 
 
     // call deploy method
@@ -311,7 +311,7 @@ fn test_deploy_empty_contract() {
     let image = ContractImage::new(&mut data_cur, None, None).expect("Error creating ContractImage");
     let acc_id = image.account_id();
 
-    tests_common::get_grams_from_giver(acc_id.clone());
+    tests_common::get_grams_from_giver(&acc_id);
 
     println!("Account ID {}", acc_id);
 
@@ -326,7 +326,7 @@ fn test_deploy_empty_contract() {
 	queries_helper::wait_for(
         "accounts",
         &json!({
-			"id": { "eq": acc_id.to_hex_string() },
+			"id": { "eq": format!("{}", acc_id) },
 			"storage": {
 				"balance": {
 					"Grams": { "gt": "0" }
