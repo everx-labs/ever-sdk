@@ -59,7 +59,7 @@ const ACCOUNT_FIELDS: &str = r#"
 "#;
 
 lazy_static! {
-    static ref DEFAULT_WORKCHAIN: Mutex<Option<i32>> = Mutex::new(None);
+    static ref DEFAULT_WORKCHAIN: Mutex<i32> = Mutex::new(0);
 }
 
 #[cfg(test)]
@@ -191,14 +191,12 @@ impl AccountAddress {
     }
 
     /// Returns full account address as `MsgAddressInt` struct
-    pub fn get_msg_address(&self) -> SdkResult<MsgAddressInt> {
+    pub fn get_msg_address(&self) -> MsgAddressInt {
         match self {
-            AccountAddress::Full(address) => Ok(address.clone()),
+            AccountAddress::Full(address) => address.clone(),
             AccountAddress::Short(id) => {
-                let workchain = Contract::get_default_workchain()
-                    .ok_or(SdkErrorKind::DefaultWorkchainNotSet)?;
-
-                Ok(MsgAddressInt::with_standart(None, workchain as i8, id.clone())?)
+                let workchain = Contract::get_default_workchain();
+                MsgAddressInt::with_standart(None, workchain as i8, id.clone()).unwrap()
             }
         }
     }
@@ -222,11 +220,7 @@ impl AccountAddress {
             bail!(SdkErrorKind::InvalidArg(data.to_owned()));
         };
 
-        Ok(MsgAddressInt::with_standart(
-                None,
-                i8::from_be_bytes(<[u8; 1]>::try_from(&vec[1..2])?),
-                vec[2..34].into())?
-            .into())
+        Self::with_account_id_and_workchain(vec[1] as i8, vec[2..34].into())
     }
 
     fn decode_std_hex(data: &str) -> SdkResult<Self> {
@@ -236,11 +230,7 @@ impl AccountAddress {
             bail!(SdkErrorKind::InvalidArg(data.to_owned()));
         }
 
-        Ok(MsgAddressInt::with_standart(
-                None,
-                i8::from_str_radix(vec[0], 10)?,
-                hex::decode(vec[1])?.into())?
-            .into())
+        Self::with_account_id_and_workchain(i8::from_str_radix(vec[0], 10)?, hex::decode(vec[1])?.into())
     }
     
     /// Retrieves account address from `str` in Telegram lite-client format
@@ -252,6 +242,11 @@ impl AccountAddress {
         } else {
             Self::decode_std_hex(data)
         }
+    }
+
+    pub fn read_keypair(&self) -> Vec<u8> {
+        let file_name = self.get_account_id().unwrap().to_hex_string();
+        std::fs::read(file_name).expect("Couldn't read key pair")
     }
 
     fn get_std_address(&self) -> SdkResult<(i8, Vec<u8>)> {
@@ -318,12 +313,12 @@ pub struct Contract {
 impl Contract {
 
     // Asynchronously loads a Contract instance or None if contract with given id is not exists
-    pub fn load(address: AccountAddress) -> SdkResult<Box<dyn Stream<Item = Option<Contract>, Error = SdkError>>> {
-        let id = address.get_account_id()?;
+    pub fn load(address: &MsgAddressInt) -> SdkResult<Box<dyn Stream<Item = Option<Contract>, Error = SdkError>>> {
+        let id = serde_json::to_string(address)?;
 
         let map = queries_helper::load_record_fields(
             CONTRACTS_TABLE_NAME,
-            &id.to_hex_string(),
+            &id,
             ACCOUNT_FIELDS)?
                 .and_then(|val| {
                     if val == serde_json::Value::Null {
@@ -354,14 +349,14 @@ impl Contract {
     // Works with json representation of input and abi.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
-    pub fn call_json(id: AccountAddress, func: String, input: String, abi: String, key_pair: Option<&Keypair>)
+    pub fn call_json(address: MsgAddressInt, func: String, input: String, abi: String, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
         // pack params into bag of cells via ABI
         let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
-        let msg = Self::create_message(id.clone(), msg_body.into())?;
+        let msg = Self::create_message(address, msg_body.into())?;
 
         // send message by Kafka
         let msg_id = Self::_send_message(msg)?;
@@ -445,6 +440,14 @@ pub struct MessageToSign {
 }
 
 impl Contract {
+    /// Returns contract's address
+    pub fn address(&self) -> MsgAddressInt {
+        match self.acc.get_addr() {
+            Some(MsgAddressInt::AddrStd(_)) => self.acc.get_addr().unwrap().clone(),
+            _ => MsgAddressInt::with_standart(None, Contract::get_default_workchain() as i8,  [0; 32].into()).unwrap()
+        }
+    }
+
     /// Returns contract's identifier
     pub fn id(&self) -> SdkResult<AccountId> {
         Ok(self.acc.get_id()
@@ -514,7 +517,7 @@ impl Contract {
         let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
-        let address = self.id().unwrap_or(AccountId::from([0; 32])).into();
+        let address = self.address();
 
         let msg = Self::create_message(address, msg_body.into())?;
 
@@ -584,6 +587,7 @@ impl Contract {
         let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
+        let address = address.get_msg_address();
         let msg = Self::create_message(address, msg_body.into())?;
 
         Self::serialize_message(msg)
@@ -594,6 +598,7 @@ impl Contract {
     pub fn construct_call_message_with_body(address: AccountAddress, body: &[u8]) -> SdkResult<(Vec<u8>, MessageId)> {
         let body_cell = Self::deserialize_tree_to_slice(body)?;
 
+        let address = address.get_msg_address();
         let msg = Self::create_message(address, body_cell)?;
 
         Self::serialize_message(msg)
@@ -609,6 +614,7 @@ impl Contract {
         let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(abi, func, input)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
+        let address = address.get_msg_address();
         let msg = Self::create_message(address, msg_body.into())?;
 
         Self::serialize_message(msg).map(|(msg_data, _id)| {
@@ -698,10 +704,10 @@ impl Contract {
         Self::serialize_message(message)
     }
 
-    fn create_message(address: AccountAddress, msg_body: SliceData) -> SdkResult<TvmMessage> {
+    fn create_message(address: MsgAddressInt, msg_body: SliceData) -> SdkResult<TvmMessage> {
 
         let mut msg_header = ExternalInboundMessageHeader::default();
-        msg_header.dst = address.get_msg_address()?;
+        msg_header.dst = address;
         
         let mut msg = TvmMessage::with_ext_in_header(msg_header);
         *msg.body_mut() = Some(msg_body);
@@ -713,13 +719,11 @@ impl Contract {
         msg_body: Option<SliceData>,
         image: ContractImage
     ) -> SdkResult<TvmMessage> {
-        let account_id = image.account_id();
-        let state_init = image.state_init();
         let mut msg_header = ExternalInboundMessageHeader::default();
-        msg_header.dst = AccountAddress::from(account_id).get_msg_address()?;
+        msg_header.dst = AccountAddress::from(image.account_id().clone()).get_msg_address();
         let mut msg = TvmMessage::with_ext_in_header(msg_header);
+        *msg.state_init_mut() = Some(image.state_init());
         *msg.body_mut() = msg_body;
-        *msg.state_init_mut() = Some(state_init);
         Ok(msg)
     }
 
@@ -758,16 +762,13 @@ impl Contract {
 
     /// Sets new default workchain number which will be used in message destination address
     /// construction if client provides only account ID
-    pub fn set_default_workchain(workchain: Option<i32>) {
-        let mut default = DEFAULT_WORKCHAIN.lock().unwrap();
-        *default = workchain;
+    pub fn set_default_workchain(workchain: i32) {
+        *DEFAULT_WORKCHAIN.lock().unwrap() = workchain
     }
 
     /// Returns default workchain number which are used in message destination address
     /// construction if client provides only account ID
-    pub fn get_default_workchain() -> Option<i32> {
-        let default = DEFAULT_WORKCHAIN.lock().unwrap();
-
-        default.clone()
+    pub fn get_default_workchain() -> i32 {
+        *DEFAULT_WORKCHAIN.lock().unwrap()
     }
 }

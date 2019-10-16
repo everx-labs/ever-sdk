@@ -103,12 +103,8 @@ pub fn u256_encode(value: &UInt256) -> String {
     hex::encode(value.as_slice())
 }
 
-pub fn u256_from_slice_data(slice: &tvm::stack::SliceData) -> UInt256 {
-    UInt256::from(slice.storage().as_slice())
-}
-
 pub fn account_encode(value: &tvm::types::AccountId) -> String {
-    hex::encode(&u256_from_slice_data(value))
+    value.to_hex_string()
 }
 
 pub fn generic_id_encode(value: &tvm::block::GenericId) -> String {

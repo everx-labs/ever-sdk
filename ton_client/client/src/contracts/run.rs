@@ -1,4 +1,5 @@
 use ton_sdk::{Contract, Message, MessageType, AbiContract};
+use tvm::block::MsgAddressInt;
 use crypto::keys::{KeyPair, u256_encode, account_decode};
 use types::{ApiResult, ApiError, base64_decode};
 
@@ -86,7 +87,7 @@ pub(crate) fn run(_context: &mut ClientContext, params: ParamsOfRun) -> ApiResul
     let key_pair = if let Some(ref keys) = params.keyPair { Some(keys.decode()?) } else { None };
 
     debug!("run contract");
-    let tr_id = call_contract(&address, &params, key_pair.as_ref())?;
+    let tr_id = call_contract(address.get_msg_address(), &params, key_pair.as_ref())?;
     let tr_id_hex = tr_id.to_hex_string();
 
     debug!("load transaction {}", tr_id_hex);
@@ -141,7 +142,7 @@ pub(crate) fn local_run(_context: &mut ClientContext, params: ParamsOfLocalRun) 
         #[cfg(feature = "node_interaction")]
         None => {
             debug!("load contract");
-            load_contract(&address)?
+            load_contract(&address.get_msg_address())?
         }
         // can't load
         #[cfg(not(feature = "node_interaction"))]
@@ -328,8 +329,8 @@ fn load_out_message(tr: &Transaction, abi_function: &AbiFunction) -> Message {
 }
 
 #[cfg(feature = "node_interaction")]
-fn load_contract(address: &ton_sdk::AccountAddress) -> ApiResult<Contract> {
-    Contract::load(address.clone())
+fn load_contract(address: &MsgAddressInt) -> ApiResult<Contract> {
+    Contract::load(address)
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -340,12 +341,12 @@ fn load_contract(address: &ton_sdk::AccountAddress) -> ApiResult<Contract> {
 
 #[cfg(feature = "node_interaction")]
 fn call_contract(
-    address: &ton_sdk::AccountAddress,
+    address: MsgAddressInt,
     params: &ParamsOfRun,
     key_pair: Option<&Keypair>,
 ) -> ApiResult<TransactionId> {
     let changes_stream = Contract::call_json(
-        address.clone(),
+        address,
         params.functionName.to_owned(),
         params.input.to_string().to_owned(),
         params.abi.to_string().to_owned(),

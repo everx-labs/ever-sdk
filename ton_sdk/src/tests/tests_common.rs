@@ -56,7 +56,7 @@ pub fn init_node_connection() {
     };
 
         
-    init_json(Some(WORKCHAIN), config_json.into()).unwrap();
+    init_json(WORKCHAIN, config_json.into()).unwrap();
 }
 
 fn print_wallet_address(key_pair: &Keypair) {
@@ -303,7 +303,7 @@ pub fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_par
 
 pub fn call_contract(address: AccountId, func: &str, input: &str, abi: &str, key_pair: Option<&Keypair>) -> Transaction {
     // call needed method
-    let changes_stream = Contract::call_json(address.into(), func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
+    let changes_stream = Contract::call_json(AccountAddress::from(address).get_msg_address(), func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
         .expect("Error calling contract method");
 
     // wait transaction id in message-status
@@ -333,7 +333,7 @@ pub fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: 
 {
     // call needed method
     let changes_stream =
-        Contract::call_json(address.into(), func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
+        Contract::call_json(AccountAddress::from(address).get_msg_address(), func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
             .expect("Error calling contract method");
 
     // wait transaction id in message-status
@@ -396,7 +396,7 @@ pub fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: 
 
 pub fn local_contract_call(address: AccountId, func: &str, input: &str, abi: &str, key_pair: Option<&Keypair>) -> String {
 
-    let contract = Contract::load(address.into())
+    let contract = Contract::load(&AccountAddress::from(address).get_msg_address())
         .expect("Error calling load Contract")
         .wait()
         .next()

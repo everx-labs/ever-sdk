@@ -124,7 +124,7 @@ pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfDeplo
 pub(crate) fn encode_unsigned_message(_context: &mut ClientContext, params: ParamsOfEncodeUnsignedDeployMessage) -> ApiResult<ResultOfEncodeUnsignedDeployMessage> {
     let public = decode_public_key(&params.publicKeyHex)?;
     let image = create_image(&params.imageBase64, &public)?;
-    let address_hex = image.account_id().to_hex_string();
+    let address_hex = account_encode(&image.account_id());
     let encoded = ton_sdk::Contract::get_deploy_message_bytes_for_signing(
         "constructor".to_owned(),
         params.constructorParams.to_string().to_owned(),
