@@ -286,8 +286,13 @@ impl AccountAddress {
 
 impl fmt::Display for AccountAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        println!("{}", serde_json::to_string(&self.get_msg_address()).unwrap_or_default());
-        write!(f, "{}", serde_json::to_string(&self.get_msg_address()).unwrap_or_default())
+        write!(
+            f,
+            "{}",
+            serde_json::to_value(&self.get_msg_address())
+                .map_err(|_| fmt::Error)?
+                .as_str()
+                .ok_or(fmt::Error)?)
     }
 }
 
