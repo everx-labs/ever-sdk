@@ -153,30 +153,22 @@ connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_status
 }
 */
 
-const SUBSCRIBE_PARAMS: &str = r#"
-{
-    "subscriptionId": "x0000000000000000000000000000000000000000000000000000000000000001",
-	"pubkey": "x0000000000000000000000000000000000000000000000000000000000000001",
-	"to": "x0000000000000000000000000000000000000000000000000000000000000002",
-	"value": 1234567890,
-	"period": 1234567890
-}"#;
 
 const CONSTRUCTOR_PARAMS: &str = r#"
 {
-	"wallet": "x0000000000000000000000000000000000000000000000000000000000000001"
+	"wallet": "0x0000000000000000000000000000000000000000000000000000000000000001"
 }"#;
 
 
 fn test_call_contract(address: AccountId, key_pair: &Keypair) {
 
-    let func = "subscribe".to_string();
-    let input = SUBSCRIBE_PARAMS.to_string();
+    let func = "getWallet".to_string();
     let abi = test_piggy_bank::SUBSCRIBE_CONTRACT_ABI.to_string();
 
     // call needed method
-    let changes_stream = Contract::call_json(address.into(), func.clone(), input, abi.clone(), Some(&key_pair))
-        .expect("Error calling contract method");
+    let changes_stream = Contract::call_json(
+        address.into(), func.clone(), "{}".to_owned(), abi.clone(), Some(&key_pair))
+            .expect("Error calling contract method");
 
     // wait transaction id in message-status 
     let mut tr_id = None;
@@ -325,13 +317,26 @@ fn test_deploy_empty_contract() {
 
     println!("Account ID {}", acc_id);
 
-    Contract::load(acc_id.into())
+    /*Contract::load(acc_id.into())
         .expect("Error calling load Contract")
         .wait()
         .next()
         .expect("Error unwrap stream next while loading Contract")
         .expect("Error unwrap result while loading Contract")
-        .expect("Error unwrap contract while loading Contract");
+        .expect("Error unwrap contract while loading Contract");*/
+        	// wait for grams recieving
+	queries_helper::wait_for(
+        "accounts",
+        &json!({
+			"id": { "eq": acc_id.to_hex_string() },
+			"storage": {
+				"balance": {
+					"Grams": { "gt": "0" }
+				}
+			}
+		}).to_string(),
+		"id storage {balance {Grams}}"
+	).unwrap();
     println!("Contract got!!!");
 
 
@@ -376,7 +381,7 @@ fn test_load_nonexistent_contract() {
 
 #[test]
 fn test_address_parsing() {
-    Contract::set_default_workchain(Some(-1));
+    Contract::set_default_workchain(Some(WORKCHAIN));
 
     let short = "fcb91a3a3816d0f7b8c2c76108b8a9bc5a6b7a55bd79f8ab101c52db29232260";
     let full_std = "-1:fcb91a3a3816d0f7b8c2c76108b8a9bc5a6b7a55bd79f8ab101c52db29232260";
@@ -384,8 +389,9 @@ fn test_address_parsing() {
     let base64_url = "kf_8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15-KsQHFLbKSMiYIny";
 
     let address = tvm::block::MsgAddressInt::with_standart(None, -1, hex::decode(short).unwrap().into()).unwrap();
+    let wc0_address = tvm::block::MsgAddressInt::with_standart(None, 0, hex::decode(short).unwrap().into()).unwrap();
 
-    assert_eq!(address, AccountAddress::from_str(short).expect("Couldn't parse short address").get_msg_address().unwrap());
+    assert_eq!(wc0_address, AccountAddress::from_str(short).expect("Couldn't parse short address").get_msg_address().unwrap());
     assert_eq!(address, AccountAddress::from_str(full_std).expect("Couldn't parse full_std address").get_msg_address().unwrap());
     assert_eq!(address, AccountAddress::from_str(base64).expect("Couldn't parse base64 address").get_msg_address().unwrap());
     assert_eq!(address, AccountAddress::from_str(base64_url).expect("Couldn't parse base64_url address").get_msg_address().unwrap());

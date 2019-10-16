@@ -155,7 +155,7 @@ pub const SUBSCRIBE_CONTRACT_ABI: &str = r#"
 	]
 } "#;
 
-const PIGGY_BANK_CONTRACT_ABI: &str = r#"
+pub const PIGGY_BANK_CONTRACT_ABI: &str = r#"
 {
 	"ABI version": 1,
 	"functions": [
