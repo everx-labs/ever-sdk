@@ -154,7 +154,7 @@ fn wait_message_processed_by_id(message_id: MessageId)-> TransactionId {
 
 // Create message "from wallet" to transfer some funds 
 // from one account to another
-pub fn create_external_transfer_funds_message(src: AccountId, dst: MsgAddressInt, value: u128) -> Message {
+pub fn create_external_transfer_funds_message(src: MsgAddressInt, dst: MsgAddressInt, value: u128) -> Message {
     
     let mut rng = thread_rng();    
     let mut builder = BuilderData::new();
@@ -162,7 +162,7 @@ pub fn create_external_transfer_funds_message(src: AccountId, dst: MsgAddressInt
     let mut msg = Message::with_ext_in_header(
         ExternalInboundMessageHeader {
             src: MsgAddressExt::with_extern(builder.into()).unwrap(),
-            dst: MsgAddressInt::with_standart(None, 0, src.clone()).unwrap(),
+            dst: src.clone(),
             import_fee: Grams::default(),
         }
     );
@@ -170,12 +170,7 @@ pub fn create_external_transfer_funds_message(src: AccountId, dst: MsgAddressInt
     let mut balance = CurrencyCollection::default();
     balance.grams = Grams(value.into());
 
-    let workchain = Contract::get_default_workchain();
-
-    let int_msg_hdr = InternalMessageHeader::with_addresses(
-            MsgAddressInt::with_standart(None, workchain as i8, src).unwrap(),
-            dst,
-            balance);
+    let int_msg_hdr = InternalMessageHeader::with_addresses(src, dst, balance);
 
     *msg.body_mut() = Some(int_msg_hdr.write_to_new_cell().unwrap().into());
 
@@ -192,7 +187,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
 
     // before deploying contract need to transfer some funds to its address
     //println!("Account ID to take some grams {}\n", account_id.to_hex_string());
-    let msg = create_external_transfer_funds_message(AccountId::from([0_u8; 32]), account_id.get_msg_address(), 100000000000);
+    let msg = create_external_transfer_funds_message(AccountAddress::from(AccountId::from([0; 32])).get_msg_address(), account_id.get_msg_address(), 100000000000);
     let changes_stream = Contract::send_message(msg).expect("Error calling contract method");
 
     // wait transaction id in message-status 

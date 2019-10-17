@@ -37,14 +37,14 @@ fn full_test_piggy_bank() {
 	// deploy subscription
 
     println!("Subscription contract deploying...\n");
-	let subscription_constructor_params = format!("{{ \"wallet\" : \"{}\" }}", wallet_address);
+	let subscription_constructor_params = format!("{{ \"wallet\" : \"0x{:x}\" }}", wallet_address.get_account_id().unwrap());
 	let subscripition_address = deploy_contract_and_wait("Subscription.tvc", SUBSCRIBE_CONTRACT_ABI, &subscription_constructor_params, &keypair);
 	println!("Subscription contract deployed. Account address {}\n", subscripition_address);
 
 
     // call setSubscriptionAccount in wallet
     println!("Adding subscription address to the wallet...\n");
-	let set_subscription_params = format!("{{ \"addr\" : \"{}\" }}", subscripition_address);
+	let set_subscription_params = format!("{{ \"addr\" : \"0x{:x}\" }}", subscripition_address.get_account_id().unwrap());
 
 	let _set_subscription_answer = call_contract(&wallet_address, "setSubscriptionAccount", set_subscription_params, WALLET_ABI, Some(&keypair));
 
@@ -55,10 +55,10 @@ fn full_test_piggy_bank() {
     let subscr_id_str = hex::encode(&[0x11; 32]);
 	let pubkey_str = hex::encode(keypair.public.as_bytes());
 	let subscribe_params = format!(
-        "{{ \"subscriptionId\" : \"0x{}\", \"pubkey\" : \"0x{}\", \"to\": \"{}\", \"value\" : 123, \"period\" : 456 }}",
+        "{{ \"subscriptionId\" : \"0x{}\", \"pubkey\" : \"0x{}\", \"to\": \"0x{:x}\", \"value\" : 123, \"period\" : 456 }}",
         subscr_id_str,
         &pubkey_str,
-        piggy_bank_address,
+        piggy_bank_address.get_account_id().unwrap(),
     );
 
 	call_contract(&subscripition_address, "subscribe", subscribe_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
@@ -68,10 +68,10 @@ fn full_test_piggy_bank() {
     println!("Adding subscription 2...\n");
     let subscr_id_str = hex::encode(&[0x22; 32]);
 	let subscribe_params = format!(
-        "{{ \"subscriptionId\" : \"0x{}\", \"pubkey\" : \"0x{}\", \"to\": \"{}\", \"value\" : 5000000000, \"period\" : 86400 }}",
+        "{{ \"subscriptionId\" : \"0x{}\", \"pubkey\" : \"0x{}\", \"to\": \"0x{:x}\", \"value\" : 5000000000, \"period\" : 86400 }}",
         subscr_id_str,
         &pubkey_str,
-        piggy_bank_address,
+        piggy_bank_address.get_account_id().unwrap(),
     );
 	call_contract(&subscripition_address, "subscribe", subscribe_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
 	println!("Subscription 2 added.\n");

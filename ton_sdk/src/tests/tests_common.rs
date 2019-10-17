@@ -33,11 +33,11 @@ pub fn init_node_connection() {
         r#"
         {
             "queries_config": {
-                "queries_server": "http://192.168.99.100/graphql",
-                "subscriptions_server": "ws://192.168.99.100/graphql"
+                "queries_server": "http://127.0.0.1/graphql",
+                "subscriptions_server": "ws://127.0.0.1/graphql"
             },
             "requests_config": {
-                "requests_server": "http://192.168.99.100/topics/requests"
+                "requests_server": "http://127.0.0.1/topics/requests"
             }
         }"#
     } else {
@@ -97,7 +97,7 @@ fn test_send_grams_from_giver() {
         &GIVER_ADDRESS.to_owned(),
         "sendGrams",
         json!({
-            "dest": format!("{}", WALLET_ADDRESS.to_owned()),
+            "dest": format!("0x{:x}", WALLET_ADDRESS.get_account_id().unwrap()),
             "amount": 1_000_000_000_000u64
         }).to_string(),
         GIVER_ABI,
@@ -105,7 +105,6 @@ fn test_send_grams_from_giver() {
 }
 
 #[test]
-#[ignore]
 fn test_deploy_giver() {
     init_node_connection();
 
@@ -231,7 +230,7 @@ pub fn get_grams_from_giver(address: &AccountAddress) {
             &GIVER_ADDRESS.to_owned(),
             "sendGrams",
             json!({
-            "dest": format!("{}", address),
+            "dest": format!("0x{:x}", address.get_account_id().unwrap()),
             "amount": 500_000_000u64
             }).to_string(),
             GIVER_ABI,
@@ -248,7 +247,7 @@ pub fn get_grams_from_giver(address: &AccountAddress) {
             &WALLET_ADDRESS.to_owned(),
             "sendTransaction",
             json!({
-                "dest": format!("{}", address),
+                "dest": format!("0x{:x}", address.get_account_id().unwrap()),
                 "value": 500_000_000u64,
                 "bounce": false
             }).to_string(),
@@ -429,7 +428,7 @@ const GIVER_ABI: &str = r#"
 		{
 			"name": "sendGrams",
 			"inputs": [
-				{"name":"dest","type":"address"},
+				{"name":"dest","type":"uint256"},
 				{"name":"amount","type":"uint64"}
 			],
 			"outputs": [
@@ -456,7 +455,7 @@ const SIMPLE_WALLET_ABI: &str = r#"
 		{
 			"name": "sendTransaction",
 			"inputs": [
-				{"name":"dest","type":"address"},
+				{"name":"dest","type":"uint256"},
 				{"name":"value","type":"uint128"},
 				{"name":"bounce","type":"bool"}
 			],
@@ -466,7 +465,7 @@ const SIMPLE_WALLET_ABI: &str = r#"
 		{
 			"name": "setSubscriptionAccount",
 			"inputs": [
-				{"name":"addr","type":"address"}
+				{"name":"addr","type":"uint256"}
 			],
 			"outputs": [
 			]

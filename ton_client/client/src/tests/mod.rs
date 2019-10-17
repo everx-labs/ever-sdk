@@ -4,6 +4,7 @@ use ::{tc_read_json_response, tc_destroy_json_response};
 use serde_json::Value;
 use log::{Metadata, Record, LevelFilter};
 use {tc_create_context, tc_destroy_context};
+use tvm::block::MsgAddressInt;
 
 struct SimpleLogger;
 
@@ -50,7 +51,7 @@ fn test() {
         println!("result: {}", version.result_json.to_string());
 
         let _deployed = json_request(context, "setup",
-            json!({"baseUrl": "http://192.168.99.100"}));
+            json!({"baseUrl": "http://127.0.0.1"}));
 
 		let keys = json_request(context, "crypto.ed25519.keypair", json!({}));
 
@@ -71,7 +72,7 @@ fn test() {
 		assert_eq!(address.error_json, "");
 
 		let address = serde_json::from_str::<Value>(&address.result_json).unwrap()["address"].clone();
-		let address = address.as_str().unwrap();
+		let address = serde_json::from_str::<MsgAddressInt>(&address.as_str().unwrap()).unwrap();
 
 		let giver_abi: Value = serde_json::from_str(GIVER_ABI).unwrap();
 
@@ -81,7 +82,7 @@ fn test() {
                 "abi": giver_abi,
                 "functionName": "sendGrams",
                 "input": &json!({
-					"dest": format!("0x{}", address),
+					"dest": format!("0x{:x}", address.get_address()),
 					"amount": 10_000_000_000u64
 					}),
             }),
