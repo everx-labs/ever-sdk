@@ -1,9 +1,8 @@
 use std::sync::Mutex;
-use tvm::types::UInt256;
+use tvm::types::{AccountId, UInt256};
 use ed25519_dalek::{Keypair, PublicKey, SecretKey};
 use types::{ApiResult, ApiError, hex_decode};
 use std::collections::HashMap;
-use ton_sdk::AccountAddress;
 
 pub type Key192 = [u8; 24];
 pub type Key256 = [u8; 32];
@@ -104,8 +103,8 @@ pub fn u256_encode(value: &UInt256) -> String {
     hex::encode(value.as_slice())
 }
 
-pub fn account_encode(value: &AccountAddress) -> String {
-    serde_json::to_string(&value.get_msg_address()).unwrap_or_default()
+pub fn account_encode(value: &AccountId) -> String {
+    value.to_hex_string()
 }
 
 pub fn generic_id_encode(value: &tvm::block::GenericId) -> String {

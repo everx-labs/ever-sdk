@@ -33,11 +33,11 @@ pub fn init_node_connection() {
         r#"
         {
             "queries_config": {
-                "queries_server": "http://127.0.0.1/graphql",
-                "subscriptions_server": "ws://127.0.0.1/graphql"
+                "queries_server": "http://192.168.99.100/graphql",
+                "subscriptions_server": "ws://192.168.99.100/graphql"
             },
             "requests_config": {
-                "requests_server": "http://127.0.0.1/topics/requests"
+                "requests_server": "http://192.168.99.100/topics/requests"
             }
         }"#
     } else {
@@ -69,13 +69,11 @@ fn print_wallet_address(key_pair: &Keypair) {
 }
 
 #[test]
-#[ignore]
 fn test_print_address() {
     print_wallet_address(&WALLET_KEYS);
 }
 
 #[test]
-#[ignore]
 fn test_generate_keypair_and_address() {
     // generate key pair
     let mut csprng = OsRng::new().unwrap();
@@ -87,7 +85,6 @@ fn test_generate_keypair_and_address() {
 }
 
 #[test]
-#[ignore]
 fn test_send_grams_from_giver() {
     init_node_connection();
 
@@ -120,20 +117,18 @@ fn is_message_done(status: TransactionProcessingStatus) -> bool {
 }
 
 fn wait_message_processed(changes_stream: Box<dyn Stream<Item = ContractCallState, Error = SdkError>>) -> TransactionId {
-    let mut tr_id = None;
     for state in changes_stream.wait() {
-        if let Err(e) = state {
-            panic!("error next state getting: {}", e);
-        }
-        if let Ok(s) = state {
-            println!("{} : {:?}", s.id.to_hex_string(), s.status);
-            if is_message_done(s.status) {
-                tr_id = Some(s.id.clone());
-                break;
+        match state {
+            Ok(s) => {
+                println!("{} : {:?}", s.id.to_hex_string(), s.status);
+                if is_message_done(s.status) {
+                    return s.id.clone()
+                }
             }
+            Err(e) => panic!("error next state getting: {}", e)
         }
     }
-    tr_id.expect("Error: no transaction id")
+    panic!("Error: no transaction id")
 }
 
 fn wait_message_processed_by_id(id: MessageId)-> TransactionId {
@@ -296,7 +291,6 @@ pub fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_par
 
 pub fn call_contract(address: &AccountAddress, func: &str, input: String, abi: &str, key_pair: Option<&Keypair>) -> Transaction {
     // call needed method
-    println!("{}", input);
     let changes_stream = Contract::call_json(address.get_msg_address(), func.to_owned(), input, abi.to_owned(), key_pair)
         .expect("Error calling contract method");
 
@@ -387,32 +381,6 @@ pub fn call_contract_and_wait(address: &AccountAddress, func: &str, input: Strin
     // 2. transaction object with out messages ids
     // 3. message object with body
 }
-
-// pub fn local_contract_call(address: &AccountAddress, func: &str, input: &str, abi: &str, key_pair: Option<&Keypair>) -> String {
-
-//     let contract = Contract::load(&address.get_msg_address())
-//         .expect("Error calling load Contract")
-//         .wait()
-//         .next()
-//         .expect("Error unwrap stream next while loading Contract")
-//         .expect("Error unwrap result while loading Contract")
-//         .expect("Error unwrap contract while loading Contract");
-
-//     // call needed method
-//     let messages = contract.local_call_json(func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
-//         .expect("Error calling locally");
-
-//     for msg in messages {
-//         let msg = crate::Message::with_msg(msg);
-//         if msg.msg_type() == MessageType::ExternalOutbound {
-//             return Contract::decode_function_response_json(
-//                 abi.to_owned(), func.to_owned(), msg.body().expect("Message has no body"))
-//                     .expect("Error decoding result");
-//         }
-//     }
-
-//     panic!("No output messages")
-// }
 
 const GIVER_ABI: &str = r#"
 {

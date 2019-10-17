@@ -247,6 +247,9 @@ impl AccountAddress {
 
     fn get_std_address(&self) -> SdkResult<(i8, Vec<u8>)> {
         match self {
+            AccountAddress::Short(accouunt_id) => {
+                Ok((Contract::get_default_workchain() as i8, accouunt_id.get_bytestring(0)))
+            }
             AccountAddress::Full(address) => {
                 match address {
                     MsgAddressInt::AddrStd(msg_address) => {
@@ -258,7 +261,6 @@ impl AccountAddress {
                     _ => bail!(SdkErrorKind::InvalidData("Non-std address".to_owned()))
                 }
             },
-            _ => bail!(SdkErrorKind::InvalidData("Non-std address".to_owned()))
         }
     }
 
@@ -322,7 +324,7 @@ impl Contract {
 
     // Asynchronously loads a Contract instance or None if contract with given id is not exists
     pub fn load(address: &MsgAddressInt) -> SdkResult<Box<dyn Stream<Item = Option<Contract>, Error = SdkError>>> {
-        let id = serde_json::to_string(address)?;
+        let id = address.get_address().to_hex_string();
 
         let map = queries_helper::load_record_fields(
             CONTRACTS_TABLE_NAME,

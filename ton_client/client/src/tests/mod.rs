@@ -39,7 +39,6 @@ fn json_request(
     }
 }
 
-
 #[test]
 fn test() {
     log::set_boxed_logger(Box::new(SimpleLogger))
@@ -51,7 +50,7 @@ fn test() {
         println!("result: {}", version.result_json.to_string());
 
         let _deployed = json_request(context, "setup",
-            json!({"baseUrl": "http://127.0.0.1"}));
+            json!({"baseUrl": "http://192.168.99.100"}));
 
 		let keys = json_request(context, "crypto.ed25519.keypair", json!({}));
 
@@ -72,7 +71,7 @@ fn test() {
 		assert_eq!(address.error_json, "");
 
 		let address = serde_json::from_str::<Value>(&address.result_json).unwrap()["address"].clone();
-		let address = serde_json::from_str::<MsgAddressInt>(&address.as_str().unwrap()).unwrap();
+		let address = serde_json::from_value::<MsgAddressInt>(address).unwrap();
 
 		let giver_abi: Value = serde_json::from_str(GIVER_ABI).unwrap();
 
@@ -116,7 +115,7 @@ fn test() {
             }),
         );
 
-        assert_eq!(format!("{{\"address\":\"{}\"}}", address), deployed.result_json);
+        assert_eq!(format!("{{\"address\":\"{:x}\"}}", address.get_address()), deployed.result_json);
 
         let result = json_request(context, "contracts.run",
             json!({

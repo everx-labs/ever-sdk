@@ -11,12 +11,12 @@ use tvm::block::{
 use crate::test_piggy_bank::PIGGY_BANK_CONTRACT_ABI;
 
 #[test]
-#[ignore]
 fn test_local_contract_call() {
     // sample contract
     let code = compile_code("
         SETCP0
-        THROWIF 100  ; check if message is external
+        EQINT -1
+        THROWIFNOT 100  ; check if message is external
         PLDU 8
         MULCONST 8
         PUSHROOT
