@@ -87,7 +87,7 @@ pub(crate) fn run(_context: &mut ClientContext, params: ParamsOfRun) -> ApiResul
     let key_pair = if let Some(ref keys) = params.keyPair { Some(keys.decode()?) } else { None };
 
     debug!("run contract");
-    let tr_id = call_contract(address.get_msg_address(), &params, key_pair.as_ref())?;
+    let tr_id = call_contract(address, &params, key_pair.as_ref())?;
     let tr_id_hex = tr_id.to_hex_string();
 
     debug!("load transaction {}", tr_id_hex);
@@ -142,7 +142,7 @@ pub(crate) fn local_run(_context: &mut ClientContext, params: ParamsOfLocalRun) 
         #[cfg(feature = "node_interaction")]
         None => {
             debug!("load contract");
-            load_contract(&address.get_msg_address())?
+            load_contract(&address)?
         }
         // can't load
         #[cfg(not(feature = "node_interaction"))]

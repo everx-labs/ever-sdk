@@ -182,7 +182,7 @@ impl ApiError {
             "Invalid secret key [{}]: {}", err, key)
     }
 
-    pub fn crypto_invalid_address<E: Display>(err: E, address: &String) -> Self {
+    pub fn crypto_invalid_address<E: Display>(err: E, address: &str) -> Self {
         sdk_err!(CryptoInvalidAddress,
             "Invalid address [{}]: {}", err, address)
     }

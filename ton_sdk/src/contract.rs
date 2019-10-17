@@ -1,7 +1,6 @@
 use crate::*;
 use std::io::{Read, Seek, Cursor};
 use std::sync::{Arc, Mutex};
-use std::fmt;
 use ed25519_dalek::{Keypair, PublicKey};
 use tvm::stack::{BuilderData, CellData, SliceData, find_tag};
 use tvm::types::AccountId;
@@ -24,7 +23,6 @@ use tvm::block::{
 };
 use std::convert::Into;
 use crc16::*;
-use std::convert::TryFrom;
 
 pub use ton_abi::json_abi::DecodedMessage;
 
@@ -60,7 +58,7 @@ const ACCOUNT_FIELDS: &str = r#"
 "#;
 
 lazy_static! {
-    static ref DEFAULT_WORKCHAIN: Mutex<i32> = Mutex::new(0);
+    static ref DEFAULT_WORKCHAIN: Mutex<i8> = Mutex::new(0);
 }
 
 #[cfg(test)]
@@ -77,7 +75,7 @@ pub struct ContractCallState {
 // The struct represents conract's image
 pub struct ContractImage {
     state_init: StateInit,
-    id: AccountAddress
+    id: MsgAddressInt
 }
 
 #[allow(dead_code)]
@@ -111,7 +109,7 @@ impl ContractImage {
             state_init.set_library(library_roots.remove(0));
         }
 
-        let id = AccountAddress::from(AccountId::from(state_init.hash()?));
+        let id = MsgAddressInt::with_standart(None, Contract::get_default_workchain(), AccountId::from(state_init.hash()?))?;
 
         Ok(Self{ state_init, id })
     }
@@ -149,7 +147,7 @@ impl ContractImage {
         }
         state_init.set_data(new_data.into());
 
-        let id = AccountAddress::from(AccountId::from(state_init.hash()?));
+        let id = MsgAddressInt::with_standart(None, Contract::get_default_workchain(), AccountId::from(state_init.hash()?))?;
 
         Ok(Self{ state_init, id })
     }
@@ -160,121 +158,33 @@ impl ContractImage {
     }
 
     // Returns future contract's identifier
-    pub fn account_id(&self) -> AccountAddress { // TODO: make reference
+    pub fn account_id(&self) -> MsgAddressInt {
         self.id.clone()
     }
 }
 
-/// Enum represents blockchain account address.
-/// `Short` value contains only `AccountId` value and is used for addressing contracts in default
-/// workchain. `Full` value is fully qualified account address and can be used for addressing
-/// contracts in any workchain
-#[derive(Clone, Eq, PartialEq)]
-pub enum AccountAddress {
-    Short(AccountId),
-    Full(MsgAddressInt)
+pub fn decode_std_base64(data: &str) -> SdkResult<MsgAddressInt> {
+    // conversion from base64url
+    let data = data.replace('_', "/").replace('-', "+");
+
+    let vec = base64::decode(&data)?;
+
+    // check CRC and address tag
+    if State::<XMODEM>::calculate(&vec[..34]).to_be_bytes() != &vec[34..36] || vec[0] & 0x3f != 0x11 {
+        bail!(SdkErrorKind::InvalidArg(data.to_owned()));
+    };
+
+    Ok(MsgAddressInt::with_standart(None, vec[1] as i8, vec[2..34].into())?)
 }
 
-impl AccountAddress {
-    /// Returns `AccountId` from the address
-    pub fn get_account_id(&self) -> SdkResult<AccountId> {
-        match self {
-            AccountAddress::Short(account_id) => Ok(account_id.clone()),
-            AccountAddress::Full(address) => {
-                let vec = address.get_address();
-                if vec.remaining_bits() == 256 {
-                    Ok(vec)
-                } else {
-                    Err(SdkErrorKind::InvalidData("Address must be 32 bytes long".to_owned()).into())
-                }
-            }
-        }
-    }
-
-    /// Returns full account address as `MsgAddressInt` struct
-    pub fn get_msg_address(&self) -> MsgAddressInt {
-        match self {
-            AccountAddress::Full(address) => address.clone(),
-            AccountAddress::Short(id) => {
-                let workchain = Contract::get_default_workchain();
-                MsgAddressInt::with_standart(None, workchain as i8, id.clone()).unwrap()
-            }
-        }
-    }
-
-    /// Creates full account address from `AccountId` and workchain number
-    pub fn with_account_id_and_workchain(workchain: i8, account_id: AccountId) -> SdkResult<Self> {
-        Ok(AccountAddress::Full(MsgAddressInt::with_standart(None, workchain, account_id)?))
-    }
-
-    
-    fn decode_std_base64(data: &str) -> SdkResult<Self> {
-        // conversion from base64url
-        let data = data.replace('_', "/").replace('-', "+");
-
-        let vec = base64::decode(&data)?;
-
-        // check CRC and address tag
-        if State::<XMODEM>::calculate(&vec[..34]) != u16::from_be_bytes(<[u8; 2]>::try_from(&vec[34..36])?)
-            || vec[0] & 0x3f != 0x11
-        {
-            bail!(SdkErrorKind::InvalidArg(data.to_owned()));
-        };
-
-        Self::with_account_id_and_workchain(vec[1] as i8, vec[2..34].into())
-    }
-
-    fn decode_std_hex(data: &str) -> SdkResult<Self> {
-        let vec: Vec<&str> = data.split(':').collect();
-
-        if vec.len() != 2 {
-            bail!(SdkErrorKind::InvalidArg(data.to_owned()));
-        }
-
-        Self::with_account_id_and_workchain(i8::from_str_radix(vec[0], 10)?, hex::decode(vec[1])?.into())
-    }
-    
-    /// Retrieves account address from `str` in Telegram lite-client format
-    pub fn from_str(data: &str) -> SdkResult<Self> {
-        if data.len() == 64 {
-            Ok(AccountAddress::Short(hex::decode(data)?.into()))
-        } else if data.len() == 48 {
-            Self::decode_std_base64(data)
-        } else {
-            Self::decode_std_hex(data)
-        }
-    }
-
-    fn get_std_address(&self) -> SdkResult<(i8, Vec<u8>)> {
-        match self {
-            AccountAddress::Short(accouunt_id) => {
-                Ok((Contract::get_default_workchain() as i8, accouunt_id.get_bytestring(0)))
-            }
-            AccountAddress::Full(address) => {
-                match address {
-                    MsgAddressInt::AddrStd(msg_address) => {
-                        if msg_address.address.remaining_bits() != 256 {
-                            bail!(SdkErrorKind::InvalidData("Address must be 32 bytes long".to_owned()));
-                        }
-                        Ok((msg_address.workchain_id, msg_address.address.get_bytestring(0)))
-                    },
-                    _ => bail!(SdkErrorKind::InvalidData("Non-std address".to_owned()))
-                }
-            },
-        }
-    }
-
-    /// Returns base64 address representation
-    pub fn as_base64(&self, bounceable: bool, test: bool, as_url: bool) -> SdkResult<String> {
-        let (worckchain, mut address) = self.get_std_address()?;
-
+pub fn encode_base64(address: &MsgAddressInt, bounceable: bool, test: bool, as_url: bool) -> SdkResult<String> {
+    if let MsgAddressInt::AddrStd(address) = address {
         let mut tag = if bounceable { 0x11 } else { 0x51 };
         if test { tag |= 0x80 };
         let mut vec = vec![tag];
-        vec.append(&mut worckchain.to_be_bytes().to_vec());
-        vec.append(&mut address);
-        
-        vec.append(&mut State::<XMODEM>::calculate(&vec[..]).to_be_bytes().to_vec());
+        vec.extend_from_slice(&address.workchain_id.to_be_bytes());
+        vec.append(&mut address.address.get_bytestring(0));
+        vec.extend_from_slice(&State::<XMODEM>::calculate(&vec).to_be_bytes());
 
         let result = base64::encode(&vec);
 
@@ -283,33 +193,8 @@ impl AccountAddress {
         } else {
             Ok(result)
         }
-    }
+    } else { bail!(SdkErrorKind::InvalidData("Non-std address".to_owned())) }
 }
-
-impl fmt::Display for AccountAddress {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            serde_json::to_value(&self.get_msg_address())
-                .map_err(|_| fmt::Error)?
-                .as_str()
-                .ok_or(fmt::Error)?)
-    }
-}
-
-impl From<AccountId> for AccountAddress {
-    fn from(data: AccountId) -> Self {
-        AccountAddress::Short(data)
-    }
-}
-
-impl From<MsgAddressInt> for AccountAddress {
-    fn from(data: MsgAddressInt) -> Self {
-        AccountAddress::Full(data)
-    }
-}
-
 
 // The struct represents smart contract and allows
 // to deploy and call it, to get some contract's properties.
@@ -456,7 +341,7 @@ impl Contract {
     pub fn address(&self) -> MsgAddressInt {
         match self.acc.get_addr() {
             Some(MsgAddressInt::AddrStd(_)) => self.acc.get_addr().unwrap().clone(),
-            _ => MsgAddressInt::with_standart(None, Contract::get_default_workchain() as i8,  [0; 32].into()).unwrap()
+            _ => MsgAddressInt::with_standart(None, Contract::get_default_workchain(),  [0; 32].into()).unwrap()
         }
     }
 
@@ -592,14 +477,14 @@ impl Contract {
     // Packs given inputs by abi into Message struct.
     // Works with json representation of input and abi.
     // Returns message's bag of cells and identifier.
-    pub fn construct_call_message_json(address: AccountAddress, func: String, input: String,
+    pub fn construct_call_message_json(address: MsgAddressInt, func: String, input: String,
         abi: String, key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
 
         // pack params into bag of cells via ABI
         let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
-        let address = address.get_msg_address();
+        let address = address;
         let msg = Self::create_message(address, msg_body.into())?;
 
         Self::serialize_message(msg)
@@ -607,10 +492,10 @@ impl Contract {
 
     // Creates Message struct with provided body and account address
     // Returns message's bag of cells and identifier.
-    pub fn construct_call_message_with_body(address: AccountAddress, body: &[u8]) -> SdkResult<(Vec<u8>, MessageId)> {
+    pub fn construct_call_message_with_body(address: MsgAddressInt, body: &[u8]) -> SdkResult<(Vec<u8>, MessageId)> {
         let body_cell = Self::deserialize_tree_to_slice(body)?;
 
-        let address = address.get_msg_address();
+        let address = address;
         let msg = Self::create_message(address, body_cell)?;
 
         Self::serialize_message(msg)
@@ -619,14 +504,13 @@ impl Contract {
     // Packs given inputs by abi into Message struct without sign and returns data to sign.
     // Sign should be then added with `add_sign_to_message` function
     // Works with json representation of input and abi.
-    pub fn get_call_message_bytes_for_signing(address: AccountAddress, func: String, input: String, 
+    pub fn get_call_message_bytes_for_signing(address: MsgAddressInt, func: String, input: String, 
         abi: String) -> SdkResult<MessageToSign> {
         
         // pack params into bag of cells via ABI
         let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(abi, func, input)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
-        let address = address.get_msg_address();
         let msg = Self::create_message(address, msg_body.into())?;
 
         Self::serialize_message(msg).map(|(msg_data, _id)| {
@@ -732,7 +616,7 @@ impl Contract {
         image: ContractImage
     ) -> SdkResult<TvmMessage> {
         let mut msg_header = ExternalInboundMessageHeader::default();
-        msg_header.dst = AccountAddress::from(image.account_id().clone()).get_msg_address();
+        msg_header.dst = image.account_id();
         let mut msg = TvmMessage::with_ext_in_header(msg_header);
         *msg.state_init_mut() = Some(image.state_init());
         *msg.body_mut() = msg_body;
@@ -774,13 +658,13 @@ impl Contract {
 
     /// Sets new default workchain number which will be used in message destination address
     /// construction if client provides only account ID
-    pub fn set_default_workchain(workchain: i32) {
+    pub fn set_default_workchain(workchain: i8) {
         *DEFAULT_WORKCHAIN.lock().unwrap() = workchain
     }
 
     /// Returns default workchain number which are used in message destination address
     /// construction if client provides only account ID
-    pub fn get_default_workchain() -> i32 {
+    pub fn get_default_workchain() -> i8 {
         *DEFAULT_WORKCHAIN.lock().unwrap()
     }
 }

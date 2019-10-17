@@ -30,23 +30,23 @@ fn full_test_piggy_bank() {
 
     // get goal from piggy
     println!("Get goal from piggy...\n");
-    let (get_goal_answer, _) = call_contract_and_wait(&piggy_bank_address, "getGoal", "{}".to_string(), PIGGY_BANK_CONTRACT_ABI, None);
+    let (get_goal_answer, _) = call_contract_and_wait(piggy_bank_address.clone(), "getGoal", "{}".to_string(), PIGGY_BANK_CONTRACT_ABI, None);
     //let get_goal_answer = local_contract_call(piggy_bank_address.clone(), "getGoal", "{}", PIGGY_BANK_CONTRACT_ABI, None);
     println!("piggy answer {}", get_goal_answer);
 
 	// deploy subscription
 
     println!("Subscription contract deploying...\n");
-	let subscription_constructor_params = format!("{{ \"wallet\" : \"0x{:x}\" }}", wallet_address.get_account_id().unwrap());
+	let subscription_constructor_params = format!("{{ \"wallet\" : \"0x{:x}\" }}", wallet_address.get_address());
 	let subscripition_address = deploy_contract_and_wait("Subscription.tvc", SUBSCRIBE_CONTRACT_ABI, &subscription_constructor_params, &keypair);
 	println!("Subscription contract deployed. Account address {}\n", subscripition_address);
 
 
     // call setSubscriptionAccount in wallet
     println!("Adding subscription address to the wallet...\n");
-	let set_subscription_params = format!("{{ \"addr\" : \"0x{:x}\" }}", subscripition_address.get_account_id().unwrap());
+	let set_subscription_params = format!("{{ \"addr\" : \"0x{:x}\" }}", subscripition_address.get_address());
 
-	let _set_subscription_answer = call_contract(&wallet_address, "setSubscriptionAccount", set_subscription_params, WALLET_ABI, Some(&keypair));
+	let _set_subscription_answer = call_contract(wallet_address, "setSubscriptionAccount", set_subscription_params, WALLET_ABI, Some(&keypair));
 
 	println!("Subscription address added to the wallet.\n");
 
@@ -58,10 +58,10 @@ fn full_test_piggy_bank() {
         "{{ \"subscriptionId\" : \"0x{}\", \"pubkey\" : \"0x{}\", \"to\": \"0x{:x}\", \"value\" : 123, \"period\" : 456 }}",
         subscr_id_str,
         &pubkey_str,
-        piggy_bank_address.get_account_id().unwrap(),
+        piggy_bank_address.get_address(),
     );
 
-	call_contract(&subscripition_address, "subscribe", subscribe_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
+	call_contract(subscripition_address.clone(), "subscribe", subscribe_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
 	println!("Subscription 1 added.\n");
 
     	// call subscribe in subscription
@@ -71,14 +71,14 @@ fn full_test_piggy_bank() {
         "{{ \"subscriptionId\" : \"0x{}\", \"pubkey\" : \"0x{}\", \"to\": \"0x{:x}\", \"value\" : 5000000000, \"period\" : 86400 }}",
         subscr_id_str,
         &pubkey_str,
-        piggy_bank_address.get_account_id().unwrap(),
+        piggy_bank_address.get_address(),
     );
-	call_contract(&subscripition_address, "subscribe", subscribe_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
+	call_contract(subscripition_address.clone(), "subscribe", subscribe_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
 	println!("Subscription 2 added.\n");
 
     println!("Call getSubscription with id {}\n", &subscr_id_str);
     let get_params = format!("{{ \"subscriptionId\" : \"0x{}\" }}", &subscr_id_str);
-    call_contract_and_wait(&subscripition_address, "getSubscription", get_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
+    call_contract_and_wait(subscripition_address.clone(), "getSubscription", get_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
     println!("getSubscription called.\n");
 
     let t = now.elapsed();

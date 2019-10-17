@@ -23,7 +23,7 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 #[derive(Deserialize)]
 #[serde(rename_all="camelCase")]
 pub(crate) struct SetupParams {
-    pub default_workchain: Option<i32>,
+    pub default_workchain: Option<i8>,
     pub base_url: Option<String>,
     pub requests_url: Option<String>,
     pub queries_url: Option<String>,

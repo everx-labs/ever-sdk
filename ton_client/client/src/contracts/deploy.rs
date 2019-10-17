@@ -84,7 +84,7 @@ pub(crate) fn deploy(_context: &mut ClientContext, params: ParamsOfDeploy) -> Ap
         Err(ApiError::contracts_deploy_transaction_aborted())
     } else {
         Ok(ResultOfDeploy {
-            address: account_encode(&account_id.get_account_id().unwrap())
+            address: account_encode(&account_id)
         })
     }
 }
@@ -93,7 +93,7 @@ pub(crate) fn get_address(_context: &mut ClientContext, params: ParamsOfGetDeplo
     let key_pair = params.keyPair.decode()?;
     let contract_image = create_image(&params.imageBase64, &key_pair.public)?;
     let account_id = contract_image.account_id();
-    Ok(account_encode(&account_id.get_account_id().unwrap()))
+    Ok(account_encode(&account_id))
 }
 
 pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<ResultOfEncodeDeployMessage> {
@@ -103,7 +103,7 @@ pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfDeplo
 
     let contract_image = create_image(&params.imageBase64, &keys.public)?;
     let account_id = contract_image.account_id();
-    debug!("image prepared with address: {}", account_encode(&account_id.get_account_id().unwrap()));
+    debug!("image prepared with address: {}", account_encode(&account_id));
     let account_id = contract_image.account_id();
     let (message_body, message_id) = Contract::construct_deploy_message_json(
         "constructor".to_owned(),
@@ -114,7 +114,7 @@ pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfDeplo
 
     debug!("<-");
     Ok(ResultOfEncodeDeployMessage {
-        address: account_encode(&account_id.get_account_id().unwrap()),
+        address: account_encode(&account_id),
         messageId: generic_id_encode(&message_id),
         messageIdBase64: base64::encode(message_id.data.as_slice()),
         messageBodyBase64: base64::encode(&message_body),
@@ -124,7 +124,7 @@ pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfDeplo
 pub(crate) fn encode_unsigned_message(_context: &mut ClientContext, params: ParamsOfEncodeUnsignedDeployMessage) -> ApiResult<ResultOfEncodeUnsignedDeployMessage> {
     let public = decode_public_key(&params.publicKeyHex)?;
     let image = create_image(&params.imageBase64, &public)?;
-    let address_hex = account_encode(&image.account_id().get_account_id().unwrap());
+    let address_hex = account_encode(&image.account_id());
     let encoded = ton_sdk::Contract::get_deploy_message_bytes_for_signing(
         "constructor".to_owned(),
         params.constructorParams.to_string().to_owned(),

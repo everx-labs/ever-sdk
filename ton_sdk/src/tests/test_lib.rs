@@ -1,7 +1,5 @@
 /*use crate::*;
 
-const WORKCHAIN: i32 = 0;
-
 #[test]
 fn test_init() {
 
@@ -12,7 +10,7 @@ fn test_init() {
         other => panic!(format!("{:?}", other))
     };
 
-    let res = init_json(Some(WORKCHAIN), "{}".into());
+    let res = init_json(0, "{}".into());
     assert!(res.is_err());
     match res.err().unwrap().kind() {
         SdkErrorKind::InvalidArg(_) => (),
@@ -31,7 +29,7 @@ fn test_init() {
             }
         }"#;
     
-    let res = init_json(Some(WORKCHAIN), config_json.into());
+    let res = init_json(0, config_json.into());
     assert!(res.is_err());
     match res.err().unwrap().kind() {
         SdkErrorKind::Kafka(_) => (),

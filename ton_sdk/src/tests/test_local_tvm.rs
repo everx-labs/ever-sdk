@@ -94,7 +94,7 @@ fn test_local_piggy_call() {
     let state_init: StateInit = serde_json::from_str(STATE_INIT).expect("Error parsing state init");
     let address: MsgAddressInt = serde_json::from_str(PIGGY_ADDR).expect("Error parsing address");
     let (msg, _) = crate::Contract::construct_call_message_json(
-        address.into(),
+        address,
         "getGoal".to_owned(),
         "{}".to_owned(),
         PIGGY_BANK_CONTRACT_ABI.to_owned(), None)

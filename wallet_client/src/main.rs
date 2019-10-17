@@ -177,7 +177,7 @@ pub fn create_external_transfer_funds_message(src: MsgAddressInt, dst: MsgAddres
     msg
 }
 
-fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params: &str, key_pair: &Keypair) -> AccountId {
+fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params: &str, key_pair: &Keypair) -> MsgAddressInt {
     // read image from file and construct ContractImage
     let mut state_init = std::fs::File::open(code_file_name).expect("Unable to open contract code file");
 
@@ -187,7 +187,8 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
 
     // before deploying contract need to transfer some funds to its address
     //println!("Account ID to take some grams {}\n", account_id.to_hex_string());
-    let msg = create_external_transfer_funds_message(AccountAddress::from(AccountId::from([0; 32])).get_msg_address(), account_id.get_msg_address(), 100000000000);
+    let address = MsgAddressInt::with_standart(None, Contract::get_default_workchain(), AccountId::from([0; 32])).unwrap();
+    let msg = create_external_transfer_funds_message(address, account_id.clone(), 100000000000);
     let changes_stream = Contract::send_message(msg).expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -232,13 +233,13 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
         panic!("transaction aborted!\n\n{}", serde_json::to_string_pretty(tr.tr()).unwrap())
     }
 
-    account_id.get_account_id().unwrap()
+    account_id
 }
 
-fn call_contract_and_wait(address: &AccountAddress, func: &str, input: String, abi: &str, key_pair: Option<&Keypair>) -> String {
+fn call_contract_and_wait(address: MsgAddressInt, func: &str, input: String, abi: &str, key_pair: Option<&Keypair>) -> String {
     // call needed method
     let changes_stream = 
-        Contract::call_json(address.get_msg_address(), func.to_owned(), input, abi.to_owned(), key_pair)
+        Contract::call_json(address, func.to_owned(), input, abi.to_owned(), key_pair)
             .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -288,7 +289,7 @@ fn call_contract_and_wait(address: &AccountAddress, func: &str, input: String, a
     // 3. message object with body
 }
 
-fn call_create(current_address: &mut Option<AccountAddress>) {
+fn call_create(current_address: &mut Option<MsgAddressInt>) {
     println!("Creating new wallet account");
 
     // generate key pair
@@ -297,19 +298,19 @@ fn call_create(current_address: &mut Option<AccountAddress>) {
    
     // deploy wallet
     let wallet_address = deploy_contract_and_wait("Wallet.tvc", WALLET_ABI, "{}", &keypair);
-    let str_address = wallet_address.to_hex_string();
+    let str_address = wallet_address.get_address().to_hex_string();
 
     println!("Acoount created. Address {}", str_address);
 
-    std::fs::write("last_address", wallet_address.get_bytestring(0)).expect("Couldn't save wallet address");
+    std::fs::write("last_address", wallet_address.to_string()).expect("Couldn't save wallet address");
     std::fs::write(str_address, &keypair.to_bytes().to_vec()).expect("Couldn't save wallet key pair");
 
-    *current_address = Some(wallet_address.into());
+    *current_address = Some(wallet_address);
 }
 
-fn call_get_balance(current_address: &Option<AccountAddress>, params: &[&str]) {
+fn call_get_balance(current_address: &Option<MsgAddressInt>, params: &[&str]) {
     let address = if params.len() > 0 {
-        AccountAddress::from_str(params[0]).unwrap()
+        MsgAddressInt::from_str(params[0]).unwrap()
     } else if let Some(addr) = current_address {
         addr.clone()
     } else {
@@ -317,7 +318,7 @@ fn call_get_balance(current_address: &Option<AccountAddress>, params: &[&str]) {
         return;
     };
 
-    let contract = Contract::load(&address.get_msg_address())
+    let contract = Contract::load(&address)
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -339,12 +340,12 @@ struct SendTransactionAnswer {
     error: String
 }
 
-fn read_keypair(address: &AccountAddress) -> Vec<u8> {
-    let file_name = address.get_account_id().unwrap().to_hex_string();
+fn read_keypair(address: &MsgAddressInt) -> Vec<u8> {
+    let file_name = address.get_address().to_hex_string();
     std::fs::read(file_name).expect("Couldn't read key pair")
 }
 
-fn call_send_transaction(current_address: &Option<AccountAddress>, params: &[&str]) {
+fn call_send_transaction(current_address: &Option<MsgAddressInt>, params: &[&str]) {
     if params.len() < 2 {
         println!("Not enough parameters");
         return;
@@ -366,7 +367,7 @@ fn call_send_transaction(current_address: &Option<AccountAddress>, params: &[&st
     let pair = read_keypair(&address);
     let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
 
-    let answer = call_contract_and_wait(&address, "sendTransaction", str_params, WALLET_ABI, Some(&pair));
+    let answer = call_contract_and_wait(address, "sendTransaction", str_params, WALLET_ABI, Some(&pair));
 
 
     let answer: SendTransactionAnswer = serde_json::from_str(&answer).unwrap();
@@ -384,7 +385,7 @@ struct CreateLimitAnswer {
     error: String
 }
 
-fn call_create_limit(current_address: &Option<AccountAddress>, params: &[&str]) {
+fn call_create_limit(current_address: &Option<MsgAddressInt>, params: &[&str]) {
     if params.len() < 2 {
         println!("Not enough parameters");
         return;
@@ -419,7 +420,7 @@ fn call_create_limit(current_address: &Option<AccountAddress>, params: &[&str]) 
     let pair = read_keypair(&address);
     let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
 
-    let answer = call_contract_and_wait(&address, "createLimit", str_params, WALLET_ABI, Some(&pair));
+    let answer = call_contract_and_wait(address, "createLimit", str_params, WALLET_ABI, Some(&pair));
 
 
     let answer: CreateLimitAnswer = serde_json::from_str(&answer).unwrap();
@@ -436,7 +437,7 @@ struct ChangeLimitAnswer {
     error: String
 }
 
-fn call_change_limit(current_address: &Option<AccountAddress>, params: &[&str]) {
+fn call_change_limit(current_address: &Option<MsgAddressInt>, params: &[&str]) {
     if params.len() < 2 {
         println!("Not enough parameters");
         return;
@@ -463,7 +464,7 @@ fn call_change_limit(current_address: &Option<AccountAddress>, params: &[&str]) 
     let pair = read_keypair(&address);
     let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
 
-    let answer = call_contract_and_wait(&address, "changeLimitById", str_params, WALLET_ABI, Some(&pair));
+    let answer = call_contract_and_wait(address, "changeLimitById", str_params, WALLET_ABI, Some(&pair));
 
 
     let _answer: ChangeLimitAnswer = serde_json::from_str(&answer).unwrap();
@@ -471,7 +472,7 @@ fn call_change_limit(current_address: &Option<AccountAddress>, params: &[&str]) 
     println!("Limit changed successfully");
 }
 
-fn call_remove_limit(current_address: &Option<AccountAddress>, params: &[&str]) {
+fn call_remove_limit(current_address: &Option<MsgAddressInt>, params: &[&str]) {
     if params.len() < 1 {
         println!("Not enough parameters");
         return;
@@ -489,7 +490,7 @@ fn call_remove_limit(current_address: &Option<AccountAddress>, params: &[&str]) 
     let pair = read_keypair(&address);
     let pair = Keypair::from_bytes(&pair).expect("Couldn't restore key pair");
 
-    let answer = call_contract_and_wait(&address, "removeLimit", str_params, WALLET_ABI, Some(&pair));
+    let answer = call_contract_and_wait(address, "removeLimit", str_params, WALLET_ABI, Some(&pair));
 
 
     let _answer: ChangeLimitAnswer = serde_json::from_str(&answer).unwrap();
@@ -513,7 +514,7 @@ struct GetLimitByIdAnswer {
     error: String
 }
 
-fn call_get_limit_by_id(current_address: &Option<AccountAddress>, params: &[&str]) {
+fn call_get_limit_by_id(current_address: &Option<MsgAddressInt>, params: &[&str]) {
     if params.len() < 1 {
         println!("Not enough parameters");
         return;
@@ -528,7 +529,7 @@ fn call_get_limit_by_id(current_address: &Option<AccountAddress>, params: &[&str
 
     let str_params = format!(r#"{{ "limitId" : "{}" }}"#, params[0]);
 
-    let answer = call_contract_and_wait(&address, "getLimitById", str_params, WALLET_ABI, None);
+    let answer = call_contract_and_wait(address, "getLimitById", str_params, WALLET_ABI, None);
 
 
     let answer: GetLimitByIdAnswer = serde_json::from_str(&answer).unwrap();
@@ -555,7 +556,7 @@ struct GetLimitsAnswer {
     error: String
 }
 
-fn call_get_limits(current_address: &Option<AccountAddress>) {
+fn call_get_limits(current_address: &Option<MsgAddressInt>) {
     let address = if let Some(addr) = current_address {
         addr.clone()
     } else {
@@ -565,7 +566,7 @@ fn call_get_limits(current_address: &Option<AccountAddress>) {
 
     let str_params = "{}".to_owned();
 
-    let answer = call_contract_and_wait(&address, "getLimits", str_params, WALLET_ABI, None);
+    let answer = call_contract_and_wait(address, "getLimits", str_params, WALLET_ABI, None);
 
 
     let answer: GetLimitsAnswer = serde_json::from_str(&answer).unwrap();
@@ -590,7 +591,7 @@ struct GetVersionAnswer {
     error: String
 }
 
-fn call_get_version(current_address: &Option<AccountAddress>) {
+fn call_get_version(current_address: &Option<MsgAddressInt>) {
     let address = if let Some(addr) = current_address {
         addr.clone()
     } else {
@@ -600,7 +601,7 @@ fn call_get_version(current_address: &Option<AccountAddress>) {
 
     let str_params = "{}".to_owned();
 
-    let answer = call_contract_and_wait(&address, "getVersion", str_params, WALLET_ABI, None);
+    let answer = call_contract_and_wait(address, "getVersion", str_params, WALLET_ABI, None);
 
 
     let answer: GetVersionAnswer = serde_json::from_str(&answer).unwrap();
@@ -611,28 +612,23 @@ fn call_get_version(current_address: &Option<AccountAddress>) {
     println!("Wallet version {}.{}", major, minor);
 }
 
-fn set_address(current_address: &mut Option<AccountAddress>, params: &[&str]) {
+fn set_address(current_address: &mut Option<MsgAddressInt>, params: &[&str]) {
     if params.len() < 1 {
         println!("Not enough parameters");
         return;
     }
 
-    if let Ok(vec) = hex::decode(params[0]) {
-        if vec.len() != 32 {
-            println!("Wrong address length. Address should be 32 bytes long");
-            return;
-        }
-
-        if std::fs::read(params[0]).is_err() {
+    if let Ok(address) = MsgAddressInt::from_str(params[0]) {
+        if std::fs::read(address.get_address().to_hex_string()).is_err() {
             println!("No key pair for this address. Can't work");
             return;
         }
 
-        std::fs::write("last_address", vec.clone()).expect("Couldn't save wallet address");
+        std::fs::write("last_address", params[0]).expect("Couldn't save wallet address");
 
         println!("New wallet address {}", params[0]);
 
-        *current_address = Some(AccountId::from(vec).into());
+        *current_address = Some(address);
     } else {
         println!("Couldn't parse address");
     }
@@ -715,7 +711,7 @@ fn create_cycle_test_thread(config: String, accounts: Vec<AccountData>, timeout:
             let str_params = format!("{{ \"recipient\" : \"x{}\", \"value\": \"{}\" }}", address_to.to_hex_string(), value);
 
             let (msg, id) = Contract::construct_call_message_json(
-                address_from.clone().into(),
+                MsgAddressInt::with_standart(None, Contract::get_default_workchain(), address_from.clone()).unwrap(),
                 "sendTransaction".to_owned(),
                 str_params.to_owned(),
                 WALLET_ABI.to_owned(),
@@ -790,7 +786,7 @@ fn cycle_test(config: String, params: &[&str]) {
         let wallet_address = deploy_contract_and_wait("Wallet.tvc", WALLET_ABI, "{}", &keypair);
 
         accounts.push(AccountData { 
-                id: wallet_address,
+                id: wallet_address.get_address(),
                 keypair: keypair.to_bytes().to_vec() 
             });
     }
@@ -835,7 +831,7 @@ fn cycle_test_init(params: &[&str]) {
         let wallet_address = deploy_contract_and_wait("Wallet.tvc", WALLET_ABI, "{}", &keypair);
 
         vec.push(AccountData { 
-                id: wallet_address,
+                id: wallet_address.get_address(),
                 keypair: keypair.to_bytes().to_vec() 
             });
 
@@ -957,14 +953,14 @@ fn main() {
 
     let workchain = matches.value_of("workchain").unwrap_or("0");
 
-    let workchain = i32::from_str_radix(workchain, 10).expect("Couldn't parse workchain number");
+    let workchain = i8::from_str_radix(workchain, 10).expect("Couldn't parse workchain number");
 
     init_json(workchain, &config).expect("Couldn't establish connection");
     println!("Connection established");
 
     let mut current_address = if let Ok(address) = std::fs::read("last_address") {
-        let address = AccountAddress::from_str(&String::from_utf8(address).unwrap()).unwrap();
-        println!("Wallet address {}", serde_json::to_string(&address.get_msg_address()).unwrap());
+        let address = MsgAddressInt::from_str(&String::from_utf8(address).unwrap()).unwrap();
+        println!("Wallet address {}", serde_json::to_string(&address).unwrap());
         Some(address)
     } else {
         println!("Wallet address not assigned. Create new wallet");

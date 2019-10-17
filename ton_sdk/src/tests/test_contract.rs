@@ -5,11 +5,11 @@ use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
 use rand::RngCore;
 use sha2::Sha512;
-use tvm::block::TransactionProcessingStatus;
+use tvm::block::{MsgAddressInt, TransactionProcessingStatus};
 use tvm::types::AccountId;
 use tvm::stack::{BuilderData, IBitstring};
 use tests_common::*;
- 
+
 /*
 #[test]
 #[ignore] // Rethink have to work on 127.0.0.1:32769. Run it and comment "ignore"
@@ -100,7 +100,7 @@ connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_status
 
     // init SDK
     let config_json = CONFIG_JSON.clone();    
-    init_json(Some(WORKCHAIN), config_json.into()).unwrap();
+    init_json(0, config_json.into()).unwrap();
 
 
     let msg_id = MessageId::default();
@@ -158,14 +158,14 @@ const CONSTRUCTOR_PARAMS: &str = r#"
 }"#;
 
 
-fn test_call_contract(address: AccountAddress, key_pair: &Keypair) {
+fn test_call_contract(address: MsgAddressInt, key_pair: &Keypair) {
 
     let func = "getWallet".to_string();
     let abi = test_piggy_bank::SUBSCRIBE_CONTRACT_ABI.to_string();
 
     // call needed method
     let changes_stream = Contract::call_json(
-        address.get_msg_address(), func.clone(), "{}".to_owned(), abi.clone(), Some(&key_pair))
+        address, func.clone(), "{}".to_owned(), abi.clone(), Some(&key_pair))
             .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -247,7 +247,7 @@ fn test_deploy_and_call_contract() {
     // before deploying contract need to transfer some funds to its address
     println!("Account ID to take some grams {}", account_id);
     
-    tests_common::get_grams_from_giver(&account_id);
+    tests_common::get_grams_from_giver(account_id.clone());
 
 
     // call deploy method
@@ -279,7 +279,7 @@ fn test_deploy_and_call_contract() {
     // so just check deployment transaction created
     let _tr_id = tr_id.expect("Error: no transaction id");
 
-    test_call_contract(account_id.into(), &keypair);
+    test_call_contract(account_id, &keypair);
 }
 
 #[test]
@@ -311,11 +311,11 @@ fn test_deploy_empty_contract() {
     let image = ContractImage::new(&mut data_cur, None, None).expect("Error creating ContractImage");
     let acc_id = image.account_id();
 
-    tests_common::get_grams_from_giver(&acc_id);
+    tests_common::get_grams_from_giver(acc_id.clone());
 
     println!("Account ID {}", acc_id);
 
-    /*Contract::load(&AccountAddress::from(acc_id).get_msg_address())
+    /*Contract::load(&acc_id)
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -326,7 +326,7 @@ fn test_deploy_empty_contract() {
 	queries_helper::wait_for(
         "accounts",
         &json!({
-			"id": { "eq": acc_id.get_account_id().unwrap().to_hex_string() },
+			"id": { "eq": acc_id.get_address().to_hex_string() },
 			"storage": {
 				"balance": {
 					"Grams": { "gt": "0" }
@@ -367,8 +367,8 @@ fn test_deploy_empty_contract() {
 fn test_load_nonexistent_contract() {
     init_node_connection();
 
-    let acc_id = AccountId::from([67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31]);
-    let c = Contract::load(&AccountAddress::from(acc_id).get_msg_address())
+    let acc_id = AccountId::from([67; 32]);
+    let c = Contract::load(&MsgAddressInt::with_standart(None, Contract::get_default_workchain(), acc_id).unwrap())
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -376,34 +376,4 @@ fn test_load_nonexistent_contract() {
         .expect("Error unwrap result while loading Contract");
 
     assert!(c.is_none());
-}
-
-#[test]
-fn test_address_parsing() {
-    Contract::set_default_workchain(WORKCHAIN);
-
-    let short = "fcb91a3a3816d0f7b8c2c76108b8a9bc5a6b7a55bd79f8ab101c52db29232260";
-    let full_std = "-1:fcb91a3a3816d0f7b8c2c76108b8a9bc5a6b7a55bd79f8ab101c52db29232260";
-    let base64 = "kf/8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15+KsQHFLbKSMiYIny";
-    let base64_url = "kf_8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15-KsQHFLbKSMiYIny";
-
-    let address = tvm::block::MsgAddressInt::with_standart(None, -1, hex::decode(short).unwrap().into()).unwrap();
-    let wc0_address = tvm::block::MsgAddressInt::with_standart(None, 0, hex::decode(short).unwrap().into()).unwrap();
-
-    assert_eq!(wc0_address, AccountAddress::from_str(short).expect("Couldn't parse short address").get_msg_address());
-    assert_eq!(address, AccountAddress::from_str(full_std).expect("Couldn't parse full_std address").get_msg_address());
-    assert_eq!(address, AccountAddress::from_str(base64).expect("Couldn't parse base64 address").get_msg_address());
-    assert_eq!(address, AccountAddress::from_str(base64_url).expect("Couldn't parse base64_url address").get_msg_address());
-
-    assert_eq!(AccountAddress::from(address.clone()).as_base64(true, true, false).unwrap(), base64);
-    assert_eq!(AccountAddress::from(address).as_base64(true, true, true).unwrap(), base64_url);
-}
-
-#[test]
-fn test_print_base64_address_from_hex() {
-    let hex_address = "0:9f2bc8a81da52c6b8cb1878352120f21e254138fff0b897f44fb6ff2b8cae256";
-
-    let address = AccountAddress::from_str(hex_address).unwrap();
-
-    println!("{}", address.as_base64(false, false, false).unwrap());
 }

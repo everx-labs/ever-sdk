@@ -1,9 +1,11 @@
+use crypto::keys::account_decode;
 use ::{InteropContext, JsonResponse};
 use ::{tc_json_request, InteropString};
 use ::{tc_read_json_response, tc_destroy_json_response};
 use serde_json::Value;
 use log::{Metadata, Record, LevelFilter};
 use {tc_create_context, tc_destroy_context};
+use ton_sdk::encode_base64;
 use tvm::block::MsgAddressInt;
 
 struct SimpleLogger;
@@ -270,3 +272,31 @@ pub const WALLET_ABI: &str = r#"{
 	]
 }
 "#;
+
+#[test]
+fn test_address_parsing() {
+    let short = "fcb91a3a3816d0f7b8c2c76108b8a9bc5a6b7a55bd79f8ab101c52db29232260";
+    let full_std = "-1:fcb91a3a3816d0f7b8c2c76108b8a9bc5a6b7a55bd79f8ab101c52db29232260";
+    let base64 = "kf/8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15+KsQHFLbKSMiYIny";
+    let base64_url = "kf_8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15-KsQHFLbKSMiYIny";
+
+    let address = tvm::block::MsgAddressInt::with_standart(None, -1, hex::decode(short).unwrap().into()).unwrap();
+    let wc0_address = tvm::block::MsgAddressInt::with_standart(None, 0, hex::decode(short).unwrap().into()).unwrap();
+
+    assert_eq!(wc0_address, account_decode(short).expect("Couldn't parse short address"));
+    assert_eq!(address, account_decode(full_std).expect("Couldn't parse full_std address"));
+    assert_eq!(address, account_decode(base64).expect("Couldn't parse base64 address"));
+    assert_eq!(address, account_decode(base64_url).expect("Couldn't parse base64_url address"));
+
+    assert_eq!(encode_base64(&address, true, true, false).unwrap(), base64);
+    assert_eq!(encode_base64(&address, true, true, true ).unwrap(), base64_url);
+}
+
+#[test]
+fn test_print_base64_address_from_hex() {
+    let hex_address = "0:9f2bc8a81da52c6b8cb1878352120f21e254138fff0b897f44fb6ff2b8cae256";
+
+    let address = account_decode(hex_address).unwrap();
+
+    println!("{}", encode_base64(&address, false, false, false).unwrap());
+}

@@ -18,9 +18,8 @@ pub(crate) struct LoadResult {
 }
 
 pub(crate) fn load(_context: &mut ClientContext, params: LoadParams) -> ApiResult<LoadResult> {
-    let address = params.address;
-    let loaded = Contract::load(&account_decode(&address)?.get_msg_address())
-        .map_err(|err|ApiError::contracts_load_failed(err, &address))?
+    let loaded = Contract::load(&account_decode(&params.address)?)
+        .map_err(|err|ApiError::contracts_load_failed(err, &params.address))?
         .wait()
         .next();
     match loaded {
@@ -31,7 +30,7 @@ pub(crate) fn load(_context: &mut ClientContext, params: LoadParams) -> ApiResul
                         Some(contract) => make_result(contract),
                         None => Ok(EMPTY_RESULT)
                     },
-                Err(err) => Err(ApiError::contracts_load_failed(err, &address))
+                Err(err) => Err(ApiError::contracts_load_failed(err, &params.address))
             },
         None => Ok(EMPTY_RESULT)
     }
