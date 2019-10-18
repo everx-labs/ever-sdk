@@ -1,10 +1,13 @@
 use std::sync::Arc;
+use chrono::prelude::*;
+use std::convert::TryFrom;
 use tvm::executor::Engine;
 use tvm::block::{
     BlockResult,
     Message,
     Serializable,
     Deserializable,
+    SmartContractInfo
 };
 use tvm::block::error::*;
 use tvm::stack::{CellData, IntegerData, SaveList, SliceData, Stack, StackItem};
@@ -29,6 +32,14 @@ pub fn local_contract_call(code: Arc<CellData>, data: Option<Arc<CellData>>, msg
     ctrls.put(4, &mut StackItem::Cell(data.unwrap_or_default()))
         .map_err(|err| BlockError::from(BlockErrorKind::Other(
             format!("Cannot put data to register: {}", err))))?;
+
+    let mut sci = SmartContractInfo::default();
+    *sci.unix_time_mut() = <u32>::try_from(Utc::now().timestamp())
+        .map_err(|_| BlockError::from(BlockErrorKind::Other(
+            format!("Wrong time: {}", Utc::now().timestamp()))))?;
+    ctrls.put(7, &mut sci.into_temp_data()?)
+        .map_err(|err| BlockError::from(BlockErrorKind::Other(
+            format!("Cannot put data to register: {}", err))))?;;
     
     let mut engine = Engine::new().setup(SliceData::from(code), Some(ctrls), Some(stack), None);
     let _result = engine.execute()?;

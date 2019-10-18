@@ -97,7 +97,7 @@ pub fn decode_secret_key(string: &String) -> ApiResult<SecretKey> {
         .map_err(|err| ApiError::crypto_invalid_secret_key(err, string))
 }
 
-pub fn u256_zero() -> UInt256 { [0; 32].into() }
+//pub fn u256_zero() -> UInt256 { [0; 32].into() }
 
 pub fn u256_encode(value: &UInt256) -> String {
     hex::encode(value.as_slice())

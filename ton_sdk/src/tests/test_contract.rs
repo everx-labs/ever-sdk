@@ -1,5 +1,6 @@
-use ton_abi_json::json_abi::decode_function_response;
+use ton_abi::json_abi::decode_function_response;
 use super::*;
+use contract::ContractImage;
 use std::io::{Cursor};
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
@@ -8,18 +9,9 @@ use sha2::Sha512;
 use tvm::block::TransactionProcessingStatus;
 use tvm::types::AccountId;
 use tvm::stack::{BuilderData, IBitstring};
-
-const WORKCHAIN: i32 = 0;
-const CONFIG_JSON: &str = r#"
-    {
-        "queries_config": {
-            "queries_server": "http://0.0.0.0/graphql",
-            "subscriptions_server": "ws://0.0.0.0/graphql"
-        },
-        "requests_config": {
-            "requests_server": "http://0.0.0.0/topics/requests"
-        }
-    }"#;  
+use tvm::stack::dictionary::HashmapType;
+use tests_common::*;
+ 
 /*
 #[test]
 #[ignore] // Rethink have to work on 127.0.0.1:32769. Run it and comment "ignore"
@@ -161,38 +153,22 @@ connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_status
 }
 */
 
-const SUBSCRIBE_PARAMS: &str = r#"
-{
-    "subscriptionId": "x0000000000000000000000000000000000000000000000000000000000000001",
-	"pubkey": "x0000000000000000000000000000000000000000000000000000000000000001",
-	"to": "x0000000000000000000000000000000000000000000000000000000000000002",
-	"value": 1234567890,
-	"period": 1234567890
-}"#;
 
 const CONSTRUCTOR_PARAMS: &str = r#"
 {
-	"wallet": "x0000000000000000000000000000000000000000000000000000000000000001"
+	"wallet": "0x0000000000000000000000000000000000000000000000000000000000000001"
 }"#;
 
 
 fn test_call_contract(address: AccountId, key_pair: &Keypair) {
 
-    let func = "subscribe".to_string();
-    let input = SUBSCRIBE_PARAMS.to_string();
+    let func = "getWallet".to_string();
     let abi = test_piggy_bank::SUBSCRIBE_CONTRACT_ABI.to_string();
 
-    let contract = Contract::load(address.into())
-        .expect("Error calling load Contract")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract")
-        .expect("Error unwrap contract while loading Contract");
-
     // call needed method
-    let changes_stream = Contract::call_json(contract.id().into(), func.clone(), input, abi.clone(), Some(&key_pair))
-        .expect("Error calling contract method");
+    let changes_stream = Contract::call_json(
+        address.into(), func.clone(), "{}".to_owned(), abi.clone(), Some(&key_pair))
+            .expect("Error calling contract method");
 
     // wait transaction id in message-status 
     let mut tr_id = None;
@@ -258,9 +234,7 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
 #[test]
 fn test_deploy_and_call_contract() {
    
-    let config_json = CONFIG_JSON.clone();    
-    init_json(Some(WORKCHAIN), config_json.into()).unwrap();
-   
+    tests_common::init_node_connection();   
    
     // read image from file and construct ContractImage
     let mut state_init = std::fs::File::open("src/tests/Subscription.tvc").expect("Unable to open contract code file");
@@ -275,7 +249,7 @@ fn test_deploy_and_call_contract() {
     // before deploying contract need to transfer some funds to its address
     println!("Account ID to take some grams {}", account_id);
     
-    test_piggy_bank::get_grams_from_giver(account_id.clone());
+    tests_common::get_grams_from_giver(account_id.clone());
 
 
     // call deploy method
@@ -324,10 +298,7 @@ fn test_contract_image_from_file() {
 
 #[test]
 fn test_deploy_empty_contract() {
-    // init SDK
-    let config_json = CONFIG_JSON.clone();    
-    init_json(Some(WORKCHAIN), config_json.into()).unwrap();
-
+    init_node_connection();
 
     let mut csprng = OsRng::new().unwrap();
 
@@ -342,17 +313,30 @@ fn test_deploy_empty_contract() {
     let image = ContractImage::new(&mut data_cur, None, None).expect("Error creating ContractImage");
     let acc_id = image.account_id();
 
-    test_piggy_bank::get_grams_from_giver(acc_id.clone());
+    tests_common::get_grams_from_giver(acc_id.clone());
 
     println!("Account ID {}", acc_id);
 
-    Contract::load(acc_id.into())
+    /*Contract::load(acc_id.into())
         .expect("Error calling load Contract")
         .wait()
         .next()
         .expect("Error unwrap stream next while loading Contract")
         .expect("Error unwrap result while loading Contract")
-        .expect("Error unwrap contract while loading Contract");
+        .expect("Error unwrap contract while loading Contract");*/
+        	// wait for grams recieving
+	queries_helper::wait_for(
+        "accounts",
+        &json!({
+			"id": { "eq": acc_id.to_hex_string() },
+			"storage": {
+				"balance": {
+					"Grams": { "gt": "0" }
+				}
+			}
+		}).to_string(),
+		"id storage {balance {Grams}}"
+	).unwrap();
     println!("Contract got!!!");
 
 
@@ -383,10 +367,7 @@ fn test_deploy_empty_contract() {
 
 #[test]
 fn test_load_nonexistent_contract() {
-
-        // init SDK
-    let config_json = CONFIG_JSON.clone();    
-    init_json(Some(WORKCHAIN), config_json.into()).unwrap();
+    init_node_connection();
 
     let c = Contract::load(AccountId::from([67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31]).into())
         .expect("Error calling load Contract")
@@ -400,7 +381,7 @@ fn test_load_nonexistent_contract() {
 
 #[test]
 fn test_address_parsing() {
-    Contract::set_default_workchain(Some(-1));
+    Contract::set_default_workchain(Some(WORKCHAIN));
 
     let short = "fcb91a3a3816d0f7b8c2c76108b8a9bc5a6b7a55bd79f8ab101c52db29232260";
     let full_std = "-1:fcb91a3a3816d0f7b8c2c76108b8a9bc5a6b7a55bd79f8ab101c52db29232260";
@@ -408,8 +389,9 @@ fn test_address_parsing() {
     let base64_url = "kf_8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15-KsQHFLbKSMiYIny";
 
     let address = tvm::block::MsgAddressInt::with_standart(None, -1, hex::decode(short).unwrap().into()).unwrap();
+    let wc0_address = tvm::block::MsgAddressInt::with_standart(None, 0, hex::decode(short).unwrap().into()).unwrap();
 
-    assert_eq!(address, AccountAddress::from_str(short).expect("Couldn't parse short address").get_msg_address().unwrap());
+    assert_eq!(wc0_address, AccountAddress::from_str(short).expect("Couldn't parse short address").get_msg_address().unwrap());
     assert_eq!(address, AccountAddress::from_str(full_std).expect("Couldn't parse full_std address").get_msg_address().unwrap());
     assert_eq!(address, AccountAddress::from_str(base64).expect("Couldn't parse base64 address").get_msg_address().unwrap());
     assert_eq!(address, AccountAddress::from_str(base64_url).expect("Couldn't parse base64_url address").get_msg_address().unwrap());
@@ -420,9 +402,70 @@ fn test_address_parsing() {
 
 #[test]
 fn test_print_base64_address_from_hex() {
-    let hex_address = "0:ce709b5bfca589eb621b5a5786d0b562761144ac48f59e0b0d35ad0973bcdb86";
+    let hex_address = "0:9f2bc8a81da52c6b8cb1878352120f21e254138fff0b897f44fb6ff2b8cae256";
 
     let address = AccountAddress::from_str(hex_address).unwrap();
 
     println!("{}", address.as_base64(false, false, false).unwrap());
+}
+
+#[test]
+fn test_store_pubkey() {
+    let mut test_map = HashmapE::with_bit_len(ContractImage::DATA_MAP_KEYLEN);
+    let test_pubkey = vec![11u8; 32];
+    test_map.set(
+        0u64.write_to_new_cell().unwrap().into(),
+        &BuilderData::with_raw(vec![0u8; 32], 256).unwrap().into(),
+    ).unwrap();
+
+    let mut data = BuilderData::new();
+    data.append_bit_one().unwrap()
+        .checked_append_reference(test_map.data().unwrap()).unwrap();
+
+    let new_data = ContractImage::insert_pubkey(data.into(), &test_pubkey).unwrap();
+
+    let new_map = HashmapE::with_data(ContractImage::DATA_MAP_KEYLEN, new_data.into());
+    let key_slice = new_map.get(
+        0u64.write_to_new_cell().unwrap().into(),
+    )
+    .unwrap()
+    .unwrap();
+
+    assert_eq!(key_slice.get_bytestring(0), test_pubkey);
+}
+
+#[test]
+fn test_update_contract_data() {
+    // read image from file and construct ContractImage
+    let mut state_init = std::fs::File::open("src/tests/Subscription.tvc")
+        .expect("Unable to open Subscription contract file");
+
+    let mut csprng = OsRng::new().unwrap();
+    let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
+
+    let mut contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair.public)
+        .expect("Unable to parse contract code file");
+
+    let new_data = r#"
+        { "mywallet": "0x1111111111111111111111111111111111111111111111111111111111111111" }
+    "#;
+
+    contract_image.update_data(new_data, test_piggy_bank::SUBSCRIBE_CONTRACT_ABI).unwrap();
+    let init = contract_image.state_init();
+    let new_map = HashmapE::with_data(ContractImage::DATA_MAP_KEYLEN, init.data.unwrap().into());
+
+    let key_slice = new_map.get(
+        0u64.write_to_new_cell().unwrap().into(),
+    )
+    .unwrap()
+    .unwrap();
+
+    assert_eq!(key_slice.get_bytestring(0), keypair.public.as_bytes().to_vec());
+    let mywallet_slice = new_map.get(
+        100u64.write_to_new_cell().unwrap().into(),
+    )
+    .unwrap()
+    .unwrap();
+
+    assert_eq!(mywallet_slice.get_bytestring(0), vec![0x11; 32]);
 }

@@ -2,8 +2,7 @@
 
 #[macro_use]
 extern crate tvm;
-extern crate ton_abi_json;
-extern crate ton_abi_core;
+extern crate ton_abi;
 
 #[macro_use]
 extern crate lazy_static;
@@ -16,6 +15,7 @@ extern crate rand;
 extern crate sha2;
 extern crate base64;
 extern crate crc16;
+extern crate chrono;
 
 #[macro_use]
 extern crate error_chain;
@@ -27,9 +27,9 @@ extern crate futures;
 #[cfg(feature = "node_interaction")]
 extern crate graphite;
 
-pub use ton_abi_json::json_abi;
-pub use ton_abi_json::Contract as AbiContract;
-pub use ton_abi_json::Function as AbiFunction;
+pub use ton_abi::json_abi;
+pub use ton_abi::Contract as AbiContract;
+pub use ton_abi::Function as AbiFunction;
 
 #[allow(deprecated)]
 #[macro_use]
@@ -95,3 +95,7 @@ mod tests;
 #[cfg(test)]
 #[path = "tests/test_piggy_bank.rs"]
 mod test_piggy_bank;
+
+#[cfg(test)]
+#[path = "tests/tests_common.rs"]
+mod tests_common;

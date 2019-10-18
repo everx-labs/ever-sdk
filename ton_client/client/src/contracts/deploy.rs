@@ -1,4 +1,4 @@
-use crypto::keys::{KeyPair, u256_encode, decode_public_key, account_encode, generic_id_encode};
+use crypto::keys::{KeyPair, decode_public_key, account_encode, generic_id_encode};
 use ton_sdk::{Contract, ContractImage};
 
 use contracts::EncodedUnsignedMessage;
@@ -7,12 +7,15 @@ use contracts::EncodedUnsignedMessage;
 use tvm::block::TransactionId;
 #[cfg(feature = "node_interaction")]
 use futures::Stream;
+#[cfg(feature = "node_interaction")]
+use crypto::keys::u256_encode;
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
 pub(crate) struct ParamsOfDeploy {
     pub abi: serde_json::Value,
     pub constructorParams: serde_json::Value,
+    pub initParams: Option<serde_json::Value>,
     pub imageBase64: String,
     pub keyPair: KeyPair,
 }
@@ -22,6 +25,7 @@ pub(crate) struct ParamsOfDeploy {
 pub(crate) struct ParamsOfEncodeUnsignedDeployMessage {
     pub abi: serde_json::Value,
     pub constructorParams: serde_json::Value,
+    pub initParams: Option<serde_json::Value>,
     pub imageBase64: String,
     pub publicKeyHex: String,
 }
@@ -37,6 +41,7 @@ pub(crate) struct ResultOfEncodeUnsignedDeployMessage {
 #[allow(non_snake_case)]
 pub(crate) struct ParamsOfGetDeployAddress {
     pub abi: serde_json::Value,
+    pub initParams: Option<serde_json::Value>,
     pub imageBase64: String,
     pub keyPair: KeyPair,
 }
@@ -62,7 +67,7 @@ pub(crate) fn deploy(_context: &mut ClientContext, params: ParamsOfDeploy) -> Ap
 
     let key_pair = params.keyPair.decode()?;
 
-    let contract_image = create_image(&params.imageBase64, &key_pair.public)?;
+    let contract_image = create_image(&params.abi, params.initParams.as_ref(), &params.imageBase64, &key_pair.public)?;
     let account_id = contract_image.account_id();
     debug!("-> -> image prepared with address: {}", account_encode(&account_id));
 
@@ -89,7 +94,7 @@ pub(crate) fn deploy(_context: &mut ClientContext, params: ParamsOfDeploy) -> Ap
 
 pub(crate) fn get_address(_context: &mut ClientContext, params: ParamsOfGetDeployAddress) -> ApiResult<String> {
     let key_pair = params.keyPair.decode()?;
-    let contract_image = create_image(&params.imageBase64, &key_pair.public)?;
+    let contract_image = create_image(&params.abi, params.initParams.as_ref(), &params.imageBase64, &key_pair.public)?;
     let account_id = contract_image.account_id();
     Ok(account_encode(&account_id))
 }
@@ -99,7 +104,7 @@ pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfDeplo
 
     let keys = params.keyPair.decode()?;
 
-    let contract_image = create_image(&params.imageBase64, &keys.public)?;
+    let contract_image = create_image(&params.abi, params.initParams.as_ref(), &params.imageBase64, &keys.public)?;
     let account_id = contract_image.account_id();
     debug!("image prepared with address: {}", account_encode(&account_id));
     let account_id = contract_image.account_id();
@@ -121,8 +126,8 @@ pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfDeplo
 
 pub(crate) fn encode_unsigned_message(_context: &mut ClientContext, params: ParamsOfEncodeUnsignedDeployMessage) -> ApiResult<ResultOfEncodeUnsignedDeployMessage> {
     let public = decode_public_key(&params.publicKeyHex)?;
-    let image = create_image(&params.imageBase64, &public)?;
-    let address_hex = image.account_id().to_hex_string();
+    let image = create_image(&params.abi, params.initParams.as_ref(), &params.imageBase64, &public)?;
+    let address_hex = account_encode(&image.account_id());
     let encoded = ton_sdk::Contract::get_deploy_message_bytes_for_signing(
         "constructor".to_owned(),
         params.constructorParams.to_string().to_owned(),
@@ -152,12 +157,20 @@ use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
 use tvm::block::TransactionProcessingStatus;
 
-fn create_image(image_base64: &String, public_key: &PublicKey) -> ApiResult<ContractImage> {
+fn create_image(abi: &serde_json::Value, init_params: Option<&serde_json::Value>, image_base64: &String, public_key: &PublicKey) -> ApiResult<ContractImage> {
     let bytes = base64::decode(image_base64)
         .map_err(|err| ApiError::contracts_deploy_invalid_image(err))?;
     let mut reader = Cursor::new(bytes);
-    ContractImage::from_state_init_and_key(&mut reader, public_key)
-        .map_err(|err| ApiError::contracts_deploy_image_creation_failed(err))
+    let mut image = ContractImage::from_state_init_and_key(&mut reader, public_key)
+        .map_err(|err| ApiError::contracts_deploy_image_creation_failed(err))?;
+
+    if let Some(params) = init_params {
+        image.update_data(&params.to_string(), &abi.to_string())
+            .map_err(|err| ApiError::contracts_deploy_image_creation_failed(
+                format!("Failed to set initial data: {}", err)))?;
+    }
+
+    Ok(image)
 }
 
 #[cfg(feature = "node_interaction")]

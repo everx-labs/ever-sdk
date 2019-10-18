@@ -27,10 +27,10 @@ pub(crate) fn load(_context: &mut ClientContext, params: LoadParams) -> ApiResul
         Some(optional_contract_or_err) =>
             match optional_contract_or_err {
                 Ok(optional_contract) =>
-                    Ok(match optional_contract {
+                    match optional_contract {
                         Some(contract) => make_result(contract),
-                        None => EMPTY_RESULT
-                    }),
+                        None => Ok(EMPTY_RESULT)
+                    },
                 Err(err) => Err(ApiError::contracts_load_failed(err, &address))
             },
         None => Ok(EMPTY_RESULT)
@@ -44,10 +44,9 @@ const EMPTY_RESULT: LoadResult = LoadResult {
     balanceGrams: None,
 };
 
-fn make_result(contract: Contract) -> LoadResult {
-    LoadResult {
-        id: Some(account_encode(&contract.id())),
-        balanceGrams: Some(contract.balance_grams().0.to_str_radix(10)),
-    }
+fn make_result(contract: Contract) -> ApiResult<LoadResult> {
+    Ok(LoadResult {
+        id: contract.id().map(|id| account_encode(&id)).ok(),
+        balanceGrams: contract.balance_grams().map(|balance| balance.0.to_str_radix(10)).ok(),
+    })
 }
-
