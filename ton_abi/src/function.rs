@@ -289,7 +289,7 @@ impl Event {
 
         //println!("{}", signature);
 
-        Function::calc_function_id(&signature)
+        Function::calc_function_id(&signature) & 0x7FFFFFFF
     }
 
     /// Decodes provided params from SliceData
