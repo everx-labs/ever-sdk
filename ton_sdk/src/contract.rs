@@ -1,8 +1,7 @@
 use crate::*;
 use std::io::{Read, Seek, Cursor};
-use std::sync::{Arc, Mutex};
 use ed25519_dalek::{Keypair, PublicKey};
-use tvm::stack::{BuilderData, CellData, SliceData, find_tag};
+use tvm::stack::{BuilderData, SliceData, find_tag};
 use tvm::types::AccountId;
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use tvm::block::{
@@ -57,10 +56,6 @@ const ACCOUNT_FIELDS: &str = r#"
     }
 "#;
 
-lazy_static! {
-    static ref DEFAULT_WORKCHAIN: Mutex<i8> = Mutex::new(0);
-}
-
 #[cfg(test)]
 #[path = "tests/test_contract.rs"]
 mod tests;
@@ -75,7 +70,7 @@ pub struct ContractCallState {
 // The struct represents conract's image
 pub struct ContractImage {
     state_init: StateInit,
-    id: MsgAddressInt
+    id: AccountId
 }
 
 #[allow(dead_code)]
@@ -109,7 +104,7 @@ impl ContractImage {
             state_init.set_library(library_roots.remove(0));
         }
 
-        let id = MsgAddressInt::with_standart(None, Contract::get_default_workchain(), AccountId::from(state_init.hash()?))?;
+        let id = AccountId::from(state_init.hash()?);
 
         Ok(Self{ state_init, id })
     }
@@ -147,7 +142,7 @@ impl ContractImage {
         }
         state_init.set_data(new_data.into());
 
-        let id = MsgAddressInt::with_standart(None, Contract::get_default_workchain(), AccountId::from(state_init.hash()?))?;
+        let id = AccountId::from(state_init.hash()?);
 
         Ok(Self{ state_init, id })
     }
@@ -158,8 +153,8 @@ impl ContractImage {
     }
 
     // Returns future contract's identifier
-    pub fn account_id(&self) -> MsgAddressInt {
-        self.id.clone()
+    pub fn account_id(&self, workchain_id: i8) -> MsgAddressInt {
+        MsgAddressInt::with_standart(None, workchain_id, self.id.clone()).unwrap()
     }
 }
 
@@ -341,7 +336,7 @@ impl Contract {
     pub fn address(&self) -> MsgAddressInt {
         match self.acc.get_addr() {
             Some(MsgAddressInt::AddrStd(_)) => self.acc.get_addr().unwrap().clone(),
-            _ => MsgAddressInt::with_standart(None, Contract::get_default_workchain(),  [0; 32].into()).unwrap()
+            _ => MsgAddressInt::with_standart(None, 0,  [0; 32].into()).unwrap()
         }
     }
 
@@ -616,7 +611,7 @@ impl Contract {
         image: ContractImage
     ) -> SdkResult<TvmMessage> {
         let mut msg_header = ExternalInboundMessageHeader::default();
-        msg_header.dst = image.account_id();
+        msg_header.dst = image.account_id(0);
         let mut msg = TvmMessage::with_ext_in_header(msg_header);
         *msg.state_init_mut() = Some(image.state_init());
         *msg.body_mut() = msg_body;
@@ -624,14 +619,13 @@ impl Contract {
     }
 
     pub fn serialize_message(msg: TvmMessage) -> SdkResult<(Vec<u8>, MessageId)> {
-        let cells = Arc::<CellData>::from(msg.write_to_new_cell()?);
-        let id = cells.repr_hash();
+        let cells = msg.write_to_new_cell()?.into();
 
         let mut data = Vec::new();
         let bag = BagOfCells::with_root(&cells);
         bag.write_to(&mut data, false)?;
 
-        Ok((data, id.into()))
+        Ok((data, cells.repr_hash().into()))
     }
 
     /// Deserializes tree of cells from byte array into `SliceData`
@@ -654,17 +648,5 @@ impl Contract {
         }
 
         Ok(TvmMessage::construct_from(&mut root_cells.remove(0).into())?)
-    }
-
-    /// Sets new default workchain number which will be used in message destination address
-    /// construction if client provides only account ID
-    pub fn set_default_workchain(workchain: i8) {
-        *DEFAULT_WORKCHAIN.lock().unwrap() = workchain
-    }
-
-    /// Returns default workchain number which are used in message destination address
-    /// construction if client provides only account ID
-    pub fn get_default_workchain() -> i8 {
-        *DEFAULT_WORKCHAIN.lock().unwrap()
     }
 }

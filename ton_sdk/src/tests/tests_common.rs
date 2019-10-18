@@ -56,7 +56,7 @@ pub fn init_node_connection() {
     };
 
         
-    init_json(0, config_json.into()).unwrap();
+    init_json(config_json.into()).unwrap();
 }
 
 fn print_wallet_address(key_pair: &Keypair) {
@@ -64,10 +64,10 @@ fn print_wallet_address(key_pair: &Keypair) {
     let mut state_init = std::fs::File::open("src/tests/Wallet.tvc".to_owned()).expect("Unable to open contract code file");
     let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &key_pair.public).expect("Unable to parse contract code file");
 
-    let address = contract_image.account_id();
+    let address = contract_image.account_id(0);
 
     println!("Base64 address for gram request: {}", encode_base64(&address, false, false, false).unwrap());
-    println!("Hex address: {}", contract_image.account_id());
+    println!("Hex address: {}", contract_image.account_id(0));
 }
 
 #[test]
@@ -264,7 +264,7 @@ pub fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_par
 
     let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &key_pair.public).expect("Unable to parse contract code file");
 
-    let account_id = contract_image.account_id();
+    let account_id = contract_image.account_id(0);
 
     get_grams_from_giver(account_id.clone());
 

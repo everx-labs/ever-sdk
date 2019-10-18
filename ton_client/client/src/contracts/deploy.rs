@@ -65,7 +65,7 @@ pub(crate) fn deploy(_context: &mut ClientContext, params: ParamsOfDeploy) -> Ap
     let key_pair = params.keyPair.decode()?;
 
     let contract_image = create_image(&params.imageBase64, &key_pair.public)?;
-    let account_id = contract_image.account_id();
+    let account_id = contract_image.account_id(0);
     debug!("-> -> image prepared with address: {}", account_id);
 
     debug!("-> -> deploy");
@@ -92,7 +92,7 @@ pub(crate) fn deploy(_context: &mut ClientContext, params: ParamsOfDeploy) -> Ap
 pub(crate) fn get_address(_context: &mut ClientContext, params: ParamsOfGetDeployAddress) -> ApiResult<String> {
     let key_pair = params.keyPair.decode()?;
     let contract_image = create_image(&params.imageBase64, &key_pair.public)?;
-    let account_id = contract_image.account_id();
+    let account_id = contract_image.account_id(0);
     Ok(account_encode(&account_id))
 }
 
@@ -102,9 +102,9 @@ pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfDeplo
     let keys = params.keyPair.decode()?;
 
     let contract_image = create_image(&params.imageBase64, &keys.public)?;
-    let account_id = contract_image.account_id();
+    let account_id = contract_image.account_id(0);
     debug!("image prepared with address: {}", account_encode(&account_id));
-    let account_id = contract_image.account_id();
+    let account_id = contract_image.account_id(0);
     let (message_body, message_id) = Contract::construct_deploy_message_json(
         "constructor".to_owned(),
         params.constructorParams.to_string().to_owned(),
@@ -124,7 +124,7 @@ pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfDeplo
 pub(crate) fn encode_unsigned_message(_context: &mut ClientContext, params: ParamsOfEncodeUnsignedDeployMessage) -> ApiResult<ResultOfEncodeUnsignedDeployMessage> {
     let public = decode_public_key(&params.publicKeyHex)?;
     let image = create_image(&params.imageBase64, &public)?;
-    let address_hex = account_encode(&image.account_id());
+    let address_hex = account_encode(&image.account_id(0));
     let encoded = ton_sdk::Contract::get_deploy_message_bytes_for_signing(
         "constructor".to_owned(),
         params.constructorParams.to_string().to_owned(),

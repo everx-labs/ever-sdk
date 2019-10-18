@@ -84,11 +84,11 @@ fn setup(_context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
             subscriptions_server: subscriptions_url
         }
     };
-    ton_sdk::init(config.default_workchain.unwrap_or(0), internal_config).map_err(|err|ApiError::config_init_failed(err))
+    ton_sdk::init(internal_config).map_err(|err|ApiError::config_init_failed(err))
 }
 
 
 #[cfg(not(feature = "node_interaction"))]
-fn setup(_context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
-    Ok(ton_sdk::Contract::set_default_workchain(config.default_workchain.unwrap_or(0)))
+fn setup(_context: &mut ClientContext, _config: SetupParams) -> ApiResult<()> {
+    Ok(())
 }

@@ -10,7 +10,7 @@ fn test_init() {
         other => panic!(format!("{:?}", other))
     };
 
-    let res = init_json(0, "{}".into());
+    let res = init_json("{}".into());
     assert!(res.is_err());
     match res.err().unwrap().kind() {
         SdkErrorKind::InvalidArg(_) => (),
@@ -29,7 +29,7 @@ fn test_init() {
             }
         }"#;
     
-    let res = init_json(0, config_json.into());
+    let res = init_json(config_json.into());
     assert!(res.is_err());
     match res.err().unwrap().kind() {
         SdkErrorKind::Kafka(_) => (),

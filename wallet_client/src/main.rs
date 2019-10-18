@@ -183,11 +183,11 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
 
     let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &key_pair.public).expect("Unable to parse contract code file");
 
-    let account_id = contract_image.account_id();
+    let account_id = contract_image.account_id(0);
 
     // before deploying contract need to transfer some funds to its address
     //println!("Account ID to take some grams {}\n", account_id.to_hex_string());
-    let address = MsgAddressInt::with_standart(None, Contract::get_default_workchain(), AccountId::from([0; 32])).unwrap();
+    let address = MsgAddressInt::with_standart(None, 0, AccountId::from([0; 32])).unwrap();
     let msg = create_external_transfer_funds_message(address, account_id.clone(), 100000000000);
     let changes_stream = Contract::send_message(msg).expect("Error calling contract method");
 
@@ -711,7 +711,7 @@ fn create_cycle_test_thread(config: String, accounts: Vec<AccountData>, timeout:
             let str_params = format!("{{ \"recipient\" : \"x{}\", \"value\": \"{}\" }}", address_to.to_hex_string(), value);
 
             let (msg, id) = Contract::construct_call_message_json(
-                MsgAddressInt::with_standart(None, Contract::get_default_workchain(), address_from.clone()).unwrap(),
+                MsgAddressInt::with_standart(None, 0, address_from.clone()).unwrap(),
                 "sendTransaction".to_owned(),
                 str_params.to_owned(),
                 WALLET_ABI.to_owned(),
@@ -938,12 +938,6 @@ fn main() {
                             .value_name("FILE")
                             .help("Sets a custom config file. Default is `config`")
                             .takes_value(true))
-                        .arg(Arg::with_name("workchain")
-                            .long("workchain")
-                            .short("w")
-                            .value_name("NUMBER")
-                            .help("Sets a workchain. Default is `0`")
-                            .takes_value(true))
                         .get_matches();
 
     // Gets a value for config if supplied by user, or defaults to "default.conf"
@@ -951,11 +945,7 @@ fn main() {
     println!("Using config file: `{}`", config_file);
     let config = std::fs::read_to_string(config_file).expect("Couldn't read config file");
 
-    let workchain = matches.value_of("workchain").unwrap_or("0");
-
-    let workchain = i8::from_str_radix(workchain, 10).expect("Couldn't parse workchain number");
-
-    init_json(workchain, &config).expect("Couldn't establish connection");
+    init_json(&config).expect("Couldn't establish connection");
     println!("Connection established");
 
     let mut current_address = if let Ok(address) = std::fs::read("last_address") {

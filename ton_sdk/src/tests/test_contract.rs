@@ -100,7 +100,7 @@ connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_status
 
     // init SDK
     let config_json = CONFIG_JSON.clone();    
-    init_json(0, config_json.into()).unwrap();
+    init_json(config_json.into()).unwrap();
 
 
     let msg_id = MessageId::default();
@@ -242,7 +242,7 @@ fn test_deploy_and_call_contract() {
 
     let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair.public).expect("Unable to parse contract code file");
 
-    let account_id = contract_image.account_id();
+    let account_id = contract_image.account_id(0);
 
     // before deploying contract need to transfer some funds to its address
     println!("Account ID to take some grams {}", account_id);
@@ -291,7 +291,7 @@ fn test_contract_image_from_file() {
 
     let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair.public).expect("Unable to parse contract code file");
 
-    println!("Account ID {}", contract_image.account_id());
+    println!("Account ID {}", contract_image.account_id(0));
 }
 
 #[test]
@@ -304,12 +304,12 @@ fn test_deploy_empty_contract() {
     code_builder.append_u32(csprng.next_u32()).expect("Unable to add u32");
 
     let mut data = Vec::new();
-    BagOfCells::with_root(&Arc::<CellData>::from(&code_builder)).write_to(&mut data, false).expect("Error serializing BOC");
+    BagOfCells::with_root(&code_builder.into()).write_to(&mut data, false).expect("Error serializing BOC");
                                         
     let mut data_cur = Cursor::new(data);
     
     let image = ContractImage::new(&mut data_cur, None, None).expect("Error creating ContractImage");
-    let acc_id = image.account_id();
+    let acc_id = image.account_id(0);
 
     tests_common::get_grams_from_giver(acc_id.clone());
 
@@ -368,7 +368,7 @@ fn test_load_nonexistent_contract() {
     init_node_connection();
 
     let acc_id = AccountId::from([67; 32]);
-    let c = Contract::load(&MsgAddressInt::with_standart(None, Contract::get_default_workchain(), acc_id).unwrap())
+    let c = Contract::load(&MsgAddressInt::with_standart(None, 0, acc_id).unwrap())
         .expect("Error calling load Contract")
         .wait()
         .next()
