@@ -20,12 +20,12 @@ fn full_test_piggy_bank() {
 
 	// deploy wallet
     println!("Wallet contract deploying...\n");
-    let wallet_address = deploy_contract_and_wait("LimitWallet.tvc", WALLET_ABI, "{}", &keypair);
+    let wallet_address = deploy_contract_and_wait("LimitWallet.tvc", WALLET_ABI, "{}", &keypair, 0);
 	println!("Wallet contract deployed. Account address {}\n", wallet_address);
 
 	// deploy piggy bank
     println!("Piggy bank contract deploying...\n");
-	let piggy_bank_address = deploy_contract_and_wait("Piggy.tvc", PIGGY_BANK_CONTRACT_ABI, PIGGY_BANK_CONSTRUCTOR_PARAMS, &keypair);
+	let piggy_bank_address = deploy_contract_and_wait("Piggy.tvc", PIGGY_BANK_CONTRACT_ABI, PIGGY_BANK_CONSTRUCTOR_PARAMS, &keypair, 0);
 	println!("Piggy bank contract deployed. Account address {}\n", piggy_bank_address);
 
     // get goal from piggy
@@ -38,7 +38,7 @@ fn full_test_piggy_bank() {
 
     println!("Subscription contract deploying...\n");
 	let subscription_constructor_params = format!("{{ \"wallet\" : \"0x{:x}\" }}", wallet_address.get_address());
-	let subscripition_address = deploy_contract_and_wait("Subscription.tvc", SUBSCRIBE_CONTRACT_ABI, &subscription_constructor_params, &keypair);
+	let subscripition_address = deploy_contract_and_wait("Subscription.tvc", SUBSCRIBE_CONTRACT_ABI, &subscription_constructor_params, &keypair, 0);
 	println!("Subscription contract deployed. Account address {}\n", subscripition_address);
 
 

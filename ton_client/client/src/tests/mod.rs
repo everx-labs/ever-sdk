@@ -42,7 +42,7 @@ fn json_request(
 }
 
 #[test]
-fn test() {
+fn test_wallet_deploy() {
     log::set_boxed_logger(Box::new(SimpleLogger))
         .map(|()| log::set_max_level(LevelFilter::Debug)).unwrap();
     unsafe {
@@ -67,6 +67,7 @@ fn test() {
                 "constructorParams": json!({}),
                 "imageBase64": WALLET_CODE_BASE64,
                 "keyPair": keys,
+                "workchainId": 0,
             }),
         );
 
@@ -95,7 +96,7 @@ fn test() {
             json!({
                 "table": "accounts".to_owned(),
                 "filter": json!({
-					"id": { "eq": address },
+					"id": { "eq": address.get_address().to_hex_string() },
 					"storage": {
 						"balance": {
 							"Grams": { "gt": "0" }
@@ -114,6 +115,7 @@ fn test() {
                 "constructorParams": json!({}),
                 "imageBase64": WALLET_CODE_BASE64,
                 "keyPair": keys,
+                "workchainId": 0,
             }),
         );
 
@@ -121,15 +123,14 @@ fn test() {
 
         let result = json_request(context, "contracts.run",
             json!({
-                "address": address,
+                "address": address.get_address().to_hex_string(),
                 "abi": abi.clone(),
                 "functionName": "getLimitCount",
                 "input": json!({}),
                 "keyPair": keys,
             }),
         );
-        assert_eq!("{\"output\":{\"value0\":\"0x0\"}}",
-            result.result_json);
+        assert_eq!("{\"output\":{\"value0\":\"0x0\"}}", result.result_json);
 
         tc_destroy_context(context);
     }

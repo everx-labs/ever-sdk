@@ -110,7 +110,7 @@ impl ContractImage {
     }
 
     pub fn from_state_init_and_key<T>(state_init_bag: &mut T, pub_key: &PublicKey) -> SdkResult<Self>
-        where T: Read + Seek {
+        where T: Read {
 
         let mut si_roots = deserialize_cells_tree(state_init_bag)?;
         if si_roots.len() != 1 {
@@ -153,8 +153,16 @@ impl ContractImage {
     }
 
     // Returns future contract's identifier
-    pub fn account_id(&self, workchain_id: i8) -> MsgAddressInt {
-        MsgAddressInt::with_standart(None, workchain_id, self.id.clone()).unwrap()
+    pub fn account_id(&self) -> AccountId {
+        self.id.clone()
+    }
+
+    // Returns future contract's address
+    pub fn msg_address(&self, workchain_id: i32) -> MsgAddressInt {
+        match workchain_id / 128 {
+            0 => MsgAddressInt::with_standart(None, workchain_id as i8, self.id.clone()).unwrap(),
+            _ => MsgAddressInt::with_variant(None, workchain_id, self.id.clone()).unwrap(),
+        }
     }
 }
 
@@ -261,14 +269,14 @@ impl Contract {
     // Works with json representation of input and abi.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
-    pub fn deploy_json(func: String, input: String, abi: String, image: ContractImage, key_pair: Option<&Keypair>)
+    pub fn deploy_json(func: String, input: String, abi: String, image: ContractImage, key_pair: Option<&Keypair>, workchain_id: i32)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
         let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let cell = msg_body.into();
-        let msg = Self::create_deploy_message(Some(cell), image)?;
+        let msg = Self::create_deploy_message(Some(cell), image, workchain_id)?;
 
         let msg_id = Self::_send_message(msg)?;
 
@@ -278,9 +286,9 @@ impl Contract {
     // Packs given image asynchronously send deploy message into blockchain.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
-    pub fn deploy_no_constructor(image: ContractImage)
+    pub fn deploy_no_constructor(image: ContractImage, workchain_id: i32)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
-        let msg = Self::create_deploy_message(None, image)?;
+        let msg = Self::create_deploy_message(None, image, workchain_id)?;
 
         let msg_id = Self::_send_message(msg)?;
 
@@ -520,36 +528,36 @@ impl Contract {
     // Works with json representation of input and abi.
     // Returns message's bag of cells and identifier.
     pub fn construct_deploy_message_json(func: String, input: String, abi: String, image: ContractImage,
-        key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
+        key_pair: Option<&Keypair>, workchain_id: i32) -> SdkResult<(Vec<u8>, MessageId)> {
 
         let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let cell = msg_body.into();
-        let msg = Self::create_deploy_message(Some(cell), image)?;
+        let msg = Self::create_deploy_message(Some(cell), image, workchain_id)?;
 
         Self::serialize_message(msg)
     }
 
     // Packs given image and body into Message struct.
     // Returns message's bag of cells and identifier.
-    pub fn construct_deploy_message_with_body(image: ContractImage, body: Option<&[u8]>) -> SdkResult<(Vec<u8>, MessageId)> {
+    pub fn construct_deploy_message_with_body(image: ContractImage, body: Option<&[u8]>, workchain_id: i32) -> SdkResult<(Vec<u8>, MessageId)> {
         let body_cell = match body {
             None => None,
             Some(data) => Some(Self::deserialize_tree_to_slice(data)?)
         };
 
-        let msg = Self::create_deploy_message(body_cell, image)?;
+        let msg = Self::create_deploy_message(body_cell, image, workchain_id)?;
         
         Self::serialize_message(msg)
     }
 
     // Packs given image into Message struct.
     // Returns message's bag of cells and identifier.
-    pub fn construct_deploy_message_no_constructor(image: ContractImage)
+    pub fn construct_deploy_message_no_constructor(image: ContractImage, workchain_id: i32)
         -> SdkResult<(Vec<u8>, MessageId)>
     {
-        let msg = Self::create_deploy_message(None, image)?;
+        let msg = Self::create_deploy_message(None, image, workchain_id)?;
 
         Self::serialize_message(msg)
     }
@@ -558,13 +566,13 @@ impl Contract {
     // Sign should be then added with `add_sign_to_message` function
     // Works with json representation of input and abi.
     pub fn get_deploy_message_bytes_for_signing(func: String, input: String, abi: String,
-        image: ContractImage) -> SdkResult<MessageToSign> {
+        image: ContractImage, workchain_id: i32) -> SdkResult<MessageToSign> {
 
         let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(abi, func, input)
                 .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let cell = msg_body.into();
-        let msg = Self::create_deploy_message(Some(cell), image)?;
+        let msg = Self::create_deploy_message(Some(cell), image, workchain_id)?;
 
         Self::serialize_message(msg).map(|(msg_data, _id)| {
                 MessageToSign { message: msg_data, data_to_sign } 
@@ -608,10 +616,11 @@ impl Contract {
 
     fn create_deploy_message(
         msg_body: Option<SliceData>,
-        image: ContractImage
+        image: ContractImage,
+        workchain_id: i32
     ) -> SdkResult<TvmMessage> {
         let mut msg_header = ExternalInboundMessageHeader::default();
-        msg_header.dst = image.account_id(0);
+        msg_header.dst = image.msg_address(workchain_id);
         let mut msg = TvmMessage::with_ext_in_header(msg_header);
         *msg.state_init_mut() = Some(image.state_init());
         *msg.body_mut() = msg_body;

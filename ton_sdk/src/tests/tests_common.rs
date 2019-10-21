@@ -59,20 +59,20 @@ pub fn init_node_connection() {
     init_json(config_json.into()).unwrap();
 }
 
-fn print_wallet_address(key_pair: &Keypair) {
+fn print_wallet_address(key_pair: &Keypair, workchain_id: i32) {
     // create image to retrieve address
     let mut state_init = std::fs::File::open("src/tests/Wallet.tvc".to_owned()).expect("Unable to open contract code file");
     let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &key_pair.public).expect("Unable to parse contract code file");
 
-    let address = contract_image.account_id(0);
+    let address = contract_image.msg_address(workchain_id);
 
     println!("Base64 address for gram request: {}", encode_base64(&address, false, false, false).unwrap());
-    println!("Hex address: {}", contract_image.account_id(0));
+    println!("Hex address: {}", address);
 }
 
 #[test]
 fn test_print_address() {
-    print_wallet_address(&WALLET_KEYS);
+    print_wallet_address(&WALLET_KEYS, 0);
 }
 
 #[test]
@@ -83,7 +83,7 @@ fn test_generate_keypair_and_address() {
 
     println!("Key pair: {}", hex::encode(&key_pair.to_bytes().to_vec()));
 
-    print_wallet_address(&key_pair);
+    print_wallet_address(&key_pair, 0);
 }
 
 #[test]
@@ -108,7 +108,7 @@ fn test_send_grams_from_giver() {
 fn test_deploy_giver() {
     init_node_connection();
 
-    deploy_contract_and_wait("Wallet.tvc", SIMPLE_WALLET_ABI, "{}", &WALLET_KEYS);
+    deploy_contract_and_wait("Wallet.tvc", SIMPLE_WALLET_ABI, "{}", &WALLET_KEYS, 0);
 
     println!("Giver deployed. Address {} ({:x})\n", WALLET_ADDRESS_STR, WALLET_ADDRESS.get_address());
 }
@@ -258,18 +258,18 @@ pub fn get_grams_from_giver(address: MsgAddressInt) {
     });
 }
 
-pub fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params: &str, key_pair: &Keypair) -> MsgAddressInt {
+pub fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params: &str, key_pair: &Keypair, workchain_id: i32) -> MsgAddressInt {
     // read image from file and construct ContractImage
     let mut state_init = std::fs::File::open("src/tests/".to_owned() + code_file_name).expect("Unable to open contract code file");
 
     let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &key_pair.public).expect("Unable to parse contract code file");
 
-    let account_id = contract_image.account_id(0);
+    let account_id = contract_image.msg_address(workchain_id);
 
     get_grams_from_giver(account_id.clone());
 
     // call deploy method
-    let changes_stream = Contract::deploy_json("constructor".to_owned(), constructor_params.to_owned(), abi.to_owned(), contract_image, Some(key_pair))
+    let changes_stream = Contract::deploy_json("constructor".to_owned(), constructor_params.to_owned(), abi.to_owned(), contract_image, Some(key_pair), workchain_id)
         .expect("Error deploying contract");
 
     // wait transaction id in message-status

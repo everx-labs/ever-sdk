@@ -177,13 +177,13 @@ pub fn create_external_transfer_funds_message(src: MsgAddressInt, dst: MsgAddres
     msg
 }
 
-fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params: &str, key_pair: &Keypair) -> MsgAddressInt {
+fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params: &str, key_pair: &Keypair, workchain_id: i32) -> MsgAddressInt {
     // read image from file and construct ContractImage
     let mut state_init = std::fs::File::open(code_file_name).expect("Unable to open contract code file");
 
     let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &key_pair.public).expect("Unable to parse contract code file");
 
-    let account_id = contract_image.account_id(0);
+    let account_id = contract_image.msg_address(workchain_id);
 
     // before deploying contract need to transfer some funds to its address
     //println!("Account ID to take some grams {}\n", account_id.to_hex_string());
@@ -213,7 +213,7 @@ fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params:
     });
 
     // call deploy method
-    let changes_stream = Contract::deploy_json("constructor".to_owned(), constructor_params.to_owned(), abi.to_owned(), contract_image, Some(key_pair))
+    let changes_stream = Contract::deploy_json("constructor".to_owned(), constructor_params.to_owned(), abi.to_owned(), contract_image, Some(key_pair), workchain_id)
         .expect("Error deploying contract");
 
     // wait transaction id in message-status 
@@ -297,7 +297,8 @@ fn call_create(current_address: &mut Option<MsgAddressInt>) {
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
    
     // deploy wallet
-    let wallet_address = deploy_contract_and_wait("Wallet.tvc", WALLET_ABI, "{}", &keypair);
+    let workchain_id = current_address.as_ref().map(|address| address.get_workchain_id()).unwrap_or(0);
+    let wallet_address = deploy_contract_and_wait("Wallet.tvc", WALLET_ABI, "{}", &keypair, workchain_id);
     let str_address = wallet_address.get_address().to_hex_string();
 
     println!("Acoount created. Address {}", str_address);
@@ -736,7 +737,7 @@ fn create_cycle_test_thread(config: String, accounts: Vec<AccountData>, timeout:
 }
 
 fn cycle_test(config: String, params: &[&str]) {
-    if params.len() < 4 {
+    if params.len() < 5 {
         println!("Not enough parameters");
         return;
     }
@@ -773,7 +774,16 @@ fn cycle_test(config: String, params: &[&str]) {
         }
     };
 
-    println!("Processing {} accounts in {} messages in {} threads", acc_count, msg_count, thread_count);
+    let workchain_id = match i32::from_str_radix(params[4], 10) {
+        Ok(n) => n,
+        _ => {
+            println!("error parsing workchain_id");
+            return;
+        }
+    };
+
+    println!("Processing {} accounts in {} messages in {} threads in workchain_id {} ",
+        acc_count, msg_count, thread_count, workchain_id);
 
     println!("Accounts creating...");
     let mut csprng = rand::rngs::OsRng::new().unwrap();
@@ -783,7 +793,7 @@ fn cycle_test(config: String, params: &[&str]) {
         let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
 
         // deploy wallet
-        let wallet_address = deploy_contract_and_wait("Wallet.tvc", WALLET_ABI, "{}", &keypair);
+        let wallet_address = deploy_contract_and_wait("Wallet.tvc", WALLET_ABI, "{}", &keypair, workchain_id);
 
         accounts.push(AccountData { 
                 id: wallet_address.get_address(),
@@ -805,7 +815,7 @@ fn cycle_test(config: String, params: &[&str]) {
 }
 
 fn cycle_test_init(params: &[&str]) {
-    if params.len() < 1 {
+    if params.len() < 2 {
         println!("Not enough parameters");
         return;
     }
@@ -814,6 +824,14 @@ fn cycle_test_init(params: &[&str]) {
         Ok(n) => n,
         _ => {
             println!("error parsing accounts count");
+            return;
+        }
+    };
+
+    let workchain_id = match i32::from_str_radix(params[1], 10) {
+        Ok(n) => n,
+        _ => {
+            println!("error parsing workchain_id");
             return;
         }
     };
@@ -828,7 +846,7 @@ fn cycle_test_init(params: &[&str]) {
         let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
 
         // deploy wallet
-        let wallet_address = deploy_contract_and_wait("Wallet.tvc", WALLET_ABI, "{}", &keypair);
+        let wallet_address = deploy_contract_and_wait("Wallet.tvc", WALLET_ABI, "{}", &keypair, workchain_id);
 
         vec.push(AccountData { 
                 id: wallet_address.get_address(),
@@ -915,12 +933,12 @@ Supported commands:
     get-limit <limit ID>                    - get one limit info
     limits                                  - list all existing wallet limits information
     version                                 - get version of the wallet contract
-    cycle-test-full <accounts count> <timeout> <messages count> <threads count> - start a performance test - cyclically send founds between accounts
+    cycle-test-full <accounts count> <timeout> <messages count> <threads count> <workchain_id> - start a performance test - cyclically send founds between accounts
         accounts count - count of accounts
         timeout        - timeout in milliseconds between messages
         messages count - count of transfer messages
         threads count  - count of parallel working test threads
-    cycle-test-init <accounts count>        - prepare cycle test data: deploy contracts and save accounts data
+    cycle-test-init <accounts count> <workchain_id> - prepare cycle test data: deploy contracts and save accounts data
         accounts count - count of accounts
     cycle-test-run <timeout> <messages count> <threads count> - start a performance test - cyclically send founds between accounts prepared by `cycle-test-init` command
         timeout        - timeout in milliseconds between messages

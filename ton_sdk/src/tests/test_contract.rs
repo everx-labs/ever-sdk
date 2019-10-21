@@ -242,7 +242,7 @@ fn test_deploy_and_call_contract() {
 
     let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair.public).expect("Unable to parse contract code file");
 
-    let account_id = contract_image.account_id(0);
+    let account_id = contract_image.msg_address(0);
 
     // before deploying contract need to transfer some funds to its address
     println!("Account ID to take some grams {}", account_id);
@@ -255,7 +255,7 @@ fn test_deploy_and_call_contract() {
     let input = CONSTRUCTOR_PARAMS.to_string();
     let abi = test_piggy_bank::SUBSCRIBE_CONTRACT_ABI.to_string();
 
-    let changes_stream = Contract::deploy_json(func, input, abi, contract_image, Some(&keypair))
+    let changes_stream = Contract::deploy_json(func, input, abi, contract_image, Some(&keypair), 0)
         .expect("Error deploying contract");
 
     // wait transaction id in message-status or 
@@ -291,7 +291,7 @@ fn test_contract_image_from_file() {
 
     let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair.public).expect("Unable to parse contract code file");
 
-    println!("Account ID {}", contract_image.account_id(0));
+    println!("Account ID {:x}", contract_image.account_id());
 }
 
 #[test]
@@ -309,7 +309,7 @@ fn test_deploy_empty_contract() {
     let mut data_cur = Cursor::new(data);
     
     let image = ContractImage::new(&mut data_cur, None, None).expect("Error creating ContractImage");
-    let acc_id = image.account_id(0);
+    let acc_id = image.msg_address(0);
 
     tests_common::get_grams_from_giver(acc_id.clone());
 
@@ -339,7 +339,7 @@ fn test_deploy_empty_contract() {
 
 
 
-    let changes_stream = Contract::deploy_no_constructor(image)
+    let changes_stream = Contract::deploy_no_constructor(image, 0)
         .expect("Error deploying contract");
 
         // wait transaction id in message-status 
