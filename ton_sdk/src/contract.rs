@@ -106,7 +106,14 @@ impl ContractImage {
         Ok(Self{ state_init, id })
     }
 
-    pub fn from_state_init_and_key<T>(state_init_bag: &mut T, pub_key: &PublicKey) -> SdkResult<Self>
+    pub fn new_empty() -> SdkResult<Self> {
+        let state_init = StateInit::default();
+        let id = state_init.hash()?.into();
+
+        Ok(Self{ state_init, id })
+    }
+
+    pub fn from_state_init<T>(state_init_bag: &mut T) -> SdkResult<Self>
         where T: Read + Seek {
 
         let mut si_roots = deserialize_cells_tree(state_init_bag)?;
@@ -114,20 +121,71 @@ impl ContractImage {
             bail!(SdkErrorKind::InvalidData("Invalid state init's bag of cells".into()));
         }
 
-        let mut state_init : StateInit
+        let state_init : StateInit
             = StateInit::construct_from(&mut SliceData::from(si_roots.remove(0)))?;
 
-        // state init's data's root cell contains zero-key
-        // need to change it by real public key
+        let id = state_init.hash()?.into();
+
+        Ok(Self{ state_init, id })
+    }
+
+    pub fn from_state_init_and_key<T>(state_init_bag: &mut T, pub_key: &PublicKey) -> SdkResult<Self>
+        where T: Read + Seek {
+
+        let mut result = Self::from_state_init(state_init_bag)?;
+        result.set_public_key(pub_key)?;
+
+        Ok(result)
+    }
+
+    pub fn set_public_key(&mut self, pub_key: &PublicKey) -> SdkResult<()> {
+        let state_init = &mut self.state_init;
+
         let new_data = Self::insert_pubkey(
             state_init.data.clone().unwrap_or_default(),
             pub_key.as_bytes(),
         )?;
         state_init.set_data(new_data);
 
-        let id = state_init.hash()?.into();
+        self.id = state_init.hash()?.into();
 
-        Ok(Self{ state_init, id })
+        Ok(())
+    }
+    
+    pub fn get_serialized_code(&self) -> SdkResult<Vec<u8>> {
+        match &self.state_init.code {
+            Some(cell) => {
+                let mut data = Vec::new();
+                let bag = BagOfCells::with_root(&cell);
+                bag.write_to(&mut data, false)?;
+
+                Ok(data)
+            },
+            None => bail!(SdkErrorKind::InvalidData("State init has no code".to_owned()))
+        }
+    }
+
+    pub fn get_serialized_data(&self) -> SdkResult<Vec<u8>> {
+        match &self.state_init.data {
+            Some(cell) => {
+                let mut data = Vec::new();
+                let bag = BagOfCells::with_root(&cell);
+                bag.write_to(&mut data, false)?;
+
+                Ok(data)
+            },
+            None => bail!(SdkErrorKind::InvalidData("State init has no data".to_owned()))
+        }
+    }
+
+    pub fn serialize(&self) -> SdkResult<Vec<u8>> {
+        let cell = self.state_init.write_to_new_cell()?;
+
+        let mut data = Vec::new();
+        let bag = BagOfCells::with_root(&cell.into());
+        bag.write_to(&mut data, false)?;
+
+        Ok(data)
     }
 
     // Returns future contract's state_init struct
@@ -391,7 +449,7 @@ impl Contract {
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
         // pack params into bag of cells via ABI
-        let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
+        let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let msg = Self::create_message(id.clone(), msg_body.into())?;
@@ -410,7 +468,7 @@ impl Contract {
     pub fn deploy_json(func: String, input: String, abi: String, image: ContractImage, key_pair: Option<&Keypair>)
         -> SdkResult<Box<dyn Stream<Item = ContractCallState, Error = SdkError>>> {
 
-        let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
+        let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let cell = msg_body.into();
@@ -544,7 +602,7 @@ impl Contract {
          -> SdkResult<Vec<TvmMessage>>
     {
         // pack params into bag of cells via ABI
-        let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
+        let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let address = self.id().unwrap_or(AccountId::from([0; 32])).into();
@@ -555,54 +613,54 @@ impl Contract {
     }
 
     /// Decodes output parameters returned by contract function call 
-    pub fn decode_function_response_json(abi: String, function: String, response: SliceData) 
+    pub fn decode_function_response_json(abi: String, function: String, response: SliceData, internal: bool) 
         -> SdkResult<String> {
 
-        ton_abi::json_abi::decode_function_response(abi, function, response)
+        ton_abi::json_abi::decode_function_response(abi, function, response, internal)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
-    pub fn decode_function_response_from_bytes_json(abi: String, function: String, response: &[u8])
+    pub fn decode_function_response_from_bytes_json(abi: String, function: String, response: &[u8], internal: bool)
         -> SdkResult<String> {
 
         let slice = Self::deserialize_tree_to_slice(response)?;
 
-        Self::decode_function_response_json(abi, function, slice)
+        Self::decode_function_response_json(abi, function, slice, internal)
     }
 
     /// Decodes output parameters returned by contract function call 
-    pub fn decode_unknown_function_response_json(abi: String, response: SliceData) 
+    pub fn decode_unknown_function_response_json(abi: String, response: SliceData, internal: bool) 
         -> SdkResult<DecodedMessage> {
 
-        ton_abi::json_abi::decode_unknown_function_response(abi, response)
+        ton_abi::json_abi::decode_unknown_function_response(abi, response, internal)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
-    pub fn decode_unknown_function_response_from_bytes_json(abi: String, response: &[u8])
+    pub fn decode_unknown_function_response_from_bytes_json(abi: String, response: &[u8], internal: bool)
         -> SdkResult<DecodedMessage> {
 
         let slice = Self::deserialize_tree_to_slice(response)?;
 
-        Self::decode_unknown_function_response_json(abi, slice)
+        Self::decode_unknown_function_response_json(abi, slice, internal)
     }
 
     /// Decodes output parameters returned by contract function call 
-    pub fn decode_unknown_function_call_json(abi: String, response: SliceData) 
+    pub fn decode_unknown_function_call_json(abi: String, response: SliceData, internal: bool) 
         -> SdkResult<DecodedMessage> {
 
-        ton_abi::json_abi::decode_unknown_function_call(abi, response)
+        ton_abi::json_abi::decode_unknown_function_call(abi, response, internal)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
-    pub fn decode_unknown_function_call_from_bytes_json(abi: String, response: &[u8])
+    pub fn decode_unknown_function_call_from_bytes_json(abi: String, response: &[u8], internal: bool)
         -> SdkResult<DecodedMessage> {
 
         let slice = Self::deserialize_tree_to_slice(response)?;
 
-        Self::decode_unknown_function_call_json(abi, slice)
+        Self::decode_unknown_function_call_json(abi, slice, internal)
     }
 
     // ------- Call constructing functions -------
@@ -611,10 +669,10 @@ impl Contract {
     // Works with json representation of input and abi.
     // Returns message's bag of cells and identifier.
     pub fn construct_call_message_json(address: AccountAddress, func: String, input: String,
-        abi: String, key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
+        abi: String, internal: bool, key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
 
         // pack params into bag of cells via ABI
-        let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
+        let msg_body = ton_abi::encode_function_call(abi, func, input, internal, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let msg = Self::create_message(address, msg_body.into())?;
@@ -658,7 +716,7 @@ impl Contract {
     pub fn construct_deploy_message_json(func: String, input: String, abi: String, image: ContractImage,
         key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
 
-        let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
+        let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
 
         let cell = msg_body.into();

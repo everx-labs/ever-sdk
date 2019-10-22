@@ -2,7 +2,6 @@
 members = [
     "ton_abi",
     "ton_sdk",
-    "wallet_client",
     "ton_client/client"
 ]
 

@@ -99,7 +99,9 @@ fn test_local_piggy_call() {
         address.into(),
         "getGoal".to_owned(),
         "{}".to_owned(),
-        PIGGY_BANK_CONTRACT_ABI.to_owned(), None)
+        PIGGY_BANK_CONTRACT_ABI.to_owned(),
+        false,
+        None)
         .expect("Error creating message");
     let msg = crate::Contract::deserialize_message(&msg).unwrap();
     println!("msg {}", msg.body().unwrap());
@@ -109,7 +111,10 @@ fn test_local_piggy_call() {
     assert!(messages.len() == 1);
 
     let answer = crate::Contract::decode_function_response_json(
-        PIGGY_BANK_CONTRACT_ABI.to_owned(), "getGoal".to_owned(), messages[0].body().expect("Message has no body"))
+        PIGGY_BANK_CONTRACT_ABI.to_owned(),
+        "getGoal".to_owned(),
+        messages[0].body().expect("Message has no body"),
+        false)
             .expect("Error decoding result");
 
     println!("answer {}", answer);

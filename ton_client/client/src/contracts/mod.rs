@@ -65,6 +65,10 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         deploy::encode_unsigned_message);
     handlers.spawn("contracts.deploy.address",
         deploy::get_address);
+    handlers.spawn("contracts.deploy.code_from_image",
+        deploy::get_code_from_image);
+    handlers.spawn("contracts.deploy.data",
+        deploy::get_deploy_data);
 
     // Run
     #[cfg(feature = "node_interaction")]
@@ -81,6 +85,8 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         run::decode_unknown_input);
     handlers.spawn("contracts.run.unknown.output",
         run::decode_unknown_output);
+    handlers.spawn("contracts.run.body",
+        run::get_run_body);
 
     // Contracts
     handlers.spawn("contracts.encode_message_with_sign",

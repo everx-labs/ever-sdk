@@ -369,7 +369,7 @@ pub fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: 
                     .expect("error unwrap out message 2");
             msg.msg_type() == MessageType::ExternalOutbound
             && msg.body().is_some()
-            && abi_function.is_my_message(msg.body().expect("No body")).expect("error is_my_message")
+            && abi_function.is_my_message(msg.body().expect("No body"), false).expect("error is_my_message")
         })
             .expect("erro unwrap out message 2")
             .expect("erro unwrap out message 3")
@@ -381,7 +381,7 @@ pub fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: 
     //println!("response {}", responce);
 
     // decode the body by ABI
-    let result = Contract::decode_function_response_json(abi.to_owned(), func.to_owned(), responce)
+    let result = Contract::decode_function_response_json(abi.to_owned(), func.to_owned(), responce, false)
         .expect("Error decoding result");
 
     //println!("Contract call result: {}\n", result);
@@ -412,7 +412,7 @@ pub fn local_contract_call(address: AccountId, func: &str, input: &str, abi: &st
         let msg = crate::Message::with_msg(msg);
         if msg.msg_type() == MessageType::ExternalOutbound {
             return Contract::decode_function_response_json(
-                abi.to_owned(), func.to_owned(), msg.body().expect("Message has no body"))
+                abi.to_owned(), func.to_owned(), msg.body().expect("Message has no body"), false)
                     .expect("Error decoding result");
         }
     }

@@ -218,7 +218,7 @@ fn test_call_contract(address: AccountId, key_pair: &Keypair) {
 
 
     // decode the body by ABI
-    let result = decode_function_response(abi, func, response)
+    let result = decode_function_response(abi, func, response, false)
         .expect("Error decoding result");
 
     println!("result:/n{}", result);

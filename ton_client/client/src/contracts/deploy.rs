@@ -61,6 +61,34 @@ pub(crate) struct ResultOfEncodeDeployMessage {
     pub messageBodyBase64: String,
 }
 
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct ParamsOfGetDeployData {
+    pub abi: Option<serde_json::Value>,
+    pub initParams: Option<serde_json::Value>,
+    pub imageBase64: Option<String>,
+    pub publicKeyHex: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct ResultOfGetDeployData {
+    pub imageBase64: Option<String>,
+    pub dataBase64: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct ParamsOfGetCodeFromImage {
+    pub imageBase64: String,
+}
+
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize)]
+pub(crate) struct ResultOfGetCodeFromImage {
+    pub codeBase64: String,
+}
+
 #[cfg(feature = "node_interaction")]
 pub(crate) fn deploy(_context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<ResultOfDeploy> {
     debug!("-> contracts.deploy({})", params.constructorParams.to_string());
@@ -121,6 +149,71 @@ pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfDeplo
         messageId: generic_id_encode(&message_id),
         messageIdBase64: base64::encode(message_id.data.as_slice()),
         messageBodyBase64: base64::encode(&message_body),
+    })
+}
+
+pub(crate) fn get_code_from_image(_context: &mut ClientContext, params: ParamsOfGetCodeFromImage) -> ApiResult<ResultOfGetCodeFromImage> {
+    debug!("-> contracts.deploy.image.code()");
+
+    let bytes = base64::decode(&params.imageBase64)
+        .map_err(|err| ApiError::contracts_deploy_invalid_image(err))?;
+    let mut reader = Cursor::new(bytes);
+    let image = ContractImage::from_state_init(&mut reader)
+        .map_err(|err| ApiError::contracts_deploy_image_creation_failed(err))?;
+
+    debug!("<-");
+    Ok(ResultOfGetCodeFromImage {
+        codeBase64: base64::encode(&image.get_serialized_code()
+            .map_err(|err| ApiError::contracts_deploy_image_creation_failed(err))?),
+    })
+}
+
+pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetDeployData) -> ApiResult<ResultOfGetDeployData> {
+    debug!("-> contracts.run.message({}, {}, {})",
+        &params.abi.clone().unwrap_or_default(),
+        &params.imageBase64.clone().unwrap_or_default(),
+        &params.initParams.clone().unwrap_or_default(),
+    );
+
+
+    let public = decode_public_key(&params.publicKeyHex)?;
+
+    let mut image = if let Some(image) = &params.imageBase64 {
+        let bytes = base64::decode(&image)
+            .map_err(|err| ApiError::contracts_deploy_invalid_image(err))?;
+        let mut reader = Cursor::new(bytes);
+        let image = ContractImage::from_state_init_and_key(&mut reader, &public)
+            .map_err(|err| ApiError::contracts_deploy_image_creation_failed(err))?;
+
+        image
+    } else {
+        let mut image = ContractImage::new_empty()
+            .map_err(|err| ApiError::contracts_deploy_image_creation_failed(err))?;
+        image.set_public_key(&public)
+            .map_err(|err| ApiError::contracts_deploy_image_creation_failed(err))?;;
+
+        image
+    };
+
+    if let Some(init_params) = params.initParams {
+        let abi = params.abi.ok_or(ApiError::contracts_deploy_image_creation_failed("No ABI provided"))?;
+        image.update_data(&init_params.to_string(), &abi.to_string())
+            .map_err(|err| ApiError::contracts_deploy_image_creation_failed(err))?;
+    }
+
+    let data = base64::encode(&image.get_serialized_data()
+        .map_err(|err| ApiError::contracts_deploy_image_creation_failed(err))?);
+
+    let image = match params.imageBase64 {
+        Some(_) => Some(base64::encode(&image.serialize()
+            .map_err(|err| ApiError::contracts_deploy_image_creation_failed(err))?)),
+        None => None,
+    };
+
+    debug!("<-");
+    Ok(ResultOfGetDeployData {
+        imageBase64: image,
+        dataBase64: data,
     })
 }
 

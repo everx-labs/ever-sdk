@@ -266,6 +266,11 @@ impl ApiError {
         "Deploy failed: transaction aborted".into())
     }
 
+    pub fn contracts_run_body_creation_failed<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsRunBodyCreationFailed,
+        "Run body creation failed: {}", err)
+    }
+
     pub fn contracts_encode_message_with_sign_failed<E: Display>(err: E) -> Self {
         sdk_err!(ContractsEncodeMessageWithSignFailed,
             "Encoding message with sign failed: {}", err)
@@ -356,6 +361,7 @@ pub enum ApiSdkErrorCode {
     ContractsCreateSendGramsMessageFailed = 3013,
     ContractsEncodeMessageWithSignFailed = 3014,
     ContractsDeployTransactionAborted = 3015,
+    ContractsRunBodyCreationFailed = 3016,
 
     QueriesQueryFailed = 4001,
     QueriesSubscribeFailed = 4002,

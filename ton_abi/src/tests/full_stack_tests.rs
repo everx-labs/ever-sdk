@@ -106,6 +106,7 @@ fn test_constructor_call() {
         WALLET_ABI.to_owned(),
         "constructor".to_owned(),
         params.to_owned(),
+        false,
         None,
     ).unwrap();
 
@@ -119,6 +120,7 @@ fn test_constructor_call() {
     let response = decode_unknown_function_call(
         WALLET_ABI.to_owned(),
         test_tree.clone(),
+        false
     ).unwrap();
 
     assert_eq!(response.params, params);
@@ -130,6 +132,7 @@ fn test_constructor_call() {
     let response = decode_unknown_function_response(
         WALLET_ABI.to_owned(),
         test_tree.clone(),
+        false
     )
     .unwrap();
 
@@ -141,6 +144,7 @@ fn test_constructor_call() {
         WALLET_ABI.to_owned(),
         "constructor".to_owned(),
         test_tree,
+        false
     )
     .unwrap();
 
@@ -164,6 +168,7 @@ fn test_signed_call() {
         WALLET_ABI.to_owned(),
         "createLimit".to_owned(),
         params.to_owned(),
+        false,
         Some(&pair),
     )
     .unwrap();
@@ -173,6 +178,7 @@ fn test_signed_call() {
     let response = decode_unknown_function_call(
         WALLET_ABI.to_owned(),
         test_tree.clone(),
+        false
     )
     .unwrap();
 
@@ -199,6 +205,7 @@ fn test_signed_call() {
         WALLET_ABI.to_owned(),
         "createLimit".to_owned(),
         response_tree.clone(),
+        false
     )
     .unwrap();
 
@@ -208,6 +215,7 @@ fn test_signed_call() {
     let response = decode_unknown_function_response(
         WALLET_ABI.to_owned(),
         response_tree,
+        false
     )
     .unwrap();
 
@@ -225,6 +233,7 @@ fn test_not_signed_call() {
         WALLET_ABI.to_owned(),
         "getLimitById".to_owned(),
         params.to_owned(),
+        false,
         None,
     )
     .unwrap();
@@ -251,7 +260,7 @@ fn test_add_signature_full() {
 
     let msg = add_sign_to_function_call(&signature, &pair.public.to_bytes(), msg.into()).unwrap();
 
-    let decoded = decode_unknown_function_call(WALLET_ABI.to_owned(), msg.into()).unwrap();
+    let decoded = decode_unknown_function_call(WALLET_ABI.to_owned(), msg.into(), false).unwrap();
 
     assert_eq!(decoded.params, params);
 }
