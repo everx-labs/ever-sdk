@@ -4,6 +4,7 @@ use std::collections::HashMap;
 const TEST_ABI: &str = r#"
 {
     "ABI version": 1,
+    "data" : [],
     "functions": [{
             "name": "input_and_output",
             "inputs": [
@@ -104,7 +105,7 @@ fn test_abi_parse() {
                 id: Function::calc_function_id("signed(time,bool)()v1")
         });
 
-    let expected_contract = Contract { functions, events: HashMap::new() };
+    let expected_contract = Contract { functions, events: HashMap::new(), data: HashMap::new() };
 
     assert_eq!(parsed_contract, expected_contract);
 }

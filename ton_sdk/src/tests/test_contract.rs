@@ -1,6 +1,8 @@
 use ton_abi::json_abi::decode_function_response;
 use super::*;
+use contract::ContractImage;
 use std::io::{Cursor};
+use std::str::FromStr;
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
 use rand::RngCore;
@@ -8,6 +10,7 @@ use sha2::Sha512;
 use tvm::block::{MsgAddressInt, TransactionProcessingStatus};
 use tvm::types::AccountId;
 use tvm::stack::{BuilderData, IBitstring};
+use tvm::stack::dictionary::HashmapType;
 use tests_common::*;
 
 /*
@@ -376,4 +379,75 @@ fn test_load_nonexistent_contract() {
         .expect("Error unwrap result while loading Contract");
 
     assert!(c.is_none());
+}
+
+#[test]
+#[ignore]
+fn test_print_base64_address_from_hex() {
+    let hex_address = "0:9f2bc8a81da52c6b8cb1878352120f21e254138fff0b897f44fb6ff2b8cae256";
+
+    let address = MsgAddressInt::from_str(hex_address).unwrap();
+
+    println!("{}", contract::encode_base64(&address, false, false, false).unwrap());
+}
+
+#[test]
+fn test_store_pubkey() {
+    let mut test_map = HashmapE::with_bit_len(ContractImage::DATA_MAP_KEYLEN);
+    let test_pubkey = vec![11u8; 32];
+    test_map.set(
+        0u64.write_to_new_cell().unwrap().into(),
+        &BuilderData::with_raw(vec![0u8; 32], 256).unwrap().into(),
+    ).unwrap();
+
+    let mut data = BuilderData::new();
+    data.append_bit_one().unwrap()
+        .checked_append_reference(test_map.data().unwrap()).unwrap();
+
+    let new_data = ContractImage::insert_pubkey(data.into(), &test_pubkey).unwrap();
+
+    let new_map = HashmapE::with_data(ContractImage::DATA_MAP_KEYLEN, new_data.into());
+    let key_slice = new_map.get(
+        0u64.write_to_new_cell().unwrap().into(),
+    )
+    .unwrap()
+    .unwrap();
+
+    assert_eq!(key_slice.get_bytestring(0), test_pubkey);
+}
+
+#[test]
+fn test_update_contract_data() {
+    // read image from file and construct ContractImage
+    let mut state_init = std::fs::File::open("src/tests/Subscription.tvc")
+        .expect("Unable to open Subscription contract file");
+
+    let mut csprng = OsRng::new().unwrap();
+    let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
+
+    let mut contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair.public)
+        .expect("Unable to parse contract code file");
+
+    let new_data = r#"
+        { "mywallet": "0x1111111111111111111111111111111111111111111111111111111111111111" }
+    "#;
+
+    contract_image.update_data(new_data, test_piggy_bank::SUBSCRIBE_CONTRACT_ABI).unwrap();
+    let init = contract_image.state_init();
+    let new_map = HashmapE::with_data(ContractImage::DATA_MAP_KEYLEN, init.data.unwrap().into());
+
+    let key_slice = new_map.get(
+        0u64.write_to_new_cell().unwrap().into(),
+    )
+    .unwrap()
+    .unwrap();
+
+    assert_eq!(key_slice.get_bytestring(0), keypair.public.as_bytes().to_vec());
+    let mywallet_slice = new_map.get(
+        100u64.write_to_new_cell().unwrap().into(),
+    )
+    .unwrap()
+    .unwrap();
+
+    assert_eq!(mywallet_slice.get_bytestring(0), vec![0x11; 32]);
 }

@@ -289,7 +289,7 @@ impl Event {
 
         //println!("{}", signature);
 
-        Function::calc_function_id(&signature)
+        Function::calc_function_id(&signature) & 0x7FFFFFFF
     }
 
     /// Decodes provided params from SliceData
@@ -324,6 +324,13 @@ impl Event {
     pub fn decode_id(mut data: SliceData) -> AbiResult<u32> {
         Ok(data.get_next_u32()?)
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct DataItem {
+    pub key: u64,
+    #[serde(flatten)]
+    pub value: Param,
 }
 
 #[cfg(test)]
