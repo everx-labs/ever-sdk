@@ -101,25 +101,32 @@ const TRANSACTION_FIELDS_ORDINARY: &str = r#"
     account_addr
     block_id
     description {
-        ...on TransactionDescriptionOrdinaryVariant {
-            Ordinary {
-                aborted
-                compute_ph {
-                    ...on TrComputePhaseVmVariant {
-                        Vm {
-                            exit_code
-                            success
-                        }
-                    }
-                    ...on TrComputePhaseSkippedVariant {
-                        Skipped {
-                            reason
-                        }
-                    }
-                }
+      ...on TransactionDescriptionOrdinaryVariant {
+        Ordinary {
+          aborted
+          storage_ph {
+            status_change
+          }
+          compute_ph {
+            ...on TrComputePhaseSkippedVariant {
+              Skipped {reason}
             }
+            ...on TrComputePhaseVmVariant {
+              Vm {
+                success
+                exit_code
+              }
+            }
+          }
+          action {
+            success
+            valid
+            result_code
+            no_funds
+          }
         }
-    }
+      }
+  	}    
     end_status
     in_msg
     now
