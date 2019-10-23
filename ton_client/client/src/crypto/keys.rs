@@ -106,7 +106,38 @@ pub fn u256_encode(value: &UInt256) -> String {
 }
 
 pub fn account_encode(value: &MsgAddressInt) -> String {
-    value.get_address().to_hex_string() // TODO: rewrite_pfx need
+    value.to_string()
+}
+
+#[derive(Serialize, Deserialize)]
+pub(crate) enum AccountAddressType {
+    AccountId,
+    Hex,
+    Base64,
+}
+
+#[derive(Serialize, Deserialize)]
+pub(crate) struct Base64AddressParams {
+    url: bool,
+    test: bool,
+    bounce: bool
+}
+
+pub(crate) fn account_encode_ex(
+    value: &MsgAddressInt,
+    addr_type: AccountAddressType,
+    base64_params: Option<Base64AddressParams>
+) -> ApiResult<String> {
+    match addr_type {
+        AccountAddressType::AccountId => Ok(value.get_address().to_hex_string()),
+        AccountAddressType::Hex => Ok(value.to_string()),
+        AccountAddressType::Base64 => {
+            let params = base64_params.ok_or(ApiError::contracts_address_conversion_failed(
+                "No base64 address parameters provided".to_owned()))?;
+            ton_sdk::encode_base64(value, params.bounce, params.test, params.url)
+                .map_err(|err| ApiError::crypto_invalid_address(err, &value.to_string()))
+        }
+    }
 }
 
 pub fn generic_id_encode(value: &tvm::block::GenericId) -> String {

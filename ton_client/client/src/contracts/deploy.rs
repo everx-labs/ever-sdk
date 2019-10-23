@@ -17,6 +17,7 @@ pub(crate) struct ParamsOfDeploy {
     pub constructorParams: serde_json::Value,
     pub imageBase64: String,
     pub keyPair: KeyPair,
+    #[serde(default)]
     pub workchainId: i32,
 }
 
@@ -27,6 +28,7 @@ pub(crate) struct ParamsOfEncodeUnsignedDeployMessage {
     pub constructorParams: serde_json::Value,
     pub imageBase64: String,
     pub publicKeyHex: String,
+    #[serde(default)]
     pub workchainId: i32,
 }
 
@@ -43,6 +45,7 @@ pub(crate) struct ParamsOfGetDeployAddress {
     pub abi: serde_json::Value,
     pub imageBase64: String,
     pub keyPair: KeyPair,
+    #[serde(default)]
     pub workchainId: i32,
 }
 

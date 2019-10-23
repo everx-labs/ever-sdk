@@ -326,7 +326,7 @@ fn test_deploy_empty_contract() {
 	queries_helper::wait_for(
         "accounts",
         &json!({
-			"id": { "eq": acc_id.get_address().to_hex_string() },
+			"id": { "eq": acc_id.to_string() },
 			"storage": {
 				"balance": {
 					"Grams": { "gt": "0" }

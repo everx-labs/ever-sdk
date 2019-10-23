@@ -1,4 +1,5 @@
 use types::{ApiResult, hex_decode, base64_decode, ApiError};
+use crypto::keys::{account_decode, account_encode_ex, AccountAddressType, Base64AddressParams};
 
 pub(crate) mod types;
 pub(crate) mod deploy;
@@ -30,6 +31,20 @@ pub(crate) struct ParamsOfEncodeMessageWithSign {
     pub publicKeyHex: String,
 }
 
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct ParamsOfConvertAddress {
+    pub address: String,
+    pub convertTo: AccountAddressType,
+    pub base64Params: Option<Base64AddressParams>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct ResultOfConvertAddress {
+    pub address: String,
+}
+
 use ton_sdk;
 use tvm::types::UInt256;
 use dispatch::DispatchTable;
@@ -46,6 +61,13 @@ pub(crate) fn encode_message_with_sign(_context: &mut ClientContext, params: Par
         messageId: hex::encode(&id),
         messageIdBase64: base64::encode(id.as_slice()),
         messageBodyBase64: base64::encode(&body),
+    })
+}
+
+pub(crate) fn convert_address(_context: &mut ClientContext, params: ParamsOfConvertAddress) -> ApiResult<ResultOfConvertAddress> {
+    let address = account_decode(&params.address)?;
+    Ok(ResultOfConvertAddress {
+        address: account_encode_ex(&address, params.convertTo, params.base64Params)?,
     })
 }
 
@@ -87,4 +109,8 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         encode_message_with_sign);
     handlers.spawn("contracts.run.local",
         run::local_run);
+
+    // Addresses
+    handlers.spawn("contracts.address.convert",
+        convert_address);
 }

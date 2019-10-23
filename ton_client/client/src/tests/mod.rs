@@ -96,7 +96,7 @@ fn test_wallet_deploy() {
             json!({
                 "table": "accounts".to_owned(),
                 "filter": json!({
-					"id": { "eq": address.get_address().to_hex_string() },
+					"id": { "eq": address.to_string() },
 					"storage": {
 						"balance": {
 							"Grams": { "gt": "0" }
@@ -119,11 +119,11 @@ fn test_wallet_deploy() {
             }),
         );
 
-        assert_eq!(format!("{{\"address\":\"{:x}\"}}", address.get_address()), deployed.result_json);
+        assert_eq!(format!("{{\"address\":\"{}\"}}", address), deployed.result_json);
 
         let result = json_request(context, "contracts.run",
             json!({
-                "address": address.get_address().to_hex_string(),
+                "address": address.to_string(),
                 "abi": abi.clone(),
                 "functionName": "getLimitCount",
                 "input": json!({}),
