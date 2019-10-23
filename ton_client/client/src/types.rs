@@ -19,40 +19,52 @@ pub fn base64_decode(base64: &String) -> ApiResult<Vec<u8>> {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ApiErrorSource {
-    SDK,
-    TVM,
-    StdLib,
-    Contract,
+    Client,
+    Node
 }
 
 impl ApiErrorSource {
     pub fn to_string(&self) -> String {
         match self {
-            ApiErrorSource::SDK => "sdk".to_string(),
-            ApiErrorSource::TVM => "tvm".to_string(),
-            ApiErrorSource::StdLib => "stdlib".to_string(),
-            ApiErrorSource::Contract => "contract".to_string(),
+            ApiErrorSource::Client => "client".to_string(),
+            ApiErrorSource::Node => "node".to_string(),
         }
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ApiErrorData {
+    pub transaction_id: String,
+    pub phase: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ApiError {
     pub source: String,
-    pub code: usize,
+    pub code: isize,
     pub message: String,
+    pub data: Option<ApiErrorData>
 }
 
 pub type ApiResult<T> = Result<T, ApiError>;
 
 trait ApiErrorCode {
-    fn as_number(&self) -> usize;
+    fn as_number(&self) -> isize;
 }
-
 
 macro_rules! sdk_err {
     ($code:expr, $($args:tt),*) => (
-        ApiError::new(ApiErrorSource::SDK, &$code, format!($($args),*))
+        ApiError::new(ApiErrorSource::Client, &$code, format!($($args),*))
+    );
+}
+
+macro_rules! as_number_impl {
+    ($name:ident) => (
+        impl ApiErrorCode for $name {
+            fn as_number(&self) -> isize {
+                self.clone() as isize
+            }
+        }
     );
 }
 
@@ -62,11 +74,12 @@ impl ApiError {
             source: source.to_string(),
             code: code.as_number(),
             message,
+            data: None,
         }
     }
 
     pub fn sdk(code: ApiSdkErrorCode, message: String) -> Self {
-        Self::new(ApiErrorSource::SDK, &code, message)
+        Self::new(ApiErrorSource::Client, &code, message)
     }
 
     // SDK Common
@@ -293,22 +306,76 @@ impl ApiError {
             "Get next failed: {}", err)
     }
 
-    // TVM
+    // Failed transaction phases
 
-    pub fn tvm_execution_skipped(reason: &String) -> ApiError {
+    pub fn transaction_parse_failed() -> ApiError {
         ApiError::new(
-            ApiErrorSource::TVM,
-            &ApiTvmErrorCode::ExecutionSkipped,
-            format!("Contract execution skipped with reason: {}", reason)
+            ApiErrorSource::Node,
+            &(0i32),
+            "Failed to analyze transaction".to_string()
         )
     }
 
-    pub fn tvm_execution_failed(exit_code: i32) -> ApiError {
-        ApiError::new(
-            ApiErrorSource::Contract,
+    pub fn transaction_aborted(tr_id: String) -> ApiError {
+        let mut error = ApiError::new(
+            ApiErrorSource::Node,
+            &(-1i32),
+            "Transaction aborted".to_string()
+        );
+         error.data = Some(ApiErrorData{
+            transaction_id: tr_id,
+            phase: "unknown".to_string(),
+        });
+        error
+    }
+
+    pub fn tvm_execution_skipped(tr_id: String, reason: &str) -> ApiError {
+        let code = ApiComputeSkippedCode::from_reason(reason);
+        let mut error = ApiError::new(ApiErrorSource::Node, &code, code.as_string());
+        error.data = Some(ApiErrorData{
+            transaction_id: tr_id,
+            phase: "computeSkipped".to_string(),
+        });
+        error
+    }
+
+    pub fn tvm_execution_failed(tr_id: String, exit_code: i32) -> ApiError {
+        let mut error = ApiError::new(
+            ApiErrorSource::Node,
             &ApiContractErrorCode { exit_code },
-            format!("Contract execution failed with VM exit code: {}", exit_code)
-        )
+            format!("Contract execution failed with VM exit code: {}", exit_code),
+        );
+
+        error.data = Some(ApiErrorData{
+            transaction_id: tr_id,
+            phase: "computeVm".to_string(),
+        });
+        error
+    }
+
+    pub fn storage_phase_failed(tr_id: String, reason: &str) -> ApiError {
+        let code = ApiStorageCode::from_reason(reason);
+        let mut error = ApiError::new(ApiErrorSource::Node, &code, code.as_string());
+        error.data = Some(ApiErrorData{
+            transaction_id: tr_id,
+            phase: "storage".to_string(),
+        });
+        error
+    }
+
+    pub fn action_phase_failed(
+        tr_id: String,
+        result_code: i32,
+        valid: bool,
+        no_funds: bool,
+    ) -> ApiError {
+        let code = ApiActionCode::new(result_code, valid, no_funds);
+        let mut error = ApiError::new(ApiErrorSource::Node, &code, code.as_string());
+        error.data = Some(ApiErrorData{
+            transaction_id: tr_id,
+            phase: "action".to_string(),
+        });
+        error
     }
 }
 
@@ -367,42 +434,113 @@ pub enum ApiSdkErrorCode {
 }
 
 impl ApiErrorCode for ApiSdkErrorCode {
-    fn as_number(&self) -> usize {
-        (self.clone() as i32) as usize
+    fn as_number(&self) -> isize {
+        (self.clone() as i32) as isize
     }
 }
 
 #[derive(Clone)]
-pub enum ApiTvmErrorCode {
-    ExecutionSkipped = 3006,
-    ExecutionFailed = 3007,
+pub enum ApiComputeSkippedCode {
+    Unknown = 0,
+    NoState = 1,
+    BadState = 2,
+    NoGas = 3,
 }
+as_number_impl!(ApiComputeSkippedCode);
 
-impl ApiErrorCode for ApiTvmErrorCode {
-    fn as_number(&self) -> usize {
-        (self.clone() as i32) as usize
+impl ApiComputeSkippedCode {
+    pub fn from_reason(reason: &str) -> Self {
+        match reason {
+            "NoState" => ApiComputeSkippedCode::NoState,
+            "BadState" => ApiComputeSkippedCode::BadState,
+            "NoGas" => ApiComputeSkippedCode::NoGas,
+            _ => ApiComputeSkippedCode::Unknown,
+        }
+    }
+
+    pub fn as_string(&self) -> String {
+        match self {
+            ApiComputeSkippedCode::NoState => "Account has no code and data",
+            ApiComputeSkippedCode::BadState => "Account has bad state: frozen or deleted",
+            ApiComputeSkippedCode::NoGas => "No gas to execute VM",
+            ApiComputeSkippedCode::Unknown => "Phase skipped by unknown reason",
+        }.to_string()
     }
 }
-
 
 #[derive(Clone)]
-pub enum ApiStdLibErrorCode {
-    NoError = 0
+pub enum ApiStorageCode {
+    Unknown = 0,
+    Unchanged = 1,
+    Frozen = 2,
+    Deleted = 3,
 }
+as_number_impl!(ApiStorageCode);
 
-impl ApiErrorCode for ApiStdLibErrorCode {
-    fn as_number(&self) -> usize {
-        (self.clone() as i32) as usize
+impl ApiStorageCode {
+    pub fn from_reason(reason: &str) -> Self {
+        match reason {
+            "Unchanged" => ApiStorageCode::Unchanged,
+            "Frozen" => ApiStorageCode::Frozen,
+            "Deleted" => ApiStorageCode::Deleted,
+            _ => ApiStorageCode::Unknown,
+        }
+    }
+
+    pub fn as_string(&self) -> String {
+        match self {
+            ApiStorageCode::Unchanged => "Account unchanged",
+            ApiStorageCode::Frozen => "Account was frozen due storage phase",
+            ApiStorageCode::Deleted => "Account was deleted due storage phase",
+            ApiStorageCode::Unknown => "Storage phase failed",
+        }.to_string()
     }
 }
+
 
 pub struct ApiContractErrorCode {
     exit_code: i32
 }
 
 impl ApiErrorCode for ApiContractErrorCode {
-    fn as_number(&self) -> usize {
-        self.exit_code as usize
+    fn as_number(&self) -> isize {
+        self.exit_code as isize
     }
 }
 
+pub struct ApiActionCode {
+    pub result_code: i32,
+    pub valid: bool,
+    pub no_funds: bool,
+}
+
+impl ApiErrorCode for ApiActionCode {
+    fn as_number(&self) -> isize {
+        self.result_code as isize
+    }
+}
+
+impl ApiActionCode{
+    pub fn new(result_code: i32, valid: bool, no_funds: bool) -> Self {
+        Self {
+            result_code,
+            valid,
+            no_funds,
+        }
+    }
+    pub fn as_string(&self) -> String {
+        if self.no_funds {
+            "Too low balance to send outbound message"
+        } else if !self.valid {
+            "Outbound message is invalid"
+        } else {
+            "Action phase failed"
+        }.to_string()
+    }
+}
+
+impl ApiErrorCode for i32 {
+    fn as_number(&self) -> isize {
+        self.clone() as isize
+    }
+}
