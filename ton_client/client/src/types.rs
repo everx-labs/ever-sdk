@@ -343,7 +343,7 @@ impl ApiError {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ApiContractErrorCode { exit_code },
-            format!("Contract execution failed with VM exit code: {}", exit_code),
+            format!("VM terminated with exit code: {}", exit_code),
         );
 
         error.data = Some(ApiErrorData{
