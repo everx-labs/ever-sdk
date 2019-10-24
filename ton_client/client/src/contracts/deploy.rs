@@ -74,6 +74,7 @@ pub(crate) struct ParamsOfGetDeployData {
 #[allow(non_snake_case)]
 pub(crate) struct ResultOfGetDeployData {
     pub imageBase64: Option<String>,
+    pub accountId: Option<String>,
     pub dataBase64: String,
 }
 
@@ -178,6 +179,7 @@ pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetD
 
     let public = decode_public_key(&params.publicKeyHex)?;
 
+    // if image provided use it to modify initial data
     let mut image = if let Some(image) = &params.imageBase64 {
         let bytes = base64::decode(&image)
             .map_err(|err| ApiError::contracts_deploy_invalid_image(err))?;
@@ -186,7 +188,7 @@ pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetD
             .map_err(|err| ApiError::contracts_deploy_image_creation_failed(err))?;
 
         image
-    } else {
+    } else { // or create temporary one
         let mut image = ContractImage::new_empty()
             .map_err(|err| ApiError::contracts_deploy_image_creation_failed(err))?;
         image.set_public_key(&public)
@@ -195,25 +197,33 @@ pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetD
         image
     };
 
+    // if initial data provided add it to image
     if let Some(init_params) = params.initParams {
         let abi = params.abi.ok_or(ApiError::contracts_deploy_image_creation_failed("No ABI provided"))?;
         image.update_data(&init_params.to_string(), &abi.to_string())
             .map_err(|err| ApiError::contracts_deploy_image_creation_failed(err))?;
     }
 
-    let data = base64::encode(&image.get_serialized_data()
+    // data is always returned
+    let data_base64 = base64::encode(&image.get_serialized_data()
         .map_err(|err| ApiError::contracts_deploy_image_creation_failed(err))?);
 
-    let image = match params.imageBase64 {
-        Some(_) => Some(base64::encode(&image.serialize()
-            .map_err(|err| ApiError::contracts_deploy_image_creation_failed(err))?)),
-        None => None,
+    // image is returned only if original image was provided
+    // accountId is computed from image so it is returned only with image
+    let (image_base64, account_id) = match params.imageBase64 {
+        Some(_) => (
+            Some(base64::encode(&image.serialize()
+                .map_err(|err| ApiError::contracts_deploy_image_creation_failed(err))?)),
+            Some(image.account_id().to_hex_string())
+        ),
+        None => (None, None),
     };
 
     debug!("<-");
     Ok(ResultOfGetDeployData {
-        imageBase64: image,
-        dataBase64: data,
+        imageBase64: image_base64,
+        accountId: account_id,
+        dataBase64: data_base64
     })
 }
 
