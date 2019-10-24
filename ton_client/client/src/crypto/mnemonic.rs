@@ -3,6 +3,10 @@ use types::{ApiResult, ApiError};
 use hmac::Hmac;
 use sha2::Sha512;
 use pbkdf2::pbkdf2;
+use std::cmp;
+
+static PBKDF_ITERATIONS: usize = 100000;
+//static SALT: String = "TON seed version".to_string();
 
 pub fn mnemonic_get_words() -> ApiResult<String> {
     let words = English.wordlist();
@@ -38,7 +42,7 @@ pub fn mnemonic_seed_from_phrase_and_salt(phrase: &String, salt: &String) -> Api
 
     let salt = format!("mnemonic{}", salt);
     let mut seed = vec![0u8; 64];
-    pbkdf2::<Hmac<Sha512>>(mnemonic.phrase().as_bytes(), salt.as_bytes(), 2048, &mut seed);
+    pbkdf2::<Hmac<Sha512>>(mnemonic.phrase().as_bytes(), salt.as_bytes(), get_pbkdf2_iterations(), &mut seed);
     Ok(hex::encode(seed))
 }
 
@@ -49,3 +53,17 @@ pub fn mnemonic_entropy_from_phrase(phrase: &String) -> ApiResult<String> {
     Ok(hex::encode(mnemonic.entropy()))
 }
 
+
+#[allow(dead_code)]
+pub fn private_key_from_mnemonic(mnemonic: &String) -> ApiResult<String> {
+    let mut seed = vec![0u8; 64];
+    pbkdf2::<Hmac<Sha512>>(mnemonic.as_bytes(), "TON seed version".as_bytes(), get_pbkdf2_iterations(), &mut seed);
+    let keypair = ed25519_dalek::Keypair::from_bytes(&seed)
+        .map_err(|err| ApiError::crypto_ed25519_generation_error(err))?;
+    Ok(hex::encode(keypair.secret.to_bytes()))
+}
+
+fn get_pbkdf2_iterations() -> usize {
+    let iterations = PBKDF_ITERATIONS/256;
+    cmp::max(1, iterations)
+}

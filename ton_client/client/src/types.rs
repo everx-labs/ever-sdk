@@ -201,6 +201,11 @@ impl ApiError {
             "Either Key or Keystore Handle must be specified".into())
     }
 
+    pub fn crypto_ed25519_generation_error<E: Display>(err: E) -> Self {
+        sdk_err!(CryptoEd25519GenerationError,
+            "Invalid ed25519 generation: {}", err)
+    }
+
 // SDK Contracts
 
     pub fn contracts_load_failed<E: Display>(err: E, address: &String) -> Self {
@@ -232,7 +237,7 @@ impl ApiError {
         sdk_err!(ContractsDecodeRunOutputFailed,
             "Decode run output failed: {}", err)
     }
-   
+
     pub fn contracts_decode_run_input_failed<E: Display>(err: E) -> Self {
         sdk_err!(ContractsDecodeRunInputFailed,
             "Decode run intput failed: {}", err)
@@ -341,6 +346,7 @@ pub enum ApiSdkErrorCode {
     CryptoBip32InvalidDerivePath = 2019,
     CryptoInvalidKeystoreHandle = 2020,
     CryptoMissingKeySource = 2021,
+    CryptoEd25519GenerationError = 2022,
 
     ContractsLoadFailed = 3001,
     ContractsDeployInvalidImage = 3002,
@@ -405,4 +411,3 @@ impl ApiErrorCode for ApiContractErrorCode {
         self.exit_code as usize
     }
 }
-
