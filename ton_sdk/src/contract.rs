@@ -245,7 +245,7 @@ impl Contract {
 
     // Asynchronously loads a Contract instance or None if contract with given id is not exists
     pub fn load(address: &MsgAddressInt) -> SdkResult<Box<dyn Stream<Item = Option<Contract>, Error = SdkError>>> {
-        let id = address.get_address().to_hex_string();
+        let id = address.to_string();
 
         let map = queries_helper::load_record_fields(
             CONTRACTS_TABLE_NAME,
@@ -255,7 +255,6 @@ impl Contract {
                     if val == serde_json::Value::Null {
                         Ok(None)
                     } else {
-                        println!("val {}", val);
                         let acc: Account = serde_json::from_value(val)
                             .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing account: {}", err)))?;
 
@@ -286,8 +285,6 @@ impl Contract {
         // pack params into bag of cells via ABI
         let msg_body = ton_abi::encode_function_call(abi, func, input, key_pair)
             .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
-
-        println!("{}", msg_body);
 
         let msg = Self::create_message(address, msg_body.into())?;
 
