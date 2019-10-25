@@ -1,4 +1,4 @@
-use crypto::keys::{KeyPair, decode_public_key, account_encode, generic_id_encode};
+use crypto::keys::{KeyPair, decode_public_key, account_encode};
 use ton_sdk::{Contract, ContractImage};
 
 use contracts::EncodedUnsignedMessage;
@@ -118,8 +118,8 @@ pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfDeplo
     debug!("<-");
     Ok(ResultOfEncodeDeployMessage {
         address: account_encode(&account_id),
-        messageId: generic_id_encode(&message_id),
-        messageIdBase64: base64::encode(message_id.data.as_slice()),
+        messageId: u256_encode(&message_id),
+        messageIdBase64: base64::encode(message_id.as_slice()),
         messageBodyBase64: base64::encode(&message_body),
     })
 }
