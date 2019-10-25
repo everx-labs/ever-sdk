@@ -1,6 +1,6 @@
 use crate::*;
 use futures::stream::Stream;
-use tvm::block::{Block as TvmBlock, BlockId, BlockProcessingStatus};
+use tvm::block::{Block as TvmBlock, BlockId, BlockProcessingStatus, GenericId};
 
 #[derive(Debug)]
 pub struct Block {
@@ -45,7 +45,8 @@ impl Block {
 
     // Returns block's identifier
     pub fn id(&self) -> BlockId {
-        self.block.id.clone()
+        // On client side id is ready allways. It is never be calculated, just returned.
+        self.block.calc_id().unwrap()
     }
 
     // Returns blockchain's block struct
