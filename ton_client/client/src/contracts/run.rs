@@ -275,15 +275,17 @@ pub(crate) fn check_transaction_status(transaction: &tvm::block::Transaction) ->
     }
 
     debug!("Transaction aborted");
-    let fail = ApiError::transaction_parse_failed();
-    let tr = serde_json::to_value(&transaction).map_err(|_| fail)?;
+    let fail = || { ApiError::transaction_parse_failed() };
+
+    let tr = serde_json::to_value(&transaction)
+        .map_err(|_| ApiError::transaction_parse_failed())?;
 
     let ordinary = &tr["description"]["Ordinary"];
 
-    let id = tr["id"].as_str().unwrap().to_string();
+    let id = tr["id"].as_str().ok_or_else(fail)?.to_string();
     
     if !ordinary["storage_ph"].is_null() {
-        let status = ordinary["storage_ph"]["status_change"].as_str().unwrap();
+        let status = ordinary["storage_ph"]["status_change"].as_str().ok_or_else(fail)?;
         if status != "Unchanged" {
             Err(ApiError::storage_phase_failed(id.clone(), status))?;
         }
@@ -291,14 +293,14 @@ pub(crate) fn check_transaction_status(transaction: &tvm::block::Transaction) ->
     
     if !ordinary["compute_ph"].is_null() {
         if !ordinary["compute_ph"]["Skipped"].is_null() {
-            let reason = ordinary["compute_ph"]["Skipped"]["reason"].as_str().unwrap();
+            let reason = ordinary["compute_ph"]["Skipped"]["reason"].as_str().ok_or_else(fail)?;
             Err(ApiError::tvm_execution_skipped(id.clone(), reason))?;
         }
         
         if !ordinary["compute_ph"]["Vm"].is_null() {
             let vm = &ordinary["compute_ph"]["Vm"];
-            if !vm["success"].as_bool().unwrap() {
-                let exit_code = vm["exit_code"].as_i64().unwrap() as i32;
+            if !vm["success"].as_bool().ok_or_else(fail)? {
+                let exit_code = vm["exit_code"].as_i64().ok_or_else(fail)? as i32;
                 Err(ApiError::tvm_execution_failed(id.clone(), exit_code))?;
             }
         }
@@ -306,12 +308,12 @@ pub(crate) fn check_transaction_status(transaction: &tvm::block::Transaction) ->
 
     if !ordinary["action"].is_null() {
         let action = &ordinary["action"];
-        if !action["success"].as_bool().unwrap() {
+        if !action["success"].as_bool().ok_or_else(fail)? {
             Err(ApiError::action_phase_failed(
                 id.clone(), 
-                action["result_code"].as_i64().unwrap() as i32,
-                action["valid"].as_bool().unwrap(),
-                action["no_funds"].as_bool().unwrap(),
+                action["result_code"].as_i64().ok_or_else(fail)? as i32,
+                action["valid"].as_bool().ok_or_else(fail)?,
+                action["no_funds"].as_bool().ok_or_else(fail)?,
             ))?;
         }
     }
