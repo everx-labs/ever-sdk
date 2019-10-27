@@ -7,7 +7,6 @@ use contracts::EncodedUnsignedMessage;
 use tvm::block::TransactionId;
 #[cfg(feature = "node_interaction")]
 use futures::Stream;
-#[cfg(feature = "node_interaction")]
 use crypto::keys::u256_encode;
 
 #[derive(Serialize, Deserialize)]
