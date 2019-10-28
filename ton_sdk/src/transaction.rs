@@ -2,7 +2,7 @@ use crate::*;
 use futures::stream::Stream;
 use tvm::block::{
     Transaction as TvmTransaction, TransactionProcessingStatus, MessageId, 
-    TransactionId
+    TransactionId, GenericId
 };
 
 #[derive(Debug)]
@@ -65,7 +65,8 @@ impl Transaction {
 
     // Returns message's identifier
     pub fn id(&self) -> TransactionId {
-        self.tr.id.clone()
+        // On client side id is ready allways. It is never be calculated, just returned.
+        self.tr.calc_id().unwrap()
     }
 
     // Asynchronously loads an instances of transaction's out messages

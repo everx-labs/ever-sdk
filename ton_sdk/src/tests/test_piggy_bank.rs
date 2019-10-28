@@ -10,8 +10,6 @@ fn full_test_piggy_bank() {
     // connect to node
     init_node_connection();
 
-    println!("Connection to node established\n");
-
 	// generate key pair
     let mut csprng = OsRng::new().unwrap();
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);

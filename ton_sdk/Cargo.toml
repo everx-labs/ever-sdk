@@ -23,6 +23,7 @@ ton_abi = { path = "../ton_abi" }
 
 [target.'cfg(target_arch="wasm32")'.dependencies]
 rand = { version = "0.6.1", features = ["wasm-bindgen"] }
+chrono = { version = "0.4.9", features = ["wasmbind"] }
 
 
 [dependencies.tvm]

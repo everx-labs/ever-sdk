@@ -110,11 +110,11 @@ pub fn u256_from_slice_data(slice: &tvm::stack::SliceData) -> UInt256 {
 pub fn account_encode(value: &tvm::types::AccountId) -> String {
     hex::encode(&u256_from_slice_data(value))
 }
-
-pub fn generic_id_encode(value: &tvm::block::GenericId) -> String {
-    u256_encode(&value.data)
-}
 /*
+pub fn generic_id_encode(value: &mut dyn tvm::block::GenericId) -> String {
+    u256_encode(&value.id().unwrap())
+}
+
 pub fn u256_decode(string: &String) -> ApiResult<UInt256> {
     match string.len() {
         0 => Ok(u256_zero()),
