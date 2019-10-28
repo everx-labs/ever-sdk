@@ -13,7 +13,7 @@ use tvm::types::AccountId;
 pub const WORKCHAIN: i32 = 0;
 const NODE_SE: bool = true;
 
-const WALLET_ADDRESS_STR: &str =  "UQC7oawjsBAYgInWIBDdsA1ZTADw4hd5Tz8rU6gYlOxxRrJ6";//"UQAizw8ps+9a/Q9DVsiMTS5rM+GhNI/9UtHE8j2xrXgT5Xgt";//
+const WALLET_ADDRESS_STR: &str = "UQC7oawjsBAYgInWIBDdsA1ZTADw4hd5Tz8rU6gYlOxxRrJ6";//"Uf++mOJpmwbBe2h6PDSSwEl2RWxLoJESW6xMSjhGsuYe7cnu"; //
 
 lazy_static! {
     static ref GIVER_ADDRESS: AccountAddress = 
@@ -26,7 +26,6 @@ lazy_static! {
 
     static ref WALLET_KEYS: Keypair = Keypair::from_bytes(&hex::decode(
             "2245e4f44af8af6bbd15c4a53eb67a8f211d541ddc7c197f74d7830dba6d27fed542f44146f169c6726c8cf70e4cbb3d33d8d842a4afd799ac122c5808d81ba3"
-            //"a95e8560f28fb38ada7fa7c9504ccbb8248f09dfe0479bbcfdeee3f8306250b91ae42edc068af25b62896cd756ea7f958666b91aa862f01cda87d538e173dd43"
         ).unwrap()).unwrap();
 }
 
@@ -46,11 +45,11 @@ pub fn init_node_connection() {
         r#"
         {
             "queries_config": {
-                "queries_server": "https://azt005.tonlabs.io/graphql",
-                "subscriptions_server": "wss://azt005.tonlabs.io/graphql"
+                "queries_server": "https://testnet.ton.dev/graphql",
+                "subscriptions_server": "wss://testnet.ton.dev/graphql"
             },
             "requests_config": {
-                "requests_server": "https://azt005.tonlabs.io/topics/requests"
+                "requests_server": "https://testnet.ton.dev/topics/requests"
             }
         }"#
     };
@@ -72,7 +71,7 @@ fn print_wallet_address(key_pair: &Keypair) {
 }
 
 #[test]
-#[ignore]
+//#[ignore]
 fn test_print_address() {
     print_wallet_address(&WALLET_KEYS);
 }
@@ -226,6 +225,7 @@ fn check_giver() {
 }
 
 pub fn get_grams_from_giver(account_id: AccountId) {
+    println!("Account to take some grams {}", account_id.to_hex_string());
 
     let transaction = if NODE_SE {
         if GIVER_ADDRESS.get_account_id().unwrap() == account_id{
