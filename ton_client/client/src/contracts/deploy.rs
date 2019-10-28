@@ -1,5 +1,6 @@
 use crypto::keys::{KeyPair, decode_public_key, account_encode};
 use ton_sdk::{Contract, ContractImage};
+use crypto::keys::u256_encode;
 
 use contracts::EncodedUnsignedMessage;
 
@@ -7,8 +8,6 @@ use contracts::EncodedUnsignedMessage;
 use tvm::block::TransactionId;
 #[cfg(feature = "node_interaction")]
 use futures::Stream;
-#[cfg(feature = "node_interaction")]
-use crypto::keys::u256_encode;
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
