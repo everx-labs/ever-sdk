@@ -1,5 +1,6 @@
 use crypto::keys::{KeyPair, decode_public_key, account_encode};
 use ton_sdk::{Contract, ContractImage};
+use crypto::keys::u256_encode;
 
 use contracts::EncodedUnsignedMessage;
 
@@ -7,7 +8,6 @@ use contracts::EncodedUnsignedMessage;
 use tvm::block::TransactionId;
 #[cfg(feature = "node_interaction")]
 use futures::Stream;
-use crypto::keys::u256_encode;
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
@@ -58,6 +58,23 @@ pub(crate) struct ResultOfEncodeDeployMessage {
     pub messageId: String,
     pub messageIdBase64: String,
     pub messageBodyBase64: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct ParamsOfGetDeployData {
+    pub abi: Option<serde_json::Value>,
+    pub initParams: Option<serde_json::Value>,
+    pub imageBase64: Option<String>,
+    pub publicKeyHex: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct ResultOfGetDeployData {
+    pub imageBase64: Option<String>,
+    pub accountId: Option<String>,
+    pub dataBase64: String,
 }
 
 #[cfg(feature = "node_interaction")]
@@ -116,6 +133,64 @@ pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfDeplo
     })
 }
 
+pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetDeployData) -> ApiResult<ResultOfGetDeployData> {
+    debug!("-> contracts.run.message({}, {}, {})",
+        &params.abi.clone().unwrap_or_default(),
+        &params.imageBase64.clone().unwrap_or_default(),
+        &params.initParams.clone().unwrap_or_default(),
+    );
+
+
+    let public = decode_public_key(&params.publicKeyHex)?;
+
+    // if image provided use it to modify initial data
+    let mut image = if let Some(image) = &params.imageBase64 {
+        let bytes = base64::decode(&image)
+            .map_err(|err| ApiError::contracts_invalid_image(err))?;
+        let mut reader = Cursor::new(bytes);
+        let image = ContractImage::from_state_init_and_key(&mut reader, &public)
+            .map_err(|err| ApiError::contracts_image_creation_failed(err))?;
+
+        image
+    } else { // or create temporary one
+        let mut image = ContractImage::new()
+            .map_err(|err| ApiError::contracts_image_creation_failed(err))?;
+        image.set_public_key(&public)
+            .map_err(|err| ApiError::contracts_image_creation_failed(err))?;;
+
+        image
+    };
+
+    // if initial data provided add it to image
+    if let Some(init_params) = params.initParams {
+        let abi = params.abi.ok_or(ApiError::contracts_image_creation_failed("No ABI provided"))?;
+        image.update_data(&init_params.to_string(), &abi.to_string())
+            .map_err(|err| ApiError::contracts_image_creation_failed(err))?;
+    }
+
+    // data is always returned
+    let data_base64 = base64::encode(&image.get_serialized_data()
+        .map_err(|err| ApiError::contracts_image_creation_failed(err))?);
+
+    // image is returned only if original image was provided
+    // accountId is computed from image so it is returned only with image
+    let (image_base64, account_id) = match params.imageBase64 {
+        Some(_) => (
+            Some(base64::encode(&image.serialize()
+                .map_err(|err| ApiError::contracts_image_creation_failed(err))?)),
+            Some(image.account_id().to_hex_string())
+        ),
+        None => (None, None),
+    };
+
+    debug!("<-");
+    Ok(ResultOfGetDeployData {
+        imageBase64: image_base64,
+        accountId: account_id,
+        dataBase64: data_base64
+    })
+}
+
 pub(crate) fn encode_unsigned_message(_context: &mut ClientContext, params: ParamsOfEncodeUnsignedDeployMessage) -> ApiResult<ResultOfEncodeUnsignedDeployMessage> {
     let public = decode_public_key(&params.publicKeyHex)?;
     let image = create_image(&params.abi, params.initParams.as_ref(), &params.imageBase64, &public)?;
@@ -151,14 +226,14 @@ use tvm::block::TransactionProcessingStatus;
 
 fn create_image(abi: &serde_json::Value, init_params: Option<&serde_json::Value>, image_base64: &String, public_key: &PublicKey) -> ApiResult<ContractImage> {
     let bytes = base64::decode(image_base64)
-        .map_err(|err| ApiError::contracts_deploy_invalid_image(err))?;
+        .map_err(|err| ApiError::contracts_invalid_image(err))?;
     let mut reader = Cursor::new(bytes);
     let mut image = ContractImage::from_state_init_and_key(&mut reader, public_key)
-        .map_err(|err| ApiError::contracts_deploy_image_creation_failed(err))?;
+        .map_err(|err| ApiError::contracts_image_creation_failed(err))?;
 
     if let Some(params) = init_params {
         image.update_data(&params.to_string(), &abi.to_string())
-            .map_err(|err| ApiError::contracts_deploy_image_creation_failed(
+            .map_err(|err| ApiError::contracts_image_creation_failed(
                 format!("Failed to set initial data: {}", err)))?;
     }
 

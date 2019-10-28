@@ -137,13 +137,13 @@ impl Contract {
     }
 
     /// Decodes contract answer and returns name of the function called
-    pub fn decode_output(&self, data: SliceData) -> AbiResult<DecodedMessage> {
+    pub fn decode_output(&self, data: SliceData, internal: bool) -> AbiResult<DecodedMessage> {
         let original_data = data.clone();
         
         let func_id = Function::decode_id(data)?;
 
         if let Ok(func) = self.function_by_id(func_id, false){
-            let tokens = func.decode_output(original_data)?;
+            let tokens = func.decode_output(original_data, internal)?;
 
             Ok( DecodedMessage {
                 function_name: func.name.clone(),
@@ -163,14 +163,14 @@ impl Contract {
     }
 
     /// Decodes contract answer and returns name of the function called
-    pub fn decode_input(&self, data: SliceData) -> AbiResult<DecodedMessage> {
+    pub fn decode_input(&self, data: SliceData, internal: bool) -> AbiResult<DecodedMessage> {
         let original_data = data.clone();
         
         let func_id = Function::decode_id(data)?;
 
         let func = self.function_by_id(func_id, true)?;
 
-        let tokens = func.decode_input(original_data)?;
+        let tokens = func.decode_input(original_data, internal)?;
 
         Ok( DecodedMessage {
             function_name: func.name.clone(),

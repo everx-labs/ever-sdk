@@ -139,16 +139,18 @@ impl Function {
     }
 
     /// Parses the ABI function output to list of tokens.
-    pub fn decode_output(&self, data: SliceData) -> AbiResult<Vec<Token>> {
+    pub fn decode_output(&self, data: SliceData, _internal: bool) -> AbiResult<Vec<Token>> {
         self.decode_params(self.output_params(), data, self.get_output_id(), false)
     }
 
     /// Parses the ABI function call to list of tokens.
-    pub fn decode_input(&self, mut data: SliceData) -> AbiResult<Vec<Token>> {
-        data.checked_drain_reference()
-            .map_err(|err| AbiErrorKind::InvalidInputData(err.to_string()))?;
+    pub fn decode_input(&self, mut data: SliceData, internal: bool) -> AbiResult<Vec<Token>> {
+        if !internal {
+            data.checked_drain_reference()
+                .map_err(|err| AbiErrorKind::InvalidInputData(err.to_string()))?;
+        }
 
-        self.decode_params(self.input_params(), data, self.get_input_id(), self.set_time)
+        self.decode_params(self.input_params(), data, self.get_input_id(), self.set_time && !internal)
     }
 
     /// Decodes function id from contract answer
@@ -160,20 +162,23 @@ impl Function {
     pub fn encode_input(
         &self,
         tokens: &[Token],
+        internal: bool,
         pair: Option<&Keypair>
     ) -> AbiResult<BuilderData> {
-        let (mut builder, hash) = self.prepare_input_for_sign(tokens)?;
+        let (mut builder, hash) = self.create_unsigned_call(tokens, internal)?;
 
-        match pair {
-            Some(pair) => {
-                let mut signature = pair.sign::<Sha512>(&hash).to_bytes().to_vec();
-                signature.extend_from_slice(&pair.public.to_bytes());
-    
-                let len = signature.len() * 8;
+        if !internal {
+            match pair {
+                Some(pair) => {
+                    let mut signature = pair.sign::<Sha512>(&hash).to_bytes().to_vec();
+                    signature.extend_from_slice(&pair.public.to_bytes());
+        
+                    let len = signature.len() * 8;
 
-                builder.prepend_reference(BuilderData::with_raw(signature, len).unwrap());
-            },
-            None => builder.prepend_reference(BuilderData::new())
+                    builder.prepend_reference(BuilderData::with_raw(signature, len).unwrap());
+                },
+                None => builder.prepend_reference(BuilderData::new())
+            }
         }
 
         Ok(builder)
@@ -181,9 +186,10 @@ impl Function {
 
     /// Encodes provided function parameters into `BuilderData` containing ABI contract call.
     /// `BuilderData` is prepared for signing. Sign should be the added by `add_sign_to_function_call` function
-    pub fn prepare_input_for_sign(
+    pub fn create_unsigned_call(
         &self,
-        tokens: &[Token]
+        tokens: &[Token],
+        internal: bool
     ) -> AbiResult<(BuilderData, Vec<u8>)> {
         let params = self.input_params();
 
@@ -195,22 +201,26 @@ impl Function {
         let mut builder = BuilderData::new();
         builder.append_u32(self.get_input_id())?;
 
-        if self.set_time {
-            let time = Utc::now().timestamp_millis();
-            builder.append_i64(time)?;
+        if !internal {
+            if self.set_time {
+                let time = Utc::now().timestamp_millis();
+                builder.append_i64(time)?;
+            }
+            
+            // reserve reference for sign
+            builder.append_reference(BuilderData::new().into());
         }
-        
-        // reserve reference for sign
-        builder.append_reference(BuilderData::new().into());
 
         // encoding itself
         let mut builder = TokenValue::pack_values_into_chain(tokens, vec![builder])?;
         
-        // delete sign reference before hash
-        builder.update_cell(|_, _, refs, _| {
-                        refs.remove(0)
-                    },
-                    ());
+        if !internal {
+            // delete sign reference before hash
+            builder.update_cell(|_, _, refs, _| {
+                            refs.remove(0)
+                        },
+                        ());
+        }
 
         let hash = (&Arc::<CellData>::from(&builder)).repr_hash().as_slice().to_vec();
 
@@ -239,7 +249,7 @@ impl Function {
         Ok(builder)
     }
 
-    pub fn is_my_message(&self, data: SliceData) -> Result<bool, AbiErrorKind> {
+    pub fn is_my_message(&self, data: SliceData, _internal: bool) -> Result<bool, AbiErrorKind> {
         let decoded_id = Self::decode_id(data)?;
         Ok(self.get_input_id() == decoded_id || self.get_output_id() == decoded_id)
     }

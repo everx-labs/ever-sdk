@@ -280,7 +280,7 @@ fn call_contract_and_wait(address: AccountId, func: &str, input: &str, abi: &str
     let responce = out_msg.body().expect("error unwrap out message body");
 
     // decode the body by ABI
-    let result = Contract::decode_function_response_json(abi.to_owned(), func.to_owned(), responce)
+    let result = Contract::decode_function_response_json(abi.to_owned(), func.to_owned(), responce, false)
         .expect("Error decoding result");
 
     //println!("Contract call result: {}\n", result);
@@ -719,6 +719,7 @@ fn create_cycle_test_thread(config: String, accounts: Vec<AccountData>, timeout:
                 "sendTransaction".to_owned(),
                 str_params.to_owned(),
                 WALLET_ABI.to_owned(),
+                false,
                 Some(&keypair)
             ).expect("Error generating message");
 

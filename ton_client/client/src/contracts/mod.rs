@@ -1,4 +1,6 @@
 use types::{ApiResult, hex_decode, base64_decode, ApiError};
+use ton_sdk::{AbiContract, ContractImage};
+use std::io::Cursor;
 
 pub(crate) mod types;
 pub(crate) mod deploy;
@@ -30,6 +32,32 @@ pub(crate) struct ParamsOfEncodeMessageWithSign {
     pub publicKeyHex: String,
 }
 
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct ParamsOfGetFunctionId {
+    pub abi: serde_json::Value,
+    pub function: String,
+    pub input: bool,
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct ResultOfGetFunctionId {
+    pub id: u32
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct ParamsOfGetCodeFromImage {
+    pub imageBase64: String,
+}
+
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize)]
+pub(crate) struct ResultOfGetCodeFromImage {
+    pub codeBase64: String,
+}
+
 use ton_sdk;
 use tvm::types::UInt256;
 use dispatch::DispatchTable;
@@ -49,6 +77,34 @@ pub(crate) fn encode_message_with_sign(_context: &mut ClientContext, params: Par
     })
 }
 
+pub(crate) fn get_function_id(_context: &mut ClientContext, params: ParamsOfGetFunctionId) -> ApiResult<ResultOfGetFunctionId> {
+    let contract = AbiContract::load(params.abi.to_string().as_bytes())
+        .map_err(|err|ApiError::contracts_get_function_id_failed(err))?;
+
+    let function = contract.function(&params.function)
+        .map_err(|err|ApiError::contracts_get_function_id_failed(err))?;
+
+    Ok(ResultOfGetFunctionId {
+       id: if params.input { function.get_input_id() } else { function.get_input_id() }
+    })
+}
+
+pub(crate) fn get_code_from_image(_context: &mut ClientContext, params: ParamsOfGetCodeFromImage) -> ApiResult<ResultOfGetCodeFromImage> {
+    debug!("-> contracts.image.code()");
+
+    let bytes = base64::decode(&params.imageBase64)
+        .map_err(|err| ApiError::contracts_invalid_image(err))?;
+    let mut reader = Cursor::new(bytes);
+    let image = ContractImage::from_state_init(&mut reader)
+        .map_err(|err| ApiError::contracts_image_creation_failed(err))?;
+
+    debug!("<-");
+    Ok(ResultOfGetCodeFromImage {
+        codeBase64: base64::encode(&image.get_serialized_code()
+            .map_err(|err| ApiError::contracts_image_creation_failed(err))?),
+    })
+}
+
 pub(crate) fn register(handlers: &mut DispatchTable) {
     // Load
     #[cfg(feature = "node_interaction")]
@@ -65,6 +121,8 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         deploy::encode_unsigned_message);
     handlers.spawn("contracts.deploy.address",
         deploy::get_address);
+    handlers.spawn("contracts.deploy.data",
+        deploy::get_deploy_data);
 
     // Run
     #[cfg(feature = "node_interaction")]
@@ -81,10 +139,16 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         run::decode_unknown_input);
     handlers.spawn("contracts.run.unknown.output",
         run::decode_unknown_output);
+    handlers.spawn("contracts.run.body",
+        run::get_run_body);
+    handlers.spawn("contracts.run.local",
+        run::local_run);
 
     // Contracts
     handlers.spawn("contracts.encode_message_with_sign",
         encode_message_with_sign);
-    handlers.spawn("contracts.run.local",
-        run::local_run);
+    handlers.spawn("contracts.function.id",
+        get_function_id);
+    handlers.spawn("contracts.image.code",
+        get_code_from_image);
 }

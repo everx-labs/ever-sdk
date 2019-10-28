@@ -1,6 +1,8 @@
 use ton_sdk::{Contract, Message, MessageType, AbiContract};
+use ton_sdk::json_abi::encode_function_call;
 use crypto::keys::{KeyPair, u256_encode, account_decode};
 use types::{ApiResult, ApiError, base64_decode};
+use tvm::cells_serialization::BagOfCells;
 
 use contracts::{EncodedMessage, EncodedUnsignedMessage};
 use client::ClientContext;
@@ -13,6 +15,8 @@ use tvm::block::{TransactionProcessingStatus, TransactionId};
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
 use futures::Stream;
+
+fn bool_false() -> bool { false }
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
@@ -50,6 +54,8 @@ pub(crate) struct ParamsOfDecodeRunOutput {
     pub abi: serde_json::Value,
     pub functionName: String,
     pub bodyBase64: String,
+    #[serde(default = "bool_false")]
+    pub internal: bool,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -57,6 +63,8 @@ pub(crate) struct ParamsOfDecodeRunOutput {
 pub struct ParamsOfDecodeUnknownRun {
     pub abi: serde_json::Value,
     pub bodyBase64: String,
+    #[serde(default = "bool_false")]
+    pub internal: bool,
 }
 
 #[allow(non_snake_case)]
@@ -70,6 +78,23 @@ pub(crate) struct ResultOfRun {
 pub struct ResultOfDecodeUnknownRun {
     pub function: String,
     pub output: serde_json::Value
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct ParamsOfGetRunBody {
+    pub abi: serde_json::Value,
+    pub function: String,
+    pub params: serde_json::Value,
+    #[serde(default = "bool_false")]
+    pub internal: bool,
+    pub keyPair: Option<KeyPair>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct ResultOfGetRunBody {
+    pub bodyBase64: String,
 }
 
 #[cfg(feature = "node_interaction")]
@@ -110,7 +135,8 @@ pub(crate) fn run(_context: &mut ClientContext, params: ParamsOfRun) -> ApiResul
         let result = Contract::decode_function_response_json(
             params.abi.to_string().to_owned(),
             params.functionName.to_owned(),
-            response)
+            response,
+            false)
             .expect("Error decoding result");
 
         debug!("<-");
@@ -169,10 +195,10 @@ pub(crate) fn local_run(_context: &mut ClientContext, params: ParamsOfLocalRun) 
     for msg in messages {
         let msg = Message::with_msg(msg);
         if msg.msg_type() == MessageType::ExternalOutbound &&
-            abi_function.is_my_message(msg.body().expect("Message has no body")).expect("Error is_my_message")
+            abi_function.is_my_message(msg.body().expect("Message has no body"), false).expect("Error is_my_message")
         {
             let output = Contract::decode_function_response_json(
-                params.abi.to_string(), params.functionName, msg.body().expect("Message has no body"))
+                params.abi.to_string(), params.functionName, msg.body().expect("Message has no body"), false)
                 .expect("Error decoding result");
 
             let output: serde_json::Value = serde_json::from_str(&output)
@@ -200,6 +226,7 @@ pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfRun) 
         params.functionName.to_owned(),
         params.input.to_string().to_owned(),
         params.abi.to_string().to_owned(),
+        false,
         key_pair.as_ref())
         .map_err(|err| ApiError::contracts_create_run_message_failed(err))?;
 
@@ -229,7 +256,9 @@ pub(crate) fn decode_output(_context: &mut ClientContext, params: ParamsOfDecode
     let result = Contract::decode_function_response_from_bytes_json(
         params.abi.to_string().to_owned(),
         params.functionName.to_owned(),
-        &body).map_err(|err| ApiError::contracts_decode_run_output_failed(err))?;
+        &body,
+        params.internal)
+            .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?;
     Ok(ResultOfRun {
         output: serde_json::from_str(result.as_str())
             .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?
@@ -240,7 +269,9 @@ pub(crate) fn decode_unknown_input(_context: &mut ClientContext, params: ParamsO
     let body = base64_decode(&params.bodyBase64)?;
     let result = Contract::decode_unknown_function_call_from_bytes_json(
         params.abi.to_string().to_owned(),
-        &body).map_err(|err|ApiError::contracts_decode_run_input_failed(err))?;
+        &body,
+        params.internal)
+            .map_err(|err|ApiError::contracts_decode_run_input_failed(err))?;
     Ok(ResultOfDecodeUnknownRun {
         function: result.function_name,
         output: serde_json::from_str(result.params.as_str())
@@ -252,11 +283,40 @@ pub(crate) fn decode_unknown_output(_context: &mut ClientContext, params: Params
     let body = base64_decode(&params.bodyBase64)?;
     let result = Contract::decode_unknown_function_response_from_bytes_json(
         params.abi.to_string().to_owned(),
-        &body).map_err(|err|ApiError::contracts_decode_run_output_failed(err))?;
+        &body,
+        params.internal)
+            .map_err(|err|ApiError::contracts_decode_run_output_failed(err))?;
     Ok(ResultOfDecodeUnknownRun {
         function: result.function_name,
         output: serde_json::from_str(result.params.as_str())
             .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?
+    })
+}
+
+pub(crate) fn get_run_body(_context: &mut ClientContext, params: ParamsOfGetRunBody) -> ApiResult<ResultOfGetRunBody> {
+    debug!("-> contracts.run.body({})", params.params.to_string());
+
+    let keys = match params.keyPair {
+        Some(str_pair) => Some(str_pair.decode()?),
+        None => None
+    };
+
+    let body = encode_function_call(
+        params.abi.to_string(),
+        params.function,
+        params.params.to_string(),
+        params.internal,
+        keys.as_ref())
+            .map_err(|err| ApiError::contracts_run_body_creation_failed(err))?;
+
+    let mut data = Vec::new();
+    let bag = BagOfCells::with_root(&body.into());
+    bag.write_to(&mut data, false)
+        .map_err(|err| ApiError::contracts_run_body_creation_failed(err))?;
+
+    debug!("<-");
+    Ok(ResultOfGetRunBody {
+        bodyBase64: base64::encode(&data)
     })
 }
 
@@ -344,7 +404,7 @@ fn load_out_message(tr: &Transaction, abi_function: &AbiFunction) -> Message {
                     .expect("error unwrap out message 2");
             msg.msg_type() == MessageType::ExternalOutbound
             && msg.body().is_some()
-            && abi_function.is_my_message(msg.body().expect("No body")).expect("error is_my_message")
+            && abi_function.is_my_message(msg.body().expect("No body"), false).expect("error is_my_message")
         })
         .expect("error unwrap out message 3")
         .expect("error unwrap out message 4")

@@ -88,7 +88,7 @@ fn test_parameters_set(
 
     // simple tree check
     let test_tree = function
-        .encode_input(inputs.clone(), None)
+        .encode_input(inputs.clone(), false, None)
         .unwrap();
 
     let mut test_tree = SliceData::from(&test_tree);
@@ -101,7 +101,7 @@ fn test_parameters_set(
     if check_time {
         // timed tree check
         let test_tree = timed_function
-            .encode_input(inputs.clone(), None)
+            .encode_input(inputs.clone(), false, None)
             .unwrap();
 
         let mut test_tree = SliceData::from(&test_tree);
@@ -123,7 +123,7 @@ fn test_parameters_set(
     let pair = Keypair::generate::<Sha512, _>(&mut rand::rngs::OsRng::new().unwrap());
 
     let test_tree = function
-        .encode_input(inputs.clone(), Some(&pair))
+        .encode_input(inputs.clone(), false, Some(&pair))
         .unwrap();
     let mut test_tree = SliceData::from(test_tree);
     let input_copy = test_tree.clone();
@@ -141,7 +141,7 @@ fn test_parameters_set(
 
     // check inputs decoding
 
-    let test_inputs = function.decode_input(input_copy).unwrap();
+    let test_inputs = function.decode_input(input_copy, false).unwrap();
     assert_eq!(test_inputs, inputs);
 
     // check outputs decoding
@@ -153,7 +153,7 @@ fn test_parameters_set(
     let mut test_tree = SliceData::from(test_tree);
     test_tree.checked_drain_reference().unwrap();
 
-    let test_outputs = function.decode_output(test_tree).unwrap();
+    let test_outputs = function.decode_output(test_tree, false).unwrap();
     assert_eq!(test_outputs, inputs);
 }
 
@@ -671,12 +671,12 @@ fn test_add_signature() {
 
     function.id = function.get_function_id();
 
-    let (msg, data_to_sign) = function.prepare_input_for_sign(&tokens).unwrap();
+    let (msg, data_to_sign) = function.create_unsigned_call(&tokens, false).unwrap();
 
     let pair = Keypair::generate::<Sha512, _>(&mut rand::rngs::OsRng::new().unwrap());
     let signature = pair.sign::<Sha512>(&data_to_sign).to_bytes().to_vec();
 
     let msg = Function::add_sign_to_encoded_input(&signature, &pair.public.to_bytes(), msg.into()).unwrap();
 
-    assert_eq!(function.decode_input(msg.into()).unwrap(), tokens);
+    assert_eq!(function.decode_input(msg.into(), false).unwrap(), tokens);
 }

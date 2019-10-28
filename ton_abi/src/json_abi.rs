@@ -11,6 +11,7 @@ pub fn encode_function_call(
     abi: String,
     function: String,
     parameters: String,
+    internal: bool,
     pair: Option<&Keypair>,
 ) -> AbiResult<BuilderData> {
     let contract = Contract::load(abi.as_bytes())?;
@@ -21,7 +22,7 @@ pub fn encode_function_call(
 
     let tokens = Tokenizer::tokenize_all(&function.input_params(), &v)?;
 
-    function.encode_input(&tokens, pair)
+    function.encode_input(&tokens, internal, pair)
 }
 
 /// Encodes `parameters` for given `function` of contract described by `abi` into `BuilderData`
@@ -40,7 +41,7 @@ pub fn prepare_function_call_for_sign(
 
     let tokens = Tokenizer::tokenize_all(&function.input_params(), &v)?;
 
-    function.prepare_input_for_sign(&tokens)
+    function.create_unsigned_call(&tokens, false)
 }
 
 /// Add sign to messsage body returned by `prepare_function_call_for_sign` function
@@ -57,12 +58,13 @@ pub fn decode_function_response(
     abi: String,
     function: String,
     response: SliceData,
+    internal: bool,
 ) -> AbiResult<String> {
     let contract = Contract::load(abi.as_bytes())?;
 
     let function = contract.function(&function)?;
 
-    let tokens = function.decode_output(response)?;
+    let tokens = function.decode_output(response, internal)?;
 
     Detokenizer::detokenize(&function.output_params(), &tokens)
 }
@@ -76,10 +78,11 @@ pub struct DecodedMessage {
 pub fn decode_unknown_function_response(
     abi: String,
     response: SliceData,
+    internal: bool,
 ) -> AbiResult<DecodedMessage> {
     let contract = Contract::load(abi.as_bytes())?;
 
-    let result = contract.decode_output(response)?;
+    let result = contract.decode_output(response, internal)?;
 
     let output = Detokenizer::detokenize(&result.params, &result.tokens)?;
 
@@ -93,10 +96,11 @@ pub fn decode_unknown_function_response(
 pub fn decode_unknown_function_call(
     abi: String,
     response: SliceData,
+    internal: bool,
 ) -> AbiResult<DecodedMessage> {
     let contract = Contract::load(abi.as_bytes())?;
 
-    let result = contract.decode_input(response)?;
+    let result = contract.decode_input(response, internal)?;
 
     let input = Detokenizer::detokenize(&result.params, &result.tokens)?;
 

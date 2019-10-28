@@ -259,13 +259,13 @@ impl ApiError {
         Self::sdk(ContractsRunContractNotFound, "Contract not found".into())
     }
 
-    pub fn contracts_deploy_invalid_image<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsDeployInvalidImage,
+    pub fn contracts_invalid_image<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsInvalidImage,
             "Invalid contract image: {}", err)
     }
 
-    pub fn contracts_deploy_image_creation_failed<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsDeployImageCreationFailed,
+    pub fn contracts_image_creation_failed<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsImageCreationFailed,
             "Image creation failed: {}", err)
     }
 
@@ -279,9 +279,19 @@ impl ApiError {
         "Deploy failed: transaction aborted".into())
     }
 
+    pub fn contracts_run_body_creation_failed<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsRunBodyCreationFailed,
+        "Run body creation failed: {}", err)
+    }
+
     pub fn contracts_encode_message_with_sign_failed<E: Display>(err: E) -> Self {
         sdk_err!(ContractsEncodeMessageWithSignFailed,
             "Encoding message with sign failed: {}", err)
+    }
+
+    pub fn contracts_get_function_id_failed<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsGetFunctionIdFailed,
+            "Get function ID failed: {}", err)
     }
 
     // SDK queries
@@ -410,8 +420,8 @@ pub enum ApiSdkErrorCode {
     CryptoMissingKeySource = 2021,
 
     ContractsLoadFailed = 3001,
-    ContractsDeployInvalidImage = 3002,
-    ContractsDeployImageCreationFailed = 3003,
+    ContractsInvalidImage = 3002,
+    ContractsImageCreationFailed = 3003,
     ContractsDeployTransactionMissing = 3004,
     ContractsDecodeRunOutputFailed = 3005,
     ContractsDecodeRunInputFailed = 3006,
@@ -423,6 +433,8 @@ pub enum ApiSdkErrorCode {
     ContractsCreateSendGramsMessageFailed = 3013,
     ContractsEncodeMessageWithSignFailed = 3014,
     ContractsDeployTransactionAborted = 3015,
+    ContractsRunBodyCreationFailed = 3016,
+    ContractsGetFunctionIdFailed = 3017,
 
     QueriesQueryFailed = 4001,
     QueriesSubscribeFailed = 4002,
