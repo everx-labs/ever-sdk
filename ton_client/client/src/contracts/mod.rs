@@ -1,4 +1,5 @@
 use types::{ApiResult, hex_decode, base64_decode, ApiError};
+use ton_sdk::AbiContract;
 
 pub(crate) mod types;
 pub(crate) mod deploy;
@@ -30,6 +31,20 @@ pub(crate) struct ParamsOfEncodeMessageWithSign {
     pub publicKeyHex: String,
 }
 
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct ParamsOfGetFunctionId {
+    pub abi: serde_json::Value,
+    pub function: String,
+    pub input: bool,
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct ResultOfGetFunctionId {
+    pub id: u32
+}
+
 use ton_sdk;
 use tvm::types::UInt256;
 use dispatch::DispatchTable;
@@ -46,6 +61,18 @@ pub(crate) fn encode_message_with_sign(_context: &mut ClientContext, params: Par
         messageId: hex::encode(&id),
         messageIdBase64: base64::encode(id.as_slice()),
         messageBodyBase64: base64::encode(&body),
+    })
+}
+
+pub(crate) fn get_function_id(_context: &mut ClientContext, params: ParamsOfGetFunctionId) -> ApiResult<ResultOfGetFunctionId> {
+    let contract = AbiContract::load(params.abi.to_string().as_bytes())
+        .map_err(|err|ApiError::contracts_get_function_id_failed(err))?;
+
+    let function = contract.function(&params.function)
+        .map_err(|err|ApiError::contracts_get_function_id_failed(err))?;
+
+    Ok(ResultOfGetFunctionId {
+       id: if params.input { function.get_input_id() } else { function.get_input_id() }
     })
 }
 
@@ -87,10 +114,12 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         run::decode_unknown_output);
     handlers.spawn("contracts.run.body",
         run::get_run_body);
+    handlers.spawn("contracts.run.local",
+        run::local_run);
 
     // Contracts
     handlers.spawn("contracts.encode_message_with_sign",
         encode_message_with_sign);
-    handlers.spawn("contracts.run.local",
-        run::local_run);
+    handlers.spawn("contracts.function.id",
+        get_function_id);
 }

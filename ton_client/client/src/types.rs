@@ -276,6 +276,11 @@ impl ApiError {
             "Encoding message with sign failed: {}", err)
     }
 
+    pub fn contracts_get_function_id_failed<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsGetFunctionIdFailed,
+            "Get function ID failed: {}", err)
+    }
+
     // SDK queries
 
     pub fn queries_query_failed<E: Display>(err: E) -> Self {
@@ -362,6 +367,7 @@ pub enum ApiSdkErrorCode {
     ContractsEncodeMessageWithSignFailed = 3014,
     ContractsDeployTransactionAborted = 3015,
     ContractsRunBodyCreationFailed = 3016,
+    ContractsGetFunctionIdFailed = 3017,
 
     QueriesQueryFailed = 4001,
     QueriesSubscribeFailed = 4002,
