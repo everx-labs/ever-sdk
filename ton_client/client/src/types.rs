@@ -246,13 +246,13 @@ impl ApiError {
         Self::sdk(ContractsRunContractNotFound, "Contract not found".into())
     }
 
-    pub fn contracts_deploy_invalid_image<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsDeployInvalidImage,
+    pub fn contracts_invalid_image<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsInvalidImage,
             "Invalid contract image: {}", err)
     }
 
-    pub fn contracts_deploy_image_creation_failed<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsDeployImageCreationFailed,
+    pub fn contracts_image_creation_failed<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsImageCreationFailed,
             "Image creation failed: {}", err)
     }
 
@@ -353,8 +353,8 @@ pub enum ApiSdkErrorCode {
     CryptoMissingKeySource = 2021,
 
     ContractsLoadFailed = 3001,
-    ContractsDeployInvalidImage = 3002,
-    ContractsDeployImageCreationFailed = 3003,
+    ContractsInvalidImage = 3002,
+    ContractsImageCreationFailed = 3003,
     ContractsDeployTransactionMissing = 3004,
     ContractsDecodeRunOutputFailed = 3005,
     ContractsDecodeRunInputFailed = 3006,

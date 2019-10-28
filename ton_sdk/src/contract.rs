@@ -74,7 +74,7 @@ pub struct ContractImage {
 impl ContractImage {
 
     // Creating contract image from code data and library bags of cells
-    pub fn new<T>(code: &mut T, data: Option<&mut T>, library: Option<&mut T>) -> SdkResult<Self>
+    pub fn from_code_data_and_library<T>(code: &mut T, data: Option<&mut T>, library: Option<&mut T>) -> SdkResult<Self>
         where T: Read + Seek {
 
         let mut state_init = StateInit::default();
@@ -106,7 +106,7 @@ impl ContractImage {
         Ok(Self{ state_init, id })
     }
 
-    pub fn new_empty() -> SdkResult<Self> {
+    pub fn new() -> SdkResult<Self> {
         let state_init = StateInit::default();
         let id = state_init.hash()?.into();
 
