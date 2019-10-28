@@ -97,15 +97,8 @@ pub(crate) fn deploy(_context: &mut ClientContext, params: ParamsOfDeploy) -> Ap
     let tr = super::run::load_transaction(&tr_id);
 
     debug!("<-");
-    if tr.tr().is_aborted() {
-        debug!("Transaction aborted");
-        super::run::get_result_from_block_transaction(tr.tr())?;
-        Err(ApiError::contracts_deploy_transaction_aborted())
-    } else {
-        Ok(ResultOfDeploy {
-            address: account_encode(&account_id)
-        })
-    }
+    super::run::check_transaction_status(tr.tr())?;
+    Ok(ResultOfDeploy { address: account_encode(&account_id) })
 }
 
 pub(crate) fn get_address(_context: &mut ClientContext, params: ParamsOfGetDeployAddress) -> ApiResult<String> {

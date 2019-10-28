@@ -15,8 +15,6 @@ use tvm::block::{TransactionProcessingStatus, TransactionId};
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
 use futures::Stream;
-#[cfg(feature = "node_interaction")]
-use tvm::block::TrComputePhase::*;
 
 fn bool_false() -> bool { false }
 
@@ -126,7 +124,8 @@ pub(crate) fn run(_context: &mut ClientContext, params: ParamsOfRun) -> ApiResul
         debug!("out messages missing");
         let block_transaction = tr.tr();
         debug!("block transaction: {}", serde_json::to_string(block_transaction).unwrap());
-        get_result_from_block_transaction(&block_transaction)
+        check_transaction_status(&block_transaction)?;
+        ok_null()
     } else {
         debug!("load out messages");
         let out_msg = load_out_message(&tr, abi_function);
@@ -330,31 +329,56 @@ fn ok_null() -> ApiResult<ResultOfRun> {
 }
 
 #[cfg(feature = "node_interaction")]
-pub(crate) fn get_result_from_block_transaction(transaction: &tvm::block::Transaction) -> ApiResult<ResultOfRun> {
-    match transaction.compute_phase_ref() {
-        Some(compute_phase) => {
-            match compute_phase {
-                Skipped(skipped) => {
-                    debug!("VM compute phase was skipped");
-                    let reason = format!("{:?}", skipped.reason.clone());
-                    Err(ApiError::tvm_execution_skipped(&reason))
-                }
-                Vm(vm) => {
-                    if vm.success {
-                        debug!("VM compute phase was succeeded");
-                        ok_null()
-                    } else {
-                        debug!("VM compute phase was not succeeded");
-                        Err(ApiError::tvm_execution_failed(vm.exit_code))
-                    }
-                }
-            }
-        }
-        None => {
-            debug!("VM compute phase have missing!");
-            ok_null()
+pub(crate) fn check_transaction_status(transaction: &tvm::block::Transaction) -> ApiResult<()> {
+    if !transaction.is_aborted() {
+        return Ok(());
+    }
+
+    debug!("Transaction aborted");
+    let fail = || { ApiError::transaction_parse_failed() };
+
+    let tr = serde_json::to_value(&transaction)
+        .map_err(|_| ApiError::transaction_parse_failed())?;
+
+    let ordinary = &tr["description"]["Ordinary"];
+
+    let id = tr["id"].as_str().ok_or_else(fail)?.to_string();
+    
+    if !ordinary["storage_ph"].is_null() {
+        let status = ordinary["storage_ph"]["status_change"].as_str().ok_or_else(fail)?;
+        if status != "Unchanged" {
+            Err(ApiError::storage_phase_failed(id.clone(), status))?;
         }
     }
+    
+    if !ordinary["compute_ph"].is_null() {
+        if !ordinary["compute_ph"]["Skipped"].is_null() {
+            let reason = ordinary["compute_ph"]["Skipped"]["reason"].as_str().ok_or_else(fail)?;
+            Err(ApiError::tvm_execution_skipped(id.clone(), reason))?;
+        }
+        
+        if !ordinary["compute_ph"]["Vm"].is_null() {
+            let vm = &ordinary["compute_ph"]["Vm"];
+            if !vm["success"].as_bool().ok_or_else(fail)? {
+                let exit_code = vm["exit_code"].as_i64().ok_or_else(fail)? as i32;
+                Err(ApiError::tvm_execution_failed(id.clone(), exit_code))?;
+            }
+        }
+    }
+
+    if !ordinary["action"].is_null() {
+        let action = &ordinary["action"];
+        if !action["success"].as_bool().ok_or_else(fail)? {
+            Err(ApiError::action_phase_failed(
+                id.clone(), 
+                action["result_code"].as_i64().ok_or_else(fail)? as i32,
+                action["valid"].as_bool().ok_or_else(fail)?,
+                action["no_funds"].as_bool().ok_or_else(fail)?,
+            ))?;
+        }
+    }
+
+    Err(ApiError::transaction_aborted(id))
 }
 
 #[cfg(feature = "node_interaction")]
