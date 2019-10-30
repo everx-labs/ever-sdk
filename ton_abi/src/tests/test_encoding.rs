@@ -29,7 +29,9 @@ fn put_array_into_map<T: Serializable>(array: &[T]) -> HashmapE {
     let mut map = HashmapE::with_bit_len(32);
 
     for i in 0..array.len() {
-        map.set_serializable(&(i as u32), &array[i]).unwrap();
+        let index = (i as u32).write_to_new_cell().unwrap();
+        let data = array[i].write_to_new_cell().unwrap();
+        map.set(index.into(), &data.into()).unwrap();
     }
 
     map

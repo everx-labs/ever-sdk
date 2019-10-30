@@ -310,7 +310,7 @@ fn test_deploy_empty_contract() {
                                         
     let mut data_cur = Cursor::new(data);
     
-    let image = ContractImage::new(&mut data_cur, None, None).expect("Error creating ContractImage");
+    let image = ContractImage::from_code_data_and_library(&mut data_cur, None, None).expect("Error creating ContractImage");
     let acc_id = image.account_id();
 
     tests_common::get_grams_from_giver(acc_id.clone());
