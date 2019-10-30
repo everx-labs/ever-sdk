@@ -7,10 +7,10 @@ use tvm::block::{
     Message,
     Serializable,
     Deserializable,
-    SmartContractInfo
 };
 use tvm::block::error::*;
 use tvm::stack::{CellData, IntegerData, SaveList, SliceData, Stack, StackItem};
+use tvm::SmartContractInfo;
 
 #[cfg(test)]
 #[path = "tests/test_local_tvm.rs"]
