@@ -37,7 +37,7 @@ pub fn local_contract_call(code: Arc<CellData>, data: Option<Arc<CellData>>, msg
     *sci.unix_time_mut() = <u32>::try_from(Utc::now().timestamp())
         .map_err(|_| BlockError::from(BlockErrorKind::Other(
             format!("Wrong time: {}", Utc::now().timestamp()))))?;
-    ctrls.put(7, &mut sci.into_temp_data()?)
+    ctrls.put(7, &mut sci.into_temp_data())
         .map_err(|err| BlockError::from(BlockErrorKind::Other(
             format!("Cannot put data to register: {}", err))))?;;
     
