@@ -187,19 +187,22 @@ pub(crate) fn local_run(_context: &mut ClientContext, params: ParamsOfLocalRun) 
         params.input.to_string(),
         params.abi.to_string(),
         key_pair.as_ref())
-        .expect("Error calling locally");
+       .map_err(|err| ApiError::contracts_local_run_failed(err))?;
 
     let abi_contract = AbiContract::load(params.abi.to_string().as_bytes()).expect("Couldn't parse ABI");
     let abi_function = abi_contract.function(&params.functionName).expect("Couldn't find function");
 
     for msg in messages {
         let msg = Message::with_msg(msg);
-        if msg.msg_type() == MessageType::ExternalOutbound &&
-            abi_function.is_my_message(msg.body().expect("Message has no body"), false).expect("Error is_my_message")
+        if  msg.msg_type() == MessageType::ExternalOutbound &&
+            abi_function.is_my_message(
+                msg.body().ok_or(ApiError::contracts_decode_run_output_failed("Message has no body"))?,
+                false)
+                    .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?
         {
             let output = Contract::decode_function_response_json(
                 params.abi.to_string(), params.functionName, msg.body().expect("Message has no body"), false)
-                .expect("Error decoding result");
+                     .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?;
 
             let output: serde_json::Value = serde_json::from_str(&output)
                 .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?;

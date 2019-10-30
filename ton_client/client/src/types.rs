@@ -294,6 +294,11 @@ impl ApiError {
             "Get function ID failed: {}", err)
     }
 
+    pub fn contracts_local_run_failed<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsLocalRunFailed,
+            "Local run failed: {}", err)
+    }
+
     // SDK queries
 
     pub fn queries_query_failed<E: Display>(err: E) -> Self {
@@ -435,6 +440,7 @@ pub enum ApiSdkErrorCode {
     ContractsDeployTransactionAborted = 3015,
     ContractsRunBodyCreationFailed = 3016,
     ContractsGetFunctionIdFailed = 3017,
+    ContractsLocalRunFailed = 3018,
 
     QueriesQueryFailed = 4001,
     QueriesSubscribeFailed = 4002,
