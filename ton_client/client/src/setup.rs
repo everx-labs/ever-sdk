@@ -7,8 +7,6 @@ use types::ApiError;
 #[cfg(feature = "node_interaction")]
 use ton_sdk::{NodeClientConfig, RequestsConfig, QueriesConfig};
 
-const VERSION: &str = "0.11.0";
-
 pub(crate) fn register(handlers: &mut DispatchTable) {
     #[cfg(feature = "node_interaction")]
     handlers.call_no_args("uninit", |_| Ok(ton_sdk::uninit()));
@@ -16,7 +14,7 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
     handlers.call_no_args("uninit", |_| Ok(()));
 
     handlers.call("setup", setup);
-    handlers.call_no_args("version", |_|Ok(VERSION));
+    handlers.call_no_args("version", |_|Ok(env!("CARGO_PKG_VERSION")));
 }
 
 
