@@ -1,7 +1,7 @@
-use ::{InteropContext, JsonResponse};
+use ::InteropContext;
 use ::{tc_json_request, InteropString};
 use ::{tc_read_json_response, tc_destroy_json_response};
-use serde_json::Value;
+use serde_json::{Value, Map};
 use log::{Metadata, Record, LevelFilter};
 use {tc_create_context, tc_destroy_context};
 use crypto::keys::{hmac_sha512, pbkdf2_hmac_sha512, key_to_ton_string};
@@ -20,64 +20,123 @@ impl log::Log for SimpleLogger {
     fn flush(&self) {}
 }
 
-fn json_request(
+struct TestClient {
     context: InteropContext,
-    method_name: &str,
-    params: Value,
-) -> JsonResponse {
-    unsafe {
-        let params_json = if params.is_null() { String::new() } else { params.to_string() };
-        let response_ptr = tc_json_request(
-            context,
-            InteropString::from(&method_name.to_string()),
-            InteropString::from(&params_json),
-        );
-        let interop_response = tc_read_json_response(response_ptr);
-        let response = interop_response.to_response();
-        tc_destroy_json_response(response_ptr);
-        response
+}
+
+impl TestClient {
+    fn new() -> Self {
+        log::set_boxed_logger(Box::new(SimpleLogger))
+            .map(|()| log::set_max_level(LevelFilter::Debug)).unwrap();
+        let context: InteropContext;
+        unsafe {
+            context = tc_create_context()
+        }
+        Self { context }
+    }
+    fn request(
+        &self,
+        method_name: &str,
+        params: Value,
+    ) -> Result<String, String> {
+        unsafe {
+            let params_json = if params.is_null() { String::new() } else { params.to_string() };
+            let response_ptr = tc_json_request(
+                self.context,
+                InteropString::from(&method_name.to_string()),
+                InteropString::from(&params_json),
+            );
+            let interop_response = tc_read_json_response(response_ptr);
+            let response = interop_response.to_response();
+            tc_destroy_json_response(response_ptr);
+            if response.error_json.is_empty() {
+                Ok(response.result_json)
+            } else {
+                Err(response.error_json)
+            }
+        }
+    }
+}
+
+impl Drop for TestClient {
+    fn drop(&mut self) {
+        unsafe {
+            tc_destroy_context(self.context)
+        }
     }
 }
 
 
+fn parse_object(s: Result<String, String>) -> Map<String, Value> {
+    if let Value::Object(m) = serde_json::from_str(s.unwrap().as_str()).unwrap() {
+        return m.clone();
+    }
+    panic!("Object expected");
+}
+
+fn parse_string(r: Result<String, String>) -> String {
+    if let Value::String(s) = serde_json::from_str(r.unwrap().as_str()).unwrap() {
+        return s.clone();
+    }
+    panic!("String expected");
+}
+
+fn get_map_string(m: &Map<String, Value>, f: &str) -> String {
+    if let Value::String(s) = m.get(f).unwrap() {
+        return s.clone();
+    }
+    panic!("Field not fount");
+}
+
+#[test]
+fn test_tg_mnemonic() {
+    let client = TestClient::new();
+    let crc16 = client.request("crypto.ton_crc16", json!({
+        "hex": "0123456789abcdef"
+    })).unwrap();
+    assert_eq!(crc16, "43349");
+
+    let keys = parse_object(client.request("crypto.sign_keys_from_ton_mnemonic",
+        Value::String("unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle".to_string()),
+    ));
+    let secret = get_map_string(&keys, "secret");
+    let ton_public = parse_string(client.request(
+        "crypto.ton_public_key_string",
+        Value::String(get_map_string(&keys, "public")),
+    ));
+    assert_eq!(ton_public, "PubDdJkMyss2qHywFuVP1vzww0TpsLxnRNnbifTCcu-XEgW0");
+}
+
 #[test]
 fn test() {
-    log::set_boxed_logger(Box::new(SimpleLogger))
-        .map(|()| log::set_max_level(LevelFilter::Debug)).unwrap();
-    unsafe {
-        let context = tc_create_context();
+    let client = TestClient::new();
+    let version = client.request("version", Value::Null).unwrap();
+    println!("result: {}", version.to_string());
 
-        let version = json_request(context, "version", Value::Null);
-        println!("result: {}", version.result_json.to_string());
+    let _deployed = client.request("setup",
+        json!({"baseUrl": "http://192.168.99.100"}));
 
-        let _deployed = json_request(context, "setup",
-            json!({"baseUrl": "http://192.168.99.100"}));
+    let keys = client.request("crypto.ed25519.keypair", json!({})).unwrap();
 
-        let keys = json_request(context, "crypto.ed25519.keypair", json!({}));
+    let abi: Value = serde_json::from_str(WALLET_ABI).unwrap();
+    let keys: Value = serde_json::from_str(&keys).unwrap();
 
-        assert_eq!(keys.error_json, "");
-
-        let abi: Value = serde_json::from_str(WALLET_ABI).unwrap();
-        let keys: Value = serde_json::from_str(&keys.result_json).unwrap();
-
-        let address = json_request(context, "contracts.deploy.message",
-            json!({
+    let address = client.request("contracts.deploy.message",
+        json!({
                 "abi": abi.clone(),
                 "constructorParams": json!({}),
                 "imageBase64": WALLET_CODE_BASE64,
                 "keyPair": keys,
             }),
-        );
+    ).unwrap();
 
-        assert_eq!(address.error_json, "");
+    let address = serde_json::from_str::<Value>(&address).unwrap()["address"].clone();
+    let address = address.as_str().unwrap();
 
-        let address = serde_json::from_str::<Value>(&address.result_json).unwrap()["address"].clone();
-        let address = address.as_str().unwrap();
+    let giver_abi: Value = serde_json::from_str(GIVER_ABI).unwrap();
 
-        let giver_abi: Value = serde_json::from_str(GIVER_ABI).unwrap();
-
-        let result = json_request(context, "contracts.run",
-            json!({
+    let result = client.request("contracts.run",
+        json!({
                 "address": GIVER_ADDRESS,
                 "abi": giver_abi,
                 "functionName": "sendGrams",
@@ -86,12 +145,10 @@ fn test() {
 					"amount": 10_000_000_000u64
 					}),
             }),
-        );
+    ).unwrap();
 
-        assert_eq!(result.error_json, "");
-
-        let wait_result = json_request(context, "queries.wait.for",
-            json!({
+    let wait_result = client.request("queries.wait.for",
+        json!({
                 "table": "accounts".to_owned(),
                 "filter": json!({
 					"id": { "eq": address },
@@ -103,35 +160,29 @@ fn test() {
 				}).to_string(),
 				"result": "id storage {balance {Grams}}".to_owned()
             }),
-        );
+    ).unwrap();
 
-        assert_eq!(wait_result.error_json, "");
-
-        let deployed = json_request(context, "contracts.deploy",
-            json!({
+    let deployed = client.request("contracts.deploy",
+        json!({
                 "abi": abi.clone(),
                 "constructorParams": json!({}),
                 "imageBase64": WALLET_CODE_BASE64,
                 "keyPair": keys,
             }),
-        );
+    ).unwrap();
 
-        assert_eq!(format!("{{\"address\":\"{}\"}}", address), deployed.result_json);
+    assert_eq!(format!("{{\"address\":\"{}\"}}", address), deployed);
 
-        let result = json_request(context, "contracts.run",
-            json!({
+    let result = client.request("contracts.run",
+        json!({
                 "address": address,
                 "abi": abi.clone(),
                 "functionName": "getLimitCount",
                 "input": json!({}),
                 "keyPair": keys,
             }),
-        );
-        assert_eq!("{\"output\":{\"value0\":\"0x0\"}}",
-            result.result_json);
-
-        tc_destroy_context(context);
-    }
+    ).unwrap();
+    assert_eq!("{\"output\":{\"value0\":\"0x0\"}}", result);
 }
 
 const GIVER_ADDRESS: &str = "a46af093b38fcae390e9af5104a93e22e82c29bcb35bf88160e4478417028884";
@@ -273,15 +324,3 @@ pub const WALLET_ABI: &str = r#"{
 "#;
 
 
-
-#[test]
-fn test_private_keys() {
-    let mnemonic = String::from("unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle");
-    let entropy = hmac_sha512(mnemonic.as_bytes(), &[]);
-    let seed = pbkdf2_hmac_sha512(&entropy, "TON default seed".as_bytes(), 100_000);
-    assert_eq!(hex::encode(&seed[..32]), "92328f6ff49bb225167ec94f2b146a9560bdc5f3c4ff416624d60ed6e23e0d01");
-    let secret = ed25519_dalek::SecretKey::from_bytes(&seed[..32]).unwrap();
-    let public = ed25519_dalek::PublicKey::from_secret::<sha2::Sha512>(&secret);
-    let public_key = key_to_ton_string(public.as_bytes());
-    assert_eq!(public_key, "PubDdJkMyss2qHywFuVP1vzww0TpsLxnRNnbifTCcu-XEgW0");
-}
