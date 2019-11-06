@@ -1,6 +1,7 @@
 use types::{ApiResult, hex_decode, base64_decode, ApiError};
 use ton_sdk::{AbiContract, ContractImage};
 use std::io::Cursor;
+use crypto::keys::{account_decode, account_encode_ex, AccountAddressType, Base64AddressParams};
 
 pub(crate) mod types;
 pub(crate) mod deploy;
@@ -42,6 +43,14 @@ pub(crate) struct ParamsOfGetFunctionId {
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
+pub(crate) struct ParamsOfConvertAddress {
+    pub address: String,
+    pub convertTo: AccountAddressType,
+    pub base64Params: Option<Base64AddressParams>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
 pub(crate) struct ResultOfGetFunctionId {
     pub id: u32
 }
@@ -56,6 +65,12 @@ pub(crate) struct ParamsOfGetCodeFromImage {
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfGetCodeFromImage {
     pub codeBase64: String,
+}
+
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize)]
+pub(crate) struct ResultOfConvertAddress {
+    pub address: String,
 }
 
 use ton_sdk;
@@ -105,6 +120,13 @@ pub(crate) fn get_code_from_image(_context: &mut ClientContext, params: ParamsOf
     })
 }
 
+pub(crate) fn convert_address(_context: &mut ClientContext, params: ParamsOfConvertAddress) -> ApiResult<ResultOfConvertAddress> {
+    let address = account_decode(&params.address)?;
+    Ok(ResultOfConvertAddress {
+        address: account_encode_ex(&address, params.convertTo, params.base64Params)?,
+    })
+}
+
 pub(crate) fn register(handlers: &mut DispatchTable) {
     // Load
     #[cfg(feature = "node_interaction")]
@@ -151,4 +173,8 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         get_function_id);
     handlers.spawn("contracts.image.code",
         get_code_from_image);
+
+    // Addresses
+    handlers.spawn("contracts.address.convert",
+        convert_address);
 }

@@ -1,7 +1,7 @@
 use ton_sdk::Contract;
 use futures::Stream;
 use types::{ApiResult, ApiError};
-use crypto::keys::{account_encode, account_decode};
+use crypto::keys::{account_decode};
 use client::ClientContext;
 
 #[derive(Deserialize)]
@@ -18,9 +18,8 @@ pub(crate) struct LoadResult {
 }
 
 pub(crate) fn load(_context: &mut ClientContext, params: LoadParams) -> ApiResult<LoadResult> {
-    let address = params.address;
-    let loaded = Contract::load(account_decode(&address)?)
-        .map_err(|err|ApiError::contracts_load_failed(err, &address))?
+    let loaded = Contract::load(&account_decode(&params.address)?)
+        .map_err(|err|ApiError::contracts_load_failed(err, &params.address))?
         .wait()
         .next();
     match loaded {
@@ -31,7 +30,7 @@ pub(crate) fn load(_context: &mut ClientContext, params: LoadParams) -> ApiResul
                         Some(contract) => make_result(contract),
                         None => Ok(EMPTY_RESULT)
                     },
-                Err(err) => Err(ApiError::contracts_load_failed(err, &address))
+                Err(err) => Err(ApiError::contracts_load_failed(err, &params.address))
             },
         None => Ok(EMPTY_RESULT)
     }
@@ -46,7 +45,7 @@ const EMPTY_RESULT: LoadResult = LoadResult {
 
 fn make_result(contract: Contract) -> ApiResult<LoadResult> {
     Ok(LoadResult {
-        id: contract.id().map(|id| account_encode(&id)).ok(),
+        id: contract.id().map(|id| id.to_hex_string()).ok(),
         balanceGrams: contract.balance_grams().map(|balance| balance.0.to_str_radix(10)).ok(),
     })
 }

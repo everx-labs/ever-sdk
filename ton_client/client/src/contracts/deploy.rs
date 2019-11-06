@@ -17,6 +17,8 @@ pub(crate) struct ParamsOfDeploy {
     pub initParams: Option<serde_json::Value>,
     pub imageBase64: String,
     pub keyPair: KeyPair,
+    #[serde(default)]
+    pub workchainId: i32,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -27,6 +29,8 @@ pub(crate) struct ParamsOfEncodeUnsignedDeployMessage {
     pub initParams: Option<serde_json::Value>,
     pub imageBase64: String,
     pub publicKeyHex: String,
+    #[serde(default)]
+    pub workchainId: i32,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -43,6 +47,8 @@ pub(crate) struct ParamsOfGetDeployAddress {
     pub initParams: Option<serde_json::Value>,
     pub imageBase64: String,
     pub keyPair: KeyPair,
+    #[serde(default)]
+    pub workchainId: i32,
 }
 
 #[allow(non_snake_case)]
@@ -84,8 +90,8 @@ pub(crate) fn deploy(_context: &mut ClientContext, params: ParamsOfDeploy) -> Ap
     let key_pair = params.keyPair.decode()?;
 
     let contract_image = create_image(&params.abi, params.initParams.as_ref(), &params.imageBase64, &key_pair.public)?;
-    let account_id = contract_image.account_id();
-    debug!("-> -> image prepared with address: {}", account_encode(&account_id));
+    let account_id = contract_image.msg_address(params.workchainId);
+    debug!("-> -> image prepared with address: {}", account_id);
 
     debug!("-> -> deploy");
     let tr_id = deploy_contract(&params, contract_image, &key_pair)?;
@@ -104,7 +110,7 @@ pub(crate) fn deploy(_context: &mut ClientContext, params: ParamsOfDeploy) -> Ap
 pub(crate) fn get_address(_context: &mut ClientContext, params: ParamsOfGetDeployAddress) -> ApiResult<String> {
     let key_pair = params.keyPair.decode()?;
     let contract_image = create_image(&params.abi, params.initParams.as_ref(), &params.imageBase64, &key_pair.public)?;
-    let account_id = contract_image.account_id();
+    let account_id = contract_image.msg_address(params.workchainId);
     Ok(account_encode(&account_id))
 }
 
@@ -114,15 +120,14 @@ pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfDeplo
     let keys = params.keyPair.decode()?;
 
     let contract_image = create_image(&params.abi, params.initParams.as_ref(), &params.imageBase64, &keys.public)?;
-    let account_id = contract_image.account_id();
+    let account_id = contract_image.msg_address(params.workchainId);
     debug!("image prepared with address: {}", account_encode(&account_id));
-    let account_id = contract_image.account_id();
     let (message_body, message_id) = Contract::construct_deploy_message_json(
         "constructor".to_owned(),
         params.constructorParams.to_string().to_owned(),
         params.abi.to_string().to_owned(),
         contract_image,
-        Some(&keys)).map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
+        Some(&keys), params.workchainId).map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
 
     debug!("<-");
     Ok(ResultOfEncodeDeployMessage {
@@ -194,12 +199,12 @@ pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetD
 pub(crate) fn encode_unsigned_message(_context: &mut ClientContext, params: ParamsOfEncodeUnsignedDeployMessage) -> ApiResult<ResultOfEncodeUnsignedDeployMessage> {
     let public = decode_public_key(&params.publicKeyHex)?;
     let image = create_image(&params.abi, params.initParams.as_ref(), &params.imageBase64, &public)?;
-    let address_hex = account_encode(&image.account_id());
+    let address_hex = account_encode(&image.msg_address(params.workchainId));
     let encoded = ton_sdk::Contract::get_deploy_message_bytes_for_signing(
         "constructor".to_owned(),
         params.constructorParams.to_string().to_owned(),
         params.abi.to_string().to_owned(),
-        image
+        image, params.workchainId
     ).map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
     Ok(ResultOfEncodeUnsignedDeployMessage {
         encoded: EncodedUnsignedMessage {
@@ -212,7 +217,6 @@ pub(crate) fn encode_unsigned_message(_context: &mut ClientContext, params: Para
 
 // Internals
 
-use std::io::Cursor;
 use ed25519_dalek::PublicKey;
 use types::{ApiResult, ApiError};
 
@@ -228,7 +232,7 @@ fn create_image(abi: &serde_json::Value, init_params: Option<&serde_json::Value>
     let bytes = base64::decode(image_base64)
         .map_err(|err| ApiError::contracts_invalid_image(err))?;
     let mut reader = Cursor::new(bytes);
-    let mut image = ContractImage::from_state_init_and_key(&mut reader, public_key)
+    let mut image = ContractImage::from_state_init_and_key(&mut bytes.as_slice(), public_key)
         .map_err(|err| ApiError::contracts_image_creation_failed(err))?;
 
     if let Some(params) = init_params {
@@ -246,8 +250,7 @@ fn deploy_contract(params: &ParamsOfDeploy, image: ContractImage, keys: &Keypair
         "constructor".to_owned(),
         params.constructorParams.to_string().to_owned(),
         params.abi.to_string().to_owned(),
-        image,
-        Some(keys))
+        image, Some(keys), params.workchainId)
         .expect("Error deploying contract");
 
     let mut tr_id = None;

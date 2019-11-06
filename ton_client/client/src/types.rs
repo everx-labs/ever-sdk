@@ -195,7 +195,7 @@ impl ApiError {
             "Invalid secret key [{}]: {}", err, key)
     }
 
-    pub fn crypto_invalid_address<E: Display>(err: E, address: &String) -> Self {
+    pub fn crypto_invalid_address<E: Display>(err: E, address: &str) -> Self {
         sdk_err!(CryptoInvalidAddress,
             "Invalid address [{}]: {}", err, address)
     }
@@ -297,6 +297,11 @@ impl ApiError {
     pub fn contracts_local_run_failed<E: Display>(err: E) -> Self {
         sdk_err!(ContractsLocalRunFailed,
             "Local run failed: {}", err)
+    }
+    
+    pub fn contracts_address_conversion_failed<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsAddressConversionFailed,
+            "Address conversion failed: {}", err)
     }
 
     // SDK queries
@@ -441,6 +446,7 @@ pub enum ApiSdkErrorCode {
     ContractsRunBodyCreationFailed = 3016,
     ContractsGetFunctionIdFailed = 3017,
     ContractsLocalRunFailed = 3018,
+    ContractsAddressConversionFailed = 3019,
 
     QueriesQueryFailed = 4001,
     QueriesSubscribeFailed = 4002,

@@ -2,16 +2,17 @@ use ton_abi::json_abi::decode_function_response;
 use super::*;
 use contract::ContractImage;
 use std::io::{Cursor};
+use std::str::FromStr;
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
 use rand::RngCore;
 use sha2::Sha512;
-use tvm::block::TransactionProcessingStatus;
+use tvm::block::{MsgAddressInt, TransactionProcessingStatus};
 use tvm::types::AccountId;
 use tvm::stack::{BuilderData, IBitstring};
 use tvm::stack::dictionary::HashmapType;
 use tests_common::*;
- 
+
 /*
 #[test]
 #[ignore] // Rethink have to work on 127.0.0.1:32769. Run it and comment "ignore"
@@ -102,7 +103,7 @@ connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_status
 
     // init SDK
     let config_json = CONFIG_JSON.clone();    
-    init_json(Some(WORKCHAIN), config_json.into()).unwrap();
+    init_json(config_json.into()).unwrap();
 
 
     let msg_id = MessageId::default();
@@ -160,14 +161,14 @@ const CONSTRUCTOR_PARAMS: &str = r#"
 }"#;
 
 
-fn test_call_contract(address: AccountId, key_pair: &Keypair) {
+fn test_call_contract(address: MsgAddressInt, key_pair: &Keypair) {
 
     let func = "getWallet".to_string();
     let abi = test_piggy_bank::SUBSCRIBE_CONTRACT_ABI.to_string();
 
     // call needed method
     let changes_stream = Contract::call_json(
-        address.into(), func.clone(), "{}".to_owned(), abi.clone(), Some(&key_pair))
+        address, func.clone(), "{}".to_owned(), abi.clone(), Some(&key_pair))
             .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -244,7 +245,7 @@ fn test_deploy_and_call_contract() {
 
     let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair.public).expect("Unable to parse contract code file");
 
-    let account_id = contract_image.account_id();
+    let account_id = contract_image.msg_address(0);
 
     // before deploying contract need to transfer some funds to its address
     println!("Account ID to take some grams {}", account_id);
@@ -257,7 +258,7 @@ fn test_deploy_and_call_contract() {
     let input = CONSTRUCTOR_PARAMS.to_string();
     let abi = test_piggy_bank::SUBSCRIBE_CONTRACT_ABI.to_string();
 
-    let changes_stream = Contract::deploy_json(func, input, abi, contract_image, Some(&keypair))
+    let changes_stream = Contract::deploy_json(func, input, abi, contract_image, Some(&keypair), 0)
         .expect("Error deploying contract");
 
     // wait transaction id in message-status or 
@@ -293,7 +294,7 @@ fn test_contract_image_from_file() {
 
     let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair.public).expect("Unable to parse contract code file");
 
-    println!("Account ID {}", contract_image.account_id());
+    println!("Account ID {:x}", contract_image.account_id());
 }
 
 #[test]
@@ -306,18 +307,18 @@ fn test_deploy_empty_contract() {
     code_builder.append_u32(csprng.next_u32()).expect("Unable to add u32");
 
     let mut data = Vec::new();
-    BagOfCells::with_root(&Arc::<CellData>::from(&code_builder)).write_to(&mut data, false).expect("Error serializing BOC");
+    BagOfCells::with_root(&code_builder.into()).write_to(&mut data, false).expect("Error serializing BOC");
                                         
     let mut data_cur = Cursor::new(data);
     
     let image = ContractImage::from_code_data_and_library(&mut data_cur, None, None).expect("Error creating ContractImage");
-    let acc_id = image.account_id();
+    let acc_id = image.msg_address(0);
 
     tests_common::get_grams_from_giver(acc_id.clone());
 
     println!("Account ID {}", acc_id);
 
-    /*Contract::load(acc_id.into())
+    /*Contract::load(&acc_id)
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -328,7 +329,7 @@ fn test_deploy_empty_contract() {
 	queries_helper::wait_for(
         "accounts",
         &json!({
-			"id": { "eq": acc_id.to_hex_string() },
+			"id": { "eq": acc_id.to_string() },
 			"storage": {
 				"balance": {
 					"Grams": { "gt": "0" }
@@ -341,7 +342,7 @@ fn test_deploy_empty_contract() {
 
 
 
-    let changes_stream = Contract::deploy_no_constructor(image)
+    let changes_stream = Contract::deploy_no_constructor(image, 0)
         .expect("Error deploying contract");
 
         // wait transaction id in message-status 
@@ -369,7 +370,8 @@ fn test_deploy_empty_contract() {
 fn test_load_nonexistent_contract() {
     init_node_connection();
 
-    let c = Contract::load(AccountId::from([67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31, 67, 68, 69, 31]).into())
+    let acc_id = AccountId::from([67; 32]);
+    let c = Contract::load(&MsgAddressInt::with_standart(None, 0, acc_id).unwrap())
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -380,33 +382,13 @@ fn test_load_nonexistent_contract() {
 }
 
 #[test]
-fn test_address_parsing() {
-    Contract::set_default_workchain(Some(WORKCHAIN));
-
-    let short = "fcb91a3a3816d0f7b8c2c76108b8a9bc5a6b7a55bd79f8ab101c52db29232260";
-    let full_std = "-1:fcb91a3a3816d0f7b8c2c76108b8a9bc5a6b7a55bd79f8ab101c52db29232260";
-    let base64 = "kf/8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15+KsQHFLbKSMiYIny";
-    let base64_url = "kf_8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15-KsQHFLbKSMiYIny";
-
-    let address = tvm::block::MsgAddressInt::with_standart(None, -1, hex::decode(short).unwrap().into()).unwrap();
-    let wc0_address = tvm::block::MsgAddressInt::with_standart(None, 0, hex::decode(short).unwrap().into()).unwrap();
-
-    assert_eq!(wc0_address, AccountAddress::from_str(short).expect("Couldn't parse short address").get_msg_address().unwrap());
-    assert_eq!(address, AccountAddress::from_str(full_std).expect("Couldn't parse full_std address").get_msg_address().unwrap());
-    assert_eq!(address, AccountAddress::from_str(base64).expect("Couldn't parse base64 address").get_msg_address().unwrap());
-    assert_eq!(address, AccountAddress::from_str(base64_url).expect("Couldn't parse base64_url address").get_msg_address().unwrap());
-
-    assert_eq!(AccountAddress::from(address.clone()).as_base64(true, true, false).unwrap(), base64);
-    assert_eq!(AccountAddress::from(address).as_base64(true, true, true).unwrap(), base64_url);
-}
-
-#[test]
+#[ignore]
 fn test_print_base64_address_from_hex() {
     let hex_address = "0:9f2bc8a81da52c6b8cb1878352120f21e254138fff0b897f44fb6ff2b8cae256";
 
-    let address = AccountAddress::from_str(hex_address).unwrap();
+    let address = MsgAddressInt::from_str(hex_address).unwrap();
 
-    println!("{}", address.as_base64(false, false, false).unwrap());
+    println!("{}", contract::encode_base64(&address, false, false, false).unwrap());
 }
 
 #[test]

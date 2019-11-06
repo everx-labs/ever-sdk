@@ -1,8 +1,10 @@
 use std::sync::Mutex;
+use tvm::block::MsgAddressInt;
 use tvm::types::UInt256;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey};
 use types::{ApiResult, ApiError, hex_decode};
 use std::collections::HashMap;
+use std::str::FromStr;
 
 pub type Key192 = [u8; 24];
 pub type Key256 = [u8; 32];
@@ -103,41 +105,52 @@ pub fn u256_encode(value: &UInt256) -> String {
     hex::encode(value.as_slice())
 }
 
-pub fn u256_from_slice_data(slice: &tvm::stack::SliceData) -> UInt256 {
-    UInt256::from(slice.storage().as_slice())
+pub fn account_encode(value: &MsgAddressInt) -> String {
+    value.to_string()
 }
 
-pub fn account_encode(value: &tvm::types::AccountId) -> String {
-    hex::encode(&u256_from_slice_data(value))
-}
-/*
-pub fn generic_id_encode(value: &mut dyn tvm::block::GenericId) -> String {
-    u256_encode(&value.id().unwrap())
+#[derive(Serialize, Deserialize)]
+pub(crate) enum AccountAddressType {
+    AccountId,
+    Hex,
+    Base64,
 }
 
-pub fn u256_decode(string: &String) -> ApiResult<UInt256> {
-    match string.len() {
-        0 => Ok(u256_zero()),
-        _ => string
-            .as_str()
-            .parse()
-            .map_err(|err| {
-                let err = format!("{:?}", err);
-                ApiError::crypto_invalid_address(err, string)
-            })
+#[derive(Serialize, Deserialize)]
+pub(crate) struct Base64AddressParams {
+    url: bool,
+    test: bool,
+    bounce: bool
+}
+
+pub(crate) fn account_encode_ex(
+    value: &MsgAddressInt,
+    addr_type: AccountAddressType,
+    base64_params: Option<Base64AddressParams>
+) -> ApiResult<String> {
+    match addr_type {
+        AccountAddressType::AccountId => Ok(value.get_address().to_hex_string()),
+        AccountAddressType::Hex => Ok(value.to_string()),
+        AccountAddressType::Base64 => {
+            let params = base64_params.ok_or(ApiError::contracts_address_conversion_failed(
+                "No base64 address parameters provided".to_owned()))?;
+            ton_sdk::encode_base64(value, params.bounce, params.test, params.url)
+                .map_err(|err| ApiError::crypto_invalid_address(err, &value.to_string()))
+        }
     }
 }
 
-pub fn account_from_u256(u: &UInt256) -> tvm::types::AccountId {
-    tvm::types::AccountId::from_raw(u.as_slice().to_vec(), 256)
+pub fn generic_id_encode(value: &tvm::block::GenericId) -> String {
+    u256_encode(&value.data)
 }
-*/
-pub fn account_decode(string: &String) -> ApiResult<ton_sdk::AccountAddress> {
-    ton_sdk::AccountAddress::from_str(&string)
-        .map_err(|err| {
-                let err = format!("{:?}", err);
-                ApiError::crypto_invalid_address(err, string)
-            })
+
+pub fn account_decode(string: &str) -> ApiResult<MsgAddressInt> {
+    match MsgAddressInt::from_str(string) {
+        Ok(address) => Ok(address),
+        Err(_) if string.len() == 48 => ton_sdk::decode_std_base64(string)
+        .map_err(|err| ApiError::crypto_invalid_address(err, string)),
+        Err(err) => Err(ApiError::crypto_invalid_address(err, string))
+    }
 }
 
 // Internals
