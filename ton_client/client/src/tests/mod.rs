@@ -4,6 +4,7 @@ use ::{tc_read_json_response, tc_destroy_json_response};
 use serde_json::Value;
 use log::{Metadata, Record, LevelFilter};
 use {tc_create_context, tc_destroy_context};
+use crypto::keys::{hmac_sha512, pbkdf2_hmac_sha512, key_to_ton_string};
 
 struct SimpleLogger;
 
@@ -52,14 +53,14 @@ fn test() {
         let _deployed = json_request(context, "setup",
             json!({"baseUrl": "http://192.168.99.100"}));
 
-		let keys = json_request(context, "crypto.ed25519.keypair", json!({}));
+        let keys = json_request(context, "crypto.ed25519.keypair", json!({}));
 
-		assert_eq!(keys.error_json, "");
+        assert_eq!(keys.error_json, "");
 
-		let abi: Value = serde_json::from_str(WALLET_ABI).unwrap();
-		let keys: Value = serde_json::from_str(&keys.result_json).unwrap();
+        let abi: Value = serde_json::from_str(WALLET_ABI).unwrap();
+        let keys: Value = serde_json::from_str(&keys.result_json).unwrap();
 
-		let address = json_request(context, "contracts.deploy.message",
+        let address = json_request(context, "contracts.deploy.message",
             json!({
                 "abi": abi.clone(),
                 "constructorParams": json!({}),
@@ -68,14 +69,14 @@ fn test() {
             }),
         );
 
-		assert_eq!(address.error_json, "");
+        assert_eq!(address.error_json, "");
 
-		let address = serde_json::from_str::<Value>(&address.result_json).unwrap()["address"].clone();
-		let address = address.as_str().unwrap();
+        let address = serde_json::from_str::<Value>(&address.result_json).unwrap()["address"].clone();
+        let address = address.as_str().unwrap();
 
-		let giver_abi: Value = serde_json::from_str(GIVER_ABI).unwrap();
+        let giver_abi: Value = serde_json::from_str(GIVER_ABI).unwrap();
 
-		let result = json_request(context, "contracts.run",
+        let result = json_request(context, "contracts.run",
             json!({
                 "address": GIVER_ADDRESS,
                 "abi": giver_abi,
@@ -87,9 +88,9 @@ fn test() {
             }),
         );
 
-		assert_eq!(result.error_json, "");
+        assert_eq!(result.error_json, "");
 
-		let wait_result = json_request(context, "queries.wait.for",
+        let wait_result = json_request(context, "queries.wait.for",
             json!({
                 "table": "accounts".to_owned(),
                 "filter": json!({
@@ -104,7 +105,7 @@ fn test() {
             }),
         );
 
-		assert_eq!(wait_result.error_json, "");
+        assert_eq!(wait_result.error_json, "");
 
         let deployed = json_request(context, "contracts.deploy",
             json!({
@@ -270,3 +271,17 @@ pub const WALLET_ABI: &str = r#"{
 	]
 }
 "#;
+
+
+
+#[test]
+fn test_private_keys() {
+    let mnemonic = String::from("unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle");
+    let entropy = hmac_sha512(mnemonic.as_bytes(), &[]);
+    let seed = pbkdf2_hmac_sha512(&entropy, "TON default seed".as_bytes(), 100_000);
+    assert_eq!(hex::encode(&seed[..32]), "92328f6ff49bb225167ec94f2b146a9560bdc5f3c4ff416624d60ed6e23e0d01");
+    let secret = ed25519_dalek::SecretKey::from_bytes(&seed[..32]).unwrap();
+    let public = ed25519_dalek::PublicKey::from_secret::<sha2::Sha512>(&secret);
+    let public_key = key_to_ton_string(public.as_bytes());
+    assert_eq!(public_key, "PubDdJkMyss2qHywFuVP1vzww0TpsLxnRNnbifTCcu-XEgW0");
+}
