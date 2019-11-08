@@ -293,12 +293,3 @@ fn test_address_parsing() {
     assert_eq!(encode_base64(&address, true, true, false).unwrap(), base64);
     assert_eq!(encode_base64(&address, true, true, true ).unwrap(), base64_url);
 }
-
-#[test]
-fn test_print_base64_address_from_hex() {
-    let hex_address = "0:9f2bc8a81da52c6b8cb1878352120f21e254138fff0b897f44fb6ff2b8cae256";
-
-    let address = account_decode(hex_address).unwrap();
-
-    println!("{}", encode_base64(&address, false, false, false).unwrap());
-}
