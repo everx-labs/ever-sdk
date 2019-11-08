@@ -109,6 +109,13 @@ pub(crate) struct NaclSignParams {
 
 #[derive(Deserialize)]
 #[allow(non_snake_case)]
+pub(crate) struct MnemonicWordsParams {
+    pub count: u8,
+    pub words: u8,
+}
+
+#[derive(Deserialize)]
+#[allow(non_snake_case)]
 pub(crate) struct MnemonicFromEntropyParams {
     pub entropy: InputMessage,
 }
