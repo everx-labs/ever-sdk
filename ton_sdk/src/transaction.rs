@@ -7,7 +7,7 @@ use serde::Deserialize;
 #[serde(default)]
 pub struct ComputePhase {
     pub compute_type: u8,
-    #[serde(deserialize_with = "json_helper::deserialize_skipped_reason_from_num")]
+    #[serde(deserialize_with = "json_helper::deserialize_skipped_reason")]
     pub skipped_reason: Option<ComputeSkipReason>,
     pub exit_code: i32,
     pub success: bool
@@ -16,7 +16,7 @@ pub struct ComputePhase {
 #[derive(Deserialize, Default, Debug)]
 #[serde(default)]
 pub struct StoragePhase {
-    #[serde(deserialize_with = "json_helper::deserialize_acc_state_change_from_num")]
+    #[serde(deserialize_with = "json_helper::deserialize_acc_state_change")]
     pub status_change: AccStatusChange
 }
 
@@ -35,7 +35,7 @@ pub type TransactionId = StringId;
 #[serde(default)]
 pub struct Transaction {
     pub id: TransactionId,
-    #[serde(deserialize_with = "json_helper::deserialize_tr_state_from_num")]
+    #[serde(deserialize_with = "json_helper::deserialize_tr_state")]
     pub status: TransactionProcessingStatus,
     pub now: u32,
     pub in_msg: Option<MessageId>,

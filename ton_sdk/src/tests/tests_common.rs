@@ -372,7 +372,6 @@ pub fn local_contract_call(address: MsgAddressInt, func: &str, input: &str, abi:
         .expect("Error calling locally");
 
     for msg in messages {
-        let msg = crate::Message::with_msg(msg).expect("Error constructing message");
         if msg.msg_type() == MessageType::ExternalOutbound {
             return Contract::decode_function_response_json(
                 abi.to_owned(), func.to_owned(), msg.body().expect("Message has no body"), false)

@@ -321,13 +321,9 @@ fn test_deploy_empty_contract() {
         "accounts",
         &json!({
 			"id": { "eq": acc_id.to_string() },
-			"storage": {
-				"balance": {
-					"Grams": { "gt": "0" }
-				}
-			}
+			"balance": { "gt": "0" }
 		}).to_string(),
-		"id storage {balance {Grams}}"
+		"id balance"
 	).unwrap();
     println!("Contract got!!!");
 

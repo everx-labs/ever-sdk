@@ -10,10 +10,10 @@ use futures::stream::Stream;
 
 #[derive(Deserialize, Debug, PartialEq, Clone)]
 pub enum MessageType {
-    Internal = 0,
-    ExternalInbound = 1,
-    ExternalOutbound = 2,
-    Unknown = 0xff,
+    Internal,
+    ExternalInbound,
+    ExternalOutbound,
+    Unknown,
 }
 
 impl Default for MessageType {
@@ -29,6 +29,7 @@ pub struct Message {
     pub id: MessageId,
     #[serde(deserialize_with = "json_helper::deserialize_tree_of_cells_opt_cell")]
     pub body: Option<Arc<CellData>>,
+    #[serde(deserialize_with = "json_helper::deserialize_message_type")]
     pub msg_type: MessageType,
 }
 
@@ -80,10 +81,10 @@ impl Message {
         Ok(Box::new(map))
     }
 
-    pub fn with_msg(tvm_msg: TvmMessage) -> SdkResult<Self> {
+    pub fn with_msg(tvm_msg: &TvmMessage) -> SdkResult<Self> {
         let mut msg = Self::default();
         msg.id = tvm_msg.calc_id()?.as_slice()[..].into();
-        msg.body = tvm_msg.body().map(|slice| slice.cell().clone());
+        msg.body = tvm_msg.body().map(|slice| slice.into_cell());
 
         msg.msg_type = match tvm_msg.header() {
             CommonMsgInfo::IntMsgInfo(_) => MessageType::Internal,

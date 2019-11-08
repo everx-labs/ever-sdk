@@ -98,13 +98,9 @@ fn test_wallet_deploy() {
                 "table": "accounts".to_owned(),
                 "filter": json!({
 					"id": { "eq": address.to_string() },
-					"storage": {
-						"balance": {
-							"Grams": { "gt": "0" }
-						}
-					}
+					"balance": { "gt": "0" }
 				}).to_string(),
-				"result": "id storage {balance {Grams}}".to_owned()
+				"result": "id balance".to_owned()
             }),
         );
 

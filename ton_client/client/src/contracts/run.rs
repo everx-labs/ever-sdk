@@ -188,8 +188,6 @@ pub(crate) fn local_run(_context: &mut ClientContext, params: ParamsOfLocalRun) 
     let abi_function = abi_contract.function(&params.functionName).expect("Couldn't find function");
 
     for msg in messages {
-        let msg = Message::with_msg(msg)
-            .map_err(|err| ApiError::contracts_local_run_failed(err))?;
         if  msg.msg_type() == MessageType::ExternalOutbound &&
             abi_function.is_my_message(
                 msg.body().ok_or(ApiError::contracts_decode_run_output_failed("Message has no body"))?,
