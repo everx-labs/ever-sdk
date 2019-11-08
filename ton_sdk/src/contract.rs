@@ -7,13 +7,11 @@ use std::sync::Arc;
 use tvm::block::{
     Deserializable, ExternalInboundMessageHeader,
     GetRepresentationHash, Message as TvmMessage, MsgAddressInt,
-    Serializable, StateInit, TransactionProcessingStatus,
-};
+    Serializable, StateInit};
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use tvm::stack::dictionary::HashmapE;
 use tvm::stack::{BuilderData, CellData, SliceData};
 use tvm::types::AccountId;
-use serde::Deserialize;
 
 pub use ton_abi::json_abi::DecodedMessage;
 pub use ton_abi::token::{Token, TokenValue, Tokenizer};
@@ -69,21 +67,6 @@ pub struct Contract {
 #[cfg(test)]
 #[path = "tests/test_contract.rs"]
 mod tests;
-
-#[derive(Deserialize, PartialEq, Debug)]
-enum TransactionState {
-    Proposed = 0,
-    Finalized = 1
-}
-
-// The struct represents status of message that performs contract's call
-#[derive(Deserialize, Debug)]
-pub struct ContractCallState {
-    pub id: MessageId,
-    #[serde(deserialize_with = "json_helper::deserialize_tr_state_from_num")]
-    pub status: TransactionProcessingStatus,
-    pub transaction_id: Option<TransactionId>
-}
 
 // The struct represents conract's image
 pub struct ContractImage {

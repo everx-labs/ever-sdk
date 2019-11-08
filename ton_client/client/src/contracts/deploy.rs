@@ -1,10 +1,12 @@
 use crypto::keys::{KeyPair, decode_public_key, account_encode};
-use ton_sdk::{Contract, ContractImage, Transaction};
+use ton_sdk::{Contract, ContractImage};
 
 use contracts::EncodedUnsignedMessage;
 
 #[cfg(feature = "node_interaction")]
 use futures::Stream;
+#[cfg(feature = "node_interaction")]
+use ton_sdk::Transaction;
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]

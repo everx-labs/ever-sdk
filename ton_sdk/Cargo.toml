@@ -50,5 +50,3 @@ default = ["node_interaction"]
 ci_run = []
 node_interaction = ["graphite", "futures", "reqwest"]
 
-[dev-dependencies.rand]
-version = "0.6.1"

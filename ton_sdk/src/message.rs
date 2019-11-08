@@ -4,7 +4,6 @@ use tvm::block::{
 };
 use std::sync::Arc;
 
-#[cfg(feature = "node_interaction")]
 use crate::*;
 #[cfg(feature = "node_interaction")]
 use futures::stream::Stream;
@@ -31,7 +30,6 @@ pub struct Message {
     #[serde(deserialize_with = "json_helper::deserialize_tree_of_cells_opt_cell")]
     pub body: Option<Arc<CellData>>,
     pub msg_type: MessageType,
-    pub transaction_id: Option<TransactionId>,
 }
 
 #[cfg(feature = "node_interaction")]
@@ -39,7 +37,6 @@ const MESSAGE_FIELDS: &str = r#"
     id
     body
     msg_type
-    transaction_id
 "#;
 
 // The struct represents sent message and allows to access their properties.

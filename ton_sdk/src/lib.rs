@@ -5,8 +5,6 @@ extern crate tvm;
 extern crate ton_abi;
 
 #[macro_use]
-extern crate lazy_static;
-#[macro_use]
 extern crate serde_derive;
 extern crate serde;
 extern crate hex;
@@ -17,6 +15,9 @@ extern crate base64;
 extern crate crc16;
 extern crate chrono;
 
+#[cfg(feature = "node_interaction")]
+#[macro_use]
+extern crate lazy_static;
 #[macro_use]
 extern crate error_chain;
 #[cfg(feature = "node_interaction")]
@@ -54,9 +55,7 @@ mod block;
 #[cfg(feature = "node_interaction")]
 pub use block::*;
 */
-#[cfg(feature = "node_interaction")]
 mod types;
-#[cfg(feature = "node_interaction")]
 pub use types::*;
 
 #[cfg(feature = "node_interaction")]
@@ -64,7 +63,7 @@ pub mod queries_helper;
 #[cfg(feature = "node_interaction")]
 mod requests_helper;
 
-mod json_helper;
+pub mod json_helper;
 
 
 /// Init SKD. Globally saves queries and requests server URLs
