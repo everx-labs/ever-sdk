@@ -7,6 +7,7 @@ use log::{Metadata, Record, LevelFilter};
 use {tc_create_context, tc_destroy_context};
 use ton_sdk::encode_base64;
 use tvm::block::MsgAddressInt;
+use std::str::FromStr;
 
 struct SimpleLogger;
 
@@ -74,7 +75,7 @@ fn test_wallet_deploy() {
 		assert_eq!(address.error_json, "");
 
 		let address = serde_json::from_str::<Value>(&address.result_json).unwrap()["address"].clone();
-		let address = serde_json::from_value::<MsgAddressInt>(address).unwrap();
+		let address = MsgAddressInt::from_str(address.as_str().unwrap()).unwrap();
 
 		let giver_abi: Value = serde_json::from_str(GIVER_ABI).unwrap();
 

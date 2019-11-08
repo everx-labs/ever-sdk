@@ -1,11 +1,8 @@
 use crypto::keys::{KeyPair, decode_public_key, account_encode};
-use ton_sdk::{Contract, ContractImage};
-use crypto::keys::u256_encode;
+use ton_sdk::{Contract, ContractImage, Transaction};
 
 use contracts::EncodedUnsignedMessage;
 
-#[cfg(feature = "node_interaction")]
-use tvm::block::TransactionId;
 #[cfg(feature = "node_interaction")]
 use futures::Stream;
 
@@ -94,16 +91,11 @@ pub(crate) fn deploy(_context: &mut ClientContext, params: ParamsOfDeploy) -> Ap
     debug!("-> -> image prepared with address: {}", account_id);
 
     debug!("-> -> deploy");
-    let tr_id = deploy_contract(&params, contract_image, &key_pair)?;
-    debug!("-> -> deploy transaction: {}", u256_encode(&tr_id.clone().into()));
-
-    let tr_id_hex = tr_id.to_hex_string();
-
-    debug!("load transaction {}", tr_id_hex);
-    let tr = super::run::load_transaction(&tr_id);
+    let tr = deploy_contract(&params, contract_image, &key_pair)?;
+    debug!("-> -> deploy transaction: {}", tr. id());
 
     debug!("<-");
-    super::run::check_transaction_status(tr.tr())?;
+    super::run::check_transaction_status(&tr)?;
     Ok(ResultOfDeploy { address: account_encode(&account_id) })
 }
 
@@ -132,8 +124,8 @@ pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfDeplo
     debug!("<-");
     Ok(ResultOfEncodeDeployMessage {
         address: account_encode(&account_id),
-        messageId: u256_encode(&message_id),
-        messageIdBase64: base64::encode(message_id.as_slice()),
+        messageId: message_id.to_string(),
+        messageIdBase64: message_id.to_base64().map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?,
         messageBodyBase64: base64::encode(&message_body),
     })
 }
@@ -152,8 +144,7 @@ pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetD
     let mut image = if let Some(image) = &params.imageBase64 {
         let bytes = base64::decode(&image)
             .map_err(|err| ApiError::contracts_invalid_image(err))?;
-        let mut reader = Cursor::new(bytes);
-        let image = ContractImage::from_state_init_and_key(&mut reader, &public)
+        let image = ContractImage::from_state_init_and_key(&mut bytes.as_slice(), &public)
             .map_err(|err| ApiError::contracts_image_creation_failed(err))?;
 
         image
@@ -231,7 +222,6 @@ use tvm::block::TransactionProcessingStatus;
 fn create_image(abi: &serde_json::Value, init_params: Option<&serde_json::Value>, image_base64: &String, public_key: &PublicKey) -> ApiResult<ContractImage> {
     let bytes = base64::decode(image_base64)
         .map_err(|err| ApiError::contracts_invalid_image(err))?;
-    let mut reader = Cursor::new(bytes);
     let mut image = ContractImage::from_state_init_and_key(&mut bytes.as_slice(), public_key)
         .map_err(|err| ApiError::contracts_image_creation_failed(err))?;
 
@@ -245,7 +235,7 @@ fn create_image(abi: &serde_json::Value, init_params: Option<&serde_json::Value>
 }
 
 #[cfg(feature = "node_interaction")]
-fn deploy_contract(params: &ParamsOfDeploy, image: ContractImage, keys: &Keypair) -> ApiResult<TransactionId> {
+fn deploy_contract(params: &ParamsOfDeploy, image: ContractImage, keys: &Keypair) -> ApiResult<Transaction> {
     let changes_stream = Contract::deploy_json(
         "constructor".to_owned(),
         params.constructorParams.to_string().to_owned(),
@@ -253,21 +243,21 @@ fn deploy_contract(params: &ParamsOfDeploy, image: ContractImage, keys: &Keypair
         image, Some(keys), params.workchainId)
         .expect("Error deploying contract");
 
-    let mut tr_id = None;
-    for state in changes_stream.wait() {
-        if let Err(e) = state {
+    let mut tr = None;
+    for transaction in changes_stream.wait() {
+        if let Err(e) = transaction {
             panic!("error next state getting: {}", e);
         }
-        if let Ok(state) = state {
-            debug!("-> -> deploy: {:?}", state.status);
-            if state.status == TransactionProcessingStatus::Preliminary ||
-                state.status == TransactionProcessingStatus::Proposed ||
-                state.status == TransactionProcessingStatus::Finalized
+        if let Ok(transaction) = transaction {
+            debug!("-> -> deploy: {:?}", transaction.status);
+            if transaction.status == TransactionProcessingStatus::Preliminary ||
+                transaction.status == TransactionProcessingStatus::Proposed ||
+                transaction.status == TransactionProcessingStatus::Finalized
             {
-                tr_id = Some(state.id.clone());
+                tr = Some(transaction);
                 break;
             }
         }
     }
-    tr_id.ok_or(ApiError::contracts_deploy_transaction_missing())
+    tr.ok_or(ApiError::contracts_deploy_transaction_missing())
 }

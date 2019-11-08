@@ -1,6 +1,5 @@
 use std::sync::Mutex;
 use tvm::block::MsgAddressInt;
-use tvm::types::UInt256;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey};
 use types::{ApiResult, ApiError, hex_decode};
 use std::collections::HashMap;
@@ -99,24 +98,18 @@ pub fn decode_secret_key(string: &String) -> ApiResult<SecretKey> {
         .map_err(|err| ApiError::crypto_invalid_secret_key(err, string))
 }
 
-//pub fn u256_zero() -> UInt256 { [0; 32].into() }
-
-pub fn u256_encode(value: &UInt256) -> String {
-    hex::encode(value.as_slice())
-}
-
 pub fn account_encode(value: &MsgAddressInt) -> String {
     value.to_string()
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub(crate) enum AccountAddressType {
     AccountId,
     Hex,
     Base64,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct Base64AddressParams {
     url: bool,
     test: bool,
@@ -138,10 +131,6 @@ pub(crate) fn account_encode_ex(
                 .map_err(|err| ApiError::crypto_invalid_address(err, &value.to_string()))
         }
     }
-}
-
-pub fn generic_id_encode(value: &tvm::block::GenericId) -> String {
-    u256_encode(&value.data)
 }
 
 pub fn account_decode(string: &str) -> ApiResult<MsgAddressInt> {

@@ -5,9 +5,7 @@ use rand::rngs::OsRng;
 use sha2::Sha512;
 use std::str::FromStr;
 use tvm::block::{
-    MessageId,
     MsgAddressInt,
-    TransactionId,
     TransactionProcessingStatus
 };
 
@@ -15,7 +13,6 @@ const NODE_SE: bool = true;
 
 const GIVER_ADDRESS_STR:  &str = "0:a46af093b38fcae390e9af5104a93e22e82c29bcb35bf88160e4478417028884";
 const WALLET_ADDRESS_STR: &str = "0:bba1ac23b010188089d62010ddb00d594c00f0e217794f3f2b53a81894ec7146";
-// const WALLET_ADDRESS_STR: &str =  "UQC7oawjsBAYgInWIBDdsA1ZTADw4hd5Tz8rU6gYlOxxRrJ6";//"UQAizw8ps+9a/Q9DVsiMTS5rM+GhNI/9UtHE8j2xrXgT5Xgt";//
 
 lazy_static! {
     static ref GIVER_ADDRESS: MsgAddressInt = MsgAddressInt::from_str(GIVER_ADDRESS_STR).unwrap();
@@ -119,13 +116,13 @@ fn is_message_done(status: TransactionProcessingStatus) -> bool {
     (status == TransactionProcessingStatus::Finalized)
 }
 
-fn wait_message_processed(changes_stream: Box<dyn Stream<Item = ContractCallState, Error = SdkError>>) -> TransactionId {
+fn wait_message_processed(changes_stream: Box<dyn Stream<Item = Transaction, Error = SdkError>>) -> Transaction {
     for state in changes_stream.wait() {
         match state {
             Ok(s) => {
-                println!("{} : {:?}", s.id.to_hex_string(), s.status);
+                println!("{} : {:?}", s.id, s.status);
                 if is_message_done(s.status) {
-                    return s.id.clone()
+                    return s;
                 }
             }
             Err(e) => panic!("error next state getting: {}", e)
@@ -134,8 +131,8 @@ fn wait_message_processed(changes_stream: Box<dyn Stream<Item = ContractCallStat
     panic!("Error: no transaction id")
 }
 
-fn wait_message_processed_by_id(id: MessageId)-> TransactionId {
-    wait_message_processed(Contract::subscribe_updates(id.clone()).unwrap())
+fn wait_message_processed_by_id(id: &MessageId)-> Transaction {
+    wait_message_processed(Contract::subscribe_transaction_processing(id).unwrap())
 }
 
 fn check_giver() {
@@ -217,7 +214,7 @@ fn check_giver() {
 }
 
 pub fn get_grams_from_giver(address: MsgAddressInt) {
-    println!("Account to take some grams {}", account_id.to_hex_string());
+    println!("Account to take some grams {}", address);
 
     let transaction = if NODE_SE {
         if GIVER_ADDRESS.to_owned() == address {
@@ -255,7 +252,7 @@ pub fn get_grams_from_giver(address: MsgAddressInt) {
     };
 
     transaction.out_messages_id().iter().for_each(|msg_id| {
-        wait_message_processed_by_id(msg_id.clone());
+        wait_message_processed_by_id(&msg_id);
     });
 }
 
@@ -276,18 +273,10 @@ pub fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_par
     // wait transaction id in message-status
     // contract constructor doesn't return any values so there are no output messages in transaction
     // so just check deployment transaction created
-    let tr_id = wait_message_processed(changes_stream);
+    let tr = wait_message_processed(changes_stream);
 
-    let tr = Transaction::load(tr_id)
-        .expect("Error calling load Transaction")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Transaction")
-        .expect("Error unwrap result while loading Transaction")
-        .expect("Error unwrap returned Transaction");
-
-    if tr.tr().is_aborted() {
-        panic!("transaction aborted!\n\n{}", serde_json::to_string_pretty(tr.tr()).unwrap())
+    if tr.is_aborted() {
+        panic!("transaction aborted!\n\n{:?}", tr)
     }
 
     account_id
@@ -299,22 +288,13 @@ pub fn call_contract(address: MsgAddressInt, func: &str, input: String, abi: &st
         .expect("Error calling contract method");
 
     // wait transaction id in message-status
-    let tr_id = wait_message_processed(changes_stream);
+    let tr = wait_message_processed(changes_stream);
 
     // OR
     // wait message will done and find transaction with the message
 
-    // load transaction object
-    let tr = Transaction::load(tr_id)
-        .expect("Error calling load Transaction")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Transaction")
-        .expect("Error unwrap result while loading Transaction")
-        .expect("Error unwrap returned Transaction");
-
-    if tr.tr().is_aborted() {
-        panic!("transaction aborted!\n\n{}", serde_json::to_string_pretty(tr.tr()).unwrap())
+    if tr.is_aborted() {
+        panic!("transaction aborted!\n\n{:?}", tr)
     }
 
     tr
@@ -329,22 +309,13 @@ pub fn call_contract_and_wait(address: MsgAddressInt, func: &str, input: String,
             .expect("Error calling contract method");
 
     // wait transaction id in message-status
-    let tr_id = wait_message_processed(changes_stream);
+    let tr = wait_message_processed(changes_stream);
 
     // OR
     // wait message will done and find transaction with the message
 
-    // load transaction object
-    let tr = Transaction::load(tr_id)
-        .expect("Error calling load Transaction")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Transaction")
-        .expect("Error unwrap result while loading Transaction")
-        .expect("Error unwrap got Transaction");
-
-    if tr.tr().is_aborted() {
-        panic!("transaction aborted!\n\n{}", serde_json::to_string_pretty(tr.tr()).unwrap())
+    if tr.is_aborted() {
+        panic!("transaction aborted!\n\n{:?}", tr)
     }
 
     let abi_contract = AbiContract::load(abi.as_bytes()).expect("Couldn't parse ABI");
@@ -386,9 +357,9 @@ pub fn call_contract_and_wait(address: MsgAddressInt, func: &str, input: String,
     // 3. message object with body
 }
 
-pub fn local_contract_call(address: AccountId, func: &str, input: &str, abi: &str, key_pair: Option<&Keypair>) -> String {
+pub fn local_contract_call(address: MsgAddressInt, func: &str, input: &str, abi: &str, key_pair: Option<&Keypair>) -> String {
 
-    let contract = Contract::load(address.into())
+    let contract = Contract::load(&address)
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -401,7 +372,7 @@ pub fn local_contract_call(address: AccountId, func: &str, input: &str, abi: &st
         .expect("Error calling locally");
 
     for msg in messages {
-        let msg = crate::Message::with_msg(msg);
+        let msg = crate::Message::with_msg(msg).expect("Error constructing message");
         if msg.msg_type() == MessageType::ExternalOutbound {
             return Contract::decode_function_response_json(
                 abi.to_owned(), func.to_owned(), msg.body().expect("Message has no body"), false)

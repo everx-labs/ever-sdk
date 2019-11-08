@@ -35,16 +35,17 @@ pub fn uninit() {
 }
 
 // Returns Stream with updates of some field in database. First stream item is current value
-pub fn subscribe_record_updates(table: &str, record_id: &str, fields: &str)
+pub fn subscribe_record_updates(table: &str, filter: &str, fields: &str)
     -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError>>> {
 
     let subscription_stream = subscribe(
         table,
-        &format!("{{ \"id\": {{\"eq\": \"{record_id}\" }} }}", record_id=record_id),
+        filter,
         fields)?;
 
-    let load_stream = load_record_fields(table, record_id, fields)?
-        .filter(|value| !value.is_null());
+    let load_stream = query(table, filter, fields, None, None)?
+        .filter(|value| !value[0].is_null())
+        .map(|value| value[0].clone());
 
     Ok(Box::new(load_stream.chain(subscription_stream)))
 }

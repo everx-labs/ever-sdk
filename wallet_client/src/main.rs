@@ -149,7 +149,7 @@ fn wait_message_processed(
 }
 
 fn wait_message_processed_by_id(message_id: MessageId)-> TransactionId {
-    wait_message_processed(Contract::subscribe_updates(message_id.clone()).unwrap())
+    wait_message_processed(Contract::subscribe_message_updates(message_id.clone()).unwrap())
 }
 
 // Create message "from wallet" to transfer some funds 

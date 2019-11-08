@@ -46,6 +46,6 @@ const EMPTY_RESULT: LoadResult = LoadResult {
 fn make_result(contract: Contract) -> ApiResult<LoadResult> {
     Ok(LoadResult {
         id: contract.id().map(|id| id.to_hex_string()).ok(),
-        balanceGrams: contract.balance_grams().map(|balance| balance.0.to_str_radix(10)).ok(),
+        balanceGrams: contract.balance_grams().map(|balance| balance.to_string()).ok(),
     })
 }

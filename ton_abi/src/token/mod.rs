@@ -123,7 +123,7 @@ impl fmt::Display for TokenValue {
 
                 write!(f, "{{{}}}", s)
             }
-            TokenValue::Address(a) => write!(f, "{}", serde_json::to_string(a).map_err(|_| fmt::Error)?),
+            TokenValue::Address(a) => write!(f, "{}", a),
             TokenValue::Bytes(ref arr) | TokenValue::FixedBytes(ref arr) => write!(f, "{:?}", arr),
             TokenValue::Gram(g) => write!(f, "{}", g),
         }

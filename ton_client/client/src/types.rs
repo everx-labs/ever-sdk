@@ -2,6 +2,7 @@
 
 use std::fmt::Display;
 use types::ApiSdkErrorCode::*;
+use tvm::block::{AccStatusChange, ComputeSkipReason};
 
 pub fn hex_decode(hex: &String) -> ApiResult<Vec<u8>> {
     if hex.starts_with("x") || hex.starts_with("X") {
@@ -50,6 +51,10 @@ pub type ApiResult<T> = Result<T, ApiError>;
 
 trait ApiErrorCode {
     fn as_number(&self) -> isize;
+}
+
+trait AsString {
+    fn as_string(&self) -> String;
 }
 
 macro_rules! sdk_err {
@@ -349,9 +354,8 @@ impl ApiError {
         error
     }
 
-    pub fn tvm_execution_skipped(tr_id: String, reason: &str) -> ApiError {
-        let code = ApiComputeSkippedCode::from_reason(reason);
-        let mut error = ApiError::new(ApiErrorSource::Node, &code, code.as_string());
+    pub fn tvm_execution_skipped(tr_id: String, reason: &ComputeSkipReason) -> ApiError {
+        let mut error = ApiError::new(ApiErrorSource::Node, reason, reason.as_string());
         error.data = Some(ApiErrorData{
             transaction_id: tr_id,
             phase: "computeSkipped".to_string(),
@@ -373,9 +377,8 @@ impl ApiError {
         error
     }
 
-    pub fn storage_phase_failed(tr_id: String, reason: &str) -> ApiError {
-        let code = ApiStorageCode::from_reason(reason);
-        let mut error = ApiError::new(ApiErrorSource::Node, &code, code.as_string());
+    pub fn storage_phase_failed(tr_id: String, reason: &AccStatusChange) -> ApiError {
+        let mut error = ApiError::new(ApiErrorSource::Node, reason, reason.as_string());
         error.data = Some(ApiErrorData{
             transaction_id: tr_id,
             phase: "storage".to_string(),
@@ -463,60 +466,26 @@ impl ApiErrorCode for ApiSdkErrorCode {
     }
 }
 
-#[derive(Clone)]
-pub enum ApiComputeSkippedCode {
-    Unknown = 0,
-    NoState = 1,
-    BadState = 2,
-    NoGas = 3,
-}
-as_number_impl!(ApiComputeSkippedCode);
+as_number_impl!(ComputeSkipReason);
 
-impl ApiComputeSkippedCode {
-    pub fn from_reason(reason: &str) -> Self {
-        match reason {
-            "NoState" => ApiComputeSkippedCode::NoState,
-            "BadState" => ApiComputeSkippedCode::BadState,
-            "NoGas" => ApiComputeSkippedCode::NoGas,
-            _ => ApiComputeSkippedCode::Unknown,
-        }
-    }
-
-    pub fn as_string(&self) -> String {
+impl AsString for ComputeSkipReason {
+    fn as_string(&self) -> String {
         match self {
-            ApiComputeSkippedCode::NoState => "Account has no code and data",
-            ApiComputeSkippedCode::BadState => "Account has bad state: frozen or deleted",
-            ApiComputeSkippedCode::NoGas => "No gas to execute VM",
-            ApiComputeSkippedCode::Unknown => "Phase skipped by unknown reason",
+            ComputeSkipReason::NoState => "Account has no code and data",
+            ComputeSkipReason::BadState => "Account has bad state: frozen or deleted",
+            ComputeSkipReason::NoGas => "No gas to execute VM",
         }.to_string()
     }
 }
 
-#[derive(Clone)]
-pub enum ApiStorageCode {
-    Unknown = 0,
-    Unchanged = 1,
-    Frozen = 2,
-    Deleted = 3,
-}
-as_number_impl!(ApiStorageCode);
+as_number_impl!(AccStatusChange);
 
-impl ApiStorageCode {
-    pub fn from_reason(reason: &str) -> Self {
-        match reason {
-            "Unchanged" => ApiStorageCode::Unchanged,
-            "Frozen" => ApiStorageCode::Frozen,
-            "Deleted" => ApiStorageCode::Deleted,
-            _ => ApiStorageCode::Unknown,
-        }
-    }
-
-    pub fn as_string(&self) -> String {
+impl AsString for AccStatusChange {
+    fn as_string(&self) -> String {
         match self {
-            ApiStorageCode::Unchanged => "Account unchanged",
-            ApiStorageCode::Frozen => "Account was frozen due storage phase",
-            ApiStorageCode::Deleted => "Account was deleted due storage phase",
-            ApiStorageCode::Unknown => "Storage phase failed",
+            AccStatusChange::Unchanged => "Account unchanged",
+            AccStatusChange::Frozen => "Account was frozen due storage phase",
+            AccStatusChange::Deleted => "Account was deleted due storage phase",
         }.to_string()
     }
 }

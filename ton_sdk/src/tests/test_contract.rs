@@ -16,7 +16,7 @@ use tests_common::*;
 /*
 #[test]
 #[ignore] // Rethink have to work on 127.0.0.1:32769. Run it and comment "ignore"
-fn test_subscribe_updates() {
+fn test_subscribe_message_updates() {
 
     // create database, table and record
     let r = Client::new();
@@ -44,7 +44,7 @@ fn test_subscribe_updates() {
     println!("\n\n insert \n {:#?}", insert_doc);
 
     // subscribe changes
-    let changes_stream = Contract::subscribe_updates(msg_id.clone()).unwrap();
+    let changes_stream = Contract::subscribe_message_updates(msg_id.clone()).unwrap();
 
     // another thread - write changes into DB
     let msg_id_ = msg_id.clone();
@@ -81,7 +81,7 @@ fn test_subscribe_updates() {
 
 #[test]
 #[ignore] 
-fn test_subscribe_updates_kafka_connector() {
+fn test_subscribe_message_updates_kafka_connector() {
 
     /* Connector config
 
@@ -109,7 +109,7 @@ connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_status
     let msg_id = MessageId::default();
 
     // subscribe changes
-    let changes_stream = Contract::subscribe_updates(msg_id.clone()).unwrap();
+    let changes_stream = Contract::subscribe_message_updates(msg_id.clone()).unwrap();
 
     // another thread - write changes into DB though Kafka (emulate node activity)
     let msg_id_ = msg_id.clone();
@@ -172,7 +172,7 @@ fn test_call_contract(address: MsgAddressInt, key_pair: &Keypair) {
             .expect("Error calling contract method");
 
     // wait transaction id in message-status 
-    let mut tr_id = None;
+    let mut tr = None;
     for state in changes_stream.wait() {
         if let Err(e) = state {
             panic!("error next state getting: {}", e);
@@ -180,24 +180,15 @@ fn test_call_contract(address: MsgAddressInt, key_pair: &Keypair) {
         if let Ok(s) = state {
             println!("next state: {:?}", s);
             if s.status == TransactionProcessingStatus::Finalized {
-                tr_id = Some(s.id.clone());
+                tr = Some(s);
                 break;
             }
         }
     }
-    let tr_id = tr_id.expect("Error: no transaction id");
+    let tr = tr.expect("Error: no transaction");
 
     // OR 
     // wait message will done and find transaction with the message
-
-    // load transaction object
-    let tr = Transaction::load(tr_id)
-        .expect("Error calling load Transaction")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Transaction")
-        .expect("Error unwrap result while loading Transaction")
-        .expect("Error unwrap returned Transaction");
 
     // take external outbound message from the transaction
     let out_msg = tr.load_out_messages()

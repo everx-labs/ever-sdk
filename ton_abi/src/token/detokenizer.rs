@@ -117,7 +117,7 @@ impl Serialize for TokenValue {
             TokenValue::FixedArray(ref tokens) => tokens.serialize(serializer),
             TokenValue::Cell(ref cell) => Token::detokenize_cell(cell, serializer),
             TokenValue::Map(key_type, ref map) => Token::detokenize_hashmap(key_type, map, serializer),
-            TokenValue::Address(ref address) => address.serialize(serializer),
+            TokenValue::Address(ref address) => serializer.serialize_str(&address.to_string()),
             TokenValue::Bytes(ref arr) => Token::detokenize_bytes(arr, serializer),
             TokenValue::FixedBytes(ref arr) => Token::detokenize_bytes(arr, serializer),
             TokenValue::Gram(gram) => Token::detokenize_big_int(gram.value(), serializer),

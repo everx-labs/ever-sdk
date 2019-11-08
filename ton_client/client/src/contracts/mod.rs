@@ -74,7 +74,6 @@ pub(crate) struct ResultOfConvertAddress {
 }
 
 use ton_sdk;
-use tvm::types::UInt256;
 use dispatch::DispatchTable;
 use client::ClientContext;
 
@@ -84,10 +83,9 @@ pub(crate) fn encode_message_with_sign(_context: &mut ClientContext, params: Par
         &hex_decode(&params.publicKeyHex)?,
         &base64_decode(&params.unsignedBytesBase64)?
     ).map_err(|err|ApiError::contracts_encode_message_with_sign_failed(err))?;
-    let id: UInt256 = id.into();
     Ok(EncodedMessage {
-        messageId: hex::encode(&id),
-        messageIdBase64: base64::encode(id.as_slice()),
+        messageId: id.to_string(),
+        messageIdBase64: id.to_base64().map_err(|err| ApiError::contracts_encode_message_with_sign_failed(err))?,
         messageBodyBase64: base64::encode(&body),
     })
 }
@@ -121,6 +119,7 @@ pub(crate) fn get_code_from_image(_context: &mut ClientContext, params: ParamsOf
 }
 
 pub(crate) fn convert_address(_context: &mut ClientContext, params: ParamsOfConvertAddress) -> ApiResult<ResultOfConvertAddress> {
+    debug!("-> contracts.image.code({}, {:?}, {:?})", params.address, params.convertTo, params.base64Params);
     let address = account_decode(&params.address)?;
     Ok(ResultOfConvertAddress {
         address: account_encode_ex(&address, params.convertTo, params.base64Params)?,
