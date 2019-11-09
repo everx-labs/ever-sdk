@@ -64,11 +64,12 @@ pub mod queries_helper;
 #[cfg(feature = "node_interaction")]
 mod requests_helper;
 
+mod json_helper;
+
 
 /// Init SKD. Globally saves queries and requests server URLs
 #[cfg(feature = "node_interaction")]
-pub fn init(default_workchain: Option<i32>, config: NodeClientConfig) -> SdkResult<()> {
-    Contract::set_default_workchain(default_workchain);
+pub fn init(config: NodeClientConfig) -> SdkResult<()> {
     requests_helper::init(config.requests_config);
     queries_helper::init(config.queries_config);
     Ok(())
@@ -76,8 +77,8 @@ pub fn init(default_workchain: Option<i32>, config: NodeClientConfig) -> SdkResu
 
 /// Init SKD. Globally saves queries and requests server URLs
 #[cfg(feature = "node_interaction")]
-pub fn init_json(default_workchain: Option<i32>, config: &str) -> SdkResult<()> {
-    init(default_workchain, serde_json::from_str(config)
+pub fn init_json(config: &str) -> SdkResult<()> {
+    init(serde_json::from_str(config)
         .map_err(|err| SdkErrorKind::InvalidArg(format!("{}", err)))?)
 }
 

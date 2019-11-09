@@ -1,13 +1,13 @@
 //! ABI param and parsing for it.
 use {ParamType, Param, Uint, Int, Token, TokenValue};
 use serde_json::Value;
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::io::Cursor;
 use num_bigint::{Sign, BigInt, BigUint};
 use tvm::block::{Grams, MsgAddress};
 use tvm::cells_serialization::deserialize_tree_of_cells;
 use crate::error::*;
+use std::str::FromStr;
 
 /// This struct should be used to parse string values as tokens.
 pub struct Tokenizer;
@@ -26,7 +26,7 @@ impl Tokenizer {
             ParamType::Cell => Self::tokenize_cell(value),
             ParamType::Map(key_type, value_type) => Self::tokenize_hashmap(key_type, value_type, value),
             ParamType::Address => {
-                let address = MsgAddress::deserialize(value)
+                let address = MsgAddress::from_str(&value.to_string())
                     .map_err(|_| AbiErrorKind::WrongDataFormat(value.clone()))?;
                 Ok(TokenValue::Address(address))
             }
