@@ -383,7 +383,7 @@ impl Contract {
         let (data, id) = Self::serialize_message(msg)?;
 
         requests_helper::send_message(&id.to_bytes()?, &data)?;
-        println!("msg is sent, id: {}", id);
+        //println!("msg is sent, id: {}", id);
         Ok(id.clone())
     }
 
@@ -399,7 +399,6 @@ impl Contract {
             &format!("{{ \"in_msg\": {{\"eq\": \"{}\" }} }}", message_id), 
             TRANSACTION_FIELDS_ORDINARY)?
                 .and_then(|value| {
-                    println!("Call state {}", value);
                     Ok(serde_json::from_value::<Transaction>(value)?)
                 });
 
