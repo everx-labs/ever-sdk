@@ -9,10 +9,10 @@ use tvm::block::{
     TransactionProcessingStatus
 };
 
-const NODE_SE: bool = false;
+const NODE_SE: bool = true;
 
 const GIVER_ADDRESS_STR:  &str = "0:a46af093b38fcae390e9af5104a93e22e82c29bcb35bf88160e4478417028884";
-const WALLET_ADDRESS_STR: &str = "0:be98e2699b06c17b687a3c3492c04976456c4ba091125bac4c4a3846b2e61eed";
+const WALLET_ADDRESS_STR: &str = "0:bba1ac23b010188089d62010ddb00d594c00f0e217794f3f2b53a81894ec7146";
 
 lazy_static! {
     static ref GIVER_ADDRESS: MsgAddressInt = MsgAddressInt::from_str(GIVER_ADDRESS_STR).unwrap();
@@ -27,7 +27,7 @@ lazy_static! {
 }
 
 pub fn init_node_connection() {
-    let config_json = if !NODE_SE {
+    let config_json = if NODE_SE {
         r#"
         {
             "queries_config": {
