@@ -154,21 +154,19 @@ connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_status
 }
 */
 
-
-const CONSTRUCTOR_PARAMS: &str = r#"
+const FUNCTION_PARAMS: &str = r#"
 {
-	"wallet": "0x0000000000000000000000000000000000000000000000000000000000000001"
+	"value": "0000000000000000000000000000000000000000000000000000000000000001"
 }"#;
-
 
 fn test_call_contract(address: MsgAddressInt, key_pair: &Keypair) {
 
-    let func = "getWallet".to_string();
-    let abi = test_piggy_bank::SUBSCRIBE_CONTRACT_ABI.to_string();
+    let func = "createOperationLimit".to_string();
+    let abi = test_piggy_bank::WALLET_ABI.to_string();
 
     // call needed method
     let changes_stream = Contract::call_json(
-        address, func.clone(), "{}".to_owned(), abi.clone(), Some(&key_pair))
+        address, func.clone(), FUNCTION_PARAMS.to_owned(), abi.clone(), Some(&key_pair))
             .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -229,7 +227,7 @@ fn test_deploy_and_call_contract() {
     tests_common::init_node_connection();   
    
     // read image from file and construct ContractImage
-    let mut state_init = std::fs::File::open("src/tests/Subscription.tvc").expect("Unable to open contract code file");
+    let mut state_init = std::fs::File::open("src/tests/LimitWallet.tvc").expect("Unable to open contract code file");
 
     let mut csprng = OsRng::new().unwrap();
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
@@ -246,10 +244,9 @@ fn test_deploy_and_call_contract() {
 
     // call deploy method
     let func = "constructor".to_string();
-    let input = CONSTRUCTOR_PARAMS.to_string();
-    let abi = test_piggy_bank::SUBSCRIBE_CONTRACT_ABI.to_string();
+    let abi = test_piggy_bank::WALLET_ABI.to_string();
 
-    let changes_stream = Contract::deploy_json(func, input, abi, contract_image, Some(&keypair), 0)
+    let changes_stream = Contract::deploy_json(func, "{}".to_owned(), abi, contract_image, Some(&keypair), 0)
         .expect("Error deploying contract");
 
     // wait transaction id in message-status or 
@@ -416,7 +413,7 @@ fn test_update_contract_data() {
         .expect("Unable to parse contract code file");
 
     let new_data = r#"
-        { "mywallet": "0x1111111111111111111111111111111111111111111111111111111111111111" }
+        { "mywallet": "0:1111111111111111111111111111111111111111111111111111111111111111" }
     "#;
 
     contract_image.update_data(new_data, test_piggy_bank::SUBSCRIBE_CONTRACT_ABI).unwrap();
@@ -436,5 +433,7 @@ fn test_update_contract_data() {
     .unwrap()
     .unwrap();
 
-    assert_eq!(mywallet_slice.get_bytestring(0), vec![0x11; 32]);
+    assert_eq!(
+        mywallet_slice,
+        MsgAddressInt::with_standart(None, 0, vec![0x11; 32].into()).unwrap().write_to_new_cell().unwrap().into());
 }

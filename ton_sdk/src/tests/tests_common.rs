@@ -9,10 +9,10 @@ use tvm::block::{
     TransactionProcessingStatus
 };
 
-const NODE_SE: bool = true;
+const NODE_SE: bool = false;
 
 const GIVER_ADDRESS_STR:  &str = "0:a46af093b38fcae390e9af5104a93e22e82c29bcb35bf88160e4478417028884";
-const WALLET_ADDRESS_STR: &str = "0:bba1ac23b010188089d62010ddb00d594c00f0e217794f3f2b53a81894ec7146";
+const WALLET_ADDRESS_STR: &str = "0:be98e2699b06c17b687a3c3492c04976456c4ba091125bac4c4a3846b2e61eed";
 
 lazy_static! {
     static ref GIVER_ADDRESS: MsgAddressInt = MsgAddressInt::from_str(GIVER_ADDRESS_STR).unwrap();
@@ -27,7 +27,7 @@ lazy_static! {
 }
 
 pub fn init_node_connection() {
-    let config_json = if NODE_SE {
+    let config_json = if !NODE_SE {
         r#"
         {
             "queries_config": {
@@ -136,8 +136,7 @@ fn wait_message_processed_by_id(id: &MessageId)-> Transaction {
 }
 
 fn check_giver() {
-    /*
-    let contract = Contract::load(WALLET_ADDRESS.clone())
+    let contract = Contract::load(&WALLET_ADDRESS)
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -145,67 +144,17 @@ fn check_giver() {
         .expect("Error unwrap result while loading Contract");
 
     if let  Some(contract) = contract {
-        if contract.balance_grams().value() < &1_000_000_000u64.into() {
+        if contract.balance_grams().unwrap() < 500_000_000 {
             panic!(format!(
-                "Giver has no money. Send some grams to {} ({})",
-                WALLET_ADDRESS_STR,
-                WALLET_ADDRESS_STR_HEX.as_str()));
+                "Giver has no money. Send some grams to {}",
+                WALLET_ADDRESS_STR));
         }
+
+        if contract.code.is_some() { return; }
     } else {
         panic!(format!(
-            "Giver does not exist. Send some grams to {} ({})",
-            WALLET_ADDRESS_STR,
-            &WALLET_ADDRESS_STR_HEX.as_str()));
-    }*/
-
-    let result = queries_helper::query(
-            "accounts",
-            &json!({
-                "id": {
-                    "eq": WALLET_ADDRESS_STR_HEX.as_str()
-                }
-            }).to_string(),
-            "storage {
-                balance {
-                    Grams
-                }
-                state {
-                    ...on AccountStorageStateAccountActiveVariant {
-                        AccountActive {
-                            code
-                        }
-                    }
-                }
-            }",
-            None,
-            None)
-        .expect("Error calling load Contract")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract");
-
-    if result[0].is_null() {
-        panic!(format!(
-            "Giver does not exist. Send some grams to {} ({})",
-            WALLET_ADDRESS_STR,
-            &WALLET_ADDRESS_STR_HEX.as_str()));
-    }
-
-    if u64::from_str_radix(
-            result[0]["storage"]["balance"]["Grams"].as_str().unwrap(),
-            10)
-        .unwrap() < 500_000_000u64
-    {
-        panic!(format!(
-            "Giver has no money. Send some grams to {} ({})",
-            WALLET_ADDRESS_STR,
-            WALLET_ADDRESS_STR_HEX.as_str()));
-    }
-
-    if !result[0]["storage"]["state"]["AccountActive"].is_null()
-    {
-        return;
+            "Giver does not exist. Send some grams to {}",
+            WALLET_ADDRESS_STR));
     }
 
     println!("No giver. Deploy");
