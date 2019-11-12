@@ -344,8 +344,9 @@ pub(crate) fn check_transaction_status(transaction: &Transaction) -> ApiResult<(
         Err(ApiError::tvm_execution_skipped(id.clone(), &reason))?;
     }
 
-    if !transaction.compute.success {
-        Err(ApiError::tvm_execution_failed(id.clone(), transaction.compute.exit_code))?;
+    if transaction.compute.success.is_none() || !transaction.compute.success.unwrap() {
+        Err(ApiError::tvm_execution_failed(
+            id.clone(), transaction.compute.exit_code.unwrap_or(-1)))?;
     }
 
     if !transaction.action.success {

@@ -9,8 +9,8 @@ pub struct ComputePhase {
     pub compute_type: u8,
     #[serde(deserialize_with = "json_helper::deserialize_skipped_reason")]
     pub skipped_reason: Option<ComputeSkipReason>,
-    pub exit_code: i32,
-    pub success: bool
+    pub exit_code: Option<i32>,
+    pub success: Option<bool>
 }
 
 #[derive(Deserialize, Default, Debug)]
