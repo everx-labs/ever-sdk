@@ -249,6 +249,7 @@ pub fn call_contract(address: MsgAddressInt, func: &str, input: String, abi: &st
     tr
 }
 
+#[allow(dead_code)]
 pub fn call_contract_and_wait(address: MsgAddressInt, func: &str, input: String, abi: &str, key_pair: Option<&Keypair>)
     -> (String, Transaction)
 {

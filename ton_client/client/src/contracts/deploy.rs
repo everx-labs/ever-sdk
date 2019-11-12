@@ -154,7 +154,7 @@ pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetD
         let mut image = ContractImage::new()
             .map_err(|err| ApiError::contracts_image_creation_failed(err))?;
         image.set_public_key(&public)
-            .map_err(|err| ApiError::contracts_image_creation_failed(err))?;;
+            .map_err(|err| ApiError::contracts_image_creation_failed(err))?;
 
         image
     };
