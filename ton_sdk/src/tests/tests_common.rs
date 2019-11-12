@@ -11,7 +11,7 @@ use tvm::block::{
 
 const NODE_SE: bool = true;
 
-const GIVER_ADDRESS_STR:  &str = "0:a46af093b38fcae390e9af5104a93e22e82c29bcb35bf88160e4478417028884";
+const GIVER_ADDRESS_STR:  &str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
 const WALLET_ADDRESS_STR: &str = "0:bba1ac23b010188089d62010ddb00d594c00f0e217794f3f2b53a81894ec7146";
 
 lazy_static! {
@@ -175,8 +175,8 @@ pub fn get_grams_from_giver(address: MsgAddressInt) {
             GIVER_ADDRESS.to_owned(),
             "sendGrams",
             json!({
-            "dest": format!("0x{:x}", address.get_address()),
-            "amount": 500_000_000u64
+                "dest": address.to_string(),
+                "amount": 500_000_000u64
             }).to_string(),
             GIVER_ABI,
             None)
@@ -345,7 +345,7 @@ const GIVER_ABI: &str = r#"
 		{
 			"name": "sendGrams",
 			"inputs": [
-				{"name":"dest","type":"uint256"},
+				{"name":"dest","type":"address"},
 				{"name":"amount","type":"uint64"}
 			],
 			"outputs": [
