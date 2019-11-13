@@ -382,13 +382,7 @@ fn load_out_message(tr: &Transaction, abi_function: &AbiFunction) -> Message {
 
 #[cfg(feature = "node_interaction")]
 fn load_contract(address: &MsgAddressInt) -> ApiResult<Contract> {
-    Contract::load(address)
-        .expect("Error calling load Contract")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract")
-        .ok_or(ApiError::contracts_run_contract_not_found())
+    Contract::load_wait_deployed(address).map_err(|err| ApiError::contracts_run_contract_load_failed(err))
 }
 
 #[cfg(feature = "node_interaction")]

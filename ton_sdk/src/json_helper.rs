@@ -155,3 +155,12 @@ pub fn deserialize_account_status<'de, D>(d: D) -> Result<AccountStatus, D::Erro
         num => Err(D::Error::custom(format!("Invalid account status: {}", num)))
     }
 }
+
+pub fn account_status_to_u8(status: AccountStatus) -> u8 {
+    match status {
+        AccountStatus::AccStateUninit => 0,
+        AccountStatus::AccStateActive => 1,
+        AccountStatus::AccStateFrozen => 2,
+        AccountStatus::AccStateNonexist => 3,
+    }
+}

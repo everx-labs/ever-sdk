@@ -309,13 +309,7 @@ pub fn call_contract_and_wait(address: MsgAddressInt, func: &str, input: String,
 
 pub fn local_contract_call(address: MsgAddressInt, func: &str, input: &str, abi: &str, key_pair: Option<&Keypair>) -> String {
 
-    let contract = Contract::load(&address)
-        .expect("Error calling load Contract")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract")
-        .expect("Error unwrap contract while loading Contract");
+    let contract = Contract::load_wait_deployed(&address).expect("Error loading Contract");
 
     // call needed method
     let messages = contract.local_call_json(func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
