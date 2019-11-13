@@ -15,6 +15,8 @@ use crypto::keys::KeyStore;
 use dispatch::DispatchTable;
 use client::ClientContext;
 use crypto::math::ton_crc16;
+use crypto::mnemonic::{CryptoMnemonic, TonMnemonic, Bip39Mnemonic};
+use bip39::{MnemonicType, Language};
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct FactorizeResult {
@@ -110,25 +112,38 @@ pub(crate) struct NaclSignParams {
 #[derive(Deserialize)]
 #[allow(non_snake_case)]
 pub(crate) struct MnemonicWordsParams {
-    pub count: u8,
-    pub words: u8,
+    pub dictionary: Option<u8>,
+    pub wordCount: Option<u8>,
+}
+
+#[derive(Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct MnemonicGenerateParams {
+    pub dictionary: Option<u8>,
+    pub wordCount: Option<u8>,
 }
 
 #[derive(Deserialize)]
 #[allow(non_snake_case)]
 pub(crate) struct MnemonicFromEntropyParams {
+    pub dictionary: Option<u8>,
+    pub wordCount: Option<u8>,
     pub entropy: InputMessage,
 }
 
 #[derive(Deserialize)]
 #[allow(non_snake_case)]
 pub(crate) struct MnemonicVerifyParams {
+    pub dictionary: Option<u8>,
+    pub wordCount: Option<u8>,
     pub phrase: String,
 }
 
 #[derive(Deserialize)]
 #[allow(non_snake_case)]
 pub(crate) struct HDKeyFromMnemonicParams {
+    pub dictionary: Option<u8>,
+    pub wordCount: Option<u8>,
     pub phrase: String,
 }
 
@@ -194,6 +209,44 @@ impl OutputEncoding {
             OutputEncoding::Base64 => Ok(base64::encode(&output))
         }
     }
+}
+
+const TON_DICTIONARY: u8 = 0;
+const ENGLISH_DICTIONARY: u8 = 1;
+const CHINESE_SIMPLIFIED_DICTIONARY: u8 = 2;
+const CHINESE_TRADITIONAL_DICTIONARY: u8 = 3;
+const FRENCH_DICTIONARY: u8 = 4;
+const ITALIAN_DICTIONARY: u8 = 5;
+const JAPANESE_DICTIONARY: u8 = 6;
+const KOREAN_DICTIONARY: u8 = 7;
+const SPANISH_DICTIONARY: u8 = 8;
+
+fn mnemonics(dictionary: Option<u8>, word_count: Option<u8>) -> ApiResult<Box<dyn CryptoMnemonic>> {
+    let dictionary = dictionary.unwrap_or(TON_DICTIONARY);
+    let word_count = word_count.unwrap_or(24);
+    if dictionary == TON_DICTIONARY {
+        return Ok(Box::new(TonMnemonic::new(word_count)));
+    }
+    let mnemonic_type = match word_count {
+        12 => MnemonicType::Words12,
+        15 => MnemonicType::Words15,
+        18 => MnemonicType::Words18,
+        21 => MnemonicType::Words21,
+        24 => MnemonicType::Words24,
+        _ => return Err(ApiError::crypto_bip39_invalid_word_count(word_count)),
+    };
+    let language = match dictionary {
+        ENGLISH_DICTIONARY => Language::English,
+        CHINESE_SIMPLIFIED_DICTIONARY => Language::ChineseSimplified,
+        CHINESE_TRADITIONAL_DICTIONARY => Language::ChineseTraditional,
+        FRENCH_DICTIONARY => Language::French,
+        ITALIAN_DICTIONARY => Language::Italian,
+        JAPANESE_DICTIONARY => Language::Japanese,
+        KOREAN_DICTIONARY => Language::Korean,
+        SPANISH_DICTIONARY => Language::Spanish,
+        _ => return Err(ApiError::crypto_bip39_invalid_dictionary(dictionary))
+    };
+    Ok(Box::new(Bip39Mnemonic::new(mnemonic_type, language)))
 }
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
@@ -349,24 +402,20 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 
     // Mnemonic
 
-    handlers.spawn_no_args("crypto.mnemonic.words", |_context: &mut ClientContext|
-        api::mnemonic::mnemonic_get_words(),
+    handlers.spawn("crypto.mnemonic.words", |_context: &mut ClientContext, params: MnemonicWordsParams|
+        mnemonics(params.dictionary, params.wordCount)?.get_words(),
     );
 
-    handlers.spawn_no_args("crypto.mnemonic.from.random", |_context: &mut ClientContext|
-        api::mnemonic::mnemonic_generate_random(),
+    handlers.spawn("crypto.mnemonic.from.random", |_context: &mut ClientContext, params: MnemonicGenerateParams|
+        mnemonics(params.dictionary, params.wordCount)?.generate_random_phrase()
     );
 
     handlers.spawn("crypto.mnemonic.from.entropy", |_context: &mut ClientContext, params: MnemonicFromEntropyParams| {
-        api::mnemonic::mnemonic_from_entropy(&params.entropy.decode()?)
+        mnemonics(params.dictionary, params.wordCount)?.phrase_from_entropy(&params.entropy.decode()?)
     });
 
     handlers.spawn("crypto.mnemonic.verify", |_context: &mut ClientContext, params: MnemonicVerifyParams| {
-        api::mnemonic::mnemonic_is_valid(&params.phrase)
-    });
-
-    handlers.spawn("crypto.mnemonic.verify", |_context: &mut ClientContext, params: MnemonicVerifyParams| {
-        api::mnemonic::mnemonic_is_valid(&params.phrase)
+        mnemonics(params.dictionary, params.wordCount)?.is_phrase_valid(&params.phrase)
     });
 
     // HDKey

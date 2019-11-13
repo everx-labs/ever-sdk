@@ -1,12 +1,10 @@
 use crypto::keys::account_decode;
-use ::{InteropContext, JsonResponse};
 use ::InteropContext;
 use ::{tc_json_request, InteropString};
 use ::{tc_read_json_response, tc_destroy_json_response};
 use serde_json::{Value, Map};
 use log::{Metadata, Record, LevelFilter};
 use {tc_create_context, tc_destroy_context};
-use crypto::keys::{hmac_sha512, pbkdf2_hmac_sha512, key_to_ton_string};
 use ton_sdk::encode_base64;
 use tvm::block::MsgAddressInt;
 use std::str::FromStr;
@@ -104,7 +102,6 @@ fn test_tg_mnemonic() {
     let keys = parse_object(client.request("crypto.sign_keys_from_ton_mnemonic",
         Value::String("unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle".to_string()),
     ));
-    let secret = get_map_string(&keys, "secret");
     let ton_public = parse_string(client.request(
         "crypto.ton_public_key_string",
         Value::String(get_map_string(&keys, "public")),
@@ -112,8 +109,8 @@ fn test_tg_mnemonic() {
     assert_eq!(ton_public, "PubDdJkMyss2qHywFuVP1vzww0TpsLxnRNnbifTCcu-XEgW0");
 }
 
-#[test_wallet_deploy]
-fn test() {
+#[test]
+fn test_wallet_deploy() {
     let client = TestClient::new();
     let version = client.request("version", Value::Null).unwrap();
     println!("result: {}", version.to_string());
@@ -136,14 +133,12 @@ fn test() {
             }),
     ).unwrap();
 
-		assert_eq!(address.error_json, "");
-
-		let address = serde_json::from_str::<Value>(&address.result_json).unwrap()["address"].clone();
-		let address = MsgAddressInt::from_str(address.as_str().unwrap()).unwrap();
+    let address = serde_json::from_str::<Value>(&address).unwrap()["address"].clone();
+    let address = MsgAddressInt::from_str(address.as_str().unwrap()).unwrap();
 
     let giver_abi: Value = serde_json::from_str(GIVER_ABI).unwrap();
 
-    let result = client.request("contracts.run",
+    let _ = client.request("contracts.run",
         json!({
                 "address": GIVER_ADDRESS,
                 "abi": giver_abi,
@@ -155,7 +150,7 @@ fn test() {
             }),
     ).unwrap();
 
-    let wait_result = client.request("queries.wait.for",
+    let _ = client.request("queries.wait.for",
         json!({
                 "table": "accounts".to_owned(),
                 "filter": json!({
@@ -348,7 +343,7 @@ fn test_address_parsing() {
     assert_eq!(address, account_decode(base64_url).expect("Couldn't parse base64_url address"));
 
     assert_eq!(encode_base64(&address, true, true, false).unwrap(), base64);
-    assert_eq!(encode_base64(&address, true, true, true ).unwrap(), base64_url);
+    assert_eq!(encode_base64(&address, true, true, true).unwrap(), base64_url);
 }
 
 #[test]

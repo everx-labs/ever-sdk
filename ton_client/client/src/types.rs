@@ -190,6 +190,16 @@ impl ApiError {
             "Invalid bip32 derive path: {}", path)
     }
 
+    pub fn crypto_bip39_invalid_dictionary(dictionary: u8) -> Self {
+        sdk_err!(CryptoBip39InvalidDictionary,
+            "Invalid mnemonic dictionary: {}", dictionary)
+    }
+
+    pub fn crypto_bip39_invalid_word_count(word_count: u8) -> Self {
+        sdk_err!(CryptoBip39InvalidWordCount,
+            "Invalid mnemonic word count: {}", word_count)
+    }
+
     pub fn crypto_invalid_secret_key<E: Display>(err: E, key: &String) -> Self {
         sdk_err!(CryptoInvalidSecretKey,
             "Invalid secret key [{}]: {}", err, key)
@@ -250,7 +260,7 @@ impl ApiError {
         sdk_err!(ContractsDecodeRunOutputFailed,
             "Decode run output failed: {}", err)
     }
-   
+
     pub fn contracts_decode_run_input_failed<E: Display>(err: E) -> Self {
         sdk_err!(ContractsDecodeRunInputFailed,
             "Decode run intput failed: {}", err)
@@ -303,7 +313,7 @@ impl ApiError {
         sdk_err!(ContractsLocalRunFailed,
             "Local run failed: {}", err)
     }
-    
+
     pub fn contracts_address_conversion_failed<E: Display>(err: E) -> Self {
         sdk_err!(ContractsAddressConversionFailed,
             "Address conversion failed: {}", err)
@@ -431,6 +441,8 @@ pub enum ApiSdkErrorCode {
     CryptoBip32InvalidDerivePath = 2019,
     CryptoInvalidKeystoreHandle = 2020,
     CryptoMissingKeySource = 2021,
+    CryptoBip39InvalidDictionary = 2022,
+    CryptoBip39InvalidWordCount = 2023,
 
     ContractsLoadFailed = 3001,
     ContractsInvalidImage = 3002,
