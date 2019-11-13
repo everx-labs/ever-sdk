@@ -11,7 +11,7 @@ use tvm::block::{
 
 const NODE_SE: bool = true;
 
-const GIVER_ADDRESS_STR:  &str = "0:a46af093b38fcae390e9af5104a93e22e82c29bcb35bf88160e4478417028884";
+const GIVER_ADDRESS_STR:  &str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
 const WALLET_ADDRESS_STR: &str = "0:bba1ac23b010188089d62010ddb00d594c00f0e217794f3f2b53a81894ec7146";
 
 lazy_static! {
@@ -136,8 +136,7 @@ fn wait_message_processed_by_id(id: &MessageId)-> Transaction {
 }
 
 fn check_giver() {
-    /*
-    let contract = Contract::load(WALLET_ADDRESS.clone())
+    let contract = Contract::load(&WALLET_ADDRESS)
         .expect("Error calling load Contract")
         .wait()
         .next()
@@ -145,67 +144,17 @@ fn check_giver() {
         .expect("Error unwrap result while loading Contract");
 
     if let  Some(contract) = contract {
-        if contract.balance_grams().value() < &1_000_000_000u64.into() {
+        if contract.balance_grams().unwrap() < 500_000_000 {
             panic!(format!(
-                "Giver has no money. Send some grams to {} ({})",
-                WALLET_ADDRESS_STR,
-                WALLET_ADDRESS_STR_HEX.as_str()));
+                "Giver has no money. Send some grams to {}",
+                WALLET_ADDRESS_STR));
         }
+
+        if contract.code.is_some() { return; }
     } else {
         panic!(format!(
-            "Giver does not exist. Send some grams to {} ({})",
-            WALLET_ADDRESS_STR,
-            &WALLET_ADDRESS_STR_HEX.as_str()));
-    }*/
-
-    let result = queries_helper::query(
-            "accounts",
-            &json!({
-                "id": {
-                    "eq": WALLET_ADDRESS_STR_HEX.as_str()
-                }
-            }).to_string(),
-            "storage {
-                balance {
-                    Grams
-                }
-                state {
-                    ...on AccountStorageStateAccountActiveVariant {
-                        AccountActive {
-                            code
-                        }
-                    }
-                }
-            }",
-            None,
-            None)
-        .expect("Error calling load Contract")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract");
-
-    if result[0].is_null() {
-        panic!(format!(
-            "Giver does not exist. Send some grams to {} ({})",
-            WALLET_ADDRESS_STR,
-            &WALLET_ADDRESS_STR_HEX.as_str()));
-    }
-
-    if u64::from_str_radix(
-            result[0]["storage"]["balance"]["Grams"].as_str().unwrap(),
-            10)
-        .unwrap() < 500_000_000u64
-    {
-        panic!(format!(
-            "Giver has no money. Send some grams to {} ({})",
-            WALLET_ADDRESS_STR,
-            WALLET_ADDRESS_STR_HEX.as_str()));
-    }
-
-    if !result[0]["storage"]["state"]["AccountActive"].is_null()
-    {
-        return;
+            "Giver does not exist. Send some grams to {}",
+            WALLET_ADDRESS_STR));
     }
 
     println!("No giver. Deploy");
@@ -226,8 +175,8 @@ pub fn get_grams_from_giver(address: MsgAddressInt) {
             GIVER_ADDRESS.to_owned(),
             "sendGrams",
             json!({
-            "dest": format!("0x{:x}", address.get_address()),
-            "amount": 500_000_000u64
+                "dest": address.to_string(),
+                "amount": 500_000_000u64
             }).to_string(),
             GIVER_ABI,
             None)
@@ -300,6 +249,7 @@ pub fn call_contract(address: MsgAddressInt, func: &str, input: String, abi: &st
     tr
 }
 
+#[allow(dead_code)]
 pub fn call_contract_and_wait(address: MsgAddressInt, func: &str, input: String, abi: &str, key_pair: Option<&Keypair>)
     -> (String, Transaction)
 {
@@ -372,7 +322,6 @@ pub fn local_contract_call(address: MsgAddressInt, func: &str, input: &str, abi:
         .expect("Error calling locally");
 
     for msg in messages {
-        let msg = crate::Message::with_msg(msg).expect("Error constructing message");
         if msg.msg_type() == MessageType::ExternalOutbound {
             return Contract::decode_function_response_json(
                 abi.to_owned(), func.to_owned(), msg.body().expect("Message has no body"), false)
@@ -397,7 +346,7 @@ const GIVER_ABI: &str = r#"
 		{
 			"name": "sendGrams",
 			"inputs": [
-				{"name":"dest","type":"uint256"},
+				{"name":"dest","type":"address"},
 				{"name":"amount","type":"uint64"}
 			],
 			"outputs": [

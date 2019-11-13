@@ -28,7 +28,7 @@ chrono = { version = "0.4.9", features = ["wasmbind"] }
 
 [dependencies.tvm]
 git = "ssh://git@github.com/tonlabs/sdk-emulator.git"
-branch = "feature-flat-db"
+branch = "0.16.0-rc"
 package = "tvm"
 default-features = false
 
@@ -50,5 +50,3 @@ default = ["node_interaction"]
 ci_run = []
 node_interaction = ["graphite", "futures", "reqwest"]
 
-[dev-dependencies.rand]
-version = "0.6.1"

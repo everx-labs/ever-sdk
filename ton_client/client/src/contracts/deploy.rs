@@ -1,10 +1,12 @@
 use crypto::keys::{KeyPair, decode_public_key, account_encode};
-use ton_sdk::{Contract, ContractImage, Transaction};
+use ton_sdk::{Contract, ContractImage};
 
 use contracts::EncodedUnsignedMessage;
 
 #[cfg(feature = "node_interaction")]
 use futures::Stream;
+#[cfg(feature = "node_interaction")]
+use ton_sdk::Transaction;
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
@@ -152,7 +154,7 @@ pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetD
         let mut image = ContractImage::new()
             .map_err(|err| ApiError::contracts_image_creation_failed(err))?;
         image.set_public_key(&public)
-            .map_err(|err| ApiError::contracts_image_creation_failed(err))?;;
+            .map_err(|err| ApiError::contracts_image_creation_failed(err))?;
 
         image
     };

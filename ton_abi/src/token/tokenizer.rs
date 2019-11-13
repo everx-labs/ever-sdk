@@ -26,7 +26,9 @@ impl Tokenizer {
             ParamType::Cell => Self::tokenize_cell(value),
             ParamType::Map(key_type, value_type) => Self::tokenize_hashmap(key_type, value_type, value),
             ParamType::Address => {
-                let address = MsgAddress::from_str(&value.to_string())
+                let address = MsgAddress::from_str(
+                    &value.as_str()
+                        .ok_or(AbiErrorKind::WrongDataFormat(value.clone()))?)
                     .map_err(|_| AbiErrorKind::WrongDataFormat(value.clone()))?;
                 Ok(TokenValue::Address(address))
             }

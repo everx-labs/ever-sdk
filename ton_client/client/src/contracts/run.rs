@@ -1,6 +1,5 @@
-use ton_sdk::{Contract, Message, MessageType, AbiContract};
+use ton_sdk::{Contract, MessageType, AbiContract};
 use ton_sdk::json_abi::encode_function_call;
-use tvm::block::{MsgAddressInt, AccStatusChange};
 use crypto::keys::{KeyPair, account_decode};
 use types::{ApiResult, ApiError, base64_decode};
 use tvm::cells_serialization::BagOfCells;
@@ -9,9 +8,9 @@ use contracts::{EncodedMessage, EncodedUnsignedMessage};
 use client::ClientContext;
 
 #[cfg(feature = "node_interaction")]
-use ton_sdk::{Transaction, AbiFunction};
+use ton_sdk::{Transaction, AbiFunction, Message};
 #[cfg(feature = "node_interaction")]
-use tvm::block::{TransactionProcessingStatus};
+use tvm::block::{TransactionProcessingStatus, MsgAddressInt, AccStatusChange};
 #[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
@@ -189,8 +188,6 @@ pub(crate) fn local_run(_context: &mut ClientContext, params: ParamsOfLocalRun) 
     let abi_function = abi_contract.function(&params.functionName).expect("Couldn't find function");
 
     for msg in messages {
-        let msg = Message::with_msg(msg)
-            .map_err(|err| ApiError::contracts_local_run_failed(err))?;
         if  msg.msg_type() == MessageType::ExternalOutbound &&
             abi_function.is_my_message(
                 msg.body().ok_or(ApiError::contracts_decode_run_output_failed("Message has no body"))?,
@@ -347,8 +344,9 @@ pub(crate) fn check_transaction_status(transaction: &Transaction) -> ApiResult<(
         Err(ApiError::tvm_execution_skipped(id.clone(), &reason))?;
     }
 
-    if !transaction.compute.success {
-        Err(ApiError::tvm_execution_failed(id.clone(), transaction.compute.exit_code))?;
+    if transaction.compute.success.is_none() || !transaction.compute.success.unwrap() {
+        Err(ApiError::tvm_execution_failed(
+            id.clone(), transaction.compute.exit_code.unwrap_or(-1)))?;
     }
 
     if !transaction.action.success {

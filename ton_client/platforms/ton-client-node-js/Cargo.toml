@@ -1,6 +1,6 @@
 [package]
 name = "tonclientnodejs"
-version = "0.15.0"
+version = "0.16.0"
 authors = ["Michael Vlasov"]
 
 [lib]
@@ -9,7 +9,10 @@ crate-type = ["staticlib", "cdylib"]
 
 [dependencies]
 libc = "0.2"
-ton_client = { path = "../../client" }
+
+[dependencies.ton_client]
+path = "../../client"
+default-features = false
 
 [profile.release]
 lto = true

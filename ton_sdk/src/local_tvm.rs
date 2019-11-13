@@ -39,7 +39,7 @@ pub fn local_contract_call(code: Arc<CellData>, data: Option<Arc<CellData>>, msg
             format!("Wrong time: {}", Utc::now().timestamp()))))?;
     ctrls.put(7, &mut sci.into_temp_data())
         .map_err(|err| BlockError::from(BlockErrorKind::Other(
-            format!("Cannot put data to register: {}", err))))?;;
+            format!("Cannot put data to register: {}", err))))?;
     
     let mut engine = Engine::new().setup(SliceData::from(code), Some(ctrls), Some(stack), None);
     let _result = engine.execute()?;

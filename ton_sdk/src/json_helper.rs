@@ -1,9 +1,11 @@
 use tvm::stack::CellData;
-use tvm::block::{MsgAddressInt, TransactionProcessingStatus, AccStatusChange, ComputeSkipReason};
+use tvm::block::{MsgAddressInt, TransactionProcessingStatus, AccStatusChange, ComputeSkipReason,
+    AccountStatus};
 use std::fmt;
 use serde::de::Error;
 use std::sync::Arc;
 use std::str::FromStr;
+use crate::*;
 
 struct StringVisitor;
 
@@ -88,7 +90,7 @@ pub fn deserialize_uint_from_string<'de, D>(d: D) -> Result<u128, D::Error>
         .map_err(|err| D::Error::custom(format!("Error parsing number: {}", err)))
 }
 
-pub fn deserialize_tr_state_from_num<'de, D>(d: D) -> Result<TransactionProcessingStatus, D::Error>
+pub fn deserialize_tr_state<'de, D>(d: D) -> Result<TransactionProcessingStatus, D::Error>
     where D: serde::Deserializer<'de>
 {
     match d.deserialize_u8(U8Visitor) {
@@ -102,7 +104,7 @@ pub fn deserialize_tr_state_from_num<'de, D>(d: D) -> Result<TransactionProcessi
     }
 }
 
-pub fn deserialize_acc_state_change_from_num<'de, D>(d: D) -> Result<AccStatusChange, D::Error>
+pub fn deserialize_acc_state_change<'de, D>(d: D) -> Result<AccStatusChange, D::Error>
     where D: serde::Deserializer<'de>
 {
     let num = d.deserialize_u8(U8Visitor)?;
@@ -115,7 +117,7 @@ pub fn deserialize_acc_state_change_from_num<'de, D>(d: D) -> Result<AccStatusCh
     }
 }
 
-pub fn deserialize_skipped_reason_from_num<'de, D>(d: D) -> Result<Option<ComputeSkipReason>, D::Error>
+pub fn deserialize_skipped_reason<'de, D>(d: D) -> Result<Option<ComputeSkipReason>, D::Error>
     where D: serde::Deserializer<'de>
 {
     match d.deserialize_u8(U8Visitor) {
@@ -124,5 +126,32 @@ pub fn deserialize_skipped_reason_from_num<'de, D>(d: D) -> Result<Option<Comput
         Ok(1) => Ok(Some(ComputeSkipReason::BadState)),
         Ok(2) => Ok(Some(ComputeSkipReason::NoGas)),
         Ok(num) => Err(D::Error::custom(format!("Invalid skip reason: {}", num)))
+    }
+}
+
+pub fn deserialize_message_type<'de, D>(d: D) -> Result<MessageType, D::Error>
+    where D: serde::Deserializer<'de>
+{
+    let num = d.deserialize_u8(U8Visitor)?;
+
+    match num {
+        0 => Ok(MessageType::Internal),
+        1 => Ok(MessageType::ExternalInbound),
+        2 => Ok(MessageType::ExternalOutbound),
+        num => Err(D::Error::custom(format!("Invalid message type: {}", num)))
+    }
+}
+
+pub fn deserialize_account_status<'de, D>(d: D) -> Result<AccountStatus, D::Error>
+    where D: serde::Deserializer<'de>
+{
+    let num = d.deserialize_u8(U8Visitor)?;
+
+    match num {
+        0 => Ok(AccountStatus::AccStateUninit),
+        1 => Ok(AccountStatus::AccStateActive),
+        2 => Ok(AccountStatus::AccStateFrozen),
+        3 => Ok(AccountStatus::AccStateNonexist),
+        num => Err(D::Error::custom(format!("Invalid account status: {}", num)))
     }
 }
