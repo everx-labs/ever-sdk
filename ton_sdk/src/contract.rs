@@ -12,13 +12,14 @@ use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use tvm::stack::dictionary::HashmapE;
 use tvm::stack::{BuilderData, CellData, SliceData};
 use tvm::types::AccountId;
-use json_helper::account_status_to_u8;
 
 pub use ton_abi::json_abi::DecodedMessage;
 pub use ton_abi::token::{Token, TokenValue, Tokenizer};
 
 #[cfg(feature = "node_interaction")]
 use futures::stream::Stream;
+#[cfg(feature = "node_interaction")]
+use json_helper::account_status_to_u8;
 
 #[cfg(feature = "node_interaction")]
 const ACCOUNT_FIELDS: &str = r#"

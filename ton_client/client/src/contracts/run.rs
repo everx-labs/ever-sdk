@@ -168,7 +168,7 @@ pub(crate) fn local_run(_context: &mut ClientContext, params: ParamsOfLocalRun) 
         None => {
             debug!("no account provided");
             let _address = address;
-            return Err(ApiError::contracts_run_contract_not_found());
+            return Err(ApiError::invalid_params("", "No account provided"));
         }
 
         Some(account) => {
