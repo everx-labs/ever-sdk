@@ -12,7 +12,7 @@ use tvm::block::{
 const NODE_SE: bool = true;
 
 const GIVER_ADDRESS_STR:  &str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
-const WALLET_ADDRESS_STR: &str = "0:bba1ac23b010188089d62010ddb00d594c00f0e217794f3f2b53a81894ec7146";
+const WALLET_ADDRESS_STR: &str = "0:da09a29c054c85cbaeb0922e18d721e222acd8f227c55ca4b26db37ce15524d8";
 
 lazy_static! {
     static ref GIVER_ADDRESS: MsgAddressInt = MsgAddressInt::from_str(GIVER_ADDRESS_STR).unwrap();
@@ -93,7 +93,7 @@ fn test_send_grams_from_giver() {
         GIVER_ADDRESS.to_owned(),
         "sendGrams",
         json!({
-            "dest": format!("0x{:x}", WALLET_ADDRESS.get_address()),
+            "dest": WALLET_ADDRESS.to_string(),
             "amount": 1_000_000_000_000u64
         }).to_string(),
         GIVER_ABI,
@@ -355,44 +355,29 @@ const GIVER_ABI: &str = r#"
 
 const SIMPLE_WALLET_ABI: &str = r#"
 {
-	"ABI version": 1,
-	"functions": [
-		{
-			"name": "constructor",
-			"inputs": [
-			],
-			"outputs": [
-			]
-		},
-		{
-			"name": "sendTransaction",
-			"inputs": [
-				{"name":"dest","type":"uint256"},
-				{"name":"value","type":"uint128"},
-				{"name":"bounce","type":"bool"}
-			],
-			"outputs": [
-			]
-		},
-		{
-			"name": "setSubscriptionAccount",
-			"inputs": [
-				{"name":"addr","type":"uint256"}
-			],
-			"outputs": [
-			]
-		},
-		{
-			"name": "getSubscriptionAccount",
-			"inputs": [
-			],
-			"outputs": [
-				{"name":"value0","type":"uint256"}
-			]
-		}
-	],
-	"events": [
-	],
-	"data": [
-	]
+    "ABI version": 1,
+    "functions": [
+        {
+            "name": "constructor",
+            "inputs": [
+            ],
+            "outputs": [
+            ]
+        },
+        {
+            "name": "sendTransaction",
+            "inputs": [
+                {"name":"dest","type":"address"},
+                {"name":"value","type":"uint128"},
+                {"name":"bounce","type":"bool"}
+            ],
+            "outputs": [
+            ]
+        }
+    ],
+    "events": [
+    ],
+    "data": [
+        {"key":100,"name":"owner","type":"uint256"}
+    ]
 } "#;
