@@ -25,10 +25,9 @@ ton_abi = { path = "../ton_abi" }
 rand = { version = "0.6.1", features = ["wasm-bindgen"] }
 chrono = { version = "0.4.9", features = ["wasmbind"] }
 
-
 [dependencies.tvm]
-git = "ssh://git@github.com/tonlabs/sdk-emulator.git"
-branch = "0.16.0-rc"
+git = "ssh://git@github.com/tonlabs/ton-labs-vm.git"
+branch = "master"
 package = "tvm"
 default-features = false
 
