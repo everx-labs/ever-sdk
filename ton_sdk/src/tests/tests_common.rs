@@ -1,5 +1,5 @@
 use super::*;
-use ed25519_dalek::Keypair;
+use ed25519_dalek::{Keypair, SecretKey, PublicKey};
 use futures::Stream;
 use rand::rngs::OsRng;
 use sha2::Sha512;
@@ -12,18 +12,47 @@ use tvm::block::{
 const NODE_SE: bool = true;
 
 const GIVER_ADDRESS_STR:  &str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
-const WALLET_ADDRESS_STR: &str = "0:da09a29c054c85cbaeb0922e18d721e222acd8f227c55ca4b26db37ce15524d8";
 
 lazy_static! {
     static ref GIVER_ADDRESS: MsgAddressInt = MsgAddressInt::from_str(GIVER_ADDRESS_STR).unwrap();
 
-    static ref WALLET_ADDRESS: MsgAddressInt = MsgAddressInt::from_str(WALLET_ADDRESS_STR).unwrap();
+    static ref WALLET_ADDRESS: MsgAddressInt = get_wallet_address(&WALLET_KEYS, 0);
 
-    static ref WALLET_ADDRESS_STR_HEX: String = WALLET_ADDRESS.get_address().to_hex_string();
+    static ref WALLET_ADDRESS_BASE64: String = encode_base64(&WALLET_ADDRESS, false, false, false).unwrap();
 
-    static ref WALLET_KEYS: Keypair = Keypair::from_bytes(&hex::decode(
-            "2245e4f44af8af6bbd15c4a53eb67a8f211d541ddc7c197f74d7830dba6d27fed542f44146f169c6726c8cf70e4cbb3d33d8d842a4afd799ac122c5808d81ba3"
-        ).unwrap()).unwrap();
+    static ref WALLET_KEYS: Keypair = get_wallet_keys();
+}
+
+const DEFAULT_GIVER_KEYS: &str = r#"
+{
+    "secret": "2245e4f44af8af6bbd15c4a53eb67a8f211d541ddc7c197f74d7830dba6d27fe",
+    "public": "d542f44146f169c6726c8cf70e4cbb3d33d8d842a4afd799ac122c5808d81ba3",
+}"#;
+
+fn get_wallet_keys() -> Keypair {
+    let mut keys_file = dirs::home_dir().unwrap();
+    keys_file.push("giverKeys.json");
+    let keys = std::fs::read_to_string(keys_file).unwrap_or(DEFAULT_GIVER_KEYS.to_owned());
+    
+    let keys: serde_json::Value = serde_json::from_str(&keys).unwrap();
+
+    println!("Using keys\n{}", keys);
+
+    Keypair {
+        secret: SecretKey::from_bytes(&hex::decode(keys["secret"].as_str().unwrap()).unwrap()).unwrap(),
+        public: PublicKey::from_bytes(&hex::decode(keys["public"].as_str().unwrap()).unwrap()).unwrap(),
+    }
+}
+
+fn get_wallet_address(key_pair: &Keypair, workchain_id: i32) -> MsgAddressInt {
+    // create image to retrieve address
+    let mut state_init = std::fs::File::open("src/tests/Wallet.tvc".to_owned()).expect("Unable to open contract code file");
+    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &key_pair.public).expect("Unable to parse contract code file");
+
+    let address = contract_image.msg_address(workchain_id);
+    println!("Wallet address {} ({})", address, encode_base64(&address, false, false, false).unwrap());
+
+    address
 }
 
 pub fn init_node_connection() {
@@ -55,21 +84,10 @@ pub fn init_node_connection() {
     init_json(config_json.into()).unwrap();
 }
 
-fn print_wallet_address(key_pair: &Keypair, workchain_id: i32) {
-    // create image to retrieve address
-    let mut state_init = std::fs::File::open("src/tests/Wallet.tvc".to_owned()).expect("Unable to open contract code file");
-    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &key_pair.public).expect("Unable to parse contract code file");
-
-    let address = contract_image.msg_address(workchain_id);
-
-    println!("Base64 address for gram request: {}", encode_base64(&address, false, false, false).unwrap());
-    println!("Hex address: {}", address);
-}
-
 #[test]
-//#[ignore]
+#[ignore]
 fn test_print_address() {
-    print_wallet_address(&WALLET_KEYS, 0);
+    get_wallet_address(&WALLET_KEYS, 0);
 }
 
 #[test]
@@ -80,7 +98,7 @@ fn test_generate_keypair_and_address() {
 
     println!("Key pair: {}", hex::encode(&key_pair.to_bytes().to_vec()));
 
-    print_wallet_address(&key_pair, 0);
+    get_wallet_address(&key_pair, 0);
 }
 
 #[test]
@@ -107,7 +125,7 @@ fn test_deploy_giver() {
 
     deploy_contract_and_wait("Wallet.tvc", SIMPLE_WALLET_ABI, "{}", &WALLET_KEYS, 0);
 
-    println!("Giver deployed. Address {} ({:x})\n", WALLET_ADDRESS_STR, WALLET_ADDRESS.get_address());
+    println!("Giver deployed. Address {}\n", WALLET_ADDRESS.to_string());
 }
 
 fn is_message_done(status: TransactionProcessingStatus) -> bool {
@@ -146,15 +164,17 @@ fn check_giver() {
     if let  Some(contract) = contract {
         if contract.balance_grams().unwrap() < 500_000_000 {
             panic!(format!(
-                "Giver has no money. Send some grams to {}",
-                WALLET_ADDRESS_STR));
+                "Giver has no money. Send some grams to {} ({})",
+                WALLET_ADDRESS.to_string(),
+                WALLET_ADDRESS_BASE64.to_string()));
         }
 
         if contract.code.is_some() { return; }
     } else {
         panic!(format!(
-            "Giver does not exist. Send some grams to {}",
-            WALLET_ADDRESS_STR));
+            "Giver does not exist. Send some grams to {} ({})",
+            WALLET_ADDRESS.to_string(),
+            WALLET_ADDRESS_BASE64.to_string()));
     }
 
     println!("No giver. Deploy");
