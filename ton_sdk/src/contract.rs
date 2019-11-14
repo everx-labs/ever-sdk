@@ -18,6 +18,8 @@ pub use ton_abi::token::{Token, TokenValue, Tokenizer};
 
 #[cfg(feature = "node_interaction")]
 use futures::stream::Stream;
+#[cfg(feature = "node_interaction")]
+use json_helper::account_status_to_u8;
 
 #[cfg(feature = "node_interaction")]
 const ACCOUNT_FIELDS: &str = r#"
@@ -305,6 +307,24 @@ impl Contract {
             });
 
         Ok(Box::new(map))
+    }
+
+    // Asynchronously loads a Contract instance or None if contract with given id is not exists
+    pub fn load_wait_deployed(address: &MsgAddressInt) -> SdkResult<Contract> {
+        let value = queries_helper::wait_for(
+            CONTRACTS_TABLE_NAME,
+            &json!({
+                "id": {
+                    "eq": address.to_string()
+                },
+                "acc_type": { "eq": account_status_to_u8(AccountStatus::AccStateActive) }
+            }).to_string(),
+            ACCOUNT_FIELDS)?;
+
+        let acc: Contract = serde_json::from_value(value)
+            .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing account: {}", err)))?;
+
+        Ok(acc)
     }
 
     // Asynchronously loads a Contract's json representation

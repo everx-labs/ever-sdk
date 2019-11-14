@@ -21,7 +21,6 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 #[derive(Deserialize)]
 #[serde(rename_all="camelCase")]
 pub(crate) struct SetupParams {
-    pub default_workchain: Option<i8>,
     pub base_url: Option<String>,
     pub requests_url: Option<String>,
     pub queries_url: Option<String>,
@@ -49,7 +48,7 @@ fn setup(_context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
 
     let base_url = resolve_url(
         config.base_url.as_ref(),
-        "services.tonlabs.io",
+        "http://0.0.0.0",
     );
 
     let requests_url = resolve_url(

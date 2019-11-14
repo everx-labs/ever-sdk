@@ -260,8 +260,9 @@ impl ApiError {
         Self::sdk(ContractsRunTransactionMissing, "Transaction missing".into())
     }
 
-    pub fn contracts_run_contract_not_found() -> ApiError {
-        Self::sdk(ContractsRunContractNotFound, "Contract not found".into())
+    pub fn contracts_run_contract_load_failed<E: Display>(err: E) -> ApiError {
+        sdk_err!(ContractsRunContractLoadFailed,
+            "Contract load failed: {}", err)
     }
 
     pub fn contracts_invalid_image<E: Display>(err: E) -> Self {
@@ -438,7 +439,7 @@ pub enum ApiSdkErrorCode {
     ContractsDeployTransactionMissing = 3004,
     ContractsDecodeRunOutputFailed = 3005,
     ContractsDecodeRunInputFailed = 3006,
-    ContractsRunContractNotFound = 3008,
+    ContractsRunContractLoadFailed = 3008,
     ContractsRunTransactionMissing = 3009,
     ContractsSendMessageFailed = 3010,
     ContractsCreateDeployMessageFailed = 3011,

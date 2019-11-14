@@ -9,7 +9,6 @@ extern crate serde_derive;
 extern crate serde;
 extern crate hex;
 extern crate ed25519_dalek;
-extern crate rand;
 extern crate sha2;
 extern crate base64;
 extern crate crc16;
@@ -87,6 +86,11 @@ pub fn uninit() {
     requests_helper::uninit();
     queries_helper::uninit();
 }
+
+#[cfg(test)]
+extern crate rand;
+#[cfg(test)]
+extern crate dirs;
 
 #[cfg(test)]
 #[path = "tests/test_lib.rs"]

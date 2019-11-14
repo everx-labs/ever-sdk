@@ -135,7 +135,12 @@ pub(crate) fn account_encode_ex(
 
 pub fn account_decode(string: &str) -> ApiResult<MsgAddressInt> {
     match MsgAddressInt::from_str(string) {
-        Ok(address) => Ok(address),
+        Ok(address) => {
+            match address {
+                MsgAddressInt::AddrNone => Err(ApiError::crypto_invalid_address("Empty address not allowed", string)),
+                _ => Ok(address)
+            }
+        },
         Err(_) if string.len() == 48 => ton_sdk::decode_std_base64(string)
         .map_err(|err| ApiError::crypto_invalid_address(err, string)),
         Err(err) => Err(ApiError::crypto_invalid_address(err, string))
