@@ -23,7 +23,5 @@ base64 = "0.10.0"
 ton_sdk = { path = "../ton_sdk" }
 
 [dependencies.tvm]
-git = "ssh://git@github.com/tonlabs/ton-labs-vm.git"
-branch = "master"
-package = "tvm"
+git = "https://github.com/tonlabs/ton-labs-vm.git"
 default-features = false
