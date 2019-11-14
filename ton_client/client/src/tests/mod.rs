@@ -85,7 +85,7 @@ fn test_wallet_deploy() {
                 "abi": giver_abi,
                 "functionName": "sendGrams",
                 "input": &json!({
-					"dest": format!("0x{:x}", address.get_address()),
+					"dest": address.to_string(),
 					"amount": 10_000_000_000u64
 					}),
             }),
@@ -135,7 +135,7 @@ fn test_wallet_deploy() {
     }
 }
 
-const GIVER_ADDRESS: &str = "a46af093b38fcae390e9af5104a93e22e82c29bcb35bf88160e4478417028884";
+const GIVER_ADDRESS: &str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
 const GIVER_ABI: &str = r#"
 {
 	"ABI version": 1,
@@ -150,7 +150,7 @@ const GIVER_ABI: &str = r#"
 		{
 			"name": "sendGrams",
 			"inputs": [
-				{"name":"dest","type":"uint256"},
+				{"name":"dest","type":"address"},
 				{"name":"amount","type":"uint64"}
 			],
 			"outputs": [
