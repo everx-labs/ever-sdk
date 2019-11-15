@@ -3,7 +3,6 @@ name = "ton_sdk"
 version = "0.1.0"
 
 [dependencies]
-rand = "0.6.1"
 pretty_assertions = "0.5.1"
 num-bigint = "0.2.2"
 sha2 = "0.8"
@@ -25,11 +24,8 @@ ton_abi = { path = "../ton_abi" }
 rand = { version = "0.6.1", features = ["wasm-bindgen"] }
 chrono = { version = "0.4.9", features = ["wasmbind"] }
 
-
 [dependencies.tvm]
-git = "ssh://git@github.com/tonlabs/sdk-emulator.git"
-branch = "feature-address-serialize"
-package = "tvm"
+git = "https://github.com/tonlabs/ton-labs-vm.git"
 default-features = false
 
 [dependencies.futures]
@@ -45,10 +41,12 @@ version = "0.9.18"
 features = ["default-tls-vendored"]
 optional = true
 
+[dev-dependencies]
+rand = "0.6.1"
+dirs = "2.0.2"
+
 [features]
 default = ["node_interaction"]
 ci_run = []
 node_interaction = ["graphite", "futures", "reqwest"]
 
-[dev-dependencies.rand]
-version = "0.6.1"

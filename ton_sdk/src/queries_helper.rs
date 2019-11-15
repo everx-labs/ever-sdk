@@ -1,3 +1,17 @@
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 use crate::*;
 use graphite::client::GqlClient;
 use graphite::types::VariableRequest;
@@ -35,16 +49,17 @@ pub fn uninit() {
 }
 
 // Returns Stream with updates of some field in database. First stream item is current value
-pub fn subscribe_record_updates(table: &str, record_id: &str, fields: &str)
+pub fn subscribe_record_updates(table: &str, filter: &str, fields: &str)
     -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError>>> {
 
     let subscription_stream = subscribe(
         table,
-        &format!("{{ \"id\": {{\"eq\": \"{record_id}\" }} }}", record_id=record_id),
+        filter,
         fields)?;
 
-    let load_stream = load_record_fields(table, record_id, fields)?
-        .filter(|value| !value.is_null());
+    let load_stream = query(table, filter, fields, None, None)?
+        .filter(|value| !value[0].is_null())
+        .map(|value| value[0].clone());
 
     Ok(Box::new(load_stream.chain(subscription_stream)))
 }

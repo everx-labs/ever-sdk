@@ -1,6 +1,21 @@
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 use types::{ApiResult, hex_decode, base64_decode, ApiError};
 use ton_sdk::{AbiContract, ContractImage};
 use std::io::Cursor;
+use crypto::keys::{account_decode, account_encode_ex, AccountAddressType, Base64AddressParams};
 
 pub(crate) mod types;
 pub(crate) mod deploy;
@@ -42,6 +57,14 @@ pub(crate) struct ParamsOfGetFunctionId {
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
+pub(crate) struct ParamsOfConvertAddress {
+    pub address: String,
+    pub convertTo: AccountAddressType,
+    pub base64Params: Option<Base64AddressParams>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
 pub(crate) struct ResultOfGetFunctionId {
     pub id: u32
 }
@@ -58,8 +81,13 @@ pub(crate) struct ResultOfGetCodeFromImage {
     pub codeBase64: String,
 }
 
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize)]
+pub(crate) struct ResultOfConvertAddress {
+    pub address: String,
+}
+
 use ton_sdk;
-use tvm::types::UInt256;
 use dispatch::DispatchTable;
 use client::ClientContext;
 
@@ -69,10 +97,9 @@ pub(crate) fn encode_message_with_sign(_context: &mut ClientContext, params: Par
         &hex_decode(&params.publicKeyHex)?,
         &base64_decode(&params.unsignedBytesBase64)?
     ).map_err(|err|ApiError::contracts_encode_message_with_sign_failed(err))?;
-    let id: UInt256 = id.into();
     Ok(EncodedMessage {
-        messageId: hex::encode(&id),
-        messageIdBase64: base64::encode(id.as_slice()),
+        messageId: id.to_string(),
+        messageIdBase64: id.to_base64().map_err(|err| ApiError::contracts_encode_message_with_sign_failed(err))?,
         messageBodyBase64: base64::encode(&body),
     })
 }
@@ -102,6 +129,14 @@ pub(crate) fn get_code_from_image(_context: &mut ClientContext, params: ParamsOf
     Ok(ResultOfGetCodeFromImage {
         codeBase64: base64::encode(&image.get_serialized_code()
             .map_err(|err| ApiError::contracts_image_creation_failed(err))?),
+    })
+}
+
+pub(crate) fn convert_address(_context: &mut ClientContext, params: ParamsOfConvertAddress) -> ApiResult<ResultOfConvertAddress> {
+    debug!("-> contracts.image.code({}, {:?}, {:?})", params.address, params.convertTo, params.base64Params);
+    let address = account_decode(&params.address)?;
+    Ok(ResultOfConvertAddress {
+        address: account_encode_ex(&address, params.convertTo, params.base64Params)?,
     })
 }
 
@@ -151,4 +186,8 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         get_function_id);
     handlers.spawn("contracts.image.code",
         get_code_from_image);
+
+    // Addresses
+    handlers.spawn("contracts.address.convert",
+        convert_address);
 }

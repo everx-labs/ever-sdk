@@ -1,8 +1,23 @@
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 use std::sync::Mutex;
-use tvm::types::UInt256;
+use tvm::block::MsgAddressInt;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey};
 use types::{ApiResult, ApiError, hex_decode};
 use std::collections::HashMap;
+use std::str::FromStr;
 
 pub type Key192 = [u8; 24];
 pub type Key256 = [u8; 32];
@@ -97,47 +112,53 @@ pub fn decode_secret_key(string: &String) -> ApiResult<SecretKey> {
         .map_err(|err| ApiError::crypto_invalid_secret_key(err, string))
 }
 
-//pub fn u256_zero() -> UInt256 { [0; 32].into() }
-
-pub fn u256_encode(value: &UInt256) -> String {
-    hex::encode(value.as_slice())
+pub fn account_encode(value: &MsgAddressInt) -> String {
+    value.to_string()
 }
 
-pub fn u256_from_slice_data(slice: &tvm::stack::SliceData) -> UInt256 {
-    UInt256::from(slice.storage().as_slice())
+#[derive(Serialize, Deserialize, Debug)]
+pub(crate) enum AccountAddressType {
+    AccountId,
+    Hex,
+    Base64,
 }
 
-pub fn account_encode(value: &tvm::types::AccountId) -> String {
-    hex::encode(&u256_from_slice_data(value))
-}
-/*
-pub fn generic_id_encode(value: &mut dyn tvm::block::GenericId) -> String {
-    u256_encode(&value.id().unwrap())
+#[derive(Serialize, Deserialize, Debug)]
+pub(crate) struct Base64AddressParams {
+    url: bool,
+    test: bool,
+    bounce: bool
 }
 
-pub fn u256_decode(string: &String) -> ApiResult<UInt256> {
-    match string.len() {
-        0 => Ok(u256_zero()),
-        _ => string
-            .as_str()
-            .parse()
-            .map_err(|err| {
-                let err = format!("{:?}", err);
-                ApiError::crypto_invalid_address(err, string)
-            })
+pub(crate) fn account_encode_ex(
+    value: &MsgAddressInt,
+    addr_type: AccountAddressType,
+    base64_params: Option<Base64AddressParams>
+) -> ApiResult<String> {
+    match addr_type {
+        AccountAddressType::AccountId => Ok(value.get_address().to_hex_string()),
+        AccountAddressType::Hex => Ok(value.to_string()),
+        AccountAddressType::Base64 => {
+            let params = base64_params.ok_or(ApiError::contracts_address_conversion_failed(
+                "No base64 address parameters provided".to_owned()))?;
+            ton_sdk::encode_base64(value, params.bounce, params.test, params.url)
+                .map_err(|err| ApiError::crypto_invalid_address(err, &value.to_string()))
+        }
     }
 }
 
-pub fn account_from_u256(u: &UInt256) -> tvm::types::AccountId {
-    tvm::types::AccountId::from_raw(u.as_slice().to_vec(), 256)
-}
-*/
-pub fn account_decode(string: &String) -> ApiResult<ton_sdk::AccountAddress> {
-    ton_sdk::AccountAddress::from_str(&string)
-        .map_err(|err| {
-                let err = format!("{:?}", err);
-                ApiError::crypto_invalid_address(err, string)
-            })
+pub fn account_decode(string: &str) -> ApiResult<MsgAddressInt> {
+    match MsgAddressInt::from_str(string) {
+        Ok(address) => {
+            match address {
+                MsgAddressInt::AddrNone => Err(ApiError::crypto_invalid_address("Empty address not allowed", string)),
+                _ => Ok(address)
+            }
+        },
+        Err(_) if string.len() == 48 => ton_sdk::decode_std_base64(string)
+        .map_err(|err| ApiError::crypto_invalid_address(err, string)),
+        Err(err) => Err(ApiError::crypto_invalid_address(err, string))
+    }
 }
 
 // Internals

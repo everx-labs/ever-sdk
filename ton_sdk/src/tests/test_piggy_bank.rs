@@ -1,3 +1,17 @@
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 use super::*;
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
@@ -18,69 +32,66 @@ fn full_test_piggy_bank() {
 
 	// deploy wallet
     println!("Wallet contract deploying...\n");
-    let wallet_address = deploy_contract_and_wait("LimitWallet.tvc", WALLET_ABI, "{}", &keypair);
-	println!("Wallet contract deployed. Account address {}\n", wallet_address.to_hex_string());
+    let wallet_address = deploy_contract_and_wait("LimitWallet.tvc", WALLET_ABI, "{}", &keypair, 0);
+	println!("Wallet contract deployed. Account address {}\n", wallet_address);
 
 	// deploy piggy bank
     println!("Piggy bank contract deploying...\n");
-	let piggy_bank_address = deploy_contract_and_wait("Piggy.tvc", PIGGY_BANK_CONTRACT_ABI, PIGGY_BANK_CONSTRUCTOR_PARAMS, &keypair);
-	println!("Piggy bank contract deployed. Account address {}\n", piggy_bank_address.to_hex_string());
+	let piggy_bank_address = deploy_contract_and_wait("Piggy.tvc", PIGGY_BANK_CONTRACT_ABI, PIGGY_BANK_CONSTRUCTOR_PARAMS, &keypair, 0);
+	println!("Piggy bank contract deployed. Account address {}\n", piggy_bank_address);
 
     // get goal from piggy
     println!("Get goal from piggy...\n");
-    let (get_goal_answer, _) = call_contract_and_wait(piggy_bank_address.clone(), "getGoal", "{}", PIGGY_BANK_CONTRACT_ABI, None);
-    //let get_goal_answer = local_contract_call(piggy_bank_address.clone(), "getGoal", "{}", PIGGY_BANK_CONTRACT_ABI, None);
+    //let (get_goal_answer, _) = call_contract_and_wait(piggy_bank_address.clone(), "getGoal", "{}".to_string(), PIGGY_BANK_CONTRACT_ABI, None);
+    let get_goal_answer = local_contract_call(piggy_bank_address.clone(), "getGoal", "{}", PIGGY_BANK_CONTRACT_ABI, None);
     println!("piggy answer {}", get_goal_answer);
 
 	// deploy subscription
 
     println!("Subscription contract deploying...\n");
-	let wallet_address_str = wallet_address.to_hex_string();
-	let subscription_constructor_params = format!("{{ \"wallet\" : \"0x{}\" }}", wallet_address_str);
-	let subscripition_address = deploy_contract_and_wait("Subscription.tvc", SUBSCRIBE_CONTRACT_ABI, &subscription_constructor_params, &keypair);
-	println!("Subscription contract deployed. Account address {}\n", subscripition_address.to_hex_string());
+	let subscription_constructor_params = format!("{{ \"wallet\" : \"{}\" }}", wallet_address);
+	let subscripition_address = deploy_contract_and_wait("Subscription.tvc", SUBSCRIBE_CONTRACT_ABI, &subscription_constructor_params, &keypair, 0);
+	println!("Subscription contract deployed. Account address {}\n", subscripition_address);
 
 
     // call setSubscriptionAccount in wallet
     println!("Adding subscription address to the wallet...\n");
-	let subscripition_address_str = subscripition_address.to_hex_string();
-	let set_subscription_params = format!("{{ \"addr\" : \"0x{}\" }}", subscripition_address_str);
+	let set_subscription_params = format!("{{ \"addr\" : \"{}\" }}", subscripition_address);
 
-	let _set_subscription_answer = call_contract(wallet_address, "setSubscriptionAccount", &set_subscription_params, WALLET_ABI, Some(&keypair));
+	let _set_subscription_answer = call_contract(wallet_address, "setSubscriptionAccount", set_subscription_params, WALLET_ABI, Some(&keypair));
 
 	println!("Subscription address added to the wallet.\n");
 
 	// call subscribe in subscription
     println!("Adding subscription 1...\n");
     let subscr_id_str = hex::encode(&[0x11; 32]);
-	let piggy_bank_address_str = piggy_bank_address.to_hex_string();
 	let pubkey_str = hex::encode(keypair.public.as_bytes());
 	let subscribe_params = format!(
-        "{{ \"subscriptionId\" : \"0x{}\", \"pubkey\" : \"0x{}\", \"to\": \"0x{}\", \"value\" : 123, \"period\" : 456 }}",
+        "{{ \"subscriptionId\" : \"0x{}\", \"pubkey\" : \"0x{}\", \"to\": \"{}\", \"value\" : 123, \"period\" : 456 }}",
         subscr_id_str,
         &pubkey_str,
-        &piggy_bank_address_str,
+        piggy_bank_address,
     );
 
-	call_contract(subscripition_address.clone(), "subscribe", &subscribe_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
+	call_contract(subscripition_address.clone(), "subscribe", subscribe_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
 	println!("Subscription 1 added.\n");
 
     	// call subscribe in subscription
     println!("Adding subscription 2...\n");
     let subscr_id_str = hex::encode(&[0x22; 32]);
 	let subscribe_params = format!(
-        "{{ \"subscriptionId\" : \"0x{}\", \"pubkey\" : \"0x{}\", \"to\": \"0x{}\", \"value\" : 5000000000, \"period\" : 86400 }}",
+        "{{ \"subscriptionId\" : \"0x{}\", \"pubkey\" : \"0x{}\", \"to\": \"{}\", \"value\" : 5000000000, \"period\" : 86400 }}",
         subscr_id_str,
         &pubkey_str,
-        &piggy_bank_address_str,
+        piggy_bank_address,
     );
-	call_contract(subscripition_address.clone(), "subscribe", &subscribe_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
+	call_contract(subscripition_address.clone(), "subscribe", subscribe_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
 	println!("Subscription 2 added.\n");
 
     println!("Call getSubscription with id {}\n", &subscr_id_str);
     let get_params = format!("{{ \"subscriptionId\" : \"0x{}\" }}", &subscr_id_str);
-    call_contract_and_wait(subscripition_address, "getSubscription", &get_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
-    println!("getSubscription called.\n");
+    let answer = local_contract_call(subscripition_address.clone(), "getSubscription", &get_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
+    println!("getSubscription result:\n{}", answer);
 
     let t = now.elapsed();
 	println!("Time: sec={}.{:06} ", t.as_secs(), t.subsec_micros());
@@ -95,7 +106,7 @@ pub const SUBSCRIBE_CONTRACT_ABI: &str = r#"
 		{
 			"name": "constructor",
 			"inputs": [
-				{"name":"wallet","type":"uint256"}
+				{"name":"wallet","type":"address"}
 			],
 			"outputs": [
 			]
@@ -105,7 +116,7 @@ pub const SUBSCRIBE_CONTRACT_ABI: &str = r#"
 			"inputs": [
 			],
 			"outputs": [
-				{"name":"value0","type":"uint256"}
+				{"name":"value0","type":"address"}
 			]
 		},
 		{
@@ -114,7 +125,7 @@ pub const SUBSCRIBE_CONTRACT_ABI: &str = r#"
 				{"name":"subscriptionId","type":"uint256"}
 			],
 			"outputs": [
-				{"components":[{"name":"pubkey","type":"uint256"},{"name":"to","type":"uint256"},{"name":"value","type":"uint64"},{"name":"period","type":"uint32"},{"name":"start","type":"uint32"},{"name":"status","type":"uint8"}],"name":"value0","type":"tuple"}
+				{"components":[{"name":"pubkey","type":"uint256"},{"name":"to","type":"address"},{"name":"value","type":"uint64"},{"name":"period","type":"uint32"},{"name":"start","type":"uint32"},{"name":"status","type":"uint8"}],"name":"value0","type":"tuple"}
 			]
 		},
 		{
@@ -122,7 +133,7 @@ pub const SUBSCRIBE_CONTRACT_ABI: &str = r#"
 			"inputs": [
 				{"name":"subscriptionId","type":"uint256"},
 				{"name":"pubkey","type":"uint256"},
-				{"name":"to","type":"uint256"},
+				{"name":"to","type":"address"},
 				{"name":"value","type":"uint64"},
 				{"name":"period","type":"uint32"}
 			],
@@ -149,9 +160,9 @@ pub const SUBSCRIBE_CONTRACT_ABI: &str = r#"
 	"events": [
 	],
 	"data": [
-		{"key":100,"name":"mywallet","type":"uint256"}
+		{"key":100,"name":"mywallet","type":"address"}
 	]
-} "#;
+}"#;
 
 pub const PIGGY_BANK_CONTRACT_ABI: &str = r#"
 {
@@ -161,7 +172,15 @@ pub const PIGGY_BANK_CONTRACT_ABI: &str = r#"
 			"name": "constructor",
 			"inputs": [
 				{"name":"amount","type":"uint64"},
-				{"name":"goal","type":"uint8[]"}
+				{"name":"goal","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "transfer",
+			"inputs": [
+				{"name":"to","type":"address"}
 			],
 			"outputs": [
 			]
@@ -171,7 +190,7 @@ pub const PIGGY_BANK_CONTRACT_ABI: &str = r#"
 			"inputs": [
 			],
 			"outputs": [
-				{"name":"value0","type":"uint8[]"}
+				{"name":"value0","type":"bytes"}
 			]
 		},
 		{
@@ -181,20 +200,12 @@ pub const PIGGY_BANK_CONTRACT_ABI: &str = r#"
 			"outputs": [
 				{"name":"value0","type":"uint64"}
 			]
-		},
-		{
-			"name": "transfer",
-			"inputs": [
-				{"name":"to","type":"uint256"}
-			],
-			"outputs": [
-			]
 		}
 	],
 	"events": [
 	],
 	"data": [
-		{"key":100,"name":"targetGoal","type":"uint8[]"},
+		{"key":100,"name":"targetGoal","type":"bytes"},
 		{"key":101,"name":"targetAmount","type":"uint64"}
 	]
 } "#;
@@ -203,25 +214,18 @@ pub const PIGGY_BANK_CONTRACT_ABI: &str = r#"
 const PIGGY_BANK_CONSTRUCTOR_PARAMS: &str = r#"
 {
 	"amount": 123,
-	"goal": [83, 111, 109, 101, 32, 103, 111, 97, 108]
+	"goal": "536f6d6520676f616c"
 }"#;
 
 
-const WALLET_ABI: &str = r#"
+pub const WALLET_ABI: &str = r#"
 {
 	"ABI version": 1,
 	"functions": [
 		{
-			"name": "constructor",
-			"inputs": [
-			],
-			"outputs": [
-			]
-		},
-		{
 			"name": "sendTransaction",
 			"inputs": [
-				{"name":"dest","type":"uint256"},
+				{"name":"dest","type":"address"},
 				{"name":"value","type":"uint128"},
 				{"name":"bounce","type":"bool"}
 			],
@@ -231,7 +235,7 @@ const WALLET_ABI: &str = r#"
 		{
 			"name": "setSubscriptionAccount",
 			"inputs": [
-				{"name":"addr","type":"uint256"}
+				{"name":"addr","type":"address"}
 			],
 			"outputs": [
 			]
@@ -241,7 +245,7 @@ const WALLET_ABI: &str = r#"
 			"inputs": [
 			],
 			"outputs": [
-				{"name":"value0","type":"uint256"}
+				{"name":"value0","type":"address"}
 			]
 		},
 		{
@@ -305,14 +309,20 @@ const WALLET_ABI: &str = r#"
 			"outputs": [
 				{"name":"value0","type":"uint64[]"}
 			]
+		},
+		{
+			"name": "constructor",
+			"inputs": [
+			],
+			"outputs": [
+			]
 		}
 	],
 	"events": [
 	],
 	"data": [
-		{"key":102,"name":"MAX_LIMIT_COUNT","type":"uint8"},
-		{"key":103,"name":"SECONDS_IN_DAY","type":"uint32"},
-		{"key":104,"name":"MAX_LIMIT_PERIOD","type":"uint32"}
+		{"key":101,"name":"subscription","type":"address"},
+		{"key":100,"name":"owner","type":"uint256"}
 	]
 }
 "#;

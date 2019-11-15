@@ -1,13 +1,27 @@
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 //! ABI param and parsing for it.
 use {ParamType, Param, Uint, Int, Token, TokenValue};
 use serde_json::Value;
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::io::Cursor;
 use num_bigint::{Sign, BigInt, BigUint};
 use tvm::block::{Grams, MsgAddress};
 use tvm::cells_serialization::deserialize_tree_of_cells;
 use crate::error::*;
+use std::str::FromStr;
 
 /// This struct should be used to parse string values as tokens.
 pub struct Tokenizer;
@@ -26,7 +40,9 @@ impl Tokenizer {
             ParamType::Cell => Self::tokenize_cell(value),
             ParamType::Map(key_type, value_type) => Self::tokenize_hashmap(key_type, value_type, value),
             ParamType::Address => {
-                let address = MsgAddress::deserialize(value)
+                let address = MsgAddress::from_str(
+                    &value.as_str()
+                        .ok_or(AbiErrorKind::WrongDataFormat(value.clone()))?)
                     .map_err(|_| AbiErrorKind::WrongDataFormat(value.clone()))?;
                 Ok(TokenValue::Address(address))
             }

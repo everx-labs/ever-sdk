@@ -1,3 +1,17 @@
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 use serde::ser::{Serialize, Serializer, SerializeMap};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -117,7 +131,7 @@ impl Serialize for TokenValue {
             TokenValue::FixedArray(ref tokens) => tokens.serialize(serializer),
             TokenValue::Cell(ref cell) => Token::detokenize_cell(cell, serializer),
             TokenValue::Map(key_type, ref map) => Token::detokenize_hashmap(key_type, map, serializer),
-            TokenValue::Address(ref address) => address.serialize(serializer),
+            TokenValue::Address(ref address) => serializer.serialize_str(&address.to_string()),
             TokenValue::Bytes(ref arr) => Token::detokenize_bytes(arr, serializer),
             TokenValue::FixedBytes(ref arr) => Token::detokenize_bytes(arr, serializer),
             TokenValue::Gram(gram) => Token::detokenize_big_int(gram.value(), serializer),

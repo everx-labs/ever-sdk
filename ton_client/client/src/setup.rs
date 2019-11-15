@@ -1,3 +1,17 @@
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 use client::ClientContext;
 use dispatch::DispatchTable;
 use types::ApiResult;
@@ -7,8 +21,6 @@ use types::ApiError;
 #[cfg(feature = "node_interaction")]
 use ton_sdk::{NodeClientConfig, RequestsConfig, QueriesConfig};
 
-const VERSION: &str = "0.11.0";
-
 pub(crate) fn register(handlers: &mut DispatchTable) {
     #[cfg(feature = "node_interaction")]
     handlers.call_no_args("uninit", |_| Ok(ton_sdk::uninit()));
@@ -16,14 +28,13 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
     handlers.call_no_args("uninit", |_| Ok(()));
 
     handlers.call("setup", setup);
-    handlers.call_no_args("version", |_|Ok(VERSION));
+    handlers.call_no_args("version", |_|Ok(env!("CARGO_PKG_VERSION")));
 }
 
 
 #[derive(Deserialize)]
 #[serde(rename_all="camelCase")]
 pub(crate) struct SetupParams {
-    pub default_workchain: Option<i32>,
     pub base_url: Option<String>,
     pub requests_url: Option<String>,
     pub queries_url: Option<String>,
@@ -51,7 +62,7 @@ fn setup(_context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
 
     let base_url = resolve_url(
         config.base_url.as_ref(),
-        "services.tonlabs.io",
+        "http://0.0.0.0",
     );
 
     let requests_url = resolve_url(
@@ -84,11 +95,11 @@ fn setup(_context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
             subscriptions_server: subscriptions_url
         }
     };
-    ton_sdk::init(Some(config.default_workchain.unwrap_or(0)), internal_config).map_err(|err|ApiError::config_init_failed(err))
+    ton_sdk::init(internal_config).map_err(|err|ApiError::config_init_failed(err))
 }
 
 
 #[cfg(not(feature = "node_interaction"))]
-fn setup(_context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
-    Ok(ton_sdk::Contract::set_default_workchain(Some(config.default_workchain.unwrap_or(0))))
+fn setup(_context: &mut ClientContext, _config: SetupParams) -> ApiResult<()> {
+    Ok(())
 }
