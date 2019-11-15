@@ -33,7 +33,7 @@ log = "0.4.6"
 ton_sdk = { path = "../../ton_sdk", default-features = false }
 
 [dependencies.tvm]
-git = "https://github.com/tonlabs/ton-labs-vm.git"
+git = "ssh://git@github.com/tonlabs/ton-labs-vm.git"
 default-features = false
 
 [features]
