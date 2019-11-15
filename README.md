@@ -4,7 +4,7 @@ This repository contains source code for all client libraries included in TON La
 
 The best way to build client libraries is to use build scripts from this repo. 
 
-**Note**: The scripts are written in JavaScript so you have to install Node.js (v.10 or newer) to run them.
+**Note**: The scripts are written in JavaScript so you have to install Node.js (v.10 or newer) to run them. Also make sure you have the latest version of Rust installed.
 
 To build a binary for a specific target (or binding), navigate to the relevant folder and run `node build.js`.
 
