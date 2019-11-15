@@ -26,7 +26,7 @@ lazy_static! {
 const DEFAULT_GIVER_KEYS: &str = r#"
 {
     "secret": "2245e4f44af8af6bbd15c4a53eb67a8f211d541ddc7c197f74d7830dba6d27fe",
-    "public": "d542f44146f169c6726c8cf70e4cbb3d33d8d842a4afd799ac122c5808d81ba3",
+    "public": "d542f44146f169c6726c8cf70e4cbb3d33d8d842a4afd799ac122c5808d81ba3"
 }"#;
 
 fn get_wallet_keys() -> Keypair {
