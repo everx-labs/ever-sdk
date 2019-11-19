@@ -113,8 +113,11 @@ fn test_tg_mnemonic() {
     })).unwrap();
     assert_eq!(crc16, "43349");
 
-    let keys = parse_object(client.request("crypto.sign_keys_from_ton_mnemonic",
-        Value::String("unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle".to_string()),
+    let keys = parse_object(client.request(
+        "crypto.mnemonic.derive.sign.keys",
+        json!({
+            "phrase": "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle"
+        }),
     ));
     let ton_public = parse_string(client.request(
         "crypto.ton_public_key_string",

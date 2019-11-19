@@ -24,7 +24,7 @@ pub(crate) mod hdkey;
 
 use crypto as api;
 use types::{base64_decode, ApiError, ApiResult, hex_decode};
-use crypto::keys::{KeyPair, hmac_sha512, pbkdf2_hmac_sha512, key_to_ton_string};
+use crypto::keys::{KeyPair, key_to_ton_string};
 use crypto::keys::KeyStore;
 use dispatch::DispatchTable;
 use client::ClientContext;
@@ -332,17 +332,6 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
     });
 
     // Keys
-
-    handlers.spawn("crypto.sign_keys_from_ton_mnemonic", |_context: &mut ClientContext, params: String| {
-        let entropy = hmac_sha512(params.as_bytes(), &[]);
-        let seed = pbkdf2_hmac_sha512(&entropy, "TON default seed".as_bytes(), 100_000);
-        let secret = ed25519_dalek::SecretKey::from_bytes(&seed[..32]).unwrap();
-        let public = ed25519_dalek::PublicKey::from_secret::<sha2::Sha512>(&secret);
-        Ok(KeyPair::new(
-            hex::encode(public.as_bytes()),
-            hex::encode(secret.as_bytes()),
-        ))
-    });
 
     handlers.spawn("crypto.ton_public_key_string", |_context: &mut ClientContext, params: String| {
         Ok(key_to_ton_string(&hex_decode(&params)?))
