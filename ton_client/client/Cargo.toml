@@ -29,6 +29,7 @@ pbkdf2 = { version = "0.3.0", default-features = false, features = [] }
 byteorder = "1.3.2"
 libsecp256k1 = "0.2.2"
 log = "0.4.6"
+crc-any = "2.2.3"
 
 ton_sdk = { path = "../../ton_sdk", default-features = false }
 
