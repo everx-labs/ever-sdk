@@ -1,3 +1,17 @@
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 use std::sync::Mutex;
 use tvm::block::MsgAddressInt;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey};
@@ -139,7 +153,12 @@ pub(crate) fn account_encode_ex(
 
 pub fn account_decode(string: &str) -> ApiResult<MsgAddressInt> {
     match MsgAddressInt::from_str(string) {
-        Ok(address) => Ok(address),
+        Ok(address) => {
+            match address {
+                MsgAddressInt::AddrNone => Err(ApiError::crypto_invalid_address("Empty address not allowed", string)),
+                _ => Ok(address)
+            }
+        },
         Err(_) if string.len() == 48 => ton_sdk::decode_std_base64(string)
         .map_err(|err| ApiError::crypto_invalid_address(err, string)),
         Err(err) => Err(ApiError::crypto_invalid_address(err, string))

@@ -1,5 +1,19 @@
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 use super::*;
-use ed25519_dalek::Keypair;
+use ed25519_dalek::{Keypair, SecretKey, PublicKey};
 use futures::Stream;
 use rand::rngs::OsRng;
 use sha2::Sha512;
@@ -12,18 +26,47 @@ use tvm::block::{
 const NODE_SE: bool = true;
 
 const GIVER_ADDRESS_STR:  &str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
-const WALLET_ADDRESS_STR: &str = "0:bba1ac23b010188089d62010ddb00d594c00f0e217794f3f2b53a81894ec7146";
 
 lazy_static! {
     static ref GIVER_ADDRESS: MsgAddressInt = MsgAddressInt::from_str(GIVER_ADDRESS_STR).unwrap();
 
-    static ref WALLET_ADDRESS: MsgAddressInt = MsgAddressInt::from_str(WALLET_ADDRESS_STR).unwrap();
+    static ref WALLET_ADDRESS: MsgAddressInt = get_wallet_address(&WALLET_KEYS, 0);
 
-    static ref WALLET_ADDRESS_STR_HEX: String = WALLET_ADDRESS.get_address().to_hex_string();
+    static ref WALLET_ADDRESS_BASE64: String = encode_base64(&WALLET_ADDRESS, false, false, false).unwrap();
 
-    static ref WALLET_KEYS: Keypair = Keypair::from_bytes(&hex::decode(
-            "2245e4f44af8af6bbd15c4a53eb67a8f211d541ddc7c197f74d7830dba6d27fed542f44146f169c6726c8cf70e4cbb3d33d8d842a4afd799ac122c5808d81ba3"
-        ).unwrap()).unwrap();
+    static ref WALLET_KEYS: Keypair = get_wallet_keys();
+}
+
+const DEFAULT_GIVER_KEYS: &str = r#"
+{
+    "secret": "2245e4f44af8af6bbd15c4a53eb67a8f211d541ddc7c197f74d7830dba6d27fe",
+    "public": "d542f44146f169c6726c8cf70e4cbb3d33d8d842a4afd799ac122c5808d81ba3"
+}"#;
+
+fn get_wallet_keys() -> Keypair {
+    let mut keys_file = dirs::home_dir().unwrap();
+    keys_file.push("giverKeys.json");
+    let keys = std::fs::read_to_string(keys_file).unwrap_or(DEFAULT_GIVER_KEYS.to_owned());
+    
+    let keys: serde_json::Value = serde_json::from_str(&keys).unwrap();
+
+    println!("Using keys\n{}", keys);
+
+    Keypair {
+        secret: SecretKey::from_bytes(&hex::decode(keys["secret"].as_str().unwrap()).unwrap()).unwrap(),
+        public: PublicKey::from_bytes(&hex::decode(keys["public"].as_str().unwrap()).unwrap()).unwrap(),
+    }
+}
+
+fn get_wallet_address(key_pair: &Keypair, workchain_id: i32) -> MsgAddressInt {
+    // create image to retrieve address
+    let mut state_init = std::fs::File::open("src/tests/Wallet.tvc".to_owned()).expect("Unable to open contract code file");
+    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &key_pair.public).expect("Unable to parse contract code file");
+
+    let address = contract_image.msg_address(workchain_id);
+    println!("Wallet address {} ({})", address, encode_base64(&address, false, false, false).unwrap());
+
+    address
 }
 
 pub fn init_node_connection() {
@@ -31,11 +74,11 @@ pub fn init_node_connection() {
         r#"
         {
             "queries_config": {
-                "queries_server": "http://192.168.99.100/graphql",
-                "subscriptions_server": "ws://192.168.99.100/graphql"
+                "queries_server": "http://0.0.0.0/graphql",
+                "subscriptions_server": "ws://0.0.0.0/graphql"
             },
             "requests_config": {
-                "requests_server": "http://192.168.99.100/topics/requests"
+                "requests_server": "http://0.0.0.0/topics/requests"
             }
         }"#
     } else {
@@ -55,21 +98,10 @@ pub fn init_node_connection() {
     init_json(config_json.into()).unwrap();
 }
 
-fn print_wallet_address(key_pair: &Keypair, workchain_id: i32) {
-    // create image to retrieve address
-    let mut state_init = std::fs::File::open("src/tests/Wallet.tvc".to_owned()).expect("Unable to open contract code file");
-    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &key_pair.public).expect("Unable to parse contract code file");
-
-    let address = contract_image.msg_address(workchain_id);
-
-    println!("Base64 address for gram request: {}", encode_base64(&address, false, false, false).unwrap());
-    println!("Hex address: {}", address);
-}
-
 #[test]
-//#[ignore]
+#[ignore]
 fn test_print_address() {
-    print_wallet_address(&WALLET_KEYS, 0);
+    get_wallet_address(&WALLET_KEYS, 0);
 }
 
 #[test]
@@ -80,7 +112,7 @@ fn test_generate_keypair_and_address() {
 
     println!("Key pair: {}", hex::encode(&key_pair.to_bytes().to_vec()));
 
-    print_wallet_address(&key_pair, 0);
+    get_wallet_address(&key_pair, 0);
 }
 
 #[test]
@@ -93,7 +125,7 @@ fn test_send_grams_from_giver() {
         GIVER_ADDRESS.to_owned(),
         "sendGrams",
         json!({
-            "dest": format!("0x{:x}", WALLET_ADDRESS.get_address()),
+            "dest": WALLET_ADDRESS.to_string(),
             "amount": 1_000_000_000_000u64
         }).to_string(),
         GIVER_ABI,
@@ -107,7 +139,7 @@ fn test_deploy_giver() {
 
     deploy_contract_and_wait("Wallet.tvc", SIMPLE_WALLET_ABI, "{}", &WALLET_KEYS, 0);
 
-    println!("Giver deployed. Address {} ({:x})\n", WALLET_ADDRESS_STR, WALLET_ADDRESS.get_address());
+    println!("Giver deployed. Address {}\n", WALLET_ADDRESS.to_string());
 }
 
 fn is_message_done(status: TransactionProcessingStatus) -> bool {
@@ -146,15 +178,17 @@ fn check_giver() {
     if let  Some(contract) = contract {
         if contract.balance_grams().unwrap() < 500_000_000 {
             panic!(format!(
-                "Giver has no money. Send some grams to {}",
-                WALLET_ADDRESS_STR));
+                "Giver has no money. Send some grams to {} ({})",
+                WALLET_ADDRESS.to_string(),
+                WALLET_ADDRESS_BASE64.to_string()));
         }
 
         if contract.code.is_some() { return; }
     } else {
         panic!(format!(
-            "Giver does not exist. Send some grams to {}",
-            WALLET_ADDRESS_STR));
+            "Giver does not exist. Send some grams to {} ({})",
+            WALLET_ADDRESS.to_string(),
+            WALLET_ADDRESS_BASE64.to_string()));
     }
 
     println!("No giver. Deploy");
@@ -309,13 +343,7 @@ pub fn call_contract_and_wait(address: MsgAddressInt, func: &str, input: String,
 
 pub fn local_contract_call(address: MsgAddressInt, func: &str, input: &str, abi: &str, key_pair: Option<&Keypair>) -> String {
 
-    let contract = Contract::load(&address)
-        .expect("Error calling load Contract")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract")
-        .expect("Error unwrap contract while loading Contract");
+    let contract = Contract::load_wait_deployed(&address).expect("Error loading Contract");
 
     // call needed method
     let messages = contract.local_call_json(func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
@@ -361,44 +389,29 @@ const GIVER_ABI: &str = r#"
 
 const SIMPLE_WALLET_ABI: &str = r#"
 {
-	"ABI version": 1,
-	"functions": [
-		{
-			"name": "constructor",
-			"inputs": [
-			],
-			"outputs": [
-			]
-		},
-		{
-			"name": "sendTransaction",
-			"inputs": [
-				{"name":"dest","type":"uint256"},
-				{"name":"value","type":"uint128"},
-				{"name":"bounce","type":"bool"}
-			],
-			"outputs": [
-			]
-		},
-		{
-			"name": "setSubscriptionAccount",
-			"inputs": [
-				{"name":"addr","type":"uint256"}
-			],
-			"outputs": [
-			]
-		},
-		{
-			"name": "getSubscriptionAccount",
-			"inputs": [
-			],
-			"outputs": [
-				{"name":"value0","type":"uint256"}
-			]
-		}
-	],
-	"events": [
-	],
-	"data": [
-	]
+    "ABI version": 1,
+    "functions": [
+        {
+            "name": "constructor",
+            "inputs": [
+            ],
+            "outputs": [
+            ]
+        },
+        {
+            "name": "sendTransaction",
+            "inputs": [
+                {"name":"dest","type":"address"},
+                {"name":"value","type":"uint128"},
+                {"name":"bounce","type":"bool"}
+            ],
+            "outputs": [
+            ]
+        }
+    ],
+    "events": [
+    ],
+    "data": [
+        {"key":100,"name":"owner","type":"uint256"}
+    ]
 } "#;

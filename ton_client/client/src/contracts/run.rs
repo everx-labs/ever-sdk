@@ -1,3 +1,17 @@
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 use ton_sdk::{Contract, MessageType, AbiContract};
 use ton_sdk::json_abi::encode_function_call;
 use crypto::keys::{KeyPair, account_decode};
@@ -168,7 +182,7 @@ pub(crate) fn local_run(_context: &mut ClientContext, params: ParamsOfLocalRun) 
         None => {
             debug!("no account provided");
             let _address = address;
-            return Err(ApiError::contracts_run_contract_not_found());
+            return Err(ApiError::invalid_params("", "No account provided"));
         }
 
         Some(account) => {
@@ -382,13 +396,7 @@ fn load_out_message(tr: &Transaction, abi_function: &AbiFunction) -> Message {
 
 #[cfg(feature = "node_interaction")]
 fn load_contract(address: &MsgAddressInt) -> ApiResult<Contract> {
-    Contract::load(address)
-        .expect("Error calling load Contract")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract")
-        .ok_or(ApiError::contracts_run_contract_not_found())
+    Contract::load_wait_deployed(address).map_err(|err| ApiError::contracts_run_contract_load_failed(err))
 }
 
 #[cfg(feature = "node_interaction")]

@@ -1,3 +1,17 @@
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 use crypto::keys::account_decode;
 use ::InteropContext;
 use ::{tc_json_request, InteropString};
@@ -116,7 +130,7 @@ fn test_wallet_deploy() {
     println!("result: {}", version.to_string());
 
     let _deployed = client.request("setup",
-        json!({"baseUrl": "http://192.168.99.100"}));
+        json!({"baseUrl": "http://0.0.0.0"}));
 
     let keys = client.request("crypto.ed25519.keypair", json!({})).unwrap();
 
@@ -144,7 +158,7 @@ fn test_wallet_deploy() {
                 "abi": giver_abi,
                 "functionName": "sendGrams",
                 "input": &json!({
-					"dest": format!("0x{:x}", address.get_address()),
+					"dest": address.to_string(),
 					"amount": 10_000_000_000u64
 					}),
             }),
@@ -187,7 +201,7 @@ fn test_wallet_deploy() {
     assert_eq!("{\"output\":{\"value0\":\"0x0\"}}", result);
 }
 
-const GIVER_ADDRESS: &str = "a46af093b38fcae390e9af5104a93e22e82c29bcb35bf88160e4478417028884";
+const GIVER_ADDRESS: &str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
 const GIVER_ABI: &str = r#"
 {
 	"ABI version": 1,
@@ -202,7 +216,7 @@ const GIVER_ABI: &str = r#"
 		{
 			"name": "sendGrams",
 			"inputs": [
-				{"name":"dest","type":"uint256"},
+				{"name":"dest","type":"address"},
 				{"name":"amount","type":"uint64"}
 			],
 			"outputs": [

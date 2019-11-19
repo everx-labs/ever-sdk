@@ -1,3 +1,17 @@
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 use crate::*;
 use crc16::*;
 use ed25519_dalek::{Keypair, PublicKey};
@@ -18,6 +32,8 @@ pub use ton_abi::token::{Token, TokenValue, Tokenizer};
 
 #[cfg(feature = "node_interaction")]
 use futures::stream::Stream;
+#[cfg(feature = "node_interaction")]
+use json_helper::account_status_to_u8;
 
 #[cfg(feature = "node_interaction")]
 const ACCOUNT_FIELDS: &str = r#"
@@ -305,6 +321,24 @@ impl Contract {
             });
 
         Ok(Box::new(map))
+    }
+
+    // Asynchronously loads a Contract instance or None if contract with given id is not exists
+    pub fn load_wait_deployed(address: &MsgAddressInt) -> SdkResult<Contract> {
+        let value = queries_helper::wait_for(
+            CONTRACTS_TABLE_NAME,
+            &json!({
+                "id": {
+                    "eq": address.to_string()
+                },
+                "acc_type": { "eq": account_status_to_u8(AccountStatus::AccStateActive) }
+            }).to_string(),
+            ACCOUNT_FIELDS)?;
+
+        let acc: Contract = serde_json::from_value(value)
+            .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing account: {}", err)))?;
+
+        Ok(acc)
     }
 
     // Asynchronously loads a Contract's json representation
