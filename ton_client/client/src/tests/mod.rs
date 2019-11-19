@@ -121,6 +121,32 @@ fn test_tg_mnemonic() {
         Value::String(get_map_string(&keys, "public")),
     ));
     assert_eq!(ton_public, "PubDdJkMyss2qHywFuVP1vzww0TpsLxnRNnbifTCcu-XEgW0");
+
+    let words = parse_string(client.request("crypto.mnemonic.words", json!({
+    })));
+    assert_eq!(words.split(" ").count(), 2048);
+
+    let phrase = parse_string(client.request("crypto.mnemonic.from.random", json!({
+    })));
+    assert_eq!(phrase.split(" ").count(), 24);
+
+    let entropy = "2199ebe996f14d9e4e2595113ad1e6276bd05e2e147e16c8ab8ad5d47d13b44fcf";
+    let mnemonic = parse_string(client.request("crypto.mnemonic.from.entropy", json!({
+        "entropy": json!({
+            "hex": entropy
+        }),
+    })));
+    let public = get_map_string(&parse_object(client.request(
+        "crypto.mnemonic.derive.sign.keys",
+        json!({
+            "phrase": mnemonic
+        }),
+    )), "public");
+    let ton_public = parse_string(client.request(
+        "crypto.ton_public_key_string",
+        Value::String(public),
+    ));
+    assert_eq!(ton_public, "PuYGEX9Zreg-CX4Psz5dKehzW9qCs794oBVUKqqFO7aWAOTD");
 }
 
 #[test]

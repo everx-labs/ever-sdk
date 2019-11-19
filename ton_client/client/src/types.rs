@@ -238,9 +238,20 @@ impl ApiError {
         ApiError::sdk(CryptoInvalidKeystoreHandle,
             "Keystore Handle is invalid or has removed".into())
     }
+
     pub fn crypto_missing_key_source() -> Self {
         ApiError::sdk(CryptoMissingKeySource,
             "Either Key or Keystore Handle must be specified".into())
+    }
+
+    pub fn crypto_mnemonic_generation_failed() -> Self {
+        ApiError::sdk(CryptoMnemonicGenerationFailed,
+            "Mnemonic generation failed (this must never be)".into())
+    }
+
+    pub fn crypto_mnemonic_from_entropy_failed(reason: &str) -> Self {
+        ApiError::sdk(CryptoMnemonicFromEntropyFailed,
+            format!("Mnemonic from entropy failed: {}", reason))
     }
 
 // SDK Contracts
@@ -458,6 +469,8 @@ pub enum ApiSdkErrorCode {
     CryptoMissingKeySource = 2021,
     CryptoBip39InvalidDictionary = 2022,
     CryptoBip39InvalidWordCount = 2023,
+    CryptoMnemonicGenerationFailed = 2024,
+    CryptoMnemonicFromEntropyFailed = 2025,
 
     ContractsLoadFailed = 3001,
     ContractsInvalidImage = 3002,

@@ -18,13 +18,9 @@ use hmac::*;
 use sha2::{Sha512, Digest};
 use base58::*;
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
-use crypto::keys::{key256, key512, Key256, Key264};
 use crypto::sha::sha256;
-use hmac::*;
 use pbkdf2::pbkdf2;
 use secp256k1::{PublicKey, SecretKey};
-use sha2::{Digest, Sha512};
-use types::{ApiError, ApiResult};
 
 pub fn hdkey_xprv_from_mnemonic(phrase: &String) -> ApiResult<String> {
     Ok(HDPrivateKey::from_mnemonic(phrase)?.serialize_to_string())

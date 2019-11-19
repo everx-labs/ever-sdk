@@ -126,65 +126,97 @@ pub(crate) struct NaclSignParams {
 #[derive(Deserialize)]
 #[allow(non_snake_case)]
 pub(crate) struct MnemonicWordsParams {
-    pub dictionary: Option<u8>,
-    pub wordCount: Option<u8>,
+    #[serde(default = "default_dictionary")]
+    pub dictionary: u8,
+    #[serde(default = "default_word_count")]
+    pub wordCount: u8,
 }
 
 #[derive(Deserialize)]
 #[allow(non_snake_case)]
 pub(crate) struct MnemonicGenerateParams {
-    pub dictionary: Option<u8>,
-    pub wordCount: Option<u8>,
+    #[serde(default = "default_dictionary")]
+    pub dictionary: u8,
+    #[serde(default = "default_word_count")]
+    pub wordCount: u8,
 }
 
 #[derive(Deserialize)]
 #[allow(non_snake_case)]
 pub(crate) struct MnemonicFromEntropyParams {
-    pub dictionary: Option<u8>,
-    pub wordCount: Option<u8>,
+    #[serde(default = "default_dictionary")]
+    pub dictionary: u8,
+    #[serde(default = "default_word_count")]
+    pub wordCount: u8,
     pub entropy: InputMessage,
 }
 
 #[derive(Deserialize)]
 #[allow(non_snake_case)]
 pub(crate) struct MnemonicVerifyParams {
-    pub dictionary: Option<u8>,
-    pub wordCount: Option<u8>,
+    #[serde(default = "default_dictionary")]
+    pub dictionary: u8,
+    #[serde(default = "default_word_count")]
+    pub wordCount: u8,
     pub phrase: String,
 }
 
 #[derive(Deserialize)]
 #[allow(non_snake_case)]
 pub(crate) struct HDKeyFromMnemonicParams {
-    pub dictionary: Option<u8>,
-    pub wordCount: Option<u8>,
+    #[serde(default = "default_dictionary")]
+    pub dictionary: u8,
+    #[serde(default = "default_word_count")]
+    pub wordCount: u8,
     pub phrase: String,
 }
 
 #[derive(Deserialize)]
 #[allow(non_snake_case)]
-pub(crate) struct HDKeyDeriveParams {
-    serialized: String,
-    index: u32,
-    #[serde(default = "default_hardened")]
-    hardened: bool,
+pub(crate) struct MnemonicDeriveSignKeysParams {
+    #[serde(default = "default_dictionary")]
+    pub dictionary: u8,
+    #[serde(default = "default_word_count")]
+    pub wordCount: u8,
+    pub phrase: String,
+    #[serde(default = "default_path")]
+    pub path: String,
     #[serde(default = "default_compliant")]
-    compliant: bool,
+    pub compliant: bool,
+}
+
+#[derive(Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct HDKeyDeriveParams {
+    pub serialized: String,
+    pub index: u32,
+    #[serde(default = "default_hardened")]
+    pub hardened: bool,
+    #[serde(default = "default_compliant")]
+    pub compliant: bool,
 }
 
 #[derive(Deserialize)]
 #[allow(non_snake_case)]
 pub(crate) struct HDKeyDerivePathParams {
-    serialized: String,
-    path: String,
+    pub serialized: String,
+    pub path: String,
     #[serde(default = "default_compliant")]
-    compliant: bool,
+    pub compliant: bool,
 }
 
 #[derive(Deserialize)]
 #[allow(non_snake_case)]
 pub(crate) struct HDKeyGetKeyParams {
-    serialized: String,
+    pub serialized: String,
+}
+
+fn default_dictionary() -> u8 {
+    0
+}
+
+fn default_word_count() -> u8 {
+    24
 }
 
 fn default_hardened() -> bool {
@@ -193,6 +225,10 @@ fn default_hardened() -> bool {
 
 fn default_compliant() -> bool {
     true
+}
+
+fn default_path() -> String {
+    String::new()
 }
 
 fn default_result_encoding_hex() -> OutputEncoding {
@@ -235,9 +271,7 @@ const JAPANESE_DICTIONARY: u8 = 6;
 const KOREAN_DICTIONARY: u8 = 7;
 const SPANISH_DICTIONARY: u8 = 8;
 
-fn mnemonics(dictionary: Option<u8>, word_count: Option<u8>) -> ApiResult<Box<dyn CryptoMnemonic>> {
-    let dictionary = dictionary.unwrap_or(TON_DICTIONARY);
-    let word_count = word_count.unwrap_or(24);
+fn mnemonics(dictionary: u8, word_count: u8) -> ApiResult<Box<dyn CryptoMnemonic>> {
     if dictionary == TON_DICTIONARY {
         return Ok(Box::new(TonMnemonic::new(word_count)));
     }
@@ -430,6 +464,13 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 
     handlers.spawn("crypto.mnemonic.verify", |_context: &mut ClientContext, params: MnemonicVerifyParams| {
         mnemonics(params.dictionary, params.wordCount)?.is_phrase_valid(&params.phrase)
+    });
+
+    handlers.spawn("crypto.mnemonic.derive.sign.keys", |_context: &mut ClientContext, params: MnemonicDeriveSignKeysParams| {
+        mnemonics(params.dictionary, params.wordCount)?.derive_ed25519_keys_from_phrase(
+            &params.phrase,
+            &params.path,
+            params.compliant)
     });
 
     // HDKey

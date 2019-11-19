@@ -16,12 +16,11 @@ use bip39::{Language, Mnemonic, MnemonicType};
 use crypto::hdkey::HDPrivateKey;
 use crypto::keys::{hmac_sha512, pbkdf2_hmac_sha512, KeyPair};
 use ed25519_dalek::{PublicKey, SecretKey};
-use bip39::{Mnemonic, MnemonicType::Words12, Language::English};
 use types::{ApiResult, ApiError};
 use hmac::Hmac;
 use pbkdf2::pbkdf2;
 use sha2::Sha512;
-use types::{ApiError, ApiResult};
+use crypto::random::generate_bytes;
 
 pub trait CryptoMnemonic {
     fn get_words(&self) -> ApiResult<String>;
@@ -100,7 +99,6 @@ impl CryptoMnemonic for Bip39Mnemonic {
         Ok(Mnemonic::validate(phrase.as_str(), self.language).is_ok())
     }
 
-    #[allow(dead_code)]
     fn seed_from_phrase_and_salt(&self, phrase: &String, salt: &String) -> ApiResult<String> {
         let mnemonic = Mnemonic::from_phrase(phrase, self.language)
             .map_err(|err| ApiError::crypto_bip39_invalid_phrase(err))?;
@@ -132,7 +130,37 @@ impl TonMnemonic {
     pub fn new(word_count: u8) -> Self {
         TonMnemonic { word_count }
     }
+
+    fn words_from_bytes(&self, bytes: &[u8]) -> Vec<&str> {
+        let mut words = Vec::new();
+        for i in 0usize..self.word_count as usize {
+            let mut word_i = 0;
+            for j in 0usize..11 {
+                let offset = i * 11 + j;
+                if (bytes[offset / 8] & (1 << (offset & 7)) as u8) != 0 {
+                    word_i |= 1 << j;
+                }
+            }
+            words.push(TON_WORDS[word_i]);
+        }
+        words
+    }
+
+    fn entropy_from_phrase(phrase: &String) -> [u8; 64] {
+        hmac_sha512(phrase.as_bytes(), &[])
+    }
+
+    fn seed_from_phrase(phrase: &String, salt: &str, c: usize) -> [u8; 64] {
+        let entropy = Self::entropy_from_phrase(&phrase);
+        pbkdf2_hmac_sha512(&entropy, salt.as_bytes(), c)
+    }
+
+    fn is_basic_seed(phrase: &String) -> bool {
+        let seed = Self::seed_from_phrase(&phrase, "TON seed version", 100_000 / 256);
+        seed[0] == 0
+    }
 }
+
 
 impl CryptoMnemonic for TonMnemonic {
     fn get_words(&self) -> ApiResult<String> {
@@ -140,7 +168,17 @@ impl CryptoMnemonic for TonMnemonic {
     }
 
     fn generate_random_phrase(&self) -> ApiResult<String> {
-        panic!()
+        let max_iterations: i32 = 256 * 20;
+        for _ in 0..max_iterations {
+            let rnd = generate_bytes(((self.word_count as usize) * 11 + 7) / 8);
+            let words = self.words_from_bytes(&rnd);
+            let phrase: String = words.join(" ");
+            if !Self::is_basic_seed(&phrase) {
+                continue;
+            }
+            return Ok(phrase);
+        }
+        return Err(ApiError::crypto_mnemonic_generation_failed());
     }
 
     fn derive_ed25519_keys_from_phrase(
@@ -149,25 +187,37 @@ impl CryptoMnemonic for TonMnemonic {
         _path: &String,
         _compliant: bool,
     ) -> ApiResult<KeyPair> {
-        let entropy = hmac_sha512(phrase.as_bytes(), &[]);
-        let seed = pbkdf2_hmac_sha512(&entropy, "TON default seed".as_bytes(), 100_000);
+        let seed = Self::seed_from_phrase(&phrase, "TON default seed", 100_000);
         ed25519_keys_from_secret_bytes(&seed[..32])
     }
 
-    fn phrase_from_entropy(&self, _entropy: &[u8]) -> ApiResult<String> {
-        panic!()
+    fn phrase_from_entropy(&self, entropy: &[u8]) -> ApiResult<String> {
+        if entropy.len() != 24 * 11 / 8 {
+            return Err(ApiError::crypto_mnemonic_from_entropy_failed("Invalid entropy size"));
+        }
+        let phrase = self.words_from_bytes(entropy).join(" ");
+        if Self::is_basic_seed(&phrase) {
+            Ok(phrase)
+        } else {
+            Err(ApiError::crypto_mnemonic_from_entropy_failed("Invalid entropy"))
+        }
     }
 
-    fn is_phrase_valid(&self, _phrase: &String) -> ApiResult<bool> {
-        panic!()
+    fn is_phrase_valid(&self, phrase: &String) -> ApiResult<bool> {
+        for word in phrase.split(" ") {
+            if TON_WORDS.contains(&word) {
+                return Ok(false);
+            }
+        };
+        Ok(true)
     }
 
-    fn seed_from_phrase_and_salt(&self, _phrase: &String, _salt: &String) -> ApiResult<String> {
-        panic!()
+    fn seed_from_phrase_and_salt(&self, phrase: &String, salt: &String) -> ApiResult<String> {
+        Ok(hex::encode(Self::seed_from_phrase(phrase, salt, 100_000).as_ref()))
     }
 
-    fn entropy_from_phrase(&self, _phrase: &String) -> ApiResult<String> {
-        panic!()
+    fn entropy_from_phrase(&self, phrase: &String) -> ApiResult<String> {
+        Ok(hex::encode(Self::entropy_from_phrase(&phrase).as_ref()))
     }
 }
 

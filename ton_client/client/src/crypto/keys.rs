@@ -232,3 +232,4 @@ pub(crate) fn pbkdf2_hmac_sha512(password: &[u8], salt: &[u8], c: usize) -> [u8;
     pbkdf2::pbkdf2::<Hmac<Sha512>>(password, salt, c, &mut result);
     result
 }
+
