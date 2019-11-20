@@ -13,7 +13,6 @@
 */
 
 use crate::*;
-use crc16::*;
 use ed25519_dalek::{Keypair, PublicKey};
 use std::convert::Into;
 use std::io::{Cursor, Read, Seek};
@@ -271,7 +270,10 @@ pub fn decode_std_base64(data: &str) -> SdkResult<MsgAddressInt> {
     let vec = base64::decode(&data)?;
 
     // check CRC and address tag
-    if State::<XMODEM>::calculate(&vec[..34]).to_be_bytes() != &vec[34..36] || vec[0] & 0x3f != 0x11 {
+    let mut crc = crc_any::CRC::crc16xmodem();
+    crc.digest(&vec[..34]);
+
+    if crc.get_crc_vec_be() != &vec[34..36] || vec[0] & 0x3f != 0x11 {
         bail!(SdkErrorKind::InvalidArg(data.to_owned()));
     };
 
@@ -285,7 +287,10 @@ pub fn encode_base64(address: &MsgAddressInt, bounceable: bool, test: bool, as_u
         let mut vec = vec![tag];
         vec.extend_from_slice(&address.workchain_id.to_be_bytes());
         vec.append(&mut address.address.get_bytestring(0));
-        vec.extend_from_slice(&State::<XMODEM>::calculate(&vec).to_be_bytes());
+
+        let mut crc = crc_any::CRC::crc16xmodem();
+        crc.digest(&vec);
+        vec.extend_from_slice(&crc.get_crc_vec_be());
 
         let result = base64::encode(&vec);
 

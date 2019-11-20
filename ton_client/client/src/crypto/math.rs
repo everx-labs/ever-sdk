@@ -21,6 +21,12 @@ fn parse_big_int(hex: &str) -> ApiResult<BigInt> {
         .ok_or(ApiError::crypto_invalid_big_int(&hex.to_string()))
 }
 
+pub(crate) fn ton_crc16(data: &[u8]) -> u16 {
+    let mut crc = crc_any::CRC::crc16xmodem();
+    crc.digest(data);
+    crc.get_crc() as u16
+}
+
 pub fn modular_power(base: &String, exponent: &String, modulus: &String) -> ApiResult<String> {
     let base = parse_big_int(&base)?;
     let exp = parse_big_int(&exponent)?;
