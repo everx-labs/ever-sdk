@@ -17,10 +17,20 @@ use std::collections::HashMap;
 use serde::{Deserialize, Deserializer};
 use serde::de::{Unexpected, Error as SerdeError};
 use serde_json;
-use {DataItem, Function, Event, Token, Param};
-use tvm::stack::SliceData;
+use {Function, Event, Token, Param};
+use tvm::stack::{SliceData, BuilderData};
+use tvm::stack::dictionary::HashmapE;
 use crate::error::*;
-use super::function::ABI_VERSION;
+use tvm::block::Serializable;
+
+pub const   ABI_VERSION: u8 = 1;
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct DataItem {
+    pub key: u64,
+    #[serde(flatten)]
+    pub value: Param,
+}
 
 /// API building calls to contracts ABI.
 #[derive(Clone, Debug, PartialEq)]
@@ -55,12 +65,16 @@ impl<'a> Deserialize<'a> for Contract {
 
         for mut function in serde_contract.functions {
             function.set_time = serde_contract.set_time;
-            function.id = function.get_function_id();
+            if function.id.is_none() {
+                function.id = Some(function.get_function_id());
+            }
             result.functions.insert(function.name.clone(), function);
         }
 
         for mut event in serde_contract.events {
-            event.id = event.get_function_id();
+            if event.id.is_none() {
+                event.id = Some(event.get_function_id());
+            }
             result.events.insert(event.name.clone(), event);
         }
 
@@ -128,7 +142,7 @@ impl Contract {
     /// Returns `Event` struct with provided function id.
     pub fn event_by_id(&self, id: u32) -> AbiResult<&Event> {
         for (_, event) in &self.events {
-            if event.id == id {
+            if event.get_id() == id {
                 return Ok(event);
             }
         }
@@ -191,6 +205,50 @@ impl Contract {
             tokens: tokens,
             params: func.input_params()
         })
+    }
+
+    pub const DATA_MAP_KEYLEN: usize = 64;
+
+    /// Changes initial values for public contract variables
+    pub fn update_data(&self, data: SliceData, tokens: &[Token]) -> AbiResult<SliceData> {
+        let mut map = HashmapE::with_data(
+            Self::DATA_MAP_KEYLEN, 
+            data,
+        );
+
+        for token in tokens {
+            let builder = token.value.pack_into_chain()?;
+            let key = self.data
+                .get(&token.name)
+                .ok_or(
+                    AbiErrorKind::InvalidData(format!("data item {} not found in contract ABI", token.name))
+                )?.key;
+
+                map.set(
+                    key.write_to_new_cell().unwrap().into(), 
+                    &builder.into(), 
+                )?;
+        }
+
+        Ok(map.write_to_new_cell()?.into())
+    }
+
+    /// Sets public key into contract data
+    pub fn insert_pubkey(data: SliceData, pubkey: &[u8]) -> AbiResult<SliceData> {
+        let pubkey_vec = pubkey.to_vec();
+        let pubkey_len = pubkey_vec.len() * 8;
+        let value = BuilderData::with_raw(pubkey_vec, pubkey_len)
+                .unwrap_or(BuilderData::new());
+
+        let mut map = HashmapE::with_data(
+            Self::DATA_MAP_KEYLEN, 
+            data,
+        );
+        map.set(
+            0u64.write_to_new_cell().unwrap().into(), 
+            &value.into(), 
+        )?;
+        Ok(map.write_to_new_cell()?.into())
     }
 }
 
