@@ -22,8 +22,7 @@ use tvm::block::{
     GetRepresentationHash, Message as TvmMessage, MsgAddressInt,
     Serializable, StateInit, AccountStatus};
 use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
-use tvm::stack::dictionary::HashmapE;
-use tvm::stack::{BuilderData, CellData, SliceData};
+use tvm::stack::{CellData, SliceData};
 use tvm::types::AccountId;
 
 pub use ton_abi::json_abi::DecodedMessage;
@@ -142,11 +141,11 @@ impl ContractImage {
     pub fn set_public_key(&mut self, pub_key: &PublicKey) -> SdkResult<()> {
         let state_init = &mut self.state_init;
 
-        let new_data = Self::insert_pubkey(
-            state_init.data.clone().unwrap_or_default(),
+        let new_data = AbiContract::insert_pubkey(
+            state_init.data.clone().unwrap_or_default().into(),
             pub_key.as_bytes(),
         )?;
-        state_init.set_data(new_data);
+        state_init.set_data(new_data.into_cell());
 
         self.id = state_init.hash()?.into();
 
@@ -209,57 +208,15 @@ impl ContractImage {
 
     ///Allows to change initial values for public contract variables
     pub fn update_data(&mut self, data_json: &str, abi_json: &str) -> SdkResult<()> {
-        let contract = ton_abi::Contract::load(abi_json.as_bytes())?;
+        let new_data = ton_abi::json_abi::update_contract_data(
+            abi_json,
+            data_json,
+            self.state_init.data.clone().unwrap_or_default().into())?;
 
-        let data_json: serde_json::Value = serde_json::from_str(&data_json)?;
-
-        let params: Vec<_> = contract
-            .data()
-            .values()
-            .map(|item| item.value.clone())
-            .collect();
-
-        let tokens = Tokenizer::tokenize_all(&params[..], &data_json)?;
-
-        let mut new_data = self.state_init.data.clone().unwrap_or_default();
-
-        for token in tokens {
-            let builder = token.value.pack_into_chain()?;
-            let key = contract
-                .data()
-                .get(&token.name)
-                .ok_or(
-                    SdkErrorKind::InvalidArg(format!("data item {} not found in contract ABI", token.name))
-                )?.key;
-
-            new_data = Self::insert_data_item(new_data, key, builder)?;
-        }
-        self.state_init.set_data(new_data.into());
+        self.state_init.set_data(new_data.into_cell());
         self.id = self.state_init.hash()?.into();
 
         ok!()
-    }
-
-    fn insert_pubkey(data: Arc<CellData>, pubkey: &[u8]) -> SdkResult<Arc<CellData>> {
-        let pubkey_vec = pubkey.to_vec();
-        let pubkey_len = pubkey_vec.len() * 8;
-        let value = BuilderData::with_raw(pubkey_vec, pubkey_len)
-                .unwrap_or(BuilderData::new()).into();
-        Self::insert_data_item(data, 0, value)
-    }
-
-    const DATA_MAP_KEYLEN: usize = 64;
-
-    fn insert_data_item(data: Arc<CellData>, key: u64, value: BuilderData) -> SdkResult<Arc<CellData>> {
-        let mut map = HashmapE::with_data(
-            Self::DATA_MAP_KEYLEN, 
-            data.into(),
-        );
-        map.set(
-            key.write_to_new_cell().unwrap().into(), 
-            &value.into(), 
-        )?;
-        Ok(map.write_to_new_cell()?.into())
     }
 }
 

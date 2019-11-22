@@ -43,14 +43,16 @@ struct TestClient {
 
 impl TestClient {
     fn new() -> Self {
-        log::set_boxed_logger(Box::new(SimpleLogger))
-            .map(|()| log::set_max_level(LevelFilter::Debug)).unwrap();
+        let _ = log::set_boxed_logger(Box::new(SimpleLogger))
+            .map(|()| log::set_max_level(LevelFilter::Debug));
+
         let context: InteropContext;
         unsafe {
             context = tc_create_context()
         }
         Self { context }
     }
+
     fn request(
         &self,
         method_name: &str,

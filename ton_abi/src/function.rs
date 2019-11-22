@@ -19,10 +19,10 @@ use chrono::prelude::*;
 use sha2::{Digest, Sha256, Sha512};
 use {Param, Token, TokenValue};
 use ed25519_dalek::*;
+use serde::de::Error;
 use tvm::stack::{BuilderData, SliceData, CellData, IBitstring};
 use crate::error::*;
-
-pub const   ABI_VERSION: u8 = 1;
+use super::contract::ABI_VERSION;
 
 /// Contract function specification.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -35,13 +35,14 @@ pub struct Function {
     /// Function output.
     #[serde(default)]
     pub outputs: Vec<Param>,
+    /// Calculated function ID
+    #[serde(default)]
+    #[serde(deserialize_with = "deserialize_opt_u32_from_string")]
+    pub id: Option<u32>,
 
-    /// Signed function.
+    /// Set timestamp.
     #[serde(skip_deserializing)]
     pub set_time: bool,
-    /// Calculated function ID
-    #[serde(skip_deserializing)]
-    pub id: u32
 }
 
 impl Function {
@@ -108,19 +109,25 @@ impl Function {
     pub fn get_function_id(&self) -> u32 {
         let signature = self.get_function_signature();
 
-        //println!("{}", signature);
-
         Self::calc_function_id(&signature)
+    }
+
+    /// Returns function ID
+    pub fn get_id(&self) -> u32 {
+        match self.id {
+            Some(id) => id,
+            None => self.get_function_id()
+        }
     }
 
     /// Returns ID for call message
     pub fn get_input_id(&self) -> u32 {
-        self.id & 0x7FFFFFFF
+        self.get_id() & 0x7FFFFFFF
     }
 
     /// Returns ID for response message
     pub fn get_output_id(&self) -> u32 {
-        self.id | 0x80000000
+        self.get_id() | 0x80000000
     }
 
     /// Decodes provided params from SliceData
@@ -263,98 +270,46 @@ impl Function {
         Ok(builder)
     }
 
+    /// Check if message body is related to this function
     pub fn is_my_message(&self, data: SliceData, _internal: bool) -> Result<bool, AbiErrorKind> {
         let decoded_id = Self::decode_id(data)?;
         Ok(self.get_input_id() == decoded_id || self.get_output_id() == decoded_id)
     }
 }
 
+struct StringVisitor;
 
-/// Contract event specification.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
-pub struct Event {
-    /// Event name.
-    pub name: String,
-    /// Event input.
-    #[serde(default)]
-    pub inputs: Vec<Param>,
+impl<'de> serde::de::Visitor<'de> for StringVisitor {
+    type Value = String;
 
-    #[serde(skip_deserializing)]
-    pub id: u32
-}
-
-
-impl Event {
-    /// Returns all input params of given function.
-    pub fn input_params(&self) -> Vec<Param> {
-        self.inputs.iter()
-            .map(|p| p.clone())
-            .collect()
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("String")
     }
 
-    /// Returns true if function has input parameters, false in not
-    pub fn has_input(&self) -> bool {
-        self.inputs.len() != 0
+    fn visit_string<E>(self, v: String) -> Result<Self::Value, E> where E: serde::de::Error {
+        Ok(v)
     }
 
-    /// Retruns ABI function signature
-    pub fn get_function_signature(&self) -> String {
-        let input_types = self.inputs.iter()
-            .map(|param| param.kind.type_signature())
-            .collect::<Vec<String>>()
-            .join(",");
-
-        format!("{}({})v{}", self.name, input_types, ABI_VERSION)
-    }
-
-    /// Computes function ID for contract function
-    pub fn get_function_id(&self) -> u32 {
-        let signature = self.get_function_signature();
-
-        //println!("{}", signature);
-
-        Function::calc_function_id(&signature) & 0x7FFFFFFF
-    }
-
-    /// Decodes provided params from SliceData
-    fn decode_params(&self, params: Vec<Param>, mut cursor: SliceData) -> AbiResult<Vec<Token>> {
-        let mut tokens = vec![];
-        let original = cursor.clone();
-
-        let id = cursor.get_next_u32()?;
-
-        if id != self.id { Err(AbiErrorKind::WrongId(id))? }
-
-        for param in params {
-            let (token_value, new_cursor) = TokenValue::read_from(&param.kind, cursor)?;
-
-            cursor = new_cursor;
-            tokens.push(Token { name: param.name, value: token_value });
-        }
-
-        if cursor.remaining_references() != 0 || cursor.remaining_bits() != 0 {
-            bail!(AbiErrorKind::IncompleteDeserializationError(original))
-        } else {
-            Ok(tokens)
-        }
-    }
-
-    /// Parses the ABI function call to list of tokens.
-    pub fn decode_input(&self, data: SliceData) -> AbiResult<Vec<Token>> {
-        self.decode_params(self.input_params(), data)
-    }
-
-    /// Decodes function id from contract answer
-    pub fn decode_id(mut data: SliceData) -> AbiResult<u32> {
-        Ok(data.get_next_u32()?)
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> where E: serde::de::Error {
+        Ok(v.to_string())
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
-pub struct DataItem {
-    pub key: u64,
-    #[serde(flatten)]
-    pub value: Param,
+pub fn deserialize_opt_u32_from_string<'de, D>(d: D) -> Result<Option<u32>, D::Error>
+    where D: serde::Deserializer<'de>
+{
+    match d.deserialize_string(StringVisitor) {
+        Err(_) => Ok(None),
+        Ok(string) => {
+            if !string.starts_with("0x") {
+                return Err(D::Error::custom(format!("Number parsing error: number must be prefixed with 0x ({})", string)));
+            }
+        
+            u32::from_str_radix(&string[2..], 16)
+                .map_err(|err| D::Error::custom(format!("Error parsing number: {}", err)))
+                .map(|value| Some(value))
+        }
+    }
 }
 
 #[cfg(test)]
