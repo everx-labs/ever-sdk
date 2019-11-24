@@ -39,7 +39,6 @@ release.ios.archs.push('i386-apple-ios', 'armv7-apple-ios', 'armv7s-apple-ios', 
 release.android.archs.push('aarch64-linux-android', 'armv7-linux-androideabi');
 release.android.jniArchs.push('arm64-v8a', 'armeabi-v7a');
 const cargoTargetsIOS = [
-	"x86_64-apple-darwin",
 	"aarch64-apple-ios",
 	"armv7-apple-ios",
 	"armv7s-apple-ios",
@@ -47,7 +46,6 @@ const cargoTargetsIOS = [
 	"x86_64-apple-ios"
 ];
 const cargoTargetsAndroid = [
-	"x86_64-apple-darwin",
 	"aarch64-linux-android",
 	"armv7-linux-androideabi",
 	"i686-linux-android"
@@ -144,11 +142,13 @@ async function getNDK() {
 
 
 async function spawnAll(items, getArgs) {
+	const list = [];
 	for(const item of items) {
 		const args = getArgs(item);
 		console.log(`Build: ${args.join(' ')}`);
-		await spawnProcess(args[0], args.slice(1));
+		list.push(spawnProcess(args[0], args.slice(1)));
 	}
+	return Promise.all(list);
 }
 
 
@@ -243,7 +243,7 @@ async function buildReactNativeAndroidLibrary() {
 	fs.mkdirSync(outDir);
 	try {
 		await checkNDK();
-		let cargoTargets = [];
+		let cargoTargets = ["x86_64-apple-darwin"];
 		cargoTargets = build_iOS ? cargoTargets.concat(cargoTargetsIOS) : cargoTargets;
 		cargoTargets = build_Android ? cargoTargets.concat(cargoTargetsAndroid) : cargoTargets;
 		await spawnProcess('rustup', ['target', 'add'].concat(cargoTargets));
