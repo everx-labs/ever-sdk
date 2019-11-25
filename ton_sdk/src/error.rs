@@ -95,8 +95,9 @@ error_chain! {
         InitializeError {
             description("SDK initialize error")
         }
-        DefaultWorkchainNotSet {
-            description("Default workchain not set")
+        NetworkError(msg: String){
+            description("Network error"),
+            display("Network error: {}", msg)
         }
     }
 }

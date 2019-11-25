@@ -27,6 +27,7 @@ extern crate sha2;
 extern crate base64;
 extern crate chrono;
 extern crate crc_any;
+extern crate reqwest;
 
 #[cfg(feature = "node_interaction")]
 #[macro_use]
@@ -83,8 +84,7 @@ pub mod json_helper;
 #[cfg(feature = "node_interaction")]
 pub fn init(config: NodeClientConfig) -> SdkResult<()> {
     requests_helper::init(config.requests_config);
-    queries_helper::init(config.queries_config);
-    Ok(())
+    queries_helper::init(config.queries_config)
 }
 
 /// Init SKD. Globally saves queries and requests server URLs
