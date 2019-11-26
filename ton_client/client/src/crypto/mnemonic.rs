@@ -205,7 +205,7 @@ impl CryptoMnemonic for TonMnemonic {
 
     fn is_phrase_valid(&self, phrase: &String) -> ApiResult<bool> {
         for word in phrase.split(" ") {
-            if TON_WORDS.contains(&word) {
+            if !TON_WORDS.contains(&word) {
                 return Ok(false);
             }
         };

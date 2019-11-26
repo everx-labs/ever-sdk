@@ -152,6 +152,14 @@ fn test_tg_mnemonic() {
         Value::String(public),
     ));
     assert_eq!(ton_public, "PuYGEX9Zreg-CX4Psz5dKehzW9qCs794oBVUKqqFO7aWAOTD");
+    let ton_phrase = "shove often foil innocent soft slim pioneer day uncle drop nephew soccer worry renew public hand word nut again dry first delay first maple";
+    let is_valid = client.request(
+        "crypto.mnemonic.verify",
+        json!({
+            "phrase": "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle"
+        }),
+    ).unwrap();
+    assert_eq!(is_valid, "true");
 }
 
 #[test]
