@@ -300,6 +300,7 @@ fn test_contract_image_from_file() {
 }
 
 #[test]
+#[ignore]
 fn test_deploy_empty_contract() {
     init_node_connection();
 
