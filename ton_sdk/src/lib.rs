@@ -27,7 +27,6 @@ extern crate sha2;
 extern crate base64;
 extern crate chrono;
 extern crate crc_any;
-extern crate reqwest;
 
 #[cfg(feature = "node_interaction")]
 #[macro_use]
@@ -41,6 +40,8 @@ extern crate serde_json;
 extern crate futures;
 #[cfg(feature = "node_interaction")]
 extern crate graphite;
+#[cfg(feature = "node_interaction")]
+extern crate reqwest;
 
 pub use ton_abi::json_abi;
 pub use ton_abi::Contract as AbiContract;
