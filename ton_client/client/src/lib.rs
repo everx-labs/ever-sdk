@@ -38,7 +38,7 @@ extern crate base58;
 extern crate byteorder;
 extern crate secp256k1;
 extern crate ton_sdk;
-extern crate tvm;
+extern crate ton_vm as tvm;
 
 mod types;
 mod dispatch;

@@ -17,7 +17,7 @@ mod tokenize_tests {
     // use serde::Serialize;
     use std::collections::HashMap;
     use token::{Detokenizer, Tokenizer};
-    use tvm::block::MsgAddress;
+    use ton_block::MsgAddress;
     use tvm::stack::{BuilderData, SliceData};
     use tvm::types::AccountId;
 
@@ -570,7 +570,7 @@ mod tokenize_tests {
 mod types_check_tests {
     use {Int, Param, ParamType, Token, TokenValue, Uint};
     use tvm::stack::BuilderData;
-    use tvm::block::MsgAddress;
+    use ton_block::MsgAddress;
     use std::collections::HashMap;
 
     #[test]

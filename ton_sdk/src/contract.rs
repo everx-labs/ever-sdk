@@ -18,12 +18,12 @@ use ed25519_dalek::{Keypair, PublicKey};
 use std::convert::Into;
 use std::io::{Cursor, Read, Seek};
 use std::sync::Arc;
-use tvm::block::{
+use ton_block::{
     Deserializable, ExternalInboundMessageHeader,
     GetRepresentationHash, Message as TvmMessage, MsgAddressInt,
     Serializable, StateInit, AccountStatus};
-use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
-use tvm::stack::dictionary::HashmapE;
+use ton_types::cells_serialization::{deserialize_cells_tree, BagOfCells};
+use ton_types::dictionary::HashmapE;
 use tvm::stack::{BuilderData, CellData, SliceData};
 use tvm::types::AccountId;
 
@@ -238,7 +238,7 @@ impl ContractImage {
         self.state_init.set_data(new_data.into());
         self.id = self.state_init.hash()?.into();
 
-        ok!()
+        Ok(())
     }
 
     fn insert_pubkey(data: Arc<CellData>, pubkey: &[u8]) -> SdkResult<Arc<CellData>> {

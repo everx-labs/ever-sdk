@@ -30,7 +30,7 @@ use rand::{thread_rng, Rng};
 use sha2::Sha512;
 use std::str::FromStr;
 use ton_sdk::*;
-use tvm::block::{
+use ton_block::{
     Message, MessageId, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
     ExternalInboundMessageHeader, CurrencyCollection, Serializable, 
     TransactionProcessingStatus, TransactionId

@@ -21,8 +21,8 @@ use crate::error::*;
 
 use num_bigint::{BigInt, BigUint};
 use tvm::stack::{CellData, BuilderData, SliceData, IBitstring};
-use tvm::stack::dictionary::{HashmapE, HashmapType};
-use tvm::block::types::Grams;
+use ton_types::dictionary::{HashmapE, HashmapType};
+use ton_block::types::Grams;
 
 impl TokenValue {
     /// Deserializes value from `SliceData` to `TokenValue`
@@ -45,14 +45,14 @@ impl TokenValue {
             ParamType::Map(key_type, value_type) => Self::read_hashmap(key_type, value_type, cursor),
             ParamType::Address => {
                 cursor = find_next_bits(cursor, 1)?;
-                let address = <MsgAddress as tvm::block::Deserializable>::construct_from(&mut cursor)?;
+                let address = <MsgAddress as ton_block::Deserializable>::construct_from(&mut cursor)?;
                 Ok((TokenValue::Address(address), cursor))
             }
             ParamType::Bytes => Self::read_bytes(None, cursor),
             ParamType::FixedBytes(size) => Self::read_bytes(Some(*size), cursor),
             ParamType::Gram => {
                 cursor = find_next_bits(cursor, 1)?;
-                let gram = <Grams as tvm::block::Deserializable>::construct_from(&mut cursor)?;
+                let gram = <Grams as ton_block::Deserializable>::construct_from(&mut cursor)?;
                 Ok((TokenValue::Gram(gram), cursor))
             }
         }

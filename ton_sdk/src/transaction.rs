@@ -14,7 +14,7 @@
 
 use crate::*;
 use futures::stream::Stream;
-use tvm::block::{TransactionProcessingStatus, AccStatusChange, ComputeSkipReason};
+use ton_block::{TransactionProcessingStatus, AccStatusChange, ComputeSkipReason};
 use serde::Deserialize;
 
 #[derive(Deserialize, Default, Debug)]

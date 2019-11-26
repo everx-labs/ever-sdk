@@ -16,8 +16,8 @@ use super::*;
 use crate::error::*;
 
 use tvm::stack::{BuilderData, IBitstring};
-use tvm::block::Serializable;
-use tvm::stack::dictionary::HashmapE;
+use ton_block::Serializable;
+use ton_types::dictionary::HashmapE;
 
 use num_bigint::{BigInt, Sign};
 

@@ -14,8 +14,10 @@
 
 #![recursion_limit="128"] // needed for error_chain
 
+extern crate ton_block;
+extern crate ton_types;
 #[macro_use]
-extern crate tvm;
+extern crate ton_vm as tvm;
 extern crate ton_abi;
 
 #[macro_use]

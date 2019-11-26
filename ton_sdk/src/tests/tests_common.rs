@@ -18,7 +18,7 @@ use futures::Stream;
 use rand::rngs::OsRng;
 use sha2::Sha512;
 use std::str::FromStr;
-use tvm::block::{
+use ton_block::{
     MsgAddressInt,
     TransactionProcessingStatus
 };

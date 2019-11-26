@@ -233,7 +233,7 @@ use client::ClientContext;
 use ed25519_dalek::Keypair;
 
 #[cfg(feature = "node_interaction")]
-use tvm::block::TransactionProcessingStatus;
+use ton_block::TransactionProcessingStatus;
 
 fn create_image(abi: &serde_json::Value, init_params: Option<&serde_json::Value>, image_base64: &String, public_key: &PublicKey) -> ApiResult<ContractImage> {
     let bytes = base64::decode(image_base64)

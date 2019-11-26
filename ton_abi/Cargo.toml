@@ -3,6 +3,10 @@ name = "ton_abi"
 version = "0.1.0"
 
 [dependencies]
+ton_types = { git = "ssh://git@github.com/tonlabs/ton-types.git" }
+ton_block = { git = "ssh://git@github.com/tonlabs/ton-block.git" }
+ton_vm = { git = "ssh://git@github.com/tonlabs/ton-vm.git" }
+
 base64 = "0.10.0"
 pretty_assertions = "0.5.1"
 num-bigint = "0.2.2"
@@ -15,10 +19,6 @@ ed25519-dalek = "^0.9.1"
 error-chain = "0.12.1"
 chrono = "0.4.9"
 byteorder = "1.3.2"
-
-[dependencies.tvm]
-git = "https://github.com/tonlabs/ton-labs-vm.git"
-default-features = false
 
 [dev-dependencies.rand]
 version = "0.6.1"

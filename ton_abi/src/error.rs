@@ -22,10 +22,11 @@ error_chain! {
 
     foreign_links {
         Io(std::io::Error);
-        BlockError(tvm::block::BlockError);
+        BlockError(ton_block::BlockError);
         TvmError(tvm::error::TvmError);
         SerdeError(serde_json::Error);
         TvmException(tvm::types::Exception);
+        TvmExceptionCode(tvm::types::ExceptionCode);
         TryFromIntError(std::num::TryFromIntError);
     }
 

@@ -12,17 +12,17 @@
 * limitations under the License.
 */
 
+use crate::error::*;
 use std::sync::Arc;
 use chrono::prelude::*;
 use std::convert::TryFrom;
 use tvm::executor::Engine;
-use tvm::block::{
-    BlockResult,
+use ton_block::{
     Message,
     Serializable,
     Deserializable,
 };
-use tvm::block::error::*;
+use ton_block::error::*;
 use tvm::stack::{CellData, IntegerData, SaveList, SliceData, Stack, StackItem};
 use tvm::SmartContractInfo;
 
@@ -32,7 +32,7 @@ mod tests;
 
 #[allow(dead_code)]
 pub fn local_contract_call(code: Arc<CellData>, data: Option<Arc<CellData>>, msg: &Message)
--> BlockResult<Vec<Message>> {
+-> SdkResult<Vec<Message>> {
     let msg_cell = msg.write_to_new_cell()?.into();
     let mut stack = Stack::new();
     stack

@@ -52,7 +52,8 @@ error_chain! {
         Io(io::Error);
         Tvm(tvm::error::TvmError);
         TvmException(tvm::types::Exception);
-        TonBlocks(tvm::block::BlockError);
+        TvmExceptionCode(tvm::types::ExceptionCode);
+        TonBlocks(ton_block::BlockError);
         Graphql(GraphiteError);
         SerdeJson(serde_json::Error);
         TryFromSliceError(std::array::TryFromSliceError);

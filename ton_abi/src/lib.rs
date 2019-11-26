@@ -18,7 +18,9 @@ extern crate hex;
 #[cfg(test)]
 #[macro_use]
 extern crate pretty_assertions;
-extern crate tvm;
+extern crate ton_block;
+extern crate ton_types;
+extern crate ton_vm as tvm;
 extern crate serde;
 extern crate serde_json;
 #[macro_use]
