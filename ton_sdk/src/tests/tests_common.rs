@@ -105,6 +105,8 @@ fn test_print_address() {
 }
 
 #[test]
+
+#[ignore]
 fn test_generate_keypair_and_address() {
     // generate key pair
     let mut csprng = OsRng::new().unwrap();
@@ -116,6 +118,7 @@ fn test_generate_keypair_and_address() {
 }
 
 #[test]
+#[ignore]
 fn test_send_grams_from_giver() {
     init_node_connection();
 
