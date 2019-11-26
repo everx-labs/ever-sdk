@@ -40,6 +40,8 @@ extern crate serde_json;
 extern crate futures;
 #[cfg(feature = "node_interaction")]
 extern crate graphite;
+#[cfg(feature = "node_interaction")]
+extern crate reqwest;
 
 pub use ton_abi::json_abi;
 pub use ton_abi::Contract as AbiContract;
@@ -83,8 +85,7 @@ pub mod json_helper;
 #[cfg(feature = "node_interaction")]
 pub fn init(config: NodeClientConfig) -> SdkResult<()> {
     requests_helper::init(config.requests_config);
-    queries_helper::init(config.queries_config);
-    Ok(())
+    queries_helper::init(config.queries_config)
 }
 
 /// Init SKD. Globally saves queries and requests server URLs

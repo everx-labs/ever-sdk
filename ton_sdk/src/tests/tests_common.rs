@@ -226,8 +226,8 @@ pub fn get_grams_from_giver(address: MsgAddressInt) {
             WALLET_ADDRESS.to_owned(),
             "sendTransaction",
             json!({
-                "dest": format!("0x{:x}", address.get_address()),
-                "value": 500_000_000u64,
+                "dest": address.to_string(),
+                "value": 200_000_000u64,
                 "bounce": false
             }).to_string(),
             SIMPLE_WALLET_ABI,
