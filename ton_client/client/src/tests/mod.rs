@@ -160,6 +160,13 @@ fn test_tg_mnemonic() {
         }),
     ).unwrap();
     assert_eq!(is_valid, "true");
+    let is_valid = client.request(
+        "crypto.mnemonic.verify",
+        json!({
+            "phrase": "unit follow"
+        }),
+    ).unwrap();
+    assert_eq!(is_valid, "false");
 }
 
 #[test]
