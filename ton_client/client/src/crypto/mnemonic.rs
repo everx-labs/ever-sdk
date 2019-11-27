@@ -204,12 +204,14 @@ impl CryptoMnemonic for TonMnemonic {
     }
 
     fn is_phrase_valid(&self, phrase: &String) -> ApiResult<bool> {
+        let mut count = 0u8;
         for word in phrase.split(" ") {
             if !TON_WORDS.contains(&word) {
                 return Ok(false);
             }
+            count += 1;
         };
-        Ok(true)
+        Ok(count == self.word_count)
     }
 
     fn seed_from_phrase_and_salt(&self, phrase: &String, salt: &String) -> ApiResult<String> {
