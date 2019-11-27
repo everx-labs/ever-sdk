@@ -15,8 +15,6 @@
 use crate::*;
 use std::sync::Mutex;
 
-extern crate reqwest;
-
 use self::reqwest::Client;
 use self::reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use serde_json::json;

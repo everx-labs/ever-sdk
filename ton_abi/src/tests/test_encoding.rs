@@ -23,7 +23,7 @@ use tvm::stack::dictionary::{HashmapE, HashmapType};
 use tvm::block::{AnycastInfo, BlockResult, Grams, MsgAddress, Serializable};
 use tvm::types::AccountId;
 
-use {Function, Int, Param, ParamType, Token, TokenValue, Uint};
+use {Function, Event, Int, Param, ParamType, Token, TokenValue, Uint};
 
 fn get_function_id(signature: &[u8]) -> u32 {
     // Sha256 hash of signature
@@ -88,19 +88,16 @@ fn test_parameters_set(
         params_from_tokens(inputs)
     };
 
-    let mut function = Function {
+    let function = Function {
         name: func_name.to_owned(),
         inputs: input_params.clone(),
         outputs: input_params.clone(),
         set_time: false,
-        id: 0
+        id: None
     };
-
-    function.id = function.get_function_id();
 
     let mut timed_function = function.clone();
     timed_function.set_time = true;
-    timed_function.id = timed_function.get_function_id();
 
     // simple tree check
     let test_tree = function
@@ -677,15 +674,13 @@ fn test_tuples_with_combined_types() {
 fn test_add_signature() {
     let tokens = tokens_from_values(vec![TokenValue::Uint(Uint::new(456, 32))]);
 
-    let mut function = Function {
+    let function = Function {
         name: "test_add_signature".to_owned(),
         inputs: params_from_tokens(&tokens),
         outputs: vec![],
         set_time: false,
-        id: 0
+        id: None
     };
-
-    function.id = function.get_function_id();
 
     let (msg, data_to_sign) = function.create_unsigned_call(&tokens, false).unwrap();
 
@@ -695,4 +690,21 @@ fn test_add_signature() {
     let msg = Function::add_sign_to_encoded_input(&signature, &pair.public.to_bytes(), msg.into()).unwrap();
 
     assert_eq!(function.decode_input(msg.into(), false).unwrap(), tokens);
+}
+
+#[test]
+fn test_decode_event() {
+    let mut builder = BuilderData::new();
+    builder.append_u32(get_function_id(b"event(uint64)v1")).unwrap();
+    builder.append_u64(123).unwrap();
+
+    let tokens = tokens_from_values(vec![TokenValue::Uint(Uint::new(123, 64))]);
+
+    let event = Event {
+        name: "event".to_owned(),
+        inputs: params_from_tokens(&tokens),
+        id: None
+    };
+
+    assert_eq!(event.decode_input(builder.into()).unwrap(), tokens);
 }

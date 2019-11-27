@@ -17,6 +17,10 @@ use tvm::block::MsgAddressInt;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey};
 use types::{ApiResult, ApiError, hex_decode};
 use std::collections::HashMap;
+use base64::URL_SAFE;
+use hmac::*;
+use sha2::Sha512;
+use crypto::math::ton_crc16;
 use std::str::FromStr;
 
 pub type Key192 = [u8; 24];
@@ -200,5 +204,32 @@ pub(crate) fn key192(slice: &[u8]) -> ApiResult<Key192> {
         *place = *element;
     }
     Ok(key)
+}
+
+
+pub(crate) fn key_to_ton_string(key: &[u8]) -> String {
+    let mut public_key: Vec<u8> = Vec::new();
+    public_key.push(0x3e);
+    public_key.push(0xe6);
+    public_key.extend_from_slice(key);
+    let hash = ton_crc16(&public_key);
+    public_key.push((hash >> 8) as u8);
+    public_key.push((hash & 255) as u8);
+    return base64::encode_config(&public_key, URL_SAFE);
+}
+
+pub(crate) fn hmac_sha512(key: &[u8], data: &[u8]) -> [u8; 64] {
+    let mut hmac = Hmac::<Sha512>::new_varkey(key).unwrap();
+    hmac.input(&data);
+    let mut result = [0u8; 64];
+    result.copy_from_slice(&hmac.result().code());
+    result
+
+}
+
+pub(crate) fn pbkdf2_hmac_sha512(password: &[u8], salt: &[u8], c: usize) -> [u8; 64] {
+    let mut result = [0u8; 64];
+    pbkdf2::pbkdf2::<Hmac<Sha512>>(password, salt, c, &mut result);
+    result
 }
 

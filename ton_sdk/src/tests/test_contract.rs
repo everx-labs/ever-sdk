@@ -24,7 +24,7 @@ use sha2::Sha512;
 use tvm::block::{MsgAddressInt, TransactionProcessingStatus};
 use tvm::types::AccountId;
 use tvm::stack::{BuilderData, IBitstring};
-use tvm::stack::dictionary::HashmapType;
+use tvm::stack::dictionary::HashmapE;
 use tests_common::*;
 
 /*
@@ -300,6 +300,7 @@ fn test_contract_image_from_file() {
 }
 
 #[test]
+#[ignore]
 fn test_deploy_empty_contract() {
     init_node_connection();
 
@@ -390,31 +391,6 @@ fn test_print_base64_address_from_hex() {
 }
 
 #[test]
-fn test_store_pubkey() {
-    let mut test_map = HashmapE::with_bit_len(ContractImage::DATA_MAP_KEYLEN);
-    let test_pubkey = vec![11u8; 32];
-    test_map.set(
-        0u64.write_to_new_cell().unwrap().into(),
-        &BuilderData::with_raw(vec![0u8; 32], 256).unwrap().into(),
-    ).unwrap();
-
-    let mut data = BuilderData::new();
-    data.append_bit_one().unwrap()
-        .checked_append_reference(test_map.data().unwrap()).unwrap();
-
-    let new_data = ContractImage::insert_pubkey(data.into(), &test_pubkey).unwrap();
-
-    let new_map = HashmapE::with_data(ContractImage::DATA_MAP_KEYLEN, new_data.into());
-    let key_slice = new_map.get(
-        0u64.write_to_new_cell().unwrap().into(),
-    )
-    .unwrap()
-    .unwrap();
-
-    assert_eq!(key_slice.get_bytestring(0), test_pubkey);
-}
-
-#[test]
 fn test_update_contract_data() {
     // read image from file and construct ContractImage
     let mut state_init = std::fs::File::open("src/tests/Subscription.tvc")
@@ -432,7 +408,7 @@ fn test_update_contract_data() {
 
     contract_image.update_data(new_data, test_piggy_bank::SUBSCRIBE_CONTRACT_ABI).unwrap();
     let init = contract_image.state_init();
-    let new_map = HashmapE::with_data(ContractImage::DATA_MAP_KEYLEN, init.data.unwrap().into());
+    let new_map = HashmapE::with_data(ton_abi::Contract::DATA_MAP_KEYLEN, init.data.unwrap().into());
 
     let key_slice = new_map.get(
         0u64.write_to_new_cell().unwrap().into(),
