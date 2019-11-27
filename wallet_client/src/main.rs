@@ -35,8 +35,8 @@ use ton_block::{
     ExternalInboundMessageHeader, CurrencyCollection, Serializable, 
     TransactionProcessingStatus, TransactionId
 };
-use tvm::stack::{BuilderData, IBitstring};
-use tvm::types::{AccountId};
+use ton_vm::stack::{BuilderData, IBitstring};
+use ton_vm::types::{AccountId};
 
 const WALLET_ABI: &str = r#"{
     "ABI version" : 0,

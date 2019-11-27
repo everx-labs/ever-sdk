@@ -18,10 +18,10 @@ use num_bigint::{BigInt, BigUint};
 use sha2::{Digest, Sha256, Sha512};
 use chrono::prelude::*;
 
-use tvm::stack::{BuilderData, IBitstring, SliceData, CellData};
+use ton_vm::stack::{BuilderData, IBitstring, SliceData, CellData};
 use ton_types::dictionary::{HashmapE, HashmapType};
 use ton_block::{AnycastInfo, BlockResult, Grams, MsgAddress, Serializable};
-use tvm::types::AccountId;
+use ton_vm::types::AccountId;
 
 use {Function, Int, Param, ParamType, Token, TokenValue, Uint};
 

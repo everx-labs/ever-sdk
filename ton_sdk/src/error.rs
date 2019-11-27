@@ -50,9 +50,9 @@ error_chain! {
 
     foreign_links {
         Io(io::Error);
-        Tvm(tvm::error::TvmError);
-        TvmException(tvm::types::Exception);
-        TvmExceptionCode(tvm::types::ExceptionCode);
+        Tvm(ton_vm::error::TvmError);
+        TvmException(ton_vm::types::Exception);
+        TvmExceptionCode(ton_vm::types::ExceptionCode);
         TonBlocks(ton_block::BlockError);
         Graphql(GraphiteError);
         SerdeJson(serde_json::Error);

@@ -20,7 +20,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
 use ton_block::{Grams, MsgAddress};
-use tvm::stack::CellData;
+use ton_vm::stack::CellData;
 
 mod tokenizer;
 mod detokenizer;

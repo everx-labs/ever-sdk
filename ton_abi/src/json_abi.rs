@@ -15,7 +15,7 @@
 use ed25519_dalek::*;
 use serde_json::Value;
 use token::{Detokenizer, Tokenizer};
-use tvm::stack::{BuilderData, SliceData};
+use ton_vm::stack::{BuilderData, SliceData};
 use {Contract, Function};
 use crate::error::*;
 

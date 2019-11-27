@@ -24,8 +24,8 @@ use ton_block::{
     Serializable, StateInit, AccountStatus};
 use ton_types::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use ton_types::dictionary::HashmapE;
-use tvm::stack::{BuilderData, CellData, SliceData};
-use tvm::types::AccountId;
+use ton_vm::stack::{BuilderData, CellData, SliceData};
+use ton_vm::types::AccountId;
 
 pub use ton_abi::json_abi::DecodedMessage;
 pub use ton_abi::token::{Token, TokenValue, Tokenizer};

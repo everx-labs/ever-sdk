@@ -18,8 +18,8 @@ mod tokenize_tests {
     use std::collections::HashMap;
     use token::{Detokenizer, Tokenizer};
     use ton_block::MsgAddress;
-    use tvm::stack::{BuilderData, SliceData};
-    use tvm::types::AccountId;
+    use ton_vm::stack::{BuilderData, SliceData};
+    use ton_vm::types::AccountId;
 
     #[test]
     fn test_tokenize_ints() {
@@ -569,7 +569,7 @@ mod tokenize_tests {
 
 mod types_check_tests {
     use {Int, Param, ParamType, Token, TokenValue, Uint};
-    use tvm::stack::BuilderData;
+    use ton_vm::stack::BuilderData;
     use ton_block::MsgAddress;
     use std::collections::HashMap;
 

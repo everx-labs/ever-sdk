@@ -19,7 +19,7 @@ use chrono::prelude::*;
 use sha2::{Digest, Sha256, Sha512};
 use {Param, Token, TokenValue};
 use ed25519_dalek::*;
-use tvm::stack::{BuilderData, SliceData, CellData, IBitstring};
+use ton_vm::stack::{BuilderData, SliceData, CellData, IBitstring};
 use crate::error::*;
 
 pub const   ABI_VERSION: u8 = 1;

@@ -12,7 +12,7 @@
 * limitations under the License.
 */
 
-use tvm::stack::{SliceData, CellData};
+use ton_vm::stack::{SliceData, CellData};
 use ton_block::{
     CommonMsgInfo, Message as TvmMessage, GenericId
 };

@@ -22,8 +22,8 @@ use rand::rngs::OsRng;
 use rand::RngCore;
 use sha2::Sha512;
 use ton_block::{MsgAddressInt, TransactionProcessingStatus};
-use tvm::types::AccountId;
-use tvm::stack::{BuilderData, IBitstring};
+use ton_vm::types::AccountId;
+use ton_vm::stack::{BuilderData, IBitstring};
 use ton_types::dictionary::HashmapType;
 use tests_common::*;
 

@@ -15,7 +15,7 @@
 use ed25519_dalek::*;
 use sha2::Sha512;
 
-use tvm::stack::{BuilderData, SliceData};
+use ton_vm::stack::{BuilderData, SliceData};
 
 use json_abi::*;
 

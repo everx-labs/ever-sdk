@@ -20,7 +20,7 @@ extern crate hex;
 extern crate pretty_assertions;
 extern crate ton_block;
 extern crate ton_types;
-extern crate ton_vm as tvm;
+extern crate ton_vm;
 extern crate serde;
 extern crate serde_json;
 #[macro_use]

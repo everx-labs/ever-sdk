@@ -18,7 +18,7 @@ use serde::{Deserialize, Deserializer};
 use serde::de::{Unexpected, Error as SerdeError};
 use serde_json;
 use {DataItem, Function, Event, Token, Param};
-use tvm::stack::SliceData;
+use ton_vm::stack::SliceData;
 use crate::error::*;
 use super::function::ABI_VERSION;
 

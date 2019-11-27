@@ -12,7 +12,7 @@
 * limitations under the License.
 */
 
-use tvm::stack::CellData;
+use ton_vm::stack::CellData;
 use ton_block::{MsgAddressInt, TransactionProcessingStatus, AccStatusChange, ComputeSkipReason,
     AccountStatus};
 use std::fmt;
