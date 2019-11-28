@@ -105,6 +105,8 @@ fn test_print_address() {
 }
 
 #[test]
+
+#[ignore]
 fn test_generate_keypair_and_address() {
     // generate key pair
     let mut csprng = OsRng::new().unwrap();
@@ -116,6 +118,7 @@ fn test_generate_keypair_and_address() {
 }
 
 #[test]
+#[ignore]
 fn test_send_grams_from_giver() {
     init_node_connection();
 
@@ -226,8 +229,8 @@ pub fn get_grams_from_giver(address: MsgAddressInt) {
             WALLET_ADDRESS.to_owned(),
             "sendTransaction",
             json!({
-                "dest": format!("0x{:x}", address.get_address()),
-                "value": 500_000_000u64,
+                "dest": address.to_string(),
+                "value": 200_000_000u64,
                 "bounce": false
             }).to_string(),
             SIMPLE_WALLET_ABI,

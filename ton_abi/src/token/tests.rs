@@ -396,11 +396,13 @@ mod tokenize_tests {
     #[test]
     fn test_tokenize_cell() {
         let input = r#"{
-            "a": "te6ccgEBAwEAIAACEAECAwQFBgcIAgEAEBUWFxgZGhscABALDA0ODxAREg=="
+            "a": "te6ccgEBAwEAIAACEAECAwQFBgcIAgEAEBUWFxgZGhscABALDA0ODxAREg==",
+            "b": ""
         }"#;
 
         let params = vec![
             Param::new("a", ParamType::Cell),
+            Param::new("b", ParamType::Cell),
         ];
 
         let mut expected_tokens = vec![];
@@ -408,6 +410,7 @@ mod tokenize_tests {
         builder.append_reference(BuilderData::with_bitstring(vec![11, 12, 13, 14, 15, 16, 17, 18, 0x80]).unwrap());
         builder.append_reference(BuilderData::with_bitstring(vec![21, 22, 23, 24, 25, 26, 27, 28, 0x80]).unwrap());
         expected_tokens.push(Token::new("a", TokenValue::Cell(builder.into())));
+        expected_tokens.push(Token::new("b", TokenValue::Cell(BuilderData::new().into())));
 
         assert_eq!(
             Tokenizer::tokenize_all(&params, &serde_json::from_str(input).unwrap()).unwrap(),
