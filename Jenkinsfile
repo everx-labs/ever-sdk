@@ -1,6 +1,6 @@
 G_giturl = "git@github.com:tonlabs/TON-SDK.git"
 G_gitcred = 'TonJenSSH'
-G_container = "atomxy/empty-ton-sdk-js:20190827"
+G_container = "atomxy/empty-ton-sdk-js:20191128"
 C_PROJECT = "NotSet"
 C_COMMITER = "NotSet"
 C_HASH = "NotSet"
