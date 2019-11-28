@@ -15,99 +15,122 @@
 use ed25519_dalek::*;
 use sha2::Sha512;
 
-use ton_vm::stack::{BuilderData, SliceData};
+use ton_types::{BuilderData, SliceData};
+use ton_types::dictionary::HashmapE;
+use ton_block::{MsgAddressInt, Serializable};
 
 use json_abi::*;
 
 const WALLET_ABI: &str = r#"{
-    "ABI version" : 1,
+    "ABI version": 1,
     "setTime": false,
-    "functions" :    [{
-            "inputs": [
-                {"name": "recipient", "type": "fixedbytes32"},
-                {"name": "value", "type": "gram"}
-            ],
+    "functions": [
+        {
             "name": "sendTransaction",
-            "outputs": [
-                {"name": "transaction", "type": "uint64"},
-                {"name": "error", "type": "int8"}
-            ]
-        }, {
             "inputs": [
-                {"name": "type", "type": "uint8"},
-                {"name": "value", "type": "gram"},
-                {"name": "meta", "type": "bytes"}
+                {"name":"dest","type":"address"},
+                {"name":"value","type":"uint128"},
+                {"name":"bounce","type":"bool"}
             ],
-            "name": "createLimit",
             "outputs": [
-                {"name": "limitId", "type": "uint8"},
-                {"name": "error", "type": "int8"}
             ]
-        }, {
-            "inputs": [
-                {"name": "limitId", "type": "uint8"},
-                {"name": "value", "type": "gram"},
-                {"name": "meta", "type": "bytes"}
-            ],
-            "name": "changeLimitById",
-            "outputs": [{"name": "error", "type": "int8"}]
-        }, {
-            "inputs": [{"name": "limitId", "type": "uint8"}],
-            "name": "removeLimit",
-            "outputs": [{"name": "error", "type": "int8"}]
-        }, {
-            "inputs": [{"name": "limitId", "type": "uint8"}],
-            "name": "getLimitById",
-            "outputs": [
-                {
-                    "name": "limitInfo",
-                    "type": "tuple",
-                    "components": [
-                        {"name": "value", "type": "gram"},
-                        {"name": "type", "type": "uint8"},
-                        {"name": "meta", "type": "bytes"}
-                        ]
-                },
-                {"name": "error", "type": "int8"}
-            ]
-        }, {
-            "inputs": [],
-            "name": "getLimits",
-            "outputs": [
-                {"name": "list", "type": "uint8[]"},
-                {"name": "error", "type": "int8"}
-            ]
-        }, {
-            "inputs": [],
-            "name": "getVersion",
-            "outputs": [
-                {
-                    "name": "version",
-                    "type": "tuple",
-                    "components": [
-                        {"name": "major", "type": "uint16"},
-                        {"name": "minor", "type": "uint16"}
-                    ]
-                },
-                {"name": "error", "type": "int8"}
-            ]
-        }, {
-            "inputs": [],
-            "name": "getBalance",
-            "outputs": [{"name": "balance", "type": "uint64"}]
-        }, {
-            "inputs": [],
-            "name": "constructor",
-            "outputs": []
-        }, {
-            "inputs": [{"name": "address", "type": "fixedbytes32" }],
+        },
+        {
             "name": "setSubscriptionAccount",
-            "outputs": []
-        }, {
-            "inputs": [],
+            "inputs": [
+                {"name":"addr","type":"address"}
+            ],
+            "outputs": [
+            ]
+        },
+        {
             "name": "getSubscriptionAccount",
-            "outputs": [{"name": "address", "type": "fixedbytes32" }]
+            "inputs": [
+            ],
+            "outputs": [
+                {"name":"value0","type":"address"}
+            ]
+        },
+        {
+            "name": "createOperationLimit",
+            "inputs": [
+                {"name":"value","type":"uint256"}
+            ],
+            "outputs": [
+                {"name":"value0","type":"uint256"}
+            ]
+        },
+        {
+            "name": "createArbitraryLimit",
+            "inputs": [
+                {"name":"value","type":"uint256"},
+                {"name":"period","type":"uint32"}
+            ],
+            "outputs": [
+                {"name":"value0","type":"uint64"}
+            ]
+        },
+        {
+            "name": "changeLimit",
+            "inputs": [
+                {"name":"limitId","type":"uint64"},
+                {"name":"value","type":"uint256"},
+                {"name":"period","type":"uint32"}
+            ],
+            "outputs": [
+            ]
+        },
+        {
+            "name": "deleteLimit",
+            "inputs": [
+                {"name":"limitId","type":"uint64"}
+            ],
+            "outputs": [
+            ]
+        },
+        {
+            "name": "getLimit",
+            "inputs": [
+                {"name":"limitId","type":"uint64"}
+            ],
+            "outputs": [
+                {"components":[{"name":"value","type":"uint256"},{"name":"period","type":"uint32"},{"name":"ltype","type":"uint8"},{"name":"spent","type":"uint256"},{"name":"start","type":"uint32"}],"name":"value0","type":"tuple"}
+            ]
+        },
+        {
+            "name": "getLimitCount",
+            "inputs": [
+            ],
+            "outputs": [
+                {"name":"value0","type":"uint64"}
+            ]
+        },
+        {
+            "name": "getLimits",
+            "inputs": [
+            ],
+            "outputs": [
+                {"name":"value0","type":"uint64[]"}
+            ]
+        },
+        {
+            "name": "constructor",
+            "inputs": [
+            ],
+            "outputs": [
+            ]
         }
+    ],
+    "events": [{
+        "name": "event",
+        "inputs": [
+            {"name":"param","type":"uint8"}
+        ]
+    }
+    ],
+    "data": [
+        {"key":101,"name":"subscription","type":"address"},
+        {"key":100,"name":"owner","type":"uint256"}
     ]
 }
 "#;
@@ -169,18 +192,17 @@ fn test_constructor_call() {
 fn test_signed_call() {
     let params = r#"
     {
-        "type": 1,
         "value": 12,
-        "meta": ""
+        "period": 30
     }"#;
 
-    let expected_params = r#"{"type":"0x1","value":"0xc","meta":""}"#;
+    let expected_params = r#"{"value":"0xc","period":"0x1e"}"#;
 
     let pair = Keypair::generate::<Sha512, _>(&mut rand::rngs::OsRng::new().unwrap());
 
     let test_tree = encode_function_call(
         WALLET_ABI.to_owned(),
-        "createLimit".to_owned(),
+        "createArbitraryLimit".to_owned(),
         params.to_owned(),
         false,
         Some(&pair),
@@ -197,27 +219,28 @@ fn test_signed_call() {
     .unwrap();
 
     assert_eq!(response.params, expected_params);
-    assert_eq!(response.function_name, "createLimit");
+    assert_eq!(response.function_name, "createArbitraryLimit");
 
-    let mut expected_tree = BuilderData::with_bitstring(vec![
-        0x79, 0x63, 0xc9, 0x74, 0x01, 0x10, 0xc8
-    ]).unwrap();
-    expected_tree.append_reference(BuilderData::new());
+    let mut vec = vec![0x3C, 0x0B, 0xB9, 0xBC];
+    vec.resize(vec.len() + 31, 0);
+    vec.extend_from_slice(&[0x0C, 0x00, 0x00, 0x00, 0x1E, 0x80]);
+
+    let expected_tree = BuilderData::with_bitstring(vec).unwrap();
 
     test_tree.checked_drain_reference().unwrap();
     assert_eq!(test_tree, SliceData::from(expected_tree));
 
 
-    let expected_response = r#"{"limitId":"0x0","error":"-0x1"}"#;
+    let expected_response = r#"{"value0":"0x0"}"#;
 
     let response_tree = SliceData::from(
         BuilderData::with_bitstring(
-            vec![0xf9, 0x63, 0xc9, 0x74, 0x00, 0xFF, 0x80])
+            vec![0xBC, 0x0B, 0xB9, 0xBC, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80])
         .unwrap());
 
     let response = decode_function_response(
         WALLET_ABI.to_owned(),
-        "createLimit".to_owned(),
+        "createArbitraryLimit".to_owned(),
         response_tree.clone(),
         false
     )
@@ -234,7 +257,7 @@ fn test_signed_call() {
     .unwrap();
 
     assert_eq!(response.params, expected_response);
-    assert_eq!(response.function_name, "createLimit");
+    assert_eq!(response.function_name, "createArbitraryLimit");
 }
 
 #[test]
@@ -245,14 +268,16 @@ fn test_not_signed_call() {
 
     let test_tree = encode_function_call(
         WALLET_ABI.to_owned(),
-        "getLimitById".to_owned(),
+        "getLimit".to_owned(),
         params.to_owned(),
         false,
         None,
     )
     .unwrap();
 
-    let mut expected_tree = BuilderData::with_bitstring(vec![0x0F, 0xEF, 0x4E, 0x34, 0x02, 0x80]).unwrap();
+    let mut expected_tree = BuilderData::with_bitstring(vec![
+            0x23, 0xF3, 0x3E, 0x2F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x80
+        ]).unwrap();
     expected_tree.prepend_reference(BuilderData::new());
 
     assert_eq!(test_tree, expected_tree);
@@ -264,7 +289,7 @@ fn test_add_signature_full() {
 
     let (msg, data_to_sign) = prepare_function_call_for_sign(
         WALLET_ABI.to_owned(),
-        "getLimitById".to_owned(),
+        "getLimit".to_owned(),
         params.to_owned()
     )
     .unwrap();
@@ -277,4 +302,101 @@ fn test_add_signature_full() {
     let decoded = decode_unknown_function_call(WALLET_ABI.to_owned(), msg.into(), false).unwrap();
 
     assert_eq!(decoded.params, params);
+}
+
+#[test]
+fn test_find_event() {
+    let event_tree = SliceData::from(
+        BuilderData::with_bitstring(
+            vec![0x13, 0x47, 0xD7, 0x9D, 0xFF, 0x80])
+        .unwrap());
+
+    let decoded = decode_unknown_function_response(WALLET_ABI.to_owned(), event_tree, false).unwrap();
+
+    assert_eq!(decoded.function_name, "event");
+    assert_eq!(decoded.params, r#"{"param":"0xff"}"#);
+}
+
+#[test]
+fn test_insert_pubkey() {
+    let event_tree = SliceData::from(
+        BuilderData::with_bitstring(
+            vec![0x13, 0x47, 0xD7, 0x9D, 0xFF, 0x80])
+        .unwrap());
+
+    let decoded = decode_unknown_function_response(WALLET_ABI.to_owned(), event_tree, false).unwrap();
+
+    assert_eq!(decoded.function_name, "event");
+    assert_eq!(decoded.params, r#"{"param":"0xff"}"#);
+}
+
+#[test]
+fn test_store_pubkey() {
+    let mut test_map = HashmapE::with_bit_len(Contract::DATA_MAP_KEYLEN);
+    let test_pubkey = vec![11u8; 32];
+    test_map.set(
+        0u64.write_to_new_cell().unwrap().into(),
+        &BuilderData::with_raw(vec![0u8; 32], 256).unwrap().into(),
+    ).unwrap();
+
+    let data = test_map.write_to_new_cell().unwrap();
+
+    let new_data = Contract::insert_pubkey(data.into(), &test_pubkey).unwrap();
+
+    let new_map = HashmapE::with_data(Contract::DATA_MAP_KEYLEN, new_data.into());
+    let key_slice = new_map.get(
+        0u64.write_to_new_cell().unwrap().into(),
+    )
+    .unwrap()
+    .unwrap();
+
+    assert_eq!(key_slice.get_bytestring(0), test_pubkey);
+}
+
+#[test]
+fn test_update_contract_data() {
+    let mut test_map = HashmapE::with_bit_len(Contract::DATA_MAP_KEYLEN);
+    test_map.set(
+        0u64.write_to_new_cell().unwrap().into(),
+        &BuilderData::with_raw(vec![0u8; 32], 256).unwrap().into(),
+    ).unwrap();
+
+    let params = r#"{
+        "subscription": "0:1111111111111111111111111111111111111111111111111111111111111111",
+        "owner": "0x2222222222222222222222222222222222222222222222222222222222222222"
+     }
+    "#;
+
+    let data = test_map.write_to_new_cell().unwrap();
+    let new_data = update_contract_data(WALLET_ABI, params, data.into()).unwrap();
+    let new_map = HashmapE::with_data(Contract::DATA_MAP_KEYLEN, new_data.into());
+
+
+    let key_slice = new_map.get(
+        0u64.write_to_new_cell().unwrap().into(),
+    )
+    .unwrap()
+    .unwrap();
+
+    assert_eq!(key_slice.get_bytestring(0), vec![0u8; 32]);
+
+
+    let subscription_slice = new_map.get(
+        101u64.write_to_new_cell().unwrap().into(),
+    )
+    .unwrap()
+    .unwrap();
+
+    assert_eq!(
+        subscription_slice,
+        MsgAddressInt::with_standart(None, 0, vec![0x11; 32].into()).unwrap().write_to_new_cell().unwrap().into());
+
+
+    let owner_slice = new_map.get(
+        100u64.write_to_new_cell().unwrap().into(),
+    )
+    .unwrap()
+    .unwrap();
+
+    assert_eq!(owner_slice.get_bytestring(0), vec![0x22; 32]);
 }

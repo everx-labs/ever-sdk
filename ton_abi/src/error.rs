@@ -12,7 +12,7 @@
 * limitations under the License.
 */
 
-use ton_vm::stack::SliceData;
+use ton_types::SliceData;
 
 error_chain! {
 
@@ -85,7 +85,7 @@ error_chain! {
         }
         WrongId(id: u32) {
             description("Wrong function ID"),
-            display("Wrong function ID: {}", id)
+            display("Wrong function ID: {:x}", id)
         }
     }
 }

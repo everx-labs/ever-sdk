@@ -124,6 +124,23 @@ pub fn decode_unknown_function_call(
     })
 }
 
+/// Changes initial values for public contract variables
+pub fn update_contract_data(abi: &str, parameters: &str, data: SliceData) -> AbiResult<SliceData> {
+    let contract = Contract::load(abi.as_bytes())?;
+
+    let data_json: serde_json::Value = serde_json::from_str(parameters)?;
+
+    let params: Vec<_> = contract
+        .data()
+        .values()
+        .map(|item| item.value.clone())
+        .collect();
+
+    let tokens = Tokenizer::tokenize_all(&params[..], &data_json)?;
+
+    contract.update_data(data, &tokens)
+}
+
 #[cfg(test)]
 #[path = "tests/full_stack_tests.rs"]
 mod tests;

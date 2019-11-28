@@ -18,6 +18,8 @@ use graphite::types::VariableRequest;
 use futures::stream::Stream;
 use serde_json::Value;
 use std::sync::Mutex;
+use reqwest::{ClientBuilder, RedirectPolicy, StatusCode};
+use reqwest::header::LOCATION;
 
 #[derive(Serialize, Deserialize)]
 pub enum SortDirection {
@@ -37,10 +39,45 @@ lazy_static! {
     static ref CLIENT: Mutex<Option<GqlClient>> = Mutex::new(None);
 }
 
+fn check_redirect(config: QueriesConfig) -> SdkResult<QueriesConfig> {
+    let client = ClientBuilder::new()
+        .redirect(RedirectPolicy::none())
+        .build()
+        .map_err(|err| SdkErrorKind::InternalError(format!("Can not build test request: {}", err)))?;
+
+    let result = client.get(&config.queries_server).send();
+
+    match result {
+        Ok(result) => {
+            if result.status() == StatusCode::PERMANENT_REDIRECT {
+                let address = result
+                    .headers()
+                    .get(LOCATION)
+                    .ok_or(SdkErrorKind::NetworkError("Missing location field in redirect response".to_owned()))?
+                    .to_str()
+                    .map_err(|err| SdkErrorKind::NetworkError(format!("Can not cast redirect location to string: {}", err)))?
+                    .to_owned();
+                
+                Ok(QueriesConfig {
+                    queries_server: address.clone(),
+                    subscriptions_server: address
+                        .replace("https://", "wss://")
+                        .replace("http://", "ws://")
+                })
+            } else {
+                Ok(config)
+            }
+        },
+        Err(err) => bail!(SdkErrorKind::NetworkError(format!("Can not send test request: {}", err)))
+    }
+}
+
 // Globally initializes client with server address
-pub fn init(config: QueriesConfig) {
+pub fn init(config: QueriesConfig) -> SdkResult<()> {
+    let config = check_redirect(config)?;
     let mut client = CLIENT.lock().unwrap();
     *client = Some(GqlClient::new(&config.queries_server,&config.subscriptions_server));
+    Ok(())
 }
 
 pub fn uninit() {

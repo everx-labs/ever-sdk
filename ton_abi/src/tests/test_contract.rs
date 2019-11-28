@@ -12,13 +12,12 @@
 * limitations under the License.
 */
 
-use {Contract, Function, Param, ParamType};
+use {Contract, Function, Event, Param, ParamType, DataItem};
 use std::collections::HashMap;
 
 const TEST_ABI: &str = r#"
 {
     "ABI version": 1,
-    "data" : [],
     "functions": [{
             "name": "input_and_output",
             "inputs": [
@@ -42,11 +41,27 @@ const TEST_ABI: &str = r#"
             "name": "constructor",
             "inputs": [],
             "outputs": []
-        }, {
-            "name": "signed",
-            "inputs": [{"name": "a", "type": "bool"}],
+        },
+        {
+            "name": "has_id",
+            "id": "0x01234567",
+            "inputs": [],
             "outputs": []
-        }]
+        }],
+    "events": [{
+        "name": "input",
+        "inputs": [{"name": "a","type": "uint64"}]
+    }, {
+        "name": "no_input",
+        "inputs": []
+    }, {
+        "name": "has_id",
+        "id": "0x89abcdef",
+        "inputs": []
+    }],
+    "data": [
+        {"key":100,"name":"a","type":"uint256"}
+    ]
 }"#;
 
 #[test]
@@ -58,68 +73,106 @@ fn test_abi_parse() {
     functions.insert(
         "input_and_output".to_owned(),
         Function {
-                name: "input_and_output".to_owned(),
-                inputs: vec![
-                    Param { name: "a".to_owned(), kind: ParamType::Uint(64) },
-                    Param { name: "b".to_owned(), kind: ParamType::Array(
-                        Box::new(ParamType::Uint(8))) },
-                    Param { name: "c".to_owned(), kind: ParamType::Bytes },
-                ],
-                outputs: vec![
-                    Param { name: "a".to_owned(), kind: ParamType::Int(16) },
-                    Param { name: "b".to_owned(), kind: ParamType::Uint(8) },
-                ],
-                set_time: true,
-                id: Function::calc_function_id("input_and_output(time,uint64,uint8[],bytes)(int16,uint8)v1")
+            name: "input_and_output".to_owned(),
+            inputs: vec![
+                Param { name: "a".to_owned(), kind: ParamType::Uint(64) },
+                Param { name: "b".to_owned(), kind: ParamType::Array(
+                    Box::new(ParamType::Uint(8))) },
+                Param { name: "c".to_owned(), kind: ParamType::Bytes },
+            ],
+            outputs: vec![
+                Param { name: "a".to_owned(), kind: ParamType::Int(16) },
+                Param { name: "b".to_owned(), kind: ParamType::Uint(8) },
+            ],
+            set_time: true,
+            id: Some(Function::calc_function_id("input_and_output(time,uint64,uint8[],bytes)(int16,uint8)v1"))
         });
 
     functions.insert(
         "no_output".to_owned(),
         Function {
-                name: "no_output".to_owned(),
-                inputs: vec![
-                    Param { name: "a".to_owned(), kind: ParamType::Uint(15) },
-                ],
-                outputs: vec![],
-                set_time: true,
-                id: Function::calc_function_id("no_output(time,uint15)()v1")
+            name: "no_output".to_owned(),
+            inputs: vec![
+                Param { name: "a".to_owned(), kind: ParamType::Uint(15) },
+            ],
+            outputs: vec![],
+            set_time: true,
+            id: Some(Function::calc_function_id("no_output(time,uint15)()v1"))
         });
 
     functions.insert(
         "no_input".to_owned(),
         Function {
-                name: "no_input".to_owned(),
-                inputs: vec![],
-                outputs: vec![
-                    Param { name: "a".to_owned(), kind: ParamType::Uint(8) },
-                ],
-                set_time: true,
-                id: Function::calc_function_id("no_input(time)(uint8)v1")
+            name: "no_input".to_owned(),
+            inputs: vec![],
+            outputs: vec![
+                Param { name: "a".to_owned(), kind: ParamType::Uint(8) },
+            ],
+            set_time: true,
+            id: Some(Function::calc_function_id("no_input(time)(uint8)v1"))
         });
 
     functions.insert(
         "constructor".to_owned(),
         Function {
-                name: "constructor".to_owned(),
-                inputs: vec![],
-                outputs: vec![],
-                set_time: true,
-                id: Function::calc_function_id("constructor(time)()v1")
+            name: "constructor".to_owned(),
+            inputs: vec![],
+            outputs: vec![],
+            set_time: true,
+            id: Some(Function::calc_function_id("constructor(time)()v1"))
         });
 
     functions.insert(
-        "signed".to_owned(),
+        "has_id".to_owned(),
         Function {
-                name: "signed".to_owned(),
-                inputs: vec![
-                    Param { name: "a".to_owned(), kind: ParamType::Bool },
-                ],
-                outputs: vec![],
-                set_time: true,
-                id: Function::calc_function_id("signed(time,bool)()v1")
+            name: "has_id".to_owned(),
+            inputs: vec![],
+            outputs: vec![],
+            set_time: true,
+            id: Some(0x01234567)
         });
 
-    let expected_contract = Contract { functions, events: HashMap::new(), data: HashMap::new() };
+    let mut events = HashMap::new();
+
+    events.insert(
+        "input".to_owned(),
+        Event {
+            name: "input".to_owned(),
+            inputs: vec![
+                Param { name: "a".to_owned(), kind: ParamType::Uint(64) },
+            ],
+            id: Some(Function::calc_function_id("input(uint64)v1"))
+        });
+
+    events.insert(
+        "no_input".to_owned(),
+        Event {
+            name: "no_input".to_owned(),
+            inputs: vec![],
+            id: Some(Function::calc_function_id("no_input()v1"))
+        });
+
+    events.insert(
+        "has_id".to_owned(),
+        Event {
+            name: "has_id".to_owned(),
+            inputs: vec![],
+            id: Some(0x89abcdef)
+        });
+
+    let mut data = HashMap::new();
+
+    data.insert(
+        "a".to_owned(),
+        DataItem {
+            value: Param {
+                name: "a".to_owned(),
+                kind: ParamType::Uint(256)
+            },
+            key: 100
+        });
+
+    let expected_contract = Contract { functions, events, data };
 
     assert_eq!(parsed_contract, expected_contract);
 }
@@ -133,7 +186,6 @@ fn print_function_singnatures() {
     let functions = contract.functions();
 
     for (_, function) in functions {
-        //println!("{}", function.name);
         println!("{}", function.get_function_signature());
         let id = function.get_function_id();
         println!("{:X?}\n", id);
@@ -144,7 +196,6 @@ fn print_function_singnatures() {
     let events = contract.events();
 
     for (_, event) in events {
-        //println!("{}", function.name);
         println!("{}", event.get_function_signature());
         let id = event.get_function_id();
         println!("{:X?}\n", id);
