@@ -3,9 +3,9 @@ name = "ton_abi"
 version = "0.1.0"
 
 [dependencies]
-ton_types = { git = "ssh://git@github.com/tonlabs/ton-types.git" }
-ton_block = { git = "ssh://git@github.com/tonlabs/ton-block.git" }
-ton_vm = { git = "ssh://git@github.com/tonlabs/ton-vm.git" }
+ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git" }
+ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }
+ton_vm = { git = "https://github.com/tonlabs/ton-labs-vm.git", default-features = false }
 
 base64 = "0.10.0"
 pretty_assertions = "0.5.1"
