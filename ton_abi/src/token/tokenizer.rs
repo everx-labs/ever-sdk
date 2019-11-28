@@ -19,6 +19,7 @@ use std::collections::HashMap;
 use std::io::Cursor;
 use num_bigint::{Sign, BigInt, BigUint};
 use tvm::block::{Grams, MsgAddress};
+use tvm::stack::BuilderData;
 use tvm::cells_serialization::deserialize_tree_of_cells;
 use crate::error::*;
 use std::str::FromStr;
@@ -216,6 +217,11 @@ impl Tokenizer {
         let string = value
             .as_str()
             .ok_or(AbiErrorKind::WrongDataFormat(value.clone()))?;
+
+        if string.len() == 0 {
+            return Ok(TokenValue::Cell(BuilderData::new().into()));
+        }
+
         let data = base64::decode(string)
             .map_err(|_| AbiErrorKind::InvalidParameterValue(value.clone()))?;
         let cell = deserialize_tree_of_cells(&mut Cursor::new(data))
