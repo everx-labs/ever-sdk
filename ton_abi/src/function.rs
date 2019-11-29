@@ -20,7 +20,7 @@ use sha2::{Digest, Sha256, Sha512};
 use {Param, Token, TokenValue};
 use ed25519_dalek::*;
 use serde::de::Error;
-use tvm::stack::{BuilderData, SliceData, CellData, IBitstring};
+use ton_types::{BuilderData, SliceData, CellData, IBitstring};
 use crate::error::*;
 use super::contract::ABI_VERSION;
 

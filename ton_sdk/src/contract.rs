@@ -17,13 +17,13 @@ use ed25519_dalek::{Keypair, PublicKey};
 use std::convert::Into;
 use std::io::{Cursor, Read, Seek};
 use std::sync::Arc;
-use tvm::block::{
+use ton_block::{
     Deserializable, ExternalInboundMessageHeader,
     GetRepresentationHash, Message as TvmMessage, MsgAddressInt,
     Serializable, StateInit, AccountStatus};
-use tvm::cells_serialization::{deserialize_cells_tree, BagOfCells};
-use tvm::stack::{CellData, SliceData};
-use tvm::types::AccountId;
+use ton_types::cells_serialization::{deserialize_cells_tree, BagOfCells};
+use ton_types::{CellData, SliceData};
+use ton_block::AccountId;
 
 pub use ton_abi::json_abi::DecodedMessage;
 pub use ton_abi::token::{Token, TokenValue, Tokenizer};
@@ -216,7 +216,7 @@ impl ContractImage {
         self.state_init.set_data(new_data.into_cell());
         self.id = self.state_init.hash()?.into();
 
-        ok!()
+        Ok(())
     }
 }
 

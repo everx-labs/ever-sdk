@@ -18,9 +18,9 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::io::Cursor;
 use num_bigint::{Sign, BigInt, BigUint};
-use tvm::block::{Grams, MsgAddress};
-use tvm::stack::BuilderData;
-use tvm::cells_serialization::deserialize_tree_of_cells;
+use ton_block::{Grams, MsgAddress};
+use ton_types::BuilderData;
+use ton_types::cells_serialization::deserialize_tree_of_cells;
 use crate::error::*;
 use std::str::FromStr;
 

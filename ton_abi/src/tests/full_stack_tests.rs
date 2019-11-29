@@ -15,9 +15,9 @@
 use ed25519_dalek::*;
 use sha2::Sha512;
 
-use tvm::stack::{BuilderData, SliceData};
-use tvm::stack::dictionary::HashmapE;
-use tvm::block::{MsgAddressInt, Serializable};
+use ton_types::{BuilderData, SliceData};
+use ton_types::dictionary::HashmapE;
+use ton_block::{MsgAddressInt, Serializable};
 
 use json_abi::*;
 

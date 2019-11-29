@@ -30,13 +30,13 @@ use rand::{thread_rng, Rng};
 use sha2::Sha512;
 use std::str::FromStr;
 use ton_sdk::*;
-use tvm::block::{
+use ton_block::{
     Message, MessageId, MsgAddressExt, MsgAddressInt, InternalMessageHeader, Grams, 
     ExternalInboundMessageHeader, CurrencyCollection, Serializable, 
     TransactionProcessingStatus, TransactionId
 };
-use tvm::stack::{BuilderData, IBitstring};
-use tvm::types::{AccountId};
+use ton_vm::stack::{BuilderData, IBitstring};
+use ton_vm::types::{AccountId};
 
 const WALLET_ABI: &str = r#"{
     "ABI version" : 0,

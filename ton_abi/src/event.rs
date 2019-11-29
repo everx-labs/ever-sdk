@@ -13,7 +13,7 @@
 */
 
 use {Function, Param, Token, TokenValue};
-use tvm::stack::SliceData;
+use ton_types::SliceData;
 use crate::error::*;
 use super::contract::ABI_VERSION;
 

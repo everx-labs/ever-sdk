@@ -13,7 +13,7 @@
 */
 
 use std::sync::Mutex;
-use tvm::block::MsgAddressInt;
+use ton_block::MsgAddressInt;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey};
 use types::{ApiResult, ApiError, hex_decode};
 use std::collections::HashMap;
