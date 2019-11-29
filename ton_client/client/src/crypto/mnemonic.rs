@@ -211,7 +211,7 @@ impl CryptoMnemonic for TonMnemonic {
             }
             count += 1;
         };
-        Ok(count == self.word_count)
+        Ok(count == self.word_count && Self::is_basic_seed(phrase))
     }
 
     fn seed_from_phrase_and_salt(&self, phrase: &String, salt: &String) -> ApiResult<String> {
