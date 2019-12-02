@@ -21,10 +21,9 @@ use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
 use rand::RngCore;
 use sha2::Sha512;
-use tvm::block::{MsgAddressInt, TransactionProcessingStatus};
-use tvm::types::AccountId;
-use tvm::stack::{BuilderData, IBitstring};
-use tvm::stack::dictionary::HashmapE;
+use ton_block::{AccountId, MsgAddressInt, TransactionProcessingStatus};
+use ton_types::{BuilderData, IBitstring};
+use ton_types::dictionary::HashmapE;
 use tests_common::*;
 
 /*

@@ -77,7 +77,7 @@ pub fn init(config: QueriesConfig) -> SdkResult<()> {
     let config = check_redirect(config)?;
     let mut client = CLIENT.lock().unwrap();
     *client = Some(GqlClient::new(&config.queries_server,&config.subscriptions_server));
-    ok!()
+    Ok(())
 }
 
 pub fn uninit() {

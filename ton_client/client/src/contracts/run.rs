@@ -16,7 +16,7 @@ use ton_sdk::{Contract, MessageType, AbiContract};
 use ton_sdk::json_abi::encode_function_call;
 use crypto::keys::{KeyPair, account_decode};
 use types::{ApiResult, ApiError, base64_decode};
-use tvm::cells_serialization::BagOfCells;
+use ton_types::cells_serialization::BagOfCells;
 
 use contracts::{EncodedMessage, EncodedUnsignedMessage};
 use client::ClientContext;
@@ -24,7 +24,7 @@ use client::ClientContext;
 #[cfg(feature = "node_interaction")]
 use ton_sdk::{Transaction, AbiFunction, Message};
 #[cfg(feature = "node_interaction")]
-use tvm::block::{TransactionProcessingStatus, MsgAddressInt, AccStatusChange};
+use ton_block::{TransactionProcessingStatus, MsgAddressInt, AccStatusChange};
 #[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]

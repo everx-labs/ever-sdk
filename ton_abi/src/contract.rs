@@ -18,10 +18,10 @@ use serde::{Deserialize, Deserializer};
 use serde::de::{Unexpected, Error as SerdeError};
 use serde_json;
 use {Function, Event, Token, Param};
-use tvm::stack::{SliceData, BuilderData};
-use tvm::stack::dictionary::HashmapE;
+use ton_types::{SliceData, BuilderData};
+use ton_types::dictionary::HashmapE;
 use crate::error::*;
-use tvm::block::Serializable;
+use ton_block::Serializable;
 
 pub const   ABI_VERSION: u8 = 1;
 

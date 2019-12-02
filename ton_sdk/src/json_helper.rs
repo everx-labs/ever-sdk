@@ -12,8 +12,8 @@
 * limitations under the License.
 */
 
-use tvm::stack::CellData;
-use tvm::block::{MsgAddressInt, TransactionProcessingStatus, AccStatusChange, ComputeSkipReason,
+use ton_vm::stack::CellData;
+use ton_block::{MsgAddressInt, TransactionProcessingStatus, AccStatusChange, ComputeSkipReason,
     AccountStatus};
 use std::fmt;
 use serde::de::Error;
@@ -63,7 +63,7 @@ pub fn deserialize_tree_of_cells_from_base64<'de, D>(b64: &str) -> Result<Arc<Ce
     let bytes = base64::decode(&b64)
         .map_err(|err| D::Error::custom(format!("error decode base64: {}", err)))?;
 
-    tvm::cells_serialization::deserialize_tree_of_cells(&mut bytes.as_slice())
+    ton_types::cells_serialization::deserialize_tree_of_cells(&mut bytes.as_slice())
         .map_err(|err| D::Error::custom(format!("BOC read error: {}", err)))
 }
 

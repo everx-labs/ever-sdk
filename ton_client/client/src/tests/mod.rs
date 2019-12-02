@@ -20,7 +20,7 @@ use serde_json::{Value, Map};
 use log::{Metadata, Record, LevelFilter};
 use {tc_create_context, tc_destroy_context};
 use ton_sdk::encode_base64;
-use tvm::block::MsgAddressInt;
+use ton_block::MsgAddressInt;
 use std::str::FromStr;
 
 struct SimpleLogger;
@@ -152,7 +152,7 @@ fn test_tg_mnemonic() {
         Value::String(public),
     ));
     assert_eq!(ton_public, "PuYGEX9Zreg-CX4Psz5dKehzW9qCs794oBVUKqqFO7aWAOTD");
-    let ton_phrase = "shove often foil innocent soft slim pioneer day uncle drop nephew soccer worry renew public hand word nut again dry first delay first maple";
+//    let ton_phrase = "shove often foil innocent soft slim pioneer day uncle drop nephew soccer worry renew public hand word nut again dry first delay first maple";
     let is_valid = client.request(
         "crypto.mnemonic.verify",
         json!({
@@ -164,6 +164,13 @@ fn test_tg_mnemonic() {
         "crypto.mnemonic.verify",
         json!({
             "phrase": "unit follow"
+        }),
+    ).unwrap();
+    assert_eq!(is_valid, "false");
+    let is_valid = client.request(
+        "crypto.mnemonic.verify",
+        json!({
+            "phrase": "unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit"
         }),
     ).unwrap();
     assert_eq!(is_valid, "false");
@@ -391,8 +398,8 @@ fn test_address_parsing() {
     let base64 = "kf/8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15+KsQHFLbKSMiYIny";
     let base64_url = "kf_8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15-KsQHFLbKSMiYIny";
 
-    let address = tvm::block::MsgAddressInt::with_standart(None, -1, hex::decode(short).unwrap().into()).unwrap();
-    let wc0_address = tvm::block::MsgAddressInt::with_standart(None, 0, hex::decode(short).unwrap().into()).unwrap();
+    let address = ton_block::MsgAddressInt::with_standart(None, -1, hex::decode(short).unwrap().into()).unwrap();
+    let wc0_address = ton_block::MsgAddressInt::with_standart(None, 0, hex::decode(short).unwrap().into()).unwrap();
 
     assert_eq!(wc0_address, account_decode(short).expect("Couldn't parse short address"));
     assert_eq!(address, account_decode(full_std).expect("Couldn't parse full_std address"));

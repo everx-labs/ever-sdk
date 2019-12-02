@@ -18,7 +18,7 @@ use futures::Stream;
 use rand::rngs::OsRng;
 use sha2::Sha512;
 use std::str::FromStr;
-use tvm::block::{
+use ton_block::{
     MsgAddressInt,
     TransactionProcessingStatus
 };
@@ -74,11 +74,11 @@ pub fn init_node_connection() {
         r#"
         {
             "queries_config": {
-                "queries_server": "http://0.0.0.0/graphql",
-                "subscriptions_server": "ws://0.0.0.0/graphql"
+                "queries_server": "http://192.168.99.100/graphql",
+                "subscriptions_server": "ws://192.168.99.100/graphql"
             },
             "requests_config": {
-                "requests_server": "http://0.0.0.0/topics/requests"
+                "requests_server": "http://192.168.99.100/topics/requests"
             }
         }"#
     } else {

@@ -16,7 +16,7 @@
 
 use std::fmt::Display;
 use types::ApiSdkErrorCode::*;
-use tvm::block::{AccStatusChange, ComputeSkipReason};
+use ton_block::{AccStatusChange, ComputeSkipReason};
 
 pub fn hex_decode(hex: &String) -> ApiResult<Vec<u8>> {
     if hex.starts_with("x") || hex.starts_with("X") {

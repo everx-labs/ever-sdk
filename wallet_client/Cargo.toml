@@ -5,6 +5,11 @@ authors = ["Alexey Vavilin <mnogoborec@mail.ru>"]
 edition = "2018"
 
 [dependencies]
+ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git" }
+ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }
+ton_vm = { git = "https://github.com/tonlabs/ton-labs-vm.git", default-features = false }
+ton_sdk = { path = "../ton_sdk" }
+
 rand = "0.6.1"
 ed25519-dalek = "^0.9.1"
 futures = "^0.1.26"
@@ -20,8 +25,3 @@ clap = "2.33.0"
 reqwest = "0.9.18"
 base64 = "0.10.0"
 
-ton_sdk = { path = "../ton_sdk" }
-
-[dependencies.tvm]
-git = "https://github.com/tonlabs/ton-labs-vm.git"
-default-features = false
