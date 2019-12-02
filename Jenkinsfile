@@ -22,6 +22,12 @@ pipeline {
         disableConcurrentBuilds()
         parallelsAlwaysFailFast()
     }
+    triggers {
+        upstream(
+            upstreamProjects: 'ton-labs-vm/master',
+            threshold: hudson.model.Result.SUCCESS
+        )
+    }
     stages {
         stage('Initialize') {
             agent any
