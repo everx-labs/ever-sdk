@@ -61,6 +61,7 @@ error_chain! {
         FromHexError(hex::FromHexError);
         Base64DecodeError(base64::DecodeError);
         AbiError(ton_abi::error::AbiError);
+        TryFromIntError(std::num::TryFromIntError);
     }
 
     errors {

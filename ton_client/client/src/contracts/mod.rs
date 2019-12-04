@@ -178,6 +178,8 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         run::get_run_body);
     handlers.spawn("contracts.run.local",
         run::local_run);
+    handlers.spawn("contracts.run.local.msg",
+        run::local_run_msg);
 
     // Contracts
     handlers.spawn("contracts.encode_message_with_sign",

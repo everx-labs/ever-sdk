@@ -32,6 +32,10 @@ pub fn base64_decode(base64: &String) -> ApiResult<Vec<u8>> {
     base64::decode(base64).map_err(|err| ApiError::crypto_invalid_base64(&base64, err))
 }
 
+pub fn long_num_to_json_string(num: u128) -> String {
+    format!("0x{:x}", num)
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ApiErrorSource {
     Client,
