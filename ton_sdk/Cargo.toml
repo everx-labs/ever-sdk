@@ -3,6 +3,7 @@ name = "ton_sdk"
 version = "0.1.0"
 
 [dependencies]
+ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git" }
 ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git" }
 ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }
 ton_vm = { git = "https://github.com/tonlabs/ton-labs-vm.git", default-features = false }
@@ -19,8 +20,6 @@ lazy_static = "1.1.0"
 base64 = "0.10.0"
 chrono = "0.4.9"
 crc-any = "2.2.3"
-
-ton_abi = { path = "../ton_abi" }
 
 
 [target.'cfg(target_arch="wasm32")'.dependencies]
