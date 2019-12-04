@@ -1,6 +1,6 @@
 [package]
 name = "ton_client_web"
-version = "0.17.0"
+version = "0.17.100"
 edition = "2018"
 description = "tonsdk WASM binding"
 
