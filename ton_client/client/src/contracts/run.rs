@@ -173,7 +173,7 @@ pub(crate) fn run(_context: &mut ClientContext, params: ParamsOfRun) -> ApiResul
     }
 }
 
-pub(crate) fn local_run(_context: &mut ClientContext, params: ParamsOfLocalRun) -> ApiResult<ResultOfLocalRun> {
+pub(crate) fn local_run(context: &mut ClientContext, params: ParamsOfLocalRun) -> ApiResult<ResultOfLocalRun> {
     debug!("-> contracts.run.local({}, {}, {})",
         params.address.clone(),
         params.functionName.clone(),
@@ -197,7 +197,7 @@ pub(crate) fn local_run(_context: &mut ClientContext, params: ParamsOfLocalRun) 
         .map_err(|err| ApiError::contracts_create_run_message_failed(err))?;
 
     local_run_msg(
-        _context,
+        context,
         ParamsOfLocalRunWithMsg {
             address: params.address,
             account: params.account,
@@ -243,15 +243,15 @@ pub(crate) fn local_run_msg(_context: &mut ClientContext, params: ParamsOfLocalR
             .map_err(|err| ApiError::crypto_invalid_base64(&params.messageBase64, err))?)
         .map_err(|err| ApiError::invalid_params(&params.messageBase64, err))?;
 
-    let (messages, gas_fee) = contract.local_call(msg)
+    let result = contract.local_call(msg)
        .map_err(|err| ApiError::contracts_local_run_failed(err))?;
 
-    let gas_fee = long_num_to_json_string(gas_fee);
+    let gas_fee = long_num_to_json_string(result.gas_fee);
 
     let abi_contract = AbiContract::load(params.abi.to_string().as_bytes()).expect("Couldn't parse ABI");
     let abi_function = abi_contract.function(&params.functionName).expect("Couldn't find function");
 
-    for msg in messages {
+    for msg in result.messages {
         if  msg.msg_type() == MessageType::ExternalOutbound &&
             abi_function.is_my_message(
                 msg.body().ok_or(ApiError::contracts_decode_run_output_failed("Message has no body"))?,
