@@ -349,10 +349,10 @@ pub fn local_contract_call(address: MsgAddressInt, func: &str, input: &str, abi:
     let contract = Contract::load_wait_deployed(&address).expect("Error loading Contract");
 
     // call needed method
-    let messages = contract.local_call_json(func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
+    let result = contract.local_call_json(func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
         .expect("Error calling locally");
 
-    for msg in messages {
+    for msg in result.messages {
         if msg.msg_type() == MessageType::ExternalOutbound {
             return Contract::decode_function_response_json(
                 abi.to_owned(), func.to_owned(), msg.body().expect("Message has no body"), false)
@@ -360,7 +360,7 @@ pub fn local_contract_call(address: MsgAddressInt, func: &str, input: &str, abi:
         }
     }
 
-    panic!("No output messages")
+   "{}".to_owned()
 }
 
 const GIVER_ABI: &str = r#"

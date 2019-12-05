@@ -15,7 +15,7 @@
 use ton_sdk::{Contract, MessageType, AbiContract};
 use ton_sdk::json_abi::encode_function_call;
 use crypto::keys::{KeyPair, account_decode};
-use types::{ApiResult, ApiError, base64_decode};
+use types::{ApiResult, ApiError, base64_decode, long_num_to_json_string};
 use ton_types::cells_serialization::BagOfCells;
 
 use contracts::{EncodedMessage, EncodedUnsignedMessage};
@@ -55,6 +55,16 @@ pub(crate) struct ParamsOfLocalRun {
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
+pub(crate) struct ParamsOfLocalRunWithMsg {
+    pub address: String,
+    pub account: Option<serde_json::Value>,
+    pub abi: serde_json::Value,
+    pub functionName: String,
+    pub messageBase64: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
 pub(crate) struct ParamsOfEncodeUnsignedRunMessage {
     pub address: String,
     pub abi: serde_json::Value,
@@ -85,6 +95,13 @@ pub struct ParamsOfDecodeUnknownRun {
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfRun {
     pub output: serde_json::Value
+}
+
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize)]
+pub(crate) struct ResultOfLocalRun {
+    pub output: serde_json::Value,
+    pub gasFee: String
 }
 
 #[allow(non_snake_case)]
@@ -156,7 +173,7 @@ pub(crate) fn run(_context: &mut ClientContext, params: ParamsOfRun) -> ApiResul
     }
 }
 
-pub(crate) fn local_run(_context: &mut ClientContext, params: ParamsOfLocalRun) -> ApiResult<ResultOfRun> {
+pub(crate) fn local_run(context: &mut ClientContext, params: ParamsOfLocalRun) -> ApiResult<ResultOfLocalRun> {
     debug!("-> contracts.run.local({}, {}, {})",
         params.address.clone(),
         params.functionName.clone(),
@@ -170,7 +187,37 @@ pub(crate) fn local_run(_context: &mut ClientContext, params: ParamsOfLocalRun) 
         Some(pair) => Some(pair.decode()?)
     };
 
-    let contract = match params.account {
+    let (body, _) = Contract::construct_call_message_json(
+        address,
+        params.functionName.to_owned(),
+        params.input.to_string().to_owned(),
+        params.abi.to_string().to_owned(),
+        false,
+        key_pair.as_ref())
+        .map_err(|err| ApiError::contracts_create_run_message_failed(err))?;
+
+    local_run_msg(
+        context,
+        ParamsOfLocalRunWithMsg {
+            address: params.address,
+            account: params.account,
+            functionName: params.functionName,
+            abi: params.abi,
+            messageBase64:  base64::encode(&body)
+        }
+    )
+}
+
+pub(crate) fn local_run_msg(_context: &mut ClientContext, params: ParamsOfLocalRunWithMsg) -> ApiResult<ResultOfLocalRun> {
+    debug!("-> contracts.run.local.msg({}, {}, {})",
+        params.address.clone(),
+        params.functionName.clone(),
+        params.messageBase64
+    );
+
+    let address = account_decode(&params.address)?;
+
+    let contract = match &params.account {
         // load contract data from node manually
         #[cfg(feature = "node_interaction")]
         None => {
@@ -191,17 +238,20 @@ pub(crate) fn local_run(_context: &mut ClientContext, params: ParamsOfLocalRun) 
         }
     };
 
-    let messages = contract.local_call_json(
-        params.functionName.clone(),
-        params.input.to_string(),
-        params.abi.to_string(),
-        key_pair.as_ref())
+    let msg = Contract::deserialize_message(
+        &base64::decode(&params.messageBase64)
+            .map_err(|err| ApiError::crypto_invalid_base64(&params.messageBase64, err))?)
+        .map_err(|err| ApiError::invalid_params(&params.messageBase64, err))?;
+
+    let result = contract.local_call(msg)
        .map_err(|err| ApiError::contracts_local_run_failed(err))?;
+
+    let gas_fee = long_num_to_json_string(result.gas_fee);
 
     let abi_contract = AbiContract::load(params.abi.to_string().as_bytes()).expect("Couldn't parse ABI");
     let abi_function = abi_contract.function(&params.functionName).expect("Couldn't find function");
 
-    for msg in messages {
+    for msg in result.messages {
         if  msg.msg_type() == MessageType::ExternalOutbound &&
             abi_function.is_my_message(
                 msg.body().ok_or(ApiError::contracts_decode_run_output_failed("Message has no body"))?,
@@ -215,11 +265,14 @@ pub(crate) fn local_run(_context: &mut ClientContext, params: ParamsOfLocalRun) 
             let output: serde_json::Value = serde_json::from_str(&output)
                 .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?;
 
-            return Ok(ResultOfRun { output });
+            return Ok(ResultOfLocalRun { output, gasFee: gas_fee });
         }
     }
 
-    return Ok(ResultOfRun { output: serde_json::Value::default() });
+    return Ok(ResultOfLocalRun { 
+        output: serde_json::Value::default(),
+        gasFee: gas_fee
+    });
 }
 
 pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfRun) -> ApiResult<EncodedMessage> {

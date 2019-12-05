@@ -19,7 +19,7 @@ const CONTRACT: &str = r#"{"id": "0:e6392da8a96f648098f818501f0211f27c89675e5f19
 #[test]
 fn test_local_piggy_call() {
     let contract: crate::Contract = serde_json::from_str(CONTRACT).expect("Error parsing state init");
-    let messages = contract.local_call_json(
+    let crate::LocalCallResult { messages, gas_fee } = contract.local_call_json(
         "getGoal".to_owned(),
         "{}".to_owned(),
         PIGGY_BANK_CONTRACT_ABI.to_owned(),
@@ -34,6 +34,7 @@ fn test_local_piggy_call() {
         false)
             .expect("Error decoding result");
 
+    println!("Gas fee {}", gas_fee);
     println!("answer {}", answer);
 
     assert_eq!(answer, r#"{"value0":"536f6d6520676f616c"}"#);
