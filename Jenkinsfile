@@ -24,7 +24,7 @@ pipeline {
     }
     triggers {
         upstream(
-            upstreamProjects: 'ton-labs-vm/master',
+            upstreamProjects: 'ton-labs-vm/master,SDK/ton-labs-abi/master',
             threshold: hudson.model.Result.SUCCESS
         )
     }
