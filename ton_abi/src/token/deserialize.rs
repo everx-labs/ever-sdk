@@ -19,7 +19,7 @@ use super::*;
 use crate::error::*;
 
 use num_bigint::{BigInt, BigUint};
-use tvm::stack::{Cell, BuilderData, SliceData, IBitstring};
+use ton_types::{Cell, BuilderData, SliceData, IBitstring};
 use ton_types::dictionary::{HashmapE, HashmapType};
 use ton_block::types::Grams;
 

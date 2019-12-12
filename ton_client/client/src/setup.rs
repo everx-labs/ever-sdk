@@ -43,6 +43,15 @@ pub(crate) struct SetupParams {
 
 #[cfg(feature = "node_interaction")]
 fn setup(_context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
+    // if node address is not provided don't init network connection
+    if  config.base_url.is_none() &&
+        config.queries_url.is_none() &&
+        config.subscriptions_url.is_none() &&
+        config.requests_url.is_none()
+    {
+       return Ok(());
+    }
+
     fn replace_prefix(s: &String, prefix: &str, new_prefix: &str) -> String {
         format!("{}{}", new_prefix, s[prefix.len()..].to_string())
     }
@@ -62,7 +71,7 @@ fn setup(_context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
 
     let base_url = resolve_url(
         config.base_url.as_ref(),
-        "http://0.0.0.0",
+        "",
     );
 
     let requests_url = resolve_url(

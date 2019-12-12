@@ -17,7 +17,7 @@ use std::collections::HashMap;
 use {Param, ParamType, Token, TokenValue};
 use num_bigint::{BigInt, BigUint};
 use ton_types::cells_serialization::serialize_tree_of_cells;
-use tvm::stack::Cell;
+use ton_types::Cell;
 use crate::error::*;
 
 pub struct Detokenizer;

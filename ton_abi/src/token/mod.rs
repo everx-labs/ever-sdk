@@ -19,7 +19,7 @@ use {Param, ParamType};
 use std::collections::HashMap;
 use std::fmt;
 use ton_block::{Grams, MsgAddress};
-use tvm::stack::Cell;
+use ton_types::Cell;
 
 mod tokenizer;
 mod detokenizer;

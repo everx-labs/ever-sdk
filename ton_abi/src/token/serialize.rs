@@ -15,7 +15,7 @@
 use super::*;
 use crate::error::*;
 
-use tvm::stack::{BuilderData, IBitstring};
+use ton_types::{BuilderData, IBitstring};
 use ton_block::Serializable;
 use ton_types::dictionary::HashmapE;
 

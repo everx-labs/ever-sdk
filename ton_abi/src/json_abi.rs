@@ -15,7 +15,7 @@
 use ed25519_dalek::*;
 use serde_json::Value;
 use token::{Detokenizer, Tokenizer};
-use tvm::stack::{BuilderData, SliceData};
+use ton_types::{BuilderData, SliceData};
 use {Contract, Function};
 use crate::error::*;
 
@@ -122,6 +122,23 @@ pub fn decode_unknown_function_call(
         function_name: result.function_name,
         params: input
     })
+}
+
+/// Changes initial values for public contract variables
+pub fn update_contract_data(abi: &str, parameters: &str, data: SliceData) -> AbiResult<SliceData> {
+    let contract = Contract::load(abi.as_bytes())?;
+
+    let data_json: serde_json::Value = serde_json::from_str(parameters)?;
+
+    let params: Vec<_> = contract
+        .data()
+        .values()
+        .map(|item| item.value.clone())
+        .collect();
+
+    let tokens = Tokenizer::tokenize_all(&params[..], &data_json)?;
+
+    contract.update_data(data, &tokens)
 }
 
 #[cfg(test)]

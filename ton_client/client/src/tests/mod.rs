@@ -13,10 +13,10 @@
 */
 
 use crypto::keys::account_decode;
-use ::{InteropContext, JsonResponse};
+use ::InteropContext;
 use ::{tc_json_request, InteropString};
 use ::{tc_read_json_response, tc_destroy_json_response};
-use serde_json::Value;
+use serde_json::{Value, Map};
 use log::{Metadata, Record, LevelFilter};
 use {tc_create_context, tc_destroy_context};
 use ton_sdk::encode_base64;
@@ -37,64 +37,176 @@ impl log::Log for SimpleLogger {
     fn flush(&self) {}
 }
 
-fn json_request(
+struct TestClient {
     context: InteropContext,
-    method_name: &str,
-    params: Value,
-) -> JsonResponse {
-    unsafe {
-        let params_json = if params.is_null() { String::new() } else { params.to_string() };
-        let response_ptr = tc_json_request(
-            context,
-            InteropString::from(&method_name.to_string()),
-            InteropString::from(&params_json),
-        );
-        let interop_response = tc_read_json_response(response_ptr);
-        let response = interop_response.to_response();
-        tc_destroy_json_response(response_ptr);
-        response
+}
+
+impl TestClient {
+    fn new() -> Self {
+        let _ = log::set_boxed_logger(Box::new(SimpleLogger))
+            .map(|()| log::set_max_level(LevelFilter::Debug));
+
+        let context: InteropContext;
+        unsafe {
+            context = tc_create_context()
+        }
+        Self { context }
     }
+
+    fn request(
+        &self,
+        method_name: &str,
+        params: Value,
+    ) -> Result<String, String> {
+        unsafe {
+            let params_json = if params.is_null() { String::new() } else { params.to_string() };
+            let response_ptr = tc_json_request(
+                self.context,
+                InteropString::from(&method_name.to_string()),
+                InteropString::from(&params_json),
+            );
+            let interop_response = tc_read_json_response(response_ptr);
+            let response = interop_response.to_response();
+            tc_destroy_json_response(response_ptr);
+            if response.error_json.is_empty() {
+                Ok(response.result_json)
+            } else {
+                Err(response.error_json)
+            }
+        }
+    }
+}
+
+impl Drop for TestClient {
+    fn drop(&mut self) {
+        unsafe {
+            tc_destroy_context(self.context)
+        }
+    }
+}
+
+
+fn parse_object(s: Result<String, String>) -> Map<String, Value> {
+    if let Value::Object(m) = serde_json::from_str(s.unwrap().as_str()).unwrap() {
+        return m.clone();
+    }
+    panic!("Object expected");
+}
+
+fn parse_string(r: Result<String, String>) -> String {
+    if let Value::String(s) = serde_json::from_str(r.unwrap().as_str()).unwrap() {
+        return s.clone();
+    }
+    panic!("String expected");
+}
+
+fn get_map_string(m: &Map<String, Value>, f: &str) -> String {
+    if let Value::String(s) = m.get(f).unwrap() {
+        return s.clone();
+    }
+    panic!("Field not fount");
+}
+
+#[test]
+fn test_tg_mnemonic() {
+    let client = TestClient::new();
+    let crc16 = client.request("crypto.ton_crc16", json!({
+        "hex": "0123456789abcdef"
+    })).unwrap();
+    assert_eq!(crc16, "43349");
+
+    let keys = parse_object(client.request(
+        "crypto.mnemonic.derive.sign.keys",
+        json!({
+            "phrase": "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle"
+        }),
+    ));
+    let ton_public = parse_string(client.request(
+        "crypto.ton_public_key_string",
+        Value::String(get_map_string(&keys, "public")),
+    ));
+    assert_eq!(ton_public, "PubDdJkMyss2qHywFuVP1vzww0TpsLxnRNnbifTCcu-XEgW0");
+
+    let words = parse_string(client.request("crypto.mnemonic.words", json!({
+    })));
+    assert_eq!(words.split(" ").count(), 2048);
+
+    let phrase = parse_string(client.request("crypto.mnemonic.from.random", json!({
+    })));
+    assert_eq!(phrase.split(" ").count(), 24);
+
+    let entropy = "2199ebe996f14d9e4e2595113ad1e6276bd05e2e147e16c8ab8ad5d47d13b44fcf";
+    let mnemonic = parse_string(client.request("crypto.mnemonic.from.entropy", json!({
+        "entropy": json!({
+            "hex": entropy
+        }),
+    })));
+    let public = get_map_string(&parse_object(client.request(
+        "crypto.mnemonic.derive.sign.keys",
+        json!({
+            "phrase": mnemonic
+        }),
+    )), "public");
+    let ton_public = parse_string(client.request(
+        "crypto.ton_public_key_string",
+        Value::String(public),
+    ));
+    assert_eq!(ton_public, "PuYGEX9Zreg-CX4Psz5dKehzW9qCs794oBVUKqqFO7aWAOTD");
+//    let ton_phrase = "shove often foil innocent soft slim pioneer day uncle drop nephew soccer worry renew public hand word nut again dry first delay first maple";
+    let is_valid = client.request(
+        "crypto.mnemonic.verify",
+        json!({
+            "phrase": "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle"
+        }),
+    ).unwrap();
+    assert_eq!(is_valid, "true");
+    let is_valid = client.request(
+        "crypto.mnemonic.verify",
+        json!({
+            "phrase": "unit follow"
+        }),
+    ).unwrap();
+    assert_eq!(is_valid, "false");
+    let is_valid = client.request(
+        "crypto.mnemonic.verify",
+        json!({
+            "phrase": "unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit"
+        }),
+    ).unwrap();
+    assert_eq!(is_valid, "false");
 }
 
 #[test]
 fn test_wallet_deploy() {
-    log::set_boxed_logger(Box::new(SimpleLogger))
-        .map(|()| log::set_max_level(LevelFilter::Debug)).unwrap();
-    unsafe {
-        let context = tc_create_context();
+    let client = TestClient::new();
+    let version = client.request("version", Value::Null).unwrap();
+    println!("result: {}", version.to_string());
 
-        let version = json_request(context, "version", Value::Null);
-        println!("result: {}", version.result_json.to_string());
+    let _deployed = client.request("setup",
+        json!({"baseUrl": "http://0.0.0.0"}));
 
-        let _deployed = json_request(context, "setup",
-            json!({"baseUrl": "http://0.0.0.0"}));
+    let keys = client.request("crypto.ed25519.keypair", json!({})).unwrap();
 
-		let keys = json_request(context, "crypto.ed25519.keypair", json!({}));
+    let abi: Value = serde_json::from_str(WALLET_ABI).unwrap();
+    let keys: Value = serde_json::from_str(&keys).unwrap();
 
-		assert_eq!(keys.error_json, "");
-
-		let abi: Value = serde_json::from_str(WALLET_ABI).unwrap();
-		let keys: Value = serde_json::from_str(&keys.result_json).unwrap();
-
-		let address = json_request(context, "contracts.deploy.message",
-            json!({
+    let address = client.request("contracts.deploy.message",
+        json!({
                 "abi": abi.clone(),
                 "constructorParams": json!({}),
                 "imageBase64": WALLET_CODE_BASE64,
                 "keyPair": keys,
                 "workchainId": 0,
             }),
-        );
+    ).unwrap();
 
-		assert_eq!(address.error_json, "");
+    let address = serde_json::from_str::<Value>(&address).unwrap()["address"].clone();
+    let address = MsgAddressInt::from_str(address.as_str().unwrap()).unwrap();
 
-		let address = serde_json::from_str::<Value>(&address.result_json).unwrap()["address"].clone();
-		let address = MsgAddressInt::from_str(address.as_str().unwrap()).unwrap();
+    let giver_abi: Value = serde_json::from_str(GIVER_ABI).unwrap();
 
-		let giver_abi: Value = serde_json::from_str(GIVER_ABI).unwrap();
-
-		let result = json_request(context, "contracts.run",
-            json!({
+    let _ = client.request("contracts.run",
+        json!({
                 "address": GIVER_ADDRESS,
                 "abi": giver_abi,
                 "functionName": "sendGrams",
@@ -103,12 +215,10 @@ fn test_wallet_deploy() {
 					"amount": 10_000_000_000u64
 					}),
             }),
-        );
+    ).unwrap();
 
-		assert_eq!(result.error_json, "");
-
-		let wait_result = json_request(context, "queries.wait.for",
-            json!({
+    let _ = client.request("queries.wait.for",
+        json!({
                 "table": "accounts".to_owned(),
                 "filter": json!({
 					"id": { "eq": address.to_string() },
@@ -116,24 +226,22 @@ fn test_wallet_deploy() {
 				}).to_string(),
 				"result": "id balance".to_owned()
             }),
-        );
+    ).unwrap();
 
-		assert_eq!(wait_result.error_json, "");
-
-        let deployed = json_request(context, "contracts.deploy",
-            json!({
+    let deployed = client.request("contracts.deploy",
+        json!({
                 "abi": abi.clone(),
                 "constructorParams": json!({}),
                 "imageBase64": WALLET_CODE_BASE64,
                 "keyPair": keys,
                 "workchainId": 0,
             }),
-        );
+    ).unwrap();
 
-        assert_eq!(format!("{{\"address\":\"{}\"}}", address), deployed.result_json);
+    assert_eq!(format!("{{\"address\":\"{}\"}}", address), deployed);
 
-        let result = json_request(context, "contracts.run",
-            json!({
+    let result = client.request("contracts.run",
+        json!({
                 "address": address.to_string(),
                 "abi": abi.clone(),
                 "functionName": "createOperationLimit",
@@ -142,11 +250,8 @@ fn test_wallet_deploy() {
 				}),
                 "keyPair": keys,
             }),
-        );
-        assert_eq!("{\"output\":{\"value0\":\"0x0\"}}", result.result_json);
-
-        tc_destroy_context(context);
-    }
+    ).unwrap();
+    assert_eq!("{\"output\":{\"value0\":\"0x0\"}}", result);
 }
 
 const GIVER_ADDRESS: &str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
@@ -302,5 +407,5 @@ fn test_address_parsing() {
     assert_eq!(address, account_decode(base64_url).expect("Couldn't parse base64_url address"));
 
     assert_eq!(encode_base64(&address, true, true, false).unwrap(), base64);
-    assert_eq!(encode_base64(&address, true, true, true ).unwrap(), base64_url);
+    assert_eq!(encode_base64(&address, true, true, true).unwrap(), base64_url);
 }

@@ -50,9 +50,9 @@ error_chain! {
 
     foreign_links {
         Io(io::Error);
-        Tvm(tvm::error::TvmError);
-        TvmException(tvm::types::Exception);
-        TvmExceptionCode(tvm::types::ExceptionCode);
+        Tvm(ton_vm::error::TvmError);
+        TvmException(ton_vm::types::Exception);
+        TvmExceptionCode(ton_vm::types::ExceptionCode);
         Graphql(GraphiteError);
         SerdeJson(serde_json::Error);
         TryFromSliceError(std::array::TryFromSliceError);
@@ -103,8 +103,9 @@ error_chain! {
         InitializeError {
             description("SDK initialize error")
         }
-        DefaultWorkchainNotSet {
-            description("Default workchain not set")
+        NetworkError(msg: String){
+            description("Network error"),
+            display("Network error: {}", msg)
         }
     }
 }

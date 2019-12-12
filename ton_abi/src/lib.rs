@@ -20,7 +20,7 @@ extern crate hex;
 extern crate pretty_assertions;
 extern crate ton_block;
 extern crate ton_types;
-extern crate ton_vm as tvm;
+extern crate ton_vm;
 extern crate serde;
 extern crate serde_json;
 #[macro_use]
@@ -34,6 +34,7 @@ extern crate failure;
 
 pub mod contract;
 pub mod function;
+pub mod event;
 pub mod int;
 pub mod param;
 pub mod param_type;
@@ -42,9 +43,10 @@ pub mod json_abi;
 pub mod error;
 
 pub use param_type::ParamType;
-pub use contract::{Contract};
+pub use contract::{Contract, DataItem};
 pub use token::{Token, TokenValue};
-pub use function::{DataItem, Function, Event, ABI_VERSION};
+pub use function::Function;
+pub use event::Event;
 pub use json_abi::*;
 pub use param::Param;
 pub use int::{Int, Uint};

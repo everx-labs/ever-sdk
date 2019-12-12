@@ -17,7 +17,7 @@
 extern crate ton_block;
 extern crate ton_types;
 #[macro_use]
-extern crate ton_vm as tvm;
+extern crate ton_vm;
 extern crate ton_abi;
 
 #[macro_use]
@@ -27,9 +27,9 @@ extern crate hex;
 extern crate ed25519_dalek;
 extern crate sha2;
 extern crate base64;
-extern crate crc16;
 extern crate chrono;
 extern crate failure;
+extern crate crc_any;
 
 #[cfg(feature = "node_interaction")]
 #[macro_use]
@@ -43,6 +43,8 @@ extern crate serde_json;
 extern crate futures;
 #[cfg(feature = "node_interaction")]
 extern crate graphite;
+#[cfg(feature = "node_interaction")]
+extern crate reqwest;
 
 pub use ton_abi::json_abi;
 pub use ton_abi::Contract as AbiContract;
@@ -86,8 +88,7 @@ pub mod json_helper;
 #[cfg(feature = "node_interaction")]
 pub fn init(config: NodeClientConfig) -> SdkResult<()> {
     requests_helper::init(config.requests_config);
-    queries_helper::init(config.queries_config);
-    Ok(())
+    queries_helper::init(config.queries_config)
 }
 
 /// Init SKD. Globally saves queries and requests server URLs

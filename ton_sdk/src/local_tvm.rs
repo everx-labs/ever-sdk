@@ -16,14 +16,15 @@ use crate::error::*;
 use std::sync::Arc;
 use chrono::prelude::*;
 use std::convert::TryFrom;
-use tvm::executor::Engine;
+use ton_vm::executor::Engine;
 use ton_block::{
     Message,
     Serializable,
     Deserializable,
 };
-use tvm::stack::{Cell, IntegerData, SaveList, SliceData, Stack, StackItem};
-use tvm::SmartContractInfo;
+use ton_types::{Cell, SliceData};
+use ton_vm::stack::{IntegerData, SaveList, Stack, StackItem};
+use ton_vm::SmartContractInfo;
 
 #[cfg(test)]
 #[path = "tests/test_local_tvm.rs"]

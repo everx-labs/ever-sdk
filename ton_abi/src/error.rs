@@ -12,7 +12,7 @@
 * limitations under the License.
 */
 
-use tvm::stack::SliceData;
+use ton_types::SliceData;
 
 error_chain! {
 
@@ -22,10 +22,10 @@ error_chain! {
 
     foreign_links {
         Io(std::io::Error);
-        TvmError(tvm::error::TvmError);
+        TvmError(ton_vm::error::TvmError);
         SerdeError(serde_json::Error);
-        TvmException(tvm::types::Exception);
-        TvmExceptionCode(tvm::types::ExceptionCode);
+        TvmException(ton_vm::types::Exception);
+        TvmExceptionCode(ton_vm::types::ExceptionCode);
         TryFromIntError(std::num::TryFromIntError);
     }
 
@@ -92,7 +92,7 @@ error_chain! {
         }
         WrongId(id: u32) {
             description("Wrong function ID"),
-            display("Wrong function ID: {}", id)
+            display("Wrong function ID: {:x}", id)
         }
     }
 }

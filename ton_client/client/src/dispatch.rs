@@ -102,11 +102,11 @@ impl DispatchTable {
         self.sync_runners.insert(method.to_string(), Box::new(CallHandler { handler }));
     }
 
-    pub fn spawn_no_args<R>(&mut self, method: &str, handler: fn(context: &mut ClientContext) -> ApiResult<R>)
-        where R: Send + Serialize + 'static
-    {
-        self.sync_runners.insert(method.to_string(), Box::new(CallNoArgsHandler { handler }));
-    }
+//    pub fn spawn_no_args<R>(&mut self, method: &str, handler: fn(context: &mut ClientContext) -> ApiResult<R>)
+//        where R: Send + Serialize + 'static
+//    {
+//        self.sync_runners.insert(method.to_string(), Box::new(CallNoArgsHandler { handler }));
+//    }
 
     pub fn call<P, R>(&mut self, method: &str, handler: fn(context: &mut ClientContext, params: P) -> ApiResult<R>)
         where P: Send + DeserializeOwned + 'static, R: Send + Serialize + 'static
