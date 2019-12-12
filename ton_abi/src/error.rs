@@ -30,9 +30,9 @@ error_chain! {
     }
 
     errors {
-        FailureError(msg: String) {
-            description("Invalid data"),
-            display("Invalid data: {}", msg)
+        FailureError(error: failure::Error) {
+            description("Failure error"),
+            display("Failure error: {}", error.to_string())
         }
         BlockError(error: ton_block::BlockError) {
             description("Block error"),
@@ -99,6 +99,6 @@ error_chain! {
 
 impl From<failure::Error> for AbiError {
     fn from(error: failure::Error) -> Self {
-        AbiErrorKind::FailureError(error.to_string()).into()
+        AbiErrorKind::FailureError(error).into()
     }
 }
