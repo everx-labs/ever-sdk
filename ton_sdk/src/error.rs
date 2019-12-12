@@ -53,7 +53,6 @@ error_chain! {
         Tvm(tvm::error::TvmError);
         TvmException(tvm::types::Exception);
         TvmExceptionCode(tvm::types::ExceptionCode);
-        TonBlocks(ton_block::BlockError);
         Graphql(GraphiteError);
         SerdeJson(serde_json::Error);
         TryFromSliceError(std::array::TryFromSliceError);
@@ -64,6 +63,14 @@ error_chain! {
     }
 
     errors {
+        FailureError(msg: String) {
+            description("Invalid data"),
+            display("Invalid data: {}", msg)
+        }
+        BlockError(error: ton_block::BlockError) {
+            description("Block error"),
+            display("Block error: {}", error.to_string())
+        }
         NotFound {
             description("Requested item not found")
         }
@@ -99,5 +106,11 @@ error_chain! {
         DefaultWorkchainNotSet {
             description("Default workchain not set")
         }
+    }
+}
+
+impl From<failure::Error> for SdkError {
+    fn from(error: failure::Error) -> Self {
+        SdkErrorKind::FailureError(error.to_string()).into()
     }
 }

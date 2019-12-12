@@ -12,12 +12,11 @@
 * limitations under the License.
 */
 
-use tvm::stack::CellData;
+use tvm::stack::Cell;
 use ton_block::{MsgAddressInt, TransactionProcessingStatus, AccStatusChange, ComputeSkipReason,
     AccountStatus};
 use std::fmt;
 use serde::de::Error;
-use std::sync::Arc;
 use std::str::FromStr;
 use crate::*;
 
@@ -57,7 +56,7 @@ impl<'de> serde::de::Visitor<'de> for U8Visitor {
     }
 }
 
-pub fn deserialize_tree_of_cells_from_base64<'de, D>(b64: &str) -> Result<Arc<CellData>, D::Error>
+pub fn deserialize_tree_of_cells_from_base64<'de, D>(b64: &str) -> Result<Cell, D::Error>
     where D: serde::Deserializer<'de>
 {
     let bytes = base64::decode(&b64)
@@ -67,7 +66,7 @@ pub fn deserialize_tree_of_cells_from_base64<'de, D>(b64: &str) -> Result<Arc<Ce
         .map_err(|err| D::Error::custom(format!("BOC read error: {}", err)))
 }
 
-pub fn deserialize_tree_of_cells_opt_cell<'de, D>(d: D) -> Result<Option<Arc<CellData>>, D::Error>
+pub fn deserialize_tree_of_cells_opt_cell<'de, D>(d: D) -> Result<Option<Cell>, D::Error>
     where D: serde::Deserializer<'de>
 {
     match d.deserialize_string(StringVisitor) {

@@ -17,14 +17,13 @@ use crc16::*;
 use ed25519_dalek::{Keypair, PublicKey};
 use std::convert::Into;
 use std::io::{Cursor, Read, Seek};
-use std::sync::Arc;
 use ton_block::{
     Deserializable, ExternalInboundMessageHeader,
     GetRepresentationHash, Message as TvmMessage, MsgAddressInt,
     Serializable, StateInit, AccountStatus};
 use ton_types::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use ton_types::dictionary::HashmapE;
-use tvm::stack::{BuilderData, CellData, SliceData};
+use tvm::stack::{BuilderData, Cell, SliceData};
 use tvm::types::AccountId;
 
 pub use ton_abi::json_abi::DecodedMessage;
@@ -57,9 +56,9 @@ pub struct Contract {
     #[serde(deserialize_with = "json_helper::deserialize_uint_from_string")]
     pub balance: u128,
     #[serde(deserialize_with = "json_helper::deserialize_tree_of_cells_opt_cell")]
-    pub code: Option<Arc<CellData>>,
+    pub code: Option<Cell>,
     #[serde(deserialize_with = "json_helper::deserialize_tree_of_cells_opt_cell")]
-    pub data: Option<Arc<CellData>>,
+    pub data: Option<Cell>,
 }
 
 #[cfg(test)]
@@ -241,7 +240,7 @@ impl ContractImage {
         Ok(())
     }
 
-    fn insert_pubkey(data: Arc<CellData>, pubkey: &[u8]) -> SdkResult<Arc<CellData>> {
+    fn insert_pubkey(data: Cell, pubkey: &[u8]) -> SdkResult<Cell> {
         let pubkey_vec = pubkey.to_vec();
         let pubkey_len = pubkey_vec.len() * 8;
         let value = BuilderData::with_raw(pubkey_vec, pubkey_len)
@@ -251,7 +250,7 @@ impl ContractImage {
 
     const DATA_MAP_KEYLEN: usize = 64;
 
-    fn insert_data_item(data: Arc<CellData>, key: u64, value: BuilderData) -> SdkResult<Arc<CellData>> {
+    fn insert_data_item(data: Cell, key: u64, value: BuilderData) -> SdkResult<Cell> {
         let mut map = HashmapE::with_data(
             Self::DATA_MAP_KEYLEN, 
             data.into(),

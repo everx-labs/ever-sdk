@@ -22,8 +22,7 @@ use ton_block::{
     Serializable,
     Deserializable,
 };
-use ton_block::error::*;
-use tvm::stack::{CellData, IntegerData, SaveList, SliceData, Stack, StackItem};
+use tvm::stack::{Cell, IntegerData, SaveList, SliceData, Stack, StackItem};
 use tvm::SmartContractInfo;
 
 #[cfg(test)]
@@ -31,7 +30,7 @@ use tvm::SmartContractInfo;
 mod tests;
 
 #[allow(dead_code)]
-pub fn local_contract_call(code: Arc<CellData>, data: Option<Arc<CellData>>, msg: &Message)
+pub fn local_contract_call(code: Cell, data: Option<Cell>, msg: &Message)
 -> SdkResult<Vec<Message>> {
     let msg_cell = msg.write_to_new_cell()?.into();
     let mut stack = Stack::new();
@@ -44,15 +43,15 @@ pub fn local_contract_call(code: Arc<CellData>, data: Option<Arc<CellData>>, msg
     
     let mut ctrls = SaveList::new();
     ctrls.put(4, &mut StackItem::Cell(data.unwrap_or_default()))
-        .map_err(|err| BlockError::from(BlockErrorKind::Other(
+        .map_err(|err| SdkError::from(SdkErrorKind::InternalError(
             format!("Cannot put data to register: {}", err))))?;
 
     let mut sci = SmartContractInfo::default();
     *sci.unix_time_mut() = <u32>::try_from(Utc::now().timestamp())
-        .map_err(|_| BlockError::from(BlockErrorKind::Other(
+        .map_err(|_| SdkError::from(SdkErrorKind::InternalError(
             format!("Wrong time: {}", Utc::now().timestamp()))))?;
     ctrls.put(7, &mut sci.into_temp_data())
-        .map_err(|err| BlockError::from(BlockErrorKind::Other(
+        .map_err(|err| SdkError::from(SdkErrorKind::InternalError(
             format!("Cannot put data to register: {}", err))))?;
     
     let mut engine = Engine::new().setup(SliceData::from(code), Some(ctrls), Some(stack), None);

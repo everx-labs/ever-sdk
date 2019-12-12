@@ -400,7 +400,7 @@ fn test_store_pubkey() {
 
     let mut data = BuilderData::new();
     data.append_bit_one().unwrap()
-        .checked_append_reference(test_map.data().unwrap()).unwrap();
+        .checked_append_reference(test_map.data().unwrap().clone()).unwrap();
 
     let new_data = ContractImage::insert_pubkey(data.into(), &test_pubkey).unwrap();
 

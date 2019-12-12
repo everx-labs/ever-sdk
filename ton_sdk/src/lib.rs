@@ -29,6 +29,7 @@ extern crate sha2;
 extern crate base64;
 extern crate crc16;
 extern crate chrono;
+extern crate failure;
 
 #[cfg(feature = "node_interaction")]
 #[macro_use]

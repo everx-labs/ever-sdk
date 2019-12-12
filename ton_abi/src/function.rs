@@ -14,12 +14,11 @@
 
 //! Contract function call builder.
 
-use std::sync::Arc;
 use chrono::prelude::*;
 use sha2::{Digest, Sha256, Sha512};
 use {Param, Token, TokenValue};
 use ed25519_dalek::*;
-use tvm::stack::{BuilderData, SliceData, CellData, IBitstring};
+use tvm::stack::{BuilderData, SliceData, Cell, IBitstring};
 use crate::error::*;
 
 pub const   ABI_VERSION: u8 = 1;
@@ -226,17 +225,15 @@ impl Function {
         }
 
         // encoding itself
-        let mut builder = TokenValue::pack_values_into_chain(tokens, vec![builder])?;
-        
+        builder = TokenValue::pack_values_into_chain(tokens, vec![builder])?;
         if !internal {
             // delete sign reference before hash
-            builder.update_cell(|_, _, refs, _| {
-                            refs.remove(0)
-                        },
-                        ());
+            let mut slice = SliceData::from(builder);
+            slice.checked_drain_reference()?;
+            builder = BuilderData::from_slice(&slice);
         }
 
-        let hash = (&Arc::<CellData>::from(&builder)).repr_hash().as_slice().to_vec();
+        let hash = Cell::from(&builder).repr_hash().as_slice().to_vec();
 
         Ok((builder, hash))
     }
