@@ -22,7 +22,6 @@ error_chain! {
 
     foreign_links {
         Io(std::io::Error);
-        BlockError(ton_block::BlockError);
         TvmError(ton_vm::error::TvmError);
         SerdeError(serde_json::Error);
         TvmException(ton_vm::types::Exception);
@@ -31,6 +30,14 @@ error_chain! {
     }
 
     errors {
+        FailureError(error: failure::Error) {
+            description("Failure error"),
+            display("Failure error: {}", error.to_string())
+        }
+        BlockError(error: ton_block::BlockError) {
+            description("Block error"),
+            display("Block error: {}", error.to_string())
+        }
         InvalidData(msg: String) {
             description("Invalid data"),
             display("Invalid data: {}", msg)
@@ -87,5 +94,11 @@ error_chain! {
             description("Wrong function ID"),
             display("Wrong function ID: {:x}", id)
         }
+    }
+}
+
+impl From<failure::Error> for AbiError {
+    fn from(error: failure::Error) -> Self {
+        AbiErrorKind::FailureError(error).into()
     }
 }

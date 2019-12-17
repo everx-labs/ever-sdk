@@ -15,12 +15,11 @@
 use int::{Int, Uint};
 use {Param, ParamType};
 use serde_json;
-use std::sync::Arc;
 use super::*;
 use crate::error::*;
 
 use num_bigint::{BigInt, BigUint};
-use ton_vm::stack::{CellData, BuilderData, SliceData, IBitstring};
+use ton_types::{Cell, BuilderData, SliceData, IBitstring};
 use ton_types::dictionary::{HashmapE, HashmapType};
 use ton_block::types::Grams;
 
@@ -122,9 +121,9 @@ impl TokenValue {
         Ok((TokenValue::FixedArray(result), cursor))
     }
 
-    fn read_cell(mut cursor: SliceData) -> AbiResult<(Arc<CellData>, SliceData)> {
+    fn read_cell(mut cursor: SliceData) -> AbiResult<(Cell, SliceData)> {
         let cell = match cursor.remaining_references() {
-            1 if cursor.cell().references_used() == BuilderData::references_capacity() => {
+            1 if cursor.cell().references_count() == BuilderData::references_capacity() => {
                 cursor = SliceData::from(cursor.reference(0)?);
                 cursor.checked_drain_reference()?
             }
