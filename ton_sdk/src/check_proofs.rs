@@ -1,11 +1,11 @@
 use crate::*;
 use std::str::FromStr;
 use serde_json::Value;
-use tvm::block::{ Transaction as TvmTransaction, Message as TvmMessage, 
+use ton_block::{ Transaction as TvmTransaction, Message as TvmMessage, 
     TransactionProcessingStatus, Deserializable, Account as TvmAccount, check_account_proof,
     check_transaction_proof, check_message_proof, MerkleProof, MessageProcessingStatus };
-use tvm::cells_serialization::deserialize_tree_of_cells;
-use tvm::types::UInt256;
+use ton_types::cells_serialization::deserialize_tree_of_cells;
+use ton_vm::types::UInt256;
 
 #[cfg(test)]
 #[path = "tests/test_check_proofs.rs"]
@@ -38,10 +38,17 @@ pub fn check_transaction(tr_val: &Value) -> SdkResult<()> {
 
     let status: TransactionProcessingStatus;
     if let Some(status_val) = tr_val_obj.get("status") {
-        status = serde_json::from_value(status_val.clone())
-            .map_err(|err| {
-                SdkErrorKind::InvalidData(format!("error parsing transaction's status: {}", err))
-            })?;
+        if let Some(status_num) = status_val.as_u64() {
+            status = match status_num {
+                1 => TransactionProcessingStatus::Preliminary,
+                2 => TransactionProcessingStatus::Proposed,
+                3 => TransactionProcessingStatus::Finalized,
+                4 => TransactionProcessingStatus::Refused,
+                _ => bail!(SdkErrorKind::InvalidData("Error parsing message's status: unknown value".into()))
+            };
+        } else {
+            bail!(SdkErrorKind::InvalidData("Status field must be a number".into()));
+        }
     } else {
         bail!(SdkErrorKind::InvalidData(
             "Transaction JSON must contain status field".into()));
@@ -55,7 +62,7 @@ pub fn check_transaction(tr_val: &Value) -> SdkResult<()> {
                 bail!(SdkErrorKind::InvalidData(
                     "Finalized or Proposed transactions must contain both proof and boc fields".into()));
             } else {
-                return ok!();
+                return Ok(());
             }
     }
 
@@ -67,43 +74,41 @@ pub fn check_transaction(tr_val: &Value) -> SdkResult<()> {
 
     let proof_bytes = base64::decode(proof_str)
         .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing proof: {}", err)))?;
-    let proof = deserialize_tree_of_cells(&mut std::io::Cursor::new(proof_bytes))
+    let proof = deserialize_tree_of_cells(&mut std::io::Cursor::new(&proof_bytes))
         .map_err(|err| SdkErrorKind::InvalidData(format!("error deserialize proof: {}", err)))?;
 
     let boc_bytes = base64::decode(boc_str)
         .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing boc: {}", err)))?;
-    let boc = deserialize_tree_of_cells(&mut std::io::Cursor::new(boc_bytes))
+    let boc = deserialize_tree_of_cells(&mut std::io::Cursor::new(&boc_bytes))
         .map_err(|err| SdkErrorKind::InvalidData(format!("error deserialize boc: {}", err)))?;
 
-    let block_id = Some(UInt256::from_str(block_id_str)
+    let block_id = UInt256::from_str(block_id_str)
         .map_err(|err| SdkErrorKind::InvalidData(format!("error deserialize block id: {}", err)))?
-        .into());
+        .into();
 
     // build full transaction from BOC
-    let mut full_tr: TvmTransaction = TvmTransaction::construct_from(&mut boc.into())?;
-    full_tr.block_id = block_id;
-    full_tr.status = status;
+    let full_tr: TvmTransaction = TvmTransaction::construct_from(&mut boc.clone().into())?;
 
     // and proof
     let proof: MerkleProof = MerkleProof::construct_from(&mut proof.into())?;
 
     // check merkle proof
-    check_transaction_proof(&proof, &full_tr)?;
+    check_transaction_proof(&proof, &full_tr, &block_id)?;
 
     // check given transaction's JSON
-    let ser_set = TransactionSerializationSet {
+    let ser_set = ton_block_json::TransactionSerializationSet {
         transaction: full_tr,
         id: boc.repr_hash(),
         status,
-        block_id,
-        boc: boc_bytes,
-        proof: Some(proof_bytes),
+        block_id: Some(block_id),
+        boc: vec!(),  // There's no point in checking these fields because it is got
+        proof: None,  // from checked jsons (it is skipped in check_incomplete_json)
     };
 
     let complete_json = json!(Value::from(ton_block_json::db_serialize_transaction("id", &ser_set)));
     check_incomplete_json(tr_val, &complete_json)?;
 
-    ok!()
+    Ok(())
 }
 
 /// Checks merkle proof of message. Takes serde_json::Value with message struct.
@@ -121,7 +126,7 @@ pub fn check_transaction(tr_val: &Value) -> SdkResult<()> {
 #[allow(dead_code)]
 pub fn check_message(msg_val: &Value) -> SdkResult<()> {
 
-    // extracting boc, proof and block_id strings
+    // extracting "special" values (which absent in blockchain struct)
 
     if !msg_val.is_object() {
         bail!(SdkErrorKind::InvalidData("Invalid message json".into()));
@@ -133,10 +138,20 @@ pub fn check_message(msg_val: &Value) -> SdkResult<()> {
 
     let status: MessageProcessingStatus;
     if let Some(status_val) = msg_val_obj.get("status") {
-        status = serde_json::from_value(status_val.clone())
-            .map_err(|err| {
-                SdkErrorKind::InvalidData(format!("error parsing message's status: {}", err))
-            })?;
+        if let Some(status_num) = status_val.as_u64() {
+            status = match status_num {
+                1 => MessageProcessingStatus::Queued,
+                2 => MessageProcessingStatus::Processing,
+                3 => MessageProcessingStatus::Preliminary,
+                4 => MessageProcessingStatus::Proposed,
+                5 => MessageProcessingStatus::Finalized,
+                6 => MessageProcessingStatus::Refused,
+                7 => MessageProcessingStatus::Transiting,
+                _ => bail!(SdkErrorKind::InvalidData("Error parsing message's status: unknown value".into()))
+            };
+        } else {
+            bail!(SdkErrorKind::InvalidData("Status field must be a number".into()));
+        }
     } else {
         bail!(SdkErrorKind::InvalidData(
             "Message JSON must contain status field".into()));
@@ -150,7 +165,7 @@ pub fn check_message(msg_val: &Value) -> SdkResult<()> {
                 bail!(SdkErrorKind::InvalidData(
                     "Finalized or Proposed messages must contain both proof and boc fields".into()));
             } else {
-                return ok!();
+                return Ok(());
             }
     }
 
@@ -158,47 +173,59 @@ pub fn check_message(msg_val: &Value) -> SdkResult<()> {
     let proof_str = mandatory_values.remove(1).unwrap().as_str().unwrap();
     let boc_str = mandatory_values.remove(0).unwrap().as_str().unwrap();
 
-    // parse boc, proof and block_id
+    let transaction_id_str = msg_val_obj
+        .get("transaction_id")
+        .and_then(|tv| tv.as_str());
+
+    // parse "special" values
 
     let proof_bytes = base64::decode(proof_str)
         .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing proof: {}", err)))?;
-    let proof = deserialize_tree_of_cells(&mut std::io::Cursor::new(proof_bytes))
+    let proof = deserialize_tree_of_cells(&mut std::io::Cursor::new(&proof_bytes))
         .map_err(|err| SdkErrorKind::InvalidData(format!("error deserialize proof: {}", err)))?;
 
     let boc_bytes = base64::decode(boc_str)
         .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing boc: {}", err)))?;
-    let boc = deserialize_tree_of_cells(&mut std::io::Cursor::new(boc_bytes))
+    let boc = deserialize_tree_of_cells(&mut std::io::Cursor::new(&boc_bytes))
         .map_err(|err| SdkErrorKind::InvalidData(format!("error deserialize boc: {}", err)))?;
 
-    let block_id = Some(UInt256::from_str(block_id_str)
+    let block_id = UInt256::from_str(block_id_str)
         .map_err(|err| SdkErrorKind::InvalidData(format!("error deserialize block id: {}", err)))?
-        .into());
+        .into();
+
+    let transaction_id = if let Some(id_str) = transaction_id_str {
+        Some(
+            UInt256::from_str(id_str)
+                .map_err(|err| SdkErrorKind::InvalidData(format!("error deserialize transaction id: {}", err)))?
+        )
+    } else {
+        None
+    };
 
     // build full message from BOC
-    let mut full_msg: TvmMessage = TvmMessage::construct_from(&mut boc.into())?;
+    let full_msg: TvmMessage = TvmMessage::construct_from(&mut boc.clone().into())?;
 
     // and proof
     let proof: MerkleProof = MerkleProof::construct_from(&mut proof.into())?;
 
     // check merkle proof
-    check_message_proof(&proof, &full_msg)?;
+    check_message_proof(&proof, &full_msg, &block_id)?;
 
     // check given message's JSON
-    let transaction_id = full_msg.transaction_cell().map(|cell| cell.repr_hash());
-    let ser_set = MessageSerializationSet {
+    let ser_set = ton_block_json::MessageSerializationSet {
         message: full_msg,
         id: boc.repr_hash(),
         block_id: Some(block_id),
         transaction_id,
         status,
-        boc: boc_bytes,
-        proof: Some(proof_bytes),
-    }
+        boc: vec!(),  // There's no point in checking these fields because it is got
+        proof: None,  // from checked jsons (it is skipped in check_incomplete_json)
+    };
 
-    let complete_json = json!(Value::from(ton_block_json::db_serialize_transaction("id", &ser_set)));
+    let complete_json = json!(Value::from(ton_block_json::db_serialize_message("id", &ser_set)));
     check_incomplete_json(msg_val, &complete_json)?;
 
-    ok!()
+    Ok(())
 }
 
 
@@ -236,12 +263,12 @@ pub fn check_account(acc_val: &Value) -> SdkResult<UInt256> {
 
     let proof_bytes = base64::decode(proof_str)
         .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing proof: {}", err)))?;
-    let proof = deserialize_tree_of_cells(&mut std::io::Cursor::new(proof_bytes))
+    let proof = deserialize_tree_of_cells(&mut std::io::Cursor::new(&proof_bytes))
         .map_err(|err| SdkErrorKind::InvalidData(format!("error deserialize proof: {}", err)))?;
 
     let boc_bytes = base64::decode(boc_str)
         .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing boc: {}", err)))?;
-    let boc = deserialize_tree_of_cells(&mut std::io::Cursor::new(boc_bytes))
+    let boc = deserialize_tree_of_cells(&mut std::io::Cursor::new(&boc_bytes))
         .map_err(|err| SdkErrorKind::InvalidData(format!("error deserialize boc: {}", err)))?;
 
 
@@ -255,10 +282,10 @@ pub fn check_account(acc_val: &Value) -> SdkResult<UInt256> {
     check_account_proof(&proof, &full_acc)?;
 
     // check given account's JSON
-    let ser_set = AccountSerializationSet {
+    let ser_set = ton_block_json::AccountSerializationSet {
         account: full_acc,
-        boc: boc_bytes,
-        proof: Some(proof_bytes),
+        boc: vec!(),  // There's no point in checking these fields because it is got
+        proof: None,  // from checked jsons (it is skipped in check_incomplete_json)
     };
 
     let complete_json = json!(Value::from(ton_block_json::db_serialize_account("id", &ser_set)));
@@ -298,12 +325,6 @@ fn check_incomplete_json_internal(incomplete: &Value, complete: &Value, root: bo
                 if !root || (key != "boc" && key != "proof") {
                     if let Some(complete_value) = complete_map.get(key) {
                         check_incomplete_json_internal(value, complete_value, false)?;
-                    } else if root && key == "_id" {
-                        if let Some(complete_value) = complete_map.get("id") {
-                            check_incomplete_json_internal(value, complete_value, false)?;
-                        } else {
-                            bail!(SdkErrorKind::WrongJson);
-                        }
                     } else {
                         bail!(SdkErrorKind::WrongJson);
                     }
@@ -319,5 +340,5 @@ fn check_incomplete_json_internal(incomplete: &Value, complete: &Value, root: bo
             }
         }
     }
-    ok!()
+    Ok(())
 }
