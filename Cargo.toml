@@ -1,13 +1,12 @@
 [workspace]
 members = [
-	"abi/abi_core",
-	"abi/abi_json",
+    "ton_abi",
     "ton_sdk",
-    "wallet_client",
     "ton_client/client"
 ]
 
 exclude = [
+    "wallet_client",
     "ton_client/platforms/ton-client-node-js",
     "ton_client/platforms/ton-client-web",
     "ton_client/platforms/ton-client-react-native"

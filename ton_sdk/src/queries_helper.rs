@@ -1,9 +1,25 @@
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 use crate::*;
 use graphite::client::GqlClient;
 use graphite::types::VariableRequest;
 use futures::stream::Stream;
 use serde_json::Value;
 use std::sync::Mutex;
+use reqwest::{ClientBuilder, RedirectPolicy, StatusCode};
+use reqwest::header::LOCATION;
 
 #[derive(Serialize, Deserialize)]
 pub enum SortDirection {
@@ -23,10 +39,45 @@ lazy_static! {
     static ref CLIENT: Mutex<Option<GqlClient>> = Mutex::new(None);
 }
 
+fn check_redirect(config: QueriesConfig) -> SdkResult<QueriesConfig> {
+    let client = ClientBuilder::new()
+        .redirect(RedirectPolicy::none())
+        .build()
+        .map_err(|err| SdkErrorKind::InternalError(format!("Can not build test request: {}", err)))?;
+
+    let result = client.get(&config.queries_server).send();
+
+    match result {
+        Ok(result) => {
+            if result.status() == StatusCode::PERMANENT_REDIRECT {
+                let address = result
+                    .headers()
+                    .get(LOCATION)
+                    .ok_or(SdkErrorKind::NetworkError("Missing location field in redirect response".to_owned()))?
+                    .to_str()
+                    .map_err(|err| SdkErrorKind::NetworkError(format!("Can not cast redirect location to string: {}", err)))?
+                    .to_owned();
+                
+                Ok(QueriesConfig {
+                    queries_server: address.clone(),
+                    subscriptions_server: address
+                        .replace("https://", "wss://")
+                        .replace("http://", "ws://")
+                })
+            } else {
+                Ok(config)
+            }
+        },
+        Err(err) => bail!(SdkErrorKind::NetworkError(format!("Can not send test request: {}", err)))
+    }
+}
+
 // Globally initializes client with server address
-pub fn init(config: QueriesConfig) {
+pub fn init(config: QueriesConfig) -> SdkResult<()> {
+    let config = check_redirect(config)?;
     let mut client = CLIENT.lock().unwrap();
     *client = Some(GqlClient::new(&config.queries_server,&config.subscriptions_server));
+    Ok(())
 }
 
 pub fn uninit() {
@@ -35,16 +86,17 @@ pub fn uninit() {
 }
 
 // Returns Stream with updates of some field in database. First stream item is current value
-pub fn subscribe_record_updates(table: &str, record_id: &str, fields: &str)
+pub fn subscribe_record_updates(table: &str, filter: &str, fields: &str)
     -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError>>> {
 
     let subscription_stream = subscribe(
         table,
-        &format!("{{ \"id\": {{\"eq\": \"{record_id}\" }} }}", record_id=record_id),
+        filter,
         fields)?;
 
-    let load_stream = load_record_fields(table, record_id, fields)?
-        .filter(|value| !value.is_null());
+    let load_stream = query(table, filter, fields, None, None)?
+        .filter(|value| !value[0].is_null())
+        .map(|value| value[0].clone());
 
     Ok(Box::new(load_stream.chain(subscription_stream)))
 }

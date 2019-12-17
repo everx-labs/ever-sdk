@@ -9,6 +9,19 @@ const ndkURLstr = 'http://dl.google.com/android/repository/android-ndk-r17c-darw
 const ndkZipFile = root_path(((parts = ndkURLstr.split('/')).length < 1 ? null : parts[parts.length-1]));
 const ndkDirName = root_path('android-ndk-r17c');
 
+// parse arguments
+let pArgs = process.argv.slice(2);
+let build_Android=false;
+let build_iOS=false;
+while(pArgs.length > 0) {
+	build_Android = build_Android ? true : pArgs[0].trim().toLowerCase() === '--android';
+	build_iOS = build_iOS ? true : pArgs[0].trim().toLowerCase() === '--ios';
+	pArgs = pArgs.slice(1);
+}
+if(!build_Android && !build_iOS) {
+	build_Android = build_iOS = true;
+}
+
 const dev = {
 	ios: {
 		archs: ['x86_64-apple-ios'],
@@ -25,16 +38,17 @@ const release = JSON.parse(JSON.stringify(dev));
 release.ios.archs.push('i386-apple-ios', 'armv7-apple-ios', 'armv7s-apple-ios', 'aarch64-apple-ios');
 release.android.archs.push('aarch64-linux-android', 'armv7-linux-androideabi');
 release.android.jniArchs.push('arm64-v8a', 'armeabi-v7a');
-const cargoTargets = [
+const cargoTargetsIOS = [
 	"aarch64-apple-ios",
-	"aarch64-linux-android",
 	"armv7-apple-ios",
-	"armv7-linux-androideabi",
 	"armv7s-apple-ios",
 	"i386-apple-ios",
-	"i686-linux-android",
-	"x86_64-apple-darwin",
 	"x86_64-apple-ios"
+];
+const cargoTargetsAndroid = [
+	"aarch64-linux-android",
+	"armv7-linux-androideabi",
+	"i686-linux-android"
 ];
 
 const config = release;
@@ -128,11 +142,13 @@ async function getNDK() {
 
 
 async function spawnAll(items, getArgs) {
+	const list = [];
 	for(const item of items) {
 		const args = getArgs(item);
 		console.log(`Build: ${args.join(' ')}`);
-		await spawnProcess(args[0], args.slice(1));
+		list.push(spawnProcess(args[0], args.slice(1)));
 	}
+	return Promise.all(list);
 }
 
 
@@ -227,10 +243,17 @@ async function buildReactNativeAndroidLibrary() {
 	fs.mkdirSync(outDir);
 	try {
 		await checkNDK();
+		let cargoTargets = ["x86_64-apple-darwin"];
+		cargoTargets = build_iOS ? cargoTargets.concat(cargoTargetsIOS) : cargoTargets;
+		cargoTargets = build_Android ? cargoTargets.concat(cargoTargetsAndroid) : cargoTargets;
 		await spawnProcess('rustup', ['target', 'add'].concat(cargoTargets));
 		await spawnProcess('cargo', ['update']);
-		await buildReactNativeIosLibrary();
-		await buildReactNativeAndroidLibrary();
+		if(build_iOS) {
+			await buildReactNativeIosLibrary();
+		}
+		if(build_Android) {
+			await buildReactNativeAndroidLibrary();
+		}
 	} catch (error) {
 		console.error(error);
 		process.exit(1);

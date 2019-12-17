@@ -1,41 +1,69 @@
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 use types::{ApiResult, ApiError};
 use crypto::keys::{key512, Key256, key256, Key264};
 use hmac::*;
 use sha2::{Sha512, Digest};
 use base58::*;
-use bip39::{Mnemonic, Language::English};
-use pbkdf2::pbkdf2;
+use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use crypto::sha::sha256;
-use byteorder::{ByteOrder, LittleEndian, BigEndian};
-use secp256k1::{SecretKey, PublicKey};
+use pbkdf2::pbkdf2;
+use secp256k1::{PublicKey, SecretKey};
 
 pub fn hdkey_xprv_from_mnemonic(phrase: &String) -> ApiResult<String> {
     Ok(HDPrivateKey::from_mnemonic(phrase)?.serialize_to_string())
 }
 
 pub fn hdkey_secret_from_xprv(serialized: &String) -> ApiResult<String> {
-    Ok(hex::encode(HDPrivateKey::from_serialized_string(serialized)?.secret()))
+    Ok(hex::encode(
+        HDPrivateKey::from_serialized_string(serialized)?.secret(),
+    ))
 }
 
 pub fn hdkey_public_from_xprv(serialized: &String) -> ApiResult<String> {
-    Ok(hex::encode(HDPrivateKey::from_serialized_string(serialized)?.public().as_ref()))
+    Ok(hex::encode(
+        HDPrivateKey::from_serialized_string(serialized)?
+            .public()
+            .as_ref(),
+    ))
 }
 
-pub fn hdkey_derive_from_xprv(serialized: &String, child_index: u32, hardened: bool, compliant: bool) -> ApiResult<String> {
+pub fn hdkey_derive_from_xprv(
+    serialized: &String,
+    child_index: u32,
+    hardened: bool,
+    compliant: bool,
+) -> ApiResult<String> {
     let xprv = HDPrivateKey::from_serialized_string(serialized)?;
     let derived = xprv.derive(child_index, hardened, compliant)?;
-//TODO:    println!("HEX: {}", hex::encode(&derived.serialize()));
+    //TODO:    println!("HEX: {}", hex::encode(&derived.serialize()));
 
     Ok(derived.serialize_to_string())
 }
 
-pub fn hdkey_derive_from_xprv_path(serialized: &String, path: &String, compliant: bool) -> ApiResult<String> {
+pub fn hdkey_derive_from_xprv_path(
+    serialized: &String,
+    path: &String,
+    compliant: bool,
+) -> ApiResult<String> {
     let xprv = HDPrivateKey::from_serialized_string(serialized)?;
     Ok(xprv.derive_path(path, compliant)?.serialize_to_string())
 }
 
 #[derive(Default, Clone)]
-struct HDPrivateKey {
+pub(crate) struct HDPrivateKey {
     depth: u8,
     parent_fingerprint: [u8; 4],
     child_number: [u8; 4],
@@ -56,23 +84,25 @@ impl HDPrivateKey {
         }
     }
 
-    fn from_mnemonic(phrase: &String) -> ApiResult<HDPrivateKey> {
-        let mnemonic = Mnemonic::from_phrase(phrase, English)
-            .map_err(|err| ApiError::crypto_bip39_invalid_phrase(err))?;
-
+    pub fn from_mnemonic(phrase: &String) -> ApiResult<HDPrivateKey> {
         let salt = "mnemonic";
         let mut seed = vec![0u8; 64];
-        pbkdf2::<Hmac<Sha512>>(mnemonic.phrase().as_bytes(), salt.as_bytes(), 2048, &mut seed);
+        pbkdf2::<Hmac<Sha512>>(
+            phrase.as_bytes(),
+            salt.as_bytes(),
+            2048,
+            &mut seed,
+        );
         let mut hmac: Hmac<Sha512> = Hmac::new_varkey(b"Bitcoin seed").unwrap();
         hmac.input(&seed);
         let child_chain_with_key = key512(&hmac.result().code())?;
         Ok(HDPrivateKey::master(
             &key256(&child_chain_with_key[32..])?,
-            &key256(&child_chain_with_key[..32])?))
+            &key256(&child_chain_with_key[..32])?,
+        ))
     }
 
-
-    fn secret(&self) -> Key256 {
+    pub(crate) fn secret(&self) -> Key256 {
         self.key
     }
 
@@ -84,24 +114,36 @@ impl HDPrivateKey {
 
     fn map_secp_error(error: secp256k1::Error) -> ApiError {
         match error {
-            secp256k1::Error::InvalidSignature =>
-                ApiError::crypto_bip32_invalid_key("InvalidSignature"),
-            secp256k1::Error::InvalidPublicKey =>
-                ApiError::crypto_bip32_invalid_key("InvalidPublicKey"),
-            secp256k1::Error::InvalidSecretKey =>
-                ApiError::crypto_bip32_invalid_key("InvalidSecretKey"),
-            secp256k1::Error::InvalidRecoveryId =>
-                ApiError::crypto_bip32_invalid_key("InvalidRecoveryId"),
-            secp256k1::Error::InvalidMessage =>
-                ApiError::crypto_bip32_invalid_key("InvalidMessage"),
-            secp256k1::Error::InvalidInputLength =>
-                ApiError::crypto_bip32_invalid_key("InvalidInputLength"),
-            secp256k1::Error::TweakOutOfRange =>
-                ApiError::crypto_bip32_invalid_key("TweakOutOfRange"),
+            secp256k1::Error::InvalidSignature => {
+                ApiError::crypto_bip32_invalid_key("InvalidSignature")
+            }
+            secp256k1::Error::InvalidPublicKey => {
+                ApiError::crypto_bip32_invalid_key("InvalidPublicKey")
+            }
+            secp256k1::Error::InvalidSecretKey => {
+                ApiError::crypto_bip32_invalid_key("InvalidSecretKey")
+            }
+            secp256k1::Error::InvalidRecoveryId => {
+                ApiError::crypto_bip32_invalid_key("InvalidRecoveryId")
+            }
+            secp256k1::Error::InvalidMessage => {
+                ApiError::crypto_bip32_invalid_key("InvalidMessage")
+            }
+            secp256k1::Error::InvalidInputLength => {
+                ApiError::crypto_bip32_invalid_key("InvalidInputLength")
+            }
+            secp256k1::Error::TweakOutOfRange => {
+                ApiError::crypto_bip32_invalid_key("TweakOutOfRange")
+            }
         }
     }
 
-    pub fn derive(&self, child_index: u32, hardened: bool, compliant: bool) -> ApiResult<HDPrivateKey> {
+    pub fn derive(
+        &self,
+        child_index: u32,
+        hardened: bool,
+        compliant: bool,
+    ) -> ApiResult<HDPrivateKey> {
         let mut child: HDPrivateKey = Default::default();
         child.depth = self.depth + 1;
 
@@ -113,7 +155,11 @@ impl HDPrivateKey {
 
         child.parent_fingerprint.copy_from_slice(&fingerprint[0..4]);
 
-        let child_index = if hardened { 0x80000000 | child_index } else { child_index };
+        let child_index = if hardened {
+            0x80000000 | child_index
+        } else {
+            child_index
+        };
         BigEndian::write_u32(&mut child.child_number, child_index);
 
         let mut hmac: Hmac<Sha512> = Hmac::new_varkey(&self.child_chain)
@@ -136,11 +182,12 @@ impl HDPrivateKey {
         let result = hmac.result().code();
         let (child_key_bytes, chain_code) = result.split_at(32);
 
-        let mut child_secret_key = SecretKey::parse_slice(&child_key_bytes)
-            .map_err(|err| Self::map_secp_error(err))?;
-        let self_secret_key = SecretKey::parse(&self.key)
-            .map_err(|err| Self::map_secp_error(err))?;
-        child_secret_key.tweak_add_assign(&self_secret_key)
+        let mut child_secret_key =
+            SecretKey::parse_slice(&child_key_bytes).map_err(|err| Self::map_secp_error(err))?;
+        let self_secret_key =
+            SecretKey::parse(&self.key).map_err(|err| Self::map_secp_error(err))?;
+        child_secret_key
+            .tweak_add_assign(&self_secret_key)
             .map_err(|err| Self::map_secp_error(err))?;
 
         child.child_chain.copy_from_slice(&chain_code);
@@ -154,9 +201,13 @@ impl HDPrivateKey {
             if step == "m" {
             } else {
                 let hardened = step.ends_with('\'');
-                let index: u32 = (if hardened { &step[0..(step.len() - 1)] } else { step })
-                    .parse()
-                    .map_err(|_|ApiError::crypto_bip32_invalid_derive_path(path))?;
+                let index: u32 = (if hardened {
+                    &step[0..(step.len() - 1)]
+                } else {
+                    step
+                })
+                .parse()
+                .map_err(|_| ApiError::crypto_bip32_invalid_derive_path(path))?;
                 child = child.derive(index, hardened, compliant)?;
             }
         }
@@ -200,8 +251,10 @@ impl HDPrivateKey {
     }
 
     fn from_serialized_string(string: &String) -> ApiResult<HDPrivateKey> {
-        Self::from_serialized(&string.from_base58()
-            .map_err(|_| ApiError::crypto_bip32_invalid_key(string))?
+        Self::from_serialized(
+            &string
+                .from_base58()
+                .map_err(|_| ApiError::crypto_bip32_invalid_key(string))?,
         )
     }
 
@@ -250,7 +303,6 @@ impl Ripemd160 {
         }
         res
     }
-
 
     fn update(&mut self, msg: &[u8]) -> &mut Self {
         self.pending.extend_from_slice(msg);
@@ -307,9 +359,12 @@ impl Ripemd160 {
                         a,
                         Ripemd160::f(j.into(), b, c, d),
                         msg[(RIPEMD160_R[j as usize] as u32 + start) as usize],
-                        Ripemd160::k(j)),
-                    RIPEMD160_S[j as usize].into()),
-                e);
+                        Ripemd160::k(j),
+                    ),
+                    RIPEMD160_S[j as usize].into(),
+                ),
+                e,
+            );
             a = e;
             e = d;
             d = Ripemd160::rotl32(c, 10);
@@ -321,9 +376,12 @@ impl Ripemd160 {
                         ah,
                         Ripemd160::f(79 - j, bh, ch, dh),
                         msg[(RIPEMD160_RH[j as usize] as u32 + start) as usize],
-                        Ripemd160::kh(j)),
-                    RIPEMD160_SH[j as usize].into()),
-                eh);
+                        Ripemd160::kh(j),
+                    ),
+                    RIPEMD160_SH[j as usize].into(),
+                ),
+                eh,
+            );
             ah = eh;
             eh = dh;
             dh = Ripemd160::rotl32(ch, 10);
@@ -381,7 +439,6 @@ impl Ripemd160 {
         }
     }
 
-
     fn kh(j: u32) -> u32 {
         if j <= 15 {
             0x50a28be6
@@ -398,35 +455,27 @@ impl Ripemd160 {
 }
 
 static RIPEMD160_R: [u8; 80] = [
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-    7, 4, 13, 1, 10, 6, 15, 3, 12, 0, 9, 5, 2, 14, 11, 8,
-    3, 10, 14, 4, 9, 15, 8, 1, 2, 7, 0, 6, 13, 11, 5, 12,
-    1, 9, 11, 10, 0, 8, 12, 4, 13, 3, 7, 15, 14, 5, 6, 2,
-    4, 0, 5, 9, 7, 12, 2, 10, 14, 1, 3, 8, 11, 6, 15, 13
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 7, 4, 13, 1, 10, 6, 15, 3, 12, 0, 9, 5,
+    2, 14, 11, 8, 3, 10, 14, 4, 9, 15, 8, 1, 2, 7, 0, 6, 13, 11, 5, 12, 1, 9, 11, 10, 0, 8, 12, 4,
+    13, 3, 7, 15, 14, 5, 6, 2, 4, 0, 5, 9, 7, 12, 2, 10, 14, 1, 3, 8, 11, 6, 15, 13,
 ];
 
 static RIPEMD160_RH: [u8; 80] = [
-    5, 14, 7, 0, 9, 2, 11, 4, 13, 6, 15, 8, 1, 10, 3, 12,
-    6, 11, 3, 7, 0, 13, 5, 10, 14, 15, 8, 12, 4, 9, 1, 2,
-    15, 5, 1, 3, 7, 14, 6, 9, 11, 8, 12, 2, 10, 0, 4, 13,
-    8, 6, 4, 1, 3, 11, 15, 0, 5, 12, 2, 13, 9, 7, 10, 14,
-    12, 15, 10, 4, 1, 5, 8, 7, 6, 2, 13, 14, 0, 3, 9, 11
+    5, 14, 7, 0, 9, 2, 11, 4, 13, 6, 15, 8, 1, 10, 3, 12, 6, 11, 3, 7, 0, 13, 5, 10, 14, 15, 8, 12,
+    4, 9, 1, 2, 15, 5, 1, 3, 7, 14, 6, 9, 11, 8, 12, 2, 10, 0, 4, 13, 8, 6, 4, 1, 3, 11, 15, 0, 5,
+    12, 2, 13, 9, 7, 10, 14, 12, 15, 10, 4, 1, 5, 8, 7, 6, 2, 13, 14, 0, 3, 9, 11,
 ];
 
 static RIPEMD160_S: [u8; 80] = [
-    11, 14, 15, 12, 5, 8, 7, 9, 11, 13, 14, 15, 6, 7, 9, 8,
-    7, 6, 8, 13, 11, 9, 7, 15, 7, 12, 15, 9, 11, 7, 13, 12,
-    11, 13, 6, 7, 14, 9, 13, 15, 14, 8, 13, 6, 5, 12, 7, 5,
-    11, 12, 14, 15, 14, 15, 9, 8, 9, 14, 5, 6, 8, 6, 5, 12,
-    9, 15, 5, 11, 6, 8, 13, 12, 5, 12, 13, 14, 11, 8, 5, 6
+    11, 14, 15, 12, 5, 8, 7, 9, 11, 13, 14, 15, 6, 7, 9, 8, 7, 6, 8, 13, 11, 9, 7, 15, 7, 12, 15,
+    9, 11, 7, 13, 12, 11, 13, 6, 7, 14, 9, 13, 15, 14, 8, 13, 6, 5, 12, 7, 5, 11, 12, 14, 15, 14,
+    15, 9, 8, 9, 14, 5, 6, 8, 6, 5, 12, 9, 15, 5, 11, 6, 8, 13, 12, 5, 12, 13, 14, 11, 8, 5, 6,
 ];
 
 static RIPEMD160_SH: [u8; 80] = [
-    8, 9, 9, 11, 13, 15, 15, 5, 7, 7, 8, 11, 14, 14, 12, 6,
-    9, 13, 15, 7, 12, 8, 9, 11, 7, 7, 12, 7, 6, 15, 13, 11,
-    9, 7, 15, 11, 8, 6, 6, 14, 12, 13, 5, 14, 13, 13, 7, 5,
-    15, 5, 8, 11, 14, 14, 6, 14, 6, 9, 12, 9, 12, 5, 15, 8,
-    8, 5, 12, 9, 12, 5, 14, 6, 8, 13, 6, 5, 15, 13, 11, 11
+    8, 9, 9, 11, 13, 15, 15, 5, 7, 7, 8, 11, 14, 14, 12, 6, 9, 13, 15, 7, 12, 8, 9, 11, 7, 7, 12,
+    7, 6, 15, 13, 11, 9, 7, 15, 11, 8, 6, 6, 14, 12, 13, 5, 14, 13, 13, 7, 5, 15, 5, 8, 11, 14, 14,
+    6, 14, 6, 9, 12, 9, 12, 5, 15, 8, 8, 5, 12, 9, 12, 5, 14, 6, 8, 13, 6, 5, 15, 13, 11, 11,
 ];
 
 static RIPEMD160_BLOCK_SIZE: usize = 512;

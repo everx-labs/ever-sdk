@@ -1,6 +1,6 @@
 G_giturl = "git@github.com:tonlabs/TON-SDK.git"
 G_gitcred = 'TonJenSSH'
-G_container = "atomxy/empty-ton-sdk-js:20190827"
+G_container = "atomxy/empty-ton-sdk-js:20191128"
 C_PROJECT = "NotSet"
 C_COMMITER = "NotSet"
 C_HASH = "NotSet"
@@ -21,6 +21,12 @@ pipeline {
         buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '10')
         disableConcurrentBuilds()
         parallelsAlwaysFailFast()
+    }
+    triggers {
+        upstream(
+            upstreamProjects: 'ton-labs-vm/master,SDK/ton-labs-abi/master',
+            threshold: hudson.model.Result.SUCCESS
+        )
     }
     stages {
         stage('Initialize') {
@@ -186,7 +192,7 @@ pipeline {
 						cleanup {script{cleanWs notFailBuild: true}}
 					}                
 				}
-                stage('react-native') {
+                stage('react-native-ios') {
                     agent {
                         label "ios"
                     }
@@ -204,7 +210,64 @@ pipeline {
                                 echo 'Build ...'
                                 sshagent([G_gitcred]) {
                                     dir('ton_client/platforms/ton-client-react-native') {
-                                        sh 'node build.js'
+                                        sh 'node build.js --ios'
+                                    }
+                                }
+                            }
+                            post {
+                                failure {
+                                    script { G_tsnj_build = false }
+                                }
+                            }
+                        }
+                        stage('Deploy') {
+                            when { 
+                                expression {
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                }
+                            }
+                            steps {
+                                dir('ton_client/platforms/ton-client-react-native/output') {
+                                    script {
+                                        withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
+                                            identity = awsIdentity()
+                                            s3Upload \
+                                                bucket: 'sdkbinaries.tonlabs.io', \
+                                                includePathPattern:'*.gz', workingDir:'.'
+                                            }
+                                    }
+                                }
+                            }
+                            post {
+                                failure {
+                                    script { G_tsnj_deploy = false }
+                                }
+                            }
+                        }
+                    }
+					post {
+						cleanup {script{cleanWs notFailBuild: true}}
+					}                
+				}
+                stage('react-native-android') {
+                    agent {
+                        label "ios"
+                    }
+                    stages {
+                        stage('Report versions') {
+                            steps {
+                                sh '''
+                                rustc --version
+                                cargo --version
+                                '''
+                            }
+                        }
+                        stage('Build') {
+                            steps {
+                                echo 'Build ...'
+                                sshagent([G_gitcred]) {
+                                    dir('ton_client/platforms/ton-client-react-native') {
+                                        sh 'node build.js --android'
                                     }
                                 }
                             }

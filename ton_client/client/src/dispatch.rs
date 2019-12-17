@@ -1,3 +1,17 @@
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 use std::collections::HashMap;
 use ::{JsonResponse};
 use types::{ApiError, ApiResult};
@@ -29,7 +43,7 @@ trait SyncHandler {
 
 
 pub(crate) struct DispatchTable {
-    sync_runners: HashMap<String, Box<SyncHandler + Sync>>
+    sync_runners: HashMap<String, Box<dyn SyncHandler + Sync>>
 }
 
 fn parse_params<P: DeserializeOwned + 'static>(params_json: &str) -> ApiResult<P> {
@@ -88,11 +102,11 @@ impl DispatchTable {
         self.sync_runners.insert(method.to_string(), Box::new(CallHandler { handler }));
     }
 
-    pub fn spawn_no_args<R>(&mut self, method: &str, handler: fn(context: &mut ClientContext) -> ApiResult<R>)
-        where R: Send + Serialize + 'static
-    {
-        self.sync_runners.insert(method.to_string(), Box::new(CallNoArgsHandler { handler }));
-    }
+//    pub fn spawn_no_args<R>(&mut self, method: &str, handler: fn(context: &mut ClientContext) -> ApiResult<R>)
+//        where R: Send + Serialize + 'static
+//    {
+//        self.sync_runners.insert(method.to_string(), Box::new(CallNoArgsHandler { handler }));
+//    }
 
     pub fn call<P, R>(&mut self, method: &str, handler: fn(context: &mut ClientContext, params: P) -> ApiResult<R>)
         where P: Send + DeserializeOwned + 'static, R: Send + Serialize + 'static

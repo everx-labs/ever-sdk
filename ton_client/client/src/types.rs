@@ -1,7 +1,22 @@
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 #![allow(dead_code)]
 
 use std::fmt::Display;
 use types::ApiSdkErrorCode::*;
+use ton_block::{AccStatusChange, ComputeSkipReason};
 
 pub fn hex_decode(hex: &String) -> ApiResult<Vec<u8>> {
     if hex.starts_with("x") || hex.starts_with("X") {
@@ -19,54 +34,71 @@ pub fn base64_decode(base64: &String) -> ApiResult<Vec<u8>> {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ApiErrorSource {
-    SDK,
-    TVM,
-    StdLib,
-    Contract,
+    Client,
+    Node
 }
 
 impl ApiErrorSource {
     pub fn to_string(&self) -> String {
         match self {
-            ApiErrorSource::SDK => "sdk".to_string(),
-            ApiErrorSource::TVM => "tvm".to_string(),
-            ApiErrorSource::StdLib => "stdlib".to_string(),
-            ApiErrorSource::Contract => "contract".to_string(),
+            ApiErrorSource::Client => "client".to_string(),
+            ApiErrorSource::Node => "node".to_string(),
         }
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ApiErrorData {
+    pub transaction_id: String,
+    pub phase: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ApiError {
     pub source: String,
-    pub code: usize,
+    pub code: isize,
     pub message: String,
+    pub data: Option<ApiErrorData>
 }
 
 pub type ApiResult<T> = Result<T, ApiError>;
 
 trait ApiErrorCode {
-    fn as_number(&self) -> usize;
+    fn as_number(&self) -> isize;
 }
 
+trait AsString {
+    fn as_string(&self) -> String;
+}
 
 macro_rules! sdk_err {
     ($code:expr, $($args:tt),*) => (
-        ApiError::new(ApiErrorSource::SDK, &$code, format!($($args),*))
+        ApiError::new(ApiErrorSource::Client, &$code, format!($($args),*))
+    );
+}
+
+macro_rules! as_number_impl {
+    ($name:ident) => (
+        impl ApiErrorCode for $name {
+            fn as_number(&self) -> isize {
+                self.clone() as isize
+            }
+        }
     );
 }
 
 impl ApiError {
-    fn new(source: ApiErrorSource, code: &ApiErrorCode, message: String) -> Self {
+    fn new(source: ApiErrorSource, code: &dyn ApiErrorCode, message: String) -> Self {
         Self {
             source: source.to_string(),
             code: code.as_number(),
             message,
+            data: None,
         }
     }
 
     pub fn sdk(code: ApiSdkErrorCode, message: String) -> Self {
-        Self::new(ApiErrorSource::SDK, &code, message)
+        Self::new(ApiErrorSource::Client, &code, message)
     }
 
     // SDK Common
@@ -172,6 +204,16 @@ impl ApiError {
             "Invalid bip32 derive path: {}", path)
     }
 
+    pub fn crypto_bip39_invalid_dictionary(dictionary: u8) -> Self {
+        sdk_err!(CryptoBip39InvalidDictionary,
+            "Invalid mnemonic dictionary: {}", dictionary)
+    }
+
+    pub fn crypto_bip39_invalid_word_count(word_count: u8) -> Self {
+        sdk_err!(CryptoBip39InvalidWordCount,
+            "Invalid mnemonic word count: {}", word_count)
+    }
+
     pub fn crypto_invalid_secret_key<E: Display>(err: E, key: &String) -> Self {
         sdk_err!(CryptoInvalidSecretKey,
             "Invalid secret key [{}]: {}", err, key)
@@ -182,7 +224,7 @@ impl ApiError {
             "Invalid secret key [{}]: {}", err, key)
     }
 
-    pub fn crypto_invalid_address<E: Display>(err: E, address: &String) -> Self {
+    pub fn crypto_invalid_address<E: Display>(err: E, address: &str) -> Self {
         sdk_err!(CryptoInvalidAddress,
             "Invalid address [{}]: {}", err, address)
     }
@@ -196,9 +238,20 @@ impl ApiError {
         ApiError::sdk(CryptoInvalidKeystoreHandle,
             "Keystore Handle is invalid or has removed".into())
     }
+
     pub fn crypto_missing_key_source() -> Self {
         ApiError::sdk(CryptoMissingKeySource,
             "Either Key or Keystore Handle must be specified".into())
+    }
+
+    pub fn crypto_mnemonic_generation_failed() -> Self {
+        ApiError::sdk(CryptoMnemonicGenerationFailed,
+            "Mnemonic generation failed (this must never be)".into())
+    }
+
+    pub fn crypto_mnemonic_from_entropy_failed(reason: &str) -> Self {
+        ApiError::sdk(CryptoMnemonicFromEntropyFailed,
+            format!("Mnemonic from entropy failed: {}", reason))
     }
 
 // SDK Contracts
@@ -232,7 +285,7 @@ impl ApiError {
         sdk_err!(ContractsDecodeRunOutputFailed,
             "Decode run output failed: {}", err)
     }
-   
+
     pub fn contracts_decode_run_input_failed<E: Display>(err: E) -> Self {
         sdk_err!(ContractsDecodeRunInputFailed,
             "Decode run intput failed: {}", err)
@@ -242,17 +295,18 @@ impl ApiError {
         Self::sdk(ContractsRunTransactionMissing, "Transaction missing".into())
     }
 
-    pub fn contracts_run_contract_not_found() -> ApiError {
-        Self::sdk(ContractsRunContractNotFound, "Contract not found".into())
+    pub fn contracts_run_contract_load_failed<E: Display>(err: E) -> ApiError {
+        sdk_err!(ContractsRunContractLoadFailed,
+            "Contract load failed: {}", err)
     }
 
-    pub fn contracts_deploy_invalid_image<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsDeployInvalidImage,
+    pub fn contracts_invalid_image<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsInvalidImage,
             "Invalid contract image: {}", err)
     }
 
-    pub fn contracts_deploy_image_creation_failed<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsDeployImageCreationFailed,
+    pub fn contracts_image_creation_failed<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsImageCreationFailed,
             "Image creation failed: {}", err)
     }
 
@@ -266,9 +320,29 @@ impl ApiError {
         "Deploy failed: transaction aborted".into())
     }
 
+    pub fn contracts_run_body_creation_failed<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsRunBodyCreationFailed,
+        "Run body creation failed: {}", err)
+    }
+
     pub fn contracts_encode_message_with_sign_failed<E: Display>(err: E) -> Self {
         sdk_err!(ContractsEncodeMessageWithSignFailed,
             "Encoding message with sign failed: {}", err)
+    }
+
+    pub fn contracts_get_function_id_failed<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsGetFunctionIdFailed,
+            "Get function ID failed: {}", err)
+    }
+
+    pub fn contracts_local_run_failed<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsLocalRunFailed,
+            "Local run failed: {}", err)
+    }
+
+    pub fn contracts_address_conversion_failed<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsAddressConversionFailed,
+            "Address conversion failed: {}", err)
     }
 
     // SDK queries
@@ -293,22 +367,74 @@ impl ApiError {
             "Get next failed: {}", err)
     }
 
-    // TVM
+    // Failed transaction phases
 
-    pub fn tvm_execution_skipped(reason: &String) -> ApiError {
+    pub fn transaction_parse_failed() -> ApiError {
         ApiError::new(
-            ApiErrorSource::TVM,
-            &ApiTvmErrorCode::ExecutionSkipped,
-            format!("Contract execution skipped with reason: {}", reason)
+            ApiErrorSource::Node,
+            &(0i32),
+            "Failed to analyze transaction".to_string()
         )
     }
 
-    pub fn tvm_execution_failed(exit_code: i32) -> ApiError {
-        ApiError::new(
-            ApiErrorSource::Contract,
+    pub fn transaction_aborted(tr_id: String) -> ApiError {
+        let mut error = ApiError::new(
+            ApiErrorSource::Node,
+            &(-1i32),
+            "Transaction aborted".to_string()
+        );
+         error.data = Some(ApiErrorData{
+            transaction_id: tr_id,
+            phase: "unknown".to_string(),
+        });
+        error
+    }
+
+    pub fn tvm_execution_skipped(tr_id: String, reason: &ComputeSkipReason) -> ApiError {
+        let mut error = ApiError::new(ApiErrorSource::Node, reason, reason.as_string());
+        error.data = Some(ApiErrorData{
+            transaction_id: tr_id,
+            phase: "computeSkipped".to_string(),
+        });
+        error
+    }
+
+    pub fn tvm_execution_failed(tr_id: String, exit_code: i32) -> ApiError {
+        let mut error = ApiError::new(
+            ApiErrorSource::Node,
             &ApiContractErrorCode { exit_code },
-            format!("Contract execution failed with VM exit code: {}", exit_code)
-        )
+            format!("VM terminated with exit code: {}", exit_code),
+        );
+
+        error.data = Some(ApiErrorData{
+            transaction_id: tr_id,
+            phase: "computeVm".to_string(),
+        });
+        error
+    }
+
+    pub fn storage_phase_failed(tr_id: String, reason: &AccStatusChange) -> ApiError {
+        let mut error = ApiError::new(ApiErrorSource::Node, reason, reason.as_string());
+        error.data = Some(ApiErrorData{
+            transaction_id: tr_id,
+            phase: "storage".to_string(),
+        });
+        error
+    }
+
+    pub fn action_phase_failed(
+        tr_id: String,
+        result_code: i32,
+        valid: bool,
+        no_funds: bool,
+    ) -> ApiError {
+        let code = ApiActionCode::new(result_code, valid, no_funds);
+        let mut error = ApiError::new(ApiErrorSource::Node, &code, code.as_string());
+        error.data = Some(ApiErrorData{
+            transaction_id: tr_id,
+            phase: "action".to_string(),
+        });
+        error
     }
 }
 
@@ -341,14 +467,18 @@ pub enum ApiSdkErrorCode {
     CryptoBip32InvalidDerivePath = 2019,
     CryptoInvalidKeystoreHandle = 2020,
     CryptoMissingKeySource = 2021,
+    CryptoBip39InvalidDictionary = 2022,
+    CryptoBip39InvalidWordCount = 2023,
+    CryptoMnemonicGenerationFailed = 2024,
+    CryptoMnemonicFromEntropyFailed = 2025,
 
     ContractsLoadFailed = 3001,
-    ContractsDeployInvalidImage = 3002,
-    ContractsDeployImageCreationFailed = 3003,
+    ContractsInvalidImage = 3002,
+    ContractsImageCreationFailed = 3003,
     ContractsDeployTransactionMissing = 3004,
     ContractsDecodeRunOutputFailed = 3005,
     ContractsDecodeRunInputFailed = 3006,
-    ContractsRunContractNotFound = 3008,
+    ContractsRunContractLoadFailed = 3008,
     ContractsRunTransactionMissing = 3009,
     ContractsSendMessageFailed = 3010,
     ContractsCreateDeployMessageFailed = 3011,
@@ -356,6 +486,10 @@ pub enum ApiSdkErrorCode {
     ContractsCreateSendGramsMessageFailed = 3013,
     ContractsEncodeMessageWithSignFailed = 3014,
     ContractsDeployTransactionAborted = 3015,
+    ContractsRunBodyCreationFailed = 3016,
+    ContractsGetFunctionIdFailed = 3017,
+    ContractsLocalRunFailed = 3018,
+    ContractsAddressConversionFailed = 3019,
 
     QueriesQueryFailed = 4001,
     QueriesSubscribeFailed = 4002,
@@ -367,42 +501,79 @@ pub enum ApiSdkErrorCode {
 }
 
 impl ApiErrorCode for ApiSdkErrorCode {
-    fn as_number(&self) -> usize {
-        (self.clone() as i32) as usize
+    fn as_number(&self) -> isize {
+        (self.clone() as i32) as isize
     }
 }
 
-#[derive(Clone)]
-pub enum ApiTvmErrorCode {
-    ExecutionSkipped = 3006,
-    ExecutionFailed = 3007,
-}
+as_number_impl!(ComputeSkipReason);
 
-impl ApiErrorCode for ApiTvmErrorCode {
-    fn as_number(&self) -> usize {
-        (self.clone() as i32) as usize
+impl AsString for ComputeSkipReason {
+    fn as_string(&self) -> String {
+        match self {
+            ComputeSkipReason::NoState => "Account has no code and data",
+            ComputeSkipReason::BadState => "Account has bad state: frozen or deleted",
+            ComputeSkipReason::NoGas => "No gas to execute VM",
+        }.to_string()
     }
 }
 
+as_number_impl!(AccStatusChange);
 
-#[derive(Clone)]
-pub enum ApiStdLibErrorCode {
-    NoError = 0
-}
-
-impl ApiErrorCode for ApiStdLibErrorCode {
-    fn as_number(&self) -> usize {
-        (self.clone() as i32) as usize
+impl AsString for AccStatusChange {
+    fn as_string(&self) -> String {
+        match self {
+            AccStatusChange::Unchanged => "Account unchanged",
+            AccStatusChange::Frozen => "Account was frozen due storage phase",
+            AccStatusChange::Deleted => "Account was deleted due storage phase",
+        }.to_string()
     }
 }
+
 
 pub struct ApiContractErrorCode {
     exit_code: i32
 }
 
 impl ApiErrorCode for ApiContractErrorCode {
-    fn as_number(&self) -> usize {
-        self.exit_code as usize
+    fn as_number(&self) -> isize {
+        self.exit_code as isize
     }
 }
 
+pub struct ApiActionCode {
+    pub result_code: i32,
+    pub valid: bool,
+    pub no_funds: bool,
+}
+
+impl ApiErrorCode for ApiActionCode {
+    fn as_number(&self) -> isize {
+        self.result_code as isize
+    }
+}
+
+impl ApiActionCode{
+    pub fn new(result_code: i32, valid: bool, no_funds: bool) -> Self {
+        Self {
+            result_code,
+            valid,
+            no_funds,
+        }
+    }
+    pub fn as_string(&self) -> String {
+        if self.no_funds {
+            "Too low balance to send outbound message"
+        } else if !self.valid {
+            "Outbound message is invalid"
+        } else {
+            "Action phase failed"
+        }.to_string()
+    }
+}
+
+impl ApiErrorCode for i32 {
+    fn as_number(&self) -> isize {
+        self.clone() as isize
+    }
+}

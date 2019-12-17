@@ -1,5 +1,18 @@
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 use std::io;
-use ton_abi_json::ABIError;
 
 #[cfg(feature = "node_interaction")]
 use graphite::types::GraphiteError;
@@ -37,14 +50,17 @@ error_chain! {
 
     foreign_links {
         Io(io::Error);
-        Tvm(tvm::error::TvmError);
-        TonBlocks(tvm::block::BlockError);
+        Tvm(ton_vm::error::TvmError);
+        TvmException(ton_vm::types::Exception);
+        TvmExceptionCode(ton_vm::types::ExceptionCode);
+        TonBlocks(ton_block::BlockError);
         Graphql(GraphiteError);
         SerdeJson(serde_json::Error);
         TryFromSliceError(std::array::TryFromSliceError);
         ParseIntError(std::num::ParseIntError);
         FromHexError(hex::FromHexError);
         Base64DecodeError(base64::DecodeError);
+        AbiError(ton_abi::error::AbiError);
     }
 
     errors {
@@ -74,22 +90,15 @@ error_chain! {
             description("Signature error"),
             display("Signature error: {}", inner)
         }
-        AbiError(inner: ABIError) {
-            description("ABI error"),
-            display("ABI error: {:?}", inner)
-        }
-        AbiError2(inner: ton_abi_core::abi_response::Exception) {
-            description("ABI error"),
-            display("ABI error: {:?}", inner)
-        }
         NotInitialized {
             description("SDK is not initialized")
         }
         InitializeError {
             description("SDK initialize error")
-        }        
-        DefaultWorkchainNotSet {
-            description("Default workchain not set")
+        }
+        NetworkError(msg: String){
+            description("Network error"),
+            display("Network error: {}", msg)
         }
         WrongJson {
             description("Json document does not correspond to the value built from BOC")

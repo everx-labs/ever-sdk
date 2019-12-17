@@ -1,13 +1,63 @@
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 use crate::*;
 use futures::stream::Stream;
-use tvm::block::{
-    Transaction as TvmTransaction, TransactionProcessingStatus, MessageId, 
-    TransactionId
-};
+use ton_block::{TransactionProcessingStatus, AccStatusChange, ComputeSkipReason};
+use serde::Deserialize;
 
-#[derive(Debug)]
+#[derive(Deserialize, Default, Debug)]
+#[serde(default)]
+pub struct ComputePhase {
+    pub compute_type: u8,
+    #[serde(deserialize_with = "json_helper::deserialize_skipped_reason")]
+    pub skipped_reason: Option<ComputeSkipReason>,
+    pub exit_code: Option<i32>,
+    pub success: Option<bool>
+}
+
+#[derive(Deserialize, Default, Debug)]
+#[serde(default)]
+pub struct StoragePhase {
+    #[serde(deserialize_with = "json_helper::deserialize_acc_state_change")]
+    pub status_change: AccStatusChange
+}
+
+#[derive(Deserialize, Default, Debug)]
+#[serde(default)]
+pub struct ActionPhase {
+    pub success: bool,
+    pub valid: bool,
+    pub no_funds: bool,
+    pub result_code: i32
+}
+
+pub type TransactionId = StringId;
+
+#[derive(Deserialize, Default, Debug)]
+#[serde(default)]
 pub struct Transaction {
-    tr: TvmTransaction,
+    pub id: TransactionId,
+    #[serde(deserialize_with = "json_helper::deserialize_tr_state")]
+    pub status: TransactionProcessingStatus,
+    pub now: u32,
+    pub in_msg: Option<MessageId>,
+    pub out_msgs: Vec<MessageId>,
+    pub aborted: bool,
+    pub compute: ComputePhase,
+    pub storage: Option<StoragePhase>,
+    pub action: ActionPhase
 }
 
 // The struct represents performed transaction and allows to access their properties.
@@ -15,21 +65,19 @@ pub struct Transaction {
 impl Transaction {
 
     // Asynchronously loads a Transaction instance or None if transaction with given id is not exists
-    pub fn load(id: TransactionId) -> SdkResult<Box<dyn Stream<Item = Option<Transaction>, Error = SdkError>>> {
+    pub fn load(id: &TransactionId) -> SdkResult<Box<dyn Stream<Item = Option<Transaction>, Error = SdkError>>> {
         let map = queries_helper::load_record_fields(
             TRANSACTIONS_TABLE_NAME,
-            &id.to_hex_string(),
+            &id.to_string(),
             TRANSACTION_FIELDS_ORDINARY)?
                 .and_then(|val| {
                     if val == serde_json::Value::Null {
                         Ok(None)
                     } else {
-                        let tr: TvmTransaction = serde_json::from_value(val)
+                        let tr: Transaction = serde_json::from_value(val)
                             .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing transaction: {}", err)))?;
 
-                        //check_proofs::check_transaction()?;
-
-                        Ok(Some(Transaction { tr }))
+                        Ok(Some(tr))
                     }
             });
 
@@ -38,45 +86,45 @@ impl Transaction {
 
     // Returns transaction's processing status
     pub fn status(&self) -> TransactionProcessingStatus {
-        self.tr.processing_status()
-    }
-
-    // Returns blockchain's transaction struct
-    // Some node-specifed methods won't work. All TonStructVariant fields has Client variant.
-    pub fn tr(&self) -> &TvmTransaction {
-         &self.tr
+        self.status
     }
 
     // Returns id of transaction's input message if it exists
     pub fn in_message_id(&self) -> Option<MessageId> {
-        self.tr.in_message().map(|m| m.client_ref_unwrap().clone())
+        self.in_msg.clone()
     }
 
     // Asynchronously loads an instance of transaction's input message
     pub fn load_in_message(&self) -> SdkResult<Box<dyn Stream<Item = Option<Message>, Error = SdkError>>> {
         match self.in_message_id() {
-            Some(m) => Message::load(m),
+            Some(m) => Message::load(&m),
             None => bail!(SdkErrorKind::InvalidOperation("transaction doesn't have inbound message".into()))
         }
     }
 
     // Returns id of transaction's out messages if it exists
     pub fn out_messages_id(&self) -> &Vec<MessageId> {
-        &self.tr.out_msgs_sdk()
+        &self.out_msgs
     }
 
     // Returns message's identifier
     pub fn id(&self) -> TransactionId {
-        self.tr.id.clone()
+        // On client side id is ready allways. It is never be calculated, just returned.
+        self.id.clone()
+    }
+
+    // Returns `aborted` flag
+    pub fn is_aborted(&self) -> bool {
+        self.aborted
     }
 
     // Asynchronously loads an instances of transaction's out messages
     pub fn load_out_messages(&self) -> SdkResult<Box<dyn Stream<Item = Option<Message>, Error = SdkError>>> {
         let mut msg_id_iter = self.out_messages_id().iter();
         if let Some(id) = msg_id_iter.next().clone() {
-            let mut stream = Message::load(id.clone())?;
+            let mut stream = Message::load(&id)?;
             for id in msg_id_iter {
-                stream = Box::new(stream.chain(Message::load(id.clone())?));
+                stream = Box::new(stream.chain(Message::load(&id)?));
             }
             Ok(stream)
         } else {
@@ -86,201 +134,20 @@ impl Transaction {
     }
 }
 
-
-#[allow(dead_code)]
-const TRANSACTION_FIELDS_MESSAGES: &str = r#"
+pub const TRANSACTION_FIELDS_ORDINARY: &str = r#"
     id
-    account_addr
-    in_msg
-    out_msgs
-    outmsg_cnt
-    status
-"#;
-
-const TRANSACTION_FIELDS_ORDINARY: &str = r#"
-    id
-    account_addr
-    block_id
-    description {
-        ...on TransactionDescriptionOrdinaryVariant {
-            Ordinary {
-                aborted
-                compute_ph {
-                    ...on TrComputePhaseVmVariant {
-                        Vm {
-                            exit_code
-                            success
-                        }
-                    }
-                    ...on TrComputePhaseSkippedVariant {
-                        Skipped {
-                            reason
-                        }
-                    }
-                }
-            }
-        }
+    aborted
+    compute {
+        compute_type
+        skipped_reason
+        exit_code
+        success
     }
-    end_status
+    storage {
+       status_change 
+    }
     in_msg
     now
-    orig_status
     out_msgs
-    outmsg_cnt
     status
-"#;
-
-#[allow(dead_code)]
-const TRANSACTION_FIELDS_FULL: &str = r#"
-    id
-    account_addr
-    block_id
-    description {
-        ...on TransactionDescriptionOrdinaryVariant {
-            Ordinary {
-                aborted
-                compute_ph {
-                    ...on TrComputePhaseVmVariant {
-                        Vm {
-                            exit_code
-                            gas_credit
-                            gas_fees
-                            gas_limit
-                            gas_used
-                            success
-                        }
-                    }
-                    ...on TrComputePhaseSkippedVariant {
-                        Skipped {
-                            reason
-                        }
-                    }
-                }
-            }
-        }
-        ...on TransactionDescriptionStorageVariant {
-            Storage {
-                storage_fees_collected
-                storage_fees_due
-                status_change
-            }
-        }
-        ...on TransactionDescriptionTickTockVariant {
-            TickTock {
-                tt
-                aborted
-                compute_ph {
-                    ...on TrComputePhaseVmVariant {
-                        Vm {
-                            exit_code
-                            gas_credit
-                            gas_fees
-                            gas_limit
-                            gas_used
-                            success
-                        }
-                    }
-                    ...on TrComputePhaseSkippedVariant {
-                        Skipped {
-                            reason
-                        }
-                    }
-                }
-            }
-        }
-        ...on TransactionDescriptionSplitPrepareVariant {
-            SplitPrepare {
-                aborted
-                split_info {
-                    cur_shard_pfx_len
-                    acc_split_depth
-                    this_addr
-                    sibling_addr
-                }
-                compute_ph {
-                    ...on TrComputePhaseVmVariant {
-                        Vm {
-                            exit_code
-                            gas_credit
-                            gas_fees
-                            gas_limit
-                            gas_used
-                            success
-                        }
-                    }
-                    ...on TrComputePhaseSkippedVariant {
-                        Skipped {
-                            reason
-                        }
-                    }
-                }
-            }
-        }
-        ...on TransactionDescriptionSplitInstallVariant {
-            SplitInstall {
-                split_info {
-                    cur_shard_pfx_len
-                    acc_split_depth
-                    this_addr
-                    sibling_addr
-                }
-                prepare_transaction
-                installed
-            }
-        }
-        ...on TransactionDescriptionMergePrepareVariant {
-            MergePrepare {
-                split_info {
-                    cur_shard_pfx_len
-                    acc_split_depth
-                    this_addr
-                    sibling_addr
-                }
-                storage_ph {
-                    storage_fees_collected
-                    storage_fees_due
-                    status_change
-                }
-                aborted
-            }
-        }
-        ...on TransactionDescriptionMergeInstallVariant {
-            MergeInstall {
-                split_info {
-                    cur_shard_pfx_len
-                    acc_split_depth
-                    this_addr
-                    sibling_addr
-                }
-                compute_ph {
-                    ...on TrComputePhaseVmVariant {
-                        Vm {
-                            exit_code
-                            gas_credit
-                            gas_fees
-                            gas_limit
-                            gas_used
-                            success
-                        }
-                    }
-                    ...on TrComputePhaseSkippedVariant {
-                        Skipped {
-                            reason
-                        }
-                    }
-                }
-                prepare_transaction
-                aborted
-            }
-        }
-
-    }
-    end_status
-    in_msg
-    now
-    orig_status
-    out_msgs
-    outmsg_cnt
-    status
-    total_fees
 "#;

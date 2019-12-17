@@ -1,3 +1,17 @@
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 use num_bigint::BigInt;
 use types::{ApiResult, ApiError};
 use rand::RngCore;
@@ -5,6 +19,12 @@ use rand::RngCore;
 fn parse_big_int(hex: &str) -> ApiResult<BigInt> {
     BigInt::parse_bytes(hex.as_bytes(), 16)
         .ok_or(ApiError::crypto_invalid_big_int(&hex.to_string()))
+}
+
+pub(crate) fn ton_crc16(data: &[u8]) -> u16 {
+    let mut crc = crc_any::CRC::crc16xmodem();
+    crc.digest(data);
+    crc.get_crc() as u16
 }
 
 pub fn modular_power(base: &String, exponent: &String, modulus: &String) -> ApiResult<String> {

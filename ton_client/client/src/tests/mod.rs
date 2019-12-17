@@ -1,9 +1,27 @@
-use ::{InteropContext, JsonResponse};
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
+use crypto::keys::account_decode;
+use ::InteropContext;
 use ::{tc_json_request, InteropString};
 use ::{tc_read_json_response, tc_destroy_json_response};
-use serde_json::Value;
+use serde_json::{Value, Map};
 use log::{Metadata, Record, LevelFilter};
 use {tc_create_context, tc_destroy_context};
+use ton_sdk::encode_base64;
+use ton_block::MsgAddressInt;
+use std::str::FromStr;
 
 struct SimpleLogger;
 
@@ -19,339 +37,375 @@ impl log::Log for SimpleLogger {
     fn flush(&self) {}
 }
 
-fn json_request(
+struct TestClient {
     context: InteropContext,
-    method_name: &str,
-    params: Value,
-) -> JsonResponse {
-    unsafe {
-        let params_json = if params.is_null() { String::new() } else { params.to_string() };
-        let response_ptr = tc_json_request(
-            context,
-            InteropString::from(&method_name.to_string()),
-            InteropString::from(&params_json),
-        );
-        let interop_response = tc_read_json_response(response_ptr);
-        let response = interop_response.to_response();
-        tc_destroy_json_response(response_ptr);
-        response
+}
+
+impl TestClient {
+    fn new() -> Self {
+        let _ = log::set_boxed_logger(Box::new(SimpleLogger))
+            .map(|()| log::set_max_level(LevelFilter::Debug));
+
+        let context: InteropContext;
+        unsafe {
+            context = tc_create_context()
+        }
+        Self { context }
+    }
+
+    fn request(
+        &self,
+        method_name: &str,
+        params: Value,
+    ) -> Result<String, String> {
+        unsafe {
+            let params_json = if params.is_null() { String::new() } else { params.to_string() };
+            let response_ptr = tc_json_request(
+                self.context,
+                InteropString::from(&method_name.to_string()),
+                InteropString::from(&params_json),
+            );
+            let interop_response = tc_read_json_response(response_ptr);
+            let response = interop_response.to_response();
+            tc_destroy_json_response(response_ptr);
+            if response.error_json.is_empty() {
+                Ok(response.result_json)
+            } else {
+                Err(response.error_json)
+            }
+        }
+    }
+}
+
+impl Drop for TestClient {
+    fn drop(&mut self) {
+        unsafe {
+            tc_destroy_context(self.context)
+        }
     }
 }
 
 
+fn parse_object(s: Result<String, String>) -> Map<String, Value> {
+    if let Value::Object(m) = serde_json::from_str(s.unwrap().as_str()).unwrap() {
+        return m.clone();
+    }
+    panic!("Object expected");
+}
+
+fn parse_string(r: Result<String, String>) -> String {
+    if let Value::String(s) = serde_json::from_str(r.unwrap().as_str()).unwrap() {
+        return s.clone();
+    }
+    panic!("String expected");
+}
+
+fn get_map_string(m: &Map<String, Value>, f: &str) -> String {
+    if let Value::String(s) = m.get(f).unwrap() {
+        return s.clone();
+    }
+    panic!("Field not fount");
+}
+
 #[test]
-fn test() {
-    log::set_boxed_logger(Box::new(SimpleLogger))
-        .map(|()| log::set_max_level(LevelFilter::Debug)).unwrap();
-    unsafe {
-        let context = tc_create_context();
+fn test_tg_mnemonic() {
+    let client = TestClient::new();
+    let crc16 = client.request("crypto.ton_crc16", json!({
+        "hex": "0123456789abcdef"
+    })).unwrap();
+    assert_eq!(crc16, "43349");
 
-        let version = json_request(context, "version", Value::Null);
-        println!("result: {}", version.result_json.to_string());
+    let keys = parse_object(client.request(
+        "crypto.mnemonic.derive.sign.keys",
+        json!({
+            "phrase": "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle"
+        }),
+    ));
+    let ton_public = parse_string(client.request(
+        "crypto.ton_public_key_string",
+        Value::String(get_map_string(&keys, "public")),
+    ));
+    assert_eq!(ton_public, "PubDdJkMyss2qHywFuVP1vzww0TpsLxnRNnbifTCcu-XEgW0");
 
-        let _deployed = json_request(context, "setup",
-            json!({"baseUrl": "http://0.0.0.0"}));
+    let words = parse_string(client.request("crypto.mnemonic.words", json!({
+    })));
+    assert_eq!(words.split(" ").count(), 2048);
 
-		let giver_abi: Value = serde_json::from_str(GIVER_ABI).unwrap();
+    let phrase = parse_string(client.request("crypto.mnemonic.from.random", json!({
+    })));
+    assert_eq!(phrase.split(" ").count(), 24);
 
-		let result = json_request(context, "contracts.run",
-            json!({
+    let entropy = "2199ebe996f14d9e4e2595113ad1e6276bd05e2e147e16c8ab8ad5d47d13b44fcf";
+    let mnemonic = parse_string(client.request("crypto.mnemonic.from.entropy", json!({
+        "entropy": json!({
+            "hex": entropy
+        }),
+    })));
+    let public = get_map_string(&parse_object(client.request(
+        "crypto.mnemonic.derive.sign.keys",
+        json!({
+            "phrase": mnemonic
+        }),
+    )), "public");
+    let ton_public = parse_string(client.request(
+        "crypto.ton_public_key_string",
+        Value::String(public),
+    ));
+    assert_eq!(ton_public, "PuYGEX9Zreg-CX4Psz5dKehzW9qCs794oBVUKqqFO7aWAOTD");
+//    let ton_phrase = "shove often foil innocent soft slim pioneer day uncle drop nephew soccer worry renew public hand word nut again dry first delay first maple";
+    let is_valid = client.request(
+        "crypto.mnemonic.verify",
+        json!({
+            "phrase": "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle"
+        }),
+    ).unwrap();
+    assert_eq!(is_valid, "true");
+    let is_valid = client.request(
+        "crypto.mnemonic.verify",
+        json!({
+            "phrase": "unit follow"
+        }),
+    ).unwrap();
+    assert_eq!(is_valid, "false");
+    let is_valid = client.request(
+        "crypto.mnemonic.verify",
+        json!({
+            "phrase": "unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit"
+        }),
+    ).unwrap();
+    assert_eq!(is_valid, "false");
+}
+
+#[test]
+fn test_wallet_deploy() {
+    let client = TestClient::new();
+    let version = client.request("version", Value::Null).unwrap();
+    println!("result: {}", version.to_string());
+
+    let _deployed = client.request("setup",
+        json!({"baseUrl": "http://0.0.0.0"}));
+
+    let keys = client.request("crypto.ed25519.keypair", json!({})).unwrap();
+
+    let abi: Value = serde_json::from_str(WALLET_ABI).unwrap();
+    let keys: Value = serde_json::from_str(&keys).unwrap();
+
+    let address = client.request("contracts.deploy.message",
+        json!({
+                "abi": abi.clone(),
+                "constructorParams": json!({}),
+                "imageBase64": WALLET_CODE_BASE64,
+                "keyPair": keys,
+                "workchainId": 0,
+            }),
+    ).unwrap();
+
+    let address = serde_json::from_str::<Value>(&address).unwrap()["address"].clone();
+    let address = MsgAddressInt::from_str(address.as_str().unwrap()).unwrap();
+
+    let giver_abi: Value = serde_json::from_str(GIVER_ABI).unwrap();
+
+    let _ = client.request("contracts.run",
+        json!({
                 "address": GIVER_ADDRESS,
                 "abi": giver_abi,
                 "functionName": "sendGrams",
                 "input": &json!({
-					"dest": format!("0x{}", WALLET_ADDRESS),
+					"dest": address.to_string(),
 					"amount": 10_000_000_000u64
 					}),
-                "keyPair": {
-                    "public": "d59bdd49a40013f6335753eb19b34b37f42ca25df8a44bd7388882ab57019dd1",
-                    "secret": "4f255abd8da7dcf1fbc94ae2e2742d350621a99a4bd53592661f22ec25bf1d23"
-                },
             }),
-        );
+    ).unwrap();
 
-		assert_eq!(result.error_json, "");
+    let _ = client.request("queries.wait.for",
+        json!({
+                "table": "accounts".to_owned(),
+                "filter": json!({
+					"id": { "eq": address.to_string() },
+					"balance": { "gt": "0" }
+				}).to_string(),
+				"result": "id balance".to_owned()
+            }),
+    ).unwrap();
 
-        let abi: Value = serde_json::from_str(WALLET_ABI).unwrap();
-        let deployed = json_request(context, "contracts.deploy",
-            json!({
+    let deployed = client.request("contracts.deploy",
+        json!({
                 "abi": abi.clone(),
                 "constructorParams": json!({}),
                 "imageBase64": WALLET_CODE_BASE64,
-                "keyPair": {
-                    "public": "d59bdd49a40013f6335753eb19b34b37f42ca25df8a44bd7388882ab57019dd1",
-                    "secret": "4f255abd8da7dcf1fbc94ae2e2742d350621a99a4bd53592661f22ec25bf1d23"
-                },
+                "keyPair": keys,
+                "workchainId": 0,
             }),
-        );
+    ).unwrap();
 
-        assert_eq!("{\"address\":\"bbc3fbdb18379635480bbe3a0c520a2183e13b2cf1541a35a29446b72b331ed0\"}",
-            deployed.result_json);
+    assert_eq!(format!("{{\"address\":\"{}\"}}", address), deployed);
 
-        let result = json_request(context, "contracts.run",
-            json!({
-                "address": WALLET_ADDRESS,
+    let result = client.request("contracts.run",
+        json!({
+                "address": address.to_string(),
                 "abi": abi.clone(),
-                "functionName": "getVersion",
-                "input": json!({}),
-                "keyPair": {
-                    "public": "d59bdd49a40013f6335753eb19b34b37f42ca25df8a44bd7388882ab57019dd1",
-                    "secret": "4f255abd8da7dcf1fbc94ae2e2742d350621a99a4bd53592661f22ec25bf1d23"
-                },
+                "functionName": "createOperationLimit",
+                "input": json!({
+					"value": 123
+				}),
+                "keyPair": keys,
             }),
-        );
-        assert_eq!("{\"output\":{\"error\":\"-0x1\",\"version\":{\"major\":\"0x0\",\"minor\":\"0x1\"}}}",
-            result.result_json);
-
-        tc_destroy_context(context);
-    }
+    ).unwrap();
+    assert_eq!("{\"output\":{\"value0\":\"0x0\"}}", result);
 }
 
-const GIVER_ADDRESS: &str = "ce709b5bfca589eb621b5a5786d0b562761144ac48f59e0b0d35ad0973bcdb86";
+const GIVER_ADDRESS: &str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
 const GIVER_ABI: &str = r#"
 {
-    "ABI version": 0,
-    "functions": [{
-        "name": "constructor",
-        "inputs": [],
-        "outputs": []
-    }, {
-        "name": "sendGrams",
-        "inputs": [
-            {"name":"dest","type":"uint256"},
-            {"name":"amount","type":"uint64"}
-        ],
-        "outputs": []
-    }]
-}"#;
-
-pub const WALLET_ADDRESS: &str = "bbc3fbdb18379635480bbe3a0c520a2183e13b2cf1541a35a29446b72b331ed0";
-pub const WALLET_CODE_BASE64: &str = r#"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"#;
-pub const WALLET_ABI: &str = r#"{
-	"ABI version": 0,
+	"ABI version": 1,
 	"functions": [
 		{
-			"inputs": [
-				{
-					"name": "recipient",
-					"type": "bits256"
-				},
-				{
-					"name": "value",
-					"type": "duint"
-				}
-			],
-			"name": "sendTransaction",
-			"outputs": [
-				{
-					"name": "transaction",
-					"type": "uint64"
-				},
-				{
-					"name": "error",
-					"type": "int8"
-				}
-			]
-		},
-		{
-			"inputs": [
-				{
-					"name": "type",
-					"type": "uint8"
-				},
-				{
-					"name": "value",
-					"type": "duint"
-				},
-				{
-					"name": "meta",
-					"type": "bitstring"
-				}
-			],
-			"name": "createLimit",
-			"outputs": [
-				{
-					"name": "limitId",
-					"type": "uint8"
-				},
-				{
-					"name": "error",
-					"type": "int8"
-				}
-			]
-		},
-		{
-			"inputs": [
-				{
-					"name": "limitId",
-					"type": "uint8"
-				},
-				{
-					"name": "value",
-					"type": "duint"
-				},
-				{
-					"name": "meta",
-					"type": "bitstring"
-				}
-			],
-			"name": "changeLimitById",
-			"outputs": [
-				{
-					"name": "error",
-					"type": "int8"
-				}
-			]
-		},
-		{
-			"inputs": [
-				{
-					"name": "limitId",
-					"type": "uint8"
-				}
-			],
-			"name": "removeLimit",
-			"outputs": [
-				{
-					"name": "error",
-					"type": "int8"
-				}
-			]
-		},
-		{
-			"inputs": [
-				{
-					"name": "limitId",
-					"type": "uint8"
-				}
-			],
-			"name": "getLimitById",
-			"outputs": [
-				{
-					"name": "limitInfo",
-					"type": "tuple",
-					"components": [
-						{
-							"name": "value",
-							"type": "duint"
-						},
-						{
-							"name": "type",
-							"type": "uint8"
-						},
-						{
-							"name": "meta",
-							"type": "bitstring"
-						}
-					]
-				},
-				{
-					"name": "error",
-					"type": "int8"
-				}
-			]
-		},
-		{
-			"inputs": [],
-			"name": "getLimits",
-			"outputs": [
-				{
-					"name": "list",
-					"type": "uint8[]"
-				},
-				{
-					"name": "error",
-					"type": "int8"
-				}
-			]
-		},
-		{
-			"inputs": [],
-			"name": "getLimitsEx",
-			"outputs": [
-				{
-					"name": "list",
-					"type": "tuple[]",
-					"components": [
-						{
-							"name": "id",
-							"type": "uint8"
-						},
-						{
-							"name": "type",
-							"type": "uint8"
-						},
-						{
-							"name": "value",
-							"type": "duint"
-						},
-						{
-							"name": "meta",
-							"type": "bitstring"
-						}
-					]
-				}
-			]
-		},
-		{
-			"inputs": [],
-			"name": "getVersion",
-			"outputs": [
-				{
-					"name": "version",
-					"type": "tuple",
-					"components": [
-						{
-							"name": "major",
-							"type": "uint16"
-						},
-						{
-							"name": "minor",
-							"type": "uint16"
-						}
-					]
-				},
-				{
-					"name": "error",
-					"type": "int8"
-				}
-			]
-		},
-		{
-			"inputs": [],
-			"name": "getBalance",
-			"outputs": [
-				{
-					"name": "balance",
-					"type": "uint64"
-				}
-			]
-		},
-		{
-			"inputs": [],
 			"name": "constructor",
-			"outputs": []
-		},
-		{
 			"inputs": [
-				{
-					"name": "address",
-					"type": "bits256"
-				}
 			],
-			"name": "setSubscriptionAccount",
-			"outputs": []
+			"outputs": [
+			]
 		},
 		{
-			"inputs": [],
-			"name": "getSubscriptionAccount",
+			"name": "sendGrams",
+			"inputs": [
+				{"name":"dest","type":"address"},
+				{"name":"amount","type":"uint64"}
+			],
 			"outputs": [
-				{
-					"name": "address",
-					"type": "bits256"
-				}
 			]
 		}
+	],
+	"events": [
+	],
+	"data": [
+	]
+}"#;
+
+pub const WALLET_CODE_BASE64: &str = r#"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"#;
+pub const WALLET_ABI: &str = r#"{
+	"ABI version": 1,
+	"functions": [
+		{
+			"name": "sendTransaction",
+			"inputs": [
+				{"name":"dest","type":"address"},
+				{"name":"value","type":"uint128"},
+				{"name":"bounce","type":"bool"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setSubscriptionAccount",
+			"inputs": [
+				{"name":"addr","type":"address"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getSubscriptionAccount",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"value0","type":"address"}
+			]
+		},
+		{
+			"name": "createOperationLimit",
+			"inputs": [
+				{"name":"value","type":"uint256"}
+			],
+			"outputs": [
+				{"name":"value0","type":"uint256"}
+			]
+		},
+		{
+			"name": "createArbitraryLimit",
+			"inputs": [
+				{"name":"value","type":"uint256"},
+				{"name":"period","type":"uint32"}
+			],
+			"outputs": [
+				{"name":"value0","type":"uint64"}
+			]
+		},
+		{
+			"name": "changeLimit",
+			"inputs": [
+				{"name":"limitId","type":"uint64"},
+				{"name":"value","type":"uint256"},
+				{"name":"period","type":"uint32"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "deleteLimit",
+			"inputs": [
+				{"name":"limitId","type":"uint64"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getLimit",
+			"inputs": [
+				{"name":"limitId","type":"uint64"}
+			],
+			"outputs": [
+				{"components":[{"name":"value","type":"uint256"},{"name":"period","type":"uint32"},{"name":"ltype","type":"uint8"},{"name":"spent","type":"uint256"},{"name":"start","type":"uint32"}],"name":"value0","type":"tuple"}
+			]
+		},
+		{
+			"name": "getLimitCount",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"value0","type":"uint64"}
+			]
+		},
+		{
+			"name": "getLimits",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"value0","type":"uint64[]"}
+			]
+		},
+		{
+			"name": "constructor",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		}
+	],
+	"events": [
+	],
+	"data": [
+		{"key":101,"name":"subscription","type":"address"},
+		{"key":100,"name":"owner","type":"uint256"}
 	]
 }
 "#;
+
+#[test]
+fn test_address_parsing() {
+    let short = "fcb91a3a3816d0f7b8c2c76108b8a9bc5a6b7a55bd79f8ab101c52db29232260";
+    let full_std = "-1:fcb91a3a3816d0f7b8c2c76108b8a9bc5a6b7a55bd79f8ab101c52db29232260";
+    let base64 = "kf/8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15+KsQHFLbKSMiYIny";
+    let base64_url = "kf_8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15-KsQHFLbKSMiYIny";
+
+    let address = ton_block::MsgAddressInt::with_standart(None, -1, hex::decode(short).unwrap().into()).unwrap();
+    let wc0_address = ton_block::MsgAddressInt::with_standart(None, 0, hex::decode(short).unwrap().into()).unwrap();
+
+    assert_eq!(wc0_address, account_decode(short).expect("Couldn't parse short address"));
+    assert_eq!(address, account_decode(full_std).expect("Couldn't parse full_std address"));
+    assert_eq!(address, account_decode(base64).expect("Couldn't parse base64 address"));
+    assert_eq!(address, account_decode(base64_url).expect("Couldn't parse base64_url address"));
+
+    assert_eq!(encode_base64(&address, true, true, false).unwrap(), base64);
+    assert_eq!(encode_base64(&address, true, true, true).unwrap(), base64_url);
+}

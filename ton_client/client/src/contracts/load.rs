@@ -1,7 +1,21 @@
+/*
+* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.  You may obtain a copy of the
+* License at: https://ton.dev/licenses
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 use ton_sdk::Contract;
 use futures::Stream;
 use types::{ApiResult, ApiError};
-use crypto::keys::{account_encode, account_decode};
+use crypto::keys::{account_decode};
 use client::ClientContext;
 
 #[derive(Deserialize)]
@@ -18,20 +32,19 @@ pub(crate) struct LoadResult {
 }
 
 pub(crate) fn load(_context: &mut ClientContext, params: LoadParams) -> ApiResult<LoadResult> {
-    let address = params.address;
-    let loaded = Contract::load(account_decode(&address)?)
-        .map_err(|err|ApiError::contracts_load_failed(err, &address))?
+    let loaded = Contract::load(&account_decode(&params.address)?)
+        .map_err(|err|ApiError::contracts_load_failed(err, &params.address))?
         .wait()
         .next();
     match loaded {
         Some(optional_contract_or_err) =>
             match optional_contract_or_err {
                 Ok(optional_contract) =>
-                    Ok(match optional_contract {
+                    match optional_contract {
                         Some(contract) => make_result(contract),
-                        None => EMPTY_RESULT
-                    }),
-                Err(err) => Err(ApiError::contracts_load_failed(err, &address))
+                        None => Ok(EMPTY_RESULT)
+                    },
+                Err(err) => Err(ApiError::contracts_load_failed(err, &params.address))
             },
         None => Ok(EMPTY_RESULT)
     }
@@ -44,10 +57,9 @@ const EMPTY_RESULT: LoadResult = LoadResult {
     balanceGrams: None,
 };
 
-fn make_result(contract: Contract) -> LoadResult {
-    LoadResult {
-        id: Some(account_encode(&contract.id())),
-        balanceGrams: Some(contract.balance_grams().0.to_str_radix(10)),
-    }
+fn make_result(contract: Contract) -> ApiResult<LoadResult> {
+    Ok(LoadResult {
+        id: contract.id().map(|id| id.to_hex_string()).ok(),
+        balanceGrams: contract.balance_grams().map(|balance| balance.to_string()).ok(),
+    })
 }
-
