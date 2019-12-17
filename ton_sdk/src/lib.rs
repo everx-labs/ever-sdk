@@ -19,6 +19,7 @@ extern crate ton_types;
 #[macro_use]
 extern crate ton_vm;
 extern crate ton_abi;
+extern crate ton_block_json;
 
 #[macro_use]
 extern crate serde_derive;

@@ -91,10 +91,16 @@ pub fn check_transaction(tr_val: &Value) -> SdkResult<()> {
     check_transaction_proof(&proof, &full_tr)?;
 
     // check given transaction's JSON
-    let complete_json = serde_json::to_value(full_tr)
-        .map_err(|err| {
-            SdkErrorKind::InvalidData(format!("error serializing (to json) full transaction: {}", err))
-        })?;
+    let ser_set = TransactionSerializationSet {
+        transaction: full_tr,
+        id: boc.repr_hash(),
+        status,
+        block_id,
+        boc: boc_bytes,
+        proof: Some(proof_bytes),
+    };
+
+    let complete_json = json!(Value::from(ton_block_json::db_serialize_transaction("id", &ser_set)));
     check_incomplete_json(tr_val, &complete_json)?;
 
     ok!()
@@ -170,8 +176,6 @@ pub fn check_message(msg_val: &Value) -> SdkResult<()> {
 
     // build full message from BOC
     let mut full_msg: TvmMessage = TvmMessage::construct_from(&mut boc.into())?;
-    full_msg.block_id = block_id;
-    full_msg.status = status;
 
     // and proof
     let proof: MerkleProof = MerkleProof::construct_from(&mut proof.into())?;
@@ -180,10 +184,18 @@ pub fn check_message(msg_val: &Value) -> SdkResult<()> {
     check_message_proof(&proof, &full_msg)?;
 
     // check given message's JSON
-    let complete_json = serde_json::to_value(full_msg)
-        .map_err(|err| {
-            SdkErrorKind::InvalidData(format!("error serializing (to json) full message: {}", err))
-        })?;
+    let transaction_id = full_msg.transaction_cell().map(|cell| cell.repr_hash());
+    let ser_set = MessageSerializationSet {
+        message: full_msg,
+        id: boc.repr_hash(),
+        block_id: Some(block_id),
+        transaction_id,
+        status,
+        boc: boc_bytes,
+        proof: Some(proof_bytes),
+    }
+
+    let complete_json = json!(Value::from(ton_block_json::db_serialize_transaction("id", &ser_set)));
     check_incomplete_json(msg_val, &complete_json)?;
 
     ok!()
@@ -243,10 +255,13 @@ pub fn check_account(acc_val: &Value) -> SdkResult<UInt256> {
     check_account_proof(&proof, &full_acc)?;
 
     // check given account's JSON
-    let complete_json = serde_json::to_value(full_acc)
-        .map_err(|err| {
-            SdkErrorKind::InvalidData(format!("error serializing (to json) full account: {}", err))
-        })?;
+    let ser_set = AccountSerializationSet {
+        account: full_acc,
+        boc: boc_bytes,
+        proof: Some(proof_bytes),
+    };
+
+    let complete_json = json!(Value::from(ton_block_json::db_serialize_account("id", &ser_set)));
     check_incomplete_json(acc_val, &complete_json)?;
 
     Ok(proof.hash.clone())
