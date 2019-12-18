@@ -3,7 +3,8 @@ use std::str::FromStr;
 use serde_json::Value;
 use ton_block::{ Transaction as TvmTransaction, Message as TvmMessage, 
     TransactionProcessingStatus, Deserializable, Account as TvmAccount, check_account_proof,
-    check_transaction_proof, check_message_proof, MerkleProof, MessageProcessingStatus };
+    check_transaction_proof, check_message_proof, MerkleProof, MessageProcessingStatus,
+    BlockSeqNoAndShard };
 use ton_types::cells_serialization::deserialize_tree_of_cells;
 use ton_vm::types::UInt256;
 
@@ -235,9 +236,9 @@ pub fn check_message(msg_val: &Value) -> SdkResult<()> {
 /// * check if all account's fields from value 
 /// is corresponds to values in account constructed from boc;
 /// * check if account merkle proof is correct (account is a part of shard state with given (in proof) root hash).
-/// Returns shard state's root hash for future checks.
+/// Returns shard state's root hash and correspond block's info for future checks.
 #[allow(dead_code)]
-pub fn check_account(acc_val: &Value) -> SdkResult<UInt256> {
+pub fn check_account(acc_val: &Value) -> SdkResult<(UInt256, BlockSeqNoAndShard)> {
 
     // extracting boc and proof
 
@@ -279,7 +280,7 @@ pub fn check_account(acc_val: &Value) -> SdkResult<UInt256> {
     let proof: MerkleProof = MerkleProof::construct_from(&mut proof.into())?;
 
     // check merkle proof
-    check_account_proof(&proof, &full_acc)?;
+    let block_inf = check_account_proof(&proof, &full_acc)?;
 
     // check given account's JSON
     let ser_set = ton_block_json::AccountSerializationSet {
@@ -291,7 +292,7 @@ pub fn check_account(acc_val: &Value) -> SdkResult<UInt256> {
     let complete_json = json!(Value::from(ton_block_json::db_serialize_account("id", &ser_set)));
     check_incomplete_json(acc_val, &complete_json)?;
 
-    Ok(proof.hash.clone())
+    Ok((proof.hash.clone(), block_inf))
 }
 
 fn check_incomplete_json(incomplete: &Value, complete: &Value) -> SdkResult<()> {
