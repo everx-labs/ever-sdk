@@ -3,10 +3,10 @@ name = "ton_sdk"
 version = "0.1.0"
 
 [dependencies]
-ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git" }
-ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git" }
-ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }
-ton_vm = { git = "https://github.com/tonlabs/ton-labs-vm.git", default-features = false }
+ton_abi = { git = "ssh://git@github.com/tonlabs/ton-labs-abi.git", branch = "private-repos" }
+ton_block = { git = "ssh://git@github.com/tonlabs/ton-block.git" }
+ton_vm = { git = "ssh://git@github.com/tonlabs/ton-vm.git" }
+ton_types = { git = "ssh://git@github.com/tonlabs/ton-types.git" }
 
 num-bigint = "0.2.2"
 sha2 = "0.8"
