@@ -17,13 +17,12 @@ use ed25519_dalek::{Keypair, PublicKey};
 use chrono::prelude::Utc;
 use std::convert::{Into, TryFrom};
 use std::io::{Cursor, Read, Seek};
-use std::sync::Arc;
 use ton_block::{
     Deserializable, ExternalInboundMessageHeader,
     GetRepresentationHash, Message as TvmMessage, MsgAddressInt,
     Serializable, StateInit, AccountStatus};
 use ton_types::cells_serialization::{deserialize_cells_tree, BagOfCells};
-use ton_types::{CellData, SliceData, HashmapE};
+use ton_types::{Cell, SliceData, HashmapE};
 use ton_block::AccountId;
 
 pub use ton_abi::json_abi::DecodedMessage;
@@ -71,9 +70,9 @@ pub struct Contract {
     pub balance: u128,
     pub balance_other: Option<Vec<OtherCurrencyValue>>,
     #[serde(deserialize_with = "json_helper::deserialize_tree_of_cells_opt_cell")]
-    pub code: Option<Arc<CellData>>,
+    pub code: Option<Cell>,
     #[serde(deserialize_with = "json_helper::deserialize_tree_of_cells_opt_cell")]
-    pub data: Option<Arc<CellData>>,
+    pub data: Option<Cell>,
 }
 
 #[cfg(test)]

@@ -28,6 +28,7 @@ extern crate ed25519_dalek;
 extern crate sha2;
 extern crate base64;
 extern crate chrono;
+extern crate failure;
 extern crate crc_any;
 
 #[cfg(feature = "node_interaction")]

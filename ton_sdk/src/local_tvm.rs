@@ -21,9 +21,8 @@ use ton_block::{
     Deserializable,
     MsgAddressInt
 };
-use ton_block::error::*;
-use ton_vm::stack::{CellData, IntegerData, SaveList, SliceData, Stack, StackItem};
-use ton_types::HashmapE;
+use ton_types::{Cell, SliceData, HashmapE};
+use ton_vm::stack::{IntegerData, SaveList, Stack, StackItem};
 use ton_vm::SmartContractInfo;
 use ton_vm::executor::gas::gas_state::Gas;
 
@@ -36,10 +35,10 @@ pub fn local_contract_call(
     balance: u128,
     balance_other: HashmapE,
     address: &MsgAddressInt,
-    config_params: Option<Arc<CellData>>,
+    config_params: Option<Cell>,
     timestamp: u32,
-    code: Arc<CellData>,
-    data: Option<Arc<CellData>>,
+    code:Cell,
+    data: Option<Cell>,
     msg: &Message)
 -> SdkResult<(Vec<Message>, i64)> {
     let msg_cell = msg.write_to_new_cell()?.into();
@@ -53,7 +52,7 @@ pub fn local_contract_call(
     
     let mut ctrls = SaveList::new();
     ctrls.put(4, &mut StackItem::Cell(data.unwrap_or_default()))
-        .map_err(|err| BlockError::from(BlockErrorKind::Other(
+        .map_err(|err| SdkError::from(SdkErrorKind::InternalError(
             format!("Cannot put data to register: {}", err))))?;
 
     let mut sci = SmartContractInfo::with_myself(address.write_to_new_cell()?.into());
@@ -65,7 +64,7 @@ pub fn local_contract_call(
     }
 
     ctrls.put(7, &mut sci.into_temp_data())
-        .map_err(|err| BlockError::from(BlockErrorKind::Other(
+        .map_err(|err| SdkError::from(SdkErrorKind::InternalError(
             format!("Cannot put data to register: {}", err))))?;
 
     let gas_limit = 1_000_000_000;

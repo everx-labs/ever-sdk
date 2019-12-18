@@ -53,7 +53,6 @@ error_chain! {
         Tvm(ton_vm::error::TvmError);
         TvmException(ton_vm::types::Exception);
         TvmExceptionCode(ton_vm::types::ExceptionCode);
-        TonBlocks(ton_block::BlockError);
         Graphql(GraphiteError);
         SerdeJson(serde_json::Error);
         TryFromSliceError(std::array::TryFromSliceError);
@@ -65,6 +64,14 @@ error_chain! {
     }
 
     errors {
+        FailureError(msg: String) {
+            description("Invalid data"),
+            display("Invalid data: {}", msg)
+        }
+        BlockError(error: ton_block::BlockError) {
+            description("Block error"),
+            display("Block error: {}", error.to_string())
+        }
         NotFound {
             description("Requested item not found")
         }
@@ -101,5 +108,11 @@ error_chain! {
             description("Network error"),
             display("Network error: {}", msg)
         }
+    }
+}
+
+impl From<failure::Error> for SdkError {
+    fn from(error: failure::Error) -> Self {
+        SdkErrorKind::FailureError(error.to_string()).into()
     }
 }
