@@ -288,7 +288,7 @@ impl ApiError {
 
     pub fn contracts_decode_run_input_failed<E: Display>(err: E) -> Self {
         sdk_err!(ContractsDecodeRunInputFailed,
-            "Decode run intput failed: {}", err)
+            "Decode run input failed: {}", err)
     }
 
     pub fn contracts_run_transaction_missing() -> ApiError {
