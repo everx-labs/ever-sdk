@@ -221,7 +221,7 @@ impl ApiError {
 
     pub fn crypto_invalid_public_key<E: Display>(err: E, key: &String) -> Self {
         sdk_err!(CryptoInvalidPublicKey,
-            "Invalid secret key [{}]: {}", err, key)
+            "Invalid public key [{}]: {}", err, key)
     }
 
     pub fn crypto_invalid_address<E: Display>(err: E, address: &str) -> Self {
@@ -246,7 +246,7 @@ impl ApiError {
 
     pub fn crypto_mnemonic_generation_failed() -> Self {
         ApiError::sdk(CryptoMnemonicGenerationFailed,
-            "Mnemonic generation failed (this must never be)".into())
+            "Mnemonic generation failed".into())
     }
 
     pub fn crypto_mnemonic_from_entropy_failed(reason: &str) -> Self {
