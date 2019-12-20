@@ -61,12 +61,13 @@ error_chain! {
         Base64DecodeError(base64::DecodeError);
         AbiError(ton_abi::error::AbiError);
         TryFromIntError(std::num::TryFromIntError);
+        ExecutorError(ton_executor::ExecutorError);
     }
 
     errors {
         FailureError(msg: String) {
-            description("Invalid data"),
-            display("Invalid data: {}", msg)
+            description("Error"),
+            display("Error: {}", msg)
         }
         BlockError(error: ton_block::BlockError) {
             description("Block error"),
@@ -107,6 +108,10 @@ error_chain! {
         NetworkError(msg: String){
             description("Network error"),
             display("Network error: {}", msg)
+        }
+        LocalCallError(msg: String) {
+            description("Local contract call error"),
+            display("Local contract call error: {}", msg)
         }
     }
 }

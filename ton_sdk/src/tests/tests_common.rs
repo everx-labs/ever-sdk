@@ -344,7 +344,7 @@ pub fn call_contract_and_wait(address: MsgAddressInt, func: &str, input: String,
     // 3. message object with body
 }
 
-pub fn local_contract_call(address: MsgAddressInt, func: &str, input: &str, abi: &str, key_pair: Option<&Keypair>) -> String {
+pub fn contract_call_local(address: MsgAddressInt, func: &str, input: &str, abi: &str, key_pair: Option<&Keypair>) -> String {
 
     let contract = Contract::load_wait_deployed(&address).expect("Error loading Contract");
 

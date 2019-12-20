@@ -19,6 +19,7 @@ extern crate ton_types;
 #[macro_use]
 extern crate ton_vm;
 extern crate ton_abi;
+extern crate ton_executor;
 
 #[macro_use]
 extern crate serde_derive;
@@ -30,6 +31,7 @@ extern crate base64;
 extern crate chrono;
 extern crate failure;
 extern crate crc_any;
+extern crate num_traits;
 
 #[cfg(feature = "node_interaction")]
 #[macro_use]
@@ -62,6 +64,7 @@ mod message;
 pub use message::*;
 
 mod local_tvm;
+pub use local_tvm::*;
 
 #[cfg(feature = "node_interaction")]
 mod transaction;

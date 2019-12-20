@@ -7,6 +7,7 @@ ton_abi = { git = "ssh://git@github.com/tonlabs/ton-labs-abi.git", branch = "pri
 ton_block = { git = "ssh://git@github.com/tonlabs/ton-block.git" }
 ton_vm = { git = "ssh://git@github.com/tonlabs/ton-vm.git" }
 ton_types = { git = "ssh://git@github.com/tonlabs/ton-types.git" }
+ton_executor = { git = "ssh://git@github.com/tonlabs/ton-executor.git", branch = "calc-fee" }
 
 num-bigint = "0.2.2"
 sha2 = "0.8"
@@ -21,6 +22,7 @@ base64 = "0.10.0"
 chrono = "0.4.9"
 crc-any = "2.2.3"
 failure = "0.1"
+num-traits = "^0.2.8"
 
 
 [target.'cfg(target_arch="wasm32")'.dependencies]
