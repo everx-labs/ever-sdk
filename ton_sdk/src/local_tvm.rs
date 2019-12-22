@@ -27,6 +27,7 @@ use ton_block::{
     TransactionDescr,
     TrComputePhase
 };
+use ton_block::types::Grams;
 use ton_types::{Cell, SliceData, HashmapE};
 use ton_types::types::UInt256;
 use ton_vm::stack::{IntegerData, SaveList, Stack, StackItem};
@@ -101,7 +102,7 @@ pub struct TransactionFees {
     pub gas_fee: u64,
     pub out_msgs_fwd_fee: u64,
     pub total_account_fees: u64,
-    pub total_spent: u64,
+    pub total_output: u64,
 }
 
 fn grams_to_u64(grams: &ton_block::types::Grams) -> SdkResult<u64> {
@@ -178,7 +179,16 @@ pub(crate) fn call_executor(account: Account, msg: Message, config: &BlockchainC
     }
 
     let mut messages = vec![];
-    transaction.iterate_out_msgs(&mut |msg| { messages.push(msg); Ok(true) })?;
+    let mut total_output = Grams::zero();
+    transaction.iterate_out_msgs(&mut |msg| { 
+        if let Some(value) = msg.get_value() {
+            total_output.0 += &value.grams.0;
+        }
+        messages.push(msg);
+        Ok(true) 
+    })?;
+
+    fees.total_output = grams_to_u64(&total_output)?;
 
     Ok((messages, fees))
 }

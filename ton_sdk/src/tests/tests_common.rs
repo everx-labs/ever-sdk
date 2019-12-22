@@ -244,17 +244,35 @@ pub fn get_grams_from_giver(address: MsgAddressInt) {
 
 pub fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params: &str, key_pair: &Keypair, workchain_id: i32) -> MsgAddressInt {
     // read image from file and construct ContractImage
-    let mut state_init = std::fs::File::open("src/tests/".to_owned() + code_file_name).expect("Unable to open contract code file");
+    let mut state_init = std::fs::File::open(/*"src/tests/".to_owned() + */code_file_name).expect("Unable to open contract code file");
 
     let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &key_pair.public).expect("Unable to parse contract code file");
 
     let account_id = contract_image.msg_address(workchain_id);
+
+    let (msg, _) = Contract::construct_deploy_message_json(
+        "constructor".to_owned(),
+        constructor_params.to_owned(),
+        abi.to_owned(),
+        contract_image.clone(),
+        Some(key_pair),
+        workchain_id).unwrap();
+
+    let contract = Contract::from_json(&json!({
+        "id": account_id.to_string(),
+        "balance": "0x10000000000000"
+    }).to_string()).unwrap();
+
+    let fees = contract.local_call(Contract::deserialize_message(&msg).unwrap()).unwrap();
+
+    println!("{:#?}", fees.fees);
 
     get_grams_from_giver(account_id.clone());
 
     // call deploy method
     let changes_stream = Contract::deploy_json("constructor".to_owned(), constructor_params.to_owned(), abi.to_owned(), contract_image, Some(key_pair), workchain_id)
         .expect("Error deploying contract");
+
 
     // wait transaction id in message-status
     // contract constructor doesn't return any values so there are no output messages in transaction
@@ -349,10 +367,10 @@ pub fn contract_call_local(address: MsgAddressInt, func: &str, input: &str, abi:
     let contract = Contract::load_wait_deployed(&address).expect("Error loading Contract");
 
     // call needed method
-    let result = contract.local_call_json(func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
+    let messages = contract.local_call_tvm_json(func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
         .expect("Error calling locally");
 
-    for msg in result.messages {
+    for msg in messages {
         if msg.msg_type() == MessageType::ExternalOutbound {
             return Contract::decode_function_response_json(
                 abi.to_owned(), func.to_owned(), msg.body().expect("Message has no body"), false)

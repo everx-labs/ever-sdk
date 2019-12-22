@@ -81,6 +81,7 @@ pub struct Contract {
 mod tests;
 
 // The struct represents conract's image
+#[derive(Clone)]
 pub struct ContractImage {
     state_init: StateInit,
     id: AccountId
@@ -782,13 +783,20 @@ impl Contract {
     }
 
     pub fn to_account(&self) -> SdkResult<Account> {
-        let mut state = StateInit::default();
-        state.code = self.code.clone();
-        state.data = self.data.clone();
+        let state = match &self.code {
+            Some(code) => {
+                let mut state_init = StateInit::default();
+                state_init.code = Some(code.clone());
+                state_init.data = self.data.clone();
+                AccountState::with_state(state_init)
+            },
+            // account without code is considered uninit
+            None => AccountState::AccountUninit
+        };
         let storage = AccountStorage {
             last_trans_lt: 0,
             balance: CurrencyCollection { grams: self.balance.into(), other: self.balance_other_as_hashmape()? },
-            state: AccountState::with_state(state)
+            state
         };
         Ok(Account::with_storage(
             &self.id,
