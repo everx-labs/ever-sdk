@@ -244,28 +244,11 @@ pub fn get_grams_from_giver(address: MsgAddressInt) {
 
 pub fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params: &str, key_pair: &Keypair, workchain_id: i32) -> MsgAddressInt {
     // read image from file and construct ContractImage
-    let mut state_init = std::fs::File::open(/*"src/tests/".to_owned() + */code_file_name).expect("Unable to open contract code file");
+    let mut state_init = std::fs::File::open("src/tests/".to_owned() + code_file_name).expect("Unable to open contract code file");
 
     let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &key_pair.public).expect("Unable to parse contract code file");
 
     let account_id = contract_image.msg_address(workchain_id);
-
-    let (msg, _) = Contract::construct_deploy_message_json(
-        "constructor".to_owned(),
-        constructor_params.to_owned(),
-        abi.to_owned(),
-        contract_image.clone(),
-        Some(key_pair),
-        workchain_id).unwrap();
-
-    let contract = Contract::from_json(&json!({
-        "id": account_id.to_string(),
-        "balance": "0x10000000000000"
-    }).to_string()).unwrap();
-
-    let fees = contract.local_call(Contract::deserialize_message(&msg).unwrap()).unwrap();
-
-    println!("{:#?}", fees.fees);
 
     get_grams_from_giver(account_id.clone());
 
