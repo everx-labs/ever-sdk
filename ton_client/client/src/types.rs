@@ -349,6 +349,11 @@ impl ApiError {
             "Address conversion failed: {}", err)
     }
 
+    pub fn contracts_invalid_boc<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsInvalidBoc,
+            "Invalid Bag of Cells: {}", err)
+    }
+
     // SDK queries
 
     pub fn queries_query_failed<E: Display>(err: E) -> Self {
@@ -494,6 +499,7 @@ pub enum ApiSdkErrorCode {
     ContractsGetFunctionIdFailed = 3017,
     ContractsLocalRunFailed = 3018,
     ContractsAddressConversionFailed = 3019,
+    ContractsInvalidBoc = 3020,
 
     QueriesQueryFailed = 4001,
     QueriesSubscribeFailed = 4002,
