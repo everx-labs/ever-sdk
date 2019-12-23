@@ -87,6 +87,18 @@ pub(crate) struct ResultOfConvertAddress {
     pub address: String,
 }
 
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct ParamsOfGetBocHash {
+    pub bocBase64: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct ResultOfGetBocHash {
+    pub hash: String,
+}
+
 use ton_sdk;
 use dispatch::DispatchTable;
 use client::ClientContext;
@@ -137,6 +149,16 @@ pub(crate) fn convert_address(_context: &mut ClientContext, params: ParamsOfConv
     let address = account_decode(&params.address)?;
     Ok(ResultOfConvertAddress {
         address: account_encode_ex(&address, params.convertTo, params.base64Params)?,
+    })
+}
+
+pub(crate) fn get_boc_root_hash(_context: &mut ClientContext, params: ParamsOfGetBocHash) -> ApiResult<ResultOfGetBocHash> {
+    debug!("-> contracts.boc.hash({})", params.bocBase64);
+    let bytes = base64_decode(&params.bocBase64)?;
+    let cells = ton_block::cells_serialization::deserialize_tree_of_cells(&mut bytes.as_slice())
+        .map_err(|err| ApiError::contracts_invalid_boc(err))?;
+    Ok(ResultOfGetBocHash {
+        hash: format!("{:x}", cells.repr_hash()),
     })
 }
 
@@ -192,4 +214,8 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
     // Addresses
     handlers.spawn("contracts.address.convert",
         convert_address);
+
+    // Bag of cells
+    handlers.spawn("contracts.boc.hash",
+        get_boc_root_hash);
 }
