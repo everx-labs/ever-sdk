@@ -53,7 +53,6 @@ error_chain! {
         Tvm(ton_vm::error::TvmError);
         TvmException(ton_vm::types::Exception);
         TvmExceptionCode(ton_vm::types::ExceptionCode);
-        TonBlocks(ton_block::BlockError);
         Graphql(GraphiteError);
         SerdeJson(serde_json::Error);
         TryFromSliceError(std::array::TryFromSliceError);
@@ -62,9 +61,18 @@ error_chain! {
         Base64DecodeError(base64::DecodeError);
         AbiError(ton_abi::error::AbiError);
         TryFromIntError(std::num::TryFromIntError);
+        ExecutorError(ton_executor::ExecutorError);
     }
 
     errors {
+        FailureError(msg: String) {
+            description("Error"),
+            display("Error: {}", msg)
+        }
+        BlockError(error: ton_block::BlockError) {
+            description("Block error"),
+            display("Block error: {}", error.to_string())
+        }
         NotFound {
             description("Requested item not found")
         }
@@ -101,5 +109,15 @@ error_chain! {
             description("Network error"),
             display("Network error: {}", msg)
         }
+        LocalCallError(msg: String) {
+            description("Local contract call error"),
+            display("Local contract call error: {}", msg)
+        }
+    }
+}
+
+impl From<failure::Error> for SdkError {
+    fn from(error: failure::Error) -> Self {
+        SdkErrorKind::FailureError(error.to_string()).into()
     }
 }

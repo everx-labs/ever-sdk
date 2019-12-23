@@ -57,7 +57,7 @@ pub struct Transaction {
     pub aborted: bool,
     pub compute: ComputePhase,
     pub storage: Option<StoragePhase>,
-    pub action: ActionPhase
+    pub action: Option<ActionPhase>
 }
 
 // The struct represents performed transaction and allows to access their properties.

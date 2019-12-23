@@ -256,6 +256,7 @@ pub fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_par
     let changes_stream = Contract::deploy_json("constructor".to_owned(), constructor_params.to_owned(), abi.to_owned(), contract_image, Some(key_pair), workchain_id)
         .expect("Error deploying contract");
 
+
     // wait transaction id in message-status
     // contract constructor doesn't return any values so there are no output messages in transaction
     // so just check deployment transaction created
@@ -344,15 +345,15 @@ pub fn call_contract_and_wait(address: MsgAddressInt, func: &str, input: String,
     // 3. message object with body
 }
 
-pub fn local_contract_call(address: MsgAddressInt, func: &str, input: &str, abi: &str, key_pair: Option<&Keypair>) -> String {
+pub fn contract_call_local(address: MsgAddressInt, func: &str, input: &str, abi: &str, key_pair: Option<&Keypair>) -> String {
 
     let contract = Contract::load_wait_deployed(&address).expect("Error loading Contract");
 
     // call needed method
-    let result = contract.local_call_json(func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
+    let messages = contract.local_call_tvm_json(func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
         .expect("Error calling locally");
 
-    for msg in result.messages {
+    for msg in messages {
         if msg.msg_type() == MessageType::ExternalOutbound {
             return Contract::decode_function_response_json(
                 abi.to_owned(), func.to_owned(), msg.body().expect("Message has no body"), false)
