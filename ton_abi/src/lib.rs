@@ -30,6 +30,7 @@ extern crate ed25519_dalek;
 extern crate error_chain;
 extern crate base64;
 extern crate chrono;
+extern crate failure;
 
 pub mod contract;
 pub mod function;

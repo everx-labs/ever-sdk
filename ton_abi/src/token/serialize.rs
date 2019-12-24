@@ -15,7 +15,7 @@
 use super::*;
 use crate::error::*;
 
-use ton_vm::stack::{BuilderData, IBitstring};
+use ton_types::{BuilderData, IBitstring};
 use ton_block::Serializable;
 use ton_types::dictionary::HashmapE;
 
@@ -126,7 +126,7 @@ impl TokenValue {
         Ok(vec![builder])
     }
 
-    fn write_cell(cell: &Arc<CellData>) -> AbiResult<Vec<BuilderData>> {
+    fn write_cell(cell: &Cell) -> AbiResult<Vec<BuilderData>> {
         let mut builder = BuilderData::new();
         builder.append_reference_cell(cell.clone());
         Ok(vec![builder])

@@ -12,13 +12,12 @@
 * limitations under the License.
 */
 
-use std::sync::Arc;
 use ed25519_dalek::*;
 use num_bigint::{BigInt, BigUint};
 use sha2::{Digest, Sha256, Sha512};
 use chrono::prelude::*;
 
-use ton_vm::stack::{BuilderData, IBitstring, SliceData, CellData};
+use ton_types::{BuilderData, IBitstring, SliceData};
 use ton_types::dictionary::{HashmapE, HashmapType};
 use ton_block::{AnycastInfo, BlockResult, Grams, MsgAddress, Serializable};
 use ton_vm::types::AccountId;
@@ -106,7 +105,7 @@ fn test_parameters_set(
 
     let mut test_tree = SliceData::from(&test_tree);
     assert_eq!(test_tree.get_next_u32().unwrap(), func_id & 0x7FFFFFFF);
-    assert_eq!(test_tree.checked_drain_reference().unwrap(), SliceData::new_empty().cell());
+    assert_eq!(test_tree.checked_drain_reference().unwrap(), BuilderData::new().into());
     println!("{:#.2}", test_tree.into_cell());
     println!("{:#.2}", params_slice.into_cell());
     assert_eq!(test_tree, params_slice);
@@ -126,7 +125,7 @@ fn test_parameters_set(
         let now = Utc::now().timestamp_millis() as u64;
         assert!(tree_time <= now && tree_time >= now - 1000);
 
-        assert_eq!(test_tree.checked_drain_reference().unwrap(), SliceData::new_empty().cell());
+        assert_eq!(test_tree.checked_drain_reference().unwrap(), BuilderData::new().into());
         assert_eq!(test_tree, params_slice);
     }
     
@@ -143,7 +142,7 @@ fn test_parameters_set(
 
     let mut signature = SliceData::from(test_tree.checked_drain_reference().unwrap());
     let signature_data = Signature::from_bytes(signature.get_next_bytes(64).unwrap().as_slice()).unwrap();
-    let bag_hash = (&Arc::<CellData>::from(&BuilderData::from_slice(&test_tree))).repr_hash();
+    let bag_hash = test_tree.into_cell().repr_hash();
     pair.verify::<Sha512>(bag_hash.as_slice(), &signature_data).unwrap();
 
     let public_key = signature.get_next_bytes(32).unwrap();

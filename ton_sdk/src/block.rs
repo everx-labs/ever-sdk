@@ -14,7 +14,7 @@
 
 use crate::*;
 use futures::stream::Stream;
-use ton_block::{Block as TvmBlock, BlockId, BlockProcessingStatus, GenericId};
+use ton_block::{Block as TvmBlock, BlockId, BlockProcessingStatus};
 
 #[derive(Debug)]
 pub struct Block {
