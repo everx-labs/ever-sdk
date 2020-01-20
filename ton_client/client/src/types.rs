@@ -1,5 +1,5 @@
 /*
-* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+* Copyright 2018-2020 TON DEV SOLUTIONS LTD.
 *
 * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
 * this file except in compliance with the License.  You may obtain a copy of the
@@ -30,6 +30,10 @@ pub fn hex_decode(hex: &String) -> ApiResult<Vec<u8>> {
 
 pub fn base64_decode(base64: &String) -> ApiResult<Vec<u8>> {
     base64::decode(base64).map_err(|err| ApiError::crypto_invalid_base64(&base64, err))
+}
+
+pub fn long_num_to_json_string(num: u64) -> String {
+    format!("0x{:x}", num)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -221,7 +225,7 @@ impl ApiError {
 
     pub fn crypto_invalid_public_key<E: Display>(err: E, key: &String) -> Self {
         sdk_err!(CryptoInvalidPublicKey,
-            "Invalid secret key [{}]: {}", err, key)
+            "Invalid public key [{}]: {}", err, key)
     }
 
     pub fn crypto_invalid_address<E: Display>(err: E, address: &str) -> Self {
@@ -246,7 +250,7 @@ impl ApiError {
 
     pub fn crypto_mnemonic_generation_failed() -> Self {
         ApiError::sdk(CryptoMnemonicGenerationFailed,
-            "Mnemonic generation failed (this must never be)".into())
+            "Mnemonic generation failed".into())
     }
 
     pub fn crypto_mnemonic_from_entropy_failed(reason: &str) -> Self {
@@ -288,7 +292,7 @@ impl ApiError {
 
     pub fn contracts_decode_run_input_failed<E: Display>(err: E) -> Self {
         sdk_err!(ContractsDecodeRunInputFailed,
-            "Decode run intput failed: {}", err)
+            "Decode run input failed: {}", err)
     }
 
     pub fn contracts_run_transaction_missing() -> ApiError {
@@ -343,6 +347,11 @@ impl ApiError {
     pub fn contracts_address_conversion_failed<E: Display>(err: E) -> Self {
         sdk_err!(ContractsAddressConversionFailed,
             "Address conversion failed: {}", err)
+    }
+
+    pub fn contracts_invalid_boc<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsInvalidBoc,
+            "Invalid Bag of Cells: {}", err)
     }
 
     // SDK queries
@@ -490,6 +499,7 @@ pub enum ApiSdkErrorCode {
     ContractsGetFunctionIdFailed = 3017,
     ContractsLocalRunFailed = 3018,
     ContractsAddressConversionFailed = 3019,
+    ContractsInvalidBoc = 3020,
 
     QueriesQueryFailed = 4001,
     QueriesSubscribeFailed = 4002,

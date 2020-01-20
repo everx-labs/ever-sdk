@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "ton_abi",
     "ton_sdk",
     "ton_client/client"
 ]

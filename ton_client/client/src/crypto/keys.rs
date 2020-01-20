@@ -1,5 +1,5 @@
 /*
-* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+* Copyright 2018-2020 TON DEV SOLUTIONS LTD.
 *
 * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
 * this file except in compliance with the License.  You may obtain a copy of the
@@ -152,15 +152,12 @@ pub(crate) fn account_encode_ex(
 }
 
 pub fn account_decode(string: &str) -> ApiResult<MsgAddressInt> {
-    match MsgAddressInt::from_str(string) {
-        Ok(address) => {
-            match address {
-                MsgAddressInt::AddrNone => Err(ApiError::crypto_invalid_address("Empty address not allowed", string)),
-                _ => Ok(address)
-            }
+    match MsgAddressInt::from_str(string) { 
+        Ok(address) => Ok(address),
+        Err(_) if string.len() == 48 => {
+            ton_sdk::decode_std_base64(string)
+                .map_err(|err| ApiError::crypto_invalid_address(err, string))
         },
-        Err(_) if string.len() == 48 => ton_sdk::decode_std_base64(string)
-        .map_err(|err| ApiError::crypto_invalid_address(err, string)),
         Err(err) => Err(ApiError::crypto_invalid_address(err, string))
     }
 }

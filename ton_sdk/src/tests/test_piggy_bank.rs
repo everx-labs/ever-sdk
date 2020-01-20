@@ -1,5 +1,5 @@
 /*
-* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+* Copyright 2018-2020 TON DEV SOLUTIONS LTD.
 *
 * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
 * this file except in compliance with the License.  You may obtain a copy of the
@@ -43,7 +43,7 @@ fn full_test_piggy_bank() {
     // get goal from piggy
     println!("Get goal from piggy...\n");
     //let (get_goal_answer, _) = call_contract_and_wait(piggy_bank_address.clone(), "getGoal", "{}".to_string(), PIGGY_BANK_CONTRACT_ABI, None);
-    let get_goal_answer = local_contract_call(piggy_bank_address.clone(), "getGoal", "{}", PIGGY_BANK_CONTRACT_ABI, None);
+    let get_goal_answer = contract_call_local(piggy_bank_address.clone(), "getGoal", "{}", PIGGY_BANK_CONTRACT_ABI, None);
     println!("piggy answer {}", get_goal_answer);
 
 	// deploy subscription
@@ -90,7 +90,7 @@ fn full_test_piggy_bank() {
 
     println!("Call getSubscription with id {}\n", &subscr_id_str);
     let get_params = format!("{{ \"subscriptionId\" : \"0x{}\" }}", &subscr_id_str);
-    let answer = local_contract_call(subscripition_address.clone(), "getSubscription", &get_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
+    let answer = contract_call_local(subscripition_address.clone(), "getSubscription", &get_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
     println!("getSubscription result:\n{}", answer);
 
     let t = now.elapsed();

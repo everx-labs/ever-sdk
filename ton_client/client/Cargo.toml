@@ -1,6 +1,6 @@
 [package]
 name = "ton_client"
-version = "0.17.0"
+version = "0.18.0"
 authors = ["Michael Vlasov"]
 
 [lib]
@@ -8,9 +8,9 @@ name = "ton_client"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git" }
-ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }
-ton_vm = { git = "https://github.com/tonlabs/ton-labs-vm.git", default-features = false }
+ton_block = { git = "ssh://git@github.com/tonlabs/ton-block.git" }
+ton_vm = { git = "ssh://git@github.com/tonlabs/ton-vm.git", default-features = false }
+ton_types = { git = "ssh://git@github.com/tonlabs/ton-types.git" }
 
 rand = "0.6.1"
 hex = "0.3.2"

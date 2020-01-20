@@ -1,5 +1,5 @@
 /*
-* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+* Copyright 2018-2020 TON DEV SOLUTIONS LTD.
 *
 * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
 * this file except in compliance with the License.  You may obtain a copy of the
@@ -60,12 +60,14 @@ error_chain! {
         FromHexError(hex::FromHexError);
         Base64DecodeError(base64::DecodeError);
         AbiError(ton_abi::error::AbiError);
+        TryFromIntError(std::num::TryFromIntError);
+        ExecutorError(ton_executor::ExecutorError);
     }
 
     errors {
         FailureError(msg: String) {
-            description("Invalid data"),
-            display("Invalid data: {}", msg)
+            description("Error"),
+            display("Error: {}", msg)
         }
         BlockError(error: ton_block::BlockError) {
             description("Block error"),
@@ -106,6 +108,10 @@ error_chain! {
         NetworkError(msg: String){
             description("Network error"),
             display("Network error: {}", msg)
+        }
+        LocalCallError(msg: String) {
+            description("Local contract call error"),
+            display("Local contract call error: {}", msg)
         }
     }
 }

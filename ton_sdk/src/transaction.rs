@@ -1,5 +1,5 @@
 /*
-* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+* Copyright 2018-2020 TON DEV SOLUTIONS LTD.
 *
 * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
 * this file except in compliance with the License.  You may obtain a copy of the
@@ -57,7 +57,7 @@ pub struct Transaction {
     pub aborted: bool,
     pub compute: ComputePhase,
     pub storage: Option<StoragePhase>,
-    pub action: ActionPhase
+    pub action: Option<ActionPhase>
 }
 
 // The struct represents performed transaction and allows to access their properties.

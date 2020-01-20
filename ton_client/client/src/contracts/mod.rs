@@ -1,5 +1,5 @@
 /*
-* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+* Copyright 2018-2020 TON DEV SOLUTIONS LTD.
 *
 * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
 * this file except in compliance with the License.  You may obtain a copy of the
@@ -87,6 +87,18 @@ pub(crate) struct ResultOfConvertAddress {
     pub address: String,
 }
 
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct ParamsOfGetBocHash {
+    pub bocBase64: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct ResultOfGetBocHash {
+    pub hash: String,
+}
+
 use ton_sdk;
 use dispatch::DispatchTable;
 use client::ClientContext;
@@ -140,6 +152,16 @@ pub(crate) fn convert_address(_context: &mut ClientContext, params: ParamsOfConv
     })
 }
 
+pub(crate) fn get_boc_root_hash(_context: &mut ClientContext, params: ParamsOfGetBocHash) -> ApiResult<ResultOfGetBocHash> {
+    debug!("-> contracts.boc.hash({})", params.bocBase64);
+    let bytes = base64_decode(&params.bocBase64)?;
+    let cells = ton_block::cells_serialization::deserialize_tree_of_cells(&mut bytes.as_slice())
+        .map_err(|err| ApiError::contracts_invalid_boc(err))?;
+    Ok(ResultOfGetBocHash {
+        hash: format!("{:x}", cells.repr_hash()),
+    })
+}
+
 pub(crate) fn register(handlers: &mut DispatchTable) {
     // Load
     #[cfg(feature = "node_interaction")]
@@ -177,7 +199,13 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
     handlers.spawn("contracts.run.body",
         run::get_run_body);
     handlers.spawn("contracts.run.local",
-        run::local_run);
+        |context, params| run::local_run(context, params, true));
+    handlers.spawn("contracts.run.local.msg",
+        |context, params| run::local_run_msg(context, params, true));
+    handlers.spawn("contracts.run.fee",
+        |context, params| run::local_run(context, params, false));
+    handlers.spawn("contracts.run.fee.msg",
+        |context, params| run::local_run_msg(context, params, false));
 
     // Contracts
     handlers.spawn("contracts.encode_message_with_sign",
@@ -190,4 +218,8 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
     // Addresses
     handlers.spawn("contracts.address.convert",
         convert_address);
+
+    // Bag of cells
+    handlers.spawn("contracts.boc.hash",
+        get_boc_root_hash);
 }

@@ -1,5 +1,5 @@
 /*
-* Copyright 2018-2019 TON DEV SOLUTIONS LTD.
+* Copyright 2018-2020 TON DEV SOLUTIONS LTD.
 *
 * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
 * this file except in compliance with the License.  You may obtain a copy of the
@@ -12,10 +12,10 @@
 * limitations under the License.
 */
 
-use ton_sdk::{Contract, MessageType, AbiContract};
+use ton_sdk::{Contract, MessageType, AbiContract, TransactionFees};
 use ton_sdk::json_abi::encode_function_call;
 use crypto::keys::{KeyPair, account_decode};
-use types::{ApiResult, ApiError, base64_decode};
+use types::{ApiResult, ApiError, base64_decode, long_num_to_json_string};
 use ton_types::cells_serialization::BagOfCells;
 
 use contracts::{EncodedMessage, EncodedUnsignedMessage};
@@ -55,6 +55,16 @@ pub(crate) struct ParamsOfLocalRun {
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
+pub(crate) struct ParamsOfLocalRunWithMsg {
+    pub address: String,
+    pub account: Option<serde_json::Value>,
+    pub abi: Option<serde_json::Value>,
+    pub functionName: Option<String>,
+    pub messageBase64: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
 pub(crate) struct ParamsOfEncodeUnsignedRunMessage {
     pub address: String,
     pub abi: serde_json::Value,
@@ -85,6 +95,37 @@ pub struct ParamsOfDecodeUnknownRun {
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfRun {
     pub output: serde_json::Value
+}
+
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize)]
+pub struct LocalRunFees {
+    pub inMsgFwdFee: String,
+    pub storageFee: String,
+    pub gasFee: String,
+    pub outMsgsFwdFee: String,
+    pub totalAccountFees: String,
+    pub totalOutput: String
+}
+
+impl From<TransactionFees> for LocalRunFees {
+    fn from(value: TransactionFees) -> Self {
+        LocalRunFees {
+            inMsgFwdFee: long_num_to_json_string(value.in_msg_fwd_fee),
+            storageFee: long_num_to_json_string(value.storage_fee),
+            gasFee: long_num_to_json_string(value.gas_fee),
+            outMsgsFwdFee: long_num_to_json_string(value.out_msgs_fwd_fee),
+            totalAccountFees: long_num_to_json_string(value.total_account_fees),
+            totalOutput: long_num_to_json_string(value.total_output),
+        }
+    }
+ }
+
+#[allow(non_snake_case)]
+#[derive(Serialize, Deserialize)]
+pub(crate) struct ResultOfLocalRun {
+    pub output: Option<serde_json::Value>,
+    pub fees: Option<LocalRunFees>
 }
 
 #[allow(non_snake_case)]
@@ -156,7 +197,7 @@ pub(crate) fn run(_context: &mut ClientContext, params: ParamsOfRun) -> ApiResul
     }
 }
 
-pub(crate) fn local_run(_context: &mut ClientContext, params: ParamsOfLocalRun) -> ApiResult<ResultOfRun> {
+pub(crate) fn local_run(context: &mut ClientContext, params: ParamsOfLocalRun, tvm_call: bool) -> ApiResult<ResultOfLocalRun> {
     debug!("-> contracts.run.local({}, {}, {})",
         params.address.clone(),
         params.functionName.clone(),
@@ -170,7 +211,38 @@ pub(crate) fn local_run(_context: &mut ClientContext, params: ParamsOfLocalRun) 
         Some(pair) => Some(pair.decode()?)
     };
 
-    let contract = match params.account {
+    let (body, _) = Contract::construct_call_message_json(
+        address,
+        params.functionName.to_owned(),
+        params.input.to_string().to_owned(),
+        params.abi.to_string().to_owned(),
+        false,
+        key_pair.as_ref())
+        .map_err(|err| ApiError::contracts_create_run_message_failed(err))?;
+
+    local_run_msg(
+        context,
+        ParamsOfLocalRunWithMsg {
+            address: params.address,
+            account: params.account,
+            functionName: Some(params.functionName),
+            abi: Some(params.abi),
+            messageBase64:  base64::encode(&body)
+        },
+        tvm_call
+    )
+}
+
+pub(crate) fn local_run_msg(_context: &mut ClientContext, params: ParamsOfLocalRunWithMsg, tvm_call: bool) -> ApiResult<ResultOfLocalRun> {
+    debug!("-> contracts.run.local.msg({}, {}, {})",
+        params.address.clone(),
+        params.functionName.clone().unwrap_or_default(),
+        params.messageBase64
+    );
+
+    let address = account_decode(&params.address)?;
+
+    let contract = match &params.account {
         // load contract data from node manually
         #[cfg(feature = "node_interaction")]
         None => {
@@ -191,35 +263,50 @@ pub(crate) fn local_run(_context: &mut ClientContext, params: ParamsOfLocalRun) 
         }
     };
 
-    let messages = contract.local_call_json(
-        params.functionName.clone(),
-        params.input.to_string(),
-        params.abi.to_string(),
-        key_pair.as_ref())
-       .map_err(|err| ApiError::contracts_local_run_failed(err))?;
+    let msg = Contract::deserialize_message(
+        &base64::decode(&params.messageBase64)
+            .map_err(|err| ApiError::crypto_invalid_base64(&params.messageBase64, err))?)
+        .map_err(|err| ApiError::invalid_params(&params.messageBase64, err))?;
 
-    let abi_contract = AbiContract::load(params.abi.to_string().as_bytes()).expect("Couldn't parse ABI");
-    let abi_function = abi_contract.function(&params.functionName).expect("Couldn't find function");
+    let (messages, fees) = if !tvm_call {
+        let result = contract.local_call(msg)
+            .map_err(|err| ApiError::contracts_local_run_failed(err))?;
+        (result.messages, Some(LocalRunFees::from(result.fees)))
+    } else {
+        let messages = contract.local_call_tvm(msg)
+            .map_err(|err| ApiError::contracts_local_run_failed(err))?;
 
-    for msg in messages {
-        if  msg.msg_type() == MessageType::ExternalOutbound &&
-            abi_function.is_my_message(
-                msg.body().ok_or(ApiError::contracts_decode_run_output_failed("Message has no body"))?,
-                false)
-                    .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?
-        {
-            let output = Contract::decode_function_response_json(
-                params.abi.to_string(), params.functionName, msg.body().expect("Message has no body"), false)
-                     .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?;
+        (messages, None)
+    };
 
-            let output: serde_json::Value = serde_json::from_str(&output)
-                .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?;
+    if let Some(abi) = params.abi {
+        let abi_contract = AbiContract::load(abi.to_string().as_bytes()).expect("Couldn't parse ABI");
+        let function = params.functionName.unwrap_or_default();
+        let abi_function = abi_contract.function(&function).expect("Couldn't find function");
 
-            return Ok(ResultOfRun { output });
+        for msg in messages {
+            if  msg.msg_type() == MessageType::ExternalOutbound &&
+                abi_function.is_my_message(
+                    msg.body().ok_or(ApiError::contracts_decode_run_output_failed("Message has no body"))?,
+                    false)
+                        .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?
+            {
+                let output = Contract::decode_function_response_json(
+                    abi.to_string(), function, msg.body().expect("Message has no body"), false)
+                        .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?;
+
+                let output: serde_json::Value = serde_json::from_str(&output)
+                    .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?;
+
+                return Ok(ResultOfLocalRun { output: Some(output), fees });
+            }
         }
     }
 
-    return Ok(ResultOfRun { output: serde_json::Value::default() });
+    Ok(ResultOfLocalRun { 
+        output: Some(serde_json::Value::default()),
+        fees
+    })
 }
 
 pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfRun) -> ApiResult<EncodedMessage> {
@@ -363,14 +450,17 @@ pub(crate) fn check_transaction_status(transaction: &Transaction) -> ApiResult<(
             id.clone(), transaction.compute.exit_code.unwrap_or(-1)))?;
     }
 
-    if !transaction.action.success {
-        Err(ApiError::action_phase_failed(
-                id.clone(), 
-                transaction.action.result_code,
-                transaction.action.valid,
-                transaction.action.no_funds,
-            ))?;
+    if let Some(action) = &transaction.action {
+        if !action.success {
+            Err(ApiError::action_phase_failed(
+                    id.clone(), 
+                    action.result_code,
+                    action.valid,
+                    action.no_funds,
+                ))?;
+        }
     }
+
 
     Err(ApiError::transaction_aborted(id))
 }
