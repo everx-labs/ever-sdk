@@ -81,7 +81,7 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            when { 
+                            when {
                                 expression {
                                     GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
                                 }
@@ -125,7 +125,7 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            when { 
+                            when {
                                 expression {
                                     GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
                                 }
@@ -169,7 +169,7 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            when { 
+                            when {
                                 expression {
                                     GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
                                 }
@@ -190,7 +190,7 @@ pipeline {
                     }
 					post {
 						cleanup {script{cleanWs notFailBuild: true}}
-					}                
+					}
 				}
                 stage('react-native-ios') {
                     agent {
@@ -221,7 +221,7 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            when { 
+                            when {
                                 expression {
                                     GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
                                 }
@@ -247,7 +247,7 @@ pipeline {
                     }
 					post {
 						cleanup {script{cleanWs notFailBuild: true}}
-					}                
+					}
 				}
                 stage('react-native-android') {
                     agent {
@@ -278,7 +278,7 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            when { 
+                            when {
                                 expression {
                                     GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
                                 }
@@ -304,7 +304,7 @@ pipeline {
                     }
 					post {
 						cleanup {script{cleanWs notFailBuild: true}}
-					}                
+					}
 				}
                 stage('node-js for iOS') {
                     agent {
@@ -335,7 +335,7 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            when { 
+                            when {
                                 expression {
                                     GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
                                 }
@@ -361,7 +361,7 @@ pipeline {
                     }
 					post {
 						cleanup {script{cleanWs notFailBuild: true}}
-					}                
+					}
 				}
                 stage('node-js for Windows') {
                     agent {
@@ -392,7 +392,7 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            when { 
+                            when {
                                 expression {
                                     GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
                                 }
@@ -418,7 +418,7 @@ pipeline {
                     }
 					post {
 						cleanup {script{cleanWs notFailBuild: true}}
-					}                
+					}
 				}
                 stage('node-js for Linux') {
                     agent {
@@ -451,7 +451,7 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            when { 
+                            when {
                                 expression {
                                     GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
                                 }
@@ -477,7 +477,7 @@ pipeline {
                     }
 					post {
 						cleanup {script{cleanWs notFailBuild: true}}
-					}                
+					}
 				}
                 stage('web') {
                     agent {
@@ -522,7 +522,7 @@ pipeline {
                             }
                         }
                         stage('Deploy') {
-                            when { 
+                            when {
                                 expression {
                                     GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
                                 }
@@ -548,7 +548,7 @@ pipeline {
                     }
 					post {
 						cleanup {script{cleanWs notFailBuild: true}}
-					}                
+					}
 				}
             }
         }
@@ -632,7 +632,7 @@ pipeline {
                         }
                     }
                 }
-                
+
                 stage('Check branch in ton-client-node-js') {
                     agent any
                     when {
