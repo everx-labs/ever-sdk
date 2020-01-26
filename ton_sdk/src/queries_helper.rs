@@ -43,7 +43,7 @@ fn check_redirect(config: QueriesConfig) -> SdkResult<QueriesConfig> {
     let client = ClientBuilder::new()
         .redirect(RedirectPolicy::none())
         .build()
-        .map_err(|err| SdkErrorKind::InternalError(format!("Can not build test request: {}", err)))?;
+        .map_err(|err| SdkErrorKind::InternalError { msg: format!("Can not build test request: {}", err) } )?;
 
     let result = client.get(&config.queries_server).send();
 
@@ -53,9 +53,9 @@ fn check_redirect(config: QueriesConfig) -> SdkResult<QueriesConfig> {
                 let address = result
                     .headers()
                     .get(LOCATION)
-                    .ok_or(SdkErrorKind::NetworkError("Missing location field in redirect response".to_owned()))?
+                    .ok_or(SdkErrorKind::NetworkError { msg: "Missing location field in redirect response".to_owned() } )?
                     .to_str()
-                    .map_err(|err| SdkErrorKind::NetworkError(format!("Can not cast redirect location to string: {}", err)))?
+                    .map_err(|err| SdkErrorKind::NetworkError { msg: format!("Can not cast redirect location to string: {}", err) } )?
                     .to_owned();
                 
                 Ok(QueriesConfig {
@@ -68,7 +68,7 @@ fn check_redirect(config: QueriesConfig) -> SdkResult<QueriesConfig> {
                 Ok(config)
             }
         },
-        Err(err) => bail!(SdkErrorKind::NetworkError(format!("Can not send test request: {}", err)))
+        Err(err) => bail!(SdkErrorKind::NetworkError { msg: format!("Can not send test request: {}", err) } )
     }
 }
 
@@ -119,8 +119,9 @@ pub fn subscribe(table: &str, filter: &str, fields: &str)
                         let record_value = &value["payload"]["data"][&closure_table];
                         
                         if record_value.is_null() {
-                            Err(SdkError::from(SdkErrorKind::InvalidData(
-                                format!("Invalid subscription answer: {}", value))))
+                            Err(SdkError::from(SdkErrorKind::InvalidData {
+                                msg: format!("Invalid subscription answer: {}", value)
+                            }))
                         } else {
                             Ok(record_value.clone())
                         }
@@ -173,7 +174,7 @@ pub fn query(table: &str, filter: &str, fields: &str, order_by: Option<OrderBy>,
                     // try to extract the record value from the answer
                     let records_array = &value["data"][&table];
                     if records_array.is_null() {
-                        bail!(SdkErrorKind::InvalidData(format!("Invalid query answer: {}", value)))
+                        bail!(SdkErrorKind::InvalidData { msg: format!("Invalid query answer: {}", value) } )
                     }
                     
                     Ok(records_array.clone())
@@ -202,7 +203,7 @@ pub fn wait_for(table: &str, filter: &str, fields: &str)
         .chain(subscription_stream)
         .wait()
         .next()
-        .ok_or(SdkErrorKind::InvalidData("None value".to_owned()))??)
+        .ok_or(SdkErrorKind::InvalidData { msg: "None value".to_owned() } )??)
 }
 
 fn generate_query_var(table: &str, filter: &str, fields: &str, order_by: Option<OrderBy>, limit: Option<u32>)

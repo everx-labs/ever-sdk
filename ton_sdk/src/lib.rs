@@ -98,7 +98,7 @@ pub fn init(config: NodeClientConfig) -> SdkResult<()> {
 #[cfg(feature = "node_interaction")]
 pub fn init_json(config: &str) -> SdkResult<()> {
     init(serde_json::from_str(config)
-        .map_err(|err| SdkErrorKind::InvalidArg(format!("{}", err)))?)
+        .map_err(|err| SdkErrorKind::InvalidArg { msg: format!("{}", err) } )?)
 }
 
 /// Uninit SKD. Should be called before process

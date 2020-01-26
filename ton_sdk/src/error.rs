@@ -12,7 +12,8 @@
 * limitations under the License.
 */
 
-use std::io;
+use failure::{Context, Fail, Backtrace};
+use std::fmt::{Formatter, Result, Display};
 
 #[cfg(feature = "node_interaction")]
 use graphite::types::GraphiteError;
@@ -42,82 +43,228 @@ impl std::error::Error for GraphiteError {
 }
 
 
-error_chain! {
+#[derive(Debug)]
+pub struct SdkError {
+    inner: Context<SdkErrorKind>,
+}
 
-    types {
-        SdkError, SdkErrorKind, SdkResultExt, SdkResult;
-    }
+pub type SdkResult<T> = std::result::Result<T, failure::Error>;
 
-    foreign_links {
-        Io(io::Error);
-        Tvm(ton_vm::error::TvmError);
-        TvmException(ton_vm::types::Exception);
-        TvmExceptionCode(ton_vm::types::ExceptionCode);
-        Graphql(GraphiteError);
-        SerdeJson(serde_json::Error);
-        TryFromSliceError(std::array::TryFromSliceError);
-        ParseIntError(std::num::ParseIntError);
-        FromHexError(hex::FromHexError);
-        Base64DecodeError(base64::DecodeError);
-        AbiError(ton_abi::error::AbiError);
-        TryFromIntError(std::num::TryFromIntError);
-        ExecutorError(ton_executor::ExecutorError);
-    }
+#[derive(Debug, Fail)]
+pub enum SdkErrorKind {
 
-    errors {
-        FailureError(msg: String) {
-            description("Error"),
-            display("Error: {}", msg)
-        }
-        BlockError(error: ton_block::BlockError) {
-            description("Block error"),
-            display("Block error: {}", error.to_string())
-        }
-        NotFound {
-            description("Requested item not found")
-        }
-        NoData {
-            description("Requested item not found")
-        }
-        InvalidOperation(msg: String) {
-             description("Invalid operation"),
-             display("Invalid operation: {}", msg)
-        }
-        InvalidData(msg: String) {
-            description("Invalid data"),
-            display("Invalid data: {}", msg)
-        }
-        InvalidArg(msg: String) {
-            description("Invalid argument"),
-            display("Invalid argument: {}", msg)
-        }
-        InternalError(msg: String) {
-            description("Internal error"),
-            display("Internal error: {}", msg)
-        }
-        Signature(inner: ed25519_dalek::SignatureError) {
-            description("Signature error"),
-            display("Signature error: {}", inner)
-        }
-        NotInitialized {
-            description("SDK is not initialized")
-        }
-        InitializeError {
-            description("SDK initialize error")
-        }
-        NetworkError(msg: String){
-            description("Network error"),
-            display("Network error: {}", msg)
-        }
-        LocalCallError(msg: String) {
-            description("Local contract call error"),
-            display("Local contract call error: {}", msg)
-        }
+    #[fail(display = "Block error: {}", error)]
+    BlockError {
+        error: ton_block::BlockError
+    },
+
+    #[fail(display = "Requested item not found")]
+    NotFound,
+
+    #[fail(display = "No data")]
+    NoData,
+
+    #[fail(display = "Invalid operation: {}", msg)]
+    InvalidOperation {
+        msg: String
+    },
+
+    #[fail(display = "Invalid data: {}", msg)]
+    InvalidData {
+        msg: String
+    },
+
+    #[fail(display = "Invalid argument: {}", msg)]
+    InvalidArg {
+        msg: String
+    },
+
+    #[fail(display = "Internal error: {}", msg)]
+    InternalError {
+        msg: String
+    },
+
+    #[fail(display = "Signature error: {}", err)]
+    Signature {
+        err: ed25519_dalek::SignatureError
+    },
+
+    #[fail(display = "SDK is not initialized")]
+    NotInitialized,
+
+    #[fail(display = "SDK initialize error")]
+    InitializeError,
+
+    #[fail(display = "Network error: {}", msg)]
+    NetworkError {
+        msg: String
+    },
+
+    #[fail(display = "Local contract call error: {}", msg)]
+    LocalCallError {
+        msg: String
+    },
+
+    // External errors
+
+    #[fail(display = "IO error: {}", err)]
+    Io { 
+        err: std::io::Error
+    },
+
+    #[fail(display = "VM exception: {}", ex)]
+    TvmException {
+        ex: ton_vm::types::Exception,
+    },
+
+    #[fail(display = "VM exception, code: {}", code)]
+    TvmExceptionCode {
+        code: ton_types::types::ExceptionCode,
+    },
+
+    #[fail(display = "Graphite error: {}", err)]
+    Graphql {
+        err: GraphiteError
+    },
+
+    #[fail(display = "Serde json error: {}", err)]
+    SerdeError {
+        err: serde_json::Error
+    },
+
+    #[fail(display = "Try from slice error: {}", err)]
+    TryFromSliceError {
+        err: std::array::TryFromSliceError
+    },
+
+    #[fail(display = "Parse int error: {}", err)]
+    ParseIntError {
+        err: std::num::ParseIntError
+    },
+
+    #[fail(display = "From hex error: {}", err)]
+    FromHexError {
+        err: hex::FromHexError
+    },
+
+    #[fail(display = "Base64 decode error: {}", err)]
+    Base64DecodeError {
+        err: base64::DecodeError
+    },
+
+    #[fail(display = "ABI error: {}", err)]
+    AbiError {
+        err: ton_abi::error::AbiError
+    },
+
+    #[fail(display = "Try from int error: {}", err)]
+    TryFromIntError {
+        err: std::num::TryFromIntError
+    },
+
+    #[fail(display = "Transaction executor error: {}", err)]
+    ExecutorError {
+        err: ton_executor::ExecutorError
+    },
+}
+
+impl SdkError {
+    pub fn kind(&self) -> &SdkErrorKind {
+        self.inner.get_context()
     }
 }
 
-impl From<failure::Error> for SdkError {
-    fn from(error: failure::Error) -> Self {
-        SdkErrorKind::FailureError(error.to_string()).into()
+impl Fail for SdkError {
+    fn cause(&self) -> Option<&dyn Fail> {
+        self.inner.cause()
+    }
+
+    fn backtrace(&self) -> Option<&Backtrace> {
+        self.inner.backtrace()
+    }
+}
+
+impl Display for SdkError {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+        Display::fmt(&self.inner, f)
+    }
+}
+
+impl From<SdkErrorKind> for SdkError {
+    fn from(kind: SdkErrorKind) -> SdkError {
+        SdkError { inner: Context::new(kind) }
+    }
+}
+
+impl From<std::io::Error> for SdkError {
+    fn from(err: std::io::Error) -> SdkError {
+        SdkError::from(SdkErrorKind::Io { err })
+    }
+}
+
+impl From<ton_types::types::ExceptionCode> for SdkError {
+    fn from(code: ton_types::types::ExceptionCode) -> SdkError {
+        SdkError::from(SdkErrorKind::TvmExceptionCode { code })
+    }
+}
+
+impl From<ton_vm::types::Exception> for SdkError {
+    fn from(ex: ton_vm::types::Exception) -> SdkError {
+        SdkError::from(SdkErrorKind::TvmException { ex })
+    }
+}
+
+impl From<GraphiteError> for SdkError {
+    fn from(err: GraphiteError) -> SdkError {
+        SdkError::from(SdkErrorKind::Graphql { err })
+    }
+}
+
+impl From<serde_json::Error> for SdkError {
+    fn from(err: serde_json::Error) -> SdkError {
+        SdkError::from(SdkErrorKind::SerdeError { err })
+    }
+}
+
+impl From<std::array::TryFromSliceError> for SdkError {
+    fn from(err: std::array::TryFromSliceError) -> SdkError {
+        SdkError::from(SdkErrorKind::TryFromSliceError { err })
+    }
+}
+
+impl From<std::num::ParseIntError> for SdkError {
+    fn from(err: std::num::ParseIntError) -> SdkError {
+        SdkError::from(SdkErrorKind::ParseIntError { err })
+    }
+}
+
+impl From<hex::FromHexError> for SdkError {
+    fn from(err: hex::FromHexError) -> SdkError {
+        SdkError::from(SdkErrorKind::FromHexError { err })
+    }
+}
+
+impl From<base64::DecodeError> for SdkError {
+    fn from(err: base64::DecodeError) -> SdkError {
+        SdkError::from(SdkErrorKind::Base64DecodeError { err })
+    }
+}
+
+impl From<ton_abi::error::AbiError> for SdkError {
+    fn from(err: ton_abi::error::AbiError) -> SdkError {
+        SdkError::from(SdkErrorKind::AbiError { err })
+    }
+}
+
+
+impl From<std::num::TryFromIntError> for SdkError {
+    fn from(err: std::num::TryFromIntError) -> SdkError {
+        SdkError::from(SdkErrorKind::TryFromIntError { err })
+    }
+}
+
+impl From<ton_executor::ExecutorError> for SdkError {
+    fn from(err: ton_executor::ExecutorError) -> SdkError {
+        SdkError::from(SdkErrorKind::ExecutorError { err })
     }
 }
