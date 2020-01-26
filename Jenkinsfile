@@ -17,7 +17,7 @@ def getVar(Gvar) {
 def checkAndCreateBranch(ton_client_url) {
     ton_repo_name = ton_client_url.substring(ton_client_url.lastIndexOf('/') + 1, ton_client_url.lastIndexOf('.') )
     ton_client_path = "~/workdir/${ton_repo_name}-version"
-    
+    ton_client_js_path = "git+ssh://git@github.com/tonlabs/ton-client-js.git#${G_binversion}-rc"
     return sh (script:  """
         rm -rf $ton_client_path
         mkdir -pv $ton_client_path
@@ -41,17 +41,17 @@ def checkAndCreateBranch(ton_client_url) {
 
             "ton-client-node-js")
                 sed -i 's@"version"\\s*:\\s*"[0-9]*\\.[0-9]*\\.[0-9]*"@"version": "${G_binversion}"@g' package.json
-                sed -i 's@"ton-client-js"\\s*:\\s*"^[0-9]*\\.[0-9]*\\.[0-9]*"@"ton-client-js": "^${G_binversion}"@g' package.json
+                sed -i 's@"ton-client-js"\\s*:\\s*"^[0-9]*\\.[0-9]*\\.[0-9]*"@"ton-client-js": "^${ton_client_js_path}"@g' package.json
                 ;;
 
             "ton-client-web-js")
                 sed -i 's@"version"\\s*:\\s*"[0-9]*\\.[0-9]*\\.[0-9]*"@"version": "${G_binversion}"@g' package.json
-                sed -i 's@"ton-client-js"\\s*:\\s*"^[0-9]*\\.[0-9]*\\.[0-9]*"@"ton-client-js": "^${G_binversion}"@g' package.json
+                sed -i 's@"ton-client-js"\\s*:\\s*"^[0-9]*\\.[0-9]*\\.[0-9]*"@"ton-client-js": "^${ton_client_js_path}"@g' package.json
                 ;;  
 
             "ton-client-react-native-js")
                 sed -i 's@"version"\\s*:\\s*"[0-9]*\\.[0-9]*\\.[0-9]*"@"version": "${G_binversion}"@g' package.json
-                sed -i 's@"ton-client-js"\\s*:\\s*"^[0-9]*\\.[0-9]*\\.[0-9]*"@"ton-client-js": "^${G_binversion}"@g' package.json
+                sed -i 's@"ton-client-js"\\s*:\\s*"^[0-9]*\\.[0-9]*\\.[0-9]*"@"ton-client-js": "^${ton_client_js_path}"@g' package.json
                 ;;  
             *)
                 echo "Error no ${ton_repo_name}"
