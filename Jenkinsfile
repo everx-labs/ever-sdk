@@ -14,6 +14,58 @@ def getVar(Gvar) {
     return Gvar
 }
 
+def checkAndCreateBranch(ton_client_url) {
+    ton_repo_name = ton_client_url.substring(ton_client_url.lastIndexOf('/') + 1, ton_client_url.lastIndexOf('.') )
+    ton_client_path = "~/workdir/${ton_repo_name}-version"
+    
+    return sh (script:  """
+        rm -rf $ton_client_path
+        mkdir -pv $ton_client_path
+        git clone $ton_client_url $ton_client_path
+        cd $ton_client_path
+        if (git ls-remote --heads --exit-code $ton_client_url ${GIT_BRANCH})
+        then
+            echo "Branch name ${GIT_BRANCH} in $ton_client_url already exists."
+        else
+            echo "Branch ${GIT_BRANCH} in $ton_client_url was created."
+            git checkout -b ${GIT_BRANCH}
+
+            case ${ton_repo_name} in
+            "ton-client-rs")
+                sed -i 's@^version\\s*=\\s*"[0-9]*\\.[0-9]*\\.[0-9]*"@version = "${G_binversion}"@g' Cargo.toml
+                ;;
+
+            "ton-client-js")
+                sed -i 's@"version"\\s*:\\s*"[0-9]*\\.[0-9]*\\.[0-9]*"@"version": "${G_binversion}"@g' package.json
+                ;;
+
+            "ton-client-node-js")
+                sed -i 's@"version"\\s*:\\s*"[0-9]*\\.[0-9]*\\.[0-9]*"@"version": "${G_binversion}"@g' package.json
+                sed -i 's@"ton-client-js"\\s*:\\s*"^[0-9]*\\.[0-9]*\\.[0-9]*"@"ton-client-js": "^${G_binversion}"@g' package.json
+                ;;
+
+            "ton-client-web-js")
+                sed -i 's@"version"\\s*:\\s*"[0-9]*\\.[0-9]*\\.[0-9]*"@"version": "${G_binversion}"@g' package.json
+                sed -i 's@"ton-client-js"\\s*:\\s*"^[0-9]*\\.[0-9]*\\.[0-9]*"@"ton-client-js": "^${G_binversion}"@g' package.json
+                ;;  
+
+            "ton-client-react-native-js")
+                sed -i 's@"version"\\s*:\\s*"[0-9]*\\.[0-9]*\\.[0-9]*"@"version": "${G_binversion}"@g' package.json
+                sed -i 's@"ton-client-js"\\s*:\\s*"^[0-9]*\\.[0-9]*\\.[0-9]*"@"ton-client-js": "^${G_binversion}"@g' package.json
+                ;;  
+            *)
+                echo "Error no ${ton_repo_name}"
+                ;;
+            esac
+            git add .
+            git commit -m 'automate Jenkins branch ${GIT_BRANCH}'
+            git push --set-upstream origin ${GIT_BRANCH}
+            echo "Branch ${GIT_BRANCH} in $ton_client_url was created."
+        fi
+    """ ,  returnStdout: true).trim()
+}
+
+
 pipeline {
     agent none
     tools {nodejs "Node12.8.0"}
@@ -564,31 +616,8 @@ pipeline {
                     }
                     steps {
                         script {
-                            ton_client_path = '~/workdir/ton-client-rs-version'
-                            ton_client_url = 'git@github.com:tonlabs/ton-client-rs.git'
-
                             sshagent (credentials: [G_gitcred]) {
-                                sh """
-                                    rm -rf ${ton_client_path}
-                                    mkdir -pv ${ton_client_path}
-                                    git clone ${ton_client_url} ${ton_client_path}
-                                    cd ${ton_client_path}
-                                    echo
-                                    if (git ls-remote --heads --exit-code ${ton_client_url} ${GIT_BRANCH})
-                                    then
-                                        echo "Branch name ${GIT_BRANCH} in ${ton_client_url} already exists."
-                                    else
-                                        echo "Branch ${GIT_BRANCH} in ${ton_client_url} not exists."
-                                        git checkout -b ${GIT_BRANCH}
-                                        sed -i 's@^version\\s*=\\s*"[0-9]*\\.[0-9]*\\.[0-9]*"@version = "${G_binversion}"@g' Cargo.toml
-                                        git status
-                                        git add .
-                                        git commit -m 'automate Jenkins branch ${GIT_BRANCH}'
-                                        git push --set-upstream origin ${GIT_BRANCH}
-                                        echo "Branch ${GIT_BRANCH} in ${ton_client_url} was created."
-                                    fi
-                                """
-
+                                checkAndCreateBranch('git@github.com:tonlabs/ton-client-rs.git')
                             }
                         }
                     }
@@ -603,31 +632,8 @@ pipeline {
                     }
                     steps {
                         script {
-                            ton_client_path = '~/workdir/ton-client-js-version'
-                            ton_client_url = 'git@github.com:tonlabs/ton-client-js.git'
-                            ton_filename = 'package.json'
-
                             sshagent (credentials: [G_gitcred]) {
-                                sh """
-                                    rm -rf ${ton_client_path}
-                                    mkdir -pv ${ton_client_path}
-                                    git clone ${ton_client_url} ${ton_client_path}
-                                    cd ${ton_client_path}
-                                    if (git ls-remote --heads --exit-code ${ton_client_url} ${GIT_BRANCH} )
-                                    then
-                                        echo "Branch name ${GIT_BRANCH} in ${ton_client_url} already exists."
-                                    else
-                                        echo "Branch ${GIT_BRANCH} in ${ton_client_url} not exists."
-                                        git checkout -b ${GIT_BRANCH}
-                                        sed -i 's@"version"\\s*:\\s*"[0-9]*\\.[0-9]*\\.[0-9]*"@"version": "${G_binversion}"@g' ${ton_filename}
-                                        git status
-                                        git add .
-                                        git commit -m 'automate Jenkins branch ${GIT_BRANCH}'
-                                        git push --set-upstream origin ${GIT_BRANCH}
-                                        echo "Branch ${GIT_BRANCH} in ${ton_client_url} was created."
-                                    fi
-                                """
-
+                                checkAndCreateBranch("git@github.com:tonlabs/ton-client-js.git")
                             }
                         }
                     }
@@ -642,32 +648,8 @@ pipeline {
                     }
                     steps {
                         script {
-                            ton_client_path = '~/workdir/ton-client-node-js-version'
-                            ton_client_url = 'git@github.com:tonlabs/ton-client-node-js.git'
-                            ton_filename = 'package.json'
-
                             sshagent (credentials: [G_gitcred]) {
-                                sh """
-                                    rm -rf ${ton_client_path}
-                                    mkdir -pv ${ton_client_path}
-                                    git clone ${ton_client_url} ${ton_client_path}
-                                    cd ${ton_client_path}
-                                    if (git ls-remote --heads --exit-code ${ton_client_url} ${GIT_BRANCH} )
-                                    then
-                                        echo "Branch name ${GIT_BRANCH} in ${ton_client_url} already exists."
-                                    else
-                                        echo "Branch ${GIT_BRANCH} in ${ton_client_url} not exists."
-                                        git checkout -b ${GIT_BRANCH}
-                                        sed -i 's@"version"\\s*:\\s*"[0-9]*\\.[0-9]*\\.[0-9]*"@"version": "${G_binversion}"@g' ${ton_filename}
-                                        sed -i 's@"ton-client-js"\\s*:\\s*"^[0-9]*\\.[0-9]*\\.[0-9]*"@"ton-client-js": "^${G_binversion}"@g' ${ton_filename}
-                                        git status
-                                        git add .
-                                        git commit -m 'automate Jenkins branch ${GIT_BRANCH}'
-                                        git push --set-upstream origin ${GIT_BRANCH}
-                                        echo "Branch ${GIT_BRANCH} in ${ton_client_url} was created."
-                                    fi
-                                """
-
+                                checkAndCreateBranch("git@github.com:tonlabs/ton-client-node-js.git")
                             }
                         }
                     }
@@ -682,32 +664,23 @@ pipeline {
                     }
                     steps {
                         script {
-                            ton_client_path = '~/workdir/ton-client-web-version'
-                            ton_client_url = 'git@github.com:tonlabs/ton-client-web-js.git'
-                            ton_filename = 'package.json'
-
                             sshagent (credentials: [G_gitcred]) {
-                                sh """
-                                    rm -rf ${ton_client_path}
-                                    mkdir -pv ${ton_client_path}
-                                    git clone ${ton_client_url} ${ton_client_path}
-                                    cd ${ton_client_path}
-                                    if (git ls-remote --heads --exit-code ${ton_client_url} ${GIT_BRANCH} )
-                                    then
-                                        echo "Branch name ${GIT_BRANCH} in ${ton_client_url} already exists."
-                                    else
-                                        echo "Branch ${GIT_BRANCH} in ${ton_client_url} not exists."
-                                        git checkout -b ${GIT_BRANCH}
-                                        sed -i 's@"version"\\s*:\\s*"[0-9]*\\.[0-9]*\\.[0-9]*"@"version": "${G_binversion}"@g' ${ton_filename}
-                                        sed -i 's@"ton-client-js"\\s*:\\s*"^[0-9]*\\.[0-9]*\\.[0-9]*"@"ton-client-js": "^${G_binversion}"@g' ${ton_filename}
-                                        git status
-                                        git add .
-                                        git commit -m 'automate Jenkins branch ${GIT_BRANCH}'
-                                        git push --set-upstream origin ${GIT_BRANCH}
-                                        echo "Branch ${GIT_BRANCH} in ${ton_client_url} was created."
-                                    fi
-                                """
-
+                                checkAndCreateBranch("git@github.com:tonlabs/ton-client-web-js.git")
+                            }
+                        }
+                    }
+                }
+                stage('Check branch in ton-client-react-native-js') {
+                    agent any
+                    when {
+                        expression {
+                            GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                        }
+                    }
+                    steps {
+                        script {
+                            sshagent (credentials: [G_gitcred]) {
+                                checkAndCreateBranch("git@github.com:tonlabs/ton-client-react-native-js.git")
                             }
                         }
                     }
