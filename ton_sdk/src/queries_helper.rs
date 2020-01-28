@@ -174,10 +174,12 @@ pub fn query(table: &str, filter: &str, fields: &str, order_by: Option<OrderBy>,
                     // try to extract the record value from the answer
                     let records_array = &value["data"][&table];
                     if records_array.is_null() {
-                        bail!(SdkErrorKind::InvalidData { msg: format!("Invalid query answer: {}", value) } )
+                        Err(SdkError::from(
+                            SdkErrorKind::InvalidData { msg: format!("Invalid query answer: {}", value) }
+                        ))
+                    } else {
+                        Ok(records_array.clone())
                     }
-                    
-                    Ok(records_array.clone())
                 }
             }
         });

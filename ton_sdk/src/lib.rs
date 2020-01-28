@@ -29,6 +29,7 @@ extern crate ed25519_dalek;
 extern crate sha2;
 extern crate base64;
 extern crate chrono;
+#[macro_use]
 extern crate failure;
 extern crate crc_any;
 extern crate num_traits;
@@ -36,8 +37,6 @@ extern crate num_traits;
 #[cfg(feature = "node_interaction")]
 #[macro_use]
 extern crate lazy_static;
-#[macro_use]
-extern crate error_chain;
 #[cfg(feature = "node_interaction")]
 #[macro_use]
 extern crate serde_json;
