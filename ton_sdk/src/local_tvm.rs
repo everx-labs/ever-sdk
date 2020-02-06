@@ -61,8 +61,9 @@ pub(crate) fn call_tvm(
     
     let mut ctrls = SaveList::new();
     ctrls.put(4, &mut StackItem::Cell(data.unwrap_or_default()))
-        .map_err(|err| SdkError::from(SdkErrorKind::InternalError(
-            format!("Cannot put data to register: {}", err))))?;
+        .map_err(|err| SdkError::from(SdkErrorKind::InternalError {
+            msg: format!("Cannot put data to register: {}", err)
+        }))?;
 
     let mut sci = SmartContractInfo::with_myself(address.write_to_new_cell()?.into());
     *sci.unix_time_mut() = timestamp;
@@ -73,8 +74,9 @@ pub(crate) fn call_tvm(
     }
 
     ctrls.put(7, &mut sci.into_temp_data())
-        .map_err(|err| SdkError::from(SdkErrorKind::InternalError(
-            format!("Cannot put data to register: {}", err))))?;
+        .map_err(|err| SdkError::from(SdkErrorKind::InternalError {
+            msg: format!("Cannot put data to register: {}", err)
+        }))?;
 
     let gas_limit = 1_000_000_000;
     let gas = Gas::new(gas_limit, 0, gas_limit, 10);
@@ -107,7 +109,7 @@ pub struct TransactionFees {
 
 fn grams_to_u64(grams: &ton_block::types::Grams) -> SdkResult<u64> {
     grams.0.to_u64()
-        .ok_or(SdkErrorKind::LocalCallError("Cannot convert rams value".to_owned()).into())
+        .ok_or(SdkErrorKind::LocalCallError { msg: "Cannot convert rams value".to_owned() }.into())
 }
 
 pub(crate) fn call_executor(account: Account, msg: Message, config: &BlockchainConfig, timestamp: u32)
@@ -133,33 +135,34 @@ pub(crate) fn call_executor(account: Account, msg: Message, config: &BlockchainC
 
         if let Some(storage_phase) = descr.storage_ph {
             if storage_phase.status_change != AccStatusChange::Unchanged {
-                bail!(SdkErrorKind::LocalCallError(
-                    format!("Storage phase failed. Status change: {:?}", storage_phase.status_change)));
+                bail!(SdkErrorKind::LocalCallError {
+                    msg: format!("Storage phase failed. Status change: {:?}", storage_phase.status_change)
+                });
             }
             fees.storage_fee = grams_to_u64(&storage_phase.storage_fees_collected)?;
         } else {
             if is_aborted {
-                bail!(SdkErrorKind::LocalCallError("No storage phase".to_owned()));
+                bail!(SdkErrorKind::LocalCallError { msg: "No storage phase".to_owned() } );
             }
         }
 
         fees.gas_fee = match descr.compute_ph {
             TrComputePhase::Vm(phase) => { 
                 if !phase.success {
-                    bail!(SdkErrorKind::LocalCallError(
-                        format!("Compute phase failed. Exit code: {}", phase.exit_code)))
+                    bail!(SdkErrorKind::LocalCallError {
+                        msg: format!("Compute phase failed. Exit code: {}", phase.exit_code) } )
                 }
                 grams_to_u64(&phase.gas_fees)?
             },
-            TrComputePhase::Skipped(skipped) => bail!(SdkErrorKind::LocalCallError(
-                format!("Compute phase skipped. Reason: {:?}", skipped.reason)))
+            TrComputePhase::Skipped(skipped) => bail!(SdkErrorKind::LocalCallError {
+                msg: format!("Compute phase skipped. Reason: {:?}", skipped.reason) } )
         };
 
         let action_phase = descr.action
-            .ok_or(SdkErrorKind::LocalCallError("No action phase".to_owned()))?;
+            .ok_or(SdkErrorKind::LocalCallError { msg: "No action phase".to_owned() } )?;
         if !action_phase.success {
-            bail!(SdkErrorKind::LocalCallError(
-                format!("Action phase failed. Result: {:?}", action_phase.result_code)));
+            bail!(SdkErrorKind::LocalCallError {
+                msg: format!("Action phase failed. Result: {:?}", action_phase.result_code) } );
         }
         fees.out_msgs_fwd_fee = grams_to_u64(&action_phase.total_fwd_fees.unwrap_or_default())?;
 
@@ -175,7 +178,7 @@ pub(crate) fn call_executor(account: Account, msg: Message, config: &BlockchainC
         // inbound_fwd_fees is not represented in transaction fields so need to calculate it
         fees.in_msg_fwd_fee = fees.total_account_fees - fees.storage_fee - fees.gas_fee - fees.out_msgs_fwd_fee;
     } else {
-        return Err(SdkErrorKind::LocalCallError("Invalid transaction type".to_owned()).into());
+        return Err(SdkErrorKind::LocalCallError { msg: "Invalid transaction type".to_owned() }.into());
     }
 
     let mut messages = vec![];

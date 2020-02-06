@@ -71,7 +71,7 @@ impl Message {
                         Ok(None)
                     } else {
                         let msg: Message = serde_json::from_value(val)
-                            .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing message: {}", err)))?;
+                            .map_err(|err| SdkErrorKind::InvalidData { msg: format!("error parsing message: {}", err) } )?;
 
                         Ok(Some(msg))
                     }

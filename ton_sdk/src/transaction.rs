@@ -75,7 +75,7 @@ impl Transaction {
                         Ok(None)
                     } else {
                         let tr: Transaction = serde_json::from_value(val)
-                            .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing transaction: {}", err)))?;
+                            .map_err(|err| SdkErrorKind::InvalidData { msg: format!("error parsing transaction: {}", err) } )?;
 
                         Ok(Some(tr))
                     }
@@ -98,7 +98,7 @@ impl Transaction {
     pub fn load_in_message(&self) -> SdkResult<Box<dyn Stream<Item = Option<Message>, Error = SdkError>>> {
         match self.in_message_id() {
             Some(m) => Message::load(&m),
-            None => bail!(SdkErrorKind::InvalidOperation("transaction doesn't have inbound message".into()))
+            None => bail!(SdkErrorKind::InvalidOperation { msg: "transaction doesn't have inbound message".into() } )
         }
     }
 

@@ -98,14 +98,14 @@ impl ContractImage {
 
         let mut code_roots = deserialize_cells_tree(code)?;
         if code_roots.len() != 1 {
-            bail!(SdkErrorKind::InvalidData("Invalid code's bag of cells".into()));
+            bail!(SdkErrorKind::InvalidData { msg: "Invalid code's bag of cells".into() } );
         }
         state_init.set_code(code_roots.remove(0));
 
         if let Some(data_) = data {
             let mut data_roots = deserialize_cells_tree(data_)?;
             if data_roots.len() != 1 {
-                bail!(SdkErrorKind::InvalidData("Invalid data's bag of cells".into()));
+                bail!(SdkErrorKind::InvalidData { msg: "Invalid data's bag of cells".into() } );
             }
             state_init.set_data(data_roots.remove(0));
         }
@@ -113,7 +113,7 @@ impl ContractImage {
         if let Some(library_) = library {
             let mut library_roots = deserialize_cells_tree(library_)?;
             if library_roots.len() != 1 {
-                bail!(SdkErrorKind::InvalidData("Invalid library's bag of cells".into()));
+                bail!(SdkErrorKind::InvalidData { msg: "Invalid library's bag of cells".into() } );
             }
             state_init.set_library(library_roots.remove(0));
         }
@@ -135,7 +135,7 @@ impl ContractImage {
 
         let mut si_roots = deserialize_cells_tree(state_init_bag)?;
         if si_roots.len() != 1 {
-            bail!(SdkErrorKind::InvalidData("Invalid state init's bag of cells".into()));
+            bail!(SdkErrorKind::InvalidData { msg: "Invalid state init's bag of cells".into() } );
         }
 
         let state_init : StateInit
@@ -178,7 +178,7 @@ impl ContractImage {
 
                 Ok(data)
             },
-            None => bail!(SdkErrorKind::InvalidData("State init has no code".to_owned()))
+            None => bail!(SdkErrorKind::InvalidData { msg: "State init has no code".to_owned() } )
         }
     }
 
@@ -191,7 +191,7 @@ impl ContractImage {
 
                 Ok(data)
             },
-            None => bail!(SdkErrorKind::InvalidData("State init has no data".to_owned()))
+            None => bail!(SdkErrorKind::InvalidData { msg: "State init has no data".to_owned() } )
         }
     }
 
@@ -248,7 +248,7 @@ pub fn decode_std_base64(data: &str) -> SdkResult<MsgAddressInt> {
     crc.digest(&vec[..34]);
 
     if crc.get_crc_vec_be() != &vec[34..36] || vec[0] & 0x3f != 0x11 {
-        bail!(SdkErrorKind::InvalidArg(data.to_owned()));
+        bail!(SdkErrorKind::InvalidArg { msg: data.to_owned() } );
     };
 
     Ok(MsgAddressInt::with_standart(None, vec[1] as i8, vec[2..34].into())?)
@@ -273,7 +273,7 @@ pub fn encode_base64(address: &MsgAddressInt, bounceable: bool, test: bool, as_u
         } else {
             Ok(result)
         }
-    } else { bail!(SdkErrorKind::InvalidData("Non-std address".to_owned())) }
+    } else { bail!(SdkErrorKind::InvalidData { msg: "Non-std address".to_owned() } ) }
 }
 
 #[allow(dead_code)]
@@ -293,7 +293,7 @@ impl Contract {
                         Ok(None)
                     } else {
                         let acc: Contract = serde_json::from_value(val)
-                            .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing account: {}", err)))?;
+                            .map_err(|err| SdkErrorKind::InvalidData { msg: format!("error parsing account: {}", err) } )?;
 
                         Ok(Some(acc))
                     }
@@ -315,7 +315,7 @@ impl Contract {
             ACCOUNT_FIELDS)?;
 
         let acc: Contract = serde_json::from_value(value)
-            .map_err(|err| SdkErrorKind::InvalidData(format!("error parsing account: {}", err)))?;
+            .map_err(|err| SdkErrorKind::InvalidData { msg: format!("error parsing account: {}", err) } )?;
 
         Ok(acc)
     }
@@ -338,8 +338,7 @@ impl Contract {
         -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError>>> {
 
         // pack params into bag of cells via ABI
-        let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)
-            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
+        let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)?;
 
         let msg = Self::create_message(address, msg_body.into())?;
 
@@ -357,8 +356,7 @@ impl Contract {
     pub fn deploy_json(func: String, input: String, abi: String, image: ContractImage, key_pair: Option<&Keypair>, workchain_id: i32)
         -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError>>> {
 
-        let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)
-            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
+        let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)?;
 
         let cell = msg_body.into();
         let msg = Self::create_deploy_message(Some(cell), image, workchain_id)?;
@@ -463,7 +461,7 @@ impl Contract {
     /// Returns outbound messages generated by contract function and gas fee function consumed
     pub fn local_call_tvm(&self, message: TvmMessage) -> SdkResult<Vec<Message>> {
         let code = self.code.clone().ok_or(
-            SdkError::from(SdkErrorKind::InvalidData("Account has no code".to_owned())))?;
+            SdkError::from(SdkErrorKind::InvalidData { msg: "Account has no code".to_owned() } ))?;
                 
         let (tvm_messages, _) = local_tvm::call_tvm(
             self.balance,
@@ -489,8 +487,7 @@ impl Contract {
          -> SdkResult<Vec<Message>>
     {
         // pack params into bag of cells via ABI
-        let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)
-            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
+        let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)?;
 
         let address = self.address();
 
@@ -523,8 +520,7 @@ impl Contract {
          -> SdkResult<LocalCallResult>
     {
         // pack params into bag of cells via ABI
-        let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)
-            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
+        let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)?;
 
         let address = self.address();
 
@@ -538,7 +534,6 @@ impl Contract {
         -> SdkResult<String> {
 
         ton_abi::json_abi::decode_function_response(abi, function, response, internal)
-            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
@@ -555,7 +550,6 @@ impl Contract {
         -> SdkResult<DecodedMessage> {
 
         ton_abi::json_abi::decode_unknown_function_response(abi, response, internal)
-            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
@@ -572,7 +566,6 @@ impl Contract {
         -> SdkResult<DecodedMessage> {
 
         ton_abi::json_abi::decode_unknown_function_call(abi, response, internal)
-            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
@@ -593,8 +586,7 @@ impl Contract {
         abi: String, internal: bool, key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
 
         // pack params into bag of cells via ABI
-        let msg_body = ton_abi::encode_function_call(abi, func, input, internal, key_pair)
-            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
+        let msg_body = ton_abi::encode_function_call(abi, func, input, internal, key_pair)?;
 
         let address = address;
         let msg = Self::create_message(address, msg_body.into())?;
@@ -620,8 +612,7 @@ impl Contract {
         abi: String) -> SdkResult<MessageToSign> {
         
         // pack params into bag of cells via ABI
-        let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(abi, func, input)
-            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
+        let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(abi, func, input)?;
 
         let msg = Self::create_message(address, msg_body.into())?;
 
@@ -639,8 +630,7 @@ impl Contract {
     pub fn construct_deploy_message_json(func: String, input: String, abi: String, image: ContractImage,
         key_pair: Option<&Keypair>, workchain_id: i32) -> SdkResult<(Vec<u8>, MessageId)> {
 
-        let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)
-            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
+        let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)?;
 
         let cell = msg_body.into();
         let msg = Self::create_deploy_message(Some(cell), image, workchain_id)?;
@@ -677,8 +667,7 @@ impl Contract {
     pub fn get_deploy_message_bytes_for_signing(func: String, input: String, abi: String,
         image: ContractImage, workchain_id: i32) -> SdkResult<MessageToSign> {
 
-        let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(abi, func, input)
-                .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
+        let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(abi, func, input)?;
 
         let cell = msg_body.into();
         let msg = Self::create_deploy_message(Some(cell), image, workchain_id)?;
@@ -701,10 +690,9 @@ impl Contract {
         let mut message: TvmMessage = TvmMessage::construct_from(&mut slice)?;
 
         let body = message.body()
-            .ok_or(SdkError::from(SdkErrorKind::InvalidData("No message body".to_owned())))?;
+            .ok_or(SdkError::from(SdkErrorKind::InvalidData { msg: "No message body".to_owned() } ))?;
 
-        let signed_body = ton_abi::add_sign_to_function_call(signature, public_key, body)
-            .map_err(|err| SdkError::from(SdkErrorKind::AbiError(err)))?;
+        let signed_body = ton_abi::add_sign_to_function_call(signature, public_key, body)?;
 
         *message.body_mut() = Some(signed_body.into());
             
@@ -751,7 +739,7 @@ impl Contract {
         let mut response_cells = deserialize_cells_tree(&mut Cursor::new(data))?;
 
         if response_cells.len() != 1 {
-            return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
+            bail!(SdkErrorKind::InvalidData { msg: "Deserialize message error".to_owned() } );
         }
 
         Ok(response_cells.remove(0).into())
@@ -762,7 +750,7 @@ impl Contract {
         let mut root_cells = deserialize_cells_tree(&mut Cursor::new(message))?;
 
         if root_cells.len() != 1 { 
-            return Err(SdkError::from(SdkErrorKind::InvalidData("Deserialize message error".to_owned())));
+            bail!(SdkErrorKind::InvalidData { msg: "Deserialize message error".to_owned() } );
         }
 
         Ok(TvmMessage::construct_from(&mut root_cells.remove(0).into())?)
