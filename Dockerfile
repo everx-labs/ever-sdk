@@ -9,7 +9,6 @@ RUN addgroup --gid 1000 jenkins && \
     adduser -D -G jenkins jenkins
 COPY --chown=jenkins:jenkins Cargo.* *.md LICENSE /tonlabs/TON-SDK/
 COPY --chown=jenkins:jenkins graphite      /tonlabs/TON-SDK/graphite
-COPY --chown=jenkins:jenkins target        /tonlabs/TON-SDK/target
 COPY --chown=jenkins:jenkins ton_client    /tonlabs/TON-SDK/ton_client
 COPY --chown=jenkins:jenkins ton_sdk       /tonlabs/TON-SDK/ton_sdk
 COPY --chown=jenkins:jenkins wallet_client /tonlabs/TON-SDK/wallet_client
