@@ -67,35 +67,37 @@ pipeline {
                     additionalBuildArgs '--target ton-sdk-src'
                 }
             }
-            stage('Checkout') {
-                steps {
-                    script {
-                        G_gitproject = G_giturl.substring(15,G_giturl.length()-4)
-                        G_gitproject_dir = G_gitproject.substring(8, G_gitproject.length())
-                        C_TEXT = sh (script: "git show -s --format=%s ${GIT_COMMIT}", \
-                            returnStdout: true).trim()
-                        C_AUTHOR = sh (script: "git show -s --format=%an ${GIT_COMMIT}", \
-                            returnStdout: true).trim()
-                        C_COMMITER = sh (script: "git show -s --format=%cn ${GIT_COMMIT}", \
-                            returnStdout: true).trim()
-                        C_HASH = sh (script: "git show -s --format=%h ${GIT_COMMIT}", \
-                            returnStdout: true).trim()
-                        C_PROJECT = G_giturl.substring(15,G_giturl.length()-4)
-                        C_GITURL = sh (script: "echo ${GIT_URL}",returnStdout: true).trim()
-                        C_GITCOMMIT = sh (script: "echo ${GIT_COMMIT}", \
-                            returnStdout: true).trim()
-                        G_binversion = sh (script: 'cat ton_client/client/Cargo.toml | grep -Eo "^version = \\".*\\"" | grep -Eo "[0-9\\.]*"', \
-                            returnStdout: true).trim()
-                    }
-                    echo "Version: ${getVar(G_binversion)}."
-                    echo "Branch: ${GIT_BRANCH}"
-                    echo "Possible RC: ${getVar(G_binversion)}-rc"
-                }    
-            }
-            stage('Fix Cargo path') {
-                steps {
-                    script {
-                        sh
+            stages {
+                stage('Checkout') {
+                    steps {
+                        script {
+                            G_gitproject = G_giturl.substring(15,G_giturl.length()-4)
+                            G_gitproject_dir = G_gitproject.substring(8, G_gitproject.length())
+                            C_TEXT = sh (script: "git show -s --format=%s ${GIT_COMMIT}", \
+                                returnStdout: true).trim()
+                            C_AUTHOR = sh (script: "git show -s --format=%an ${GIT_COMMIT}", \
+                                returnStdout: true).trim()
+                            C_COMMITER = sh (script: "git show -s --format=%cn ${GIT_COMMIT}", \
+                                returnStdout: true).trim()
+                            C_HASH = sh (script: "git show -s --format=%h ${GIT_COMMIT}", \
+                                returnStdout: true).trim()
+                            C_PROJECT = G_giturl.substring(15,G_giturl.length()-4)
+                            C_GITURL = sh (script: "echo ${GIT_URL}",returnStdout: true).trim()
+                            C_GITCOMMIT = sh (script: "echo ${GIT_COMMIT}", \
+                                returnStdout: true).trim()
+                            G_binversion = sh (script: 'cat ton_client/client/Cargo.toml | grep -Eo "^version = \\".*\\"" | grep -Eo "[0-9\\.]*"', \
+                                returnStdout: true).trim()
+                        }
+                        echo "Version: ${getVar(G_binversion)}."
+                        echo "Branch: ${GIT_BRANCH}"
+                        echo "Possible RC: ${getVar(G_binversion)}-rc"
+                    }    
+                }
+                stage('Fix Cargo path') {
+                    steps {
+                        script {
+                            sh
+                        }
                     }
                 }
             }
