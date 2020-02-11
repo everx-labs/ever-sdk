@@ -22,13 +22,84 @@ pipeline {
         disableConcurrentBuilds()
         parallelsAlwaysFailFast()
     }
-    triggers {
-        upstream(
-            upstreamProjects: 'ton-labs-vm/master,SDK/ton-labs-abi/master',
-            threshold: hudson.model.Result.SUCCESS
+    parameters {
+
+        booleanParam (
+            defaultValue: false,
+            description: 'Promote image built to be used as latest',
+            name : 'FORCE_PROMOTE_LATEST'
+        )
+        string(
+            name:'dockerImage_ton_types',
+            defaultValue: 'tonlabs/ton-types:latest',
+            description: 'Existing ton-types image name'
+        )
+        string(
+            name:'dockerImage_ton_block',
+            defaultValue: 'tonlabs/ton-block:latest',
+            description: 'Existing ton-block image name'
+        )
+        string(
+            name:'dockerImage_ton_vm',
+            defaultValue: 'tonlabs/ton-vm:latest',
+            description: 'Existing ton-vm image name'
+        )
+        string(
+            name:'dockerImage_ton_labs_abi',
+            defaultValue: 'tonlabs/ton-labs-abi:latest',
+            description: 'Existing ton-labs-abi image name'
+        )
+        string(
+            name:'dockerImage_ton_executor',
+            defaultValue: 'tonlabs/ton-executor:latest',
+            description: 'Existing ton-executor image name'
+        )
+        string(
+            name:'dockerImage_ton_sdk',
+            defaultValue: '',
+            description: 'Expexted TON-SDK image name'
         )
     }
     stages {
+        stage('Preinit') {
+            agent {
+                dockerfile {
+                    additionalBuildArgs '--target ton-sdk-src'
+                }
+            }
+            stage('Checkout') {
+                steps {
+                    script {
+                        G_gitproject = G_giturl.substring(15,G_giturl.length()-4)
+                        G_gitproject_dir = G_gitproject.substring(8, G_gitproject.length())
+                        C_TEXT = sh (script: "git show -s --format=%s ${GIT_COMMIT}", \
+                            returnStdout: true).trim()
+                        C_AUTHOR = sh (script: "git show -s --format=%an ${GIT_COMMIT}", \
+                            returnStdout: true).trim()
+                        C_COMMITER = sh (script: "git show -s --format=%cn ${GIT_COMMIT}", \
+                            returnStdout: true).trim()
+                        C_HASH = sh (script: "git show -s --format=%h ${GIT_COMMIT}", \
+                            returnStdout: true).trim()
+                        C_PROJECT = G_giturl.substring(15,G_giturl.length()-4)
+                        C_GITURL = sh (script: "echo ${GIT_URL}",returnStdout: true).trim()
+                        C_GITCOMMIT = sh (script: "echo ${GIT_COMMIT}", \
+                            returnStdout: true).trim()
+                        G_binversion = sh (script: 'cat ton_client/client/Cargo.toml | grep -Eo "^version = \\".*\\"" | grep -Eo "[0-9\\.]*"', \
+                            returnStdout: true).trim()
+                    }
+                    echo "Version: ${getVar(G_binversion)}."
+                    echo "Branch: ${GIT_BRANCH}"
+                    echo "Possible RC: ${getVar(G_binversion)}-rc"
+                }    
+            }
+            stage('Fix Cargo path') {
+                steps {
+                    script {
+                        sh
+                    }
+                }
+            }
+        }
         stage('Initialize') {
             agent any
             steps {
