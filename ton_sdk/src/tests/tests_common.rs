@@ -151,7 +151,7 @@ fn is_message_done(status: TransactionProcessingStatus) -> bool {
     (status == TransactionProcessingStatus::Finalized)
 }
 
-fn wait_message_processed(changes_stream: Box<dyn Stream<Item = Transaction, Error = SdkError>>) -> Transaction {
+fn wait_message_processed(changes_stream: Box<dyn Stream<Item = Transaction, Error = SdkError> + Send>) -> Transaction {
     for state in changes_stream.wait() {
         match state {
             Ok(s) => {

@@ -281,7 +281,7 @@ pub fn encode_base64(address: &MsgAddressInt, bounceable: bool, test: bool, as_u
 impl Contract {
 
     // Asynchronously loads a Contract instance or None if contract with given id is not exists
-    pub fn load(address: &MsgAddressInt) -> SdkResult<Box<dyn Stream<Item = Option<Contract>, Error = SdkError>>> {
+    pub fn load(address: &MsgAddressInt) -> SdkResult<Box<dyn Stream<Item = Option<Contract>, Error = SdkError> + Send>> {
         let id = address.to_string();
 
         let map = queries_helper::load_record_fields(
@@ -322,7 +322,7 @@ impl Contract {
 
     // Asynchronously loads a Contract's json representation
     // or null if message with given id is not exists
-    pub fn load_json(id: AccountId) -> SdkResult<Box<dyn Stream<Item = String, Error = SdkError>>> {
+    pub fn load_json(id: AccountId) -> SdkResult<Box<dyn Stream<Item = String, Error = SdkError> + Send>> {
 
         let map = queries_helper::load_record_fields(CONTRACTS_TABLE_NAME, &id.to_hex_string(), ACCOUNT_FIELDS)?
             .map(|val| val.to_string());
@@ -335,7 +335,7 @@ impl Contract {
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
     pub fn call_json(address: MsgAddressInt, func: String, input: String, abi: String, key_pair: Option<&Keypair>)
-        -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError>>> {
+        -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError> + Send>> {
 
         // pack params into bag of cells via ABI
         let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)?;
@@ -354,7 +354,7 @@ impl Contract {
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
     pub fn deploy_json(func: String, input: String, abi: String, image: ContractImage, key_pair: Option<&Keypair>, workchain_id: i32)
-        -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError>>> {
+        -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError> + Send>> {
 
         let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)?;
 
@@ -370,7 +370,7 @@ impl Contract {
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
     pub fn deploy_no_constructor(image: ContractImage, workchain_id: i32)
-        -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError>>> {
+        -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError> + Send>> {
         let msg = Self::create_deploy_message(None, image, workchain_id)?;
 
         let msg_id = Self::_send_message(msg)?;
@@ -382,7 +382,7 @@ impl Contract {
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
     pub fn send_message(msg: TvmMessage)
-        -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError>>> 
+        -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError> + Send>> 
     {
         // send message by Kafka
         let msg_id = Self::_send_message(msg)?;
@@ -403,7 +403,7 @@ impl Contract {
     }
 
     pub fn subscribe_transaction_processing(message_id: &MessageId) ->
-        SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError>>> {
+        SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError> + Send>> {
 
         let subscribe_stream = queries_helper::subscribe_record_updates(
             TRANSACTIONS_TABLE_NAME,
