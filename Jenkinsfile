@@ -1,5 +1,6 @@
 G_giturl = "git@github.com:tonlabs/TON-SDK.git"
 G_gitcred = 'TonJenSSH'
+G_docker_creds = 'dockerhubLanin'
 G_container = "atomxy/empty-ton-sdk-js:20191128"
 C_PROJECT = "NotSet"
 C_COMMITER = "NotSet"
@@ -15,7 +16,9 @@ def getVar(Gvar) {
 }
 
 pipeline {
-    agent none
+    agent {
+        node 'master'
+    }
     tools {nodejs "Node12.8.0"}
     options {
         buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '10')
@@ -61,49 +64,7 @@ pipeline {
         )
     }
     stages {
-        stage('Preinit') {
-            agent {
-                dockerfile {
-                    additionalBuildArgs '--target ton-sdk-src'
-                }
-            }
-            stages {
-                stage('Checkout') {
-                    steps {
-                        script {
-                            G_gitproject = G_giturl.substring(15,G_giturl.length()-4)
-                            G_gitproject_dir = G_gitproject.substring(8, G_gitproject.length())
-                            C_TEXT = sh (script: "git show -s --format=%s ${GIT_COMMIT}", \
-                                returnStdout: true).trim()
-                            C_AUTHOR = sh (script: "git show -s --format=%an ${GIT_COMMIT}", \
-                                returnStdout: true).trim()
-                            C_COMMITER = sh (script: "git show -s --format=%cn ${GIT_COMMIT}", \
-                                returnStdout: true).trim()
-                            C_HASH = sh (script: "git show -s --format=%h ${GIT_COMMIT}", \
-                                returnStdout: true).trim()
-                            C_PROJECT = G_giturl.substring(15,G_giturl.length()-4)
-                            C_GITURL = sh (script: "echo ${GIT_URL}",returnStdout: true).trim()
-                            C_GITCOMMIT = sh (script: "echo ${GIT_COMMIT}", \
-                                returnStdout: true).trim()
-                            G_binversion = sh (script: 'cat ton_client/client/Cargo.toml | grep -Eo "^version = \\".*\\"" | grep -Eo "[0-9\\.]*"', \
-                                returnStdout: true).trim()
-                        }
-                        echo "Version: ${getVar(G_binversion)}."
-                        echo "Branch: ${GIT_BRANCH}"
-                        echo "Possible RC: ${getVar(G_binversion)}-rc"
-                    }    
-                }
-                stage('Fix Cargo path') {
-                    steps {
-                        script {
-                            sh
-                        }
-                    }
-                }
-            }
-        }
         stage('Initialize') {
-            agent any
             steps {
                 script {
                     G_gitproject = G_giturl.substring(15,G_giturl.length()-4)
@@ -126,6 +87,67 @@ pipeline {
                 echo "Version: ${getVar(G_binversion)}."
                 echo "Branch: ${GIT_BRANCH}"
                 echo "Possible RC: ${getVar(G_binversion)}-rc"
+            }
+        }
+        stage('Switch to file source') {
+            steps {
+                sh """
+                    node pathFix.js ton_sdk/Cargo.toml \"ton_abi = {.*\" \"ton_abi = { path = \\\"/tonlabs/ton-labs-abi\\\" }\"
+                    node pathFix.js ton_sdk/Cargo.toml \"ton_block = {.*\" \"ton_block = { path = \\\"/tonlabs/ton-block\\\" }\"
+                    node pathFix.js ton_sdk/Cargo.toml \"ton_vm = {.*\" \"ton_vm = { path = \\\"/tonlabs/ton-vm\\\", default-features = false }\"
+                    node pathFix.js ton_sdk/Cargo.toml \"ton_types = {.*\" \"ton_types = { path = \\\"/tonlabs/ton-types\\\" }\"
+                    node pathFix.js ton_sdk/Cargo.toml \"ton_executor = {.*\" \"ton_executor = { path = \\\"/tonlabs/ton-executor\\\" }\"
+
+                    node pathFix.js ton_client/client/Cargo.toml \"ton_block = {.*\" \"ton_block = { path = \\\"/tonlabs/ton-block\\\" }\"
+                    node pathFix.js ton_client/client/Cargo.toml \"ton_vm = {.*\" \"ton_vm = { path = \\\"/tonlabs/ton-vm\\\", default-features = false }\"
+                    node pathFix.js ton_client/client/Cargo.toml \"ton_types = {.*\" \"ton_types = { path = \\\"/tonlabs/ton-types\\\" }\"
+                    
+                    node pathFix.js wallet_client/Cargo.toml \"ton_block = {.*\" \"ton_block = { path = \\\"/tonlabs/ton-block\\\" }\"
+                    node pathFix.js wallet_client/Cargo.toml \"ton_vm = {.*\" \"ton_vm = { path = \\\"/tonlabs/ton-vm\\\", default-features = false }\"
+                    node pathFix.js wallet_client/Cargo.toml \"ton_types = {.*\" \"ton_types = { path = \\\"/tonlabs/ton-types\\\" }\"
+                """
+            }
+        }
+        stage('Build sources image') {
+            steps {
+                script {
+                    if(params.dockerImage_ton_sdk) {
+                        G_docker_src_image = params.dockerImage_ton_sdk
+                    } else {
+                        G_docker_src_image = "tonlabs/ton-sdk:${GIT_COMMIT}"
+                    }
+                    docker.withRegistry('', G_docker_creds) {
+                        sshagent (credentials: [G_gitcred]) {
+                            withEnv(["DOCKER_BUILDKIT=1", "BUILD_INFO=${env.BUILD_TAG}:${GIT_COMMIT}"]) {
+                                src_image = docker.build(
+                                    "${G_docker_src_image}",
+                                    "--label \"git-commit=\${GIT_COMMIT}\" --target ton-sdk-src ."
+                                )
+                            }
+                        }
+                        docker.image("${G_docker_src_image}").push()
+                    }
+                }
+            }
+        }
+        stage('Build common sources for agents') {
+            agent {
+                dockerfile {
+                    additionalBuildArgs "--target ton-sdk-full " + 
+                                        "--build-arg \"TON_TYPES_IMAGE=${params.dockerImage_ton_types}\" " +
+                                        "--build-arg \"TON_BLOCK_IMAGE=${params.dockerImage_ton_block}\" " + 
+                                        "--build-arg \"TON_VM_IMAGE=${params.dockerImage_ton_vm}\" " + 
+                                        "--build-arg \"TON_LABS_ABI_IMAGE=${params.dockerImage_ton_labs_abi}\" " + 
+                                        "--build-arg \"TON_EXECUTOR_IMAGE=${params.dockerImage_ton_executor}\" " +
+                                        "--build-arg \"TON_SDK_IMAGE=${G_docker_src_image}\""
+                }
+            }
+            steps {
+                sh """
+                    zip -9 -r ton-sdk-src.zip /tonlabs/*
+                    chown jenkins:jenkins ton-sdk-src.zip
+                """
+                stash includes: '**/ton-sdk-src.zip', name: 'ton-sdk-src'
             }
         }
         stage('Building...') {
