@@ -61,10 +61,10 @@ pub fn send_message(key: &[u8], value: &[u8]) -> SdkResult<()> {
                         Ok(text) => text,
                         Err(_) => hex::encode(bytes)
                     };
-                    bail!(SdkErrorKind::InternalError(format!("Request failed: {}", text)))
+                    bail!(SdkErrorKind::InternalError { msg: format!("Request failed: {}", text) } )
                 }
             }
-            Err(err) => bail!(SdkErrorKind::InternalError(format!("Can not send request: {}", err)))
+            Err(err) => bail!(SdkErrorKind::InternalError { msg: format!("Can not send request: {}", err) } )
         }
     } else {
         bail!(SdkErrorKind::NotInitialized);
