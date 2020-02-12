@@ -133,6 +133,7 @@ pipeline {
         stage('Build common sources for agents') {
             agent {
                 dockerfile {
+                    registryCredentialsId "${G_docker_creds}"
                     additionalBuildArgs "--target ton-sdk-full " + 
                                         "--build-arg \"TON_TYPES_IMAGE=${params.dockerImage_ton_types}\" " +
                                         "--build-arg \"TON_BLOCK_IMAGE=${params.dockerImage_ton_block}\" " + 
@@ -144,13 +145,11 @@ pipeline {
             }
             steps {
                 script {
-                    docker.withRegistry('', G_docker_creds) {
-                        sh """
-                            zip -9 -r ton-sdk-src.zip /tonlabs/*
-                            chown jenkins:jenkins ton-sdk-src.zip
-                        """
-                        stash includes: '**/ton-sdk-src.zip', name: 'ton-sdk-src'
-                    }
+                    sh """
+                        zip -9 -r ton-sdk-src.zip /tonlabs/*
+                        chown jenkins:jenkins ton-sdk-src.zip
+                    """
+                    stash includes: '**/ton-sdk-src.zip', name: 'ton-sdk-src'
                 }
             }
         }
