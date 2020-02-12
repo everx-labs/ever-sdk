@@ -143,11 +143,13 @@ pipeline {
                 }
             }
             steps {
-                sh """
-                    zip -9 -r ton-sdk-src.zip /tonlabs/*
-                    chown jenkins:jenkins ton-sdk-src.zip
-                """
-                stash includes: '**/ton-sdk-src.zip', name: 'ton-sdk-src'
+                docker.withRegistry('', G_docker_creds) {
+                    sh """
+                        zip -9 -r ton-sdk-src.zip /tonlabs/*
+                        chown jenkins:jenkins ton-sdk-src.zip
+                    """
+                    stash includes: '**/ton-sdk-src.zip', name: 'ton-sdk-src'
+                }
             }
         }
         stage('Building...') {
