@@ -179,7 +179,7 @@ fn test_call_contract(address: MsgAddressInt, key_pair: &Keypair) {
 
     // call needed method
     let changes_stream = Contract::call_json(
-        address, func.clone(), FUNCTION_PARAMS.to_owned(), abi.clone(), Some(&key_pair))
+        address, func.clone(), None, FUNCTION_PARAMS.to_owned(), abi.clone(), Some(&key_pair))
             .expect("Error calling contract method");
 
     // wait transaction id in message-status 
@@ -259,7 +259,7 @@ fn test_deploy_and_call_contract() {
     let func = "constructor".to_string();
     let abi = test_piggy_bank::WALLET_ABI.to_string();
 
-    let changes_stream = Contract::deploy_json(func, "{}".to_owned(), abi, contract_image, Some(&keypair), 0)
+    let changes_stream = Contract::deploy_json(func, None, "{}".to_owned(), abi, contract_image, Some(&keypair), 0)
         .expect("Error deploying contract");
 
     // wait transaction id in message-status or 
@@ -438,6 +438,7 @@ fn professor_test() {
 
     let _message = Contract::construct_deploy_message_json(
             "constructor".to_owned(),
+            None,
             json!({
                 "parents": [1234, 1234],
                 "timestamps": [1234, 1234],

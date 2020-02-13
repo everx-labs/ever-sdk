@@ -29,6 +29,7 @@ fn test_local_piggy_call() {
     let contract: crate::Contract = serde_json::from_str(CONTRACT).expect("Error parsing state init");
     let messages = contract.local_call_tvm_json(
         "getTargetAmount".to_owned(),
+        None,
         "{}".to_owned(),
         PIGGY_BANK_CONTRACT_ABI.to_owned(),
         None).expect("Error calling contract");
@@ -50,6 +51,7 @@ fn test_local_call_accept_error() {
     let contract: crate::Contract = serde_json::from_str(CONTRACT).expect("Error parsing state init");
     let result = contract.local_call_json(
         "getGoal".to_owned(),
+        None,
         "{}".to_owned(),
         PIGGY_BANK_CONTRACT_ABI.to_owned(),
         None);
@@ -63,6 +65,7 @@ fn test_executor_call() {
 
     let result = contract.local_call_json(
         "transfer".to_owned(),
+        None,
         "{\"to\": \"0:e6392da8a96f648098f818501f0211f27c89675e5f196445d211947b48e7c85b\"}".to_owned(),
         PIGGY_BANK_CONTRACT_ABI.to_owned(),
         Some(&keypair)).expect("Error calling contract");
