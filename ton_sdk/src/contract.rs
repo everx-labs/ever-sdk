@@ -281,7 +281,7 @@ pub fn encode_base64(address: &MsgAddressInt, bounceable: bool, test: bool, as_u
 impl Contract {
 
     // Asynchronously loads a Contract instance or None if contract with given id is not exists
-    pub fn load(address: &MsgAddressInt) -> SdkResult<Box<dyn Stream<Item = Option<Contract>, Error = SdkError>>> {
+    pub fn load(address: &MsgAddressInt) -> SdkResult<Box<dyn Stream<Item = Option<Contract>, Error = SdkError> + Send>> {
         let id = address.to_string();
 
         let map = queries_helper::load_record_fields(
@@ -322,7 +322,7 @@ impl Contract {
 
     // Asynchronously loads a Contract's json representation
     // or null if message with given id is not exists
-    pub fn load_json(id: AccountId) -> SdkResult<Box<dyn Stream<Item = String, Error = SdkError>>> {
+    pub fn load_json(id: AccountId) -> SdkResult<Box<dyn Stream<Item = String, Error = SdkError> + Send>> {
 
         let map = queries_helper::load_record_fields(CONTRACTS_TABLE_NAME, &id.to_hex_string(), ACCOUNT_FIELDS)?
             .map(|val| val.to_string());
@@ -336,7 +336,7 @@ impl Contract {
     // it's id and processing status is returned by this function
     pub fn call_json(address: MsgAddressInt, func: String, header: Option<String>, input: String,
         abi: String, key_pair: Option<&Keypair>
-    ) -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError>>> {
+    ) -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError> + Send>> {
 
         // pack params into bag of cells via ABI
         let msg_body = ton_abi::encode_function_call(abi, func, header, input, false, key_pair)?;
@@ -356,7 +356,7 @@ impl Contract {
     // it's id and processing status is returned by this function
     pub fn deploy_json(func: String, header: Option<String>, input: String, abi: String,
         image: ContractImage, key_pair: Option<&Keypair>, workchain_id: i32
-    ) -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError>>> {
+    ) -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError> + Send>> {
 
         let msg_body = ton_abi::encode_function_call(abi, func, header, input, false, key_pair)?;
 
@@ -372,7 +372,7 @@ impl Contract {
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
     pub fn deploy_no_constructor(image: ContractImage, workchain_id: i32)
-        -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError>>> {
+        -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError> + Send>> {
         let msg = Self::create_deploy_message(None, image, workchain_id)?;
 
         let msg_id = Self::_send_message(msg)?;
@@ -384,7 +384,7 @@ impl Contract {
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
     pub fn send_message(msg: TvmMessage)
-        -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError>>> 
+        -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError> + Send>> 
     {
         // send message by Kafka
         let msg_id = Self::_send_message(msg)?;
@@ -405,7 +405,7 @@ impl Contract {
     }
 
     pub fn subscribe_transaction_processing(message_id: &MessageId) ->
-        SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError>>> {
+        SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError> + Send>> {
 
         let subscribe_stream = queries_helper::subscribe_record_updates(
             TRANSACTIONS_TABLE_NAME,
@@ -457,6 +457,53 @@ impl Contract {
         let acc: Contract = serde_json::from_str(json)?;
 
         Ok(acc)
+    }
+
+    /// Creates `Contract` struct by serialized contract's bag of cells
+    pub fn from_bytes(boc: &[u8]) -> SdkResult<Self> {
+        Self::from_cells(
+            ton_types::cells_serialization::deserialize_tree_of_cells(&mut Cursor::new(boc))?
+                .into()
+        )
+    }
+
+    /// Creates `Contract` struct by deserialized contract's tree of cells
+    pub fn from_cells(mut root_cell_slice: SliceData) -> SdkResult<Self> {
+        let acc: ton_block::Account = ton_block::Account::construct_from(&mut root_cell_slice)?;
+        if acc.is_none() {
+            bail!(SdkErrorKind::InvalidData { msg: "Account is none.".into() } );
+        }
+
+        let mut balance_other = vec!();
+        ton_types::HashmapType::iterate(
+            &acc.get_balance().unwrap().other,
+                &mut |ref mut key, ref mut value| -> SdkResult<bool> {
+                let value: ton_block::VarUInteger32 = ton_block::VarUInteger32::construct_from(value)?;
+                balance_other.push(OtherCurrencyValue {
+                    currency: key.get_next_u32()?,
+                    value: num_traits::ToPrimitive::to_u128(value.value()).ok_or(
+                        SdkError::from(SdkErrorKind::InvalidData { msg: "Account's other currency balance is too big".to_owned() } )
+                    )?
+                });
+                Ok(true)
+            }
+        ).unwrap();
+
+        // All unwraps below won't panic because the account is checked for none.
+        Ok(Contract {
+            id: acc.get_addr().unwrap().clone(),
+            acc_type: acc.status(),
+            balance: num_traits::ToPrimitive::to_u128(
+                acc.get_balance().unwrap().grams.value()).ok_or(
+                    SdkError::from(SdkErrorKind::InvalidData {
+                        msg: "Account's balance is too big".to_owned() 
+                    } )
+                )?,
+            balance_other: if balance_other.len() > 0 { Some(balance_other) } else { None },
+            code: acc.get_code(),
+            data: acc.get_data(),
+            last_paid: acc.storage_info().unwrap().last_paid,
+        })
     }
 
     /// Invokes local TVM instance with provided inbound message.

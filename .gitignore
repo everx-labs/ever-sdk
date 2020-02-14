@@ -18,6 +18,3 @@ Cargo.lock
 .idea
 .vscode
 .DS_Store
-
-# Other 
-wallet_client/test_accounts

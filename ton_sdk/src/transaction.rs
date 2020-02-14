@@ -65,7 +65,7 @@ pub struct Transaction {
 impl Transaction {
 
     // Asynchronously loads a Transaction instance or None if transaction with given id is not exists
-    pub fn load(id: &TransactionId) -> SdkResult<Box<dyn Stream<Item = Option<Transaction>, Error = SdkError>>> {
+    pub fn load(id: &TransactionId) -> SdkResult<Box<dyn Stream<Item = Option<Transaction>, Error = SdkError> + Send>> {
         let map = queries_helper::load_record_fields(
             TRANSACTIONS_TABLE_NAME,
             &id.to_string(),
@@ -95,7 +95,7 @@ impl Transaction {
     }
 
     // Asynchronously loads an instance of transaction's input message
-    pub fn load_in_message(&self) -> SdkResult<Box<dyn Stream<Item = Option<Message>, Error = SdkError>>> {
+    pub fn load_in_message(&self) -> SdkResult<Box<dyn Stream<Item = Option<Message>, Error = SdkError> + Send>> {
         match self.in_message_id() {
             Some(m) => Message::load(&m),
             None => bail!(SdkErrorKind::InvalidOperation { msg: "transaction doesn't have inbound message".into() } )
@@ -119,7 +119,7 @@ impl Transaction {
     }
 
     // Asynchronously loads an instances of transaction's out messages
-    pub fn load_out_messages(&self) -> SdkResult<Box<dyn Stream<Item = Option<Message>, Error = SdkError>>> {
+    pub fn load_out_messages(&self) -> SdkResult<Box<dyn Stream<Item = Option<Message>, Error = SdkError> + Send>> {
         let mut msg_id_iter = self.out_messages_id().iter();
         if let Some(id) = msg_id_iter.next().clone() {
             let mut stream = Message::load(&id)?;

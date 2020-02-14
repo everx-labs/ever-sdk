@@ -60,7 +60,7 @@ impl Message {
 
     // Asynchronously loads a Message instance or None if message with given id is not exists
     #[cfg(feature = "node_interaction")]
-    pub fn load(id: &MessageId) -> SdkResult<Box<dyn Stream<Item = Option<Message>, Error = SdkError>>> {
+    pub fn load(id: &MessageId) -> SdkResult<Box<dyn Stream<Item = Option<Message>, Error = SdkError> + Send>> {
         let map = queries_helper::load_record_fields(
             MESSAGES_TABLE_NAME,
             &id.to_string(),
@@ -83,7 +83,7 @@ impl Message {
     // Asynchronously loads a Message's json representation 
     // or null if message with given id is not exists
     #[cfg(feature = "node_interaction")]
-    pub fn load_json(id: MessageId) -> SdkResult<Box<dyn Stream<Item = String, Error = SdkError>>> {
+    pub fn load_json(id: MessageId) -> SdkResult<Box<dyn Stream<Item = String, Error = SdkError> + Send>> {
 
         let map = queries_helper::load_record_fields(
             MESSAGES_TABLE_NAME,
