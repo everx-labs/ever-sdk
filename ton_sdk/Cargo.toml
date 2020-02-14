@@ -3,7 +3,7 @@ name = "ton_sdk"
 version = "0.1.0"
 
 [dependencies]
-ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git"}
+ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git", branch = "abi-v2"}
 ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }
 ton_vm = { git = "https://github.com/tonlabs/ton-labs-vm.git", default-features = false }
 ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git" }
