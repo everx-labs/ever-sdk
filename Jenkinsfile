@@ -166,9 +166,9 @@ ton_client/platforms/ton-client-web"""
                 dockerfile {
                     registryCredentialsId "${G_docker_creds}"
                     additionalBuildArgs "--target ton-sdk-full " + 
-                                        "--build-arg \"TON_TYPES_IMAGE=${params.dockerImage_ton_labs_types}\" " +
-                                        "--build-arg \"TON_BLOCK_IMAGE=${params.dockerImage_ton_labs_block}\" " + 
-                                        "--build-arg \"TON_VM_IMAGE=${params.dockerImage_ton_labs_vm}\" " + 
+                                        "--build-arg \"TON_LABS_TYPES_IMAGE=${params.dockerImage_ton_labs_types}\" " +
+                                        "--build-arg \"TON_LABS_BLOCK_IMAGE=${params.dockerImage_ton_labs_block}\" " + 
+                                        "--build-arg \"TON_LABS_VM_IMAGE=${params.dockerImage_ton_labs_vm}\" " + 
                                         "--build-arg \"TON_LABS_ABI_IMAGE=${params.dockerImage_ton_labs_abi}\" " + 
                                         "--build-arg \"TON_EXECUTOR_IMAGE=${params.dockerImage_ton_executor}\" " +
                                         "--build-arg \"TON_SDK_IMAGE=${G_docker_src_image}\""
