@@ -26,26 +26,30 @@ pipeline {
         parallelsAlwaysFailFast()
     }
     parameters {
-
+        string(
+            name:'common_version',
+            defaultValue: '',
+            description: 'Common version'
+        )
         booleanParam (
             defaultValue: false,
             description: 'Promote image built to be used as latest',
             name : 'FORCE_PROMOTE_LATEST'
         )
         string(
-            name:'dockerImage_ton_types',
-            defaultValue: 'tonlabs/ton-types:latest',
-            description: 'Existing ton-types image name'
+            name:'dockerImage_ton_labs_types',
+            defaultValue: 'tonlabs/ton-labs-types:latest',
+            description: 'Existing ton-labs-types image name'
         )
         string(
-            name:'dockerImage_ton_block',
-            defaultValue: 'tonlabs/ton-block:latest',
-            description: 'Existing ton-block image name'
+            name:'dockerImage_ton_labs_block',
+            defaultValue: 'tonlabs/ton-labs-block:latest',
+            description: 'Existing ton-labs-block image name'
         )
         string(
-            name:'dockerImage_ton_vm',
-            defaultValue: 'tonlabs/ton-vm:latest',
-            description: 'Existing ton-vm image name'
+            name:'dockerImage_ton_labs_vm',
+            defaultValue: 'tonlabs/ton-labs-vm:latest',
+            description: 'Existing ton-labs-vm image name'
         )
         string(
             name:'dockerImage_ton_labs_abi',
@@ -64,6 +68,35 @@ pipeline {
         )
     }
     stages {
+        stage('Versioning') {
+            steps {
+                script {
+                    withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
+                        identity = awsIdentity()
+                        s3Download bucket: 'sdkbinaries.tonlabs.io', file: 'version.json', force: true, path: 'version.json'
+                    }
+                    def folders = """ton_sdk \
+ton_client/client \
+ton_client/platforms/ton-client-node-js \
+ton_client/platforms/ton-client-react-native \
+ton_client/platforms/ton-client-web"""
+                    if(params.common_version) {
+                        G_binversion = sh (script: "node tonVersion.js --set ${params.common_version} ${folders}", returnStdout: true).trim()
+                    } else {
+                        G_binversion = sh (script: "node tonVersion.js ${folders}", returnStdout: true).trim()
+                    }
+
+
+                    withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
+                        identity = awsIdentity()
+                        s3Upload \
+                            bucket: 'sdkbinaries.tonlabs.io', \
+                            includePathPattern:'version.json', path: '', \
+                            workingDir:'.'
+                    }
+                }
+            }
+        }
         stage('Initialize') {
             steps {
                 script {
@@ -81,8 +114,6 @@ pipeline {
                     C_GITURL = sh (script: "echo ${GIT_URL}",returnStdout: true).trim()
                     C_GITCOMMIT = sh (script: "echo ${GIT_COMMIT}", \
                         returnStdout: true).trim()
-                    G_binversion = sh (script: 'cat ton_client/client/Cargo.toml | grep -Eo "^version = \\".*\\"" | grep -Eo "[0-9\\.]*"', \
-                        returnStdout: true).trim()
                 }
                 echo "Version: ${getVar(G_binversion)}."
                 echo "Branch: ${GIT_BRANCH}"
@@ -93,18 +124,18 @@ pipeline {
             steps {
                 sh """
                     node pathFix.js ton_sdk/Cargo.toml \"ton_abi = {.*\" \"ton_abi = { path = \\\"/tonlabs/ton-labs-abi\\\" }\"
-                    node pathFix.js ton_sdk/Cargo.toml \"ton_block = {.*\" \"ton_block = { path = \\\"/tonlabs/ton-block\\\" }\"
-                    node pathFix.js ton_sdk/Cargo.toml \"ton_vm = {.*\" \"ton_vm = { path = \\\"/tonlabs/ton-vm\\\", default-features = false }\"
-                    node pathFix.js ton_sdk/Cargo.toml \"ton_types = {.*\" \"ton_types = { path = \\\"/tonlabs/ton-types\\\" }\"
+                    node pathFix.js ton_sdk/Cargo.toml \"ton_block = {.*\" \"ton_block = { path = \\\"/tonlabs/ton-labs-block\\\" }\"
+                    node pathFix.js ton_sdk/Cargo.toml \"ton_vm = {.*\" \"ton_vm = { path = \\\"/tonlabs/ton-labs-vm\\\", default-features = false }\"
+                    node pathFix.js ton_sdk/Cargo.toml \"ton_types = {.*\" \"ton_types = { path = \\\"/tonlabs/ton-labs-types\\\" }\"
                     node pathFix.js ton_sdk/Cargo.toml \"ton_executor = {.*\" \"ton_executor = { path = \\\"/tonlabs/ton-executor\\\" }\"
 
-                    node pathFix.js ton_client/client/Cargo.toml \"ton_block = {.*\" \"ton_block = { path = \\\"/tonlabs/ton-block\\\" }\"
-                    node pathFix.js ton_client/client/Cargo.toml \"ton_vm = {.*\" \"ton_vm = { path = \\\"/tonlabs/ton-vm\\\", default-features = false }\"
-                    node pathFix.js ton_client/client/Cargo.toml \"ton_types = {.*\" \"ton_types = { path = \\\"/tonlabs/ton-types\\\" }\"
+                    node pathFix.js ton_client/client/Cargo.toml \"ton_block = {.*\" \"ton_block = { path = \\\"/tonlabs/ton-labs-block\\\" }\"
+                    node pathFix.js ton_client/client/Cargo.toml \"ton_vm = {.*\" \"ton_vm = { path = \\\"/tonlabs/ton-labs-vm\\\", default-features = false }\"
+                    node pathFix.js ton_client/client/Cargo.toml \"ton_types = {.*\" \"ton_types = { path = \\\"/tonlabs/ton-labs-types\\\" }\"
                     
-                    node pathFix.js wallet_client/Cargo.toml \"ton_block = {.*\" \"ton_block = { path = \\\"/tonlabs/ton-block\\\" }\"
-                    node pathFix.js wallet_client/Cargo.toml \"ton_vm = {.*\" \"ton_vm = { path = \\\"/tonlabs/ton-vm\\\", default-features = false }\"
-                    node pathFix.js wallet_client/Cargo.toml \"ton_types = {.*\" \"ton_types = { path = \\\"/tonlabs/ton-types\\\" }\"
+                    node pathFix.js wallet_client/Cargo.toml \"ton_block = {.*\" \"ton_block = { path = \\\"/tonlabs/ton-labs-block\\\" }\"
+                    node pathFix.js wallet_client/Cargo.toml \"ton_vm = {.*\" \"ton_vm = { path = \\\"/tonlabs/ton-labs-vm\\\", default-features = false }\"
+                    node pathFix.js wallet_client/Cargo.toml \"ton_types = {.*\" \"ton_types = { path = \\\"/tonlabs/ton-labs-types\\\" }\"
                 """
             }
         }
@@ -135,9 +166,9 @@ pipeline {
                 dockerfile {
                     registryCredentialsId "${G_docker_creds}"
                     additionalBuildArgs "--target ton-sdk-full " + 
-                                        "--build-arg \"TON_TYPES_IMAGE=${params.dockerImage_ton_types}\" " +
-                                        "--build-arg \"TON_BLOCK_IMAGE=${params.dockerImage_ton_block}\" " + 
-                                        "--build-arg \"TON_VM_IMAGE=${params.dockerImage_ton_vm}\" " + 
+                                        "--build-arg \"TON_TYPES_IMAGE=${params.dockerImage_ton_labs_types}\" " +
+                                        "--build-arg \"TON_BLOCK_IMAGE=${params.dockerImage_ton_labs_block}\" " + 
+                                        "--build-arg \"TON_VM_IMAGE=${params.dockerImage_ton_labs_vm}\" " + 
                                         "--build-arg \"TON_LABS_ABI_IMAGE=${params.dockerImage_ton_labs_abi}\" " + 
                                         "--build-arg \"TON_EXECUTOR_IMAGE=${params.dockerImage_ton_executor}\" " +
                                         "--build-arg \"TON_SDK_IMAGE=${G_docker_src_image}\""
@@ -147,6 +178,7 @@ pipeline {
                 script {
                     sh """
                         zip -9 -r ton-sdk-src.zip /tonlabs/*
+                        ls -la ton-sdk-src.zip
                         chown jenkins:jenkins ton-sdk-src.zip
                     """
                     stash includes: '**/ton-sdk-src.zip', name: 'ton-sdk-src'

@@ -3,7 +3,7 @@ const os = require('os');
 const path = require('path');
 const https = require('https');
 
-const canonical = (versionString) => {
+function canonical(versionString) {
     if(!versionString) {
         return [];
     }
@@ -24,34 +24,11 @@ const canonical = (versionString) => {
     }
     return verArray;
 };
-const get = (url) => { 
-    return new Promise((resolve, reject) => {
-        const req = https.get(url, (res) => {
-            let data = '';
-            res.on('data', (part) => { 
-                data = data.concat(data, part);
-            });
-            res.on('end', () => {
-                resolve(JSON.parse(data.toString()));
-            });
-        });
-        req.on('error', (err) => {
-            reject(err);
-        });
-    });
-};
-const getVersion = async () => {
-    try {
-        return(await get('https://s3.eu-central-1.amazonaws.com/sdkbinaries.tonlabs.io/version.json'));
-    } catch (e) {
-        throw e;
-    }
-}
-const increment = (canonicalVersion) => {
+function increment(canonicalVersion) {
     canonicalVersion[2]++;
     return canonicalVersion
 };
-const setVersion = (dest, version) => {
+function setVersion(dest, version) {
     const packagePath = path.join(dest, 'package.json');
     const cargoPath = path.join(dest, 'Cargo.toml');
     if(fs.existsSync(packagePath)) {
@@ -75,25 +52,58 @@ const setVersion = (dest, version) => {
         fs.writeFileSync(cargoPath, conf.join(os.EOL));
     }
 };
+
 const cwd = process.cwd();
 let args = process.argv.slice(2);
 const folders = []
+const lastVersion = JSON.parse(fs.readFileSync(path.join(cwd,'version.json')));
+let argVersion;
+
 while(args.length > 0) {
-    item = path.join(cwd, ...args[0].split(/[\\/]/g));
-    if(fs.existsSync(item)) {
-        folders.push(item);
+    switch(args[0].trim()) {
+    case '--set':
+        if(args.length < 2) {
+            throw new Error('Version value wasn\'t been presented');
+        }
+        argVersion = args[1].trim();
+        args = args.slice(1);
+        break;
+    case '--release':
+        if(lastVersion.candidate) {
+            lastVersion.release = lastVersion.candidate;
+            lastVersion.candidate = '';
+            fs.writeFileSync(path.join(cwd, 'version.json'), JSON.stringify(lastVersion));
+            process.exit(0);
+        } else {
+            throw new Error('Unable to set candidate as release');
+        }
+    default :
+        item = path.join(cwd, ...args[0].split(/[\\/]/g));
+        if(fs.existsSync(item)) {
+            folders.push(item);
+        }
+        break;
     }
     args = args.slice(1);
 }
 
-(async () => {
-    try {
-        const lastVersion = await getVersion();
-        const newVersion = lastVersion.candidate ? canonical(lastVersion.candidate) : increment(canonical(lastVersion.release));
-        console.log(newVersion.join('.'));
-        folders.forEach(item => setVersion(item, newVersion.join('.')));
-    } catch (err) {
-        throw err;
-    }
-        
-})();
+function allowed(ver) {
+    const n = canonical(ver);
+    const c = canonical(lastVersion.candidate ? lastVersion.candidate : lastVersion.release);
+    return (
+        c[0] <= n[0] &&
+        (c[1] <= n[1] || c[0] < n[0]) &&
+        (c[2] < n[2] || c[1] < n[1])
+    );
+}
+
+const newVersion = argVersion && allowed(argVersion) ? canonical(argVersion) : (
+    lastVersion.candidate ? canonical(lastVersion.candidate) : increment(canonical(lastVersion.release))
+);
+console.log(newVersion.join('.'));
+folders.forEach(item => setVersion(item, newVersion.join('.')));
+
+if(!lastVersion.candidate) {
+    lastVersion.candidate = newVersion.join('.');
+    fs.writeFileSync(path.join(cwd, 'version.json'), JSON.stringify(lastVersion));
+}
