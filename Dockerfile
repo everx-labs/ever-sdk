@@ -12,7 +12,6 @@ COPY --chown=jenkins:jenkins Cargo.* *.md LICENSE /tonlabs/TON-SDK/
 COPY --chown=jenkins:jenkins graphite      /tonlabs/TON-SDK/graphite
 COPY --chown=jenkins:jenkins ton_client    /tonlabs/TON-SDK/ton_client
 COPY --chown=jenkins:jenkins ton_sdk       /tonlabs/TON-SDK/ton_sdk
-COPY --chown=jenkins:jenkins wallet_client /tonlabs/TON-SDK/wallet_client
 
 FROM $TON_LABS_TYPES_IMAGE as ton-labs-types-src
 FROM $TON_LABS_BLOCK_IMAGE as ton-labs-block-src
