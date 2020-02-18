@@ -190,26 +190,18 @@ ton_client/platforms/ton-client-web"""
             parallel {
                 stage('Client linux') {
                     agent {
-                        docker {
-                            image G_container
+                        dockerfile {
+                            registryCredentialsId "${G_docker_creds}"
+                            additionalBuildArgs "--target ton-sdk-build " + 
+                                                "--build-arg \"TON_LABS_TYPES_IMAGE=${params.dockerImage_ton_labs_types}\" " +
+                                                "--build-arg \"TON_LABS_BLOCK_IMAGE=${params.dockerImage_ton_labs_block}\" " + 
+                                                "--build-arg \"TON_LABS_VM_IMAGE=${params.dockerImage_ton_labs_vm}\" " + 
+                                                "--build-arg \"TON_LABS_ABI_IMAGE=${params.dockerImage_ton_labs_abi}\" " + 
+                                                "--build-arg \"TON_EXECUTOR_IMAGE=${params.dockerImage_ton_executor}\" " +
+                                                "--build-arg \"TON_SDK_IMAGE=${G_docker_src_image}\""
                         }
                     }
                     stages {
-                        stage('Report versions') {
-                            steps {
-                                sh 'rustc --version'
-                                sh 'cargo --version'
-                            }
-                        }
-                        stage('Build') {
-                            steps {
-                                dir('ton_client/client') {
-                                    sshagent([G_gitcred]) {
-                                        sh 'node build.js'
-                                    }
-                                }
-                            }
-                        }
                         stage('Deploy') {
                             when { 
                                 expression {
@@ -217,7 +209,7 @@ ton_client/platforms/ton-client-web"""
                                 }
                             }
                             steps {
-                                dir('ton_client/client/bin') {
+                                dir('/tonlabs/TON-SDK/ton_client/client/bin') {
                                     script {
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
