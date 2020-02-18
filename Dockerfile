@@ -31,10 +31,16 @@ COPY --from=ton-labs-vm-src    --chown=jenkins:jenkins /tonlabs/ton-labs-vm    /
 COPY --from=ton-labs-abi-src   --chown=jenkins:jenkins /tonlabs/ton-labs-abi   /tonlabs/ton-labs-abi
 COPY --from=ton-executor-src   --chown=jenkins:jenkins /tonlabs/ton-executor   /tonlabs/ton-executor
 COPY --from=ton-sdk-source     --chown=jenkins:jenkins /tonlabs/TON-SDK        /tonlabs/TON-SDK
+WORKDIR /tonlabs/ton-executor
+RUN sed -e "s/\/tonlabs\/ton-block/\/tonlabs\/ton-labs-block/g" Cargo.toml | \
+    sed -e "s/\/tonlabs\/ton-types/\/tonlabs\/ton-labs-types/g" | \
+    sed -e "s/\/tonlabs\/ton-vm/\/tonlabs\/ton-labs-vm/g" > tmp.toml && \
+    rm Cargo.toml && mv tmp.toml Cargo.toml
 
 FROM rust:latest as ton-sdk-build
 RUN apt -qqy update && apt -qyy install apt-utils && \
     curl -sL https://deb.nodesource.com/setup_12.x | bash - && \
     apt-get install -qqy nodejs
 COPY --from=ton-sdk-full /tonlabs /tonlabs
-WORKDIR /tonlabs/TON-SDK
+WORKDIR /tonlabs/TON-SDK/ton_client/client
+RUN node build.js
