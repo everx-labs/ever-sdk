@@ -12,6 +12,7 @@ COPY --chown=jenkins:jenkins Cargo.* *.md LICENSE /tonlabs/TON-SDK/
 COPY --chown=jenkins:jenkins graphite      /tonlabs/TON-SDK/graphite
 COPY --chown=jenkins:jenkins ton_client    /tonlabs/TON-SDK/ton_client
 COPY --chown=jenkins:jenkins ton_sdk       /tonlabs/TON-SDK/ton_sdk
+VOLUME /tonlabs/TON-SDK
 
 FROM $TON_LABS_TYPES_IMAGE as ton-labs-types-src
 FROM $TON_LABS_BLOCK_IMAGE as ton-labs-block-src
@@ -35,11 +36,18 @@ RUN sed -e "s/\/tonlabs\/ton-block/\/tonlabs\/ton-labs-block/g" Cargo.toml | \
     sed -e "s/\/tonlabs\/ton-types/\/tonlabs\/ton-labs-types/g" | \
     sed -e "s/\/tonlabs\/ton-vm/\/tonlabs\/ton-labs-vm/g" > tmp.toml && \
     rm Cargo.toml && mv tmp.toml Cargo.toml
+WORKDIR /tonlabs
+VOLUME /tonlabs
 
 FROM rust:latest as ton-sdk-build
 RUN apt -qqy update && apt -qyy install apt-utils && \
     curl -sL https://deb.nodesource.com/setup_12.x | bash - && \
     apt-get install -qqy nodejs
-COPY --from=ton-sdk-full /tonlabs /tonlabs
+COPY --from=ton-sdk-full /tonlabs/ton-labs-types /tonlabs/ton-labs-types
+COPY --from=ton-sdk-full /tonlabs/ton-labs-vm    /tonlabs/ton-labs-vm
+COPY --from=ton-sdk-full /tonlabs/ton-labs-block /tonlabs/ton-labs-block
+COPY --from=ton-sdk-full /tonlabs/ton-labs-abi   /tonlabs/ton-labs-abi
+COPY --from=ton-sdk-full /tonlabs/ton-executor   /tonlabs/ton-executor
+COPY --from=ton-sdk-full /tonlabs/TON-SDK        /tonlabs/TON-SDK
 WORKDIR /tonlabs/TON-SDK/ton_client/client
 RUN node build.js
