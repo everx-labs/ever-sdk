@@ -16,7 +16,7 @@ def getVar(Gvar) {
 
 def checkAndCreateBranch(ton_client_url) {
     ton_repo_name = ton_client_url.substring(ton_client_url.lastIndexOf('/') + 1, ton_client_url.lastIndexOf('.') )
-    ton_client_path = "/tmp/${ton_repo_name}-version"
+    ton_client_path = "tmp/${ton_repo_name}-version"
     ton_client_js_path = "git+ssh://git@github.com/tonlabs/ton-client-js.git#${G_binversion}-rc"
     return sh (script:  """
         rm -rf $ton_client_path
