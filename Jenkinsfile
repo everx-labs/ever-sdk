@@ -10,24 +10,19 @@ G_tsnj_build = true
 G_tsnj_deploy = true
 
 DiscordURL = "https://discordapp.com/api/webhooks/496992026932543489/4exQIw18D4U_4T0H76bS3Voui4SyD7yCQzLP9IRQHKpwGRJK1-IFnyZLyYzDmcBKFTJw"
-def getVar(Gvar) {
-    return Gvar
-}
 
 def checkAndCreateBranch(ton_client_url) {
     ton_repo_name = ton_client_url.substring(ton_client_url.lastIndexOf('/') + 1, ton_client_url.lastIndexOf('.') )
-    ton_client_path = "tmp/${ton_repo_name}-version"
+    tmp_dir = "tmp/${ton_repo_name}-version"
     ton_client_js_path = "git+ssh://git@github.com/tonlabs/ton-client-js.git#${G_binversion}-rc"
-    return sh (script:  """
-        rm -rf $ton_client_path
-        mkdir -pv $ton_client_path
-        git clone $ton_client_url $ton_client_path
-        cd $ton_client_path
+    sh (script:  """
+        mkdir -pv $tmp_dir
+        git clone $ton_client_url $tmp_dir
+        cd $tmp_dir
         if (git ls-remote --heads --exit-code $ton_client_url ${GIT_BRANCH})
         then
             echo "Branch name ${GIT_BRANCH} in $ton_client_url already exists."
         else
-            echo "Branch ${GIT_BRANCH} in $ton_client_url was created."
             git checkout -b ${GIT_BRANCH}
 
             case ${ton_repo_name} in
@@ -38,15 +33,13 @@ def checkAndCreateBranch(ton_client_url) {
             "ton-client-js")
                 sed -i 's@"version"\\s*:\\s*"[0-9]*\\.[0-9]*\\.[0-9]*"@"version": "${G_binversion}"@g' package.json
                 ;;
-                echo "Error no ${ton_repo_name}"
-                ;;
             esac
             git add .
             git commit -m 'automate Jenkins branch ${GIT_BRANCH}'
             git push --set-upstream origin ${GIT_BRANCH}
             echo "Branch ${GIT_BRANCH} in $ton_client_url was created."
         fi
-    """ ,  returnStdout: true).trim()
+    """)
 }
 
 
@@ -86,9 +79,25 @@ pipeline {
                     G_binversion = sh (script: 'cat ton_client/client/Cargo.toml | grep -Eo "^version = \\".*\\"" | grep -Eo "[0-9\\.]*"', \
                         returnStdout: true).trim()
                 }
-                echo "Version: ${getVar(G_binversion)}."
+                echo "Version: ${G_binversion}."
                 echo "Branch: ${GIT_BRANCH}"
-                echo "Possible RC: ${getVar(G_binversion)}-rc"
+                echo "Possible RC: ${G_binversion}-rc"
+            }
+        }
+        stage('Check branch in ton-client-js,ton-client-rs') {
+            agent any
+            when {
+                expression {
+                    GIT_BRANCH == "${G_binversion}-rc"
+                }
+            }
+            steps {
+                script {
+                    sshagent (credentials: [G_gitcred]) {
+                        checkAndCreateBranch("git@github.com:tonlabs/ton-client-js.git")
+                        checkAndCreateBranch('git@github.com:tonlabs/ton-client-rs.git')
+                    }
+                }
             }
         }
         stage('Building...') {
@@ -119,7 +128,7 @@ pipeline {
                         stage('Deploy') {
                             when {
                                 expression {
-                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${G_binversion}-rc"
                                 }
                             }
                             steps {
@@ -163,7 +172,7 @@ pipeline {
                         stage('Deploy') {
                             when {
                                 expression {
-                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${G_binversion}-rc"
                                 }
                             }
                             steps {
@@ -207,7 +216,7 @@ pipeline {
                         stage('Deploy') {
                             when {
                                 expression {
-                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${G_binversion}-rc"
                                 }
                             }
                             steps {
@@ -259,7 +268,7 @@ pipeline {
                         stage('Deploy') {
                             when {
                                 expression {
-                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${G_binversion}-rc"
                                 }
                             }
                             steps {
@@ -316,7 +325,7 @@ pipeline {
                         stage('Deploy') {
                             when {
                                 expression {
-                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${G_binversion}-rc"
                                 }
                             }
                             steps {
@@ -373,7 +382,7 @@ pipeline {
                         stage('Deploy') {
                             when {
                                 expression {
-                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${G_binversion}-rc"
                                 }
                             }
                             steps {
@@ -430,7 +439,7 @@ pipeline {
                         stage('Deploy') {
                             when {
                                 expression {
-                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${G_binversion}-rc"
                                 }
                             }
                             steps {
@@ -489,7 +498,7 @@ pipeline {
                         stage('Deploy') {
                             when {
                                 expression {
-                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${G_binversion}-rc"
                                 }
                             }
                             steps {
@@ -560,7 +569,7 @@ pipeline {
                         stage('Deploy') {
                             when {
                                 expression {
-                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${G_binversion}-rc"
                                 }
                             }
                             steps {
@@ -586,42 +595,6 @@ pipeline {
 						cleanup {script{cleanWs notFailBuild: true}}
 					}
 				}
-            }
-        }
-        stage('Check rc branches...') {
-            failFast true
-            parallel {
-                stage('Check branch in ton-client-rs') {
-                    agent any
-                    when {
-                        expression {
-                            GIT_BRANCH == "${getVar(G_binversion)}-rc"
-                        }
-                    }
-                    steps {
-                        script {
-                            sshagent (credentials: [G_gitcred]) {
-                                checkAndCreateBranch('git@github.com:tonlabs/ton-client-rs.git')
-                            }
-                        }
-                    }
-                }
-
-                stage('Check branch in ton-client-js') {
-                    agent any
-                    when {
-                        expression {
-                            GIT_BRANCH == "${getVar(G_binversion)}-rc"
-                        }
-                    }
-                    steps {
-                        script {
-                            sshagent (credentials: [G_gitcred]) {
-                                checkAndCreateBranch("git@github.com:tonlabs/ton-client-js.git")
-                            }
-                        }
-                    }
-                }                
             }
         }
     }
