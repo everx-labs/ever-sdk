@@ -695,7 +695,7 @@ ton_client/platforms/ton-client-web"""
                             steps {
                                 echo 'Build ...'
                                 sshagent([G_gitcred]) {
-                                    dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js') {
+                                    dir('ton_client/platforms/ton-client-node-js') {
                                         sh 'node build.js'
                                     }
                                 }
@@ -713,7 +713,7 @@ ton_client/platforms/ton-client-web"""
                                 }
                             }
                             steps {
-                                dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js/bin') {
+                                dir('ton_client/platforms/ton-client-node-js/bin') {
                                     script {
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
