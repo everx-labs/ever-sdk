@@ -50,7 +50,3 @@ COPY --from=ton-sdk-full /tonlabs/ton-labs-abi   /tonlabs/ton-labs-abi
 COPY --from=ton-sdk-full /tonlabs/ton-executor   /tonlabs/ton-executor
 COPY --from=ton-sdk-full /tonlabs/TON-SDK        /tonlabs/TON-SDK
 WORKDIR /tonlabs/TON-SDK
-
-FROM ton-sdk-rust as ton-sdk-build-client
-WORKDIR /tonlabs/TON-SDK/ton_client/client
-RUN node build.js
