@@ -74,11 +74,11 @@ pub fn init_node_connection() {
         r#"
         {
             "queries_config": {
-                "queries_server": "http://192.168.99.100/graphql",
-                "subscriptions_server": "ws://192.168.99.100/graphql"
+                "queries_server": "http://localhost/graphql",
+                "subscriptions_server": "ws://localhost/graphql"
             },
             "requests_config": {
-                "requests_server": "http://192.168.99.100/topics/requests"
+                "requests_server": "http://localhost/topics/requests"
             }
         }"#
     } else {
