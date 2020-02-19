@@ -73,24 +73,14 @@ pub fn init_node_connection() {
     let config_json = if NODE_SE {
         r#"
         {
-            "queries_config": {
-                "queries_server": "http://localhost/graphql",
-                "subscriptions_server": "ws://localhost/graphql"
-            },
-            "requests_config": {
-                "requests_server": "http://localhost/topics/requests"
-            }
+            "queries_server": "http://localhost/graphql",
+            "subscriptions_server": "ws://localhost/graphql"
         }"#
     } else {
         r#"
         {
-            "queries_config": {
-                "queries_server": "https://testnet.ton.dev/graphql",
-                "subscriptions_server": "wss://testnet.ton.dev/graphql"
-            },
-            "requests_config": {
-                "requests_server": "https://testnet.ton.dev/topics/requests"
-            }
+            "queries_server": "https://testnet.ton.dev/graphql",
+            "subscriptions_server": "wss://testnet.ton.dev/graphql"
         }"#
     };
 
