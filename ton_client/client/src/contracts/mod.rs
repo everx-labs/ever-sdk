@@ -14,6 +14,7 @@
 
 use types::{ApiResult, hex_decode, base64_decode, ApiError};
 use ton_sdk::{AbiContract, ContractImage};
+use ton_block::{CommonMsgInfo, Deserializable};
 use std::io::Cursor;
 use crypto::keys::{account_decode, account_encode_ex, AccountAddressType, Base64AddressParams};
 
@@ -89,7 +90,7 @@ pub(crate) struct ResultOfConvertAddress {
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
-pub(crate) struct ParamsOfGetBocHash {
+pub(crate) struct InputBoc {
     pub bocBase64: String,
 }
 
@@ -152,14 +153,35 @@ pub(crate) fn convert_address(_context: &mut ClientContext, params: ParamsOfConv
     })
 }
 
-pub(crate) fn get_boc_root_hash(_context: &mut ClientContext, params: ParamsOfGetBocHash) -> ApiResult<ResultOfGetBocHash> {
+fn decode_boc_base64(boc_base64: &String) -> ApiResult<ton_types::Cell> {
+    let bytes = base64_decode(boc_base64)?;
+    ton_block::cells_serialization::deserialize_tree_of_cells(&mut bytes.as_slice())
+        .map_err(|err| ApiError::contracts_invalid_boc(err))
+}
+
+pub(crate) fn get_boc_root_hash(_context: &mut ClientContext, params: InputBoc) -> ApiResult<ResultOfGetBocHash> {
     debug!("-> contracts.boc.hash({})", params.bocBase64);
-    let bytes = base64_decode(&params.bocBase64)?;
-    let cells = ton_block::cells_serialization::deserialize_tree_of_cells(&mut bytes.as_slice())
-        .map_err(|err| ApiError::contracts_invalid_boc(err))?;
+    let cells = decode_boc_base64(&params.bocBase64)?;
     Ok(ResultOfGetBocHash {
         hash: format!("{:x}", cells.repr_hash()),
     })
+}
+
+pub(crate) fn parse_message(_context: &mut ClientContext, params: InputBoc) -> ApiResult<serde_json::Value> {
+    debug!("-> contracts.boc.hash({})", params.bocBase64);
+    let cells = decode_boc_base64(&params.bocBase64)?;
+    let mut message = ton_block::Message::default();
+    message.read_from(&mut cells.into())
+        .map_err(|err| ApiError::contracts_invalid_boc(err))?;
+    // TODO: serialize via ton-block-json when it is opened
+    let address = match message.header() {
+        CommonMsgInfo::IntMsgInfo(ref header) => header.dst.to_string(),
+        CommonMsgInfo::ExtInMsgInfo(ref header) => header.dst.to_string(),
+        CommonMsgInfo::ExtOutMsgInfo(ref header) => header.dst.to_string()
+    };
+    Ok(json!({
+        "dst": address
+    }))
 }
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
@@ -222,4 +244,6 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
     // Bag of cells
     handlers.spawn("contracts.boc.hash",
         get_boc_root_hash);
+    handlers.spawn("contracts.parse.message",
+        parse_message);
 }
