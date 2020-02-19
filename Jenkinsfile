@@ -695,17 +695,8 @@ ton_client/platforms/ton-client-web"""
                         }
                     }
                     stages {
-                        stage('Report versions') {
-                            steps {
-                                sh '''
-                                rustc --version
-                                cargo --version
-                                '''
-                            }
-                        }
                         stage('Build') {
                             steps {
-                                echo 'Build ...'
                                 sshagent([G_gitcred]) {
                                     dir('/tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js') {
                                         sh 'node build.js'
@@ -761,14 +752,6 @@ ton_client/platforms/ton-client-web"""
                         }
                     }
                     stages {
-                        stage('Report versions') {
-                            steps {
-                                sh '''
-                                rustc --version
-                                cargo --version
-                                '''
-                            }
-                        }
                         stage('Build') {
                             environment {
                                 X86_64_UNKNOWN_LINUX_GNU_OPENSSL_LIB_DIR='/usr/lib/x86_64-linux-gnu'
@@ -777,7 +760,6 @@ ton_client/platforms/ton-client-web"""
                                 OPENSSL_DIR='/usr/bin/openssl'
                             }
                             steps {
-                                echo 'Install...'
                                 sshagent([G_gitcred]) {
                                     dir('/tonlabs/TON-SDK/ton_client/platforms/ton-client-web') {
                                         sh 'npm install'

@@ -42,11 +42,14 @@ VOLUME /tonlabs
 FROM rust:latest as ton-sdk-rust
 RUN apt -qqy update && apt -qyy install apt-utils && \
     curl -sL https://deb.nodesource.com/setup_12.x | bash - && \
-    apt-get install -qqy nodejs
-COPY --from=ton-sdk-full /tonlabs/ton-labs-types /tonlabs/ton-labs-types
-COPY --from=ton-sdk-full /tonlabs/ton-labs-vm    /tonlabs/ton-labs-vm
-COPY --from=ton-sdk-full /tonlabs/ton-labs-block /tonlabs/ton-labs-block
-COPY --from=ton-sdk-full /tonlabs/ton-labs-abi   /tonlabs/ton-labs-abi
-COPY --from=ton-sdk-full /tonlabs/ton-executor   /tonlabs/ton-executor
-COPY --from=ton-sdk-full /tonlabs/TON-SDK        /tonlabs/TON-SDK
+    apt-get install -qqy nodejs && \
+    adduser --group jenkins && \
+    adduser -q --disabled-password --gid 1000 jenkins && \
+    mkdir /tonlabs && chown -R jenkins:jenkins /tonlabs
+COPY --from=ton-sdk-full --chown=jenkins:jenkins /tonlabs/ton-labs-types /tonlabs/ton-labs-types
+COPY --from=ton-sdk-full --chown=jenkins:jenkins /tonlabs/ton-labs-vm    /tonlabs/ton-labs-vm
+COPY --from=ton-sdk-full --chown=jenkins:jenkins /tonlabs/ton-labs-block /tonlabs/ton-labs-block
+COPY --from=ton-sdk-full --chown=jenkins:jenkins /tonlabs/ton-labs-abi   /tonlabs/ton-labs-abi
+COPY --from=ton-sdk-full --chown=jenkins:jenkins /tonlabs/ton-executor   /tonlabs/ton-executor
+COPY --from=ton-sdk-full --chown=jenkins:jenkins /tonlabs/TON-SDK        /tonlabs/TON-SDK
 WORKDIR /tonlabs/TON-SDK
