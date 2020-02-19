@@ -188,7 +188,7 @@ ton_client/platforms/ton-client-web"""
                     agent {
                         dockerfile {
                             registryCredentialsId "${G_docker_creds}"
-                            additionalBuildArgs "--target ton-sdk-build " + 
+                            additionalBuildArgs "--target ton-sdk-rust " + 
                                                 "--build-arg \"TON_LABS_TYPES_IMAGE=${params.dockerImage_ton_labs_types}\" " +
                                                 "--build-arg \"TON_LABS_BLOCK_IMAGE=${params.dockerImage_ton_labs_block}\" " + 
                                                 "--build-arg \"TON_LABS_VM_IMAGE=${params.dockerImage_ton_labs_vm}\" " + 
@@ -198,6 +198,15 @@ ton_client/platforms/ton-client-web"""
                         }
                     }
                     stages {
+                        stage('Build') {
+                            steps {
+                                script {
+                                    dir('/tonlabs/TON-SDK/ton_client/client') {
+                                        sh 'node build.js'
+                                    }
+                                }
+                            }
+                        }
                         stage('Deploy') {
                             when { 
                                 expression {
@@ -307,8 +316,6 @@ ton_client/platforms/ton-client-web"""
                                     unstash 'ton-sdk-src'
                                     bat """
                                         unzip ton-sdk-src.zip
-
-                                        node pathFix.js tonlabs\\ton-labs-block\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
 
                                         node pathFix.js tonlabs\\ton-labs-block\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
                                         node pathFix.js tonlabs\\ton-labs-vm\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
@@ -617,8 +624,6 @@ ton_client/platforms/ton-client-web"""
                                         unzip ton-sdk-src.zip
 
                                         node pathFix.js tonlabs\\ton-labs-block\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
-
-                                        node pathFix.js tonlabs\\ton-labs-block\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
                                         node pathFix.js tonlabs\\ton-labs-vm\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
                                         node pathFix.js tonlabs\\ton-labs-abi\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
                                         node pathFix.js tonlabs\\ton-executor\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
@@ -678,8 +683,15 @@ ton_client/platforms/ton-client-web"""
 				}
                 stage('node-js for Linux') {
                     agent {
-                        docker {
-                            image G_container
+                        dockerfile {
+                            registryCredentialsId "${G_docker_creds}"
+                            additionalBuildArgs "--target ton-sdk-rust " + 
+                                                "--build-arg \"TON_LABS_TYPES_IMAGE=${params.dockerImage_ton_labs_types}\" " +
+                                                "--build-arg \"TON_LABS_BLOCK_IMAGE=${params.dockerImage_ton_labs_block}\" " + 
+                                                "--build-arg \"TON_LABS_VM_IMAGE=${params.dockerImage_ton_labs_vm}\" " + 
+                                                "--build-arg \"TON_LABS_ABI_IMAGE=${params.dockerImage_ton_labs_abi}\" " + 
+                                                "--build-arg \"TON_EXECUTOR_IMAGE=${params.dockerImage_ton_executor}\" " +
+                                                "--build-arg \"TON_SDK_IMAGE=${G_docker_src_image}\""
                         }
                     }
                     stages {
@@ -695,7 +707,7 @@ ton_client/platforms/ton-client-web"""
                             steps {
                                 echo 'Build ...'
                                 sshagent([G_gitcred]) {
-                                    dir('ton_client/platforms/ton-client-node-js') {
+                                    dir('/tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js') {
                                         sh 'node build.js'
                                     }
                                 }
@@ -713,7 +725,7 @@ ton_client/platforms/ton-client-web"""
                                 }
                             }
                             steps {
-                                dir('ton_client/platforms/ton-client-node-js/bin') {
+                                dir('/tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js/bin') {
                                     script {
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
@@ -737,8 +749,15 @@ ton_client/platforms/ton-client-web"""
 				}
                 stage('web') {
                     agent {
-                        docker {
-                            image G_container
+                        dockerfile {
+                            registryCredentialsId "${G_docker_creds}"
+                            additionalBuildArgs "--target ton-sdk-rust " + 
+                                                "--build-arg \"TON_LABS_TYPES_IMAGE=${params.dockerImage_ton_labs_types}\" " +
+                                                "--build-arg \"TON_LABS_BLOCK_IMAGE=${params.dockerImage_ton_labs_block}\" " + 
+                                                "--build-arg \"TON_LABS_VM_IMAGE=${params.dockerImage_ton_labs_vm}\" " + 
+                                                "--build-arg \"TON_LABS_ABI_IMAGE=${params.dockerImage_ton_labs_abi}\" " + 
+                                                "--build-arg \"TON_EXECUTOR_IMAGE=${params.dockerImage_ton_executor}\" " +
+                                                "--build-arg \"TON_SDK_IMAGE=${G_docker_src_image}\""
                         }
                     }
                     stages {
@@ -760,13 +779,13 @@ ton_client/platforms/ton-client-web"""
                             steps {
                                 echo 'Install...'
                                 sshagent([G_gitcred]) {
-                                    dir('ton_client/platforms/ton-client-web') {
+                                    dir('/tonlabs/TON-SDK/ton_client/platforms/ton-client-web') {
                                         sh 'npm install'
                                     }
                                 }
                                 echo 'Build ...'
                                 sshagent([G_gitcred]) {
-                                    dir('ton_client/platforms/ton-client-web') {
+                                    dir('/tonlabs/TON-SDK/ton_client/platforms/ton-client-web') {
                                         sh 'node build.js'
                                     }
                                 }
@@ -784,7 +803,7 @@ ton_client/platforms/ton-client-web"""
                                 }
                             }
                             steps {
-                                dir('ton_client/platforms/ton-client-web/bin') {
+                                dir('/tonlabs/TON-SDK/ton_client/platforms/ton-client-web/bin') {
                                     script {
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()

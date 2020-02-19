@@ -39,7 +39,7 @@ RUN sed -e "s/\/tonlabs\/ton-block/\/tonlabs\/ton-labs-block/g" Cargo.toml | \
 WORKDIR /tonlabs
 VOLUME /tonlabs
 
-FROM rust:latest as ton-sdk-build
+FROM rust:latest as ton-sdk-rust
 RUN apt -qqy update && apt -qyy install apt-utils && \
     curl -sL https://deb.nodesource.com/setup_12.x | bash - && \
     apt-get install -qqy nodejs
@@ -49,5 +49,8 @@ COPY --from=ton-sdk-full /tonlabs/ton-labs-block /tonlabs/ton-labs-block
 COPY --from=ton-sdk-full /tonlabs/ton-labs-abi   /tonlabs/ton-labs-abi
 COPY --from=ton-sdk-full /tonlabs/ton-executor   /tonlabs/ton-executor
 COPY --from=ton-sdk-full /tonlabs/TON-SDK        /tonlabs/TON-SDK
+WORKDIR /tonlabs/TON-SDK
+
+FROM ton-sdk-rust as ton-sdk-build-client
 WORKDIR /tonlabs/TON-SDK/ton_client/client
 RUN node build.js
