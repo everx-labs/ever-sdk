@@ -233,9 +233,31 @@ ton_client/platforms/ton-client-web"""
                                 sh 'cargo --version'
                             }
                         }
+                        stage('Get sources') {
+                            steps {
+                                script {
+                                    def C_PATH = sh (script: 'pwd', returnStdout: true).trim()
+                            
+                                    unstash 'ton-sdk-src'
+                                    sh """
+                                        unzip ton-sdk-src.zip
+                                        node pathFix.js tonlabs/ton-labs-block/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/ton-labs-vm/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/ton-labs-abi/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/ton-executor/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/ton_sdk/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/ton_client/client/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/ton_client/platforms/ton-client-react-native/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/ton_client/platforms/ton-client-web/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                    """
+                                }
+                            }
+                        }
                         stage('Build') {
                             steps {
-                                dir('ton_client/client') {
+                                dir('tonlabs/TON-SDK/ton_client/client') {
                                     sshagent([G_gitcred]) {
                                         sh 'node build.js'
                                     }
@@ -249,7 +271,7 @@ ton_client/platforms/ton-client-web"""
                                 }
                             }
                             steps {
-                                dir('ton_client/client/bin') {
+                                dir('tonlabs/TON-SDK/ton_client/client/bin') {
                                     script {
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
@@ -277,9 +299,34 @@ ton_client/platforms/ton-client-web"""
                                 bat 'cargo --version'
                             }
                         }
+                        stage('Get sources') {
+                            steps {
+                                script {
+                                    def C_PATH = bat (script: '@echo off && echo %cd%', returnStdout: true).trim()
+                            
+                                    unstash 'ton-sdk-src'
+                                    bat """
+                                        unzip ton-sdk-src.zip
+
+                                        node pathFix.js tonlabs\\ton-labs-block\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+
+                                        node pathFix.js tonlabs\\ton-labs-block\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        node pathFix.js tonlabs\\ton-labs-vm\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        node pathFix.js tonlabs\\ton-labs-abi\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        node pathFix.js tonlabs\\ton-executor\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        node pathFix.js tonlabs\\TON-SDK\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        node pathFix.js tonlabs\\TON-SDK\\ton_sdk\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        node pathFix.js tonlabs\\TON-SDK\\ton_client\\client\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        node pathFix.js tonlabs\\TON-SDK\\ton_client\\platforms\\ton-client-node-js\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        node pathFix.js tonlabs\\TON-SDK\\ton_client\\platforms\\ton-client-react-native\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        node pathFix.js tonlabs\\TON-SDK\\ton_client\\platforms\\ton-client-web\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                    """
+                                }
+                            }
+                        }
                         stage('Build') {
                             steps {
-                                dir('ton_client/client') {
+                                dir('tonlabs/TON-SDK/ton_client/client') {
                                     sshagent([G_gitcred]) {
                                         bat 'node build.js'
                                     }
@@ -293,7 +340,7 @@ ton_client/platforms/ton-client-web"""
                                 }
                             }
                             steps {
-                                dir('ton_client/client/bin') {
+                                dir('tonlabs/TON-SDK/ton_client/client/bin') {
                                     script {
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
@@ -323,11 +370,33 @@ ton_client/platforms/ton-client-web"""
                                 '''
                             }
                         }
+                        stage('Get sources') {
+                            steps {
+                                script {
+                                    def C_PATH = sh (script: 'pwd', returnStdout: true).trim()
+                            
+                                    unstash 'ton-sdk-src'
+                                    sh """
+                                        unzip ton-sdk-src.zip
+                                        node pathFix.js tonlabs/ton-labs-block/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/ton-labs-vm/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/ton-labs-abi/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/ton-executor/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/ton_sdk/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/ton_client/client/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/ton_client/platforms/ton-client-react-native/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/ton_client/platforms/ton-client-web/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                    """
+                                }
+                            }
+                        }
                         stage('Build') {
                             steps {
                                 echo 'Build ...'
                                 sshagent([G_gitcred]) {
-                                    dir('ton_client/platforms/ton-client-react-native') {
+                                    dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-react-native') {
                                         sh 'node build.js --ios'
                                     }
                                 }
@@ -345,7 +414,7 @@ ton_client/platforms/ton-client-web"""
                                 }
                             }
                             steps {
-                                dir('ton_client/platforms/ton-client-react-native/output') {
+                                dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-react-native/output') {
                                     script {
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
@@ -380,11 +449,33 @@ ton_client/platforms/ton-client-web"""
                                 '''
                             }
                         }
+                        stage('Get sources') {
+                            steps {
+                                script {
+                                    def C_PATH = sh (script: 'pwd', returnStdout: true).trim()
+                            
+                                    unstash 'ton-sdk-src'
+                                    sh """
+                                        unzip ton-sdk-src.zip
+                                        node pathFix.js tonlabs/ton-labs-block/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/ton-labs-vm/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/ton-labs-abi/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/ton-executor/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/ton_sdk/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/ton_client/client/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/ton_client/platforms/ton-client-react-native/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/ton_client/platforms/ton-client-web/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                    """
+                                }
+                            }
+                        }
                         stage('Build') {
                             steps {
                                 echo 'Build ...'
                                 sshagent([G_gitcred]) {
-                                    dir('ton_client/platforms/ton-client-react-native') {
+                                    dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-react-native') {
                                         sh 'node build.js --android'
                                     }
                                 }
@@ -402,7 +493,7 @@ ton_client/platforms/ton-client-web"""
                                 }
                             }
                             steps {
-                                dir('ton_client/platforms/ton-client-react-native/output') {
+                                dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-react-native/output') {
                                     script {
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
@@ -437,11 +528,33 @@ ton_client/platforms/ton-client-web"""
                                 '''
                             }
                         }
+                        stage('Get sources') {
+                            steps {
+                                script {
+                                    def C_PATH = sh (script: 'pwd', returnStdout: true).trim()
+                            
+                                    unstash 'ton-sdk-src'
+                                    sh """
+                                        unzip ton-sdk-src.zip
+                                        node pathFix.js tonlabs/ton-labs-block/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/ton-labs-vm/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/ton-labs-abi/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/ton-executor/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/ton_sdk/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/ton_client/client/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/ton_client/platforms/ton-client-react-native/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/TON-SDK/ton_client/platforms/ton-client-web/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                    """
+                                }
+                            }
+                        }
                         stage('Build') {
                             steps {
                                 echo 'Build ...'
                                 sshagent([G_gitcred]) {
-                                    dir('ton_client/platforms/ton-client-node-js') {
+                                    dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js') {
                                         sh 'node build.js'
                                     }
                                 }
@@ -459,7 +572,7 @@ ton_client/platforms/ton-client-web"""
                                 }
                             }
                             steps {
-                                dir('ton_client/platforms/ton-client-node-js/bin') {
+                                dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js/bin') {
                                     script {
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
@@ -494,11 +607,36 @@ ton_client/platforms/ton-client-web"""
                                 '''
                             }
                         }
+                        stage('Get sources') {
+                            steps {
+                                script {
+                                    def C_PATH = bat (script: '@echo off && echo %cd%', returnStdout: true).trim()
+                            
+                                    unstash 'ton-sdk-src'
+                                    bat """
+                                        unzip ton-sdk-src.zip
+
+                                        node pathFix.js tonlabs\\ton-labs-block\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+
+                                        node pathFix.js tonlabs\\ton-labs-block\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        node pathFix.js tonlabs\\ton-labs-vm\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        node pathFix.js tonlabs\\ton-labs-abi\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        node pathFix.js tonlabs\\ton-executor\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        node pathFix.js tonlabs\\TON-SDK\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        node pathFix.js tonlabs\\TON-SDK\\ton_sdk\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        node pathFix.js tonlabs\\TON-SDK\\ton_client\\client\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        node pathFix.js tonlabs\\TON-SDK\\ton_client\\platforms\\ton-client-node-js\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        node pathFix.js tonlabs\\TON-SDK\\ton_client\\platforms\\ton-client-react-native\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        node pathFix.js tonlabs\\TON-SDK\\ton_client\\platforms\\ton-client-web\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                    """
+                                }
+                            }
+                        }
                         stage('Build') {
                             steps {
                                 echo 'Build ...'
                                 sshagent([G_gitcred]) {
-                                    dir('ton_client/platforms/ton-client-node-js') {
+                                    dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js') {
                                         bat 'node build.js'
                                     }
                                 }
@@ -516,7 +654,7 @@ ton_client/platforms/ton-client-web"""
                                 }
                             }
                             steps {
-                                dir('ton_client/platforms/ton-client-node-js/bin') {
+                                dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js/bin') {
                                     script {
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
@@ -557,7 +695,7 @@ ton_client/platforms/ton-client-web"""
                             steps {
                                 echo 'Build ...'
                                 sshagent([G_gitcred]) {
-                                    dir('ton_client/platforms/ton-client-node-js') {
+                                    dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js') {
                                         sh 'node build.js'
                                     }
                                 }
@@ -575,7 +713,7 @@ ton_client/platforms/ton-client-web"""
                                 }
                             }
                             steps {
-                                dir('ton_client/platforms/ton-client-node-js/bin') {
+                                dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js/bin') {
                                     script {
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
