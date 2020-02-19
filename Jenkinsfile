@@ -99,6 +99,9 @@ pipeline {
                     }
                 }
             }
+            post {
+						cleanup {script{cleanWs notFailBuild: true}}
+			}
         }
         stage('Building...') {
             failFast true
