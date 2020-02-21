@@ -77,6 +77,10 @@ while(args.length > 0) {
         } else {
             throw new Error('Unable to set candidate as release');
         }
+    case '--decline':
+            lastVersion.candidate='';
+            fs.writeFileSync(path.join(cwd, 'version.json'), JSON.stringify(lastVersion));
+            process.exit(0);
     default :
         item = path.join(cwd, ...args[0].split(/[\\/]/g));
         if(fs.existsSync(item)) {
