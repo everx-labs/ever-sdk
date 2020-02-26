@@ -395,13 +395,13 @@ impl Contract {
     fn _send_message(msg: TvmMessage) -> SdkResult<MessageId> {
         let (data, id) = Self::serialize_message(msg)?;
 
-        requests_helper::send_message(&id.to_bytes()?, &data)?;
+        queries_helper::send_message(&id.to_bytes()?, &data)?;
         //println!("msg is sent, id: {}", id);
         Ok(id.clone())
     }
 
     pub fn send_serialized_message(id: &MessageId, msg: &[u8]) -> SdkResult<()> {
-        requests_helper::send_message(&id.to_bytes()?, msg)
+        queries_helper::send_message(&id.to_bytes()?, msg)
     }
 
     pub fn subscribe_transaction_processing(message_id: &MessageId) ->

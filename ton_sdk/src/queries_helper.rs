@@ -14,7 +14,7 @@
 
 use crate::*;
 use graphite::client::GqlClient;
-use graphite::types::VariableRequest;
+use graphite::types::{VariableRequest};
 use futures::stream::Stream;
 use serde_json::Value;
 use std::sync::Mutex;
@@ -39,13 +39,13 @@ lazy_static! {
     static ref CLIENT: Mutex<Option<GqlClient>> = Mutex::new(None);
 }
 
-fn check_redirect(config: QueriesConfig) -> SdkResult<QueriesConfig> {
+fn check_redirect(address: &str) -> SdkResult<Option<String>> {
     let client = ClientBuilder::new()
         .redirect(RedirectPolicy::none())
         .build()
         .map_err(|err| SdkErrorKind::InternalError { msg: format!("Can not build test request: {}", err) } )?;
 
-    let result = client.get(&config.queries_server).send();
+    let result = client.get(address).send();
 
     match result {
         Ok(result) => {
@@ -57,15 +57,10 @@ fn check_redirect(config: QueriesConfig) -> SdkResult<QueriesConfig> {
                     .to_str()
                     .map_err(|err| SdkErrorKind::NetworkError { msg: format!("Can not cast redirect location to string: {}", err) } )?
                     .to_owned();
-                
-                Ok(QueriesConfig {
-                    queries_server: address.clone(),
-                    subscriptions_server: address
-                        .replace("https://", "wss://")
-                        .replace("http://", "ws://")
-                })
+
+                Ok(Some(address))
             } else {
-                Ok(config)
+                Ok(None)
             }
         },
         Err(err) => bail!(SdkErrorKind::NetworkError { msg: format!("Can not send test request: {}", err) } )
@@ -73,8 +68,15 @@ fn check_redirect(config: QueriesConfig) -> SdkResult<QueriesConfig> {
 }
 
 // Globally initializes client with server address
-pub fn init(config: QueriesConfig) -> SdkResult<()> {
-    let config = check_redirect(config)?;
+pub fn init(mut config: NodeClientConfig) -> SdkResult<()> {
+    if let Some(redirected) = check_redirect(&config.queries_server)? {
+        config = NodeClientConfig {
+            queries_server: redirected.clone(),
+            subscriptions_server: redirected
+                .replace("https://", "wss://")
+                .replace("http://", "ws://")
+        }
+    }
     let mut client = CLIENT.lock().unwrap();
     *client = Some(GqlClient::new(&config.queries_server,&config.subscriptions_server));
     Ok(())
@@ -251,3 +253,38 @@ fn generate_subscription(table: &str, filter: &str, fields: &str) -> SdkResult<V
     Ok(VariableRequest::new(query, Some(variables)))
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct MutationRequest {
+    pub id: String,
+    pub body: String
+}
+
+fn generate_post_mutation(requests: &[MutationRequest]) -> SdkResult<VariableRequest> {
+    let query = "mutation postRequests($requests:[Request]){postRequests(requests:$requests)}".to_owned();
+    let variables = json!({
+        "requests": serde_json::to_value(requests)?
+    }).to_string();
+
+    Ok(VariableRequest::new(query, Some(variables)))
+}
+
+// Sends message to node
+pub fn send_message(key: &[u8], value: &[u8]) -> SdkResult<()> {
+    if let Some(client) = CLIENT.lock().unwrap().as_ref() {
+        let request = MutationRequest {
+            id: base64::encode(key),
+            body: base64::encode(value)
+        };
+
+        Ok(client.query_vars(generate_post_mutation(&[request])?)?
+            .wait()
+            .next()
+            .ok_or(SdkErrorKind::NetworkError {
+                    msg: "Post message error: server did not responded".to_owned()
+                })?
+            .map(|_| ())?
+        )
+    } else {
+        bail!(SdkErrorKind::NotInitialized);
+    }
+}

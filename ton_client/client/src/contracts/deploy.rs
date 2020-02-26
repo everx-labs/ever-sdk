@@ -70,6 +70,7 @@ pub(crate) struct ParamsOfGetDeployAddress {
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfDeploy {
     pub address: String,
+    pub alreadyDeployed: bool,
 }
 
 #[allow(non_snake_case)]
@@ -99,7 +100,7 @@ pub(crate) struct ResultOfGetDeployData {
 }
 
 #[cfg(feature = "node_interaction")]
-pub(crate) fn deploy(_context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<ResultOfDeploy> {
+pub(crate) fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<ResultOfDeploy> {
     debug!("-> contracts.deploy({})", params.constructorParams.to_string());
 
     let key_pair = params.keyPair.decode()?;
@@ -108,13 +109,23 @@ pub(crate) fn deploy(_context: &mut ClientContext, params: ParamsOfDeploy) -> Ap
     let account_id = contract_image.msg_address(params.workchainId);
     debug!("-> -> image prepared with address: {}", account_id);
 
+    if check_deployed(context, &account_id)? {
+        return Ok(ResultOfDeploy { 
+            address: account_encode(&account_id),
+            alreadyDeployed: true
+        })
+    }
+
     debug!("-> -> deploy");
     let tr = deploy_contract(params, contract_image, &key_pair)?;
     debug!("-> -> deploy transaction: {}", tr. id());
 
     debug!("<-");
     super::run::check_transaction_status(&tr)?;
-    Ok(ResultOfDeploy { address: account_encode(&account_id) })
+    Ok(ResultOfDeploy {
+        address: account_encode(&account_id),
+        alreadyDeployed: false
+    })
 }
 
 pub(crate) fn get_address(_context: &mut ClientContext, params: ParamsOfGetDeployAddress) -> ApiResult<String> {
@@ -234,10 +245,13 @@ use types::{ApiResult, ApiError};
 use client::ClientContext;
 
 #[cfg(feature = "node_interaction")]
-use ed25519_dalek::Keypair;
-
+use queries::query::{query, ParamsOfQuery};
 #[cfg(feature = "node_interaction")]
-use ton_block::TransactionProcessingStatus;
+use ed25519_dalek::Keypair;
+#[cfg(feature = "node_interaction")]
+use ton_block::{TransactionProcessingStatus, AccountStatus};
+#[cfg(feature = "node_interaction")]
+use ton_sdk::json_helper::account_status_to_u8;
 
 fn create_image(abi: &serde_json::Value, init_params: Option<&serde_json::Value>, image_base64: &String, public_key: &PublicKey) -> ApiResult<ContractImage> {
     let bytes = base64::decode(image_base64)
@@ -281,4 +295,22 @@ fn deploy_contract(params: ParamsOfDeploy, image: ContractImage, keys: &Keypair)
         }
     }
     tr.ok_or(ApiError::contracts_deploy_transaction_missing())
+}
+
+#[cfg(feature = "node_interaction")]
+fn check_deployed(context: &mut ClientContext, address: &ton_block::MsgAddressInt) -> ApiResult<bool> {
+    let filter = json!({
+        "id": { "eq": address.to_string() },
+        "acc_type": { "eq":  account_status_to_u8(AccountStatus::AccStateActive) }
+    }).to_string();
+
+    let result = query(context, ParamsOfQuery {
+        table: ton_sdk::CONTRACTS_TABLE_NAME.to_owned(),
+        filter,
+        result: "id".to_owned(),
+        limit: None,
+        order: None
+    })?;
+
+    Ok(result.result.as_array().and_then(|value| value.get(0)).is_some())
 }

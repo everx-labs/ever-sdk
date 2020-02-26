@@ -18,7 +18,7 @@ extern crate websocket;
 use futures::{Async, Poll};
 use futures::stream::Stream;
 use std::fmt;
-use reqwest::{Response, RequestBuilder};
+use reqwest::{Response};
 use serde_json::Value;
 use websocket::{ClientBuilder, OwnedMessage};
 use websocket::client::sync::Client;
@@ -62,47 +62,6 @@ impl VariableRequest {
 
     pub fn get_variables(&self) -> Option<String> {
         self.variables.clone()
-    }
-}
-
-pub struct PeriodicRequestStream {
-    request: RequestBuilder,
-    timeout: u64
-}
-
-impl PeriodicRequestStream {
-    pub fn new(request: RequestBuilder) -> Result<Self, GraphiteError> {
-        Ok(Self { request, timeout: 0 })
-    }
-}
-
-impl Stream for PeriodicRequestStream {
-    type Item = Value;
-    type Error = GraphiteError;
-
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        std::thread::sleep(std::time::Duration::from_millis(self.timeout));
-        self.timeout = 1000;
-
-        match  self.request.try_clone().unwrap().send() {
-            Ok(mut res) => {
-                match res.text() {
-                    Ok(res_str) => {
-                        if let Ok(value) = serde_json::from_str(res_str.as_str()) {
-                            if let Some(error) = try_extract_error(&value) {
-                                return Err(error);
-                            }
-                            Ok(Async::Ready(Some(value)))
-                        } else {
-                            Err(GraphiteError::new(format!(
-                                        "Invalid JSON: {}", res_str)))
-                        }
-                    },
-                    Err(err) => Err(GraphiteError::new(err.to_string().clone()))
-                }
-            },
-            Err(err) => Err(GraphiteError::new(err.to_string().clone()))
-        }
     }
 }
 
@@ -219,21 +178,26 @@ impl Drop for SubscribeStream {
 }
 
 fn try_extract_error(value: &Value) -> Option<GraphiteError> {
-    if let Some(payload) = value.get("payload") {
-        if let Some(errors) = payload.get("errors") {
-            if let Some(errors) = errors.as_array() {
-                if errors.len() > 0 {
-                    if let Some(error) = errors.get(0) {
-                        if let Some(message) = error.get("message") {
-                            if let Some(string) = message.as_str() {
-                                return Some(GraphiteError::new(string.to_string()))
-                            }
+    let errors = if let Some(payload) = value.get("payload") {
+        payload.get("errors")
+    } else {
+        value.get("errors")
+    };
+    
+    if let Some(errors) = errors {
+        if let Some(errors) = errors.as_array() {
+            if errors.len() > 0 {
+                if let Some(error) = errors.get(0) {
+                    if let Some(message) = error.get("message") {
+                        if let Some(string) = message.as_str() {
+                            return Some(GraphiteError::new(string.to_string()))
                         }
                     }
                 }
             }
         }
     }
+
     return None;
 }
 

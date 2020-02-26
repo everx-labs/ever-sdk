@@ -183,7 +183,7 @@ fn test_wallet_deploy() {
     println!("result: {}", version.to_string());
 
     let _deployed = client.request("setup",
-        json!({"baseUrl": "http://192.168.99.100"}));
+        json!({"baseUrl": "http://localhost"}));
 
     let keys = client.request("crypto.ed25519.keypair", json!({})).unwrap();
 
@@ -238,7 +238,7 @@ fn test_wallet_deploy() {
             }),
     ).unwrap();
 
-    assert_eq!(format!("{{\"address\":\"{}\"}}", address), deployed);
+    assert_eq!(format!("{{\"address\":\"{}\",\"alreadyDeployed\":false}}", address), deployed);
 
     let result = client.request("contracts.run",
         json!({
