@@ -250,8 +250,6 @@ fn test_deploy_and_call_contract() {
     let account_id = contract_image.msg_address(0);
 
     // before deploying contract need to transfer some funds to its address
-    println!("Account ID to take some grams {}", account_id);
-    
     tests_common::get_grams_from_giver(account_id.clone());
 
 

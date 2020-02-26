@@ -80,17 +80,14 @@ pub use types::*;
 
 #[cfg(feature = "node_interaction")]
 pub mod queries_helper;
-#[cfg(feature = "node_interaction")]
-mod requests_helper;
 
 pub mod json_helper;
 
 
 /// Init SKD. Globally saves queries and requests server URLs
 #[cfg(feature = "node_interaction")]
-pub fn init(config: NodeClientConfig) -> SdkResult<()> {
-    requests_helper::init(config.requests_config);
-    queries_helper::init(config.queries_config)
+pub fn init(config: NodeClientConfig) -> SdkResult<()> { 
+    queries_helper::init(config)
 }
 
 /// Init SKD. Globally saves queries and requests server URLs
@@ -103,7 +100,6 @@ pub fn init_json(config: &str) -> SdkResult<()> {
 /// Uninit SKD. Should be called before process
 #[cfg(feature = "node_interaction")]
 pub fn uninit() {
-    requests_helper::uninit();
     queries_helper::uninit();
 }
 

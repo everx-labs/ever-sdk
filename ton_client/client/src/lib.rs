@@ -12,7 +12,6 @@
 * limitations under the License.
 */
 
-#[cfg(test)]
 #[macro_use]
 extern crate serde_json;
 
