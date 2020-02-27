@@ -38,6 +38,7 @@ pub(crate) struct ParamsOfRun {
     pub address: String,
     pub abi: serde_json::Value,
     pub functionName: String,
+    pub header: Option<serde_json::Value>,
     pub input: serde_json::Value,
     pub keyPair: Option<KeyPair>,
 }
@@ -49,6 +50,7 @@ pub(crate) struct ParamsOfLocalRun {
     pub account: Option<serde_json::Value>,
     pub abi: serde_json::Value,
     pub functionName: String,
+    pub header: Option<serde_json::Value>,
     pub input: serde_json::Value,
     pub keyPair: Option<KeyPair>,
 }
@@ -70,6 +72,7 @@ pub(crate) struct ParamsOfEncodeUnsignedRunMessage {
     pub abi: serde_json::Value,
     pub functionName: String,
     pub input: serde_json::Value,
+    pub header: Option<serde_json::Value>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -140,6 +143,7 @@ pub struct ResultOfDecodeUnknownRun {
 pub(crate) struct ParamsOfGetRunBody {
     pub abi: serde_json::Value,
     pub function: String,
+    pub header: Option<serde_json::Value>,
     pub params: serde_json::Value,
     #[serde(default = "bool_false")]
     pub internal: bool,
@@ -214,6 +218,7 @@ pub(crate) fn local_run(context: &mut ClientContext, params: ParamsOfLocalRun, t
     let (body, _) = Contract::construct_call_message_json(
         address,
         params.functionName.to_owned(),
+        params.header.map(|value| value.to_string().to_owned()),
         params.input.to_string().to_owned(),
         params.abi.to_string().to_owned(),
         false,
@@ -286,7 +291,7 @@ pub(crate) fn local_run_msg(_context: &mut ClientContext, params: ParamsOfLocalR
 
         for msg in messages {
             if  msg.msg_type() == MessageType::ExternalOutbound &&
-                abi_function.is_my_message(
+                abi_function.is_my_output_message(
                     msg.body().ok_or(ApiError::contracts_decode_run_output_failed("Message has no body"))?,
                     false)
                         .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?
@@ -322,6 +327,7 @@ pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfRun) 
     let (body, id) = Contract::construct_call_message_json(
         address,
         params.functionName.to_owned(),
+        params.header.map(|value| value.to_string().to_owned()),
         params.input.to_string().to_owned(),
         params.abi.to_string().to_owned(),
         false,
@@ -340,6 +346,7 @@ pub(crate) fn encode_unsigned_message(_context: &mut ClientContext, params: Para
     let encoded = ton_sdk::Contract::get_call_message_bytes_for_signing(
         account_decode(&params.address)?,
         params.functionName,
+        params.header.map(|value| value.to_string().to_owned()),
         params.input.to_string(),
         params.abi.to_string(),
     ).map_err(|err| ApiError::contracts_create_run_message_failed(err))?;
@@ -402,6 +409,7 @@ pub(crate) fn get_run_body(_context: &mut ClientContext, params: ParamsOfGetRunB
     let body = encode_function_call(
         params.abi.to_string(),
         params.function,
+        params.header.map(|value| value.to_string().to_owned()),
         params.params.to_string(),
         params.internal,
         keys.as_ref())
@@ -477,7 +485,7 @@ fn load_out_message(tr: &Transaction, abi_function: &AbiFunction) -> Message {
                     .expect("error unwrap out message 2");
             msg.msg_type() == MessageType::ExternalOutbound
             && msg.body().is_some()
-            && abi_function.is_my_message(msg.body().expect("No body"), false).expect("error is_my_message")
+            && abi_function.is_my_output_message(msg.body().expect("No body"), false).expect("error is_my_message")
         })
         .expect("error unwrap out message 3")
         .expect("error unwrap out message 4")
@@ -498,6 +506,7 @@ fn call_contract(
     let changes_stream = Contract::call_json(
         address,
         params.functionName.to_owned(),
+        params.header.clone().map(|value| value.to_string().to_owned()),
         params.input.to_string().to_owned(),
         params.abi.to_string().to_owned(),
         key_pair)
