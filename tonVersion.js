@@ -53,10 +53,26 @@ function setVersion(dest, version) {
     }
 };
 
+function allowed(ver) {
+    const n = canonical(ver);
+    const c = canonical(lastVersion.candidate ? lastVersion.candidate : lastVersion.release);
+    return (
+        c[0] <= n[0] &&
+        (c[1] <= n[1] || c[0] < n[0]) &&
+        (c[2] < n[2] || c[1] < n[1])
+    );
+}
+
 const cwd = process.cwd();
 let args = process.argv.slice(2);
+if(!fs.existsSync('version.json')) {
+    throw new Error('File version.json not found');
+}
 const folders = []
 const lastVersion = JSON.parse(fs.readFileSync(path.join(cwd,'version.json')));
+if(!lastVersion || !lastVersion.release || !canonical(lastVersion.release)) {
+    throw new Error('Wrong release value in version.json');
+}
 let argVersion;
 
 while(args.length > 0) {
@@ -69,18 +85,22 @@ while(args.length > 0) {
         args = args.slice(1);
         break;
     case '--release':
-        if(lastVersion.candidate) {
+        if(lastVersion.candidate && lastVersion.release) {
             lastVersion.release = lastVersion.candidate;
             lastVersion.candidate = '';
             fs.writeFileSync(path.join(cwd, 'version.json'), JSON.stringify(lastVersion));
             process.exit(0);
         } else {
-            throw new Error('Unable to set candidate as release');
+            throw new Error(`Unable to set candidate as release\n${JSON.stringify(lastVersion)}`);
         }
     case '--decline':
-            lastVersion.candidate='';
-            fs.writeFileSync(path.join(cwd, 'version.json'), JSON.stringify(lastVersion));
-            process.exit(0);
+            if(lastVersion.release) {
+                lastVersion.candidate='';
+                fs.writeFileSync(path.join(cwd, 'version.json'), JSON.stringify(lastVersion));
+                process.exit(0);
+            } else {
+                throw new Error(`Unable to decline candidate\n${JSON.stringify(lastVersion)}`);
+            }
     default :
         item = path.join(cwd, ...args[0].split(/[\\/]/g));
         if(fs.existsSync(item)) {
@@ -89,16 +109,6 @@ while(args.length > 0) {
         break;
     }
     args = args.slice(1);
-}
-
-function allowed(ver) {
-    const n = canonical(ver);
-    const c = canonical(lastVersion.candidate ? lastVersion.candidate : lastVersion.release);
-    return (
-        c[0] <= n[0] &&
-        (c[1] <= n[1] || c[0] < n[0]) &&
-        (c[2] < n[2] || c[1] < n[1])
-    );
 }
 
 const newVersion = argVersion && allowed(argVersion) ? canonical(argVersion) : (
