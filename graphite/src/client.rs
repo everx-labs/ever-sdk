@@ -56,16 +56,6 @@ impl GqlClient {
             .send())?)
     }
     
-    pub fn mutation(&self, query: String) -> Result<ResponseStream, GraphiteError> {
-        let mut headers = HeaderMap::new();
-        headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
-        let request = format!("{{\"query\":\"{}\"}}", query);       
-        Ok(ResponseStream::new(self.client_htpp.post(&self.graphql_host)
-            .headers(headers)
-            .body(request)
-            .send())?)
-    }
-    
     pub fn subscribe(&mut self, request: VariableRequest) -> Result<SubscribeStream, GraphiteError> {
         self.incremented_id = self.incremented_id+1;
         let id = self.incremented_id;

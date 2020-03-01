@@ -1,6 +1,6 @@
 [package]
 name = "ton_client"
-version = "0.21.0"
+version = "0.20.100"
 authors = ["Michael Vlasov"]
 
 [lib]
@@ -9,6 +9,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }
+ton_vm = { git = "https://github.com/tonlabs/ton-labs-vm.git", default-features = false }
 ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git" }
 
 rand = "0.6.1"

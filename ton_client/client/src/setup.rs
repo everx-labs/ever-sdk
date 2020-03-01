@@ -19,7 +19,7 @@ use types::ApiResult;
 use types::ApiError;
 
 #[cfg(feature = "node_interaction")]
-use ton_sdk::{NodeClientConfig, RequestsConfig, QueriesConfig};
+use ton_sdk::{NodeClientConfig};
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
     #[cfg(feature = "node_interaction")]
@@ -35,20 +35,13 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 #[derive(Deserialize)]
 #[serde(rename_all="camelCase")]
 pub(crate) struct SetupParams {
-    pub base_url: Option<String>,
-    pub requests_url: Option<String>,
-    pub queries_url: Option<String>,
-    pub subscriptions_url: Option<String>,
+    pub base_url: Option<String>
 }
 
 #[cfg(feature = "node_interaction")]
 fn setup(_context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
     // if node address is not provided don't init network connection
-    if  config.base_url.is_none() &&
-        config.queries_url.is_none() &&
-        config.subscriptions_url.is_none() &&
-        config.requests_url.is_none()
-    {
+    if config.base_url.is_none() {
        return Ok(());
     }
 
@@ -74,35 +67,18 @@ fn setup(_context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
         "",
     );
 
-    let requests_url = resolve_url(
-        config.requests_url.as_ref(),
-        &format!("{}/topics/requests", base_url),
-    );
 
+    let queries_url = format!("{}/graphql", base_url);
 
-    let queries_url = resolve_url(
-        config.queries_url.as_ref(),
-        &format!("{}/graphql", base_url),
-    );
-
-
-    let subscriptions_url = resolve_url(
-        config.subscriptions_url.as_ref(),
-        &if queries_url.starts_with("https://") {
-            replace_prefix(&queries_url, "https://", "wss://")
-        } else {
-            replace_prefix(&queries_url, "http://", "ws://")
-        }
-    );
+    let subscriptions_url = if queries_url.starts_with("https://") {
+        replace_prefix(&queries_url, "https://", "wss://")
+    } else {
+        replace_prefix(&queries_url, "http://", "ws://")
+    };
 
     let internal_config = NodeClientConfig {
-        requests_config: RequestsConfig {
-            requests_server: requests_url,
-        },
-        queries_config: QueriesConfig {
-            queries_server: queries_url,
-            subscriptions_server: subscriptions_url
-        }
+        queries_server: queries_url,
+        subscriptions_server: subscriptions_url
     };
     ton_sdk::init(internal_config).map_err(|err|ApiError::config_init_failed(err))
 }
