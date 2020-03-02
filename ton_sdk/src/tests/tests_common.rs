@@ -243,7 +243,7 @@ pub fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_par
     get_grams_from_giver(account_id.clone());
 
     // call deploy method
-    let changes_stream = Contract::deploy_json("constructor".to_owned(), constructor_params.to_owned(), abi.to_owned(), contract_image, Some(key_pair), workchain_id)
+    let changes_stream = Contract::deploy_json("constructor".to_owned(), None, constructor_params.to_owned(), abi.to_owned(), contract_image, Some(key_pair), workchain_id)
         .expect("Error deploying contract");
 
 
@@ -261,7 +261,7 @@ pub fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_par
 
 pub fn call_contract(address: MsgAddressInt, func: &str, input: String, abi: &str, key_pair: Option<&Keypair>) -> Transaction {
     // call needed method
-    let changes_stream = Contract::call_json(address, func.to_owned(), input, abi.to_owned(), key_pair)
+    let changes_stream = Contract::call_json(address, func.to_owned(), None, input, abi.to_owned(), key_pair)
         .expect("Error calling contract method");
 
     // wait transaction id in message-status
@@ -283,7 +283,7 @@ pub fn call_contract_and_wait(address: MsgAddressInt, func: &str, input: String,
 {
     // call needed method
     let changes_stream =
-        Contract::call_json(address, func.to_owned(), input, abi.to_owned(), key_pair)
+        Contract::call_json(address, func.to_owned(), None, input, abi.to_owned(), key_pair)
             .expect("Error calling contract method");
 
     // wait transaction id in message-status
@@ -310,7 +310,7 @@ pub fn call_contract_and_wait(address: MsgAddressInt, func: &str, input: String,
                     .expect("error unwrap out message 2");
             msg.msg_type() == MessageType::ExternalOutbound
             && msg.body().is_some()
-            && abi_function.is_my_message(msg.body().expect("No body"), false).expect("error is_my_message")
+            && abi_function.is_my_output_message(msg.body().expect("No body"), false).expect("error is_my_message")
         })
             .expect("erro unwrap out message 2")
             .expect("erro unwrap out message 3")
@@ -340,7 +340,7 @@ pub fn contract_call_local(address: MsgAddressInt, func: &str, input: &str, abi:
     let contract = Contract::load_wait_deployed(&address).expect("Error loading Contract");
 
     // call needed method
-    let messages = contract.local_call_tvm_json(func.to_owned(), input.to_owned(), abi.to_owned(), key_pair)
+    let messages = contract.local_call_tvm_json(func.to_owned(), None, input.to_owned(), abi.to_owned(), key_pair)
         .expect("Error calling locally");
 
     for msg in messages {

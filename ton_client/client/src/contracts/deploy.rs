@@ -26,6 +26,7 @@ use ton_sdk::Transaction;
 #[allow(non_snake_case)]
 pub(crate) struct ParamsOfDeploy {
     pub abi: serde_json::Value,
+    pub constructorHeader: Option<serde_json::Value>,
     pub constructorParams: serde_json::Value,
     pub initParams: Option<serde_json::Value>,
     pub imageBase64: String,
@@ -38,6 +39,7 @@ pub(crate) struct ParamsOfDeploy {
 #[allow(non_snake_case)]
 pub(crate) struct ParamsOfEncodeUnsignedDeployMessage {
     pub abi: serde_json::Value,
+    pub constructorHeader: Option<serde_json::Value>,
     pub constructorParams: serde_json::Value,
     pub initParams: Option<serde_json::Value>,
     pub imageBase64: String,
@@ -115,7 +117,7 @@ pub(crate) fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) -> Api
     }
 
     debug!("-> -> deploy");
-    let tr = deploy_contract(&params, contract_image, &key_pair)?;
+    let tr = deploy_contract(params, contract_image, &key_pair)?;
     debug!("-> -> deploy transaction: {}", tr. id());
 
     debug!("<-");
@@ -143,6 +145,7 @@ pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfDeplo
     debug!("image prepared with address: {}", account_encode(&account_id));
     let (message_body, message_id) = Contract::construct_deploy_message_json(
         "constructor".to_owned(),
+        params.constructorHeader.map(|value| value.to_string().to_owned()),
         params.constructorParams.to_string().to_owned(),
         params.abi.to_string().to_owned(),
         contract_image,
@@ -220,6 +223,7 @@ pub(crate) fn encode_unsigned_message(_context: &mut ClientContext, params: Para
     let address_hex = account_encode(&image.msg_address(params.workchainId));
     let encoded = ton_sdk::Contract::get_deploy_message_bytes_for_signing(
         "constructor".to_owned(),
+        params.constructorHeader.map(|value| value.to_string().to_owned()),
         params.constructorParams.to_string().to_owned(),
         params.abi.to_string().to_owned(),
         image, params.workchainId
@@ -265,9 +269,10 @@ fn create_image(abi: &serde_json::Value, init_params: Option<&serde_json::Value>
 }
 
 #[cfg(feature = "node_interaction")]
-fn deploy_contract(params: &ParamsOfDeploy, image: ContractImage, keys: &Keypair) -> ApiResult<Transaction> {
+fn deploy_contract(params: ParamsOfDeploy, image: ContractImage, keys: &Keypair) -> ApiResult<Transaction> {
     let changes_stream = Contract::deploy_json(
         "constructor".to_owned(),
+        params.constructorHeader.map(|value| value.to_string().to_owned()),
         params.constructorParams.to_string().to_owned(),
         params.abi.to_string().to_owned(),
         image, Some(keys), params.workchainId)
