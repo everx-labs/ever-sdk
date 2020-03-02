@@ -148,7 +148,7 @@ ton_client/platforms/ton-client-web"""
                             withEnv(["DOCKER_BUILDKIT=1", "BUILD_INFO=${env.BUILD_TAG}:${GIT_COMMIT}"]) {
                                 src_image = docker.build(
                                     "${G_docker_src_image}",
-                                    "--label \"git-commit=\${GIT_COMMIT}\" --target ton-sdk-src ."
+                                    "--pull --label \"git-commit=\${GIT_COMMIT}\" --target ton-sdk-src ."
                                 )
                             }
                         }
@@ -161,7 +161,7 @@ ton_client/platforms/ton-client-web"""
             agent {
                 dockerfile {
                     registryCredentialsId "${G_docker_creds}"
-                    additionalBuildArgs "--target ton-sdk-full " + 
+                    additionalBuildArgs "--pull --target ton-sdk-full " + 
                                         "--build-arg \"TON_LABS_TYPES_IMAGE=${params.dockerImage_ton_labs_types}\" " +
                                         "--build-arg \"TON_LABS_BLOCK_IMAGE=${params.dockerImage_ton_labs_block}\" " + 
                                         "--build-arg \"TON_LABS_VM_IMAGE=${params.dockerImage_ton_labs_vm}\" " + 
@@ -188,7 +188,7 @@ ton_client/platforms/ton-client-web"""
                     agent {
                         dockerfile {
                             registryCredentialsId "${G_docker_creds}"
-                            additionalBuildArgs "--target ton-sdk-rust " + 
+                            additionalBuildArgs "--pull --target ton-sdk-rust " + 
                                                 "--build-arg \"TON_LABS_TYPES_IMAGE=${params.dockerImage_ton_labs_types}\" " +
                                                 "--build-arg \"TON_LABS_BLOCK_IMAGE=${params.dockerImage_ton_labs_block}\" " + 
                                                 "--build-arg \"TON_LABS_VM_IMAGE=${params.dockerImage_ton_labs_vm}\" " + 
@@ -690,7 +690,7 @@ ton_client/platforms/ton-client-web"""
                     agent {
                         dockerfile {
                             registryCredentialsId "${G_docker_creds}"
-                            additionalBuildArgs "--target ton-sdk-rust " + 
+                            additionalBuildArgs "--pull --target ton-sdk-rust " + 
                                                 "--build-arg \"TON_LABS_TYPES_IMAGE=${params.dockerImage_ton_labs_types}\" " +
                                                 "--build-arg \"TON_LABS_BLOCK_IMAGE=${params.dockerImage_ton_labs_block}\" " + 
                                                 "--build-arg \"TON_LABS_VM_IMAGE=${params.dockerImage_ton_labs_vm}\" " + 
@@ -747,7 +747,7 @@ ton_client/platforms/ton-client-web"""
                     agent {
                         dockerfile {
                             registryCredentialsId "${G_docker_creds}"
-                            additionalBuildArgs "--target ton-sdk-rust " + 
+                            additionalBuildArgs "--pull --target ton-sdk-rust " + 
                                                 "--build-arg \"TON_LABS_TYPES_IMAGE=${params.dockerImage_ton_labs_types}\" " +
                                                 "--build-arg \"TON_LABS_BLOCK_IMAGE=${params.dockerImage_ton_labs_block}\" " + 
                                                 "--build-arg \"TON_LABS_VM_IMAGE=${params.dockerImage_ton_labs_vm}\" " + 
