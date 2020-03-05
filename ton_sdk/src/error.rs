@@ -166,6 +166,9 @@ pub enum SdkErrorKind {
     ExecutorError {
         err: ton_executor::ExecutorError
     },
+
+    #[fail(display = "Wait for operation rejected on timeout")]
+    WaitForTimeout,
 }
 
 impl SdkError {

@@ -20,7 +20,7 @@ use std::io::{Cursor, Read, Seek};
 use ton_block::{
     Account, AccountState, AccountStatus, AccountStorage, CurrencyCollection, Deserializable,
     ExternalInboundMessageHeader, GetRepresentationHash, Message as TvmMessage, MsgAddressInt,
-    Serializable, StateInit, StorageInfo};
+    Serializable, StateInit, StorageInfo, TransactionProcessingStatus};
 use ton_types::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use ton_types::{Cell, SliceData, HashmapE};
 use ton_block::AccountId;
@@ -303,8 +303,10 @@ impl Contract {
     }
 
     // Asynchronously loads a Contract instance or None if contract with given id is not exists
-    pub fn load_wait_deployed(address: &MsgAddressInt) -> SdkResult<Contract> {
-        let value = queries_helper::wait_for(
+    pub fn load_wait_deployed(address: &MsgAddressInt, timeout: Option<u32>)
+    -> SdkResult<Box<dyn Stream<Item = Contract, Error = SdkError> + Send>>
+    {
+        let stream = queries_helper::wait_for(
             CONTRACTS_TABLE_NAME,
             &json!({
                 "id": {
@@ -312,12 +314,15 @@ impl Contract {
                 },
                 "acc_type": { "eq": account_status_to_u8(AccountStatus::AccStateActive) }
             }).to_string(),
-            ACCOUNT_FIELDS)?;
+            ACCOUNT_FIELDS,
+            timeout)?
+                .and_then(|val| {
+                    let acc: Contract = serde_json::from_value(val)
+                        .map_err(|err| SdkErrorKind::InvalidData { msg: format!("error parsing account: {}", err) } )?;
+                    Ok(acc)
+                });
 
-        let acc: Contract = serde_json::from_value(value)
-            .map_err(|err| SdkErrorKind::InvalidData { msg: format!("error parsing account: {}", err) } )?;
-
-        Ok(acc)
+        Ok(Box::new(stream))
     }
 
     // Asynchronously loads a Contract's json representation
@@ -343,11 +348,7 @@ impl Contract {
 
         let msg = Self::create_message(address, msg_body.into())?;
 
-        // send message by Kafka
-        let msg_id = Self::_send_message(msg)?;
-
-        // subscribe on updates from DB and return updates stream
-        Self::subscribe_transaction_processing(&msg_id)
+        Self::send_message(msg)
     }
 
     // Packs given image and input and asynchronously calls given contract's constructor method.
@@ -363,9 +364,7 @@ impl Contract {
         let cell = msg_body.into();
         let msg = Self::create_deploy_message(Some(cell), image, workchain_id)?;
 
-        let msg_id = Self::_send_message(msg)?;
-
-        Self::subscribe_transaction_processing(&msg_id)
+        Self::send_message(msg)
     }
 
     // Packs given image asynchronously send deploy message into blockchain.
@@ -375,9 +374,7 @@ impl Contract {
         -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError> + Send>> {
         let msg = Self::create_deploy_message(None, image, workchain_id)?;
 
-        let msg_id = Self::_send_message(msg)?;
-
-        Self::subscribe_transaction_processing(&msg_id)
+        Self::send_message(msg)
     }
 
     // Asynchronously calls contract by sending given message.
@@ -386,10 +383,10 @@ impl Contract {
     pub fn send_message(msg: TvmMessage)
         -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError> + Send>> 
     {
-        // send message by Kafka
+        // send message
         let msg_id = Self::_send_message(msg)?;
         // subscribe on updates from DB and return updates stream
-        Self::subscribe_transaction_processing(&msg_id)
+        Self::wait_transaction_processing(&msg_id, None)
     }
 
     fn _send_message(msg: TvmMessage) -> SdkResult<MessageId> {
@@ -404,18 +401,22 @@ impl Contract {
         queries_helper::send_message(&id.to_bytes()?, msg)
     }
 
-    pub fn subscribe_transaction_processing(message_id: &MessageId) ->
+    pub fn wait_transaction_processing(message_id: &MessageId, timeout: Option<u32>) ->
         SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError> + Send>> {
 
-        let subscribe_stream = queries_helper::subscribe_record_updates(
+        let stream = queries_helper::wait_for(
             TRANSACTIONS_TABLE_NAME,
-            &format!("{{ \"in_msg\": {{\"eq\": \"{}\" }} }}", message_id), 
-            TRANSACTION_FIELDS_ORDINARY)?
+            &json!({
+                "in_msg": { "eq": message_id.to_string() },
+                "status": { "eq": json_helper::transaction_status_to_u8(TransactionProcessingStatus::Finalized) }
+            }).to_string(), 
+            TRANSACTION_FIELDS_ORDINARY,
+            timeout)?
                 .and_then(|value| {
                     Ok(serde_json::from_value::<Transaction>(value)?)
                 });
 
-        Ok(Box::new(subscribe_stream))
+        Ok(Box::new(stream))
     }
 }
 

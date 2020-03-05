@@ -35,6 +35,8 @@ pub struct OrderBy {
     direction: SortDirection
 }
 
+const DEFAULT_TIMEOUT: u32 = 40000;
+
 lazy_static! {
     static ref CLIENT: Mutex<Option<GqlClient>> = Mutex::new(None);
 }
@@ -96,7 +98,7 @@ pub fn subscribe_record_updates(table: &str, filter: &str, fields: &str)
         filter,
         fields)?;
 
-    let load_stream = query(table, filter, fields, None, None)?
+    let load_stream = query(table, filter, fields, None, None, None)?
         .filter(|value| !value[0].is_null())
         .map(|value| value[0].clone());
 
@@ -145,6 +147,7 @@ pub fn load_record_fields(table: &str, record_id: &str, fields: &str)
         &format!("{{ \"id\": {{\"eq\": \"{record_id}\" }} }}", record_id=record_id),
         fields,
         None,
+        None,
         None)?
         .and_then(|value| {
             Ok(value[0].clone())
@@ -154,14 +157,21 @@ pub fn load_record_fields(table: &str, record_id: &str, fields: &str)
 }
 
 // Returns Stream with GraphQL query answer 
-pub fn query(table: &str, filter: &str, fields: &str, order_by: Option<OrderBy>, limit: Option<u32>)
-    -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError> + Send>> {
+pub fn query(
+    table: &str,
+    filter: &str,
+    fields: &str,
+    order_by: Option<OrderBy>,
+    limit: Option<u32>,
+    timeout: Option<u32>
+) -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError> + Send>> {
     let query = generate_query_var(
         table,
         filter,
         fields,
         order_by,
-        limit)?;
+        limit,
+        timeout)?;
 
     let mut client = CLIENT.lock().unwrap();
     let client = client.as_mut().ok_or(SdkError::from(SdkErrorKind::NotInitialized))?;
@@ -190,34 +200,45 @@ pub fn query(table: &str, filter: &str, fields: &str, order_by: Option<OrderBy>,
 }
 
 // Executes GraphQL query, waits for result and returns recieved value
-pub fn wait_for(table: &str, filter: &str, fields: &str) 
-    -> SdkResult<Value> {
-    let subscription_stream = subscribe(
-        table,
-        filter,
-        fields)?;
+pub fn wait_for(table: &str, filter: &str, fields: &str, timeout: Option<u32>)
+    -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError> + Send>>
+{
+    let timeout = match timeout {
+        Some(timeout) => timeout,
+        None => DEFAULT_TIMEOUT
+    };
 
-    let load_stream = query(table, filter, fields, None, None)?
-        .filter(|value| !value[0].is_null())
+    let stream = query(table, filter, fields, None, None, Some(timeout))?
         .and_then(|value| {
-            Ok(value[0].clone())
+            if !value[0].is_null() {
+                Ok(value[0].clone())
+            } else {
+                Err(SdkErrorKind::WaitForTimeout.into())
+            }
+            
         });
 
-    Ok(load_stream
-        .chain(subscription_stream)
-        .wait()
-        .next()
-        .ok_or(SdkErrorKind::InvalidData { msg: "None value".to_owned() } )??)
+    Ok(Box::new(stream))
 }
 
-fn generate_query_var(table: &str, filter: &str, fields: &str, order_by: Option<OrderBy>, limit: Option<u32>)
-    -> SdkResult<VariableRequest>
-{
+fn generate_query_var(
+    table: &str,
+    filter: &str,
+    fields: &str,
+    order_by: Option<OrderBy>,
+    limit: Option<u32>,
+    timeout: Option<u32>
+) -> SdkResult<VariableRequest> {
     let mut scheme_type = (&table[0 .. table.len() - 1]).to_owned() + "Filter";
     scheme_type[..1].make_ascii_uppercase();
 
     let mut query = format!(
-        "query {table}($filter: {scheme_type}, $orderBy: [QueryOrderBy], $limit: Int) {{ {table}(filter: $filter, orderBy: $orderBy, limit: $limit) {{ {fields} }}}}",
+        r#"query {table}
+        ($filter: {scheme_type}, $orderBy: [QueryOrderBy], $limit: Int, $timeout: Float)
+        {{ 
+            {table}(filter: $filter, orderBy: $orderBy, limit: $limit, timeout: $timeout)
+            {{ {fields} }}
+        }}"#,
         table=table,
         scheme_type=scheme_type,
         fields=fields
@@ -227,7 +248,8 @@ fn generate_query_var(table: &str, filter: &str, fields: &str, order_by: Option<
     let variables = json!({
         "filter" : serde_json::from_str::<Value>(filter)?,
         "orderBy": order_by,
-        "limit": limit
+        "limit": limit,
+        "timeout": timeout
     });
 
     let variables = variables.to_string().split_whitespace().collect::<Vec<&str>>().join(" ");

@@ -18,7 +18,7 @@ use std::sync::Mutex;
 use rand::RngCore;
 
 use ton_sdk::queries_helper;
-use ton_sdk::SdkError;
+use ton_sdk::{SdkError, SdkErrorKind};
 use client::ClientContext;
 use types::{ApiResult, ApiError};
 
@@ -38,6 +38,15 @@ pub(crate) struct ParamsOfSubscribe {
     pub table: String,
     pub filter: String,
     pub result: String
+}
+
+#[derive(Serialize, Deserialize)]
+#[allow(non_snake_case)]
+pub(crate) struct ParamsOfWaitFor {
+    pub table: String,
+    pub filter: String,
+    pub result: String,
+    pub timeout: Option<u32>
 }
 
 #[allow(non_snake_case)]
@@ -61,7 +70,7 @@ lazy_static! {
 }
 
 pub(crate) fn query(_context: &mut ClientContext, params: ParamsOfQuery) -> ApiResult<ResultOfQuery> {
-    let stream = queries_helper::query(&params.table, &params.filter, &params.result, params.order, params.limit)
+    let stream = queries_helper::query(&params.table, &params.filter, &params.result, params.order, params.limit, Some(0))
         .map_err(|err| ApiError::queries_query_failed(err))?;
 
     let result = stream
@@ -73,9 +82,16 @@ pub(crate) fn query(_context: &mut ClientContext, params: ParamsOfQuery) -> ApiR
     Ok(ResultOfQuery{ result: result })
 }
 
-pub(crate) fn wait_for(_context: &mut ClientContext, params: ParamsOfSubscribe) -> ApiResult<ResultOfQuery> {
-    let result = queries_helper::wait_for(&params.table, &params.filter, &params.result)
-        .map_err(|err| ApiError::queries_wait_for_failed(err))?;
+pub(crate) fn wait_for(_context: &mut ClientContext, params: ParamsOfWaitFor) -> ApiResult<ResultOfQuery> {
+    let result = queries_helper::wait_for(&params.table, &params.filter, &params.result, params.timeout)
+        .map_err(|err| ApiError::queries_wait_for_failed(err))?
+        .wait()
+        .next()
+        .ok_or(ApiError::queries_query_failed("None value"))?
+        .map_err(|err| match err.kind() {
+            &SdkErrorKind::WaitForTimeout => ApiError::wait_for_timeout(),
+            _ => ApiError::queries_wait_for_failed(err)
+        })?;
 
     Ok(ResultOfQuery{ result: result })
 }

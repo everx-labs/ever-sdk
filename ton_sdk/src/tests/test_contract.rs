@@ -332,8 +332,13 @@ fn test_deploy_empty_contract() {
 			"id": { "eq": acc_id.to_string() },
 			"balance": { "gt": "0" }
 		}).to_string(),
-		"id balance"
-	).unwrap();
+        "id balance",
+        None)        
+        .expect("Error calling wait_for")
+        .wait()
+        .next()
+        .expect("Error unwrap stream next while waiting balance")
+        .expect("Error unwrap result while waiting balance");
     println!("Contract got!!!");
 
 

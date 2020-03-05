@@ -12,7 +12,7 @@
 * limitations under the License.
 */
 
-use ton_sdk::{Contract, MessageType, AbiContract, TransactionFees};
+use ton_sdk::{Contract, MessageType, AbiContract, TransactionFees, SdkErrorKind};
 use ton_sdk::json_abi::encode_function_call;
 use crypto::keys::{KeyPair, account_decode};
 use types::{ApiResult, ApiError, base64_decode, long_num_to_json_string};
@@ -494,7 +494,15 @@ fn load_out_message(tr: &Transaction, abi_function: &AbiFunction) -> Message {
 
 #[cfg(feature = "node_interaction")]
 fn load_contract(address: &MsgAddressInt) -> ApiResult<Contract> {
-    Contract::load_wait_deployed(address).map_err(|err| ApiError::contracts_run_contract_load_failed(err))
+    Contract::load_wait_deployed(address, None)
+        .map_err(|err| ApiError::contracts_run_contract_load_failed(err))?
+        .wait()
+        .next()
+        .ok_or(ApiError::contracts_run_contract_load_failed("None value"))?
+        .map_err(|err| match err.kind() {
+            &SdkErrorKind::WaitForTimeout => ApiError::wait_for_timeout(),
+            _ => ApiError::contracts_run_contract_load_failed(err)
+        })
 }
 
 #[cfg(feature = "node_interaction")]

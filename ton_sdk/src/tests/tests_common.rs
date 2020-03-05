@@ -157,7 +157,7 @@ fn wait_message_processed(changes_stream: Box<dyn Stream<Item = Transaction, Err
 }
 
 fn wait_message_processed_by_id(id: &MessageId)-> Transaction {
-    wait_message_processed(Contract::subscribe_transaction_processing(id).unwrap())
+    wait_message_processed(Contract::wait_transaction_processing(id, None).unwrap())
 }
 
 fn check_giver() {
@@ -337,7 +337,12 @@ pub fn call_contract_and_wait(address: MsgAddressInt, func: &str, input: String,
 
 pub fn contract_call_local(address: MsgAddressInt, func: &str, input: &str, abi: &str, key_pair: Option<&Keypair>) -> String {
 
-    let contract = Contract::load_wait_deployed(&address).expect("Error loading Contract");
+    let contract = Contract::load_wait_deployed(&address, None)
+        .expect("Error calling load Contract")
+        .wait()
+        .next()
+        .expect("Error unwrap stream next while loading Contract")
+        .expect("Error unwrap result while loading Contract");
 
     // call needed method
     let messages = contract.local_call_tvm_json(func.to_owned(), None, input.to_owned(), abi.to_owned(), key_pair)

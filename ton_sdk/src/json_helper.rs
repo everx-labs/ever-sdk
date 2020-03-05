@@ -117,6 +117,16 @@ pub fn deserialize_tr_state<'de, D>(d: D) -> Result<TransactionProcessingStatus,
     }
 }
 
+pub fn transaction_status_to_u8(status: TransactionProcessingStatus) -> u8 {
+    match status {
+        TransactionProcessingStatus::Unknown => 0,
+        TransactionProcessingStatus::Preliminary => 1,
+        TransactionProcessingStatus::Proposed => 2,
+        TransactionProcessingStatus::Finalized => 3,
+        TransactionProcessingStatus::Refused => 4
+    }
+}
+
 pub fn deserialize_acc_state_change<'de, D>(d: D) -> Result<AccStatusChange, D::Error>
     where D: serde::Deserializer<'de>
 {

@@ -131,6 +131,11 @@ impl ApiError {
             "Config init failed: {}", err)
     }
 
+    pub fn wait_for_timeout() -> Self {
+        sdk_err!(WaitForTimeout,
+            "Wait for operation rejected on timeout")
+    }
+
     // SDK Crypto
 
     pub fn crypto_invalid_hex<E: Display>(s: &String, err: E) -> Self {
@@ -454,6 +459,7 @@ pub enum ApiSdkErrorCode {
     InvalidContextHandle = 3,
 
     ConfigInitFailed = 1001,
+    WaitForTimeout = 1003,
 
     CryptoInvalidPublicKey = 2001,
     CryptoInvalidSecretKey = 2002,
@@ -505,9 +511,6 @@ pub enum ApiSdkErrorCode {
     QueriesSubscribeFailed = 4002,
     QueriesWaitForFailed = 4003,
     QueriesGetNextFailed = 4004,
-
-    Wallet = 5000,
-
 }
 
 impl ApiErrorCode for ApiSdkErrorCode {
