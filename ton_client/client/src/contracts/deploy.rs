@@ -13,7 +13,7 @@
 */
 
 use crypto::keys::{KeyPair, decode_public_key, account_encode};
-use ton_sdk::{Contract, ContractImage};
+use ton_sdk::{Contract, ContractImage, SdkErrorKind};
 
 use contracts::EncodedUnsignedMessage;
 
@@ -249,7 +249,7 @@ use queries::query::{query, ParamsOfQuery};
 #[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
-use ton_block::{TransactionProcessingStatus, AccountStatus};
+use ton_block::{AccountStatus};
 #[cfg(feature = "node_interaction")]
 use ton_sdk::json_helper::account_status_to_u8;
 
@@ -270,31 +270,22 @@ fn create_image(abi: &serde_json::Value, init_params: Option<&serde_json::Value>
 
 #[cfg(feature = "node_interaction")]
 fn deploy_contract(params: ParamsOfDeploy, image: ContractImage, keys: &Keypair) -> ApiResult<Transaction> {
-    let changes_stream = Contract::deploy_json(
+    let stream = Contract::deploy_json(
         "constructor".to_owned(),
         params.constructorHeader.map(|value| value.to_string().to_owned()),
         params.constructorParams.to_string().to_owned(),
         params.abi.to_string().to_owned(),
         image, Some(keys), params.workchainId)
-        .expect("Error deploying contract");
+    .map_err(|err| ApiError::contracts_deploy_failed(err))?;
 
-    let mut tr = None;
-    for transaction in changes_stream.wait() {
-        if let Err(e) = transaction {
-            panic!("error next state getting: {}", e);
-        }
-        if let Ok(transaction) = transaction {
-            debug!("-> -> deploy: {:?}", transaction.status);
-            if transaction.status == TransactionProcessingStatus::Preliminary ||
-                transaction.status == TransactionProcessingStatus::Proposed ||
-                transaction.status == TransactionProcessingStatus::Finalized
-            {
-                tr = Some(transaction);
-                break;
-            }
-        }
-    }
-    tr.ok_or(ApiError::contracts_deploy_transaction_missing())
+    stream
+        .wait()
+        .next()
+        .ok_or(ApiError::contracts_deploy_failed("None value"))?
+        .map_err(|err| match err.kind() {
+            &SdkErrorKind::WaitForTimeout => ApiError::wait_for_timeout(),
+            _ => ApiError::contracts_deploy_failed(err)
+        })
 }
 
 #[cfg(feature = "node_interaction")]

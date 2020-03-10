@@ -24,7 +24,7 @@ use client::ClientContext;
 #[cfg(feature = "node_interaction")]
 use ton_sdk::{Transaction, AbiFunction, Message};
 #[cfg(feature = "node_interaction")]
-use ton_block::{TransactionProcessingStatus, MsgAddressInt, AccStatusChange};
+use ton_block::{MsgAddressInt, AccStatusChange};
 #[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
@@ -511,30 +511,21 @@ fn call_contract(
     params: &ParamsOfRun,
     key_pair: Option<&Keypair>,
 ) -> ApiResult<Transaction> {
-    let changes_stream = Contract::call_json(
+    let stream = Contract::call_json(
         address,
         params.functionName.to_owned(),
         params.header.clone().map(|value| value.to_string().to_owned()),
         params.input.to_string().to_owned(),
         params.abi.to_string().to_owned(),
         key_pair)
-        .expect("Error calling contract method");
+        .map_err(|err| ApiError::contracts_run_failed(err))?;
 
-    let mut tr = None;
-    for transaction in changes_stream.wait() {
-        if let Err(e) = transaction {
-            panic!("error next state getting: {}", e);
-        }
-        if let Ok(transaction) = transaction {
-            debug!("run: {:?}", transaction.status);
-            if transaction.status == TransactionProcessingStatus::Preliminary ||
-                transaction.status == TransactionProcessingStatus::Proposed ||
-                transaction.status == TransactionProcessingStatus::Finalized
-            {
-                tr = Some(transaction);
-                break;
-            }
-        }
-    }
-    tr.ok_or(ApiError::contracts_run_transaction_missing())
+    stream
+        .wait()
+        .next()
+        .ok_or(ApiError::contracts_run_failed("None value"))?
+        .map_err(|err| match err.kind() {
+            &SdkErrorKind::WaitForTimeout => ApiError::wait_for_timeout(),
+            _ => ApiError::contracts_run_failed(err)
+        })
 }
