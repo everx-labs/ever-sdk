@@ -1,11 +1,11 @@
 [package]
 name = "ton_client_web"
-version = "0.20.100"
+version = "0.21.0"
 edition = "2018"
 description = "tonsdk WASM binding"
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = false #['-Os'] uncomment when wasm-opt issue on Linux is solved
+wasm-opt = ['-Os']
 
 [profile.release]
 lto = true

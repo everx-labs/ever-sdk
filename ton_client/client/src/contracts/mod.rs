@@ -12,11 +12,17 @@
 * limitations under the License.
 */
 
-use types::{ApiResult, hex_decode, base64_decode, ApiError};
+use types::{ApiResult, base64_decode, ApiError};
 use ton_sdk::{AbiContract, ContractImage};
 use ton_block::{CommonMsgInfo, Deserializable};
 use std::io::Cursor;
-use crypto::keys::{account_decode, account_encode_ex, AccountAddressType, Base64AddressParams};
+use crypto::keys::{
+    account_decode,
+    account_encode_ex,
+    AccountAddressType,
+    Base64AddressParams,
+    decode_public_key
+};
 
 pub(crate) mod types;
 pub(crate) mod deploy;
@@ -43,9 +49,10 @@ pub(crate) struct EncodedUnsignedMessage {
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
 pub(crate) struct ParamsOfEncodeMessageWithSign {
+    pub abi: serde_json::Value,
     pub unsignedBytesBase64: String,
     pub signBytesBase64: String,
-    pub publicKeyHex: String,
+    pub publicKeyHex: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -105,9 +112,17 @@ use dispatch::DispatchTable;
 use client::ClientContext;
 
 pub(crate) fn encode_message_with_sign(_context: &mut ClientContext, params: ParamsOfEncodeMessageWithSign) -> ApiResult<EncodedMessage> {
+    let key_array: [u8; ed25519_dalek::PUBLIC_KEY_LENGTH];
+    let public_key = if let Some(key) = params.publicKeyHex {
+        key_array = decode_public_key(&key)?.to_bytes();
+        Some(key_array.as_ref())
+    } else {
+        None
+    };
     let (body, id) = ton_sdk::Contract::add_sign_to_message(
+        params.abi.to_string(),
         &base64_decode(&params.signBytesBase64)?,
-        &hex_decode(&params.publicKeyHex)?,
+        public_key,
         &base64_decode(&params.unsignedBytesBase64)?
     ).map_err(|err|ApiError::contracts_encode_message_with_sign_failed(err))?;
     Ok(EncodedMessage {

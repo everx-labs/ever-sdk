@@ -89,7 +89,7 @@ pub fn uninit() {
 
 // Returns Stream with updates of some field in database. First stream item is current value
 pub fn subscribe_record_updates(table: &str, filter: &str, fields: &str)
-    -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError>>> {
+    -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError> + Send>> {
 
     let subscription_stream = subscribe(
         table,
@@ -139,7 +139,7 @@ pub fn subscribe(table: &str, filter: &str, fields: &str)
 
 // Returns Stream with required database record fields
 pub fn load_record_fields(table: &str, record_id: &str, fields: &str)
-    -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError>>> {
+    -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError> + Send>> {
     let stream = query(
         table,
         &format!("{{ \"id\": {{\"eq\": \"{record_id}\" }} }}", record_id=record_id),
@@ -155,7 +155,7 @@ pub fn load_record_fields(table: &str, record_id: &str, fields: &str)
 
 // Returns Stream with GraphQL query answer 
 pub fn query(table: &str, filter: &str, fields: &str, order_by: Option<OrderBy>, limit: Option<u32>)
-    -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError>>> {
+    -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError> + Send>> {
     let query = generate_query_var(
         table,
         filter,

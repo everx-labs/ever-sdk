@@ -37,7 +37,6 @@ extern crate base58;
 extern crate byteorder;
 extern crate secp256k1;
 extern crate ton_sdk;
-extern crate ton_vm;
 extern crate ton_types;
 extern crate ton_block;
 extern crate base64;

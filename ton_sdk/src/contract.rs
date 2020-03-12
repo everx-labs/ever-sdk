@@ -281,7 +281,7 @@ pub fn encode_base64(address: &MsgAddressInt, bounceable: bool, test: bool, as_u
 impl Contract {
 
     // Asynchronously loads a Contract instance or None if contract with given id is not exists
-    pub fn load(address: &MsgAddressInt) -> SdkResult<Box<dyn Stream<Item = Option<Contract>, Error = SdkError>>> {
+    pub fn load(address: &MsgAddressInt) -> SdkResult<Box<dyn Stream<Item = Option<Contract>, Error = SdkError> + Send>> {
         let id = address.to_string();
 
         let map = queries_helper::load_record_fields(
@@ -322,7 +322,7 @@ impl Contract {
 
     // Asynchronously loads a Contract's json representation
     // or null if message with given id is not exists
-    pub fn load_json(id: AccountId) -> SdkResult<Box<dyn Stream<Item = String, Error = SdkError>>> {
+    pub fn load_json(id: AccountId) -> SdkResult<Box<dyn Stream<Item = String, Error = SdkError> + Send>> {
 
         let map = queries_helper::load_record_fields(CONTRACTS_TABLE_NAME, &id.to_hex_string(), ACCOUNT_FIELDS)?
             .map(|val| val.to_string());
@@ -334,11 +334,12 @@ impl Contract {
     // Works with json representation of input and abi.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
-    pub fn call_json(address: MsgAddressInt, func: String, input: String, abi: String, key_pair: Option<&Keypair>)
-        -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError>>> {
+    pub fn call_json(address: MsgAddressInt, func: String, header: Option<String>, input: String,
+        abi: String, key_pair: Option<&Keypair>
+    ) -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError> + Send>> {
 
         // pack params into bag of cells via ABI
-        let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)?;
+        let msg_body = ton_abi::encode_function_call(abi, func, header, input, false, key_pair)?;
 
         let msg = Self::create_message(address, msg_body.into())?;
 
@@ -353,10 +354,11 @@ impl Contract {
     // Works with json representation of input and abi.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
-    pub fn deploy_json(func: String, input: String, abi: String, image: ContractImage, key_pair: Option<&Keypair>, workchain_id: i32)
-        -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError>>> {
+    pub fn deploy_json(func: String, header: Option<String>, input: String, abi: String,
+        image: ContractImage, key_pair: Option<&Keypair>, workchain_id: i32
+    ) -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError> + Send>> {
 
-        let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)?;
+        let msg_body = ton_abi::encode_function_call(abi, func, header, input, false, key_pair)?;
 
         let cell = msg_body.into();
         let msg = Self::create_deploy_message(Some(cell), image, workchain_id)?;
@@ -370,7 +372,7 @@ impl Contract {
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
     pub fn deploy_no_constructor(image: ContractImage, workchain_id: i32)
-        -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError>>> {
+        -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError> + Send>> {
         let msg = Self::create_deploy_message(None, image, workchain_id)?;
 
         let msg_id = Self::_send_message(msg)?;
@@ -382,7 +384,7 @@ impl Contract {
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
     pub fn send_message(msg: TvmMessage)
-        -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError>>> 
+        -> SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError> + Send>> 
     {
         // send message by Kafka
         let msg_id = Self::_send_message(msg)?;
@@ -403,7 +405,7 @@ impl Contract {
     }
 
     pub fn subscribe_transaction_processing(message_id: &MessageId) ->
-        SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError>>> {
+        SdkResult<Box<dyn Stream<Item = Transaction, Error = SdkError> + Send>> {
 
         let subscribe_stream = queries_helper::subscribe_record_updates(
             TRANSACTIONS_TABLE_NAME,
@@ -457,6 +459,53 @@ impl Contract {
         Ok(acc)
     }
 
+    /// Creates `Contract` struct by serialized contract's bag of cells
+    pub fn from_bytes(boc: &[u8]) -> SdkResult<Self> {
+        Self::from_cells(
+            ton_types::cells_serialization::deserialize_tree_of_cells(&mut Cursor::new(boc))?
+                .into()
+        )
+    }
+
+    /// Creates `Contract` struct by deserialized contract's tree of cells
+    pub fn from_cells(mut root_cell_slice: SliceData) -> SdkResult<Self> {
+        let acc: ton_block::Account = ton_block::Account::construct_from(&mut root_cell_slice)?;
+        if acc.is_none() {
+            bail!(SdkErrorKind::InvalidData { msg: "Account is none.".into() } );
+        }
+
+        let mut balance_other = vec!();
+        ton_types::HashmapType::iterate(
+            &acc.get_balance().unwrap().other,
+                &mut |ref mut key, ref mut value| -> SdkResult<bool> {
+                let value: ton_block::VarUInteger32 = ton_block::VarUInteger32::construct_from(value)?;
+                balance_other.push(OtherCurrencyValue {
+                    currency: key.get_next_u32()?,
+                    value: num_traits::ToPrimitive::to_u128(value.value()).ok_or(
+                        SdkError::from(SdkErrorKind::InvalidData { msg: "Account's other currency balance is too big".to_owned() } )
+                    )?
+                });
+                Ok(true)
+            }
+        ).unwrap();
+
+        // All unwraps below won't panic because the account is checked for none.
+        Ok(Contract {
+            id: acc.get_addr().unwrap().clone(),
+            acc_type: acc.status(),
+            balance: num_traits::ToPrimitive::to_u128(
+                acc.get_balance().unwrap().grams.value()).ok_or(
+                    SdkError::from(SdkErrorKind::InvalidData {
+                        msg: "Account's balance is too big".to_owned() 
+                    } )
+                )?,
+            balance_other: if balance_other.len() > 0 { Some(balance_other) } else { None },
+            code: acc.get_code(),
+            data: acc.get_data(),
+            last_paid: acc.storage_info().unwrap().last_paid,
+        })
+    }
+
     /// Invokes local TVM instance with provided inbound message.
     /// Returns outbound messages generated by contract function and gas fee function consumed
     pub fn local_call_tvm(&self, message: TvmMessage) -> SdkResult<Vec<Message>> {
@@ -483,11 +532,12 @@ impl Contract {
 
     /// Invokes local TVM instance with provided inbound message.
     /// Returns outbound messages generated by contract function and gas fee function consumed
-    pub fn local_call_tvm_json(&self, func: String, input: String, abi: String, key_pair: Option<&Keypair>)
-         -> SdkResult<Vec<Message>>
+    pub fn local_call_tvm_json(&self, func: String, header: Option<String>, input: String,
+        abi: String, key_pair: Option<&Keypair>
+    ) -> SdkResult<Vec<Message>>
     {
         // pack params into bag of cells via ABI
-        let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)?;
+        let msg_body = ton_abi::encode_function_call(abi, func, header, input, false, key_pair)?;
 
         let address = self.address();
 
@@ -516,11 +566,11 @@ impl Contract {
 
     /// Invokes local transaction executor instance with provided inbound message.
     /// Returns outbound messages generated by contract function and transaction fees
-    pub fn local_call_json(&self, func: String, input: String, abi: String, key_pair: Option<&Keypair>)
+    pub fn local_call_json(&self, func: String, header: Option<String>, input: String, abi: String, key_pair: Option<&Keypair>)
          -> SdkResult<LocalCallResult>
     {
         // pack params into bag of cells via ABI
-        let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)?;
+        let msg_body = ton_abi::encode_function_call(abi, func, header, input, false, key_pair)?;
 
         let address = self.address();
 
@@ -582,11 +632,12 @@ impl Contract {
     // Packs given inputs by abi into Message struct.
     // Works with json representation of input and abi.
     // Returns message's bag of cells and identifier.
-    pub fn construct_call_message_json(address: MsgAddressInt, func: String, input: String,
-        abi: String, internal: bool, key_pair: Option<&Keypair>) -> SdkResult<(Vec<u8>, MessageId)> {
+    pub fn construct_call_message_json(address: MsgAddressInt, func: String, header: Option<String>,
+        input: String, abi: String, internal: bool, key_pair: Option<&Keypair>
+    ) -> SdkResult<(Vec<u8>, MessageId)> {
 
         // pack params into bag of cells via ABI
-        let msg_body = ton_abi::encode_function_call(abi, func, input, internal, key_pair)?;
+        let msg_body = ton_abi::encode_function_call(abi, func, header, input, internal, key_pair)?;
 
         let address = address;
         let msg = Self::create_message(address, msg_body.into())?;
@@ -608,11 +659,12 @@ impl Contract {
     // Packs given inputs by abi into Message struct without sign and returns data to sign.
     // Sign should be then added with `add_sign_to_message` function
     // Works with json representation of input and abi.
-    pub fn get_call_message_bytes_for_signing(address: MsgAddressInt, func: String, input: String, 
-        abi: String) -> SdkResult<MessageToSign> {
+    pub fn get_call_message_bytes_for_signing(address: MsgAddressInt, func: String, 
+        header: Option<String>, input: String, abi: String
+    ) -> SdkResult<MessageToSign> {
         
         // pack params into bag of cells via ABI
-        let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(abi, func, input)?;
+        let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(abi, func, header, input)?;
 
         let msg = Self::create_message(address, msg_body.into())?;
 
@@ -627,10 +679,11 @@ impl Contract {
     // Packs given image and input into Message struct.
     // Works with json representation of input and abi.
     // Returns message's bag of cells and identifier.
-    pub fn construct_deploy_message_json(func: String, input: String, abi: String, image: ContractImage,
-        key_pair: Option<&Keypair>, workchain_id: i32) -> SdkResult<(Vec<u8>, MessageId)> {
+    pub fn construct_deploy_message_json(func: String, header: Option<String>, input: String,
+        abi: String, image: ContractImage, key_pair: Option<&Keypair>, workchain_id: i32
+    ) -> SdkResult<(Vec<u8>, MessageId)> {
 
-        let msg_body = ton_abi::encode_function_call(abi, func, input, false, key_pair)?;
+        let msg_body = ton_abi::encode_function_call(abi, func, header, input, false, key_pair)?;
 
         let cell = msg_body.into();
         let msg = Self::create_deploy_message(Some(cell), image, workchain_id)?;
@@ -664,10 +717,11 @@ impl Contract {
     // Packs given image and input into Message struct without sign and returns data to sign.
     // Sign should be then added with `add_sign_to_message` function
     // Works with json representation of input and abi.
-    pub fn get_deploy_message_bytes_for_signing(func: String, input: String, abi: String,
-        image: ContractImage, workchain_id: i32) -> SdkResult<MessageToSign> {
+    pub fn get_deploy_message_bytes_for_signing(func: String, header: Option<String>, input: String,
+        abi: String, image: ContractImage, workchain_id: i32
+    ) -> SdkResult<MessageToSign> {
 
-        let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(abi, func, input)?;
+        let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(abi, func, header, input)?;
 
         let cell = msg_body.into();
         let msg = Self::create_deploy_message(Some(cell), image, workchain_id)?;
@@ -682,7 +736,7 @@ impl Contract {
     // Add sign to message, returned by `get_deploy_message_bytes_for_signing` or 
     // `get_run_message_bytes_for_signing` function.
     // Returns serialized message and identifier.
-    pub fn add_sign_to_message(signature: &[u8], public_key: &[u8], message: &[u8]) 
+    pub fn add_sign_to_message(abi: String, signature: &[u8], public_key: Option<&[u8]>, message: &[u8]) 
         -> SdkResult<(Vec<u8>, MessageId)> {
         
         let mut slice = Self::deserialize_tree_to_slice(message)?;
@@ -692,7 +746,7 @@ impl Contract {
         let body = message.body()
             .ok_or(SdkError::from(SdkErrorKind::InvalidData { msg: "No message body".to_owned() } ))?;
 
-        let signed_body = ton_abi::add_sign_to_function_call(signature, public_key, body)?;
+        let signed_body = ton_abi::add_sign_to_function_call(abi, signature, public_key, body)?;
 
         *message.body_mut() = Some(signed_body.into());
             
