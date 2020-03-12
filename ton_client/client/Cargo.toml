@@ -37,5 +37,6 @@ crc-any = "2.2.3"
 ton_sdk = { path = "../../ton_sdk", default-features = false }
 
 [features]
-default = ["node_interaction"]
+default = ["node_interaction", "fee_calculation"]
 node_interaction = ["ton_sdk/node_interaction"]
+fee_calculation = ["ton_sdk/fee_calculation"]

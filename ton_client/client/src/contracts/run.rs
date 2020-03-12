@@ -12,10 +12,10 @@
 * limitations under the License.
 */
 
-use ton_sdk::{Contract, MessageType, AbiContract, TransactionFees};
+use ton_sdk::{Contract, MessageType, AbiContract};
 use ton_sdk::json_abi::encode_function_call;
 use crypto::keys::{KeyPair, account_decode};
-use types::{ApiResult, ApiError, base64_decode, long_num_to_json_string};
+use types::{ApiResult, ApiError, base64_decode};
 use ton_types::cells_serialization::BagOfCells;
 
 use contracts::{EncodedMessage, EncodedUnsignedMessage};
@@ -29,6 +29,11 @@ use ton_block::{TransactionProcessingStatus, MsgAddressInt, AccStatusChange};
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
 use futures::Stream;
+
+#[cfg(feature = "fee_calculation")]
+use ton_sdk::TransactionFees;
+#[cfg(feature = "fee_calculation")]
+use types::long_num_to_json_string;
 
 fn bool_false() -> bool { false }
 
@@ -111,6 +116,7 @@ pub struct LocalRunFees {
     pub totalOutput: String
 }
 
+#[cfg(feature = "fee_calculation")]
 impl From<TransactionFees> for LocalRunFees {
     fn from(value: TransactionFees) -> Self {
         LocalRunFees {
@@ -274,9 +280,16 @@ pub(crate) fn local_run_msg(_context: &mut ClientContext, params: ParamsOfLocalR
         .map_err(|err| ApiError::invalid_params(&params.messageBase64, err))?;
 
     let (messages, fees) = if !tvm_call {
+    #[cfg(feature = "fee_calculation")]
+    {
         let result = contract.local_call(msg)
             .map_err(|err| ApiError::contracts_local_run_failed(err))?;
         (result.messages, Some(LocalRunFees::from(result.fees)))
+    }
+    #[cfg(not(feature = "fee_calculation"))]
+    {
+        return Err(ApiError::contracts_local_run_failed("Fee calculation feature disabled"));
+    }
     } else {
         let messages = contract.local_call_tvm(msg)
             .map_err(|err| ApiError::contracts_local_run_failed(err))?;

@@ -31,3 +31,7 @@ default-features = false
 [dependencies.clear_on_drop]
 version = "0.2" #This version should match the version that the ed25519-dalek crate depends on.
 features = ["no_cc"]
+
+[features]
+default = ["fee_calculation"]
+fee_calculation = ["ton_client/fee_calculation"]

@@ -4,8 +4,12 @@ const {gz, spawnProcess, deleteFolderRecursive, main, version, root_path} = requ
 
 main(async() => {
     // await spawnProcess('cargo', ['clean']);
-    await spawnProcess('cargo', ['update']);
-    await spawnProcess('wasm-pack', ['build', '--release']);
+    if (process.argv.includes("--open")) {
+        await spawnProcess('wasm-pack', ['build', '--release', '--', '--no-default-features']);
+    } else {
+        await spawnProcess('cargo', ['update']);
+        await spawnProcess('wasm-pack', ['build', '--release']);
+    }
     deleteFolderRecursive(root_path('bin'));
     fs.mkdirSync(root_path('bin'), { recursive: true });
     await gz(['pkg', 'ton_client_web_bg.wasm'], `tonclient_${version}_wasm`);

@@ -17,3 +17,6 @@ default-features = false
 [profile.release]
 lto = true
 
+[features]
+default = ["fee_calculation"]
+fee_calculation = ["ton_client/fee_calculation"]
