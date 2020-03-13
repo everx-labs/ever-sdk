@@ -19,7 +19,6 @@ extern crate ton_types;
 #[macro_use]
 extern crate ton_vm;
 extern crate ton_abi;
-extern crate ton_executor;
 
 #[macro_use]
 extern crate serde_derive;
@@ -47,6 +46,9 @@ extern crate graphite;
 #[cfg(feature = "node_interaction")]
 extern crate reqwest;
 
+#[cfg(feature = "fee_calculation")]
+extern crate ton_executor;
+
 pub use ton_abi::json_abi;
 pub use ton_abi::Contract as AbiContract;
 pub use ton_abi::Function as AbiFunction;
@@ -63,7 +65,8 @@ mod message;
 pub use message::*;
 
 mod local_tvm;
-pub use local_tvm::*;
+#[cfg(feature = "fee_calculation")]
+pub use local_tvm::executor::TransactionFees;
 
 #[cfg(feature = "node_interaction")]
 mod transaction;

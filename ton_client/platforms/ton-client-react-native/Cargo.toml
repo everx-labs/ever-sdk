@@ -20,3 +20,7 @@ jni = { version = "0.12.0", default-features = false }
 
 [profile.release]
 lto = true
+
+[features]
+default = ["fee_calculation"]
+fee_calculation = ["ton_client/fee_calculation"]

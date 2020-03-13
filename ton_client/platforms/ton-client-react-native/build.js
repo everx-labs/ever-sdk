@@ -176,7 +176,11 @@ async function checkNDK() {
 
 
 async function cargoBuild(targets) {
-	return spawnAll(targets, x => ['cargo', 'build', '--target', x, '--release']);
+	if (pArgs.includes("--open")) {
+		return spawnAll(targets, x => ['cargo', 'build', '--target', x, '--release', '--no-default-features']);
+	} else {
+		return spawnAll(targets, x => ['cargo', 'build', '--target', x, '--release']);
+	}
 }
 
 
@@ -247,7 +251,9 @@ async function buildReactNativeAndroidLibrary() {
 		cargoTargets = build_iOS ? cargoTargets.concat(cargoTargetsIOS) : cargoTargets;
 		cargoTargets = build_Android ? cargoTargets.concat(cargoTargetsAndroid) : cargoTargets;
 		await spawnProcess('rustup', ['target', 'add'].concat(cargoTargets));
-		await spawnProcess('cargo', ['update']);
+		if (!pArgs.includes("--open")) {
+			await spawnProcess('cargo', ['update']);
+		}
 		if(build_iOS) {
 			await buildReactNativeIosLibrary();
 		}

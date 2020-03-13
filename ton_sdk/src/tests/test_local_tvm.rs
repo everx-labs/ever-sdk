@@ -22,6 +22,7 @@ const CONTRACT: &str = r#"{
     "data": "te6ccgEBDAEAkgABIYAAALePXtUngAAAAAANu6BgAQIDzmAIAgIDpMAEAwBBos0gyqoQ3DWUqNEMVQwwSlqP7bGRqdp/Df/UE9G9EpT4AgEgBgUAEQAAAAAAAAAe4AEBIAcAElNvbWUgZ29hbAIBYgsJAQHeCgAD0CAAQdlmkGVVCG4aylRohiqGGCUtR/bYyNTtP4b/6gno3olKfA=="
 }"#;
 
+#[cfg(feature = "fee_calculation")]
 const KEYS: &str = r"5de9980d946f426689c71e77bf9bf6d3da179a477bed01fc5a118034fe07f1c82cd20caaa10dc3594a8d10c550c304a5a8fedb191a9da7f0dffd413d1bd1294f";
 
 #[test]
@@ -46,6 +47,7 @@ fn test_local_piggy_call() {
     assert_eq!(answer, r#"{"value0":"0x7b"}"#);
 }
 
+#[cfg(feature = "fee_calculation")]
 #[test]
 fn test_local_call_accept_error() {
     let contract: crate::Contract = serde_json::from_str(CONTRACT).expect("Error parsing state init");
@@ -58,6 +60,7 @@ fn test_local_call_accept_error() {
     assert!(result.is_err());
 }
 
+#[cfg(feature = "fee_calculation")]
 #[test]
 fn test_executor_call() {
     let contract: crate::Contract = serde_json::from_str(CONTRACT).expect("Error parsing state init");
