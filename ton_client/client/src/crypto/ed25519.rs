@@ -12,8 +12,8 @@
 * limitations under the License.
 */
 
-use crypto::keys::KeyPair;
-use types::ApiResult;
+use crate::crypto::keys::KeyPair;
+use crate::types::ApiResult;
 
 pub fn generate_keypair() -> ApiResult<KeyPair> {
     let mut csprng = rand::rngs::OsRng::new().unwrap();

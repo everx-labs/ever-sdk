@@ -12,14 +12,14 @@
 * limitations under the License.
 */
 
-use ton_sdk::{Contract, MessageType, AbiContract, TransactionFees, SdkErrorKind};
+use ton_sdk::{Contract, MessageType, AbiContract, TransactionFees};
 use ton_sdk::json_abi::encode_function_call;
-use crypto::keys::{KeyPair, account_decode};
-use types::{ApiResult, ApiError, base64_decode, long_num_to_json_string};
+use crate::crypto::keys::{KeyPair, account_decode};
+use crate::types::{ApiResult, ApiError, base64_decode, long_num_to_json_string};
 use ton_types::cells_serialization::BagOfCells;
 
-use contracts::{EncodedMessage, EncodedUnsignedMessage};
-use client::ClientContext;
+use crate::contracts::{EncodedMessage, EncodedUnsignedMessage};
+use crate::client::ClientContext;
 
 #[cfg(feature = "node_interaction")]
 use ton_sdk::{Transaction, AbiFunction, Message};
@@ -28,7 +28,7 @@ use ton_block::{MsgAddressInt, AccStatusChange};
 #[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
-use futures::Stream;
+use futures::StreamExt;
 
 fn bool_false() -> bool { false }
 
@@ -157,7 +157,7 @@ pub(crate) struct ResultOfGetRunBody {
 }
 
 #[cfg(feature = "node_interaction")]
-pub(crate) fn run(_context: &mut ClientContext, params: ParamsOfRun) -> ApiResult<ResultOfRun> {
+pub(crate) async fn run(_context: &mut ClientContext, params: ParamsOfRun) -> ApiResult<ResultOfRun> {
     debug!("-> contracts.run({}, {}, {})",
         params.address.clone(),
         params.functionName.clone(),
@@ -168,7 +168,7 @@ pub(crate) fn run(_context: &mut ClientContext, params: ParamsOfRun) -> ApiResul
     let key_pair = if let Some(ref keys) = params.keyPair { Some(keys.decode()?) } else { None };
 
     debug!("run contract");
-    let tr = call_contract(address, &params, key_pair.as_ref())?;
+    let tr = call_contract(address, &params, key_pair.as_ref()).await?;
 
     let abi_contract = AbiContract::load(params.abi.to_string().as_bytes()).expect("Couldn't parse ABI");
     let abi_function = abi_contract.function(&params.functionName).expect("Couldn't find function");
@@ -182,7 +182,7 @@ pub(crate) fn run(_context: &mut ClientContext, params: ParamsOfRun) -> ApiResul
         ok_null()
     } else {
         debug!("load out messages");
-        let out_msg = load_out_message(&tr, abi_function);
+        let out_msg = load_out_message(&tr, abi_function).await?;
         let response = out_msg.body().expect("error unwrap out message body").into();
 
         debug!("decode output");
@@ -252,7 +252,8 @@ pub(crate) fn local_run_msg(_context: &mut ClientContext, params: ParamsOfLocalR
         #[cfg(feature = "node_interaction")]
         None => {
             debug!("load contract");
-            load_contract(&address)?
+            
+            crate::dispatch::run_in_runtime(load_contract(&address))?
         }
         // can't load
         #[cfg(not(feature = "node_interaction"))]
@@ -474,58 +475,47 @@ pub(crate) fn check_transaction_status(transaction: &Transaction) -> ApiResult<(
 }
 
 #[cfg(feature = "node_interaction")]
-fn load_out_message(tr: &Transaction, abi_function: &AbiFunction) -> Message {
-    tr.load_out_messages()
-        .expect("Error calling load out messages")
-        .wait()
-        .find(|msg| {
-            let msg = msg.as_ref()
-                .expect("error unwrap out message 1")
-                .as_ref()
-                    .expect("error unwrap out message 2");
-            msg.msg_type() == MessageType::ExternalOutbound
+async fn load_out_message(tr: &Transaction, abi_function: &AbiFunction) -> ApiResult<Message> {
+    let stream = tr.load_out_messages()
+        .map_err(|err| ApiError::contracts_load_messages_failed(err))?;
+
+    futures::pin_mut!(stream);
+
+    while let Some(msg) = stream.next().await {
+        let msg = msg.map_err(|err| ApiError::contracts_load_messages_failed(err))?;
+
+        if  msg.msg_type() == MessageType::ExternalOutbound
             && msg.body().is_some()
-            && abi_function.is_my_output_message(msg.body().expect("No body"), false).expect("error is_my_message")
-        })
-        .expect("error unwrap out message 3")
-        .expect("error unwrap out message 4")
-        .expect("error unwrap out message 5")
+            && abi_function.is_my_output_message(msg.body().unwrap(), false)
+                .map_err(|err| ApiError::contracts_load_messages_failed(err))?
+            {
+                return Ok(msg);
+            }
+    }
+
+    Err(ApiError::contracts_load_messages_failed("No external output messages"))
 }
 
 #[cfg(feature = "node_interaction")]
-fn load_contract(address: &MsgAddressInt) -> ApiResult<Contract> {
+async fn load_contract(address: &MsgAddressInt) -> ApiResult<Contract> {
     Contract::load_wait_deployed(address, None)
-        .map_err(|err| ApiError::contracts_run_contract_load_failed(err))?
-        .wait()
-        .next()
-        .ok_or(ApiError::contracts_run_contract_load_failed("None value"))?
-        .map_err(|err| match err.kind() {
-            &SdkErrorKind::WaitForTimeout => ApiError::wait_for_timeout(),
-            _ => ApiError::contracts_run_contract_load_failed(err)
-        })
+        .await
+        .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::contracts_run_failed))
 }
 
 #[cfg(feature = "node_interaction")]
-fn call_contract(
+async fn call_contract(
     address: MsgAddressInt,
     params: &ParamsOfRun,
     key_pair: Option<&Keypair>,
 ) -> ApiResult<Transaction> {
-    let stream = Contract::call_json(
+    Contract::call_json(
         address,
         params.functionName.to_owned(),
         params.header.clone().map(|value| value.to_string().to_owned()),
         params.input.to_string().to_owned(),
         params.abi.to_string().to_owned(),
         key_pair)
-        .map_err(|err| ApiError::contracts_run_failed(err))?;
-
-    stream
-        .wait()
-        .next()
-        .ok_or(ApiError::contracts_run_failed("None value"))?
-        .map_err(|err| match err.kind() {
-            &SdkErrorKind::WaitForTimeout => ApiError::wait_for_timeout(),
-            _ => ApiError::contracts_run_failed(err)
-        })
+            .await
+            .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::contracts_run_failed))
 }

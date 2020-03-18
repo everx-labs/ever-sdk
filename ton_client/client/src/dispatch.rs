@@ -12,12 +12,15 @@
 * limitations under the License.
 */
 
+use crate::types::{ApiError, ApiResult};
+use crate::client::ClientContext;
+use super::{JsonResponse};
 use std::collections::HashMap;
-use ::{JsonResponse};
-use types::{ApiError, ApiResult};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use client::ClientContext;
+
+#[cfg(feature = "node_interaction")]
+use futures::Future;
 
 
 impl JsonResponse {
@@ -46,7 +49,7 @@ pub(crate) struct DispatchTable {
     sync_runners: HashMap<String, Box<dyn SyncHandler + Sync>>
 }
 
-fn parse_params<P: DeserializeOwned + 'static>(params_json: &str) -> ApiResult<P> {
+fn parse_params<P: DeserializeOwned>(params_json: &str) -> ApiResult<P> {
     serde_json::from_str(params_json).map_err(|err| ApiError::invalid_params(params_json, err))
 }
 
@@ -54,12 +57,46 @@ struct CallHandler<P: Send + DeserializeOwned, R: Send + Serialize> {
     handler: fn(context: &mut ClientContext, params: P) -> ApiResult<R>,
 }
 
-impl<P: Send + DeserializeOwned + 'static, R: Send + Serialize> SyncHandler for CallHandler<P, R> {
+impl<P: Send + DeserializeOwned, R: Send + Serialize> SyncHandler for CallHandler<P, R> {
     fn handle(&self, context: &mut ClientContext, params_json: &str) -> JsonResponse {
         match parse_params(params_json) {
             Ok(params) => {
                 let handler = self.handler;
                 let result = handler(context, params);
+                match result {
+                    Ok(result) =>
+                        JsonResponse::from_result(serde_json::to_string(&result).unwrap()),
+                    Err(err) =>
+                        JsonResponse::from_error(err)
+                }
+            }
+            Err(err) => JsonResponse::from_error(err)
+        }
+    }
+}
+
+#[cfg(feature = "node_interaction")]
+struct AsyncCallHandler<P, R, Fut>
+where
+    P: Send + DeserializeOwned,
+    R: Send + Serialize,
+    Fut: Send + Future<Output=ApiResult<R>>
+{
+    handler: fn(context: &mut ClientContext, params: P) -> Fut,
+}
+
+#[cfg(feature = "node_interaction")]
+impl<P, R, Fut> SyncHandler for AsyncCallHandler<P, R, Fut>
+where
+    P: Send + DeserializeOwned,
+    R: Send + Serialize,
+    Fut: Send + Future<Output=ApiResult<R>>
+{
+    fn handle(&self, context: &mut ClientContext, params_json: &str) -> JsonResponse {
+        match parse_params(params_json) {
+            Ok(params) => {
+                let handler = self.handler;
+                let result = run_in_runtime(handler(context, params));
                 match result {
                     Ok(result) =>
                         JsonResponse::from_result(serde_json::to_string(&result).unwrap()),
@@ -89,6 +126,20 @@ impl<R: Send + Serialize> SyncHandler for CallNoArgsHandler<R> {
     }
 }
 
+#[cfg(feature = "node_interaction")]
+pub(crate) fn run_in_runtime<R, F>(future: F) -> ApiResult<R>
+where F: Future<Output=ApiResult<R>>
+{
+    let runtime = tokio::runtime::Builder::new()
+            .basic_scheduler()
+            .enable_io()
+            .enable_time()
+            .build()
+            .map_err(|err| ApiError::cannot_create_runtime(err))?;
+
+    runtime.block_on(future)
+}
+
 impl DispatchTable {
     pub fn new() -> DispatchTable {
         DispatchTable {
@@ -100,6 +151,16 @@ impl DispatchTable {
         where P: Send + DeserializeOwned + 'static, R: Send + Serialize + 'static
     {
         self.sync_runners.insert(method.to_string(), Box::new(CallHandler { handler }));
+    }
+
+    #[cfg(feature = "node_interaction")]
+    pub fn spawn_async<P, R, Fut>(&mut self, method: &str, handler: fn(context: &mut ClientContext, params: P) -> Fut)
+    where
+        P: Send + DeserializeOwned + 'static,
+        R: Send + Serialize + 'static,
+        Fut: Send + Future<Output=ApiResult<R>> + 'static
+    {
+        self.sync_runners.insert(method.to_string(), Box::new(AsyncCallHandler { handler }));
     }
 
 //    pub fn spawn_no_args<R>(&mut self, method: &str, handler: fn(context: &mut ClientContext) -> ApiResult<R>)

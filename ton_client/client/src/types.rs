@@ -15,8 +15,9 @@
 #![allow(dead_code)]
 
 use std::fmt::Display;
-use types::ApiSdkErrorCode::*;
+use ApiSdkErrorCode::*;
 use ton_block::{AccStatusChange, ComputeSkipReason};
+use ton_sdk::SdkErrorKind;
 
 pub fn hex_decode(hex: &String) -> ApiResult<Vec<u8>> {
     if hex.starts_with("x") || hex.starts_with("X") {
@@ -122,6 +123,11 @@ impl ApiError {
             "Invalid context handle: {}", context)
     }
 
+    pub fn cannot_create_runtime<E: Display>(err: E) -> Self {
+        sdk_err!(CannotCreateRuntime,
+            "Can not create runtime: {}", err)
+    }
+
 
 
     // SDK Config
@@ -134,6 +140,11 @@ impl ApiError {
     pub fn wait_for_timeout() -> Self {
         sdk_err!(WaitForTimeout,
             "Wait for operation rejected on timeout")
+    }
+
+    pub fn message_expired() -> Self {
+        sdk_err!(MessageExpired,
+            "Message expired")
     }
 
     // SDK Crypto
@@ -359,6 +370,11 @@ impl ApiError {
             "Invalid Bag of Cells: {}", err)
     }
 
+    pub fn contracts_load_messages_failed<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsLoadMessagesFailed,
+            "Load messages failed: {}", err)
+    }
+
     // SDK queries
 
     pub fn queries_query_failed<E: Display>(err: E) -> Self {
@@ -457,9 +473,11 @@ pub enum ApiSdkErrorCode {
     UnknownMethod = 1,
     InvalidParams = 2,
     InvalidContextHandle = 3,
+    CannotCreateRuntime = 4,
 
     ConfigInitFailed = 1001,
     WaitForTimeout = 1003,
+    MessageExpired = 1005,
 
     CryptoInvalidPublicKey = 2001,
     CryptoInvalidSecretKey = 2002,
@@ -506,6 +524,7 @@ pub enum ApiSdkErrorCode {
     ContractsLocalRunFailed = 3018,
     ContractsAddressConversionFailed = 3019,
     ContractsInvalidBoc = 3020,
+    ContractsLoadMessagesFailed = 3021,
 
     QueriesQueryFailed = 4001,
     QueriesSubscribeFailed = 4002,
@@ -588,5 +607,16 @@ impl ApiActionCode{
 impl ApiErrorCode for i32 {
     fn as_number(&self) -> isize {
         self.clone() as isize
+    }
+}
+
+pub fn apierror_from_sdkerror<F>(err: failure::Error, default_err: F) -> ApiError
+where 
+    F: Fn(failure::Error) -> ApiError,
+{
+    match err.downcast_ref::<SdkErrorKind>() {
+        Some(SdkErrorKind::WaitForTimeout) => ApiError::wait_for_timeout(),
+        Some(SdkErrorKind::MessageExpired) => ApiError::message_expired(),
+        _ => default_err(err)
     }
 }

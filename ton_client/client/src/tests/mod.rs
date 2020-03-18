@@ -12,13 +12,13 @@
 * limitations under the License.
 */
 
-use crypto::keys::account_decode;
-use ::InteropContext;
-use ::{tc_json_request, InteropString};
-use ::{tc_read_json_response, tc_destroy_json_response};
+use crate::crypto::keys::account_decode;
+use super::InteropContext;
+use super::{tc_json_request, InteropString};
+use super::{tc_read_json_response, tc_destroy_json_response};
 use serde_json::{Value, Map};
 use log::{Metadata, Record, LevelFilter};
-use {tc_create_context, tc_destroy_context};
+use crate::{tc_create_context, tc_destroy_context};
 use ton_sdk::encode_base64;
 use ton_block::MsgAddressInt;
 use std::str::FromStr;

@@ -12,11 +12,11 @@
 * limitations under the License.
 */
 
-use client::ClientContext;
-use dispatch::DispatchTable;
-use types::ApiResult;
+use crate::client::ClientContext;
+use crate::dispatch::DispatchTable;
+use crate::types::ApiResult;
 #[cfg(feature = "node_interaction")]
-use types::ApiError;
+use crate::types::ApiError;
 
 #[cfg(feature = "node_interaction")]
 use ton_sdk::{NodeClientConfig};
@@ -35,7 +35,8 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 #[derive(Deserialize)]
 #[serde(rename_all="camelCase")]
 pub(crate) struct SetupParams {
-    pub base_url: Option<String>
+    pub base_url: Option<String>,
+    pub transaction_timeout: Option<u32>,
 }
 
 #[cfg(feature = "node_interaction")]
@@ -78,7 +79,8 @@ fn setup(_context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
 
     let internal_config = NodeClientConfig {
         queries_server: queries_url,
-        subscriptions_server: subscriptions_url
+        subscriptions_server: subscriptions_url,
+        transaction_timeout: config.transaction_timeout,
     };
     ton_sdk::init(internal_config).map_err(|err|ApiError::config_init_failed(err))
 }

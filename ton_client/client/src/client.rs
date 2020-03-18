@@ -12,11 +12,11 @@
 * limitations under the License.
 */
 
-use dispatch::DispatchTable;
-use ::{JsonResponse, InteropContext};
+use crate::dispatch::DispatchTable;
+use super::{JsonResponse, InteropContext};
 use std::collections::HashMap;
 use std::sync::{Mutex, MutexGuard};
-use types::{ApiResult, ApiError};
+use crate::types::{ApiResult, ApiError};
 
 fn create_handlers() -> DispatchTable {
     let mut handlers = DispatchTable::new();

@@ -12,15 +12,15 @@
 * limitations under the License.
 */
 
+use crate::types::{ApiResult, ApiError, hex_decode};
+use crate::crypto::math::ton_crc16;
 use std::sync::Mutex;
 use ton_block::MsgAddressInt;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey};
-use types::{ApiResult, ApiError, hex_decode};
 use std::collections::HashMap;
 use base64::URL_SAFE;
 use hmac::*;
 use sha2::Sha512;
-use crypto::math::ton_crc16;
 use std::str::FromStr;
 
 pub type Key192 = [u8; 24];

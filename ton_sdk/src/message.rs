@@ -19,8 +19,6 @@ use ton_block::{
 use ton_block::GetRepresentationHash;
 
 use crate::*;
-#[cfg(feature = "node_interaction")]
-use futures::stream::Stream;
 
 #[derive(Deserialize, Debug, PartialEq, Clone)]
 pub enum MessageType {
@@ -60,12 +58,12 @@ impl Message {
 
     // Asynchronously loads a Message instance or None if message with given id is not exists
     #[cfg(feature = "node_interaction")]
-    pub fn load(id: &MessageId) -> SdkResult<Box<dyn Stream<Item = Option<Message>, Error = SdkError> + Send>> {
-        let map = queries_helper::load_record_fields(
+    pub async fn load(id: &MessageId) -> SdkResult<Option<Message>> {
+        queries_helper::load_record_fields(
             MESSAGES_TABLE_NAME,
             &id.to_string(),
-            MESSAGE_FIELDS
-            )?
+            MESSAGE_FIELDS)
+                .await
                 .and_then(|val| {
                     if val == serde_json::Value::Null {
                         Ok(None)
@@ -75,24 +73,19 @@ impl Message {
 
                         Ok(Some(msg))
                     }
-            });
-
-        Ok(Box::new(map))
+            })
     }
 
     // Asynchronously loads a Message's json representation 
     // or null if message with given id is not exists
     #[cfg(feature = "node_interaction")]
-    pub fn load_json(id: MessageId) -> SdkResult<Box<dyn Stream<Item = String, Error = SdkError> + Send>> {
-
-        let map = queries_helper::load_record_fields(
+    pub async fn load_json(id: MessageId) -> SdkResult<String> {
+        queries_helper::load_record_fields(
             MESSAGES_TABLE_NAME,
             &id.to_string(),
-            MESSAGE_FIELDS
-            )?
-            .map(|val| val.to_string());
-
-        Ok(Box::new(map))
+            MESSAGE_FIELDS)
+                .await
+                .map(|val| val.to_string())
     }
 
     pub fn with_msg(tvm_msg: &TvmMessage) -> SdkResult<Self> {

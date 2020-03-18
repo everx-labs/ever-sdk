@@ -30,6 +30,7 @@ pub const MSG_STATE_FIELD_NAME: &str = "status";
 pub struct NodeClientConfig {
     pub queries_server: String,
     pub subscriptions_server: String,
+    pub transaction_timeout: Option<u32>,
 }
 
 #[derive(Deserialize, Default, Clone, Debug)]

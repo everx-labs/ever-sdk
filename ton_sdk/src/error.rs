@@ -15,34 +15,6 @@
 use failure::{Context, Fail, Backtrace};
 use std::fmt::{Formatter, Result, Display};
 
-#[cfg(feature = "node_interaction")]
-use graphite::types::GraphiteError;
-
-#[cfg(not(feature = "node_interaction"))]
-#[derive(Debug)]
-pub struct GraphiteError {}
-
-#[cfg(not(feature = "node_interaction"))]
-impl std::fmt::Display for GraphiteError {
-    fn fmt(&self, _f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        unreachable!()
-    }
-}
-
-#[cfg(not(feature = "node_interaction"))]
-impl std::error::Error for GraphiteError {
-    fn description(&self) -> &str {
-        unimplemented!()
-    }
-    fn cause(&self) -> Option<&dyn std::error::Error> {
-        unimplemented!()
-    }
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        unimplemented!()
-    }
-}
-
-
 #[derive(Debug)]
 pub struct SdkError {
     inner: Context<SdkErrorKind>,
@@ -122,9 +94,10 @@ pub enum SdkErrorKind {
         code: ton_types::types::ExceptionCode,
     },
 
+    #[cfg(feature = "node_interaction")]
     #[fail(display = "Graphite error: {}", err)]
     Graphql {
-        err: GraphiteError
+        err: graphite::types::GraphiteError
     },
 
     #[fail(display = "Serde json error: {}", err)]
@@ -169,6 +142,9 @@ pub enum SdkErrorKind {
 
     #[fail(display = "Wait for operation rejected on timeout")]
     WaitForTimeout,
+
+    #[fail(display = "Message expired")]
+    MessageExpired,
 }
 
 impl SdkError {
@@ -217,8 +193,9 @@ impl From<ton_vm::types::Exception> for SdkError {
     }
 }
 
-impl From<GraphiteError> for SdkError {
-    fn from(err: GraphiteError) -> SdkError {
+#[cfg(feature = "node_interaction")]
+impl From<graphite::types::GraphiteError> for SdkError {
+    fn from(err: graphite::types::GraphiteError) -> SdkError {
         SdkError::from(SdkErrorKind::Graphql { err })
     }
 }

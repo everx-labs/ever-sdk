@@ -15,9 +15,9 @@
 use crate::*;
 use graphite::client::GqlClient;
 use graphite::types::{VariableRequest};
-use futures::stream::Stream;
+use futures::{TryFutureExt, Stream, StreamExt};
 use serde_json::Value;
-use std::sync::Mutex;
+use std::sync::{Mutex, RwLock};
 use reqwest::{ClientBuilder, RedirectPolicy, StatusCode};
 use reqwest::header::LOCATION;
 
@@ -35,10 +35,11 @@ pub struct OrderBy {
     direction: SortDirection
 }
 
-const DEFAULT_TIMEOUT: u32 = 40000;
+pub const DEFAULT_TIMEOUT: u32 = 40000;
 
 lazy_static! {
     static ref CLIENT: Mutex<Option<GqlClient>> = Mutex::new(None);
+    static ref TIMEOUT: RwLock<u32> = RwLock::new(DEFAULT_TIMEOUT);
 }
 
 fn check_redirect(address: &str) -> SdkResult<Option<String>> {
@@ -76,11 +77,18 @@ pub fn init(mut config: NodeClientConfig) -> SdkResult<()> {
             queries_server: redirected.clone(),
             subscriptions_server: redirected
                 .replace("https://", "wss://")
-                .replace("http://", "ws://")
+                .replace("http://", "ws://"),
+            transaction_timeout: config.transaction_timeout
         }
     }
     let mut client = CLIENT.lock().unwrap();
-    *client = Some(GqlClient::new(&config.queries_server,&config.subscriptions_server));
+    *client = Some(GqlClient::new(&config.queries_server,&config.subscriptions_server)?);
+
+    if let Some(configured) = config.transaction_timeout {
+        let mut timeout = TIMEOUT.write().unwrap();
+        *timeout = configured;
+    }
+
     Ok(())
 }
 
@@ -89,25 +97,14 @@ pub fn uninit() {
     *client = None;
 }
 
-// Returns Stream with updates of some field in database. First stream item is current value
-pub fn subscribe_record_updates(table: &str, filter: &str, fields: &str)
-    -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError> + Send>> {
-
-    let subscription_stream = subscribe(
-        table,
-        filter,
-        fields)?;
-
-    let load_stream = query(table, filter, fields, None, None, None)?
-        .filter(|value| !value[0].is_null())
-        .map(|value| value[0].clone());
-
-    Ok(Box::new(load_stream.chain(subscription_stream)))
+pub fn get_timeout() -> u32 {
+    let timeout = TIMEOUT.read().unwrap();
+    *timeout
 }
 
 // Returns Stream with updates database fileds by provided filter
 pub fn subscribe(table: &str, filter: &str, fields: &str)
-    -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError> + Send>> {
+    -> SdkResult<impl Stream<Item=SdkResult<Value>> + Send> {
 
     let request = generate_subscription(table, filter, fields)?;
 
@@ -115,110 +112,92 @@ pub fn subscribe(table: &str, filter: &str, fields: &str)
 
     let stream = if let Some(client) = CLIENT.lock().unwrap().as_mut() {
          client.subscribe(request)?
-            .then(move |result| {
-                match result {
-                    Err(err) => Err(SdkError::from(err)),
-                    Ok(value) => {
-                        // try to extract the record value from the answer
-                        let record_value = &value["payload"]["data"][&closure_table];
-                        
-                        if record_value.is_null() {
-                            Err(SdkError::from(SdkErrorKind::InvalidData {
-                                msg: format!("Invalid subscription answer: {}", value)
-                            }))
-                        } else {
-                            Ok(record_value.clone())
+            .map(move |result| {
+                    match result {
+                        Err(err) => Err(SdkError::from(err).into()),
+                        Ok(value) => {
+                            // try to extract the record value from the answer
+                            let record_value = &value["payload"]["data"][&closure_table];
+                            
+                            if record_value.is_null() {
+                                Err(SdkError::from(SdkErrorKind::InvalidData {
+                                    msg: format!("Invalid subscription answer: {}", value)
+                                }).into())
+                            } else {
+                                Ok(record_value.clone())
+                            }
                         }
                     }
                 }
-            })
+            )
     } else {
-        bail!(SdkErrorKind::NotInitialized)
+        return Err(SdkErrorKind::NotInitialized.into());
     };
 
-    Ok(Box::new(stream))
+    Ok(stream)
 }
 
 // Returns Stream with required database record fields
-pub fn load_record_fields(table: &str, record_id: &str, fields: &str)
-    -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError> + Send>> {
-    let stream = query(
+pub async fn load_record_fields(table: &str, record_id: &str, fields: &str)
+    -> SdkResult<Value> {
+    query(
         table,
         &format!("{{ \"id\": {{\"eq\": \"{record_id}\" }} }}", record_id=record_id),
         fields,
         None,
         None,
-        None)?
-        .and_then(|value| {
-            Ok(value[0].clone())
-        });
-
-    Ok(Box::new(stream))
+        None)
+            .await
+            .and_then(|value| {
+                Ok(value[0].clone())
+            })
 }
 
 // Returns Stream with GraphQL query answer 
-pub fn query(
+pub async fn query(
     table: &str,
     filter: &str,
     fields: &str,
     order_by: Option<OrderBy>,
     limit: Option<u32>,
     timeout: Option<u32>
-) -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError> + Send>> {
-    let query = generate_query_var(
-        table,
-        filter,
-        fields,
-        order_by,
-        limit,
-        timeout)?;
-
-    let mut client = CLIENT.lock().unwrap();
-    let client = client.as_mut().ok_or(SdkError::from(SdkErrorKind::NotInitialized))?;
+) -> SdkResult<Value> {
+    let query = generate_query_var(table, filter, fields, order_by, limit, timeout)?;
+    
+    let client = {
+        let mut client = CLIENT.lock().unwrap();
+        client.as_mut().ok_or(SdkError::from(SdkErrorKind::NotInitialized))?.clone()
+    };
 
     let table = table.to_owned();
 
-    let stream = client.query_vars(query)?
-        .then(move |result| {
-            match result {
-                Err(err) => Err(SdkError::from(err)),
-                Ok(value) => {
-                    // try to extract the record value from the answer
-                    let records_array = &value["data"][&table];
-                    if records_array.is_null() {
-                        Err(SdkError::from(
-                            SdkErrorKind::InvalidData { msg: format!("Invalid query answer: {}", value) }
-                        ))
-                    } else {
-                        Ok(records_array.clone())
-                    }
-                }
+    client.query_vars(query)
+        .await
+        .map_err(|err| SdkError::from(err).into())
+        .and_then(move |result| {
+            // try to extract the record value from the answer
+            let records_array = &result["data"][&table];
+            if records_array.is_null() {
+                Err(SdkErrorKind::InvalidData { msg: format!("Invalid query answer: {}", result) }.into())
+            } else {
+                Ok(records_array.clone())
             }
-        });
-
-    Ok(Box::new(stream))
+        })
 }
 
 // Executes GraphQL query, waits for result and returns recieved value
-pub fn wait_for(table: &str, filter: &str, fields: &str, timeout: Option<u32>)
-    -> SdkResult<Box<dyn Stream<Item=Value, Error=SdkError> + Send>>
+pub async fn wait_for(table: &str, filter: &str, fields: &str, timeout: Option<u32>)
+    -> SdkResult<Value>
 {
-    let timeout = match timeout {
-        Some(timeout) => timeout,
-        None => DEFAULT_TIMEOUT
-    };
-
-    let stream = query(table, filter, fields, None, None, Some(timeout))?
+    query(table, filter, fields, None, None, timeout.or(Some(DEFAULT_TIMEOUT)))
+        .await
         .and_then(|value| {
             if !value[0].is_null() {
                 Ok(value[0].clone())
             } else {
                 Err(SdkErrorKind::WaitForTimeout.into())
             }
-            
-        });
-
-    Ok(Box::new(stream))
+        })
 }
 
 fn generate_query_var(
@@ -291,22 +270,20 @@ fn generate_post_mutation(requests: &[MutationRequest]) -> SdkResult<VariableReq
 }
 
 // Sends message to node
-pub fn send_message(key: &[u8], value: &[u8]) -> SdkResult<()> {
+pub async fn send_message(key: &[u8], value: &[u8]) -> SdkResult<()> {
     if let Some(client) = CLIENT.lock().unwrap().as_ref() {
         let request = MutationRequest {
             id: base64::encode(key),
             body: base64::encode(value)
         };
 
-        Ok(client.query_vars(generate_post_mutation(&[request])?)?
-            .wait()
-            .next()
-            .ok_or(SdkErrorKind::NetworkError {
+        client.query_vars(generate_post_mutation(&[request])?)
+            .map_err(|_| SdkErrorKind::NetworkError {
                     msg: "Post message error: server did not responded".to_owned()
-                })?
-            .map(|_| ())?
-        )
+                }.into())
+            .map_ok(|_| ())
+            .await
     } else {
-        bail!(SdkErrorKind::NotInitialized);
+        Err(SdkErrorKind::NotInitialized.into())
     }
 }

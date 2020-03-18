@@ -26,7 +26,6 @@ extern crate log;
 
 extern crate serde;
 extern crate rand;
-extern crate futures;
 extern crate ed25519_dalek;
 extern crate num_bigint;
 extern crate sha2;

@@ -21,10 +21,11 @@ use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
 use rand::RngCore;
 use sha2::Sha512;
-use ton_block::{AccountId, MsgAddressInt, TransactionProcessingStatus};
+use ton_block::{AccountId, MsgAddressInt};
 use ton_types::{BuilderData, IBitstring};
 use ton_types::dictionary::HashmapE;
 use tests_common::*;
+use futures::StreamExt;
 
 /*
 #[test]
@@ -172,49 +173,32 @@ const FUNCTION_PARAMS: &str = r#"
 	"value": "0000000000000000000000000000000000000000000000000000000000000001"
 }"#;
 
-fn test_call_contract(address: MsgAddressInt, key_pair: &Keypair) {
+async fn test_call_contract(address: MsgAddressInt, key_pair: &Keypair) {
 
     let func = "createOperationLimit".to_string();
     let abi = test_piggy_bank::WALLET_ABI.to_string();
 
     // call needed method
-    let changes_stream = Contract::call_json(
+    let tr = Contract::call_json(
         address, func.clone(), None, FUNCTION_PARAMS.to_owned(), abi.clone(), Some(&key_pair))
+            .await
             .expect("Error calling contract method");
-
-    // wait transaction id in message-status 
-    let mut tr = None;
-    for state in changes_stream.wait() {
-        if let Err(e) = state {
-            panic!("error next state getting: {}", e);
-        }
-        if let Ok(s) = state {
-            println!("next state: {:?}", s);
-            if s.status == TransactionProcessingStatus::Finalized {
-                tr = Some(s);
-                break;
-            }
-        }
-    }
-    let tr = tr.expect("Error: no transaction");
-
-    // OR 
-    // wait message will done and find transaction with the message
 
     // take external outbound message from the transaction
     let out_msg = tr.load_out_messages()
-        .expect("Error calling load out messages")
-        .wait()
-        .find(|msg| {
+        .expect("Error calling load out messages");
+    
+    futures::pin_mut!(out_msg);
+
+    let out_msg = out_msg
+        .filter(|msg| futures::future::ready(
             msg.as_ref()
                 .expect("error unwrap out message 1")
-                .as_ref()
-                    .expect("error unwrap out message 2")
-                    .msg_type() == MessageType::ExternalOutbound
-        })
+                .msg_type() == MessageType::ExternalOutbound))
+        .next()
+        .await
             .expect("erro unwrap out message 2")
-            .expect("erro unwrap out message 3")
-            .expect("erro unwrap out message 4");
+            .expect("erro unwrap out message 3");
 
     // take body from the message
     let response = out_msg.body().expect("erro unwrap out message body");
@@ -234,8 +218,9 @@ fn test_call_contract(address: MsgAddressInt, key_pair: &Keypair) {
 
 }
 
+#[tokio::main]
 #[test]
-fn test_deploy_and_call_contract() {
+async fn test_deploy_and_call_contract() {
    
     tests_common::init_node_connection();   
    
@@ -250,38 +235,22 @@ fn test_deploy_and_call_contract() {
     let account_id = contract_image.msg_address(0);
 
     // before deploying contract need to transfer some funds to its address
-    tests_common::get_grams_from_giver(account_id.clone());
+    tests_common::get_grams_from_giver(account_id.clone()).await;
 
 
     // call deploy method
     let func = "constructor".to_string();
     let abi = test_piggy_bank::WALLET_ABI.to_string();
 
-    let changes_stream = Contract::deploy_json(func, None, "{}".to_owned(), abi, contract_image, Some(&keypair), 0)
+    let tr = Contract::deploy_json(func, None, "{}".to_owned(), abi, contract_image, Some(&keypair), 0)
+        .await
         .expect("Error deploying contract");
 
-    // wait transaction id in message-status or 
-    // wait message will done and find transaction with the message
-
-    // wait transaction id in message-status 
-    let mut tr_id = None;
-    for state in changes_stream.wait() {
-        if let Err(e) = state {
-            panic!("error next state getting: {}", e);
-        }
-        if let Ok(s) = state {
-            println!("next state: {:?}", s);
-            if s.status == TransactionProcessingStatus::Finalized {
-                tr_id = Some(s.id.clone());
-                break;
-            }
-        }
+    if tr.is_aborted() {
+        panic!("transaction aborted!\n\n{:?}", tr)
     }
-    // contract constructor doesn't return any values so there are no output messages in transaction
-    // so just check deployment transaction created
-    let _tr_id = tr_id.expect("Error: no transaction id");
 
-    test_call_contract(account_id, &keypair);
+    test_call_contract(account_id, &keypair).await;
 }
 
 #[test]
@@ -296,9 +265,10 @@ fn test_contract_image_from_file() {
     println!("Account ID {:x}", contract_image.account_id());
 }
 
+#[tokio::main]
 #[test]
 #[ignore]
-fn test_deploy_empty_contract() {
+async fn test_deploy_empty_contract() {
     init_node_connection();
 
     let mut csprng = OsRng::new().unwrap();
@@ -314,7 +284,7 @@ fn test_deploy_empty_contract() {
     let image = ContractImage::from_code_data_and_library(&mut data_cur, None, None).expect("Error creating ContractImage");
     let acc_id = image.msg_address(0);
 
-    tests_common::get_grams_from_giver(acc_id.clone());
+    tests_common::get_grams_from_giver(acc_id.clone()).await;
 
     println!("Account ID {}", acc_id);
 
@@ -333,50 +303,31 @@ fn test_deploy_empty_contract() {
 			"balance": { "gt": "0" }
 		}).to_string(),
         "id balance",
-        None)        
-        .expect("Error calling wait_for")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while waiting balance")
+        None)
+        .await
         .expect("Error unwrap result while waiting balance");
     println!("Contract got!!!");
 
 
-
-    let changes_stream = Contract::deploy_no_constructor(image, 0)
+    let tr = Contract::deploy_no_constructor(image, 0)
+        .await
         .expect("Error deploying contract");
 
-        // wait transaction id in message-status 
-    let mut tr_id = None;
-    for state in changes_stream.wait() {
-        if let Err(e) = state {
-            panic!("error next state getting: {}", e);
-        }
-        if let Ok(s) = state {
-            println!("next state: {:?}", s);
-            if s.status == TransactionProcessingStatus::Finalized {
-                tr_id = Some(s.id.clone());
-                break;
-            }
-        }
-    }
-    // contract constructor doesn't return any values so there are no output messages in transaction
-    // so just check deployment transaction created
-    let _tr_id = tr_id.expect("Error: no transaction id");
     println!("Transaction got!!!");
 
+    if tr.is_aborted() {
+        panic!("transaction aborted!\n\n{:?}", tr)
+    }
 }
 
+#[tokio::main]
 #[test]
-fn test_load_nonexistent_contract() {
+async fn test_load_nonexistent_contract() {
     init_node_connection();
 
     let acc_id = AccountId::from([67; 32]);
     let c = Contract::load(&MsgAddressInt::with_standart(None, 0, acc_id).unwrap())
-        .expect("Error calling load Contract")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Contract")
+        .await
         .expect("Error unwrap result while loading Contract");
 
     assert!(c.is_none());

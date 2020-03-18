@@ -1,6 +1,7 @@
 [package]
 name = "ton_sdk"
 version = "0.1.0"
+edition = "2018"
 
 [dependencies]
 ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git"}
@@ -28,8 +29,13 @@ num-traits = "^0.2.8"
 rand = { version = "0.6.1", features = ["wasm-bindgen"] }
 chrono = { version = "0.4.9", features = ["wasmbind"] }
 
+[dependencies.tokio]
+version = "0.2.13"
+features = ["full"]
+optional = true
+
 [dependencies.futures]
-version = "^0.1.26"
+version = "0.3.4"
 optional = true
 
 [dependencies.graphite]
@@ -49,5 +55,5 @@ dirs = "2.0.2"
 [features]
 default = ["node_interaction"]
 ci_run = []
-node_interaction = ["graphite", "futures", "reqwest"]
+node_interaction = ["graphite", "futures", "reqwest", "tokio"]
 

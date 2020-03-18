@@ -2,6 +2,7 @@
 name = "ton_client"
 version = "0.21.0"
 authors = ["Michael Vlasov"]
+edition = "2018"
 
 [lib]
 name = "ton_client"
@@ -18,7 +19,6 @@ serde_derive = "1.0.91"
 serde = "1.0.91"
 ed25519-dalek = "^0.9.1"
 sha2 = "0.8"
-futures = "^0.1.26"
 base64 = "0.10.0"
 lazy_static = "1.1.0"
 num-bigint = "0.2.2"
@@ -33,9 +33,19 @@ byteorder = "1.3.2"
 libsecp256k1 = "0.2.2"
 log = "0.4.6"
 crc-any = "2.2.3"
+failure = "0.1"
 
 ton_sdk = { path = "../../ton_sdk", default-features = false }
 
+[dependencies.tokio]
+version = "0.2.13"
+features = ["full"]
+optional = true
+
+[dependencies.futures]
+version = "0.3.4"
+optional = true
+
 [features]
 default = ["node_interaction"]
-node_interaction = ["ton_sdk/node_interaction"]
+node_interaction = ["ton_sdk/node_interaction", "tokio", "futures"]

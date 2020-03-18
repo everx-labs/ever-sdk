@@ -12,11 +12,11 @@
 * limitations under the License.
 */
 
-use types::{ApiResult, base64_decode, ApiError};
+use crate::types::{ApiResult, base64_decode, ApiError};
 use ton_sdk::{AbiContract, ContractImage};
 use ton_block::{CommonMsgInfo, Deserializable};
 use std::io::Cursor;
-use crypto::keys::{
+use crate::crypto::keys::{
     account_decode,
     account_encode_ex,
     AccountAddressType,
@@ -108,8 +108,8 @@ pub(crate) struct ResultOfGetBocHash {
 }
 
 use ton_sdk;
-use dispatch::DispatchTable;
-use client::ClientContext;
+use crate::dispatch::DispatchTable;
+use crate::client::ClientContext;
 
 pub(crate) fn encode_message_with_sign(_context: &mut ClientContext, params: ParamsOfEncodeMessageWithSign) -> ApiResult<EncodedMessage> {
     let key_array: [u8; ed25519_dalek::PUBLIC_KEY_LENGTH];
@@ -202,11 +202,11 @@ pub(crate) fn parse_message(_context: &mut ClientContext, params: InputBoc) -> A
 pub(crate) fn register(handlers: &mut DispatchTable) {
     // Load
     #[cfg(feature = "node_interaction")]
-    handlers.spawn("contracts.load", load::load);
+    handlers.spawn_async("contracts.load", load::load);
 
     // Deploy
     #[cfg(feature = "node_interaction")]
-    handlers.spawn("contracts.deploy",
+    handlers.spawn_async("contracts.deploy",
         deploy::deploy);
 
     handlers.spawn("contracts.deploy.message",
@@ -220,7 +220,7 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 
     // Run
     #[cfg(feature = "node_interaction")]
-    handlers.spawn("contracts.run",
+    handlers.spawn_async("contracts.run",
         run::run);
 
     handlers.spawn("contracts.run.message",

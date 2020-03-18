@@ -12,8 +12,8 @@
 * limitations under the License.
 */
 
+use crate::types::{ApiResult, ApiError};
 use num_bigint::BigInt;
-use types::{ApiResult, ApiError};
 use rand::RngCore;
 
 fn parse_big_int(hex: &str) -> ApiResult<BigInt> {

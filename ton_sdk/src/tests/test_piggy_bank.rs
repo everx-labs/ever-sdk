@@ -18,8 +18,9 @@ use rand::rngs::OsRng;
 use sha2::Sha512;
 use tests_common::*;
 
+#[tokio::main]
 #[test]
-fn full_test_piggy_bank() {
+async fn full_test_piggy_bank() {
 
     // connect to node
     init_node_connection();
@@ -32,25 +33,25 @@ fn full_test_piggy_bank() {
 
 	// deploy wallet
     println!("Wallet contract deploying...\n");
-    let wallet_address = deploy_contract_and_wait("LimitWallet.tvc", WALLET_ABI, "{}", &keypair, 0);
+    let wallet_address = deploy_contract_and_wait("LimitWallet.tvc", WALLET_ABI, "{}", &keypair, 0).await;
 	println!("Wallet contract deployed. Account address {}\n", wallet_address);
 
 	// deploy piggy bank
     println!("Piggy bank contract deploying...\n");
-	let piggy_bank_address = deploy_contract_and_wait("Piggy.tvc", PIGGY_BANK_CONTRACT_ABI, PIGGY_BANK_CONSTRUCTOR_PARAMS, &keypair, 0);
+	let piggy_bank_address = deploy_contract_and_wait("Piggy.tvc", PIGGY_BANK_CONTRACT_ABI, PIGGY_BANK_CONSTRUCTOR_PARAMS, &keypair, 0).await;
 	println!("Piggy bank contract deployed. Account address {}\n", piggy_bank_address);
 
     // get goal from piggy
     println!("Get goal from piggy...\n");
     //let (get_goal_answer, _) = call_contract_and_wait(piggy_bank_address.clone(), "getGoal", "{}".to_string(), PIGGY_BANK_CONTRACT_ABI, None);
-    let get_goal_answer = contract_call_local(piggy_bank_address.clone(), "getGoal", "{}", PIGGY_BANK_CONTRACT_ABI, None);
+    let get_goal_answer = contract_call_local(piggy_bank_address.clone(), "getGoal", "{}", PIGGY_BANK_CONTRACT_ABI, None).await;
     println!("piggy answer {}", get_goal_answer);
 
 	// deploy subscription
 
     println!("Subscription contract deploying...\n");
 	let subscription_constructor_params = format!("{{ \"wallet\" : \"{}\" }}", wallet_address);
-	let subscripition_address = deploy_contract_and_wait("Subscription.tvc", SUBSCRIBE_CONTRACT_ABI, &subscription_constructor_params, &keypair, 0);
+	let subscripition_address = deploy_contract_and_wait("Subscription.tvc", SUBSCRIBE_CONTRACT_ABI, &subscription_constructor_params, &keypair, 0).await;
 	println!("Subscription contract deployed. Account address {}\n", subscripition_address);
 
 
@@ -58,7 +59,7 @@ fn full_test_piggy_bank() {
     println!("Adding subscription address to the wallet...\n");
 	let set_subscription_params = format!("{{ \"addr\" : \"{}\" }}", subscripition_address);
 
-	let _set_subscription_answer = call_contract(wallet_address, "setSubscriptionAccount", set_subscription_params, WALLET_ABI, Some(&keypair));
+	let _set_subscription_answer = call_contract(wallet_address, "setSubscriptionAccount", set_subscription_params, WALLET_ABI, Some(&keypair)).await;
 
 	println!("Subscription address added to the wallet.\n");
 
@@ -73,7 +74,7 @@ fn full_test_piggy_bank() {
         piggy_bank_address,
     );
 
-	call_contract(subscripition_address.clone(), "subscribe", subscribe_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
+	call_contract(subscripition_address.clone(), "subscribe", subscribe_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair)).await;
 	println!("Subscription 1 added.\n");
 
     	// call subscribe in subscription
@@ -85,12 +86,12 @@ fn full_test_piggy_bank() {
         &pubkey_str,
         piggy_bank_address,
     );
-	call_contract(subscripition_address.clone(), "subscribe", subscribe_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
+	call_contract(subscripition_address.clone(), "subscribe", subscribe_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair)).await;
 	println!("Subscription 2 added.\n");
 
     println!("Call getSubscription with id {}\n", &subscr_id_str);
     let get_params = format!("{{ \"subscriptionId\" : \"0x{}\" }}", &subscr_id_str);
-    let answer = contract_call_local(subscripition_address.clone(), "getSubscription", &get_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair));
+    let answer = contract_call_local(subscripition_address.clone(), "getSubscription", &get_params, SUBSCRIBE_CONTRACT_ABI, Some(&keypair)).await;
     println!("getSubscription result:\n{}", answer);
 
     let t = now.elapsed();
