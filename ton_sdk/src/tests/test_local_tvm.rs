@@ -75,7 +75,7 @@ fn test_executor_call() {
     assert!(result.messages.len() == 1);
 
     assert_eq!(result.fees.in_msg_fwd_fee, 1868000);
-    assert_eq!(result.fees.gas_fee, 14735000);
+    assert_eq!(result.fees.gas_fee, 13770000);
     assert_eq!(result.fees.out_msgs_fwd_fee, 2500000);
     assert!(result.fees.total_account_fees > 19256373);
     assert!(result.fees.storage_fee > 153373);

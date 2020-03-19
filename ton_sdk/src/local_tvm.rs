@@ -80,7 +80,8 @@ pub(crate) fn call_tvm(
     let mut msgs = vec![];
     while slice.remaining_references() != 0 {
         let next = slice.checked_drain_reference()?.into();
-        if Ok(0x0ec3c86d) == slice.get_next_u32() && slice.remaining_references() == 1 {
+        let magic = slice.get_next_u32();
+        if magic.is_ok() && magic.unwrap() == 0x0ec3c86d && slice.remaining_references() == 1 {
             msgs.push(Message::construct_from::<Message>(&mut slice.checked_drain_reference()?.into())?);
         }
         slice = next;
