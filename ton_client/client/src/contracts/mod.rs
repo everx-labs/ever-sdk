@@ -202,12 +202,17 @@ pub(crate) fn parse_message(_context: &mut ClientContext, params: InputBoc) -> A
 pub(crate) fn register(handlers: &mut DispatchTable) {
     // Load
     #[cfg(feature = "node_interaction")]
-    handlers.spawn_async("contracts.load", load::load);
+    handlers.spawn("contracts.load",
+        |context: &mut crate::client::ClientContext, params: load::LoadParams| {
+            crate::dispatch::run_in_runtime(load::load(context, params))
+        });
 
     // Deploy
     #[cfg(feature = "node_interaction")]
-    handlers.spawn_async("contracts.deploy",
-        deploy::deploy);
+    handlers.spawn("contracts.deploy",
+        |context: &mut crate::client::ClientContext, params: deploy::ParamsOfDeploy| {
+            crate::dispatch::run_in_runtime(deploy::deploy(context, params))
+        });
 
     handlers.spawn("contracts.deploy.message",
         deploy::encode_message);
@@ -220,8 +225,10 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 
     // Run
     #[cfg(feature = "node_interaction")]
-    handlers.spawn_async("contracts.run",
-        run::run);
+    handlers.spawn("contracts.run",
+        |context: &mut crate::client::ClientContext, params: run::ParamsOfRun| {
+            crate::dispatch::run_in_runtime(run::run(context, params))
+        });
 
     handlers.spawn("contracts.run.message",
         run::encode_message);

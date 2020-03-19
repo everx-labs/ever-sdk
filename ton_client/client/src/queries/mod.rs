@@ -17,14 +17,20 @@ use crate::dispatch::DispatchTable;
 pub(crate) mod query;
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.spawn_async("queries.query",
-        query::query);
-    handlers.spawn_async("queries.wait.for",
-        query::wait_for);
+    handlers.spawn("queries.query", 
+        |context: &mut crate::client::ClientContext, params: query::ParamsOfQuery| {
+            crate::dispatch::run_in_runtime(query::query(context, params))
+        });
+    handlers.spawn("queries.wait.for",
+        |context: &mut crate::client::ClientContext, params: query::ParamsOfWaitFor| {
+            crate::dispatch::run_in_runtime(query::wait_for(context, params))
+        });
     handlers.spawn("queries.subscribe",
         query::subscribe);
-    handlers.spawn_async("queries.get.next",
-        query::get_next);
+    handlers.spawn("queries.get.next",
+        |context: &mut crate::client::ClientContext, params: query::SubscribeHandle| {
+            crate::dispatch::run_in_runtime(query::get_next(context, params))
+        });
     handlers.spawn("queries.unsubscribe",
         query::unsubscribe);
 }

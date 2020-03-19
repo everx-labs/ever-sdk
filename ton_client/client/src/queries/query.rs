@@ -88,8 +88,6 @@ pub(crate) fn subscribe(_context: &mut ClientContext, params: ParamsOfSubscribe)
     let stream = queries_helper::subscribe(&params.table, &params.filter, &params.result)
         .map_err(|err| ApiError::queries_subscribe_failed(err))?;
 
-    futures::pin_mut!(stream);
-
     let mut rng = rand::rngs::OsRng::new()
         .map_err(|err| ApiError::queries_subscribe_failed(err))?;
     let handle =  rng.next_u32();
