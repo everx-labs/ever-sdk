@@ -68,7 +68,7 @@ lazy_static! {
             = Mutex::new(HashMap::new());
 }
 
-pub(crate) async fn query<'r>(_context: &'r mut ClientContext, params: ParamsOfQuery) -> ApiResult<ResultOfQuery> {
+pub(crate) async fn query(_context: &mut ClientContext, params: ParamsOfQuery) -> ApiResult<ResultOfQuery> {
     let result = queries_helper::query(&params.table, &params.filter, &params.result, params.order, params.limit, Some(0))
         .await
         .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::queries_query_failed))?;

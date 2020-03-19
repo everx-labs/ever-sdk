@@ -14,25 +14,13 @@
 
 #![recursion_limit="128"] // needed for error_chain
 
-extern crate ton_block;
-extern crate ton_types;
 #[macro_use]
 extern crate ton_vm;
-extern crate ton_abi;
-extern crate ton_executor;
 
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
-extern crate hex;
-extern crate ed25519_dalek;
-extern crate sha2;
-extern crate base64;
-extern crate chrono;
 #[macro_use]
 extern crate failure;
-extern crate crc_any;
-extern crate num_traits;
 
 #[cfg(feature = "node_interaction")]
 #[macro_use]
@@ -40,12 +28,6 @@ extern crate lazy_static;
 #[cfg(feature = "node_interaction")]
 #[macro_use]
 extern crate serde_json;
-#[cfg(feature = "node_interaction")]
-extern crate futures;
-#[cfg(feature = "node_interaction")]
-extern crate graphite;
-#[cfg(feature = "node_interaction")]
-extern crate reqwest;
 
 pub use ton_abi::json_abi;
 pub use ton_abi::Contract as AbiContract;
@@ -69,12 +51,7 @@ pub use local_tvm::*;
 mod transaction;
 #[cfg(feature = "node_interaction")]
 pub use transaction::*;
-/*
-#[cfg(feature = "node_interaction")]
-mod block;
-#[cfg(feature = "node_interaction")]
-pub use block::*;
-*/
+
 mod types;
 pub use types::*;
 
@@ -102,11 +79,6 @@ pub fn init_json(config: &str) -> SdkResult<()> {
 pub fn uninit() {
     queries_helper::uninit();
 }
-
-#[cfg(test)]
-extern crate rand;
-#[cfg(test)]
-extern crate dirs;
 
 #[cfg(test)]
 #[path = "tests/test_lib.rs"]

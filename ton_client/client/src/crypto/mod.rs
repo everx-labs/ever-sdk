@@ -30,7 +30,7 @@ use crate::dispatch::DispatchTable;
 use crate::client::ClientContext;
 use crate::crypto::math::ton_crc16;
 use crate::crypto::mnemonic::{CryptoMnemonic, TonMnemonic, Bip39Mnemonic};
-use crate::bip39::{MnemonicType, Language};
+use bip39::{MnemonicType, Language};
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct FactorizeResult {
