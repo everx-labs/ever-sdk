@@ -1095,34 +1095,6 @@ ton_client/platforms/ton-client-web"""
         }
     }
     post {
-        success {
-            script {
-                def cause = "${currentBuild.getBuildCauses()}"
-                echo "${cause}"
-                if(!cause.matches('upstream')) {
-                    withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
-                        identity = awsIdentity()
-                        s3Download bucket: 'sdkbinaries.tonlabs.io', file: 'version.json', force: true, path: 'version.json'
-                    }
-                    sh """
-                        echo const fs = require\\(\\'fs\\'\\)\\; > release.js
-                        echo const ver = JSON.parse\\(fs.readFileSync\\(\\'version.json\\'\\, \\'utf8\\'\\)\\)\\; >> release.js
-                        echo if\\(!ver.release\\) { throw new Error\\(\\'Empty release field\\'\\); } >> release.js
-                        echo if\\(ver.candidate\\) { ver.release = ver.candidate\\; ver.candidate = \\'\\'\\; } >> release.js
-                        echo fs.writeFileSync\\(\\'version.json\\', JSON.stringify\\(ver\\)\\)\\; >> release.js
-                        cat release.js
-                        cat version.json
-                        node release.js
-                    """
-                    withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
-                        identity = awsIdentity()
-                        s3Upload \
-                            bucket: 'sdkbinaries.tonlabs.io', \
-                            includePathPattern:'version.json', workingDir:'.'
-                    }
-                }
-            }
-        }
         failure {
             script {
                 def cause = "${currentBuild.getBuildCauses()}"
