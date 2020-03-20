@@ -1097,6 +1097,10 @@ ton_client/platforms/ton-client-web"""
     post {
         failure {
             script {
+                withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
+                    identity = awsIdentity()
+                    s3Delete bucket: 'sdkbinaries.tonlabs.io', path: 'tmp_sdk/'
+                }
                 def cause = "${currentBuild.getBuildCauses()}"
                 echo "${cause}"
                 if(!cause.matches('upstream')) {
