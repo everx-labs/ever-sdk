@@ -128,6 +128,11 @@ impl ApiError {
             "Can not create runtime: {}", err)
     }
 
+    pub fn sdk_not_init() -> Self {
+        ApiError::sdk(SdkNotInit,
+            "SDK is not initialized".into())
+    }
+
 
 
     // SDK Config
@@ -474,6 +479,7 @@ pub enum ApiSdkErrorCode {
     InvalidParams = 2,
     InvalidContextHandle = 3,
     CannotCreateRuntime = 4,
+    SdkNotInit = 5,
 
     ConfigInitFailed = 1001,
     WaitForTimeout = 1003,

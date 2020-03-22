@@ -173,19 +173,19 @@ const FUNCTION_PARAMS: &str = r#"
 	"value": "0000000000000000000000000000000000000000000000000000000000000001"
 }"#;
 
-async fn test_call_contract(address: MsgAddressInt, key_pair: &Keypair) {
+async fn test_call_contract(client: &NodeClient, address: MsgAddressInt, key_pair: &Keypair) {
 
     let func = "createOperationLimit".to_string();
-    let abi = test_piggy_bank::WALLET_ABI.to_string();
+    let abi = tests_common::WALLET_ABI.to_string();
 
     // call needed method
     let tr = Contract::call_json(
-        address, func.clone(), None, FUNCTION_PARAMS.to_owned(), abi.clone(), Some(&key_pair))
+        client, address, func.clone(), None, FUNCTION_PARAMS.to_owned(), abi.clone(), Some(&key_pair))
             .await
             .expect("Error calling contract method");
 
     // take external outbound message from the transaction
-    let out_msg = tr.load_out_messages()
+    let out_msg = tr.load_out_messages(client)
         .expect("Error calling load out messages");
     
     futures::pin_mut!(out_msg);
@@ -220,29 +220,26 @@ async fn test_call_contract(address: MsgAddressInt, key_pair: &Keypair) {
 
 #[tokio::main]
 #[test]
-async fn test_deploy_and_call_contract() {
+pub async fn test_deploy_and_call_contract() {
    
-    tests_common::init_node_connection();   
-   
-    // read image from file and construct ContractImage
-    let mut state_init = std::fs::File::open("src/tests/LimitWallet.tvc").expect("Unable to open contract code file");
+    let client = tests_common::init_node_connection();
 
     let mut csprng = OsRng::new().unwrap();
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
 
-    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair.public).expect("Unable to parse contract code file");
+    let contract_image = ContractImage::from_state_init_and_key(&mut tests_common::WALLET_IMAGE.as_slice(), &keypair.public).expect("Unable to parse contract code file");
 
     let account_id = contract_image.msg_address(0);
 
     // before deploying contract need to transfer some funds to its address
-    tests_common::get_grams_from_giver(account_id.clone()).await;
+    tests_common::get_grams_from_giver(&client, account_id.clone()).await;
 
 
     // call deploy method
     let func = "constructor".to_string();
-    let abi = test_piggy_bank::WALLET_ABI.to_string();
+    let abi = tests_common::WALLET_ABI.to_string();
 
-    let tr = Contract::deploy_json(func, None, "{}".to_owned(), abi, contract_image, Some(&keypair), 0)
+    let tr = Contract::deploy_json(&client, func, None, "{}".to_owned(), abi, contract_image, Some(&keypair), 0)
         .await
         .expect("Error deploying contract");
 
@@ -250,17 +247,16 @@ async fn test_deploy_and_call_contract() {
         panic!("transaction aborted!\n\n{:?}", tr)
     }
 
-    test_call_contract(account_id, &keypair).await;
+    test_call_contract(&client, account_id, &keypair).await;
 }
 
 #[test]
 fn test_contract_image_from_file() {
-    let mut state_init = std::fs::File::open("src/tests/Subscription.tvc").expect("Unable to open contract code file");
 
     let mut csprng = OsRng::new().unwrap();
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
 
-    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair.public).expect("Unable to parse contract code file");
+    let contract_image = ContractImage::from_state_init_and_key(&mut tests_common::SUBSCRIBE_CONTRACT_IMAGE.as_slice(), &keypair.public).expect("Unable to parse contract code file");
 
     println!("Account ID {:x}", contract_image.account_id());
 }
@@ -269,7 +265,7 @@ fn test_contract_image_from_file() {
 #[test]
 #[ignore]
 async fn test_deploy_empty_contract() {
-    init_node_connection();
+    let client = init_node_connection();
 
     let mut csprng = OsRng::new().unwrap();
 
@@ -284,7 +280,7 @@ async fn test_deploy_empty_contract() {
     let image = ContractImage::from_code_data_and_library(&mut data_cur, None, None).expect("Error creating ContractImage");
     let acc_id = image.msg_address(0);
 
-    tests_common::get_grams_from_giver(acc_id.clone()).await;
+    tests_common::get_grams_from_giver(&client, acc_id.clone()).await;
 
     println!("Account ID {}", acc_id);
 
@@ -296,7 +292,7 @@ async fn test_deploy_empty_contract() {
         .expect("Error unwrap result while loading Contract")
         .expect("Error unwrap contract while loading Contract");*/
         	// wait for grams recieving
-	queries_helper::wait_for(
+	client.wait_for(
         "accounts",
         &json!({
 			"id": { "eq": acc_id.to_string() },
@@ -309,7 +305,7 @@ async fn test_deploy_empty_contract() {
     println!("Contract got!!!");
 
 
-    let tr = Contract::deploy_no_constructor(image, 0)
+    let tr = Contract::deploy_no_constructor(&client, image, 0)
         .await
         .expect("Error deploying contract");
 
@@ -323,10 +319,10 @@ async fn test_deploy_empty_contract() {
 #[tokio::main]
 #[test]
 async fn test_load_nonexistent_contract() {
-    init_node_connection();
+    let client = init_node_connection();
 
     let acc_id = AccountId::from([67; 32]);
-    let c = Contract::load(&MsgAddressInt::with_standart(None, 0, acc_id).unwrap())
+    let c = Contract::load(&client, &MsgAddressInt::with_standart(None, 0, acc_id).unwrap())
         .await
         .expect("Error unwrap result while loading Contract");
 
@@ -344,22 +340,19 @@ fn test_print_base64_address_from_hex() {
 }
 
 #[test]
+#[ignore]
 fn test_update_contract_data() {
-    // read image from file and construct ContractImage
-    let mut state_init = std::fs::File::open("src/tests/Subscription.tvc")
-        .expect("Unable to open Subscription contract file");
-
     let mut csprng = OsRng::new().unwrap();
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
 
-    let mut contract_image = ContractImage::from_state_init_and_key(&mut state_init, &keypair.public)
+    let mut contract_image = ContractImage::from_state_init_and_key(&mut tests_common::SUBSCRIBE_CONTRACT_IMAGE.as_slice(), &keypair.public)
         .expect("Unable to parse contract code file");
 
     let new_data = r#"
         { "mywallet": "0:1111111111111111111111111111111111111111111111111111111111111111" }
     "#;
 
-    contract_image.update_data(new_data, test_piggy_bank::SUBSCRIBE_CONTRACT_ABI).unwrap();
+    contract_image.update_data(new_data, &tests_common::SUBSCRIBE_CONTRACT_ABI).unwrap();
     let init = contract_image.state_init();
     let new_map = HashmapE::with_data(ton_abi::Contract::DATA_MAP_KEYLEN, init.data.unwrap().into());
 

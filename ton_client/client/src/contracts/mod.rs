@@ -204,14 +204,20 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
     #[cfg(feature = "node_interaction")]
     handlers.spawn("contracts.load",
         |context: &mut crate::client::ClientContext, params: load::LoadParams| {
-            crate::dispatch::run_in_runtime(load::load(context, params))
+            let mut runtime = context.take_runtime()?;
+            let result = runtime.block_on(load::load(context, params));
+            context.runtime = Some(runtime);
+            result
         });
 
     // Deploy
     #[cfg(feature = "node_interaction")]
     handlers.spawn("contracts.deploy",
         |context: &mut crate::client::ClientContext, params: deploy::ParamsOfDeploy| {
-            crate::dispatch::run_in_runtime(deploy::deploy(context, params))
+            let mut runtime = context.take_runtime()?;
+            let result = runtime.block_on(deploy::deploy(context, params));
+            context.runtime = Some(runtime);
+            result
         });
 
     handlers.spawn("contracts.deploy.message",
@@ -227,7 +233,10 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
     #[cfg(feature = "node_interaction")]
     handlers.spawn("contracts.run",
         |context: &mut crate::client::ClientContext, params: run::ParamsOfRun| {
-            crate::dispatch::run_in_runtime(run::run(context, params))
+            let mut runtime = context.take_runtime()?;
+            let result = runtime.block_on(run::run(context, params));
+            context.runtime = Some(runtime);
+            result
         });
 
     handlers.spawn("contracts.run.message",

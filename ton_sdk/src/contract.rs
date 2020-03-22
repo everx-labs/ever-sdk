@@ -86,7 +86,7 @@ pub struct Contract {
 
 #[cfg(test)]
 #[path = "tests/test_contract.rs"]
-mod tests;
+pub mod tests;
 
 // The struct represents conract's image
 #[derive(Clone)]
@@ -289,10 +289,10 @@ pub fn encode_base64(address: &MsgAddressInt, bounceable: bool, test: bool, as_u
 impl Contract {
 
     // Asynchronously loads a Contract instance or None if contract with given id is not exists
-    pub async fn load(address: &MsgAddressInt) -> SdkResult<Option<Contract>> {
+    pub async fn load(client: &NodeClient, address: &MsgAddressInt) -> SdkResult<Option<Contract>> {
         let id = address.to_string();
 
-        queries_helper::load_record_fields(
+        client.load_record_fields(
             CONTRACTS_TABLE_NAME,
             &id,
             ACCOUNT_FIELDS)
@@ -310,10 +310,10 @@ impl Contract {
     }
 
     // Asynchronously loads a Contract instance or None if contract with given id is not exists
-    pub async fn load_wait_deployed(address: &MsgAddressInt, timeout: Option<u32>)
+    pub async fn load_wait_deployed(client: &NodeClient, address: &MsgAddressInt, timeout: Option<u32>)
     -> SdkResult<Contract>
     {
-        queries_helper::wait_for(
+        client.wait_for(
             CONTRACTS_TABLE_NAME,
             &json!({
                 "id": {
@@ -333,25 +333,25 @@ impl Contract {
 
     // Asynchronously loads a Contract's json representation
     // or null if message with given id is not exists
-    pub async fn load_json(id: AccountId) -> SdkResult<String> {
-        queries_helper::load_record_fields(CONTRACTS_TABLE_NAME, &id.to_hex_string(), ACCOUNT_FIELDS)
+    pub async fn load_json(client: &NodeClient, id: AccountId) -> SdkResult<String> {
+        client.load_record_fields(CONTRACTS_TABLE_NAME, &id.to_hex_string(), ACCOUNT_FIELDS)
             .await
             .map(|val| val.to_string())
     }
 
     // Add `expire` parameter to contract functions header
-    fn make_expire_header(abi: String, header: Option<String>) -> SdkResult<(Option<String>, Option<u32>)> {
+    fn make_expire_header(client: &NodeClient, abi: String, header: Option<String>) -> SdkResult<(Option<String>, Option<u32>)> {
         let abi = AbiContract::load(abi.as_bytes())?;
         // use expire only if contract supports it
         if abi.header().contains(&serde_json::from_value::<ton_abi::Param>("expire".into())?) {
             // expire is `now + timeout`
-            let timeout = queries_helper::get_timeout();
+            let timeout = client.get_timeout();
             let expire = Self::get_now()? + timeout / 1000;
             let expire = ton_abi::TokenValue::Expire(expire);
 
             let header = serde_json::from_str::<Value>(&header.unwrap_or("{}".to_owned()))?;
             // parse provided header using calculated value as default for expire param
-            let mut header = Tokenizer::tokenize_optional_params(
+            let header = Tokenizer::tokenize_optional_params(
                 abi.header(),
                 &header,
                 &HashMap::from_iter(std::iter::once(("expire".to_owned(), expire))))?;
@@ -361,8 +361,7 @@ impl Contract {
                 _ => return Err(SdkErrorKind::InternalError{msg: "Wrong expire type".to_owned()}.into())
             };
 
-            let header: Vec<Token> = header.drain().map(|(name, value)| Token { name, value }).collect();
-            Ok((Some(Detokenizer::detokenize(abi.header(), &header)?), Some(expire)))
+            Ok((Some(Detokenizer::detokenize_optional(&header)?), Some(expire)))
         } else {
             Ok((header, None))
         }
@@ -372,80 +371,78 @@ impl Contract {
     // Works with json representation of input and abi.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
-    pub async fn call_json(address: MsgAddressInt, func: String, header: Option<String>, input: String,
+    pub async fn call_json(client: &NodeClient, address: MsgAddressInt, func: String, header: Option<String>, input: String,
         abi: String, key_pair: Option<&Keypair>
     ) -> SdkResult<Transaction> {
-        let (header, expire) = Self::make_expire_header(abi.clone(), header)?;
+        let (header, expire) = Self::make_expire_header(client, abi.clone(), header)?;
 
         // pack params into bag of cells via ABI
         let msg_body = ton_abi::encode_function_call(abi, func, header, input, false, key_pair)?;
 
         let msg = Self::create_message(address, msg_body.into())?;
 
-        Self::send_message(msg, expire).await
+        Self::send_message(client, msg, expire).await
     }
 
     // Packs given image and input and asynchronously calls given contract's constructor method.
     // Works with json representation of input and abi.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
-    pub async fn deploy_json(func: String, header: Option<String>, input: String, abi: String,
+    pub async fn deploy_json(client: &NodeClient, func: String, header: Option<String>, input: String, abi: String,
         image: ContractImage, key_pair: Option<&Keypair>, workchain_id: i32
     ) -> SdkResult<Transaction> {
-        let (header, expire) = Self::make_expire_header(abi.clone(), header)?;
+        let (header, expire) = Self::make_expire_header(client, abi.clone(), header)?;
 
         let msg_body = ton_abi::encode_function_call(abi, func, header, input, false, key_pair)?;
 
         let cell = msg_body.into();
         let msg = Self::create_deploy_message(Some(cell), image, workchain_id)?;
 
-        Self::send_message(msg, expire).await
+        Self::send_message(client, msg, expire).await
     }
 
     // Packs given image asynchronously send deploy message into blockchain.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
-    pub async fn deploy_no_constructor(image: ContractImage, workchain_id: i32)
+    pub async fn deploy_no_constructor(client: &NodeClient, image: ContractImage, workchain_id: i32)
         -> SdkResult<Transaction> {
         let msg = Self::create_deploy_message(None, image, workchain_id)?;
 
-        Self::send_message(msg, None).await
+        Self::send_message(client, msg, None).await
     }
 
     // Asynchronously calls contract by sending given message.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
-    pub async fn send_message(msg: TvmMessage, expire: Option<u32>)
+    pub async fn send_message(client: &NodeClient, msg: TvmMessage, expire: Option<u32>)
         -> SdkResult<Transaction> 
     {
         // send message
-        let msg_id = Self::_send_message(msg).await?;
+        let msg_id = Self::_send_message(client, msg).await?;
         // subscribe on updates from DB and return updates stream
-        Self::wait_transaction_processing(&msg_id, expire).await
+        Self::wait_transaction_processing(client, &msg_id, expire).await
     }
 
-   async fn _send_message(msg: TvmMessage) -> SdkResult<MessageId> {
+   async fn _send_message(client: &NodeClient, msg: TvmMessage) -> SdkResult<MessageId> {
         let (data, id) = Self::serialize_message(msg)?;
-
-        queries_helper::send_message(&id.to_bytes()?, &data).await?;
-        println!("msg is sent, id: {}", id);
+        client.send_message(&id.to_bytes()?, &data).await?;
+        //println!("msg is sent, id: {}", id);
         Ok(id.clone())
     }
 
-    pub async fn send_serialized_message(id: &MessageId, msg: &[u8]) -> SdkResult<()> {
-        queries_helper::send_message(&id.to_bytes()?, msg).await
+    pub async fn send_serialized_message(client: &NodeClient, id: &MessageId, msg: &[u8]) -> SdkResult<()> {
+        client.send_message(&id.to_bytes()?, msg).await
     }
 
-    pub async fn wait_transaction_processing(message_id: &MessageId, expire: Option<u32>) ->
+    pub async fn wait_transaction_processing(client: &NodeClient, message_id: &MessageId, expire: Option<u32>) ->
         SdkResult<Transaction>
     {
         let timeout = if let Some(expire) = expire {
-            println!("expire {}", expire);
             let now = Self::get_now()?;
             if expire <= now {
                 return Err(SdkErrorKind::InvalidArg{ msg: "Message already expired".to_owned() }.into());
             }
-            Some((expire - now) * 1000 + queries_helper::DEFAULT_TIMEOUT)
+            Some((expire - now) * 1000 + node_client::DEFAULT_TIMEOUT)
         } else {
             None
         };
@@ -455,7 +452,7 @@ impl Contract {
             "status": { "eq": json_helper::transaction_status_to_u8(TransactionProcessingStatus::Finalized) }
         }).to_string();
 
-        let transaction_stream = queries_helper::wait_for(
+        let transaction_stream = client.wait_for(
             TRANSACTIONS_TABLE_NAME,
             &filter, 
             TRANSACTION_FIELDS_ORDINARY,
@@ -469,7 +466,7 @@ impl Contract {
             }).to_string();
 
         if expire.is_some() {
-            let block_stream = queries_helper::wait_for(
+            let block_stream = client.wait_for(
                 BLOCKS_TABLE_NAME,
                 &filter, 
                 "in_msg_descr { transaction_id }",
@@ -480,7 +477,7 @@ impl Contract {
                                     msg: "Invalid block recieved: no transaction ID".to_owned()
                                 }.into()),
                                 Some(string) => {
-                                    queries_helper::wait_for(
+                                    client.wait_for(
                                         TRANSACTIONS_TABLE_NAME,
                                         &json!({ "id": { "eq": string }}).to_string(), 
                                         "id",

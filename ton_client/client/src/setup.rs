@@ -23,7 +23,7 @@ use ton_sdk::{NodeClientConfig};
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
     #[cfg(feature = "node_interaction")]
-    handlers.call_no_args("uninit", |_| Ok(ton_sdk::uninit()));
+    handlers.call_no_args("uninit", |context| Ok(context.client = None));
     #[cfg(not(feature = "node_interaction"))]
     handlers.call_no_args("uninit", |_| Ok(()));
 
@@ -40,7 +40,10 @@ pub(crate) struct SetupParams {
 }
 
 #[cfg(feature = "node_interaction")]
-fn setup(_context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
+fn setup(context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
+    debug!("-> setup({}, {})",
+        config.base_url.clone().unwrap_or("".to_owned()),
+        config.transaction_timeout.unwrap_or(0));
     // if node address is not provided don't init network connection
     if config.base_url.is_none() {
        return Ok(());
@@ -82,7 +85,16 @@ fn setup(_context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
         subscriptions_server: subscriptions_url,
         transaction_timeout: config.transaction_timeout,
     };
-    ton_sdk::init(internal_config).map_err(|err|ApiError::config_init_failed(err))
+
+    context.client = Some(ton_sdk::init(internal_config).map_err(|err|ApiError::config_init_failed(err))?);
+    context.runtime = Some(tokio::runtime::Builder::new()
+        .basic_scheduler()
+        .enable_io()
+        .enable_time()
+        .build()
+        .map_err(|err| ApiError::cannot_create_runtime(err))?);
+
+    Ok(())
 }
 
 

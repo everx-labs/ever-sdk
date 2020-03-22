@@ -87,10 +87,13 @@ impl GqlClient {
         Self::process_response(response).await
     }
     
-    pub fn subscribe(&mut self, request: VariableRequest) -> Result<SubscribeStream, GraphiteError> {
-        self.incremented_id = self.incremented_id+1;
-        let id = self.incremented_id;
-                
-        Ok(SubscribeStream::new(id, request, &self.graphql_socket_host)?)
+    pub fn subscribe(&self, request: VariableRequest) -> Result<SubscribeStream, GraphiteError> {
+        Ok(SubscribeStream::new(
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_err(|err| GraphiteError::new(format!("Cannot get time: {}", err)))?
+                .subsec_nanos(),
+            request,
+            &self.graphql_socket_host)?)
     }
 }

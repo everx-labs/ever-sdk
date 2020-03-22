@@ -39,7 +39,6 @@ ton_sdk = { path = "../../ton_sdk", default-features = false }
 
 [dependencies.tokio]
 version = "0.2.13"
-features = ["full"]
 optional = true
 
 [dependencies.futures]

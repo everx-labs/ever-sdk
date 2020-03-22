@@ -24,9 +24,6 @@ extern crate failure;
 
 #[cfg(feature = "node_interaction")]
 #[macro_use]
-extern crate lazy_static;
-#[cfg(feature = "node_interaction")]
-#[macro_use]
 extern crate serde_json;
 
 pub use ton_abi::json_abi;
@@ -56,28 +53,24 @@ mod types;
 pub use types::*;
 
 #[cfg(feature = "node_interaction")]
-pub mod queries_helper;
+pub mod node_client;
+#[cfg(feature = "node_interaction")]
+pub use node_client::*;
 
 pub mod json_helper;
 
 
 /// Init SKD. Globally saves queries and requests server URLs
 #[cfg(feature = "node_interaction")]
-pub fn init(config: NodeClientConfig) -> SdkResult<()> { 
-    queries_helper::init(config)
+pub fn init(config: NodeClientConfig) -> SdkResult<NodeClient> { 
+    NodeClient::new(config)
 }
 
 /// Init SKD. Globally saves queries and requests server URLs
 #[cfg(feature = "node_interaction")]
-pub fn init_json(config: &str) -> SdkResult<()> {
+pub fn init_json(config: &str) -> SdkResult<NodeClient> {
     init(serde_json::from_str(config)
         .map_err(|err| SdkErrorKind::InvalidArg { msg: format!("{}", err) } )?)
-}
-
-/// Uninit SKD. Should be called before process
-#[cfg(feature = "node_interaction")]
-pub fn uninit() {
-    queries_helper::uninit();
 }
 
 #[cfg(test)]

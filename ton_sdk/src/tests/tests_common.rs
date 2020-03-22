@@ -24,14 +24,24 @@ const NODE_SE: bool = true;
 
 const GIVER_ADDRESS_STR:  &str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
 
-lazy_static! {
+pub const CONTRACTS_PATH: &str = "src/tests/contracts/";
+
+lazy_static::lazy_static! {
     static ref GIVER_ADDRESS: MsgAddressInt = MsgAddressInt::from_str(GIVER_ADDRESS_STR).unwrap();
-
     static ref WALLET_ADDRESS: MsgAddressInt = get_wallet_address(&WALLET_KEYS, 0);
-
     static ref WALLET_ADDRESS_BASE64: String = encode_base64(&WALLET_ADDRESS, false, false, false).unwrap();
-
     static ref WALLET_KEYS: Keypair = get_wallet_keys();
+
+	pub static ref SUBSCRIBE_CONTRACT_ABI: String = std::fs::read_to_string(CONTRACTS_PATH.to_owned() + "Subscription.abi.json").unwrap();
+	pub static ref PIGGY_BANK_CONTRACT_ABI: String = std::fs::read_to_string(CONTRACTS_PATH.to_owned() + "Piggy.abi.json").unwrap();
+    pub static ref WALLET_ABI: String = std::fs::read_to_string(CONTRACTS_PATH.to_owned() + "LimitWallet.abi.json").unwrap();
+    pub static ref SIMPLE_WALLET_ABI: String = std::fs::read_to_string(CONTRACTS_PATH.to_owned() + "Wallet.abi.json").unwrap();
+    pub static ref GIVER_ABI: String = std::fs::read_to_string(CONTRACTS_PATH.to_owned() + "Giver.abi.json").unwrap();
+    
+    pub static ref SUBSCRIBE_CONTRACT_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.to_owned() + "Subscription.tvc").unwrap();
+	pub static ref PIGGY_BANK_CONTRACT_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.to_owned() + "Piggy.tvc").unwrap();
+    pub static ref WALLET_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.to_owned() + "LimitWallet.tvc").unwrap();
+    pub static ref SIMPLE_WALLET_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.to_owned() + "Wallet.tvc").unwrap();
 }
 
 const DEFAULT_GIVER_KEYS: &str = r#"
@@ -56,9 +66,7 @@ fn get_wallet_keys() -> Keypair {
 }
 
 fn get_wallet_address(key_pair: &Keypair, workchain_id: i32) -> MsgAddressInt {
-    // create image to retrieve address
-    let mut state_init = std::fs::File::open("src/tests/Wallet.tvc".to_owned()).expect("Unable to open contract code file");
-    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &key_pair.public).expect("Unable to parse contract code file");
+    let contract_image = ContractImage::from_state_init_and_key(&mut tests_common::SIMPLE_WALLET_IMAGE.as_slice(), &key_pair.public).expect("Unable to parse contract code file");
 
     let address = contract_image.msg_address(workchain_id);
     println!("Wallet address {} ({})", address, encode_base64(&address, false, false, false).unwrap());
@@ -66,7 +74,7 @@ fn get_wallet_address(key_pair: &Keypair, workchain_id: i32) -> MsgAddressInt {
     address
 }
 
-pub fn init_node_connection() {
+pub fn init_node_connection() -> NodeClient {
     let config_json = if NODE_SE {
         r#"
         {
@@ -76,13 +84,12 @@ pub fn init_node_connection() {
     } else {
         r#"
         {
-            "queries_server": "https://testnet.ton.dev/graphql",
-            "subscriptions_server": "wss://testnet.ton.dev/graphql"
+            "queries_server": "https://cinet.tonlabs.io/graphql",
+            "subscriptions_server": "wss://cinet.tonlabs.io/graphql"
         }"#
     };
 
-        
-    init_json(config_json.into()).unwrap();
+    init_json(config_json.into()).unwrap()
 }
 
 #[test]
@@ -107,18 +114,19 @@ fn test_generate_keypair_and_address() {
 #[ignore]
 #[test]
 async fn test_send_grams_from_giver() {
-    init_node_connection();
+    let client = init_node_connection();
 
     println!("Sending grams to {}", WALLET_ADDRESS.to_owned());
 
     call_contract(
+        &client,
         GIVER_ADDRESS.to_owned(),
         "sendGrams",
         json!({
             "dest": WALLET_ADDRESS.to_string(),
             "amount": 1_000_000_000_000u64
         }).to_string(),
-        GIVER_ABI,
+        &GIVER_ABI,
         None).await;
 }
 
@@ -126,15 +134,15 @@ async fn test_send_grams_from_giver() {
 #[ignore]
 #[test]
 async fn test_deploy_giver() {
-    init_node_connection();
+    let client = init_node_connection();
 
-    deploy_contract_and_wait("Wallet.tvc", SIMPLE_WALLET_ABI, "{}", &WALLET_KEYS, 0).await;
+    deploy_contract_and_wait(&client, &SIMPLE_WALLET_IMAGE, &SIMPLE_WALLET_ABI, "{}", &WALLET_KEYS, 0).await;
 
     println!("Giver deployed. Address {}\n", WALLET_ADDRESS.to_string());
 }
 
-async fn check_giver() {
-    let contract = Contract::load(&WALLET_ADDRESS)
+async fn check_giver(client: &NodeClient) {
+    let contract = Contract::load(client, &WALLET_ADDRESS)
         .await
         .expect("Error unwrap result while loading Contract");
 
@@ -159,7 +167,7 @@ async fn check_giver() {
     test_deploy_giver();
 }
 
-pub async fn get_grams_from_giver(address: MsgAddressInt) {
+pub async fn get_grams_from_giver(client: &NodeClient, address: MsgAddressInt) {
     println!("Account to take some grams {}", address);
 
     let transaction = if NODE_SE {
@@ -169,13 +177,14 @@ pub async fn get_grams_from_giver(address: MsgAddressInt) {
         }
 
         call_contract(
+            client,
             GIVER_ADDRESS.to_owned(),
             "sendGrams",
             json!({
                 "dest": address.to_string(),
                 "amount": 500_000_000u64
             }).to_string(),
-            GIVER_ABI,
+            &GIVER_ABI,
             None).await
     } else {
         if WALLET_ADDRESS.to_owned() == address {
@@ -183,9 +192,10 @@ pub async fn get_grams_from_giver(address: MsgAddressInt) {
             return;
         }
 
-        check_giver().await;
+        check_giver(client).await;
 
         call_contract(
+            client,
             WALLET_ADDRESS.to_owned(),
             "sendTransaction",
             json!({
@@ -193,29 +203,34 @@ pub async fn get_grams_from_giver(address: MsgAddressInt) {
                 "value": 200_000_000u64,
                 "bounce": false
             }).to_string(),
-            SIMPLE_WALLET_ABI,
+            &SIMPLE_WALLET_ABI,
             Some(&WALLET_KEYS)).await
     };
 
     for msg_id in transaction.out_messages_id() {
-        Contract::wait_transaction_processing(&msg_id, None)
+        Contract::wait_transaction_processing(client, &msg_id, None)
             .await
             .expect("Error waiting giver message processing");
     }
 }
 
-pub async fn deploy_contract_and_wait(code_file_name: &str, abi: &str, constructor_params: &str, key_pair: &Keypair, workchain_id: i32) -> MsgAddressInt {
-    // read image from file and construct ContractImage
-    let mut state_init = std::fs::File::open("src/tests/".to_owned() + code_file_name).expect("Unable to open contract code file");
-
-    let contract_image = ContractImage::from_state_init_and_key(&mut state_init, &key_pair.public).expect("Unable to parse contract code file");
+pub async fn deploy_contract_and_wait(
+    client: &NodeClient,
+    mut contract_image: &[u8],
+    abi: &str,
+    constructor_params: &str,
+    key_pair: &Keypair,
+    workchain_id: i32
+) -> MsgAddressInt {
+    let contract_image = ContractImage::from_state_init_and_key(&mut contract_image, &key_pair.public).expect("Unable to parse contract code file");
 
     let account_id = contract_image.msg_address(workchain_id);
 
-    get_grams_from_giver(account_id.clone()).await;
+    get_grams_from_giver(client, account_id.clone()).await;
 
     // call deploy method
     let tr = Contract::deploy_json(
+        client,
         "constructor".to_owned(),
         None,
         constructor_params.to_owned(),
@@ -234,9 +249,16 @@ pub async fn deploy_contract_and_wait(code_file_name: &str, abi: &str, construct
     account_id
 }
 
-pub async fn call_contract(address: MsgAddressInt, func: &str, input: String, abi: &str, key_pair: Option<&Keypair>) -> Transaction {
+pub async fn call_contract(
+    client: &NodeClient,
+    address: MsgAddressInt,
+    func: &str,
+    input: String,
+    abi: &str,
+    key_pair: Option<&Keypair>
+) -> Transaction {
     // call needed method
-    let tr = Contract::call_json(address, func.to_owned(), None, input, abi.to_owned(), key_pair)
+    let tr = Contract::call_json(client, address, func.to_owned(), None, input, abi.to_owned(), key_pair)
         .await
         .expect("Error calling contract method");
 
@@ -249,11 +271,16 @@ pub async fn call_contract(address: MsgAddressInt, func: &str, input: String, ab
 }
 
 #[allow(dead_code)]
-pub async fn call_contract_and_wait(address: MsgAddressInt, func: &str, input: String, abi: &str, key_pair: Option<&Keypair>)
-    -> (String, Transaction)
-{
+pub async fn call_contract_and_wait(
+    client: &NodeClient,
+    address: MsgAddressInt,
+    func: &str,
+    input: String,
+    abi: &str,
+    key_pair: Option<&Keypair>
+) -> (String, Transaction) {
     // call needed method
-    let tr = Contract::call_json(address, func.to_owned(), None, input, abi.to_owned(), key_pair)
+    let tr = Contract::call_json(client, address, func.to_owned(), None, input, abi.to_owned(), key_pair)
             .await
             .expect("Error calling contract method");
 
@@ -265,7 +292,7 @@ pub async fn call_contract_and_wait(address: MsgAddressInt, func: &str, input: S
     let abi_function = abi_contract.function(func).expect("Couldn't find function");
 
     // take external outbound message from the transaction
-    let out_msg = tr.load_out_messages()
+    let out_msg = tr.load_out_messages(client)
         .expect("Error calling load out messages");
     
     futures::pin_mut!(out_msg);
@@ -303,13 +330,14 @@ pub async fn call_contract_and_wait(address: MsgAddressInt, func: &str, input: S
 }
 
 pub async fn contract_call_local(
+    client: &NodeClient,
     address: MsgAddressInt,
     func: &str,
     input: &str,
     abi: &str,
     key_pair: Option<&Keypair>
 ) -> String {
-    let contract = Contract::load_wait_deployed(&address, None)
+    let contract = Contract::load_wait_deployed(client, &address, None)
         .await
         .expect("Error unwrap result while loading Contract");
 
@@ -327,59 +355,3 @@ pub async fn contract_call_local(
 
    "{}".to_owned()
 }
-
-const GIVER_ABI: &str = r#"
-{
-	"ABI version": 1,
-	"functions": [
-		{
-			"name": "constructor",
-			"inputs": [
-			],
-			"outputs": [
-			]
-		},
-		{
-			"name": "sendGrams",
-			"inputs": [
-				{"name":"dest","type":"address"},
-				{"name":"amount","type":"uint64"}
-			],
-			"outputs": [
-			]
-		}
-	],
-	"events": [
-	],
-	"data": [
-	]
-}"#;
-
-const SIMPLE_WALLET_ABI: &str = r#"
-{
-    "ABI version": 1,
-    "functions": [
-        {
-            "name": "constructor",
-            "inputs": [
-            ],
-            "outputs": [
-            ]
-        },
-        {
-            "name": "sendTransaction",
-            "inputs": [
-                {"name":"dest","type":"address"},
-                {"name":"value","type":"uint128"},
-                {"name":"bounce","type":"bool"}
-            ],
-            "outputs": [
-            ]
-        }
-    ],
-    "events": [
-    ],
-    "data": [
-        {"key":100,"name":"owner","type":"uint256"}
-    ]
-} "#;

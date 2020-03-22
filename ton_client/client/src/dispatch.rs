@@ -19,10 +19,6 @@ use std::collections::HashMap;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-#[cfg(feature = "node_interaction")]
-use futures::Future;
-
-
 impl JsonResponse {
     pub(crate) fn from_result(result_json: String) -> Self {
         Self {
@@ -90,20 +86,6 @@ impl<R: Send + Serialize> SyncHandler for CallNoArgsHandler<R> {
                 JsonResponse::from_error(err)
         }
     }
-}
-
-#[cfg(feature = "node_interaction")]
-pub(crate) fn run_in_runtime<R, F>(future: F) -> ApiResult<R>
-where F: Future<Output=ApiResult<R>>
-{
-    let mut runtime = tokio::runtime::Builder::new()
-            .basic_scheduler()
-            .enable_io()
-            .enable_time()
-            .build()
-            .map_err(|err| ApiError::cannot_create_runtime(err))?;
-
-    runtime.block_on(future)
 }
 
 impl DispatchTable {

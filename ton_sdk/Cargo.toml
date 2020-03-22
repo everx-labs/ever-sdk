@@ -31,7 +31,6 @@ chrono = { version = "0.4.9", features = ["wasmbind"] }
 
 [dependencies.tokio]
 version = "0.2.13"
-features = ["full"]
 optional = true
 
 [dependencies.futures]
@@ -51,6 +50,7 @@ optional = true
 pretty_assertions = "0.5.1"
 rand = "0.6.1"
 dirs = "2.0.2"
+tokio = { version = "0.2.13", features = ["macros"]}
 
 [features]
 default = ["node_interaction"]

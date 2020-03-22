@@ -17,7 +17,6 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use rand::RngCore;
 
-use ton_sdk::queries_helper;
 use crate::client::ClientContext;
 use crate::types::{ApiResult, ApiError};
 
@@ -27,7 +26,7 @@ pub(crate) struct ParamsOfQuery {
     pub table: String,
     pub filter: String,
     pub result: String,
-    pub order: Option<queries_helper::OrderBy>,
+    pub order: Option<ton_sdk::OrderBy>,
     pub limit: Option<u32>
 }
 
@@ -68,24 +67,27 @@ lazy_static! {
             = Mutex::new(HashMap::new());
 }
 
-pub(crate) async fn query(_context: &mut ClientContext, params: ParamsOfQuery) -> ApiResult<ResultOfQuery> {
-    let result = queries_helper::query(&params.table, &params.filter, &params.result, params.order, params.limit, Some(0))
+pub(crate) async fn query(context: &mut ClientContext, params: ParamsOfQuery) -> ApiResult<ResultOfQuery> {
+    let client = context.get_client()?;
+    let result = client.query(&params.table, &params.filter, &params.result, params.order, params.limit, Some(0))
         .await
         .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::queries_query_failed))?;
 
     Ok(ResultOfQuery{ result })
 }
 
-pub(crate) async fn wait_for(_context: &mut ClientContext, params: ParamsOfWaitFor) -> ApiResult<ResultOfQuery> {
-    let result = queries_helper::wait_for(&params.table, &params.filter, &params.result, params.timeout)
+pub(crate) async fn wait_for(context: &mut ClientContext, params: ParamsOfWaitFor) -> ApiResult<ResultOfQuery> {
+    let client = context.get_client()?;
+    let result = client.wait_for(&params.table, &params.filter, &params.result, params.timeout)
         .await
         .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::queries_wait_for_failed))?;
 
     Ok(ResultOfQuery{ result })
 }
 
-pub(crate) fn subscribe(_context: &mut ClientContext, params: ParamsOfSubscribe) -> ApiResult<SubscribeHandle> {
-    let stream = queries_helper::subscribe(&params.table, &params.filter, &params.result)
+pub(crate) fn subscribe(context: &mut ClientContext, params: ParamsOfSubscribe) -> ApiResult<SubscribeHandle> {
+    let client = context.get_client()?;
+    let stream = client.subscribe(&params.table, &params.filter, &params.result)
         .map_err(|err| ApiError::queries_subscribe_failed(err))?;
 
     let mut rng = rand::rngs::OsRng::new()

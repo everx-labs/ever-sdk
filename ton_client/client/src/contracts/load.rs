@@ -30,8 +30,9 @@ pub(crate) struct LoadResult {
     pub balanceGrams: Option<String>,
 }
 
-pub(crate) async fn load(_context: &mut ClientContext, params: LoadParams) -> ApiResult<LoadResult> {
-    let loaded = Contract::load(&account_decode(&params.address)?)
+pub(crate) async fn load(context: &mut ClientContext, params: LoadParams) -> ApiResult<LoadResult> {
+    let client = context.get_client()?;
+    let loaded = Contract::load(client, &account_decode(&params.address)?)
         .await
         .map_err(|err|ApiError::contracts_load_failed(err, &params.address))?;
     match loaded {

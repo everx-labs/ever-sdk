@@ -12,13 +12,21 @@
 * limitations under the License.
 */
 
+use crate::error::*;
+use crate::json_helper;
+use crate::{StringId};
+
+#[cfg(feature = "node_interaction")]
+use crate::node_client::NodeClient;
+#[cfg(feature = "node_interaction")]
+use crate::types::MESSAGES_TABLE_NAME;
+
 use ton_types::{SliceData, Cell};
 use ton_block::{
     CommonMsgInfo, Message as TvmMessage
 };
 use ton_block::GetRepresentationHash;
 
-use crate::*;
 
 #[derive(Deserialize, Debug, PartialEq, Clone)]
 pub enum MessageType {
@@ -58,8 +66,8 @@ impl Message {
 
     // Asynchronously loads a Message instance or None if message with given id is not exists
     #[cfg(feature = "node_interaction")]
-    pub async fn load(id: &MessageId) -> SdkResult<Option<Message>> {
-        queries_helper::load_record_fields(
+    pub async fn load(client: &NodeClient, id: &MessageId) -> SdkResult<Option<Message>> {
+        client.load_record_fields(
             MESSAGES_TABLE_NAME,
             &id.to_string(),
             MESSAGE_FIELDS)
@@ -79,8 +87,8 @@ impl Message {
     // Asynchronously loads a Message's json representation 
     // or null if message with given id is not exists
     #[cfg(feature = "node_interaction")]
-    pub async fn load_json(id: MessageId) -> SdkResult<String> {
-        queries_helper::load_record_fields(
+    pub async fn load_json(client: &NodeClient, id: MessageId) -> SdkResult<String> {
+        client.load_record_fields(
             MESSAGES_TABLE_NAME,
             &id.to_string(),
             MESSAGE_FIELDS)

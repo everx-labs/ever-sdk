@@ -19,6 +19,8 @@ use crate::contracts::EncodedUnsignedMessage;
 
 #[cfg(feature = "node_interaction")]
 use ton_sdk::Transaction;
+#[cfg(feature = "node_interaction")]
+use ton_sdk::NodeClient;
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
@@ -114,8 +116,9 @@ pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) 
         })
     }
 
+    let client = context.get_client()?;
     debug!("-> -> deploy");
-    let tr = deploy_contract(params, contract_image, &key_pair).await?;
+    let tr = deploy_contract(client, params, contract_image, &key_pair).await?;
     debug!("-> -> deploy transaction: {}", tr. id());
 
     debug!("<-");
@@ -267,8 +270,9 @@ fn create_image(abi: &serde_json::Value, init_params: Option<&serde_json::Value>
 }
 
 #[cfg(feature = "node_interaction")]
-async fn deploy_contract(params: ParamsOfDeploy, image: ContractImage, keys: &Keypair) -> ApiResult<Transaction> {
+async fn deploy_contract(client: &NodeClient, params: ParamsOfDeploy, image: ContractImage, keys: &Keypair) -> ApiResult<Transaction> {
     Contract::deploy_json(
+        client,
         "constructor".to_owned(),
         params.constructorHeader.map(|value| value.to_string().to_owned()),
         params.constructorParams.to_string().to_owned(),

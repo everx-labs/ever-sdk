@@ -65,13 +65,13 @@ impl VariableRequest {
 }
 
 pub struct SubscribeStream {
-    id: u64,
+    id: u32,
     request: VariableRequest,
     client: Client<Box<dyn NetworkStream + Send>>
 }
 
 impl SubscribeStream {
-    pub fn new(id: u64, request: VariableRequest, host:&str) -> Result<Self, GraphiteError> {
+    pub fn new(id: u32, request: VariableRequest, host:&str) -> Result<Self, GraphiteError> {
         let client = ClientBuilder::new(host)
             .map_err(|err| 
                 GraphiteError::new(
@@ -123,8 +123,8 @@ impl SubscribeStream {
         Ok(())
     }
 
-    pub fn get_id(&self) -> u64 {
-        self.id.clone()
+    pub fn get_id(&self) -> u32 {
+        self.id
     }
 }
 

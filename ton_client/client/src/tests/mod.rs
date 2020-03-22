@@ -183,7 +183,7 @@ fn test_wallet_deploy() {
     println!("result: {}", version.to_string());
 
     let _deployed = client.request("setup",
-        json!({"baseUrl": "http://localhost"}));
+        json!({"baseUrl": "http://localhost"})).unwrap();
 
     let keys = client.request("crypto.ed25519.keypair", json!({})).unwrap();
 
