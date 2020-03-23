@@ -36,7 +36,7 @@ use futures::StreamExt;
 #[cfg(feature = "fee_calculation")]
 use ton_sdk::TransactionFees;
 #[cfg(feature = "fee_calculation")]
-use types::long_num_to_json_string;
+use crate::types::long_num_to_json_string;
 
 fn bool_false() -> bool { false }
 
