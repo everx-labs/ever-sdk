@@ -14,32 +14,24 @@
 
 use crate::error::*;
 use std::sync::Arc;
-use num_traits::cast::ToPrimitive;
 use ton_vm::executor::Engine;
 use ton_block::{
-    Account,
-    AccStatusChange,
     Message,
     Serializable,
     Deserializable,
     MsgAddressInt,
-    ShardAccount,
-    TransactionDescr,
-    TrComputePhase
 };
-use ton_block::types::Grams;
 use ton_types::{Cell, SliceData, HashmapE};
-use ton_types::types::UInt256;
 use ton_vm::stack::{IntegerData, SaveList, Stack, StackItem};
 use ton_vm::SmartContractInfo;
 use ton_vm::executor::gas::gas_state::Gas;
+#[cfg(feature = "fee_calculation")]
 use ton_executor::{BlockchainConfig, TransactionExecutor, OrdinaryTransactionExecutor};
 
 #[cfg(test)]
 #[path = "tests/test_local_tvm.rs"]
 mod tests;
 
-#[allow(dead_code)]
 pub(crate) fn call_tvm(
     balance: u128,
     balance_other: HashmapE,
@@ -97,6 +89,22 @@ pub(crate) fn call_tvm(
     msgs.reverse();
     Ok((msgs, engine.gas_used()))
 }
+
+#[cfg(feature = "fee_calculation")]
+pub mod executor {
+    
+use super::*;
+use num_traits::cast::ToPrimitive;
+use ton_types::types::UInt256;
+use ton_block::types::Grams;
+use ton_block::{
+    Account,
+    AccStatusChange,
+    Message,
+    ShardAccount,
+    TransactionDescr,
+    TrComputePhase
+};
 
 #[derive(Default, Debug)]
 pub struct TransactionFees {
@@ -195,4 +203,6 @@ pub(crate) fn call_executor(account: Account, msg: Message, config: &BlockchainC
     fees.total_output = grams_to_u64(&total_output)?;
 
     Ok((messages, fees))
+}
+
 }

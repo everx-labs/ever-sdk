@@ -135,6 +135,7 @@ pub enum SdkErrorKind {
         err: std::num::TryFromIntError
     },
 
+    #[cfg(feature = "fee_calculation")]
     #[fail(display = "Transaction executor error: {}", err)]
     ExecutorError {
         err: ton_executor::ExecutorError
@@ -243,6 +244,7 @@ impl From<std::num::TryFromIntError> for SdkError {
     }
 }
 
+#[cfg(feature = "fee_calculation")]
 impl From<ton_executor::ExecutorError> for SdkError {
     fn from(err: ton_executor::ExecutorError) -> SdkError {
         SdkError::from(SdkErrorKind::ExecutorError { err })

@@ -1,0 +1,14 @@
+name: Release post-actions
+
+on: 
+  release: 
+    types: [published]
+
+jobs:
+  send-discord-msg:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Discord notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        uses: Ilshidur/action-discord@master

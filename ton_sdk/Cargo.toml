@@ -8,7 +8,6 @@ ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git"}
 ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }
 ton_vm = { git = "https://github.com/tonlabs/ton-labs-vm.git", default-features = false }
 ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git" }
-ton_executor = { git = "ssh://git@github.com/tonlabs/ton-executor.git" }
 
 num-bigint = "0.2.2"
 sha2 = "0.8"
@@ -46,6 +45,10 @@ version = "0.9.18"
 features = ["default-tls-vendored"]
 optional = true
 
+[dependencies.ton_executor]
+git = "ssh://git@github.com/tonlabs/ton-executor.git"
+optional = true
+
 [dev-dependencies]
 pretty_assertions = "0.5.1"
 rand = "0.6.1"
@@ -53,7 +56,8 @@ dirs = "2.0.2"
 tokio = { version = "0.2.13", features = ["macros"]}
 
 [features]
-default = ["node_interaction"]
+default = ["node_interaction", "fee_calculation"]
 ci_run = []
 node_interaction = ["graphite", "futures", "reqwest", "tokio"]
+fee_calculation = ["ton_executor"]
 

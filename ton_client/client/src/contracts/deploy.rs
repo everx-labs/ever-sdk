@@ -89,6 +89,8 @@ pub(crate) struct ParamsOfGetDeployData {
     pub initParams: Option<serde_json::Value>,
     pub imageBase64: Option<String>,
     pub publicKeyHex: String,
+    #[serde(default)]
+    pub workchainId: i32,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -96,6 +98,7 @@ pub(crate) struct ParamsOfGetDeployData {
 pub(crate) struct ResultOfGetDeployData {
     pub imageBase64: Option<String>,
     pub accountId: Option<String>,
+    pub address: Option<String>,
     pub dataBase64: String,
 }
 
@@ -201,19 +204,21 @@ pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetD
 
     // image is returned only if original image was provided
     // accountId is computed from image so it is returned only with image
-    let (image_base64, account_id) = match params.imageBase64 {
+    let (image_base64, account_id, address) = match params.imageBase64 {
         Some(_) => (
             Some(base64::encode(&image.serialize()
                 .map_err(|err| ApiError::contracts_image_creation_failed(err))?)),
-            Some(image.account_id().to_hex_string())
+            Some(image.account_id().to_hex_string()),
+            Some(image.msg_address(params.workchainId).to_string())
         ),
-        None => (None, None),
+        None => (None, None, None),
     };
 
     debug!("<-");
     Ok(ResultOfGetDeployData {
         imageBase64: image_base64,
         accountId: account_id,
+        address,
         dataBase64: data_base64
     })
 }
