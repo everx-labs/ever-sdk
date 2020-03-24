@@ -15,14 +15,11 @@
 use ton_abi::json_abi::decode_function_response;
 use super::*;
 use contract::ContractImage;
-use std::io::{Cursor};
 use std::str::FromStr;
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
-use rand::RngCore;
 use sha2::Sha512;
 use ton_block::{AccountId, MsgAddressInt};
-use ton_types::{BuilderData, IBitstring};
 use ton_types::dictionary::HashmapE;
 use tests_common::*;
 use futures::StreamExt;
@@ -263,61 +260,6 @@ fn test_contract_image_from_file() {
 
 #[tokio::main]
 #[test]
-#[ignore]
-async fn test_deploy_empty_contract() {
-    let client = init_node_connection();
-
-    let mut csprng = OsRng::new().unwrap();
-
-    let mut code_builder = BuilderData::new();
-    code_builder.append_u32(csprng.next_u32()).expect("Unable to add u32");
-
-    let mut data = Vec::new();
-    BagOfCells::with_root(&code_builder.into()).write_to(&mut data, false).expect("Error serializing BOC");
-                                        
-    let mut data_cur = Cursor::new(data);
-    
-    let image = ContractImage::from_code_data_and_library(&mut data_cur, None, None).expect("Error creating ContractImage");
-    let acc_id = image.msg_address(0);
-
-    tests_common::get_grams_from_giver(&client, acc_id.clone()).await;
-
-    println!("Account ID {}", acc_id);
-
-    /*Contract::load(&acc_id)
-        .expect("Error calling load Contract")
-        .wait()
-        .next()
-        .expect("Error unwrap stream next while loading Contract")
-        .expect("Error unwrap result while loading Contract")
-        .expect("Error unwrap contract while loading Contract");*/
-        	// wait for grams recieving
-	client.wait_for(
-        "accounts",
-        &json!({
-			"id": { "eq": acc_id.to_string() },
-			"balance": { "gt": "0" }
-		}).to_string(),
-        "id balance",
-        None)
-        .await
-        .expect("Error unwrap result while waiting balance");
-    println!("Contract got!!!");
-
-
-    let tr = Contract::deploy_no_constructor(&client, image, 0)
-        .await
-        .expect("Error deploying contract");
-
-    println!("Transaction got!!!");
-
-    if tr.is_aborted() {
-        panic!("transaction aborted!\n\n{:?}", tr)
-    }
-}
-
-#[tokio::main]
-#[test]
 async fn test_load_nonexistent_contract() {
     let client = init_node_connection();
 
@@ -372,6 +314,78 @@ fn test_update_contract_data() {
     assert_eq!(
         mywallet_slice,
         MsgAddressInt::with_standart(None, 0, vec![0x11; 32].into()).unwrap().write_to_new_cell().unwrap().into());
+}
+
+#[tokio::main]
+#[test]
+async fn test_expire() {
+    let mut config = tests_common::get_config();
+    config["timeouts"]["message_retries_count"] = serde_json::Value::from(0);
+    // connect to node
+	let client = init_json(&config.to_string()).unwrap();
+
+	// generate key pair
+    let mut csprng = OsRng::new().unwrap();
+    let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
+
+    let wallet_address = deploy_contract_and_wait(&client, &WALLET_IMAGE, &WALLET_ABI, "{}", &keypair, 0).await;
+
+    let (msg, _) = Contract::construct_call_message_json(
+        wallet_address.clone(),
+        "setSubscriptionAccount".to_owned(),
+        Some(json!({
+            "expire": 123
+        }).to_string()),
+        json!({
+            "addr": wallet_address.to_string()
+        }).to_string(),
+        WALLET_ABI.clone(),
+        false,
+        Some(&keypair)).unwrap();
+
+    let result = Contract::send_message(&client, Contract::deserialize_message(&msg).unwrap(), Some(Contract::get_now().unwrap() + 1), 0).await;
+
+    match result {
+        Err(error) => match error.downcast_ref::<SdkErrorKind>().unwrap() {
+            SdkErrorKind::MessageExpired => {},
+            _ => panic!("Error `SdkErrorKind::MessageExpired` expected")
+        },
+        _ => panic!("Error expected")
+    }
+}
+
+#[tokio::main]
+#[test]
+async fn test_retries() {
+    let mut config = tests_common::get_config();
+    config["timeouts"]["message_expiration_timeout_grow_factor"] = serde_json::Value::from(1.1);
+    config["timeouts"]["message_processing_timeout_grow_factor"] = serde_json::Value::from(0.9);
+    // connect to node
+	let client = init_json(&config.to_string()).unwrap();
+
+    let mut csprng = OsRng::new().unwrap();
+    let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
+
+    let wallet_address = deploy_contract_and_wait(&client, &WALLET_IMAGE, &WALLET_ABI, "{}", &keypair, 0).await;
+
+    let mut futures = vec![];
+    for i in 0..10 {
+        let str_address = wallet_address.to_string();
+        let str_address = str_address[..str_address.len() - 2].to_owned() + &format!("{:02x}", i);
+        let fut = call_contract(
+            &client,
+            wallet_address.clone(),
+            "setSubscriptionAccount",
+            json!({
+                "addr": str_address
+            }).to_string(),
+            &WALLET_ABI,
+            Some(&keypair));
+
+        futures.push(fut);
+    }
+
+    futures::future::join_all(futures).await;
 }
 
 #[test]

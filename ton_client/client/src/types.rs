@@ -483,7 +483,7 @@ pub enum ApiSdkErrorCode {
 
     ConfigInitFailed = 1001,
     WaitForTimeout = 1003,
-    MessageExpired = 1005,
+    MessageExpired = 1006,
 
     CryptoInvalidPublicKey = 2001,
     CryptoInvalidSecretKey = 2002,

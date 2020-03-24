@@ -20,7 +20,7 @@ use std::str::FromStr;
 use ton_block::MsgAddressInt;
 use futures::StreamExt;
 
-const NODE_SE: bool = true;
+const NODE_SE: bool = false;
 
 const GIVER_ADDRESS_STR:  &str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
 
@@ -50,6 +50,26 @@ const DEFAULT_GIVER_KEYS: &str = r#"
     "public": "d542f44146f169c6726c8cf70e4cbb3d33d8d842a4afd799ac122c5808d81ba3"
 }"#;
 
+pub fn get_config() -> serde_json::Value {
+    if NODE_SE {
+        json!({
+            "queries_server": "http://localhost/graphql",
+            "subscriptions_server": "ws://localhost/graphql"
+        })
+    } else {
+        json!({
+            "queries_server": "https://cinet.tonlabs.io/graphql",
+            "subscriptions_server": "wss://cinet.tonlabs.io/graphql"
+        })
+    }
+}
+
+pub fn init_node_connection() -> NodeClient {
+    let config_json = get_config().to_string();
+
+    init_json(&config_json).unwrap()
+}
+
 fn get_wallet_keys() -> Keypair {
     let mut keys_file = dirs::home_dir().unwrap();
     keys_file.push("giverKeys.json");
@@ -74,23 +94,6 @@ fn get_wallet_address(key_pair: &Keypair, workchain_id: i32) -> MsgAddressInt {
     address
 }
 
-pub fn init_node_connection() -> NodeClient {
-    let config_json = if NODE_SE {
-        r#"
-        {
-            "queries_server": "http://localhost/graphql",
-            "subscriptions_server": "ws://localhost/graphql"
-        }"#
-    } else {
-        r#"
-        {
-            "queries_server": "https://cinet.tonlabs.io/graphql",
-            "subscriptions_server": "wss://cinet.tonlabs.io/graphql"
-        }"#
-    };
-
-    init_json(config_json.into()).unwrap()
-}
 
 #[test]
 #[ignore]
@@ -208,7 +211,7 @@ pub async fn get_grams_from_giver(client: &NodeClient, address: MsgAddressInt) {
     };
 
     for msg_id in transaction.out_messages_id() {
-        Contract::wait_transaction_processing(client, &msg_id, None)
+        Contract::wait_transaction_processing(client, &msg_id, None, 0)
             .await
             .expect("Error waiting giver message processing");
     }
@@ -228,6 +231,8 @@ pub async fn deploy_contract_and_wait(
 
     get_grams_from_giver(client, account_id.clone()).await;
 
+    let now = std::time::Instant::now();
+
     // call deploy method
     let tr = Contract::deploy_json(
         client,
@@ -238,8 +243,12 @@ pub async fn deploy_contract_and_wait(
         contract_image,
         Some(key_pair),
         workchain_id)
-            .await
-            .expect("Error deploying contract");
+            .await;
+
+    let t = now.elapsed();
+    println!("Deploy time {}.{:03} ", t.as_secs(), t.subsec_millis());
+
+    let tr = tr.expect("Error deploying contract");
 
     println!("Transaction now {}", tr.now);
     if tr.is_aborted() {
@@ -257,10 +266,15 @@ pub async fn call_contract(
     abi: &str,
     key_pair: Option<&Keypair>
 ) -> Transaction {
+    let now = std::time::Instant::now();
     // call needed method
     let tr = Contract::call_json(client, address, func.to_owned(), None, input, abi.to_owned(), key_pair)
-        .await
-        .expect("Error calling contract method");
+        .await;
+
+    let t = now.elapsed();
+    println!("Call time {}.{:03} ", t.as_secs(), t.subsec_millis());
+    
+    let tr = tr.expect("Error calling contract method");
 
     println!("Transaction now {}", tr.now);
     if tr.is_aborted() {
@@ -279,10 +293,15 @@ pub async fn call_contract_and_wait(
     abi: &str,
     key_pair: Option<&Keypair>
 ) -> (String, Transaction) {
+    let now = std::time::Instant::now();
     // call needed method
     let tr = Contract::call_json(client, address, func.to_owned(), None, input, abi.to_owned(), key_pair)
-            .await
-            .expect("Error calling contract method");
+            .await;
+
+    let t = now.elapsed();
+    println!("Call time {}.{:02} ", t.as_secs(), t.subsec_millis());
+    
+    let tr = tr.expect("Error calling contract method");
 
     if tr.is_aborted() {
         panic!("transaction aborted!\n\n{:?}", tr)

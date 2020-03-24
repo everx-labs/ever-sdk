@@ -28,10 +28,6 @@ use ton_vm::executor::gas::gas_state::Gas;
 #[cfg(feature = "fee_calculation")]
 use ton_executor::{BlockchainConfig, TransactionExecutor, OrdinaryTransactionExecutor};
 
-#[cfg(test)]
-#[path = "tests/test_local_tvm.rs"]
-mod tests;
-
 pub(crate) fn call_tvm(
     balance: u128,
     balance_other: HashmapE,
@@ -135,8 +131,6 @@ pub(crate) fn call_executor(account: Account, msg: Message, config: &BlockchainC
         1,
         false)?;
 
-    //println!("{:#?}", transaction.read_description());
-
     let mut fees = TransactionFees::default();
 
     if let TransactionDescr::Ordinary(descr) = transaction.read_description()? {
@@ -206,3 +200,8 @@ pub(crate) fn call_executor(account: Account, msg: Message, config: &BlockchainC
 }
 
 }
+
+
+#[cfg(test)]
+#[path = "tests/test_local_tvm.rs"]
+mod tests;

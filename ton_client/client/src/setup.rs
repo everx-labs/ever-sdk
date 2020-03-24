@@ -19,7 +19,7 @@ use crate::types::ApiResult;
 use crate::types::ApiError;
 
 #[cfg(feature = "node_interaction")]
-use ton_sdk::{NodeClientConfig};
+use ton_sdk::{NodeClientConfig, TimeoutsConfig};
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
     #[cfg(feature = "node_interaction")]
@@ -36,14 +36,31 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 #[serde(rename_all="camelCase")]
 pub(crate) struct SetupParams {
     pub base_url: Option<String>,
-    pub transaction_timeout: Option<u32>,
+    pub message_retries_count: Option<u8>,
+    pub message_expiration_timeout: Option<u32>,
+    pub message_expiration_timeout_grow_factor: Option<f32>,
+    pub message_processing_timeout: Option<u32>,
+    pub message_processing_timeout_grow_factor: Option<f32>,
+    pub wait_for_timeout: Option<u32>,
+    pub access_key: Option<String>,
+}
+
+impl Into<TimeoutsConfig> for &SetupParams {
+    fn into(self) -> TimeoutsConfig {
+        let default = TimeoutsConfig::default();
+        TimeoutsConfig {
+            message_retries_count: self.message_retries_count.unwrap_or(default.message_retries_count),
+            message_expiration_timeout: self.message_expiration_timeout.unwrap_or(default.message_expiration_timeout),
+            message_expiration_timeout_grow_factor: self.message_expiration_timeout_grow_factor.unwrap_or(default.message_expiration_timeout_grow_factor),
+            message_processing_timeout: self.message_processing_timeout.unwrap_or(default.message_processing_timeout),
+            message_processing_timeout_grow_factor: self.message_processing_timeout_grow_factor.unwrap_or(default.message_processing_timeout_grow_factor),
+            wait_for_timeout: self.wait_for_timeout.unwrap_or(default.wait_for_timeout),
+        }
+    }
 }
 
 #[cfg(feature = "node_interaction")]
 fn setup(context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
-    debug!("-> setup({}, {})",
-        config.base_url.clone().unwrap_or("".to_owned()),
-        config.transaction_timeout.unwrap_or(0));
     // if node address is not provided don't init network connection
     if config.base_url.is_none() {
        return Ok(());
@@ -83,7 +100,8 @@ fn setup(context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
     let internal_config = NodeClientConfig {
         queries_server: queries_url,
         subscriptions_server: subscriptions_url,
-        transaction_timeout: config.transaction_timeout,
+        timeouts: Some((&config).into()),
+        access_key: config.access_key
     };
 
     context.client = Some(ton_sdk::init(internal_config).map_err(|err|ApiError::config_init_failed(err))?);

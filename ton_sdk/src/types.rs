@@ -25,12 +25,44 @@ pub const CONTRACT_CALL_STATE_FIELDS: &str = "id status transaction_id";
 
 pub const MSG_STATE_FIELD_NAME: &str = "status";
 
+pub const DEFAULT_RETRIES_COUNT: u8 = 5;
+pub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 10000;
+pub const DEFAULT_PROCESSING_TIMEOUT: u32 = 40000;
+pub const DEFAULT_TIMEOUT_GROW_FACTOR: f32 = 1.5;
+pub const DEFAULT_WAIT_TIMEOUT: u32 = 40000;
+
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(default)]
+pub struct TimeoutsConfig {
+    pub message_retries_count: u8,
+    pub message_expiration_timeout: u32,
+    pub message_expiration_timeout_grow_factor: f32,
+    pub message_processing_timeout: u32,
+    pub message_processing_timeout_grow_factor: f32,
+    pub wait_for_timeout: u32,
+}
+
+impl Default for TimeoutsConfig {
+    fn default() -> Self {
+        Self {
+            message_retries_count: DEFAULT_RETRIES_COUNT,
+            message_expiration_timeout: DEFAULT_EXPIRATION_TIMEOUT,
+            message_expiration_timeout_grow_factor: DEFAULT_TIMEOUT_GROW_FACTOR,
+            message_processing_timeout: DEFAULT_PROCESSING_TIMEOUT,
+            message_processing_timeout_grow_factor: DEFAULT_TIMEOUT_GROW_FACTOR,
+            wait_for_timeout: DEFAULT_WAIT_TIMEOUT,
+        }
+    }
+}
+
 // Represents config to connect node
 #[derive(Debug, Deserialize, Serialize)]
 pub struct NodeClientConfig {
     pub queries_server: String,
     pub subscriptions_server: String,
-    pub transaction_timeout: Option<u32>,
+    pub timeouts: Option<TimeoutsConfig>,
+    pub access_key: Option<String>,
 }
 
 #[derive(Deserialize, Default, Clone, Debug)]

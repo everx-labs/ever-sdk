@@ -40,11 +40,9 @@ pub struct MutationRequest {
     pub body: String
 }
 
-pub const DEFAULT_TIMEOUT: u32 = 40000;
-
 pub struct NodeClient {
     client: GqlClient,
-    timeout: u32
+    timeouts: TimeoutsConfig
 }
 
 impl NodeClient {
@@ -85,18 +83,19 @@ impl NodeClient {
                 subscriptions_server: redirected
                     .replace("https://", "wss://")
                     .replace("http://", "ws://"),
-                transaction_timeout: config.transaction_timeout
+                timeouts: config.timeouts,
+                access_key: config.access_key
             }
         }
 
         Ok(NodeClient {
             client: GqlClient::new(&config.queries_server,&config.subscriptions_server)?,
-            timeout: config.transaction_timeout.unwrap_or(DEFAULT_TIMEOUT)
+            timeouts: config.timeouts.unwrap_or_default()
         })
     }
 
-    pub fn get_timeout(&self) -> u32 {
-        self.timeout
+    pub fn get_timeouts(&self) -> &TimeoutsConfig {
+        &self.timeouts
     }
     
     // Returns Stream with updates database fileds by provided filter
@@ -178,7 +177,7 @@ impl NodeClient {
     pub async fn wait_for(&self, table: &str, filter: &str, fields: &str, timeout: Option<u32>)
         -> SdkResult<Value>
     {
-        self.query(table, filter, fields, None, None, timeout.or(Some(DEFAULT_TIMEOUT)))
+        self.query(table, filter, fields, None, None, timeout.or(Some(self.timeouts.wait_for_timeout)))
             .await
             .and_then(|value| {
                 if !value[0].is_null() {
