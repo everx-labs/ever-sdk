@@ -45,6 +45,7 @@ pub(crate) struct SetupParams {
     pub access_key: Option<String>,
 }
 
+#[cfg(feature = "node_interaction")]
 impl Into<TimeoutsConfig> for &SetupParams {
     fn into(self) -> TimeoutsConfig {
         let default = TimeoutsConfig::default();
