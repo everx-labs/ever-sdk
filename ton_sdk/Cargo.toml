@@ -42,6 +42,7 @@ optional = true
 
 [dependencies.ton_executor]
 git = "ssh://git@github.com/tonlabs/ton-executor.git"
+branch = "feature/use-atomic"
 optional = true
 
 [dev-dependencies]

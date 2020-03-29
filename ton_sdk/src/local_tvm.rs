@@ -13,7 +13,7 @@
 */
 
 use crate::error::*;
-use std::sync::Arc;
+use std::sync::{atomic::AtomicU64, Arc};
 use ton_vm::executor::Engine;
 use ton_block::{
     Message,
@@ -126,13 +126,14 @@ pub(crate) fn call_executor(account: Account, msg: Message, config: &BlockchainC
 {
     let shard_acc = ShardAccount::with_params(account, UInt256::from([0;32]), 0).unwrap();
 
+    let lt = Arc::new(AtomicU64::new(1));
     let mut executor = OrdinaryTransactionExecutor::new();
     let transaction = executor.execute(
         config,
         msg,
         &mut Some(shard_acc),
         timestamp,
-        1,
+        lt.clone(),
         false)?;
 
     //println!("{:#?}", transaction.read_description());
