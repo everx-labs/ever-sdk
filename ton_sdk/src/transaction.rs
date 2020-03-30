@@ -72,21 +72,19 @@ impl Transaction {
 
     // Asynchronously loads a Transaction instance or None if transaction with given id is not exists
     pub async fn load<'a>(client: &'a NodeClient, id: &TransactionId) -> SdkResult<Option<Transaction>> {
-        client.load_record_fields(
+        let value = client.load_record_fields(
             TRANSACTIONS_TABLE_NAME,
             &id.to_string(),
-            TRANSACTION_FIELDS_ORDINARY)
-                .await
-                .and_then(|val| {
-                    if val == serde_json::Value::Null {
-                        Ok(None)
-                    } else {
-                        let tr: Transaction = serde_json::from_value(val)
-                            .map_err(|err| SdkErrorKind::InvalidData { msg: format!("error parsing transaction: {}", err) } )?;
+            TRANSACTION_FIELDS_ORDINARY).await?;
 
-                        Ok(Some(tr))
-                    }
-                })
+        if value == serde_json::Value::Null {
+            Ok(None)
+        } else {
+            Ok(Some(serde_json::from_value(value)
+                .map_err(|err| SdkErrorKind::InvalidData {
+                    msg: format!("error parsing transaction: {}", err)
+                })?))
+        }
     }
 
     // Returns transaction's processing status

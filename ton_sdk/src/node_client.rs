@@ -133,17 +133,15 @@ impl NodeClient {
     // Returns Stream with required database record fields
     pub async fn load_record_fields(&self, table: &str, record_id: &str, fields: &str)
         -> SdkResult<Value> {
-        self.query(
+        let value = self.query(
             table,
             &format!("{{ \"id\": {{\"eq\": \"{record_id}\" }} }}", record_id=record_id),
             fields,
             None,
             None,
-            None)
-                .await
-                .and_then(|value| {
-                    Ok(value[0].clone())
-                })
+            None).await?;
+        
+        Ok(value[0].clone())
     }
     
     // Returns Stream with GraphQL query answer 
@@ -158,35 +156,34 @@ impl NodeClient {
     ) -> SdkResult<Value> {
         let query = Self::generate_query_var(table, filter, fields, order_by, limit, timeout)?;
 
-        let table = table.to_owned();
-    
-        self.client.query_vars(query)
-            .await
-            .map_err(|err| SdkError::from(err).into())
-            .and_then(move |result| {
-                // try to extract the record value from the answer
-                let records_array = &result["data"][&table];
-                if records_array.is_null() {
-                    Err(SdkErrorKind::InvalidData { msg: format!("Invalid query answer: {}", result) }.into())
-                } else {
-                    Ok(records_array.clone())
-                }
-            })
+        let result = self.client.query_vars(query).await?;
+        
+        // try to extract the record value from the answer
+        let records_array = &result["data"][&table];
+        if records_array.is_null() {
+            Err(SdkErrorKind::InvalidData { msg: format!("Invalid query answer: {}", result) }.into())
+        } else {
+            Ok(records_array.clone())
+        }
     }
     
     // Executes GraphQL query, waits for result and returns recieved value
     pub async fn wait_for(&self, table: &str, filter: &str, fields: &str, timeout: Option<u32>)
         -> SdkResult<Value>
     {
-        self.query(table, filter, fields, None, None, timeout.or(Some(self.timeouts.wait_for_timeout)))
-            .await
-            .and_then(|value| {
-                if !value[0].is_null() {
-                    Ok(value[0].clone())
-                } else {
-                    Err(SdkErrorKind::WaitForTimeout.into())
-                }
-            })
+        let value = self.query(
+            table,
+            filter,
+            fields,
+            None,
+            None,
+            timeout.or(Some(self.timeouts.wait_for_timeout))).await?;
+
+        if !value[0].is_null() {
+            Ok(value[0].clone())
+        } else {
+            Err(SdkErrorKind::WaitForTimeout.into())
+        }
     }
     
     fn generate_query_var(

@@ -67,21 +67,19 @@ impl Message {
     // Asynchronously loads a Message instance or None if message with given id is not exists
     #[cfg(feature = "node_interaction")]
     pub async fn load(client: &NodeClient, id: &MessageId) -> SdkResult<Option<Message>> {
-        client.load_record_fields(
+        let value = client.load_record_fields(
             MESSAGES_TABLE_NAME,
             &id.to_string(),
-            MESSAGE_FIELDS)
-                .await
-                .and_then(|val| {
-                    if val == serde_json::Value::Null {
-                        Ok(None)
-                    } else {
-                        let msg: Message = serde_json::from_value(val)
-                            .map_err(|err| SdkErrorKind::InvalidData { msg: format!("error parsing message: {}", err) } )?;
+            MESSAGE_FIELDS).await?;
 
-                        Ok(Some(msg))
-                    }
-            })
+        if value == serde_json::Value::Null {
+            Ok(None)
+        } else {
+            Ok(Some(serde_json::from_value(value)
+                .map_err(|err| SdkErrorKind::InvalidData {
+                    msg: format!("error parsing message: {}", err)
+                })?))
+        }
     }
 
     // Asynchronously loads a Message's json representation 

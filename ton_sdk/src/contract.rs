@@ -39,7 +39,7 @@ use ton_abi::token::{TokenValue, Tokenizer, Detokenizer};
 
 
 #[cfg(feature = "node_interaction")]
-use futures::{TryFutureExt, FutureExt};
+use futures::FutureExt;
 #[cfg(feature = "node_interaction")]
 use crate::json_helper::account_status_to_u8;
 #[cfg(feature = "node_interaction")]
@@ -257,28 +257,26 @@ impl Contract {
     pub async fn load(client: &NodeClient, address: &MsgAddressInt) -> SdkResult<Option<Contract>> {
         let id = address.to_string();
 
-        client.load_record_fields(
+        let value = client.load_record_fields(
             CONTRACTS_TABLE_NAME,
             &id,
-            ACCOUNT_FIELDS)
-                .await
-                .and_then(|val| {
-                    if val == serde_json::Value::Null {
-                        Ok(None)
-                    } else {
-                        let acc: Contract = serde_json::from_value(val)
-                            .map_err(|err| SdkErrorKind::InvalidData { msg: format!("error parsing account: {}", err) } )?;
+            ACCOUNT_FIELDS).await?;
 
-                        Ok(Some(acc))
-                    }
-            })
+        if value == serde_json::Value::Null {
+            Ok(None)
+        } else {
+            Ok(Some(serde_json::from_value(value)
+                .map_err(|err| SdkErrorKind::InvalidData {
+                    msg: format!("error parsing account: {}", err)
+                })?))
+        }
     }
 
     // Asynchronously loads a Contract instance or None if contract with given id is not exists
     pub async fn load_wait_deployed(client: &NodeClient, address: &MsgAddressInt, timeout: Option<u32>)
     -> SdkResult<Contract>
     {
-        client.wait_for(
+        let value = client.wait_for(
             CONTRACTS_TABLE_NAME,
             &json!({
                 "id": {
@@ -287,13 +285,12 @@ impl Contract {
                 "acc_type": { "eq": account_status_to_u8(AccountStatus::AccStateActive) }
             }).to_string(),
             ACCOUNT_FIELDS,
-            timeout)
-                .await
-                .and_then(|val| {
-                    let acc: Contract = serde_json::from_value(val)
-                        .map_err(|err| SdkErrorKind::InvalidData { msg: format!("error parsing account: {}", err) } )?;
-                    Ok(acc)
-                })
+            timeout).await?;
+
+        serde_json::from_value(value)
+            .map_err(|err| SdkErrorKind::InvalidData {
+                msg: format!("error parsing account: {}", err)
+            }.into())
     }
 
     // Asynchronously loads a Contract's json representation
@@ -464,54 +461,53 @@ impl Contract {
         }).to_string();
 
         // main future awaiting message processing transaction
-        let transaction_future = client.wait_for(
-            TRANSACTIONS_TABLE_NAME,
-            &filter, 
-            TRANSACTION_FIELDS_ORDINARY,
-            Some(timeout))
-                .and_then(|value|  async move {
-                        let transaction = serde_json::from_value::<Transaction>(value)?;
-                        if  transaction.compute.exit_code == Some(Self::MESSAGE_EXPIRED_CODE) ||
-                            transaction.compute.exit_code == Some(Self::REPLAY_PROTECTION_CODE)
-                        {
-                            Err(SdkErrorKind::MessageExpired.into())
-                        } else {
-                            Ok(transaction)
-                        }
-                });
+        let transaction_future = async {
+            let transaction = client.wait_for(
+                TRANSACTIONS_TABLE_NAME,
+                &filter, 
+                TRANSACTION_FIELDS_ORDINARY,
+                Some(timeout)).await?;
 
-        let filter = json!({
-                "master": { "min_shard_gen_utime": { "ge": expire }}
-            }).to_string();
+            let transaction = serde_json::from_value::<Transaction>(transaction)?;
+            if  transaction.compute.exit_code == Some(Self::MESSAGE_EXPIRED_CODE) ||
+                transaction.compute.exit_code == Some(Self::REPLAY_PROTECTION_CODE)
+            {
+                Err(SdkErrorKind::MessageExpired.into())
+            } else {
+                Ok(transaction)
+            }
+        };
 
         // if message expiration time is set we make another future waiting for the masterchain
         // block which reference to shadchain blocks generated after message expiration: it
         // guarantees that message won't be processed by the contract later
         if expire.is_some() {
-            let block_future = client.wait_for(
-                BLOCKS_TABLE_NAME,
-                &filter, 
-                "in_msg_descr { transaction_id }",
-                Some(timeout))
-                    .and_then(|value| async move {
-                            // if we've recieved masterblock check that transactions from this block
-                            // are already put into DB and there is no lag in transaction topic
-                            match value["in_msg_descr"][0]["transaction_id"].as_str() {
-                                None => Err(SdkErrorKind::InvalidData {
-                                    msg: "Invalid block recieved: no transaction ID".to_owned()
-                                }.into()),
-                                Some(string) => {
-                                    client.wait_for(
-                                        TRANSACTIONS_TABLE_NAME,
-                                        &json!({ "id": { "eq": string }}).to_string(), 
-                                        "id",
-                                        Some(timeout))
-                                        .await?;
-    
-                                    Err(SdkErrorKind::MessageExpired.into())
-                                }
-                            }
-                        });
+            let block_future = async {
+                let block = client.wait_for(
+                    BLOCKS_TABLE_NAME,
+                    &json!({
+                        "master": { "min_shard_gen_utime": { "ge": expire }}
+                    }).to_string(),
+                    "in_msg_descr { transaction_id }",
+                    Some(timeout)).await?;
+
+                // if we've recieved masterblock check that transactions from this block
+                // are already put into DB and there is no lag in transaction topic
+                match block["in_msg_descr"][0]["transaction_id"].as_str() {
+                    None => Err(SdkErrorKind::InvalidData {
+                        msg: "Invalid block recieved: no transaction ID".to_owned()
+                    }.into()),
+                    Some(string) => {
+                        client.wait_for(
+                            TRANSACTIONS_TABLE_NAME,
+                            &json!({ "id": { "eq": string }}).to_string(), 
+                            "id",
+                            Some(timeout)).await?;
+
+                        Err(SdkErrorKind::MessageExpired.into())
+                    }
+                }
+            };
             // awaiting the first future resolved
             futures::pin_mut!(transaction_future, block_future);
             futures::select!{
