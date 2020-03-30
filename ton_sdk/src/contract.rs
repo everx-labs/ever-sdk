@@ -314,8 +314,8 @@ impl Contract {
         if abi.header().contains(&serde_json::from_value::<ton_abi::Param>("expire".into())?) {
             // expire is `now + timeout`
             let timeout = Self::calc_timeout(
-                client.get_timeouts().message_expiration_timeout,
-                client.get_timeouts().message_expiration_timeout_grow_factor,
+                client.timeouts().message_expiration_timeout,
+                client.timeouts().message_expiration_timeout_grow_factor,
                 try_index);
             let expire = Self::get_now()? + timeout / 1000;
             let expire = ton_abi::TokenValue::Expire(expire);
@@ -369,7 +369,7 @@ impl Contract {
     pub async fn call_json(client: &NodeClient, address: MsgAddressInt, func: String, header: Option<String>, input: String,
         abi: String, key_pair: Option<&Keypair>
     ) -> SdkResult<Transaction> {
-        Self::retry_call(client.get_timeouts().message_retries_count, |try_index: u8| {
+        Self::retry_call(client.timeouts().message_retries_count, |try_index: u8| {
             let (header, expire) = Self::make_expire_header(client, abi.clone(), header.clone(), try_index)?;
 
             // pack params into bag of cells via ABI
@@ -388,7 +388,7 @@ impl Contract {
     pub async fn deploy_json(client: &NodeClient, func: String, header: Option<String>, input: String, abi: String,
         image: ContractImage, key_pair: Option<&Keypair>, workchain_id: i32
     ) -> SdkResult<Transaction> {
-        Self::retry_call(client.get_timeouts().message_retries_count, |try_index: u8| {
+        Self::retry_call(client.timeouts().message_retries_count, |try_index: u8| {
             let (header, expire) = Self::make_expire_header(client, abi.clone(), header.clone(), try_index)?;
 
             let msg_body = ton_abi::encode_function_call(abi.clone(), func.clone(), header.clone(), input.clone(), false, key_pair)?;
@@ -442,8 +442,8 @@ impl Contract {
     {
         // timeout is growing from try to try
         let mut timeout = Self::calc_timeout(
-            client.get_timeouts().message_processing_timeout,
-            client.get_timeouts().message_processing_timeout_grow_factor,
+            client.timeouts().message_processing_timeout,
+            client.timeouts().message_processing_timeout_grow_factor,
             try_index);
         if let Some(expire) = expire {
             //println!("expire {}", expire);

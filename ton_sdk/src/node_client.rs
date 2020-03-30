@@ -95,7 +95,7 @@ impl NodeClient {
         })
     }
 
-    pub fn get_timeouts(&self) -> &TimeoutsConfig {
+    pub fn timeouts(&self) -> &TimeoutsConfig {
         &self.timeouts
     }
     
