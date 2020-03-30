@@ -36,11 +36,13 @@ lazy_static::lazy_static! {
     pub static ref WALLET_ABI: String = std::fs::read_to_string(CONTRACTS_PATH.to_owned() + "LimitWallet.abi.json").unwrap();
     pub static ref SIMPLE_WALLET_ABI: String = std::fs::read_to_string(CONTRACTS_PATH.to_owned() + "Wallet.abi.json").unwrap();
     pub static ref GIVER_ABI: String = std::fs::read_to_string(CONTRACTS_PATH.to_owned() + "Giver.abi.json").unwrap();
+    pub static ref PROFESSOR_ABI: String = std::fs::read_to_string(CONTRACTS_PATH.to_owned() + "Professor.abi.json").unwrap();
     
     pub static ref SUBSCRIBE_CONTRACT_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.to_owned() + "Subscription.tvc").unwrap();
 	pub static ref PIGGY_BANK_CONTRACT_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.to_owned() + "Piggy.tvc").unwrap();
     pub static ref WALLET_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.to_owned() + "LimitWallet.tvc").unwrap();
     pub static ref SIMPLE_WALLET_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.to_owned() + "Wallet.tvc").unwrap();
+    pub static ref PROFESSOR_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.to_owned() + "Professor.tvc").unwrap();
 }
 
 const DEFAULT_GIVER_KEYS: &str = r#"
