@@ -18,7 +18,7 @@ use ton_block::{MsgAddressInt, TransactionProcessingStatus, AccStatusChange, Com
 use std::fmt;
 use serde::de::Error;
 use std::str::FromStr;
-use crate::*;
+use crate::MessageType;
 
 struct StringVisitor;
 

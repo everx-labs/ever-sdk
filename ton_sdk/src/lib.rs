@@ -12,8 +12,6 @@
 * limitations under the License.
 */
 
-#![recursion_limit="128"] // needed for error_chain
-
 #[macro_use]
 extern crate ton_vm;
 
@@ -33,16 +31,14 @@ pub use ton_abi::json_abi;
 pub use ton_abi::Contract as AbiContract;
 pub use ton_abi::Function as AbiFunction;
 
-#[allow(deprecated)]
-#[macro_use]
 mod error;
-pub use error::*;
+pub use error::{SdkError, SdkErrorKind, SdkResult};
 
 mod contract;
-pub use contract::*;
+pub use contract::{Contract, ContractImage};
 
 mod message;
-pub use message::*;
+pub use message::{Message, MessageId, MessageType};
 
 mod local_tvm;
 #[cfg(feature = "fee_calculation")]
@@ -51,15 +47,15 @@ pub use local_tvm::executor::TransactionFees;
 #[cfg(feature = "node_interaction")]
 mod transaction;
 #[cfg(feature = "node_interaction")]
-pub use transaction::*;
+pub use transaction::{Transaction, TransactionId};
 
-mod types;
-pub use types::*;
+pub mod types;
+pub use types::{NodeClientConfig, TimeoutsConfig};
 
 #[cfg(feature = "node_interaction")]
 pub mod node_client;
 #[cfg(feature = "node_interaction")]
-pub use node_client::*;
+pub use node_client::{NodeClient, OrderBy};
 
 pub mod json_helper;
 

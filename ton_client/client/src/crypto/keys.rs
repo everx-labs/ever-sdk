@@ -129,9 +129,9 @@ pub(crate) enum AccountAddressType {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct Base64AddressParams {
-    url: bool,
-    test: bool,
-    bounce: bool
+    pub url: bool,
+    pub test: bool,
+    pub bounce: bool
 }
 
 pub(crate) fn account_encode_ex(
@@ -145,8 +145,7 @@ pub(crate) fn account_encode_ex(
         AccountAddressType::Base64 => {
             let params = base64_params.ok_or(ApiError::contracts_address_conversion_failed(
                 "No base64 address parameters provided".to_owned()))?;
-            ton_sdk::encode_base64(value, params.bounce, params.test, params.url)
-                .map_err(|err| ApiError::crypto_invalid_address(err, &value.to_string()))
+            encode_base64(value, params.bounce, params.test, params.url)
         }
     }
 }
@@ -155,10 +154,52 @@ pub fn account_decode(string: &str) -> ApiResult<MsgAddressInt> {
     match MsgAddressInt::from_str(string) { 
         Ok(address) => Ok(address),
         Err(_) if string.len() == 48 => {
-            ton_sdk::decode_std_base64(string)
-                .map_err(|err| ApiError::crypto_invalid_address(err, string))
+            decode_std_base64(string)
         },
         Err(err) => Err(ApiError::crypto_invalid_address(err, string))
+    }
+}
+
+fn decode_std_base64(data: &str) -> ApiResult<MsgAddressInt> {
+    // conversion from base64url
+    let data = data.replace('_', "/").replace('-', "+");
+
+    let vec = base64::decode(&data)
+        .map_err(|err| ApiError::crypto_invalid_address(err, &data))?;
+
+    // check CRC and address tag
+    let mut crc = crc_any::CRC::crc16xmodem();
+    crc.digest(&vec[..34]);
+
+    if crc.get_crc_vec_be() != &vec[34..36] || vec[0] & 0x3f != 0x11 {
+        return Err(ApiError::crypto_invalid_address("CRC mismatch", &data).into());
+    };
+
+    MsgAddressInt::with_standart(None, vec[1] as i8, vec[2..34].into())
+        .map_err(|err| ApiError::crypto_invalid_address(err, &data).into())
+}
+
+fn encode_base64(address: &MsgAddressInt, bounceable: bool, test: bool, as_url: bool) -> ApiResult<String> {
+    if let MsgAddressInt::AddrStd(address) = address {
+        let mut tag = if bounceable { 0x11 } else { 0x51 };
+        if test { tag |= 0x80 };
+        let mut vec = vec![tag];
+        vec.extend_from_slice(&address.workchain_id.to_be_bytes());
+        vec.append(&mut address.address.get_bytestring(0));
+
+        let mut crc = crc_any::CRC::crc16xmodem();
+        crc.digest(&vec);
+        vec.extend_from_slice(&crc.get_crc_vec_be());
+
+        let result = base64::encode(&vec);
+
+        if as_url {
+            Ok(result.replace('/', "_").replace('+', "-"))
+        } else {
+            Ok(result)
+        }
+    } else { 
+        Err(ApiError::crypto_invalid_address("Non-std address", &address.to_string()).into())
     }
 }
 

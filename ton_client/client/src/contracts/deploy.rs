@@ -295,7 +295,7 @@ async fn check_deployed(context: &mut ClientContext, address: &ton_block::MsgAdd
     }).to_string();
 
     let result = query(context, ParamsOfQuery {
-        table: ton_sdk::CONTRACTS_TABLE_NAME.to_owned(),
+        table: ton_sdk::types::CONTRACTS_TABLE_NAME.to_owned(),
         filter,
         result: "id".to_owned(),
         limit: None,

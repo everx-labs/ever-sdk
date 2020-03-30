@@ -13,17 +13,12 @@
 */
 
 use std::fmt;
-use crate::*;
+use crate::error::SdkResult;
 
 pub const MESSAGES_TABLE_NAME: &str = "messages";
 pub const CONTRACTS_TABLE_NAME: &str = "accounts";
 pub const BLOCKS_TABLE_NAME: &str = "blocks";
 pub const TRANSACTIONS_TABLE_NAME: &str = "transactions";
-
-
-pub const CONTRACT_CALL_STATE_FIELDS: &str = "id status transaction_id";
-
-pub const MSG_STATE_FIELD_NAME: &str = "status";
 
 pub const DEFAULT_RETRIES_COUNT: u8 = 5;
 pub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 10000;

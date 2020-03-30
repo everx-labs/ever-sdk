@@ -14,156 +14,15 @@
 
 use ton_abi::json_abi::decode_function_response;
 use super::*;
-use contract::ContractImage;
-use std::str::FromStr;
+use crate::{ContractImage, init_json, MessageType};
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
 use sha2::Sha512;
 use ton_block::{AccountId, MsgAddressInt};
 use ton_types::dictionary::HashmapE;
-use tests_common::*;
+use crate::tests_common::{call_contract, deploy_contract_and_wait, get_config, get_grams_from_giver,
+    init_node_connection, WALLET_ABI, WALLET_IMAGE, SUBSCRIBE_CONTRACT_IMAGE, SUBSCRIBE_CONTRACT_ABI};
 use futures::StreamExt;
-
-/*
-#[test]
-#[ignore] // Rethink have to work on 127.0.0.1:32769. Run it and comment "ignore"
-fn test_subscribe_message_updates() {
-
-    // create database, table and record
-    let r = Client::new();
-    let mut conf = Config::default();
-    conf.servers = vec!("127.0.0.1:32769".parse().unwrap());
-    let conn = r.connect(conf).unwrap();
-
-    let db_create_res = r.db_create(DB_NAME).run::<Value>(conn).unwrap().wait().next();
-    println!("\n\n db_create \n {:#?}", db_create_res);
-
-    let table_create_res = r.db(DB_NAME).table_create(MSG_TABLE_NAME).run::<Value>(conn).unwrap().wait().next();
-    println!("\n\n table_create \n {:#?}", table_create_res);
-
-    let msg_id = MessageId::default();
-
-    let insert_doc = r.db(DB_NAME)
-        .table(MSG_TABLE_NAME)
-        .update( // TODO insert with "update" flag
-            json!({
-                "id": msg_id.to_hex_string(),
-                MSG_STATE_FIELD_NAME: MessageProcessingStatus::Queued
-                })
-        )
-        .run::<WriteStatus>(conn).unwrap().wait().next().unwrap();
-    println!("\n\n insert \n {:#?}", insert_doc);
-
-    // subscribe changes
-    let changes_stream = Contract::subscribe_message_updates(msg_id.clone()).unwrap();
-
-    // another thread - write changes into DB
-    let msg_id_ = msg_id.clone();
-    let another_thread = std::thread::spawn(move || {
-
-        std::thread::sleep(std::time::Duration::from_secs(1));
-
-        for state in [MessageProcessingStatus::Processing, MessageProcessingStatus::Proposed, MessageProcessingStatus::Finalized].iter() {
-
-            let insert_doc = r.db(DB_NAME)
-                .table(MSG_TABLE_NAME)
-                .replace(json!({
-                    "id": msg_id_.to_hex_string(),
-                    MSG_STATE_FIELD_NAME: state
-                 }))
-                .run::<WriteStatus>(conn).unwrap().wait().next().unwrap();
-            println!("\n\n insert \n {:#?}", insert_doc);
-        }
-    });
-
-    // chech all changes were got    
-    let mut changes_stream = changes_stream.wait();
-    for state in [MessageProcessingStatus::Processing, MessageProcessingStatus::Proposed, MessageProcessingStatus::Finalized].iter() {
-        let ccs = ContractCallState {
-            id: msg_id.clone(),
-            status: state.clone(),
-        };
-        
-        assert_eq!(changes_stream.next().unwrap().unwrap(), ccs);
-    }
-
-    another_thread.join().unwrap();
-}
-
-#[test]
-#[ignore] 
-fn test_subscribe_message_updates_kafka_connector() {
-
-    /* Connector config
-
-connector.class=com.datamountaineer.streamreactor.connect.rethink.sink.ReThinkSinkConnector
-tasks.max=1
-topics=messages_statuses
-connect.rethink.db=blockchain
-connect.rethink.host=rethinkdb
-connect.rethink.port=28015
-key.converter.schemas.enable=false
-name=rethink-sink
-value.converter.schemas.enable=false
-value.converter=org.apache.kafka.connect.json.JsonConverter
-key.converter=org.apache.kafka.connect.json.JsonConverter
-connect.rethink.kcql=UPSERT INTO messages_statuses SELECT * FROM messages_statuses AUTOCREATE PK id
-
-    */
-
-
-    // init SDK
-    let config_json = CONFIG_JSON.clone();    
-    init_json(config_json.into()).unwrap();
-
-
-    let msg_id = MessageId::default();
-
-    // subscribe changes
-    let changes_stream = Contract::subscribe_message_updates(msg_id.clone()).unwrap();
-
-    // another thread - write changes into DB though Kafka (emulate node activity)
-    let msg_id_ = msg_id.clone();
-    let another_thread = std::thread::spawn(move || {
-
-        std::thread::sleep(std::time::Duration::from_secs(1));
-
-        for state in [MessageProcessingStatus::Processing, MessageProcessingStatus::Proposed, MessageProcessingStatus::Finalized].iter() {
-            let key = format!("\"{}\"", msg_id_.to_hex_string());
-            
-            let doc = json!({
-                "id": msg_id_.to_hex_string(),
-                MSG_STATE_FIELD_NAME: state
-            }).to_string();
-            
-            requests_helper::send_message_to_topic(
-                    key.as_bytes(),
-                    doc.as_bytes(),
-                    "messages_statuses"
-                )
-                .unwrap();
-
-            println!("NODE {}", doc);
-        }
-    });
-
-    // chech all changes were got    
-    let mut changes_stream = changes_stream.wait();
-    for state in [MessageProcessingStatus::Processing, MessageProcessingStatus::Proposed, MessageProcessingStatus::Finalized].iter() {
-        let ccs = ContractCallState {
-            id: msg_id.clone(),
-            status: state.clone(),
-        };
-
-        let json = serde_json::to_string(&ccs).unwrap();
-        println!("CLIENT {}", json);
-
-        assert_eq!(changes_stream.next().unwrap().unwrap(), ccs);
-    }
-
-    another_thread.join().unwrap();
-}
-*/
 
 const FUNCTION_PARAMS: &str = r#"
 {
@@ -173,7 +32,7 @@ const FUNCTION_PARAMS: &str = r#"
 async fn test_call_contract(client: &NodeClient, address: MsgAddressInt, key_pair: &Keypair) {
 
     let func = "createOperationLimit".to_string();
-    let abi = tests_common::WALLET_ABI.to_string();
+    let abi = WALLET_ABI.to_string();
 
     // call needed method
     let tr = Contract::call_json(
@@ -219,22 +78,22 @@ async fn test_call_contract(client: &NodeClient, address: MsgAddressInt, key_pai
 #[test]
 pub async fn test_deploy_and_call_contract() {
    
-    let client = tests_common::init_node_connection();
+    let client = init_node_connection();
 
     let mut csprng = OsRng::new().unwrap();
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
 
-    let contract_image = ContractImage::from_state_init_and_key(&mut tests_common::WALLET_IMAGE.as_slice(), &keypair.public).expect("Unable to parse contract code file");
+    let contract_image = ContractImage::from_state_init_and_key(&mut WALLET_IMAGE.as_slice(), &keypair.public).expect("Unable to parse contract code file");
 
     let account_id = contract_image.msg_address(0);
 
     // before deploying contract need to transfer some funds to its address
-    tests_common::get_grams_from_giver(&client, account_id.clone()).await;
+    get_grams_from_giver(&client, account_id.clone()).await;
 
 
     // call deploy method
     let func = "constructor".to_string();
-    let abi = tests_common::WALLET_ABI.to_string();
+    let abi = WALLET_ABI.to_string();
 
     let tr = Contract::deploy_json(&client, func, None, "{}".to_owned(), abi, contract_image, Some(&keypair), 0)
         .await
@@ -253,7 +112,7 @@ fn test_contract_image_from_file() {
     let mut csprng = OsRng::new().unwrap();
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
 
-    let contract_image = ContractImage::from_state_init_and_key(&mut tests_common::SUBSCRIBE_CONTRACT_IMAGE.as_slice(), &keypair.public).expect("Unable to parse contract code file");
+    let contract_image = ContractImage::from_state_init_and_key(&mut SUBSCRIBE_CONTRACT_IMAGE.as_slice(), &keypair.public).expect("Unable to parse contract code file");
 
     println!("Account ID {:x}", contract_image.account_id());
 }
@@ -273,28 +132,18 @@ async fn test_load_nonexistent_contract() {
 
 #[test]
 #[ignore]
-fn test_print_base64_address_from_hex() {
-    let hex_address = "0:9f2bc8a81da52c6b8cb1878352120f21e254138fff0b897f44fb6ff2b8cae256";
-
-    let address = MsgAddressInt::from_str(hex_address).unwrap();
-
-    println!("{}", contract::encode_base64(&address, false, false, false).unwrap());
-}
-
-#[test]
-#[ignore]
 fn test_update_contract_data() {
     let mut csprng = OsRng::new().unwrap();
     let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
 
-    let mut contract_image = ContractImage::from_state_init_and_key(&mut tests_common::SUBSCRIBE_CONTRACT_IMAGE.as_slice(), &keypair.public)
+    let mut contract_image = ContractImage::from_state_init_and_key(&mut SUBSCRIBE_CONTRACT_IMAGE.as_slice(), &keypair.public)
         .expect("Unable to parse contract code file");
 
     let new_data = r#"
         { "mywallet": "0:1111111111111111111111111111111111111111111111111111111111111111" }
     "#;
 
-    contract_image.update_data(new_data, &tests_common::SUBSCRIBE_CONTRACT_ABI).unwrap();
+    contract_image.update_data(new_data, &SUBSCRIBE_CONTRACT_ABI).unwrap();
     let init = contract_image.state_init();
     let new_map = HashmapE::with_data(ton_abi::Contract::DATA_MAP_KEYLEN, init.data.unwrap().into());
 
@@ -319,7 +168,7 @@ fn test_update_contract_data() {
 #[tokio::main]
 #[test]
 async fn test_expire() {
-    let mut config = tests_common::get_config();
+    let mut config = get_config();
     config["timeouts"]["message_retries_count"] = serde_json::Value::from(0);
     // connect to node
 	let client = init_json(&config.to_string()).unwrap();
@@ -357,7 +206,7 @@ async fn test_expire() {
 #[tokio::main]
 #[test]
 async fn test_retries() {
-    let mut config = tests_common::get_config();
+    let mut config = get_config();
     config["timeouts"]["message_expiration_timeout_grow_factor"] = serde_json::Value::from(1.1);
     config["timeouts"]["message_processing_timeout_grow_factor"] = serde_json::Value::from(0.9);
     // connect to node

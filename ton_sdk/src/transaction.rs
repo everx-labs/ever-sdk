@@ -12,9 +12,10 @@
 * limitations under the License.
 */
 
-use crate::error::*;
+use crate::error::{SdkErrorKind, SdkResult};
 use crate::json_helper;
-use crate::{Message, MessageId, StringId};
+use crate::{Message, MessageId};
+use crate::types::StringId;
 use crate::node_client::NodeClient;
 use crate::types::TRANSACTIONS_TABLE_NAME;
 

@@ -12,9 +12,9 @@
 * limitations under the License.
 */
 
-use crate::error::*;
+use crate::error::{SdkErrorKind, SdkResult};
 use crate::json_helper;
-use crate::{StringId};
+use crate::types::StringId;
 
 #[cfg(feature = "node_interaction")]
 use crate::node_client::NodeClient;

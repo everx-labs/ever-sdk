@@ -12,7 +12,13 @@
 * limitations under the License.
 */
 
-use crate::*;
+use crate::json_helper;
+use crate::local_tvm;
+use crate::transaction::TRANSACTION_FIELDS_ORDINARY;
+use crate::error::{SdkError, SdkErrorKind, SdkResult};
+use crate::types::{BLOCKS_TABLE_NAME, CONTRACTS_TABLE_NAME, TRANSACTIONS_TABLE_NAME};
+use crate::{AbiContract, Message, MessageId, NodeClient, Transaction, TransactionFees};
+
 use ed25519_dalek::{Keypair, PublicKey};
 use chrono::prelude::Utc;
 use std::convert::{Into, TryFrom};
@@ -28,14 +34,14 @@ use ton_block::AccountId;
 #[cfg(feature = "fee_calculation")]
 use ton_executor::BlockchainConfig;
 
-pub use ton_abi::json_abi::DecodedMessage;
-pub use ton_abi::token::{Token, TokenValue, Tokenizer, Detokenizer};
+use ton_abi::json_abi::DecodedMessage;
+use ton_abi::token::{TokenValue, Tokenizer, Detokenizer};
 
 
 #[cfg(feature = "node_interaction")]
 use futures::{TryFutureExt, FutureExt};
 #[cfg(feature = "node_interaction")]
-use json_helper::account_status_to_u8;
+use crate::json_helper::account_status_to_u8;
 #[cfg(feature = "node_interaction")]
 use ton_block::TransactionProcessingStatus;
 #[cfg(feature = "node_interaction")]
@@ -243,45 +249,6 @@ impl ContractImage {
     }
 }
 
-pub fn decode_std_base64(data: &str) -> SdkResult<MsgAddressInt> {
-    // conversion from base64url
-    let data = data.replace('_', "/").replace('-', "+");
-
-    let vec = base64::decode(&data)?;
-
-    // check CRC and address tag
-    let mut crc = crc_any::CRC::crc16xmodem();
-    crc.digest(&vec[..34]);
-
-    if crc.get_crc_vec_be() != &vec[34..36] || vec[0] & 0x3f != 0x11 {
-        bail!(SdkErrorKind::InvalidArg { msg: data.to_owned() } );
-    };
-
-    Ok(MsgAddressInt::with_standart(None, vec[1] as i8, vec[2..34].into())?)
-}
-
-pub fn encode_base64(address: &MsgAddressInt, bounceable: bool, test: bool, as_url: bool) -> SdkResult<String> {
-    if let MsgAddressInt::AddrStd(address) = address {
-        let mut tag = if bounceable { 0x11 } else { 0x51 };
-        if test { tag |= 0x80 };
-        let mut vec = vec![tag];
-        vec.extend_from_slice(&address.workchain_id.to_be_bytes());
-        vec.append(&mut address.address.get_bytestring(0));
-
-        let mut crc = crc_any::CRC::crc16xmodem();
-        crc.digest(&vec);
-        vec.extend_from_slice(&crc.get_crc_vec_be());
-
-        let result = base64::encode(&vec);
-
-        if as_url {
-            Ok(result.replace('/', "_").replace('+', "-"))
-        } else {
-            Ok(result)
-        }
-    } else { bail!(SdkErrorKind::InvalidData { msg: "Non-std address".to_owned() } ) }
-}
-
 #[allow(dead_code)]
 #[cfg(feature = "node_interaction")]
 impl Contract {
@@ -337,6 +304,8 @@ impl Contract {
             .map(|val| val.to_string())
     }
 
+    // Calculate timeout according to try number and timeout grow rate
+    // (timeouts are growing from try to try)
     fn calc_timeout(timeout: u32, grow_rate: f32, try_index: u8) -> u32 {
        (timeout as f64 * grow_rate.powi(try_index as i32) as f64) as u32
     }
@@ -474,6 +443,7 @@ impl Contract {
         try_index: u8
     ) -> SdkResult<Transaction>
     {
+        // timeout is growing from try to try
         let mut timeout = Self::calc_timeout(
             client.get_timeouts().message_processing_timeout,
             client.get_timeouts().message_processing_timeout_grow_factor,
@@ -484,6 +454,7 @@ impl Contract {
             if expire <= now {
                 return Err(SdkErrorKind::InvalidArg{ msg: "Message already expired".to_owned() }.into());
             }
+            // timeout is time to `expire` plus additional time for masterblock awaiting
             timeout = (expire - now) * 1000 + timeout;
         }
 
@@ -492,7 +463,8 @@ impl Contract {
             "status": { "eq": json_helper::transaction_status_to_u8(TransactionProcessingStatus::Finalized) }
         }).to_string();
 
-        let transaction_stream = client.wait_for(
+        // main future awaiting message processing transaction
+        let transaction_future = client.wait_for(
             TRANSACTIONS_TABLE_NAME,
             &filter, 
             TRANSACTION_FIELDS_ORDINARY,
@@ -512,13 +484,18 @@ impl Contract {
                 "master": { "min_shard_gen_utime": { "ge": expire }}
             }).to_string();
 
+        // if message expiration time is set we make another future waiting for the masterchain
+        // block which reference to shadchain blocks generated after message expiration: it
+        // guarantees that message won't be processed by the contract later
         if expire.is_some() {
-            let block_stream = client.wait_for(
+            let block_future = client.wait_for(
                 BLOCKS_TABLE_NAME,
                 &filter, 
                 "in_msg_descr { transaction_id }",
                 Some(timeout))
                     .and_then(|value| async move {
+                            // if we've recieved masterblock check that transactions from this block
+                            // are already put into DB and there is no lag in transaction topic
                             match value["in_msg_descr"][0]["transaction_id"].as_str() {
                                 None => Err(SdkErrorKind::InvalidData {
                                     msg: "Invalid block recieved: no transaction ID".to_owned()
@@ -535,13 +512,14 @@ impl Contract {
                                 }
                             }
                         });
-            futures::pin_mut!(transaction_stream, block_stream);
+            // awaiting the first future resolved
+            futures::pin_mut!(transaction_future, block_future);
             futures::select!{
-                transaction = transaction_stream.fuse() => transaction,
-                block = block_stream.fuse() => block,
+                transaction = transaction_future.fuse() => transaction,
+                block = block_future.fuse() => block,
             }
         } else {
-            transaction_stream.await
+            transaction_future.await
         }
     }
 }

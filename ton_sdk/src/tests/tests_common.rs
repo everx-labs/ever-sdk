@@ -20,7 +20,7 @@ use std::str::FromStr;
 use ton_block::MsgAddressInt;
 use futures::StreamExt;
 
-const NODE_SE: bool = false;
+const NODE_SE: bool = true;
 
 const GIVER_ADDRESS_STR:  &str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
 
@@ -29,7 +29,6 @@ pub const CONTRACTS_PATH: &str = "src/tests/contracts/";
 lazy_static::lazy_static! {
     static ref GIVER_ADDRESS: MsgAddressInt = MsgAddressInt::from_str(GIVER_ADDRESS_STR).unwrap();
     static ref WALLET_ADDRESS: MsgAddressInt = get_wallet_address(&WALLET_KEYS, 0);
-    static ref WALLET_ADDRESS_BASE64: String = encode_base64(&WALLET_ADDRESS, false, false, false).unwrap();
     static ref WALLET_KEYS: Keypair = get_wallet_keys();
 
 	pub static ref SUBSCRIBE_CONTRACT_ABI: String = std::fs::read_to_string(CONTRACTS_PATH.to_owned() + "Subscription.abi.json").unwrap();
@@ -86,10 +85,13 @@ fn get_wallet_keys() -> Keypair {
 }
 
 fn get_wallet_address(key_pair: &Keypair, workchain_id: i32) -> MsgAddressInt {
-    let contract_image = ContractImage::from_state_init_and_key(&mut tests_common::SIMPLE_WALLET_IMAGE.as_slice(), &key_pair.public).expect("Unable to parse contract code file");
+    let contract_image = ContractImage::from_state_init_and_key(
+        &mut tests_common::SIMPLE_WALLET_IMAGE.as_slice(),
+        &key_pair.public)
+        .expect("Unable to parse contract code file");
 
     let address = contract_image.msg_address(workchain_id);
-    println!("Wallet address {} ({})", address, encode_base64(&address, false, false, false).unwrap());
+    println!("Wallet address {}", address);
 
     address
 }
@@ -152,17 +154,15 @@ async fn check_giver(client: &NodeClient) {
     if let  Some(contract) = contract {
         if contract.balance_grams().unwrap() < 500_000_000 {
             panic!(format!(
-                "Giver has no money. Send some grams to {} ({})",
-                WALLET_ADDRESS.to_string(),
-                WALLET_ADDRESS_BASE64.to_string()));
+                "Giver has no money. Send some grams to {}",
+                WALLET_ADDRESS.to_string()));
         }
 
         if contract.code.is_some() { return; }
     } else {
         panic!(format!(
-            "Giver does not exist. Send some grams to {} ({})",
-            WALLET_ADDRESS.to_string(),
-            WALLET_ADDRESS_BASE64.to_string()));
+            "Giver does not exist. Send some grams to {}",
+            WALLET_ADDRESS.to_string()));
     }
 
     println!("No giver. Deploy");

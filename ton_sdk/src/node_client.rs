@@ -12,7 +12,8 @@
 * limitations under the License.
 */
 
-use crate::*;
+use crate::{NodeClientConfig, TimeoutsConfig};
+use crate::error::{SdkError, SdkErrorKind, SdkResult};
 use graphite::client::GqlClient;
 use graphite::types::{VariableRequest};
 use futures::{TryFutureExt, Stream, StreamExt};

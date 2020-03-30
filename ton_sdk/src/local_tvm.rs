@@ -12,7 +12,7 @@
 * limitations under the License.
 */
 
-use crate::error::*;
+use crate::error::{SdkError, SdkErrorKind, SdkResult};
 use std::sync::Arc;
 use ton_vm::executor::Engine;
 use ton_block::{
