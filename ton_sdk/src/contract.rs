@@ -14,10 +14,8 @@
 
 use crate::json_helper;
 use crate::local_tvm;
-use crate::transaction::TRANSACTION_FIELDS_ORDINARY;
 use crate::error::{SdkError, SdkErrorKind, SdkResult};
-use crate::types::{BLOCKS_TABLE_NAME, CONTRACTS_TABLE_NAME, TRANSACTIONS_TABLE_NAME};
-use crate::{AbiContract, Message, MessageId, NodeClient, Transaction, TransactionFees};
+use crate::{AbiContract, Message, MessageId, TransactionFees};
 
 use ed25519_dalek::{Keypair, PublicKey};
 use chrono::prelude::Utc;
@@ -35,21 +33,27 @@ use ton_block::AccountId;
 use ton_executor::BlockchainConfig;
 
 use ton_abi::json_abi::DecodedMessage;
-use ton_abi::token::{TokenValue, Tokenizer, Detokenizer};
-
 
 #[cfg(feature = "node_interaction")]
-use futures::FutureExt;
+use crate::{NodeClient, Transaction};
 #[cfg(feature = "node_interaction")]
 use crate::json_helper::account_status_to_u8;
 #[cfg(feature = "node_interaction")]
+use crate::transaction::TRANSACTION_FIELDS_ORDINARY;
+#[cfg(feature = "node_interaction")]
+use crate::types::{BLOCKS_TABLE_NAME, CONTRACTS_TABLE_NAME, TRANSACTIONS_TABLE_NAME};
+#[cfg(feature = "node_interaction")]
 use ton_block::TransactionProcessingStatus;
+#[cfg(feature = "node_interaction")]
+use ton_abi::token::{TokenValue, Tokenizer, Detokenizer};
 #[cfg(feature = "node_interaction")]
 use std::collections::HashMap;
 #[cfg(feature = "node_interaction")]
 use std::iter::FromIterator;
 #[cfg(feature = "node_interaction")]
 use serde_json::Value;
+#[cfg(feature = "node_interaction")]
+use futures::FutureExt;
 
 #[cfg(feature = "node_interaction")]
 const ACCOUNT_FIELDS: &str = r#"

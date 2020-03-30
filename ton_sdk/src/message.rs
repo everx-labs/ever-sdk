@@ -12,7 +12,7 @@
 * limitations under the License.
 */
 
-use crate::error::{SdkErrorKind, SdkResult};
+use crate::error::SdkResult;
 use crate::json_helper;
 use crate::types::StringId;
 
@@ -20,6 +20,8 @@ use crate::types::StringId;
 use crate::node_client::NodeClient;
 #[cfg(feature = "node_interaction")]
 use crate::types::MESSAGES_TABLE_NAME;
+#[cfg(feature = "node_interaction")]
+use crate::error::SdkErrorKind;
 
 use ton_types::{SliceData, Cell};
 use ton_block::{
