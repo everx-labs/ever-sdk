@@ -14,7 +14,7 @@
 
 extern crate scrypt;
 
-use types::{ApiResult, ApiError};
+use crate::types::{ApiResult, ApiError};
 
 pub fn scrypt(password: &[u8], salt: &[u8], log_n: u8, r: u32, p: u32, dk_len: usize) -> ApiResult<Vec<u8>> {
     let mut result = Vec::new();

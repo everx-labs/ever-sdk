@@ -1,0 +1,69 @@
+{
+	"ABI version": 2,
+	"header": ["time", "expire"],
+	"functions": [
+		{
+			"name": "constructor",
+			"inputs": [
+				{"name":"wallet","type":"address"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getWallet",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"value0","type":"address"}
+			]
+		},
+		{
+			"name": "getSubscription",
+			"inputs": [
+				{"name":"subscriptionId","type":"uint256"}
+			],
+			"outputs": [
+				{"components":[{"name":"pubkey","type":"uint256"},{"name":"to","type":"address"},{"name":"value","type":"uint64"},{"name":"period","type":"uint32"},{"name":"start","type":"uint32"},{"name":"status","type":"uint8"}],"name":"value0","type":"tuple"}
+			]
+		},
+		{
+			"name": "subscribe",
+			"inputs": [
+				{"name":"subscriptionId","type":"uint256"},
+				{"name":"pubkey","type":"uint256"},
+				{"name":"to","type":"address"},
+				{"name":"value","type":"uint64"},
+				{"name":"period","type":"uint32"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "cancel",
+			"inputs": [
+				{"name":"subscriptionId","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "executeSubscription",
+			"inputs": [
+				{"name":"subscriptionId","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "sendAllMoney",
+			"inputs": [
+				{"name":"dest_addr","type":"address"}
+			],
+			"outputs": [
+			]
+		}
+	],
+	"events": [
+	]
+}

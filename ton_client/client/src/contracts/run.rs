@@ -14,26 +14,29 @@
 
 use ton_sdk::{Contract, MessageType, AbiContract};
 use ton_sdk::json_abi::encode_function_call;
-use crypto::keys::{KeyPair, account_decode};
-use types::{ApiResult, ApiError, base64_decode};
+use crate::crypto::keys::{KeyPair, account_decode};
+use crate::types::{ApiResult, ApiError, base64_decode};
 use ton_types::cells_serialization::BagOfCells;
 
-use contracts::{EncodedMessage, EncodedUnsignedMessage};
-use client::ClientContext;
+use crate::contracts::{EncodedMessage, EncodedUnsignedMessage};
+use crate::client::ClientContext;
 
 #[cfg(feature = "node_interaction")]
 use ton_sdk::{Transaction, AbiFunction, Message};
 #[cfg(feature = "node_interaction")]
-use ton_block::{TransactionProcessingStatus, MsgAddressInt, AccStatusChange};
+use ton_sdk::NodeClient;
+#[cfg(feature = "node_interaction")]
+use ton_block::{MsgAddressInt, AccStatusChange};
 #[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
-use futures::Stream;
+use futures::StreamExt;
+
 
 #[cfg(feature = "fee_calculation")]
 use ton_sdk::TransactionFees;
 #[cfg(feature = "fee_calculation")]
-use types::long_num_to_json_string;
+use crate::types::long_num_to_json_string;
 
 fn bool_false() -> bool { false }
 
@@ -163,7 +166,7 @@ pub(crate) struct ResultOfGetRunBody {
 }
 
 #[cfg(feature = "node_interaction")]
-pub(crate) fn run(_context: &mut ClientContext, params: ParamsOfRun) -> ApiResult<ResultOfRun> {
+pub(crate) async fn run(context: &mut ClientContext, params: ParamsOfRun) -> ApiResult<ResultOfRun> {
     debug!("-> contracts.run({}, {}, {})",
         params.address.clone(),
         params.functionName.clone(),
@@ -172,9 +175,10 @@ pub(crate) fn run(_context: &mut ClientContext, params: ParamsOfRun) -> ApiResul
 
     let address = account_decode(&params.address)?;
     let key_pair = if let Some(ref keys) = params.keyPair { Some(keys.decode()?) } else { None };
-
+    
+    let client = context.get_client()?;
     debug!("run contract");
-    let tr = call_contract(address, &params, key_pair.as_ref())?;
+    let tr = call_contract(client, address, &params, key_pair.as_ref()).await?;
 
     let abi_contract = AbiContract::load(params.abi.to_string().as_bytes()).expect("Couldn't parse ABI");
     let abi_function = abi_contract.function(&params.functionName).expect("Couldn't find function");
@@ -188,7 +192,7 @@ pub(crate) fn run(_context: &mut ClientContext, params: ParamsOfRun) -> ApiResul
         ok_null()
     } else {
         debug!("load out messages");
-        let out_msg = load_out_message(&tr, abi_function);
+        let out_msg = load_out_message(client, &tr, abi_function).await?;
         let response = out_msg.body().expect("error unwrap out message body").into();
 
         debug!("decode output");
@@ -244,7 +248,7 @@ pub(crate) fn local_run(context: &mut ClientContext, params: ParamsOfLocalRun, t
     )
 }
 
-pub(crate) fn local_run_msg(_context: &mut ClientContext, params: ParamsOfLocalRunWithMsg, tvm_call: bool) -> ApiResult<ResultOfLocalRun> {
+pub(crate) fn local_run_msg(context: &mut ClientContext, params: ParamsOfLocalRunWithMsg, tvm_call: bool) -> ApiResult<ResultOfLocalRun> {
     debug!("-> contracts.run.local.msg({}, {}, {})",
         params.address.clone(),
         params.functionName.clone().unwrap_or_default(),
@@ -258,13 +262,17 @@ pub(crate) fn local_run_msg(_context: &mut ClientContext, params: ParamsOfLocalR
         #[cfg(feature = "node_interaction")]
         None => {
             debug!("load contract");
-            load_contract(&address)?
+            let mut runtime = context.take_runtime()?;
+            let result = runtime.block_on(load_contract(context, &address));
+            context.runtime = Some(runtime);
+            result?
         }
         // can't load
         #[cfg(not(feature = "node_interaction"))]
         None => {
             debug!("no account provided");
             let _address = address;
+            let _context = context;
             return Err(ApiError::invalid_params("", "No account provided"));
         }
 
@@ -487,59 +495,50 @@ pub(crate) fn check_transaction_status(transaction: &Transaction) -> ApiResult<(
 }
 
 #[cfg(feature = "node_interaction")]
-fn load_out_message(tr: &Transaction, abi_function: &AbiFunction) -> Message {
-    tr.load_out_messages()
-        .expect("Error calling load out messages")
-        .wait()
-        .find(|msg| {
-            let msg = msg.as_ref()
-                .expect("error unwrap out message 1")
-                .as_ref()
-                    .expect("error unwrap out message 2");
-            msg.msg_type() == MessageType::ExternalOutbound
+async fn load_out_message(client: &NodeClient, tr: &Transaction, abi_function: &AbiFunction) -> ApiResult<Message> {
+    let stream = tr.load_out_messages(client)
+        .map_err(|err| ApiError::contracts_load_messages_failed(err))?;
+
+    futures::pin_mut!(stream);
+
+    while let Some(msg) = stream.next().await {
+        let msg = msg.map_err(|err| ApiError::contracts_load_messages_failed(err))?;
+
+        if  msg.msg_type() == MessageType::ExternalOutbound
             && msg.body().is_some()
-            && abi_function.is_my_output_message(msg.body().expect("No body"), false).expect("error is_my_message")
-        })
-        .expect("error unwrap out message 3")
-        .expect("error unwrap out message 4")
-        .expect("error unwrap out message 5")
+            && abi_function.is_my_output_message(msg.body().unwrap(), false)
+                .map_err(|err| ApiError::contracts_load_messages_failed(err))?
+            {
+                return Ok(msg);
+            }
+    }
+
+    Err(ApiError::contracts_load_messages_failed("No external output messages"))
 }
 
 #[cfg(feature = "node_interaction")]
-fn load_contract(address: &MsgAddressInt) -> ApiResult<Contract> {
-    Contract::load_wait_deployed(address).map_err(|err| ApiError::contracts_run_contract_load_failed(err))
+async fn load_contract(context: &ClientContext, address: &MsgAddressInt) -> ApiResult<Contract> {
+    let client = context.get_client()?;
+    Contract::load_wait_deployed(client, address, None)
+        .await
+        .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::contracts_run_failed))
 }
 
 #[cfg(feature = "node_interaction")]
-fn call_contract(
+async fn call_contract(
+    client: &NodeClient, 
     address: MsgAddressInt,
     params: &ParamsOfRun,
     key_pair: Option<&Keypair>,
 ) -> ApiResult<Transaction> {
-    let changes_stream = Contract::call_json(
+    Contract::call_json(
+        client,
         address,
         params.functionName.to_owned(),
         params.header.clone().map(|value| value.to_string().to_owned()),
         params.input.to_string().to_owned(),
         params.abi.to_string().to_owned(),
         key_pair)
-        .expect("Error calling contract method");
-
-    let mut tr = None;
-    for transaction in changes_stream.wait() {
-        if let Err(e) = transaction {
-            panic!("error next state getting: {}", e);
-        }
-        if let Ok(transaction) = transaction {
-            debug!("run: {:?}", transaction.status);
-            if transaction.status == TransactionProcessingStatus::Preliminary ||
-                transaction.status == TransactionProcessingStatus::Proposed ||
-                transaction.status == TransactionProcessingStatus::Finalized
-            {
-                tr = Some(transaction);
-                break;
-            }
-        }
-    }
-    tr.ok_or(ApiError::contracts_run_transaction_missing())
+            .await
+            .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::contracts_run_failed))
 }

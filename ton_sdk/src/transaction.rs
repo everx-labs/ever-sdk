@@ -12,8 +12,14 @@
 * limitations under the License.
 */
 
-use crate::*;
-use futures::stream::Stream;
+use crate::error::{SdkErrorKind, SdkResult};
+use crate::json_helper;
+use crate::{Message, MessageId};
+use crate::types::StringId;
+use crate::node_client::NodeClient;
+use crate::types::TRANSACTIONS_TABLE_NAME;
+
+use futures::{Stream, StreamExt};
 use ton_block::{TransactionProcessingStatus, AccStatusChange, ComputeSkipReason};
 use serde::Deserialize;
 
@@ -65,23 +71,20 @@ pub struct Transaction {
 impl Transaction {
 
     // Asynchronously loads a Transaction instance or None if transaction with given id is not exists
-    pub fn load(id: &TransactionId) -> SdkResult<Box<dyn Stream<Item = Option<Transaction>, Error = SdkError> + Send>> {
-        let map = queries_helper::load_record_fields(
+    pub async fn load<'a>(client: &'a NodeClient, id: &TransactionId) -> SdkResult<Option<Transaction>> {
+        let value = client.load_record_fields(
             TRANSACTIONS_TABLE_NAME,
             &id.to_string(),
-            TRANSACTION_FIELDS_ORDINARY)?
-                .and_then(|val| {
-                    if val == serde_json::Value::Null {
-                        Ok(None)
-                    } else {
-                        let tr: Transaction = serde_json::from_value(val)
-                            .map_err(|err| SdkErrorKind::InvalidData { msg: format!("error parsing transaction: {}", err) } )?;
+            TRANSACTION_FIELDS_ORDINARY).await?;
 
-                        Ok(Some(tr))
-                    }
-            });
-
-        Ok(Box::new(map))
+        if value == serde_json::Value::Null {
+            Ok(None)
+        } else {
+            Ok(Some(serde_json::from_value(value)
+                .map_err(|err| SdkErrorKind::InvalidData {
+                    msg: format!("error parsing transaction: {}", err)
+                })?))
+        }
     }
 
     // Returns transaction's processing status
@@ -95,9 +98,9 @@ impl Transaction {
     }
 
     // Asynchronously loads an instance of transaction's input message
-    pub fn load_in_message(&self) -> SdkResult<Box<dyn Stream<Item = Option<Message>, Error = SdkError> + Send>> {
+    pub async fn load_in_message(&self, client: &NodeClient) -> SdkResult<Option<Message>> {
         match self.in_message_id() {
-            Some(m) => Message::load(&m),
+            Some(m) => Message::load(client, &m).await,
             None => bail!(SdkErrorKind::InvalidOperation { msg: "transaction doesn't have inbound message".into() } )
         }
     }
@@ -119,18 +122,12 @@ impl Transaction {
     }
 
     // Asynchronously loads an instances of transaction's out messages
-    pub fn load_out_messages(&self) -> SdkResult<Box<dyn Stream<Item = Option<Message>, Error = SdkError> + Send>> {
-        let mut msg_id_iter = self.out_messages_id().iter();
-        if let Some(id) = msg_id_iter.next().clone() {
-            let mut stream = Message::load(&id)?;
-            for id in msg_id_iter {
-                stream = Box::new(stream.chain(Message::load(&id)?));
-            }
-            Ok(stream)
-        } else {
-            // TODO how to return empty Stream?
-            bail!(SdkErrorKind::NoData);
-        }
+    pub fn load_out_messages<'a>(&self, client: &'a NodeClient) -> SdkResult<impl Stream<Item = SdkResult<Message>> + Send + 'a> {
+        Ok(futures::stream::iter(self.out_messages_id().clone()).then(move |id| async move { 
+            match Message::load(client, &id).await {
+                Err(err) => Err(err),
+                Ok(msg) => msg.ok_or(SdkErrorKind::NoData.into())
+            }}))
     }
 }
 

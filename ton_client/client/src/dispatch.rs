@@ -12,13 +12,12 @@
 * limitations under the License.
 */
 
+use crate::types::{ApiError, ApiResult};
+use crate::client::ClientContext;
+use super::{JsonResponse};
 use std::collections::HashMap;
-use ::{JsonResponse};
-use types::{ApiError, ApiResult};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use client::ClientContext;
-
 
 impl JsonResponse {
     pub(crate) fn from_result(result_json: String) -> Self {
@@ -46,7 +45,7 @@ pub(crate) struct DispatchTable {
     sync_runners: HashMap<String, Box<dyn SyncHandler + Sync>>
 }
 
-fn parse_params<P: DeserializeOwned + 'static>(params_json: &str) -> ApiResult<P> {
+fn parse_params<P: DeserializeOwned>(params_json: &str) -> ApiResult<P> {
     serde_json::from_str(params_json).map_err(|err| ApiError::invalid_params(params_json, err))
 }
 
@@ -54,7 +53,7 @@ struct CallHandler<P: Send + DeserializeOwned, R: Send + Serialize> {
     handler: fn(context: &mut ClientContext, params: P) -> ApiResult<R>,
 }
 
-impl<P: Send + DeserializeOwned + 'static, R: Send + Serialize> SyncHandler for CallHandler<P, R> {
+impl<P: Send + DeserializeOwned, R: Send + Serialize> SyncHandler for CallHandler<P, R> {
     fn handle(&self, context: &mut ClientContext, params_json: &str) -> JsonResponse {
         match parse_params(params_json) {
             Ok(params) => {

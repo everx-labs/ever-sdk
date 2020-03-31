@@ -1,0 +1,32 @@
+{
+    "ABI version": 1,
+    "functions": [
+        {
+            "name": "constructor",
+            "inputs": [
+                {"name":"parents","type":"uint160[]"},
+                {"name":"timestamps","type":"uint64[]"},
+                {"name":"details","type":"uint8[]"},
+                {"name":"detailsDelimiter","type":"uint8[]"},
+                {"name":"amount","type":"uint32"}
+            ],
+            "outputs": [
+            ]
+        },
+        {
+            "name": "getData",
+            "inputs": [
+            ],
+            "outputs": [
+                {"name":"value0","type":"uint160"},
+                {"name":"value1","type":"uint64[]"},
+                {"name":"value2","type":"uint32[]"},
+                {"name":"value3","type":"uint8[]"}
+            ]
+        }
+    ],
+    "events": [
+    ],
+    "data": [
+    ]
+}

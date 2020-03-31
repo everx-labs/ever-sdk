@@ -12,15 +12,23 @@
 * limitations under the License.
 */
 
+use crate::error::SdkResult;
+use crate::json_helper;
+use crate::types::StringId;
+
+#[cfg(feature = "node_interaction")]
+use crate::node_client::NodeClient;
+#[cfg(feature = "node_interaction")]
+use crate::types::MESSAGES_TABLE_NAME;
+#[cfg(feature = "node_interaction")]
+use crate::error::SdkErrorKind;
+
 use ton_types::{SliceData, Cell};
 use ton_block::{
     CommonMsgInfo, Message as TvmMessage
 };
 use ton_block::GetRepresentationHash;
 
-use crate::*;
-#[cfg(feature = "node_interaction")]
-use futures::stream::Stream;
 
 #[derive(Deserialize, Debug, PartialEq, Clone)]
 pub enum MessageType {
@@ -60,39 +68,32 @@ impl Message {
 
     // Asynchronously loads a Message instance or None if message with given id is not exists
     #[cfg(feature = "node_interaction")]
-    pub fn load(id: &MessageId) -> SdkResult<Box<dyn Stream<Item = Option<Message>, Error = SdkError> + Send>> {
-        let map = queries_helper::load_record_fields(
+    pub async fn load(client: &NodeClient, id: &MessageId) -> SdkResult<Option<Message>> {
+        let value = client.load_record_fields(
             MESSAGES_TABLE_NAME,
             &id.to_string(),
-            MESSAGE_FIELDS
-            )?
-                .and_then(|val| {
-                    if val == serde_json::Value::Null {
-                        Ok(None)
-                    } else {
-                        let msg: Message = serde_json::from_value(val)
-                            .map_err(|err| SdkErrorKind::InvalidData { msg: format!("error parsing message: {}", err) } )?;
+            MESSAGE_FIELDS).await?;
 
-                        Ok(Some(msg))
-                    }
-            });
-
-        Ok(Box::new(map))
+        if value == serde_json::Value::Null {
+            Ok(None)
+        } else {
+            Ok(Some(serde_json::from_value(value)
+                .map_err(|err| SdkErrorKind::InvalidData {
+                    msg: format!("error parsing message: {}", err)
+                })?))
+        }
     }
 
     // Asynchronously loads a Message's json representation 
     // or null if message with given id is not exists
     #[cfg(feature = "node_interaction")]
-    pub fn load_json(id: MessageId) -> SdkResult<Box<dyn Stream<Item = String, Error = SdkError> + Send>> {
-
-        let map = queries_helper::load_record_fields(
+    pub async fn load_json(client: &NodeClient, id: MessageId) -> SdkResult<String> {
+        client.load_record_fields(
             MESSAGES_TABLE_NAME,
             &id.to_string(),
-            MESSAGE_FIELDS
-            )?
-            .map(|val| val.to_string());
-
-        Ok(Box::new(map))
+            MESSAGE_FIELDS)
+                .await
+                .map(|val| val.to_string())
     }
 
     pub fn with_msg(tvm_msg: &TvmMessage) -> SdkResult<Self> {
