@@ -15,7 +15,7 @@
 use crate::json_helper;
 use crate::local_tvm;
 use crate::error::{SdkError, SdkErrorKind, SdkResult};
-use crate::{AbiContract, Message, MessageId, TransactionFees};
+use crate::{AbiContract, Message, MessageId};
 
 use ed25519_dalek::{Keypair, PublicKey};
 use chrono::prelude::Utc;
@@ -28,11 +28,12 @@ use ton_block::{
 use ton_types::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use ton_types::{Cell, SliceData, HashmapE};
 use ton_block::AccountId;
+use ton_abi::json_abi::DecodedMessage;
 
 #[cfg(feature = "fee_calculation")]
+use crate::TransactionFees;
+#[cfg(feature = "fee_calculation")]
 use ton_executor::BlockchainConfig;
-
-use ton_abi::json_abi::DecodedMessage;
 
 #[cfg(feature = "node_interaction")]
 use crate::{NodeClient, Transaction};
