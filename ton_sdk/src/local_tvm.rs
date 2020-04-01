@@ -126,13 +126,15 @@ pub(crate) fn call_executor(account: Account, msg: Message, config: &BlockchainC
 {
     let shard_acc = ShardAccount::with_params(account, UInt256::from([0;32]), 0).unwrap();
 
-    let lt = Arc::new(AtomicU64::new(1));
+    let block_lt = 1_000_000;
+    let lt = Arc::new(AtomicU64::new(block_lt + 1));
     let mut executor = OrdinaryTransactionExecutor::new();
     let transaction = executor.execute(
         config,
         msg,
         &mut Some(shard_acc),
         timestamp,
+        block_lt,
         lt.clone(),
         false)?;
 
