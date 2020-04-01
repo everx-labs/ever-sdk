@@ -12,15 +12,17 @@
 * limitations under the License.
 */
 
-use crypto::keys::{KeyPair, decode_public_key, account_encode};
+use crate::crypto::keys::{KeyPair, decode_public_key, account_encode};
 use ton_sdk::{Contract, ContractImage};
 
-use contracts::EncodedUnsignedMessage;
+use crate::contracts::EncodedUnsignedMessage;
 
 #[cfg(feature = "node_interaction")]
-use futures::Stream;
-#[cfg(feature = "node_interaction")]
 use ton_sdk::Transaction;
+#[cfg(feature = "node_interaction")]
+use ton_sdk::NodeClient;
+
+const DEFAULT_WORKCHAIN: i32 = 0;
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
@@ -31,8 +33,7 @@ pub(crate) struct ParamsOfDeploy {
     pub initParams: Option<serde_json::Value>,
     pub imageBase64: String,
     pub keyPair: KeyPair,
-    #[serde(default)]
-    pub workchainId: i32,
+    pub workchainId: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -44,8 +45,7 @@ pub(crate) struct ParamsOfEncodeUnsignedDeployMessage {
     pub initParams: Option<serde_json::Value>,
     pub imageBase64: String,
     pub publicKeyHex: String,
-    #[serde(default)]
-    pub workchainId: i32,
+    pub workchainId: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -62,8 +62,7 @@ pub(crate) struct ParamsOfGetDeployAddress {
     pub initParams: Option<serde_json::Value>,
     pub imageBase64: String,
     pub keyPair: KeyPair,
-    #[serde(default)]
-    pub workchainId: i32,
+    pub workchainId: Option<i32>,
 }
 
 #[allow(non_snake_case)]
@@ -89,8 +88,7 @@ pub(crate) struct ParamsOfGetDeployData {
     pub initParams: Option<serde_json::Value>,
     pub imageBase64: Option<String>,
     pub publicKeyHex: String,
-    #[serde(default)]
-    pub workchainId: i32,
+    pub workchainId: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -103,24 +101,25 @@ pub(crate) struct ResultOfGetDeployData {
 }
 
 #[cfg(feature = "node_interaction")]
-pub(crate) fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<ResultOfDeploy> {
+pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<ResultOfDeploy> {
     debug!("-> contracts.deploy({})", params.constructorParams.to_string());
 
     let key_pair = params.keyPair.decode()?;
 
     let contract_image = create_image(&params.abi, params.initParams.as_ref(), &params.imageBase64, &key_pair.public)?;
-    let account_id = contract_image.msg_address(params.workchainId);
+    let account_id = contract_image.msg_address(params.workchainId.unwrap_or(DEFAULT_WORKCHAIN));
     debug!("-> -> image prepared with address: {}", account_id);
 
-    if check_deployed(context, &account_id)? {
+    if check_deployed(context, &account_id).await? {
         return Ok(ResultOfDeploy { 
             address: account_encode(&account_id),
             alreadyDeployed: true
         })
     }
 
+    let client = context.get_client()?;
     debug!("-> -> deploy");
-    let tr = deploy_contract(params, contract_image, &key_pair)?;
+    let tr = deploy_contract(client, params, contract_image, &key_pair).await?;
     debug!("-> -> deploy transaction: {}", tr. id());
 
     debug!("<-");
@@ -134,7 +133,7 @@ pub(crate) fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) -> Api
 pub(crate) fn get_address(_context: &mut ClientContext, params: ParamsOfGetDeployAddress) -> ApiResult<String> {
     let key_pair = params.keyPair.decode()?;
     let contract_image = create_image(&params.abi, params.initParams.as_ref(), &params.imageBase64, &key_pair.public)?;
-    let account_id = contract_image.msg_address(params.workchainId);
+    let account_id = contract_image.msg_address(params.workchainId.unwrap_or(DEFAULT_WORKCHAIN));
     Ok(account_encode(&account_id))
 }
 
@@ -142,9 +141,10 @@ pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfDeplo
     debug!("-> contracts.deploy.message({})", params.constructorParams.to_string());
 
     let keys = params.keyPair.decode()?;
+    let workchain = params.workchainId.unwrap_or(DEFAULT_WORKCHAIN);
 
     let contract_image = create_image(&params.abi, params.initParams.as_ref(), &params.imageBase64, &keys.public)?;
-    let account_id = contract_image.msg_address(params.workchainId);
+    let account_id = contract_image.msg_address(workchain);
     debug!("image prepared with address: {}", account_encode(&account_id));
     let (message_body, message_id) = Contract::construct_deploy_message_json(
         "constructor".to_owned(),
@@ -152,7 +152,7 @@ pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfDeplo
         params.constructorParams.to_string().to_owned(),
         params.abi.to_string().to_owned(),
         contract_image,
-        Some(&keys), params.workchainId).map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
+        Some(&keys), workchain).map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
 
     debug!("<-");
     Ok(ResultOfEncodeDeployMessage {
@@ -208,7 +208,7 @@ pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetD
             Some(base64::encode(&image.serialize()
                 .map_err(|err| ApiError::contracts_image_creation_failed(err))?)),
             Some(image.account_id().to_hex_string()),
-            Some(image.msg_address(params.workchainId).to_string())
+            Some(image.msg_address(params.workchainId.unwrap_or(DEFAULT_WORKCHAIN)).to_string())
         ),
         None => (None, None, None),
     };
@@ -225,13 +225,14 @@ pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetD
 pub(crate) fn encode_unsigned_message(_context: &mut ClientContext, params: ParamsOfEncodeUnsignedDeployMessage) -> ApiResult<ResultOfEncodeUnsignedDeployMessage> {
     let public = decode_public_key(&params.publicKeyHex)?;
     let image = create_image(&params.abi, params.initParams.as_ref(), &params.imageBase64, &public)?;
-    let address_hex = account_encode(&image.msg_address(params.workchainId));
+    let workchain = params.workchainId.unwrap_or(DEFAULT_WORKCHAIN);
+    let address_hex = account_encode(&image.msg_address(workchain));
     let encoded = ton_sdk::Contract::get_deploy_message_bytes_for_signing(
         "constructor".to_owned(),
         params.constructorHeader.map(|value| value.to_string().to_owned()),
         params.constructorParams.to_string().to_owned(),
         params.abi.to_string().to_owned(),
-        image, params.workchainId
+        image, workchain
     ).map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
     Ok(ResultOfEncodeUnsignedDeployMessage {
         encoded: EncodedUnsignedMessage {
@@ -245,16 +246,16 @@ pub(crate) fn encode_unsigned_message(_context: &mut ClientContext, params: Para
 // Internals
 
 use ed25519_dalek::PublicKey;
-use types::{ApiResult, ApiError};
+use crate::types::{ApiResult, ApiError};
 
-use client::ClientContext;
+use crate::client::ClientContext;
 
 #[cfg(feature = "node_interaction")]
-use queries::query::{query, ParamsOfQuery};
+use crate::queries::query::{query, ParamsOfQuery};
 #[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
-use ton_block::{TransactionProcessingStatus, AccountStatus};
+use ton_block::{AccountStatus};
 #[cfg(feature = "node_interaction")]
 use ton_sdk::json_helper::account_status_to_u8;
 
@@ -274,48 +275,33 @@ fn create_image(abi: &serde_json::Value, init_params: Option<&serde_json::Value>
 }
 
 #[cfg(feature = "node_interaction")]
-fn deploy_contract(params: ParamsOfDeploy, image: ContractImage, keys: &Keypair) -> ApiResult<Transaction> {
-    let changes_stream = Contract::deploy_json(
+async fn deploy_contract(client: &NodeClient, params: ParamsOfDeploy, image: ContractImage, keys: &Keypair) -> ApiResult<Transaction> {
+    Contract::deploy_json(
+        client,
         "constructor".to_owned(),
         params.constructorHeader.map(|value| value.to_string().to_owned()),
         params.constructorParams.to_string().to_owned(),
         params.abi.to_string().to_owned(),
-        image, Some(keys), params.workchainId)
-        .expect("Error deploying contract");
-
-    let mut tr = None;
-    for transaction in changes_stream.wait() {
-        if let Err(e) = transaction {
-            panic!("error next state getting: {}", e);
-        }
-        if let Ok(transaction) = transaction {
-            debug!("-> -> deploy: {:?}", transaction.status);
-            if transaction.status == TransactionProcessingStatus::Preliminary ||
-                transaction.status == TransactionProcessingStatus::Proposed ||
-                transaction.status == TransactionProcessingStatus::Finalized
-            {
-                tr = Some(transaction);
-                break;
-            }
-        }
-    }
-    tr.ok_or(ApiError::contracts_deploy_transaction_missing())
+        image, Some(keys), params.workchainId.unwrap_or(DEFAULT_WORKCHAIN))
+            .await
+            .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::contracts_run_failed))
 }
 
 #[cfg(feature = "node_interaction")]
-fn check_deployed(context: &mut ClientContext, address: &ton_block::MsgAddressInt) -> ApiResult<bool> {
+async fn check_deployed(context: &mut ClientContext, address: &ton_block::MsgAddressInt) -> ApiResult<bool> {
     let filter = json!({
         "id": { "eq": address.to_string() },
         "acc_type": { "eq":  account_status_to_u8(AccountStatus::AccStateActive) }
     }).to_string();
 
     let result = query(context, ParamsOfQuery {
-        table: ton_sdk::CONTRACTS_TABLE_NAME.to_owned(),
+        table: ton_sdk::types::CONTRACTS_TABLE_NAME.to_owned(),
         filter,
         result: "id".to_owned(),
         limit: None,
         order: None
-    })?;
+    })
+        .await?;
 
     Ok(result.result.as_array().and_then(|value| value.get(0)).is_some())
 }

@@ -12,18 +12,18 @@
 * limitations under the License.
 */
 
-use client::ClientContext;
-use dispatch::DispatchTable;
-use types::ApiResult;
+use crate::client::ClientContext;
+use crate::dispatch::DispatchTable;
+use crate::types::ApiResult;
 #[cfg(feature = "node_interaction")]
-use types::ApiError;
+use crate::types::ApiError;
 
 #[cfg(feature = "node_interaction")]
-use ton_sdk::{NodeClientConfig};
+use ton_sdk::{NodeClientConfig, TimeoutsConfig};
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
     #[cfg(feature = "node_interaction")]
-    handlers.call_no_args("uninit", |_| Ok(ton_sdk::uninit()));
+    handlers.call_no_args("uninit", |context| Ok(context.client = None));
     #[cfg(not(feature = "node_interaction"))]
     handlers.call_no_args("uninit", |_| Ok(()));
 
@@ -35,11 +35,33 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 #[derive(Deserialize)]
 #[serde(rename_all="camelCase")]
 pub(crate) struct SetupParams {
-    pub base_url: Option<String>
+    pub base_url: Option<String>,
+    pub message_retries_count: Option<u8>,
+    pub message_expiration_timeout: Option<u32>,
+    pub message_expiration_timeout_grow_factor: Option<f32>,
+    pub message_processing_timeout: Option<u32>,
+    pub message_processing_timeout_grow_factor: Option<f32>,
+    pub wait_for_timeout: Option<u32>,
+    pub access_key: Option<String>,
 }
 
 #[cfg(feature = "node_interaction")]
-fn setup(_context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
+impl Into<TimeoutsConfig> for &SetupParams {
+    fn into(self) -> TimeoutsConfig {
+        let default = TimeoutsConfig::default();
+        TimeoutsConfig {
+            message_retries_count: self.message_retries_count.unwrap_or(default.message_retries_count),
+            message_expiration_timeout: self.message_expiration_timeout.unwrap_or(default.message_expiration_timeout),
+            message_expiration_timeout_grow_factor: self.message_expiration_timeout_grow_factor.unwrap_or(default.message_expiration_timeout_grow_factor),
+            message_processing_timeout: self.message_processing_timeout.unwrap_or(default.message_processing_timeout),
+            message_processing_timeout_grow_factor: self.message_processing_timeout_grow_factor.unwrap_or(default.message_processing_timeout_grow_factor),
+            wait_for_timeout: self.wait_for_timeout.unwrap_or(default.wait_for_timeout),
+        }
+    }
+}
+
+#[cfg(feature = "node_interaction")]
+fn setup(context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
     // if node address is not provided don't init network connection
     if config.base_url.is_none() {
        return Ok(());
@@ -78,9 +100,20 @@ fn setup(_context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
 
     let internal_config = NodeClientConfig {
         queries_server: queries_url,
-        subscriptions_server: subscriptions_url
+        subscriptions_server: subscriptions_url,
+        timeouts: Some((&config).into()),
+        access_key: config.access_key
     };
-    ton_sdk::init(internal_config).map_err(|err|ApiError::config_init_failed(err))
+
+    context.client = Some(ton_sdk::init(internal_config).map_err(|err|ApiError::config_init_failed(err))?);
+    context.runtime = Some(tokio::runtime::Builder::new()
+        .basic_scheduler()
+        .enable_io()
+        .enable_time()
+        .build()
+        .map_err(|err| ApiError::cannot_create_runtime(err))?);
+
+    Ok(())
 }
 
 

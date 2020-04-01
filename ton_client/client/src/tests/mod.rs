@@ -12,14 +12,13 @@
 * limitations under the License.
 */
 
-use crypto::keys::account_decode;
-use ::InteropContext;
-use ::{tc_json_request, InteropString};
-use ::{tc_read_json_response, tc_destroy_json_response};
+use crate::crypto::keys::{account_decode, account_encode_ex, AccountAddressType, Base64AddressParams};
+use super::InteropContext;
+use super::{tc_json_request, InteropString};
+use super::{tc_read_json_response, tc_destroy_json_response};
 use serde_json::{Value, Map};
 use log::{Metadata, Record, LevelFilter};
-use {tc_create_context, tc_destroy_context};
-use ton_sdk::encode_base64;
+use crate::{tc_create_context, tc_destroy_context};
 use ton_block::MsgAddressInt;
 use std::str::FromStr;
 
@@ -183,7 +182,7 @@ fn test_wallet_deploy() {
     println!("result: {}", version.to_string());
 
     let _deployed = client.request("setup",
-        json!({"baseUrl": "http://localhost"}));
+        json!({"baseUrl": "http://localhost"})).unwrap();
 
     let keys = client.request("crypto.ed25519.keypair", json!({})).unwrap();
 
@@ -406,6 +405,22 @@ fn test_address_parsing() {
     assert_eq!(address, account_decode(base64).expect("Couldn't parse base64 address"));
     assert_eq!(address, account_decode(base64_url).expect("Couldn't parse base64_url address"));
 
-    assert_eq!(encode_base64(&address, true, true, false).unwrap(), base64);
-    assert_eq!(encode_base64(&address, true, true, true).unwrap(), base64_url);
+    assert_eq!(account_encode_ex(
+            &address,
+            AccountAddressType::Base64,
+            Some(Base64AddressParams {
+                bounce: true,
+                test: true,
+                url: false
+            })).unwrap(),
+        base64);
+    assert_eq!(account_encode_ex(
+            &address,
+            AccountAddressType::Base64,
+            Some(Base64AddressParams {
+                bounce: true,
+                test: true,
+                url: true
+        })).unwrap(),
+        base64_url);
 }

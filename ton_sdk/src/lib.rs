@@ -12,39 +12,17 @@
 * limitations under the License.
 */
 
-#![recursion_limit="128"] // needed for error_chain
-
-extern crate ton_block;
-extern crate ton_types;
 #[macro_use]
 extern crate ton_vm;
-extern crate ton_abi;
 
 #[macro_use]
 extern crate serde_derive;
-extern crate serde;
-extern crate hex;
-extern crate ed25519_dalek;
-extern crate sha2;
-extern crate base64;
-extern crate chrono;
 #[macro_use]
 extern crate failure;
-extern crate crc_any;
-extern crate num_traits;
 
 #[cfg(feature = "node_interaction")]
 #[macro_use]
-extern crate lazy_static;
-#[cfg(feature = "node_interaction")]
-#[macro_use]
 extern crate serde_json;
-#[cfg(feature = "node_interaction")]
-extern crate futures;
-#[cfg(feature = "node_interaction")]
-extern crate graphite;
-#[cfg(feature = "node_interaction")]
-extern crate reqwest;
 
 #[cfg(feature = "fee_calculation")]
 extern crate ton_executor;
@@ -53,16 +31,14 @@ pub use ton_abi::json_abi;
 pub use ton_abi::Contract as AbiContract;
 pub use ton_abi::Function as AbiFunction;
 
-#[allow(deprecated)]
-#[macro_use]
 mod error;
-pub use error::*;
+pub use error::{SdkError, SdkErrorKind, SdkResult};
 
 mod contract;
-pub use contract::*;
+pub use contract::{Contract, ContractImage};
 
 mod message;
-pub use message::*;
+pub use message::{Message, MessageId, MessageType};
 
 mod local_tvm;
 #[cfg(feature = "fee_calculation")]
@@ -71,45 +47,31 @@ pub use local_tvm::executor::TransactionFees;
 #[cfg(feature = "node_interaction")]
 mod transaction;
 #[cfg(feature = "node_interaction")]
-pub use transaction::*;
-/*
-#[cfg(feature = "node_interaction")]
-mod block;
-#[cfg(feature = "node_interaction")]
-pub use block::*;
-*/
-mod types;
-pub use types::*;
+pub use transaction::{Transaction, TransactionId};
+
+pub mod types;
+pub use types::{NodeClientConfig, TimeoutsConfig};
 
 #[cfg(feature = "node_interaction")]
-pub mod queries_helper;
+pub mod node_client;
+#[cfg(feature = "node_interaction")]
+pub use node_client::{NodeClient, OrderBy};
 
 pub mod json_helper;
 
 
 /// Init SKD. Globally saves queries and requests server URLs
 #[cfg(feature = "node_interaction")]
-pub fn init(config: NodeClientConfig) -> SdkResult<()> { 
-    queries_helper::init(config)
+pub fn init(config: NodeClientConfig) -> SdkResult<NodeClient> { 
+    NodeClient::new(config)
 }
 
 /// Init SKD. Globally saves queries and requests server URLs
 #[cfg(feature = "node_interaction")]
-pub fn init_json(config: &str) -> SdkResult<()> {
+pub fn init_json(config: &str) -> SdkResult<NodeClient> {
     init(serde_json::from_str(config)
         .map_err(|err| SdkErrorKind::InvalidArg { msg: format!("{}", err) } )?)
 }
-
-/// Uninit SKD. Should be called before process
-#[cfg(feature = "node_interaction")]
-pub fn uninit() {
-    queries_helper::uninit();
-}
-
-#[cfg(test)]
-extern crate rand;
-#[cfg(test)]
-extern crate dirs;
 
 #[cfg(test)]
 #[path = "tests/test_lib.rs"]

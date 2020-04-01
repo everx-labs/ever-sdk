@@ -12,19 +12,34 @@
 * limitations under the License.
 */
 
-use dispatch::DispatchTable;
+use crate::dispatch::DispatchTable;
 
 pub(crate) mod query;
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.spawn("queries.query",
-        query::query);
+    handlers.spawn("queries.query", 
+        |context: &mut crate::client::ClientContext, params: query::ParamsOfQuery| {
+            let mut runtime = context.take_runtime()?;
+            let result = runtime.block_on(query::query(context, params));
+            context.runtime = Some(runtime);
+            result
+        });
     handlers.spawn("queries.wait.for",
-        query::wait_for);
+        |context: &mut crate::client::ClientContext, params: query::ParamsOfWaitFor| {
+            let mut runtime = context.take_runtime()?;
+            let result = runtime.block_on(query::wait_for(context, params));
+            context.runtime = Some(runtime);
+            result
+        });
     handlers.spawn("queries.subscribe",
         query::subscribe);
     handlers.spawn("queries.get.next",
-        query::get_next);
+        |context: &mut crate::client::ClientContext, params: query::SubscribeHandle| {
+            let mut runtime = context.take_runtime()?;
+            let result = runtime.block_on(query::get_next(context, params));
+            context.runtime = Some(runtime);
+            result
+        });
     handlers.spawn("queries.unsubscribe",
         query::unsubscribe);
 }

@@ -1,6 +1,7 @@
 [package]
 name = "ton_sdk"
 version = "0.1.0"
+edition = "2018"
 
 [dependencies]
 ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git"}
@@ -27,8 +28,12 @@ num-traits = "^0.2.8"
 rand = { version = "0.6.1", features = ["wasm-bindgen"] }
 chrono = { version = "0.4.9", features = ["wasmbind"] }
 
+[dependencies.tokio]
+version = "0.2.13"
+optional = true
+
 [dependencies.futures]
-version = "^0.1.26"
+version = "0.3.4"
 optional = true
 
 [dependencies.graphite]
@@ -48,10 +53,11 @@ optional = true
 pretty_assertions = "0.5.1"
 rand = "0.6.1"
 dirs = "2.0.2"
+tokio = { version = "0.2.13", features = ["macros"]}
 
 [features]
 default = ["node_interaction", "fee_calculation"]
 ci_run = []
-node_interaction = ["graphite", "futures", "reqwest"]
+node_interaction = ["graphite", "futures", "reqwest", "tokio"]
 fee_calculation = ["ton_executor"]
 

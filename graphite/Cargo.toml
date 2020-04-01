@@ -9,8 +9,6 @@ crate-type = ["rlib"]
 
 [dependencies]
 websocket = "0.22.4"
-reqwest = "0.9.18"
 serde_json = "1.0.41"
-tokio = "0.1.21"
-tokio-core = "0.1.17"
-futures = "0.1.27"
+futures = "0.3.4"
+reqwest = "0.10.4"

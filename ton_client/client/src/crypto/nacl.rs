@@ -12,8 +12,8 @@
 * limitations under the License.
 */
 
-use crypto::keys::{KeyPair, key512, key256, key192};
-use types::{ApiResult, ApiError};
+use crate::crypto::keys::{KeyPair, key512, key256, key192};
+use crate::types::{ApiResult, ApiError};
 
 // Keys
 

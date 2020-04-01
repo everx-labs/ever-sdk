@@ -12,13 +12,13 @@
 * limitations under the License.
 */
 
-use types::{ApiResult, ApiError};
-use crypto::keys::{key512, Key256, key256, Key264};
+use crate::types::{ApiResult, ApiError};
+use crate::crypto::keys::{key512, Key256, key256, Key264};
+use crate::crypto::sha::sha256;
 use hmac::*;
 use sha2::{Sha512, Digest};
 use base58::*;
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
-use crypto::sha::sha256;
 use pbkdf2::pbkdf2;
 use secp256k1::{PublicKey, SecretKey};
 

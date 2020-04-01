@@ -15,10 +15,9 @@
 extern crate futures;
 extern crate websocket;
 
-use futures::{Async, Poll};
+use futures::task::{Poll, Context};
 use futures::stream::Stream;
 use std::fmt;
-use reqwest::{Response};
 use serde_json::Value;
 use websocket::{ClientBuilder, OwnedMessage};
 use websocket::client::sync::Client;
@@ -65,56 +64,14 @@ impl VariableRequest {
     }
 }
 
-pub struct ResponseStream {
-    response: Option<Result<Response, reqwest::Error>>
-}
-
-impl ResponseStream {
-    pub fn new(response: Result<Response, reqwest::Error>) -> Result<Self, GraphiteError> {
-        Ok(Self { response: Some(response) })
-    }
-}
-
-impl Stream for ResponseStream {
-    type Item = Value;
-    type Error = GraphiteError;
-
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        match &mut self.response.take() {
-            Some(response) => {
-                match response {
-                    Ok(res) => {
-                        match res.text() {
-                            Ok(res_str) => {
-                                if let Ok(value) = serde_json::from_str(res_str.as_str()) {
-                                    if let Some(error) = try_extract_error(&value) {
-                                        return Err(error);
-                                    }
-                                    Ok(Async::Ready(Some(value)))
-                                } else {
-                                    Err(GraphiteError::new(format!(
-                                        "Invalid JSON: {}", res_str)))
-                                }
-                            },
-                            Err(err) => Err(GraphiteError::new(err.to_string().clone()))
-                        }
-                    },
-                    Err(err) => Err(GraphiteError::new(err.to_string().clone()))
-                }
-            },
-            None => Ok(Async::Ready(None))
-        }
-    }
-}
-
 pub struct SubscribeStream {
-    id: u64,
+    id: u32,
     request: VariableRequest,
     client: Client<Box<dyn NetworkStream + Send>>
 }
 
 impl SubscribeStream {
-    pub fn new(id: u64, request: VariableRequest, host:&str) -> Result<Self, GraphiteError> {
+    pub fn new(id: u32, request: VariableRequest, host:&str) -> Result<Self, GraphiteError> {
         let client = ClientBuilder::new(host)
             .map_err(|err| 
                 GraphiteError::new(
@@ -166,8 +123,8 @@ impl SubscribeStream {
         Ok(())
     }
 
-    pub fn get_id(&self) -> u64 {
-        self.id.clone()
+    pub fn get_id(&self) -> u32 {
+        self.id
     }
 }
 
@@ -177,7 +134,7 @@ impl Drop for SubscribeStream {
     }
 }
 
-fn try_extract_error(value: &Value) -> Option<GraphiteError> {
+pub fn try_extract_error(value: &Value) -> Option<GraphiteError> {
     let errors = if let Some(payload) = value.get("payload") {
         payload.get("errors")
     } else {
@@ -202,35 +159,32 @@ fn try_extract_error(value: &Value) -> Option<GraphiteError> {
 }
 
 impl Stream for SubscribeStream {
-    type Item = Value;
-    type Error = GraphiteError;
+    type Item = Result<Value, GraphiteError>;
 
-
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        if let Some(result) = self.client.incoming_messages().next() {
+    fn poll_next(self: std::pin::Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        if let Some(result) = self.get_mut().client.incoming_messages().next() {
             match result {
                 Ok(message) => {
                     match message {
                         OwnedMessage::Text(text) => {
                             if let Ok(value) = serde_json::from_str(text.as_str()) {
                                 if let Some(error) = try_extract_error(&value) {
-                                    return Err(error);
+                                    return Poll::Ready(Some(Err(error)));
                                 }
-                                Ok(Async::Ready(Some(value)))
-
+                                Poll::Ready(Some(Ok(value)))
                             } else {
-                                Err(GraphiteError::new(format!(
-                                        "Invalid JSON: {}", text)))
+                                Poll::Ready(Some(Err(GraphiteError::new(format!(
+                                        "Invalid JSON: {}", text)))))
                             }
                         },
-                        _ => Ok(Async::NotReady)
+                        _ => Poll::Pending
                     }
 
                 } ,
-                Err(err) => Err(GraphiteError::new(err.to_string())),
+                Err(err) => Poll::Ready(Some(Err(GraphiteError::new(err.to_string())))),
             }
         } else {
-            Ok(Async::NotReady)
+            Poll::Pending
         }
     }
 }

@@ -18,7 +18,7 @@ use ton_block::{MsgAddressInt, TransactionProcessingStatus, AccStatusChange, Com
 use std::fmt;
 use serde::de::Error;
 use std::str::FromStr;
-use crate::*;
+use crate::MessageType;
 
 struct StringVisitor;
 
@@ -114,6 +114,16 @@ pub fn deserialize_tr_state<'de, D>(d: D) -> Result<TransactionProcessingStatus,
         Ok(3) => Ok(TransactionProcessingStatus::Finalized),
         Ok(4) => Ok(TransactionProcessingStatus::Refused),
         Ok(num) => Err(D::Error::custom(format!("Invalid transaction state: {}", num)))
+    }
+}
+
+pub fn transaction_status_to_u8(status: TransactionProcessingStatus) -> u8 {
+    match status {
+        TransactionProcessingStatus::Unknown => 0,
+        TransactionProcessingStatus::Preliminary => 1,
+        TransactionProcessingStatus::Proposed => 2,
+        TransactionProcessingStatus::Finalized => 3,
+        TransactionProcessingStatus::Refused => 4
     }
 }
 
