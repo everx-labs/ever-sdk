@@ -22,14 +22,14 @@ pub(crate) mod ed25519;
 pub(crate) mod mnemonic;
 pub(crate) mod hdkey;
 
-use crypto as api;
-use types::{base64_decode, ApiError, ApiResult, hex_decode};
-use crypto::keys::{KeyPair, key_to_ton_string};
-use crypto::keys::KeyStore;
-use dispatch::DispatchTable;
-use client::ClientContext;
-use crypto::math::ton_crc16;
-use crypto::mnemonic::{CryptoMnemonic, TonMnemonic, Bip39Mnemonic};
+use crate::crypto as api;
+use crate::types::{base64_decode, ApiError, ApiResult, hex_decode};
+use crate::crypto::keys::{KeyPair, key_to_ton_string};
+use crate::crypto::keys::KeyStore;
+use crate::dispatch::DispatchTable;
+use crate::client::ClientContext;
+use crate::crypto::math::ton_crc16;
+use crate::crypto::mnemonic::{CryptoMnemonic, TonMnemonic, Bip39Mnemonic};
 use bip39::{MnemonicType, Language};
 
 #[derive(Serialize, Deserialize)]

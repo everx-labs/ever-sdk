@@ -12,7 +12,7 @@
 * limitations under the License.
 */
 
-use client::*;
+use crate::client::*;
 use std::ptr::null;
 
 // Rust exported functions

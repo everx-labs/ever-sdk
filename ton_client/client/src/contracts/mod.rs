@@ -12,11 +12,11 @@
 * limitations under the License.
 */
 
-use types::{ApiResult, base64_decode, ApiError};
+use crate::types::{ApiResult, base64_decode, ApiError};
 use ton_sdk::{AbiContract, ContractImage};
 use ton_block::{CommonMsgInfo, Deserializable};
 use std::io::Cursor;
-use crypto::keys::{
+use crate::crypto::keys::{
     account_decode,
     account_encode_ex,
     AccountAddressType,
@@ -108,8 +108,8 @@ pub(crate) struct ResultOfGetBocHash {
 }
 
 use ton_sdk;
-use dispatch::DispatchTable;
-use client::ClientContext;
+use crate::dispatch::DispatchTable;
+use crate::client::ClientContext;
 
 pub(crate) fn encode_message_with_sign(_context: &mut ClientContext, params: ParamsOfEncodeMessageWithSign) -> ApiResult<EncodedMessage> {
     let key_array: [u8; ed25519_dalek::PUBLIC_KEY_LENGTH];
@@ -202,12 +202,23 @@ pub(crate) fn parse_message(_context: &mut ClientContext, params: InputBoc) -> A
 pub(crate) fn register(handlers: &mut DispatchTable) {
     // Load
     #[cfg(feature = "node_interaction")]
-    handlers.spawn("contracts.load", load::load);
+    handlers.spawn("contracts.load",
+        |context: &mut crate::client::ClientContext, params: load::LoadParams| {
+            let mut runtime = context.take_runtime()?;
+            let result = runtime.block_on(load::load(context, params));
+            context.runtime = Some(runtime);
+            result
+        });
 
     // Deploy
     #[cfg(feature = "node_interaction")]
     handlers.spawn("contracts.deploy",
-        deploy::deploy);
+        |context: &mut crate::client::ClientContext, params: deploy::ParamsOfDeploy| {
+            let mut runtime = context.take_runtime()?;
+            let result = runtime.block_on(deploy::deploy(context, params));
+            context.runtime = Some(runtime);
+            result
+        });
 
     handlers.spawn("contracts.deploy.message",
         deploy::encode_message);
@@ -221,7 +232,12 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
     // Run
     #[cfg(feature = "node_interaction")]
     handlers.spawn("contracts.run",
-        run::run);
+        |context: &mut crate::client::ClientContext, params: run::ParamsOfRun| {
+            let mut runtime = context.take_runtime()?;
+            let result = runtime.block_on(run::run(context, params));
+            context.runtime = Some(runtime);
+            result
+        });
 
     handlers.spawn("contracts.run.message",
         run::encode_message);
