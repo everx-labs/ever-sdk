@@ -486,13 +486,16 @@ ton_client/platforms/ton-client-web"""
                             steps {
                                 script {
                                     sh "cp /tonlabs/TON-SDK/ton_client/client/bin/*gz ./"
+                                    stash allowEmpty: true, includes: '*.gz', name: 'cl-linux-bin'
+                                    /*
                                     withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                         identity = awsIdentity()
                                         s3Upload \
                                             bucket: 'sdkbinaries.tonlabs.io', \
                                             includePathPattern:'*.gz', path: 'tmp_sdk', \
                                             workingDir:'.'
-                                        }
+                                    }
+                                    */
                                 }
                             }
                         }
@@ -553,13 +556,16 @@ ton_client/platforms/ton-client-web"""
                             steps {
                                 dir('tonlabs/TON-SDK/ton_client/client/bin') {
                                     script {
+                                        stash allowEmpty: true, includes: '*.gz', name: 'cl-darwin-bin'
+                                        /*
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
                                             s3Upload \
                                                 bucket: 'sdkbinaries.tonlabs.io', \
                                                 includePathPattern:'*.gz', path: 'tmp_sdk', \
                                                 workingDir:'.'
-                                            }
+                                        }
+                                        */
                                     }
                                 }
                             }
@@ -622,13 +628,16 @@ ton_client/platforms/ton-client-web"""
                             steps {
                                 dir('tonlabs/TON-SDK/ton_client/client/bin') {
                                     script {
+                                        stash allowEmpty: true, includes: '*.gz', name: 'cl-windows-bin'
+                                        /*
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
                                             s3Upload \
                                                 bucket: 'sdkbinaries.tonlabs.io', \
                                                 includePathPattern:'*.gz', path: 'tmp_sdk', \
                                                 workingDir:'.'
-                                            }
+                                        }
+                                        */
                                     }
                                 }
                             }
@@ -698,13 +707,16 @@ ton_client/platforms/ton-client-web"""
                             steps {
                                 dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-react-native/output') {
                                     script {
+                                        stash allowEmpty: true, includes: '*.gz', name: 'rn-ios-bin'
+                                        /*
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
                                             s3Upload \
                                                 bucket: 'sdkbinaries.tonlabs.io', \
                                                 includePathPattern:'*.gz', path: 'tmp_sdk', \
                                                 workingDir:'.'
-                                            }
+                                        }
+                                        */
                                     }
                                 }
                             }
@@ -779,13 +791,16 @@ ton_client/platforms/ton-client-web"""
                             steps {
                                 dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-react-native/output') {
                                     script {
+                                        stash allowEmpty: true, includes: '*.gz', name: 'rn-android-bin'
+                                        /*
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
                                             s3Upload \
                                                 bucket: 'sdkbinaries.tonlabs.io', \
                                                 includePathPattern:'*.gz', path: 'tmp_sdk', \
                                                 workingDir:'.'
-                                            }
+                                        }
+                                        */
                                     }
                                 }
                             }
@@ -860,13 +875,16 @@ ton_client/platforms/ton-client-web"""
                             steps {
                                 dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js/bin') {
                                     script {
+                                        stash allowEmpty: true, includes: '*.gz', name: 'nj-darwin-bin'
+                                        /*
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
                                             s3Upload \
                                                 bucket: 'sdkbinaries.tonlabs.io', \
                                                 includePathPattern:'*.gz', path: 'tmp_sdk', \
                                                 workingDir:'.'
-                                            }
+                                        }
+                                        */
                                     }
                                 }
                             }
@@ -943,13 +961,16 @@ ton_client/platforms/ton-client-web"""
                             steps {
                                 dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js/bin') {
                                     script {
+                                        stash allowEmpty: true, includes: '*.gz', name: 'nj-windows-bin'
+                                        /*
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
                                             s3Upload \
                                                 bucket: 'sdkbinaries.tonlabs.io', \
                                                 includePathPattern:'*.gz', path: 'tmp_sdk', \
                                                 workingDir:'.'
-                                            }
+                                        }
+                                        */
                                     }
                                 }
                             }
@@ -1002,13 +1023,16 @@ ton_client/platforms/ton-client-web"""
                             steps {
                                 script {
                                     sh "cp /tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js/bin/*.gz ./"
+                                    stash allowEmpty: true, includes: '*.gz', name: 'nj-linux-bin'
+                                    /*
                                     withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                         identity = awsIdentity()
                                         s3Upload \
                                             bucket: 'sdkbinaries.tonlabs.io', \
                                             includePathPattern:'*.gz', path: 'tmp_sdk', \
                                             workingDir:'.'
-                                        }
+                                    }
+                                    */
                                 }
                             }
                             post {
@@ -1067,6 +1091,8 @@ ton_client/platforms/ton-client-web"""
                             steps {
                                 script {
                                     sh "cp /tonlabs/TON-SDK/ton_client/platforms/ton-client-web/bin/*.gz ./"
+                                    stash allowEmpty: true, includes: '*.gz', name: 'web-bin'
+                                    /*
                                     withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                         identity = awsIdentity()
                                         s3Upload \
@@ -1074,6 +1100,7 @@ ton_client/platforms/ton-client-web"""
                                             includePathPattern:'*.gz', path: 'tmp_sdk', \
                                             workingDir:'.'
                                     }
+                                    */
                                 }
                             }
                             post {
@@ -1087,6 +1114,34 @@ ton_client/platforms/ton-client-web"""
 						cleanup {script{cleanWs notFailBuild: true}}
 					}                
 				}
+            }
+        }
+        stage('Deploy to bucket') {
+            steps {
+                script {
+                    sh """
+                        if [ -e 'toDeploy' ] ; then echo 'Remove...' ; rm -rf toDeploy ; fi
+                        mkdir toDeploy
+                    """
+                    dir('toDeploy') {
+                        unstash 'cl-linux-bin'
+                        unstash 'cl-darwin-bin'
+                        unstash 'cl-windows-bin'
+                        unstash 'rn-ios-bin'
+                        unstash 'rn-android-bin'
+                        unstash 'nj-linux-bin'
+                        unstash 'nj-windows-bin'
+                        unstash 'nj-darwin-bin'
+                        unstash 'web-bin'
+                        withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
+                            identity = awsIdentity()
+                            s3Upload \
+                                bucket: 'sdkbinaries.tonlabs.io', \
+                                includePathPattern:'*.gz', path: 'tmp_sdk', \
+                                workingDir:'.'
+                        }
+                    }
+                }
             }
         }
         stage('After stages') {
