@@ -153,6 +153,16 @@ def buildBranchesMap() {
 
 def buildParams() {
     buildImagesMap()
+    if(!isUpstream() && GIT_BRANCH != 'master' && !(GIT_BRANCH ==~ '^PR-[0-9]+')) {
+        G_images['ton-types'] = 'tonlabs/ton-types:latest'
+        G_images['ton-labs-types'] = 'tonlabs/ton-labs-types:latest'
+        G_images['ton-block'] = 'tonlabs/ton-block:latest'
+        G_images['ton-labs-block'] = 'tonlabs/ton-labs-block:latest'
+        G_images['ton-vm'] = 'tonlabs/ton-vm:latest'
+        G_images['ton-labs-vm'] = 'tonlabs/ton-labs-vm:latest'
+        G_images['ton-executor'] = 'tonlabs/ton-executor:latest'
+        G_images['ton-labs-abi'] = 'tonlabs/ton-labs-abi:latest'
+    }
     buildBranchesMap()
     G_params = []
     params.each { key, value ->
@@ -181,7 +191,7 @@ pipeline {
     }
     tools {nodejs "Node12.8.0"}
     options {
-        buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '10')
+        buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '20')
         disableConcurrentBuilds()
         parallelsAlwaysFailFast()
     }
@@ -316,13 +326,14 @@ ton_client/platforms/ton-client-web"""
                         G_binversion = sh (script: "node tonVersion.js ${folders}", returnStdout: true).trim()
                     }
 
-
-                    withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
-                        identity = awsIdentity()
-                        s3Upload \
-                            bucket: 'sdkbinaries.tonlabs.io', \
-                            includePathPattern:'version.json', path: '', \
-                            workingDir:'.'
+                    if(!isUpstream() && (GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc")) {
+                        withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
+                            identity = awsIdentity()
+                            s3Upload \
+                                bucket: 'sdkbinaries.tonlabs.io', \
+                                includePathPattern:'version.json', path: '', \
+                                workingDir:'.'
+                        }
                     }
                 }
             }
@@ -356,7 +367,7 @@ ton_client/platforms/ton-client-web"""
         stage('Before stages') {
             when {
                 expression {
-                    return !isUpstream()
+                    return !isUpstream() && (GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc")
                 }
             }
             steps {
@@ -430,7 +441,7 @@ ton_client/platforms/ton-client-web"""
                 stage('Parallel stages') {
                     when {
                         expression {
-                            return !isUpstream()
+                            return !isUpstream() && (GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc")
                         }
                     }
                     steps {
@@ -469,7 +480,7 @@ ton_client/platforms/ton-client-web"""
                         stage('Deploy') {
                             when { 
                                 expression {
-                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                    return GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
                                 }
                             }
                             steps {
@@ -536,7 +547,7 @@ ton_client/platforms/ton-client-web"""
                         stage('Deploy') {
                             when { 
                                 expression {
-                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                    return GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
                                 }
                             }
                             steps {
@@ -605,7 +616,7 @@ ton_client/platforms/ton-client-web"""
                         stage('Deploy') {
                             when { 
                                 expression {
-                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                    return GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
                                 }
                             }
                             steps {
@@ -681,7 +692,7 @@ ton_client/platforms/ton-client-web"""
                         stage('Deploy') {
                             when { 
                                 expression {
-                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                    return GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
                                 }
                             }
                             steps {
@@ -762,7 +773,7 @@ ton_client/platforms/ton-client-web"""
                         stage('Deploy') {
                             when { 
                                 expression {
-                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                    return GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
                                 }
                             }
                             steps {
@@ -843,7 +854,7 @@ ton_client/platforms/ton-client-web"""
                         stage('Deploy') {
                             when { 
                                 expression {
-                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                    return GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
                                 }
                             }
                             steps {
@@ -926,7 +937,7 @@ ton_client/platforms/ton-client-web"""
                         stage('Deploy') {
                             when { 
                                 expression {
-                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                    return GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
                                 }
                             }
                             steps {
@@ -985,7 +996,7 @@ ton_client/platforms/ton-client-web"""
                         stage('Deploy') {
                             when { 
                                 expression {
-                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                    return GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
                                 }
                             }
                             steps {
@@ -1050,7 +1061,7 @@ ton_client/platforms/ton-client-web"""
                         stage('Deploy') {
                             when { 
                                 expression {
-                                    GIT_BRANCH == 'master' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                                    return GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
                                 }
                             }
                             steps {
@@ -1081,7 +1092,7 @@ ton_client/platforms/ton-client-web"""
         stage('After stages') {
             when {
                 expression {
-                    return !isUpstream()
+                    return !isUpstream() && (GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc")
                 }
             }
             steps {
