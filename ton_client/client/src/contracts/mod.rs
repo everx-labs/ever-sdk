@@ -35,8 +35,8 @@ pub(crate) mod load;
 #[derive(Serialize, Deserialize)]
 pub(crate) struct EncodedMessage {
     pub messageId: String,
-    pub messageIdBase64: String,
     pub messageBodyBase64: String,
+    pub expire: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -44,6 +44,7 @@ pub(crate) struct EncodedMessage {
 pub(crate) struct EncodedUnsignedMessage {
     pub unsignedBytesBase64: String,
     pub bytesToSignBase64: String,
+    pub expire: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -53,6 +54,7 @@ pub(crate) struct ParamsOfEncodeMessageWithSign {
     pub unsignedBytesBase64: String,
     pub signBytesBase64: String,
     pub publicKeyHex: Option<String>,
+    pub expire: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -127,8 +129,8 @@ pub(crate) fn encode_message_with_sign(_context: &mut ClientContext, params: Par
     ).map_err(|err|ApiError::contracts_encode_message_with_sign_failed(err))?;
     Ok(EncodedMessage {
         messageId: id.to_string(),
-        messageIdBase64: id.to_base64().map_err(|err| ApiError::contracts_encode_message_with_sign_failed(err))?,
         messageBodyBase64: base64::encode(&body),
+        expire: params.expire
     })
 }
 
