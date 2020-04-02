@@ -99,6 +99,7 @@ impl Client {
         #[cfg(not(feature = "node_interaction"))]
         self.contexts.insert(handle, ClientContext {
             handle,
+            client: None,
         });
 
         handle

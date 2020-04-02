@@ -17,6 +17,7 @@ use ton_sdk::json_abi::encode_function_call;
 use crate::crypto::keys::{KeyPair, account_decode};
 use crate::types::{ApiResult, ApiError, base64_decode};
 use ton_types::cells_serialization::BagOfCells;
+use ton_block::Message as TvmMessage;
 
 use crate::contracts::{EncodedMessage, EncodedUnsignedMessage};
 use crate::client::ClientContext;
@@ -26,7 +27,7 @@ use ton_sdk::{Transaction, AbiFunction, Message};
 #[cfg(feature = "node_interaction")]
 use ton_sdk::NodeClient;
 #[cfg(feature = "node_interaction")]
-use ton_block::{MsgAddressInt, AccStatusChange, Message as TvmMessage};
+use ton_block::{MsgAddressInt, AccStatusChange};
 #[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
