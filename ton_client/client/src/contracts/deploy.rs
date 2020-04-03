@@ -188,7 +188,7 @@ pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfDeploy
 }
 
 pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetDeployData) -> ApiResult<ResultOfGetDeployData> {
-    debug!("-> contracts.run.message({}, {}, {})",
+    debug!("-> contracts.deploy.data({}, {}, {})",
         &params.abi.clone().unwrap_or_default(),
         &params.imageBase64.clone().unwrap_or_default(),
         &params.initParams.clone().unwrap_or_default(),
