@@ -35,14 +35,11 @@ const dev = {
 	},
 };
 const release = JSON.parse(JSON.stringify(dev));
-release.ios.archs.push('i386-apple-ios', 'armv7-apple-ios', 'armv7s-apple-ios', 'aarch64-apple-ios');
+release.ios.archs.push('aarch64-apple-ios');
 release.android.archs.push('aarch64-linux-android', 'armv7-linux-androideabi');
 release.android.jniArchs.push('arm64-v8a', 'armeabi-v7a');
 const cargoTargetsIOS = [
 	"aarch64-apple-ios",
-	"armv7-apple-ios",
-	"armv7s-apple-ios",
-	"i386-apple-ios",
 	"x86_64-apple-ios"
 ];
 const cargoTargetsAndroid = [
