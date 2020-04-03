@@ -13,7 +13,7 @@
 */
 
 use crate::error::{SdkError, SdkErrorKind, SdkResult};
-use std::sync::{atomic::AtomicU64, Arc};
+use std::sync::Arc;
 use ton_vm::executor::Engine;
 use ton_block::{
     Message,
@@ -78,7 +78,7 @@ pub(crate) fn call_tvm(
         let next = slice.checked_drain_reference()?.into();
         let magic = slice.get_next_u32();
         if magic.is_ok() && magic.unwrap() == 0x0ec3c86d && slice.remaining_references() == 1 {
-            msgs.push(Message::construct_from::<Message>(&mut slice.checked_drain_reference()?.into())?);
+            msgs.push(Message::construct_from(&mut slice.checked_drain_reference()?.into())?);
         }
         slice = next;
     }
@@ -123,7 +123,7 @@ pub(crate) fn call_executor(account: Account, msg: Message, config: &BlockchainC
     let shard_acc = ShardAccount::with_params(account, UInt256::from([0;32]), 0).unwrap();
 
     let block_lt = 1_000_000;
-    let lt = Arc::new(AtomicU64::new(block_lt + 1));
+    let lt = Arc::new(std::sync::atomic::AtomicU64::new(block_lt + 1));
     let mut executor = OrdinaryTransactionExecutor::new();
     let transaction = executor.execute(
         config,
