@@ -13,7 +13,7 @@
 */
 
 use crate::error::{SdkError, SdkErrorKind, SdkResult};
-use std::sync::{atomic::AtomicU64, Arc};
+use std::sync::Arc;
 use ton_vm::executor::Engine;
 use ton_block::{
     Message,
