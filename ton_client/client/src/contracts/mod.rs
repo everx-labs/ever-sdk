@@ -24,41 +24,39 @@ use crate::crypto::keys::{
     decode_public_key
 };
 
-pub(crate) mod types;
 pub(crate) mod deploy;
 pub(crate) mod run;
 
 #[cfg(feature = "node_interaction")]
 pub(crate) mod load;
 
-#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct EncodedMessage {
-    pub messageId: String,
-    pub messageBodyBase64: String,
+    pub message_id: String,
+    pub message_body_base64: String,
     pub expire: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct EncodedUnsignedMessage {
-    pub unsignedBytesBase64: String,
-    pub bytesToSignBase64: String,
+    pub unsigned_bytes_base64: String,
+    pub bytes_to_sign_base64: String,
     pub expire: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfEncodeMessageWithSign {
     pub abi: serde_json::Value,
-    pub unsignedBytesBase64: String,
-    pub signBytesBase64: String,
-    pub publicKeyHex: Option<String>,
+    pub unsigned_bytes_base64: String,
+    pub sign_bytes_base64: String,
+    pub public_key_hex: Option<String>,
     pub expire: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize)]
-#[allow(non_snake_case)]
 pub(crate) struct ParamsOfGetFunctionId {
     pub abi: serde_json::Value,
     pub function: String,
@@ -66,45 +64,42 @@ pub(crate) struct ParamsOfGetFunctionId {
 }
 
 #[derive(Serialize, Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfConvertAddress {
     pub address: String,
-    pub convertTo: AccountAddressType,
-    pub base64Params: Option<Base64AddressParams>,
+    pub convert_to: AccountAddressType,
+    pub base64_params: Option<Base64AddressParams>,
 }
 
 #[derive(Serialize, Deserialize)]
-#[allow(non_snake_case)]
 pub(crate) struct ResultOfGetFunctionId {
     pub id: u32
 }
 
 #[derive(Serialize, Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfGetCodeFromImage {
-    pub imageBase64: String,
+    pub image_base64: String,
 }
 
-#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct ResultOfGetCodeFromImage {
-    pub codeBase64: String,
+    pub code_base64: String,
 }
 
-#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfConvertAddress {
     pub address: String,
 }
 
 #[derive(Serialize, Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct InputBoc {
-    pub bocBase64: String,
+    pub boc_base64: String,
 }
 
 #[derive(Serialize, Deserialize)]
-#[allow(non_snake_case)]
 pub(crate) struct ResultOfGetBocHash {
     pub hash: String,
 }
@@ -115,7 +110,7 @@ use crate::client::ClientContext;
 
 pub(crate) fn encode_message_with_sign(_context: &mut ClientContext, params: ParamsOfEncodeMessageWithSign) -> ApiResult<EncodedMessage> {
     let key_array: [u8; ed25519_dalek::PUBLIC_KEY_LENGTH];
-    let public_key = if let Some(key) = params.publicKeyHex {
+    let public_key = if let Some(key) = params.public_key_hex {
         key_array = decode_public_key(&key)?.to_bytes();
         Some(key_array.as_ref())
     } else {
@@ -123,13 +118,13 @@ pub(crate) fn encode_message_with_sign(_context: &mut ClientContext, params: Par
     };
     let (body, id) = ton_sdk::Contract::add_sign_to_message(
         params.abi.to_string(),
-        &base64_decode(&params.signBytesBase64)?,
+        &base64_decode(&params.sign_bytes_base64)?,
         public_key,
-        &base64_decode(&params.unsignedBytesBase64)?
+        &base64_decode(&params.unsigned_bytes_base64)?
     ).map_err(|err|ApiError::contracts_encode_message_with_sign_failed(err))?;
     Ok(EncodedMessage {
-        messageId: id.to_string(),
-        messageBodyBase64: base64::encode(&body),
+        message_id: id.to_string(),
+        message_body_base64: base64::encode(&body),
         expire: params.expire
     })
 }
@@ -149,7 +144,7 @@ pub(crate) fn get_function_id(_context: &mut ClientContext, params: ParamsOfGetF
 pub(crate) fn get_code_from_image(_context: &mut ClientContext, params: ParamsOfGetCodeFromImage) -> ApiResult<ResultOfGetCodeFromImage> {
     debug!("-> contracts.image.code()");
 
-    let bytes = base64::decode(&params.imageBase64)
+    let bytes = base64::decode(&params.image_base64)
         .map_err(|err| ApiError::contracts_invalid_image(err))?;
     let mut reader = Cursor::new(bytes);
     let image = ContractImage::from_state_init(&mut reader)
@@ -157,16 +152,16 @@ pub(crate) fn get_code_from_image(_context: &mut ClientContext, params: ParamsOf
 
     debug!("<-");
     Ok(ResultOfGetCodeFromImage {
-        codeBase64: base64::encode(&image.get_serialized_code()
+        code_base64: base64::encode(&image.get_serialized_code()
             .map_err(|err| ApiError::contracts_image_creation_failed(err))?),
     })
 }
 
 pub(crate) fn convert_address(_context: &mut ClientContext, params: ParamsOfConvertAddress) -> ApiResult<ResultOfConvertAddress> {
-    debug!("-> contracts.image.code({}, {:?}, {:?})", params.address, params.convertTo, params.base64Params);
+    debug!("-> contracts.image.code({}, {:?}, {:?})", params.address, params.convert_to, params.base64_params);
     let address = account_decode(&params.address)?;
     Ok(ResultOfConvertAddress {
-        address: account_encode_ex(&address, params.convertTo, params.base64Params)?,
+        address: account_encode_ex(&address, params.convert_to, params.base64_params)?,
     })
 }
 
@@ -177,16 +172,16 @@ fn decode_boc_base64(boc_base64: &String) -> ApiResult<ton_types::Cell> {
 }
 
 pub(crate) fn get_boc_root_hash(_context: &mut ClientContext, params: InputBoc) -> ApiResult<ResultOfGetBocHash> {
-    debug!("-> contracts.boc.hash({})", params.bocBase64);
-    let cells = decode_boc_base64(&params.bocBase64)?;
+    debug!("-> contracts.boc.hash({})", params.boc_base64);
+    let cells = decode_boc_base64(&params.boc_base64)?;
     Ok(ResultOfGetBocHash {
         hash: format!("{:x}", cells.repr_hash()),
     })
 }
 
 pub(crate) fn parse_message(_context: &mut ClientContext, params: InputBoc) -> ApiResult<serde_json::Value> {
-    debug!("-> contracts.boc.hash({})", params.bocBase64);
-    let cells = decode_boc_base64(&params.bocBase64)?;
+    debug!("-> contracts.boc.hash({})", params.boc_base64);
+    let cells = decode_boc_base64(&params.boc_base64)?;
     let mut message = ton_block::Message::default();
     message.read_from(&mut cells.into())
         .map_err(|err| ApiError::contracts_invalid_boc(err))?;
