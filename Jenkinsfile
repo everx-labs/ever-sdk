@@ -1117,6 +1117,11 @@ ton_client/platforms/ton-client-web"""
             }
         }
         stage('Deploy to bucket') {
+            when { 
+                expression {
+                    return GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc"
+                }
+            }
             steps {
                 script {
                     sh """
