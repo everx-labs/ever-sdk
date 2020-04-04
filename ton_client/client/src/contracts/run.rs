@@ -68,7 +68,7 @@ pub(crate) struct ParamsOfRun {
     #[serde(flatten)]
     pub call_set: RunFunctionCallSet,
     pub key_pair: Option<KeyPair>,
-    pub try_index: Option<u8>
+    pub try_index: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -193,34 +193,50 @@ pub(crate) async fn run(context: &mut ClientContext, params: ParamsOfRun) -> Api
     debug!("run contract");
     let tr = call_contract(client, address, &params, key_pair.as_ref()).await?;
 
-    let abi_contract = AbiContract::load(params.call_set.abi.to_string().as_bytes()).expect("Couldn't parse ABI");
-    let abi_function = abi_contract.function(&params.call_set.function_name).expect("Couldn't find function");
+    process_transaction(client, tr, Some(params.call_set.abi), Some(params.call_set.function_name)).await
+}
 
-    if  tr.out_messages_id().len() == 0 ||
-        !abi_function.has_output()
-    {
-        debug!("out messages missing");
-        debug!("transaction: {:?}", tr);
-        check_transaction_status(&tr)?;
-        ok_null()
+pub(crate) async fn process_transaction(
+    client: &NodeClient,
+    transaction: Transaction,
+    abi: Option<serde_json::Value>,
+    function: Option<String>
+) -> ApiResult<ResultOfRun> {
+    if let Some(abi) = abi {
+        let function = function.ok_or(ApiError::contracts_decode_run_output_failed("No function name provided"))?;
+
+        let abi_contract = AbiContract::load(abi.to_string().as_bytes()).expect("Couldn't parse ABI");
+        let abi_function = abi_contract.function(&function).expect("Couldn't find function");
+
+        if  transaction.out_messages_id().len() == 0 || !abi_function.has_output() {
+            debug!("out messages missing");
+            debug!("transaction: {:?}", transaction);
+            check_transaction_status(&transaction)?;
+            ok_null()
+        } else {
+            debug!("load out messages");
+            let out_msg = load_out_message(client, &transaction, abi_function).await?;
+            let response = out_msg.body().expect("error unwrap out message body").into();
+
+            debug!("decode output");
+            let result = Contract::decode_function_response_json(
+                abi.to_string().to_owned(),
+                function.to_owned(),
+                response,
+                false)
+                .expect("Error decoding result");
+
+            debug!("<-");
+            Ok(ResultOfRun {
+                output: serde_json::from_str(result.as_str())
+                    .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?
+            })
+        }
     } else {
-        debug!("load out messages");
-        let out_msg = load_out_message(client, &tr, abi_function).await?;
-        let response = out_msg.body().expect("error unwrap out message body").into();
-
-        debug!("decode output");
-        let result = Contract::decode_function_response_json(
-            params.call_set.abi.to_string().to_owned(),
-            params.call_set.function_name.to_owned(),
-            response,
-            false)
-            .expect("Error decoding result");
-
-        debug!("<-");
-        Ok(ResultOfRun {
-            output: serde_json::from_str(result.as_str())
-                .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?
-        })
+        debug!("No abi provided");
+        debug!("transaction: {:?}", transaction);
+        check_transaction_status(&transaction)?;
+        ok_null()
     }
 }
 

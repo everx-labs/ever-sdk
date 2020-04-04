@@ -214,7 +214,7 @@ async fn test_expire() {
         None,
         None).unwrap();
 
-    let result = Contract::send_message(&client, msg.message, Some(Contract::get_now().unwrap() + 1), 0).await;
+    let result = Contract::process_message(&client, msg.message, Some(Contract::get_now().unwrap() + 1), 0).await;
 
     match result {
         Err(error) => match error.downcast_ref::<SdkErrorKind>().unwrap() {

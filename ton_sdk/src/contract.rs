@@ -359,7 +359,7 @@ impl Contract {
                 Some(client.timeouts()),
                 Some(try_index))?;
 
-            Ok(Self::send_message(client, msg.message, msg.expire, try_index))
+            Ok(Self::process_message(client, msg.message, msg.expire, try_index))
         }).await
     }
 
@@ -383,7 +383,7 @@ impl Contract {
                 Some(client.timeouts()),
                 Some(try_index))?;
 
-            Ok(Self::send_message(client, msg.message, msg.expire, try_index))
+            Ok(Self::process_message(client, msg.message, msg.expire, try_index))
         }).await
     }
 
@@ -392,30 +392,24 @@ impl Contract {
     // it's id and processing status is returned by this function
     pub async fn deploy_no_constructor(client: &NodeClient, image: ContractImage, workchain_id: i32)
         -> SdkResult<Transaction> {
-            let msg = Self::create_deploy_message(None, image, workchain_id)?;
+        let msg = Self::create_deploy_message(None, image, workchain_id)?;
 
-            Self::send_message(client, msg, None, 0).await
+        Self::process_message(client, msg, None, 0).await
     }
 
     // Asynchronously calls contract by sending given message.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
-    pub async fn send_message(client: &NodeClient, msg: TvmMessage, expire: Option<u32>, try_index: u8)
+    pub async fn process_message(client: &NodeClient, msg: TvmMessage, expire: Option<u32>, try_index: u8)
         -> SdkResult<Transaction> 
     {
         let (data, msg_id) = Self::serialize_message(msg)?;
-        // send message
-        Self::send_serialized_message(client, &msg_id, &data, expire, try_index).await
+        Self::process_serialized_message(client, &msg_id, &data, expire, try_index).await
     }
 
-   async fn _send_message(client: &NodeClient, id: &MessageId, msg: &[u8]) -> SdkResult<()> {
-        client.send_message(&id.to_bytes()?, msg).await
-        //println!("msg is sent, id: {}", id);
-    }
-
-    pub async fn send_serialized_message(client: &NodeClient, id: &MessageId, msg: &[u8], expire: Option<u32>, try_index: u8) -> SdkResult<Transaction> {
+    pub async fn process_serialized_message(client: &NodeClient, id: &MessageId, msg: &[u8], expire: Option<u32>, try_index: u8) -> SdkResult<Transaction> {
         client.send_message(&id.to_bytes()?, msg).await?;
-        // subscribe on updates from DB and return updates stream
+        //println!("msg is sent, id: {}", id);
         Self::wait_transaction_processing(client, id, expire, try_index).await
     }
 

@@ -24,6 +24,9 @@ use crate::crypto::keys::{
     decode_public_key
 };
 
+#[cfg(feature = "node_interaction")]
+use ton_sdk::Contract;
+
 pub(crate) mod deploy;
 pub(crate) mod run;
 
@@ -36,6 +39,15 @@ pub(crate) struct EncodedMessage {
     pub message_id: String,
     pub message_body_base64: String,
     pub expire: Option<u32>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ParamsOfProcessMessage {
+    pub abi: Option<serde_json::Value>,
+    pub function_name: Option<String>,
+    pub message: EncodedMessage,
+    pub try_index: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -179,6 +191,36 @@ pub(crate) fn get_boc_root_hash(_context: &mut ClientContext, params: InputBoc) 
     })
 }
 
+pub(crate) async fn send_message(context: &mut ClientContext, params: EncodedMessage) -> ApiResult<()> {
+    debug!("-> contracts.send.message({}, {})", params.message_id, params.expire.unwrap_or_default());
+    
+    let msg = base64_decode(&params.message_body_base64)?;
+    let id = crate::types::hex_decode(&params.message_id)?;
+    let client = context.get_client()?;
+    client.send_message(&id, &msg)
+        .await
+        .map_err(|err| ApiError::contracts_send_message_failed(err))
+}
+
+pub(crate) async fn process_message(context: &mut ClientContext, params: ParamsOfProcessMessage) -> ApiResult<run::ResultOfRun> {
+    debug!("-> contracts.process.message({}, {})", 
+        params.message.message_id,
+        params.message.expire.unwrap_or_default());
+    
+    let msg = base64_decode(&params.message.message_body_base64)?;
+    let client = context.get_client()?;
+    let transaction = Contract::process_serialized_message(
+        client,
+        &params.message.message_id.into(),
+        &msg,
+        params.message.expire,
+        params.try_index.unwrap_or(0))
+        .await
+        .map_err(|err| ApiError::contracts_process_message_failed(err))?;
+
+    run::process_transaction(client, transaction, params.abi, params.function_name).await
+}
+
 pub(crate) fn parse_message(_context: &mut ClientContext, params: InputBoc) -> ApiResult<serde_json::Value> {
     debug!("-> contracts.boc.hash({})", params.boc_base64);
     let cells = decode_boc_base64(&params.boc_base64)?;
@@ -274,4 +316,22 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         get_boc_root_hash);
     handlers.spawn("contracts.parse.message",
         parse_message);
+
+    // messages processing
+    #[cfg(feature = "node_interaction")]
+    handlers.spawn("contracts.send.message",
+        |context: &mut crate::client::ClientContext, params: EncodedMessage| {
+            let mut runtime = context.take_runtime()?;
+            let result = runtime.block_on(send_message(context, params));
+            context.runtime = Some(runtime);
+            result
+        });
+    #[cfg(feature = "node_interaction")]
+    handlers.spawn("contracts.process.message",
+        |context: &mut crate::client::ClientContext, params: ParamsOfProcessMessage| {
+            let mut runtime = context.take_runtime()?;
+            let result = runtime.block_on(process_message(context, params));
+            context.runtime = Some(runtime);
+            result
+        });
 }

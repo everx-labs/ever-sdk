@@ -381,8 +381,13 @@ impl ApiError {
     }
 
     pub fn contracts_cannot_serialize_message<E: Display>(err: E) -> Self {
-        sdk_err!(ContractCannotSerializeMessage,
+        sdk_err!(ContractsCannotSerializeMessage,
             "Can not serialize message: {}", err)
+    }
+
+    pub fn contracts_process_message_failed<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsProcessMessageFailed,
+            "Process message failed: {}", err)
     }
 
     // SDK queries
@@ -536,7 +541,8 @@ pub enum ApiSdkErrorCode {
     ContractsAddressConversionFailed = 3019,
     ContractsInvalidBoc = 3020,
     ContractsLoadMessagesFailed = 3021,
-    ContractCannotSerializeMessage = 3022,
+    ContractsCannotSerializeMessage = 3022,
+    ContractsProcessMessageFailed = 3023,
 
     QueriesQueryFailed = 4001,
     QueriesSubscribeFailed = 4002,
