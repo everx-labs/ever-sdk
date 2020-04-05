@@ -216,7 +216,7 @@ pub(crate) async fn process_message(context: &mut ClientContext, params: ParamsO
         params.message.expire,
         params.try_index.unwrap_or(0))
         .await
-        .map_err(|err| ApiError::contracts_process_message_failed(err))?;
+        .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::contracts_process_message_failed))?;
 
     run::process_transaction(client, transaction, params.abi, params.function_name).await
 }
