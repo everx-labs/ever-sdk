@@ -28,8 +28,6 @@ use ton_vm::executor::gas::gas_state::Gas;
 
 #[cfg(feature = "fee_calculation")]
 use ton_executor::{BlockchainConfig, TransactionExecutor, OrdinaryTransactionExecutor};
-#[cfg(feature = "fee_calculation")]
-use std::sync::atomic::AtomicU64;
 
 pub(crate) fn call_tvm(
     balance: u128,

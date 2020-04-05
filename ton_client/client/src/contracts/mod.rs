@@ -41,6 +41,7 @@ pub(crate) struct EncodedMessage {
     pub expire: Option<u32>,
 }
 
+#[cfg(feature = "node_interaction")]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfProcessMessage {
@@ -191,6 +192,7 @@ pub(crate) fn get_boc_root_hash(_context: &mut ClientContext, params: InputBoc) 
     })
 }
 
+#[cfg(feature = "node_interaction")]
 pub(crate) async fn send_message(context: &mut ClientContext, params: EncodedMessage) -> ApiResult<()> {
     debug!("-> contracts.send.message({}, {})", params.message_id, params.expire.unwrap_or_default());
     
@@ -202,6 +204,7 @@ pub(crate) async fn send_message(context: &mut ClientContext, params: EncodedMes
         .map_err(|err| ApiError::contracts_send_message_failed(err))
 }
 
+#[cfg(feature = "node_interaction")]
 pub(crate) async fn process_message(context: &mut ClientContext, params: ParamsOfProcessMessage) -> ApiResult<run::ResultOfRun> {
     debug!("-> contracts.process.message({}, {})", 
         params.message.message_id,

@@ -196,6 +196,7 @@ pub(crate) async fn run(context: &mut ClientContext, params: ParamsOfRun) -> Api
     process_transaction(client, tr, Some(params.call_set.abi), Some(params.call_set.function_name)).await
 }
 
+#[cfg(feature = "node_interaction")]
 pub(crate) async fn process_transaction(
     client: &NodeClient,
     transaction: Transaction,
