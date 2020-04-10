@@ -58,8 +58,8 @@ pub mod node_client;
 pub use node_client::{NodeClient, OrderBy};
 
 pub mod json_helper;
+#[cfg(feature = "node_interaction")]
 use ton_types::Result;
-
 
 /// Init SKD. Globally saves queries and requests server URLs
 #[cfg(feature = "node_interaction")]
