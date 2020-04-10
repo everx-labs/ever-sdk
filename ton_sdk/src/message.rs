@@ -12,16 +12,16 @@
 * limitations under the License.
 */
 
-use crate::error::SdkResult;
 use crate::json_helper;
 use crate::types::StringId;
+use ton_types::Result;
 
 #[cfg(feature = "node_interaction")]
 use crate::node_client::NodeClient;
 #[cfg(feature = "node_interaction")]
 use crate::types::MESSAGES_TABLE_NAME;
 #[cfg(feature = "node_interaction")]
-use crate::error::SdkErrorKind;
+use crate::error::SdkError;
 
 use ton_types::{SliceData, Cell};
 use ton_block::{
@@ -68,7 +68,7 @@ impl Message {
 
     // Asynchronously loads a Message instance or None if message with given id is not exists
     #[cfg(feature = "node_interaction")]
-    pub async fn load(client: &NodeClient, id: &MessageId) -> SdkResult<Option<Message>> {
+    pub async fn load(client: &NodeClient, id: &MessageId) -> Result<Option<Message>> {
         let value = client.load_record_fields(
             MESSAGES_TABLE_NAME,
             &id.to_string(),
@@ -78,7 +78,7 @@ impl Message {
             Ok(None)
         } else {
             Ok(Some(serde_json::from_value(value)
-                .map_err(|err| SdkErrorKind::InvalidData {
+                .map_err(|err| SdkError::InvalidData {
                     msg: format!("error parsing message: {}", err)
                 })?))
         }
@@ -87,7 +87,7 @@ impl Message {
     // Asynchronously loads a Message's json representation 
     // or null if message with given id is not exists
     #[cfg(feature = "node_interaction")]
-    pub async fn load_json(client: &NodeClient, id: MessageId) -> SdkResult<String> {
+    pub async fn load_json(client: &NodeClient, id: MessageId) -> Result<String> {
         client.load_record_fields(
             MESSAGES_TABLE_NAME,
             &id.to_string(),
@@ -96,7 +96,7 @@ impl Message {
                 .map(|val| val.to_string())
     }
 
-    pub fn with_msg(tvm_msg: &TvmMessage) -> SdkResult<Self> {
+    pub fn with_msg(tvm_msg: &TvmMessage) -> Result<Self> {
         let mut msg = Self::default();
         msg.id = tvm_msg.hash()?.as_slice()[..].into();
         msg.body = tvm_msg.body().map(|slice| slice.into_cell());

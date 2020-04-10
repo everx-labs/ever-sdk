@@ -12,7 +12,7 @@
 * limitations under the License.
 */
 
-use crate::error::{SdkError, SdkErrorKind, SdkResult};
+use crate::error::SdkError;
 use std::sync::Arc;
 use ton_vm::executor::Engine;
 use ton_block::{
@@ -21,7 +21,7 @@ use ton_block::{
     Deserializable,
     MsgAddressInt,
 };
-use ton_types::{Cell, SliceData, HashmapE};
+use ton_types::{error, Result, Cell, SliceData, HashmapE};
 use ton_vm::stack::{integer::IntegerData, savelist::SaveList, Stack, StackItem};
 use ton_vm::SmartContractInfo;
 use ton_vm::executor::gas::gas_state::Gas;
@@ -37,7 +37,7 @@ pub(crate) fn call_tvm(
     code:Cell,
     data: Option<Cell>,
     msg: &Message)
--> SdkResult<(Vec<Message>, i64)> {
+-> Result<(Vec<Message>, i64)> {
     let msg_cell = msg.write_to_new_cell()?.into();
     let mut stack = Stack::new();
     stack
@@ -49,7 +49,7 @@ pub(crate) fn call_tvm(
     
     let mut ctrls = SaveList::new();
     ctrls.put(4, &mut StackItem::Cell(data.unwrap_or_default()))
-        .map_err(|err| SdkError::from(SdkErrorKind::InternalError {
+        .map_err(|err| error!(SdkError::InternalError {
             msg: format!("Cannot put data to register: {}", err)
         }))?;
 
@@ -62,7 +62,7 @@ pub(crate) fn call_tvm(
     }
 
     ctrls.put(7, &mut sci.into_temp_data())
-        .map_err(|err| SdkError::from(SdkErrorKind::InternalError {
+        .map_err(|err| error!(SdkError::InternalError {
             msg: format!("Cannot put data to register: {}", err)
         }))?;
 
@@ -112,13 +112,13 @@ pub struct TransactionFees {
     pub total_output: u64,
 }
 
-fn grams_to_u64(grams: &ton_block::types::Grams) -> SdkResult<u64> {
+fn grams_to_u64(grams: &ton_block::types::Grams) -> Result<u64> {
     grams.0.to_u64()
-        .ok_or(SdkErrorKind::LocalCallError { msg: "Cannot convert rams value".to_owned() }.into())
+        .ok_or(SdkError::LocalCallError { msg: "Cannot convert rams value".to_owned() }.into())
 }
 
 pub(crate) fn call_executor(account: Account, msg: Message, config: &BlockchainConfig, timestamp: u32)
-    -> SdkResult<(Vec<Message>, TransactionFees)>
+    -> Result<(Vec<Message>, TransactionFees)>
 {
     let shard_acc = ShardAccount::with_params(account, UInt256::from([0;32]), 0).unwrap();
 
@@ -141,33 +141,33 @@ pub(crate) fn call_executor(account: Account, msg: Message, config: &BlockchainC
 
         if let Some(storage_phase) = descr.storage_ph {
             if storage_phase.status_change != AccStatusChange::Unchanged {
-                bail!(SdkErrorKind::LocalCallError {
+                bail!(SdkError::LocalCallError {
                     msg: format!("Storage phase failed. Status change: {:?}", storage_phase.status_change)
                 });
             }
             fees.storage_fee = grams_to_u64(&storage_phase.storage_fees_collected)?;
         } else {
             if is_aborted {
-                bail!(SdkErrorKind::LocalCallError { msg: "No storage phase".to_owned() } );
+                bail!(SdkError::LocalCallError { msg: "No storage phase".to_owned() } );
             }
         }
 
         fees.gas_fee = match descr.compute_ph {
             TrComputePhase::Vm(phase) => { 
                 if !phase.success {
-                    bail!(SdkErrorKind::LocalCallError {
+                    bail!(SdkError::LocalCallError {
                         msg: format!("Compute phase failed. Exit code: {}", phase.exit_code) } )
                 }
                 grams_to_u64(&phase.gas_fees)?
             },
-            TrComputePhase::Skipped(skipped) => bail!(SdkErrorKind::LocalCallError {
+            TrComputePhase::Skipped(skipped) => bail!(SdkError::LocalCallError {
                 msg: format!("Compute phase skipped. Reason: {:?}", skipped.reason) } )
         };
 
         let action_phase = descr.action
-            .ok_or(SdkErrorKind::LocalCallError { msg: "No action phase".to_owned() } )?;
+            .ok_or(SdkError::LocalCallError { msg: "No action phase".to_owned() } )?;
         if !action_phase.success {
-            bail!(SdkErrorKind::LocalCallError {
+            bail!(SdkError::LocalCallError {
                 msg: format!("Action phase failed. Result: {:?}", action_phase.result_code) } );
         }
         fees.out_msgs_fwd_fee = grams_to_u64(&action_phase.total_fwd_fees.unwrap_or_default())?;
@@ -184,7 +184,7 @@ pub(crate) fn call_executor(account: Account, msg: Message, config: &BlockchainC
         // inbound_fwd_fees is not represented in transaction fields so need to calculate it
         fees.in_msg_fwd_fee = fees.total_account_fees - fees.storage_fee - fees.gas_fee - fees.out_msgs_fwd_fee;
     } else {
-        return Err(SdkErrorKind::LocalCallError { msg: "Invalid transaction type".to_owned() }.into());
+        return Err(SdkError::LocalCallError { msg: "Invalid transaction type".to_owned() }.into());
     }
 
     let mut messages = vec![];

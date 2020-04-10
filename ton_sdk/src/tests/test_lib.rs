@@ -20,14 +20,14 @@ fn test_init() {
     let res = requests_helper::send_message(&[0], &[0]);
     assert!(res.is_err());
     match res.err().unwrap().kind() {
-        SdkErrorKind::NotInitialized => (),
+        SdkError::NotInitialized => (),
         other => panic!(format!("{:?}", other))
     };
 
     let res = init_json("{}".into());
     assert!(res.is_err());
     match res.err().unwrap().kind() {
-        SdkErrorKind::InvalidArg(_) => (),
+        SdkError::InvalidArg(_) => (),
         other => panic!(format!("{:?}", other))
     };
 
@@ -46,7 +46,7 @@ fn test_init() {
     let res = init_json(config_json.into());
     assert!(res.is_err());
     match res.err().unwrap().kind() {
-        SdkErrorKind::Kafka(_) => (),
+        SdkError::Kafka(_) => (),
         other => panic!(format!("{:?}", other))
     };
 
@@ -55,7 +55,7 @@ fn test_init() {
     let res = requests_helper::init(config.kafka_config);
     assert!(res.is_err());
     match res.err().unwrap().kind() {
-        SdkErrorKind::Kafka(_) => (),
+        SdkError::Kafka(_) => (),
         other => panic!(format!("{:?}", other))
     };
 
