@@ -127,7 +127,7 @@ pub enum SdkErrorKind {
 
     #[fail(display = "ABI error: {}", err)]
     AbiError {
-        err: ton_abi::error::AbiError
+        err: ton_abi::error::AbiErrorKind
     },
 
     #[fail(display = "Try from int error: {}", err)]
@@ -231,8 +231,8 @@ impl From<base64::DecodeError> for SdkError {
     }
 }
 
-impl From<ton_abi::error::AbiError> for SdkError {
-    fn from(err: ton_abi::error::AbiError) -> SdkError {
+impl From<ton_abi::error::AbiErrorKind> for SdkError {
+    fn from(err: ton_abi::error::AbiErrorKind) -> SdkError {
         SdkError::from(SdkErrorKind::AbiError { err })
     }
 }

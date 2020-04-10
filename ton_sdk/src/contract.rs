@@ -26,8 +26,7 @@ use ton_block::{
     ExternalInboundMessageHeader, GetRepresentationHash, Message as TvmMessage, MsgAddressInt,
     Serializable, StateInit, StorageInfo};
 use ton_types::cells_serialization::{deserialize_cells_tree, BagOfCells};
-use ton_types::{Cell, SliceData, HashmapE};
-use ton_block::AccountId;
+use ton_types::{AccountId, Cell, SliceData, HashmapE};
 use ton_abi::json_abi::DecodedMessage;
 
 #[cfg(feature = "fee_calculation")]
