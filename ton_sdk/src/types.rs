@@ -13,7 +13,7 @@
 */
 
 use std::fmt;
-use crate::error::SdkResult;
+use ton_types::Result;
 
 pub const MESSAGES_TABLE_NAME: &str = "messages";
 pub const CONTRACTS_TABLE_NAME: &str = "accounts";
@@ -94,12 +94,12 @@ impl fmt::Display for StringId {
 }
 
 impl StringId {
-    pub fn to_base64(&self) -> SdkResult<String> {
+    pub fn to_base64(&self) -> Result<String> {
         let bytes = self.to_bytes()?;
         Ok(base64::encode(&bytes))
     }
 
-    pub fn to_bytes(&self) -> SdkResult<Vec<u8>> {
+    pub fn to_bytes(&self) -> Result<Vec<u8>> {
         hex::decode(&self.0).map_err(Into::into)
     }
 }

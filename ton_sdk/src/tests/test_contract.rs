@@ -18,8 +18,8 @@ use crate::{ContractImage, init_json, MessageType};
 use ed25519_dalek::Keypair;
 use rand::rngs::OsRng;
 use sha2::Sha512;
-use ton_block::{AccountId, MsgAddressInt};
-use ton_types::dictionary::HashmapE;
+use ton_block::{MsgAddressInt};
+use ton_types::{AccountId, HashmapE};
 use crate::tests_common::{call_contract, deploy_contract_and_wait, get_config, get_grams_from_giver,
     init_node_connection, PROFESSOR_ABI, PROFESSOR_IMAGE, WALLET_ABI, WALLET_IMAGE,
     SUBSCRIBE_CONTRACT_IMAGE, SUBSCRIBE_CONTRACT_ABI};
@@ -196,9 +196,9 @@ async fn test_expire() {
     let result = Contract::send_message(&client, Contract::deserialize_message(&msg).unwrap(), Some(Contract::get_now().unwrap() + 1), 0).await;
 
     match result {
-        Err(error) => match error.downcast_ref::<SdkErrorKind>().unwrap() {
-            SdkErrorKind::MessageExpired => {},
-            _ => panic!("Error `SdkErrorKind::MessageExpired` expected")
+        Err(error) => match error.downcast_ref::<SdkError>().unwrap() {
+            SdkError::MessageExpired => {},
+            _ => panic!("Error `SdkError::MessageExpired` expected")
         },
         _ => panic!("Error expected")
     }
