@@ -5,7 +5,7 @@ edition = "2018"
 
 [dependencies]
 ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git"}
-ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }
+ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git", branch = "sergey/new-features" }
 ton_vm = { git = "https://github.com/tonlabs/ton-labs-vm.git", default-features = false }
 ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git" }
 
@@ -48,6 +48,7 @@ optional = true
 [dependencies.ton_executor]
 git = "ssh://git@github.com/tonlabs/ton-executor.git"
 optional = true
+branch = "feature/ticktock-executor"
 
 [dev-dependencies]
 pretty_assertions = "0.5.1"
