@@ -124,9 +124,8 @@ pub(crate) fn call_executor(account: Account, msg: Message, config: BlockchainCo
 
     let block_lt = 1_000_000;
     let lt = Arc::new(std::sync::atomic::AtomicU64::new(block_lt + 1));
-    let mut executor = OrdinaryTransactionExecutor::new(config);
+    let mut executor = OrdinaryTransactionExecutor::new(config, msg);
     let transaction = executor.execute(
-        Some(msg),
         &mut Some(shard_acc),
         timestamp,
         block_lt,
