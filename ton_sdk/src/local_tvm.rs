@@ -117,17 +117,16 @@ fn grams_to_u64(grams: &ton_block::types::Grams) -> Result<u64> {
         .ok_or(SdkError::LocalCallError { msg: "Cannot convert rams value".to_owned() }.into())
 }
 
-pub(crate) fn call_executor(account: Account, msg: Message, config: &BlockchainConfig, timestamp: u32)
+pub(crate) fn call_executor(account: Account, msg: Message, config: BlockchainConfig, timestamp: u32)
     -> Result<(Vec<Message>, TransactionFees)>
 {
     let shard_acc = ShardAccount::with_params(account, UInt256::from([0;32]), 0).unwrap();
 
     let block_lt = 1_000_000;
     let lt = Arc::new(std::sync::atomic::AtomicU64::new(block_lt + 1));
-    let mut executor = OrdinaryTransactionExecutor::new();
+    let mut executor = OrdinaryTransactionExecutor::new(config);
     let transaction = executor.execute(
-        config,
-        msg,
+        Some(msg),
         &mut Some(shard_acc),
         timestamp,
         block_lt,

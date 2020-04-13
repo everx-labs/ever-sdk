@@ -660,7 +660,7 @@ impl Contract {
         let (tvm_messages, fees) = local_tvm::executor::call_executor(
             self.to_account()?,
             message,
-            &BlockchainConfig::default(),
+            BlockchainConfig::default(),
             Self::get_now()?)?;
                 
         let mut messages = vec![];
