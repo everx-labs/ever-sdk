@@ -91,15 +91,14 @@ pub mod executor {
     
 use super::*;
 use num_traits::cast::ToPrimitive;
-use ton_types::types::UInt256;
 use ton_block::types::Grams;
 use ton_block::{
     Account,
     AccStatusChange,
     Message,
-    ShardAccount,
     TransactionDescr,
-    TrComputePhase
+    TrComputePhase,
+    Serializable,
 };
 
 #[derive(Default, Debug)]
@@ -120,13 +119,14 @@ fn grams_to_u64(grams: &ton_block::types::Grams) -> Result<u64> {
 pub(crate) fn call_executor(account: Account, msg: Message, config: BlockchainConfig, timestamp: u32)
     -> Result<(Vec<Message>, TransactionFees)>
 {
-    let shard_acc = ShardAccount::with_params(account, UInt256::from([0;32]), 0).unwrap();
+    let mut acc_root = account.write_to_new_cell()?.into();
 
     let block_lt = 1_000_000;
     let lt = Arc::new(std::sync::atomic::AtomicU64::new(block_lt + 1));
-    let mut executor = OrdinaryTransactionExecutor::new(config, msg);
+    let mut executor = OrdinaryTransactionExecutor::new(config);
     let transaction = executor.execute(
-        &mut Some(shard_acc),
+        Some(&msg),
+        &mut acc_root,
         timestamp,
         block_lt,
         lt.clone(),
@@ -162,7 +162,7 @@ pub(crate) fn call_executor(account: Account, msg: Message, config: BlockchainCo
                 msg: format!("Compute phase skipped. Reason: {:?}", skipped.reason) } )
         };
 
-        let action_phase = descr.action
+        let action_phase = descr.action_ph
             .ok_or(SdkError::LocalCallError { msg: "No action phase".to_owned() } )?;
         if !action_phase.success {
             bail!(SdkError::LocalCallError {
