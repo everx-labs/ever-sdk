@@ -5,7 +5,7 @@ edition = "2018"
 
 [dependencies]
 ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git"}
-ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git", branch = "sergey/new-features" }
+ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }
 ton_vm = { git = "https://github.com/tonlabs/ton-labs-vm.git", default-features = false }
 ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git" }
 
