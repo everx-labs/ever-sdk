@@ -48,7 +48,6 @@ optional = true
 [dependencies.ton_executor]
 git = "ssh://git@github.com/tonlabs/ton-executor.git"
 optional = true
-branch = "feature/ticktock-executor"
 
 [dev-dependencies]
 pretty_assertions = "0.5.1"
