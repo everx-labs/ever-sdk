@@ -660,7 +660,7 @@ impl Contract {
         let (tvm_messages, fees) = local_tvm::executor::call_executor(
             self.to_account()?,
             message,
-            &BlockchainConfig::default(),
+            BlockchainConfig::default(),
             Self::get_now()?)?;
                 
         let mut messages = vec![];
@@ -854,7 +854,7 @@ impl Contract {
 
         let signed_body = ton_abi::add_sign_to_function_call(abi, signature, public_key, body)?;
 
-        *message.body_mut() = Some(signed_body.into());
+        message.set_body(signed_body.into());
             
 
         Self::serialize_message(message)
@@ -866,7 +866,7 @@ impl Contract {
         msg_header.dst = address;
         
         let mut msg = TvmMessage::with_ext_in_header(msg_header);
-        *msg.body_mut() = Some(msg_body);
+        msg.set_body(msg_body);
 
         Ok(msg)
     }
@@ -879,8 +879,8 @@ impl Contract {
         let mut msg_header = ExternalInboundMessageHeader::default();
         msg_header.dst = image.msg_address(workchain_id);
         let mut msg = TvmMessage::with_ext_in_header(msg_header);
-        *msg.state_init_mut() = Some(image.state_init());
-        *msg.body_mut() = msg_body;
+        msg.set_state_init(image.state_init());
+        msg_body.map(|body| msg.set_body(body));
         Ok(msg)
     }
 
