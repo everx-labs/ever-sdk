@@ -43,7 +43,7 @@ pub(crate) struct SetupParams {
     pub access_key: Option<String>,
 }
 
-impl Into<TimeoutsConfig> for &SetupParams {
+impl Into<TimeoutsConfig> for SetupParams {
     fn into(self) -> TimeoutsConfig {
         let default = TimeoutsConfig::default();
         TimeoutsConfig {
@@ -119,7 +119,7 @@ fn setup(context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
     debug!("-> client.setup({:?})", config);
 
     let internal_config = NodeClientConfig {
-        timeouts: Some((&config).into()),
+        timeouts: Some(config.into()),
     };
 
     context.client = Some(ton_sdk::init(internal_config).map_err(|err|ApiError::config_init_failed(err))?);

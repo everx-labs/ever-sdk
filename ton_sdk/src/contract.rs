@@ -427,7 +427,7 @@ impl Contract {
             try_index);
         if let Some(expire) = expire {
             //println!("expire {}", expire);
-            let now = Self::get_now()?;
+            let now = Self::now()?;
             if expire <= now {
                 return Err(SdkErrorKind::InvalidArg{ msg: "Message already expired".to_owned() }.into());
             }
@@ -600,7 +600,7 @@ impl Contract {
             self.balance_other_as_hashmape()?,
             &self.id,
             None,
-            Self::get_now()?,
+            Self::now()?,
             code,
             self.data.clone(),
             &message)?;
@@ -638,7 +638,7 @@ impl Contract {
             self.to_account()?,
             message,
             &BlockchainConfig::default(),
-            Self::get_now()?)?;
+            Self::now()?)?;
                 
         let mut messages = vec![];
         for tvm_msg in &tvm_messages {
@@ -737,7 +737,7 @@ impl Contract {
                 timeouts.message_expiration_timeout,
                 timeouts.message_expiration_timeout_grow_factor,
                 try_index.unwrap_or(0));
-            let expire = Self::get_now()? + timeout / 1000;
+            let expire = Self::now()? + timeout / 1000;
             let expire = ton_abi::TokenValue::Expire(expire);
 
             let header = serde_json::from_str::<Value>(&header.unwrap_or("{}".to_owned()))?;
@@ -773,7 +773,8 @@ impl Contract {
 
         // pack params into bag of cells via ABI
         let msg_body = ton_abi::encode_function_call(
-            params.abi, params.func, header, params.input, internal, key_pair)?;
+            params.abi, params.func, header, params.input, internal, key_pair
+        )?;
 
         Ok(SdkMessage {
             message: Self::create_message(address, msg_body.into())?,
@@ -802,7 +803,8 @@ impl Contract {
         
         // pack params into bag of cells via ABI
         let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(
-            params.abi, params.func, header, params.input)?;
+            params.abi, params.func, header, params.input
+        )?;
 
         let msg = Self::create_message(address, msg_body.into())?;
 
@@ -994,7 +996,7 @@ impl Contract {
             &storage))
     }
 
-    pub fn get_now() -> SdkResult<u32> {
+    pub fn now() -> SdkResult<u32> {
         Ok(<u32>::try_from(Utc::now().timestamp())?)
     }
 }
