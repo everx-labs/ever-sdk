@@ -21,7 +21,6 @@ use crate::client::ClientContext;
 use crate::types::{ApiResult, ApiError};
 
 #[derive(Serialize, Deserialize)]
-#[allow(non_snake_case)]
 pub(crate) struct ParamsOfQuery {
     pub table: String,
     pub filter: String,
@@ -31,7 +30,6 @@ pub(crate) struct ParamsOfQuery {
 }
 
 #[derive(Serialize, Deserialize)]
-#[allow(non_snake_case)]
 pub(crate) struct ParamsOfSubscribe {
     pub table: String,
     pub filter: String,
@@ -39,7 +37,6 @@ pub(crate) struct ParamsOfSubscribe {
 }
 
 #[derive(Serialize, Deserialize)]
-#[allow(non_snake_case)]
 pub(crate) struct ParamsOfWaitFor {
     pub table: String,
     pub filter: String,
@@ -47,13 +44,11 @@ pub(crate) struct ParamsOfWaitFor {
     pub timeout: Option<u32>
 }
 
-#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfQuery {
     pub result: serde_json::Value
 }
 
-#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize)]
 pub(crate) struct SubscribeHandle {
     pub handle: StreamHandle

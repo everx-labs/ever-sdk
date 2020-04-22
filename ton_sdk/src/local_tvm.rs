@@ -25,6 +25,7 @@ use ton_types::{Cell, SliceData, HashmapE};
 use ton_vm::stack::{integer::IntegerData, savelist::SaveList, Stack, StackItem};
 use ton_vm::SmartContractInfo;
 use ton_vm::executor::gas::gas_state::Gas;
+
 #[cfg(feature = "fee_calculation")]
 use ton_executor::{BlockchainConfig, TransactionExecutor, OrdinaryTransactionExecutor};
 

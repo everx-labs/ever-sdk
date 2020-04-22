@@ -15,10 +15,8 @@
 use crate::client::ClientContext;
 use crate::dispatch::DispatchTable;
 use crate::types::ApiResult;
-#[cfg(feature = "node_interaction")]
 use crate::types::ApiError;
 
-#[cfg(feature = "node_interaction")]
 use ton_sdk::{NodeClientConfig, TimeoutsConfig};
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
@@ -32,7 +30,7 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 }
 
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all="camelCase")]
 pub(crate) struct SetupParams {
     pub base_url: Option<String>,
@@ -45,8 +43,7 @@ pub(crate) struct SetupParams {
     pub access_key: Option<String>,
 }
 
-#[cfg(feature = "node_interaction")]
-impl Into<TimeoutsConfig> for &SetupParams {
+impl Into<TimeoutsConfig> for SetupParams {
     fn into(self) -> TimeoutsConfig {
         let default = TimeoutsConfig::default();
         TimeoutsConfig {
@@ -118,6 +115,13 @@ fn setup(context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
 
 
 #[cfg(not(feature = "node_interaction"))]
-fn setup(_context: &mut ClientContext, _config: SetupParams) -> ApiResult<()> {
+fn setup(context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
+    debug!("-> client.setup({:?})", config);
+
+    let internal_config = NodeClientConfig {
+        timeouts: Some(config.into()),
+    };
+
+    context.client = Some(ton_sdk::init(internal_config).map_err(|err|ApiError::config_init_failed(err))?);
     Ok(())
 }

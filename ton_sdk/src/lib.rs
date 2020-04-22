@@ -35,7 +35,7 @@ mod error;
 pub use error::{SdkError, SdkErrorKind, SdkResult};
 
 mod contract;
-pub use contract::{Contract, ContractImage};
+pub use contract::{Contract, ContractImage, FunctionCallSet};
 
 mod message;
 pub use message::{Message, MessageId, MessageType};
@@ -55,19 +55,40 @@ pub use types::{NodeClientConfig, TimeoutsConfig};
 #[cfg(feature = "node_interaction")]
 pub mod node_client;
 #[cfg(feature = "node_interaction")]
-pub use node_client::{NodeClient, OrderBy};
+pub use node_client::OrderBy;
+pub use node_client::NodeClient;
+
+#[cfg(not(feature = "node_interaction"))]
+pub mod node_client {
+    use crate::{NodeClientConfig, TimeoutsConfig, SdkResult};
+
+    pub struct NodeClient {
+        timeouts: TimeoutsConfig
+    }
+
+    impl NodeClient {
+        // Globally initializes client with server address
+        pub fn new(config: NodeClientConfig) -> SdkResult<NodeClient> {
+            Ok(NodeClient {
+                timeouts: config.timeouts.unwrap_or_default()
+            })
+        }
+
+        pub fn timeouts(&self) -> &TimeoutsConfig {
+            &self.timeouts
+        }
+    }
+}
 
 pub mod json_helper;
 
 
 /// Init SKD. Globally saves queries and requests server URLs
-#[cfg(feature = "node_interaction")]
 pub fn init(config: NodeClientConfig) -> SdkResult<NodeClient> { 
     NodeClient::new(config)
 }
 
 /// Init SKD. Globally saves queries and requests server URLs
-#[cfg(feature = "node_interaction")]
 pub fn init_json(config: &str) -> SdkResult<NodeClient> {
     init(serde_json::from_str(config)
         .map_err(|err| SdkErrorKind::InvalidArg { msg: format!("{}", err) } )?)
