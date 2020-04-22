@@ -95,11 +95,13 @@ fn setup(context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
         replace_prefix(&queries_url, "http://", "ws://")
     };
 
+    let access_key = config.access_key.clone();
+
     let internal_config = NodeClientConfig {
         queries_server: queries_url,
         subscriptions_server: subscriptions_url,
-        timeouts: Some((&config).into()),
-        access_key: config.access_key
+        timeouts: Some(config.into()),
+        access_key,
     };
 
     context.client = Some(ton_sdk::init(internal_config).map_err(|err|ApiError::config_init_failed(err))?);
