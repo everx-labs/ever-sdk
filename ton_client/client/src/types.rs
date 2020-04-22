@@ -17,7 +17,7 @@
 use std::fmt::Display;
 use ApiSdkErrorCode::*;
 use ton_block::{AccStatusChange, ComputeSkipReason};
-use ton_sdk::SdkErrorKind;
+use ton_sdk::SdkError;
 
 pub fn hex_decode(hex: &String) -> ApiResult<Vec<u8>> {
     if hex.starts_with("x") || hex.starts_with("X") {
@@ -632,9 +632,9 @@ pub fn apierror_from_sdkerror<F>(err: failure::Error, default_err: F) -> ApiErro
 where 
     F: Fn(failure::Error) -> ApiError,
 {
-    match err.downcast_ref::<SdkErrorKind>() {
-        Some(SdkErrorKind::WaitForTimeout) => ApiError::wait_for_timeout(),
-        Some(SdkErrorKind::MessageExpired) => ApiError::message_expired(),
+    match err.downcast_ref::<SdkError>() {
+        Some(SdkError::WaitForTimeout) => ApiError::wait_for_timeout(),
+        Some(SdkError::MessageExpired) => ApiError::message_expired(),
         _ => default_err(err)
     }
 }

@@ -13,13 +13,14 @@
 */
 
 use crate::{NodeClientConfig, TimeoutsConfig};
-use crate::error::{SdkError, SdkErrorKind, SdkResult};
+use crate::error::SdkError;
 use graphite::client::GqlClient;
 use graphite::types::{VariableRequest};
 use futures::{TryFutureExt, Stream, StreamExt};
 use serde_json::Value;
 use reqwest::{ClientBuilder, RedirectPolicy, StatusCode};
 use reqwest::header::LOCATION;
+use ton_types::{error, Result};
 
 #[derive(Serialize, Deserialize)]
 pub enum SortDirection {
@@ -48,11 +49,11 @@ pub struct NodeClient {
 
 impl NodeClient {
 
-    fn check_redirect(address: &str) -> SdkResult<Option<String>> {
+    fn check_redirect(address: &str) -> Result<Option<String>> {
         let client = ClientBuilder::new()
             .redirect(RedirectPolicy::none())
             .build()
-            .map_err(|err| SdkErrorKind::InternalError { msg: format!("Can not build test request: {}", err) } )?;
+            .map_err(|err| SdkError::InternalError { msg: format!("Can not build test request: {}", err) } )?;
     
         let result = client.get(address).send();
     
@@ -62,9 +63,9 @@ impl NodeClient {
                     let address = result
                         .headers()
                         .get(LOCATION)
-                        .ok_or(SdkErrorKind::NetworkError { msg: "Missing location field in redirect response".to_owned() } )?
+                        .ok_or(SdkError::NetworkError { msg: "Missing location field in redirect response".to_owned() } )?
                         .to_str()
-                        .map_err(|err| SdkErrorKind::NetworkError { msg: format!("Can not cast redirect location to string: {}", err) } )?
+                        .map_err(|err| SdkError::NetworkError { msg: format!("Can not cast redirect location to string: {}", err) } )?
                         .to_owned();
     
                     Ok(Some(address))
@@ -72,12 +73,12 @@ impl NodeClient {
                     Ok(None)
                 }
             },
-            Err(err) => bail!(SdkErrorKind::NetworkError { msg: format!("Can not send test request: {}", err) } )
+            Err(err) => bail!(SdkError::NetworkError { msg: format!("Can not send test request: {}", err) } )
         }
     }
     
     // Globally initializes client with server address
-    pub fn new(mut config: NodeClientConfig) -> SdkResult<NodeClient> {
+    pub fn new(mut config: NodeClientConfig) -> Result<NodeClient> {
         if let Some(redirected) = Self::check_redirect(&config.queries_server)? {
             config = NodeClientConfig {
                 queries_server: redirected.clone(),
@@ -101,7 +102,7 @@ impl NodeClient {
     
     // Returns Stream with updates database fileds by provided filter
     pub fn subscribe(&self, table: &str, filter: &str, fields: &str)
-        -> SdkResult<impl Stream<Item=SdkResult<Value>> + Send> {
+        -> Result<impl Stream<Item=Result<Value>> + Send> {
     
         let request = Self::generate_subscription(table, filter, fields)?;
     
@@ -110,13 +111,13 @@ impl NodeClient {
         let stream = self.client.subscribe(request)?
             .map(move |result| {
                     match result {
-                        Err(err) => Err(SdkError::from(err).into()),
+                        Err(err) => Err(error!(err).into()),
                         Ok(value) => {
                             // try to extract the record value from the answer
                             let record_value = &value["payload"]["data"][&closure_table];
                             
                             if record_value.is_null() {
-                                Err(SdkError::from(SdkErrorKind::InvalidData {
+                                Err(error!(SdkError::InvalidData {
                                     msg: format!("Invalid subscription answer: {}", value)
                                 }).into())
                             } else {
@@ -132,7 +133,7 @@ impl NodeClient {
     
     // Returns Stream with required database record fields
     pub async fn load_record_fields(&self, table: &str, record_id: &str, fields: &str)
-        -> SdkResult<Value> {
+        -> Result<Value> {
         let value = self.query(
             table,
             &format!("{{ \"id\": {{\"eq\": \"{record_id}\" }} }}", record_id=record_id),
@@ -153,7 +154,7 @@ impl NodeClient {
         order_by: Option<OrderBy>,
         limit: Option<u32>,
         timeout: Option<u32>
-    ) -> SdkResult<Value> {
+    ) -> Result<Value> {
         let query = Self::generate_query_var(table, filter, fields, order_by, limit, timeout)?;
 
         let result = self.client.query_vars(query).await?;
@@ -161,7 +162,7 @@ impl NodeClient {
         // try to extract the record value from the answer
         let records_array = &result["data"][&table];
         if records_array.is_null() {
-            Err(SdkErrorKind::InvalidData { msg: format!("Invalid query answer: {}", result) }.into())
+            Err(SdkError::InvalidData { msg: format!("Invalid query answer: {}", result) }.into())
         } else {
             Ok(records_array.clone())
         }
@@ -169,7 +170,7 @@ impl NodeClient {
     
     // Executes GraphQL query, waits for result and returns recieved value
     pub async fn wait_for(&self, table: &str, filter: &str, fields: &str, timeout: Option<u32>)
-        -> SdkResult<Value>
+        -> Result<Value>
     {
         let value = self.query(
             table,
@@ -182,7 +183,7 @@ impl NodeClient {
         if !value[0].is_null() {
             Ok(value[0].clone())
         } else {
-            Err(SdkErrorKind::WaitForTimeout.into())
+            Err(SdkError::WaitForTimeout.into())
         }
     }
     
@@ -193,7 +194,7 @@ impl NodeClient {
         order_by: Option<OrderBy>,
         limit: Option<u32>,
         timeout: Option<u32>
-    ) -> SdkResult<VariableRequest> {
+    ) -> Result<VariableRequest> {
         let mut scheme_type = (&table[0 .. table.len() - 1]).to_owned() + "Filter";
         scheme_type[..1].make_ascii_uppercase();
     
@@ -222,7 +223,7 @@ impl NodeClient {
         Ok(VariableRequest::new(query, Some(variables)))
     }
     
-    fn generate_subscription(table: &str, filter: &str, fields: &str) -> SdkResult<VariableRequest> {
+    fn generate_subscription(table: &str, filter: &str, fields: &str) -> Result<VariableRequest> {
         let mut scheme_type = (&table[0 .. table.len() - 1]).to_owned() + "Filter";
         scheme_type[..1].make_ascii_uppercase();
     
@@ -240,7 +241,7 @@ impl NodeClient {
         Ok(VariableRequest::new(query, Some(variables)))
     }
     
-    fn generate_post_mutation(requests: &[MutationRequest]) -> SdkResult<VariableRequest> {
+    fn generate_post_mutation(requests: &[MutationRequest]) -> Result<VariableRequest> {
         let query = "mutation postRequests($requests:[Request]){postRequests(requests:$requests)}".to_owned();
         let variables = json!({
             "requests": serde_json::to_value(requests)?
@@ -250,13 +251,13 @@ impl NodeClient {
     }
     
     // Sends message to node
-    pub async fn send_message(&self, key: &[u8], value: &[u8]) -> SdkResult<()> {
+    pub async fn send_message(&self, key: &[u8], value: &[u8]) -> Result<()> {
         let request = MutationRequest {
             id: base64::encode(key),
             body: base64::encode(value)
         };
         self.client.query_vars(Self::generate_post_mutation(&[request])?)
-            .map_err(|_| SdkErrorKind::NetworkError {
+            .map_err(|_| SdkError::NetworkError {
                     msg: "Post message error: server did not responded".to_owned()
                 }.into())
             .map_ok(|_| ())

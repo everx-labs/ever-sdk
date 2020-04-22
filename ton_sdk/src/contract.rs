@@ -14,7 +14,7 @@
 
 use crate::json_helper;
 use crate::local_tvm;
-use crate::error::{SdkError, SdkErrorKind, SdkResult};
+use crate::error::SdkError;
 use crate::{AbiContract, Message, MessageId, TimeoutsConfig};
 
 use ed25519_dalek::{Keypair, PublicKey};
@@ -26,10 +26,9 @@ use ton_block::{
     ExternalInboundMessageHeader, GetRepresentationHash, Message as TvmMessage, MsgAddressInt,
     Serializable, StateInit, StorageInfo};
 use ton_types::cells_serialization::{deserialize_cells_tree, BagOfCells};
-use ton_types::{Cell, SliceData, HashmapE};
-use ton_block::AccountId;
-use ton_abi::token::{TokenValue, Tokenizer, Detokenizer};
+use ton_types::{error, fail, Result, AccountId, Cell, SliceData, HashmapE};
 use ton_abi::json_abi::DecodedMessage;
+use ton_abi::token::{Detokenizer, Tokenizer, TokenValue};
 
 #[cfg(feature = "fee_calculation")]
 use crate::TransactionFees;
@@ -118,21 +117,21 @@ pub struct ContractImage {
 impl ContractImage {
 
     // Creating contract image from code data and library bags of cells
-    pub fn from_code_data_and_library<T>(code: &mut T, data: Option<&mut T>, library: Option<&mut T>) -> SdkResult<Self>
+    pub fn from_code_data_and_library<T>(code: &mut T, data: Option<&mut T>, library: Option<&mut T>) -> Result<Self>
         where T: Read + Seek {
 
         let mut state_init = StateInit::default();
 
         let mut code_roots = deserialize_cells_tree(code)?;
         if code_roots.len() != 1 {
-            bail!(SdkErrorKind::InvalidData { msg: "Invalid code's bag of cells".into() } );
+            bail!(SdkError::InvalidData { msg: "Invalid code's bag of cells".into() } );
         }
         state_init.set_code(code_roots.remove(0));
 
         if let Some(data_) = data {
             let mut data_roots = deserialize_cells_tree(data_)?;
             if data_roots.len() != 1 {
-                bail!(SdkErrorKind::InvalidData { msg: "Invalid data's bag of cells".into() } );
+                bail!(SdkError::InvalidData { msg: "Invalid data's bag of cells".into() } );
             }
             state_init.set_data(data_roots.remove(0));
         }
@@ -140,7 +139,7 @@ impl ContractImage {
         if let Some(library_) = library {
             let mut library_roots = deserialize_cells_tree(library_)?;
             if library_roots.len() != 1 {
-                bail!(SdkErrorKind::InvalidData { msg: "Invalid library's bag of cells".into() } );
+                bail!(SdkError::InvalidData { msg: "Invalid library's bag of cells".into() } );
             }
             state_init.set_library(library_roots.remove(0));
         }
@@ -150,19 +149,19 @@ impl ContractImage {
         Ok(Self{ state_init, id })
     }
 
-    pub fn new() -> SdkResult<Self> {
+    pub fn new() -> Result<Self> {
         let state_init = StateInit::default();
         let id = state_init.hash()?.into();
 
         Ok(Self{ state_init, id })
     }
 
-    pub fn from_state_init<T>(state_init_bag: &mut T) -> SdkResult<Self>
+    pub fn from_state_init<T>(state_init_bag: &mut T) -> Result<Self>
         where T: Read {
 
         let mut si_roots = deserialize_cells_tree(state_init_bag)?;
         if si_roots.len() != 1 {
-            bail!(SdkErrorKind::InvalidData { msg: "Invalid state init's bag of cells".into() } );
+            bail!(SdkError::InvalidData { msg: "Invalid state init's bag of cells".into() } );
         }
 
         let state_init : StateInit
@@ -173,7 +172,7 @@ impl ContractImage {
         Ok(Self{ state_init, id })
     }
 
-    pub fn from_state_init_and_key<T>(state_init_bag: &mut T, pub_key: &PublicKey) -> SdkResult<Self>
+    pub fn from_state_init_and_key<T>(state_init_bag: &mut T, pub_key: &PublicKey) -> Result<Self>
         where T: Read {
 
         let mut result = Self::from_state_init(state_init_bag)?;
@@ -182,7 +181,7 @@ impl ContractImage {
         Ok(result)
     }
 
-    pub fn set_public_key(&mut self, pub_key: &PublicKey) -> SdkResult<()> {
+    pub fn set_public_key(&mut self, pub_key: &PublicKey) -> Result<()> {
         let state_init = &mut self.state_init;
 
         let new_data = AbiContract::insert_pubkey(
@@ -196,7 +195,7 @@ impl ContractImage {
         Ok(())
     }
     
-    pub fn get_serialized_code(&self) -> SdkResult<Vec<u8>> {
+    pub fn get_serialized_code(&self) -> Result<Vec<u8>> {
         match &self.state_init.code {
             Some(cell) => {
                 let mut data = Vec::new();
@@ -205,11 +204,11 @@ impl ContractImage {
 
                 Ok(data)
             },
-            None => bail!(SdkErrorKind::InvalidData { msg: "State init has no code".to_owned() } )
+            None => bail!(SdkError::InvalidData { msg: "State init has no code".to_owned() } )
         }
     }
 
-    pub fn get_serialized_data(&self) -> SdkResult<Vec<u8>> {
+    pub fn get_serialized_data(&self) -> Result<Vec<u8>> {
         match &self.state_init.data {
             Some(cell) => {
                 let mut data = Vec::new();
@@ -218,11 +217,11 @@ impl ContractImage {
 
                 Ok(data)
             },
-            None => bail!(SdkErrorKind::InvalidData { msg: "State init has no data".to_owned() } )
+            None => bail!(SdkError::InvalidData { msg: "State init has no data".to_owned() } )
         }
     }
 
-    pub fn serialize(&self) -> SdkResult<Vec<u8>> {
+    pub fn serialize(&self) -> Result<Vec<u8>> {
         let cell = self.state_init.write_to_new_cell()?;
 
         let mut data = Vec::new();
@@ -251,7 +250,7 @@ impl ContractImage {
     }
 
     ///Allows to change initial values for public contract variables
-    pub fn update_data(&mut self, data_json: &str, abi_json: &str) -> SdkResult<()> {
+    pub fn update_data(&mut self, data_json: &str, abi_json: &str) -> Result<()> {
         let new_data = ton_abi::json_abi::update_contract_data(
             abi_json,
             data_json,
@@ -269,7 +268,7 @@ impl ContractImage {
 impl Contract {
 
     // Asynchronously loads a Contract instance or None if contract with given id is not exists
-    pub async fn load(client: &NodeClient, address: &MsgAddressInt) -> SdkResult<Option<Contract>> {
+    pub async fn load(client: &NodeClient, address: &MsgAddressInt) -> Result<Option<Contract>> {
         let id = address.to_string();
 
         let value = client.load_record_fields(
@@ -281,7 +280,7 @@ impl Contract {
             Ok(None)
         } else {
             Ok(Some(serde_json::from_value(value)
-                .map_err(|err| SdkErrorKind::InvalidData {
+                .map_err(|err| SdkError::InvalidData {
                     msg: format!("error parsing account: {}", err)
                 })?))
         }
@@ -289,7 +288,7 @@ impl Contract {
 
     // Asynchronously loads a Contract instance or None if contract with given id is not exists
     pub async fn load_wait_deployed(client: &NodeClient, address: &MsgAddressInt, timeout: Option<u32>)
-    -> SdkResult<Contract>
+    -> Result<Contract>
     {
         let value = client.wait_for(
             CONTRACTS_TABLE_NAME,
@@ -303,14 +302,14 @@ impl Contract {
             timeout).await?;
 
         serde_json::from_value(value)
-            .map_err(|err| SdkErrorKind::InvalidData {
+            .map_err(|err| SdkError::InvalidData {
                 msg: format!("error parsing account: {}", err)
             }.into())
     }
 
     // Asynchronously loads a Contract's json representation
     // or null if message with given id is not exists
-    pub async fn load_json(client: &NodeClient, id: AccountId) -> SdkResult<String> {
+    pub async fn load_json(client: &NodeClient, id: AccountId) -> Result<String> {
         client.load_record_fields(CONTRACTS_TABLE_NAME, &id.to_hex_string(), ACCOUNT_FIELDS)
             .await
             .map(|val| val.to_string())
@@ -319,25 +318,25 @@ impl Contract {
     const MESSAGE_EXPIRED_CODE: i32 = 57;
     const REPLAY_PROTECTION_CODE: i32 = 52;
 
-    async fn retry_call<F, Fut>(retries_count: u8, func: F) -> SdkResult<Transaction>
+    async fn retry_call<F, Fut>(retries_count: u8, func: F) -> Result<Transaction>
     where
-        F: Fn(u8) -> SdkResult<Fut>,
-        Fut: futures::Future<Output=SdkResult<Transaction>>
+        F: Fn(u8) -> Result<Fut>,
+        Fut: futures::Future<Output=Result<Transaction>>
     {
         for i in 0..(retries_count + 1) {
             //println!("Try#{}", i);
             let result = func(i)?.await;
             match &result {
                 Err(error) => {
-                    match error.downcast_ref::<SdkErrorKind>() {
-                        Some(SdkErrorKind::MessageExpired) => continue,
+                    match error.downcast_ref::<SdkError>() {
+                        Some(SdkError::MessageExpired) => continue,
                         _ => return result
                     }
                 },
                 _ => return result
             }
         }
-        Err(SdkErrorKind::MessageExpired.into())
+        Err(SdkError::MessageExpired.into())
     }
 
     // Packs given inputs by abi and asynchronously calls contract.
@@ -349,7 +348,7 @@ impl Contract {
         address: MsgAddressInt,
         params: FunctionCallSet,
         key_pair: Option<&Keypair>
-    ) -> SdkResult<Transaction> {
+    ) -> Result<Transaction> {
         Self::retry_call(client.timeouts().message_retries_count, |try_index: u8| {
             let msg = Self::construct_call_message_json(
                 address.clone(),
@@ -373,7 +372,7 @@ impl Contract {
         image: ContractImage,
         key_pair: Option<&Keypair>,
         workchain_id: i32
-    ) -> SdkResult<Transaction> {
+    ) -> Result<Transaction> {
         Self::retry_call(client.timeouts().message_retries_count, |try_index: u8| {
             let msg = Self::construct_deploy_message_json(
                 params.clone(),
@@ -391,7 +390,7 @@ impl Contract {
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
     pub async fn deploy_no_constructor(client: &NodeClient, image: ContractImage, workchain_id: i32)
-        -> SdkResult<Transaction> {
+        -> Result<Transaction> {
         let msg = Self::create_deploy_message(None, image, workchain_id)?;
 
         Self::process_message(client, msg, None, 0).await
@@ -401,13 +400,13 @@ impl Contract {
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
     pub async fn process_message(client: &NodeClient, msg: TvmMessage, expire: Option<u32>, try_index: u8)
-        -> SdkResult<Transaction> 
+        -> Result<Transaction> 
     {
         let (data, msg_id) = Self::serialize_message(msg)?;
         Self::process_serialized_message(client, &msg_id, &data, expire, try_index).await
     }
 
-    pub async fn process_serialized_message(client: &NodeClient, id: &MessageId, msg: &[u8], expire: Option<u32>, try_index: u8) -> SdkResult<Transaction> {
+    pub async fn process_serialized_message(client: &NodeClient, id: &MessageId, msg: &[u8], expire: Option<u32>, try_index: u8) -> Result<Transaction> {
         client.send_message(&id.to_bytes()?, msg).await?;
         //println!("msg is sent, id: {}", id);
         Self::wait_transaction_processing(client, id, expire, try_index).await
@@ -418,7 +417,7 @@ impl Contract {
         message_id: &MessageId,
         expire: Option<u32>,
         try_index: u8
-    ) -> SdkResult<Transaction>
+    ) -> Result<Transaction>
     {
         // timeout is growing from try to try
         let mut timeout = Self::calc_timeout(
@@ -429,7 +428,7 @@ impl Contract {
             //println!("expire {}", expire);
             let now = Self::now()?;
             if expire <= now {
-                return Err(SdkErrorKind::InvalidArg{ msg: "Message already expired".to_owned() }.into());
+                return Err(SdkError::InvalidArg{ msg: "Message already expired".to_owned() }.into());
             }
             // timeout is time to `expire` plus additional time for masterblock awaiting
             timeout = (expire - now) * 1000 + timeout;
@@ -452,7 +451,7 @@ impl Contract {
             if  transaction.compute.exit_code == Some(Self::MESSAGE_EXPIRED_CODE) ||
                 transaction.compute.exit_code == Some(Self::REPLAY_PROTECTION_CODE)
             {
-                Err(SdkErrorKind::MessageExpired.into())
+                Err(SdkError::MessageExpired.into())
             } else {
                 Ok(transaction)
             }
@@ -474,7 +473,7 @@ impl Contract {
                 // if we've recieved masterblock check that transactions from this block
                 // are already put into DB and there is no lag in transaction topic
                 match block["in_msg_descr"][0]["transaction_id"].as_str() {
-                    None => Err(SdkErrorKind::InvalidData {
+                    None => Err(SdkError::InvalidData {
                         msg: "Invalid block recieved: no transaction ID".to_owned()
                     }.into()),
                     Some(string) => {
@@ -484,7 +483,7 @@ impl Contract {
                             "id",
                             Some(timeout)).await?;
 
-                        Err(SdkErrorKind::MessageExpired.into())
+                        Err(SdkError::MessageExpired.into())
                     }
                 }
             };
@@ -519,31 +518,31 @@ impl Contract {
     }
 
     /// Returns contract's identifier
-    pub fn id(&self) -> SdkResult<AccountId> {
+    pub fn id(&self) -> Result<AccountId> {
         Ok(self.id.get_address())
     }
 
     /// Returns contract's balance in NANO grams
-    pub fn balance_grams(&self) -> SdkResult<u128> {
+    pub fn balance_grams(&self) -> Result<u128> {
         Ok(self.balance)
     }
 
     /// Returns contract's balance in NANO grams
-    pub fn balance_other(&self) -> SdkResult<Vec<OtherCurrencyValue>> {
+    pub fn balance_other(&self) -> Result<Vec<OtherCurrencyValue>> {
         Ok(self.balance_other.clone().unwrap_or_default())
     }
 
     // ------- Decoding functions -------
 
     /// Creates `Contract` struct by data from database
-    pub fn from_json(json: &str) -> SdkResult<Self> {
+    pub fn from_json(json: &str) -> Result<Self> {
         let acc: Contract = serde_json::from_str(json)?;
 
         Ok(acc)
     }
 
     /// Creates `Contract` struct by serialized contract's bag of cells
-    pub fn from_bytes(boc: &[u8]) -> SdkResult<Self> {
+    pub fn from_bytes(boc: &[u8]) -> Result<Self> {
         Self::from_cells(
             ton_types::cells_serialization::deserialize_tree_of_cells(&mut Cursor::new(boc))?
                 .into()
@@ -551,21 +550,21 @@ impl Contract {
     }
 
     /// Creates `Contract` struct by deserialized contract's tree of cells
-    pub fn from_cells(mut root_cell_slice: SliceData) -> SdkResult<Self> {
+    pub fn from_cells(mut root_cell_slice: SliceData) -> Result<Self> {
         let acc: ton_block::Account = ton_block::Account::construct_from(&mut root_cell_slice)?;
         if acc.is_none() {
-            bail!(SdkErrorKind::InvalidData { msg: "Account is none.".into() } );
+            bail!(SdkError::InvalidData { msg: "Account is none.".into() } );
         }
 
         let mut balance_other = vec!();
         ton_types::HashmapType::iterate(
             &acc.get_balance().unwrap().other,
-                &mut |ref mut key, ref mut value| -> SdkResult<bool> {
+                &mut |ref mut key, ref mut value| -> Result<bool> {
                 let value: ton_block::VarUInteger32 = ton_block::VarUInteger32::construct_from(value)?;
                 balance_other.push(OtherCurrencyValue {
                     currency: key.get_next_u32()?,
                     value: num_traits::ToPrimitive::to_u128(value.value()).ok_or(
-                        SdkError::from(SdkErrorKind::InvalidData { msg: "Account's other currency balance is too big".to_owned() } )
+                        error!(SdkError::InvalidData { msg: "Account's other currency balance is too big".to_owned() } )
                     )?
                 });
                 Ok(true)
@@ -578,7 +577,7 @@ impl Contract {
             acc_type: acc.status(),
             balance: num_traits::ToPrimitive::to_u128(
                 acc.get_balance().unwrap().grams.value()).ok_or(
-                    SdkError::from(SdkErrorKind::InvalidData {
+                    error!(SdkError::InvalidData {
                         msg: "Account's balance is too big".to_owned() 
                     } )
                 )?,
@@ -591,9 +590,9 @@ impl Contract {
 
     /// Invokes local TVM instance with provided inbound message.
     /// Returns outbound messages generated by contract function and gas fee function consumed
-    pub fn local_call_tvm(&self, message: TvmMessage) -> SdkResult<Vec<Message>> {
+    pub fn local_call_tvm(&self, message: TvmMessage) -> Result<Vec<Message>> {
         let code = self.code.clone().ok_or(
-            SdkError::from(SdkErrorKind::InvalidData { msg: "Account has no code".to_owned() } ))?;
+            error!(SdkError::InvalidData { msg: "Account has no code".to_owned() } ))?;
                 
         let (tvm_messages, _) = local_tvm::call_tvm(
             self.balance,
@@ -617,7 +616,7 @@ impl Contract {
     /// Returns outbound messages generated by contract function and gas fee function consumed
     pub fn local_call_tvm_json(&self, func: String, header: Option<String>, input: String,
         abi: String, key_pair: Option<&Keypair>
-    ) -> SdkResult<Vec<Message>>
+    ) -> Result<Vec<Message>>
     {
         // pack params into bag of cells via ABI
         let msg_body = ton_abi::encode_function_call(abi, func, header, input, false, key_pair)?;
@@ -632,12 +631,12 @@ impl Contract {
     /// Invokes local transaction executor instance with provided inbound message.
     /// Returns outbound messages generated by contract function and transaction fees
     #[cfg(feature = "fee_calculation")]
-    pub fn local_call(&self, message: TvmMessage) -> SdkResult<LocalCallResult> {
+    pub fn local_call(&self, message: TvmMessage) -> Result<LocalCallResult> {
        // TODO: get real config
         let (tvm_messages, fees) = local_tvm::executor::call_executor(
             self.to_account()?,
             message,
-            &BlockchainConfig::default(),
+            BlockchainConfig::default(),
             Self::now()?)?;
                 
         let mut messages = vec![];
@@ -652,7 +651,7 @@ impl Contract {
     /// Returns outbound messages generated by contract function and transaction fees
     #[cfg(feature = "fee_calculation")]
     pub fn local_call_json(&self, func: String, header: Option<String>, input: String, abi: String, key_pair: Option<&Keypair>)
-         -> SdkResult<LocalCallResult>
+         -> Result<LocalCallResult>
     {
         // pack params into bag of cells via ABI
         let msg_body = ton_abi::encode_function_call(abi, func, header, input, false, key_pair)?;
@@ -666,14 +665,14 @@ impl Contract {
 
     /// Decodes output parameters returned by contract function call 
     pub fn decode_function_response_json(abi: String, function: String, response: SliceData, internal: bool) 
-        -> SdkResult<String> {
+        -> Result<String> {
 
         ton_abi::json_abi::decode_function_response(abi, function, response, internal)
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
     pub fn decode_function_response_from_bytes_json(abi: String, function: String, response: &[u8], internal: bool)
-        -> SdkResult<String> {
+        -> Result<String> {
 
         let slice = Self::deserialize_tree_to_slice(response)?;
 
@@ -682,14 +681,14 @@ impl Contract {
 
     /// Decodes output parameters returned by contract function call 
     pub fn decode_unknown_function_response_json(abi: String, response: SliceData, internal: bool) 
-        -> SdkResult<DecodedMessage> {
+        -> Result<DecodedMessage> {
 
         ton_abi::json_abi::decode_unknown_function_response(abi, response, internal)
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
     pub fn decode_unknown_function_response_from_bytes_json(abi: String, response: &[u8], internal: bool)
-        -> SdkResult<DecodedMessage> {
+        -> Result<DecodedMessage> {
 
         let slice = Self::deserialize_tree_to_slice(response)?;
 
@@ -698,14 +697,14 @@ impl Contract {
 
     /// Decodes output parameters returned by contract function call 
     pub fn decode_unknown_function_call_json(abi: String, response: SliceData, internal: bool) 
-        -> SdkResult<DecodedMessage> {
+        -> Result<DecodedMessage> {
 
         ton_abi::json_abi::decode_unknown_function_call(abi, response, internal)
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
     pub fn decode_unknown_function_call_from_bytes_json(abi: String, response: &[u8], internal: bool)
-        -> SdkResult<DecodedMessage> {
+        -> Result<DecodedMessage> {
 
         let slice = Self::deserialize_tree_to_slice(response)?;
 
@@ -726,7 +725,7 @@ impl Contract {
         abi: String,
         header: Option<String>,
         try_index: Option<u8>
-    ) -> SdkResult<(Option<String>, Option<u32>)> {
+    ) -> Result<(Option<String>, Option<u32>)> {
         let abi = AbiContract::load(abi.as_bytes())?;
         // use expire only if contract supports it
         if abi.header().contains(&serde_json::from_value::<ton_abi::Param>("expire".into())?) {
@@ -749,7 +748,7 @@ impl Contract {
             // take resulting expire value to use it in transaction waiting
             let expire = match header.get("expire").unwrap() {
                 TokenValue::Expire(expire) => *expire,
-                _ => return Err(SdkErrorKind::InternalError{msg: "Wrong expire type".to_owned()}.into())
+                _ => fail!(SdkError::InternalError{msg: "Wrong expire type".to_owned()})
             };
 
             Ok((Some(Detokenizer::detokenize_optional(&header)?), Some(expire)))
@@ -768,7 +767,7 @@ impl Contract {
         key_pair: Option<&Keypair>,
         timeouts: Option<&TimeoutsConfig>,
         try_index: Option<u8>
-    ) -> SdkResult<SdkMessage> {
+    ) -> Result<SdkMessage> {
         let (header, expire) = Self::make_expire_header(timeouts, params.abi.clone(), params.header, try_index)?;
 
         // pack params into bag of cells via ABI
@@ -784,7 +783,7 @@ impl Contract {
 
     // Creates Message struct with provided body and account address
     // Returns message's bag of cells and identifier.
-    pub fn construct_call_message_with_body(address: MsgAddressInt, body: &[u8]) -> SdkResult<TvmMessage> {
+    pub fn construct_call_message_with_body(address: MsgAddressInt, body: &[u8]) -> Result<TvmMessage> {
         let body_cell = Self::deserialize_tree_to_slice(body)?;
 
         Self::create_message(address, body_cell)
@@ -798,7 +797,7 @@ impl Contract {
         params: FunctionCallSet,
         timeouts: Option<&TimeoutsConfig>,
         try_index: Option<u8>
-    ) -> SdkResult<MessageToSign> {
+    ) -> Result<MessageToSign> {
         let (header, expire) = Self::make_expire_header(timeouts, params.abi.clone(), params.header, try_index)?;
         
         // pack params into bag of cells via ABI
@@ -826,7 +825,7 @@ impl Contract {
         workchain_id: i32,
         timeouts: Option<&TimeoutsConfig>,
         try_index: Option<u8>
-    ) -> SdkResult<SdkMessage> {
+    ) -> Result<SdkMessage> {
         let (header, expire) = Self::make_expire_header(timeouts, params.abi.clone(), params.header, try_index)?;
 
         let msg_body = ton_abi::encode_function_call(
@@ -841,7 +840,7 @@ impl Contract {
 
     // Packs given image and body into Message struct.
     // Returns message's bag of cells and identifier.
-    pub fn construct_deploy_message_with_body(image: ContractImage, body: Option<&[u8]>, workchain_id: i32) -> SdkResult<TvmMessage> {
+    pub fn construct_deploy_message_with_body(image: ContractImage, body: Option<&[u8]>, workchain_id: i32) -> Result<TvmMessage> {
         let body_cell = match body {
             None => None,
             Some(data) => Some(Self::deserialize_tree_to_slice(data)?)
@@ -853,7 +852,7 @@ impl Contract {
     // Packs given image into Message struct.
     // Returns message's bag of cells and identifier.
     pub fn construct_deploy_message_no_constructor(image: ContractImage, workchain_id: i32)
-        -> SdkResult<TvmMessage>
+        -> Result<TvmMessage>
     {
         Self::create_deploy_message(None, image, workchain_id)
     }
@@ -867,7 +866,7 @@ impl Contract {
         workchain_id: i32,
         timeouts: Option<&TimeoutsConfig>,
         try_index: Option<u8>
-    ) -> SdkResult<MessageToSign> {
+    ) -> Result<MessageToSign> {
         let (header, expire) = Self::make_expire_header(timeouts, params.abi.clone(), params.header, try_index)?;
 
         let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(
@@ -887,30 +886,30 @@ impl Contract {
     // `get_run_message_bytes_for_signing` function.
     // Returns serialized message and identifier.
     pub fn add_sign_to_message(abi: String, signature: &[u8], public_key: Option<&[u8]>, message: &[u8]) 
-        -> SdkResult<(Vec<u8>, MessageId)> {
+        -> Result<(Vec<u8>, MessageId)> {
         
         let mut slice = Self::deserialize_tree_to_slice(message)?;
 
         let mut message: TvmMessage = TvmMessage::construct_from(&mut slice)?;
 
         let body = message.body()
-            .ok_or(SdkError::from(SdkErrorKind::InvalidData { msg: "No message body".to_owned() } ))?;
+            .ok_or(error!(SdkError::InvalidData { msg: "No message body".to_owned() } ))?;
 
         let signed_body = ton_abi::add_sign_to_function_call(abi, signature, public_key, body)?;
 
-        *message.body_mut() = Some(signed_body.into());
+        message.set_body(signed_body.into());
             
 
         Self::serialize_message(message)
     }
 
-    fn create_message(address: MsgAddressInt, msg_body: SliceData) -> SdkResult<TvmMessage> {
+    fn create_message(address: MsgAddressInt, msg_body: SliceData) -> Result<TvmMessage> {
 
         let mut msg_header = ExternalInboundMessageHeader::default();
         msg_header.dst = address;
         
         let mut msg = TvmMessage::with_ext_in_header(msg_header);
-        *msg.body_mut() = Some(msg_body);
+        msg.set_body(msg_body);
 
         Ok(msg)
     }
@@ -919,16 +918,16 @@ impl Contract {
         msg_body: Option<SliceData>,
         image: ContractImage,
         workchain_id: i32
-    ) -> SdkResult<TvmMessage> {
+    ) -> Result<TvmMessage> {
         let mut msg_header = ExternalInboundMessageHeader::default();
         msg_header.dst = image.msg_address(workchain_id);
         let mut msg = TvmMessage::with_ext_in_header(msg_header);
-        *msg.state_init_mut() = Some(image.state_init());
-        *msg.body_mut() = msg_body;
+        msg.set_state_init(image.state_init());
+        msg_body.map(|body| msg.set_body(body));
         Ok(msg)
     }
 
-    pub fn  serialize_message(msg: TvmMessage) -> SdkResult<(Vec<u8>, MessageId)> {
+    pub fn  serialize_message(msg: TvmMessage) -> Result<(Vec<u8>, MessageId)> {
         let cells = msg.write_to_new_cell()?.into();
 
         let mut data = Vec::new();
@@ -939,28 +938,28 @@ impl Contract {
     }
 
     /// Deserializes tree of cells from byte array into `SliceData`
-    fn deserialize_tree_to_slice(data: &[u8]) -> SdkResult<SliceData> {
+    fn deserialize_tree_to_slice(data: &[u8]) -> Result<SliceData> {
         let mut response_cells = deserialize_cells_tree(&mut Cursor::new(data))?;
 
         if response_cells.len() != 1 {
-            bail!(SdkErrorKind::InvalidData { msg: "Deserialize message error".to_owned() } );
+            bail!(SdkError::InvalidData { msg: "Deserialize message error".to_owned() } );
         }
 
         Ok(response_cells.remove(0).into())
     }
 
     /// Deserializes TvmMessage from byte array
-    pub fn deserialize_message(message: &[u8]) -> SdkResult<TvmMessage> {
+    pub fn deserialize_message(message: &[u8]) -> Result<TvmMessage> {
         let mut root_cells = deserialize_cells_tree(&mut Cursor::new(message))?;
 
         if root_cells.len() != 1 { 
-            bail!(SdkErrorKind::InvalidData { msg: "Deserialize message error".to_owned() } );
+            bail!(SdkError::InvalidData { msg: "Deserialize message error".to_owned() } );
         }
 
         Ok(TvmMessage::construct_from(&mut root_cells.remove(0).into())?)
     }
 
-    fn balance_other_as_hashmape(&self) -> SdkResult<HashmapE> {
+    fn balance_other_as_hashmape(&self) -> Result<HashmapE> {
         let mut map = HashmapE::with_bit_len(32);
 
         if let Some(balance_vec) = &self.balance_other {
@@ -974,7 +973,7 @@ impl Contract {
         Ok(map)
     }
 
-    pub fn to_account(&self) -> SdkResult<Account> {
+    pub fn to_account(&self) -> Result<Account> {
         let state = match &self.code {
             Some(code) => {
                 let mut state_init = StateInit::default();
@@ -996,7 +995,7 @@ impl Contract {
             &storage))
     }
 
-    pub fn now() -> SdkResult<u32> {
+    pub fn now() -> Result<u32> {
         Ok(<u32>::try_from(Utc::now().timestamp())?)
     }
 }

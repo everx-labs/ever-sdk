@@ -15,6 +15,7 @@
 use crate::types::{ApiResult, base64_decode, ApiError};
 use ton_sdk::{AbiContract, ContractImage};
 use ton_block::{CommonMsgInfo, Deserializable};
+use ton_types::deserialize_tree_of_cells;
 use std::io::Cursor;
 use crate::crypto::keys::{
     account_decode,
@@ -180,7 +181,7 @@ pub(crate) fn convert_address(_context: &mut ClientContext, params: ParamsOfConv
 
 fn decode_boc_base64(boc_base64: &String) -> ApiResult<ton_types::Cell> {
     let bytes = base64_decode(boc_base64)?;
-    ton_block::cells_serialization::deserialize_tree_of_cells(&mut bytes.as_slice())
+    deserialize_tree_of_cells(&mut bytes.as_slice())
         .map_err(|err| ApiError::contracts_invalid_boc(err))
 }
 

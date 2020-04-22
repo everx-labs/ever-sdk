@@ -32,7 +32,7 @@ pub use ton_abi::Contract as AbiContract;
 pub use ton_abi::Function as AbiFunction;
 
 mod error;
-pub use error::{SdkError, SdkErrorKind, SdkResult};
+pub use error::SdkError;
 
 mod contract;
 pub use contract::{Contract, ContractImage, FunctionCallSet};
@@ -81,17 +81,18 @@ pub mod node_client {
 }
 
 pub mod json_helper;
-
+#[cfg(feature = "node_interaction")]
+use ton_types::Result;
 
 /// Init SKD. Globally saves queries and requests server URLs
-pub fn init(config: NodeClientConfig) -> SdkResult<NodeClient> { 
+pub fn init(config: NodeClientConfig) -> Result<NodeClient> { 
     NodeClient::new(config)
 }
 
 /// Init SKD. Globally saves queries and requests server URLs
-pub fn init_json(config: &str) -> SdkResult<NodeClient> {
+pub fn init_json(config: &str) -> Result<NodeClient> {
     init(serde_json::from_str(config)
-        .map_err(|err| SdkErrorKind::InvalidArg { msg: format!("{}", err) } )?)
+        .map_err(|err| SdkError::InvalidArg { msg: format!("{}", err) } )?)
 }
 
 #[cfg(test)]
