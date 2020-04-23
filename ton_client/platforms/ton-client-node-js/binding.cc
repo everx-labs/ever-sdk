@@ -170,7 +170,11 @@ struct NodeJsAdapter {
             nullptr,
             callHandler,
             &request->onResult));
-        // CHECK(napi_ref_threadsafe_function(env, request->onResult));
+
+        //TODO: need to investigate necessary of the napi_ref for the onResult function pointer
+        //
+        //CHECK(napi_ref_threadsafe_function(env, request->onResult));
+
         endWrite();
 
         auto method = tonString(env, args[0]);

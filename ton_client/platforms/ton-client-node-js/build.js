@@ -53,7 +53,7 @@ async function buildNodeJsAddon() {
     if (process.argv.includes("--open")) {
         await spawnProcess('cargo', ['build', '--release', '--no-default-features']);
     } else {
-        // await spawnProcess('cargo', ['update']);
+        await spawnProcess('cargo', ['update']);
         await spawnProcess('cargo', ['build', '--release']);
     }
     // build addon
