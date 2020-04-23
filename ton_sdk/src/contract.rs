@@ -24,7 +24,7 @@ use std::io::{Cursor, Read, Seek};
 use ton_block::{
     Account, AccountState, AccountStatus, AccountStorage, CurrencyCollection, Deserializable,
     ExternalInboundMessageHeader, GetRepresentationHash, Message as TvmMessage, MsgAddressInt,
-    Serializable, StateInit, StorageInfo};
+    Serializable, StateInit, StorageInfo };
 use ton_types::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use ton_types::{error, Result, AccountId, Cell, SliceData, HashmapE};
 use ton_abi::json_abi::DecodedMessage;
@@ -581,19 +581,17 @@ impl Contract {
         }
 
         let mut balance_other = vec!();
-        ton_types::HashmapType::iterate(
-            &acc.get_balance().unwrap().other,
-                &mut |ref mut key, ref mut value| -> Result<bool> {
-                let value: ton_block::VarUInteger32 = ton_block::VarUInteger32::construct_from(value)?;
-                balance_other.push(OtherCurrencyValue {
-                    currency: key.get_next_u32()?,
-                    value: num_traits::ToPrimitive::to_u128(value.value()).ok_or(
-                        error!(SdkError::InvalidData { msg: "Account's other currency balance is too big".to_owned() } )
-                    )?
-                });
-                Ok(true)
-            }
-        ).unwrap();
+        &acc.get_balance().unwrap().other.iterate_slices_with_keys(
+            &mut |ref mut key, ref mut value| -> Result<bool> {
+            let value: ton_block::VarUInteger32 = ton_block::VarUInteger32::construct_from(value)?;
+            balance_other.push(OtherCurrencyValue {
+                currency: key.get_next_u32()?,
+                value: num_traits::ToPrimitive::to_u128(value.value()).ok_or(
+                    error!(SdkError::InvalidData { msg: "Account's other currency balance is too big".to_owned() } )
+                )?
+            });
+            Ok(true)
+        }).unwrap();
 
         // All unwraps below won't panic because the account is checked for none.
         Ok(Contract {
@@ -943,7 +941,7 @@ impl Contract {
         };
         let storage = AccountStorage {
             last_trans_lt: 0,
-            balance: CurrencyCollection { grams: self.balance.into(), other: self.balance_other_as_hashmape()? },
+            balance: CurrencyCollection { grams: self.balance.into(), other: self.balance_other_as_hashmape()?.into() },
             state
         };
         Ok(Account::with_storage(
