@@ -69,10 +69,16 @@ struct NodeJsAdapter {
         Request* next;
         napi_threadsafe_function onResult;
 
+        napi_value onResultSync;
+        napi_env envSync;
+
         Request(Id id, Request* next)
             : id(id)
             , next(next)
-            , onResult(nullptr) {
+            , onResult(nullptr)
+            , onResultSync(nullptr)
+            , envSync(nullptr)
+        {
         }
     };
 
@@ -137,6 +143,18 @@ struct NodeJsAdapter {
         return ptr;
     }
 
+    //--------------------------------------------------------- Async request processing
+
+    // function request(methodName, paramsJson, onResult)
+    static napi_value requestHandler(napi_env env, napi_callback_info info) {
+        size_t argc = 3;
+        napi_value args[3];
+        NodeJsAdapter* adapter;
+        CHECK(napi_get_cb_info(env, info, &argc, args, nullptr, (void**)&adapter));
+        adapter->request(env, argc, args);
+        return napiUndefined(env);
+    }
+
     void request(napi_env env, int argc, napi_value* args) {
         beginWrite();
         auto request = createRequest();
@@ -152,7 +170,7 @@ struct NodeJsAdapter {
             nullptr,
             callHandler,
             &request->onResult));
-        CHECK(napi_ref_threadsafe_function(env, request->onResult));
+        // CHECK(napi_ref_threadsafe_function(env, request->onResult));
         endWrite();
 
         auto method = tonString(env, args[0]);
@@ -160,6 +178,13 @@ struct NodeJsAdapter {
         ton_sdk_json_rpc_request(&method, &paramsJson, request->id, resultHandler);
         tonStringFree(&method);
         tonStringFree(&paramsJson);
+    }
+
+    static void resultHandler(int32_t request_id, TonSdkUtf8String result_json, TonSdkUtf8String error_json, int32_t flags) {
+        auto adapter = shared;
+        if (adapter) {
+            adapter->onResult(request_id, result_json, error_json, (OnResultFlags)flags);
+        }
     }
 
     void onResult(Request::Id id, TonSdkUtf8String resultJson, TonSdkUtf8String errorJson, OnResultFlags flags) {
@@ -174,6 +199,13 @@ struct NodeJsAdapter {
         endWrite();
     }
 
+    static void callHandler(napi_env env, napi_value onResult, void* context, void* data) {
+        auto adapter = shared;
+        if (adapter) {
+            adapter->onCall(env, onResult, context, data);
+        }
+    }
+
     void onCall(napi_env env, napi_value onResult, void* context, void* data) {
         auto result = (Result*)data;
         beginWrite();
@@ -186,6 +218,7 @@ struct NodeJsAdapter {
         if (request) {
             napi_value args[2];
             napi_value callResult;
+
             args[0] = napiString(env, result->resultJson);
             args[1] = napiString(env, result->errorJson);
             CHECK(napi_call_function(
@@ -203,36 +236,73 @@ struct NodeJsAdapter {
         delete result;
     }
 
+    //--------------------------------------------------------- Sync request processing
+
     // function request(methodName, paramsJson, onResult)
-    static napi_value requestHandler(napi_env env, napi_callback_info info) {
+    static napi_value requestHandlerSync(napi_env env, napi_callback_info info) {
         size_t argc = 3;
         napi_value args[3];
         NodeJsAdapter* adapter;
         CHECK(napi_get_cb_info(env, info, &argc, args, nullptr, (void**)&adapter));
-        adapter->request(env, argc, args);
+        adapter->requestSync(env, argc, args);
         return napiUndefined(env);
     }
 
-    static void resultHandler(int32_t request_id, TonSdkUtf8String result_json, TonSdkUtf8String error_json, int32_t flags) {
+    void requestSync(napi_env env, int argc, napi_value* args) {
+        beginWrite();
+        auto request = createRequest();
+        request->onResultSync = args[2];
+        request->envSync = env;
+        endWrite();
+
+        auto method = tonString(env, args[0]);
+        auto paramsJson = tonString(env, args[1]);
+        ton_sdk_json_rpc_request(&method, &paramsJson, request->id, resultHandlerSync);
+        tonStringFree(&method);
+        tonStringFree(&paramsJson);
+    }
+
+    static void resultHandlerSync(int32_t request_id, TonSdkUtf8String result_json, TonSdkUtf8String error_json, int32_t flags) {
         auto adapter = shared;
         if (adapter) {
-            adapter->onResult(request_id, result_json, error_json, (OnResultFlags)flags);
+            adapter->onResultSync(request_id, result_json, error_json, (OnResultFlags)flags);
         }
     }
 
-    static void callHandler(napi_env env, napi_value onResult, void* context, void* data) {
-        auto adapter = shared;
-        if (adapter) {
-            adapter->onCall(env, onResult, context, data);
+    void onResultSync(Request::Id id, TonSdkUtf8String resultJson, TonSdkUtf8String errorJson, OnResultFlags flags) {
+        beginWrite();
+        auto ptr = findRequestPtr(id);
+        auto request = *ptr;
+        if (request) {
+            *ptr = request->next;
         }
+        endWrite();
+        if (request == nullptr) {
+            return;
+        }
+        napi_value args[2];
+        napi_value callResult;
+
+        args[0] = napiString(request->envSync, resultJson);
+        args[1] = napiString(request->envSync, errorJson);
+        CHECK(napi_call_function(
+            request->envSync,
+            napiGlobal(request->envSync),
+            request->onResultSync,
+            2,
+            args,
+            &callResult));
+        delete request;
     }
+
+    //--------------------------------------------------------- Initialization
 
     static napi_value initHandler(napi_env env, napi_value exports) {
         shared = new NodeJsAdapter;
         napi_property_descriptor requestProperty = {
             "request",
             nullptr,
-            requestHandler,
+            requestHandlerSync,
             nullptr,
             nullptr,
             nullptr,
