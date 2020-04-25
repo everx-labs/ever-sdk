@@ -47,6 +47,7 @@ optional = true
 
 [dependencies.ton_executor]
 git = "ssh://git@github.com/tonlabs/ton-executor.git"
+default-features = false
 optional = true
 
 [dev-dependencies]
