@@ -54,13 +54,11 @@ const DEFAULT_GIVER_KEYS: &str = r#"
 pub fn get_config() -> serde_json::Value {
     if NODE_SE {
         json!({
-            "queries_server": "http://localhost/graphql",
-            "subscriptions_server": "ws://localhost/graphql"
+            "base_url": "http://localhost"
         })
     } else {
         json!({
-            "queries_server": "https://cinet.tonlabs.io/graphql",
-            "subscriptions_server": "wss://cinet.tonlabs.io/graphql"
+            "base_url": "cinet.tonlabs.io"
         })
     }
 }

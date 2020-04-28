@@ -43,7 +43,7 @@ pub struct MutationRequest {
 }
 
 pub struct NodeClient {
-    client: GqlClient,
+    client: Option<GqlClient>,
     timeouts: TimeoutsConfig
 }
 
@@ -76,22 +76,44 @@ impl NodeClient {
             Err(err) => bail!(SdkError::NetworkError { msg: format!("Can not send test request: {}", err) } )
         }
     }
+
+    fn expand_address(base_url: String) -> (String, String) {
+        let base_url =  if  base_url.starts_with("http://") ||
+                            base_url.starts_with("https://")
+        {
+            base_url
+        } else {
+            format!("https://{}", base_url)
+        };
+    
+        let queries_url = format!("{}/graphql", base_url);
+    
+        let subscriptions_url = if queries_url.starts_with("https://") {
+            queries_url.replace("https://", "wss://")
+        } else {
+            queries_url.replace("http://", "ws://")
+        };
+
+        (queries_url, subscriptions_url)
+    }
     
     // Globally initializes client with server address
-    pub fn new(mut config: NodeClientConfig) -> Result<NodeClient> {
-        if let Some(redirected) = Self::check_redirect(&config.queries_server)? {
-            config = NodeClientConfig {
-                queries_server: redirected.clone(),
-                subscriptions_server: redirected
+    pub fn new(config: NodeClientConfig) -> Result<NodeClient> {
+        let client = if let Some(base_url) = config.base_url {
+            let (mut queries_server, mut subscriptions_server) = Self::expand_address(base_url);
+            if let Some(redirected) = Self::check_redirect(&queries_server)? {
+                queries_server = redirected.clone();
+                subscriptions_server = redirected
                     .replace("https://", "wss://")
-                    .replace("http://", "ws://"),
-                timeouts: config.timeouts,
-                access_key: config.access_key
+                    .replace("http://", "ws://");
             }
-        }
+            Some(GqlClient::new(&queries_server, &subscriptions_server)?)
+        } else {
+            None
+        };
 
         Ok(NodeClient {
-            client: GqlClient::new(&config.queries_server,&config.subscriptions_server)?,
+            client,
             timeouts: config.timeouts.unwrap_or_default()
         })
     }
@@ -107,8 +129,9 @@ impl NodeClient {
         let request = Self::generate_subscription(table, filter, fields)?;
     
         let closure_table = table.to_owned();
-    
-        let stream = self.client.subscribe(request)?
+
+        let client = self.client.as_ref().ok_or(SdkError::SdkNotInitialized)?;
+        let stream = client.subscribe(request)?
             .map(move |result| {
                     match result {
                         Err(err) => Err(error!(err).into()),
@@ -157,7 +180,8 @@ impl NodeClient {
     ) -> Result<Value> {
         let query = Self::generate_query_var(table, filter, fields, order_by, limit, timeout)?;
 
-        let result = self.client.query_vars(query).await?;
+        let client = self.client.as_ref().ok_or(SdkError::SdkNotInitialized)?;
+        let result = client.query_vars(query).await?;
         
         // try to extract the record value from the answer
         let records_array = &result["data"][&table];
@@ -256,7 +280,9 @@ impl NodeClient {
             id: base64::encode(key),
             body: base64::encode(value)
         };
-        self.client.query_vars(Self::generate_post_mutation(&[request])?)
+
+        let client = self.client.as_ref().ok_or(SdkError::SdkNotInitialized)?;
+        client.query_vars(Self::generate_post_mutation(&[request])?)
             .map_err(|_| SdkError::NetworkError {
                     msg: "Post message error: server did not responded".to_owned()
                 }.into())
