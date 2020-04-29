@@ -256,6 +256,8 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         |context, params| run::local_run(context, params, true));
     handlers.spawn("contracts.run.local.msg",
         |context, params| run::local_run_msg(context, params, true));
+    handlers.spawn("contracts.run.local.get",
+        |context, params| run::local_run_get(context, params));
     handlers.spawn("contracts.run.fee",
         |context, params| run::local_run(context, params, false));
     handlers.spawn("contracts.run.fee.msg",

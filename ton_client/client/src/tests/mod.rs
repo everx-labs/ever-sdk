@@ -106,6 +106,90 @@ fn get_map_string(m: &Map<String, Value>, f: &str) -> String {
     panic!("Field not fount");
 }
 
+const ELECTOR_CODE: &str = r"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";
+const ELECTOR_DATA: &str = r"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";
+
+#[test]
+fn test_local_run_get() {
+    let client = TestClient::new();
+    let result = parse_object(client.request("contracts.run.local.get", json!({
+        "functionName": "participant_list",
+        "codeBase64": ELECTOR_CODE,
+        "dataBase64": ELECTOR_DATA,
+    })));
+
+    println!("{}", serde_json::Value::Object(result).to_string())
+}
+
+#[test]
+fn test_run_get() {
+    let client = TestClient::new();
+    let crc16 = client.request("crypto.ton_crc16", json!({
+        "hex": "0123456789abcdef"
+    })).unwrap();
+    assert_eq!(crc16, "43349");
+
+    let keys = parse_object(client.request(
+        "crypto.mnemonic.derive.sign.keys",
+        json!({
+            "phrase": "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle"
+        }),
+    ));
+    let ton_public = parse_string(client.request(
+        "crypto.ton_public_key_string",
+        Value::String(get_map_string(&keys, "public")),
+    ));
+    assert_eq!(ton_public, "PubDdJkMyss2qHywFuVP1vzww0TpsLxnRNnbifTCcu-XEgW0");
+
+    let words = parse_string(client.request("crypto.mnemonic.words", json!({
+    })));
+    assert_eq!(words.split(" ").count(), 2048);
+
+    let phrase = parse_string(client.request("crypto.mnemonic.from.random", json!({
+    })));
+    assert_eq!(phrase.split(" ").count(), 24);
+
+    let entropy = "2199ebe996f14d9e4e2595113ad1e6276bd05e2e147e16c8ab8ad5d47d13b44fcf";
+    let mnemonic = parse_string(client.request("crypto.mnemonic.from.entropy", json!({
+        "entropy": json!({
+            "hex": entropy
+        }),
+    })));
+    let public = get_map_string(&parse_object(client.request(
+        "crypto.mnemonic.derive.sign.keys",
+        json!({
+            "phrase": mnemonic
+        }),
+    )), "public");
+    let ton_public = parse_string(client.request(
+        "crypto.ton_public_key_string",
+        Value::String(public),
+    ));
+    assert_eq!(ton_public, "PuYGEX9Zreg-CX4Psz5dKehzW9qCs794oBVUKqqFO7aWAOTD");
+//    let ton_phrase = "shove often foil innocent soft slim pioneer day uncle drop nephew soccer worry renew public hand word nut again dry first delay first maple";
+    let is_valid = client.request(
+        "crypto.mnemonic.verify",
+        json!({
+            "phrase": "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle"
+        }),
+    ).unwrap();
+    assert_eq!(is_valid, "true");
+    let is_valid = client.request(
+        "crypto.mnemonic.verify",
+        json!({
+            "phrase": "unit follow"
+        }),
+    ).unwrap();
+    assert_eq!(is_valid, "false");
+    let is_valid = client.request(
+        "crypto.mnemonic.verify",
+        json!({
+            "phrase": "unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit"
+        }),
+    ).unwrap();
+    assert_eq!(is_valid, "false");
+}
+
 #[test]
 fn test_tg_mnemonic() {
     let client = TestClient::new();
