@@ -38,7 +38,6 @@ use futures::StreamExt;
 use ton_sdk::TransactionFees;
 #[cfg(feature = "fee_calculation")]
 use crate::types::long_num_to_json_string;
-use crate::crypto::math::ton_crc16;
 
 fn bool_false() -> bool { false }
 
@@ -355,26 +354,28 @@ pub(crate) fn local_run_msg(context: &mut ClientContext, params: ParamsOfLocalRu
     })
 }
 
+const DEFAULT_ADDRESS: &str = "0:0000000000000000000000000000000000000000000000000000000000000000";
 pub(crate) fn local_run_get(
-    context: &mut ClientContext,
+    _context: &mut ClientContext,
     params: ParamsOfLocalRunGet,
 ) -> ApiResult<ResultOfLocalRunGet> {
     debug!("-> contracts.run.get({})",
         params.functionName,
     );
     let contract_json = json!({
-        "id": params.address,
-        "acc_type": "Active",
+        "id": params.address.unwrap_or(DEFAULT_ADDRESS.to_string()),
+        "acc_type": 1,
         "balance": "0xffffffffffffffff",
         "code": params.codeBase64,
         "data": params.dataBase64,
         "last_paid": 1,
     });
-    let contract = Contract::from_json(contract_json.to_string().as_str())?;
+    let contract = Contract::from_json(contract_json.to_string().as_str())
+        .map_err(|err| ApiError::contracts_local_run_failed(err))?;
     let output = contract.local_call_tvm_get_json(
         &params.functionName,
         params.input.as_ref()
-    )?;
+    ).map_err(|err| ApiError::contracts_local_run_failed(err))?;
     Ok(ResultOfLocalRunGet { output })
     //
     // let address = account_decode(&params.address)?;
