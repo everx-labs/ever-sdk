@@ -313,7 +313,7 @@ pipeline {
                 script {
                     withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                         identity = awsIdentity()
-                        s3Download bucket: 'sdkbinaries.tonlabs.io', file: 'version.json', force: true, path: 'version.json'
+                        s3Download bucket: 'sdkbinaries-ws.tonlabs.io', file: 'version.json', force: true, path: 'version.json'
                     }
                     def folders = """ton_sdk \
 ton_client/client \
@@ -330,7 +330,7 @@ sdkbinaries-ws.tonlabs.io
                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                             identity = awsIdentity()
                             s3Upload \
-                                bucket: 'sdkbinaries.tonlabs.io', \
+                                bucket: 'sdkbinaries-ws.tonlabs.io', \
                                 includePathPattern:'version.json', path: '', \
                                 workingDir:'.'
                         }
@@ -491,7 +491,7 @@ sdkbinaries-ws.tonlabs.io
                                     withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                         identity = awsIdentity()
                                         s3Upload \
-                                            bucket: 'sdkbinaries.tonlabs.io', \
+                                            bucket: 'sdkbinaries-ws.tonlabs.io', \
                                             includePathPattern:'*.gz', path: 'tmp_sdk', \
                                             workingDir:'.'
                                     }
@@ -561,7 +561,7 @@ sdkbinaries-ws.tonlabs.io
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
                                             s3Upload \sdkbinaries-ws.tonlabs.io
-                                                bucket: 'sdkbinaries.tonlabs.io', \
+                                                bucket: 'sdkbinaries-ws.tonlabs.io', \
                                                 includePathPattern:'*.gz', path: 'tmp_sdk', \
                                                 workingDir:'.'
                                         }
@@ -633,7 +633,7 @@ sdkbinaries-ws.tonlabs.io
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
                                             s3Upload \
-                                                bucket: 'sdkbinaries.tonlabs.io', \
+                                                bucket: 'sdkbinaries-ws.tonlabs.io', \
                                                 includePathPattern:'*.gz', path: 'tmp_sdk', \
                                                 workingDir:'.'
                                         }
@@ -712,7 +712,7 @@ sdkbinaries-ws.tonlabs.io
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
                                             s3Upload \
-                                                bucket: 'sdkbinaries.tonlabs.io', \
+                                                bucket: 'sdkbinaries-ws.tonlabs.io', \
                                                 includePathPattern:'*.gz', path: 'tmp_sdk', \
                                                 workingDir:'.'
                                         }
@@ -796,7 +796,7 @@ sdkbinaries-ws.tonlabs.io
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
                                             s3Upload \
-                                                bucket: 'sdkbinaries.tonlabs.io', \
+                                                bucket: 'sdkbinaries-ws.tonlabs.io', \
                                                 includePathPattern:'*.gz', path: 'tmp_sdk', \
                                                 workingDir:'.'
                                         }
@@ -880,7 +880,7 @@ sdkbinaries-ws.tonlabs.io
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
                                             s3Upload \
-                                                bucket: 'sdkbinaries.tonlabs.io', \
+                                                bucket: 'sdkbinaries-ws.tonlabs.io', \
                                                 includePathPattern:'*.gz', path: 'tmp_sdk', \
                                                 workingDir:'.'
                                         }
@@ -966,7 +966,7 @@ sdkbinaries-ws.tonlabs.io
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
                                             s3Upload \
-                                                bucket: 'sdkbinaries.tonlabs.io', \
+                                                bucket: 'sdkbinaries-ws.tonlabs.io', \
                                                 includePathPattern:'*.gz', path: 'tmp_sdk', \
                                                 workingDir:'.'
                                         }
@@ -1028,7 +1028,7 @@ sdkbinaries-ws.tonlabs.io
                                     withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                         identity = awsIdentity()
                                         s3Upload \
-                                            bucket: 'sdkbinaries.tonlabs.io', \
+                                            bucket: 'sdkbinaries-ws.tonlabs.io', \
                                             includePathPattern:'*.gz', path: 'tmp_sdk', \
                                             workingDir:'.'
                                     }
@@ -1096,7 +1096,7 @@ sdkbinaries-ws.tonlabs.io
                                     withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                         identity = awsIdentity()
                                         s3Upload \
-                                            bucket: 'sdkbinaries.tonlabs.io', \
+                                            bucket: 'sdkbinaries-ws.tonlabs.io', \
                                             includePathPattern:'*.gz', path: 'tmp_sdk', \
                                             workingDir:'.'
                                     }
@@ -1141,7 +1141,7 @@ sdkbinaries-ws.tonlabs.io
                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                             identity = awsIdentity()
                             s3Upload \
-                                bucket: 'sdkbinaries.tonlabs.io', \
+                                bucket: 'sdkbinaries-ws.tonlabs.io', \
                                 includePathPattern:'*.gz', path: 'tmp_sdk', \
                                 workingDir:'.'
                         }
@@ -1170,14 +1170,14 @@ sdkbinaries-ws.tonlabs.io
             script {
                 withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                     identity = awsIdentity()
-                    s3Delete bucket: 'sdkbinaries.tonlabs.io', path: 'tmp_sdk/'
+                    s3Delete bucket: 'sdkbinaries-ws.tonlabs.io', path: 'tmp_sdk/'
                 }
                 def cause = "${currentBuild.getBuildCauses()}"
                 echo "${cause}"
                 if(!cause.matches('upstream')) {
                     withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                         identity = awsIdentity()
-                        s3Download bucket: 'sdkbinaries.tonlabs.io', file: 'version.json', force: true, path: 'version.json'
+                        s3Download bucket: 'sdkbinaries-ws.tonlabs.io', file: 'version.json', force: true, path: 'version.json'
                     }
                     sh """
                         echo const fs = require\\(\\'fs\\'\\)\\; > decline.js
@@ -1192,7 +1192,7 @@ sdkbinaries-ws.tonlabs.io
                     withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                         identity = awsIdentity()
                         s3Upload \
-                            bucket: 'sdkbinaries.tonlabs.io', \
+                            bucket: 'sdkbinaries-ws.tonlabs.io', \
                             includePathPattern:'version.json', workingDir:'.'
                     }
                 }
