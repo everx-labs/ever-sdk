@@ -139,7 +139,7 @@ def buildBranchesMap() {
     }
 
     if (params.branch_tvm_linker == '') {
-        G_branches.put('tvm-linker', "master")sdkbinaries-ws.tonlabs.io
+        G_branches.put('tvm-linker', "master")
     } else {
         G_branches.put('tvm-linker', params.branch_tvm_linker)
     }
@@ -255,7 +255,7 @@ pipeline {
             name:'branch_ton_labs_vm',
             defaultValue: '',
             description: 'ton-labs-vm branch'
-        )sdkbinaries-ws.tonlabs.io
+        )
         string(
             name:'image_ton_labs_vm',
             defaultValue: '',
