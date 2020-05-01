@@ -139,7 +139,7 @@ def buildBranchesMap() {
     }
 
     if (params.branch_tvm_linker == '') {
-        G_branches.put('tvm-linker', "master")
+        G_branches.put('tvm-linker', "master")sdkbinaries-ws.tonlabs.io
     } else {
         G_branches.put('tvm-linker', params.branch_tvm_linker)
     }
@@ -255,7 +255,7 @@ pipeline {
             name:'branch_ton_labs_vm',
             defaultValue: '',
             description: 'ton-labs-vm branch'
-        )
+        )sdkbinaries-ws.tonlabs.io
         string(
             name:'image_ton_labs_vm',
             defaultValue: '',
@@ -325,7 +325,7 @@ ton_client/platforms/ton-client-web"""
                     } else {
                         G_binversion = sh (script: "node tonVersion.js ${folders}", returnStdout: true).trim()
                     }
-
+sdkbinaries-ws.tonlabs.io
                     if(!isUpstream() && (GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc")) {
                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                             identity = awsIdentity()
@@ -397,7 +397,7 @@ ton_client/platforms/ton-client-web"""
         stage('Build sources image') {
             steps {
                 script {
-                    docker.withRegistry('', G_docker_creds) {
+                    docker.withRegistry('', G_docker_credsdkbinaries-ws.tonlabs.io
                         sshagent (credentials: [G_gitcred]) {
                             withEnv(["DOCKER_BUILDKIT=1", "BUILD_INFO=${env.BUILD_TAG}:${GIT_COMMIT}"]) {
                                 src_image = docker.build(
@@ -476,7 +476,7 @@ ton_client/platforms/ton-client-web"""
                                     """
                                 }
                             }
-                        }
+                        }sdkbinaries-ws.tonlabs.io
                         stage('Deploy') {
                             when { 
                                 expression {
@@ -560,7 +560,7 @@ ton_client/platforms/ton-client-web"""
                                         /*
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
-                                            s3Upload \
+                                            s3Upload \sdkbinaries-ws.tonlabs.io
                                                 bucket: 'sdkbinaries.tonlabs.io', \
                                                 includePathPattern:'*.gz', path: 'tmp_sdk', \
                                                 workingDir:'.'
@@ -644,7 +644,7 @@ ton_client/platforms/ton-client-web"""
                         }
                     }
 					post {
-						cleanup {script{cleanWs notFailBuild: true}}
+						cleanup {script{cleanWs notFailBuild: true}}sdkbinaries-ws.tonlabs.io
 					}                
 				}
                 stage('react-native-ios') {
@@ -730,7 +730,7 @@ ton_client/platforms/ton-client-web"""
 					post {
 						cleanup {script{cleanWs notFailBuild: true}}
 					}                
-				}
+				}sdkbinaries-ws.tonlabs.io
                 stage('react-native-android') {
                     agent {
                         label "ios"
@@ -792,7 +792,7 @@ ton_client/platforms/ton-client-web"""
                                 dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-react-native/output') {
                                     script {
                                         stash allowEmpty: true, includes: '*.gz', name: 'rn-android-bin'
-                                        /*
+                                        /*sdkbinaries-ws.tonlabs.io
                                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                                             identity = awsIdentity()
                                             s3Upload \
@@ -860,7 +860,7 @@ ton_client/platforms/ton-client-web"""
                                     }
                                 }
                             }
-                            post {
+                            post {sdkbinaries-ws.tonlabs.io
                                 failure {
                                     script { G_tsnj_build = false }
                                 }
@@ -906,7 +906,7 @@ ton_client/platforms/ton-client-web"""
                     stages {
                         stage('Report versions') {
                             steps {
-                                bat '''
+                                bat '''sdkbinaries-ws.tonlabs.io
                                 rustc --version
                                 cargo --version
                                 '''
@@ -922,7 +922,7 @@ ton_client/platforms/ton-client-web"""
                                         del Cargo.toml
                                         unzip ton-sdk-src.zip
 
-                                        node pathFix.js tonlabs\\ton-labs-block\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        nosdkbinaries-ws.tonlabs.io\ton-labs-block\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
                                         node pathFix.js tonlabs\\ton-labs-vm\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
                                         node pathFix.js tonlabs\\ton-labs-abi\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
                                         node pathFix.js tonlabs\\ton-executor\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
