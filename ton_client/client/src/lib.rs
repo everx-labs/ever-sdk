@@ -27,6 +27,7 @@ mod client;
 mod setup;
 mod contracts;
 mod crypto;
+mod cell;
 
 #[cfg(feature = "node_interaction")]
 mod queries;
