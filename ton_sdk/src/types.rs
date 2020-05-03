@@ -52,12 +52,18 @@ impl Default for TimeoutsConfig {
 }
 
 // Represents config to connect node
+#[cfg(feature = "node_interaction")]
 #[derive(Debug, Deserialize, Serialize)]
 pub struct NodeClientConfig {
-    pub queries_server: String,
-    pub subscriptions_server: String,
+    pub base_url: Option<String>,
     pub timeouts: Option<TimeoutsConfig>,
     pub access_key: Option<String>,
+}
+
+#[cfg(not(feature = "node_interaction"))]
+#[derive(Debug, Deserialize, Serialize)]
+pub struct NodeClientConfig {
+    pub timeouts: Option<TimeoutsConfig>,
 }
 
 #[derive(Deserialize, Default, Clone, Debug)]

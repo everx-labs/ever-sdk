@@ -28,7 +28,6 @@ pub type Key256 = [u8; 32];
 pub type Key264 = [u8; 33];
 pub type Key512 = [u8; 64];
 
-#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, Clone)]
 pub struct KeyPair {
     pub public: String,
