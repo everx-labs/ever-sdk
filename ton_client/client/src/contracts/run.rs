@@ -13,8 +13,6 @@
 */
 
 use ton_sdk::{Contract, MessageType, AbiContract, FunctionCallSet};
-use serde_json::Value;
-use ton_sdk::{Contract, MessageType, AbiContract};
 use ton_sdk::json_abi::encode_function_call;
 use crate::crypto::keys::{KeyPair, account_decode};
 use crate::types::{ApiResult, ApiError, base64_decode};
@@ -368,31 +366,6 @@ pub(crate) fn local_run_msg(context: &mut ClientContext, params: ParamsOfLocalRu
         output: Some(serde_json::Value::default()),
         fees
     })
-}
-
-const DEFAULT_ADDRESS: &str = "0:0000000000000000000000000000000000000000000000000000000000000000";
-pub(crate) fn local_run_get(
-    _context: &mut ClientContext,
-    params: ParamsOfLocalRunGet,
-) -> ApiResult<ResultOfLocalRunGet> {
-    debug!("-> contracts.run.get({})",
-        params.functionName,
-    );
-    let contract_json = json!({
-        "id": params.address.unwrap_or(DEFAULT_ADDRESS.to_string()),
-        "acc_type": 1,
-        "balance": "0xffffffffffffffff",
-        "code": params.codeBase64,
-        "data": params.dataBase64,
-        "last_paid": 1,
-    });
-    let contract = Contract::from_json(contract_json.to_string().as_str())
-        .map_err(|err| ApiError::contracts_local_run_failed(err))?;
-    let output = contract.local_call_tvm_get_json(
-        &params.functionName,
-        params.input.as_ref()
-    ).map_err(|err| ApiError::contracts_local_run_failed(err))?;
-    Ok(ResultOfLocalRunGet { output })
 }
 
 pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfRun) -> ApiResult<EncodedMessage> {

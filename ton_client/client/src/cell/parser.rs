@@ -71,7 +71,7 @@ impl Token {
 }
 
 struct Parser {
-    source: String,
+    _source: String,
     tokens: Vec<Token>,
     pos: usize,
 }
@@ -129,7 +129,7 @@ impl Parser {
             }
         }
         Ok(Self {
-            source,
+            _source: source,
             tokens,
             pos: 0,
         })

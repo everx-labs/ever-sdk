@@ -35,12 +35,12 @@ fn read_value(slice: &mut SliceData, reader: &CellValueReader) -> ApiResult<Valu
                 .map_err(|err| ApiError::cell_invalid_query(err))?;
             Value::String(format!("{}", n))
         }
-        CellValueReader::Dict(fields) => {
+        CellValueReader::Dict(_fields) => {
             let mut dict = HashmapE::with_bit_len(256);
             dict.read_hashmap_data(slice)
                 .map_err(|err| ApiError::cell_invalid_query(err))?;
             let mut count = 0;
-            let result = dict.iterate(&mut |key, value| {
+            let result = dict.iterate(&mut |_key, _value| {
                 count += 1;
                 Ok(true)
             });

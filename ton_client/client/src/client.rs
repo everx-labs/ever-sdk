@@ -27,6 +27,7 @@ fn create_handlers() -> DispatchTable {
     crate::setup::register(&mut handlers);
     crate::crypto::register(&mut handlers);
     crate::contracts::register(&mut handlers);
+    crate::tvm::register(&mut handlers);
     crate::cell::register(&mut handlers);
 
     #[cfg(feature = "node_interaction")]

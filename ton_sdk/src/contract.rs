@@ -745,7 +745,7 @@ impl Contract {
             self.balance_other_as_hashmape()?,
             &self.id,
             None,
-            Self::get_now()?,
+            Self::now()?,
             code,
             self.data.clone(),
             stack_in)?;
