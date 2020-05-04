@@ -20,7 +20,7 @@ use std::str::FromStr;
 use ton_block::MsgAddressInt;
 use futures::StreamExt;
 
-const NODE_SE: bool = true;
+const NODE_SE: bool = false;
 
 const GIVER_ADDRESS_STR:  &str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
 
@@ -58,15 +58,15 @@ pub fn get_config() -> serde_json::Value {
         })
     } else {
         json!({
-            "base_url": "cinet.tonlabs.io"
+            "base_url": "testnet.ton.dev"
         })
     }
 }
 
-pub fn init_node_connection() -> NodeClient {
+pub async fn init_node_connection() -> NodeClient {
     let config_json = get_config().to_string();
 
-    init_json(&config_json).unwrap()
+    init_json(&config_json).await.unwrap()
 }
 
 fn get_wallet_keys() -> Keypair {
@@ -119,7 +119,7 @@ fn test_generate_keypair_and_address() {
 #[ignore]
 #[test]
 async fn test_send_grams_from_giver() {
-    let client = init_node_connection();
+    let client = init_node_connection().await;
 
     println!("Sending grams to {}", WALLET_ADDRESS.to_owned());
 
@@ -139,7 +139,7 @@ async fn test_send_grams_from_giver() {
 #[ignore]
 #[test]
 async fn test_deploy_giver() {
-    let client = init_node_connection();
+    let client = init_node_connection().await;
 
     deploy_contract_and_wait(&client, &SIMPLE_WALLET_IMAGE, &SIMPLE_WALLET_ABI, "{}", &WALLET_KEYS, 0).await;
 

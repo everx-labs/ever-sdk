@@ -23,7 +23,7 @@ use tests_common::*;
 async fn full_test_piggy_bank() {
 
     // connect to node
-	let client = init_node_connection();
+	let client = init_node_connection().await;
 
 	// generate key pair
     let mut csprng = OsRng::new().unwrap();

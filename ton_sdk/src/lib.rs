@@ -86,11 +86,26 @@ pub mod node_client {
 pub mod json_helper;
 
 /// Init SKD. Globally saves queries and requests server URLs
+#[cfg(feature = "node_interaction")]
+pub async fn init(config: NodeClientConfig) -> Result<NodeClient> { 
+    NodeClient::new(config).await
+}
+
+/// Init SKD. Globally saves queries and requests server URLs
+#[cfg(feature = "node_interaction")]
+pub async fn init_json(config: &str) -> Result<NodeClient> {
+    init(serde_json::from_str(config)
+        .map_err(|err| SdkError::InvalidArg { msg: format!("{}", err) } )?).await
+}
+
+/// Init SKD. Globally saves queries and requests server URLs
+#[cfg(not(feature = "node_interaction"))]
 pub fn init(config: NodeClientConfig) -> Result<NodeClient> { 
     NodeClient::new(config)
 }
 
 /// Init SKD. Globally saves queries and requests server URLs
+#[cfg(not(feature = "node_interaction"))]
 pub fn init_json(config: &str) -> Result<NodeClient> {
     init(serde_json::from_str(config)
         .map_err(|err| SdkError::InvalidArg { msg: format!("{}", err) } )?)
