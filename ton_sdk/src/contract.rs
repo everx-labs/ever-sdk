@@ -15,7 +15,7 @@
 use crate::json_helper;
 use crate::local_tvm;
 use crate::error::SdkError;
-use crate::{AbiContract, Message, MessageId};
+use crate::{AbiContract, Message, MessageId, TimeoutsConfig};
 
 use ed25519_dalek::{Keypair, PublicKey};
 use chrono::prelude::Utc;
@@ -26,8 +26,9 @@ use ton_block::{
     ExternalInboundMessageHeader, GetRepresentationHash, Message as TvmMessage, MsgAddressInt,
     Serializable, StateInit, StorageInfo };
 use ton_types::cells_serialization::{deserialize_cells_tree, BagOfCells};
-use ton_types::{error, Result, AccountId, Cell, SliceData, HashmapE};
+use ton_types::{error, fail, Result, AccountId, Cell, SliceData, HashmapE};
 use ton_abi::json_abi::DecodedMessage;
+use ton_abi::token::{Detokenizer, Tokenizer, TokenValue};
 
 #[cfg(feature = "fee_calculation")]
 use crate::TransactionFees;
@@ -35,22 +36,18 @@ use crate::TransactionFees;
 use ton_executor::BlockchainConfig;
 
 #[cfg(feature = "node_interaction")]
-use crate::{NodeClient, Transaction};
-#[cfg(feature = "node_interaction")]
-use crate::json_helper::account_status_to_u8;
-#[cfg(feature = "node_interaction")]
-use crate::transaction::TRANSACTION_FIELDS_ORDINARY;
-#[cfg(feature = "node_interaction")]
-use crate::types::{BLOCKS_TABLE_NAME, CONTRACTS_TABLE_NAME, TRANSACTIONS_TABLE_NAME};
+use crate::{
+    NodeClient, Transaction,
+    json_helper::account_status_to_u8,
+    transaction::TRANSACTION_FIELDS_ORDINARY,
+    types::{BLOCKS_TABLE_NAME, CONTRACTS_TABLE_NAME, TRANSACTIONS_TABLE_NAME}
+};
+use std::{
+    collections::HashMap,
+    iter::FromIterator
+};
 #[cfg(feature = "node_interaction")]
 use ton_block::TransactionProcessingStatus;
-#[cfg(feature = "node_interaction")]
-use ton_abi::token::{TokenValue, Tokenizer, Detokenizer};
-#[cfg(feature = "node_interaction")]
-use std::collections::HashMap;
-#[cfg(feature = "node_interaction")]
-use std::iter::FromIterator;
-#[cfg(feature = "node_interaction")]
 use serde_json::Value;
 #[cfg(feature = "node_interaction")]
 use futures::FutureExt;
@@ -94,6 +91,19 @@ pub struct Contract {
     #[serde(deserialize_with = "json_helper::deserialize_tree_of_cells_opt_cell")]
     pub data: Option<Cell>,
     pub last_paid: u32,
+}
+
+#[derive(Clone, Debug)]
+pub struct FunctionCallSet {
+    pub func: String,
+    pub header: Option<String>,
+    pub input: String,
+    pub abi: String,
+}
+
+pub struct SdkMessage {
+    pub message: TvmMessage,
+    pub expire: Option<u32>
 }
 
 // The struct represents conract's image
@@ -305,43 +315,6 @@ impl Contract {
             .map(|val| val.to_string())
     }
 
-    // Calculate timeout according to try number and timeout grow rate
-    // (timeouts are growing from try to try)
-    fn calc_timeout(timeout: u32, grow_rate: f32, try_index: u8) -> u32 {
-       (timeout as f64 * grow_rate.powi(try_index as i32) as f64) as u32
-    }
-
-    // Add `expire` parameter to contract functions header
-    fn make_expire_header(client: &NodeClient, abi: String, header: Option<String>, try_index: u8) -> Result<(Option<String>, Option<u32>)> {
-        let abi = AbiContract::load(abi.as_bytes())?;
-        // use expire only if contract supports it
-        if abi.header().contains(&serde_json::from_value::<ton_abi::Param>("expire".into())?) {
-            // expire is `now + timeout`
-            let timeout = Self::calc_timeout(
-                client.timeouts().message_expiration_timeout,
-                client.timeouts().message_expiration_timeout_grow_factor,
-                try_index);
-            let expire = Self::get_now()? + timeout / 1000;
-            let expire = ton_abi::TokenValue::Expire(expire);
-
-            let header = serde_json::from_str::<Value>(&header.unwrap_or("{}".to_owned()))?;
-            // parse provided header using calculated value as default for expire param
-            let header = Tokenizer::tokenize_optional_params(
-                abi.header(),
-                &header,
-                &HashMap::from_iter(std::iter::once(("expire".to_owned(), expire))))?;
-            // take resulting expire value to use it in transaction waiting
-            let expire = match header.get("expire").unwrap() {
-                TokenValue::Expire(expire) => *expire,
-                _ => return Err(SdkError::InternalError{msg: "Wrong expire type".to_owned()}.into())
-            };
-
-            Ok((Some(Detokenizer::detokenize_optional(&header)?), Some(expire)))
-        } else {
-            Ok((header, None))
-        }
-    }
-
     const MESSAGE_EXPIRED_CODE: i32 = 57;
     const REPLAY_PROTECTION_CODE: i32 = 52;
 
@@ -370,18 +343,22 @@ impl Contract {
     // Works with json representation of input and abi.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
-    pub async fn call_json(client: &NodeClient, address: MsgAddressInt, func: String, header: Option<String>, input: String,
-        abi: String, key_pair: Option<&Keypair>
+    pub async fn call_json(
+        client: &NodeClient,
+        address: MsgAddressInt,
+        params: FunctionCallSet,
+        key_pair: Option<&Keypair>
     ) -> Result<Transaction> {
         Self::retry_call(client.timeouts().message_retries_count, |try_index: u8| {
-            let (header, expire) = Self::make_expire_header(client, abi.clone(), header.clone(), try_index)?;
+            let msg = Self::construct_call_message_json(
+                address.clone(),
+                params.clone(),
+                false,
+                key_pair,
+                Some(client.timeouts()),
+                Some(try_index))?;
 
-            // pack params into bag of cells via ABI
-            let msg_body = ton_abi::encode_function_call(abi.clone(), func.clone(), header.clone(), input.clone(), false, key_pair)?;
-
-            let msg = Self::create_message(address.clone(), msg_body.into())?;
-
-            Ok(Self::send_message(client, msg, expire, try_index))
+            Ok(Self::process_message(client, msg.message, msg.expire, try_index))
         }).await
     }
 
@@ -389,18 +366,23 @@ impl Contract {
     // Works with json representation of input and abi.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
-    pub async fn deploy_json(client: &NodeClient, func: String, header: Option<String>, input: String, abi: String,
-        image: ContractImage, key_pair: Option<&Keypair>, workchain_id: i32
+    pub async fn deploy_json(
+        client: &NodeClient,
+        params: FunctionCallSet,
+        image: ContractImage,
+        key_pair: Option<&Keypair>,
+        workchain_id: i32
     ) -> Result<Transaction> {
         Self::retry_call(client.timeouts().message_retries_count, |try_index: u8| {
-            let (header, expire) = Self::make_expire_header(client, abi.clone(), header.clone(), try_index)?;
+            let msg = Self::construct_deploy_message_json(
+                params.clone(),
+                image.clone(),
+                key_pair,
+                workchain_id,
+                Some(client.timeouts()),
+                Some(try_index))?;
 
-            let msg_body = ton_abi::encode_function_call(abi.clone(), func.clone(), header.clone(), input.clone(), false, key_pair)?;
-
-            let cell = msg_body.into();
-            let msg = Self::create_deploy_message(Some(cell), image.clone(), workchain_id)?;
-
-            Ok(Self::send_message(client, msg, expire, try_index))
+            Ok(Self::process_message(client, msg.message, msg.expire, try_index))
         }).await
     }
 
@@ -409,32 +391,25 @@ impl Contract {
     // it's id and processing status is returned by this function
     pub async fn deploy_no_constructor(client: &NodeClient, image: ContractImage, workchain_id: i32)
         -> Result<Transaction> {
-            let msg = Self::create_deploy_message(None, image, workchain_id)?;
+        let msg = Self::create_deploy_message(None, image, workchain_id)?;
 
-            Self::send_message(client, msg, None, 0).await
+        Self::process_message(client, msg, None, 0).await
     }
 
     // Asynchronously calls contract by sending given message.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
-    pub async fn send_message(client: &NodeClient, msg: TvmMessage, expire: Option<u32>, try_index: u8)
+    pub async fn process_message(client: &NodeClient, msg: TvmMessage, expire: Option<u32>, try_index: u8)
         -> Result<Transaction> 
     {
-        // send message
-        let msg_id = Self::_send_message(client, msg).await?;
-        // subscribe on updates from DB and return updates stream
-        Self::wait_transaction_processing(client, &msg_id, expire, try_index).await
+        let (data, msg_id) = Self::serialize_message(msg)?;
+        Self::process_serialized_message(client, &msg_id, &data, expire, try_index).await
     }
 
-   async fn _send_message(client: &NodeClient, msg: TvmMessage) -> Result<MessageId> {
-        let (data, id) = Self::serialize_message(msg)?;
-        client.send_message(&id.to_bytes()?, &data).await?;
+    pub async fn process_serialized_message(client: &NodeClient, id: &MessageId, msg: &[u8], expire: Option<u32>, try_index: u8) -> Result<Transaction> {
+        client.send_message(&id.to_bytes()?, msg).await?;
         //println!("msg is sent, id: {}", id);
-        Ok(id.clone())
-    }
-
-    pub async fn send_serialized_message(client: &NodeClient, id: &MessageId, msg: &[u8]) -> Result<()> {
-        client.send_message(&id.to_bytes()?, msg).await
+        Self::wait_transaction_processing(client, id, expire, try_index).await
     }
 
     pub async fn wait_transaction_processing(
@@ -451,7 +426,7 @@ impl Contract {
             try_index);
         if let Some(expire) = expire {
             //println!("expire {}", expire);
-            let now = Self::get_now()?;
+            let now = Self::now()?;
             if expire <= now {
                 return Err(SdkError::InvalidArg{ msg: "Message already expired".to_owned() }.into());
             }
@@ -526,7 +501,8 @@ impl Contract {
 
 pub struct MessageToSign {
     pub message: Vec<u8>,
-    pub data_to_sign: Vec<u8>
+    pub data_to_sign: Vec<u8>,
+    pub expire: Option<u32>
 }
 
 #[cfg(feature = "fee_calculation")]
@@ -621,7 +597,7 @@ impl Contract {
             self.balance_other_as_hashmape()?,
             &self.id,
             None,
-            Self::get_now()?,
+            Self::now()?,
             code,
             self.data.clone(),
             &message)?;
@@ -659,7 +635,7 @@ impl Contract {
             self.to_account()?,
             message,
             BlockchainConfig::default(),
-            Self::get_now()?)?;
+            Self::now()?)?;
                 
         let mut messages = vec![];
         for tvm_msg in &tvm_messages {
@@ -735,45 +711,102 @@ impl Contract {
 
     // ------- Call constructing functions -------
 
+    // Calculate timeout according to try number and timeout grow rate
+    // (timeouts are growing from try to try)
+    fn calc_timeout(timeout: u32, grow_rate: f32, try_index: u8) -> u32 {
+        (timeout as f64 * grow_rate.powi(try_index as i32) as f64) as u32
+    }
+
+    // Add `expire` parameter to contract functions header
+    fn make_expire_header(
+        timeouts: Option<&TimeoutsConfig>,
+        abi: String,
+        header: Option<String>,
+        try_index: Option<u8>
+    ) -> Result<(Option<String>, Option<u32>)> {
+        let abi = AbiContract::load(abi.as_bytes())?;
+        // use expire only if contract supports it
+        if abi.header().contains(&serde_json::from_value::<ton_abi::Param>("expire".into())?) {
+            let default = TimeoutsConfig::default();
+            let timeouts = timeouts.unwrap_or(&default);
+            // expire is `now + timeout`
+            let timeout = Self::calc_timeout(
+                timeouts.message_expiration_timeout,
+                timeouts.message_expiration_timeout_grow_factor,
+                try_index.unwrap_or(0));
+            let expire = Self::now()? + timeout / 1000;
+            let expire = ton_abi::TokenValue::Expire(expire);
+
+            let header = serde_json::from_str::<Value>(&header.unwrap_or("{}".to_owned()))?;
+            // parse provided header using calculated value as default for expire param
+            let header = Tokenizer::tokenize_optional_params(
+                abi.header(),
+                &header,
+                &HashMap::from_iter(std::iter::once(("expire".to_owned(), expire))))?;
+            // take resulting expire value to use it in transaction waiting
+            let expire = match header.get("expire").unwrap() {
+                TokenValue::Expire(expire) => *expire,
+                _ => fail!(SdkError::InternalError{msg: "Wrong expire type".to_owned()})
+            };
+
+            Ok((Some(Detokenizer::detokenize_optional(&header)?), Some(expire)))
+        } else {
+            Ok((header, None))
+        }
+    }
+
     // Packs given inputs by abi into Message struct.
     // Works with json representation of input and abi.
     // Returns message's bag of cells and identifier.
-    pub fn construct_call_message_json(address: MsgAddressInt, func: String, header: Option<String>,
-        input: String, abi: String, internal: bool, key_pair: Option<&Keypair>
-    ) -> Result<(Vec<u8>, MessageId)> {
+    pub fn construct_call_message_json(
+        address: MsgAddressInt,
+        params: FunctionCallSet,
+        internal: bool,
+        key_pair: Option<&Keypair>,
+        timeouts: Option<&TimeoutsConfig>,
+        try_index: Option<u8>
+    ) -> Result<SdkMessage> {
+        let (header, expire) = Self::make_expire_header(timeouts, params.abi.clone(), params.header, try_index)?;
 
         // pack params into bag of cells via ABI
-        let msg_body = ton_abi::encode_function_call(abi, func, header, input, internal, key_pair)?;
+        let msg_body = ton_abi::encode_function_call(
+            params.abi, params.func, header, params.input, internal, key_pair
+        )?;
 
-        let msg = Self::create_message(address, msg_body.into())?;
-
-        Self::serialize_message(msg)
+        Ok(SdkMessage {
+            message: Self::create_message(address, msg_body.into())?,
+            expire
+        })
     }
 
     // Creates Message struct with provided body and account address
     // Returns message's bag of cells and identifier.
-    pub fn construct_call_message_with_body(address: MsgAddressInt, body: &[u8]) -> Result<(Vec<u8>, MessageId)> {
+    pub fn construct_call_message_with_body(address: MsgAddressInt, body: &[u8]) -> Result<TvmMessage> {
         let body_cell = Self::deserialize_tree_to_slice(body)?;
 
-        let msg = Self::create_message(address, body_cell)?;
-
-        Self::serialize_message(msg)
+        Self::create_message(address, body_cell)
     }
 
     // Packs given inputs by abi into Message struct without sign and returns data to sign.
     // Sign should be then added with `add_sign_to_message` function
     // Works with json representation of input and abi.
-    pub fn get_call_message_bytes_for_signing(address: MsgAddressInt, func: String, 
-        header: Option<String>, input: String, abi: String
+    pub fn get_call_message_bytes_for_signing(
+        address: MsgAddressInt,
+        params: FunctionCallSet,
+        timeouts: Option<&TimeoutsConfig>,
+        try_index: Option<u8>
     ) -> Result<MessageToSign> {
+        let (header, expire) = Self::make_expire_header(timeouts, params.abi.clone(), params.header, try_index)?;
         
         // pack params into bag of cells via ABI
-        let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(abi, func, header, input)?;
+        let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(
+            params.abi, params.func, header, params.input
+        )?;
 
         let msg = Self::create_message(address, msg_body.into())?;
 
         Self::serialize_message(msg).map(|(msg_data, _id)| {
-                MessageToSign { message: msg_data, data_to_sign } 
+                MessageToSign { message: msg_data, data_to_sign, expire } 
             }
         )
     }
@@ -783,55 +816,65 @@ impl Contract {
     // Packs given image and input into Message struct.
     // Works with json representation of input and abi.
     // Returns message's bag of cells and identifier.
-    pub fn construct_deploy_message_json(func: String, header: Option<String>, input: String,
-        abi: String, image: ContractImage, key_pair: Option<&Keypair>, workchain_id: i32
-    ) -> Result<(Vec<u8>, MessageId)> {
+    pub fn construct_deploy_message_json(
+        params: FunctionCallSet,
+        image: ContractImage,
+        key_pair: Option<&Keypair>,
+        workchain_id: i32,
+        timeouts: Option<&TimeoutsConfig>,
+        try_index: Option<u8>
+    ) -> Result<SdkMessage> {
+        let (header, expire) = Self::make_expire_header(timeouts, params.abi.clone(), params.header, try_index)?;
 
-        let msg_body = ton_abi::encode_function_call(abi, func, header, input, false, key_pair)?;
+        let msg_body = ton_abi::encode_function_call(
+            params.abi, params.func, header, params.input, false, key_pair)?;
 
         let cell = msg_body.into();
-        let msg = Self::create_deploy_message(Some(cell), image, workchain_id)?;
-
-        Self::serialize_message(msg)
+        Ok(SdkMessage {
+            message: Self::create_deploy_message(Some(cell), image, workchain_id)?,
+            expire
+        })
     }
 
     // Packs given image and body into Message struct.
     // Returns message's bag of cells and identifier.
-    pub fn construct_deploy_message_with_body(image: ContractImage, body: Option<&[u8]>, workchain_id: i32) -> Result<(Vec<u8>, MessageId)> {
+    pub fn construct_deploy_message_with_body(image: ContractImage, body: Option<&[u8]>, workchain_id: i32) -> Result<TvmMessage> {
         let body_cell = match body {
             None => None,
             Some(data) => Some(Self::deserialize_tree_to_slice(data)?)
         };
 
-        let msg = Self::create_deploy_message(body_cell, image, workchain_id)?;
-        
-        Self::serialize_message(msg)
+        Self::create_deploy_message(body_cell, image, workchain_id)
     }
 
     // Packs given image into Message struct.
     // Returns message's bag of cells and identifier.
     pub fn construct_deploy_message_no_constructor(image: ContractImage, workchain_id: i32)
-        -> Result<(Vec<u8>, MessageId)>
+        -> Result<TvmMessage>
     {
-        let msg = Self::create_deploy_message(None, image, workchain_id)?;
-
-        Self::serialize_message(msg)
+        Self::create_deploy_message(None, image, workchain_id)
     }
     
     // Packs given image and input into Message struct without sign and returns data to sign.
     // Sign should be then added with `add_sign_to_message` function
     // Works with json representation of input and abi.
-    pub fn get_deploy_message_bytes_for_signing(func: String, header: Option<String>, input: String,
-        abi: String, image: ContractImage, workchain_id: i32
+    pub fn get_deploy_message_bytes_for_signing(
+        params: FunctionCallSet,
+        image: ContractImage,
+        workchain_id: i32,
+        timeouts: Option<&TimeoutsConfig>,
+        try_index: Option<u8>
     ) -> Result<MessageToSign> {
+        let (header, expire) = Self::make_expire_header(timeouts, params.abi.clone(), params.header, try_index)?;
 
-        let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(abi, func, header, input)?;
+        let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(
+            params.abi, params.func, header, params.input)?;
 
         let cell = msg_body.into();
         let msg = Self::create_deploy_message(Some(cell), image, workchain_id)?;
 
         Self::serialize_message(msg).map(|(msg_data, _id)| {
-                MessageToSign { message: msg_data, data_to_sign } 
+                MessageToSign { message: msg_data, data_to_sign, expire } 
             }
         )
     }
@@ -950,7 +993,7 @@ impl Contract {
             &storage))
     }
 
-    pub fn get_now() -> Result<u32> {
+    pub fn now() -> Result<u32> {
         Ok(<u32>::try_from(Utc::now().timestamp())?)
     }
 }

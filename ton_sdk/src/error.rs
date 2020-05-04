@@ -110,4 +110,7 @@ pub enum SdkError {
 
     #[fail(display = "Message expired")]
     MessageExpired,
+
+    #[fail(display = "SDK is initialized without node address")]
+    SdkNotInitialized,
 }

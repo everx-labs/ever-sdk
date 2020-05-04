@@ -54,13 +54,11 @@ const DEFAULT_GIVER_KEYS: &str = r#"
 pub fn get_config() -> serde_json::Value {
     if NODE_SE {
         json!({
-            "queries_server": "http://localhost/graphql",
-            "subscriptions_server": "ws://localhost/graphql"
+            "base_url": "http://localhost"
         })
     } else {
         json!({
-            "queries_server": "https://cinet.tonlabs.io/graphql",
-            "subscriptions_server": "wss://cinet.tonlabs.io/graphql"
+            "base_url": "cinet.tonlabs.io"
         })
     }
 }
@@ -238,10 +236,12 @@ pub async fn deploy_contract_and_wait(
     // call deploy method
     let tr = Contract::deploy_json(
         client,
-        "constructor".to_owned(),
-        None,
-        constructor_params.to_owned(),
-        abi.to_owned(),
+        FunctionCallSet {
+            func: "constructor".to_owned(),
+            header: None,
+            input: constructor_params.to_owned(),
+            abi: abi.to_owned(),
+        },
         contract_image,
         Some(key_pair),
         workchain_id)
@@ -270,7 +270,16 @@ pub async fn call_contract(
 ) -> Transaction {
     let now = std::time::Instant::now();
     // call needed method
-    let tr = Contract::call_json(client, address, func.to_owned(), None, input, abi.to_owned(), key_pair)
+    let tr = Contract::call_json(
+        client,
+        address, 
+        FunctionCallSet {
+            func: func.to_owned(),
+            header: None,
+            input,
+            abi: abi.to_owned(),
+        },
+        key_pair)
         .await;
 
     let t = now.elapsed();
@@ -297,7 +306,16 @@ pub async fn call_contract_and_wait(
 ) -> (String, Transaction) {
     let now = std::time::Instant::now();
     // call needed method
-    let tr = Contract::call_json(client, address, func.to_owned(), None, input, abi.to_owned(), key_pair)
+    let tr = Contract::call_json(
+        client,
+        address,
+        FunctionCallSet {
+            func: func.to_owned(),
+            header: None,
+            input,
+            abi: abi.to_owned(),
+        },
+        key_pair)
             .await;
 
     let t = now.elapsed();

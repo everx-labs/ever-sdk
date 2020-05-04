@@ -37,7 +37,15 @@ async fn test_call_contract(client: &NodeClient, address: MsgAddressInt, key_pai
 
     // call needed method
     let tr = Contract::call_json(
-        client, address, func.clone(), None, FUNCTION_PARAMS.to_owned(), abi.clone(), Some(&key_pair))
+        client,
+        address,
+        FunctionCallSet {
+            func: func.clone(),
+            header: None,
+            input: FUNCTION_PARAMS.to_owned(),
+            abi:  abi.clone(),
+        },
+        Some(&key_pair))
             .await
             .expect("Error calling contract method");
 
@@ -96,7 +104,16 @@ pub async fn test_deploy_and_call_contract() {
     let func = "constructor".to_string();
     let abi = WALLET_ABI.to_string();
 
-    let tr = Contract::deploy_json(&client, func, None, "{}".to_owned(), abi, contract_image, Some(&keypair), 0)
+    let tr = Contract::deploy_json(
+        &client,
+        FunctionCallSet {
+            func,
+            header: None,
+            input: "{}".to_owned(),
+            abi,
+        },
+        contract_image,
+        Some(&keypair), 0)
         .await
         .expect("Error deploying contract");
 
@@ -180,20 +197,24 @@ async fn test_expire() {
 
     let wallet_address = deploy_contract_and_wait(&client, &WALLET_IMAGE, &WALLET_ABI, "{}", &keypair, 0).await;
 
-    let (msg, _) = Contract::construct_call_message_json(
+    let msg = Contract::construct_call_message_json(
         wallet_address.clone(),
-        "setSubscriptionAccount".to_owned(),
-        Some(json!({
-            "expire": 123
-        }).to_string()),
-        json!({
-            "addr": wallet_address.to_string()
-        }).to_string(),
-        WALLET_ABI.clone(),
+        FunctionCallSet {
+            func: "setSubscriptionAccount".to_owned(),
+            header: Some(json!({
+                "expire": 123
+            }).to_string()),
+            input: json!({
+                "addr": wallet_address.to_string()
+            }).to_string(),
+            abi: WALLET_ABI.clone(),
+        },
         false,
-        Some(&keypair)).unwrap();
+        Some(&keypair),
+        None,
+        None).unwrap();
 
-    let result = Contract::send_message(&client, Contract::deserialize_message(&msg).unwrap(), Some(Contract::get_now().unwrap() + 1), 0).await;
+    let result = Contract::process_message(&client, msg.message, Some(Contract::now().unwrap() + 1), 0).await;
 
     match result {
         Err(error) => match error.downcast_ref::<SdkError>().unwrap() {
@@ -248,19 +269,23 @@ fn professor_test() {
         &keypair.public).expect("Unable to parse contract code file");
 
     let _message = Contract::construct_deploy_message_json(
-            "constructor".to_owned(),
-            None,
-            json!({
+        FunctionCallSet {
+            func: "constructor".to_owned(),
+            header: None,
+            input: json!({
                 "parents": [1234, 1234],
                 "timestamps": [1234, 1234],
                 "amount": 1234,
                 "details": [123, 123],
                 "detailsDelimiter": [1]
             }).to_string(),
-            PROFESSOR_ABI.to_owned(),
-            contract_image,
-            Some(&keypair),
-            0).unwrap();
+            abi: PROFESSOR_ABI.to_owned(),
+        },
+        contract_image,
+        Some(&keypair),
+        0,
+        None,
+        None).unwrap();
 }
 
 #[test]
