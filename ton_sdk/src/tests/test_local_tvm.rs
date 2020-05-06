@@ -96,7 +96,7 @@ fn test_stack_from_json() {
     fn int_item(data: IntegerData) -> StackItem {
         StackItem::Integer(Arc::new(data))
     }
-    fn i64(v: i64) -> StackItem {
+    fn i64_item(v: i64) -> StackItem {
         int_item(IntegerData::from_i64(v))
     }
     test_json("[]", vec![]);
@@ -104,21 +104,21 @@ fn test_stack_from_json() {
     test_json("[false]", vec![int_item(IntegerData::zero())]);
     test_json("[true]", vec![int_item(IntegerData::one())]);
     test_json(r#"["NaN"]"#, vec![int_item(IntegerData::nan())]);
-    test_json(r#"[11]"#, vec![i64(11)]);
-    test_json(r#"["12"]"#, vec![i64(12)]);
-    test_json(r#"["0x13"]"#, vec![i64(0x13)]);
-    test_json(r#"["0X14"]"#, vec![i64(0x14)]);
-    test_json(r#"[-15]"#, vec![i64(-15)]);
-    test_json(r#"["-16"]"#, vec![i64(-16)]);
-    test_json(r#"["-0x17"]"#, vec![i64(-0x17)]);
-    test_json(r#"["-0X18"]"#, vec![i64(-0x18)]);
-    test_json(r#"["0x123456789abcDEF"]"#, vec![i64(0x123456789abcdef)]);
+    test_json(r#"[11]"#, vec![i64_item(11)]);
+    test_json(r#"["12"]"#, vec![i64_item(12)]);
+    test_json(r#"["0x13"]"#, vec![i64_item(0x13)]);
+    test_json(r#"["0X14"]"#, vec![i64_item(0x14)]);
+    test_json(r#"[-15]"#, vec![i64_item(-15)]);
+    test_json(r#"["-16"]"#, vec![i64_item(-16)]);
+    test_json(r#"["-0x17"]"#, vec![i64_item(-0x17)]);
+    test_json(r#"["-0X18"]"#, vec![i64_item(-0x18)]);
+    test_json(r#"["0x123456789abcDEF"]"#, vec![i64_item(0x123456789abcdef)]);
     test_json(r#"[1, [2, 3, 4]]"#, vec![
-        i64(1),
+        i64_item(1),
         StackItem::Tuple(vec![
-            i64(2),
-            i64(3),
-            i64(4),
+            i64_item(2),
+            i64_item(3),
+            i64_item(4),
         ])
     ]);
 
@@ -131,15 +131,15 @@ fn test_stack_from_json() {
     test_stack(r#"["0x0"]"#, vec![int_item(IntegerData::zero())]);
     test_stack(r#"["0x1"]"#, vec![int_item(IntegerData::one())]);
     test_stack(r#"["NaN"]"#, vec![int_item(IntegerData::nan())]);
-    test_stack(r#"["0xb"]"#, vec![i64(11)]);
-    test_stack(r#"["0xc"]"#, vec![i64(12)]);
-    test_stack(r#"["0x13"]"#, vec![i64(0x13)]);
-    test_stack(r#"["0x14"]"#, vec![i64(0x14)]);
-    test_stack(r#"["-0xf"]"#, vec![i64(-15)]);
-    test_stack(r#"["-0x10"]"#, vec![i64(-16)]);
-    test_stack(r#"["-0x17"]"#, vec![i64(-0x17)]);
-    test_stack(r#"["-0x18"]"#, vec![i64(-0x18)]);
-    test_stack(r#"["0x123456789abcdef"]"#, vec![i64(0x123456789abcdef)]);
+    test_stack(r#"["0xb"]"#, vec![i64_item(11)]);
+    test_stack(r#"["0xc"]"#, vec![i64_item(12)]);
+    test_stack(r#"["0x13"]"#, vec![i64_item(0x13)]);
+    test_stack(r#"["0x14"]"#, vec![i64_item(0x14)]);
+    test_stack(r#"["-0xf"]"#, vec![i64_item(-15)]);
+    test_stack(r#"["-0x10"]"#, vec![i64_item(-16)]);
+    test_stack(r#"["-0x17"]"#, vec![i64_item(-0x17)]);
+    test_stack(r#"["-0x18"]"#, vec![i64_item(-0x18)]);
+    test_stack(r#"["0x123456789abcdef"]"#, vec![i64_item(0x123456789abcdef)]);
     test_stack(r#"["0x1",["0x2","0x3","0x4"]]"#, vec![
         int_item(IntegerData::from_i32(1)),
         StackItem::Tuple(vec![
