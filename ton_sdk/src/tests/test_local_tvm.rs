@@ -13,6 +13,10 @@
 */
 
 use crate::tests_common::PIGGY_BANK_CONTRACT_ABI;
+use serde_json::Value;
+use ton_vm::stack::StackItem;
+use ton_vm::stack::integer::IntegerData;
+use std::sync::Arc;
 
 const CONTRACT: &str = r#"{
     "id": "0:19ef6e8e83c5287b85ad0bfebf2fb1af6b5ad0844253d764f9675d772af0a56a",
@@ -41,7 +45,7 @@ fn test_local_piggy_call() {
         "getTargetAmount".to_owned(),
         messages[0].body().expect("Message has no body"),
         false)
-            .expect("Error decoding result");
+        .expect("Error decoding result");
 
     assert_eq!(answer, r#"{"value0":"0x7b"}"#);
 }
@@ -81,3 +85,59 @@ fn test_executor_call() {
     assert!(result.fees.total_account_fees > 10264122);
     assert!(result.fees.storage_fee > 122);
 }
+
+#[test]
+fn test_stack_from_json() {
+    fn test_json(json: &str, expected: Vec<StackItem>) {
+        let array: Vec<Value> = serde_json::from_str(json).unwrap();
+        let items = crate::contract::StackItemJSON::items_from_json_array(array.iter()).unwrap();
+        assert_eq!(items, expected);
+    }
+    fn i64(v: i64) -> StackItem {
+        StackItem::Integer(Arc::new(IntegerData::from_i64(v)))
+    }
+    test_json("[]", vec![]);
+    test_json("[null]", vec![StackItem::None]);
+    test_json("[false]", vec![StackItem::Integer(Arc::new(IntegerData::zero()))]);
+    test_json("[true]", vec![StackItem::Integer(Arc::new(IntegerData::one()))]);
+    test_json(r#"["NaN"]"#, vec![StackItem::Integer(Arc::new(IntegerData::nan()))]);
+    test_json(r#"[11]"#, vec![i64(11)]);
+    test_json(r#"["12"]"#, vec![i64(12)]);
+
+    test_json(
+        r#"["0x13"]"#,
+        vec![
+            i64(0x13)
+        ]);
+
+    test_json(
+        r#"["0X14"]"#,
+        vec![
+            i64(0x14),
+        ]);
+
+    test_json(
+        r#"[-15]"#,
+        vec![
+            i64(-15),
+        ]);
+
+    test_json(
+        r#"["-16"]"#,
+        vec![
+            i64(-16),
+        ]);
+
+    test_json(r#"["-0x17"]"#, vec![i64(-0x17)]);
+
+    test_json(r#"["-0X18"]"#, vec![i64(-0x18)]);
+
+    test_json(r#"["0x123456789abcDEF"]"#, vec![i64(0x123456789abcdef)]);
+
+    fn test_stack(stack: Vec<StackItem>, expected: &str) {
+        let json = crate::contract::StackItemJSON::json_array_from_items(stack.iter()).unwrap();
+        assert_eq!(json.to_string(), expected);
+    }
+    test_stack(vec![], "[]");
+}
+
