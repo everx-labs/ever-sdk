@@ -27,7 +27,11 @@ fn create_handlers() -> DispatchTable {
     crate::setup::register(&mut handlers);
     crate::crypto::register(&mut handlers);
     crate::contracts::register(&mut handlers);
-    
+    crate::tvm::register(&mut handlers);
+
+    //TODO: uncomment this when cell module will be ready
+    // crate::cell::register(&mut handlers);
+
     #[cfg(feature = "node_interaction")]
     crate::queries::register(&mut handlers);
 
@@ -54,7 +58,7 @@ impl ClientContext {
     pub fn get_client(&self) -> ApiResult<&NodeClient> {
         self.client.as_ref().ok_or(ApiError::sdk_not_init())
     }
-    
+
     #[cfg(feature = "node_interaction")]
     pub fn take_runtime(&mut self) -> ApiResult<Runtime> {
         self.runtime.take().ok_or(ApiError::sdk_not_init())
@@ -88,7 +92,7 @@ impl Client {
     pub fn create_context(&mut self) -> InteropContext {
         let handle = self.next_context_handle;
         self.next_context_handle = handle.wrapping_add(1);
-        
+
         #[cfg(feature = "node_interaction")]
         self.contexts.insert(handle, ClientContext {
             handle,

@@ -19,8 +19,6 @@ extern crate ton_vm;
 extern crate serde_derive;
 #[macro_use]
 extern crate failure;
-
-#[cfg(feature = "node_interaction")]
 #[macro_use]
 extern crate serde_json;
 
@@ -86,7 +84,7 @@ pub mod node_client {
 pub mod json_helper;
 
 /// Init SKD. Globally saves queries and requests server URLs
-pub fn init(config: NodeClientConfig) -> Result<NodeClient> { 
+pub fn init(config: NodeClientConfig) -> Result<NodeClient> {
     NodeClient::new(config)
 }
 

@@ -21,10 +21,11 @@ use ed25519_dalek::{Keypair, PublicKey};
 use chrono::prelude::Utc;
 use std::convert::{Into, TryFrom};
 use std::io::{Cursor, Read, Seek};
+use std::slice::Iter;
 use ton_block::{
     Account, AccountState, AccountStatus, AccountStorage, CurrencyCollection, Deserializable,
     ExternalInboundMessageHeader, GetRepresentationHash, Message as TvmMessage, MsgAddressInt,
-    Serializable, StateInit, StorageInfo };
+    Serializable, StateInit, StorageInfo};
 use ton_types::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use ton_types::{error, fail, Result, AccountId, Cell, SliceData, HashmapE};
 use ton_abi::json_abi::DecodedMessage;
@@ -51,6 +52,110 @@ use ton_block::TransactionProcessingStatus;
 use serde_json::Value;
 #[cfg(feature = "node_interaction")]
 use futures::FutureExt;
+use ton_vm::stack::{StackItem, Stack};
+use ton_vm::stack::integer::IntegerData;
+use std::sync::Arc;
+
+// JSON extension to StackItem
+//
+struct StackItemJSON;
+
+impl StackItemJSON {
+    fn invalid_json() -> SdkError {
+        SdkError::InvalidData { msg: "Invalid JSON value for stack item".to_owned() }
+    }
+
+    fn json_array_from_items(items: Iter<StackItem>) -> Result<Value> {
+        let mut values = Vec::<Value>::new();
+        for item in items {
+            values.push(StackItemJSON::json_value_from_item(item)?)
+        }
+        Ok(Value::Array(values))
+    }
+
+    fn items_from_json_array(values: Iter<Value>) -> Result<Vec<StackItem>> {
+        let mut items = Vec::<StackItem>::new();
+        for value in values {
+            items.push(Self::item_from_json_value(value)?)
+        }
+        Ok(items)
+    }
+
+    fn json_value_from_item(item: &StackItem) -> Result<Value> {
+        Ok(match item {
+            StackItem::None =>
+                Value::Null,
+            StackItem::Integer(i) => {
+                let mut hex = i.to_str_radix(16);
+                if hex.ne("NaN") {
+                    hex.insert_str(if hex.starts_with("-") { 1 } else { 0 }, "0x")
+                }
+                Value::String(hex)
+            }
+            StackItem::Tuple(items) =>
+                Self::json_array_from_items(items.iter())?,
+            StackItem::Builder(_) =>
+                json!({"builder": Value::Null}),
+            StackItem::Slice(_) =>
+                json!({"slice": Value::Null}),
+            StackItem::Cell(_) =>
+                json!({"cell": Value::Null}),
+            StackItem::Continuation(_) =>
+                json!({"continuation": Value::Null}),
+        })
+    }
+
+    fn parse_integer_data(s: &String) -> Result<IntegerData> {
+        Ok(if s.eq("NaN") {
+            IntegerData::nan()
+        } else {
+            let hex_prefix_pos =
+                if s.starts_with("0x") || s.starts_with("0X") {
+                    Some(0)
+                } else if s.starts_with("-0x") || s.starts_with("-0X") {
+                    Some(1)
+                } else {
+                    None
+                };
+            if let Some(pos) = hex_prefix_pos {
+                let mut ms = s.clone();
+                ms.remove(pos);
+                ms.remove(pos);
+                IntegerData::from_str(ms.as_str())?
+            } else {
+                IntegerData::from_str(s.as_str())?
+            }
+        })
+    }
+
+    fn item_from_json_value(value: &Value) -> Result<StackItem> {
+        Ok(match value {
+            Value::Null =>
+                StackItem::None,
+            Value::Bool(v) =>
+                StackItem::Integer(Arc::new(if *v {
+                    IntegerData::one()
+                } else {
+                    IntegerData::zero()
+                })),
+            Value::Number(n) => {
+                if let Some(i) = n.as_i64() {
+                    StackItem::Integer(Arc::new(IntegerData::from_i64(i)))
+                } else {
+                    return Err(error!(Self::invalid_json()));
+                }
+            }
+            Value::String(s) => {
+                StackItem::Integer(Arc::new(Self::parse_integer_data(s)?))
+            }
+            Value::Array(array) => {
+                StackItem::Tuple(Self::items_from_json_array(array.iter())?)
+            }
+            Value::Object(_) =>
+                return Err(error!(Self::invalid_json())),
+        })
+    }
+}
 
 #[cfg(feature = "node_interaction")]
 const ACCOUNT_FIELDS: &str = r#"
@@ -110,7 +215,7 @@ pub struct SdkMessage {
 #[derive(Clone)]
 pub struct ContractImage {
     state_init: StateInit,
-    id: AccountId
+    id: AccountId,
 }
 
 #[allow(dead_code)]
@@ -164,7 +269,7 @@ impl ContractImage {
             bail!(SdkError::InvalidData { msg: "Invalid state init's bag of cells".into() } );
         }
 
-        let state_init : StateInit
+        let state_init: StateInit
             = StateInit::construct_from(&mut SliceData::from(si_roots.remove(0)))?;
 
         let id = state_init.hash()?.into();
@@ -194,7 +299,7 @@ impl ContractImage {
 
         Ok(())
     }
-    
+
     pub fn get_serialized_code(&self) -> Result<Vec<u8>> {
         match &self.state_init.code {
             Some(cell) => {
@@ -400,7 +505,7 @@ impl Contract {
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
     pub async fn process_message(client: &NodeClient, msg: TvmMessage, expire: Option<u32>, try_index: u8)
-        -> Result<Transaction> 
+        -> Result<Transaction>
     {
         let (data, msg_id) = Self::serialize_message(msg)?;
         Self::process_serialized_message(client, &msg_id, &data, expire, try_index).await
@@ -416,7 +521,7 @@ impl Contract {
         client: &NodeClient,
         message_id: &MessageId,
         expire: Option<u32>,
-        try_index: u8
+        try_index: u8,
     ) -> Result<Transaction>
     {
         // timeout is growing from try to try
@@ -443,12 +548,12 @@ impl Contract {
         let transaction_future = async {
             let transaction = client.wait_for(
                 TRANSACTIONS_TABLE_NAME,
-                &filter, 
+                &filter,
                 TRANSACTION_FIELDS_ORDINARY,
                 Some(timeout)).await?;
 
             let transaction = serde_json::from_value::<Transaction>(transaction)?;
-            if  transaction.compute.exit_code == Some(Self::MESSAGE_EXPIRED_CODE) ||
+            if transaction.compute.exit_code == Some(Self::MESSAGE_EXPIRED_CODE) ||
                 transaction.compute.exit_code == Some(Self::REPLAY_PROTECTION_CODE)
             {
                 Err(SdkError::MessageExpired.into())
@@ -479,7 +584,7 @@ impl Contract {
                     Some(string) => {
                         client.wait_for(
                             TRANSACTIONS_TABLE_NAME,
-                            &json!({ "id": { "eq": string }}).to_string(), 
+                            &json!({ "id": { "eq": string }}).to_string(),
                             "id",
                             Some(timeout)).await?;
 
@@ -508,7 +613,7 @@ pub struct MessageToSign {
 #[cfg(feature = "fee_calculation")]
 pub struct LocalCallResult {
     pub messages: Vec<Message>,
-    pub fees: TransactionFees
+    pub fees: TransactionFees,
 }
 
 impl Contract {
@@ -576,7 +681,7 @@ impl Contract {
             balance: num_traits::ToPrimitive::to_u128(
                 acc.get_balance().unwrap().grams.value()).ok_or(
                     error!(SdkError::InvalidData {
-                        msg: "Account's balance is too big".to_owned() 
+                        msg: "Account's balance is too big".to_owned()
                     } )
                 )?,
             balance_other: if balance_other.len() > 0 { Some(balance_other) } else { None },
@@ -591,7 +696,7 @@ impl Contract {
     pub fn local_call_tvm(&self, message: TvmMessage) -> Result<Vec<Message>> {
         let code = self.code.clone().ok_or(
             error!(SdkError::InvalidData { msg: "Account has no code".to_owned() } ))?;
-                
+
         let (tvm_messages, _) = local_tvm::call_tvm(
             self.balance,
             self.balance_other_as_hashmape()?,
@@ -610,10 +715,47 @@ impl Contract {
         Ok(messages)
     }
 
+
+    /// Invokes local TVM instance with provided stack.
+    /// Returns stack after contract execution.
+    /// Used for get methods
+    pub fn local_call_tvm_get_json(
+        &self,
+        function_name: &str,
+        input: Option<&Value>,
+    ) -> Result<Value> {
+        let code = self.code.clone().ok_or(
+            error!(SdkError::InvalidData { msg: "Account has no code".to_owned() }))?;
+        let mut crc = crc_any::CRC::crc16xmodem();
+        crc.digest(function_name.as_bytes());
+        let function_id = ((crc.get_crc() as u32) & 0xffff) | 0x10000;
+        let mut stack_in = Stack::new();
+        if let Some(input) = input {
+            if let Value::Array(array) = input {
+                for value in array.iter() {
+                    stack_in.push(StackItemJSON::item_from_json_value(value)?);
+                }
+            } else {
+                stack_in.push(StackItemJSON::item_from_json_value(input)?);
+            }
+        }
+        stack_in.push(StackItem::Integer(Arc::new(IntegerData::from_u32(function_id))));
+        let stack_out = local_tvm::call_tvm_stack(
+            self.balance,
+            self.balance_other_as_hashmape()?,
+            &self.id,
+            None,
+            Self::now()?,
+            code,
+            self.data.clone(),
+            stack_in)?;
+        StackItemJSON::json_array_from_items(stack_out.iter())
+    }
+
     /// Invokes local TVM instance with provided inbound message.
     /// Returns outbound messages generated by contract function and gas fee function consumed
     pub fn local_call_tvm_json(&self, func: String, header: Option<String>, input: String,
-        abi: String, key_pair: Option<&Keypair>
+        abi: String, key_pair: Option<&Keypair>,
     ) -> Result<Vec<Message>>
     {
         // pack params into bag of cells via ABI
@@ -636,7 +778,7 @@ impl Contract {
             message,
             BlockchainConfig::default(),
             Self::now()?)?;
-                
+
         let mut messages = vec![];
         for tvm_msg in &tvm_messages {
             messages.push(Message::with_msg(tvm_msg)?);
@@ -649,7 +791,7 @@ impl Contract {
     /// Returns outbound messages generated by contract function and transaction fees
     #[cfg(feature = "fee_calculation")]
     pub fn local_call_json(&self, func: String, header: Option<String>, input: String, abi: String, key_pair: Option<&Keypair>)
-         -> Result<LocalCallResult>
+        -> Result<LocalCallResult>
     {
         // pack params into bag of cells via ABI
         let msg_body = ton_abi::encode_function_call(abi, func, header, input, false, key_pair)?;
@@ -661,8 +803,8 @@ impl Contract {
         self.local_call(msg)
     }
 
-    /// Decodes output parameters returned by contract function call 
-    pub fn decode_function_response_json(abi: String, function: String, response: SliceData, internal: bool) 
+    /// Decodes output parameters returned by contract function call
+    pub fn decode_function_response_json(abi: String, function: String, response: SliceData, internal: bool)
         -> Result<String> {
 
         ton_abi::json_abi::decode_function_response(abi, function, response, internal)
@@ -677,8 +819,8 @@ impl Contract {
         Self::decode_function_response_json(abi, function, slice, internal)
     }
 
-    /// Decodes output parameters returned by contract function call 
-    pub fn decode_unknown_function_response_json(abi: String, response: SliceData, internal: bool) 
+    /// Decodes output parameters returned by contract function call
+    pub fn decode_unknown_function_response_json(abi: String, response: SliceData, internal: bool)
         -> Result<DecodedMessage> {
 
         ton_abi::json_abi::decode_unknown_function_response(abi, response, internal)
@@ -693,8 +835,8 @@ impl Contract {
         Self::decode_unknown_function_response_json(abi, slice, internal)
     }
 
-    /// Decodes output parameters returned by contract function call 
-    pub fn decode_unknown_function_call_json(abi: String, response: SliceData, internal: bool) 
+    /// Decodes output parameters returned by contract function call
+    pub fn decode_unknown_function_call_json(abi: String, response: SliceData, internal: bool)
         -> Result<DecodedMessage> {
 
         ton_abi::json_abi::decode_unknown_function_call(abi, response, internal)
@@ -797,7 +939,7 @@ impl Contract {
         try_index: Option<u8>
     ) -> Result<MessageToSign> {
         let (header, expire) = Self::make_expire_header(timeouts, params.abi.clone(), params.header, try_index)?;
-        
+
         // pack params into bag of cells via ABI
         let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(
             params.abi, params.func, header, params.input
@@ -806,7 +948,7 @@ impl Contract {
         let msg = Self::create_message(address, msg_body.into())?;
 
         Self::serialize_message(msg).map(|(msg_data, _id)| {
-                MessageToSign { message: msg_data, data_to_sign, expire } 
+                MessageToSign { message: msg_data, data_to_sign, expire }
             }
         )
     }
@@ -854,7 +996,7 @@ impl Contract {
     {
         Self::create_deploy_message(None, image, workchain_id)
     }
-    
+
     // Packs given image and input into Message struct without sign and returns data to sign.
     // Sign should be then added with `add_sign_to_message` function
     // Works with json representation of input and abi.
@@ -874,18 +1016,18 @@ impl Contract {
         let msg = Self::create_deploy_message(Some(cell), image, workchain_id)?;
 
         Self::serialize_message(msg).map(|(msg_data, _id)| {
-                MessageToSign { message: msg_data, data_to_sign, expire } 
+                MessageToSign { message: msg_data, data_to_sign, expire }
             }
         )
     }
 
 
-    // Add sign to message, returned by `get_deploy_message_bytes_for_signing` or 
+    // Add sign to message, returned by `get_deploy_message_bytes_for_signing` or
     // `get_run_message_bytes_for_signing` function.
     // Returns serialized message and identifier.
-    pub fn add_sign_to_message(abi: String, signature: &[u8], public_key: Option<&[u8]>, message: &[u8]) 
+    pub fn add_sign_to_message(abi: String, signature: &[u8], public_key: Option<&[u8]>, message: &[u8])
         -> Result<(Vec<u8>, MessageId)> {
-        
+
         let mut slice = Self::deserialize_tree_to_slice(message)?;
 
         let mut message: TvmMessage = TvmMessage::construct_from(&mut slice)?;
@@ -896,7 +1038,7 @@ impl Contract {
         let signed_body = ton_abi::add_sign_to_function_call(abi, signature, public_key, body)?;
 
         message.set_body(signed_body.into());
-            
+
 
         Self::serialize_message(message)
     }
@@ -905,7 +1047,7 @@ impl Contract {
 
         let mut msg_header = ExternalInboundMessageHeader::default();
         msg_header.dst = address;
-        
+
         let mut msg = TvmMessage::with_ext_in_header(msg_header);
         msg.set_body(msg_body);
 
@@ -950,7 +1092,7 @@ impl Contract {
     pub fn deserialize_message(message: &[u8]) -> Result<TvmMessage> {
         let mut root_cells = deserialize_cells_tree(&mut Cursor::new(message))?;
 
-        if root_cells.len() != 1 { 
+        if root_cells.len() != 1 {
             bail!(SdkError::InvalidData { msg: "Deserialize message error".to_owned() } );
         }
 
