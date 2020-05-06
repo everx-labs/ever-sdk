@@ -721,7 +721,7 @@ impl Contract {
     /// Used for get methods
     pub fn local_call_tvm_get_json(
         &self,
-        function_name: &String,
+        function_name: &str,
         input: Option<&Value>,
     ) -> Result<Value> {
         let code = self.code.clone().ok_or(
