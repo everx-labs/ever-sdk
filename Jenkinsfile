@@ -70,6 +70,12 @@ def buildImagesMap() {
         G_images.put('ton-executor', params.image_ton_executor)
     }
 
+    if (params.image_ton_labs_executor == '') {
+        G_images.put('ton-labs-executor', "tonlabs/ton-labs-executor:ton-sdk-${GIT_COMMIT}")
+    } else {
+        G_images.put('ton-labs-executor', params.image_ton_labs_executor)
+    }
+
     if (params.image_ton_sdk == '') {
         G_images.put('ton-sdk', "tonlabs/ton-sdk:${GIT_COMMIT}")
     } else {
@@ -132,6 +138,12 @@ def buildBranchesMap() {
         G_branches.put('ton-executor', params.branch_ton_executor)
     }
 
+    if (params.branch_ton_labs_executor == '') {
+        G_branches.put('ton-labs-executor', "master")
+    } else {
+        G_branches.put('ton-labs-executor', params.branch_ton_labs_executor)
+    }
+
     if (params.branch_ton_sdk == '') {
         G_branches.put('ton-sdk', "${env.BRANCH_NAME}")
     } else {
@@ -161,6 +173,7 @@ def buildParams() {
         G_images['ton-vm'] = 'tonlabs/ton-vm:latest'
         G_images['ton-labs-vm'] = 'tonlabs/ton-labs-vm:latest'
         G_images['ton-executor'] = 'tonlabs/ton-executor:latest'
+        G_images['ton-labs-executor'] = 'tonlabs/ton-labs-executor:latest'
         G_images['ton-labs-abi'] = 'tonlabs/ton-labs-abi:latest'
     }
     buildBranchesMap()
@@ -282,6 +295,16 @@ pipeline {
             description: 'ton-executor image name'
         )
         string(
+            name:'branch_ton_labs_executor',
+            defaultValue: 'master',
+            description: 'ton-labs-executor branch'
+        )
+        string(
+            name:'image_ton_labs_executor',
+            defaultValue: '',
+            description: 'ton-labs-executor image name'
+        )
+        string(
             name:'branch_tvm_linker',
             defaultValue: 'master',
             description: 'tvm-linker branch'
@@ -386,8 +409,8 @@ ton_client/platforms/ton-client-web"""
                     node pathFix.js ton_sdk/Cargo.toml \"ton_block = {.*\" \"ton_block = { path = \\\"/tonlabs/ton-labs-block\\\" }\"
                     node pathFix.js ton_sdk/Cargo.toml \"ton_vm = {.*\" \"ton_vm = { path = \\\"/tonlabs/ton-labs-vm\\\", default-features = false }\"
                     node pathFix.js ton_sdk/Cargo.toml \"ton_types = {.*\" \"ton_types = { path = \\\"/tonlabs/ton-labs-types\\\" }\"
-                    node pathFix.js ton_sdk/Cargo.toml \"ton_executor = {.*\" \"ton_executor = { path = \\\"/tonlabs/ton-executor\\\" }\"
-                    node pathFix.js ton_sdk/Cargo.toml \"git = \\\"ssh://git@github.com/tonlabs/ton-executor.git\\\"\" \"path = \\\"/tonlabs/ton-executor\\\"\"
+                    node pathFix.js ton_sdk/Cargo.toml \"ton_executor = {.*\" \"ton_executor = { path = \\\"/tonlabs/ton-labs-executor\\\" }\"
+                    node pathFix.js ton_sdk/Cargo.toml \"git = \\\"ssh://git@github.com/tonlabs/ton-labs-executor.git\\\"\" \"path = \\\"/tonlabs/ton-labs-executor\\\"\"
                     node pathFix.js ton_client/client/Cargo.toml \"ton_block = {.*\" \"ton_block = { path = \\\"/tonlabs/ton-labs-block\\\" }\"
                     node pathFix.js ton_client/client/Cargo.toml \"ton_vm = {.*\" \"ton_vm = { path = \\\"/tonlabs/ton-labs-vm\\\", default-features = false }\"
                     node pathFix.js ton_client/client/Cargo.toml \"ton_types = {.*\" \"ton_types = { path = \\\"/tonlabs/ton-labs-types\\\" }\"
@@ -420,7 +443,7 @@ ton_client/platforms/ton-client-web"""
                                         "--build-arg \"TON_LABS_BLOCK_IMAGE=${G_images['ton-labs-block']}\" " + 
                                         "--build-arg \"TON_LABS_VM_IMAGE=${G_images['ton-labs-vm']}\" " + 
                                         "--build-arg \"TON_LABS_ABI_IMAGE=${G_images['ton-labs-abi']}\" " + 
-                                        "--build-arg \"TON_EXECUTOR_IMAGE=${G_images['ton-executor']}\" " +
+                                        "--build-arg \"TON_EXECUTOR_IMAGE=${G_images['ton-labs-executor']}\" " +
                                         "--build-arg \"TON_SDK_IMAGE=${G_images['ton-sdk']}\""
                 }
             }
@@ -462,7 +485,7 @@ ton_client/platforms/ton-client-web"""
                                                 "--build-arg \"TON_LABS_BLOCK_IMAGE=${G_images['ton-labs-block']}\" " + 
                                                 "--build-arg \"TON_LABS_VM_IMAGE=${G_images['ton-labs-vm']}\" " + 
                                                 "--build-arg \"TON_LABS_ABI_IMAGE=${G_images['ton-labs-abi']}\" " + 
-                                                "--build-arg \"TON_EXECUTOR_IMAGE=${G_images['ton-executor']}\" " +
+                                                "--build-arg \"TON_EXECUTOR_IMAGE=${G_images['ton-labs-executor']}\" " +
                                                 "--build-arg \"TON_SDK_IMAGE=${G_images['ton-sdk']}\""
                         }
                     }
@@ -527,7 +550,7 @@ ton_client/platforms/ton-client-web"""
                                         node pathFix.js tonlabs/ton-labs-block/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
                                         node pathFix.js tonlabs/ton-labs-vm/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
                                         node pathFix.js tonlabs/ton-labs-abi/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
-                                        node pathFix.js tonlabs/ton-executor/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/ton-labs-executor/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
                                         node pathFix.js tonlabs/TON-SDK/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
                                         node pathFix.js tonlabs/TON-SDK/ton_sdk/Cargo.toml \"path = \\\"/tonlabs/\" \"path = \\\"${C_PATH}/tonlabs/\"
                                         node pathFix.js tonlabs/TON-SDK/ton_client/client/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
@@ -598,10 +621,10 @@ ton_client/platforms/ton-client-web"""
                                         node pathFix.js tonlabs\\ton-labs-block\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
                                         node pathFix.js tonlabs\\ton-labs-vm\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
                                         node pathFix.js tonlabs\\ton-labs-abi\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
-                                        node pathFix.js tonlabs\\ton-executor\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        node pathFix.js tonlabs\\ton-labs-executor\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
                                         node pathFix.js tonlabs\\TON-SDK\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
                                         node pathFix.js tonlabs\\TON-SDK\\ton_sdk\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
-                                        node pathFix.js tonlabs\\TON-SDK\\ton_sdk\\Cargo.toml \"/tonlabs/ton-executor\" \"${C_PATH}\\tonlabs\\ton-executor\\\\\"
+                                        node pathFix.js tonlabs\\TON-SDK\\ton_sdk\\Cargo.toml \"/tonlabs/ton-labs-executor\" \"${C_PATH}\\tonlabs\\ton-labs-executor\\\\\"
                                         node pathFix.js tonlabs\\TON-SDK\\ton_client\\client\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
                                         node pathFix.js tonlabs\\TON-SDK\\ton_client\\platforms\\ton-client-node-js\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
                                         node pathFix.js tonlabs\\TON-SDK\\ton_client\\platforms\\ton-client-react-native\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
@@ -672,7 +695,7 @@ ton_client/platforms/ton-client-web"""
                                         node pathFix.js tonlabs/ton-labs-block/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
                                         node pathFix.js tonlabs/ton-labs-vm/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
                                         node pathFix.js tonlabs/ton-labs-abi/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
-                                        node pathFix.js tonlabs/ton-executor/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/ton-labs-executor/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
                                         node pathFix.js tonlabs/TON-SDK/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
                                         node pathFix.js tonlabs/TON-SDK/ton_sdk/Cargo.toml \"path = \\\"/tonlabs/\" \"path = \\\"${C_PATH}/tonlabs/\"
                                         node pathFix.js tonlabs/TON-SDK/ton_client/client/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
@@ -756,7 +779,7 @@ ton_client/platforms/ton-client-web"""
                                         node pathFix.js tonlabs/ton-labs-block/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
                                         node pathFix.js tonlabs/ton-labs-vm/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
                                         node pathFix.js tonlabs/ton-labs-abi/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
-                                        node pathFix.js tonlabs/ton-executor/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/ton-labs-executor/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
                                         node pathFix.js tonlabs/TON-SDK/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
                                         node pathFix.js tonlabs/TON-SDK/ton_sdk/Cargo.toml \"path = \\\"/tonlabs/\" \"path = \\\"${C_PATH}/tonlabs/\"
                                         node pathFix.js tonlabs/TON-SDK/ton_client/client/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
@@ -840,7 +863,7 @@ ton_client/platforms/ton-client-web"""
                                         node pathFix.js tonlabs/ton-labs-block/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
                                         node pathFix.js tonlabs/ton-labs-vm/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
                                         node pathFix.js tonlabs/ton-labs-abi/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
-                                        node pathFix.js tonlabs/ton-executor/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
+                                        node pathFix.js tonlabs/ton-labs-executor/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
                                         node pathFix.js tonlabs/TON-SDK/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
                                         node pathFix.js tonlabs/TON-SDK/ton_sdk/Cargo.toml \"path = \\\"/tonlabs/\" \"path = \\\"${C_PATH}/tonlabs/\"
                                         node pathFix.js tonlabs/TON-SDK/ton_client/client/Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}/tonlabs/\"
@@ -925,10 +948,10 @@ ton_client/platforms/ton-client-web"""
                                         node pathFix.js tonlabs\\ton-labs-block\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
                                         node pathFix.js tonlabs\\ton-labs-vm\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
                                         node pathFix.js tonlabs\\ton-labs-abi\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
-                                        node pathFix.js tonlabs\\ton-executor\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
+                                        node pathFix.js tonlabs\\ton-labs-executor\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
                                         node pathFix.js tonlabs\\TON-SDK\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
                                         node pathFix.js tonlabs\\TON-SDK\\ton_sdk\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
-                                        node pathFix.js tonlabs\\TON-SDK\\ton_sdk\\Cargo.toml \"/tonlabs/ton-executor\" \"${C_PATH}\\tonlabs\\ton-executor\\\\\"
+                                        node pathFix.js tonlabs\\TON-SDK\\ton_sdk\\Cargo.toml \"/tonlabs/ton-labs-executor\" \"${C_PATH}\\tonlabs\\ton-labs-executor\\\\\"
                                         node pathFix.js tonlabs\\TON-SDK\\ton_client\\client\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
                                         node pathFix.js tonlabs\\TON-SDK\\ton_client\\platforms\\ton-client-node-js\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
                                         node pathFix.js tonlabs\\TON-SDK\\ton_client\\platforms\\ton-client-react-native\\Cargo.toml \"{ path = \\\"/tonlabs/\" \"{ path = \\\"${C_PATH}\\tonlabs\\\\\"
@@ -994,7 +1017,7 @@ ton_client/platforms/ton-client-web"""
                                                 "--build-arg \"TON_LABS_BLOCK_IMAGE=${G_images['ton-labs-block']}\" " + 
                                                 "--build-arg \"TON_LABS_VM_IMAGE=${G_images['ton-labs-vm']}\" " + 
                                                 "--build-arg \"TON_LABS_ABI_IMAGE=${G_images['ton-labs-abi']}\" " + 
-                                                "--build-arg \"TON_EXECUTOR_IMAGE=${G_images['ton-executor']}\" " +
+                                                "--build-arg \"TON_EXECUTOR_IMAGE=${G_images['ton-labs-executor']}\" " +
                                                 "--build-arg \"TON_SDK_IMAGE=${G_images['ton-sdk']}\""
                         }
                     }
@@ -1055,7 +1078,7 @@ ton_client/platforms/ton-client-web"""
                                                 "--build-arg \"TON_LABS_BLOCK_IMAGE=${G_images['ton-labs-block']}\" " + 
                                                 "--build-arg \"TON_LABS_VM_IMAGE=${G_images['ton-labs-vm']}\" " + 
                                                 "--build-arg \"TON_LABS_ABI_IMAGE=${G_images['ton-labs-abi']}\" " + 
-                                                "--build-arg \"TON_EXECUTOR_IMAGE=${G_images['ton-executor']}\" " +
+                                                "--build-arg \"TON_EXECUTOR_IMAGE=${G_images['ton-labs-executor']}\" " +
                                                 "--build-arg \"TON_SDK_IMAGE=${G_images['ton-sdk']}\""
                         }
                     }
