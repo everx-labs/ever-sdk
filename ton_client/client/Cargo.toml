@@ -1,6 +1,6 @@
 [package]
 name = "ton_client"
-version = "0.21.0"
+version = "0.23.0"
 authors = ["Michael Vlasov"]
 edition = "2018"
 
@@ -36,6 +36,9 @@ crc-any = "2.2.3"
 failure = "0.1"
 
 ton_sdk = { path = "../../ton_sdk", default-features = false }
+
+[dev-dependencies]
+log4rs = "^0"
 
 [dependencies.tokio]
 version = "0.2.13"

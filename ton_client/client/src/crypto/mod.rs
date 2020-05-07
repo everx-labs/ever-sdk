@@ -46,7 +46,6 @@ pub(crate) struct ModularPowerParams {
 }
 
 #[derive(Deserialize)]
-#[allow(non_snake_case)]
 pub(crate) struct InputMessage {
     pub text: Option<String>,
     pub hex: Option<String>,
@@ -62,122 +61,121 @@ pub(crate) enum OutputEncoding {
 }
 
 #[derive(Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct GenerateParams {
     pub length: usize,
     #[serde(default = "default_result_encoding_hex")]
-    pub outputEncoding: OutputEncoding,
+    pub output_encoding: OutputEncoding,
 }
 
 #[derive(Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct ShaParams {
     pub message: InputMessage,
     #[serde(default = "default_result_encoding_hex")]
-    pub outputEncoding: OutputEncoding,
+    pub output_encoding: OutputEncoding,
 }
 
 #[derive(Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct ScryptParams {
     pub password: InputMessage,
     pub salt: InputMessage,
-    pub logN: u8,
+    pub log_n: u8,
     pub r: u32,
     pub p: u32,
-    pub dkLen: usize,
+    pub dk_len: usize,
     #[serde(default = "default_result_encoding_hex")]
-    pub outputEncoding: OutputEncoding,
+    pub output_encoding: OutputEncoding,
 }
 
 #[derive(Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct NaclBoxParams {
     pub message: InputMessage,
     pub nonce: String,
-    pub theirPublicKey: String,
-    pub secretKey: Option<String>,
-    pub keystoreHandle: Option<String>,
+    pub their_public_key: String,
+    pub secret_key: Option<String>,
+    pub keystore_handle: Option<String>,
     #[serde(default = "default_result_encoding_hex")]
-    pub outputEncoding: OutputEncoding,
+    pub output_encoding: OutputEncoding,
 }
 
 #[derive(Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct NaclSecretBoxParams {
     pub message: InputMessage,
     pub nonce: String,
     pub key: Option<String>,
-    pub keystoreHandle: Option<String>,
+    pub keystore_handle: Option<String>,
     #[serde(default = "default_result_encoding_hex")]
-    pub outputEncoding: OutputEncoding,
+    pub output_encoding: OutputEncoding,
 }
 
 #[derive(Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct NaclSignParams {
     pub message: InputMessage,
     pub key: Option<String>,
-    pub keystoreHandle: Option<String>,
+    pub keystore_handle: Option<String>,
     #[serde(default = "default_result_encoding_hex")]
-    pub outputEncoding: OutputEncoding,
+    pub output_encoding: OutputEncoding,
 }
 
 #[derive(Deserialize)]
-#[allow(non_snake_case)]
 pub(crate) struct MnemonicWordsParams {
     #[serde(default = "default_dictionary")]
     pub dictionary: u8,
     #[serde(default = "default_word_count")]
-    pub wordCount: u8,
+    pub word_count: u8,
 }
 
 #[derive(Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct MnemonicGenerateParams {
     #[serde(default = "default_dictionary")]
     pub dictionary: u8,
     #[serde(default = "default_word_count")]
-    pub wordCount: u8,
+    pub word_count: u8,
 }
 
 #[derive(Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct MnemonicFromEntropyParams {
     #[serde(default = "default_dictionary")]
     pub dictionary: u8,
     #[serde(default = "default_word_count")]
-    pub wordCount: u8,
+    pub word_count: u8,
     pub entropy: InputMessage,
 }
 
 #[derive(Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct MnemonicVerifyParams {
     #[serde(default = "default_dictionary")]
     pub dictionary: u8,
     #[serde(default = "default_word_count")]
-    pub wordCount: u8,
+    pub word_count: u8,
     pub phrase: String,
 }
 
 #[derive(Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct HDKeyFromMnemonicParams {
     #[serde(default = "default_dictionary")]
     pub dictionary: u8,
     #[serde(default = "default_word_count")]
-    pub wordCount: u8,
+    pub word_count: u8,
     pub phrase: String,
 }
 
 #[derive(Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct MnemonicDeriveSignKeysParams {
     #[serde(default = "default_dictionary")]
     pub dictionary: u8,
     #[serde(default = "default_word_count")]
-    pub wordCount: u8,
+    pub word_count: u8,
     pub phrase: String,
     #[serde(default = "default_path")]
     pub path: String,
@@ -186,7 +184,6 @@ pub(crate) struct MnemonicDeriveSignKeysParams {
 }
 
 #[derive(Deserialize)]
-#[allow(non_snake_case)]
 pub(crate) struct HDKeyDeriveParams {
     pub serialized: String,
     pub index: u32,
@@ -197,7 +194,6 @@ pub(crate) struct HDKeyDeriveParams {
 }
 
 #[derive(Deserialize)]
-#[allow(non_snake_case)]
 pub(crate) struct HDKeyDerivePathParams {
     pub serialized: String,
     pub path: String,
@@ -206,7 +202,6 @@ pub(crate) struct HDKeyDerivePathParams {
 }
 
 #[derive(Deserialize)]
-#[allow(non_snake_case)]
 pub(crate) struct HDKeyGetKeyParams {
     pub serialized: String,
 }
@@ -328,7 +323,7 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
     // Random
 
     handlers.call("crypto.random.generateBytes", |_context: &mut ClientContext, params: GenerateParams| {
-        params.outputEncoding.encode(api::random::generate_bytes(params.length))
+        params.output_encoding.encode(api::random::generate_bytes(params.length))
     });
 
     // Keys
@@ -354,23 +349,23 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
     // Sha
 
     handlers.spawn("crypto.sha256", |_context: &mut ClientContext, params: ShaParams| {
-        params.outputEncoding.encode(api::sha::sha256(&params.message.decode()?))
+        params.output_encoding.encode(api::sha::sha256(&params.message.decode()?))
     });
 
     handlers.spawn("crypto.sha512", |_context: &mut ClientContext, params: ShaParams| {
-        params.outputEncoding.encode(api::sha::sha512(&params.message.decode()?))
+        params.output_encoding.encode(api::sha::sha512(&params.message.decode()?))
     });
 
     // Scrypt
 
     handlers.spawn("crypto.scrypt", |_context: &mut ClientContext, params: ScryptParams| {
-        params.outputEncoding.encode(api::scrypt::scrypt(
+        params.output_encoding.encode(api::scrypt::scrypt(
             &params.password.decode()?,
             &params.salt.decode()?,
-            params.logN,
+            params.log_n,
             params.r,
             params.p,
-            params.dkLen,
+            params.dk_len,
         )?)
     });
 
@@ -389,74 +384,74 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         api::nacl::sign_keypair_from_secret_key(&secret)
     });
     handlers.spawn("crypto.nacl.box", |_context: &mut ClientContext, params: NaclBoxParams| {
-        params.outputEncoding.encode(api::nacl::box_(
+        params.output_encoding.encode(api::nacl::box_(
             params.message.decode()?,
             hex_decode(&params.nonce)?,
-            hex_decode(&params.theirPublicKey)?,
-            KeyStore::decode_secret(&params.secretKey, &params.keystoreHandle)?,
+            hex_decode(&params.their_public_key)?,
+            KeyStore::decode_secret(&params.secret_key, &params.keystore_handle)?,
         )?)
     });
     handlers.spawn("crypto.nacl.box.open", |_context: &mut ClientContext, params: NaclBoxParams| {
-        params.outputEncoding.encode(api::nacl::box_open(
+        params.output_encoding.encode(api::nacl::box_open(
             params.message.decode()?,
             hex_decode(&params.nonce)?,
-            hex_decode(&params.theirPublicKey)?,
-            KeyStore::decode_secret(&params.secretKey, &params.keystoreHandle)?,
+            hex_decode(&params.their_public_key)?,
+            KeyStore::decode_secret(&params.secret_key, &params.keystore_handle)?,
         )?)
     });
     handlers.spawn("crypto.nacl.secret.box", |_context: &mut ClientContext, params: NaclSecretBoxParams| {
-        params.outputEncoding.encode(api::nacl::secret_box(
+        params.output_encoding.encode(api::nacl::secret_box(
             params.message.decode()?,
             hex_decode(&params.nonce)?,
-            KeyStore::decode_secret(&params.key, &params.keystoreHandle)?,
+            KeyStore::decode_secret(&params.key, &params.keystore_handle)?,
         )?)
     });
     handlers.spawn("crypto.nacl.secret.box.open", |_context: &mut ClientContext, params: NaclSecretBoxParams| {
-        params.outputEncoding.encode(api::nacl::secret_box_open(
+        params.output_encoding.encode(api::nacl::secret_box_open(
             params.message.decode()?,
             hex_decode(&params.nonce)?,
-            KeyStore::decode_secret(&params.key, &params.keystoreHandle)?,
+            KeyStore::decode_secret(&params.key, &params.keystore_handle)?,
         )?)
     });
     handlers.spawn("crypto.nacl.sign", |_context: &mut ClientContext, params: NaclSignParams| {
-        params.outputEncoding.encode(api::nacl::sign(
+        params.output_encoding.encode(api::nacl::sign(
             params.message.decode()?,
-            KeyStore::decode_secret(&params.key, &params.keystoreHandle)?,
+            KeyStore::decode_secret(&params.key, &params.keystore_handle)?,
         )?)
     });
     handlers.spawn("crypto.nacl.sign.open", |_context: &mut ClientContext, params: NaclSignParams| {
-        params.outputEncoding.encode(api::nacl::sign_open(
+        params.output_encoding.encode(api::nacl::sign_open(
             params.message.decode()?,
-            KeyStore::decode_secret(&params.key, &params.keystoreHandle)?,
+            KeyStore::decode_secret(&params.key, &params.keystore_handle)?,
         )?)
     });
     handlers.spawn("crypto.nacl.sign.detached", |_context: &mut ClientContext, params: NaclSignParams| {
-        params.outputEncoding.encode(api::nacl::sign_detached(
+        params.output_encoding.encode(api::nacl::sign_detached(
             params.message.decode()?,
-            KeyStore::decode_secret(&params.key, &params.keystoreHandle)?,
+            KeyStore::decode_secret(&params.key, &params.keystore_handle)?,
         )?)
     });
 
     // Mnemonic
 
     handlers.spawn("crypto.mnemonic.words", |_context: &mut ClientContext, params: MnemonicWordsParams|
-        mnemonics(params.dictionary, params.wordCount)?.get_words(),
+        mnemonics(params.dictionary, params.word_count)?.get_words(),
     );
 
     handlers.spawn("crypto.mnemonic.from.random", |_context: &mut ClientContext, params: MnemonicGenerateParams|
-        mnemonics(params.dictionary, params.wordCount)?.generate_random_phrase()
+        mnemonics(params.dictionary, params.word_count)?.generate_random_phrase()
     );
 
     handlers.spawn("crypto.mnemonic.from.entropy", |_context: &mut ClientContext, params: MnemonicFromEntropyParams| {
-        mnemonics(params.dictionary, params.wordCount)?.phrase_from_entropy(&params.entropy.decode()?)
+        mnemonics(params.dictionary, params.word_count)?.phrase_from_entropy(&params.entropy.decode()?)
     });
 
     handlers.spawn("crypto.mnemonic.verify", |_context: &mut ClientContext, params: MnemonicVerifyParams| {
-        mnemonics(params.dictionary, params.wordCount)?.is_phrase_valid(&params.phrase)
+        mnemonics(params.dictionary, params.word_count)?.is_phrase_valid(&params.phrase)
     });
 
     handlers.spawn("crypto.mnemonic.derive.sign.keys", |_context: &mut ClientContext, params: MnemonicDeriveSignKeysParams| {
-        mnemonics(params.dictionary, params.wordCount)?.derive_ed25519_keys_from_phrase(
+        mnemonics(params.dictionary, params.word_count)?.derive_ed25519_keys_from_phrase(
             &params.phrase,
             &params.path,
             params.compliant)

@@ -120,6 +120,15 @@ impl DispatchTable {
     }
 
     pub fn sync_dispatch(&self, context: &mut ClientContext, method: String, params_json: String) -> JsonResponse {
+        // TODO: delete when JS bindings will save context
+        #[cfg(not(feature = "node_interaction"))]
+        {
+            if context.client.is_none() {
+                context.client = Some(ton_sdk::init(ton_sdk::NodeClientConfig {
+                    timeouts: Some(ton_sdk::TimeoutsConfig::default())
+                }).unwrap())
+            }
+        }
         match self.sync_runners.get(&method) {
             Some(handler) => handler.handle(context, params_json.as_str()),
             None => JsonResponse::from_error(ApiError::unknown_method(&method))

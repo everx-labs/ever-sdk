@@ -1,6 +1,6 @@
 [package]
 name = "tonclientnodejs"
-version = "0.21.1"
+version = "0.23.0"
 authors = ["Michael Vlasov"]
 
 [lib]

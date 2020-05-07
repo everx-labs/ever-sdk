@@ -13,13 +13,12 @@
 */
 
 use crate::dispatch::DispatchTable;
+use crate::types::{ApiResult, ApiError};
 use super::{JsonResponse, InteropContext};
 use std::collections::HashMap;
 use std::sync::{Mutex, MutexGuard};
-use crate::types::{ApiResult, ApiError};
-
-#[cfg(feature = "node_interaction")]
 use ton_sdk::NodeClient;
+
 #[cfg(feature = "node_interaction")]
 use tokio::runtime::Runtime;
 
@@ -28,7 +27,11 @@ fn create_handlers() -> DispatchTable {
     crate::setup::register(&mut handlers);
     crate::crypto::register(&mut handlers);
     crate::contracts::register(&mut handlers);
-    
+    crate::tvm::register(&mut handlers);
+
+    //TODO: uncomment this when cell module will be ready
+    // crate::cell::register(&mut handlers);
+
     #[cfg(feature = "node_interaction")]
     crate::queries::register(&mut handlers);
 
@@ -45,19 +48,18 @@ fn sync_request(context: &mut ClientContext, method: String, params_json: String
 }
 
 pub(crate) struct ClientContext {
-    #[cfg(feature = "node_interaction")]
     pub client: Option<NodeClient>,
     #[cfg(feature = "node_interaction")]
     pub runtime: Option<Runtime>,
     pub handle: u32
 }
 
-#[cfg(feature = "node_interaction")]
 impl ClientContext {
     pub fn get_client(&self) -> ApiResult<&NodeClient> {
         self.client.as_ref().ok_or(ApiError::sdk_not_init())
     }
-    
+
+    #[cfg(feature = "node_interaction")]
     pub fn take_runtime(&mut self) -> ApiResult<Runtime> {
         self.runtime.take().ok_or(ApiError::sdk_not_init())
     }
@@ -90,7 +92,7 @@ impl Client {
     pub fn create_context(&mut self) -> InteropContext {
         let handle = self.next_context_handle;
         self.next_context_handle = handle.wrapping_add(1);
-        
+
         #[cfg(feature = "node_interaction")]
         self.contexts.insert(handle, ClientContext {
             handle,
@@ -101,6 +103,7 @@ impl Client {
         #[cfg(not(feature = "node_interaction"))]
         self.contexts.insert(handle, ClientContext {
             handle,
+            client: None,
         });
 
         handle
