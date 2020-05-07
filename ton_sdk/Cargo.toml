@@ -46,7 +46,7 @@ features = ["default-tls-vendored"]
 optional = true
 
 [dependencies.ton_executor]
-git = "ssh://git@github.com/tonlabs/ton-executor.git"
+git = "https://github.com/tonlabs/ton-labs-executor.git"
 optional = true
 
 [dev-dependencies]
