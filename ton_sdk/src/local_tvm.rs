@@ -229,7 +229,7 @@ pub mod executor {
 
         let mut messages = vec![];
         let mut total_output = Grams::zero();
-        transaction.iterate_out_msgs(&mut |msg| {
+        transaction.iterate_out_msgs(&mut |msg: Message| {
             if let Some(value) = msg.get_value() {
                 total_output.0 += &value.grams.0;
             }

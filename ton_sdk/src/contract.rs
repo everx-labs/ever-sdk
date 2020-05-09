@@ -647,7 +647,7 @@ impl Contract {
 
         let mut balance_other = vec!();
         &acc.get_balance().unwrap().other.iterate_slices_with_keys(
-            &mut |ref mut key, ref mut value| -> Result<bool> {
+            &mut |ref mut key: SliceData, ref mut value| -> Result<bool> {
                 let value: ton_block::VarUInteger32 = ton_block::VarUInteger32::construct_from(value)?;
                 balance_other.push(OtherCurrencyValue {
                     currency: key.get_next_u32()?,
