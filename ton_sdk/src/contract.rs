@@ -646,11 +646,10 @@ impl Contract {
         }
 
         let mut balance_other = vec!();
-        &acc.get_balance().unwrap().other.iterate_slices_with_keys(
-            &mut |ref mut key: SliceData, ref mut value| -> Result<bool> {
-                let value: ton_block::VarUInteger32 = ton_block::VarUInteger32::construct_from(value)?;
+        &acc.get_balance().unwrap().other.iterate_with_keys(
+            |currency, value| -> Result<bool> {
                 balance_other.push(OtherCurrencyValue {
-                    currency: key.get_next_u32()?,
+                    currency,
                     value: num_traits::ToPrimitive::to_u128(value.value()).ok_or(
                         error!(SdkError::InvalidData { msg: "Account's other currency balance is too big".to_owned() })
                     )?,
