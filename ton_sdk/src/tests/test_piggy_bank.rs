@@ -14,8 +14,6 @@
 
 use super::*;
 use ed25519_dalek::Keypair;
-use rand::rngs::OsRng;
-use sha2::Sha512;
 use tests_common::*;
 
 #[tokio::main]
@@ -26,8 +24,8 @@ async fn full_test_piggy_bank() {
 	let client = init_node_connection();
 
 	// generate key pair
-    let mut csprng = OsRng::new().unwrap();
-    let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
+    let mut csprng = rand::thread_rng();
+    let keypair = Keypair::generate(&mut csprng);
 
     let now = std::time::Instant::now();
 
