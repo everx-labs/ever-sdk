@@ -196,7 +196,7 @@ pub(crate) fn get_boc_root_hash(_context: &mut ClientContext, params: InputBoc) 
 #[cfg(feature = "node_interaction")]
 pub(crate) async fn send_message(context: &mut ClientContext, params: EncodedMessage) -> ApiResult<()> {
     debug!("-> contracts.send.message({}, {})", params.message_id, params.expire.unwrap_or_default());
-    
+
     let msg = base64_decode(&params.message_body_base64)?;
     let id = crate::types::hex_decode(&params.message_id)?;
     let client = context.get_client()?;
@@ -207,10 +207,10 @@ pub(crate) async fn send_message(context: &mut ClientContext, params: EncodedMes
 
 #[cfg(feature = "node_interaction")]
 pub(crate) async fn process_message(context: &mut ClientContext, params: ParamsOfProcessMessage) -> ApiResult<run::ResultOfRun> {
-    debug!("-> contracts.process.message({}, {})", 
+    debug!("-> contracts.process.message({}, {})",
         params.message.message_id,
         params.message.expire.unwrap_or_default());
-    
+
     let msg = base64_decode(&params.message.message_body_base64)?;
     let client = context.get_client()?;
     let transaction = Contract::process_serialized_message(

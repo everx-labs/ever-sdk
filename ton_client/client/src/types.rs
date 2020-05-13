@@ -152,6 +152,13 @@ impl ApiError {
             "Message expired")
     }
 
+    // SDK Cell
+
+    pub fn cell_invalid_query<E: Display>(s: E) -> Self {
+        sdk_err!(CellInvalidQuery,
+            "Invalid cell query: {}", s)
+    }
+
     // SDK Crypto
 
     pub fn crypto_invalid_hex<E: Display>(s: &String, err: E) -> Self {
@@ -548,6 +555,8 @@ pub enum ApiSdkErrorCode {
     QueriesSubscribeFailed = 4002,
     QueriesWaitForFailed = 4003,
     QueriesGetNextFailed = 4004,
+
+    CellInvalidQuery = 5001,
 }
 
 impl ApiErrorCode for ApiSdkErrorCode {
@@ -629,7 +638,7 @@ impl ApiErrorCode for i32 {
 }
 
 pub fn apierror_from_sdkerror<F>(err: failure::Error, default_err: F) -> ApiError
-where 
+where
     F: Fn(failure::Error) -> ApiError,
 {
     match err.downcast_ref::<SdkError>() {

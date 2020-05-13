@@ -188,7 +188,7 @@ pub(crate) async fn run(context: &mut ClientContext, params: ParamsOfRun) -> Api
 
     let address = account_decode(&params.address)?;
     let key_pair = if let Some(ref keys) = params.key_pair { Some(keys.decode()?) } else { None };
-    
+
     let client = context.get_client()?;
     debug!("run contract");
     let tr = call_contract(client, address, &params, key_pair.as_ref()).await?;
@@ -362,7 +362,7 @@ pub(crate) fn local_run_msg(context: &mut ClientContext, params: ParamsOfLocalRu
         }
     }
 
-    Ok(ResultOfLocalRun { 
+    Ok(ResultOfLocalRun {
         output: Some(serde_json::Value::default()),
         fees
     })
@@ -501,8 +501,8 @@ pub(crate) fn check_transaction_status(transaction: &Transaction) -> ApiResult<(
             Err(ApiError::storage_phase_failed(id.clone(), &storage.status_change))?;
         }
     }
-   
-    
+
+
     if let Some(reason) = &transaction.compute.skipped_reason {
         Err(ApiError::tvm_execution_skipped(id.clone(), &reason))?;
     }
@@ -515,7 +515,7 @@ pub(crate) fn check_transaction_status(transaction: &Transaction) -> ApiResult<(
     if let Some(action) = &transaction.action {
         if !action.success {
             Err(ApiError::action_phase_failed(
-                    id.clone(), 
+                    id.clone(),
                     action.result_code,
                     action.valid,
                     action.no_funds,
@@ -559,7 +559,7 @@ async fn load_contract(context: &ClientContext, address: &MsgAddressInt) -> ApiR
 
 #[cfg(feature = "node_interaction")]
 async fn call_contract(
-    client: &NodeClient, 
+    client: &NodeClient,
     address: MsgAddressInt,
     params: &ParamsOfRun,
     key_pair: Option<&Keypair>,
