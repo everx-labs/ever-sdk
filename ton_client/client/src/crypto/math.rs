@@ -39,7 +39,7 @@ pub fn factorize(what: u64) -> Vec<u64> {
     let mut it = 0;
     let mut i = 0;
     let mut g: u64 = 0;
-    let mut rng = rand::rngs::OsRng::new().unwrap();
+    let mut rng = rand::thread_rng();
 
     while i < 3 || it < 1000 {
         let mut x = rng.next_u64() % (what - 1) + 1;

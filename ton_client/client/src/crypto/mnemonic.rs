@@ -54,7 +54,7 @@ impl Bip39Mnemonic {
 fn ed25519_keys_from_secret_bytes(bytes: &[u8]) -> ApiResult<KeyPair> {
     let secret = SecretKey::from_bytes(bytes)
         .map_err(|_| ApiError::crypto_bip32_invalid_key(&hex::encode(bytes)))?;
-    let public = PublicKey::from_secret::<sha2::Sha512>(&secret);
+    let public = PublicKey::from(&secret);
     Ok(KeyPair::new(
         hex::encode(public.to_bytes()),
         hex::encode(secret.to_bytes()),

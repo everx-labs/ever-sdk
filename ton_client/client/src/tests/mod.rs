@@ -127,6 +127,7 @@ fn test_tvm_get() {
 }
 
 #[test]
+#[ignore]
 fn test_query_cell() {
     let client = TestClient::new();
     let participant_list = r"
