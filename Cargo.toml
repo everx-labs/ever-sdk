@@ -1,9 +1,10 @@
+[package]
+license = "Apache-2.0"
 [workspace]
 members = [
     "ton_sdk",
     "ton_client/client"
 ]
-
 exclude = [
     "ton_client/platforms/ton-client-node-js",
     "ton_client/platforms/ton-client-web",
