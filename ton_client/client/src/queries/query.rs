@@ -85,9 +85,7 @@ pub(crate) fn subscribe(context: &mut ClientContext, params: ParamsOfSubscribe) 
     let stream = client.subscribe(&params.table, &params.filter, &params.result)
         .map_err(|err| ApiError::queries_subscribe_failed(err))?;
 
-    let mut rng = rand::rngs::OsRng::new()
-        .map_err(|err| ApiError::queries_subscribe_failed(err))?;
-    let handle =  rng.next_u32();
+    let handle =  rand::thread_rng().next_u32();
 
     add_handle(handle, Box::new(stream));
 

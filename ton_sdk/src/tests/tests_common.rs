@@ -14,8 +14,6 @@
 
 use super::*;
 use ed25519_dalek::{Keypair, SecretKey, PublicKey};
-use rand::rngs::OsRng;
-use sha2::Sha512;
 use std::str::FromStr;
 use ton_block::MsgAddressInt;
 use futures::StreamExt;
@@ -107,8 +105,8 @@ fn test_print_address() {
 #[ignore]
 fn test_generate_keypair_and_address() {
     // generate key pair
-    let mut csprng = OsRng::new().unwrap();
-    let key_pair = Keypair::generate::<Sha512, _>(&mut csprng);
+    let mut csprng = rand::thread_rng();
+    let key_pair = Keypair::generate(&mut csprng);
 
     println!("Key pair: {}", hex::encode(&key_pair.to_bytes().to_vec()));
 

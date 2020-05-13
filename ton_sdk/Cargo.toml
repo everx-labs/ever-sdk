@@ -50,7 +50,7 @@ optional = true
 
 [dev-dependencies]
 pretty_assertions = "0.5.1"
-rand = "0.6.1"
+rand = "0.7.3"
 dirs = "2.0.2"
 tokio = { version = "0.2.13", features = ["macros"]}
 
