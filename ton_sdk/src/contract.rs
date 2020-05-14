@@ -2,8 +2,7 @@
 * Copyright 2018-2020 TON DEV SOLUTIONS LTD.
 *
 * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
-* this file except in compliance with the License.  You may obtain a copy of the
-* License at: https://ton.dev/licenses
+* this file except in compliance with the License.
 *
 * Unless required by applicable law or agreed to in writing, software
 * distributed under the License is distributed on an "AS IS" BASIS,
@@ -646,11 +645,10 @@ impl Contract {
         }
 
         let mut balance_other = vec!();
-        &acc.get_balance().unwrap().other.iterate_slices_with_keys(
-            &mut |ref mut key, ref mut value| -> Result<bool> {
-                let value: ton_block::VarUInteger32 = ton_block::VarUInteger32::construct_from(value)?;
+        &acc.get_balance().unwrap().other.iterate_with_keys(
+            |currency, value| -> Result<bool> {
                 balance_other.push(OtherCurrencyValue {
-                    currency: key.get_next_u32()?,
+                    currency,
                     value: num_traits::ToPrimitive::to_u128(value.value()).ok_or(
                         error!(SdkError::InvalidData { msg: "Account's other currency balance is too big".to_owned() })
                     )?,
