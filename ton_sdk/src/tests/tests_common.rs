@@ -55,7 +55,7 @@ pub fn get_config() -> serde_json::Value {
         })
     } else {
         json!({
-            "base_url": "testnet.ton.dev"
+            "base_url": "cinet.tonlabs.io"
         })
     }
 }
