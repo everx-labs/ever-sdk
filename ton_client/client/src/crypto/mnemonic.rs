@@ -2,8 +2,7 @@
 * Copyright 2018-2020 TON DEV SOLUTIONS LTD.
 *
 * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
-* this file except in compliance with the License.  You may obtain a copy of the
-* License at: https://ton.dev/licenses
+* this file except in compliance with the License.
 *
 * Unless required by applicable law or agreed to in writing, software
 * distributed under the License is distributed on an "AS IS" BASIS,
@@ -54,7 +53,7 @@ impl Bip39Mnemonic {
 fn ed25519_keys_from_secret_bytes(bytes: &[u8]) -> ApiResult<KeyPair> {
     let secret = SecretKey::from_bytes(bytes)
         .map_err(|_| ApiError::crypto_bip32_invalid_key(&hex::encode(bytes)))?;
-    let public = PublicKey::from_secret::<sha2::Sha512>(&secret);
+    let public = PublicKey::from(&secret);
     Ok(KeyPair::new(
         hex::encode(public.to_bytes()),
         hex::encode(secret.to_bytes()),

@@ -2,8 +2,7 @@
 * Copyright 2018-2020 TON DEV SOLUTIONS LTD.
 *
 * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
-* this file except in compliance with the License.  You may obtain a copy of the
-* License at: https://ton.dev/licenses
+* this file except in compliance with the License.
 *
 * Unless required by applicable law or agreed to in writing, software
 * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +15,6 @@ use ton_abi::json_abi::decode_function_response;
 use super::*;
 use crate::{ContractImage, init_json, MessageType};
 use ed25519_dalek::Keypair;
-use rand::rngs::OsRng;
-use sha2::Sha512;
 use ton_block::{MsgAddressInt};
 use ton_types::{AccountId, HashmapE};
 use crate::tests_common::{call_contract, deploy_contract_and_wait, get_config, get_grams_from_giver,
@@ -37,7 +34,15 @@ async fn test_call_contract(client: &NodeClient, address: MsgAddressInt, key_pai
 
     // call needed method
     let tr = Contract::call_json(
-        client, address, func.clone(), None, FUNCTION_PARAMS.to_owned(), abi.clone(), Some(&key_pair))
+        client,
+        address,
+        FunctionCallSet {
+            func: func.clone(),
+            header: None,
+            input: FUNCTION_PARAMS.to_owned(),
+            abi:  abi.clone(),
+        },
+        Some(&key_pair))
             .await
             .expect("Error calling contract method");
 
@@ -81,8 +86,8 @@ pub async fn test_deploy_and_call_contract() {
    
     let client = init_node_connection();
 
-    let mut csprng = OsRng::new().unwrap();
-    let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
+    let mut csprng = rand::thread_rng();
+    let keypair = Keypair::generate(&mut csprng);
 
     let contract_image = ContractImage::from_state_init_and_key(&mut WALLET_IMAGE.as_slice(), &keypair.public).expect("Unable to parse contract code file");
 
@@ -96,7 +101,16 @@ pub async fn test_deploy_and_call_contract() {
     let func = "constructor".to_string();
     let abi = WALLET_ABI.to_string();
 
-    let tr = Contract::deploy_json(&client, func, None, "{}".to_owned(), abi, contract_image, Some(&keypair), 0)
+    let tr = Contract::deploy_json(
+        &client,
+        FunctionCallSet {
+            func,
+            header: None,
+            input: "{}".to_owned(),
+            abi,
+        },
+        contract_image,
+        Some(&keypair), 0)
         .await
         .expect("Error deploying contract");
 
@@ -110,8 +124,8 @@ pub async fn test_deploy_and_call_contract() {
 #[test]
 fn test_contract_image_from_file() {
 
-    let mut csprng = OsRng::new().unwrap();
-    let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
+    let mut csprng = rand::thread_rng();
+    let keypair = Keypair::generate(&mut csprng);
 
     let contract_image = ContractImage::from_state_init_and_key(&mut SUBSCRIBE_CONTRACT_IMAGE.as_slice(), &keypair.public).expect("Unable to parse contract code file");
 
@@ -134,8 +148,8 @@ async fn test_load_nonexistent_contract() {
 #[test]
 #[ignore]
 fn test_update_contract_data() {
-    let mut csprng = OsRng::new().unwrap();
-    let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
+    let mut csprng = rand::thread_rng();
+    let keypair = Keypair::generate(&mut csprng);
 
     let mut contract_image = ContractImage::from_state_init_and_key(&mut SUBSCRIBE_CONTRACT_IMAGE.as_slice(), &keypair.public)
         .expect("Unable to parse contract code file");
@@ -175,25 +189,29 @@ async fn test_expire() {
 	let client = init_json(&config.to_string()).unwrap();
 
 	// generate key pair
-    let mut csprng = OsRng::new().unwrap();
-    let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
+    let mut csprng = rand::thread_rng();
+    let keypair = Keypair::generate(&mut csprng);
 
     let wallet_address = deploy_contract_and_wait(&client, &WALLET_IMAGE, &WALLET_ABI, "{}", &keypair, 0).await;
 
-    let (msg, _) = Contract::construct_call_message_json(
+    let msg = Contract::construct_call_message_json(
         wallet_address.clone(),
-        "setSubscriptionAccount".to_owned(),
-        Some(json!({
-            "expire": 123
-        }).to_string()),
-        json!({
-            "addr": wallet_address.to_string()
-        }).to_string(),
-        WALLET_ABI.clone(),
+        FunctionCallSet {
+            func: "setSubscriptionAccount".to_owned(),
+            header: Some(json!({
+                "expire": 123
+            }).to_string()),
+            input: json!({
+                "addr": wallet_address.to_string()
+            }).to_string(),
+            abi: WALLET_ABI.clone(),
+        },
         false,
-        Some(&keypair)).unwrap();
+        Some(&keypair),
+        None,
+        None).unwrap();
 
-    let result = Contract::send_message(&client, Contract::deserialize_message(&msg).unwrap(), Some(Contract::get_now().unwrap() + 1), 0).await;
+    let result = Contract::process_message(&client, msg.message, Some(Contract::now().unwrap() + 1), 0).await;
 
     match result {
         Err(error) => match error.downcast_ref::<SdkError>().unwrap() {
@@ -213,8 +231,8 @@ async fn test_retries() {
     // connect to node
 	let client = init_json(&config.to_string()).unwrap();
 
-    let mut csprng = OsRng::new().unwrap();
-    let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
+    let mut csprng = rand::thread_rng();
+    let keypair = Keypair::generate(&mut csprng);
 
     let wallet_address = deploy_contract_and_wait(&client, &WALLET_IMAGE, &WALLET_ABI, "{}", &keypair, 0).await;
 
@@ -240,27 +258,31 @@ async fn test_retries() {
 
 #[test]
 fn professor_test() {
-    let mut csprng = OsRng::new().unwrap();
-    let keypair = Keypair::generate::<Sha512, _>(&mut csprng);
+    let mut csprng = rand::thread_rng();
+    let keypair = Keypair::generate(&mut csprng);
 
     let contract_image = ContractImage::from_state_init_and_key(
         &mut PROFESSOR_IMAGE.as_slice(),
         &keypair.public).expect("Unable to parse contract code file");
 
     let _message = Contract::construct_deploy_message_json(
-            "constructor".to_owned(),
-            None,
-            json!({
+        FunctionCallSet {
+            func: "constructor".to_owned(),
+            header: None,
+            input: json!({
                 "parents": [1234, 1234],
                 "timestamps": [1234, 1234],
                 "amount": 1234,
                 "details": [123, 123],
                 "detailsDelimiter": [1]
             }).to_string(),
-            PROFESSOR_ABI.to_owned(),
-            contract_image,
-            Some(&keypair),
-            0).unwrap();
+            abi: PROFESSOR_ABI.to_owned(),
+        },
+        contract_image,
+        Some(&keypair),
+        0,
+        None,
+        None).unwrap();
 }
 
 #[test]

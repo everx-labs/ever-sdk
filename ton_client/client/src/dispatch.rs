@@ -2,8 +2,7 @@
 * Copyright 2018-2020 TON DEV SOLUTIONS LTD.
 *
 * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
-* this file except in compliance with the License.  You may obtain a copy of the
-* License at: https://ton.dev/licenses
+* this file except in compliance with the License.
 *
 * Unless required by applicable law or agreed to in writing, software
 * distributed under the License is distributed on an "AS IS" BASIS,
@@ -120,6 +119,15 @@ impl DispatchTable {
     }
 
     pub fn sync_dispatch(&self, context: &mut ClientContext, method: String, params_json: String) -> JsonResponse {
+        // TODO: delete when JS bindings will save context
+        #[cfg(not(feature = "node_interaction"))]
+        {
+            if context.client.is_none() {
+                context.client = Some(ton_sdk::init(ton_sdk::NodeClientConfig {
+                    timeouts: Some(ton_sdk::TimeoutsConfig::default())
+                }).unwrap())
+            }
+        }
         match self.sync_runners.get(&method) {
             Some(handler) => handler.handle(context, params_json.as_str()),
             None => JsonResponse::from_error(ApiError::unknown_method(&method))

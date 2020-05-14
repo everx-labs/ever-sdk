@@ -2,8 +2,7 @@
 * Copyright 2018-2020 TON DEV SOLUTIONS LTD.
 *
 * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
-* this file except in compliance with the License.  You may obtain a copy of the
-* License at: https://ton.dev/licenses
+* this file except in compliance with the License.
 *
 * Unless required by applicable law or agreed to in writing, software
 * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,9 +12,10 @@
 */
 
 use crate::crypto::keys::{KeyPair, decode_public_key, account_encode};
-use ton_sdk::{Contract, ContractImage};
-
 use crate::contracts::EncodedUnsignedMessage;
+use crate::contracts::run::serialize_message;
+use ton_sdk::{Contract, ContractImage, FunctionCallSet};
+
 
 #[cfg(feature = "node_interaction")]
 use ton_sdk::Transaction;
@@ -24,96 +24,116 @@ use ton_sdk::NodeClient;
 
 const DEFAULT_WORKCHAIN: i32 = 0;
 
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeployFunctionCallSet {
+    pub abi: serde_json::Value,
+    pub constructor_header: Option<serde_json::Value>,
+    pub constructor_params: serde_json::Value,
+}
+
+impl Into<FunctionCallSet> for DeployFunctionCallSet {
+    fn into(self) -> FunctionCallSet {
+        FunctionCallSet {
+            func: "constructor".to_owned(),
+            header: self.constructor_header.map(|value| value.to_string().to_owned()),
+            input: self.constructor_params.to_string(),
+            abi: self.abi.to_string(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfDeploy {
-    pub abi: serde_json::Value,
-    pub constructorHeader: Option<serde_json::Value>,
-    pub constructorParams: serde_json::Value,
-    pub initParams: Option<serde_json::Value>,
-    pub imageBase64: String,
-    pub keyPair: KeyPair,
-    pub workchainId: Option<i32>,
+    #[serde(flatten)]
+    pub call_set: DeployFunctionCallSet,
+    pub init_params: Option<serde_json::Value>,
+    pub image_base64: String,
+    pub key_pair: KeyPair,
+    pub workchain_id: Option<i32>,
+    pub try_index: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfEncodeUnsignedDeployMessage {
-    pub abi: serde_json::Value,
-    pub constructorHeader: Option<serde_json::Value>,
-    pub constructorParams: serde_json::Value,
-    pub initParams: Option<serde_json::Value>,
-    pub imageBase64: String,
-    pub publicKeyHex: String,
-    pub workchainId: Option<i32>,
+    #[serde(flatten)]
+    pub call_set: DeployFunctionCallSet,
+    pub init_params: Option<serde_json::Value>,
+    pub image_base64: String,
+    pub public_key_hex: String,
+    pub workchain_id: Option<i32>,
+    pub try_index: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct ResultOfEncodeUnsignedDeployMessage {
     pub encoded: EncodedUnsignedMessage,
-    pub addressHex: String,
+    pub address_hex: String,
 }
 
 #[derive(Serialize, Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfGetDeployAddress {
     pub abi: serde_json::Value,
-    pub initParams: Option<serde_json::Value>,
-    pub imageBase64: String,
-    pub keyPair: KeyPair,
-    pub workchainId: Option<i32>,
+    pub init_params: Option<serde_json::Value>,
+    pub image_base64: String,
+    pub key_pair: KeyPair,
+    pub workchain_id: Option<i32>,
 }
 
-#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct ResultOfDeploy {
     pub address: String,
-    pub alreadyDeployed: bool,
+    pub already_deployed: bool,
 }
 
-#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct ResultOfEncodeDeployMessage {
     pub address: String,
-    pub messageId: String,
-    pub messageIdBase64: String,
-    pub messageBodyBase64: String,
+    pub message_id: String,
+    pub message_body_base64: String,
+    pub expire: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfGetDeployData {
     pub abi: Option<serde_json::Value>,
-    pub initParams: Option<serde_json::Value>,
-    pub imageBase64: Option<String>,
-    pub publicKeyHex: String,
-    pub workchainId: Option<i32>,
+    pub init_params: Option<serde_json::Value>,
+    pub image_base64: Option<String>,
+    pub public_key_hex: String,
+    pub workchain_id: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize)]
-#[allow(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct ResultOfGetDeployData {
-    pub imageBase64: Option<String>,
-    pub accountId: Option<String>,
+    pub image_base64: Option<String>,
+    pub account_id: Option<String>,
     pub address: Option<String>,
-    pub dataBase64: String,
+    pub data_base64: String,
 }
 
 #[cfg(feature = "node_interaction")]
 pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<ResultOfDeploy> {
-    debug!("-> contracts.deploy({})", params.constructorParams.to_string());
+    debug!("-> contracts.deploy({:?})", params.call_set.clone());
 
-    let key_pair = params.keyPair.decode()?;
+    let key_pair = params.key_pair.decode()?;
 
-    let contract_image = create_image(&params.abi, params.initParams.as_ref(), &params.imageBase64, &key_pair.public)?;
-    let account_id = contract_image.msg_address(params.workchainId.unwrap_or(DEFAULT_WORKCHAIN));
+    let contract_image = create_image(&params.call_set.abi, params.init_params.as_ref(), &params.image_base64, &key_pair.public)?;
+    let account_id = contract_image.msg_address(params.workchain_id.unwrap_or(DEFAULT_WORKCHAIN));
     debug!("-> -> image prepared with address: {}", account_id);
 
     if check_deployed(context, &account_id).await? {
         return Ok(ResultOfDeploy { 
             address: account_encode(&account_id),
-            alreadyDeployed: true
+            already_deployed: true
         })
     }
 
@@ -126,55 +146,58 @@ pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) 
     super::run::check_transaction_status(&tr)?;
     Ok(ResultOfDeploy {
         address: account_encode(&account_id),
-        alreadyDeployed: false
+        already_deployed: false
     })
 }
 
 pub(crate) fn get_address(_context: &mut ClientContext, params: ParamsOfGetDeployAddress) -> ApiResult<String> {
-    let key_pair = params.keyPair.decode()?;
-    let contract_image = create_image(&params.abi, params.initParams.as_ref(), &params.imageBase64, &key_pair.public)?;
-    let account_id = contract_image.msg_address(params.workchainId.unwrap_or(DEFAULT_WORKCHAIN));
+    let key_pair = params.key_pair.decode()?;
+    let contract_image = create_image(&params.abi, params.init_params.as_ref(), &params.image_base64, &key_pair.public)?;
+    let account_id = contract_image.msg_address(params.workchain_id.unwrap_or(DEFAULT_WORKCHAIN));
     Ok(account_encode(&account_id))
 }
 
-pub(crate) fn encode_message(_context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<ResultOfEncodeDeployMessage> {
-    debug!("-> contracts.deploy.message({})", params.constructorParams.to_string());
+pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<ResultOfEncodeDeployMessage> {
+    debug!("-> contracts.deploy.message({:?})", params.call_set.clone());
 
-    let keys = params.keyPair.decode()?;
-    let workchain = params.workchainId.unwrap_or(DEFAULT_WORKCHAIN);
+    let keys = params.key_pair.decode()?;
+    let workchain = params.workchain_id.unwrap_or(DEFAULT_WORKCHAIN);
 
-    let contract_image = create_image(&params.abi, params.initParams.as_ref(), &params.imageBase64, &keys.public)?;
+    let contract_image = create_image(&params.call_set.abi, params.init_params.as_ref(), &params.image_base64, &keys.public)?;
     let account_id = contract_image.msg_address(workchain);
     debug!("image prepared with address: {}", account_encode(&account_id));
-    let (message_body, message_id) = Contract::construct_deploy_message_json(
-        "constructor".to_owned(),
-        params.constructorHeader.map(|value| value.to_string().to_owned()),
-        params.constructorParams.to_string().to_owned(),
-        params.abi.to_string().to_owned(),
+    let msg = Contract::construct_deploy_message_json(
+        params.call_set.into(),
         contract_image,
-        Some(&keys), workchain).map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
+        Some(&keys),
+        workchain,
+        Some(context.get_client()?.timeouts()),
+        params.try_index
+    ).map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
+
+    let (body, id) = serialize_message(msg.message)?;
 
     debug!("<-");
     Ok(ResultOfEncodeDeployMessage {
         address: account_encode(&account_id),
-        messageId: message_id.to_string(),
-        messageIdBase64: message_id.to_base64().map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?,
-        messageBodyBase64: base64::encode(&message_body),
+        message_id: id,
+        message_body_base64: base64::encode(&body),
+        expire: msg.expire
     })
 }
 
 pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetDeployData) -> ApiResult<ResultOfGetDeployData> {
-    debug!("-> contracts.run.message({}, {}, {})",
+    debug!("-> contracts.deploy.data({}, {}, {})",
         &params.abi.clone().unwrap_or_default(),
-        &params.imageBase64.clone().unwrap_or_default(),
-        &params.initParams.clone().unwrap_or_default(),
+        &params.image_base64.clone().unwrap_or_default(),
+        &params.init_params.clone().unwrap_or_default(),
     );
 
 
-    let public = decode_public_key(&params.publicKeyHex)?;
+    let public = decode_public_key(&params.public_key_hex)?;
 
     // if image provided use it to modify initial data
-    let mut image = if let Some(image) = &params.imageBase64 {
+    let mut image = if let Some(image) = &params.image_base64 {
         let bytes = base64::decode(&image)
             .map_err(|err| ApiError::contracts_invalid_image(err))?;
         let image = ContractImage::from_state_init_and_key(&mut bytes.as_slice(), &public)
@@ -191,7 +214,7 @@ pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetD
     };
 
     // if initial data provided add it to image
-    if let Some(init_params) = params.initParams {
+    if let Some(init_params) = params.init_params {
         let abi = params.abi.ok_or(ApiError::contracts_image_creation_failed("No ABI provided"))?;
         image.update_data(&init_params.to_string(), &abi.to_string())
             .map_err(|err| ApiError::contracts_image_creation_failed(err))?;
@@ -202,44 +225,45 @@ pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetD
         .map_err(|err| ApiError::contracts_image_creation_failed(err))?);
 
     // image is returned only if original image was provided
-    // accountId is computed from image so it is returned only with image
-    let (image_base64, account_id, address) = match params.imageBase64 {
+    // account_id is computed from image so it is returned only with image
+    let (image_base64, account_id, address) = match params.image_base64 {
         Some(_) => (
             Some(base64::encode(&image.serialize()
                 .map_err(|err| ApiError::contracts_image_creation_failed(err))?)),
             Some(image.account_id().to_hex_string()),
-            Some(image.msg_address(params.workchainId.unwrap_or(DEFAULT_WORKCHAIN)).to_string())
+            Some(image.msg_address(params.workchain_id.unwrap_or(DEFAULT_WORKCHAIN)).to_string())
         ),
         None => (None, None, None),
     };
 
     debug!("<-");
     Ok(ResultOfGetDeployData {
-        imageBase64: image_base64,
-        accountId: account_id,
+        image_base64: image_base64,
+        account_id: account_id,
         address,
-        dataBase64: data_base64
+        data_base64: data_base64
     })
 }
 
-pub(crate) fn encode_unsigned_message(_context: &mut ClientContext, params: ParamsOfEncodeUnsignedDeployMessage) -> ApiResult<ResultOfEncodeUnsignedDeployMessage> {
-    let public = decode_public_key(&params.publicKeyHex)?;
-    let image = create_image(&params.abi, params.initParams.as_ref(), &params.imageBase64, &public)?;
-    let workchain = params.workchainId.unwrap_or(DEFAULT_WORKCHAIN);
+pub(crate) fn encode_unsigned_message(context: &mut ClientContext, params: ParamsOfEncodeUnsignedDeployMessage) -> ApiResult<ResultOfEncodeUnsignedDeployMessage> {
+    let public = decode_public_key(&params.public_key_hex)?;
+    let image = create_image(&params.call_set.abi, params.init_params.as_ref(), &params.image_base64, &public)?;
+    let workchain = params.workchain_id.unwrap_or(DEFAULT_WORKCHAIN);
     let address_hex = account_encode(&image.msg_address(workchain));
     let encoded = ton_sdk::Contract::get_deploy_message_bytes_for_signing(
-        "constructor".to_owned(),
-        params.constructorHeader.map(|value| value.to_string().to_owned()),
-        params.constructorParams.to_string().to_owned(),
-        params.abi.to_string().to_owned(),
-        image, workchain
+        params.call_set.into(),
+        image,
+        workchain,
+        Some(context.get_client()?.timeouts()),
+        params.try_index
     ).map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
     Ok(ResultOfEncodeUnsignedDeployMessage {
         encoded: EncodedUnsignedMessage {
-            unsignedBytesBase64: base64::encode(&encoded.message),
-            bytesToSignBase64: base64::encode(&encoded.data_to_sign),
+            unsigned_bytes_base64: base64::encode(&encoded.message),
+            bytes_to_sign_base64: base64::encode(&encoded.data_to_sign),
+            expire: encoded.expire
         },
-        addressHex: address_hex
+        address_hex: address_hex
     })
 }
 
@@ -278,11 +302,10 @@ fn create_image(abi: &serde_json::Value, init_params: Option<&serde_json::Value>
 async fn deploy_contract(client: &NodeClient, params: ParamsOfDeploy, image: ContractImage, keys: &Keypair) -> ApiResult<Transaction> {
     Contract::deploy_json(
         client,
-        "constructor".to_owned(),
-        params.constructorHeader.map(|value| value.to_string().to_owned()),
-        params.constructorParams.to_string().to_owned(),
-        params.abi.to_string().to_owned(),
-        image, Some(keys), params.workchainId.unwrap_or(DEFAULT_WORKCHAIN))
+        params.call_set.into(),
+        image,
+        Some(keys),
+        params.workchain_id.unwrap_or(DEFAULT_WORKCHAIN))
             .await
             .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::contracts_run_failed))
 }

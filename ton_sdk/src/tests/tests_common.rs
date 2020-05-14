@@ -2,8 +2,7 @@
 * Copyright 2018-2020 TON DEV SOLUTIONS LTD.
 *
 * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
-* this file except in compliance with the License.  You may obtain a copy of the
-* License at: https://ton.dev/licenses
+* this file except in compliance with the License.
 *
 * Unless required by applicable law or agreed to in writing, software
 * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,8 +13,6 @@
 
 use super::*;
 use ed25519_dalek::{Keypair, SecretKey, PublicKey};
-use rand::rngs::OsRng;
-use sha2::Sha512;
 use std::str::FromStr;
 use ton_block::MsgAddressInt;
 use futures::StreamExt;
@@ -54,13 +51,11 @@ const DEFAULT_GIVER_KEYS: &str = r#"
 pub fn get_config() -> serde_json::Value {
     if NODE_SE {
         json!({
-            "queries_server": "http://localhost/graphql",
-            "subscriptions_server": "ws://localhost/graphql"
+            "base_url": "http://localhost"
         })
     } else {
         json!({
-            "queries_server": "https://cinet.tonlabs.io/graphql",
-            "subscriptions_server": "wss://cinet.tonlabs.io/graphql"
+            "base_url": "cinet.tonlabs.io"
         })
     }
 }
@@ -109,8 +104,8 @@ fn test_print_address() {
 #[ignore]
 fn test_generate_keypair_and_address() {
     // generate key pair
-    let mut csprng = OsRng::new().unwrap();
-    let key_pair = Keypair::generate::<Sha512, _>(&mut csprng);
+    let mut csprng = rand::thread_rng();
+    let key_pair = Keypair::generate(&mut csprng);
 
     println!("Key pair: {}", hex::encode(&key_pair.to_bytes().to_vec()));
 
@@ -238,10 +233,12 @@ pub async fn deploy_contract_and_wait(
     // call deploy method
     let tr = Contract::deploy_json(
         client,
-        "constructor".to_owned(),
-        None,
-        constructor_params.to_owned(),
-        abi.to_owned(),
+        FunctionCallSet {
+            func: "constructor".to_owned(),
+            header: None,
+            input: constructor_params.to_owned(),
+            abi: abi.to_owned(),
+        },
         contract_image,
         Some(key_pair),
         workchain_id)
@@ -270,7 +267,16 @@ pub async fn call_contract(
 ) -> Transaction {
     let now = std::time::Instant::now();
     // call needed method
-    let tr = Contract::call_json(client, address, func.to_owned(), None, input, abi.to_owned(), key_pair)
+    let tr = Contract::call_json(
+        client,
+        address, 
+        FunctionCallSet {
+            func: func.to_owned(),
+            header: None,
+            input,
+            abi: abi.to_owned(),
+        },
+        key_pair)
         .await;
 
     let t = now.elapsed();
@@ -297,7 +303,16 @@ pub async fn call_contract_and_wait(
 ) -> (String, Transaction) {
     let now = std::time::Instant::now();
     // call needed method
-    let tr = Contract::call_json(client, address, func.to_owned(), None, input, abi.to_owned(), key_pair)
+    let tr = Contract::call_json(
+        client,
+        address,
+        FunctionCallSet {
+            func: func.to_owned(),
+            header: None,
+            input,
+            abi: abi.to_owned(),
+        },
+        key_pair)
             .await;
 
     let t = now.elapsed();

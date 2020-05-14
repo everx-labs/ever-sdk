@@ -2,8 +2,7 @@
 * Copyright 2018-2020 TON DEV SOLUTIONS LTD.
 *
 * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
-* this file except in compliance with the License.  You may obtain a copy of the
-* License at: https://ton.dev/licenses
+* this file except in compliance with the License.
 *
 * Unless required by applicable law or agreed to in writing, software
 * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,16 +17,15 @@ use crate::crypto::keys::{account_decode};
 use crate::client::ClientContext;
 
 #[derive(Deserialize)]
-#[allow(non_snake_case)]
 pub(crate) struct LoadParams {
     pub address: String,
 }
 
-#[allow(non_snake_case)]
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct LoadResult {
     pub id: Option<String>,
-    pub balanceGrams: Option<String>,
+    pub balance_grams: Option<String>,
 }
 
 pub(crate) async fn load(context: &mut ClientContext, params: LoadParams) -> ApiResult<LoadResult> {
@@ -45,12 +43,12 @@ pub(crate) async fn load(context: &mut ClientContext, params: LoadParams) -> Api
 
 const EMPTY_RESULT: LoadResult = LoadResult {
     id: None,
-    balanceGrams: None,
+    balance_grams: None,
 };
 
 fn make_result(contract: Contract) -> ApiResult<LoadResult> {
     Ok(LoadResult {
         id: contract.id().map(|id| id.to_hex_string()).ok(),
-        balanceGrams: contract.balance_grams().map(|balance| balance.to_string()).ok(),
+        balance_grams: contract.balance_grams().map(|balance| balance.to_string()).ok(),
     })
 }

@@ -2,8 +2,7 @@
 * Copyright 2018-2020 TON DEV SOLUTIONS LTD.
 *
 * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
-* this file except in compliance with the License.  You may obtain a copy of the
-* License at: https://ton.dev/licenses
+* this file except in compliance with the License.
 *
 * Unless required by applicable law or agreed to in writing, software
 * distributed under the License is distributed on an "AS IS" BASIS,
@@ -150,6 +149,13 @@ impl ApiError {
     pub fn message_expired() -> Self {
         sdk_err!(MessageExpired,
             "Message expired")
+    }
+
+    // SDK Cell
+
+    pub fn cell_invalid_query<E: Display>(s: E) -> Self {
+        sdk_err!(CellInvalidQuery,
+            "Invalid cell query: {}", s)
     }
 
     // SDK Crypto
@@ -380,6 +386,16 @@ impl ApiError {
             "Load messages failed: {}", err)
     }
 
+    pub fn contracts_cannot_serialize_message<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsCannotSerializeMessage,
+            "Can not serialize message: {}", err)
+    }
+
+    pub fn contracts_process_message_failed<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsProcessMessageFailed,
+            "Process message failed: {}", err)
+    }
+
     // SDK queries
 
     pub fn queries_query_failed<E: Display>(err: E) -> Self {
@@ -531,11 +547,15 @@ pub enum ApiSdkErrorCode {
     ContractsAddressConversionFailed = 3019,
     ContractsInvalidBoc = 3020,
     ContractsLoadMessagesFailed = 3021,
+    ContractsCannotSerializeMessage = 3022,
+    ContractsProcessMessageFailed = 3023,
 
     QueriesQueryFailed = 4001,
     QueriesSubscribeFailed = 4002,
     QueriesWaitForFailed = 4003,
     QueriesGetNextFailed = 4004,
+
+    CellInvalidQuery = 5001,
 }
 
 impl ApiErrorCode for ApiSdkErrorCode {
@@ -617,7 +637,7 @@ impl ApiErrorCode for i32 {
 }
 
 pub fn apierror_from_sdkerror<F>(err: failure::Error, default_err: F) -> ApiError
-where 
+where
     F: Fn(failure::Error) -> ApiError,
 {
     match err.downcast_ref::<SdkError>() {

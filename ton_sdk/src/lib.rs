@@ -2,8 +2,7 @@
 * Copyright 2018-2020 TON DEV SOLUTIONS LTD.
 *
 * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
-* this file except in compliance with the License.  You may obtain a copy of the
-* License at: https://ton.dev/licenses
+* this file except in compliance with the License.
 *
 * Unless required by applicable law or agreed to in writing, software
 * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,13 +18,13 @@ extern crate ton_vm;
 extern crate serde_derive;
 #[macro_use]
 extern crate failure;
-
-#[cfg(feature = "node_interaction")]
 #[macro_use]
 extern crate serde_json;
 
 #[cfg(feature = "fee_calculation")]
 extern crate ton_executor;
+
+use ton_types::Result;
 
 pub use ton_abi::json_abi;
 pub use ton_abi::Contract as AbiContract;
@@ -35,7 +34,7 @@ mod error;
 pub use error::SdkError;
 
 mod contract;
-pub use contract::{Contract, ContractImage};
+pub use contract::{Contract, ContractImage, FunctionCallSet};
 
 mod message;
 pub use message::{Message, MessageId, MessageType};
@@ -55,20 +54,40 @@ pub use types::{NodeClientConfig, TimeoutsConfig};
 #[cfg(feature = "node_interaction")]
 pub mod node_client;
 #[cfg(feature = "node_interaction")]
-pub use node_client::{NodeClient, OrderBy};
+pub use node_client::OrderBy;
+pub use node_client::NodeClient;
+
+#[cfg(not(feature = "node_interaction"))]
+pub mod node_client {
+    use crate::{NodeClientConfig, TimeoutsConfig};
+    use ton_types::Result;
+
+    pub struct NodeClient {
+        timeouts: TimeoutsConfig
+    }
+
+    impl NodeClient {
+        // Globally initializes client with server address
+        pub fn new(config: NodeClientConfig) -> Result<NodeClient> {
+            Ok(NodeClient {
+                timeouts: config.timeouts.unwrap_or_default()
+            })
+        }
+
+        pub fn timeouts(&self) -> &TimeoutsConfig {
+            &self.timeouts
+        }
+    }
+}
 
 pub mod json_helper;
-#[cfg(feature = "node_interaction")]
-use ton_types::Result;
 
 /// Init SKD. Globally saves queries and requests server URLs
-#[cfg(feature = "node_interaction")]
-pub fn init(config: NodeClientConfig) -> Result<NodeClient> { 
+pub fn init(config: NodeClientConfig) -> Result<NodeClient> {
     NodeClient::new(config)
 }
 
 /// Init SKD. Globally saves queries and requests server URLs
-#[cfg(feature = "node_interaction")]
 pub fn init_json(config: &str) -> Result<NodeClient> {
     init(serde_json::from_str(config)
         .map_err(|err| SdkError::InvalidArg { msg: format!("{}", err) } )?)
