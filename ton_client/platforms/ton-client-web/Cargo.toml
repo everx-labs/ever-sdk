@@ -3,6 +3,7 @@ name = "ton_client_web"
 version = "0.23.0"
 edition = "2018"
 description = "tonsdk WASM binding"
+license = "Apache-2.0"
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ['-Os']
