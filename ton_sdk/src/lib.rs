@@ -82,7 +82,7 @@ pub mod node_client {
 
 pub mod json_helper;
 
-/// Init SKD. Globally saves queries and requests server URLs
+/// Init SDK. Globally saves queries and requests server URLs
 #[cfg(feature = "node_interaction")]
 pub async fn init(config: NodeClientConfig) -> Result<NodeClient> { 
     NodeClient::new(config).await
