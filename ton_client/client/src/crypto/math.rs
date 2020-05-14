@@ -2,8 +2,7 @@
 * Copyright 2018-2020 TON DEV SOLUTIONS LTD.
 *
 * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
-* this file except in compliance with the License.  You may obtain a copy of the
-* License at: https://ton.dev/licenses
+* this file except in compliance with the License.
 *
 * Unless required by applicable law or agreed to in writing, software
 * distributed under the License is distributed on an "AS IS" BASIS,
@@ -39,7 +38,7 @@ pub fn factorize(what: u64) -> Vec<u64> {
     let mut it = 0;
     let mut i = 0;
     let mut g: u64 = 0;
-    let mut rng = rand::rngs::OsRng::new().unwrap();
+    let mut rng = rand::thread_rng();
 
     while i < 3 || it < 1000 {
         let mut x = rng.next_u64() % (what - 1) + 1;
