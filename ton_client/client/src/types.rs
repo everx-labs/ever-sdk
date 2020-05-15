@@ -53,17 +53,11 @@ impl ApiErrorSource {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct ApiErrorData {
-    pub transaction_id: String,
-    pub phase: String,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ApiError {
     pub source: String,
     pub code: isize,
     pub message: String,
-    pub data: Option<ApiErrorData>
+    pub data: Option<serde_json::Value>
 }
 
 pub type ApiResult<T> = Result<T, ApiError>;
@@ -147,9 +141,30 @@ impl ApiError {
             "Wait for operation rejected on timeout")
     }
 
-    pub fn message_expired() -> Self {
-        sdk_err!(MessageExpired,
-            "Message expired")
+    pub fn message_expired(msg_id: String, send_time: u32, expire: u32, block_time: u32) -> Self {
+        let mut error = ApiError::new(
+            ApiErrorSource::Node,
+            &ApiSdkErrorCode::MessageExpired,
+            "Message expired".to_owned(),
+        );
+
+        error.data = Some(serde_json::json!({
+            "message_id": msg_id,
+            "send_time": send_time,
+            "expiration_time": expire,
+            "block_time": block_time
+        }));
+        error
+    }
+
+    pub fn network_silent() -> Self {
+        sdk_err!(NetworkSilent,
+            "No blocks produced during timeout")
+    }
+
+    pub fn transactions_lag() -> Self {
+        sdk_err!(TransactionsLag,
+            "Existing block transaction not found")
     }
 
     // SDK Cell
@@ -435,19 +450,19 @@ impl ApiError {
             &(-1i32),
             "Transaction aborted".to_string()
         );
-         error.data = Some(ApiErrorData{
-            transaction_id: tr_id,
-            phase: "unknown".to_string(),
-        });
+         error.data = Some(serde_json::json!({
+            "transaction_id": tr_id,
+            "phase": "unknown",
+        }));
         error
     }
 
     pub fn tvm_execution_skipped(tr_id: String, reason: &ComputeSkipReason) -> ApiError {
         let mut error = ApiError::new(ApiErrorSource::Node, reason, reason.as_string());
-        error.data = Some(ApiErrorData{
-            transaction_id: tr_id,
-            phase: "computeSkipped".to_string(),
-        });
+        error.data = Some(serde_json::json!({
+            "transaction_id": tr_id,
+            "phase": "computeSkipped",
+        }));
         error
     }
 
@@ -458,19 +473,19 @@ impl ApiError {
             format!("VM terminated with exit code: {}", exit_code),
         );
 
-        error.data = Some(ApiErrorData{
-            transaction_id: tr_id,
-            phase: "computeVm".to_string(),
-        });
+        error.data = Some(serde_json::json!({
+            "transaction_id": tr_id,
+            "phase": "computeVm",
+        }));
         error
     }
 
     pub fn storage_phase_failed(tr_id: String, reason: &AccStatusChange) -> ApiError {
         let mut error = ApiError::new(ApiErrorSource::Node, reason, reason.as_string());
-        error.data = Some(ApiErrorData{
-            transaction_id: tr_id,
-            phase: "storage".to_string(),
-        });
+        error.data = Some(serde_json::json!({
+            "transaction_id": tr_id,
+            "phase": "storage",
+        }));
         error
     }
 
@@ -482,10 +497,10 @@ impl ApiError {
     ) -> ApiError {
         let code = ApiActionCode::new(result_code, valid, no_funds);
         let mut error = ApiError::new(ApiErrorSource::Node, &code, code.as_string());
-        error.data = Some(ApiErrorData{
-            transaction_id: tr_id,
-            phase: "action".to_string(),
-        });
+        error.data = Some(serde_json::json!({
+            "transaction_id": tr_id,
+            "phase": "action",
+        }));
         error
     }
 }
@@ -501,6 +516,8 @@ pub enum ApiSdkErrorCode {
     ConfigInitFailed = 1001,
     WaitForTimeout = 1003,
     MessageExpired = 1006,
+    NetworkSilent = 1010,
+    TransactionsLag = 1011,
 
     CryptoInvalidPublicKey = 2001,
     CryptoInvalidSecretKey = 2002,
@@ -643,7 +660,10 @@ where
 {
     match err.downcast_ref::<SdkError>() {
         Some(SdkError::WaitForTimeout) => ApiError::wait_for_timeout(),
-        Some(SdkError::MessageExpired) => ApiError::message_expired(),
+        Some(SdkError::MessageExpired{msg_id, expire, send_time, block_time}) => 
+            ApiError::message_expired(msg_id.to_string(), *expire, *send_time, *block_time),
+        Some(SdkError::NetworkSilent) => ApiError::network_silent(),
+        Some(SdkError::TransactionsLag) => ApiError::transactions_lag(),
         _ => default_err(err)
     }
 }

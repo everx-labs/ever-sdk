@@ -215,10 +215,14 @@ async fn test_expire() {
     let result = Contract::process_message(&client, msg.message, Some(Contract::now().unwrap() + 1), 0).await;
 
     match result {
-        Err(error) => match error.downcast_ref::<SdkError>().unwrap() {
-            SdkError::MessageExpired => {},
-            _ => panic!("Error `SdkError::MessageExpired` expected")
-        },
+        Err(error) => {
+            println!("{}", error);
+            match error.downcast_ref::<SdkError>().unwrap() {
+                SdkError::MessageExpired{msg_id: _, expire: _, send_time: _, block_time: _} => {},
+                _ => panic!("Error `SdkError::MessageExpired` expected")
+            };
+        }
+        ,
         _ => panic!("Error expected")
     }
 }

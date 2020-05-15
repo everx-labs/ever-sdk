@@ -108,9 +108,22 @@ pub enum SdkError {
     #[fail(display = "Wait for operation rejected on timeout")]
     WaitForTimeout,
 
-    #[fail(display = "Message expired")]
-    MessageExpired,
+    #[fail(display =
+        "Message expired\n\tid: {}\n\tsend time: {}\n\texpiration time: {}\n\tblock time: {}",
+        msg_id, send_time, expire, block_time)]
+    MessageExpired {
+        msg_id: crate::MessageId,
+        send_time: u32,
+        expire: u32,
+        block_time: u32
+    },
 
     #[fail(display = "SDK is initialized without node address")]
     SdkNotInitialized,
+
+    #[fail(display = "No blocks produced during timeout")]
+    NetworkSilent,
+
+    #[fail(display = "Existing block transaction not found")]
+    TransactionsLag,
 }
