@@ -2,6 +2,7 @@
 name = "tonclientnodejs"
 version = "0.23.0"
 authors = ["Michael Vlasov"]
+license = "Apache-2.0"
 
 [lib]
 name = "tonclientnodejs"
