@@ -506,13 +506,16 @@ ton_client/platforms/ton-client-web"""
 				}
                 stage('Client macOS') {
                     agent {
-                        label "ios"
+                        label "ios || ios2"
                     }
                     stages {
                         stage('Report versions') {
                             steps {
-                                sh 'rustc --version'
-                                sh 'cargo --version'
+                                sh '''
+                                    if [ "\$(echo \$PATH | grep -o \\\'.cargo/bin\\\')" = "" ] && [ -e \$HOME/.cargo/bin ]; then export PATH=\$HOME/.cargo/bin:\$PATH; fi
+                                    rustc --version
+                                    cargo --version
+                                '''
                             }
                         }
                         stage('Get sources') {
@@ -542,7 +545,10 @@ ton_client/platforms/ton-client-web"""
                             steps {
                                 dir('tonlabs/TON-SDK/ton_client/client') {
                                     sshagent([G_gitcred]) {
-                                        sh 'node build.js'
+                                        sh '''
+                                            if [ "\$(echo \$PATH | grep -o \\\'.cargo/bin\\\')" = "" ] && [ -e \$HOME/.cargo/bin ]; then export PATH=\$HOME/.cargo/bin:\$PATH; fi
+                                            node build.js
+                                        '''
                                     }
                                 }
                             }
@@ -649,14 +655,15 @@ ton_client/platforms/ton-client-web"""
 				}
                 stage('react-native-ios') {
                     agent {
-                        label "ios"
+                        label "ios || ios2"
                     }
                     stages {
                         stage('Report versions') {
                             steps {
                                 sh '''
-                                rustc --version
-                                cargo --version
+                                    if [ "\$(echo \$PATH | grep -o \\\'.cargo/bin\\\')" = "" ] && [ -e \$HOME/.cargo/bin ]; then export PATH=\$HOME/.cargo/bin:\$PATH; fi
+                                    rustc --version
+                                    cargo --version
                                 '''
                             }
                         }
@@ -688,7 +695,10 @@ ton_client/platforms/ton-client-web"""
                                 echo 'Build ...'
                                 sshagent([G_gitcred]) {
                                     dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-react-native') {
-                                        sh 'node build.js --ios'
+                                        sh '''
+                                            if [ "\$(echo \$PATH | grep -o \\\'.cargo/bin\\\')" = "" ] && [ -e \$HOME/.cargo/bin ]; then export PATH=\$HOME/.cargo/bin:\$PATH; fi
+                                            node build.js --ios
+                                        '''
                                     }
                                 }
                             }
@@ -733,14 +743,15 @@ ton_client/platforms/ton-client-web"""
 				}
                 stage('react-native-android') {
                     agent {
-                        label "ios"
+                        label "ios || ios2"
                     }
                     stages {
                         stage('Report versions') {
                             steps {
                                 sh '''
-                                rustc --version
-                                cargo --version
+                                    if [ "\$(echo \$PATH | grep -o \\\'.cargo/bin\\\')" = "" ] && [ -e \$HOME/.cargo/bin ]; then export PATH=\$HOME/.cargo/bin:\$PATH; fi
+                                    rustc --version
+                                    cargo --version
                                 '''
                             }
                         }
@@ -772,7 +783,10 @@ ton_client/platforms/ton-client-web"""
                                 echo 'Build ...'
                                 sshagent([G_gitcred]) {
                                     dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-react-native') {
-                                        sh 'node build.js --android'
+                                        sh '''
+                                            if [ "\$(echo \$PATH | grep -o \\\'.cargo/bin\\\')" = "" ] && [ -e \$HOME/.cargo/bin ]; then export PATH=\$HOME/.cargo/bin:\$PATH; fi
+                                            node build.js --android
+                                        '''
                                     }
                                 }
                             }
@@ -817,14 +831,15 @@ ton_client/platforms/ton-client-web"""
 				}
                 stage('node-js for iOS') {
                     agent {
-                        label "ios"
+                        label "ios || ios2"
                     }
                     stages {
                         stage('Report versions') {
                             steps {
                                 sh '''
-                                rustc --version
-                                cargo --version
+                                    if [ "\$(echo \$PATH | grep -o \\\'.cargo/bin\\\')" = "" ] && [ -e \$HOME/.cargo/bin ]; then export PATH=\$HOME/.cargo/bin:\$PATH; fi
+                                    rustc --version
+                                    cargo --version
                                 '''
                             }
                         }
@@ -856,7 +871,10 @@ ton_client/platforms/ton-client-web"""
                                 echo 'Build ...'
                                 sshagent([G_gitcred]) {
                                     dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js') {
-                                        sh 'node build.js'
+                                        sh '''
+                                            if [ "\$(echo \$PATH | grep -o \\\'.cargo/bin\\\')" = "" ] && [ -e \$HOME/.cargo/bin ]; then export PATH=\$HOME/.cargo/bin:\$PATH; fi
+                                            node build.js
+                                        '''
                                     }
                                 }
                             }
