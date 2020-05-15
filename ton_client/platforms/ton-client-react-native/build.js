@@ -247,6 +247,7 @@ async function buildReactNativeAndroidLibrary() {
 		await checkNDK();
 		let cargoTargets = ["x86_64-apple-darwin"];
 		let installed = (await exec("rustup target list --installed")).stdout;
+		console.log(`Installed targets:\n${installed}`);
 		if(build_iOS) {
 			cargoTargetsIOS.forEach(val => {
 				if(installed.indexOf(val)<0) {
