@@ -156,14 +156,51 @@ impl ApiError {
         error
     }
 
-    pub fn network_silent() -> Self {
-        sdk_err!(NetworkSilent,
-            "No blocks produced during timeout")
+    pub fn network_silent(msg_id: String, send_time: u32, expire: u32, timeout: u32) -> Self {
+        let mut error = ApiError::new(
+            ApiErrorSource::Node,
+            &ApiSdkErrorCode::NetworkSilent,
+            "No blocks produced during timeout".to_owned(),
+        );
+
+        error.data = Some(serde_json::json!({
+            "message_id": msg_id,
+            "send_time": send_time,
+            "expiration_time": expire,
+            "timeout": timeout
+        }));
+        error
     }
 
-    pub fn transactions_lag() -> Self {
-        sdk_err!(TransactionsLag,
-            "Existing block transaction not found")
+    pub fn transactions_lag(msg_id: String, send_time: u32, block_id: String, timeout: u32) -> Self {
+        let mut error = ApiError::new(
+            ApiErrorSource::Node,
+            &ApiSdkErrorCode::MessageExpired,
+            "Existing block transaction not found".to_owned(),
+        );
+
+        error.data = Some(serde_json::json!({
+            "message_id": msg_id,
+            "send_time": send_time,
+            "block_id": block_id,
+            "timeout": timeout
+        }));
+        error
+    }
+
+    pub fn transaction_wait_timeout(msg_id: String, send_time: u32, timeout: u32) -> Self {
+        let mut error = ApiError::new(
+            ApiErrorSource::Node,
+            &ApiSdkErrorCode::TransactionWaitTimeout,
+            "Transaction did not produced during specified timeout".to_owned(),
+        );
+
+        error.data = Some(serde_json::json!({
+            "message_id": msg_id,
+            "send_time": send_time,
+            "timeout": timeout
+        }));
+        error
     }
 
     // SDK Cell
@@ -517,6 +554,7 @@ pub enum ApiSdkErrorCode {
     MessageExpired = 1006,
     NetworkSilent = 1010,
     TransactionsLag = 1011,
+    TransactionWaitTimeout = 1012,
 
     CryptoInvalidPublicKey = 2001,
     CryptoInvalidSecretKey = 2002,
@@ -661,8 +699,12 @@ where
         Some(SdkError::WaitForTimeout) => ApiError::wait_for_timeout(),
         Some(SdkError::MessageExpired{msg_id, expire, send_time, block_time}) => 
             ApiError::message_expired(msg_id.to_string(), *expire, *send_time, *block_time),
-        Some(SdkError::NetworkSilent) => ApiError::network_silent(),
-        Some(SdkError::TransactionsLag) => ApiError::transactions_lag(),
+        Some(SdkError::NetworkSilent{msg_id, send_time, expire, timeout}) =>
+            ApiError::network_silent(msg_id.to_string(), *send_time, *expire, *timeout),
+        Some(SdkError::TransactionsLag{msg_id, send_time, block_id, timeout}) =>
+            ApiError::transactions_lag(msg_id.to_string(), *send_time, block_id.clone(), *timeout),
+        Some(SdkError::TransactionWaitTimeout{msg_id, send_time, timeout}) =>
+            ApiError::transaction_wait_timeout(msg_id.to_string(), *send_time, *timeout),
         _ => default_err(err)
     }
 }

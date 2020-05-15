@@ -417,6 +417,7 @@ impl Contract {
             result = func(i)?.await;
             match &result {
                 Err(error) => {
+                    println!("{}", error);
                     match error.downcast_ref::<SdkError>() {
                         Some(SdkError::MessageExpired {
                             msg_id: _, expire: _, send_time: _, block_time: _
@@ -539,7 +540,17 @@ impl Contract {
                 TRANSACTIONS_TABLE_NAME,
                 &filter,
                 TRANSACTION_FIELDS_ORDINARY,
-                Some(tr_timeout)).await?;
+                Some(tr_timeout))
+                .await
+                .map_err(|err|  match err.downcast_ref::<SdkError>() {
+                    Some(SdkError::WaitForTimeout) => 
+                        SdkError::TransactionWaitTimeout {
+                            msg_id: message_id.clone(),
+                            send_time: now,
+                            timeout: block_timeout
+                        }.into(),
+                    _ => err
+                })?;
 
             let transaction = serde_json::from_value::<Transaction>(transaction)?;
             if transaction.compute.exit_code == Some(Self::MESSAGE_EXPIRED_CODE) ||
@@ -566,11 +577,17 @@ impl Contract {
                     &json!({
                         "master": { "min_shard_gen_utime": { "ge": expire }}
                     }).to_string(),
-                    "gen_utime in_msg_descr { transaction_id }",
+                    "id gen_utime in_msg_descr { transaction_id }",
                     Some(block_timeout))
                     .await
                     .map_err(|err|  match err.downcast_ref::<SdkError>() {
-                        Some(SdkError::WaitForTimeout) => SdkError::NetworkSilent.into(),
+                        Some(SdkError::WaitForTimeout) => 
+                            SdkError::NetworkSilent {
+                                msg_id: message_id.clone(),
+                                send_time: now,
+                                expire: expire.unwrap_or(0),
+                                timeout: block_timeout
+                            }.into(),
                         _ => err
                     })?;
 
@@ -588,7 +605,13 @@ impl Contract {
                             Some(5000))
                             .await
                             .map_err(|err|  match err.downcast_ref::<SdkError>() {
-                                Some(SdkError::WaitForTimeout) => SdkError::TransactionsLag.into(),
+                                Some(SdkError::WaitForTimeout) => 
+                                    SdkError::TransactionsLag {
+                                        msg_id: message_id.clone(),
+                                        send_time: now,
+                                        block_id: block["id"].as_str().unwrap_or("").to_owned(),
+                                        timeout: block_timeout
+                                    }.into(),
                                 _ => err
                             })?;
 

@@ -121,8 +121,25 @@ pub enum SdkError {
     SdkNotInitialized,
 
     #[fail(display = "No blocks produced during timeout")]
-    NetworkSilent,
+    NetworkSilent{
+        msg_id: crate::MessageId,
+        send_time: u32,
+        expire: u32,
+        timeout: u32
+    },
 
     #[fail(display = "Existing block transaction not found")]
-    TransactionsLag,
+    TransactionsLag{
+        msg_id: crate::MessageId,
+        send_time: u32,
+        block_id: String,
+        timeout: u32
+    },
+
+    #[fail(display = "Transaction did not produced during specified timeout")]
+    TransactionWaitTimeout{
+        msg_id: crate::MessageId,
+        send_time: u32,
+        timeout: u32
+    },
 }
