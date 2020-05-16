@@ -411,20 +411,24 @@ impl Contract {
             F: Fn(u8) -> Result<Fut>,
             Fut: futures::Future<Output=Result<Transaction>>
     {
+        let mut result = Err(SdkError::InternalError { msg: "Unreacheable".to_owned() }.into());
         for i in 0..(retries_count + 1) {
             //println!("Try#{}", i);
-            let result = func(i)?.await;
+            result = func(i)?.await;
             match &result {
                 Err(error) => {
+                    println!("{}", error);
                     match error.downcast_ref::<SdkError>() {
-                        Some(SdkError::MessageExpired) => continue,
+                        Some(SdkError::MessageExpired {
+                            msg_id: _, expire: _, send_time: _, block_time: _
+                        }) => continue,
                         _ => return result
                     }
                 }
                 _ => return result
             }
         }
-        Err(SdkError::MessageExpired.into())
+        result
     }
 
     // Packs given inputs by abi and asynchronously calls contract.
@@ -508,18 +512,21 @@ impl Contract {
     ) -> Result<Transaction>
     {
         // timeout is growing from try to try
-        let mut timeout = Self::calc_timeout(
+        let mut tr_timeout = Self::calc_timeout(
             client.timeouts().message_processing_timeout,
             client.timeouts().message_processing_timeout_grow_factor,
             try_index);
+        let now = Self::now()?;
+        let mut block_timeout = tr_timeout;
         if let Some(expire) = expire {
             //println!("expire {}", expire);
-            let now = Self::now()?;
             if expire <= now {
                 return Err(SdkError::InvalidArg { msg: "Message already expired".to_owned() }.into());
             }
-            // timeout is time to `expire` plus additional time for masterblock awaiting
-            timeout = (expire - now) * 1000 + timeout;
+            // block timeout is time to `expire` plus additional time for masterblock awaiting
+            block_timeout = (expire - now) * 1000 + tr_timeout;
+            // transaction timeout must be greater then block timeout
+            tr_timeout = block_timeout + 10000;
         }
 
         let filter = json!({
@@ -533,13 +540,28 @@ impl Contract {
                 TRANSACTIONS_TABLE_NAME,
                 &filter,
                 TRANSACTION_FIELDS_ORDINARY,
-                Some(timeout)).await?;
+                Some(tr_timeout))
+                .await
+                .map_err(|err|  match err.downcast_ref::<SdkError>() {
+                    Some(SdkError::WaitForTimeout) => 
+                        SdkError::TransactionWaitTimeout {
+                            msg_id: message_id.clone(),
+                            send_time: now,
+                            timeout: block_timeout
+                        }.into(),
+                    _ => err
+                })?;
 
             let transaction = serde_json::from_value::<Transaction>(transaction)?;
             if transaction.compute.exit_code == Some(Self::MESSAGE_EXPIRED_CODE) ||
                 transaction.compute.exit_code == Some(Self::REPLAY_PROTECTION_CODE)
             {
-                Err(SdkError::MessageExpired.into())
+                Err(SdkError::MessageExpired{
+                    msg_id: message_id.clone(),
+                    send_time: now,
+                    expire: expire.unwrap_or(0),
+                    block_time: transaction.now
+                }.into())
             } else {
                 Ok(transaction)
             }
@@ -555,8 +577,19 @@ impl Contract {
                     &json!({
                         "master": { "min_shard_gen_utime": { "ge": expire }}
                     }).to_string(),
-                    "in_msg_descr { transaction_id }",
-                    Some(timeout)).await?;
+                    "id gen_utime in_msg_descr { transaction_id }",
+                    Some(block_timeout))
+                    .await
+                    .map_err(|err|  match err.downcast_ref::<SdkError>() {
+                        Some(SdkError::WaitForTimeout) => 
+                            SdkError::NetworkSilent {
+                                msg_id: message_id.clone(),
+                                send_time: now,
+                                expire: expire.unwrap_or(0),
+                                timeout: block_timeout
+                            }.into(),
+                        _ => err
+                    })?;
 
                 // if we've recieved masterblock check that transactions from this block
                 // are already put into DB and there is no lag in transaction topic
@@ -569,9 +602,25 @@ impl Contract {
                             TRANSACTIONS_TABLE_NAME,
                             &json!({ "id": { "eq": string }}).to_string(),
                             "id",
-                            Some(timeout)).await?;
+                            Some(5000))
+                            .await
+                            .map_err(|err|  match err.downcast_ref::<SdkError>() {
+                                Some(SdkError::WaitForTimeout) => 
+                                    SdkError::TransactionsLag {
+                                        msg_id: message_id.clone(),
+                                        send_time: now,
+                                        block_id: block["id"].as_str().unwrap_or("").to_owned(),
+                                        timeout: block_timeout
+                                    }.into(),
+                                _ => err
+                            })?;
 
-                        Err(SdkError::MessageExpired.into())
+                        Err(SdkError::MessageExpired{
+                            msg_id: message_id.clone(),
+                            send_time: now,
+                            expire: expire.unwrap_or(0),
+                            block_time: block["gen_utime"].as_u64().unwrap_or(0) as u32
+                        }.into())
                     }
                 }
             };

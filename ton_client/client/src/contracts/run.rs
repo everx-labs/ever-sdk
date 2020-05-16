@@ -202,6 +202,8 @@ pub(crate) async fn process_transaction(
     abi: Option<serde_json::Value>,
     function: Option<String>
 ) -> ApiResult<ResultOfRun> {
+    check_transaction_status(&transaction)?;
+
     if let Some(abi) = abi {
         let function = function.ok_or(ApiError::contracts_decode_run_output_failed("No function name provided"))?;
 
@@ -211,7 +213,6 @@ pub(crate) async fn process_transaction(
         if  transaction.out_messages_id().len() == 0 || !abi_function.has_output() {
             debug!("out messages missing");
             debug!("transaction: {:?}", transaction);
-            check_transaction_status(&transaction)?;
             ok_null()
         } else {
             debug!("load out messages");
@@ -235,7 +236,6 @@ pub(crate) async fn process_transaction(
     } else {
         debug!("No abi provided");
         debug!("transaction: {:?}", transaction);
-        check_transaction_status(&transaction)?;
         ok_null()
     }
 }
