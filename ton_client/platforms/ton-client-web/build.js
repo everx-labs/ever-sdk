@@ -8,7 +8,7 @@ main(async() => {
         await spawnProcess('wasm-pack', ['build', '--release', '--', '--no-default-features']);
     } else {
         await spawnProcess('cargo', ['update']);
-        await spawnProcess('wasm-pack', ['build', '--release']);
+        await spawnProcess('wasm-pack', ['build', '--release', '--target', 'web']);
     }
     deleteFolderRecursive(root_path('bin'));
     fs.mkdirSync(root_path('bin'), { recursive: true });
