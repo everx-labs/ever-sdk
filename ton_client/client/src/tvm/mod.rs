@@ -18,8 +18,6 @@ use ton_sdk::Contract;
 use crate::client::ClientContext;
 use crate::types::{ApiResult, ApiError};
 use crate::dispatch::DispatchTable;
-use crate::contracts::run::load_contract;
-use crate::crypto::keys::account_decode;
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
@@ -57,9 +55,9 @@ pub(crate) fn get(
         None => {
             debug!("load contract");
             let address = params.address.ok_or_else(|| ApiError::address_reqired_for_runget())?;
-            let address = account_decode(&address)?;
+            let address = crate::crypto::keys::account_decode(&address)?;
             let mut runtime = context.take_runtime()?;
-            let result = runtime.block_on(load_contract(context, &address));
+            let result = runtime.block_on(crate::contracts::run::load_contract(context, &address));
             context.runtime = Some(runtime);
             result?
         }
@@ -67,7 +65,6 @@ pub(crate) fn get(
         #[cfg(not(feature = "node_interaction"))]
         None => {
             debug!("no account provided");
-            let _address = address;
             let _context = context;
             return Err(ApiError::invalid_params("", "No account provided"));
         }
