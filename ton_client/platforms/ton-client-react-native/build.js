@@ -4,6 +4,7 @@ const {deleteFolderRecursive, version, root_path} = require('../build-lib');
 const url = require('url');
 const http=require('http');
 const zlib = require('zlib');
+const exec = require('util').promisify(require('child_process').exec);
 const outDir = root_path('output');
 const ndkURLstr = 'http://dl.google.com/android/repository/android-ndk-r17c-darwin-x86_64.zip';
 const ndkZipFile = root_path(((parts = ndkURLstr.split('/')).length < 1 ? null : parts[parts.length-1]));
@@ -245,8 +246,22 @@ async function buildReactNativeAndroidLibrary() {
 	try {
 		await checkNDK();
 		let cargoTargets = ["x86_64-apple-darwin"];
-		cargoTargets = build_iOS ? cargoTargets.concat(cargoTargetsIOS) : cargoTargets;
-		cargoTargets = build_Android ? cargoTargets.concat(cargoTargetsAndroid) : cargoTargets;
+		let installed = (await exec("rustup target list --installed")).stdout;
+		console.log(`Installed targets:\n${installed}`);
+		if(build_iOS) {
+			cargoTargetsIOS.forEach(val => {
+				if(installed.indexOf(val)<0) {
+					cargoTargets.push(val);
+				}
+			});
+		}
+		if(build_Android) {
+			cargoTargetsAndroid.forEach(val => {
+				if(installed.indexOf(val)<0) {
+					cargoTargets.push(val);
+				}
+			});
+		}
 		await spawnProcess('rustup', ['target', 'add'].concat(cargoTargets));
 		if (!pArgs.includes("--open")) {
 			await spawnProcess('cargo', ['update']);

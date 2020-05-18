@@ -202,6 +202,8 @@ pub(crate) async fn process_transaction(
     abi: Option<serde_json::Value>,
     function: Option<String>
 ) -> ApiResult<ResultOfRun> {
+    check_transaction_status(&transaction)?;
+
     if let Some(abi) = abi {
         let function = function.ok_or(ApiError::contracts_decode_run_output_failed("No function name provided"))?;
 
@@ -211,7 +213,6 @@ pub(crate) async fn process_transaction(
         if  transaction.out_messages_id().len() == 0 || !abi_function.has_output() {
             debug!("out messages missing");
             debug!("transaction: {:?}", transaction);
-            check_transaction_status(&transaction)?;
             ok_null()
         } else {
             debug!("load out messages");
@@ -235,7 +236,6 @@ pub(crate) async fn process_transaction(
     } else {
         debug!("No abi provided");
         debug!("transaction: {:?}", transaction);
-        check_transaction_status(&transaction)?;
         ok_null()
     }
 }
@@ -549,11 +549,11 @@ async fn load_out_message(client: &NodeClient, tr: &Transaction, abi_function: &
 }
 
 #[cfg(feature = "node_interaction")]
-async fn load_contract(context: &ClientContext, address: &MsgAddressInt) -> ApiResult<Contract> {
+pub(crate) async fn load_contract(context: &ClientContext, address: &MsgAddressInt) -> ApiResult<Contract> {
     let client = context.get_client()?;
     Contract::load_wait_deployed(client, address, None)
         .await
-        .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::contracts_run_failed))
+        .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::contracts_run_contract_load_failed))
 }
 
 #[cfg(feature = "node_interaction")]
