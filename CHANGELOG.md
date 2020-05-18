@@ -1,6 +1,10 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## May 17, 2020
+### New
+- `tvm.get` now can fetch account data if it is not provided
+
 ## May 14, 2020
 ### New
 - Message processing functions added

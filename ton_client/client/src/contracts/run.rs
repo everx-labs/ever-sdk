@@ -549,11 +549,11 @@ async fn load_out_message(client: &NodeClient, tr: &Transaction, abi_function: &
 }
 
 #[cfg(feature = "node_interaction")]
-async fn load_contract(context: &ClientContext, address: &MsgAddressInt) -> ApiResult<Contract> {
+pub(crate) async fn load_contract(context: &ClientContext, address: &MsgAddressInt) -> ApiResult<Contract> {
     let client = context.get_client()?;
     Contract::load_wait_deployed(client, address, None)
         .await
-        .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::contracts_run_failed))
+        .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::contracts_run_contract_load_failed))
 }
 
 #[cfg(feature = "node_interaction")]

@@ -156,6 +156,11 @@ impl ApiError {
         error
     }
 
+    pub fn address_reqired_for_runget() -> Self {
+        sdk_err!(AddressRequiredForRunGet,
+            "Address required for run local. You haven't specified contract code or data so address is required to load missing parts from network.")
+    }
+
     pub fn network_silent(msg_id: String, send_time: u32, expire: u32, timeout: u32) -> Self {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
@@ -552,6 +557,7 @@ pub enum ApiSdkErrorCode {
     ConfigInitFailed = 1001,
     WaitForTimeout = 1003,
     MessageExpired = 1006,
+    AddressRequiredForRunGet = 1009,
     NetworkSilent = 1010,
     TransactionsLag = 1011,
     TransactionWaitTimeout = 1012,
