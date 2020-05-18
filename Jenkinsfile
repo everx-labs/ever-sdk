@@ -443,7 +443,7 @@ ton_client/platforms/ton-client-web"""
                                         "--build-arg \"TON_LABS_BLOCK_IMAGE=${G_images['ton-labs-block']}\" " + 
                                         "--build-arg \"TON_LABS_VM_IMAGE=${G_images['ton-labs-vm']}\" " + 
                                         "--build-arg \"TON_LABS_ABI_IMAGE=${G_images['ton-labs-abi']}\" " + 
-                                        "--build-arg \"TON_EXECUTOR_IMAGE=${G_images['ton-labs-executor']}\" " +
+                                        "--build-arg \"TON_LABS_EXECUTOR_IMAGE=${G_images['ton-labs-executor']}\" " +
                                         "--build-arg \"TON_SDK_IMAGE=${G_images['ton-sdk']}\""
                 }
             }
@@ -485,7 +485,7 @@ ton_client/platforms/ton-client-web"""
                                                 "--build-arg \"TON_LABS_BLOCK_IMAGE=${G_images['ton-labs-block']}\" " + 
                                                 "--build-arg \"TON_LABS_VM_IMAGE=${G_images['ton-labs-vm']}\" " + 
                                                 "--build-arg \"TON_LABS_ABI_IMAGE=${G_images['ton-labs-abi']}\" " + 
-                                                "--build-arg \"TON_EXECUTOR_IMAGE=${G_images['ton-labs-executor']}\" " +
+                                                "--build-arg \"TON_LABS_EXECUTOR_IMAGE=${G_images['ton-labs-executor']}\" " +
                                                 "--build-arg \"TON_SDK_IMAGE=${G_images['ton-sdk']}\""
                         }
                     }
@@ -1017,7 +1017,7 @@ ton_client/platforms/ton-client-web"""
                                                 "--build-arg \"TON_LABS_BLOCK_IMAGE=${G_images['ton-labs-block']}\" " + 
                                                 "--build-arg \"TON_LABS_VM_IMAGE=${G_images['ton-labs-vm']}\" " + 
                                                 "--build-arg \"TON_LABS_ABI_IMAGE=${G_images['ton-labs-abi']}\" " + 
-                                                "--build-arg \"TON_EXECUTOR_IMAGE=${G_images['ton-labs-executor']}\" " +
+                                                "--build-arg \"TON_LABS_EXECUTOR_IMAGE=${G_images['ton-labs-executor']}\" " +
                                                 "--build-arg \"TON_SDK_IMAGE=${G_images['ton-sdk']}\""
                         }
                     }
@@ -1078,7 +1078,7 @@ ton_client/platforms/ton-client-web"""
                                                 "--build-arg \"TON_LABS_BLOCK_IMAGE=${G_images['ton-labs-block']}\" " + 
                                                 "--build-arg \"TON_LABS_VM_IMAGE=${G_images['ton-labs-vm']}\" " + 
                                                 "--build-arg \"TON_LABS_ABI_IMAGE=${G_images['ton-labs-abi']}\" " + 
-                                                "--build-arg \"TON_EXECUTOR_IMAGE=${G_images['ton-labs-executor']}\" " +
+                                                "--build-arg \"TON_LABS_EXECUTOR_IMAGE=${G_images['ton-labs-executor']}\" " +
                                                 "--build-arg \"TON_SDK_IMAGE=${G_images['ton-sdk']}\""
                         }
                     }
