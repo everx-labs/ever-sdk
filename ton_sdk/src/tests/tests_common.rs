@@ -60,10 +60,10 @@ pub fn get_config() -> serde_json::Value {
     }
 }
 
-pub fn init_node_connection() -> NodeClient {
+pub async fn init_node_connection() -> NodeClient {
     let config_json = get_config().to_string();
 
-    init_json(&config_json).unwrap()
+    init_json(&config_json).await.unwrap()
 }
 
 fn get_wallet_keys() -> Keypair {
@@ -116,7 +116,7 @@ fn test_generate_keypair_and_address() {
 #[ignore]
 #[test]
 async fn test_send_grams_from_giver() {
-    let client = init_node_connection();
+    let client = init_node_connection().await;
 
     println!("Sending grams to {}", WALLET_ADDRESS.to_owned());
 
@@ -136,7 +136,7 @@ async fn test_send_grams_from_giver() {
 #[ignore]
 #[test]
 async fn test_deploy_giver() {
-    let client = init_node_connection();
+    let client = init_node_connection().await;
 
     deploy_contract_and_wait(&client, &SIMPLE_WALLET_IMAGE, &SIMPLE_WALLET_ABI, "{}", &WALLET_KEYS, 0).await;
 

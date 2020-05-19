@@ -21,7 +21,6 @@ use ton_types::Result;
 
 use futures::{Stream, StreamExt};
 use ton_block::{TransactionProcessingStatus, AccStatusChange, ComputeSkipReason};
-use serde::Deserialize;
 
 #[derive(Deserialize, Default, Debug)]
 #[serde(default)]

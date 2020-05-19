@@ -13,3 +13,4 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Panic in fee calculation under WASM
+- `reqwest` crate version synced in all projects

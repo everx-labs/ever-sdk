@@ -65,14 +65,18 @@ impl Into<NodeClientConfig> for SetupParams {
 #[cfg(feature = "node_interaction")]
 fn setup(context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
 
-    context.client = Some(ton_sdk::init(config.into()).map_err(|err|ApiError::config_init_failed(err))?);
-
-    context.runtime = Some(tokio::runtime::Builder::new()
+    let mut runtime = tokio::runtime::Builder::new()
         .basic_scheduler()
         .enable_io()
         .enable_time()
         .build()
-        .map_err(|err| ApiError::cannot_create_runtime(err))?);
+        .map_err(|err| ApiError::cannot_create_runtime(err))?;
+
+    let client = runtime.block_on(ton_sdk::init(config.into()))
+        .map_err(|err|ApiError::config_init_failed(err))?;
+
+    context.client = Some(client);
+    context.runtime = Some(runtime);
 
     Ok(())
 }
