@@ -84,7 +84,7 @@ async fn test_call_contract(client: &NodeClient, address: MsgAddressInt, key_pai
 #[test]
 pub async fn test_deploy_and_call_contract() {
    
-    let client = init_node_connection();
+    let client = init_node_connection().await;
 
     let mut csprng = rand::thread_rng();
     let keypair = Keypair::generate(&mut csprng);
@@ -135,7 +135,7 @@ fn test_contract_image_from_file() {
 #[tokio::main]
 #[test]
 async fn test_load_nonexistent_contract() {
-    let client = init_node_connection();
+    let client = init_node_connection().await;
 
     let acc_id = AccountId::from([67; 32]);
     let c = Contract::load(&client, &MsgAddressInt::with_standart(None, 0, acc_id).unwrap())
@@ -186,7 +186,7 @@ async fn test_expire() {
     let mut config = get_config();
     config["timeouts"]["message_retries_count"] = serde_json::Value::from(0);
     // connect to node
-	let client = init_json(&config.to_string()).unwrap();
+	let client = init_json(&config.to_string()).await.unwrap();
 
 	// generate key pair
     let mut csprng = rand::thread_rng();
@@ -233,7 +233,7 @@ async fn test_retries() {
     config["timeouts"]["message_expiration_timeout_grow_factor"] = serde_json::Value::from(1.1);
     config["timeouts"]["message_processing_timeout_grow_factor"] = serde_json::Value::from(0.9);
     // connect to node
-	let client = init_json(&config.to_string()).unwrap();
+	let client = init_json(&config.to_string()).await.unwrap();
 
     let mut csprng = rand::thread_rng();
     let keypair = Keypair::generate(&mut csprng);

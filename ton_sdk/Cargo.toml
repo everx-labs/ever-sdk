@@ -41,8 +41,7 @@ path = "../graphite"
 optional = true
 
 [dependencies.reqwest]
-version = "0.9.18"
-features = ["default-tls-vendored"]
+version = "0.10.4"
 optional = true
 
 [dependencies.ton_executor]

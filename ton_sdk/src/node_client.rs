@@ -17,7 +17,9 @@ use graphite::client::GqlClient;
 use graphite::types::{VariableRequest};
 use futures::{TryFutureExt, Stream, StreamExt};
 use serde_json::Value;
-use reqwest::{ClientBuilder, RedirectPolicy, StatusCode};
+use reqwest::{ClientBuilder};
+use reqwest::StatusCode;
+use reqwest::redirect::Policy;
 use reqwest::header::LOCATION;
 use ton_types::{error, Result};
 
@@ -48,13 +50,13 @@ pub struct NodeClient {
 
 impl NodeClient {
 
-    fn check_redirect(address: &str) -> Result<Option<String>> {
+    async fn check_redirect(address: &str) -> Result<Option<String>> {
         let client = ClientBuilder::new()
-            .redirect(RedirectPolicy::none())
+            .redirect(Policy::none())
             .build()
             .map_err(|err| SdkError::InternalError { msg: format!("Can not build test request: {}", err) } )?;
     
-        let result = client.get(address).send();
+        let result = client.get(address).send().await;
     
         match result {
             Ok(result) => {
@@ -97,10 +99,10 @@ impl NodeClient {
     }
     
     // Globally initializes client with server address
-    pub fn new(config: NodeClientConfig) -> Result<NodeClient> {
+    pub async fn new(config: NodeClientConfig) -> Result<NodeClient> {
         let client = if let Some(base_url) = config.base_url {
             let (mut queries_server, mut subscriptions_server) = Self::expand_address(base_url);
-            if let Some(redirected) = Self::check_redirect(&queries_server)? {
+            if let Some(redirected) = Self::check_redirect(&queries_server).await? {
                 queries_server = redirected.clone();
                 subscriptions_server = redirected
                     .replace("https://", "wss://")
