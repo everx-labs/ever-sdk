@@ -61,7 +61,7 @@ pub struct ApiError {
 
 pub type ApiResult<T> = Result<T, ApiError>;
 
-trait ApiErrorCode {
+pub trait ApiErrorCode {
     fn as_number(&self) -> isize;
 }
 

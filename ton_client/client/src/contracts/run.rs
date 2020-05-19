@@ -14,7 +14,7 @@
 use ton_sdk::{Contract, MessageType, AbiContract, FunctionCallSet};
 use ton_sdk::json_abi::encode_function_call;
 use crate::crypto::keys::{KeyPair, account_decode};
-use crate::types::{ApiResult, ApiError, base64_decode};
+use crate::types::{ApiResult, ApiError, ApiErrorCode, ApiSdkErrorCode, base64_decode};
 use ton_types::cells_serialization::BagOfCells;
 use ton_block::Message as TvmMessage;
 
@@ -551,9 +551,28 @@ async fn load_out_message(client: &NodeClient, tr: &Transaction, abi_function: &
 #[cfg(feature = "node_interaction")]
 pub(crate) async fn load_contract(context: &ClientContext, address: &MsgAddressInt) -> ApiResult<Contract> {
     let client = context.get_client()?;
-    Contract::load_wait_deployed(client, address, None)
+    let result = Contract::load_wait_deployed(client, address, None)
         .await
-        .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::contracts_run_contract_load_failed))
+        .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::contracts_run_contract_load_failed));
+    if let Err(err) = result {
+        if err.code == ApiSdkErrorCode::WaitForTimeout.as_number() {
+            let result = Contract::load(context.get_client()?, address).await
+                .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::contracts_run_contract_load_failed))?;
+            if let Some(contract) = result {
+                if contract.acc_type == ton_block::AccountStatus::AccStateActive {
+                    Ok(contract)
+                } else {
+                    Err(ApiError::contracts_load_failed("Contract is not active", &address.to_string()))
+                }
+            } else {
+                Err(ApiError::contracts_load_failed("Contract not found", &address.to_string()))
+            }
+        } else {
+            Err(err)
+        }
+    } else {
+        result
+    }
 }
 
 #[cfg(feature = "node_interaction")]
