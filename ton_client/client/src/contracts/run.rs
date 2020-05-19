@@ -13,13 +13,20 @@
 
 use ton_sdk::{Contract, MessageType, AbiContract, FunctionCallSet};
 use ton_sdk::json_abi::encode_function_call;
-use crate::crypto::keys::{KeyPair, account_decode};
-use crate::types::{ApiResult, ApiError, ApiErrorCode, ApiSdkErrorCode, base64_decode};
 use ton_types::cells_serialization::BagOfCells;
 use ton_block::Message as TvmMessage;
+use ton_sdk::TransactionFees;
 
 use crate::contracts::{EncodedMessage, EncodedUnsignedMessage};
 use crate::client::ClientContext;
+use crate::crypto::keys::{KeyPair, account_decode};
+use crate::types::{
+    ApiResult,
+    ApiError,
+    ApiErrorCode,
+    ApiSdkErrorCode,
+    base64_decode,
+    long_num_to_json_string};
 
 #[cfg(feature = "node_interaction")]
 use ton_sdk::{Transaction, AbiFunction, Message};
@@ -33,10 +40,6 @@ use ed25519_dalek::Keypair;
 use futures::StreamExt;
 
 
-#[cfg(feature = "fee_calculation")]
-use ton_sdk::TransactionFees;
-#[cfg(feature = "fee_calculation")]
-use crate::types::long_num_to_json_string;
 
 fn bool_false() -> bool { false }
 
@@ -134,7 +137,6 @@ pub struct LocalRunFees {
     pub total_output: String
 }
 
-#[cfg(feature = "fee_calculation")]
 impl From<TransactionFees> for LocalRunFees {
     fn from(value: TransactionFees) -> Self {
         LocalRunFees {
@@ -320,16 +322,9 @@ pub(crate) fn local_run_msg(context: &mut ClientContext, params: ParamsOfLocalRu
         .map_err(|err| ApiError::invalid_params(&params.message_base64, err))?;
 
     let (messages, fees) = if !tvm_call {
-    #[cfg(feature = "fee_calculation")]
-    {
         let result = contract.local_call(msg)
             .map_err(|err| ApiError::contracts_local_run_failed(err))?;
         (result.messages, Some(LocalRunFees::from(result.fees)))
-    }
-    #[cfg(not(feature = "fee_calculation"))]
-    {
-        return Err(ApiError::contracts_local_run_failed("Fee calculation feature disabled"));
-    }
     } else {
         let messages = contract.local_call_tvm(msg)
             .map_err(|err| ApiError::contracts_local_run_failed(err))?;

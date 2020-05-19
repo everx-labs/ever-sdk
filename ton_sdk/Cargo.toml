@@ -25,7 +25,7 @@ failure = "0.1"
 num-traits = "^0.2.8"
 
 [target.'cfg(target_arch="wasm32")'.dependencies]
-rand = { version = "0.6.1", features = ["wasm-bindgen"] }
+rand = { version = "0.7.3", features = ["wasm-bindgen"] }
 chrono = { version = "0.4.9", features = ["wasmbind"] }
 
 [dependencies.tokio]
@@ -41,13 +41,12 @@ path = "../graphite"
 optional = true
 
 [dependencies.reqwest]
-version = "0.9.18"
-features = ["default-tls-vendored"]
+version = "0.10.4"
 optional = true
 
 [dependencies.ton_executor]
-git = "ssh://git@github.com/tonlabs/ton-executor.git"
-optional = true
+git = "https://github.com/tonlabs/ton-labs-executor.git"
+default-features = false
 
 [dev-dependencies]
 pretty_assertions = "0.5.1"
@@ -56,8 +55,7 @@ dirs = "2.0.2"
 tokio = { version = "0.2.13", features = ["macros"]}
 
 [features]
-default = ["node_interaction", "fee_calculation"]
+default = ["node_interaction"]
 ci_run = []
 node_interaction = ["graphite", "futures", "reqwest", "tokio"]
-fee_calculation = ["ton_executor"]
 
