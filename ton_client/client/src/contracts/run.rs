@@ -562,10 +562,10 @@ pub(crate) async fn load_contract(context: &ClientContext, address: &MsgAddressI
                 if contract.acc_type == ton_block::AccountStatus::AccStateActive {
                     Ok(contract)
                 } else {
-                    Err(ApiError::contracts_load_failed("Contract is not active", &address.to_string()))
+                    Err(ApiError::contracts_load_failed_account_not_active(&address.to_string()))
                 }
             } else {
-                Err(ApiError::contracts_load_failed("Contract not found", &address.to_string()))
+                Err(ApiError::contracts_load_failed("Contract does not exist", &address.to_string()))
             }
         } else {
             Err(err)

@@ -453,6 +453,11 @@ impl ApiError {
             "Process message failed: {}", err)
     }
 
+    pub fn contracts_load_failed_account_not_active(address: &String) -> Self {
+        sdk_err!(ContractsLoadFailedAccountNotActive,
+            "Load contract [{}] failed: Account exists but code is not deployed", address)
+    }
+
     // SDK queries
 
     pub fn queries_query_failed<E: Display>(err: E) -> Self {
@@ -610,6 +615,7 @@ pub enum ApiSdkErrorCode {
     ContractsLoadMessagesFailed = 3021,
     ContractsCannotSerializeMessage = 3022,
     ContractsProcessMessageFailed = 3023,
+    ContractsLoadFailedAccountNotActive = 3024,
 
     QueriesQueryFailed = 4001,
     QueriesSubscribeFailed = 4002,
