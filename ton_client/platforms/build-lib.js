@@ -89,6 +89,7 @@ module.exports = {
     deleteFolderRecursive,
     main,
     gz,
+    toml_version,
     version,
     root_path,
 };
