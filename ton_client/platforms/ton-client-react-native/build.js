@@ -174,11 +174,7 @@ async function checkNDK() {
 
 
 async function cargoBuild(targets) {
-	if (pArgs.includes("--open")) {
-		return spawnAll(targets, x => ['cargo', 'build', '--target', x, '--release', '--no-default-features']);
-	} else {
-		return spawnAll(targets, x => ['cargo', 'build', '--target', x, '--release']);
-	}
+	return spawnAll(targets, x => ['cargo', 'build', '--target', x, '--release']);
 }
 
 

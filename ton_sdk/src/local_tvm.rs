@@ -24,8 +24,6 @@ use ton_types::{error, Result, Cell, SliceData, HashmapE};
 use ton_vm::stack::{integer::IntegerData, savelist::SaveList, Stack, StackItem};
 use ton_vm::SmartContractInfo;
 use ton_vm::executor::gas::gas_state::Gas;
-
-#[cfg(feature = "fee_calculation")]
 use ton_executor::{BlockchainConfig, TransactionExecutor, OrdinaryTransactionExecutor};
 
 pub(crate) fn call_tvm_stack(
@@ -128,7 +126,6 @@ pub(crate) fn call_tvm(
     Ok((msgs, engine.gas_used()))
 }
 
-#[cfg(feature = "fee_calculation")]
 pub mod executor {
     use super::*;
     use num_traits::cast::ToPrimitive;
