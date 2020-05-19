@@ -46,7 +46,7 @@ optional = true
 
 [dependencies.ton_executor]
 git = "https://github.com/tonlabs/ton-labs-executor.git"
-optional = true
+default-features = false
 
 [dev-dependencies]
 pretty_assertions = "0.5.1"
@@ -55,8 +55,7 @@ dirs = "2.0.2"
 tokio = { version = "0.2.13", features = ["macros"]}
 
 [features]
-default = ["node_interaction", "fee_calculation"]
+default = ["node_interaction"]
 ci_run = []
 node_interaction = ["graphite", "futures", "reqwest", "tokio"]
-fee_calculation = ["ton_executor"]
 

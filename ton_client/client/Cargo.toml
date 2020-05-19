@@ -50,6 +50,5 @@ version = "0.3.4"
 optional = true
 
 [features]
-default = ["node_interaction", "fee_calculation"]
+default = ["node_interaction"]
 node_interaction = ["ton_sdk/node_interaction", "tokio", "futures"]
-fee_calculation = ["ton_sdk/fee_calculation"]

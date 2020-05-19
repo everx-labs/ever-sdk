@@ -21,9 +21,6 @@ extern crate failure;
 #[macro_use]
 extern crate serde_json;
 
-#[cfg(feature = "fee_calculation")]
-extern crate ton_executor;
-
 use ton_types::Result;
 
 pub use ton_abi::json_abi;
@@ -40,7 +37,6 @@ mod message;
 pub use message::{Message, MessageId, MessageType};
 
 mod local_tvm;
-#[cfg(feature = "fee_calculation")]
 pub use local_tvm::executor::TransactionFees;
 
 #[cfg(feature = "node_interaction")]

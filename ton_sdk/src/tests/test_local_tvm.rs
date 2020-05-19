@@ -49,7 +49,6 @@ fn test_local_piggy_call() {
     assert_eq!(answer, r#"{"value0":"0x7b"}"#);
 }
 
-#[cfg(feature = "fee_calculation")]
 #[test]
 fn test_local_call_accept_error() {
     let contract: crate::Contract = serde_json::from_str(CONTRACT).expect("Error parsing state init");
@@ -62,7 +61,6 @@ fn test_local_call_accept_error() {
     assert!(result.is_err());
 }
 
-#[cfg(feature = "fee_calculation")]
 #[test]
 fn test_executor_call() {
     let contract: crate::Contract = serde_json::from_str(CONTRACT).expect("Error parsing state init");
