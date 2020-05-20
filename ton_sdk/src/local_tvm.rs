@@ -20,11 +20,30 @@ use ton_block::{
     Deserializable,
     MsgAddressInt,
 };
-use ton_types::{error, Result, Cell, SliceData, HashmapE};
+use ton_types::{error, Result, Cell, SliceData, HashmapE, ExceptionCode};
 use ton_vm::stack::{integer::IntegerData, savelist::SaveList, Stack, StackItem};
-use ton_vm::SmartContractInfo;
+use ton_vm::{SmartContractInfo, error::TvmError};
 use ton_vm::executor::gas::gas_state::Gas;
 use ton_executor::{BlockchainConfig, TransactionExecutor, OrdinaryTransactionExecutor};
+
+fn check_tvm_result(result: Result<i32>) -> Result<i32> {
+    result.map_err(|e| {
+            let code_descr = if let Some(TvmError::TvmExceptionFull(e)) = e.downcast_ref() {
+                if ExceptionCode::UnknownError != e.code {
+                    format!("{}, exit code {}", failure::err_msg(e.code), e.number)
+                } else {
+                    format!("exit code {}", e.number)
+                }
+            } else if let Some(TvmError::TvmException(e)) = e.downcast_ref() {
+                format!("exit code {}", *e)
+            } else if let Some(e) = e.downcast_ref::<ton_types::types::ExceptionCode>() {
+                format!("exit code {}", *e)
+            } else {
+                "unknown exception".to_owned()
+            };
+            SdkError::TvmException(code_descr)
+        }.into())
+}
 
 pub(crate) fn call_tvm_stack(
     balance: u128,
@@ -64,7 +83,7 @@ pub(crate) fn call_tvm_stack(
         Some(stack),
         Some(gas),
     );
-    let _result = engine.execute()?;
+    check_tvm_result(engine.execute())?;
     Ok(engine.stack().clone())
 }
 
@@ -110,7 +129,7 @@ pub(crate) fn call_tvm(
     let gas = Gas::new(gas_limit, 0, gas_limit, 10);
 
     let mut engine = Engine::new().setup(SliceData::from(code), Some(ctrls), Some(stack), Some(gas));
-    let _result = engine.execute()?;
+    check_tvm_result(engine.execute())?;
     let mut slice = SliceData::from(engine.get_actions().as_cell()?.clone());
 
     let mut msgs = vec![];

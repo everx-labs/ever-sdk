@@ -142,4 +142,7 @@ pub enum SdkError {
         send_time: u32,
         timeout: u32
     },
+
+    #[fail(display = "VM exception: {}", 0)]
+    TvmException(String),
 }
