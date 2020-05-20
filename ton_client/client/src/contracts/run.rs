@@ -20,7 +20,13 @@ use ton_sdk::TransactionFees;
 use crate::contracts::{EncodedMessage, EncodedUnsignedMessage};
 use crate::client::ClientContext;
 use crate::crypto::keys::{KeyPair, account_decode};
-use crate::types::{ApiResult, ApiError, base64_decode, long_num_to_json_string};
+use crate::types::{
+    ApiResult,
+    ApiError,
+    ApiErrorCode,
+    ApiSdkErrorCode,
+    base64_decode,
+    long_num_to_json_string};
 
 #[cfg(feature = "node_interaction")]
 use ton_sdk::{Transaction, AbiFunction, Message};
@@ -540,9 +546,28 @@ async fn load_out_message(client: &NodeClient, tr: &Transaction, abi_function: &
 #[cfg(feature = "node_interaction")]
 pub(crate) async fn load_contract(context: &ClientContext, address: &MsgAddressInt) -> ApiResult<Contract> {
     let client = context.get_client()?;
-    Contract::load_wait_deployed(client, address, None)
+    let result = Contract::load_wait_deployed(client, address, None)
         .await
-        .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::contracts_run_contract_load_failed))
+        .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::contracts_run_contract_load_failed));
+    if let Err(err) = result {
+        if err.code == ApiSdkErrorCode::WaitForTimeout.as_number() {
+            let result = Contract::load(context.get_client()?, address).await
+                .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::contracts_run_contract_load_failed))?;
+            if let Some(contract) = result {
+                if contract.acc_type == ton_block::AccountStatus::AccStateActive {
+                    Ok(contract)
+                } else {
+                    Err(ApiError::contracts_load_failed_account_not_active(&address.to_string()))
+                }
+            } else {
+                Err(ApiError::contracts_load_failed("Contract does not exist", &address.to_string()))
+            }
+        } else {
+            Err(err)
+        }
+    } else {
+        result
+    }
 }
 
 #[cfg(feature = "node_interaction")]
