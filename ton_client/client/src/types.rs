@@ -17,6 +17,7 @@ use std::fmt::Display;
 use ApiSdkErrorCode::*;
 use ton_block::{AccStatusChange, ComputeSkipReason};
 use ton_sdk::SdkError;
+use chrono::TimeZone;
 
 pub fn hex_decode(hex: &String) -> ApiResult<Vec<u8>> {
     if hex.starts_with("x") || hex.starts_with("X") {
@@ -34,6 +35,10 @@ pub fn base64_decode(base64: &String) -> ApiResult<Vec<u8>> {
 
 pub fn long_num_to_json_string(num: u64) -> String {
     format!("0x{:x}", num)
+}
+
+fn format_time(time: u32) -> String {
+    format!("{} ({})", chrono::Local.timestamp(time as i64 , 0).to_rfc2822(), time)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -149,9 +154,9 @@ impl ApiError {
 
         error.data = Some(serde_json::json!({
             "message_id": msg_id,
-            "send_time": send_time,
-            "expiration_time": expire,
-            "block_time": block_time
+            "send_time": format_time(send_time),
+            "expiration_time": format_time(expire),
+            "block_time": format_time(block_time)
         }));
         error
     }
@@ -170,9 +175,9 @@ impl ApiError {
 
         error.data = Some(serde_json::json!({
             "message_id": msg_id,
-            "send_time": send_time,
-            "expiration_time": expire,
-            "timeout": timeout
+            "send_time": format_time(send_time),
+            "expiration_time": format_time(expire),
+            "timeout": format_time(timeout),
         }));
         error
     }
@@ -186,9 +191,9 @@ impl ApiError {
 
         error.data = Some(serde_json::json!({
             "message_id": msg_id,
-            "send_time": send_time,
+            "send_time": format_time(send_time),
             "block_id": block_id,
-            "timeout": timeout
+            "timeout": format_time(timeout)
         }));
         error
     }
@@ -202,8 +207,8 @@ impl ApiError {
 
         error.data = Some(serde_json::json!({
             "message_id": msg_id,
-            "send_time": send_time,
-            "timeout": timeout
+            "send_time": format_time(send_time),
+            "timeout": format_time(timeout)
         }));
         error
     }

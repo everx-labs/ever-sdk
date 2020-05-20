@@ -136,7 +136,7 @@ pub enum SdkError {
         timeout: u32
     },
 
-    #[fail(display = "Transaction did not produced during specified timeout")]
+    #[fail(display = "Transaction was not produced during the specified timeout")]
     TransactionWaitTimeout{
         msg_id: crate::MessageId,
         send_time: u32,
