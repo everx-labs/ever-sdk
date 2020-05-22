@@ -227,11 +227,8 @@ fn test_tg_mnemonic() {
             "phrase": invalid_phrase
         }),
     );
-    if let Err(err) = result {
-        assert_eq!(err, serde_json::to_string(&ApiError::crypto_bip39_invalid_phrase(invalid_phrase)).unwrap())
-    } else {
-        panic!("crypto.mnemonic.derive.sign.keys with invalid phrase must returns error")
-    }
+    let expected_error = ApiError::crypto_bip39_invalid_phrase(invalid_phrase);
+    assert_eq!(result.unwrap_err(), serde_json::to_string(&expected_error).unwrap());
 }
 
 #[test]
