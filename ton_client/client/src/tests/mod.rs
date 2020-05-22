@@ -20,6 +20,7 @@ use log::{Metadata, Record, LevelFilter};
 use crate::{tc_create_context, tc_destroy_context};
 use ton_block::MsgAddressInt;
 use std::str::FromStr;
+use crate::types::{ApiError};
 
 pub const LOG_CGF_PATH: &str = "src/tests/log_cfg.yaml";
 
@@ -218,6 +219,19 @@ fn test_tg_mnemonic() {
         }),
     ).unwrap();
     assert_eq!(is_valid, "false");
+
+    let invalid_phrase = "invalid phrase for TON dictionary";
+    let result = client.request(
+        "crypto.mnemonic.derive.sign.keys",
+        json!({
+            "phrase": invalid_phrase
+        }),
+    );
+    if let Err(err) = result {
+        assert_eq!(err, serde_json::to_string(&ApiError::crypto_bip39_invalid_phrase(invalid_phrase)).unwrap())
+    } else {
+        panic!("crypto.mnemonic.derive.sign.keys with invalid phrase must returns error")
+    }
 }
 
 #[test]
