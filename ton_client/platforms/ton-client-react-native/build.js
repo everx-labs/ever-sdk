@@ -111,7 +111,7 @@ async function downloadNDK() {
 		const fd = fs.createWriteStream(ndkZipFile, { encoding: 'binary' });
 		const req = http.get(ndkURL, (res) => {
 			res.pipe(fd);
-			res.on('end', () => {
+			res.on('close', () => {
 				resolve();
 			});
 		});
