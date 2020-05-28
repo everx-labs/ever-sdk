@@ -143,8 +143,8 @@ pub fn deserialize_acc_state_change<'de, D>(d: D) -> Result<AccStatusChange, D::
 
     match num {
         0 => Ok(AccStatusChange::Unchanged),
-        2 => Ok(AccStatusChange::Frozen),
-        3 => Ok(AccStatusChange::Deleted),
+        1 => Ok(AccStatusChange::Frozen),
+        2 => Ok(AccStatusChange::Deleted),
         num => Err(D::Error::custom(format!("Invalid account change state: {}", num)))
     }
 }
