@@ -584,7 +584,7 @@ impl ApiError {
         let mut data = serde_json::json!({
             "transaction_id": tr_id,
             "phase": "computeVm",
-            "exit code": exit_code,
+            "exit_code": exit_code,
             "address": address.to_string()
         });
 
