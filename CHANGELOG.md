@@ -1,6 +1,11 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## May 28, 2020
+### New
+- `tonsdk` command line tool.
+- `ton_client` function `get_method_names`.
+
 ## May 22, 2020
 ### ton-client 0.23.1
 #### Fix

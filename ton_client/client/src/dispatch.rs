@@ -94,6 +94,11 @@ impl DispatchTable {
         }
     }
 
+    pub fn get_method_names(&self) -> Vec<String> {
+        let names = self.sync_runners.keys().map(|s|s.clone()).collect();
+        names
+    }
+
     pub fn spawn<P, R>(&mut self, method: &str, handler: fn(context: &mut ClientContext, params: P) -> ApiResult<R>)
         where P: Send + DeserializeOwned + 'static, R: Send + Serialize + 'static
     {
