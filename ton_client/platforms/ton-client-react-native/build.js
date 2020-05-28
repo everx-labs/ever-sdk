@@ -104,29 +104,14 @@ function spawnProcess(name, args) {
 	});
 }
 
-async function downloadNDK() {
-	return(new Promise((resolve, reject) => {
-		console.log('Downloading android NDK...');
-		const ndkURL = url.parse(ndkURLstr);
-		const fd = fs.createWriteStream(ndkZipFile, { encoding: 'binary' });
-		const req = http.get(ndkURL, (res) => {
-			res.pipe(fd);
-			res.on('end', () => {
-				resolve();
-			});
-		});
-		req.on('error', (err) => {
-			reject(err);
-		});
-	}));
-}
-
-
 async function getNDK() {
 	let ndkHomeDir = process.env.NDK_HOME || '';
 	if(ndkHomeDir === '' || !fs.existsSync(ndkHomeDir)) {
 		try {
-			if(!fs.existsSync(ndkZipFile)) await downloadNDK();
+			if(!fs.existsSync(ndkZipFile)) {
+				console.log('Downloading android NDK...');
+				await spawnProcess('curl', [ndkURLstr, '-o', ndkZipFile]);
+			}
 			console.log('Unzipping android NDK...');
 			await spawnProcess('unzip', ['-q', '-d', root_path(''), ndkZipFile]);
 			ndkHomeDir = ndkDirName;
