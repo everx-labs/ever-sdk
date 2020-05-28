@@ -14,8 +14,8 @@
 use ton_sdk::{Contract, MessageType, AbiContract, FunctionCallSet};
 use ton_sdk::json_abi::encode_function_call;
 use ton_types::cells_serialization::BagOfCells;
-use ton_block::{AccStatusChange, Message as TvmMessage};
-use ton_sdk::{Transaction, Message, TransactionFees, SdkError};
+use ton_block::{AccStatusChange, Message as TvmMessage, MsgAddressInt};
+use ton_sdk::{Transaction, Message, TransactionFees};
 
 use crate::contracts::{EncodedMessage, EncodedUnsignedMessage};
 use crate::client::ClientContext;
@@ -23,19 +23,17 @@ use crate::crypto::keys::{KeyPair, account_decode};
 use crate::types::{
     ApiResult,
     ApiError,
+    ApiErrorCode,
     ApiSdkErrorCode,
     base64_decode,
-    long_num_to_json_string,
-    apierror_from_sdkerror};
+    long_num_to_json_string};
 
 #[cfg(feature = "node_interaction")]
-use ton_sdk::NodeClient;
-#[cfg(feature = "node_interaction")]
-use ton_block::MsgAddressInt;
+use ton_sdk::{NodeClient, SdkError};
 #[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
-use crate::types::ApiErrorCode;
+use crate::types::apierror_from_sdkerror;
 
 
 fn bool_false() -> bool { false }
@@ -647,6 +645,7 @@ pub(crate) fn resolve_msg_error(
     }
 }
 
+#[cfg(feature = "node_interaction")]
 pub(crate) async fn resolve_msg_sdk_error<F: Fn(String) -> ApiError>(
     client: &NodeClient,
     error: failure::Error,
@@ -667,6 +666,7 @@ pub(crate) async fn resolve_msg_sdk_error<F: Fn(String) -> ApiError>(
     }
 }
 
+#[cfg(feature = "node_interaction")]
 pub(crate) fn get_dst_from_msg(msg: &[u8]) -> ApiResult<MsgAddressInt> {
     let msg = Contract::deserialize_message(msg)
         .map_err(|err| ApiError::invalid_params("message", format!("cannot parse message BOC ({})", err)))?;
