@@ -13,6 +13,9 @@
 
 use std::fmt;
 use ton_types::Result;
+use num_traits::cast::ToPrimitive;
+
+use crate::error::SdkError;
 
 pub const MESSAGES_TABLE_NAME: &str = "messages";
 pub const CONTRACTS_TABLE_NAME: &str = "accounts";
@@ -107,4 +110,9 @@ impl StringId {
     pub fn to_bytes(&self) -> Result<Vec<u8>> {
         hex::decode(&self.0).map_err(Into::into)
     }
+}
+
+pub fn grams_to_u64(grams: &ton_block::types::Grams) -> Result<u64> {
+    grams.0.to_u64()
+        .ok_or(SdkError::InvalidData { msg: "Cannot convert grams value".to_owned() }.into())
 }

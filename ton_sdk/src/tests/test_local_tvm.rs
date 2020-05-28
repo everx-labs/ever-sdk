@@ -57,6 +57,7 @@ fn test_local_call_accept_error() {
         None,
         "{}".to_owned(),
         PIGGY_BANK_CONTRACT_ABI.to_owned(),
+        None,
         None);
     assert!(result.is_err());
 }
@@ -66,21 +67,25 @@ fn test_executor_call() {
     let contract: crate::Contract = serde_json::from_str(CONTRACT).expect("Error parsing state init");
     let keypair = ed25519_dalek::Keypair::from_bytes(&hex::decode(KEYS).unwrap()).unwrap();
 
-    let result = contract.local_call_json(
+    let transaction = contract.local_call_json(
         "transfer".to_owned(),
         None,
         "{\"to\": \"0:e6392da8a96f648098f818501f0211f27c89675e5f196445d211947b48e7c85b\"}".to_owned(),
         PIGGY_BANK_CONTRACT_ABI.to_owned(),
-        Some(&keypair)).expect("Error calling contract");
-    assert!(result.messages.len() == 1);
+        Some(&keypair),
+        None).expect("Error calling contract");
+    assert!(transaction.out_messages.len() == 1);
+    assert!(!transaction.aborted);
 
-    //println!("{:?}", result.fees);
+    let fees = transaction.calc_fees();
 
-    assert_eq!(result.fees.in_msg_fwd_fee, 2008000);
-    assert_eq!(result.fees.gas_fee, 7256000);
-    assert_eq!(result.fees.out_msgs_fwd_fee, 1000000);
-    assert!(result.fees.total_account_fees > 10264122);
-    assert!(result.fees.storage_fee > 122);
+    //println!("{:?}", fees);
+
+    assert_eq!(fees.in_msg_fwd_fee, 2008000);
+    assert_eq!(fees.gas_fee, 7256000);
+    assert_eq!(fees.out_msgs_fwd_fee, 1000000);
+    assert!(fees.total_account_fees > 10264122);
+    assert!(fees.storage_fee > 122);
 }
 
 #[test]

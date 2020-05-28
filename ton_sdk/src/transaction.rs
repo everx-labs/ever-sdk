@@ -15,28 +15,39 @@ use crate::error::SdkError;
 use crate::json_helper;
 use crate::{Message, MessageId};
 use crate::types::StringId;
-use crate::node_client::NodeClient;
-use crate::types::TRANSACTIONS_TABLE_NAME;
-use ton_types::Result;
+use crate::types::grams_to_u64;
 
+use ton_types::{Cell, Result};
+use ton_block::{TransactionProcessingStatus, AccStatusChange, ComputeSkipReason, TransactionDescr,
+    TrComputePhase, Serializable};
+
+use std::convert::TryFrom;
+
+#[cfg(feature = "node_interaction")]
 use futures::{Stream, StreamExt};
-use ton_block::{TransactionProcessingStatus, AccStatusChange, ComputeSkipReason};
+#[cfg(feature = "node_interaction")]
+use crate::node_client::NodeClient;
+#[cfg(feature = "node_interaction")]
+use crate::types::TRANSACTIONS_TABLE_NAME;
 
 #[derive(Deserialize, Default, Debug)]
 #[serde(default)]
 pub struct ComputePhase {
-    pub compute_type: u8,
     #[serde(deserialize_with = "json_helper::deserialize_skipped_reason")]
     pub skipped_reason: Option<ComputeSkipReason>,
     pub exit_code: Option<i32>,
-    pub success: Option<bool>
+    pub success: Option<bool>,
+    #[serde(deserialize_with = "json_helper::deserialize_uint_from_string")]
+    pub gas_fees: u64,
 }
 
 #[derive(Deserialize, Default, Debug)]
 #[serde(default)]
 pub struct StoragePhase {
     #[serde(deserialize_with = "json_helper::deserialize_acc_state_change")]
-    pub status_change: AccStatusChange
+    pub status_change: AccStatusChange,
+    #[serde(deserialize_with = "json_helper::deserialize_uint_from_string")]
+    pub storage_fees_collected: u64,
 }
 
 #[derive(Deserialize, Default, Debug)]
@@ -45,7 +56,11 @@ pub struct ActionPhase {
     pub success: bool,
     pub valid: bool,
     pub no_funds: bool,
-    pub result_code: i32
+    pub result_code: i32,
+    #[serde(deserialize_with = "json_helper::deserialize_uint_from_string")]
+    pub total_fwd_fees: u64,
+    #[serde(deserialize_with = "json_helper::deserialize_uint_from_string")]
+    pub total_action_fees: u64,
 }
 
 pub type TransactionId = StringId;
@@ -59,32 +74,107 @@ pub struct Transaction {
     pub now: u32,
     pub in_msg: Option<MessageId>,
     pub out_msgs: Vec<MessageId>,
+    pub out_messages: Vec<Message>,
     pub aborted: bool,
     pub compute: ComputePhase,
     pub storage: Option<StoragePhase>,
-    pub action: Option<ActionPhase>
+    pub action: Option<ActionPhase>,
+    #[serde(deserialize_with = "json_helper::deserialize_uint_from_string")]
+    pub total_fees: u64,
+}
+
+impl TryFrom<ton_block::Transaction> for Transaction {
+    type Error = failure::Error;
+    fn try_from(transaction: ton_block::Transaction) -> Result<Self> {
+        let descr = if let TransactionDescr::Ordinary(descr) = transaction.read_description()? {
+            descr
+        } else {
+            return Err(SdkError::InvalidData{ msg: "Invalid transaction type".to_owned() }.into())
+        };
+
+        let storage_phase = if let Some(phase) = descr.storage_ph {
+            Some(StoragePhase {
+                status_change: phase.status_change,
+                storage_fees_collected: grams_to_u64(&phase.storage_fees_collected)?
+            })
+        } else {
+            None
+        };
+
+        let compute_phase = match descr.compute_ph {
+            TrComputePhase::Skipped(ph) => {
+                ComputePhase {
+                    skipped_reason: Some(ph.reason),
+                    exit_code: None,
+                    success: None,
+                    gas_fees: 0
+                }
+            },
+            TrComputePhase::Vm(ph) => {
+                ComputePhase {
+                    skipped_reason: None,
+                    exit_code: Some(ph.exit_code),
+                    success: Some(ph.success),
+                    gas_fees: grams_to_u64(&ph.gas_fees)?
+                }
+            }
+        };
+
+        let action_phase = if let Some(phase) = descr.action {
+            Some(ActionPhase {
+                success: phase.success,
+                valid: phase.valid,
+                no_funds: phase.valid,
+                result_code: phase.result_code,
+                total_fwd_fees: grams_to_u64(&phase.total_fwd_fees.unwrap_or_default())?,
+                total_action_fees: grams_to_u64(&phase.total_action_fees.unwrap_or_default())?,
+            })
+        } else {
+            None
+        };
+
+        let in_msg = transaction.in_msg.as_ref().map(|msg| msg.hash().to_hex_string().into());
+        let mut out_msgs = vec![];
+        transaction.out_msgs.iterate_slices(|slice| {
+            if let Ok(cell) = slice.reference(0) {
+                out_msgs.push(cell.repr_hash().to_hex_string().into());
+            }
+            Ok(true)
+        })?;
+        let mut out_messages = vec![];
+        transaction.out_msgs.iterate(|msg| {
+            out_messages.push(Message::with_msg(&msg.0)?);
+            Ok(true)
+        })?;
+
+        Ok(Transaction{
+            id: Cell::from(transaction.write_to_new_cell()?).repr_hash().to_hex_string().into(),
+            status: TransactionProcessingStatus::Finalized,
+            now: transaction.now(),
+            in_msg,
+            out_msgs,
+            out_messages: out_messages,
+            aborted: descr.aborted,
+            total_fees: grams_to_u64(&transaction.total_fees.grams)?,
+            storage: storage_phase,
+            compute: compute_phase,
+            action: action_phase
+        })
+    }
+}
+
+#[derive(Default, Debug)]
+pub struct TransactionFees {
+    pub in_msg_fwd_fee: u64,
+    pub storage_fee: u64,
+    pub gas_fee: u64,
+    pub out_msgs_fwd_fee: u64,
+    pub total_account_fees: u64,
+    pub total_output: u64,
 }
 
 // The struct represents performed transaction and allows to access their properties.
-#[allow(dead_code)]
 impl Transaction {
-
-    // Asynchronously loads a Transaction instance or None if transaction with given id is not exists
-    pub async fn load<'a>(client: &'a NodeClient, id: &TransactionId) -> Result<Option<Transaction>> {
-        let value = client.load_record_fields(
-            TRANSACTIONS_TABLE_NAME,
-            &id.to_string(),
-            TRANSACTION_FIELDS_ORDINARY).await?;
-
-        if value == serde_json::Value::Null {
-            Ok(None)
-        } else {
-            Ok(Some(serde_json::from_value(value)
-                .map_err(|err| SdkError::InvalidData {
-                    msg: format!("error parsing transaction: {}", err)
-                })?))
-        }
-    }
 
     // Returns transaction's processing status
     pub fn status(&self) -> TransactionProcessingStatus {
@@ -94,14 +184,6 @@ impl Transaction {
     // Returns id of transaction's input message if it exists
     pub fn in_message_id(&self) -> Option<MessageId> {
         self.in_msg.clone()
-    }
-
-    // Asynchronously loads an instance of transaction's input message
-    pub async fn load_in_message(&self, client: &NodeClient) -> Result<Option<Message>> {
-        match self.in_message_id() {
-            Some(m) => Message::load(client, &m).await,
-            None => bail!(SdkError::InvalidOperation { msg: "transaction doesn't have inbound message".into() } )
-        }
     }
 
     // Returns id of transaction's out messages if it exists
@@ -120,6 +202,55 @@ impl Transaction {
         self.aborted
     }
 
+    pub fn calc_fees(&self) -> TransactionFees {
+        let mut fees = TransactionFees::default();
+
+        fees.gas_fee = self.compute.gas_fees;
+
+        if let Some(storage) = &self.storage {
+            fees.storage_fee = storage.storage_fees_collected;
+        }
+
+        let mut total_action_fees = 0;
+        if let Some(action) = &self.action {
+            fees.out_msgs_fwd_fee = action.total_fwd_fees;
+            total_action_fees = action.total_action_fees;
+        }
+
+        // `transaction.total_fees` is calculated as
+        // `transaction.total_fees = inbound_fwd_fees + storage_fees + gas_fees + total_action_fees`
+        // but this total_fees is fees collected the validators, not the all fees taken from account
+        // because total_action_fees contains only part of all forward fees
+        // to get all fees paid by account we need exchange `total_action_fees part` to `out_msgs_fwd_fee`
+        fees.total_account_fees = self.total_fees - total_action_fees + fees.out_msgs_fwd_fee;
+        // inbound_fwd_fees is not represented in transaction fields so need to calculate it
+        fees.in_msg_fwd_fee = fees.total_account_fees - fees.storage_fee - fees.gas_fee - fees.out_msgs_fwd_fee;
+
+        fees.total_output = self.out_messages.iter().fold(0, |acc, msg| acc + msg.value);
+
+        fees
+    }
+}
+
+#[cfg(feature = "node_interaction")]
+impl Transaction {
+    // Asynchronously loads a Transaction instance or None if transaction with given id is not exists
+    pub async fn load<'a>(client: &'a NodeClient, id: &TransactionId) -> Result<Option<Transaction>> {
+        let value = client.load_record_fields(
+            TRANSACTIONS_TABLE_NAME,
+            &id.to_string(),
+            TRANSACTION_FIELDS_ORDINARY).await?;
+
+        if value == serde_json::Value::Null {
+            Ok(None)
+        } else {
+            Ok(Some(serde_json::from_value(value)
+                .map_err(|err| SdkError::InvalidData {
+                    msg: format!("error parsing transaction: {}", err)
+                })?))
+        }
+    }
+
     // Asynchronously loads an instances of transaction's out messages
     pub fn load_out_messages<'a>(&self, client: &'a NodeClient) -> Result<impl Stream<Item = Result<Message>> + Send + 'a> {
         Ok(futures::stream::iter(self.out_messages_id().clone()).then(move |id| async move { 
@@ -128,22 +259,47 @@ impl Transaction {
                 Ok(msg) => msg.ok_or(SdkError::NoData.into())
             }}))
     }
+
+    // Asynchronously loads an instance of transaction's input message
+    pub async fn load_in_message(&self, client: &NodeClient) -> Result<Option<Message>> {
+        match self.in_message_id() {
+            Some(m) => Message::load(client, &m).await,
+            None => bail!(SdkError::InvalidOperation { msg: "transaction doesn't have inbound message".into() } )
+        }
+    }
 }
 
+#[cfg(feature = "node_interaction")]
 pub const TRANSACTION_FIELDS_ORDINARY: &str = r#"
     id
     aborted
     compute {
-        compute_type
         skipped_reason
         exit_code
         success
+        gas_fees
     }
     storage {
-       status_change 
+       status_change
+       storage_fees_collected
+    }
+    action {
+        success
+        valid
+        no_funds
+        result_code
+        total_fwd_fees
+        total_action_fees
     }
     in_msg
     now
     out_msgs
+    out_messages {
+        id
+        body
+        msg_type
+        value
+    }
     status
+    total_fees
 "#;

@@ -143,7 +143,7 @@ pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) 
     debug!("-> -> deploy transaction: {}", tr. id());
 
     debug!("<-");
-    super::run::check_transaction_status(&tr)?;
+    super::run::check_transaction_status(&tr, true, &account_id)?;
     Ok(ResultOfDeploy {
         address: account_encode(&account_id),
         already_deployed: false
@@ -300,14 +300,19 @@ fn create_image(abi: &serde_json::Value, init_params: Option<&serde_json::Value>
 
 #[cfg(feature = "node_interaction")]
 async fn deploy_contract(client: &NodeClient, params: ParamsOfDeploy, image: ContractImage, keys: &Keypair) -> ApiResult<Transaction> {
-    Contract::deploy_json(
+    let result = Contract::deploy_json(
         client,
         params.call_set.into(),
         image,
         Some(keys),
         params.workchain_id.unwrap_or(DEFAULT_WORKCHAIN))
-            .await
-            .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::contracts_run_failed))
+            .await;
+
+    match result {
+        Err(err) => 
+            Err(super::run::resolve_msg_sdk_error(client, err, ApiError::contracts_deploy_failed).await?),
+        Ok(tr) => Ok(tr)
+    }
 }
 
 #[cfg(feature = "node_interaction")]
