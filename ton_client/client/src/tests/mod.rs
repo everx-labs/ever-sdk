@@ -21,6 +21,8 @@ use crate::{tc_create_context, tc_destroy_context};
 use ton_block::MsgAddressInt;
 use std::str::FromStr;
 
+//mod resolve_error;
+
 pub const LOG_CGF_PATH: &str = "src/tests/log_cfg.yaml";
 
 struct SimpleLogger;

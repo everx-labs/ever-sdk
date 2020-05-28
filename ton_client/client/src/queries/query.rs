@@ -65,7 +65,7 @@ pub(crate) async fn query(context: &mut ClientContext, params: ParamsOfQuery) ->
     let client = context.get_client()?;
     let result = client.query(&params.table, &params.filter, &params.result, params.order, params.limit, Some(0))
         .await
-        .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::queries_query_failed))?;
+        .map_err(|err| crate::types::apierror_from_sdkerror(&err, ApiError::queries_query_failed))?;
 
     Ok(ResultOfQuery{ result })
 }
@@ -74,7 +74,7 @@ pub(crate) async fn wait_for(context: &mut ClientContext, params: ParamsOfWaitFo
     let client = context.get_client()?;
     let result = client.wait_for(&params.table, &params.filter, &params.result, params.timeout)
         .await
-        .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::queries_wait_for_failed))?;
+        .map_err(|err| crate::types::apierror_from_sdkerror(&err, ApiError::queries_wait_for_failed))?;
 
     Ok(ResultOfQuery{ result })
 }
@@ -99,7 +99,7 @@ pub(crate) async fn get_next(_context: &mut ClientContext, params: SubscribeHand
         .next()
         .await
         .ok_or(ApiError::queries_get_next_failed("None value"))?
-        .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::queries_get_next_failed))?;
+        .map_err(|err| crate::types::apierror_from_sdkerror(&err, ApiError::queries_get_next_failed))?;
 
     add_handle(params.handle, stream);
 

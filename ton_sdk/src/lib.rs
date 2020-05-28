@@ -37,12 +37,9 @@ mod message;
 pub use message::{Message, MessageId, MessageType};
 
 mod local_tvm;
-pub use local_tvm::executor::TransactionFees;
 
-#[cfg(feature = "node_interaction")]
 mod transaction;
-#[cfg(feature = "node_interaction")]
-pub use transaction::{Transaction, TransactionId};
+pub use transaction::{Transaction, TransactionId, TransactionFees};
 
 pub mod types;
 pub use types::{NodeClientConfig, TimeoutsConfig};

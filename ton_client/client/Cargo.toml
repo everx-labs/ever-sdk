@@ -35,6 +35,8 @@ libsecp256k1 = "0.2.2"
 log = "0.4.6"
 crc-any = "2.2.3"
 failure = "0.1"
+num-traits = "0.2"
+num-derive = "0.3"
 
 ton_sdk = { path = "../../ton_sdk", default-features = false }
 

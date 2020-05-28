@@ -12,7 +12,7 @@
 */
 
 use crate::types::{ApiResult, base64_decode, ApiError};
-use ton_sdk::{AbiContract, ContractImage};
+use ton_sdk::{AbiContract, ContractImage, Transaction};
 use ton_block::{CommonMsgInfo, Deserializable};
 use ton_types::deserialize_tree_of_cells;
 use std::io::Cursor;
@@ -117,6 +117,15 @@ pub(crate) struct ResultOfGetBocHash {
     pub hash: String,
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ParamsOfProcessTransaction {
+    pub transaction: Transaction,
+    pub abi: Option<serde_json::Value>,
+    pub function_name: Option<String>,
+    pub address: String,
+}
+
 use ton_sdk;
 use crate::dispatch::DispatchTable;
 use crate::client::ClientContext;
@@ -212,16 +221,46 @@ pub(crate) async fn process_message(context: &mut ClientContext, params: ParamsO
 
     let msg = base64_decode(&params.message.message_body_base64)?;
     let client = context.get_client()?;
-    let transaction = Contract::process_serialized_message(
+    let result = Contract::process_serialized_message(
         client,
         &params.message.message_id.into(),
         &msg,
         params.message.expire,
         params.try_index.unwrap_or(0))
-        .await
-        .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::contracts_process_message_failed))?;
+        .await;
 
-    run::process_transaction(client, transaction, params.abi, params.function_name).await
+    let transaction = match result {
+            Err(err) => 
+                return Err(run::resolve_msg_sdk_error(
+                        client, err, ApiError::contracts_process_message_failed
+                    ).await?),
+            Ok(tr) => tr
+    };
+
+    let address = run::get_dst_from_msg(&msg)?;
+
+    let output = run::process_transaction(
+        transaction,
+        params.abi,
+        params.function_name,
+        &address,
+        true)?;
+
+    Ok(run::ResultOfRun { output })
+}
+
+pub(crate) fn process_transaction(
+    _context: &mut ClientContext, params: ParamsOfProcessTransaction
+) -> ApiResult<run::ResultOfRun> {
+    debug!("-> contracts.process.transaction({}, {:?})", params.address, params.transaction);
+    let address = account_decode(&params.address)?;
+
+    let output = run::process_transaction(
+        params.transaction, params.abi, params.function_name, &address, true)?;
+
+    Ok(run::ResultOfRun {
+        output
+    })
 }
 
 pub(crate) fn parse_message(_context: &mut ClientContext, params: InputBoc) -> ApiResult<serde_json::Value> {
@@ -294,13 +333,19 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
     handlers.spawn("contracts.run.body",
         run::get_run_body);
     handlers.spawn("contracts.run.local",
-        |context, params| run::local_run(context, params, true));
+        run::local_run);
     handlers.spawn("contracts.run.local.msg",
-        |context, params| run::local_run_msg(context, params, true));
+        run::local_run_msg);
     handlers.spawn("contracts.run.fee",
-        |context, params| run::local_run(context, params, false));
+        |context, mut params: run::ParamsOfLocalRun| {
+            params.full_run = true;
+            run::local_run(context, params)
+        });
     handlers.spawn("contracts.run.fee.msg",
-        |context, params| run::local_run_msg(context, params, false));
+        |context, mut params: run::ParamsOfLocalRunWithMsg| {
+            params.full_run = true;
+            run::local_run_msg(context, params)
+        });
 
     // Contracts
     handlers.spawn("contracts.encode_message_with_sign",
@@ -337,4 +382,11 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
             context.runtime = Some(runtime);
             result
         });
+
+    // errors
+    handlers.spawn("contracts.resolve.error",
+        run::resolve_error);
+
+    handlers.spawn("contracts.process.transaction",
+        process_transaction);
 }
