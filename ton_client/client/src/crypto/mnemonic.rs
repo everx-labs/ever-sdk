@@ -145,18 +145,37 @@ impl TonMnemonic {
         words
     }
 
-    fn entropy_from_phrase(phrase: &String) -> [u8; 64] {
-        hmac_sha512(phrase.as_bytes(), &[])
+    fn entropy_from_string(string: &String) -> [u8; 64] {
+        hmac_sha512(string.as_bytes(), &[])
     }
 
-    fn seed_from_phrase(phrase: &String, salt: &str, c: usize) -> [u8; 64] {
-        let entropy = Self::entropy_from_phrase(&phrase);
+    fn seed_from_string(string: &String, salt: &str, c: usize) -> [u8; 64] {
+        let entropy = Self::entropy_from_string(&string);
         pbkdf2_hmac_sha512(&entropy, salt.as_bytes(), c)
     }
 
-    fn is_basic_seed(phrase: &String) -> bool {
-        let seed = Self::seed_from_phrase(&phrase, "TON seed version", 100_000 / 256);
+    fn is_basic_seed(string: &String) -> bool {
+        let seed = Self::seed_from_string(&string, "TON seed version", 100_000 / 256);
         seed[0] == 0
+    }
+
+    fn internal_is_phrase_valid(&self, phrase: &String) -> bool {
+        let mut count = 0u8;
+        for word in phrase.split(" ") {
+            if !TON_WORDS.contains(&word) {
+                return false;
+            }
+            count += 1;
+        };
+        count == self.word_count && Self::is_basic_seed(phrase)
+    }
+
+    fn check_phrase(&self, phrase: &String) -> ApiResult<()> {
+        if self.internal_is_phrase_valid(phrase) {
+            Ok(())
+        } else {
+            Err(ApiError::crypto_bip39_invalid_phrase(phrase))
+        }
     }
 }
 
@@ -186,7 +205,8 @@ impl CryptoMnemonic for TonMnemonic {
         _path: &String,
         _compliant: bool,
     ) -> ApiResult<KeyPair> {
-        let seed = Self::seed_from_phrase(&phrase, "TON default seed", 100_000);
+        self.check_phrase(phrase)?;
+        let seed = Self::seed_from_string(&phrase, "TON default seed", 100_000);
         ed25519_keys_from_secret_bytes(&seed[..32])
     }
 
@@ -203,22 +223,17 @@ impl CryptoMnemonic for TonMnemonic {
     }
 
     fn is_phrase_valid(&self, phrase: &String) -> ApiResult<bool> {
-        let mut count = 0u8;
-        for word in phrase.split(" ") {
-            if !TON_WORDS.contains(&word) {
-                return Ok(false);
-            }
-            count += 1;
-        };
-        Ok(count == self.word_count && Self::is_basic_seed(phrase))
+        Ok(self.internal_is_phrase_valid(phrase))
     }
 
     fn seed_from_phrase_and_salt(&self, phrase: &String, salt: &String) -> ApiResult<String> {
-        Ok(hex::encode(Self::seed_from_phrase(phrase, salt, 100_000).as_ref()))
+        self.check_phrase(phrase)?;
+        Ok(hex::encode(Self::seed_from_string(phrase, salt, 100_000).as_ref()))
     }
 
     fn entropy_from_phrase(&self, phrase: &String) -> ApiResult<String> {
-        Ok(hex::encode(Self::entropy_from_phrase(&phrase).as_ref()))
+        self.check_phrase(phrase)?;
+        Ok(hex::encode(Self::entropy_from_string(&phrase).as_ref()))
     }
 }
 

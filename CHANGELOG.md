@@ -1,6 +1,11 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## May 22, 2020
+### ton-client 0.23.1
+#### Fix
+- TON mnemonic functions didn't check validity of the seed phrase.
+
 ## May 19, 2020
 ### ton-client-web 0.23.1
 #### New
