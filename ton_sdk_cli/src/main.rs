@@ -148,6 +148,11 @@ fn main_internal() -> Result<(), CliError> {
 
     let mut names = Vec::<String>::new();
     for name in ton_client::get_method_names() {
+        if name == method {
+            names.clear();
+            names.push(name);
+            break;
+        }
         if name.contains(method.as_str()) {
             names.push(name);
         }
@@ -177,9 +182,12 @@ fn main_internal() -> Result<(), CliError> {
 
     let context = create_context();
     let mut config = serde_json::Map::new();
-    config.insert("servers".to_string(), Value::Array(vec!(Value::String(network))));
+    config.insert("baseUrl".to_string(), Value::String(network));
     let setup_json = Value::Object(config);
-    json_sync_request(context, "setup".to_string(), setup_json.to_string());
+    let response = json_sync_request(context, "setup".to_string(), setup_json.to_string());
+    if !response.error_json.trim().is_empty() {
+        return Err(CliError { message: reformat_json(&response.error_json)? });
+    };
     let response = json_sync_request(context, method, parameters);
     let result = if response.error_json.trim().is_empty() {
         println!("{}", reformat_json(&response.result_json)?);
