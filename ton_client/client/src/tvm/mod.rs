@@ -56,7 +56,7 @@ pub(crate) fn get(
             let address = params.address.ok_or_else(|| ApiError::address_reqired_for_runget())?;
             let address = crate::crypto::keys::account_decode(&address)?;
             let mut runtime = context.take_runtime()?;
-            let result = runtime.block_on(crate::contracts::run::load_contract(context, &address));
+            let result = runtime.block_on(crate::contracts::run::load_contract(context, &address, true));
             context.runtime = Some(runtime);
             result?
         }

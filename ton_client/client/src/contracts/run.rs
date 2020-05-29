@@ -485,9 +485,9 @@ pub(crate) fn check_transaction_status(
 }
 
 #[cfg(feature = "node_interaction")]
-pub(crate) async fn load_contract(context: &ClientContext, address: &MsgAddressInt) -> ApiResult<Contract> {
+pub(crate) async fn load_contract(context: &ClientContext, address: &MsgAddressInt, deployed: bool) -> ApiResult<Contract> {
     let client = context.get_client()?;
-    let result = Contract::load_wait_deployed(client, address, None)
+    let result = Contract::load_wait(client, address, deployed, None)
         .await
         .map_err(|err| crate::types::apierror_from_sdkerror(&err, ApiError::contracts_run_contract_load_failed));
     if let Err(err) = result {
@@ -575,7 +575,7 @@ pub(crate) fn do_local_run_msg(
             debug!("load contract");
             if let Some(context) = context {
                 let mut runtime = context.take_runtime()?;
-                let result = runtime.block_on(load_contract(context, &address));
+                let result = runtime.block_on(load_contract(context, &address, !full_run));
                 context.runtime = Some(runtime);
                 result?
             } else {
