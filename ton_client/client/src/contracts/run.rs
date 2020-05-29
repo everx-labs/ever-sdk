@@ -124,12 +124,18 @@ pub struct ParamsOfDecodeUnknownRun {
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfRun {
-    pub output: serde_json::Value
+    pub output: serde_json::Value,
+    pub fees: Option<RunFees>
+}
+
+#[derive(Serialize, Deserialize)]
+pub(crate) struct ResultOfDecode {
+    pub output: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct LocalRunFees {
+pub struct RunFees {
     pub in_msg_fwd_fee: String,
     pub storage_fee: String,
     pub gas_fee: String,
@@ -138,9 +144,9 @@ pub struct LocalRunFees {
     pub total_output: String
 }
 
-impl From<TransactionFees> for LocalRunFees {
+impl From<TransactionFees> for RunFees {
     fn from(value: TransactionFees) -> Self {
-        LocalRunFees {
+        RunFees {
             in_msg_fwd_fee: long_num_to_json_string(value.in_msg_fwd_fee),
             storage_fee: long_num_to_json_string(value.storage_fee),
             gas_fee: long_num_to_json_string(value.gas_fee),
@@ -150,12 +156,6 @@ impl From<TransactionFees> for LocalRunFees {
         }
     }
  }
-
-#[derive(Serialize, Deserialize)]
-pub(crate) struct ResultOfLocalRun {
-    pub output: Option<serde_json::Value>,
-    pub fees: Option<LocalRunFees>
-}
 
 #[derive(Serialize, Deserialize)]
 pub struct ResultOfDecodeUnknownRun {
@@ -205,14 +205,12 @@ pub(crate) async fn run(context: &mut ClientContext, params: ParamsOfRun) -> Api
     debug!("run contract");
     let tr = call_contract(client, address.clone(), &params, key_pair.as_ref()).await?;
 
-    let output = process_transaction(
+    process_transaction(
         tr,
         Some(params.call_set.abi),
         Some(params.call_set.function_name),
         &address,
-        true)?;
-
-    Ok(ResultOfRun { output })
+        true)
 }
 
 pub(crate) fn process_out_messages(
@@ -263,9 +261,12 @@ pub(crate) fn process_transaction(
     function: Option<String>,
     address: &MsgAddressInt,
     real_tr: bool,
-) -> ApiResult<serde_json::Value> {
+) -> ApiResult<ResultOfRun> {
     check_transaction_status(&transaction, real_tr, address)?;
-    process_out_messages(&transaction.out_messages, abi, function)
+    let fees = transaction.calc_fees().into();
+    let output = process_out_messages(&transaction.out_messages, abi, function)?;
+    
+    Ok( ResultOfRun { output, fees: Some(fees) } )
 }
 
 pub(crate) fn serialize_message(msg: TvmMessage) -> ApiResult<(Vec<u8>, String)> {
@@ -275,7 +276,7 @@ pub(crate) fn serialize_message(msg: TvmMessage) -> ApiResult<(Vec<u8>, String)>
     Ok((msg, id.to_string()))
 }
 
-pub(crate) fn local_run(context: &mut ClientContext, params: ParamsOfLocalRun) -> ApiResult<ResultOfLocalRun> {
+pub(crate) fn local_run(context: &mut ClientContext, params: ParamsOfLocalRun) -> ApiResult<ResultOfRun> {
     debug!("-> contracts.run.local({}, {:?})",
         params.address.clone(),
         params.call_set.clone()
@@ -294,7 +295,7 @@ pub(crate) fn local_run(context: &mut ClientContext, params: ParamsOfLocalRun) -
         Some(context), params.call_set, key_pair.as_ref(), address, account, params.full_run, params.time)
 }
 
-pub(crate) fn local_run_msg(context: &mut ClientContext, params: ParamsOfLocalRunWithMsg) -> ApiResult<ResultOfLocalRun> {
+pub(crate) fn local_run_msg(context: &mut ClientContext, params: ParamsOfLocalRunWithMsg) -> ApiResult<ResultOfRun> {
     debug!("-> contracts.run.local.msg({}, {}, {})",
         params.address.clone(),
         params.function_name.clone().unwrap_or_default(),
@@ -359,7 +360,7 @@ pub(crate) fn encode_unsigned_message(context: &mut ClientContext, params: Param
     })
 }
 
-pub(crate) fn decode_output(_context: &mut ClientContext, params: ParamsOfDecodeRunOutput) -> ApiResult<ResultOfRun> {
+pub(crate) fn decode_output(_context: &mut ClientContext, params: ParamsOfDecodeRunOutput) -> ApiResult<ResultOfDecode> {
     let body = base64_decode(&params.body_base64)?;
     let result = Contract::decode_function_response_from_bytes_json(
         params.abi.to_string().to_owned(),
@@ -367,7 +368,7 @@ pub(crate) fn decode_output(_context: &mut ClientContext, params: ParamsOfDecode
         &body,
         params.internal)
             .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?;
-    Ok(ResultOfRun {
+    Ok(ResultOfDecode {
         output: serde_json::from_str(result.as_str())
             .map_err(|err| ApiError::contracts_decode_run_output_failed(err))?
     })
@@ -539,7 +540,7 @@ pub(crate) fn do_local_run(
     account: Option<Contract>,
     full_run: bool,
     time: Option<u32>,
-) -> ApiResult<ResultOfLocalRun> {
+) -> ApiResult<ResultOfRun> {
 
     let msg = Contract::construct_call_message_json(
         address.clone(), call_set.clone().into(), false, keys, None, None)
@@ -565,7 +566,7 @@ pub(crate) fn do_local_run_msg(
     msg: TvmMessage,
     full_run: bool,
     time: Option<u32>,
-) -> ApiResult<ResultOfLocalRun> {
+) -> ApiResult<ResultOfRun> {
 
     let contract = match account {
         // load contract data from node manually
@@ -593,7 +594,7 @@ pub(crate) fn do_local_run_msg(
         Some(account) => account
     };
 
-    let (output, fees) = if full_run {
+    if full_run {
         let transaction = contract.local_call(msg, time)
             .map_err(|err| 
                 match err.downcast_ref::<ton_sdk::SdkError>() {
@@ -603,19 +604,16 @@ pub(crate) fn do_local_run_msg(
                         ApiError::low_balance(&address),
                     _ => ApiError::contracts_local_run_failed(err)
                 })?;
-        let fees = LocalRunFees::from(transaction.calc_fees());
-        (process_transaction(transaction, abi, function_name, &address, false)?, Some(fees))
+        process_transaction(transaction, abi, function_name, &address, false)
     } else {
         let messages = contract.local_call_tvm(msg)
             .map_err(|err| ApiError::contracts_local_run_failed(err))?;
 
-        (process_out_messages(&messages, abi, function_name)?, None)
-    };
-                                        
-    Ok(ResultOfLocalRun {
-        output: Some(output),
-        fees
-    })
+        Ok(ResultOfRun {
+            output: process_out_messages(&messages, abi, function_name)?,
+            fees: None
+        })
+    }
 }
 
 pub(crate) fn resolve_msg_error(
