@@ -371,17 +371,20 @@ impl Contract {
     }
 
     // Asynchronously loads a Contract instance or None if contract with given id is not exists
-    pub async fn load_wait_deployed(client: &NodeClient, address: &MsgAddressInt, timeout: Option<u32>)
-        -> Result<Contract>
-    {
+    pub async fn load_wait(
+        client: &NodeClient, address: &MsgAddressInt, deployed: bool, timeout: Option<u32>
+    ) -> Result<Contract> {
+        let mut filter = json!({
+            "id": {
+                "eq": address.to_string()
+            }
+        });
+        if deployed {
+            filter["acc_type"] = json!({ "eq": account_status_to_u8(AccountStatus::AccStateActive)});
+        }
         let value = client.wait_for(
             CONTRACTS_TABLE_NAME,
-            &json!({
-                "id": {
-                    "eq": address.to_string()
-                },
-                "acc_type": { "eq": account_status_to_u8(AccountStatus::AccStateActive) }
-            }).to_string(),
+            &filter.to_string(),
             ACCOUNT_FIELDS,
             timeout).await?;
 
