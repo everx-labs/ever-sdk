@@ -23,8 +23,6 @@ use crate::crypto::keys::{KeyPair, account_decode};
 use crate::types::{
     ApiResult,
     ApiError,
-    ApiErrorCode,
-    ApiSdkErrorCode,
     base64_decode,
     long_num_to_json_string};
 
@@ -33,7 +31,7 @@ use ton_sdk::{NodeClient, SdkError};
 #[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
-use crate::types::apierror_from_sdkerror;
+use crate::types::{apierror_from_sdkerror, ApiErrorCode};
 
 
 fn bool_false() -> bool { false }
@@ -633,12 +631,10 @@ pub(crate) fn resolve_msg_error(
     let result = do_local_run_msg(None, address, Some(account), None, None, msg, true, Some(time));
 
     if let Err(mut err) = result {
-        err.data["extended_code"] = err.code.into();
-        err.code = main_error.code;
+        err.data["original_error"] = serde_json::to_value(main_error).unwrap_or_default();
         err
     } else {
-        main_error.data["extended_code"] = ApiSdkErrorCode::ErrorNotResolved.as_number().into();
-        main_error.data["description"] = "Local contract call succeded. Can not resolve error".into();
+        main_error.data["disclaimer"] = "Local contract call succeded. Can not resolve extended error".into();
         main_error
     }
 }
