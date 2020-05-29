@@ -239,14 +239,12 @@ pub(crate) async fn process_message(context: &mut ClientContext, params: ParamsO
 
     let address = run::get_dst_from_msg(&msg)?;
 
-    let output = run::process_transaction(
+    run::process_transaction(
         transaction,
         params.abi,
         params.function_name,
         &address,
-        true)?;
-
-    Ok(run::ResultOfRun { output })
+        true)
 }
 
 pub(crate) fn process_transaction(
@@ -255,12 +253,7 @@ pub(crate) fn process_transaction(
     debug!("-> contracts.process.transaction({}, {:?})", params.address, params.transaction);
     let address = account_decode(&params.address)?;
 
-    let output = run::process_transaction(
-        params.transaction, params.abi, params.function_name, &address, true)?;
-
-    Ok(run::ResultOfRun {
-        output
-    })
+    run::process_transaction(params.transaction, params.abi, params.function_name, &address, true)
 }
 
 pub(crate) fn parse_message(_context: &mut ClientContext, params: InputBoc) -> ApiResult<serde_json::Value> {

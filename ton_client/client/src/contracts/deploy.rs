@@ -13,7 +13,7 @@
 
 use crate::crypto::keys::{KeyPair, decode_public_key, account_encode};
 use crate::contracts::EncodedUnsignedMessage;
-use crate::contracts::run::serialize_message;
+use crate::contracts::run::{RunFees, serialize_message};
 use ton_sdk::{Contract, ContractImage, FunctionCallSet};
 
 
@@ -90,6 +90,7 @@ pub(crate) struct ParamsOfGetDeployAddress {
 pub(crate) struct ResultOfDeploy {
     pub address: String,
     pub already_deployed: bool,
+    pub fees: Option<RunFees>
 }
 
 #[derive(Serialize, Deserialize)]
@@ -133,7 +134,8 @@ pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) 
     if check_deployed(context, &account_id).await? {
         return Ok(ResultOfDeploy { 
             address: account_encode(&account_id),
-            already_deployed: true
+            already_deployed: true,
+            fees: None
         })
     }
 
@@ -146,7 +148,8 @@ pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) 
     super::run::check_transaction_status(&tr, true, &account_id)?;
     Ok(ResultOfDeploy {
         address: account_encode(&account_id),
-        already_deployed: false
+        already_deployed: false,
+        fees: Some(tr.calc_fees().into())
     })
 }
 
