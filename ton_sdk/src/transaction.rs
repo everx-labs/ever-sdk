@@ -222,11 +222,19 @@ impl Transaction {
         // but this total_fees is fees collected the validators, not the all fees taken from account
         // because total_action_fees contains only part of all forward fees
         // to get all fees paid by account we need exchange `total_action_fees part` to `out_msgs_fwd_fee`
-        fees.total_account_fees = self.total_fees - total_action_fees + fees.out_msgs_fwd_fee;
+        let total_account_fees =
+            self.total_fees as i128 - total_action_fees as i128 + fees.out_msgs_fwd_fee as i128;
+        fees.total_account_fees = if total_account_fees > 0 { total_account_fees as u64 } else { 0 };
         // inbound_fwd_fees is not represented in transaction fields so need to calculate it
-        fees.in_msg_fwd_fee = fees.total_account_fees - fees.storage_fee - fees.gas_fee - fees.out_msgs_fwd_fee;
+        let in_msg_fwd_fee =
+            fees.total_account_fees as i128
+            - fees.storage_fee as i128
+            - fees.gas_fee as i128
+            - fees.out_msgs_fwd_fee as i128;
+        fees.in_msg_fwd_fee = if in_msg_fwd_fee > 0 { in_msg_fwd_fee as u64 } else { 0 };
 
-        fees.total_output = self.out_messages.iter().fold(0, |acc, msg| acc + msg.value);
+        let total_output = self.out_messages.iter().fold(0u128, |acc, msg| acc + msg.value as u128);
+        fees.total_output = if total_output <= u64::MAX as u128 { total_output as u64 } else { 0 };
 
         fees
     }
