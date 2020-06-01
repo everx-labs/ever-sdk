@@ -1150,9 +1150,10 @@ impl Contract {
             balance: CurrencyCollection { grams: self.balance.into(), other: self.balance_other_as_hashmape()?.into() },
             state,
         };
+        let last_paid = if self.last_paid != 0 { self.last_paid } else { Self::now() };
         Ok(Account::with_storage(
             &self.id,
-            &StorageInfo::with_values(self.last_paid, None),
+            &StorageInfo::with_values(last_paid, None),
             &storage))
     }
 
