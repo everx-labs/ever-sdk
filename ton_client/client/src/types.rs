@@ -179,7 +179,7 @@ impl ApiError {
             "message_id": msg_id,
             "send_time": format_time(send_time),
             "expiration_time": format_time(expire),
-            "timeout": format_time(timeout),
+            "timeout": timeout,
         });
         error
     }
@@ -195,7 +195,7 @@ impl ApiError {
             "message_id": msg_id,
             "send_time": format_time(send_time),
             "block_id": block_id,
-            "timeout": format_time(timeout)
+            "timeout": timeout
         });
         error
     }
@@ -210,7 +210,7 @@ impl ApiError {
         error.data = serde_json::json!({
             "message_id": msg_id,
             "send_time": format_time(send_time),
-            "timeout": format_time(timeout)
+            "timeout": timeout
         });
         error
     }
