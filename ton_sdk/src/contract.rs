@@ -14,7 +14,7 @@
 use crate::json_helper;
 use crate::local_tvm;
 use crate::error::SdkError;
-use crate::{AbiContract, Message, MessageId, TimeoutsConfig, TransactionFees};
+use crate::{AbiContract, Message, MessageId, TimeoutsConfig, Transaction};
 
 use ed25519_dalek::{Keypair, PublicKey};
 use chrono::prelude::Utc;
@@ -33,7 +33,7 @@ use ton_executor::BlockchainConfig;
 
 #[cfg(feature = "node_interaction")]
 use crate::{
-    NodeClient, Transaction,
+    NodeClient,
     json_helper::account_status_to_u8,
     transaction::TRANSACTION_FIELDS_ORDINARY,
     types::{BLOCKS_TABLE_NAME, CONTRACTS_TABLE_NAME, TRANSACTIONS_TABLE_NAME},
@@ -173,7 +173,7 @@ pub struct Contract {
     #[serde(deserialize_with = "json_helper::deserialize_account_status")]
     pub acc_type: AccountStatus,
     #[serde(deserialize_with = "json_helper::deserialize_uint_from_string")]
-    pub balance: u128,
+    pub balance: u64,
     pub balance_other: Option<Vec<OtherCurrencyValue>>,
     #[serde(deserialize_with = "json_helper::deserialize_tree_of_cells_opt_cell")]
     pub code: Option<Cell>,
@@ -371,17 +371,20 @@ impl Contract {
     }
 
     // Asynchronously loads a Contract instance or None if contract with given id is not exists
-    pub async fn load_wait_deployed(client: &NodeClient, address: &MsgAddressInt, timeout: Option<u32>)
-        -> Result<Contract>
-    {
+    pub async fn load_wait(
+        client: &NodeClient, address: &MsgAddressInt, deployed: bool, timeout: Option<u32>
+    ) -> Result<Contract> {
+        let mut filter = json!({
+            "id": {
+                "eq": address.to_string()
+            }
+        });
+        if deployed {
+            filter["acc_type"] = json!({ "eq": account_status_to_u8(AccountStatus::AccStateActive)});
+        }
         let value = client.wait_for(
             CONTRACTS_TABLE_NAME,
-            &json!({
-                "id": {
-                    "eq": address.to_string()
-                },
-                "acc_type": { "eq": account_status_to_u8(AccountStatus::AccStateActive) }
-            }).to_string(),
+            &filter.to_string(),
             ACCOUNT_FIELDS,
             timeout).await?;
 
@@ -413,10 +416,9 @@ impl Contract {
             result = func(i)?.await;
             match &result {
                 Err(error) => {
-                    println!("{}", error);
                     match error.downcast_ref::<SdkError>() {
                         Some(SdkError::MessageExpired {
-                            msg_id: _, expire: _, send_time: _, block_time: _
+                            msg_id: _, msg: _, expire: _, send_time: _, block_time: _
                         }) => continue,
                         _ => return result
                     }
@@ -497,12 +499,13 @@ impl Contract {
     pub async fn process_serialized_message(client: &NodeClient, id: &MessageId, msg: &[u8], expire: Option<u32>, try_index: u8) -> Result<Transaction> {
         client.send_message(&id.to_bytes()?, msg).await?;
         //println!("msg is sent, id: {}", id);
-        Self::wait_transaction_processing(client, id, expire, try_index).await
+        Self::wait_transaction_processing(client, id, msg, expire, try_index).await
     }
 
     pub async fn wait_transaction_processing(
         client: &NodeClient,
         message_id: &MessageId,
+        message: &[u8],
         expire: Option<u32>,
         try_index: u8,
     ) -> Result<Transaction>
@@ -512,7 +515,7 @@ impl Contract {
             client.timeouts().message_processing_timeout,
             client.timeouts().message_processing_timeout_grow_factor,
             try_index);
-        let now = Self::now()?;
+        let now = Self::now();
         let mut block_timeout = tr_timeout;
         if let Some(expire) = expire {
             //println!("expire {}", expire);
@@ -542,6 +545,7 @@ impl Contract {
                     Some(SdkError::WaitForTimeout) => 
                         SdkError::TransactionWaitTimeout {
                             msg_id: message_id.clone(),
+                            msg: message.to_vec(),
                             send_time: now,
                             timeout: block_timeout
                         }.into(),
@@ -554,6 +558,7 @@ impl Contract {
             {
                 Err(SdkError::MessageExpired{
                     msg_id: message_id.clone(),
+                    msg: message.to_vec(),
                     send_time: now,
                     expire: expire.unwrap_or(0),
                     block_time: transaction.now
@@ -613,6 +618,7 @@ impl Contract {
 
                         Err(SdkError::MessageExpired{
                             msg_id: message_id.clone(),
+                            msg: message.to_vec(),
                             send_time: now,
                             expire: expire.unwrap_or(0),
                             block_time: block["gen_utime"].as_u64().unwrap_or(0) as u32
@@ -638,11 +644,6 @@ pub struct MessageToSign {
     pub expire: Option<u32>,
 }
 
-pub struct LocalCallResult {
-    pub messages: Vec<Message>,
-    pub fees: TransactionFees,
-}
-
 impl Contract {
     /// Returns contract's address
     pub fn address(&self) -> MsgAddressInt {
@@ -655,7 +656,7 @@ impl Contract {
     }
 
     /// Returns contract's balance in NANO grams
-    pub fn balance_grams(&self) -> Result<u128> {
+    pub fn balance_grams(&self) -> Result<u64> {
         Ok(self.balance)
     }
 
@@ -704,7 +705,7 @@ impl Contract {
         Ok(Contract {
             id: acc.get_addr().unwrap().clone(),
             acc_type: acc.status(),
-            balance: num_traits::ToPrimitive::to_u128(
+            balance: num_traits::ToPrimitive::to_u64(
                 acc.get_balance().unwrap().grams.value()).ok_or(
                 error!(SdkError::InvalidData {
                     msg: "Account's balance is too big".to_owned()
@@ -728,7 +729,7 @@ impl Contract {
             self.balance_other_as_hashmape()?,
             &self.id,
             None,
-            Self::now()?,
+            Self::now(),
             code,
             self.data.clone(),
             &message)?;
@@ -771,7 +772,7 @@ impl Contract {
             self.balance_other_as_hashmape()?,
             &self.id,
             None,
-            Self::now()?,
+            Self::now(),
             code,
             self.data.clone(),
             stack_in)?;
@@ -796,27 +797,28 @@ impl Contract {
 
     /// Invokes local transaction executor instance with provided inbound message.
     /// Returns outbound messages generated by contract function and transaction fees
-    pub fn local_call(&self, message: TvmMessage) -> Result<LocalCallResult> {
+    pub fn local_call(&self, message: TvmMessage, time: Option<u32>) -> Result<Transaction> {
         // TODO: get real config
-        let (tvm_messages, fees) = local_tvm::executor::call_executor(
+        let transaction = local_tvm::executor::call_executor(
             self.to_account()?,
             message,
             BlockchainConfig::default(),
-            Self::now()?)?;
+            time.unwrap_or(Self::now()))?;
 
-        let mut messages = vec![];
-        for tvm_msg in &tvm_messages {
-            messages.push(Message::with_msg(tvm_msg)?);
-        }
-
-        Ok(LocalCallResult { messages, fees })
+        Transaction::try_from(transaction)
     }
 
     /// Invokes local transaction executor instance with provided inbound message.
     /// Returns outbound messages generated by contract function and transaction fees
-    pub fn local_call_json(&self, func: String, header: Option<String>, input: String, abi: String, key_pair: Option<&Keypair>)
-        -> Result<LocalCallResult>
-    {
+    pub fn local_call_json(
+        &self,
+        func: String,
+        header: Option<String>,
+        input: String,
+        abi: String,
+        key_pair: Option<&Keypair>,
+        time: Option<u32>
+    ) -> Result<Transaction> {
         // pack params into bag of cells via ABI
         let msg_body = ton_abi::encode_function_call(abi, func, header, input, false, key_pair)?;
 
@@ -824,7 +826,7 @@ impl Contract {
 
         let msg = Self::create_message(address, msg_body.into())?;
 
-        self.local_call(msg)
+        self.local_call(msg, time)
     }
 
     /// Decodes output parameters returned by contract function call
@@ -894,7 +896,7 @@ impl Contract {
                 timeouts.message_expiration_timeout,
                 timeouts.message_expiration_timeout_grow_factor,
                 try_index.unwrap_or(0));
-            let expire = Self::now()? + timeout / 1000;
+            let expire = Self::now() + timeout / 1000;
             let expire = ton_abi::TokenValue::Expire(expire);
 
             let header = serde_json::from_str::<Value>(&header.unwrap_or("{}".to_owned()))?;
@@ -1130,6 +1132,9 @@ impl Contract {
     }
 
     pub fn to_account(&self) -> Result<Account> {
+        if AccountStatus::AccStateFrozen == self.acc_type {
+            return Err(SdkError::InvalidData { msg: "Account is frozen".to_owned()}.into());
+        }
         let state = match &self.code {
             Some(code) => {
                 let mut state_init = StateInit::default();
@@ -1145,14 +1150,15 @@ impl Contract {
             balance: CurrencyCollection { grams: self.balance.into(), other: self.balance_other_as_hashmape()?.into() },
             state,
         };
+        let last_paid = if self.last_paid != 0 { self.last_paid } else { Self::now() };
         Ok(Account::with_storage(
             &self.id,
-            &StorageInfo::with_values(self.last_paid, None),
+            &StorageInfo::with_values(last_paid, None),
             &storage))
     }
 
-    pub fn now() -> Result<u32> {
-        Ok(<u32>::try_from(Utc::now().timestamp())?)
+    pub fn now() -> u32 {
+        Utc::now().timestamp() as u32
     }
 }
 

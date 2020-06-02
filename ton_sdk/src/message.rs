@@ -52,6 +52,8 @@ pub struct Message {
     pub body: Option<Cell>,
     #[serde(deserialize_with = "json_helper::deserialize_message_type")]
     pub msg_type: MessageType,
+    #[serde(deserialize_with = "json_helper::deserialize_uint_from_string")]
+    pub value: u64
 }
 
 #[cfg(feature = "node_interaction")]
@@ -59,6 +61,7 @@ const MESSAGE_FIELDS: &str = r#"
     id
     body
     msg_type
+    value
 "#;
 
 // The struct represents sent message and allows to access their properties.

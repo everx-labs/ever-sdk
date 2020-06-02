@@ -35,6 +35,15 @@ impl<'de> serde::de::Visitor<'de> for StringVisitor {
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> where E: serde::de::Error {
         Ok(v.to_string())
     }
+
+    fn visit_none<E>(self) -> Result<Self::Value, E> where E: serde::de::Error {
+        Ok("null".to_owned())
+    }
+
+    fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error> where D: serde::Deserializer<'de>
+    {
+        d.deserialize_string(StringVisitor)
+    }
 }
 
 struct U8Visitor;
@@ -68,15 +77,12 @@ pub fn deserialize_tree_of_cells_from_base64<'de, D>(b64: &str) -> Result<Cell, 
 pub fn deserialize_tree_of_cells_opt_cell<'de, D>(d: D) -> Result<Option<Cell>, D::Error>
     where D: serde::Deserializer<'de>
 {
-    match d.deserialize_string(StringVisitor) {
-        Err(_) => Ok(None),
-        Ok(b64) => {
-            if "null" == b64{
-                Ok(None)
-            } else {
-                Ok(Some(deserialize_tree_of_cells_from_base64::<D>(&b64)?))
-            }
-        }
+    let b64 = d.deserialize_option(StringVisitor)?;
+
+    if "null" == b64 {
+        Ok(None)
+    } else {
+        Ok(Some(deserialize_tree_of_cells_from_base64::<D>(&b64)?))
     }
 }
 
@@ -89,16 +95,20 @@ pub fn deserialize_address_int_from_string<'de, D>(d: D) -> Result<MsgAddressInt
          .map_err(|err| D::Error::custom(format!("Address parsing error: {}", err)))
 }
 
-pub fn deserialize_uint_from_string<'de, D>(d: D) -> Result<u128, D::Error>
+pub fn deserialize_uint_from_string<'de, D>(d: D) -> Result<u64, D::Error>
     where D: serde::Deserializer<'de>
 {
-    let string = d.deserialize_string(StringVisitor)?;
+    let string = d.deserialize_option(StringVisitor)?;
+
+    if "null" == string {
+        return Ok(0);
+    }
 
     if !string.starts_with("0x") {
         return Err(D::Error::custom(format!("Number parsing error: number must be prefixed with 0x ({})", string)));
     }
 
-    u128::from_str_radix(&string[2..], 16)
+    u64::from_str_radix(&string[2..], 16)
         .map_err(|err| D::Error::custom(format!("Error parsing number: {}", err)))
 }
 
@@ -133,8 +143,8 @@ pub fn deserialize_acc_state_change<'de, D>(d: D) -> Result<AccStatusChange, D::
 
     match num {
         0 => Ok(AccStatusChange::Unchanged),
-        2 => Ok(AccStatusChange::Frozen),
-        3 => Ok(AccStatusChange::Deleted),
+        1 => Ok(AccStatusChange::Frozen),
+        2 => Ok(AccStatusChange::Deleted),
         num => Err(D::Error::custom(format!("Invalid account change state: {}", num)))
     }
 }

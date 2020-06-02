@@ -56,10 +56,11 @@ pub enum SdkError {
         msg: String
     },
 
-    #[fail(display = "Local contract call error: {}", msg)]
-    LocalCallError {
-        msg: String
-    },
+    #[fail(display = "Contract execution error, exit code: {}", 0)]
+    ContractError(i32),
+
+    #[fail(display = "Contract has no funds for requested operation")]
+    NoFundsError,
 
     // External errors
 
@@ -112,6 +113,7 @@ pub enum SdkError {
         msg_id, send_time, expire, block_time)]
     MessageExpired {
         msg_id: crate::MessageId,
+        msg: Vec<u8>,
         send_time: u32,
         expire: u32,
         block_time: u32
@@ -136,9 +138,10 @@ pub enum SdkError {
         timeout: u32
     },
 
-    #[fail(display = "Transaction did not produced during specified timeout")]
+    #[fail(display = "Transaction was not produced during the specified timeout")]
     TransactionWaitTimeout{
         msg_id: crate::MessageId,
+        msg: Vec<u8>,
         send_time: u32,
         timeout: u32
     },

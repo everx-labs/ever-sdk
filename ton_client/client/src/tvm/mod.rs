@@ -39,7 +39,6 @@ pub(crate) struct ResultOfLocalRunGet {
 
 const DEFAULT_ADDRESS: &str = "0:0000000000000000000000000000000000000000000000000000000000000000";
 const DEFAULT_BALANCE: &str = "0xffffffffffffffff";
-const DEFAULT_LAST_PAID: u32 = 1;
 
 pub(crate) fn get(
     context: &mut ClientContext,
@@ -57,7 +56,7 @@ pub(crate) fn get(
             let address = params.address.ok_or_else(|| ApiError::address_reqired_for_runget())?;
             let address = crate::crypto::keys::account_decode(&address)?;
             let mut runtime = context.take_runtime()?;
-            let result = runtime.block_on(crate::contracts::run::load_contract(context, &address));
+            let result = runtime.block_on(crate::contracts::run::load_contract(context, &address, true));
             context.runtime = Some(runtime);
             result?
         }
@@ -70,7 +69,7 @@ pub(crate) fn get(
         }
 
         Some(code) => {
-            let last_paid = params.last_paid.unwrap_or(Contract::now().unwrap_or(DEFAULT_LAST_PAID));
+            let last_paid = params.last_paid.unwrap_or(Contract::now());
             let contract_json = json!({
                 "id": params.address.unwrap_or(DEFAULT_ADDRESS.to_string()),
                 "acc_type": 1,

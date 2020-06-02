@@ -13,7 +13,7 @@
 
 use crate::crypto::keys::{KeyPair, decode_public_key, account_encode};
 use crate::contracts::EncodedUnsignedMessage;
-use crate::contracts::run::serialize_message;
+use crate::contracts::run::{RunFees, serialize_message};
 use ton_sdk::{Contract, ContractImage, FunctionCallSet};
 
 
@@ -90,6 +90,7 @@ pub(crate) struct ParamsOfGetDeployAddress {
 pub(crate) struct ResultOfDeploy {
     pub address: String,
     pub already_deployed: bool,
+    pub fees: Option<RunFees>
 }
 
 #[derive(Serialize, Deserialize)]
@@ -133,7 +134,8 @@ pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) 
     if check_deployed(context, &account_id).await? {
         return Ok(ResultOfDeploy { 
             address: account_encode(&account_id),
-            already_deployed: true
+            already_deployed: true,
+            fees: None
         })
     }
 
@@ -143,10 +145,11 @@ pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) 
     debug!("-> -> deploy transaction: {}", tr. id());
 
     debug!("<-");
-    super::run::check_transaction_status(&tr)?;
+    super::run::check_transaction_status(&tr, true, &account_id)?;
     Ok(ResultOfDeploy {
         address: account_encode(&account_id),
-        already_deployed: false
+        already_deployed: false,
+        fees: Some(tr.calc_fees().into())
     })
 }
 
@@ -300,14 +303,19 @@ fn create_image(abi: &serde_json::Value, init_params: Option<&serde_json::Value>
 
 #[cfg(feature = "node_interaction")]
 async fn deploy_contract(client: &NodeClient, params: ParamsOfDeploy, image: ContractImage, keys: &Keypair) -> ApiResult<Transaction> {
-    Contract::deploy_json(
+    let result = Contract::deploy_json(
         client,
         params.call_set.into(),
         image,
         Some(keys),
         params.workchain_id.unwrap_or(DEFAULT_WORKCHAIN))
-            .await
-            .map_err(|err| crate::types::apierror_from_sdkerror(err, ApiError::contracts_run_failed))
+            .await;
+
+    match result {
+        Err(err) => 
+            Err(super::run::resolve_msg_sdk_error(client, err, ApiError::contracts_deploy_failed).await?),
+        Ok(tr) => Ok(tr)
+    }
 }
 
 #[cfg(feature = "node_interaction")]

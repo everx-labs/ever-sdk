@@ -208,7 +208,13 @@ pub async fn get_grams_from_giver(client: &NodeClient, address: MsgAddressInt) {
     };
 
     for msg_id in transaction.out_messages_id() {
-        Contract::wait_transaction_processing(client, &msg_id, None, 0)
+        client.wait_for(
+            crate::types::TRANSACTIONS_TABLE_NAME,
+            &json!({
+                "in_msg": { "eq": msg_id.to_string() },
+            }).to_string(),
+            "id",
+            None)
             .await
             .expect("Error waiting giver message processing");
     }
@@ -373,7 +379,7 @@ pub async fn contract_call_local(
     abi: &str,
     key_pair: Option<&Keypair>
 ) -> String {
-    let contract = Contract::load_wait_deployed(client, &address, None)
+    let contract = Contract::load_wait(client, &address, true, None)
         .await
         .expect("Error unwrap result while loading Contract");
 

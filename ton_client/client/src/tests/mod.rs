@@ -22,6 +22,8 @@ use ton_block::MsgAddressInt;
 use std::str::FromStr;
 use crate::types::{ApiError};
 
+//mod resolve_error;
+
 pub const LOG_CGF_PATH: &str = "src/tests/log_cfg.yaml";
 
 struct SimpleLogger;
