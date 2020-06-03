@@ -127,11 +127,10 @@ pub(crate) struct ResultOfRun {
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub(crate) struct ResultOfLocalRun {
     pub output: serde_json::Value,
     pub fees: Option<RunFees>,
-    pub updated_account: Option<Contract>
+    pub account: Option<Contract>
 }
 
 #[derive(Serialize, Deserialize)]
@@ -614,7 +613,7 @@ pub(crate) fn do_local_run_msg(
         Ok(ResultOfLocalRun {
             output: run_result.output,
             fees: Some(run_result.fees),
-            updated_account: Some(result.updated_account),
+            account: Some(result.updated_account),
         })
     } else {
         let messages = contract.local_call_tvm(msg)
@@ -623,7 +622,7 @@ pub(crate) fn do_local_run_msg(
         Ok(ResultOfLocalRun {
             output: process_out_messages(&messages, abi, function_name)?,
             fees: None,
-            updated_account: None
+            account: None
         })
     }
 }
