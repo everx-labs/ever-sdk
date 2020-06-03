@@ -37,7 +37,7 @@ pub struct ComputePhase {
     pub skipped_reason: Option<ComputeSkipReason>,
     pub exit_code: Option<i32>,
     pub success: Option<bool>,
-    #[serde(deserialize_with = "json_helper::deserialize_uint_from_string")]
+    #[serde(with = "json_helper::uint")]
     pub gas_fees: u64,
 }
 
@@ -46,7 +46,7 @@ pub struct ComputePhase {
 pub struct StoragePhase {
     #[serde(deserialize_with = "json_helper::deserialize_acc_state_change")]
     pub status_change: AccStatusChange,
-    #[serde(deserialize_with = "json_helper::deserialize_uint_from_string")]
+    #[serde(with = "json_helper::uint")]
     pub storage_fees_collected: u64,
 }
 
@@ -57,9 +57,9 @@ pub struct ActionPhase {
     pub valid: bool,
     pub no_funds: bool,
     pub result_code: i32,
-    #[serde(deserialize_with = "json_helper::deserialize_uint_from_string")]
+    #[serde(with = "json_helper::uint")]
     pub total_fwd_fees: u64,
-    #[serde(deserialize_with = "json_helper::deserialize_uint_from_string")]
+    #[serde(with = "json_helper::uint")]
     pub total_action_fees: u64,
 }
 
@@ -79,7 +79,7 @@ pub struct Transaction {
     pub compute: ComputePhase,
     pub storage: Option<StoragePhase>,
     pub action: Option<ActionPhase>,
-    #[serde(deserialize_with = "json_helper::deserialize_uint_from_string")]
+    #[serde(with = "json_helper::uint")]
     pub total_fees: u64,
 }
 
