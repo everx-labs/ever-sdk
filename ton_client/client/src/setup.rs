@@ -40,6 +40,7 @@ pub(crate) struct SetupParams {
     pub message_processing_timeout_grow_factor: Option<f32>,
     pub wait_for_timeout: Option<u32>,
     pub access_key: Option<String>,
+    pub out_of_sync_threshold: Option<i64>,
 }
 
 impl Into<NodeClientConfig> for SetupParams {
@@ -53,6 +54,7 @@ impl Into<NodeClientConfig> for SetupParams {
                 message_processing_timeout: self.message_processing_timeout.unwrap_or(default.message_processing_timeout),
                 message_processing_timeout_grow_factor: self.message_processing_timeout_grow_factor.unwrap_or(default.message_processing_timeout_grow_factor),
                 wait_for_timeout: self.wait_for_timeout.unwrap_or(default.wait_for_timeout),
+                out_of_sync_threshold: self.out_of_sync_threshold.unwrap_or(default.out_of_sync_threshold),
             }),
             #[cfg(feature = "node_interaction")]
             base_url: self.base_url,
@@ -73,7 +75,7 @@ fn setup(context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
         .map_err(|err| ApiError::cannot_create_runtime(err))?;
 
     let client = runtime.block_on(ton_sdk::init(config.into()))
-        .map_err(|err|ApiError::config_init_failed(err))?;
+        .map_err(|err| crate::types::apierror_from_sdkerror(&err, ApiError::config_init_failed))?;
 
     context.client = Some(client);
     context.runtime = Some(runtime);

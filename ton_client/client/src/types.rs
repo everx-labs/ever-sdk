@@ -270,6 +270,22 @@ impl ApiError {
         error
     }
 
+    pub fn clock_out_of_sync(delta_ms: i64, threshold: i64, expiration_timout: u32) -> Self {
+        let mut error = ApiError::new(
+            ApiErrorSource::Node,
+            &ApiSdkErrorCode::ClockOutOfSync,
+            "Device clock is out of sync with server time".to_owned(),
+        );
+
+        error.data = serde_json::json!({
+            "delta_ms": delta_ms,
+            "threshold_ms": threshold,
+            "expiration_timout_ms": expiration_timout,
+            "tip": "Synchronize your device clock with internet time"
+        });
+        error
+    }
+
     // SDK Cell
 
     pub fn cell_invalid_query<E: Display>(s: E) -> Self {
@@ -816,6 +832,8 @@ where
             ApiError::transactions_lag(msg_id.to_string(), *send_time, block_id.clone(), *timeout),
         Some(SdkError::TransactionWaitTimeout{msg_id, msg: _, send_time, timeout}) =>
             ApiError::transaction_wait_timeout(msg_id.to_string(), *send_time, *timeout),
+        Some(SdkError::ClockOutOfSync{delta_ms, threshold_ms, expiration_timeout}) =>
+            ApiError::clock_out_of_sync(*delta_ms, *threshold_ms, *expiration_timeout),
         _ => default_err(err.to_string())
     }
 }

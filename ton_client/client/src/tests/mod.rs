@@ -482,3 +482,19 @@ fn test_address_parsing() {
         })).unwrap(),
         base64_url);
 }
+
+
+#[test]
+fn test_out_of_sync() {
+    let client = TestClient::new();
+
+    let result = client.request("setup",
+        json!({
+            "baseUrl": "http://localhost",
+            "outOfSyncThreshold": -1
+        })).unwrap_err();
+
+    let value: Value = serde_json::from_str(&result).unwrap();
+
+   assert_eq!(value["code"], 1013);
+}
