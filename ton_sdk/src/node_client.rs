@@ -132,9 +132,9 @@ impl NodeClient {
     }
 
     async fn get_time_delta(client: &GqlClient) -> Result<i64>{
-        let start = Utc::now().timestamp();
+        let start = Utc::now().timestamp_millis();
         let response = client.query("%7Binfo%7Btime%7D%7D".to_owned()).await?;
-        let end = Utc::now().timestamp();
+        let end = Utc::now().timestamp_millis();
         let server_time = response["data"]["info"]["time"]
             .as_i64()
             .ok_or(SdkError::InvalidServerResponse(
