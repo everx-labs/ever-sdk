@@ -188,7 +188,7 @@ impl ApiError {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ApiSdkErrorCode::TransactionsLag,
-            "Existing block transaction not found".to_owned(),
+            "Existing block transaction not found (no transaction appeared for the masterchain block with gen_utime > message expiration time)".to_owned(),
         );
 
         error.data = serde_json::json!({
