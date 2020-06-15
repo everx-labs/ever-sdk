@@ -67,17 +67,17 @@ fn test_executor_call() {
     let contract: crate::Contract = serde_json::from_str(CONTRACT).expect("Error parsing state init");
     let keypair = ed25519_dalek::Keypair::from_bytes(&hex::decode(KEYS).unwrap()).unwrap();
 
-    let transaction = contract.local_call_json(
+    let result = contract.local_call_json(
         "transfer".to_owned(),
         None,
         "{\"to\": \"0:e6392da8a96f648098f818501f0211f27c89675e5f196445d211947b48e7c85b\"}".to_owned(),
         PIGGY_BANK_CONTRACT_ABI.to_owned(),
         Some(&keypair),
         None).expect("Error calling contract");
-    assert!(transaction.out_messages.len() == 1);
-    assert!(!transaction.aborted);
+    assert!(result.transaction.out_messages.len() == 1);
+    assert!(!result.transaction.aborted);
 
-    let fees = transaction.calc_fees();
+    let fees = result.transaction.calc_fees();
 
     //println!("{:?}", fees);
 

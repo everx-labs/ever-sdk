@@ -136,25 +136,15 @@ pub mod executor {
     };
     use ton_executor::ExecutorError;
 
-    #[derive(Default, Debug)]
-    pub struct TransactionFees {
-        pub in_msg_fwd_fee: u64,
-        pub storage_fee: u64,
-        pub gas_fee: u64,
-        pub out_msgs_fwd_fee: u64,
-        pub total_account_fees: u64,
-        pub total_output: u64,
-    }
-
     pub(crate) fn call_executor(account: Account, msg: Message, config: BlockchainConfig, timestamp: u32)
-        -> Result<Transaction>
+        -> Result<(Transaction, Cell)>
     {
         let mut acc_root = account.write_to_new_cell()?.into();
 
         let block_lt = 1_000_000;
         let lt = Arc::new(std::sync::atomic::AtomicU64::new(block_lt + 1));
         let executor = OrdinaryTransactionExecutor::new(config);
-        executor.execute(
+        let transaction = executor.execute(
             Some(&msg),
             &mut acc_root,
             timestamp,
@@ -167,7 +157,8 @@ pub mod executor {
                     Some(ExecutorError::NoFundsToImportMsg) => SdkError::NoFundsError.into(),
                     _ => err
                 }
-            })
+            })?;
+        Ok((transaction, acc_root))
     }
 }
 

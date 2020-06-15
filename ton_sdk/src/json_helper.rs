@@ -64,6 +64,34 @@ impl<'de> serde::de::Visitor<'de> for U8Visitor {
     }
 }
 
+pub mod opt_cell {
+    use super::*;
+
+    pub fn deserialize<'de, D>(d: D) -> Result<Option<Cell>, D::Error>
+        where D: serde::Deserializer<'de>
+    {
+        let b64 = d.deserialize_option(StringVisitor)?;
+
+        if "null" == b64 {
+            Ok(None)
+        } else {
+            Ok(Some(deserialize_tree_of_cells_from_base64::<D>(&b64)?))
+        }
+    }
+
+    pub fn serialize<S>(value: &Option<Cell>, serializer: S) -> Result<S::Ok, S::Error> 
+        where S: serde::Serializer 
+    {
+        if let Some(cell) = value {
+            let str_value = base64::encode(&ton_types::serialize_toc(&cell).map_err(|err|
+                serde::ser::Error::custom(format!("Cannot serialize BOC: {}", err)))?);
+            serializer.serialize_some(&str_value)
+        } else {
+            serializer.serialize_none()
+        }
+    }
+}
+
 pub fn deserialize_tree_of_cells_from_base64<'de, D>(b64: &str) -> Result<Cell, D::Error>
     where D: serde::Deserializer<'de>
 {
@@ -74,42 +102,50 @@ pub fn deserialize_tree_of_cells_from_base64<'de, D>(b64: &str) -> Result<Cell, 
         .map_err(|err| D::Error::custom(format!("BOC read error: {}", err)))
 }
 
-pub fn deserialize_tree_of_cells_opt_cell<'de, D>(d: D) -> Result<Option<Cell>, D::Error>
-    where D: serde::Deserializer<'de>
-{
-    let b64 = d.deserialize_option(StringVisitor)?;
+pub mod address {
+    use super::*;
 
-    if "null" == b64 {
-        Ok(None)
-    } else {
-        Ok(Some(deserialize_tree_of_cells_from_base64::<D>(&b64)?))
+    pub fn deserialize<'de, D>(d: D) -> Result<MsgAddressInt, D::Error>
+        where D: serde::Deserializer<'de>
+    {
+        let string = d.deserialize_string(StringVisitor)?;
+
+        MsgAddressInt::from_str(&string)
+            .map_err(|err| D::Error::custom(format!("Address parsing error: {}", err)))
+    }
+
+    pub fn serialize<S>(value: &MsgAddressInt, serializer: S) -> Result<S::Ok, S::Error> 
+        where S: serde::Serializer 
+    {
+        serializer.serialize_str(&value.to_string())
     }
 }
 
-pub fn deserialize_address_int_from_string<'de, D>(d: D) -> Result<MsgAddressInt, D::Error>
-    where D: serde::Deserializer<'de>
-{
-    let string = d.deserialize_string(StringVisitor)?;
+pub mod uint {
+    use super::*;
 
-    MsgAddressInt::from_str(&string)
-         .map_err(|err| D::Error::custom(format!("Address parsing error: {}", err)))
-}
+    pub fn deserialize<'de, D>(d: D) -> Result<u64, D::Error>
+        where D: serde::Deserializer<'de>
+    {
+        let string = d.deserialize_option(StringVisitor)?;
 
-pub fn deserialize_uint_from_string<'de, D>(d: D) -> Result<u64, D::Error>
-    where D: serde::Deserializer<'de>
-{
-    let string = d.deserialize_option(StringVisitor)?;
+        if "null" == string {
+            return Ok(0);
+        }
 
-    if "null" == string {
-        return Ok(0);
+        if !string.starts_with("0x") {
+            return Err(D::Error::custom(format!("Number parsing error: number must be prefixed with 0x ({})", string)));
+        }
+
+        u64::from_str_radix(&string[2..], 16)
+            .map_err(|err| D::Error::custom(format!("Error parsing number: {}", err)))
     }
 
-    if !string.starts_with("0x") {
-        return Err(D::Error::custom(format!("Number parsing error: number must be prefixed with 0x ({})", string)));
+    pub fn serialize<S>(value: &u64, serializer: S) -> Result<S::Ok, S::Error> 
+        where S: serde::Serializer 
+    {
+        serializer.serialize_str(&format!("0x{:x}", value))
     }
-
-    u64::from_str_radix(&string[2..], 16)
-        .map_err(|err| D::Error::custom(format!("Error parsing number: {}", err)))
 }
 
 pub fn deserialize_tr_state<'de, D>(d: D) -> Result<TransactionProcessingStatus, D::Error>
@@ -174,17 +210,33 @@ pub fn deserialize_message_type<'de, D>(d: D) -> Result<MessageType, D::Error>
     }
 }
 
-pub fn deserialize_account_status<'de, D>(d: D) -> Result<AccountStatus, D::Error>
-    where D: serde::Deserializer<'de>
-{
-    let num = d.deserialize_u8(U8Visitor)?;
+pub mod account_status {
+    use super::*;
 
-    match num {
-        0 => Ok(AccountStatus::AccStateUninit),
-        1 => Ok(AccountStatus::AccStateActive),
-        2 => Ok(AccountStatus::AccStateFrozen),
-        3 => Ok(AccountStatus::AccStateNonexist),
-        num => Err(D::Error::custom(format!("Invalid account status: {}", num)))
+    pub fn deserialize<'de, D>(d: D) -> Result<AccountStatus, D::Error>
+        where D: serde::Deserializer<'de>
+    {
+        let num = d.deserialize_u8(U8Visitor)?;
+
+        match num {
+            0 => Ok(AccountStatus::AccStateUninit),
+            1 => Ok(AccountStatus::AccStateActive),
+            2 => Ok(AccountStatus::AccStateFrozen),
+            3 => Ok(AccountStatus::AccStateNonexist),
+            num => Err(D::Error::custom(format!("Invalid account status: {}", num)))
+        }
+    }
+
+    pub fn serialize<S>(value: &AccountStatus, serializer: S) -> Result<S::Ok, S::Error> 
+        where S: serde::Serializer 
+    {
+        serializer.serialize_u8(        
+            match value {
+                AccountStatus::AccStateUninit => 0,
+                AccountStatus::AccStateActive => 1,
+                AccountStatus::AccStateFrozen => 2,
+                AccountStatus::AccStateNonexist => 3
+        })
     }
 }
 

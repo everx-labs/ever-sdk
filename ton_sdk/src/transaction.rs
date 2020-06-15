@@ -37,7 +37,7 @@ pub struct ComputePhase {
     pub skipped_reason: Option<ComputeSkipReason>,
     pub exit_code: Option<i32>,
     pub success: Option<bool>,
-    #[serde(deserialize_with = "json_helper::deserialize_uint_from_string")]
+    #[serde(with = "json_helper::uint")]
     pub gas_fees: u64,
 }
 
@@ -46,7 +46,7 @@ pub struct ComputePhase {
 pub struct StoragePhase {
     #[serde(deserialize_with = "json_helper::deserialize_acc_state_change")]
     pub status_change: AccStatusChange,
-    #[serde(deserialize_with = "json_helper::deserialize_uint_from_string")]
+    #[serde(with = "json_helper::uint")]
     pub storage_fees_collected: u64,
 }
 
@@ -57,9 +57,9 @@ pub struct ActionPhase {
     pub valid: bool,
     pub no_funds: bool,
     pub result_code: i32,
-    #[serde(deserialize_with = "json_helper::deserialize_uint_from_string")]
+    #[serde(with = "json_helper::uint")]
     pub total_fwd_fees: u64,
-    #[serde(deserialize_with = "json_helper::deserialize_uint_from_string")]
+    #[serde(with = "json_helper::uint")]
     pub total_action_fees: u64,
 }
 
@@ -79,7 +79,7 @@ pub struct Transaction {
     pub compute: ComputePhase,
     pub storage: Option<StoragePhase>,
     pub action: Option<ActionPhase>,
-    #[serde(deserialize_with = "json_helper::deserialize_uint_from_string")]
+    #[serde(with = "json_helper::uint")]
     pub total_fees: u64,
 }
 
@@ -222,11 +222,19 @@ impl Transaction {
         // but this total_fees is fees collected the validators, not the all fees taken from account
         // because total_action_fees contains only part of all forward fees
         // to get all fees paid by account we need exchange `total_action_fees part` to `out_msgs_fwd_fee`
-        fees.total_account_fees = self.total_fees - total_action_fees + fees.out_msgs_fwd_fee;
+        let total_account_fees =
+            self.total_fees as i128 - total_action_fees as i128 + fees.out_msgs_fwd_fee as i128;
+        fees.total_account_fees = if total_account_fees > 0 { total_account_fees as u64 } else { 0 };
         // inbound_fwd_fees is not represented in transaction fields so need to calculate it
-        fees.in_msg_fwd_fee = fees.total_account_fees - fees.storage_fee - fees.gas_fee - fees.out_msgs_fwd_fee;
+        let in_msg_fwd_fee =
+            fees.total_account_fees as i128
+            - fees.storage_fee as i128
+            - fees.gas_fee as i128
+            - fees.out_msgs_fwd_fee as i128;
+        fees.in_msg_fwd_fee = if in_msg_fwd_fee > 0 { in_msg_fwd_fee as u64 } else { 0 };
 
-        fees.total_output = self.out_messages.iter().fold(0, |acc, msg| acc + msg.value);
+        let total_output = self.out_messages.iter().fold(0u128, |acc, msg| acc + msg.value as u128);
+        fees.total_output = if total_output <= u64::MAX as u128 { total_output as u64 } else { 0 };
 
         fees
     }

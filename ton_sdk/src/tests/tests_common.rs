@@ -379,7 +379,7 @@ pub async fn contract_call_local(
     abi: &str,
     key_pair: Option<&Keypair>
 ) -> String {
-    let contract = Contract::load_wait_deployed(client, &address, None)
+    let contract = Contract::load_wait(client, &address, true, None)
         .await
         .expect("Error unwrap result while loading Contract");
 

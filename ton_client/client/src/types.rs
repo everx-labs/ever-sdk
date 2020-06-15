@@ -179,7 +179,7 @@ impl ApiError {
             "message_id": msg_id,
             "send_time": format_time(send_time),
             "expiration_time": format_time(expire),
-            "timeout": format_time(timeout),
+            "timeout": timeout,
         });
         error
     }
@@ -195,7 +195,7 @@ impl ApiError {
             "message_id": msg_id,
             "send_time": format_time(send_time),
             "block_id": block_id,
-            "timeout": format_time(timeout)
+            "timeout": timeout
         });
         error
     }
@@ -210,7 +210,7 @@ impl ApiError {
         error.data = serde_json::json!({
             "message_id": msg_id,
             "send_time": format_time(send_time),
-            "timeout": format_time(timeout)
+            "timeout": timeout
         });
         error
     }
@@ -515,11 +515,6 @@ impl ApiError {
             "Process message failed: {}", err)
     }
 
-    pub fn contracts_load_failed_account_not_active(address: &String) -> Self {
-        sdk_err!(ContractsLoadFailedAccountNotActive,
-            "Load contract [{}] failed: Account exists but code is not deployed", address)
-    }
-
     // SDK queries
 
     pub fn queries_query_failed<E: Display>(err: E) -> Self {
@@ -719,7 +714,6 @@ pub enum ApiSdkErrorCode {
     ContractsLoadMessagesFailed = 3021,
     ContractsCannotSerializeMessage = 3022,
     ContractsProcessMessageFailed = 3023,
-    ContractsLoadFailedAccountNotActive = 3024,
     ContractsTvmError = 3025,
 
     QueriesQueryFailed = 4001,

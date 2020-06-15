@@ -48,11 +48,11 @@ pub type MessageId = StringId;
 #[derive(Debug, Deserialize, Default)]
 pub struct Message {
     pub id: MessageId,
-    #[serde(deserialize_with = "json_helper::deserialize_tree_of_cells_opt_cell")]
+    #[serde(with = "json_helper::opt_cell")]
     pub body: Option<Cell>,
     #[serde(deserialize_with = "json_helper::deserialize_message_type")]
     pub msg_type: MessageType,
-    #[serde(deserialize_with = "json_helper::deserialize_uint_from_string")]
+    #[serde(with = "json_helper::uint")]
     pub value: u64
 }
 
