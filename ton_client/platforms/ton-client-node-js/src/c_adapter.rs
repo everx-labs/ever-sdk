@@ -91,9 +91,8 @@ pub unsafe extern fn ton_sdk_json_rpc_request(
     request_id: i32,
     on_result: OnResult,
 ) {
-    let context = create_context();
     let response = json_sync_request(
-        context,
+        0,
         String::from((*method).as_str()),
         String::from((*params_json).as_str()),
     );
@@ -101,5 +100,4 @@ pub unsafe extern fn ton_sdk_json_rpc_request(
     let result = TonSdkUtf8String::from(response.result_json.as_str());
     let error = TonSdkUtf8String::from(response.error_json.as_str());
     on_result(request_id, result, error, OnResultFlags::Finished as i32);
-    destroy_context(context);
 }

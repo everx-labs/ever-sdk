@@ -81,14 +81,13 @@ impl ResultHandler for CResultHandler {
 
 #[no_mangle]
 pub unsafe extern fn ton_sdk_json_rpc_request(
-    //context: InteropContext,
     method: *mut TonSdkUtf8String,
     params_json: *mut TonSdkUtf8String,
     request_id: i32,
     on_result: OnResult,
 ) {
     let response = json_sync_request(
-        create_context(),//context,
+        0,
         String::from((*method).as_str()),
         String::from((*params_json).as_str()),
     );

@@ -67,7 +67,7 @@ pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_request(
     on_result: JObject,
 ) {
     let response = json_sync_request(
-        create_context(),//context,
+        0,
         rust_string(&env, method),
         rust_string(&env, params_json),
     );
