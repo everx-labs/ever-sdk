@@ -285,7 +285,7 @@ fn test_wallet_deploy() {
             }),
     ).unwrap();
 
-    let deployed = client.request("contracts.deploy",
+    let deployed = parse_object(client.request("contracts.deploy",
         json!({
                 "abi": abi.clone(),
                 "constructorParams": json!({}),
@@ -293,11 +293,12 @@ fn test_wallet_deploy() {
                 "keyPair": keys,
                 "workchainId": 0,
             }),
-    ).unwrap();
+    ));
 
-    assert_eq!(format!("{{\"address\":\"{}\",\"alreadyDeployed\":false}}", address), deployed);
+    assert_eq!(deployed["address"], address.to_string());
+    assert_eq!(deployed["alreadyDeployed"], false);
 
-    let result = client.request("contracts.run",
+    let result = parse_object(client.request("contracts.run",
         json!({
                 "address": address.to_string(),
                 "abi": abi.clone(),
@@ -307,8 +308,8 @@ fn test_wallet_deploy() {
 				}),
                 "keyPair": keys,
             }),
-    ).unwrap();
-    assert_eq!("{\"output\":{\"value0\":\"0x0\"}}", result);
+    ));
+    assert_eq!(result["output"]["value0"], "0x0");
 }
 
 const GIVER_ADDRESS: &str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
@@ -481,4 +482,20 @@ fn test_address_parsing() {
             url: true,
         })).unwrap(),
         base64_url);
+}
+
+
+#[test]
+fn test_out_of_sync() {
+    let client = TestClient::new();
+
+    let result = client.request("setup",
+        json!({
+            "baseUrl": "http://localhost",
+            "outOfSyncThreshold": -1
+        })).unwrap_err();
+
+    let value: Value = serde_json::from_str(&result).unwrap();
+
+   assert_eq!(value["code"], 1013);
 }

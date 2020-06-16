@@ -1,6 +1,10 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## Jun 05, 2020
+### New
+- time sync check while initializing
+
 ## Jun 03, 2020
 ### New
 - local run functions return updated contract state when running with `full_run = true`
