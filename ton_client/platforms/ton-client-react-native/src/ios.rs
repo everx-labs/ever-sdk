@@ -12,87 +12,47 @@
 */
 
 extern crate ton_client;
-use self::ton_client::*;
+
+use self::ton_client::{
+    create_context,
+    destroy_context,
+    json_sync_request,
+    InteropContext,
+    InteropString,
+    tc_json_request_async,
+    OnResult
+};
 
 #[no_mangle]
-pub unsafe extern fn ton_sdk_utf8_string(s: *mut String) -> *mut TonSdkUtf8String {
-    Box::into_raw(Box::new(TonSdkUtf8String::from(&**s)))
+pub unsafe extern fn core_create_context() -> u32 {
+    create_context()
 }
 
 #[no_mangle]
-pub unsafe extern fn ton_sdk_rust_string_destroy(s: *mut String) {
-    let _ = Box::from_raw(s);
+pub unsafe extern fn core_destroy_context(context: u32) {
+    destroy_context(context)
 }
 
 #[no_mangle]
-pub unsafe extern fn ton_sdk_utf8_string_destroy(s: *mut TonSdkUtf8String) {
-    let _ = Box::from_raw(s);
-}
-
-use libc::size_t;
-
-#[repr(C)]
-pub struct TonSdkUtf8String {
-    pub ptr: *const u8,
-    pub len: size_t,
-}
-
-impl<'a> From<&'a str> for TonSdkUtf8String {
-    fn from(s: &'a str) -> Self {
-        TonSdkUtf8String {
-            ptr: s.as_ptr(),
-            len: s.len() as size_t,
-        }
-    }
-}
-
-impl TonSdkUtf8String {
-    pub fn as_str(&self) -> &str {
-        use std::{slice, str};
-
-        unsafe {
-            let slice = slice::from_raw_parts(self.ptr, self.len);
-            str::from_utf8(slice).unwrap()
-        }
-    }
-}
-
-type OnResult = extern fn(request_id: i32, result_json: TonSdkUtf8String, error_json: TonSdkUtf8String, flags: i32);
-/*
-struct CResultHandler {
-    request_id: i32,
-    on_result: OnResult,
-}
-
-impl CResultHandler {
-    fn new(request_id: i32, on_result: OnResult) -> CResultHandler {
-        CResultHandler { request_id, on_result }
-    }
-}
-
-impl ResultHandler for CResultHandler {
-    fn on_result(&self, result_json: String, error_json: String, flags: i32) {
-        let result = TonSdkUtf8String::from(result_json.as_str());
-        let error = TonSdkUtf8String::from(error_json.as_str());
-        let on_result = self.on_result;
-        on_result(self.request_id, result, error, flags)
-    }
-}*/
-
-#[no_mangle]
-pub unsafe extern fn ton_sdk_json_rpc_request(
-    method: *mut TonSdkUtf8String,
-    params_json: *mut TonSdkUtf8String,
+pub unsafe extern fn core_request(
+    context: u32,
+    method: &InteropString,
+    params_json: &InteropString,
     request_id: i32,
     on_result: OnResult,
 ) {
-    let response = json_sync_request(
-        0,
-        String::from((*method).as_str()),
-        String::from((*params_json).as_str()),
-    );
-
-    let result = TonSdkUtf8String::from(response.result_json.as_str());
-    let error = TonSdkUtf8String::from(response.error_json.as_str());
-    on_result(request_id, result, error, 0);
+    tc_json_request_async(context, method, params_json, request_id, on_result)
 }
+
+#[no_mangle]
+pub unsafe extern fn ton_sdk_json_rpc_request(
+    method: &InteropString,
+    params_json: &InteropString,
+    request_id: i32,
+    on_result: OnResult,
+) {
+    let context = create_context();
+    tc_json_request_async(context, method, params_json, request_id, on_result);
+    destroy_context(context)
+}
+

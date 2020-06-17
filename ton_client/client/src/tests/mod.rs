@@ -25,6 +25,7 @@ use crate::types::{ApiError};
 //mod resolve_error;
 
 pub const LOG_CGF_PATH: &str = "src/tests/log_cfg.yaml";
+const MISSING: Value = Value::String(String::new());
 
 struct SimpleLogger;
 
@@ -54,13 +55,6 @@ impl TestClient {
             context = tc_create_context()
         }
         Self { context }
-    }
-
-    fn new_without_context() -> Self {
-        let _ = log::set_boxed_logger(Box::new(SimpleLogger))
-            .map(|()| log::set_max_level(LevelFilter::Debug));
-
-        Self { context: 0 }
     }
 
     fn request(
@@ -142,10 +136,11 @@ fn test_contexts() {
     let log_cfg_path = LOG_CGF_PATH;
     let _ = log4rs::init_file(log_cfg_path, Default::default());
 
-    let foo = TestClient::new_without_context();
-    let bar = TestClient::new_without_context();
-    let context = foo.request("context", Value::String(String::new())).unwrap().parse::<u32>().unwrap();
-    assert_eq!(context, 0)
+    let foo = TestClient::new();
+    let bar = TestClient::new();
+    let foo_context = foo.request("context.get", MISSING).unwrap().parse::<u32>().unwrap();
+    let bar_context = bar.request("context.get", MISSING).unwrap().parse::<u32>().unwrap();
+    assert_ne!(foo_context, bar_context);
 }
 
 #[test]
