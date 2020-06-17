@@ -612,7 +612,7 @@ impl Contract {
                                         msg_id: message_id.clone(),
                                         send_time: now,
                                         block_id: block["id"].as_str().unwrap_or("").to_owned(),
-                                        timeout: block_timeout
+                                        timeout: 5000
                                     }.into(),
                                 _ => err
                             })?;

@@ -234,7 +234,7 @@ impl Transaction {
         fees.in_msg_fwd_fee = if in_msg_fwd_fee > 0 { in_msg_fwd_fee as u64 } else { 0 };
 
         let total_output = self.out_messages.iter().fold(0u128, |acc, msg| acc + msg.value as u128);
-        fees.total_output = if total_output <= u64::MAX as u128 { total_output as u64 } else { 0 };
+        fees.total_output = if total_output <= std::u64::MAX as u128 { total_output as u64 } else { 0 };
 
         fees
     }

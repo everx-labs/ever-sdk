@@ -188,7 +188,7 @@ impl ApiError {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ApiSdkErrorCode::TransactionsLag,
-            "Existing block transaction not found".to_owned(),
+            "Existing block transaction not found (no transaction appeared for the masterchain block with gen_utime > message expiration time)".to_owned(),
         );
 
         error.data = serde_json::json!({
@@ -266,6 +266,22 @@ impl ApiError {
         error.data = serde_json::json!({
             "address": address.to_string(),
             "tip": "You have to prepaid this account to have a positive balance on them and then deploy a contract code."
+        });
+        error
+    }
+
+    pub fn clock_out_of_sync(delta_ms: i64, threshold: i64, expiration_timout: u32) -> Self {
+        let mut error = ApiError::new(
+            ApiErrorSource::Node,
+            &ApiSdkErrorCode::ClockOutOfSync,
+            "Device clock is out of sync with server time".to_owned(),
+        );
+
+        error.data = serde_json::json!({
+            "delta_ms": delta_ms,
+            "threshold_ms": threshold,
+            "expiration_timout_ms": expiration_timout,
+            "tip": "Synchronize your device clock with internet time"
         });
         error
     }
@@ -816,6 +832,8 @@ where
             ApiError::transactions_lag(msg_id.to_string(), *send_time, block_id.clone(), *timeout),
         Some(SdkError::TransactionWaitTimeout{msg_id, msg: _, send_time, timeout}) =>
             ApiError::transaction_wait_timeout(msg_id.to_string(), *send_time, *timeout),
+        Some(SdkError::ClockOutOfSync{delta_ms, threshold_ms, expiration_timeout}) =>
+            ApiError::clock_out_of_sync(*delta_ms, *threshold_ms, *expiration_timeout),
         _ => default_err(err.to_string())
     }
 }
