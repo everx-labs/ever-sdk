@@ -32,36 +32,47 @@ const createLibrary = async () => {
     let deferredRequests = [];
 
     let nextActiveRequestId = 1;
+    let nextContext = 2;
 
     worker.onerror = (evt) => {
         console.log(`Error from Web Worker: ${evt.message}`);
     };
 
+    const coreRequest = (context, method, params, callback) => {
+        const id = nextActiveRequestId;
+        nextActiveRequestId += 1;
+        const request = {
+            id,
+            context,
+            method,
+            params,
+        };
+        const isDeferredSetup = (method === 'setup') && (deferredRequests !== null);
+        activeRequests.set(id, {
+            callback: isDeferredSetup ? () => {} : callback
+        });
+        if (deferredRequests !== null) {
+            deferredRequests.push(request);
+        } else {
+            worker.postMessage({ request });
+        }
+        if (isDeferredSetup) {
+            callback('', '');
+        }
+    }
+
     const library = {
+        coreCreateContext: () => {
+            const context = nextContext;
+            nextContext += 1;
+            return context;
+        },
+        coreDestroyContex: (context) => {
+            coreRequest(context, 'context.destroy', '', () => {});
+        },
+        coreRequest,
         request: (method, params, callback) => {
-            if (method === 'version') {
-                callback('"__VERSION__"', '');
-                return;
-            }
-            const id = nextActiveRequestId;
-            nextActiveRequestId += 1;
-            const request = {
-                id,
-                method,
-                params,
-            };
-            const isDeferredSetup = (method === 'setup') && (deferredRequests !== null);
-            activeRequests.set(id, {
-                callback: isDeferredSetup ? () => {} : callback
-            });
-            if (deferredRequests !== null) {
-                deferredRequests.push(request);
-            } else {
-                worker.postMessage({ request });
-            }
-            if (isDeferredSetup) {
-                callback('', '');
-            }
+            coreRequest(1, method, params, callback);
         },
     };
 

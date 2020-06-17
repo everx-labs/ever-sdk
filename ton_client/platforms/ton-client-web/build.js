@@ -68,7 +68,7 @@ function getIndexScript() {
 
 main(async () => {
     // await spawnProcess('cargo', ['clean']);
-    await spawnProcess('cargo', ['update']);
+    // await spawnProcess('cargo', ['update']);
     await spawnProcess('wasm-pack', ['build', '--release', '--target', 'web']);
     fs.writeFileSync(path.resolve(__dirname, 'pkg', 'index.js'), getIndexScript(), { encoding: 'utf8' });
     deleteFolderRecursive(root_path('bin'));
