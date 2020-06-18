@@ -14,8 +14,8 @@
 #[derive(Debug, failure::Fail)]
 pub enum SdkError {
 
-    #[fail(display = "Requested item not found")]
-    NotFound,
+    #[fail(display = "Requested item not found: {}", 0)]
+    NotFound(String),
 
     #[fail(display = "No data")]
     NoData,
@@ -40,11 +40,6 @@ pub enum SdkError {
         msg: String
     },
 
-    #[fail(display = "Signature error: {}", err)]
-    Signature {
-        err: ed25519_dalek::SignatureError
-    },
-
     #[fail(display = "SDK is not initialized")]
     NotInitialized,
 
@@ -61,49 +56,6 @@ pub enum SdkError {
 
     #[fail(display = "Contract has no funds for requested operation")]
     NoFundsError,
-
-    // External errors
-
-    #[fail(display = "IO error: {}", err)]
-    Io { 
-        err: std::io::Error
-    },
-
-    #[cfg(feature = "node_interaction")]
-    #[fail(display = "Graphite error: {}", err)]
-    Graphql {
-        err: graphite::types::GraphiteError
-    },
-
-    #[fail(display = "Serde json error: {}", err)]
-    SerdeError {
-        err: serde_json::Error
-    },
-
-    #[fail(display = "Try from slice error: {}", err)]
-    TryFromSliceError {
-        err: std::array::TryFromSliceError
-    },
-
-    #[fail(display = "Parse int error: {}", err)]
-    ParseIntError {
-        err: std::num::ParseIntError
-    },
-
-    #[fail(display = "From hex error: {}", err)]
-    FromHexError {
-        err: hex::FromHexError
-    },
-
-    #[fail(display = "Base64 decode error: {}", err)]
-    Base64DecodeError {
-        err: base64::DecodeError
-    },
-
-    #[fail(display = "Try from int error: {}", err)]
-    TryFromIntError {
-        err: std::num::TryFromIntError
-    },
 
     #[fail(display = "Wait for operation rejected on timeout")]
     WaitForTimeout,

@@ -14,7 +14,7 @@
 use crate::json_helper;
 use crate::local_tvm;
 use crate::error::SdkError;
-use crate::{AbiContract, Message, MessageId, TimeoutsConfig, Transaction};
+use crate::{AbiContract, Block, Message, MessageId, TimeoutsConfig, Transaction};
 
 use ed25519_dalek::{Keypair, PublicKey};
 use chrono::prelude::Utc;
@@ -22,9 +22,9 @@ use std::convert::{Into, TryFrom};
 use std::io::{Cursor, Read, Seek};
 use std::slice::Iter;
 use ton_block::{
-    Account, AccountState, AccountStatus, AccountStorage, CurrencyCollection, Deserializable,
-    ExternalInboundMessageHeader, GetRepresentationHash, Message as TvmMessage, MsgAddressInt,
-    Serializable, StateInit, StorageInfo};
+    Account, AccountState, AccountStatus, AccountStorage, CurrencyCollection,
+    Deserializable, ExternalInboundMessageHeader, GetRepresentationHash, Message as TvmMessage,
+    MsgAddressInt, Serializable, StateInit, StorageInfo};
 use ton_types::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use ton_types::{error, fail, Result, AccountId, Cell, SliceData, HashmapE};
 use ton_abi::json_abi::DecodedMessage;
@@ -36,7 +36,7 @@ use crate::{
     NodeClient,
     json_helper::account_status_to_u8,
     transaction::TRANSACTION_FIELDS_ORDINARY,
-    types::{BLOCKS_TABLE_NAME, CONTRACTS_TABLE_NAME, TRANSACTIONS_TABLE_NAME},
+    types::{CONTRACTS_TABLE_NAME, TRANSACTIONS_TABLE_NAME},
 };
 use std::{
     collections::HashMap,
@@ -45,8 +45,6 @@ use std::{
 #[cfg(feature = "node_interaction")]
 use ton_block::TransactionProcessingStatus;
 use serde_json::Value;
-#[cfg(feature = "node_interaction")]
-use futures::FutureExt;
 use ton_vm::stack::{StackItem, Stack};
 use ton_vm::stack::integer::IntegerData;
 use std::sync::Arc;
@@ -493,20 +491,43 @@ impl Contract {
     pub async fn process_message(client: &NodeClient, msg: TvmMessage, expire: Option<u32>, try_index: u8)
         -> Result<Transaction>
     {
+        let addr = msg.dst().ok_or(SdkError::InvalidData {
+            msg: "Wrong message type (extOut)".to_owned() })?;
         let (data, msg_id) = Self::serialize_message(msg)?;
-        Self::process_serialized_message(client, &msg_id, &data, expire, try_index).await
+        Self::process_serialized_message(client, Some(addr), &msg_id, &data, expire, try_index).await
     }
 
-    pub async fn process_serialized_message(client: &NodeClient, id: &MessageId, msg: &[u8], expire: Option<u32>, try_index: u8) -> Result<Transaction> {
-        client.send_message(&id.to_bytes()?, msg).await?;
+    pub async fn process_serialized_message(
+        client: &NodeClient,
+        address: Option<MsgAddressInt>,
+        id: &MessageId,
+        msg: &[u8],
+        expire: Option<u32>,
+        try_index: u8
+    ) -> Result<Transaction> {
+        let time = Self::send_message(client, &id.to_bytes()?, msg, expire).await?;
         //println!("msg is sent, id: {}", id);
-        Self::wait_transaction_processing(client, id, msg, expire, try_index).await
+        Self::wait_transaction_processing(client, address, id, msg, time, expire, try_index).await
     }
+
+    pub async fn send_message(client: &NodeClient, id: &[u8], msg: &[u8], expire: Option<u32>) -> Result<u32> {
+        let now = Self::now();
+        if let Some(expire) = expire {
+            if expire <= now {
+                return Err(SdkError::InvalidArg { msg: "Message already expired".to_owned() }.into());
+            }
+        }
+        client.send_message(id, msg).await?;
+        Ok(now)
+    }
+
 
     pub async fn wait_transaction_processing(
         client: &NodeClient,
+        address: Option<MsgAddressInt>,
         message_id: &MessageId,
         message: &[u8],
+        send_time: u32,
         expire: Option<u32>,
         try_index: u8,
     ) -> Result<Transaction>
@@ -518,25 +539,75 @@ impl Contract {
             try_index);
         let now = Self::now();
         let mut block_timeout = tr_timeout;
-        if let Some(expire) = expire {
-            //println!("expire {}", expire);
-            if expire <= now {
-                return Err(SdkError::InvalidArg { msg: "Message already expired".to_owned() }.into());
+
+        let transaction = if let Some(expire) = expire {
+            let address = match address {
+                Some(addr) => addr,
+                None => Self::get_dst_from_msg(message)?
+            };
+            let mut block_id = Block::find_starting_block(client, send_time, &address).await?;
+            let mut transaction = Value::Null;
+            loop {
+                let block = Block::wait_next_block(client, &block_id, &address, None)
+                    .await
+                    .map_err(|err|  match err.downcast_ref::<SdkError>() {
+                        Some(SdkError::WaitForTimeout) => 
+                            SdkError::NetworkSilent {
+                                msg_id: message_id.clone(),
+                                send_time,
+                                expire,
+                                timeout: block_timeout
+                            }.into(),
+                        _ => err
+                    })?;
+
+                if block.gen_utime > expire {
+                    fail!(SdkError::MessageExpired{
+                        msg_id: message_id.clone(),
+                        msg: message.to_vec(),
+                        send_time,
+                        expire,
+                        block_time: block.gen_utime
+                    });
+                }
+
+                for block_msg in &block.in_msg_descr {
+                    if message_id == &block_msg.msg_id {
+                        transaction = client.wait_for(
+                            TRANSACTIONS_TABLE_NAME,
+                            &json!({
+                                "id": { "eq": block_msg.transaction_id.to_string() }
+                            }).to_string(),
+                            TRANSACTION_FIELDS_ORDINARY,
+                            Some(tr_timeout))
+                            .await
+                            .map_err(|err|  match err.downcast_ref::<SdkError>() {
+                                Some(SdkError::WaitForTimeout) => 
+                                    SdkError::TransactionsLag {
+                                        msg_id: message_id.clone(),
+                                        send_time,
+                                        block_id: block.id.clone().to_string(),
+                                        timeout: block_timeout
+                                    }.into(),
+                                _ => err
+                            })?;
+                        break;
+                    }
+                }
+                if !transaction.is_null() {
+                    break;
+                }
+                block_id = block.id;
             }
-            // block timeout is time to `expire` plus additional time for masterblock awaiting
-            block_timeout = (expire - now) * 1000 + tr_timeout;
-            // transaction timeout must be greater then block timeout
-            tr_timeout = block_timeout + 10000;
-        }
 
-        let filter = json!({
-            "in_msg": { "eq": message_id.to_string() },
-            "status": { "eq": json_helper::transaction_status_to_u8(TransactionProcessingStatus::Finalized) }
-        }).to_string();
+            transaction
+        } else {
+            let filter = json!({
+                "in_msg": { "eq": message_id.to_string() },
+                "status": { "eq": json_helper::transaction_status_to_u8(TransactionProcessingStatus::Finalized) }
+            }).to_string();
 
-        // main future awaiting message processing transaction
-        let transaction_future = async {
-            let transaction = client.wait_for(
+            client.wait_for(
                 TRANSACTIONS_TABLE_NAME,
                 &filter,
                 TRANSACTION_FIELDS_ORDINARY,
@@ -551,90 +622,22 @@ impl Contract {
                             timeout: block_timeout
                         }.into(),
                     _ => err
-                })?;
-
-            let transaction = serde_json::from_value::<Transaction>(transaction)?;
-            if transaction.compute.exit_code == Some(Self::MESSAGE_EXPIRED_CODE) ||
-                transaction.compute.exit_code == Some(Self::REPLAY_PROTECTION_CODE)
-            {
-                Err(SdkError::MessageExpired{
-                    msg_id: message_id.clone(),
-                    msg: message.to_vec(),
-                    send_time: now,
-                    expire: expire.unwrap_or(0),
-                    block_time: transaction.now
-                }.into())
-            } else {
-                Ok(transaction)
-            }
+                })?
         };
 
-        // if message expiration time is set we make another future waiting for the masterchain
-        // block which reference to shadchain blocks generated after message expiration: it
-        // guarantees that message won't be processed by the contract later
-        if expire.is_some() {
-            let block_future = async {
-                let block = client.wait_for(
-                    BLOCKS_TABLE_NAME,
-                    &json!({
-                        "master": { "min_shard_gen_utime": { "ge": expire }}
-                    }).to_string(),
-                    "id gen_utime in_msg_descr { transaction_id }",
-                    Some(block_timeout))
-                    .await
-                    .map_err(|err|  match err.downcast_ref::<SdkError>() {
-                        Some(SdkError::WaitForTimeout) => 
-                            SdkError::NetworkSilent {
-                                msg_id: message_id.clone(),
-                                send_time: now,
-                                expire: expire.unwrap_or(0),
-                                timeout: block_timeout
-                            }.into(),
-                        _ => err
-                    })?;
-
-                // if we've recieved masterblock check that transactions from this block
-                // are already put into DB and there is no lag in transaction topic
-                match block["in_msg_descr"][0]["transaction_id"].as_str() {
-                    None => Err(SdkError::InvalidData {
-                        msg: "Invalid block recieved: no transaction ID".to_owned()
-                    }.into()),
-                    Some(string) => {
-                        client.wait_for(
-                            TRANSACTIONS_TABLE_NAME,
-                            &json!({ "id": { "eq": string }}).to_string(),
-                            "id",
-                            Some(5000))
-                            .await
-                            .map_err(|err|  match err.downcast_ref::<SdkError>() {
-                                Some(SdkError::WaitForTimeout) => 
-                                    SdkError::TransactionsLag {
-                                        msg_id: message_id.clone(),
-                                        send_time: now,
-                                        block_id: block["id"].as_str().unwrap_or("").to_owned(),
-                                        timeout: block_timeout
-                                    }.into(),
-                                _ => err
-                            })?;
-
-                        Err(SdkError::MessageExpired{
-                            msg_id: message_id.clone(),
-                            msg: message.to_vec(),
-                            send_time: now,
-                            expire: expire.unwrap_or(0),
-                            block_time: block["gen_utime"].as_u64().unwrap_or(0) as u32
-                        }.into())
-                    }
-                }
-            };
-            // awaiting the first future resolved
-            futures::pin_mut!(transaction_future, block_future);
-            futures::select! {
-                transaction = transaction_future.fuse() => transaction,
-                block = block_future.fuse() => block,
-            }
+        let transaction = serde_json::from_value::<Transaction>(transaction)?;
+        if transaction.compute.exit_code == Some(Self::MESSAGE_EXPIRED_CODE) ||
+            transaction.compute.exit_code == Some(Self::REPLAY_PROTECTION_CODE)
+        {
+            Err(SdkError::MessageExpired{
+                msg_id: message_id.clone(),
+                msg: message.to_vec(),
+                send_time: now,
+                expire: expire.unwrap_or(0),
+                block_time: transaction.now
+            }.into())
         } else {
-            transaction_future.await
+            Ok(transaction)
         }
     }
 }
@@ -1117,6 +1120,13 @@ impl Contract {
         }
 
         Ok(response_cells.remove(0).into())
+    }
+
+    pub fn get_dst_from_msg(msg: &[u8]) -> Result<MsgAddressInt> {
+        let msg = Contract::deserialize_message(msg)?;
+    
+        msg.dst().ok_or(SdkError::InvalidData {
+            msg: "Wrong message type (extOut)".to_owned() }.into())
     }
 
     /// Deserializes TvmMessage from byte array

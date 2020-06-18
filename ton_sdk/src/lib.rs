@@ -41,13 +41,16 @@ mod local_tvm;
 mod transaction;
 pub use transaction::{Transaction, TransactionId, TransactionFees};
 
+mod block;
+pub use block::{Block, MsgDescr};
+
 pub mod types;
 pub use types::{NodeClientConfig, TimeoutsConfig};
 
 #[cfg(feature = "node_interaction")]
 pub mod node_client;
 #[cfg(feature = "node_interaction")]
-pub use node_client::OrderBy;
+pub use node_client::{OrderBy, SortDirection};
 pub use node_client::NodeClient;
 
 #[cfg(not(feature = "node_interaction"))]

@@ -33,8 +33,8 @@ pub enum SortDirection {
 
 #[derive(Serialize, Deserialize)]
 pub struct OrderBy {
-    path: String,
-    direction: SortDirection
+    pub path: String,
+    pub direction: SortDirection
 }
 
 #[derive(Debug, Clone, Serialize)]

@@ -661,7 +661,8 @@ pub(crate) async fn resolve_msg_sdk_error<F: Fn(String) -> ApiError>(
     match error.downcast_ref::<SdkError>() {
         Some(SdkError::MessageExpired{msg_id: _, msg, expire: _, send_time, block_time: _}) | 
         Some(SdkError::TransactionWaitTimeout{msg_id: _, msg, send_time, timeout: _}) => {
-            let address = get_dst_from_msg(msg)?;
+            let address = Contract::get_dst_from_msg(msg)
+                .map_err(|err| ApiError::invalid_params("message", format!("cannot get target address: {}", err)))?;
             let account = Contract::load(client, &address)
                 .await
                 .map_err(|err| apierror_from_sdkerror(&err, ApiError::contracts_run_contract_load_failed))?
@@ -671,12 +672,4 @@ pub(crate) async fn resolve_msg_sdk_error<F: Fn(String) -> ApiError>(
         }
         _ => Err(apierror_from_sdkerror(&error, default_error))
     }
-}
-
-#[cfg(feature = "node_interaction")]
-pub(crate) fn get_dst_from_msg(msg: &[u8]) -> ApiResult<MsgAddressInt> {
-    let msg = Contract::deserialize_message(msg)
-        .map_err(|err| ApiError::invalid_params("message", format!("cannot parse message BOC ({})", err)))?;
-
-    msg.dst().ok_or(ApiError::invalid_params("message", "wrong message type (extOut)".to_owned()))
 }

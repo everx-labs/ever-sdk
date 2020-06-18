@@ -208,9 +208,10 @@ pub(crate) async fn send_message(context: &mut ClientContext, params: EncodedMes
     let msg = base64_decode(&params.message_body_base64)?;
     let id = crate::types::hex_decode(&params.message_id)?;
     let client = context.get_client()?;
-    client.send_message(&id, &msg)
+    Contract::send_message(&client, &id, &msg, params.expire)
         .await
-        .map_err(|err| ApiError::contracts_send_message_failed(err))
+        .map_err(|err| ApiError::contracts_send_message_failed(err))?;
+    Ok(())
 }
 
 #[cfg(feature = "node_interaction")]
@@ -223,6 +224,7 @@ pub(crate) async fn process_message(context: &mut ClientContext, params: ParamsO
     let client = context.get_client()?;
     let result = Contract::process_serialized_message(
         client,
+        None,
         &params.message.message_id.into(),
         &msg,
         params.message.expire,
@@ -237,7 +239,8 @@ pub(crate) async fn process_message(context: &mut ClientContext, params: ParamsO
             Ok(tr) => tr
     };
 
-    let address = run::get_dst_from_msg(&msg)?;
+    let address = Contract::get_dst_from_msg(&msg)
+        .map_err(|err| ApiError::invalid_params("message", format!("cannot get target address: {}", err)))?;
 
     run::process_transaction(
         transaction,

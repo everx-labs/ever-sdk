@@ -28,6 +28,8 @@ pub const DEFAULT_PROCESSING_TIMEOUT: u32 = 40000;
 pub const DEFAULT_TIMEOUT_GROW_FACTOR: f32 = 1.5;
 pub const DEFAULT_WAIT_TIMEOUT: u32 = 40000;
 
+pub const MASTERCHAIN_ID: i32 = -1;
+
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default)]
@@ -68,7 +70,7 @@ pub struct NodeClientConfig {
     pub timeouts: Option<TimeoutsConfig>,
 }
 
-#[derive(Deserialize, Default, Clone, Debug)]
+#[derive(Deserialize, Default, Clone, Debug, PartialEq)]
 pub struct StringId (String);
 
 impl From<String> for StringId {
