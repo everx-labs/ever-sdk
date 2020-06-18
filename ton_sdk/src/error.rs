@@ -97,4 +97,14 @@ pub enum SdkError {
         send_time: u32,
         timeout: u32
     },
+
+    #[fail(display = "Invalid server response: {}", 0)]
+    InvalidServerResponse(String),
+
+    #[fail(display = "Clock out of sync: {}", delta_ms)]
+    ClockOutOfSync {
+        delta_ms: i64,
+        threshold_ms: i64,
+        expiration_timeout: u32
+    },
 }
