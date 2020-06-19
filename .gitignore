@@ -18,3 +18,4 @@ Cargo.lock
 .idea
 .vscode
 .DS_Store
+/ton_client/platforms/ton-client-react-native/build/

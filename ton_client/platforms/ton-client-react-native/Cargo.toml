@@ -5,7 +5,7 @@ authors = ["Michael Vlasov"]
 license = "Apache-2.0"
 
 [lib]
-name = "ton_client_react_native"
+name = "tonsdk"
 crate-type = ["staticlib", "cdylib"]
 
 [dependencies]

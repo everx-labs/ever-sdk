@@ -129,6 +129,20 @@ pub struct JsonResponse {
 
 // Helpers
 
+impl Clone for InteropString {
+    fn clone(&self) -> Self {
+        return Self {
+            content: self.content,
+            len: self.len,
+        }
+    }
+
+    fn clone_from(&mut self, source: &Self) {
+        self.content = source.content;
+        self.len = source.len;
+    }
+}
+
 impl InteropString {
     pub fn default() -> Self {
         Self {

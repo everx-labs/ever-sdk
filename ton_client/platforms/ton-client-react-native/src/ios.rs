@@ -13,37 +13,17 @@
 
 extern crate ton_client;
 
-use self::ton_client::{
-    create_context,
-    destroy_context,
-    json_sync_request,
+pub use self::ton_client::{
+    tc_create_context,
+    tc_destroy_context,
+    tc_json_request_async,
     InteropContext,
     InteropString,
-    tc_json_request_async,
     OnResult
 };
 
-#[no_mangle]
-pub unsafe extern fn core_create_context() -> u32 {
-    create_context()
-}
-
-#[no_mangle]
-pub unsafe extern fn core_destroy_context(context: u32) {
-    destroy_context(context)
-}
-
-#[no_mangle]
-pub unsafe extern fn core_request(
-    context: u32,
-    method: &InteropString,
-    params_json: &InteropString,
-    request_id: i32,
-    on_result: OnResult,
-) {
-    tc_json_request_async(context, method, params_json, request_id, on_result)
-}
-
+// Obsolete. Used for backward compatibility only.
+//
 #[no_mangle]
 pub unsafe extern fn ton_sdk_json_rpc_request(
     method: &InteropString,
@@ -51,8 +31,13 @@ pub unsafe extern fn ton_sdk_json_rpc_request(
     request_id: i32,
     on_result: OnResult,
 ) {
-    let context = create_context();
-    tc_json_request_async(context, method, params_json, request_id, on_result);
-    destroy_context(context)
+    let context = self::ton_client::create_context();
+    self::ton_client::tc_json_request_async(
+        context,
+        (*method).clone(),
+        (*params_json).clone(),
+        request_id,
+        on_result);
+    self::ton_client::destroy_context(context)
 }
 

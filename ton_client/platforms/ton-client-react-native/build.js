@@ -1,260 +1,203 @@
 const fs = require('fs');
 const path = require('path');
-const {deleteFolderRecursive, version, root_path} = require('../build-lib');
-const url = require('url');
-const http=require('http');
-const zlib = require('zlib');
+const {
+    deleteFolderRecursive,
+    version,
+    root_path,
+    spawnProcess,
+    spawnAll,
+    spawnEnv,
+    gz,
+    devMode,
+    mkdir,
+} = require('../build-lib');
 const exec = require('util').promisify(require('child_process').exec);
-const outDir = root_path('output');
-const ndkURLstr = 'http://dl.google.com/android/repository/android-ndk-r17c-darwin-x86_64.zip';
-const ndkZipFile = root_path(((parts = ndkURLstr.split('/')).length < 1 ? null : parts[parts.length-1]));
+
+const outDir = root_path('bin');
+const ndkURLStr = 'http://dl.google.com/android/repository/android-ndk-r17c-darwin-x86_64.zip';
+const ndkZipFile = root_path(((parts = ndkURLStr.split('/')).length < 1 ? null : parts[parts.length - 1]));
 const ndkDirName = root_path('android-ndk-r17c');
 
 // parse arguments
 let pArgs = process.argv.slice(2);
-let build_Android=false;
-let build_iOS=false;
-while(pArgs.length > 0) {
-	build_Android = build_Android ? true : pArgs[0].trim().toLowerCase() === '--android';
-	build_iOS = build_iOS ? true : pArgs[0].trim().toLowerCase() === '--ios';
-	pArgs = pArgs.slice(1);
+let build_Android = false;
+let build_iOS = false;
+while (pArgs.length > 0) {
+    build_Android = build_Android ? true : pArgs[0].trim().toLowerCase() === '--android';
+    build_iOS = build_iOS ? true : pArgs[0].trim().toLowerCase() === '--ios';
+    pArgs = pArgs.slice(1);
 }
-if(!build_Android && !build_iOS) {
-	build_Android = build_iOS = true;
+if (!build_Android && !build_iOS) {
+    build_Android = build_iOS = true;
 }
 
-const dev = {
-	ios: {
-		archs: ['x86_64-apple-ios'],
-		lib: 'libton_client_react_native.a',
-		header: 'ton_client.h'
-	},
-	android: {
-		archs: ['i686-linux-android'],
-		jniArchs: ['x86'],
-		lib: 'libton_client_react_native.so',
-	},
+const ios = {
+    archs: [
+        { target: 'x86_64-apple-ios' },
+        { target: 'aarch64-apple-ios' },
+    ],
+    lib: 'libtonsdk.a',
+    header: 'ton_client.h'
 };
-const release = JSON.parse(JSON.stringify(dev));
-release.ios.archs.push('aarch64-apple-ios');
-release.android.archs.push('aarch64-linux-android', 'armv7-linux-androideabi');
-release.android.jniArchs.push('arm64-v8a', 'armeabi-v7a');
-const cargoTargetsIOS = [
-	"aarch64-apple-ios",
-	"x86_64-apple-ios"
-];
-const cargoTargetsAndroid = [
-	"aarch64-linux-android",
-	"armv7-linux-androideabi",
-	"i686-linux-android"
-];
-
-const config = release;
-const sdkDir = root_path('');
-const iosDir = root_path('bin', 'ios');
-const androidDir = root_path('bin', 'android');
-const androidNDKs = ['arm64', 'arm', 'x86'];
-const spawnEnv = {
-	...process.env,
-	PATH: [
-		(process.env.PATH || ''),
-		...androidNDKs.map(x => root_path('NDK', x, 'bin'))
-	].join(':'),
+const android = {
+    archs: [
+        { target: 'i686-linux-android', jni: 'x86', ndk: 'x86' },
+        { target: 'aarch64-linux-android', jni: 'arm64-v8a', ndk: 'arm64' },
+        { target: 'armv7-linux-androideabi', jni: 'armeabi-v7a', ndk: 'arm' },
+    ],
+    lib: 'libtonsdk.so',
 };
 
-async function gz(src, dst){
-	return(new Promise((resolve, reject) => {
-		fs.createReadStream(src)
-		.pipe(zlib.createGzip({ level: 9}))
-		.pipe(fs.createWriteStream(dst))
-		.on('error', (err) => {
-			reject(err);
-		})
-		.on('finish', () => {
-			console.log(`GZipped ${src} -> ${dst}`);
-			resolve();
-		})
-	}));
+if (devMode) {
+    ios.archs.splice(1);
+    android.archs.splice(1);
 }
 
-function spawnProcess(name, args) {
-	return new Promise((resolve, reject) => {
-		const {spawn} = require('child_process');
-		const spawned = spawn(name, args, {env: spawnEnv});
-
-		spawned.stdout.on('data', function (data) {
-			process.stdout.write(data);
-		});
-
-		spawned.stderr.on('data', (data) => {
-			process.stderr.write(data);
-		});
-
-		spawned.on('error', (err) => {
-			reject(err);
-		});
-
-		spawned.on('close', (code) => {
-			if (code === 0) {
-				resolve();
-			} else {
-				reject();
-			}
-		});
-	});
-}
+spawnEnv.PATH = [
+    (spawnEnv.PATH || ''),
+    ...(android.archs.map(x => root_path('NDK', x.ndk, 'bin'))),
+].join(':');
 
 async function getNDK() {
-	let ndkHomeDir = process.env.NDK_HOME || '';
-	if(ndkHomeDir === '' || !fs.existsSync(ndkHomeDir)) {
-		try {
-			if(!fs.existsSync(ndkZipFile)) {
-				console.log('Downloading android NDK...');
-				await spawnProcess('curl', [ndkURLstr, '-o', ndkZipFile]);
-			}
-			console.log('Unzipping android NDK...');
-			await spawnProcess('unzip', ['-q', '-d', root_path(''), ndkZipFile]);
-			ndkHomeDir = ndkDirName;
-			process.env.NDK_HOME = ndkHomeDir;
-		} catch (err) {
-			throw err;
-		}
-	}
-	return(ndkHomeDir);
-}
-
-
-async function spawnAll(items, getArgs) {
-	const list = [];
-	for(const item of items) {
-		const args = getArgs(item);
-		console.log(`Build: ${args.join(' ')}`);
-		list.push(spawnProcess(args[0], args.slice(1)));
-	}
-	return Promise.all(list);
+    let ndkHomeDir = process.env.NDK_HOME || '';
+    if (ndkHomeDir === '' || !fs.existsSync(ndkHomeDir)) {
+        try {
+            if (!fs.existsSync(ndkZipFile)) {
+                console.log('Downloading android NDK...');
+                await spawnProcess('curl', [ndkURLStr, '-o', ndkZipFile]);
+            }
+            console.log('Unzipping android NDK...');
+            await spawnProcess('unzip', ['-q', '-d', root_path(''), ndkZipFile]);
+            ndkHomeDir = ndkDirName;
+            process.env.NDK_HOME = ndkHomeDir;
+        } catch (err) {
+            throw err;
+        }
+    }
+    return (ndkHomeDir);
 }
 
 
 async function checkNDK() {
-	const ndkDir = root_path('NDK');
-	if (fs.existsSync(ndkDir)) {
-		console.log('Standalone NDK already exists...');
-		return;
-	}
-	let ndkHomeDir = await getNDK();
-	if (ndkHomeDir === '' || !fs.existsSync(ndkHomeDir)) {
-		ndkHomeDir = path.join(process.env.ANDROID_HOME || '', 'ndk-bundle');
-	}
-	const maker = path.join(ndkHomeDir, 'build', 'tools', 'make_standalone_toolchain.py');
-	if (!fs.existsSync(maker)) {
-		console.error('Please install android-ndk: $ brew install android-ndk');
-		process.exit(1);
-	}
-	mkdir(ndkDir);
-	process.chdir(ndkDir);
-	await spawnAll(androidNDKs, (arch) => {
-		return ['python', maker, '--arch', arch, '--install-dir', arch];
-	});
+    const ndkDir = root_path('NDK');
+    if (fs.existsSync(ndkDir)) {
+        console.log('Standalone NDK already exists...');
+        return;
+    }
+    let ndkHomeDir = await getNDK();
+    if (ndkHomeDir === '' || !fs.existsSync(ndkHomeDir)) {
+        ndkHomeDir = path.join(process.env.ANDROID_HOME || '', 'ndk-bundle');
+    }
+    const maker = path.join(ndkHomeDir, 'build', 'tools', 'make_standalone_toolchain.py');
+    if (!fs.existsSync(maker)) {
+        console.error('Please install android-ndk: $ brew install android-ndk');
+        process.exit(1);
+    }
+    mkdir(ndkDir);
+    process.chdir(ndkDir);
+    await spawnAll(android.archs, (arch) => {
+        return ['python', maker, '--arch', arch.ndk, '--install-dir', arch.ndk];
+    });
 }
 
 
 async function cargoBuild(targets) {
-	return spawnAll(targets, x => ['cargo', 'build', '--target', x, '--release']);
+    return spawnAll(targets, x => ['cargo', 'build', '--target', x, '--release']);
 }
 
 
 async function buildReactNativeIosLibrary() {
-	process.chdir(sdkDir);
+    const buildRel = ['build', 'ios'];
+    process.chdir(root_path(''));
 
-	await cargoBuild(config.ios.archs);
-	mkdir(iosDir);
-	const dest = path.join(iosDir, config.ios.lib);
-	const getIosOutput = x => path.join('target', x, 'release', config.ios.lib);
-	await spawnProcess('lipo', [
-		'-create',
-		'-output', dest,
-		...config.ios.archs.map(getIosOutput),
-	]);
+    await cargoBuild(ios.archs.map(x => x.target));
+    mkdir(root_path(buildRel));
+    const dest = root_path(buildRel, ios.lib);
+    const getIosOutput = x => path.join('target', x.target, 'release', ios.lib);
+    await spawnProcess('lipo', [
+        '-create',
+        '-output', dest,
+        ...ios.archs.map(getIosOutput),
+    ]);
 
-	if(fs.existsSync(dest)) {
-		const header_src = path.join(sdkDir, config.ios.header);
-		const header_dst = path.join(iosDir, config.ios.header);
-		fs.copyFileSync(header_src, header_dst);
-
-		const outGZip = path.join(outDir, `tonclient_${version}_react_native_ios.gz`);
-		await gz(dest, outGZip);
-	}
-}
-
-
-function mkdir(path) {
-	if (!fs.existsSync(path)) {
-		fs.mkdirSync(path, {recursive: true});
-	}
+    if (fs.existsSync(dest)) {
+        const header_src = root_path(ios.header);
+        const header_dst = root_path(buildRel, ios.header);
+        fs.copyFileSync(header_src, header_dst);
+        await gz(
+            [...buildRel, ios.lib],
+            `tonclient_${version}_react_native_ios.gz`,
+            ['ios'],
+        );
+    }
 }
 
 
 async function buildReactNativeAndroidLibrary() {
-	process.chdir(sdkDir);
+    process.chdir(root_path(''));
 
-	await cargoBuild(config.android.archs);
-	const jniLibsDir = androidDir;
-	mkdir(jniLibsDir);
+    const buildRel = ['build', 'android'];
 
-	config.android.archs.forEach(async (arch, index) => {
-		const jniArch = config.android.jniArchs[index];
-		const jniArchDir = path.join(jniLibsDir, jniArch);
-		mkdir(jniArchDir);
-		const src = path.join(sdkDir, 'target', arch, 'release', config.android.lib);
-		if (fs.existsSync(src)) {
-			const dst = path.join(jniArchDir, config.android.lib);
-			fs.copyFileSync(src, dst);
-			process.stdout.write(`Android library for [${arch}] copied to "${dst}".\n`);
-			const outGZip = path.join(outDir, `tonclient_${version}_react_native_${arch}.gz`);
-			await gz(dst, outGZip);
-		} else {
-			process.stderr.write(`Android library for [${arch}] does not exists. Skipped.\n`);
-		}
-	});
+    await cargoBuild(android.archs.map(x => x.target));
+    mkdir(root_path(buildRel));
+
+    for (const arch of android.archs) {
+        const archBuildRel = [...buildRel, arch.jni];
+        mkdir(root_path(archBuildRel));
+        const src = root_path('target', arch.target, 'release', android.lib);
+        if (fs.existsSync(src)) {
+            const dst = root_path(archBuildRel, android.lib);
+            fs.copyFileSync(src, dst);
+            process.stdout.write(`Android library for [${arch.target}] copied to "${dst}".\n`);
+            await gz(
+                [...archBuildRel, android.lib],
+                `tonclient_${version}_react_native_${arch.target}.gz`,
+                ['android', 'src', 'main', 'jniLibs', arch.jni],
+            );
+        } else {
+            process.stderr.write(`Android library for [${arch}] does not exists. Skipped.\n`);
+        }
+    }
 }
 
 
 (async () => {
-	if(fs.existsSync(outDir)) {
-		deleteFolderRecursive(outDir);
-	}
-	fs.mkdirSync(outDir);
-	try {
-		await checkNDK();
-		let cargoTargets = ["x86_64-apple-darwin"];
-		let installed = (await exec("rustup target list --installed")).stdout;
-		console.log(`Installed targets:\n${installed}`);
-		if(build_iOS) {
-			cargoTargetsIOS.forEach(val => {
-				if(installed.indexOf(val)<0) {
-					cargoTargets.push(val);
-				}
-			});
-		}
-		if(build_Android) {
-			cargoTargetsAndroid.forEach(val => {
-				if(installed.indexOf(val)<0) {
-					cargoTargets.push(val);
-				}
-			});
-		}
-		await spawnProcess('rustup', ['target', 'add'].concat(cargoTargets));
-		if (!pArgs.includes("--open")) {
-			await spawnProcess('cargo', ['update']);
-		}
-		if(build_iOS) {
-			await buildReactNativeIosLibrary();
-		}
-		if(build_Android) {
-			await buildReactNativeAndroidLibrary();
-		}
-	} catch (error) {
-		console.error(error);
-		process.exit(1);
-	}
+    if (fs.existsSync(outDir)) {
+        deleteFolderRecursive(outDir);
+    }
+    fs.mkdirSync(outDir);
+    try {
+        await checkNDK();
+        let cargoTargets = ["x86_64-apple-darwin"];
+        let installed = (await exec("rustup target list --installed")).stdout;
+        console.log(`Installed targets:\n${installed}`);
+        if (build_iOS) {
+            ios.archs.map(x => x.target).forEach(val => {
+                if (installed.indexOf(val) < 0) {
+                    cargoTargets.push(val);
+                }
+            });
+        }
+        if (build_Android) {
+            android.archs.map(x => x.target).forEach(val => {
+                if (installed.indexOf(val) < 0) {
+                    cargoTargets.push(val);
+                }
+            });
+        }
+
+        await spawnProcess('rustup', ['target', 'add'].concat(cargoTargets));
+        if (!devMode && !pArgs.includes("--open")) {
+            await spawnProcess('cargo', ['update']);
+        }
+        if (build_iOS) {
+            await buildReactNativeIosLibrary();
+        }
+        if (build_Android) {
+            await buildReactNativeAndroidLibrary();
+        }
+    } catch (error) {
+        console.error(error);
+        process.exit(1);
+    }
 })();

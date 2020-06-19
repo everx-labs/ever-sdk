@@ -12,11 +12,13 @@
 */
 
 extern crate ton_client;
-use self::ton_client::*;
+
+use self::ton_client::{create_context, json_sync_request, destroy_context, InteropContext};
 
 extern crate jni;
 
-use jni::JNIEnv;
+use jni::{JNIEnv};
+use jni::sys::{jint};
 use jni::objects::{GlobalRef, JClass, JObject, JString, JValue};
 
 struct JniResultHandler {
@@ -59,15 +61,59 @@ impl JniResultHandler {
 
 #[allow(non_snake_case)]
 #[no_mangle]
-pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_request(
+pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_tc_create_context(
+    _env: JNIEnv,
+    _class: JClass,
+) -> jint {
+    create_context() as jint
+}
+
+#[allow(non_snake_case)]
+#[no_mangle]
+pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_tc_destroy_context(
+    _env: JNIEnv,
+    _class: JClass,
+    context: jint,
+) {
+    destroy_context(context as InteropContext)
+}
+
+#[allow(non_snake_case)]
+#[no_mangle]
+pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_tc_json_request_async(
     env: JNIEnv,
-    _: JClass,
+    _class: JClass,
+    context: jint,
     method: JString,
     params_json: JString,
     on_result: JObject,
 ) {
     let response = json_sync_request(
-        0,
+        context as InteropContext,
+        rust_string(&env, method),
+        rust_string(&env, params_json),
+    );
+
+    let handler = JniResultHandler::new(env, on_result);
+
+    handler.on_result(response.result_json, response.error_json, 1);
+}
+
+
+// Obsolete. For backward compatibility only.
+//
+#[allow(non_snake_case)]
+#[no_mangle]
+pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_request(
+    env: JNIEnv,
+    _class: JClass,
+    method: JString,
+    params_json: JString,
+    on_result: JObject,
+) {
+    let context = create_context();
+    let response = json_sync_request(
+        context,
         rust_string(&env, method),
         rust_string(&env, params_json),
     );
@@ -75,5 +121,6 @@ pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_request(
     let handler = JniResultHandler::new(env, on_result);
 
     handler.on_result(response.result_json, response.error_json, 0);
+    destroy_context(context)
 }
 
