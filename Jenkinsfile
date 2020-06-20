@@ -201,6 +201,9 @@ pipeline {
     agent {
         node 'master'
     }
+    triggers {
+        pollSCM('H/15 * * * *') 
+    }
     tools {nodejs "Node12.8.0"}
     options {
         buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '20')
