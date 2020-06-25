@@ -372,16 +372,36 @@ struct NodeJsAdapter {
 
     static napi_value coreCreateContextHandler(napi_env env, napi_callback_info info)
     {
-        return napiNumber(env, tc_create_context());
-    }
-
-    static napi_value coreDestroyContextHandler(napi_env env, napi_callback_info info)
-    {
         size_t argc = 1;
         napi_value args[1];
         NodeJsAdapter* adapter;
         CHECK(napi_get_cb_info(env, info, &argc, args, nullptr, (void**)&adapter));
-        tc_destroy_context(getUInt32(env, args[0]));
+        if (argc > 0) {
+            napi_value cbArgs[1];
+            napi_value cbResult;
+
+            cbArgs[0] = napiNumber(env, tc_create_context());
+            CHECK(napi_call_function(env, napiGlobal(env), args[0], 1, cbArgs, &cbResult));
+        }
+        return napiUndefined(env);
+    }
+
+    static napi_value coreDestroyContextHandler(napi_env env, napi_callback_info info)
+    {
+        size_t argc = 2;
+        napi_value args[2];
+        NodeJsAdapter* adapter;
+        CHECK(napi_get_cb_info(env, info, &argc, args, nullptr, (void**)&adapter));
+        if (argc > 0) {
+            tc_destroy_context(getUInt32(env, args[0]));
+            if (argc > 1) {
+                napi_value cbArgs[1];
+                napi_value cbResult;
+
+                cbArgs[0] = napiNumber(env, tc_create_context());
+                CHECK(napi_call_function(env, napiGlobal(env), args[1], 0, cbArgs, &cbResult));
+            }
+        }
         return napiUndefined(env);
     }
 

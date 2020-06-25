@@ -61,7 +61,7 @@ impl JniResultHandler {
 
 #[allow(non_snake_case)]
 #[no_mangle]
-pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_tc_create_context(
+pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_createContext(
     _env: JNIEnv,
     _class: JClass,
 ) -> jint {
@@ -70,7 +70,7 @@ pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_tc_create_context(
 
 #[allow(non_snake_case)]
 #[no_mangle]
-pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_tc_destroy_context(
+pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_destroyContext(
     _env: JNIEnv,
     _class: JClass,
     context: jint,
@@ -80,7 +80,7 @@ pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_tc_destroy_context(
 
 #[allow(non_snake_case)]
 #[no_mangle]
-pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_tc_json_request_async(
+pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_jsonRequestAsync(
     env: JNIEnv,
     _class: JClass,
     context: jint,
