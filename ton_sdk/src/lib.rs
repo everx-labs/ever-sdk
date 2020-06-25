@@ -42,7 +42,7 @@ mod transaction;
 pub use transaction::{Transaction, TransactionId, TransactionFees};
 
 mod block;
-pub use block::{Block, MsgDescr};
+pub use block::{Block, BlockId, MsgDescr};
 
 pub mod types;
 pub use types::{NodeClientConfig, TimeoutsConfig};

@@ -17,15 +17,16 @@ use std::str::FromStr;
 use ton_block::MsgAddressInt;
 use futures::StreamExt;
 
-const NODE_SE: bool = true;
+const NODE_SE: bool = false;
 
 const GIVER_ADDRESS_STR:  &str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
+const WALLET_ADDRESS_STR:  &str = "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13";
 
 pub const CONTRACTS_PATH: &str = "src/tests/contracts/";
 
 lazy_static::lazy_static! {
     static ref GIVER_ADDRESS: MsgAddressInt = MsgAddressInt::from_str(GIVER_ADDRESS_STR).unwrap();
-    static ref WALLET_ADDRESS: MsgAddressInt = get_wallet_address(&WALLET_KEYS, 0);
+    static ref WALLET_ADDRESS: MsgAddressInt = MsgAddressInt::from_str(WALLET_ADDRESS_STR).unwrap();
     static ref WALLET_KEYS: Keypair = get_wallet_keys();
 
 	pub static ref SUBSCRIBE_CONTRACT_ABI: String = std::fs::read_to_string(CONTRACTS_PATH.to_owned() + "Subscription.abi.json").unwrap();
@@ -79,37 +80,6 @@ fn get_wallet_keys() -> Keypair {
         secret: SecretKey::from_bytes(&hex::decode(keys["secret"].as_str().unwrap()).unwrap()).unwrap(),
         public: PublicKey::from_bytes(&hex::decode(keys["public"].as_str().unwrap()).unwrap()).unwrap(),
     }
-}
-
-fn get_wallet_address(key_pair: &Keypair, workchain_id: i32) -> MsgAddressInt {
-    let contract_image = ContractImage::from_state_init_and_key(
-        &mut tests_common::SIMPLE_WALLET_IMAGE.as_slice(),
-        &key_pair.public)
-        .expect("Unable to parse contract code file");
-
-    let address = contract_image.msg_address(workchain_id);
-    println!("Wallet address {}", address);
-
-    address
-}
-
-
-#[test]
-#[ignore]
-fn test_print_address() {
-    get_wallet_address(&WALLET_KEYS, 0);
-}
-
-#[test]
-#[ignore]
-fn test_generate_keypair_and_address() {
-    // generate key pair
-    let mut csprng = rand::thread_rng();
-    let key_pair = Keypair::generate(&mut csprng);
-
-    println!("Key pair: {}", hex::encode(&key_pair.to_bytes().to_vec()));
-
-    get_wallet_address(&key_pair, 0);
 }
 
 #[tokio::main]

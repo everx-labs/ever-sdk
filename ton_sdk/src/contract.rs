@@ -14,7 +14,7 @@
 use crate::json_helper;
 use crate::local_tvm;
 use crate::error::SdkError;
-use crate::{AbiContract, Block, Message, MessageId, TimeoutsConfig, Transaction};
+use crate::{AbiContract, Block, BlockId, Message, MessageId, TimeoutsConfig, Transaction};
 
 use ed25519_dalek::{Keypair, PublicKey};
 use chrono::prelude::Utc;
@@ -34,6 +34,7 @@ use ton_executor::BlockchainConfig;
 #[cfg(feature = "node_interaction")]
 use crate::{
     NodeClient,
+    node_client::MAX_TIMEOUT,
     json_helper::account_status_to_u8,
     transaction::TRANSACTION_FIELDS_ORDINARY,
     types::{CONTRACTS_TABLE_NAME, TRANSACTIONS_TABLE_NAME},
@@ -192,6 +193,7 @@ pub struct FunctionCallSet {
 pub struct SdkMessage {
     pub message: TvmMessage,
     pub expire: Option<u32>,
+    pub address: MsgAddressInt,
 }
 
 // The struct represents conract's image
@@ -199,6 +201,12 @@ pub struct SdkMessage {
 pub struct ContractImage {
     state_init: StateInit,
     id: AccountId,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct MessageProcessingState {
+    last_block_id: Option<BlockId>,
+    sent_time: u32,
 }
 
 #[allow(dead_code)]
@@ -401,196 +409,115 @@ impl Contract {
             .map(|val| val.to_string())
     }
 
-    const MESSAGE_EXPIRED_CODE: i32 = 57;
-    const REPLAY_PROTECTION_CODE: i32 = 52;
-
-    async fn retry_call<F, Fut>(retries_count: u8, func: F) -> Result<Transaction>
-        where
-            F: Fn(u8) -> Result<Fut>,
-            Fut: futures::Future<Output=Result<Transaction>>
-    {
-        let mut result = Err(SdkError::InternalError { msg: "Unreacheable".to_owned() }.into());
-        for i in 0..(retries_count + 1) {
-            //println!("Try#{}", i);
-            result = func(i)?.await;
-            match &result {
-                Err(error) => {
-                    match error.downcast_ref::<SdkError>() {
-                        Some(SdkError::MessageExpired {
-                            msg_id: _, msg: _, expire: _, send_time: _, block_time: _
-                        }) => continue,
-                        _ => return result
-                    }
-                }
-                _ => return result
-            }
-        }
-        result
-    }
-
-    // Packs given inputs by abi and asynchronously calls contract.
-    // Works with json representation of input and abi.
-    // To get calling result - need to load message,
-    // it's id and processing status is returned by this function
-    pub async fn call_json(
-        client: &NodeClient,
-        address: MsgAddressInt,
-        params: FunctionCallSet,
-        key_pair: Option<&Keypair>,
-    ) -> Result<Transaction> {
-        Self::retry_call(client.timeouts().message_retries_count, |try_index: u8| {
-            let msg = Self::construct_call_message_json(
-                address.clone(),
-                params.clone(),
-                false,
-                key_pair,
-                Some(client.timeouts()),
-                Some(try_index))?;
-
-            Ok(Self::process_message(client, msg.message, msg.expire, try_index))
-        }).await
-    }
-
-    // Packs given image and input and asynchronously calls given contract's constructor method.
-    // Works with json representation of input and abi.
-    // To get calling result - need to load message,
-    // it's id and processing status is returned by this function
-    pub async fn deploy_json(
-        client: &NodeClient,
-        params: FunctionCallSet,
-        image: ContractImage,
-        key_pair: Option<&Keypair>,
-        workchain_id: i32,
-    ) -> Result<Transaction> {
-        Self::retry_call(client.timeouts().message_retries_count, |try_index: u8| {
-            let msg = Self::construct_deploy_message_json(
-                params.clone(),
-                image.clone(),
-                key_pair,
-                workchain_id,
-                Some(client.timeouts()),
-                Some(try_index))?;
-
-            Ok(Self::process_message(client, msg.message, msg.expire, try_index))
-        }).await
-    }
-
-    // Packs given image asynchronously send deploy message into blockchain.
-    // To get calling result - need to load message,
-    // it's id and processing status is returned by this function
-    pub async fn deploy_no_constructor(client: &NodeClient, image: ContractImage, workchain_id: i32)
-        -> Result<Transaction> {
-        let msg = Self::create_deploy_message(None, image, workchain_id)?;
-
-        Self::process_message(client, msg, None, 0).await
-    }
-
     // Asynchronously calls contract by sending given message.
     // To get calling result - need to load message,
     // it's id and processing status is returned by this function
     pub async fn process_message(client: &NodeClient, msg: TvmMessage, expire: Option<u32>, try_index: u8)
-        -> Result<Transaction>
+        -> Result<(Transaction, Value)>
     {
         let addr = msg.dst().ok_or(SdkError::InvalidData {
             msg: "Wrong message type (extOut)".to_owned() })?;
         let (data, msg_id) = Self::serialize_message(msg)?;
-        Self::process_serialized_message(client, Some(addr), &msg_id, &data, expire, try_index).await
+        Self::process_serialized_message(client, &addr, &msg_id, &data, expire, try_index).await
     }
 
     pub async fn process_serialized_message(
         client: &NodeClient,
-        address: Option<MsgAddressInt>,
+        address: &MsgAddressInt,
         id: &MessageId,
         msg: &[u8],
         expire: Option<u32>,
         try_index: u8
-    ) -> Result<Transaction> {
-        let time = Self::send_message(client, &id.to_bytes()?, msg, expire).await?;
+    ) -> Result<(Transaction, Value)> {
+        let state = Self::send_message(client, address, &id.to_bytes()?, msg, expire).await?;
         //println!("msg is sent, id: {}", id);
-        Self::wait_transaction_processing(client, address, id, msg, time, expire, try_index).await
+        Self::wait_transaction_processing(client, address, id, state, expire, try_index, true).await
     }
 
-    pub async fn send_message(client: &NodeClient, id: &[u8], msg: &[u8], expire: Option<u32>) -> Result<u32> {
+    pub async fn send_message(
+        client: &NodeClient,
+        address: &MsgAddressInt,
+        id: &[u8],
+        msg: &[u8],
+        expire: Option<u32>
+    ) -> Result<MessageProcessingState> {
         let now = Self::now();
+        let mut block_id = None;
         if let Some(expire) = expire {
             if expire <= now {
-                return Err(SdkError::InvalidArg { msg: "Message already expired".to_owned() }.into());
+                fail!(SdkError::InvalidArg { msg: "Message already expired".to_owned() });
             }
+            block_id = Some(Block::find_last_shard_block(client, address).await?);
         }
         client.send_message(id, msg).await?;
-        Ok(now)
+        Ok(MessageProcessingState {
+            sent_time: Self::now(),
+            last_block_id: block_id,
+        })
     }
-
 
     pub async fn wait_transaction_processing(
         client: &NodeClient,
-        address: Option<MsgAddressInt>,
+        address: &MsgAddressInt,
         message_id: &MessageId,
-        message: &[u8],
-        send_time: u32,
+        state: MessageProcessingState,
         expire: Option<u32>,
         try_index: u8,
-    ) -> Result<Transaction>
+        infinite_wait: bool
+    ) -> Result<(Transaction, Value)>
     {
-        // timeout is growing from try to try
-        let mut tr_timeout = Self::calc_timeout(
-            client.timeouts().message_processing_timeout,
-            client.timeouts().message_processing_timeout_grow_factor,
-            try_index);
-        let now = Self::now();
-        let mut block_timeout = tr_timeout;
-
         let transaction = if let Some(expire) = expire {
-            let address = match address {
-                Some(addr) => addr,
-                None => Self::get_dst_from_msg(message)?
-            };
-            let mut block_id = Block::find_starting_block(client, send_time, &address).await?;
+            let mut block_id = state.last_block_id.ok_or(SdkError::InvalidArg { 
+                msg: "No starting block provided".to_owned() })?;
             let mut transaction = Value::Null;
+            let add_timeout = client.timeouts().message_processing_timeout;
             loop {
-                let block = Block::wait_next_block(client, &block_id, &address, None)
-                    .await
-                    .map_err(|err|  match err.downcast_ref::<SdkError>() {
-                        Some(SdkError::WaitForTimeout) => 
-                            SdkError::NetworkSilent {
-                                msg_id: message_id.clone(),
-                                send_time,
-                                expire,
-                                timeout: block_timeout
-                            }.into(),
-                        _ => err
-                    })?;
+                let now = Self::now();
+                let timeout = std::cmp::max(expire, now) - now + add_timeout;
+                let result = Block::wait_next_block(client, &block_id, &address, Some(timeout)).await;
+                let block = match result {
+                    Err(err) => match err.downcast_ref::<SdkError>() {
+                        Some(SdkError::WaitForTimeout) => {
+                            if infinite_wait {
+                                continue;
+                            } else {
+                                fail!(SdkError::NetworkSilent {
+                                    msg_id: message_id.clone(),
+                                    block_id,
+                                    timeout
+                                })
+                            }
+                        }
+                        _ => fail!(err)
+                    }
+                    Ok(block) => block
+                };
 
                 if block.gen_utime > expire {
                     fail!(SdkError::MessageExpired{
                         msg_id: message_id.clone(),
-                        msg: message.to_vec(),
-                        send_time,
+                        send_time: state.sent_time,
                         expire,
-                        block_time: block.gen_utime
+                        block_time: block.gen_utime,
+                        block_id
                     });
                 }
 
                 for block_msg in &block.in_msg_descr {
-                    if message_id == &block_msg.msg_id {
+                    if Some(message_id) == block_msg.msg_id.as_ref() {
+                        let tr_id = block_msg.transaction_id.clone()
+                            .ok_or(SdkError::InvalidData {
+                                msg: "No field `transaction_id` in block".to_owned() })?;
+
                         transaction = client.wait_for(
                             TRANSACTIONS_TABLE_NAME,
                             &json!({
-                                "id": { "eq": block_msg.transaction_id.to_string() }
+                                "id": { "eq": tr_id.to_string() }
                             }).to_string(),
                             TRANSACTION_FIELDS_ORDINARY,
-                            Some(tr_timeout))
-                            .await
-                            .map_err(|err|  match err.downcast_ref::<SdkError>() {
-                                Some(SdkError::WaitForTimeout) => 
-                                    SdkError::TransactionsLag {
-                                        msg_id: message_id.clone(),
-                                        send_time,
-                                        block_id: block.id.clone().to_string(),
-                                        timeout: block_timeout
-                                    }.into(),
-                                _ => err
-                            })?;
+                            Some(MAX_TIMEOUT))
+                            .await?;
+
                         break;
                     }
                 }
@@ -602,6 +529,8 @@ impl Contract {
 
             transaction
         } else {
+            let mut tr_timeout = client.timeouts().message_processing_timeout;
+
             let filter = json!({
                 "in_msg": { "eq": message_id.to_string() },
                 "status": { "eq": json_helper::transaction_status_to_u8(TransactionProcessingStatus::Finalized) }
@@ -617,27 +546,25 @@ impl Contract {
                     Some(SdkError::WaitForTimeout) => 
                         SdkError::TransactionWaitTimeout {
                             msg_id: message_id.clone(),
-                            msg: message.to_vec(),
-                            send_time: now,
-                            timeout: block_timeout
+                            send_time: state.sent_time,
+                            timeout: tr_timeout
                         }.into(),
                     _ => err
                 })?
         };
 
-        let transaction = serde_json::from_value::<Transaction>(transaction)?;
-        if transaction.compute.exit_code == Some(Self::MESSAGE_EXPIRED_CODE) ||
-            transaction.compute.exit_code == Some(Self::REPLAY_PROTECTION_CODE)
+        let parsed = serde_json::from_value::<Transaction>(transaction.clone())?;
+        if parsed.compute.exit_code == Some(Self::MESSAGE_EXPIRED_CODE) ||
+        parsed.compute.exit_code == Some(Self::REPLAY_PROTECTION_CODE)
         {
             Err(SdkError::MessageExpired{
                 msg_id: message_id.clone(),
-                msg: message.to_vec(),
-                send_time: now,
+                send_time: state.sent_time,
                 expire: expire.unwrap_or(0),
-                block_time: transaction.now
+                block_time: parsed.now
             }.into())
         } else {
-            Ok(transaction)
+            Ok((parsed, transaction))
         }
     }
 }

@@ -654,7 +654,7 @@ impl ApiError {
         };
         error.data["transaction_id"] = tr_id.map(|s| s.into()).unwrap_or(serde_json::Value::Null);
         error.data["phase"] = "action".into();
-        error.data["result code"] = result_code.into();
+        error.data["result_code"] = result_code.into();
         error
     }
 }

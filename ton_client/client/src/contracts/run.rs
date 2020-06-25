@@ -516,6 +516,33 @@ pub(crate) async fn load_contract(context: &ClientContext, address: &MsgAddressI
     }
 }
 
+const MESSAGE_EXPIRED_CODE: i32 = 57;
+const REPLAY_PROTECTION_CODE: i32 = 52;
+
+async fn retry_call<F, Fut>(retries_count: u8, func: F) -> Result<(Transaction, serde_json::Value)>
+    where
+        F: Fn(u8) -> Result<Fut>,
+        Fut: futures::Future<Output=Result<(Transaction, serde_json::Value)>>
+{
+    let mut result = Err(SdkError::InternalError { msg: "Unreacheable".to_owned() }.into());
+    for i in 0..(retries_count + 1) {
+        //println!("Try#{}", i);
+        result = func(i)?.await;
+        match &result {
+            Err(error) => {
+                match error.downcast_ref::<SdkError>() {
+                    Some(SdkError::MessageExpired {
+                        msg_id: _, msg: _, expire: _, send_time: _, block_time: _
+                    }) => continue,
+                    _ => return result
+                }
+            }
+            _ => return result
+        }
+    }
+    result
+}
+
 #[cfg(feature = "node_interaction")]
 async fn call_contract(
     client: &NodeClient,

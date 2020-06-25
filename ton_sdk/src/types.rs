@@ -73,7 +73,7 @@ pub struct NodeClientConfig {
     pub timeouts: Option<TimeoutsConfig>,
 }
 
-#[derive(Deserialize, Default, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq)]
 pub struct StringId (String);
 
 impl From<String> for StringId {

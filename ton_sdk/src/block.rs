@@ -34,8 +34,8 @@ pub struct ShardDescr {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct MsgDescr {
-    pub msg_id: MessageId,
-    pub transaction_id: TransactionId
+    pub msg_id: Option<MessageId>,
+    pub transaction_id: Option<TransactionId>
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -76,66 +76,99 @@ impl Block {
         fail!(SdkError::NotFound(format!("No matching shard for account {}", address)))
     }
 
-    pub async fn find_starting_block(client: &NodeClient, send_time: u32, address: &MsgAddressInt) -> Result<BlockId> {
+    pub async fn find_last_shard_block(client: &NodeClient, address: &MsgAddressInt) -> Result<BlockId> {
         let workchain = address.get_workchain_id();
+
+        // if account resides in masterchain then starting point is last masterchain block
+        // generated before message was sent
+        let blocks = client.query(
+            BLOCKS_TABLE_NAME,
+            &json!({
+                "workchain_id": { "eq": MASTERCHAIN_ID }
+            }).to_string(),
+            "id",
+            Some(OrderBy {
+                path: "seq_no".to_owned(),
+                direction: SortDirection::Descending
+            }),
+            Some(1),
+            None
+        ).await?;
+
         if MASTERCHAIN_ID == workchain {
             // if account resides in masterchain then starting point is last masterchain block
-            // generated before message was sent
-            let blocks = client.query(
-                BLOCKS_TABLE_NAME,
-                &json!({
-                    "workchain_id": { "eq": MASTERCHAIN_ID },
-                    "gen_utime": { "le": send_time, "gt": 0 }
-                }).to_string(),
-                "id",
-                Some(OrderBy {
-                    path: "seq_no".to_owned(),
-                    direction: SortDirection::Descending
-                }),
-                Some(1),
-                None
-            ).await?;
             blocks[0]["id"]
                 .as_str()
                 .map(|val| val.to_owned().into())
-                .ok_or(SdkError::NotFound("No starting masterchain block returned".to_owned()).into())
+                .ok_or(SdkError::NotFound("No masterchain block found".to_owned()).into())
         } else {
-            // if account is from other chains then starting point is some account's shard block
-            // generated before message was sent. To obtain it we take masterchain block to get
-            // shards configuration and select matching shard
-            let blocks = client.query(
-                BLOCKS_TABLE_NAME,
-                &json!({
-                    "workchain_id": { "eq": MASTERCHAIN_ID },
-                    "master": {
-                        "max_shard_gen_utime": { "le": send_time, "gt": 0 }
-                    }
-                }).to_string(),
-                "id
-                master { shard_hashes { workchain_id shard descr { root_hash } } }",
-                Some(OrderBy {
-                    path: "seq_no".to_owned(),
-                    direction: SortDirection::Descending
-                }),
-                Some(1),
-                None
-            ).await?;
+            // if account is from other chains then starting point is last account's shard block
+            // To obtain it we take masterchain block to get shards configuration and select matching shard
             if blocks[0].is_null() {
-                fail!(SdkError::NotFound("No starting masterchain block returned".to_owned()))
-            }
-            let shards = blocks[0]["master"]["shard_hashes"]
-                .as_array()
-                .ok_or(SdkError::InvalidData {
-                    msg: "No `shard_hashes` field in masterchain block".to_owned()
-                })?;
+                // Node SE case - no masterchain, no sharding. Check that only one shard
+                let blocks = client.query(
+                    BLOCKS_TABLE_NAME,
+                    &json!({
+                        "workchain_id": { "eq": workchain },
+                    }).to_string(),
+                    "after_merge shard",
+                    Some(OrderBy {
+                        path: "seq_no".to_owned(),
+                        direction: SortDirection::Descending
+                    }),
+                    Some(1),
+                    None)
+                    .await
+                    .map_err(|err|  match err.downcast_ref::<SdkError>() {
+                        Some(SdkError::WaitForTimeout) => 
+                            SdkError::NotFound(format!(
+                                "No blocks for workchain {} found", workchain)).into(),
+                        _ => err
+                    })?;
 
-            let shard_block = Self::find_matching_shard(shards, address)?;
-            
-            shard_block["root_hash"]
-                .as_str()
-                .map(|val| val.to_owned().into())
-                .ok_or(SdkError::InvalidData {
-                    msg: "No `root_hash` field in shard descr".to_owned() }.into())
+                if blocks[0].is_null() {
+                    fail!(SdkError::NotFound(format!(
+                        "No blocks for workchain {} found", workchain)));
+                }
+                // if workchain is sharded then it is not Node SE and masterchain blocks missing is error
+                if blocks[0]["after_merge"] == true || blocks[0]["shard"] != "8000000000000000" {
+                    fail!(SdkError::NotFound("No masterchain block found".to_owned()));
+                }
+
+                // Take last block by seq_no
+                let blocks = client.query(
+                    BLOCKS_TABLE_NAME,
+                    &json!({
+                        "workchain_id": { "eq": workchain },
+                        "shard": { "eq": "8000000000000000" },
+                    }).to_string(),
+                    "id",
+                    Some(OrderBy {
+                        path: "seq_no".to_owned(),
+                        direction: SortDirection::Descending
+                    }),
+                    Some(1),
+                    None
+                ).await?;
+                blocks[0]["id"]
+                    .as_str()
+                    .map(|val| val.to_owned().into())
+                    .ok_or(SdkError::NotFound("No starting Node SE block found".to_owned()).into())
+            } else {
+                let shards = blocks[0]["master"]["shard_hashes"]
+                    .as_array()
+                    .ok_or(SdkError::InvalidData {
+                        msg: "No `shard_hashes` field in masterchain block".to_owned()
+                    })?;
+
+                let shard_block = Self::find_matching_shard(shards, address)?;
+                
+                shard_block["descr"]["root_hash"]
+                    .as_str()
+                    .map(|val| val.to_owned().into())
+                    .ok_or(SdkError::InvalidData {
+                        msg: "No `root_hash` field in shard descr".to_owned() }.into()) 
+            }
         }
     }
 
