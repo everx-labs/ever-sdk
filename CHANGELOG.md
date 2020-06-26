@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 ### New
 - local run functions return updated contract state when running with `full_run = true`
 
+## 0.25.0 Jun 26, 2020
+### New
+- supports for core context in all bindings
+
 ## May 28, 2020
 ### New
 - error resolving by local message processing
