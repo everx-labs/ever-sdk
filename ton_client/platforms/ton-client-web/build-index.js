@@ -1,7 +1,6 @@
-
 // This file is just a template that used to generate index.js at npm installation stage
 
-import { TONClient } from 'ton-client-js';
+import {TONClient} from 'ton-client-js';
 
 const workerScript = '';
 
@@ -32,7 +31,6 @@ const createLibrary = async () => {
     let deferredRequests = [];
 
     let nextActiveRequestId = 1;
-    let nextContext = 2;
 
     worker.onerror = (evt) => {
         console.log(`Error from Web Worker: ${evt.message}`);
@@ -49,7 +47,8 @@ const createLibrary = async () => {
         };
         const isDeferredSetup = (method === 'setup') && (deferredRequests !== null);
         activeRequests.set(id, {
-            callback: isDeferredSetup ? () => {} : callback
+            callback: isDeferredSetup ? () => {
+            } : callback
         });
         if (deferredRequests !== null) {
             deferredRequests.push(request);
@@ -62,13 +61,20 @@ const createLibrary = async () => {
     }
 
     const library = {
-        coreCreateContext: () => {
-            const context = nextContext;
-            nextContext += 1;
-            return context;
+        coreCreateContext: (callback) => {
+            coreRequest(0, 'context.create', '', (resultJson) => {
+                if (callback) {
+                    const context = JSON.parse(resultJson);
+                    callback(context);
+                }
+            });
         },
-        coreDestroyContex: (context) => {
-            coreRequest(context, 'context.destroy', '', () => {});
+        coreDestroyContext: (context, callback) => {
+            coreRequest(context, 'context.destroy', '', () => {
+                if (callback) {
+                    callback();
+                }
+            });
         },
         coreRequest,
         request: (method, params, callback) => {
@@ -135,15 +141,16 @@ const clientPlatform = {
     createLibrary,
 };
 
-TONClient.setLibrary({
-    fetch,
-    WebSocket,
-    createLibrary
-});
+function initTONClient(tonClientClass) {
+    tonClientClass.setLibrary(clientPlatform);
+}
+
+initTONClient(TONClient);
 
 export {
     createLibrary,
     setWasmOptions,
     clientPlatform,
+    initTONClient,
     TONClient
 };

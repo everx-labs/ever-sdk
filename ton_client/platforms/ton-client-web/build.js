@@ -7,7 +7,9 @@ const {
     main,
     toml_version,
     version,
-    root_path
+    root_path,
+    devMode,
+    mkdir,
 } = require('../build-lib');
 
 function scriptToStringLiteral(s) {
@@ -67,12 +69,18 @@ function getIndexScript() {
 
 
 main(async () => {
-    // await spawnProcess('cargo', ['clean']);
-    // await spawnProcess('cargo', ['update']);
+    if (!devMode) {
+        // await spawnProcess('cargo', ['clean']);
+        await spawnProcess('cargo', ['update']);
+    }
     await spawnProcess('wasm-pack', ['build', '--release', '--target', 'web']);
-    fs.writeFileSync(path.resolve(__dirname, 'pkg', 'index.js'), getIndexScript(), { encoding: 'utf8' });
+
+    mkdir(root_path('build'));
+    fs.copyFileSync(root_path('pkg', 'ton_client_web_bg.wasm'), root_path('build', 'tonclient.wasm'));
+    fs.writeFileSync(root_path('build', 'index.js'), getIndexScript(), { encoding: 'utf8' });
+
     deleteFolderRecursive(root_path('bin'));
     fs.mkdirSync(root_path('bin'), { recursive: true });
-    await gz(['pkg', 'ton_client_web_bg.wasm'], `tonclient_${version}_wasm`);
-    await gz(['pkg', 'index.js'], `tonclient_${version}_wasm_js`);
+    await gz(['build', 'tonclient.wasm'], `tonclient_${version}_wasm`);
+    await gz(['build', 'index.js'], `tonclient_${version}_wasm_js`);
 });
