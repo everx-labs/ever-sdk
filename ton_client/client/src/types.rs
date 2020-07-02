@@ -894,7 +894,7 @@ impl StdContractError {
     pub fn tip(&self) -> Option<&str> {
         let tip = match self {
             StdContractError::InvalidSignature => "Check sign keys",
-            StdContractError::MethodNotFound => "Check contract ABI. It may be invalid or from old contract version",
+            StdContractError::MethodNotFound => "Check contract ABI. It may be invalid or from an old contract version",
             StdContractError::UnsupportedAbiVersion => "Check contract ABI. It may be invalid or from old contract version",
             StdContractError::PubKeyNotFound => "Contract is probably deployed incorrectly",
             StdContractError::SignNotFount => "Check call parameters. Sign keys should be passed to sign message",
