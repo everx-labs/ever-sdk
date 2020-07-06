@@ -15,7 +15,7 @@ use crate::dispatch::DispatchTable;
 use crate::types::{ApiResult, ApiError};
 use super::{JsonResponse, InteropContext};
 use std::collections::HashMap;
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard};
 use ton_sdk::NodeClient;
 
 #[cfg(feature = "node_interaction")]
@@ -66,7 +66,7 @@ impl ClientContext {
 
 pub(crate) struct Client {
     next_context_handle: InteropContext,
-    contexts: HashMap<InteropContext, Option<ClientContext>>,
+    contexts: HashMap<InteropContext, Arc<Mutex<ClientContext>>>,
 }
 
 
@@ -93,44 +93,40 @@ impl Client {
         self.next_context_handle = handle.wrapping_add(1);
 
         #[cfg(feature = "node_interaction")]
-        self.contexts.insert(handle, Some(ClientContext {
+        self.contexts.insert(handle, Arc::new(Mutex::new(ClientContext {
             handle,
             client: None,
             runtime: None,
-        }));
+        })));
 
         #[cfg(not(feature = "node_interaction"))]
-        self.contexts.insert(handle, Some(ClientContext {
+        self.contexts.insert(handle,  Arc::new(Mutex::new(ClientContext {
             handle,
             client: None,
-        }));
+        })));
 
         handle
     }
 
     pub fn destroy_context(&mut self, handle: InteropContext) {
-        if let Ok(mut context) = self.take_required_context(handle) {
+        if let Ok(context) = self.required_context(handle) {
+            let mut context = context.lock().unwrap();
             sync_request(&mut context, "uninit".to_owned(), "{}".to_owned());
         }
+        self.contexts.remove(&handle);
     }
 
-    pub fn take_required_context(&mut self, context: InteropContext) -> ApiResult<ClientContext> {
-        self.contexts.get_mut(&context)
-            .ok_or(ApiError::invalid_context_handle(context))?
-            .take()
-            .ok_or(ApiError::context_handle_in_use(context))
-    }
-
-    pub fn insert_context(&mut self, context: ClientContext) {
-         self.contexts.insert(context.handle, Some(context));
+    pub fn required_context(&mut self, context: InteropContext) -> ApiResult<Arc<Mutex<ClientContext>>> {
+        Ok(Arc::clone(self.contexts.get_mut(&context)
+            .ok_or(ApiError::invalid_context_handle(context))?))
     }
 
     pub fn json_sync_request(handle: InteropContext, method_name: String, params_json: String) -> JsonResponse {
-        let context = Self::shared().take_required_context(handle);
+        let context = Self::shared().required_context(handle);
         match context {
-            Ok(mut context) => {
+            Ok(context) => {
+                let mut context = context.lock().unwrap();
                 let result = sync_request(&mut context, method_name, params_json);
-                Self::shared().insert_context(context);
                 result
             }
             Err(err) => JsonResponse::from_error(err)

@@ -20,7 +20,7 @@ use log::{Metadata, Record, LevelFilter};
 use crate::{tc_create_context, tc_destroy_context};
 use ton_block::MsgAddressInt;
 use std::str::FromStr;
-use crate::types::{ApiError, ApiErrorCode};
+use crate::types::{ApiError};
 
 //mod resolve_error;
 
@@ -513,6 +513,8 @@ fn test_parallel_requests() {
     client2.request("setup",
         json!({"baseUrl": "http://localhost"})).unwrap();
 
+    let start = std::time::Instant::now();
+    let timeout: u32 = 5000;
     let long_wait = std::thread::spawn(move || {
         client3.request("queries.wait.for",
             json!({
@@ -521,22 +523,20 @@ fn test_parallel_requests() {
                         "id": { "eq": "123" }
                     }).to_string(),
                     "result": "id",
-                    "timeout": "5000"
+                    "timeout": timeout
                 }),
         ).unwrap_err();
+        client3
     });
 
     std::thread::sleep(std::time::Duration::from_millis(500));
 
-    let other_client_request = std::thread::spawn(move || {
-        client2.request("crypto.ed25519.keypair", json!({})).unwrap();
-    });
+    // check that request with another context don't wait 
+    client2.request("crypto.ed25519.keypair", json!({})).unwrap();
+    assert!(start.elapsed().as_millis() < timeout as u128);
     
-    let parallel_request_result = client1.request("crypto.ed25519.keypair", json!({})).unwrap_err();
-    let err: Value = serde_json::from_str(&parallel_request_result).unwrap();
-
-    assert_eq!(err["code"], crate::types::ApiSdkErrorCode::ContextHandleInUse.as_number());
-
+    // check that request with same context waits for previous call
+    client1.request("crypto.ed25519.keypair", json!({})).unwrap();
+    assert!(start.elapsed().as_millis() > timeout as u128);
     long_wait.join().unwrap();
-    other_client_request.join().unwrap();
 }
