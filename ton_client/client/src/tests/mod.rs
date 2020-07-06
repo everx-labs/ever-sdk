@@ -20,7 +20,7 @@ use log::{Metadata, Record, LevelFilter};
 use crate::{tc_create_context, tc_destroy_context};
 use ton_block::MsgAddressInt;
 use std::str::FromStr;
-use crate::types::{ApiError};
+use crate::types::{ApiError, ApiErrorCode};
 
 //mod resolve_error;
 
@@ -40,6 +40,7 @@ impl log::Log for SimpleLogger {
     fn flush(&self) {}
 }
 
+#[derive(Clone)]
 struct TestClient {
     context: InteropContext,
 }
@@ -498,4 +499,44 @@ fn test_out_of_sync() {
     let value: Value = serde_json::from_str(&result).unwrap();
 
    assert_eq!(value["code"], 1013);
+}
+
+
+#[test]
+fn test_parallel_requests() {
+    let client1 = TestClient::new();
+    let client2 = TestClient::new();
+    let client3 = client1.clone();
+
+    client1.request("setup",
+        json!({"baseUrl": "http://localhost"})).unwrap();
+    client2.request("setup",
+        json!({"baseUrl": "http://localhost"})).unwrap();
+
+    let long_wait = std::thread::spawn(move || {
+        client3.request("queries.wait.for",
+            json!({
+                    "table": "accounts".to_owned(),
+                    "filter": json!({
+                        "id": { "eq": "123" }
+                    }).to_string(),
+                    "result": "id",
+                    "timeout": "5000"
+                }),
+        ).unwrap_err();
+    });
+
+    std::thread::sleep(std::time::Duration::from_millis(500));
+
+    let other_client_request = std::thread::spawn(move || {
+        client2.request("crypto.ed25519.keypair", json!({})).unwrap();
+    });
+    
+    let parallel_request_result = client1.request("crypto.ed25519.keypair", json!({})).unwrap_err();
+    let err: Value = serde_json::from_str(&parallel_request_result).unwrap();
+
+    assert_eq!(err["code"], crate::types::ApiSdkErrorCode::ContextHandleInUse.as_number());
+
+    long_wait.join().unwrap();
+    other_client_request.join().unwrap();
 }

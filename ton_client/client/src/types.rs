@@ -133,6 +133,11 @@ impl ApiError {
             "SDK is not initialized".into())
     }
 
+    pub fn context_handle_in_use(context: u32) -> Self {
+        sdk_err!(ContextHandleInUse,
+            "Context handle {} is currently used by some operation. Requests with same handles should be called sequentially", context)
+    }
+
 
 
     // SDK Config
@@ -666,6 +671,7 @@ pub enum ApiSdkErrorCode {
     InvalidContextHandle = 3,
     CannotCreateRuntime = 4,
     SdkNotInit = 5,
+    ContextHandleInUse = 6,
 
     ConfigInitFailed = 1001,
     WaitForTimeout = 1003,
