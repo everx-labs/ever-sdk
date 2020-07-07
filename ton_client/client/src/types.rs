@@ -134,7 +134,6 @@ impl ApiError {
     }
 
 
-
     // SDK Config
 
     pub fn config_init_failed<E: Display>(err: E) -> Self {
