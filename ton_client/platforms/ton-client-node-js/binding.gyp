@@ -16,7 +16,7 @@
       'conditions': [
         ['OS == "win"', {
           'libraries': [
-            '../target/release/tonclientnodejs.lib',
+            '../target/release/tonclient.lib',
             'advapi32.lib',
             'ws2_32.lib',
             'userenv.lib',
@@ -26,7 +26,7 @@
           ],
         }, {
           'libraries': [
-            '../target/release/libtonclientnodejs.a',
+            '../target/release/libtonclient.a',
             '-Wl,-rpath,./addon/'
           ],
         }],

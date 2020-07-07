@@ -1,5 +1,4 @@
 const fs = require('fs');
-const path = require('path');
 const os = require('os');
 const {
     deleteFolderRecursive,
@@ -25,8 +24,8 @@ function dylibext() {
 }
 
 const dev = {
-    lib: 'libtonclientnodejs.a',
-    dylib: `libtonclientnodejs.${dylibext()}`,
+    lib: 'libtonclient.a',
+    dylib: `libtonclient.${dylibext()}`,
     addon: 'tonclient.node',
 };
 

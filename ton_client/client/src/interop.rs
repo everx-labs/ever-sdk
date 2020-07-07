@@ -109,6 +109,7 @@ pub unsafe extern "C" fn tc_read_json_response(
 pub type InteropContext = u32;
 
 #[repr(C)]
+#[derive(Clone)]
 pub struct InteropString {
     pub content: *const u8,
     pub len: u32,
@@ -128,20 +129,6 @@ pub struct JsonResponse {
 }
 
 // Helpers
-
-impl Clone for InteropString {
-    fn clone(&self) -> Self {
-        return Self {
-            content: self.content,
-            len: self.len,
-        }
-    }
-
-    fn clone_from(&mut self, source: &Self) {
-        self.content = source.content;
-        self.len = source.len;
-    }
-}
 
 impl InteropString {
     pub fn default() -> Self {

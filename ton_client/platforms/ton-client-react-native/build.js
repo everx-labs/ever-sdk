@@ -36,7 +36,7 @@ const ios = {
         { target: 'x86_64-apple-ios' },
         { target: 'aarch64-apple-ios' },
     ],
-    lib: 'libtonsdk.a',
+    lib: 'libtonclient.a',
     header: 'ton_client.h'
 };
 const android = {
@@ -45,7 +45,7 @@ const android = {
         { target: 'aarch64-linux-android', jni: 'arm64-v8a', ndk: 'arm64' },
         { target: 'armv7-linux-androideabi', jni: 'armeabi-v7a', ndk: 'arm' },
     ],
-    lib: 'libtonsdk.so',
+    lib: 'libtonclient.so',
 };
 
 if (devMode) {

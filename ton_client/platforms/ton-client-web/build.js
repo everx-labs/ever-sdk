@@ -25,7 +25,7 @@ function getTemplate(name) {
 }
 
 function getWasmWrapperScript() {
-    let script = fs.readFileSync(path.resolve(__dirname, 'pkg', 'ton_client_web.js'), 'utf-8');
+    let script = fs.readFileSync(path.resolve(__dirname, 'pkg', 'tonclient.js'), 'utf-8');
     script = script.replace(
         /^let wasm;$/gm,
         `
@@ -76,7 +76,7 @@ main(async () => {
     await spawnProcess('wasm-pack', ['build', '--release', '--target', 'web']);
 
     mkdir(root_path('build'));
-    fs.copyFileSync(root_path('pkg', 'ton_client_web_bg.wasm'), root_path('build', 'tonclient.wasm'));
+    fs.copyFileSync(root_path('pkg', 'tonclient_bg.wasm'), root_path('build', 'tonclient.wasm'));
     fs.writeFileSync(root_path('build', 'index.js'), getIndexScript(), { encoding: 'utf8' });
 
     deleteFolderRecursive(root_path('bin'));
