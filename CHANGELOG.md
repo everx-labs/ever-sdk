@@ -1,6 +1,11 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## Jul 06, 2020
+### New
+- parallel requests on different contexts don't block each other. Requests on the same context
+remain sequential
+
 ## Jun 05, 2020
 ### New
 - time sync check while initializing
