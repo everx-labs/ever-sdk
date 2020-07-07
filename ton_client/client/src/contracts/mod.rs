@@ -12,8 +12,8 @@
 */
 
 use crate::types::{ApiResult, base64_decode, ApiError};
-use ton_sdk::{AbiContract, ContractImage, Transaction};
-use ton_block::{CommonMsgInfo, Deserializable};
+use ton_sdk::{AbiContract, ContractImage, SdkMessage, Transaction};
+use ton_block::{CommonMsgInfo, Deserializable, MsgAddressInt};
 use ton_types::deserialize_tree_of_cells;
 use std::io::Cursor;
 use crate::crypto::keys::{
@@ -36,10 +36,48 @@ pub(crate) mod load;
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct EncodedMessage {
+    pub address: Option<String>,
     pub message_id: String,
     pub message_body_base64: String,
     pub expire: Option<u32>,
 }
+
+impl EncodedMessage {
+    pub fn address(&self) -> ApiResult<MsgAddressInt> {
+        match &self.address {
+            Some(addr) => account_decode(addr),
+            None => {
+                let msg = base64_decode(&self.message_body_base64)?;
+                Contract::get_dst_from_msg(&msg)
+                    .map_err(|err| ApiError::invalid_params(
+                        "message",
+                        format!("cannot get target address: {}", err)))
+            }
+        }
+    }
+
+    pub fn into_sdk_msg(self) -> ApiResult<SdkMessage> {
+        let bytes = base64_decode(&self.message_body_base64)?;
+        Ok(SdkMessage {
+            address: self.address()?,
+            id: self.message_id.into(),
+            message: Contract::deserialize_message(&bytes)
+                .map_err(|err| ApiError::invalid_params("message", format!("cannot parse BOC ({})", err)))?,
+            serialized_message: bytes,
+            expire: self.expire
+        })
+    }
+
+    pub fn from_sdk_msg(msg: SdkMessage) -> Self {
+        EncodedMessage {
+            message_id: msg.id.to_string(),
+            address: Some(msg.address.to_string()),
+            message_body_base64: base64::encode(&msg.serialized_message),
+            expire: msg.expire
+        }
+    }
+}
+
 
 #[cfg(feature = "node_interaction")]
 #[derive(Serialize, Deserialize)]
@@ -138,17 +176,15 @@ pub(crate) fn encode_message_with_sign(_context: &mut ClientContext, params: Par
     } else {
         None
     };
-    let (body, id) = ton_sdk::Contract::add_sign_to_message(
+    let mut msg = ton_sdk::Contract::add_sign_to_message(
         params.abi.to_string(),
         &base64_decode(&params.sign_bytes_base64)?,
         public_key,
         &base64_decode(&params.unsigned_bytes_base64)?
     ).map_err(|err|ApiError::contracts_encode_message_with_sign_failed(err))?;
-    Ok(EncodedMessage {
-        message_id: id.to_string(),
-        message_body_base64: base64::encode(&body),
-        expire: params.expire
-    })
+    msg.expire = params.expire;
+
+    Ok(EncodedMessage::from_sdk_msg(msg))
 }
 
 pub(crate) fn get_function_id(_context: &mut ClientContext, params: ParamsOfGetFunctionId) -> ApiResult<ResultOfGetFunctionId> {
@@ -208,7 +244,8 @@ pub(crate) async fn send_message(context: &mut ClientContext, params: EncodedMes
     let msg = base64_decode(&params.message_body_base64)?;
     let id = crate::types::hex_decode(&params.message_id)?;
     let client = context.get_client()?;
-    Contract::send_message(&client, &id, &msg, params.expire)
+    let address = params.address()?;
+    Contract::send_message(&client, &address, &id, &msg, params.expire)
         .await
         .map_err(|err| ApiError::contracts_send_message_failed(err))?;
     Ok(())
@@ -220,33 +257,26 @@ pub(crate) async fn process_message(context: &mut ClientContext, params: ParamsO
         params.message.message_id,
         params.message.expire.unwrap_or_default());
 
-    let msg = base64_decode(&params.message.message_body_base64)?;
     let client = context.get_client()?;
-    let result = Contract::process_serialized_message(
+    let msg = params.message.into_sdk_msg()?;
+    let result = Contract::process_message(
         client,
-        None,
-        &params.message.message_id.into(),
-        &msg,
-        params.message.expire,
-        params.try_index.unwrap_or(0))
+        &msg)
         .await;
 
     let transaction = match result {
             Err(err) => 
                 return Err(run::resolve_msg_sdk_error(
-                        client, err, ApiError::contracts_process_message_failed
+                        client, err, &msg.serialized_message, ApiError::contracts_process_message_failed
                     ).await?),
             Ok(tr) => tr
     };
 
-    let address = Contract::get_dst_from_msg(&msg)
-        .map_err(|err| ApiError::invalid_params("message", format!("cannot get target address: {}", err)))?;
-
     run::process_transaction(
-        transaction,
+        transaction.parsed,
         params.abi,
         params.function_name,
-        &address,
+        &msg.address,
         true)
 }
 

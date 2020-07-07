@@ -65,9 +65,9 @@ pub enum SdkError {
         msg_id, send_time, expire, block_time)]
     MessageExpired {
         msg_id: crate::MessageId,
-        msg: Vec<u8>,
         send_time: u32,
         expire: u32,
+        block_id: crate::BlockId,
         block_time: u32
     },
 
@@ -77,8 +77,7 @@ pub enum SdkError {
     #[fail(display = "No blocks produced during timeout")]
     NetworkSilent{
         msg_id: crate::MessageId,
-        send_time: u32,
-        expire: u32,
+        block_id: crate::BlockId,
         timeout: u32
     },
 
@@ -93,7 +92,6 @@ pub enum SdkError {
     #[fail(display = "Transaction was not produced during the specified timeout")]
     TransactionWaitTimeout{
         msg_id: crate::MessageId,
-        msg: Vec<u8>,
         send_time: u32,
         timeout: u32
     },

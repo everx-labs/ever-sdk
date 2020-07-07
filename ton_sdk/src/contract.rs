@@ -43,8 +43,6 @@ use std::{
     collections::HashMap,
     iter::FromIterator,
 };
-#[cfg(feature = "node_interaction")]
-use ton_block::TransactionProcessingStatus;
 use serde_json::Value;
 use ton_vm::stack::{StackItem, Stack};
 use ton_vm::stack::integer::IntegerData;
@@ -191,6 +189,8 @@ pub struct FunctionCallSet {
 }
 
 pub struct SdkMessage {
+    pub id: MessageId,
+    pub serialized_message: Vec<u8>,
     pub message: TvmMessage,
     pub expire: Option<u32>,
     pub address: MsgAddressInt,
@@ -205,8 +205,14 @@ pub struct ContractImage {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct MessageProcessingState {
-    last_block_id: Option<BlockId>,
+    last_block_id: BlockId,
     sent_time: u32,
+}
+
+#[derive(Debug)]
+pub struct RecievedTransaction {
+    pub value: Value,
+    pub parsed: Transaction
 }
 
 #[allow(dead_code)]
@@ -409,29 +415,14 @@ impl Contract {
             .map(|val| val.to_string())
     }
 
-    // Asynchronously calls contract by sending given message.
-    // To get calling result - need to load message,
-    // it's id and processing status is returned by this function
-    pub async fn process_message(client: &NodeClient, msg: TvmMessage, expire: Option<u32>, try_index: u8)
-        -> Result<(Transaction, Value)>
-    {
-        let addr = msg.dst().ok_or(SdkError::InvalidData {
-            msg: "Wrong message type (extOut)".to_owned() })?;
-        let (data, msg_id) = Self::serialize_message(msg)?;
-        Self::process_serialized_message(client, &addr, &msg_id, &data, expire, try_index).await
-    }
-
-    pub async fn process_serialized_message(
+    pub async fn process_message(
         client: &NodeClient,
-        address: &MsgAddressInt,
-        id: &MessageId,
-        msg: &[u8],
-        expire: Option<u32>,
-        try_index: u8
-    ) -> Result<(Transaction, Value)> {
-        let state = Self::send_message(client, address, &id.to_bytes()?, msg, expire).await?;
+        msg: &SdkMessage
+    ) -> Result<RecievedTransaction> {
+        let state = Self::send_message(
+            client, &msg.address, &msg.id.to_bytes()?, &msg.serialized_message, msg.expire).await?;
         //println!("msg is sent, id: {}", id);
-        Self::wait_transaction_processing(client, address, id, state, expire, try_index, true).await
+        Self::wait_transaction_processing(client, &msg.address, &msg.id, state, msg.expire, true).await
     }
 
     pub async fn send_message(
@@ -442,13 +433,12 @@ impl Contract {
         expire: Option<u32>
     ) -> Result<MessageProcessingState> {
         let now = Self::now();
-        let mut block_id = None;
         if let Some(expire) = expire {
             if expire <= now {
                 fail!(SdkError::InvalidArg { msg: "Message already expired".to_owned() });
             }
-            block_id = Some(Block::find_last_shard_block(client, address).await?);
         }
+        let block_id = Block::find_last_shard_block(client, address).await?;
         client.send_message(id, msg).await?;
         Ok(MessageProcessingState {
             sent_time: Self::now(),
@@ -456,102 +446,91 @@ impl Contract {
         })
     }
 
+    const MESSAGE_EXPIRED_CODE: i32 = 57;
+    const REPLAY_PROTECTION_CODE: i32 = 52;
+
     pub async fn wait_transaction_processing(
         client: &NodeClient,
         address: &MsgAddressInt,
         message_id: &MessageId,
         state: MessageProcessingState,
         expire: Option<u32>,
-        try_index: u8,
         infinite_wait: bool
-    ) -> Result<(Transaction, Value)>
+    ) -> Result<RecievedTransaction>
     {
-        let transaction = if let Some(expire) = expire {
-            let mut block_id = state.last_block_id.ok_or(SdkError::InvalidArg { 
-                msg: "No starting block provided".to_owned() })?;
-            let mut transaction = Value::Null;
-            let add_timeout = client.timeouts().message_processing_timeout;
-            loop {
-                let now = Self::now();
-                let timeout = std::cmp::max(expire, now) - now + add_timeout;
-                let result = Block::wait_next_block(client, &block_id, &address, Some(timeout)).await;
-                let block = match result {
-                    Err(err) => match err.downcast_ref::<SdkError>() {
-                        Some(SdkError::WaitForTimeout) => {
-                            if infinite_wait {
-                                continue;
-                            } else {
-                                fail!(SdkError::NetworkSilent {
-                                    msg_id: message_id.clone(),
-                                    block_id,
-                                    timeout
-                                })
-                            }
-                        }
-                        _ => fail!(err)
-                    }
-                    Ok(block) => block
-                };
+        let stop_time = match expire {
+            Some(expire) => expire,
+            None => Self::now() + client.timeouts().message_processing_timeout / 1000
+        };
 
-                if block.gen_utime > expire {
+        let mut block_id = state.last_block_id;
+        let mut transaction = Value::Null;
+        let add_timeout = client.timeouts().message_processing_timeout;
+        loop {
+            let now = Self::now();
+            let timeout = std::cmp::max(stop_time, now) - now + add_timeout;
+            let result = Block::wait_next_block(client, &block_id, &address, Some(timeout)).await;
+            let block = match result {
+                Err(err) => match err.downcast_ref::<SdkError>() {
+                    Some(SdkError::WaitForTimeout) => {
+                        if infinite_wait {
+                            continue;
+                        } else {
+                            fail!(SdkError::NetworkSilent {
+                                msg_id: message_id.clone(),
+                                block_id,
+                                timeout
+                            })
+                        }
+                    }
+                    _ => fail!(err)
+                }
+                Ok(block) => block
+            };
+
+            for block_msg in &block.in_msg_descr {
+                if Some(message_id) == block_msg.msg_id.as_ref() {
+                    let tr_id = block_msg.transaction_id.clone()
+                        .ok_or(SdkError::InvalidData {
+                            msg: "No field `transaction_id` in block".to_owned() })?;
+
+                    transaction = client.wait_for(
+                        TRANSACTIONS_TABLE_NAME,
+                        &json!({
+                            "id": { "eq": tr_id.to_string() }
+                        }).to_string(),
+                        TRANSACTION_FIELDS_ORDINARY,
+                        Some(MAX_TIMEOUT))
+                        .await?;
+
+                    break;
+                }
+            }
+            if !transaction.is_null() {
+                break;
+            }
+
+            if block.gen_utime > stop_time {
+                if expire.is_some() {
                     fail!(SdkError::MessageExpired{
                         msg_id: message_id.clone(),
                         send_time: state.sent_time,
-                        expire,
+                        expire: stop_time,
                         block_time: block.gen_utime,
                         block_id
                     });
+                } else {
+                    fail!(SdkError::TransactionWaitTimeout {
+                        msg_id: message_id.clone(),
+                        send_time: state.sent_time,
+                        timeout
+                    });
                 }
-
-                for block_msg in &block.in_msg_descr {
-                    if Some(message_id) == block_msg.msg_id.as_ref() {
-                        let tr_id = block_msg.transaction_id.clone()
-                            .ok_or(SdkError::InvalidData {
-                                msg: "No field `transaction_id` in block".to_owned() })?;
-
-                        transaction = client.wait_for(
-                            TRANSACTIONS_TABLE_NAME,
-                            &json!({
-                                "id": { "eq": tr_id.to_string() }
-                            }).to_string(),
-                            TRANSACTION_FIELDS_ORDINARY,
-                            Some(MAX_TIMEOUT))
-                            .await?;
-
-                        break;
-                    }
-                }
-                if !transaction.is_null() {
-                    break;
-                }
-                block_id = block.id;
+                
             }
 
-            transaction
-        } else {
-            let mut tr_timeout = client.timeouts().message_processing_timeout;
-
-            let filter = json!({
-                "in_msg": { "eq": message_id.to_string() },
-                "status": { "eq": json_helper::transaction_status_to_u8(TransactionProcessingStatus::Finalized) }
-            }).to_string();
-
-            client.wait_for(
-                TRANSACTIONS_TABLE_NAME,
-                &filter,
-                TRANSACTION_FIELDS_ORDINARY,
-                Some(tr_timeout))
-                .await
-                .map_err(|err|  match err.downcast_ref::<SdkError>() {
-                    Some(SdkError::WaitForTimeout) => 
-                        SdkError::TransactionWaitTimeout {
-                            msg_id: message_id.clone(),
-                            send_time: state.sent_time,
-                            timeout: tr_timeout
-                        }.into(),
-                    _ => err
-                })?
-        };
+            block_id = block.id;
+        }
 
         let parsed = serde_json::from_value::<Transaction>(transaction.clone())?;
         if parsed.compute.exit_code == Some(Self::MESSAGE_EXPIRED_CODE) ||
@@ -561,10 +540,14 @@ impl Contract {
                 msg_id: message_id.clone(),
                 send_time: state.sent_time,
                 expire: expire.unwrap_or(0),
-                block_time: parsed.now
+                block_time: parsed.now,
+                block_id: transaction["block_id"].as_str().unwrap_or("null").into()
             }.into())
         } else {
-            Ok((parsed, transaction))
+            Ok(RecievedTransaction { 
+                parsed,
+                value: transaction
+            })
         }
     }
 }
@@ -878,18 +861,15 @@ impl Contract {
             params.abi, params.func, header, params.input, internal, key_pair,
         )?;
 
+        let msg = Self::create_message(address.clone(), msg_body.into())?;
+        let (body, id) = Self::serialize_message(&msg)?;
         Ok(SdkMessage {
-            message: Self::create_message(address, msg_body.into())?,
+            id,
+            serialized_message: body,
+            message: msg,
+            address,
             expire,
         })
-    }
-
-    // Creates Message struct with provided body and account address
-    // Returns message's bag of cells and identifier.
-    pub fn construct_call_message_with_body(address: MsgAddressInt, body: &[u8]) -> Result<TvmMessage> {
-        let body_cell = Self::deserialize_tree_to_slice(body)?;
-
-        Self::create_message(address, body_cell)
     }
 
     // Packs given inputs by abi into Message struct without sign and returns data to sign.
@@ -910,10 +890,9 @@ impl Contract {
 
         let msg = Self::create_message(address, msg_body.into())?;
 
-        Self::serialize_message(msg).map(|(msg_data, _id)| {
+        Self::serialize_message(&msg).map(|(msg_data, _id)| {
             MessageToSign { message: msg_data, data_to_sign, expire }
-        }
-        )
+        })
     }
 
     // ------- Deploy constructing functions -------
@@ -935,8 +914,17 @@ impl Contract {
             params.abi, params.func, header, params.input, false, key_pair)?;
 
         let cell = msg_body.into();
+        let msg = Self::create_deploy_message(Some(cell), image, workchain_id)?;
+
+        let address = msg.dst().ok_or_else(|| error!(SdkError::InternalError {
+            msg: "No address in created deploy message".to_owned() }))?;
+        let (body, id) = Self::serialize_message(&msg)?;
+
         Ok(SdkMessage {
-            message: Self::create_deploy_message(Some(cell), image, workchain_id)?,
+            id,
+            serialized_message: body,
+            message: msg,
+            address,
             expire,
         })
     }
@@ -978,18 +966,21 @@ impl Contract {
         let cell = msg_body.into();
         let msg = Self::create_deploy_message(Some(cell), image, workchain_id)?;
 
-        Self::serialize_message(msg).map(|(msg_data, _id)| {
+        Self::serialize_message(&msg).map(|(msg_data, _id)| {
             MessageToSign { message: msg_data, data_to_sign, expire }
-        }
-        )
+        })
     }
 
 
     // Add sign to message, returned by `get_deploy_message_bytes_for_signing` or
     // `get_run_message_bytes_for_signing` function.
     // Returns serialized message and identifier.
-    pub fn add_sign_to_message(abi: String, signature: &[u8], public_key: Option<&[u8]>, message: &[u8])
-        -> Result<(Vec<u8>, MessageId)> {
+    pub fn add_sign_to_message(
+        abi: String,
+        signature: &[u8],
+        public_key: Option<&[u8]>,
+        message: &[u8]
+    ) -> Result<SdkMessage> {
         let mut slice = Self::deserialize_tree_to_slice(message)?;
 
         let mut message: TvmMessage = TvmMessage::construct_from(&mut slice)?;
@@ -998,11 +989,19 @@ impl Contract {
             .ok_or(error!(SdkError::InvalidData { msg: "No message body".to_owned() }))?;
 
         let signed_body = ton_abi::add_sign_to_function_call(abi, signature, public_key, body)?;
-
         message.set_body(signed_body.into());
 
+        let address = message.dst().ok_or_else(|| error!(SdkError::InternalError {
+            msg: "No address in signed message".to_owned() }))?;
+        let (body, id) = Self::serialize_message(&message)?;
 
-        Self::serialize_message(message)
+        Ok(SdkMessage {
+            id,
+            address,
+            serialized_message: body,
+            message,
+            expire: None
+        })
     }
 
     fn create_message(address: MsgAddressInt, msg_body: SliceData) -> Result<TvmMessage> {
@@ -1028,7 +1027,7 @@ impl Contract {
         Ok(msg)
     }
 
-    pub fn serialize_message(msg: TvmMessage) -> Result<(Vec<u8>, MessageId)> {
+    pub fn serialize_message(msg: &TvmMessage) -> Result<(Vec<u8>, MessageId)> {
         let cells = msg.write_to_new_cell()?.into();
 
         let mut data = Vec::new();

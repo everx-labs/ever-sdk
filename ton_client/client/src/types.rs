@@ -147,7 +147,7 @@ impl ApiError {
             "Wait for operation rejected on timeout")
     }
 
-    pub fn message_expired(msg_id: String, send_time: u32, expire: u32, block_time: u32) -> Self {
+    pub fn message_expired(msg_id: String, send_time: u32, expire: u32, block_time: u32, block_id: String) -> Self {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ApiSdkErrorCode::MessageExpired,
@@ -158,7 +158,8 @@ impl ApiError {
             "message_id": msg_id,
             "send_time": format_time(send_time),
             "expiration_time": format_time(expire),
-            "block_time": format_time(block_time)
+            "block_time": format_time(block_time),
+            "block_id": block_id,
         });
         error
     }
@@ -168,7 +169,7 @@ impl ApiError {
             "Address required for run local. You haven't specified contract code or data so address is required to load missing parts from network.")
     }
 
-    pub fn network_silent(msg_id: String, send_time: u32, expire: u32, timeout: u32) -> Self {
+    pub fn network_silent(msg_id: String, timeout: u32, block_id: String) -> Self {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ApiSdkErrorCode::NetworkSilent,
@@ -177,9 +178,8 @@ impl ApiError {
 
         error.data = serde_json::json!({
             "message_id": msg_id,
-            "send_time": format_time(send_time),
-            "expiration_time": format_time(expire),
             "timeout": timeout,
+            "last_block_id": block_id
         });
         error
     }
@@ -824,13 +824,13 @@ where
 {
     match err.downcast_ref::<SdkError>() {
         Some(SdkError::WaitForTimeout) => ApiError::wait_for_timeout(),
-        Some(SdkError::MessageExpired{msg_id, msg: _, expire, send_time, block_time}) => 
-            ApiError::message_expired(msg_id.to_string(), *send_time, *expire, *block_time),
-        Some(SdkError::NetworkSilent{msg_id, send_time, expire, timeout}) =>
-            ApiError::network_silent(msg_id.to_string(), *send_time, *expire, *timeout),
+        Some(SdkError::MessageExpired{msg_id, expire, send_time, block_time, block_id}) => 
+            ApiError::message_expired(msg_id.to_string(), *send_time, *expire, *block_time, block_id.to_string()),
+        Some(SdkError::NetworkSilent{msg_id, timeout, block_id}) =>
+            ApiError::network_silent(msg_id.to_string(), *timeout, block_id.to_string()),
         Some(SdkError::TransactionsLag{msg_id, send_time, block_id, timeout}) =>
             ApiError::transactions_lag(msg_id.to_string(), *send_time, block_id.clone(), *timeout),
-        Some(SdkError::TransactionWaitTimeout{msg_id, msg: _, send_time, timeout}) =>
+        Some(SdkError::TransactionWaitTimeout{msg_id, send_time, timeout}) =>
             ApiError::transaction_wait_timeout(msg_id.to_string(), *send_time, *timeout),
         Some(SdkError::ClockOutOfSync{delta_ms, threshold_ms, expiration_timeout}) =>
             ApiError::clock_out_of_sync(*delta_ms, *threshold_ms, *expiration_timeout),

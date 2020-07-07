@@ -15,7 +15,7 @@ use ton_sdk::{Contract, MessageType, AbiContract, FunctionCallSet};
 use ton_sdk::json_abi::encode_function_call;
 use ton_types::cells_serialization::BagOfCells;
 use ton_block::{AccStatusChange, Message as TvmMessage, MsgAddressInt};
-use ton_sdk::{Transaction, Message, TransactionFees};
+use ton_sdk::{Transaction, Message, TransactionFees, RecievedTransaction};
 
 use crate::contracts::{EncodedMessage, EncodedUnsignedMessage};
 use crate::client::ClientContext;
@@ -23,6 +23,7 @@ use crate::crypto::keys::{KeyPair, account_decode};
 use crate::types::{
     ApiResult,
     ApiError,
+    ApiSdkErrorCode,
     base64_decode,
     long_num_to_json_string};
 
@@ -211,7 +212,7 @@ pub(crate) async fn run(context: &mut ClientContext, params: ParamsOfRun) -> Api
     let tr = call_contract(client, address.clone(), &params, key_pair.as_ref()).await?;
 
     process_transaction(
-        tr,
+        tr.parsed,
         Some(params.call_set.abi),
         Some(params.call_set.function_name),
         &address,
@@ -274,13 +275,6 @@ pub(crate) fn process_transaction(
     Ok( ResultOfRun { output, fees: fees } )
 }
 
-pub(crate) fn serialize_message(msg: TvmMessage) -> ApiResult<(Vec<u8>, String)> {
-    let (msg, id) = ton_sdk::Contract::serialize_message(msg)
-        .map_err(|err| ApiError::contracts_cannot_serialize_message(err))?;
-
-    Ok((msg, id.to_string()))
-}
-
 pub(crate) fn local_run(context: &mut ClientContext, params: ParamsOfLocalRun) -> ApiResult<ResultOfLocalRun> {
     debug!("-> contracts.run.local({}, {:?})",
         params.address.clone(),
@@ -341,14 +335,8 @@ pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfRun) -
         params.try_index)
         .map_err(|err| ApiError::contracts_create_run_message_failed(err))?;
 
-    let (body, id) = serialize_message(msg.message)?;
-
     debug!("<-");
-    Ok(EncodedMessage {
-        message_id: id,
-        message_body_base64: base64::encode(&body),
-        expire: msg.expire
-    })
+    Ok(EncodedMessage::from_sdk_msg(msg))
 }
 
 pub(crate) fn encode_unsigned_message(context: &mut ClientContext, params: ParamsOfEncodeUnsignedRunMessage) -> ApiResult<EncodedUnsignedMessage> {
@@ -516,25 +504,21 @@ pub(crate) async fn load_contract(context: &ClientContext, address: &MsgAddressI
     }
 }
 
-const MESSAGE_EXPIRED_CODE: i32 = 57;
-const REPLAY_PROTECTION_CODE: i32 = 52;
-
-async fn retry_call<F, Fut>(retries_count: u8, func: F) -> Result<(Transaction, serde_json::Value)>
+pub async fn retry_call<F, Fut>(retries_count: u8, func: F) -> ApiResult<RecievedTransaction>
     where
-        F: Fn(u8) -> Result<Fut>,
-        Fut: futures::Future<Output=Result<(Transaction, serde_json::Value)>>
+        F: Fn(u8) -> Fut,
+        Fut: futures::Future<Output=ApiResult<RecievedTransaction>>
 {
-    let mut result = Err(SdkError::InternalError { msg: "Unreacheable".to_owned() }.into());
+    let mut result = Err(ApiError::contracts_send_message_failed("Unreacheable"));
     for i in 0..(retries_count + 1) {
         //println!("Try#{}", i);
-        result = func(i)?.await;
+        result = func(i).await;
         match &result {
             Err(error) => {
-                match error.downcast_ref::<SdkError>() {
-                    Some(SdkError::MessageExpired {
-                        msg_id: _, msg: _, expire: _, send_time: _, block_time: _
-                    }) => continue,
-                    _ => return result
+                if error.code == ApiSdkErrorCode::MessageExpired as isize {
+                    continue;
+                } else {
+                    return result;
                 }
             }
             _ => return result
@@ -549,19 +533,30 @@ async fn call_contract(
     address: MsgAddressInt,
     params: &ParamsOfRun,
     key_pair: Option<&Keypair>,
-) -> ApiResult<Transaction> {
-    let result = Contract::call_json(
-        client,
-        address.clone(),
-        params.call_set.clone().into(),
-        key_pair)
-            .await;
-
-    match result {
-        Err(err) => 
-            Err(resolve_msg_sdk_error(client, err, ApiError::contracts_run_failed).await?),
-        Ok(tr) => Ok(tr)
-    }
+) -> ApiResult<RecievedTransaction> {
+    retry_call(client.timeouts().message_retries_count, |try_index: u8| {
+        let address = address.clone();
+        let call_set = params.call_set.clone();
+        async move {
+            let msg = Contract::construct_call_message_json(
+                address,
+                call_set.into(),
+                false,
+                key_pair,
+                Some(client.timeouts()),
+                Some(try_index))
+                .map_err(|err| ApiError::contracts_create_run_message_failed(err))?;
+    
+            let result = Contract::process_message(client, &msg).await;
+            
+            match result {
+                Err(err) => 
+                    Err(resolve_msg_sdk_error(
+                        client, err, &msg.serialized_message, ApiError::contracts_run_failed).await?),
+                Ok(tr) => Ok(tr)
+            }
+        }
+    }).await
 }
 
 pub(crate) fn do_local_run(
@@ -683,11 +678,12 @@ pub(crate) fn resolve_msg_error(
 pub(crate) async fn resolve_msg_sdk_error<F: Fn(String) -> ApiError>(
     client: &NodeClient,
     error: failure::Error,
+    msg: &[u8],
     default_error: F
 ) -> ApiResult<ApiError> {
     match error.downcast_ref::<SdkError>() {
-        Some(SdkError::MessageExpired{msg_id: _, msg, expire: _, send_time, block_time: _}) | 
-        Some(SdkError::TransactionWaitTimeout{msg_id: _, msg, send_time, timeout: _}) => {
+        Some(SdkError::MessageExpired{msg_id: _, expire: _, send_time, block_time: _, block_id: _}) | 
+        Some(SdkError::TransactionWaitTimeout{msg_id: _, send_time, timeout: _}) => {
             let address = Contract::get_dst_from_msg(msg)
                 .map_err(|err| ApiError::invalid_params("message", format!("cannot get target address: {}", err)))?;
             let account = Contract::load(client, &address)

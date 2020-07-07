@@ -11,74 +11,19 @@
 * limitations under the License.
 */
 
-use ton_abi::json_abi::decode_function_response;
 use super::*;
-use crate::{ContractImage, init_json, MessageType};
+use crate::{ContractImage, init_json};
 use ed25519_dalek::Keypair;
 use ton_block::{MsgAddressInt};
 use ton_types::{AccountId, HashmapE};
-use crate::tests_common::{call_contract, deploy_contract_and_wait, get_config, get_grams_from_giver,
-    init_node_connection, PROFESSOR_ABI, PROFESSOR_IMAGE, WALLET_ABI, WALLET_IMAGE,
+use crate::tests_common::{call_contract, call_contract_and_wait, deploy_contract_and_wait,
+    get_config, init_node_connection, PROFESSOR_ABI, PROFESSOR_IMAGE, WALLET_ABI, WALLET_IMAGE,
     SUBSCRIBE_CONTRACT_IMAGE, SUBSCRIBE_CONTRACT_ABI};
-use futures::StreamExt;
 
 const FUNCTION_PARAMS: &str = r#"
 {
 	"value": "0000000000000000000000000000000000000000000000000000000000000001"
 }"#;
-
-async fn test_call_contract(client: &NodeClient, address: MsgAddressInt, key_pair: &Keypair) {
-
-    let func = "createOperationLimit".to_string();
-    let abi = WALLET_ABI.to_string();
-
-    // call needed method
-    let tr = Contract::call_json(
-        client,
-        address,
-        FunctionCallSet {
-            func: func.clone(),
-            header: None,
-            input: FUNCTION_PARAMS.to_owned(),
-            abi:  abi.clone(),
-        },
-        Some(&key_pair))
-            .await
-            .expect("Error calling contract method");
-
-    // take external outbound message from the transaction
-    let out_msg = tr.load_out_messages(client)
-        .expect("Error calling load out messages");
-    
-    futures::pin_mut!(out_msg);
-
-    let out_msg = out_msg
-        .filter(|msg| futures::future::ready(
-            msg.as_ref()
-                .expect("error unwrap out message 1")
-                .msg_type() == MessageType::ExternalOutbound))
-        .next()
-        .await
-            .expect("erro unwrap out message 2")
-            .expect("erro unwrap out message 3");
-
-    // take body from the message
-    let response = out_msg.body().expect("erro unwrap out message body");
-
-
-    // decode the body by ABI
-    let result = decode_function_response(abi, func, response, false)
-        .expect("Error decoding result");
-
-    println!("result:/n{}", result);
-
-
-    // this way it is need:
-    // 1. message status with transaction id or transaction object with in-message id
-    // 2. transaction object with out messages ids
-    // 3. message object with body
-
-}
 
 #[tokio::main]
 #[test]
@@ -89,36 +34,13 @@ pub async fn test_deploy_and_call_contract() {
     let mut csprng = rand::thread_rng();
     let keypair = Keypair::generate(&mut csprng);
 
-    let contract_image = ContractImage::from_state_init_and_key(&mut WALLET_IMAGE.as_slice(), &keypair.public).expect("Unable to parse contract code file");
+    let address = deploy_contract_and_wait(&client, &WALLET_IMAGE, &WALLET_ABI, "{}", &keypair, 0).await;
 
-    let account_id = contract_image.msg_address(0);
+    let result = call_contract_and_wait(
+        &client, address, "createOperationLimit", FUNCTION_PARAMS.to_owned(), &WALLET_ABI, Some(&keypair)
+    ).await;
 
-    // before deploying contract need to transfer some funds to its address
-    get_grams_from_giver(&client, account_id.clone()).await;
-
-
-    // call deploy method
-    let func = "constructor".to_string();
-    let abi = WALLET_ABI.to_string();
-
-    let tr = Contract::deploy_json(
-        &client,
-        FunctionCallSet {
-            func,
-            header: None,
-            input: "{}".to_owned(),
-            abi,
-        },
-        contract_image,
-        Some(&keypair), 0)
-        .await
-        .expect("Error deploying contract");
-
-    if tr.is_aborted() {
-        panic!("transaction aborted!\n\n{:?}", tr)
-    }
-
-    test_call_contract(&client, account_id, &keypair).await;
+    println!("Contract response {}", result);
 }
 
 #[test]
@@ -194,7 +116,7 @@ async fn test_expire() {
 
     let wallet_address = deploy_contract_and_wait(&client, &WALLET_IMAGE, &WALLET_ABI, "{}", &keypair, 0).await;
 
-    let msg = Contract::construct_call_message_json(
+    let mut msg = Contract::construct_call_message_json(
         wallet_address.clone(),
         FunctionCallSet {
             func: "setSubscriptionAccount".to_owned(),
@@ -211,13 +133,15 @@ async fn test_expire() {
         None,
         None).unwrap();
 
-    let result = Contract::process_message(&client, msg.message, Some(Contract::now() + 1), 0).await;
+    msg.expire = Some(Contract::now() + 1);
+
+    let result = Contract::process_message(&client, &msg).await;
 
     match result {
         Err(error) => {
             println!("{}", error);
             match error.downcast_ref::<SdkError>().unwrap() {
-                SdkError::MessageExpired{msg_id: _, msg: _, expire: _, send_time: _, block_time: _} => {},
+                SdkError::MessageExpired{msg_id: _, expire: _, send_time: _, block_time: _, block_id: _} => {},
                 _ => panic!("Error `SdkError::MessageExpired` expected")
             };
         }
@@ -226,39 +150,39 @@ async fn test_expire() {
     }
 }
 
-#[tokio::main]
-#[test]
-async fn test_retries() {
-    let mut config = get_config();
-    config["timeouts"]["message_expiration_timeout_grow_factor"] = serde_json::Value::from(1.1);
-    config["timeouts"]["message_processing_timeout_grow_factor"] = serde_json::Value::from(0.9);
-    // connect to node
-	let client = init_json(&config.to_string()).await.unwrap();
+// #[tokio::main]
+// #[test]
+// async fn test_retries() {
+//     let mut config = get_config();
+//     config["timeouts"]["message_expiration_timeout_grow_factor"] = serde_json::Value::from(1.1);
+//     config["timeouts"]["message_processing_timeout_grow_factor"] = serde_json::Value::from(0.9);
+//     // connect to node
+// 	let client = init_json(&config.to_string()).await.unwrap();
 
-    let mut csprng = rand::thread_rng();
-    let keypair = Keypair::generate(&mut csprng);
+//     let mut csprng = rand::thread_rng();
+//     let keypair = Keypair::generate(&mut csprng);
 
-    let wallet_address = deploy_contract_and_wait(&client, &WALLET_IMAGE, &WALLET_ABI, "{}", &keypair, 0).await;
+//     let wallet_address = deploy_contract_and_wait(&client, &WALLET_IMAGE, &WALLET_ABI, "{}", &keypair, 0).await;
 
-    let mut futures = vec![];
-    for i in 0..10 {
-        let str_address = wallet_address.to_string();
-        let str_address = str_address[..str_address.len() - 2].to_owned() + &format!("{:02x}", i);
-        let fut = call_contract(
-            &client,
-            wallet_address.clone(),
-            "setSubscriptionAccount",
-            json!({
-                "addr": str_address
-            }).to_string(),
-            &WALLET_ABI,
-            Some(&keypair));
+//     let mut futures = vec![];
+//     for i in 0..10 {
+//         let str_address = wallet_address.to_string();
+//         let str_address = str_address[..str_address.len() - 2].to_owned() + &format!("{:02x}", i);
+//         let fut = call_contract(
+//             &client,
+//             wallet_address.clone(),
+//             "setSubscriptionAccount",
+//             json!({
+//                 "addr": str_address
+//             }).to_string(),
+//             &WALLET_ABI,
+//             Some(&keypair));
 
-        futures.push(fut);
-    }
+//         futures.push(fut);
+//     }
 
-    futures::future::join_all(futures).await;
-}
+//     futures::future::join_all(futures).await;
+// }
 
 #[test]
 fn professor_test() {
