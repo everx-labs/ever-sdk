@@ -665,6 +665,7 @@ pub enum ApiSdkErrorCode {
     InvalidContextHandle = 3,
     CannotCreateRuntime = 4,
     SdkNotInit = 5,
+    WasmUnreachableCode = 6,
 
     ConfigInitFailed = 1001,
     WaitForTimeout = 1003,
@@ -823,7 +824,7 @@ where
 {
     match err.downcast_ref::<SdkError>() {
         Some(SdkError::WaitForTimeout) => ApiError::wait_for_timeout(),
-        Some(SdkError::MessageExpired{msg_id, msg: _, expire, send_time, block_time}) => 
+        Some(SdkError::MessageExpired{msg_id, msg: _, expire, send_time, block_time}) =>
             ApiError::message_expired(msg_id.to_string(), *send_time, *expire, *block_time),
         Some(SdkError::NetworkSilent{msg_id, send_time, expire, timeout}) =>
             ApiError::network_silent(msg_id.to_string(), *send_time, *expire, *timeout),

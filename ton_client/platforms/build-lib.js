@@ -9,7 +9,7 @@ const spawnEnv = {
 };
 
 function root_path(...items) {
-    return path.join(root, ...items);
+    return path.resolve(root, ...(items.reduce((a, x) => a.concat(x), [])));
 }
 
 const ton_client_toml = fs.readFileSync(path.join(__dirname, '..', 'client', 'Cargo.toml')).toString();
@@ -29,6 +29,10 @@ function spawnProcess(name, args) {
             process.stderr.write(data);
         });
 
+		spawned.on('error', (err) => {
+			reject(err);
+		});
+
         spawned.on('close', (code) => {
             if (code === 0) {
                 resolve();
@@ -39,15 +43,57 @@ function spawnProcess(name, args) {
     });
 }
 
-function gz(src, dst) {
+async function spawnAll(items, getArgs) {
+    const list = [];
+    for (const item of items) {
+        const args = getArgs(item);
+        console.log(`Build: ${args.join(' ')}`);
+        list.push(spawnProcess(args[0], args.slice(1)));
+    }
+    return Promise.all(list);
+}
+
+
+function getOption(option) {
+    const prefixes = [];
+    ['--', '-'].forEach(pfx => [':', '='].forEach(sfx => prefixes.push(`${pfx}${option}${sfx}`)));
+    for (const arg of process.argv) {
+        for (const pfx of prefixes) {
+            if (arg.startsWith(pfx)) {
+                return arg.slice(pfx.length);
+            }
+        }
+    }
+    return '';
+}
+
+const devOut = getOption('dev-out');
+const devMode = !!devOut;
+
+
+function mkdir(path) {
+    if (!fs.existsSync(path)) {
+        fs.mkdirSync(path, { recursive: true });
+    }
+}
+
+
+function gz(src, dst, devPath) {
     return new Promise((resolve, reject) => {
-        const src_path = root_path(...src);
-        const dst_path = root_path('bin', dst);
-        fs.createReadStream(src_path)
+        const srcPath = root_path(src);
+        const dstPath = root_path('bin', dst);
+
+        if (devOut) {
+            const dir = devPath ? path.resolve(devOut, ...devPath) : devOut;
+            mkdir(dir)
+            fs.copyFileSync(srcPath, path.resolve(dir, src[src.length - 1]));
+        }
+
+        fs.createReadStream(srcPath)
             .pipe(zlib.createGzip({ level: 9 }))
-            .pipe(fs.createWriteStream(dst_path + '.gz'))
+            .pipe(fs.createWriteStream(dstPath + '.gz'))
             .on('finish', () => {
-                fs.chmodSync(dst_path + '.gz', 0o666);
+                fs.chmodSync(dstPath + '.gz', 0o666);
                 resolve();
             })
             .on('error', (error) => {
@@ -86,10 +132,14 @@ function main(f) {
 module.exports = {
     spawnEnv,
     spawnProcess,
+    spawnAll,
     deleteFolderRecursive,
     main,
     gz,
     toml_version,
     version,
     root_path,
+    devOut,
+    devMode,
+    mkdir,
 };
