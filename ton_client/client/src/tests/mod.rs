@@ -41,6 +41,7 @@ impl log::Log for SimpleLogger {
     fn flush(&self) {}
 }
 
+#[derive(Clone)]
 struct TestClient {
     context: InteropContext,
 }
@@ -513,4 +514,44 @@ fn test_out_of_sync() {
     let value: Value = serde_json::from_str(&result).unwrap();
 
    assert_eq!(value["code"], 1013);
+}
+
+
+#[test]
+fn test_parallel_requests() {
+    let client1 = TestClient::new();
+    let client2 = TestClient::new();
+    let client3 = client1.clone();
+
+    client1.request("setup",
+        json!({"baseUrl": "http://localhost"})).unwrap();
+    client2.request("setup",
+        json!({"baseUrl": "http://localhost"})).unwrap();
+
+    let start = std::time::Instant::now();
+    let timeout: u32 = 5000;
+    let long_wait = std::thread::spawn(move || {
+        client3.request("queries.wait.for",
+            json!({
+                    "table": "accounts".to_owned(),
+                    "filter": json!({
+                        "id": { "eq": "123" }
+                    }).to_string(),
+                    "result": "id",
+                    "timeout": timeout
+                }),
+        ).unwrap_err();
+        client3
+    });
+
+    std::thread::sleep(std::time::Duration::from_millis(500));
+
+    // check that request with another context don't wait 
+    client2.request("crypto.ed25519.keypair", json!({})).unwrap();
+    assert!(start.elapsed().as_millis() < timeout as u128);
+    
+    // check that request with same context waits for previous call
+    client1.request("crypto.ed25519.keypair", json!({})).unwrap();
+    assert!(start.elapsed().as_millis() > timeout as u128);
+    long_wait.join().unwrap();
 }

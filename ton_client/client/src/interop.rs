@@ -29,7 +29,7 @@ pub fn json_sync_request(
     method_name: String,
     params_json: String,
 ) -> JsonResponse {
-    Client::shared().json_sync_request(
+    Client::json_sync_request(
         context,
         method_name,
         params_json)
