@@ -1,22 +1,13 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
-## Jul 06, 2020
+## 0.25.0 Jul 8, 2020
 ### New
+- supports for core context in all platforms
+- local run functions return updated contract state when running with `full_run = true`
+- time sync check while initializing
 - parallel requests on different contexts don't block each other. Requests on the same context
 remain sequential
-
-## Jun 05, 2020
-### New
-- time sync check while initializing
-
-## Jun 03, 2020
-### New
-- local run functions return updated contract state when running with `full_run = true`
-
-## 0.25.0 Jun 26, 2020
-### New
-- supports for core context in all bindings
 
 ## May 28, 2020
 ### New
