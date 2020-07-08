@@ -23,7 +23,7 @@ sha2 = "0.8"
 base64 = "0.10.0"
 lazy_static = "1.1.0"
 num-bigint = "0.2.2"
-sodalite = { version = "0.3.0", features = ["rand"] }
+sodalite = { path = "../../../sodalite", features = ["rand"] }
 chrono = "0.4.6"
 scrypt = { version = "0.2.0", default-features = false }
 bip39 = { git = "https://github.com/tonlabs/bip39-rs.git" }

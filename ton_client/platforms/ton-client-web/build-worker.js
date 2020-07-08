@@ -22,14 +22,24 @@ self.onmessage = (e) => {
     const request = message.request;
     if (request) {
         let result;
-        if (request.method === 'context.create') {
-            const context = wasmWrapper.core_create_context();
-            result = JSON.stringify({result_json: JSON.stringify(context), error_json: ''});
-        } else if (request.method === 'context.destroy') {
-            wasmWrapper.core_destroy_context(request.context);
-            result = JSON.stringify({result_json: '', error_json: ''});
-        } else {
-            result = wasmWrapper.core_json_request(request.context, request.method, request.params);
+        try {
+            if (request.method === 'context.create') {
+                const context = wasmWrapper.core_create_context();
+                result = JSON.stringify({result_json: JSON.stringify(context), error_json: ''});
+            } else if (request.method === 'context.destroy') {
+                wasmWrapper.core_destroy_context(request.context);
+                result = JSON.stringify({result_json: '', error_json: ''});
+            } else {
+                result = wasmWrapper.core_json_request(request.context, request.method, request.params);
+            }
+        } catch (error) {
+            result = JSON.stringify({
+                result_json: '',
+                error_json: JSON.stringify({
+                    code: 6,
+                    message: error.toString()
+                })
+            });
         }
         postMessage({
             response: {
