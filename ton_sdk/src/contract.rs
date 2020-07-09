@@ -473,7 +473,6 @@ impl Contract {
             let result = Block::wait_next_block(client, &state.last_block_id, &address, Some(timeout)).await;
             let block = match result {
                 Err(err) => {
-                    println!("wait block error {}", err);
                     if let Some(&SdkError::WaitForTimeout) = err.downcast_ref::<SdkError>() {
                         if infinite_wait {
                             continue;

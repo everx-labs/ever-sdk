@@ -159,7 +159,7 @@ impl Block {
             }).to_string(),
             BLOCK_FIELDS,
             timeout).await?;
-        println!("{}: block recieved {:#}", crate::Contract::now(), block);
+        //println!("{}: block recieved {:#}", crate::Contract::now(), block);
 
         if block["after_split"] == true && !Contract::check_shard_match(block.clone(), address)? {
             client.wait_for(
