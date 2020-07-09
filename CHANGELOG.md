@@ -8,6 +8,11 @@ All notable changes to this project will be documented in this file.
 - time sync check while initializing
 - parallel requests on different contexts don't block each other. Requests on the same context
 remain sequential
+- new transaction wait mechanism. All account's shard blocks are checked for transaction to 
+guarantee message expiration
+- `contracts.wait.transaction` function for awaiting previously sent message processing
+- `contracts.send.message` returns message processing state for `contracts.wait.transaction` function
+- `contracts.find.shard` function for account shard matching
 
 ## May 28, 2020
 ### New
