@@ -16,7 +16,7 @@ use crate::{ContractImage, init_json};
 use ed25519_dalek::Keypair;
 use ton_block::{MsgAddressInt};
 use ton_types::{AccountId, HashmapE};
-use crate::tests_common::{call_contract, call_contract_and_wait, deploy_contract_and_wait,
+use crate::tests_common::{call_contract_and_wait, deploy_contract_and_wait,
     get_config, init_node_connection, PROFESSOR_ABI, PROFESSOR_IMAGE, WALLET_ABI, WALLET_IMAGE,
     SUBSCRIBE_CONTRACT_IMAGE, SUBSCRIBE_CONTRACT_ABI};
 
@@ -135,7 +135,7 @@ async fn test_expire() {
 
     msg.expire = Some(Contract::now() + 1);
 
-    let result = Contract::process_message(&client, &msg).await;
+    let result = Contract::process_message(&client, &msg, false).await;
 
     match result {
         Err(error) => {
@@ -145,44 +145,9 @@ async fn test_expire() {
                 _ => panic!("Error `SdkError::MessageExpired` expected")
             };
         }
-        ,
         _ => panic!("Error expected")
     }
 }
-
-// #[tokio::main]
-// #[test]
-// async fn test_retries() {
-//     let mut config = get_config();
-//     config["timeouts"]["message_expiration_timeout_grow_factor"] = serde_json::Value::from(1.1);
-//     config["timeouts"]["message_processing_timeout_grow_factor"] = serde_json::Value::from(0.9);
-//     // connect to node
-// 	let client = init_json(&config.to_string()).await.unwrap();
-
-//     let mut csprng = rand::thread_rng();
-//     let keypair = Keypair::generate(&mut csprng);
-
-//     let wallet_address = deploy_contract_and_wait(&client, &WALLET_IMAGE, &WALLET_ABI, "{}", &keypair, 0).await;
-
-//     let mut futures = vec![];
-//     for i in 0..10 {
-//         let str_address = wallet_address.to_string();
-//         let str_address = str_address[..str_address.len() - 2].to_owned() + &format!("{:02x}", i);
-//         let fut = call_contract(
-//             &client,
-//             wallet_address.clone(),
-//             "setSubscriptionAccount",
-//             json!({
-//                 "addr": str_address
-//             }).to_string(),
-//             &WALLET_ABI,
-//             Some(&keypair));
-
-//         futures.push(fut);
-//     }
-
-//     futures::future::join_all(futures).await;
-// }
 
 #[test]
 fn professor_test() {

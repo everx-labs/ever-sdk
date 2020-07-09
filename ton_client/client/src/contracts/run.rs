@@ -25,7 +25,8 @@ use crate::types::{
     ApiError,
     ApiSdkErrorCode,
     base64_decode,
-    long_num_to_json_string};
+    long_num_to_json_string,
+    StdContractError};
 
 #[cfg(feature = "node_interaction")]
 use ton_sdk::{NodeClient, SdkError};
@@ -64,7 +65,6 @@ pub(crate) struct ParamsOfRun {
     #[serde(flatten)]
     pub call_set: RunFunctionCallSet,
     pub key_pair: Option<KeyPair>,
-    pub try_index: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -99,7 +99,6 @@ pub(crate) struct ParamsOfEncodeUnsignedRunMessage {
     pub address: String,
     #[serde(flatten)]
     pub call_set: RunFunctionCallSet,
-    pub try_index: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -124,7 +123,8 @@ pub struct ParamsOfDecodeUnknownRun {
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfRun {
     pub output: serde_json::Value,
-    pub fees: RunFees
+    pub fees: RunFees,
+    pub transaction: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -213,6 +213,7 @@ pub(crate) async fn run(context: &mut ClientContext, params: ParamsOfRun) -> Api
 
     process_transaction(
         tr.parsed,
+        tr.value,
         Some(params.call_set.abi),
         Some(params.call_set.function_name),
         &address,
@@ -263,6 +264,7 @@ pub(crate) fn process_out_messages(
 
 pub(crate) fn process_transaction(
     transaction: Transaction,
+    json: serde_json::Value,
     abi: Option<serde_json::Value>,
     function: Option<String>,
     address: &MsgAddressInt,
@@ -272,7 +274,7 @@ pub(crate) fn process_transaction(
     let fees = transaction.calc_fees().into();
     let output = process_out_messages(&transaction.out_messages, abi, function)?;
     
-    Ok( ResultOfRun { output, fees: fees } )
+    Ok( ResultOfRun { output, fees: fees, transaction: json } )
 }
 
 pub(crate) fn local_run(context: &mut ClientContext, params: ParamsOfLocalRun) -> ApiResult<ResultOfLocalRun> {
@@ -332,7 +334,7 @@ pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfRun) -
         false,
         key_pair.as_ref(),
         Some(context.get_client()?.timeouts()),
-        params.try_index)
+        None)
         .map_err(|err| ApiError::contracts_create_run_message_failed(err))?;
 
     debug!("<-");
@@ -344,7 +346,7 @@ pub(crate) fn encode_unsigned_message(context: &mut ClientContext, params: Param
         account_decode(&params.address)?,
         params.call_set.into(),
         Some(context.get_client()?.timeouts()),
-        params.try_index
+        None
     ).map_err(|err| ApiError::contracts_create_run_message_failed(err))?;
     Ok(EncodedUnsignedMessage {
         unsigned_bytes_base64: base64::encode(&encoded.message),
@@ -511,11 +513,15 @@ pub async fn retry_call<F, Fut>(retries_count: u8, func: F) -> ApiResult<Recieve
 {
     let mut result = Err(ApiError::contracts_send_message_failed("Unreacheable"));
     for i in 0..(retries_count + 1) {
-        //println!("Try#{}", i);
+        println!("Try#{}", i);
         result = func(i).await;
         match &result {
             Err(error) => {
-                if error.code == ApiSdkErrorCode::MessageExpired as isize {
+                let retry = error.code == ApiSdkErrorCode::MessageExpired as isize ||
+                    (error.code == ApiSdkErrorCode::ContractsTvmError as isize && 
+                        (error.data["exit_code"] == StdContractError::ReplayProtection as i32 ||
+                        error.data["exit_code"] == StdContractError::ExtMessageExpired as i32));
+                if retry {
                     continue;
                 } else {
                     return result;
@@ -547,7 +553,7 @@ async fn call_contract(
                 Some(try_index))
                 .map_err(|err| ApiError::contracts_create_run_message_failed(err))?;
     
-            let result = Contract::process_message(client, &msg).await;
+            let result = Contract::process_message(client, &msg, true).await;
             
             match result {
                 Err(err) => 
@@ -631,7 +637,8 @@ pub(crate) fn do_local_run_msg(
                         ApiError::low_balance(&address),
                     _ => ApiError::contracts_local_run_failed(err)
                 })?;
-        let run_result = process_transaction(result.transaction, abi, function_name, &address, false)?;
+        let run_result = process_transaction(
+            result.transaction, serde_json::Value::Null, abi, function_name, &address, false)?;
         Ok(ResultOfLocalRun {
             output: run_result.output,
             fees: Some(run_result.fees),

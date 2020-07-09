@@ -86,7 +86,7 @@ impl Block {
             &json!({
                 "workchain_id": { "eq": MASTERCHAIN_ID }
             }).to_string(),
-            "id",
+            "id master { shard_hashes { workchain_id shard descr { root_hash } } }",
             Some(OrderBy {
                 path: "seq_no".to_owned(),
                 direction: SortDirection::Descending
@@ -94,6 +94,7 @@ impl Block {
             Some(1),
             None
         ).await?;
+        //println!("Last block {}", blocks[0]["id"]);
 
         if MASTERCHAIN_ID == workchain {
             // if account resides in masterchain then starting point is last masterchain block
@@ -184,6 +185,7 @@ impl Block {
             }).to_string(),
             BLOCK_FIELDS,
             timeout).await?;
+        //println!("{}: block recieved {:#}", crate::Contract::now(), block);
 
         if block["after_split"] == true && !Self::check_shard_match(block.clone(), address)? {
             client.wait_for(

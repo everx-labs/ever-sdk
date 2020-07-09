@@ -31,7 +31,13 @@ mod error;
 pub use error::SdkError;
 
 mod contract;
-pub use contract::{Contract, ContractImage, FunctionCallSet, RecievedTransaction, SdkMessage};
+pub use contract::{
+    Contract,
+    ContractImage,
+    FunctionCallSet,
+    MessageProcessingState,
+    RecievedTransaction,
+    SdkMessage};
 
 mod message;
 pub use message::{Message, MessageId, MessageType};

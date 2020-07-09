@@ -12,7 +12,7 @@
 */
 
 use crate::types::{ApiResult, base64_decode, ApiError};
-use ton_sdk::{AbiContract, ContractImage, SdkMessage, Transaction};
+use ton_sdk::{AbiContract, ContractImage, SdkMessage, MessageProcessingState};
 use ton_block::{CommonMsgInfo, Deserializable, MsgAddressInt};
 use ton_types::deserialize_tree_of_cells;
 use std::io::Cursor;
@@ -78,7 +78,6 @@ impl EncodedMessage {
     }
 }
 
-
 #[cfg(feature = "node_interaction")]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -86,7 +85,7 @@ pub(crate) struct ParamsOfProcessMessage {
     pub abi: Option<serde_json::Value>,
     pub function_name: Option<String>,
     pub message: EncodedMessage,
-    pub try_index: Option<u8>,
+    pub infinite_wait: bool,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -158,10 +157,27 @@ pub(crate) struct ResultOfGetBocHash {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfProcessTransaction {
-    pub transaction: Transaction,
+    pub transaction: serde_json::Value,
     pub abi: Option<serde_json::Value>,
     pub function_name: Option<String>,
     pub address: String,
+}
+
+#[derive(Deserialize)]
+pub(crate) struct ParamsOfFindShard {
+    pub shards: Vec<serde_json::Value>,
+    pub address: String,
+}
+
+#[cfg(feature = "node_interaction")]
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ParamsOfWaitTransaction {
+    pub abi: Option<serde_json::Value>,
+    pub function_name: Option<String>,
+    pub message: EncodedMessage,
+    pub state: MessageProcessingState,
+    pub infinite_wait: bool
 }
 
 use ton_sdk;
@@ -238,7 +254,7 @@ pub(crate) fn get_boc_root_hash(_context: &mut ClientContext, params: InputBoc) 
 }
 
 #[cfg(feature = "node_interaction")]
-pub(crate) async fn send_message(context: &mut ClientContext, params: EncodedMessage) -> ApiResult<()> {
+pub(crate) async fn send_message(context: &mut ClientContext, params: EncodedMessage) -> ApiResult<MessageProcessingState> {
     debug!("-> contracts.send.message({}, {})", params.message_id, params.expire.unwrap_or_default());
 
     let msg = base64_decode(&params.message_body_base64)?;
@@ -247,8 +263,7 @@ pub(crate) async fn send_message(context: &mut ClientContext, params: EncodedMes
     let address = params.address()?;
     Contract::send_message(&client, &address, &id, &msg, params.expire)
         .await
-        .map_err(|err| ApiError::contracts_send_message_failed(err))?;
-    Ok(())
+        .map_err(|err| ApiError::contracts_send_message_failed(err))
 }
 
 #[cfg(feature = "node_interaction")]
@@ -261,7 +276,8 @@ pub(crate) async fn process_message(context: &mut ClientContext, params: ParamsO
     let msg = params.message.into_sdk_msg()?;
     let result = Contract::process_message(
         client,
-        &msg)
+        &msg,
+        params.infinite_wait)
         .await;
 
     let transaction = match result {
@@ -274,6 +290,7 @@ pub(crate) async fn process_message(context: &mut ClientContext, params: ParamsO
 
     run::process_transaction(
         transaction.parsed,
+        transaction.value,
         params.abi,
         params.function_name,
         &msg.address,
@@ -285,8 +302,10 @@ pub(crate) fn process_transaction(
 ) -> ApiResult<run::ResultOfRun> {
     debug!("-> contracts.process.transaction({}, {:?})", params.address, params.transaction);
     let address = account_decode(&params.address)?;
+    let transaction = serde_json::from_value(params.transaction.clone())
+        .map_err(|err| ApiError::invalid_params(&params.transaction.to_string(), err))?;
 
-    run::process_transaction(params.transaction, params.abi, params.function_name, &address, true)
+    run::process_transaction(transaction, params.transaction, params.abi, params.function_name, &address, true)
 }
 
 pub(crate) fn parse_message(_context: &mut ClientContext, params: InputBoc) -> ApiResult<serde_json::Value> {
@@ -304,6 +323,48 @@ pub(crate) fn parse_message(_context: &mut ClientContext, params: InputBoc) -> A
     Ok(json!({
         "dst": address
     }))
+}
+
+pub(crate) fn find_matching_shard(_context: &mut ClientContext, params: ParamsOfFindShard) -> ApiResult<serde_json::Value> {
+    debug!("-> contracts.find.shard({}, {:#?})", params.address, params.shards);
+    let address = account_decode(&params.address)?;
+
+    ton_sdk::Block::find_matching_shard(&params.shards, &address)
+        .map_err(|err| ApiError::contracts_find_shard_failed(err))
+}
+
+#[cfg(feature = "node_interaction")]
+pub(crate) async fn wait_transaction(context: &mut ClientContext, params: ParamsOfWaitTransaction) -> ApiResult<run::ResultOfRun> {
+    debug!("-> contracts.wait.transaction({}, {})",
+        params.message.message_id,
+        params.message.expire.unwrap_or_default());
+
+    let client = context.get_client()?;
+    let msg = params.message.into_sdk_msg()?;
+    let result = Contract::wait_transaction_processing(
+        client,
+        &msg.address,
+        &msg.id,
+        params.state,
+        msg.expire,
+        params.infinite_wait)
+        .await;
+
+    let transaction = match result {
+            Err(err) => 
+                return Err(run::resolve_msg_sdk_error(
+                        client, err, &msg.serialized_message, ApiError::contracts_process_message_failed
+                    ).await?),
+            Ok(tr) => tr
+    };
+
+    run::process_transaction(
+        transaction.parsed,
+        transaction.value,
+        params.abi,
+        params.function_name,
+        &msg.address,
+        true)
 }
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
@@ -380,6 +441,8 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         get_function_id);
     handlers.spawn("contracts.image.code",
         get_code_from_image);
+    handlers.spawn("contracts.find.shard",
+        find_matching_shard);
 
     // Addresses
     handlers.spawn("contracts.address.convert",
@@ -405,6 +468,14 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         |context: &mut crate::client::ClientContext, params: ParamsOfProcessMessage| {
             let mut runtime = context.take_runtime()?;
             let result = runtime.block_on(process_message(context, params));
+            context.runtime = Some(runtime);
+            result
+        });
+    #[cfg(feature = "node_interaction")]
+    handlers.spawn("contracts.wait.transaction",
+        |context: &mut crate::client::ClientContext, params: ParamsOfWaitTransaction| {
+            let mut runtime = context.take_runtime()?;
+            let result = runtime.block_on(wait_transaction(context, params));
             context.runtime = Some(runtime);
             result
         });

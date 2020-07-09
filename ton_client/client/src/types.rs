@@ -530,6 +530,11 @@ impl ApiError {
             "Process message failed: {}", err)
     }
 
+    pub fn contracts_find_shard_failed<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsFindShardFailed,
+            "Account shard search failed: {}", err)
+    }
+
     // SDK queries
 
     pub fn queries_query_failed<E: Display>(err: E) -> Self {
@@ -730,6 +735,7 @@ pub enum ApiSdkErrorCode {
     ContractsCannotSerializeMessage = 3022,
     ContractsProcessMessageFailed = 3023,
     ContractsTvmError = 3025,
+    ContractsFindShardFailed = 3026,
 
     QueriesQueryFailed = 4001,
     QueriesSubscribeFailed = 4002,

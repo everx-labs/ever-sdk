@@ -39,10 +39,7 @@ use crate::{
     transaction::TRANSACTION_FIELDS_ORDINARY,
     types::{CONTRACTS_TABLE_NAME, TRANSACTIONS_TABLE_NAME},
 };
-use std::{
-    collections::HashMap,
-    iter::FromIterator,
-};
+use std::collections::HashMap;
 use serde_json::Value;
 use ton_vm::stack::{StackItem, Stack};
 use ton_vm::stack::integer::IntegerData;
@@ -204,6 +201,7 @@ pub struct ContractImage {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct MessageProcessingState {
     last_block_id: BlockId,
     sent_time: u32,
@@ -417,12 +415,14 @@ impl Contract {
 
     pub async fn process_message(
         client: &NodeClient,
-        msg: &SdkMessage
+        msg: &SdkMessage,
+        infinite_wait: bool
     ) -> Result<RecievedTransaction> {
         let state = Self::send_message(
             client, &msg.address, &msg.id.to_bytes()?, &msg.serialized_message, msg.expire).await?;
         //println!("msg is sent, id: {}", id);
-        Self::wait_transaction_processing(client, &msg.address, &msg.id, state, msg.expire, true).await
+        Self::wait_transaction_processing(
+            client, &msg.address, &msg.id, state, msg.expire, infinite_wait).await
     }
 
     pub async fn send_message(
@@ -532,6 +532,7 @@ impl Contract {
             block_id = block.id;
         }
 
+        //println!("transaction recieved {:#}", transaction);
         let parsed = serde_json::from_value::<Transaction>(transaction.clone())?;
         if parsed.compute.exit_code == Some(Self::MESSAGE_EXPIRED_CODE) ||
         parsed.compute.exit_code == Some(Self::REPLAY_PROTECTION_CODE)
@@ -817,20 +818,23 @@ impl Contract {
         if abi.header().contains(&serde_json::from_value::<ton_abi::Param>("expire".into())?) {
             let default = TimeoutsConfig::default();
             let timeouts = timeouts.unwrap_or(&default);
+            let try_index = try_index.unwrap_or(0);
             // expire is `now + timeout`
             let timeout = Self::calc_timeout(
                 timeouts.message_expiration_timeout,
                 timeouts.message_expiration_timeout_grow_factor,
-                try_index.unwrap_or(0));
+                try_index);
             let expire = Self::now() + timeout / 1000;
-            let expire = ton_abi::TokenValue::Expire(expire);
 
-            let header = serde_json::from_str::<Value>(&header.unwrap_or("{}".to_owned()))?;
+            let mut header = serde_json::from_str::<Value>(&header.unwrap_or("{}".to_owned()))?;
+            if try_index > 0 || header["expire"].is_null() {
+                header["expire"] = expire.into();
+            }
             // parse provided header using calculated value as default for expire param
             let header = Tokenizer::tokenize_optional_params(
                 abi.header(),
                 &header,
-                &HashMap::from_iter(std::iter::once(("expire".to_owned(), expire))))?;
+                &HashMap::new())?;
             // take resulting expire value to use it in transaction waiting
             let expire = match header.get("expire").unwrap() {
                 TokenValue::Expire(expire) => *expire,

@@ -55,7 +55,7 @@ pub fn get_config() -> serde_json::Value {
         })
     } else {
         json!({
-            "base_url": "cinet.tonlabs.io"
+            "base_url": "net.ton.dev"//"cinet.tonlabs.io"
         })
     }
 }
@@ -220,10 +220,11 @@ pub async fn deploy_contract_and_wait(
         None
     ).unwrap();
 
-    let tr = Contract::process_message(&client, &msg).await;
+    let tr = Contract::process_message(&client, &msg, false).await;
 
     let t = now.elapsed();
     println!("Deploy time {}.{:03} ", t.as_secs(), t.subsec_millis());
+    println!("now {}", Contract::now());
 
     let tr = tr.expect("Error deploying contract");
 
@@ -259,10 +260,11 @@ pub async fn call_contract(
         None
     ).unwrap();
 
-    let tr = Contract::process_message(&client, &msg).await;
+    let tr = Contract::process_message(&client, &msg, false).await;
 
     let t = now.elapsed();
     println!("Call time {}.{:03} ", t.as_secs(), t.subsec_millis());
+    println!("now {}", Contract::now());
     
     let tr = tr.expect("Error calling contract method");
 
@@ -299,11 +301,12 @@ pub async fn call_contract_and_wait(
         None
     ).unwrap();
 
-    let tr = Contract::process_message(&client, &msg)
+    let tr = Contract::process_message(&client, &msg, false)
         .await;
 
     let t = now.elapsed();
-    println!("Call time {}.{:02} ", t.as_secs(), t.subsec_millis());
+    println!("Call time {}.{:03} ", t.as_secs(), t.subsec_millis());
+    println!("now {}", Contract::now());
     
     let tr = tr.expect("Error calling contract method");
 

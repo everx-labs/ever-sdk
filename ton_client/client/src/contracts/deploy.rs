@@ -50,7 +50,6 @@ pub(crate) struct ParamsOfDeploy {
     pub image_base64: String,
     pub key_pair: KeyPair,
     pub workchain_id: Option<i32>,
-    pub try_index: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -62,7 +61,6 @@ pub(crate) struct ParamsOfEncodeUnsignedDeployMessage {
     pub image_base64: String,
     pub public_key_hex: String,
     pub workchain_id: Option<i32>,
-    pub try_index: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -87,7 +85,8 @@ pub(crate) struct ParamsOfGetDeployAddress {
 pub(crate) struct ResultOfDeploy {
     pub address: String,
     pub already_deployed: bool,
-    pub fees: Option<RunFees>
+    pub fees: Option<RunFees>,
+    pub transaction: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -123,7 +122,8 @@ pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) 
         return Ok(ResultOfDeploy { 
             address: account_encode(&account_id),
             already_deployed: true,
-            fees: None
+            fees: None,
+            transaction: serde_json::Value::Null
         })
     }
 
@@ -137,7 +137,8 @@ pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) 
     Ok(ResultOfDeploy {
         address: account_encode(&account_id),
         already_deployed: false,
-        fees: Some(tr.parsed.calc_fees().into())
+        fees: Some(tr.parsed.calc_fees().into()),
+        transaction: tr.value
     })
 }
 
@@ -163,7 +164,7 @@ pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfDeploy
         Some(&keys),
         workchain,
         Some(context.get_client()?.timeouts()),
-        params.try_index
+        None
     ).map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
 
     debug!("<-");
@@ -239,7 +240,7 @@ pub(crate) fn encode_unsigned_message(context: &mut ClientContext, params: Param
         image,
         workchain,
         Some(context.get_client()?.timeouts()),
-        params.try_index
+        None
     ).map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
     Ok(ResultOfEncodeUnsignedDeployMessage {
         encoded: EncodedUnsignedMessage {
@@ -298,12 +299,12 @@ async fn deploy_contract(client: &NodeClient, params: ParamsOfDeploy, image: Con
                 Some(try_index))
                 .map_err(|err| ApiError::contracts_create_run_message_failed(err))?;
     
-            let result = Contract::process_message(client, &msg).await;
+            let result = Contract::process_message(client, &msg, true).await;
             
             match result {
                 Err(err) => 
                     Err(resolve_msg_sdk_error(
-                        client, err, &msg.serialized_message, ApiError::contracts_run_failed).await?),
+                        client, err, &msg.serialized_message, ApiError::contracts_deploy_failed).await?),
                 Ok(tr) => Ok(tr)
             }
         }
