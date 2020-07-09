@@ -18,3 +18,6 @@ Cargo.lock
 .idea
 .vscode
 .DS_Store
+/ton_client/platforms/ton-client-react-native/build/
+/ton_client/platforms/ton-client-web/build/tonclient.wasm
+/ton_client/platforms/ton-client-web/build/index.js

@@ -656,6 +656,7 @@ pub enum ApiSdkErrorCode {
     InvalidContextHandle = 3,
     CannotCreateRuntime = 4,
     SdkNotInit = 5,
+    WasmUnreachableCode = 6,
 
     ConfigInitFailed = 1001,
     WaitForTimeout = 1003,

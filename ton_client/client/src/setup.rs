@@ -26,6 +26,7 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 
     handlers.call("setup", setup);
     handlers.call_no_args("version", |_|Ok(env!("CARGO_PKG_VERSION")));
+    handlers.call_no_args("context.get", |context|Ok(context.handle));
 }
 
 
