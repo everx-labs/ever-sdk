@@ -27,7 +27,7 @@ napi_value napiGlobal(napi_env env)
 napi_value napiString(napi_env env, const InteropString ts)
 {
     napi_value result;
-    CHECK(napi_create_string_utf8(env, ts.content, ts.len, &result));
+    CHECK(napi_create_string_utf8(env, ts.len > 0 ? ts.content : nullptr, ts.len, &result));
     return result;
 }
 
@@ -58,7 +58,9 @@ InteropString interopString(napi_env env, napi_value ns)
     size_t bytesRequired;
     CHECK(napi_get_value_string_utf8(env, ns, nullptr, 0, &bytesRequired));
     char* content = new char[bytesRequired + 1];
-    CHECK(napi_get_value_string_utf8(env, ns, content, bytesRequired + 1, &result.len));
+    size_t len = 0;
+    CHECK(napi_get_value_string_utf8(env, ns, content, bytesRequired + 1, &len));
+    result.len = len;
     result.content = content;
     return result;
 }
@@ -66,9 +68,13 @@ InteropString interopString(napi_env env, napi_value ns)
 InteropString interopString(InteropString source)
 {
     InteropString result;
-    result.content = new char[source.len];
-    memcpy(result.content, source.content, source.len);
     result.len = source.len;
+    if (source.len > 0) {
+        result.content = new char[source.len];
+        memcpy(result.content, source.content, source.len);
+    } else {
+        result.content = nullptr;
+    }
     return result;
 }
 

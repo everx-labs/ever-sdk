@@ -7,7 +7,7 @@
 
 typedef struct {
     char* content;
-    size_t len;
+    uint32_t len;
 } InteropString;
 
 enum OnResultFlags {
