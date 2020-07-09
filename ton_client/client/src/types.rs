@@ -16,7 +16,7 @@
 use std::fmt::Display;
 use ApiSdkErrorCode::*;
 use ton_block::{AccStatusChange, ComputeSkipReason, MsgAddressInt};
-use ton_sdk::SdkError;
+use ton_sdk::{SdkError, MessageProcessingState};
 use ton_types::ExceptionCode;
 use chrono::TimeZone;
 
@@ -168,7 +168,7 @@ impl ApiError {
             "Address is required for run local. You haven't specified contract code or data so address is required to load missing parts from network.")
     }
 
-    pub fn network_silent(msg_id: String, timeout: u32, block_id: String) -> Self {
+    pub fn network_silent(msg_id: String, timeout: u32, block_id: String, state: MessageProcessingState) -> Self {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ApiSdkErrorCode::NetworkSilent,
@@ -178,7 +178,8 @@ impl ApiError {
         error.data = serde_json::json!({
             "message_id": msg_id,
             "timeout": timeout,
-            "last_block_id": block_id
+            "last_block_id": block_id,
+            "resume_processing_state": state
         });
         error
     }
@@ -199,7 +200,7 @@ impl ApiError {
         error
     }
 
-    pub fn transaction_wait_timeout(msg_id: String, send_time: u32, timeout: u32) -> Self {
+    pub fn transaction_wait_timeout(msg_id: String, send_time: u32, timeout: u32, state: MessageProcessingState) -> Self {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ApiSdkErrorCode::TransactionWaitTimeout,
@@ -209,7 +210,8 @@ impl ApiError {
         error.data = serde_json::json!({
             "message_id": msg_id,
             "send_time": format_time(send_time),
-            "timeout": timeout
+            "timeout": timeout,
+            "resume_processing_state": state
         });
         error
     }
@@ -831,14 +833,19 @@ where
         Some(SdkError::WaitForTimeout) => ApiError::wait_for_timeout(),
         Some(SdkError::MessageExpired{msg_id, expire, send_time, block_time, block_id}) => 
             ApiError::message_expired(msg_id.to_string(), *send_time, *expire, *block_time, block_id.to_string()),
-        Some(SdkError::NetworkSilent{msg_id, timeout, block_id}) =>
-            ApiError::network_silent(msg_id.to_string(), *timeout, block_id.to_string()),
+        Some(SdkError::NetworkSilent{msg_id, timeout, block_id, state}) =>
+            ApiError::network_silent(msg_id.to_string(), *timeout, block_id.to_string(), state.clone()),
         Some(SdkError::TransactionsLag{msg_id, send_time, block_id, timeout}) =>
             ApiError::transactions_lag(msg_id.to_string(), *send_time, block_id.clone(), *timeout),
-        Some(SdkError::TransactionWaitTimeout{msg_id, send_time, timeout}) =>
-            ApiError::transaction_wait_timeout(msg_id.to_string(), *send_time, *timeout),
+        Some(SdkError::TransactionWaitTimeout{msg_id, send_time, timeout, state}) =>
+            ApiError::transaction_wait_timeout(msg_id.to_string(), *send_time, *timeout, state.clone()),
         Some(SdkError::ClockOutOfSync{delta_ms, threshold_ms, expiration_timeout}) =>
             ApiError::clock_out_of_sync(*delta_ms, *threshold_ms, *expiration_timeout),
+        Some(SdkError::ResumableNetworkError{state, error}) => {
+            let mut api_error = apierror_from_sdkerror(error, default_err);
+            api_error.data["resume_processing_state"] = serde_json::to_value(state).unwrap_or_default();
+            api_error
+        }
         _ => default_err(err.to_string())
     }
 }

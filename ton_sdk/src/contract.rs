@@ -30,6 +30,7 @@ use ton_types::{error, fail, Result, AccountId, Cell, SliceData, HashmapE};
 use ton_abi::json_abi::DecodedMessage;
 use ton_abi::token::{Detokenizer, Tokenizer, TokenValue};
 use ton_executor::BlockchainConfig;
+use graphite::types::GraphiteError;
 
 #[cfg(feature = "node_interaction")]
 use crate::{
@@ -200,7 +201,7 @@ pub struct ContractImage {
     id: AccountId,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct MessageProcessingState {
     last_block_id: BlockId,
@@ -453,7 +454,7 @@ impl Contract {
         client: &NodeClient,
         address: &MsgAddressInt,
         message_id: &MessageId,
-        state: MessageProcessingState,
+        mut state: MessageProcessingState,
         expire: Option<u32>,
         infinite_wait: bool
     ) -> Result<RecievedTransaction>
@@ -463,30 +464,42 @@ impl Contract {
             None => Self::now() + client.timeouts().message_processing_timeout / 1000
         };
 
-        let mut block_id = state.last_block_id;
         let mut transaction = Value::Null;
         let add_timeout = client.timeouts().message_processing_timeout;
         loop {
             let now = Self::now();
             let timeout = std::cmp::max(stop_time, now) - now + add_timeout;
-            let result = Block::wait_next_block(client, &block_id, &address, Some(timeout)).await;
+            let result = Block::wait_next_block(client, &state.last_block_id, &address, Some(timeout)).await;
             let block = match result {
-                Err(err) => match err.downcast_ref::<SdkError>() {
-                    Some(SdkError::WaitForTimeout) => {
+                Err(err) => {
+                    if let Some(&SdkError::WaitForTimeout) = err.downcast_ref::<SdkError>() {
                         if infinite_wait {
                             continue;
                         } else {
                             fail!(SdkError::NetworkSilent {
                                 msg_id: message_id.clone(),
-                                block_id,
-                                timeout
-                            })
+                                block_id: state.last_block_id.clone(),
+                                timeout,
+                                state
+                            });
                         }
+                    } else if let Some(GraphiteError::NetworkError(_)) = err.downcast_ref::<GraphiteError>() {
+                        if infinite_wait {
+                            continue;
+                        } else {
+                            fail!(err);
+                        }
+                    } else {
+                        fail!(SdkError::ResumableNetworkError {
+                            state,
+                            error: err
+                        });
                     }
-                    _ => fail!(err)
                 }
                 Ok(block) => block
             };
+
+            state.last_block_id = block.id;
 
             for block_msg in &block.in_msg_descr {
                 if Some(message_id) == block_msg.msg_id.as_ref() {
@@ -517,19 +530,18 @@ impl Contract {
                         send_time: state.sent_time,
                         expire: stop_time,
                         block_time: block.gen_utime,
-                        block_id
+                        block_id: state.last_block_id
                     });
                 } else {
                     fail!(SdkError::TransactionWaitTimeout {
                         msg_id: message_id.clone(),
                         send_time: state.sent_time,
-                        timeout
+                        timeout,
+                        state
                     });
                 }
                 
             }
-
-            block_id = block.id;
         }
 
         //println!("transaction recieved {:#}", transaction);

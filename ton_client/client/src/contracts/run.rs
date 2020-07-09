@@ -513,7 +513,7 @@ pub async fn retry_call<F, Fut>(retries_count: u8, func: F) -> ApiResult<Recieve
 {
     let mut result = Err(ApiError::contracts_send_message_failed("Unreacheable"));
     for i in 0..(retries_count + 1) {
-        println!("Try#{}", i);
+        debug!("Try#{}", i);
         result = func(i).await;
         match &result {
             Err(error) => {
@@ -690,7 +690,7 @@ pub(crate) async fn resolve_msg_sdk_error<F: Fn(String) -> ApiError>(
 ) -> ApiResult<ApiError> {
     match error.downcast_ref::<SdkError>() {
         Some(SdkError::MessageExpired{msg_id: _, expire: _, send_time, block_time: _, block_id: _}) | 
-        Some(SdkError::TransactionWaitTimeout{msg_id: _, send_time, timeout: _}) => {
+        Some(SdkError::TransactionWaitTimeout{msg_id: _, send_time, timeout: _, state: _}) => {
             let address = Contract::get_dst_from_msg(msg)
                 .map_err(|err| ApiError::invalid_params("message", format!("cannot get target address: {}", err)))?;
             let account = Contract::load(client, &address)

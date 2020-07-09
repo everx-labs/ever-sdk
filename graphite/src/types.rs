@@ -16,31 +16,27 @@ extern crate websocket;
 
 use futures::task::{Poll, Context};
 use futures::stream::Stream;
-use std::fmt;
 use serde_json::Value;
 use websocket::{ClientBuilder, OwnedMessage};
 use websocket::client::sync::Client;
 use websocket::stream::sync::NetworkStream;
 
 
-#[derive(Debug, Clone)]
-pub struct GraphiteError {
-    message: String,
-}
+#[derive(Debug, failure::Fail)]
+pub enum GraphiteError {
 
-impl GraphiteError {
-    pub fn new(message: String) -> Self {
-        Self { message: message }
-    }
-}
+    #[fail(display = "Network error: {}", 0)]
+    NetworkError(String),
 
-impl fmt::Display for GraphiteError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "({})", self.message)
-    }
-}
+    #[fail(display = "Grpahql server returned error: {}", 0)]
+    GraprhqlError(String),
 
-impl std::error::Error for GraphiteError {}
+    #[fail(display = "Server response parse error: {}\nresponse: {}", 0, 1)]
+    SerdeError(serde_json::Error, String),
+
+    #[fail(display = "{}", 0)]
+    Other(String)
+}
 
 pub struct VariableRequest {
     query: String,
@@ -73,12 +69,12 @@ impl SubscribeStream {
     pub fn new(id: u32, request: VariableRequest, host:&str) -> Result<Self, GraphiteError> {
         let client = ClientBuilder::new(host)
             .map_err(|err| 
-                GraphiteError::new(
+                GraphiteError::NetworkError(
                     format!("Can't create websocket client with address {}. Error {}", host, err)))?
             .add_protocol("graphql-ws")
             .connect(None)
             .map_err(|err|
-                GraphiteError::new(
+                GraphiteError::NetworkError(
                     format!("Can't connect to websocket server {}. Error {}", host, err)))?;
 
         let mut future = Self {
@@ -105,7 +101,7 @@ impl SubscribeStream {
         let msg = OwnedMessage::Text(request);
         self.client.send_message(&msg)
             .map_err(|err| 
-                GraphiteError::new(
+                GraphiteError::NetworkError(
                     format!("Sending message across stdin channel failed. Error: {}", err)))?;
 
         Ok(())
@@ -116,7 +112,7 @@ impl SubscribeStream {
         let msg = OwnedMessage::Text(query.to_string());
         self.client.send_message(&msg)
             .map_err(|err| 
-                GraphiteError::new(
+                GraphiteError::NetworkError(
                     format!("Sending message across stdin channel failed. Error: {}", err)))?;
 
         Ok(())
@@ -146,7 +142,7 @@ pub fn try_extract_error(value: &Value) -> Option<GraphiteError> {
                 if let Some(error) = errors.get(0) {
                     if let Some(message) = error.get("message") {
                         if let Some(string) = message.as_str() {
-                            return Some(GraphiteError::new(string.to_string()))
+                            return Some(GraphiteError::GraprhqlError(string.to_string()))
                         }
                     }
                 }
@@ -166,21 +162,27 @@ impl Stream for SubscribeStream {
                 Ok(message) => {
                     match message {
                         OwnedMessage::Text(text) => {
-                            if let Ok(value) = serde_json::from_str(text.as_str()) {
-                                if let Some(error) = try_extract_error(&value) {
-                                    return Poll::Ready(Some(Err(error)));
+                            match serde_json::from_str(text.as_str()) {
+                                Ok(value) => {
+                                    if let Some(error) = try_extract_error(&value) {
+                                        return Poll::Ready(Some(Err(error)));
+                                    }
+                                    Poll::Ready(Some(Ok(value)))
                                 }
-                                Poll::Ready(Some(Ok(value)))
-                            } else {
-                                Poll::Ready(Some(Err(GraphiteError::new(format!(
-                                        "Invalid JSON: {}", text)))))
+                                Err(error) => {
+                                    Poll::Ready(Some(Err(GraphiteError::SerdeError(error, text))))
+                                }
+                                
                             }
                         },
                         _ => Poll::Pending
                     }
-
-                } ,
-                Err(err) => Poll::Ready(Some(Err(GraphiteError::new(err.to_string())))),
+                },
+                Err(err) => Poll::Ready(
+                    Some(
+                        Err(
+                            GraphiteError::NetworkError(
+                                format!("Can not recieve next message: {}", err.to_string()))))),
             }
         } else {
             Poll::Pending

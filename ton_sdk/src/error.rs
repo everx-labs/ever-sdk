@@ -78,7 +78,8 @@ pub enum SdkError {
     NetworkSilent{
         msg_id: crate::MessageId,
         block_id: crate::BlockId,
-        timeout: u32
+        timeout: u32,
+        state: crate::MessageProcessingState
     },
 
     #[fail(display = "Existing block transaction not found")]
@@ -93,7 +94,8 @@ pub enum SdkError {
     TransactionWaitTimeout{
         msg_id: crate::MessageId,
         send_time: u32,
-        timeout: u32
+        timeout: u32,
+        state: crate::MessageProcessingState
     },
 
     #[fail(display = "Invalid server response: {}", 0)]
@@ -105,4 +107,10 @@ pub enum SdkError {
         threshold_ms: i64,
         expiration_timeout: u32
     },
+
+    #[fail(display = "Existing block transaction not found")]
+    ResumableNetworkError {
+        state: crate::MessageProcessingState,
+        error: failure::Error
+    }
 }
