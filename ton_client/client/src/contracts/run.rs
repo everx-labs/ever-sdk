@@ -15,7 +15,7 @@ use ton_sdk::{Contract, MessageType, AbiContract, FunctionCallSet};
 use ton_sdk::json_abi::encode_function_call;
 use ton_types::cells_serialization::BagOfCells;
 use ton_block::{AccStatusChange, Message as TvmMessage, MsgAddressInt};
-use ton_sdk::{Transaction, Message, TransactionFees, RecievedTransaction};
+use ton_sdk::{Transaction, Message, TransactionFees};
 
 use crate::contracts::{EncodedMessage, EncodedUnsignedMessage};
 use crate::client::ClientContext;
@@ -23,17 +23,15 @@ use crate::crypto::keys::{KeyPair, account_decode};
 use crate::types::{
     ApiResult,
     ApiError,
-    ApiSdkErrorCode,
     base64_decode,
-    long_num_to_json_string,
-    StdContractError};
+    long_num_to_json_string};
 
 #[cfg(feature = "node_interaction")]
-use ton_sdk::{NodeClient, SdkError};
+use ton_sdk::{NodeClient, RecievedTransaction, SdkError};
 #[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
-use crate::types::{apierror_from_sdkerror, ApiErrorCode};
+use crate::types::{apierror_from_sdkerror, ApiErrorCode, ApiSdkErrorCode, StdContractError};
 
 
 fn bool_false() -> bool { false }
@@ -506,6 +504,7 @@ pub(crate) async fn load_contract(context: &ClientContext, address: &MsgAddressI
     }
 }
 
+#[cfg(feature = "node_interaction")]
 pub async fn retry_call<F, Fut>(retries_count: u8, func: F) -> ApiResult<RecievedTransaction>
     where
         F: Fn(u8) -> Fut,

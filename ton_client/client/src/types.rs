@@ -184,22 +184,6 @@ impl ApiError {
         error
     }
 
-    pub fn transactions_lag(msg_id: String, send_time: u32, block_id: String, timeout: u32) -> Self {
-        let mut error = ApiError::new(
-            ApiErrorSource::Node,
-            &ApiSdkErrorCode::TransactionsLag,
-            "Existing block transaction was not found (no transaction appeared for the masterchain block with gen_utime > message expiration time)".to_owned(),
-        );
-
-        error.data = serde_json::json!({
-            "message_id": msg_id,
-            "send_time": format_time(send_time),
-            "block_id": block_id,
-            "timeout": timeout
-        });
-        error
-    }
-
     pub fn transaction_wait_timeout(msg_id: String, send_time: u32, timeout: u32, state: MessageProcessingState) -> Self {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
@@ -678,7 +662,6 @@ pub enum ApiSdkErrorCode {
     MessageExpired = 1006,
     AddressRequiredForRunGet = 1009,
     NetworkSilent = 1010,
-    TransactionsLag = 1011,
     TransactionWaitTimeout = 1012,
     ClockOutOfSync = 1013,
     AccountMissing = 1014,
@@ -835,8 +818,6 @@ where
             ApiError::message_expired(msg_id.to_string(), *send_time, *expire, *block_time, block_id.to_string()),
         Some(SdkError::NetworkSilent{msg_id, timeout, block_id, state}) =>
             ApiError::network_silent(msg_id.to_string(), *timeout, block_id.to_string(), state.clone()),
-        Some(SdkError::TransactionsLag{msg_id, send_time, block_id, timeout}) =>
-            ApiError::transactions_lag(msg_id.to_string(), *send_time, block_id.clone(), *timeout),
         Some(SdkError::TransactionWaitTimeout{msg_id, send_time, timeout, state}) =>
             ApiError::transaction_wait_timeout(msg_id.to_string(), *send_time, *timeout, state.clone()),
         Some(SdkError::ClockOutOfSync{delta_ms, threshold_ms, expiration_timeout}) =>

@@ -76,6 +76,8 @@ pub struct NodeClientConfig {
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq)]
 pub struct StringId (String);
 
+pub type BlockId = StringId;
+
 impl From<String> for StringId {
     fn from(id: String) -> Self {
         StringId{0: id}

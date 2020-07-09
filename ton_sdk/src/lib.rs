@@ -47,11 +47,13 @@ mod local_tvm;
 mod transaction;
 pub use transaction::{Transaction, TransactionId, TransactionFees};
 
+#[cfg(feature = "node_interaction")]
 mod block;
-pub use block::{Block, BlockId, MsgDescr};
+#[cfg(feature = "node_interaction")]
+pub use block::{Block, MsgDescr};
 
 pub mod types;
-pub use types::{NodeClientConfig, TimeoutsConfig};
+pub use types::{NodeClientConfig, TimeoutsConfig, BlockId};
 
 #[cfg(feature = "node_interaction")]
 pub mod node_client;

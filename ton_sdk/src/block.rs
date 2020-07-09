@@ -12,25 +12,14 @@
 */
 
 use crate::{
-    MessageId, NodeClient, OrderBy, SortDirection, TransactionId,
-    json_helper,
+    Contract, MessageId, NodeClient, OrderBy, SortDirection, TransactionId,
+    contract::ShardDescr,
     error::SdkError,
-    types::{BLOCKS_TABLE_NAME, MASTERCHAIN_ID, StringId},
+    types::{BLOCKS_TABLE_NAME, MASTERCHAIN_ID, BlockId},
 };
 
 use ton_types::{fail, error, Result};
-use ton_block::{AccountIdPrefixFull, MsgAddressInt, ShardIdent};
-
-use serde_json::Value;
-
-pub type BlockId = StringId;
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct ShardDescr {
-    pub workchain_id: i32,
-    #[serde(deserialize_with = "json_helper::deserialize_shard")]
-    pub shard: u64,
-}
+use ton_block::MsgAddressInt;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct MsgDescr {
@@ -61,21 +50,6 @@ const BLOCK_FIELDS: &str = r#"
 "#;
 
 impl Block {
-    pub fn check_shard_match(shard_descr: Value, address: &MsgAddressInt) -> Result<bool> {
-        let descr: ShardDescr = serde_json::from_value(shard_descr)?;
-        let ident = ShardIdent::with_tagged_prefix(descr.workchain_id, descr.shard)?;
-        Ok(ident.contains_full_prefix(&AccountIdPrefixFull::prefix(address)?))
-    }
-
-    pub fn find_matching_shard(shards: &Vec<Value>, address: &MsgAddressInt) -> Result<Value> {
-        for shard in shards {
-            if Self::check_shard_match(shard.clone(), address)? {
-                return Ok(shard.clone());
-            }
-        };
-        fail!(SdkError::NotFound(format!("No matching shard for account {}", address)))
-    }
-
     pub async fn find_last_shard_block(client: &NodeClient, address: &MsgAddressInt) -> Result<BlockId> {
         let workchain = address.get_workchain_id();
 
@@ -162,7 +136,7 @@ impl Block {
                         msg: "No `shard_hashes` field in masterchain block".to_owned()
                     })?;
 
-                let shard_block = Self::find_matching_shard(shards, address)?;
+                let shard_block = Contract::find_matching_shard(shards, address)?;
                 
                 shard_block["descr"]["root_hash"]
                     .as_str()
@@ -185,9 +159,9 @@ impl Block {
             }).to_string(),
             BLOCK_FIELDS,
             timeout).await?;
-        //println!("{}: block recieved {:#}", crate::Contract::now(), block);
+        println!("{}: block recieved {:#}", crate::Contract::now(), block);
 
-        if block["after_split"] == true && !Self::check_shard_match(block.clone(), address)? {
+        if block["after_split"] == true && !Contract::check_shard_match(block.clone(), address)? {
             client.wait_for(
                 BLOCKS_TABLE_NAME,
                 &json!({

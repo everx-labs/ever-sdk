@@ -12,8 +12,8 @@
 */
 
 use crate::types::{ApiResult, base64_decode, ApiError};
-use ton_sdk::{AbiContract, ContractImage, SdkMessage, MessageProcessingState};
-use ton_block::{CommonMsgInfo, Deserializable, MsgAddressInt};
+use ton_sdk::{AbiContract, Contract, ContractImage, SdkMessage};
+use ton_block::{CommonMsgInfo, Deserializable};
 use ton_types::deserialize_tree_of_cells;
 use std::io::Cursor;
 use crate::crypto::keys::{
@@ -25,7 +25,9 @@ use crate::crypto::keys::{
 };
 
 #[cfg(feature = "node_interaction")]
-use ton_sdk::Contract;
+use ton_sdk::MessageProcessingState;
+#[cfg(feature = "node_interaction")]
+use ton_block::MsgAddressInt;
 
 pub(crate) mod deploy;
 pub(crate) mod run;
@@ -43,6 +45,7 @@ pub(crate) struct EncodedMessage {
 }
 
 impl EncodedMessage {
+    #[cfg(feature = "node_interaction")]
     pub fn address(&self) -> ApiResult<MsgAddressInt> {
         match &self.address {
             Some(addr) => account_decode(addr),
@@ -56,6 +59,7 @@ impl EncodedMessage {
         }
     }
 
+    #[cfg(feature = "node_interaction")]
     pub fn into_sdk_msg(self) -> ApiResult<SdkMessage> {
         let bytes = base64_decode(&self.message_body_base64)?;
         Ok(SdkMessage {
@@ -329,7 +333,7 @@ pub(crate) fn find_matching_shard(_context: &mut ClientContext, params: ParamsOf
     debug!("-> contracts.find.shard({}, {:#?})", params.address, params.shards);
     let address = account_decode(&params.address)?;
 
-    ton_sdk::Block::find_matching_shard(&params.shards, &address)
+    Contract::find_matching_shard(&params.shards, &address)
         .map_err(|err| ApiError::contracts_find_shard_failed(err))
 }
 

@@ -82,14 +82,6 @@ pub enum SdkError {
         state: crate::MessageProcessingState
     },
 
-    #[fail(display = "Existing block transaction not found")]
-    TransactionsLag{
-        msg_id: crate::MessageId,
-        send_time: u32,
-        block_id: String,
-        timeout: u32
-    },
-
     #[fail(display = "Transaction was not produced during the specified timeout")]
     TransactionWaitTimeout{
         msg_id: crate::MessageId,

@@ -14,37 +14,38 @@
 use crate::json_helper;
 use crate::local_tvm;
 use crate::error::SdkError;
-use crate::{AbiContract, Block, BlockId, Message, MessageId, TimeoutsConfig, Transaction};
+use crate::{AbiContract, BlockId, Message, MessageId, TimeoutsConfig, Transaction};
 
 use ed25519_dalek::{Keypair, PublicKey};
 use chrono::prelude::Utc;
+use serde_json::Value;
 use std::convert::{Into, TryFrom};
 use std::io::{Cursor, Read, Seek};
 use std::slice::Iter;
+use std::collections::HashMap;
+use std::sync::Arc;
 use ton_block::{
-    Account, AccountState, AccountStatus, AccountStorage, CurrencyCollection,
+    Account, AccountIdPrefixFull, AccountState, AccountStatus, AccountStorage, CurrencyCollection,
     Deserializable, ExternalInboundMessageHeader, GetRepresentationHash, Message as TvmMessage,
-    MsgAddressInt, Serializable, StateInit, StorageInfo};
+    MsgAddressInt, Serializable, ShardIdent, StateInit, StorageInfo};
 use ton_types::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use ton_types::{error, fail, Result, AccountId, Cell, SliceData, HashmapE};
 use ton_abi::json_abi::DecodedMessage;
 use ton_abi::token::{Detokenizer, Tokenizer, TokenValue};
+use ton_vm::stack::{StackItem, Stack};
+use ton_vm::stack::integer::IntegerData;
 use ton_executor::BlockchainConfig;
-use graphite::types::GraphiteError;
 
 #[cfg(feature = "node_interaction")]
 use crate::{
-    NodeClient,
+    NodeClient, Block,
     node_client::MAX_TIMEOUT,
     json_helper::account_status_to_u8,
     transaction::TRANSACTION_FIELDS_ORDINARY,
     types::{CONTRACTS_TABLE_NAME, TRANSACTIONS_TABLE_NAME},
 };
-use std::collections::HashMap;
-use serde_json::Value;
-use ton_vm::stack::{StackItem, Stack};
-use ton_vm::stack::integer::IntegerData;
-use std::sync::Arc;
+#[cfg(feature = "node_interaction")]
+use graphite::types::GraphiteError;
 
 // JSON extension to StackItem
 //
@@ -472,6 +473,7 @@ impl Contract {
             let result = Block::wait_next_block(client, &state.last_block_id, &address, Some(timeout)).await;
             let block = match result {
                 Err(err) => {
+                    println!("wait block error {}", err);
                     if let Some(&SdkError::WaitForTimeout) = err.downcast_ref::<SdkError>() {
                         if infinite_wait {
                             continue;
@@ -575,6 +577,13 @@ pub struct LocalCallResult {
     pub transaction: Transaction,
     pub updated_account: Contract,
     pub updated_account_root: Cell
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct ShardDescr {
+    pub workchain_id: i32,
+    #[serde(deserialize_with = "json_helper::deserialize_shard")]
+    pub shard: u64,
 }
 
 impl Contract {
@@ -1124,6 +1133,21 @@ impl Contract {
 
     pub fn now() -> u32 {
         Utc::now().timestamp() as u32
+    }
+
+    pub fn check_shard_match(shard_descr: Value, address: &MsgAddressInt) -> Result<bool> {
+        let descr: ShardDescr = serde_json::from_value(shard_descr)?;
+        let ident = ShardIdent::with_tagged_prefix(descr.workchain_id, descr.shard)?;
+        Ok(ident.contains_full_prefix(&AccountIdPrefixFull::prefix(address)?))
+    }
+
+    pub fn find_matching_shard(shards: &Vec<Value>, address: &MsgAddressInt) -> Result<Value> {
+        for shard in shards {
+            if Self::check_shard_match(shard.clone(), address)? {
+                return Ok(shard.clone());
+            }
+        };
+        fail!(SdkError::NotFound(format!("No matching shard for account {}", address)))
     }
 }
 

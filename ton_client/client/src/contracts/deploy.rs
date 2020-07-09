@@ -13,11 +13,13 @@
 
 use crate::crypto::keys::{KeyPair, decode_public_key, account_encode};
 use crate::contracts::{EncodedUnsignedMessage, EncodedMessage};
-use crate::contracts::run::{RunFees, retry_call, resolve_msg_sdk_error};
-use ton_sdk::{Contract, ContractImage, FunctionCallSet, RecievedTransaction};
+use crate::contracts::run::RunFees;
+use ton_sdk::{Contract, ContractImage, FunctionCallSet};
 
 #[cfg(feature = "node_interaction")]
-use ton_sdk::NodeClient;
+use ton_sdk::{NodeClient, RecievedTransaction};
+#[cfg(feature = "node_interaction")]
+use crate::contracts::run::{resolve_msg_sdk_error, retry_call};
 
 const DEFAULT_WORKCHAIN: i32 = 0;
 
