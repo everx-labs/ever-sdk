@@ -89,6 +89,7 @@ pub(crate) struct ParamsOfProcessMessage {
     pub abi: Option<serde_json::Value>,
     pub function_name: Option<String>,
     pub message: EncodedMessage,
+    #[serde(default)]
     pub infinite_wait: bool,
 }
 
@@ -181,6 +182,7 @@ pub(crate) struct ParamsOfWaitTransaction {
     pub function_name: Option<String>,
     pub message: EncodedMessage,
     pub state: MessageProcessingState,
+    #[serde(default)]
     pub infinite_wait: bool
 }
 
@@ -258,16 +260,23 @@ pub(crate) fn get_boc_root_hash(_context: &mut ClientContext, params: InputBoc) 
 }
 
 #[cfg(feature = "node_interaction")]
-pub(crate) async fn send_message(context: &mut ClientContext, params: EncodedMessage) -> ApiResult<MessageProcessingState> {
+pub(crate) async fn send_message(context: &mut ClientContext, params: EncodedMessage) -> ApiResult<Option<MessageProcessingState>> {
     debug!("-> contracts.send.message({}, {})", params.message_id, params.expire.unwrap_or_default());
 
     let msg = base64_decode(&params.message_body_base64)?;
     let id = crate::types::hex_decode(&params.message_id)?;
     let client = context.get_client()?;
     let address = params.address()?;
-    Contract::send_message(&client, &address, &id, &msg, params.expire)
+    let is_old_client = params.address.is_none();
+    let state = Contract::send_message(&client, &address, &id, &msg, params.expire)
         .await
-        .map_err(|err| ApiError::contracts_send_message_failed(err))
+        .map_err(|err| ApiError::contracts_send_message_failed(err))?;
+
+    if is_old_client {
+        Ok(None)
+    } else {
+        Ok(Some(state))
+    }
 }
 
 #[cfg(feature = "node_interaction")]
