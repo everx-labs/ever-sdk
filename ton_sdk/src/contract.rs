@@ -1146,7 +1146,7 @@ impl Contract {
                 return Ok(shard.clone());
             }
         };
-        fail!(SdkError::NotFound(format!("No matching shard for account {}", address)))
+        Ok(Value::Null)
     }
 }
 

@@ -137,6 +137,9 @@ impl Block {
                     })?;
 
                 let shard_block = Contract::find_matching_shard(shards, address)?;
+                if shard_block.is_null() {
+                    fail!(SdkError::NotFound(format!("No matching shard for account {}", address)));
+                }
                 
                 shard_block["descr"]["root_hash"]
                     .as_str()

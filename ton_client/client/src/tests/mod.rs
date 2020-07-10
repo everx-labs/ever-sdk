@@ -643,4 +643,14 @@ fn test_find_shard() {
         "shard": "2800000000000000",
         "hello": "my shard"
       }).to_string());
+
+    let result = client.request(
+        "contracts.find.shard",
+        json!({
+            "address": address,
+            "shards": json!([]),
+        }
+    )).unwrap();
+
+    assert_eq!(result, Value::Null.to_string());
 }
