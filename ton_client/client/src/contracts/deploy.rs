@@ -12,15 +12,14 @@
 */
 
 use crate::crypto::keys::{KeyPair, decode_public_key, account_encode};
-use crate::contracts::EncodedUnsignedMessage;
-use crate::contracts::run::{RunFees, serialize_message};
+use crate::contracts::{EncodedUnsignedMessage, EncodedMessage};
+use crate::contracts::run::RunFees;
 use ton_sdk::{Contract, ContractImage, FunctionCallSet};
 
-
 #[cfg(feature = "node_interaction")]
-use ton_sdk::Transaction;
+use ton_sdk::{NodeClient, RecievedTransaction};
 #[cfg(feature = "node_interaction")]
-use ton_sdk::NodeClient;
+use crate::contracts::run::{resolve_msg_sdk_error, retry_call};
 
 const DEFAULT_WORKCHAIN: i32 = 0;
 
@@ -90,16 +89,8 @@ pub(crate) struct ParamsOfGetDeployAddress {
 pub(crate) struct ResultOfDeploy {
     pub address: String,
     pub already_deployed: bool,
-    pub fees: Option<RunFees>
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct ResultOfEncodeDeployMessage {
-    pub address: String,
-    pub message_id: String,
-    pub message_body_base64: String,
-    pub expire: Option<u32>,
+    pub fees: Option<RunFees>,
+    pub transaction: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -135,21 +126,23 @@ pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) 
         return Ok(ResultOfDeploy { 
             address: account_encode(&account_id),
             already_deployed: true,
-            fees: None
+            fees: None,
+            transaction: serde_json::Value::Null
         })
     }
 
     let client = context.get_client()?;
     debug!("-> -> deploy");
     let tr = deploy_contract(client, params, contract_image, &key_pair).await?;
-    debug!("-> -> deploy transaction: {}", tr. id());
+    debug!("-> -> deploy transaction: {}", tr.parsed.id());
 
     debug!("<-");
-    super::run::check_transaction_status(&tr, true, &account_id)?;
+    super::run::check_transaction_status(&tr.parsed, true, &account_id)?;
     Ok(ResultOfDeploy {
         address: account_encode(&account_id),
         already_deployed: false,
-        fees: Some(tr.calc_fees().into())
+        fees: Some(tr.parsed.calc_fees().into()),
+        transaction: tr.value
     })
 }
 
@@ -160,7 +153,7 @@ pub(crate) fn get_address(_context: &mut ClientContext, params: ParamsOfGetDeplo
     Ok(account_encode(&account_id))
 }
 
-pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<ResultOfEncodeDeployMessage> {
+pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<EncodedMessage> {
     debug!("-> contracts.deploy.message({:?})", params.call_set.clone());
 
     let keys = params.key_pair.decode()?;
@@ -178,15 +171,8 @@ pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfDeploy
         params.try_index
     ).map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
 
-    let (body, id) = serialize_message(msg.message)?;
-
     debug!("<-");
-    Ok(ResultOfEncodeDeployMessage {
-        address: account_encode(&account_id),
-        message_id: id,
-        message_body_base64: base64::encode(&body),
-        expire: msg.expire
-    })
+    Ok(EncodedMessage::from_sdk_msg(msg))
 }
 
 pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetDeployData) -> ApiResult<ResultOfGetDeployData> {
@@ -302,20 +288,31 @@ fn create_image(abi: &serde_json::Value, init_params: Option<&serde_json::Value>
 }
 
 #[cfg(feature = "node_interaction")]
-async fn deploy_contract(client: &NodeClient, params: ParamsOfDeploy, image: ContractImage, keys: &Keypair) -> ApiResult<Transaction> {
-    let result = Contract::deploy_json(
-        client,
-        params.call_set.into(),
-        image,
-        Some(keys),
-        params.workchain_id.unwrap_or(DEFAULT_WORKCHAIN))
-            .await;
-
-    match result {
-        Err(err) => 
-            Err(super::run::resolve_msg_sdk_error(client, err, ApiError::contracts_deploy_failed).await?),
-        Ok(tr) => Ok(tr)
-    }
+async fn deploy_contract(client: &NodeClient, params: ParamsOfDeploy, image: ContractImage, keys: &Keypair) -> ApiResult<RecievedTransaction> {
+    retry_call(client.timeouts().message_retries_count, |try_index: u8| {
+        let call_set = params.call_set.clone();
+        let workchain = params.workchain_id.unwrap_or(DEFAULT_WORKCHAIN);
+        let image = image.clone();
+        async move {
+            let msg = Contract::construct_deploy_message_json(
+                call_set.into(),
+                image,
+                Some(keys),
+                workchain,
+                Some(client.timeouts()),
+                Some(try_index))
+                .map_err(|err| ApiError::contracts_create_run_message_failed(err))?;
+    
+            let result = Contract::process_message(client, &msg, true).await;
+            
+            match result {
+                Err(err) => 
+                    Err(resolve_msg_sdk_error(
+                        client, err, &msg.serialized_message, ApiError::contracts_deploy_failed).await?),
+                Ok(tr) => Ok(tr)
+            }
+        }
+    }).await
 }
 
 #[cfg(feature = "node_interaction")]

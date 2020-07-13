@@ -555,3 +555,102 @@ fn test_parallel_requests() {
     assert!(start.elapsed().as_millis() > timeout as u128);
     long_wait.join().unwrap();
 }
+
+#[test]
+fn test_find_shard() {
+    let client = TestClient::new();
+
+    let shards = json!([
+        {
+          "workchain_id": 0,
+          "shard": "0800000000000000"
+        },
+        {
+          "workchain_id": 0,
+          "shard": "1800000000000000"
+        },
+        {
+          "workchain_id": 0,
+          "shard": "2800000000000000",
+          "hello": "my shard"
+        },
+        {
+          "workchain_id": 0,
+          "shard": "3800000000000000"
+        },
+        {
+          "workchain_id": 0,
+          "shard": "4800000000000000"
+        },
+        {
+          "workchain_id": 0,
+          "shard": "5800000000000000"
+        },
+        {
+          "workchain_id": 0,
+          "shard": "6800000000000000"
+        },
+        {
+          "workchain_id": 0,
+          "shard": "7800000000000000"
+        },
+        {
+          "workchain_id": 0,
+          "shard": "8800000000000000"
+        },
+        {
+          "workchain_id": 0,
+          "shard": "9800000000000000"
+        },
+        {
+          "workchain_id": 0,
+          "shard": "a800000000000000"
+        },
+        {
+          "workchain_id": 0,
+          "shard": "b800000000000000"
+        },
+        {
+          "workchain_id": 0,
+          "shard": "c800000000000000"
+        },
+        {
+          "workchain_id": 0,
+          "shard": "d800000000000000"
+        },
+        {
+          "workchain_id": 0,
+          "shard": "e800000000000000"
+        },
+        {
+          "workchain_id": 0,
+          "shard": "f800000000000000"
+        }
+      ]);
+
+    let address = "0:2222222222222222222222222222222222222222222222222222222222222222";
+
+    let result = client.request(
+        "contracts.find.shard",
+        json!({
+            "address": address,
+            "shards": shards,
+        }
+    )).unwrap();
+
+    assert_eq!(result, json!({
+        "workchain_id": 0,
+        "shard": "2800000000000000",
+        "hello": "my shard"
+      }).to_string());
+
+    let result = client.request(
+        "contracts.find.shard",
+        json!({
+            "address": address,
+            "shards": json!([]),
+        }
+    )).unwrap();
+
+    assert_eq!(result, Value::Null.to_string());
+}

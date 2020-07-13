@@ -24,6 +24,8 @@ use reqwest::header::LOCATION;
 use chrono::prelude::Utc;
 use ton_types::{error, Result};
 
+pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
+
 #[derive(Serialize, Deserialize)]
 pub enum SortDirection {
     #[serde(rename = "ASC")]
@@ -34,8 +36,8 @@ pub enum SortDirection {
 
 #[derive(Serialize, Deserialize)]
 pub struct OrderBy {
-    path: String,
-    direction: SortDirection
+    pub path: String,
+    pub direction: SortDirection
 }
 
 #[derive(Debug, Clone, Serialize)]

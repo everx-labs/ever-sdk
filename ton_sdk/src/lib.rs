@@ -31,7 +31,13 @@ mod error;
 pub use error::SdkError;
 
 mod contract;
-pub use contract::{Contract, ContractImage, FunctionCallSet};
+pub use contract::{
+    Contract,
+    ContractImage,
+    FunctionCallSet,
+    MessageProcessingState,
+    RecievedTransaction,
+    SdkMessage};
 
 mod message;
 pub use message::{Message, MessageId, MessageType};
@@ -41,13 +47,18 @@ mod local_tvm;
 mod transaction;
 pub use transaction::{Transaction, TransactionId, TransactionFees};
 
+#[cfg(feature = "node_interaction")]
+mod block;
+#[cfg(feature = "node_interaction")]
+pub use block::{Block, MsgDescr};
+
 pub mod types;
-pub use types::{NodeClientConfig, TimeoutsConfig};
+pub use types::{NodeClientConfig, TimeoutsConfig, BlockId};
 
 #[cfg(feature = "node_interaction")]
 pub mod node_client;
 #[cfg(feature = "node_interaction")]
-pub use node_client::OrderBy;
+pub use node_client::{OrderBy, SortDirection};
 pub use node_client::NodeClient;
 
 #[cfg(not(feature = "node_interaction"))]

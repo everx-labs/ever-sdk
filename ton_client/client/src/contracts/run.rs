@@ -27,11 +27,11 @@ use crate::types::{
     long_num_to_json_string};
 
 #[cfg(feature = "node_interaction")]
-use ton_sdk::{NodeClient, SdkError};
+use ton_sdk::{NodeClient, RecievedTransaction, SdkError};
 #[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
-use crate::types::{apierror_from_sdkerror, ApiErrorCode};
+use crate::types::{apierror_from_sdkerror, ApiErrorCode, ApiSdkErrorCode, StdContractError};
 
 
 fn bool_false() -> bool { false }
@@ -123,7 +123,8 @@ pub struct ParamsOfDecodeUnknownRun {
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfRun {
     pub output: serde_json::Value,
-    pub fees: RunFees
+    pub fees: RunFees,
+    pub transaction: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -211,7 +212,8 @@ pub(crate) async fn run(context: &mut ClientContext, params: ParamsOfRun) -> Api
     let tr = call_contract(client, address.clone(), &params, key_pair.as_ref()).await?;
 
     process_transaction(
-        tr,
+        tr.parsed,
+        tr.value,
         Some(params.call_set.abi),
         Some(params.call_set.function_name),
         &address,
@@ -262,6 +264,7 @@ pub(crate) fn process_out_messages(
 
 pub(crate) fn process_transaction(
     transaction: Transaction,
+    json: serde_json::Value,
     abi: Option<serde_json::Value>,
     function: Option<String>,
     address: &MsgAddressInt,
@@ -271,14 +274,7 @@ pub(crate) fn process_transaction(
     let fees = transaction.calc_fees().into();
     let output = process_out_messages(&transaction.out_messages, abi, function)?;
     
-    Ok( ResultOfRun { output, fees: fees } )
-}
-
-pub(crate) fn serialize_message(msg: TvmMessage) -> ApiResult<(Vec<u8>, String)> {
-    let (msg, id) = ton_sdk::Contract::serialize_message(msg)
-        .map_err(|err| ApiError::contracts_cannot_serialize_message(err))?;
-
-    Ok((msg, id.to_string()))
+    Ok( ResultOfRun { output, fees: fees, transaction: json } )
 }
 
 pub(crate) fn local_run(context: &mut ClientContext, params: ParamsOfLocalRun) -> ApiResult<ResultOfLocalRun> {
@@ -338,17 +334,11 @@ pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfRun) -
         false,
         key_pair.as_ref(),
         Some(context.get_client()?.timeouts()),
-        params.try_index)
+        None)
         .map_err(|err| ApiError::contracts_create_run_message_failed(err))?;
 
-    let (body, id) = serialize_message(msg.message)?;
-
     debug!("<-");
-    Ok(EncodedMessage {
-        message_id: id,
-        message_body_base64: base64::encode(&body),
-        expire: msg.expire
-    })
+    Ok(EncodedMessage::from_sdk_msg(msg))
 }
 
 pub(crate) fn encode_unsigned_message(context: &mut ClientContext, params: ParamsOfEncodeUnsignedRunMessage) -> ApiResult<EncodedUnsignedMessage> {
@@ -356,7 +346,7 @@ pub(crate) fn encode_unsigned_message(context: &mut ClientContext, params: Param
         account_decode(&params.address)?,
         params.call_set.into(),
         Some(context.get_client()?.timeouts()),
-        params.try_index
+        None
     ).map_err(|err| ApiError::contracts_create_run_message_failed(err))?;
     Ok(EncodedUnsignedMessage {
         unsigned_bytes_base64: base64::encode(&encoded.message),
@@ -517,24 +507,63 @@ pub(crate) async fn load_contract(context: &ClientContext, address: &MsgAddressI
 }
 
 #[cfg(feature = "node_interaction")]
+pub async fn retry_call<F, Fut>(retries_count: u8, func: F) -> ApiResult<RecievedTransaction>
+    where
+        F: Fn(u8) -> Fut,
+        Fut: futures::Future<Output=ApiResult<RecievedTransaction>>
+{
+    let mut result = Err(ApiError::contracts_send_message_failed("Unreacheable"));
+    for i in 0..(retries_count + 1) {
+        debug!("Try#{}", i);
+        result = func(i).await;
+        match &result {
+            Err(error) => {
+                let retry = error.code == ApiSdkErrorCode::MessageExpired as isize ||
+                    (error.code == ApiSdkErrorCode::ContractsTvmError as isize && 
+                        (error.data["exit_code"] == StdContractError::ReplayProtection as i32 ||
+                        error.data["exit_code"] == StdContractError::ExtMessageExpired as i32));
+                if retry {
+                    continue;
+                } else {
+                    return result;
+                }
+            }
+            _ => return result
+        }
+    }
+    result
+}
+
+#[cfg(feature = "node_interaction")]
 async fn call_contract(
     client: &NodeClient,
     address: MsgAddressInt,
     params: &ParamsOfRun,
     key_pair: Option<&Keypair>,
-) -> ApiResult<Transaction> {
-    let result = Contract::call_json(
-        client,
-        address.clone(),
-        params.call_set.clone().into(),
-        key_pair)
-            .await;
-
-    match result {
-        Err(err) => 
-            Err(resolve_msg_sdk_error(client, err, ApiError::contracts_run_failed).await?),
-        Ok(tr) => Ok(tr)
-    }
+) -> ApiResult<RecievedTransaction> {
+    retry_call(client.timeouts().message_retries_count, |try_index: u8| {
+        let address = address.clone();
+        let call_set = params.call_set.clone();
+        async move {
+            let msg = Contract::construct_call_message_json(
+                address,
+                call_set.into(),
+                false,
+                key_pair,
+                Some(client.timeouts()),
+                Some(try_index))
+                .map_err(|err| ApiError::contracts_create_run_message_failed(err))?;
+    
+            let result = Contract::process_message(client, &msg, true).await;
+            
+            match result {
+                Err(err) => 
+                    Err(resolve_msg_sdk_error(
+                        client, err, &msg.serialized_message, ApiError::contracts_run_failed).await?),
+                Ok(tr) => Ok(tr)
+            }
+        }
+    }).await
 }
 
 pub(crate) fn do_local_run(
@@ -609,7 +638,8 @@ pub(crate) fn do_local_run_msg(
                         ApiError::low_balance(&address),
                     _ => ApiError::contracts_local_run_failed(err)
                 })?;
-        let run_result = process_transaction(result.transaction, abi, function_name, &address, false)?;
+        let run_result = process_transaction(
+            result.transaction, serde_json::Value::Null, abi, function_name, &address, false)?;
         Ok(ResultOfLocalRun {
             output: run_result.output,
             fees: Some(run_result.fees),
@@ -656,12 +686,14 @@ pub(crate) fn resolve_msg_error(
 pub(crate) async fn resolve_msg_sdk_error<F: Fn(String) -> ApiError>(
     client: &NodeClient,
     error: failure::Error,
+    msg: &[u8],
     default_error: F
 ) -> ApiResult<ApiError> {
     match error.downcast_ref::<SdkError>() {
-        Some(SdkError::MessageExpired{msg_id: _, msg, expire: _, send_time, block_time: _}) | 
-        Some(SdkError::TransactionWaitTimeout{msg_id: _, msg, send_time, timeout: _}) => {
-            let address = get_dst_from_msg(msg)?;
+        Some(SdkError::MessageExpired{msg_id: _, expire: _, send_time, block_time: _, block_id: _}) | 
+        Some(SdkError::TransactionWaitTimeout{msg_id: _, send_time, timeout: _, state: _}) => {
+            let address = Contract::get_dst_from_msg(msg)
+                .map_err(|err| ApiError::invalid_params("message", format!("cannot get target address: {}", err)))?;
             let account = Contract::load(client, &address)
                 .await
                 .map_err(|err| apierror_from_sdkerror(&err, ApiError::contracts_run_contract_load_failed))?
@@ -671,12 +703,4 @@ pub(crate) async fn resolve_msg_sdk_error<F: Fn(String) -> ApiError>(
         }
         _ => Err(apierror_from_sdkerror(&error, default_error))
     }
-}
-
-#[cfg(feature = "node_interaction")]
-pub(crate) fn get_dst_from_msg(msg: &[u8]) -> ApiResult<MsgAddressInt> {
-    let msg = Contract::deserialize_message(msg)
-        .map_err(|err| ApiError::invalid_params("message", format!("cannot parse message BOC ({})", err)))?;
-
-    msg.dst().ok_or(ApiError::invalid_params("message", "wrong message type (extOut)".to_owned()))
 }
