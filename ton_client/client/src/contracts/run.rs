@@ -63,6 +63,7 @@ pub(crate) struct ParamsOfRun {
     #[serde(flatten)]
     pub call_set: RunFunctionCallSet,
     pub key_pair: Option<KeyPair>,
+    pub try_index: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -97,6 +98,7 @@ pub(crate) struct ParamsOfEncodeUnsignedRunMessage {
     pub address: String,
     #[serde(flatten)]
     pub call_set: RunFunctionCallSet,
+    pub try_index: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize)]

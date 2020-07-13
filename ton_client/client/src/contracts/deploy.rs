@@ -52,6 +52,7 @@ pub(crate) struct ParamsOfDeploy {
     pub image_base64: String,
     pub key_pair: KeyPair,
     pub workchain_id: Option<i32>,
+    pub try_index: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -63,6 +64,7 @@ pub(crate) struct ParamsOfEncodeUnsignedDeployMessage {
     pub image_base64: String,
     pub public_key_hex: String,
     pub workchain_id: Option<i32>,
+    pub try_index: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -166,7 +168,7 @@ pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfDeploy
         Some(&keys),
         workchain,
         Some(context.get_client()?.timeouts()),
-        None
+        params.try_index
     ).map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
 
     debug!("<-");
@@ -242,7 +244,7 @@ pub(crate) fn encode_unsigned_message(context: &mut ClientContext, params: Param
         image,
         workchain,
         Some(context.get_client()?.timeouts()),
-        None
+        params.try_index
     ).map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
     Ok(ResultOfEncodeUnsignedDeployMessage {
         encoded: EncodedUnsignedMessage {
