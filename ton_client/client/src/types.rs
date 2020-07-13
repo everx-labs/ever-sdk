@@ -815,7 +815,7 @@ where
 {
     match err.downcast_ref::<SdkError>() {
         Some(SdkError::WaitForTimeout) => ApiError::wait_for_timeout(),
-        Some(SdkError::MessageExpired{msg_id, expire, send_time, block_time, block_id}) => 
+        Some(SdkError::MessageExpired{msg_id, expire, send_time, block_time, block_id}) =>
             ApiError::message_expired(msg_id.to_string(), *send_time, *expire, *block_time, block_id.to_string()),
         Some(SdkError::NetworkSilent{msg_id, timeout, block_id, state}) =>
             ApiError::network_silent(msg_id.to_string(), *timeout, block_id.to_string(), state.clone()),

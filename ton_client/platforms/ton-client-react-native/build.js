@@ -19,16 +19,26 @@ const ndkZipFile = root_path(((parts = ndkURLStr.split('/')).length < 1 ? null :
 const ndkDirName = root_path('android-ndk-r17c');
 
 // parse arguments
-let pArgs = process.argv.slice(2);
-let build_Android = false;
-let build_iOS = false;
-while (pArgs.length > 0) {
-    build_Android = build_Android ? true : pArgs[0].trim().toLowerCase() === '--android';
-    build_iOS = build_iOS ? true : pArgs[0].trim().toLowerCase() === '--ios';
-    pArgs = pArgs.slice(1);
-}
-if (!build_Android && !build_iOS) {
-    build_Android = build_iOS = true;
+
+let buildAndroid = false;
+let buildIOS = false;
+let openMode = false;
+process.argv.slice(2).map(x => x.trim().toLowerCase()).forEach((arg) => {
+    switch (arg) {
+    case '--android':
+        buildAndroid = true;
+        break;
+    case '--ios':
+        buildIOS = true;
+        break;
+    case '--open':
+        openMode = true;
+        break;
+    }
+});
+
+if (!buildAndroid && !buildIOS) {
+    buildAndroid = buildIOS = true;
 }
 
 const ios = {
@@ -80,7 +90,10 @@ async function getNDK() {
 
 async function checkNDK() {
     const ndkDir = root_path('NDK');
-    if (fs.existsSync(ndkDir)) {
+    const missingArchs = android.archs.map(x =>
+        !fs.existsSync(path.resolve(ndkDir, x.ndk)) ? x : null
+    ).filter(x => x);
+    if (missingArchs.length === 0) {
         console.log('Standalone NDK already exists...');
         return;
     }
@@ -95,7 +108,7 @@ async function checkNDK() {
     }
     mkdir(ndkDir);
     process.chdir(ndkDir);
-    await spawnAll(android.archs, (arch) => {
+    await spawnAll(missingArchs, (arch) => {
         return ['python', maker, '--arch', arch.ndk, '--install-dir', arch.ndk];
     });
 }
@@ -171,14 +184,14 @@ async function buildReactNativeAndroidLibrary() {
         let cargoTargets = ["x86_64-apple-darwin"];
         let installed = (await exec("rustup target list --installed")).stdout;
         console.log(`Installed targets:\n${installed}`);
-        if (build_iOS) {
+        if (buildIOS) {
             ios.archs.map(x => x.target).forEach(val => {
                 if (installed.indexOf(val) < 0) {
                     cargoTargets.push(val);
                 }
             });
         }
-        if (build_Android) {
+        if (buildAndroid) {
             android.archs.map(x => x.target).forEach(val => {
                 if (installed.indexOf(val) < 0) {
                     cargoTargets.push(val);
@@ -187,13 +200,13 @@ async function buildReactNativeAndroidLibrary() {
         }
 
         await spawnProcess('rustup', ['target', 'add'].concat(cargoTargets));
-        if (!devMode && !pArgs.includes("--open")) {
+        if (!devMode && !openMode) {
             await spawnProcess('cargo', ['update']);
         }
-        if (build_iOS) {
+        if (buildIOS) {
             await buildReactNativeIosLibrary();
         }
-        if (build_Android) {
+        if (buildAndroid) {
             await buildReactNativeAndroidLibrary();
         }
     } catch (error) {
