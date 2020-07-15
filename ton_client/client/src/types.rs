@@ -63,6 +63,7 @@ pub struct ApiError {
     pub source: String,
     pub code: isize,
     pub message: String,
+    pub message_processing_state: Option<MessageProcessingState>,
     pub data: serde_json::Value
 }
 
@@ -98,6 +99,7 @@ impl ApiError {
             source: source.to_string(),
             code: code.as_number(),
             message,
+            message_processing_state: None,
             data: serde_json::Value::Null,
         }
     }
@@ -174,12 +176,12 @@ impl ApiError {
             &ApiSdkErrorCode::NetworkSilent,
             "No blocks were produced during the specified timeout".to_owned(),
         );
+        error.message_processing_state = Some(state);
 
         error.data = serde_json::json!({
             "message_id": msg_id,
             "timeout": timeout,
             "last_block_id": block_id,
-            "resume_processing_state": state
         });
         error
     }
@@ -190,12 +192,12 @@ impl ApiError {
             &ApiSdkErrorCode::TransactionWaitTimeout,
             "Transaction was not produced during the specified timeout".to_owned(),
         );
+        error.message_processing_state = Some(state);
 
         error.data = serde_json::json!({
             "message_id": msg_id,
             "send_time": format_time(send_time),
             "timeout": timeout,
-            "resume_processing_state": state
         });
         error
     }
@@ -825,7 +827,7 @@ where
             ApiError::clock_out_of_sync(*delta_ms, *threshold_ms, *expiration_timeout),
         Some(SdkError::ResumableNetworkError{state, error}) => {
             let mut api_error = apierror_from_sdkerror(error, default_err);
-            api_error.data["resume_processing_state"] = serde_json::to_value(state).unwrap_or_default();
+            api_error.message_processing_state = Some(state.clone());
             api_error
         }
         _ => default_err(err.to_string())
