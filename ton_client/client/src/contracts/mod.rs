@@ -181,7 +181,7 @@ pub(crate) struct ParamsOfWaitTransaction {
     pub abi: Option<serde_json::Value>,
     pub function_name: Option<String>,
     pub message: EncodedMessage,
-    pub state: MessageProcessingState,
+    pub message_processing_state: MessageProcessingState,
     #[serde(default)]
     pub infinite_wait: bool
 }
@@ -358,7 +358,7 @@ pub(crate) async fn wait_transaction(context: &mut ClientContext, params: Params
         client,
         &msg.address,
         &msg.id,
-        params.state,
+        params.message_processing_state,
         msg.expire,
         params.infinite_wait)
         .await;
