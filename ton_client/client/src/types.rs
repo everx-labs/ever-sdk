@@ -60,6 +60,7 @@ impl ApiErrorSource {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 #[serde(default)]
 pub struct ApiError {
+    pub core_version: String,
     pub source: String,
     pub code: isize,
     pub message: String,
@@ -96,6 +97,7 @@ macro_rules! as_number_impl {
 impl ApiError {
     fn new(source: ApiErrorSource, code: &dyn ApiErrorCode, message: String) -> Self {
         Self {
+            core_version: env!("CARGO_PKG_VERSION").to_owned(),
             source: source.to_string(),
             code: code.as_number(),
             message,
