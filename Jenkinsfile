@@ -1097,6 +1097,14 @@ ton_client/platforms/ton-client-web"""
                         unstash 'nj-windows-bin'
                         unstash 'nj-darwin-bin'
                         unstash 'web-bin'
+                        if(GIT_BRANCH == "${getVar(G_binversion)}-rc") {
+                            sh """
+                                for it in \$(ls)
+                                do 
+                                    mv \$it \$(echo \$it | sed -E \"s/([0-9]+_[0-9]+_[0-9]+)/\\1-rc/\");
+                                done
+                            """
+                        }
                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                             identity = awsIdentity()
                             s3Upload \
