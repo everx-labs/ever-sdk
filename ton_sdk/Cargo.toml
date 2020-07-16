@@ -36,6 +36,10 @@ optional = true
 version = "0.3.4"
 optional = true
 
+[dependencies.futures-timer]
+version = "3.0.1"
+optional = true
+
 [dependencies.graphite]
 path = "../graphite"
 optional = true
@@ -57,5 +61,5 @@ tokio = { version = "0.2.13", features = ["macros"]}
 [features]
 default = ["node_interaction"]
 ci_run = []
-node_interaction = ["graphite", "futures", "reqwest", "tokio"]
+node_interaction = ["graphite", "futures", "reqwest", "tokio", "futures-timer"]
 

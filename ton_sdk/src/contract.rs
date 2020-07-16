@@ -486,15 +486,18 @@ impl Contract {
                         }
                     } else if let Some(GraphiteError::NetworkError(_)) = err.downcast_ref::<GraphiteError>() {
                         if infinite_wait {
+                            futures_timer::Delay::new(
+                                std::time::Duration::from_secs(1)
+                            ).await;
                             continue;
                         } else {
-                            fail!(err);
+                            fail!(SdkError::ResumableNetworkError {
+                                state,
+                                error: err
+                            });
                         }
                     } else {
-                        fail!(SdkError::ResumableNetworkError {
-                            state,
-                            error: err
-                        });
+                        fail!(err);
                     }
                 }
                 Ok(block) => block
