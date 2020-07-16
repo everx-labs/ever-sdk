@@ -143,7 +143,7 @@ def buildBranchesMap() {
         G_branches.put('ton-labs-executor', params.branch_ton_labs_executor)
     }
 
-    if (params.branch_ton_sdk == '') {
+    if (params.branch_ton_sdk != "${env.BRANCH_NAME}") {
         G_branches.put('ton-sdk', "${env.BRANCH_NAME}")
     } else {
         G_branches.put('ton-sdk', params.branch_ton_sdk)
