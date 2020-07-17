@@ -62,10 +62,10 @@ pub enum SdkError {
 
     #[fail(display =
         "Message expired\n\tid: {}\n\tsend time: {}\n\texpiration time: {}\n\tblock time: {}",
-        msg_id, send_time, expire, block_time)]
+        msg_id, sending_time, expire, block_time)]
     MessageExpired {
         msg_id: crate::MessageId,
-        send_time: u32,
+        sending_time: u32,
         expire: u32,
         block_id: crate::BlockId,
         block_time: u32
@@ -85,7 +85,7 @@ pub enum SdkError {
     #[fail(display = "Transaction was not produced during the specified timeout")]
     TransactionWaitTimeout{
         msg_id: crate::MessageId,
-        send_time: u32,
+        sending_time: u32,
         timeout: u32,
         state: crate::MessageProcessingState
     },

@@ -87,7 +87,7 @@ fn setup(context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
 
 #[cfg(not(feature = "node_interaction"))]
 fn setup(context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
-    debug!("-> client.setup({:?})", config);
+    trace!("-> client.setup({:?})", config);
 
     context.client = Some(ton_sdk::init(config.into()).map_err(|err|ApiError::config_init_failed(err))?);
     Ok(())

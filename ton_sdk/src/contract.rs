@@ -19,6 +19,7 @@ use crate::{AbiContract, BlockId, Message, MessageId, TimeoutsConfig, Transactio
 use ed25519_dalek::{Keypair, PublicKey};
 use chrono::prelude::Utc;
 use serde_json::Value;
+use log::{debug, warn};
 use std::convert::{Into, TryFrom};
 use std::io::{Cursor, Read, Seek};
 use std::slice::Iter;
@@ -206,7 +207,7 @@ pub struct ContractImage {
 #[serde(rename_all = "camelCase")]
 pub struct MessageProcessingState {
     last_block_id: BlockId,
-    sent_time: u32,
+    sending_time: u32,
 }
 
 #[derive(Debug)]
@@ -422,7 +423,7 @@ impl Contract {
     ) -> Result<RecievedTransaction> {
         let state = Self::send_message(
             client, &msg.address, &msg.id.to_bytes()?, &msg.serialized_message, msg.expire).await?;
-        //println!("msg is sent, id: {}", id);
+        debug!("msg is sent, id: {}", msg.id);
         Self::wait_transaction_processing(
             client, &msg.address, &msg.id, state, msg.expire, infinite_wait).await
     }
@@ -443,7 +444,7 @@ impl Contract {
         let block_id = Block::find_last_shard_block(client, address).await?;
         client.send_message(id, msg).await?;
         Ok(MessageProcessingState {
-            sent_time: Self::now(),
+            sending_time: Self::now(),
             last_block_id: block_id,
         })
     }
@@ -473,8 +474,10 @@ impl Contract {
             let result = Block::wait_next_block(client, &state.last_block_id, &address, Some(timeout)).await;
             let block = match result {
                 Err(err) => {
+                    debug!("wait_next_block error {}", err);
                     if let Some(&SdkError::WaitForTimeout) = err.downcast_ref::<SdkError>() {
                         if infinite_wait {
+                            warn!("Block awaiting timeout. Trying again. Current block {}", state.last_block_id);
                             continue;
                         } else {
                             fail!(SdkError::NetworkSilent {
@@ -486,6 +489,7 @@ impl Contract {
                         }
                     } else if let Some(GraphiteError::NetworkError(_)) = err.downcast_ref::<GraphiteError>() {
                         if infinite_wait {
+                            warn!("Network error while awaiting next block for {}. Trying again.\n{}", state.last_block_id, err);
                             futures_timer::Delay::new(
                                 std::time::Duration::from_secs(1)
                             ).await;
@@ -531,7 +535,7 @@ impl Contract {
                 if expire.is_some() {
                     fail!(SdkError::MessageExpired{
                         msg_id: message_id.clone(),
-                        send_time: state.sent_time,
+                        sending_time: state.sending_time,
                         expire: stop_time,
                         block_time: block.gen_utime,
                         block_id: state.last_block_id
@@ -539,7 +543,7 @@ impl Contract {
                 } else {
                     fail!(SdkError::TransactionWaitTimeout {
                         msg_id: message_id.clone(),
-                        send_time: state.sent_time,
+                        sending_time: state.sending_time,
                         timeout,
                         state
                     });
@@ -555,7 +559,7 @@ impl Contract {
         {
             Err(SdkError::MessageExpired{
                 msg_id: message_id.clone(),
-                send_time: state.sent_time,
+                sending_time: state.sending_time,
                 expire: expire.unwrap_or(0),
                 block_time: parsed.now,
                 block_id: transaction["block_id"].as_str().unwrap_or("null").into()

@@ -21,6 +21,8 @@ use crate::{
 use ton_types::{fail, error, Result};
 use ton_block::MsgAddressInt;
 
+use log::debug;
+
 #[derive(Deserialize, Debug, Clone)]
 pub struct MsgDescr {
     pub msg_id: Option<MessageId>,
@@ -68,7 +70,7 @@ impl Block {
             Some(1),
             None
         ).await?;
-        //println!("Last block {}", blocks[0]["id"]);
+        debug!("Last block {}", blocks[0]["id"]);
 
         if MASTERCHAIN_ID == workchain {
             // if account resides in masterchain then starting point is last masterchain block
@@ -162,7 +164,7 @@ impl Block {
             }).to_string(),
             BLOCK_FIELDS,
             timeout).await?;
-        //println!("{}: block recieved {:#}", crate::Contract::now(), block);
+        debug!("{}: block recieved {:#}", crate::Contract::now(), block);
 
         if block["after_split"] == true && !Contract::check_shard_match(block.clone(), address)? {
             client.wait_for(

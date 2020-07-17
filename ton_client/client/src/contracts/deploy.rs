@@ -114,13 +114,13 @@ pub(crate) struct ResultOfGetDeployData {
 
 #[cfg(feature = "node_interaction")]
 pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<ResultOfDeploy> {
-    debug!("-> contracts.deploy({:?})", params.call_set.clone());
+    trace!("-> contracts.deploy({:?})", params.call_set.clone());
 
     let key_pair = params.key_pair.decode()?;
 
     let contract_image = create_image(&params.call_set.abi, params.init_params.as_ref(), &params.image_base64, &key_pair.public)?;
     let account_id = contract_image.msg_address(params.workchain_id.unwrap_or(DEFAULT_WORKCHAIN));
-    debug!("-> -> image prepared with address: {}", account_id);
+    trace!("-> -> image prepared with address: {}", account_id);
 
     if check_deployed(context, &account_id).await? {
         return Ok(ResultOfDeploy { 
@@ -132,11 +132,11 @@ pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) 
     }
 
     let client = context.get_client()?;
-    debug!("-> -> deploy");
+    trace!("-> -> deploy");
     let tr = deploy_contract(client, params, contract_image, &key_pair).await?;
-    debug!("-> -> deploy transaction: {}", tr.parsed.id());
+    trace!("-> -> deploy transaction: {}", tr.parsed.id());
 
-    debug!("<-");
+    trace!("<-");
     super::run::check_transaction_status(&tr.parsed, true, &account_id)?;
     Ok(ResultOfDeploy {
         address: account_encode(&account_id),
@@ -154,14 +154,14 @@ pub(crate) fn get_address(_context: &mut ClientContext, params: ParamsOfGetDeplo
 }
 
 pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<EncodedMessage> {
-    debug!("-> contracts.deploy.message({:?})", params.call_set.clone());
+    trace!("-> contracts.deploy.message({:?})", params.call_set.clone());
 
     let keys = params.key_pair.decode()?;
     let workchain = params.workchain_id.unwrap_or(DEFAULT_WORKCHAIN);
 
     let contract_image = create_image(&params.call_set.abi, params.init_params.as_ref(), &params.image_base64, &keys.public)?;
     let account_id = contract_image.msg_address(workchain);
-    debug!("image prepared with address: {}", account_encode(&account_id));
+    trace!("image prepared with address: {}", account_encode(&account_id));
     let msg = Contract::construct_deploy_message_json(
         params.call_set.into(),
         contract_image,
@@ -171,12 +171,12 @@ pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfDeploy
         params.try_index
     ).map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
 
-    debug!("<-");
+    trace!("<-");
     Ok(EncodedMessage::from_sdk_msg(msg))
 }
 
 pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetDeployData) -> ApiResult<ResultOfGetDeployData> {
-    debug!("-> contracts.deploy.data({}, {}, {})",
+    trace!("-> contracts.deploy.data({}, {}, {})",
         &params.abi.clone().unwrap_or_default(),
         &params.image_base64.clone().unwrap_or_default(),
         &params.init_params.clone().unwrap_or_default(),
@@ -225,7 +225,7 @@ pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetD
         None => (None, None, None),
     };
 
-    debug!("<-");
+    trace!("<-");
     Ok(ResultOfGetDeployData {
         image_base64: image_base64,
         account_id: account_id,
