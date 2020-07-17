@@ -44,7 +44,7 @@ pub(crate) fn get(
     context: &mut ClientContext,
     params: ParamsOfLocalRunGet,
 ) -> ApiResult<ResultOfLocalRunGet> {
-    debug!("-> contracts.run.get({})",
+    trace!("-> contracts.run.get({})",
         params.functionName,
     );
 
@@ -52,7 +52,7 @@ pub(crate) fn get(
         // load contract data from node manually
         #[cfg(feature = "node_interaction")]
         None => {
-            debug!("load contract");
+            trace!("load contract");
             let address = params.address.ok_or_else(|| ApiError::address_reqired_for_runget())?;
             let address = crate::crypto::keys::account_decode(&address)?;
             let mut runtime = context.take_runtime()?;
@@ -63,7 +63,7 @@ pub(crate) fn get(
         // can't load
         #[cfg(not(feature = "node_interaction"))]
         None => {
-            debug!("no account provided");
+            trace!("no account provided");
             let _context = context;
             return Err(ApiError::invalid_params("", "No account provided"));
         }

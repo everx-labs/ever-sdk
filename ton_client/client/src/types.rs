@@ -150,7 +150,7 @@ impl ApiError {
             "WaitFor operation did not return anything during the specified timeout")
     }
 
-    pub fn message_expired(msg_id: String, send_time: u32, expire: u32, block_time: u32, block_id: String) -> Self {
+    pub fn message_expired(msg_id: String, sending_time: u32, expire: u32, block_time: u32, block_id: String) -> Self {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ApiSdkErrorCode::MessageExpired,
@@ -159,7 +159,7 @@ impl ApiError {
 
         error.data = serde_json::json!({
             "message_id": msg_id,
-            "send_time": format_time(send_time),
+            "sending_time": format_time(sending_time),
             "expiration_time": format_time(expire),
             "block_time": format_time(block_time),
             "block_id": block_id,
@@ -188,7 +188,7 @@ impl ApiError {
         error
     }
 
-    pub fn transaction_wait_timeout(msg_id: String, send_time: u32, timeout: u32, state: MessageProcessingState) -> Self {
+    pub fn transaction_wait_timeout(msg_id: String, sending_time: u32, timeout: u32, state: MessageProcessingState) -> Self {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ApiSdkErrorCode::TransactionWaitTimeout,
@@ -198,7 +198,7 @@ impl ApiError {
 
         error.data = serde_json::json!({
             "message_id": msg_id,
-            "send_time": format_time(send_time),
+            "sending_time": format_time(sending_time),
             "timeout": timeout,
         });
         error
@@ -819,12 +819,12 @@ where
 {
     match err.downcast_ref::<SdkError>() {
         Some(SdkError::WaitForTimeout) => ApiError::wait_for_timeout(),
-        Some(SdkError::MessageExpired{msg_id, expire, send_time, block_time, block_id}) =>
-            ApiError::message_expired(msg_id.to_string(), *send_time, *expire, *block_time, block_id.to_string()),
+        Some(SdkError::MessageExpired{msg_id, expire, sending_time, block_time, block_id}) =>
+            ApiError::message_expired(msg_id.to_string(), *sending_time, *expire, *block_time, block_id.to_string()),
         Some(SdkError::NetworkSilent{msg_id, timeout, block_id, state}) =>
             ApiError::network_silent(msg_id.to_string(), *timeout, block_id.to_string(), state.clone()),
-        Some(SdkError::TransactionWaitTimeout{msg_id, send_time, timeout, state}) =>
-            ApiError::transaction_wait_timeout(msg_id.to_string(), *send_time, *timeout, state.clone()),
+        Some(SdkError::TransactionWaitTimeout{msg_id, sending_time, timeout, state}) =>
+            ApiError::transaction_wait_timeout(msg_id.to_string(), *sending_time, *timeout, state.clone()),
         Some(SdkError::ClockOutOfSync{delta_ms, threshold_ms, expiration_timeout}) =>
             ApiError::clock_out_of_sync(*delta_ms, *threshold_ms, *expiration_timeout),
         Some(SdkError::ResumableNetworkError{state, error}) => {

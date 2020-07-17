@@ -141,7 +141,7 @@ async fn test_expire() {
         Err(error) => {
             println!("{}", error);
             match error.downcast_ref::<SdkError>().unwrap() {
-                SdkError::MessageExpired{msg_id: _, expire: _, send_time: _, block_time: _, block_id: _} => {},
+                SdkError::MessageExpired{msg_id: _, expire: _, sending_time: _, block_time: _, block_id: _} => {},
                 _ => panic!("Error `SdkError::MessageExpired` expected")
             };
         }

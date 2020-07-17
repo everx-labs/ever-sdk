@@ -13,6 +13,7 @@ guarantee message expiration
 - `contracts.wait.transaction` function for awaiting previously sent message processing
 - `contracts.send.message` returns message processing state for `contracts.wait.transaction` function
 - `contracts.find.shard` function for account shard matching
+- added logging on warning messages
 
 ## May 28, 2020
 ### New

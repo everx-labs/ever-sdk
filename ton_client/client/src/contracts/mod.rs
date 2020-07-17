@@ -222,7 +222,7 @@ pub(crate) fn get_function_id(_context: &mut ClientContext, params: ParamsOfGetF
 }
 
 pub(crate) fn get_code_from_image(_context: &mut ClientContext, params: ParamsOfGetCodeFromImage) -> ApiResult<ResultOfGetCodeFromImage> {
-    debug!("-> contracts.image.code()");
+    trace!("-> contracts.image.code()");
 
     let bytes = base64::decode(&params.image_base64)
         .map_err(|err| ApiError::contracts_invalid_image(err))?;
@@ -230,7 +230,7 @@ pub(crate) fn get_code_from_image(_context: &mut ClientContext, params: ParamsOf
     let image = ContractImage::from_state_init(&mut reader)
         .map_err(|err| ApiError::contracts_image_creation_failed(err))?;
 
-    debug!("<-");
+    trace!("<-");
     Ok(ResultOfGetCodeFromImage {
         code_base64: base64::encode(&image.get_serialized_code()
             .map_err(|err| ApiError::contracts_image_creation_failed(err))?),
@@ -238,7 +238,7 @@ pub(crate) fn get_code_from_image(_context: &mut ClientContext, params: ParamsOf
 }
 
 pub(crate) fn convert_address(_context: &mut ClientContext, params: ParamsOfConvertAddress) -> ApiResult<ResultOfConvertAddress> {
-    debug!("-> contracts.image.code({}, {:?}, {:?})", params.address, params.convert_to, params.base64_params);
+    trace!("-> contracts.image.code({}, {:?}, {:?})", params.address, params.convert_to, params.base64_params);
     let address = account_decode(&params.address)?;
     Ok(ResultOfConvertAddress {
         address: account_encode_ex(&address, params.convert_to, params.base64_params)?,
@@ -252,7 +252,7 @@ fn decode_boc_base64(boc_base64: &String) -> ApiResult<ton_types::Cell> {
 }
 
 pub(crate) fn get_boc_root_hash(_context: &mut ClientContext, params: InputBoc) -> ApiResult<ResultOfGetBocHash> {
-    debug!("-> contracts.boc.hash({})", params.boc_base64);
+    trace!("-> contracts.boc.hash({})", params.boc_base64);
     let cells = decode_boc_base64(&params.boc_base64)?;
     Ok(ResultOfGetBocHash {
         hash: format!("{:x}", cells.repr_hash()),
@@ -261,7 +261,7 @@ pub(crate) fn get_boc_root_hash(_context: &mut ClientContext, params: InputBoc) 
 
 #[cfg(feature = "node_interaction")]
 pub(crate) async fn send_message(context: &mut ClientContext, params: EncodedMessage) -> ApiResult<Option<MessageProcessingState>> {
-    debug!("-> contracts.send.message({}, {})", params.message_id, params.expire.unwrap_or_default());
+    trace!("-> contracts.send.message({}, {})", params.message_id, params.expire.unwrap_or_default());
 
     let msg = base64_decode(&params.message_body_base64)?;
     let id = crate::types::hex_decode(&params.message_id)?;
@@ -281,7 +281,7 @@ pub(crate) async fn send_message(context: &mut ClientContext, params: EncodedMes
 
 #[cfg(feature = "node_interaction")]
 pub(crate) async fn process_message(context: &mut ClientContext, params: ParamsOfProcessMessage) -> ApiResult<run::ResultOfRun> {
-    debug!("-> contracts.process.message({}, {})",
+    trace!("-> contracts.process.message({}, {})",
         params.message.message_id,
         params.message.expire.unwrap_or_default());
 
@@ -313,7 +313,7 @@ pub(crate) async fn process_message(context: &mut ClientContext, params: ParamsO
 pub(crate) fn process_transaction(
     _context: &mut ClientContext, params: ParamsOfProcessTransaction
 ) -> ApiResult<run::ResultOfRun> {
-    debug!("-> contracts.process.transaction({}, {:?})", params.address, params.transaction);
+    trace!("-> contracts.process.transaction({}, {:?})", params.address, params.transaction);
     let address = account_decode(&params.address)?;
     let transaction = serde_json::from_value(params.transaction.clone())
         .map_err(|err| ApiError::invalid_params(&params.transaction.to_string(), err))?;
@@ -322,7 +322,7 @@ pub(crate) fn process_transaction(
 }
 
 pub(crate) fn parse_message(_context: &mut ClientContext, params: InputBoc) -> ApiResult<serde_json::Value> {
-    debug!("-> contracts.boc.hash({})", params.boc_base64);
+    trace!("-> contracts.boc.hash({})", params.boc_base64);
     let cells = decode_boc_base64(&params.boc_base64)?;
     let mut message = ton_block::Message::default();
     message.read_from(&mut cells.into())
@@ -339,7 +339,7 @@ pub(crate) fn parse_message(_context: &mut ClientContext, params: InputBoc) -> A
 }
 
 pub(crate) fn find_matching_shard(_context: &mut ClientContext, params: ParamsOfFindShard) -> ApiResult<serde_json::Value> {
-    debug!("-> contracts.find.shard({}, {:#?})", params.address, params.shards);
+    trace!("-> contracts.find.shard({}, {:#?})", params.address, params.shards);
     let address = account_decode(&params.address)?;
 
     Contract::find_matching_shard(&params.shards, &address)
@@ -348,7 +348,7 @@ pub(crate) fn find_matching_shard(_context: &mut ClientContext, params: ParamsOf
 
 #[cfg(feature = "node_interaction")]
 pub(crate) async fn wait_transaction(context: &mut ClientContext, params: ParamsOfWaitTransaction) -> ApiResult<run::ResultOfRun> {
-    debug!("-> contracts.wait.transaction({}, {})",
+    trace!("-> contracts.wait.transaction({}, {})",
         params.message.message_id,
         params.message.expire.unwrap_or_default());
 
