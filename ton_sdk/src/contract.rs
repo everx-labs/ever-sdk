@@ -19,7 +19,6 @@ use crate::{AbiContract, BlockId, Message, MessageId, TimeoutsConfig, Transactio
 use ed25519_dalek::{Keypair, PublicKey};
 use chrono::prelude::Utc;
 use serde_json::Value;
-use log::{debug, warn};
 use std::convert::{Into, TryFrom};
 use std::io::{Cursor, Read, Seek};
 use std::slice::Iter;
@@ -423,7 +422,7 @@ impl Contract {
     ) -> Result<RecievedTransaction> {
         let state = Self::send_message(
             client, &msg.address, &msg.id.to_bytes()?, &msg.serialized_message, msg.expire).await?;
-        debug!("msg is sent, id: {}", msg.id);
+        log::debug!("msg is sent, id: {}", msg.id);
         Self::wait_transaction_processing(
             client, &msg.address, &msg.id, state, msg.expire, infinite_wait).await
     }
@@ -471,13 +470,16 @@ impl Contract {
         loop {
             let now = Self::now();
             let timeout = std::cmp::max(stop_time, now) - now + add_timeout;
-            let result = Block::wait_next_block(client, &state.last_block_id, &address, Some(timeout)).await;
+            let result = Block::wait_next_block(
+                client, &state.last_block_id, &address, Some(timeout)).await;
             let block = match result {
                 Err(err) => {
-                    debug!("wait_next_block error {}", err);
+                    log::debug!("wait_next_block error {}", err);
                     if let Some(&SdkError::WaitForTimeout) = err.downcast_ref::<SdkError>() {
                         if infinite_wait {
-                            warn!("Block awaiting timeout. Trying again. Current block {}", state.last_block_id);
+                            log::warn!(
+                                "Block awaiting timeout. Trying again. Current block {}",
+                                state.last_block_id);
                             continue;
                         } else {
                             fail!(SdkError::NetworkSilent {
@@ -489,7 +491,9 @@ impl Contract {
                         }
                     } else if let Some(GraphiteError::NetworkError(_)) = err.downcast_ref::<GraphiteError>() {
                         if infinite_wait {
-                            warn!("Network error while awaiting next block for {}. Trying again.\n{}", state.last_block_id, err);
+                            log::warn!(
+                                "Network error while awaiting next block for {}. Trying again.\n{}", 
+                                state.last_block_id, err);
                             futures_timer::Delay::new(
                                 std::time::Duration::from_secs(1)
                             ).await;
