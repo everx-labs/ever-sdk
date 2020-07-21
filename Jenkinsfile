@@ -143,7 +143,7 @@ def buildBranchesMap() {
         G_branches.put('ton-labs-executor', params.branch_ton_labs_executor)
     }
 
-    if (params.branch_ton_sdk == '') {
+    if (params.branch_ton_sdk != "${env.BRANCH_NAME}") {
         G_branches.put('ton-sdk', "${env.BRANCH_NAME}")
     } else {
         G_branches.put('ton-sdk', params.branch_ton_sdk)
@@ -1097,6 +1097,14 @@ ton_client/platforms/ton-client-web"""
                         unstash 'nj-windows-bin'
                         unstash 'nj-darwin-bin'
                         unstash 'web-bin'
+                        if(GIT_BRANCH == "${getVar(G_binversion)}-rc") {
+                            sh """
+                                for it in \$(ls)
+                                do 
+                                    mv \$it \$(echo \$it | sed -E \"s/([0-9]+_[0-9]+_[0-9]+)/\\1-rc/\");
+                                done
+                            """
+                        }
                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                             identity = awsIdentity()
                             s3Upload \
