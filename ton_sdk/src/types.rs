@@ -39,7 +39,6 @@ pub struct TimeoutsConfig {
     pub message_expiration_timeout: u32,
     pub message_expiration_timeout_grow_factor: f32,
     pub message_processing_timeout: u32,
-    pub message_processing_timeout_grow_factor: f32,
     pub wait_for_timeout: u32,
     pub out_of_sync_threshold: i64
 }
@@ -51,7 +50,6 @@ impl Default for TimeoutsConfig {
             message_expiration_timeout: DEFAULT_EXPIRATION_TIMEOUT,
             message_expiration_timeout_grow_factor: DEFAULT_TIMEOUT_GROW_FACTOR,
             message_processing_timeout: DEFAULT_PROCESSING_TIMEOUT,
-            message_processing_timeout_grow_factor: DEFAULT_TIMEOUT_GROW_FACTOR,
             wait_for_timeout: DEFAULT_WAIT_TIMEOUT,
             out_of_sync_threshold: DEFAULT_OUT_OF_SYNC_THRESHOLD
         }

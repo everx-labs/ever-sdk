@@ -520,10 +520,14 @@ pub async fn retry_call<F, Fut>(retries_count: u8, func: F) -> ApiResult<Recieve
         result = func(i).await;
         match &result {
             Err(error) => {
+                // retry if message expired or if resolving returned that message expired/replay 
+                // protection error or if transaction with message expired/replay protection error
+                // returned
                 let retry = error.code == ApiSdkErrorCode::MessageExpired as isize ||
-                    (error.code == ApiSdkErrorCode::ContractsTvmError as isize && 
-                        (error.data["exit_code"] == StdContractError::ReplayProtection as i32 ||
-                        error.data["exit_code"] == StdContractError::ExtMessageExpired as i32));
+                    ((error.data["exit_code"] == StdContractError::ReplayProtection as i32 ||
+                      error.data["exit_code"] == StdContractError::ExtMessageExpired as i32) &&
+                        (error.data["original_error"].is_null() || 
+                         error.data["original_error"]["code"] == ApiSdkErrorCode::MessageExpired as isize));
                 if retry {
                     continue;
                 } else {
