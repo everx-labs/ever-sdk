@@ -144,7 +144,7 @@ function setWasmOptions(options) {
 }
 
 const clientPlatform = {
-    fetch,
+    fetch: window ? window.fetch.bind(window) : fetch,
     WebSocket,
     createLibrary,
 };
