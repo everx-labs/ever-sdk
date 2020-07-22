@@ -148,14 +148,14 @@ pub mod executor {
         let mut acc_root = account.write_to_new_cell()?.into();
 
         let block_lt = block_lt.unwrap_or(transaction_lt.unwrap_or(1_000_001) - 1);
-        let last_lt = Arc::new(AtomicU64::new(transaction_lt.unwrap_or(block_lt + 2) - 1));
+        let lt = Arc::new(AtomicU64::new(transaction_lt.unwrap_or(block_lt + 1)));
         let executor = OrdinaryTransactionExecutor::new(config);
         let transaction = executor.execute(
             Some(&msg),
             &mut acc_root,
             timestamp,
             block_lt,
-            last_lt.clone(),
+            lt.clone(),
             false)
             .map_err(|err| {
                 match err.downcast_ref::<ExecutorError>() {
