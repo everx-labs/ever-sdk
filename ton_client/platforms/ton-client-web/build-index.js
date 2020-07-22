@@ -60,6 +60,7 @@ const createLibrary = async () => {
         }
     }
 
+    let legacyCoreContext = null;
     const library = {
         coreCreateContext: (callback) => {
             coreRequest(0, 'context.create', '', (resultJson) => {
@@ -78,7 +79,14 @@ const createLibrary = async () => {
         },
         coreRequest,
         request: (method, params, callback) => {
-            coreRequest(1, method, params, callback);
+            if (legacyCoreContext === null) {
+                library.coreCreateContext((context) => {
+                    legacyCoreContext = context;
+                    coreRequest(legacyCoreContext, method, params, callback);
+                });
+            } else {
+                coreRequest(legacyCoreContext, method, params, callback);
+            }
         },
     };
 
