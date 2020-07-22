@@ -336,28 +336,35 @@ pipeline {
         stage('Versioning') {
             steps {
                 script {
-                    withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
-                        identity = awsIdentity()
-                        s3Download bucket: 'sdkbinaries-ws.tonlabs.io', file: 'version.json', force: true, path: 'version.json'
-                    }
-                    def folders = """ton_sdk \
+                    if(env.GIT_BRANCH ==~ '[0-9]+.[0-9]+.[0-9]+-rc') {
+                        G_binversion = env.GIT_BRANCH.replaceAll('-rc','')
+                        echo "Set version from branch: ${G_binversion}"
+                    } else {
+                        lock('bucket') {
+                            withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
+                                identity = awsIdentity()
+                                s3Download bucket: 'sdkbinaries-ws.tonlabs.io', file: 'version.json', force: true, path: 'version.json'
+                            }
+                            def folders = """ton_sdk \
 ton_client/client \
 ton_client/platforms/ton-client-node-js \
 ton_client/platforms/ton-client-react-native \
 ton_client/platforms/ton-client-web"""
-                    if(params.common_version) {
-                        G_binversion = sh (script: "node tonVersion.js --set ${params.common_version} ${folders}", returnStdout: true).trim()
-                    } else {
-                        G_binversion = sh (script: "node tonVersion.js ${folders}", returnStdout: true).trim()
-                    }
+                            if(params.common_version) {
+                                G_binversion = sh (script: "node tonVersion.js --set ${params.common_version} ${folders}", returnStdout: true).trim()
+                            } else {
+                                G_binversion = sh (script: "node tonVersion.js ${folders}", returnStdout: true).trim()
+                            }
 
-                    if(!isUpstream() && (GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc")) {
-                        withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
-                            identity = awsIdentity()
-                            s3Upload \
-                                bucket: 'sdkbinaries-ws.tonlabs.io', \
-                                includePathPattern:'version.json', path: '', \
-                                workingDir:'.'
+                            if(!isUpstream() && (GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc")) {
+                                withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
+                                    identity = awsIdentity()
+                                    s3Upload \
+                                        bucket: 'sdkbinaries-ws.tonlabs.io', \
+                                        includePathPattern:'version.json', path: '', \
+                                        workingDir:'.'
+                                }
+                            }
                         }
                     }
                 }
@@ -392,7 +399,7 @@ ton_client/platforms/ton-client-web"""
         stage('Before stages') {
             when {
                 expression {
-                    return !isUpstream() && (GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc")
+                    return !isUpstream() && (GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+')
                 }
             }
             steps {
@@ -466,7 +473,7 @@ ton_client/platforms/ton-client-web"""
                 stage('Parallel stages') {
                     when {
                         expression {
-                            return !isUpstream() && (GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc")
+                            return !isUpstream() && (GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+')
                         }
                     }
                     steps {
@@ -1100,7 +1107,9 @@ ton_client/platforms/ton-client-web"""
                         unstash 'nj-windows-bin'
                         unstash 'nj-darwin-bin'
                         unstash 'web-bin'
+                        def deployPath = 'tmp_sdk'
                         if(GIT_BRANCH == "${getVar(G_binversion)}-rc") {
+                            deployPath = ''
                             sh """
                                 for it in \$(ls)
                                 do 
@@ -1112,7 +1121,7 @@ ton_client/platforms/ton-client-web"""
                             identity = awsIdentity()
                             s3Upload \
                                 bucket: 'sdkbinaries-ws.tonlabs.io', \
-                                includePathPattern:'*.gz', path: 'tmp_sdk', \
+                                includePathPattern:'*.gz', path: deployPath, \
                                 workingDir:'.'
                         }
                     }
@@ -1122,7 +1131,7 @@ ton_client/platforms/ton-client-web"""
         stage('After stages') {
             when {
                 expression {
-                    return !isUpstream() && (GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc")
+                    return !isUpstream() && (GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+')
                 }
             }
             steps {
@@ -1136,36 +1145,9 @@ ton_client/platforms/ton-client-web"""
         }
     }
     post {
-        failure {
-            script {
-                withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
-                    identity = awsIdentity()
-                    s3Delete bucket: 'sdkbinaries-ws.tonlabs.io', path: 'tmp_sdk/'
-                }
-                def cause = "${currentBuild.getBuildCauses()}"
-                echo "${cause}"
-                if(!cause.matches('upstream')) {
-                    withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
-                        identity = awsIdentity()
-                        s3Download bucket: 'sdkbinaries-ws.tonlabs.io', file: 'version.json', force: true, path: 'version.json'
-                    }
-                    sh """
-                        echo const fs = require\\(\\'fs\\'\\)\\; > decline.js
-                        echo const ver = JSON.parse\\(fs.readFileSync\\(\\'version.json\\'\\, \\'utf8\\'\\)\\)\\; >> decline.js
-                        echo if\\(!ver.release\\) { throw new Error\\(\\'Unable to set decline version\\'\\)\\; } >> decline.js
-                        echo ver.candidate = \\'\\'\\; >> decline.js
-                        echo fs.writeFileSync\\(\\'version.json\\', JSON.stringify\\(ver\\)\\)\\; >> decline.js
-                        cat decline.js
-                        cat version.json
-                        node decline.js
-                    """
-                    withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
-                        identity = awsIdentity()
-                        s3Upload \
-                            bucket: 'sdkbinaries-ws.tonlabs.io', \
-                            includePathPattern:'version.json', workingDir:'.'
-                    }
-                }
+        always {
+            script{
+                cleanWs notFailBuild: true
             }
         }
     }
