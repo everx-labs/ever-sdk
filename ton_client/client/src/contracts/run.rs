@@ -11,11 +11,11 @@
 * limitations under the License.
 */
 
-use ton_sdk::{Contract, MessageType, AbiContract, FunctionCallSet};
+use ton_sdk::{AbiContract, Contract, FunctionCallSet, LocalRunContext, MessageType, Message,
+    Transaction, TransactionFees};
 use ton_sdk::json_abi::encode_function_call;
 use ton_types::cells_serialization::BagOfCells;
 use ton_block::{AccStatusChange, Message as TvmMessage, MsgAddressInt};
-use ton_sdk::{Transaction, Message, TransactionFees};
 
 use crate::contracts::{EncodedMessage, EncodedUnsignedMessage};
 use crate::client::ClientContext;
@@ -76,7 +76,8 @@ pub(crate) struct ParamsOfLocalRun {
     pub key_pair: Option<KeyPair>,
     #[serde(default)]
     pub full_run: bool,
-    pub time: Option<u32>,
+    #[serde(flatten)]
+    pub context: LocalRunContext,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -89,7 +90,8 @@ pub(crate) struct ParamsOfLocalRunWithMsg {
     pub message_base64: String,
     #[serde(default)]
     pub full_run: bool,
-    pub time: Option<u32>,
+    #[serde(flatten)]
+    pub context: LocalRunContext,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -293,7 +295,7 @@ pub(crate) fn local_run(context: &mut ClientContext, params: ParamsOfLocalRun) -
         .transpose()?;
 
     do_local_run(
-        Some(context), params.call_set, key_pair.as_ref(), address, account, params.full_run, params.time)
+        Some(context), params.call_set, key_pair.as_ref(), address, account, params.full_run, params.context)
 }
 
 pub(crate) fn local_run_msg(context: &mut ClientContext, params: ParamsOfLocalRunWithMsg) -> ApiResult<ResultOfLocalRun> {
@@ -316,7 +318,7 @@ pub(crate) fn local_run_msg(context: &mut ClientContext, params: ParamsOfLocalRu
         .map_err(|err| ApiError::invalid_params(&params.message_base64, err))?;
 
     do_local_run_msg(
-        Some(context), address, account, params.abi, params.function_name, msg, params.full_run, params.time)
+        Some(context), address, account, params.abi, params.function_name, msg, params.full_run, params.context)
 }
 
 pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfRun) -> ApiResult<EncodedMessage> {
@@ -579,7 +581,7 @@ pub(crate) fn do_local_run(
     address: MsgAddressInt,
     account: Option<Contract>,
     full_run: bool,
-    time: Option<u32>,
+    run_context: LocalRunContext,
 ) -> ApiResult<ResultOfLocalRun> {
 
     let msg = Contract::construct_call_message_json(
@@ -594,7 +596,7 @@ pub(crate) fn do_local_run(
         Some(call_set.function_name),
         msg.message,
         full_run,
-        time)
+        run_context)
 }
 
 pub(crate) fn do_local_run_msg(
@@ -605,7 +607,7 @@ pub(crate) fn do_local_run_msg(
     function_name: Option<String>,
     msg: TvmMessage,
     full_run: bool,
-    time: Option<u32>,
+    run_context: LocalRunContext,
 ) -> ApiResult<ResultOfLocalRun> {
 
     let contract = match account {
@@ -635,7 +637,7 @@ pub(crate) fn do_local_run_msg(
     };
 
     if full_run {
-        let result = contract.local_call(msg, time)
+        let result = contract.local_call(msg, run_context)
             .map_err(|err| 
                 match err.downcast_ref::<ton_sdk::SdkError>() {
                     Some(ton_sdk::SdkError::ContractError(exit_code)) =>
@@ -677,7 +679,9 @@ pub(crate) fn resolve_msg_error(
         Err(err) => return err
     };
 
-    let result = do_local_run_msg(None, address, Some(account), None, None, msg, true, Some(time));
+    let mut context = LocalRunContext::default();
+    context.time = Some(time);
+    let result = do_local_run_msg(None, address, Some(account), None, None, msg, true, context);
 
     if let Err(mut err) = result {
         err.data["original_error"] = serde_json::to_value(main_error).unwrap_or_default();

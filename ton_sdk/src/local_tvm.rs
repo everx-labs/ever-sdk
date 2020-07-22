@@ -135,21 +135,27 @@ pub mod executor {
         Serializable,
     };
     use ton_executor::ExecutorError;
+    use std::sync::atomic::AtomicU64;
 
-    pub(crate) fn call_executor(account: Account, msg: Message, config: BlockchainConfig, timestamp: u32)
-        -> Result<(Transaction, Cell)>
-    {
+    pub(crate) fn call_executor(
+        account: Account,
+        msg: Message,
+        config: BlockchainConfig,
+        timestamp: u32,
+        block_lt: Option<u64>,
+        transaction_lt: Option<u64>,
+    ) -> Result<(Transaction, Cell)> {
         let mut acc_root = account.write_to_new_cell()?.into();
 
-        let block_lt = 1_000_000;
-        let lt = Arc::new(std::sync::atomic::AtomicU64::new(block_lt + 1));
+        let block_lt = block_lt.unwrap_or(transaction_lt.unwrap_or(1_000_001) - 1);
+        let last_lt = Arc::new(AtomicU64::new(transaction_lt.unwrap_or(block_lt + 2) - 1));
         let executor = OrdinaryTransactionExecutor::new(config);
         let transaction = executor.execute(
             Some(&msg),
             &mut acc_root,
             timestamp,
             block_lt,
-            lt.clone(),
+            last_lt.clone(),
             false)
             .map_err(|err| {
                 match err.downcast_ref::<ExecutorError>() {

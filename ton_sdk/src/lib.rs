@@ -35,6 +35,7 @@ pub use contract::{
     Contract,
     ContractImage,
     FunctionCallSet,
+    LocalRunContext,
     MessageProcessingState,
     RecievedTransaction,
     SdkMessage};
