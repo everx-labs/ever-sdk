@@ -1,9 +1,10 @@
-{
-    "ABI version": 1,
+{"ABI version": 2,
+    "header": ["time", "expire"],
     "functions": [
         {
-            "name": "constructor",
+            "name": "upgrade",
             "inputs": [
+                {"name":"newcode","type":"cell"}
             ],
             "outputs": [
             ]
@@ -17,11 +18,23 @@
             ],
             "outputs": [
             ]
+        },
+        {
+            "name": "getMessages",
+            "inputs": [
+            ],
+            "outputs": [
+                {"components":[{"name":"hash","type":"uint256"},{"name":"expireAt","type":"uint64"}],"name":"messages","type":"tuple[]"}
+            ]
+        },
+        {
+            "name": "constructor",
+            "inputs": [
+            ],
+            "outputs": [
+            ]
         }
     ],
     "events": [
-    ],
-    "data": [
-        {"key":100,"name":"owner","type":"uint256"}
     ]
 }

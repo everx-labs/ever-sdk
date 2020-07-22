@@ -1,7 +1,6 @@
-
 // This file is just a template that used to generate index.js at npm installation stage
 
-import { TONClient } from 'ton-client-js';
+import {TONClient} from 'ton-client-js';
 
 const workerScript = '';
 
@@ -37,30 +36,56 @@ const createLibrary = async () => {
         console.log(`Error from Web Worker: ${evt.message}`);
     };
 
+    const coreRequest = (context, method, params, callback) => {
+        const id = nextActiveRequestId;
+        nextActiveRequestId += 1;
+        const request = {
+            id,
+            context,
+            method,
+            params,
+        };
+        const isDeferredSetup = (method === 'setup') && (deferredRequests !== null);
+        activeRequests.set(id, {
+            callback: isDeferredSetup ? () => {
+            } : callback
+        });
+        if (deferredRequests !== null) {
+            deferredRequests.push(request);
+        } else {
+            worker.postMessage({ request });
+        }
+        if (isDeferredSetup) {
+            callback('', '');
+        }
+    }
+
+    let legacyCoreContext = null;
     const library = {
-        request: (method, params, callback) => {
-            if (method === 'version') {
-                callback('"__VERSION__"', '');
-                return;
-            }
-            const id = nextActiveRequestId;
-            nextActiveRequestId += 1;
-            const request = {
-                id,
-                method,
-                params,
-            };
-            const isDeferredSetup = (method === 'setup') && (deferredRequests !== null);
-            activeRequests.set(id, {
-                callback: isDeferredSetup ? () => {} : callback
+        coreCreateContext: (callback) => {
+            coreRequest(0, 'context.create', '', (resultJson) => {
+                if (callback) {
+                    const context = JSON.parse(resultJson);
+                    callback(context);
+                }
             });
-            if (deferredRequests !== null) {
-                deferredRequests.push(request);
+        },
+        coreDestroyContext: (context, callback) => {
+            coreRequest(context, 'context.destroy', '', () => {
+                if (callback) {
+                    callback();
+                }
+            });
+        },
+        coreRequest,
+        request: (method, params, callback) => {
+            if (legacyCoreContext === null) {
+                library.coreCreateContext((context) => {
+                    legacyCoreContext = context;
+                    coreRequest(legacyCoreContext, method, params, callback);
+                });
             } else {
-                worker.postMessage({ request });
-            }
-            if (isDeferredSetup) {
-                callback('', '');
+                coreRequest(legacyCoreContext, method, params, callback);
             }
         },
     };
@@ -119,20 +144,21 @@ function setWasmOptions(options) {
 }
 
 const clientPlatform = {
-    fetch,
+    fetch: window ? window.fetch.bind(window) : fetch,
     WebSocket,
     createLibrary,
 };
 
-TONClient.setLibrary({
-    fetch,
-    WebSocket,
-    createLibrary
-});
+function initTONClient(tonClientClass) {
+    tonClientClass.setLibrary(clientPlatform);
+}
+
+initTONClient(TONClient);
 
 export {
     createLibrary,
     setWasmOptions,
     clientPlatform,
+    initTONClient,
     TONClient
 };

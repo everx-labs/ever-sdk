@@ -1,13 +1,19 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
-## Jun 05, 2020
+## 0.25.0 Jul 8, 2020
 ### New
-- time sync check while initializing
-
-## Jun 03, 2020
-### New
+- supports for core context in all platforms
 - local run functions return updated contract state when running with `full_run = true`
+- time sync check while initializing
+- parallel requests on different contexts don't block each other. Requests on the same context
+remain sequential
+- new transaction wait mechanism. All account's shard blocks are checked for transaction to 
+guarantee message expiration
+- `contracts.wait.transaction` function for awaiting previously sent message processing
+- `contracts.send.message` returns message processing state for `contracts.wait.transaction` function
+- `contracts.find.shard` function for account shard matching
+- added logging on warning messages
 
 ## May 28, 2020
 ### New

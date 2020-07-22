@@ -11,20 +11,27 @@
 * limitations under the License.
 */
 
-extern crate js_sys;
-extern crate wasm_bindgen;
-extern crate serde_json;
-extern crate ton_client;
-
 use wasm_bindgen::prelude::*;
-use ton_client::{json_sync_request, create_context};
+use ton_client::{json_sync_request, create_context, destroy_context};
+
+const INVALID_RESPONSE: &str = r#"{
+    "result_json": "",
+    "error_json": { "message": "Can not convert response into JSON" }
+}"#;
+
 
 #[wasm_bindgen]
-pub fn request(method: String, params_json: String) -> String {
-    serde_json::to_string(
-        &json_sync_request(
-            create_context(),
-            method,
-            params_json))
-        .unwrap_or("{message: \"???\"".to_string())
+pub fn core_create_context() -> u32 {
+    create_context()
+}
+
+#[wasm_bindgen]
+pub fn core_destroy_context(context: u32) {
+    destroy_context(context)
+}
+
+#[wasm_bindgen]
+pub fn core_json_request(context: u32, method: String, params_json: String) -> String {
+    let response = json_sync_request(context, method, params_json);
+    serde_json::to_string(&response).unwrap_or(INVALID_RESPONSE.to_string())
 }

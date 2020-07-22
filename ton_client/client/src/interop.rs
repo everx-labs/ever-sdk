@@ -29,13 +29,15 @@ pub fn json_sync_request(
     method_name: String,
     params_json: String,
 ) -> JsonResponse {
-    Client::shared().json_sync_request(
+    Client::json_sync_request(
         context,
         method_name,
         params_json)
 }
 
 // C-library exported functions
+
+pub type OnResult = extern fn(request_id: i32, result_json: InteropString, error_json: InteropString, flags: i32);
 
 #[no_mangle]
 pub unsafe extern "C" fn tc_create_context() -> InteropContext {
@@ -45,6 +47,26 @@ pub unsafe extern "C" fn tc_create_context() -> InteropContext {
 #[no_mangle]
 pub unsafe extern "C" fn tc_destroy_context(context: InteropContext) {
     destroy_context(context)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn tc_json_request_async(
+    context: InteropContext,
+    method_name: InteropString,
+    params_json: InteropString,
+    request_id: i32,
+    on_result: OnResult,
+) {
+    let response = json_sync_request(
+        context,
+        method_name.to_string(),
+        params_json.to_string(),
+    );
+    on_result(
+        request_id,
+        InteropString::from(&response.result_json),
+        InteropString::from(&response.error_json),
+        1);
 }
 
 #[no_mangle]
@@ -87,6 +109,7 @@ pub unsafe extern "C" fn tc_read_json_response(
 pub type InteropContext = u32;
 
 #[repr(C)]
+#[derive(Clone)]
 pub struct InteropString {
     pub content: *const u8,
     pub len: u32,
@@ -108,27 +131,26 @@ pub struct JsonResponse {
 // Helpers
 
 impl InteropString {
-    pub(crate) fn default() -> Self {
+    pub fn default() -> Self {
         Self {
             content: null(),
-            len: 0
+            len: 0,
         }
     }
 
-    pub(crate) fn from(s: &String) -> Self {
+    pub fn from(s: &String) -> Self {
         Self {
             content: s.as_ptr(),
             len: s.len() as u32,
         }
     }
 
-    pub(crate) fn to_string(&self) -> String {
+    pub fn to_string(&self) -> String {
         unsafe {
             let utf8 = std::slice::from_raw_parts(self.content, self.len as usize);
             String::from_utf8(utf8.to_vec()).unwrap()
         }
     }
-
 }
 
 impl InteropJsonResponse {

@@ -15,17 +15,17 @@ use super::*;
 use ed25519_dalek::{Keypair, SecretKey, PublicKey};
 use std::str::FromStr;
 use ton_block::MsgAddressInt;
-use futures::StreamExt;
 
 const NODE_SE: bool = true;
 
 const GIVER_ADDRESS_STR:  &str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
+const WALLET_ADDRESS_STR:  &str = "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13";
 
 pub const CONTRACTS_PATH: &str = "src/tests/contracts/";
 
 lazy_static::lazy_static! {
     static ref GIVER_ADDRESS: MsgAddressInt = MsgAddressInt::from_str(GIVER_ADDRESS_STR).unwrap();
-    static ref WALLET_ADDRESS: MsgAddressInt = get_wallet_address(&WALLET_KEYS, 0);
+    static ref WALLET_ADDRESS: MsgAddressInt = MsgAddressInt::from_str(WALLET_ADDRESS_STR).unwrap();
     static ref WALLET_KEYS: Keypair = get_wallet_keys();
 
 	pub static ref SUBSCRIBE_CONTRACT_ABI: String = std::fs::read_to_string(CONTRACTS_PATH.to_owned() + "Subscription.abi.json").unwrap();
@@ -55,7 +55,7 @@ pub fn get_config() -> serde_json::Value {
         })
     } else {
         json!({
-            "base_url": "cinet.tonlabs.io"
+            "base_url": "net.ton.dev"//"cinet.tonlabs.io"
         })
     }
 }
@@ -79,37 +79,6 @@ fn get_wallet_keys() -> Keypair {
         secret: SecretKey::from_bytes(&hex::decode(keys["secret"].as_str().unwrap()).unwrap()).unwrap(),
         public: PublicKey::from_bytes(&hex::decode(keys["public"].as_str().unwrap()).unwrap()).unwrap(),
     }
-}
-
-fn get_wallet_address(key_pair: &Keypair, workchain_id: i32) -> MsgAddressInt {
-    let contract_image = ContractImage::from_state_init_and_key(
-        &mut tests_common::SIMPLE_WALLET_IMAGE.as_slice(),
-        &key_pair.public)
-        .expect("Unable to parse contract code file");
-
-    let address = contract_image.msg_address(workchain_id);
-    println!("Wallet address {}", address);
-
-    address
-}
-
-
-#[test]
-#[ignore]
-fn test_print_address() {
-    get_wallet_address(&WALLET_KEYS, 0);
-}
-
-#[test]
-#[ignore]
-fn test_generate_keypair_and_address() {
-    // generate key pair
-    let mut csprng = rand::thread_rng();
-    let key_pair = Keypair::generate(&mut csprng);
-
-    println!("Key pair: {}", hex::encode(&key_pair.to_bytes().to_vec()));
-
-    get_wallet_address(&key_pair, 0);
 }
 
 #[tokio::main]
@@ -237,8 +206,7 @@ pub async fn deploy_contract_and_wait(
     let now = std::time::Instant::now();
 
     // call deploy method
-    let tr = Contract::deploy_json(
-        client,
+    let msg = Contract::construct_deploy_message_json(
         FunctionCallSet {
             func: "constructor".to_owned(),
             header: None,
@@ -247,16 +215,21 @@ pub async fn deploy_contract_and_wait(
         },
         contract_image,
         Some(key_pair),
-        workchain_id)
-            .await;
+        workchain_id,
+        Some(client.timeouts()),
+        None
+    ).unwrap();
+
+    let tr = Contract::process_message(&client, &msg, false).await;
 
     let t = now.elapsed();
     println!("Deploy time {}.{:03} ", t.as_secs(), t.subsec_millis());
+    println!("now {}", Contract::now());
 
     let tr = tr.expect("Error deploying contract");
 
-    println!("Transaction now {}", tr.now);
-    if tr.is_aborted() {
+    println!("Transaction now {}", tr.parsed.now);
+    if tr.parsed.is_aborted() {
         panic!("transaction aborted!\n\n{:?}", tr)
     }
 
@@ -273,29 +246,34 @@ pub async fn call_contract(
 ) -> Transaction {
     let now = std::time::Instant::now();
     // call needed method
-    let tr = Contract::call_json(
-        client,
-        address, 
+    let msg = Contract::construct_call_message_json(
+        address,
         FunctionCallSet {
             func: func.to_owned(),
             header: None,
             input,
             abi: abi.to_owned(),
         },
-        key_pair)
-        .await;
+        false,
+        key_pair,
+        Some(client.timeouts()),
+        None
+    ).unwrap();
+
+    let tr = Contract::process_message(&client, &msg, false).await;
 
     let t = now.elapsed();
     println!("Call time {}.{:03} ", t.as_secs(), t.subsec_millis());
+    println!("now {}", Contract::now());
     
     let tr = tr.expect("Error calling contract method");
 
-    println!("Transaction now {}", tr.now);
-    if tr.is_aborted() {
+    println!("Transaction now {}", tr.parsed.now);
+    if tr.parsed.is_aborted() {
         panic!("transaction aborted!\n\n{:?}", tr)
     }
 
-    tr
+    tr.parsed
 }
 
 #[allow(dead_code)]
@@ -306,11 +284,10 @@ pub async fn call_contract_and_wait(
     input: String,
     abi: &str,
     key_pair: Option<&Keypair>
-) -> (String, Transaction) {
+) -> String {
     let now = std::time::Instant::now();
     // call needed method
-    let tr = Contract::call_json(
-        client,
+    let msg = Contract::construct_call_message_json(
         address,
         FunctionCallSet {
             func: func.to_owned(),
@@ -318,57 +295,43 @@ pub async fn call_contract_and_wait(
             input,
             abi: abi.to_owned(),
         },
-        key_pair)
-            .await;
+        false,
+        key_pair,
+        Some(client.timeouts()),
+        None
+    ).unwrap();
+
+    let tr = Contract::process_message(&client, &msg, false)
+        .await;
 
     let t = now.elapsed();
-    println!("Call time {}.{:02} ", t.as_secs(), t.subsec_millis());
+    println!("Call time {}.{:03} ", t.as_secs(), t.subsec_millis());
+    println!("now {}", Contract::now());
     
     let tr = tr.expect("Error calling contract method");
 
-    if tr.is_aborted() {
+    if tr.parsed.is_aborted() {
         panic!("transaction aborted!\n\n{:?}", tr)
     }
 
     let abi_contract = AbiContract::load(abi.as_bytes()).expect("Couldn't parse ABI");
     let abi_function = abi_contract.function(func).expect("Couldn't find function");
 
-    // take external outbound message from the transaction
-    let out_msg = tr.load_out_messages(client)
-        .expect("Error calling load out messages");
-    
-    futures::pin_mut!(out_msg);
-
-    let out_msg = out_msg
-        .filter(|msg| {
-            let msg = msg.as_ref().expect("error unwrap out message 1");
-            futures::future::ready(
-                msg.msg_type() == MessageType::ExternalOutbound
-                && msg.body().is_some()
-                && abi_function.is_my_output_message(msg.body().expect("No body"), false).expect("error is_my_message"))
-        })
-        .next()
-        .await
-        .expect("erro unwrap out message 2")
-        .expect("erro unwrap out message 3");
-
-    // take body from the message
-    let responce = out_msg.body().expect("error unwrap out message body").into();
-
-    //println!("response {}", responce);
+    let mut result = "{}".to_owned();
 
     // decode the body by ABI
-    let result = Contract::decode_function_response_json(abi.to_owned(), func.to_owned(), responce, false)
-        .expect("Error decoding result");
+    for msg in tr.parsed.out_messages {
+        if  msg.msg_type() == MessageType::ExternalOutbound &&
+            abi_function.is_my_output_message(msg.body().unwrap(), false).unwrap()
+        {
+            result = Contract::decode_function_response_json(
+                abi.to_string(), func.to_string(), msg.body().unwrap(), false).unwrap();
+            //println!("Contract call result: {}\n", output);
+            break;
+        }
+    }
 
-    //println!("Contract call result: {}\n", result);
-
-    (result, tr)
-
-    // this way it is need:
-    // 1. message status with transaction id or transaction object with in-message id
-    // 2. transaction object with out messages ids
-    // 3. message object with body
+    result
 }
 
 pub async fn contract_call_local(

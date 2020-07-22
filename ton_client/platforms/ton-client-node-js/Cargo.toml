@@ -1,11 +1,11 @@
 [package]
-name = "tonclientnodejs"
-version = "0.24.0"
+name = "ton_client_node_js"
+version = "0.25.0"
 authors = ["Michael Vlasov"]
 license = "Apache-2.0"
 
 [lib]
-name = "tonclientnodejs"
+name = "tonclient"
 crate-type = ["staticlib", "cdylib"]
 
 [dependencies]

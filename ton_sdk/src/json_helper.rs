@@ -248,3 +248,12 @@ pub fn account_status_to_u8(status: AccountStatus) -> u8 {
         AccountStatus::AccStateNonexist => 3,
     }
 }
+
+pub fn deserialize_shard<'de, D>(d: D) -> Result<u64, D::Error>
+    where D: serde::Deserializer<'de>
+{
+    let string = d.deserialize_string(StringVisitor)?;
+
+    u64::from_str_radix(&string, 16)
+        .map_err(|err| D::Error::custom(format!("Error parsing shard: {}", err)))
+}

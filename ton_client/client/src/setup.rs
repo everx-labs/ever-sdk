@@ -26,6 +26,7 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 
     handlers.call("setup", setup);
     handlers.call_no_args("version", |_|Ok(env!("CARGO_PKG_VERSION")));
+    handlers.call_no_args("context.get", |context|Ok(context.handle));
 }
 
 
@@ -37,7 +38,6 @@ pub(crate) struct SetupParams {
     pub message_expiration_timeout: Option<u32>,
     pub message_expiration_timeout_grow_factor: Option<f32>,
     pub message_processing_timeout: Option<u32>,
-    pub message_processing_timeout_grow_factor: Option<f32>,
     pub wait_for_timeout: Option<u32>,
     pub access_key: Option<String>,
     pub out_of_sync_threshold: Option<i64>,
@@ -52,7 +52,6 @@ impl Into<NodeClientConfig> for SetupParams {
                 message_expiration_timeout: self.message_expiration_timeout.unwrap_or(default.message_expiration_timeout),
                 message_expiration_timeout_grow_factor: self.message_expiration_timeout_grow_factor.unwrap_or(default.message_expiration_timeout_grow_factor),
                 message_processing_timeout: self.message_processing_timeout.unwrap_or(default.message_processing_timeout),
-                message_processing_timeout_grow_factor: self.message_processing_timeout_grow_factor.unwrap_or(default.message_processing_timeout_grow_factor),
                 wait_for_timeout: self.wait_for_timeout.unwrap_or(default.wait_for_timeout),
                 out_of_sync_threshold: self.out_of_sync_threshold.unwrap_or(default.out_of_sync_threshold),
             }),
@@ -86,7 +85,7 @@ fn setup(context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
 
 #[cfg(not(feature = "node_interaction"))]
 fn setup(context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
-    debug!("-> client.setup({:?})", config);
+    trace!("-> client.setup({:?})", config);
 
     context.client = Some(ton_sdk::init(config.into()).map_err(|err|ApiError::config_init_failed(err))?);
     Ok(())

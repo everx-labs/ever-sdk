@@ -29,6 +29,8 @@ pub const DEFAULT_TIMEOUT_GROW_FACTOR: f32 = 1.5;
 pub const DEFAULT_WAIT_TIMEOUT: u32 = 40000;
 pub const DEFAULT_OUT_OF_SYNC_THRESHOLD: i64 = 15000;
 
+pub const MASTERCHAIN_ID: i32 = -1;
+
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(default)]
@@ -37,7 +39,6 @@ pub struct TimeoutsConfig {
     pub message_expiration_timeout: u32,
     pub message_expiration_timeout_grow_factor: f32,
     pub message_processing_timeout: u32,
-    pub message_processing_timeout_grow_factor: f32,
     pub wait_for_timeout: u32,
     pub out_of_sync_threshold: i64
 }
@@ -49,7 +50,6 @@ impl Default for TimeoutsConfig {
             message_expiration_timeout: DEFAULT_EXPIRATION_TIMEOUT,
             message_expiration_timeout_grow_factor: DEFAULT_TIMEOUT_GROW_FACTOR,
             message_processing_timeout: DEFAULT_PROCESSING_TIMEOUT,
-            message_processing_timeout_grow_factor: DEFAULT_TIMEOUT_GROW_FACTOR,
             wait_for_timeout: DEFAULT_WAIT_TIMEOUT,
             out_of_sync_threshold: DEFAULT_OUT_OF_SYNC_THRESHOLD
         }
@@ -71,8 +71,10 @@ pub struct NodeClientConfig {
     pub timeouts: Option<TimeoutsConfig>,
 }
 
-#[derive(Deserialize, Default, Clone, Debug)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq)]
 pub struct StringId (String);
+
+pub type BlockId = StringId;
 
 impl From<String> for StringId {
     fn from(id: String) -> Self {
