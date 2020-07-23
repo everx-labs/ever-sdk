@@ -49,7 +49,7 @@ async function buildNodeJsAddon() {
         await gz(
             ['target', 'release', config.dylib],
             `tonclient_${version}_nodejs_dylib_${platform}`,
-            'libtonclientnodejs.dylib', // TODO: for backward compatibility. Remove this on 1.0.0
+            ['libtonclientnodejs.dylib'], // TODO: for backward compatibility. Remove this on 1.0.0
         );
     }
 }
