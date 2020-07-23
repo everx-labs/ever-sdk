@@ -7,20 +7,13 @@ const {
     main,
     gz,
     devMode,
-    version
+    version,
 } = require('../build-lib');
 
 const platform = require('os').platform();
 
 function dylibext() {
-    switch (platform) {
-    case "win32":
-        return "dll";
-    case "darwin":
-        return "dylib";
-    default:
-        return "so";
-    }
+    return { win32: 'dll', darwin: 'dylib' }[platform] || 'so';
 }
 
 const dev = {
@@ -42,7 +35,7 @@ async function buildNodeJsAddon() {
     }
     await spawnProcess('cargo', ['build', '--release']);
     // build addon
-    if (os.platform() !== "win32") {
+    if (os.platform() !== 'win32') {
         await spawnProcess('npm', ['run', 'build']);
     } else {
         await spawnProcess('cmd', ['/c', 'node-gyp', 'rebuild']);
@@ -53,7 +46,11 @@ async function buildNodeJsAddon() {
 
     await gz(['build', 'Release', config.addon], `tonclient_${version}_nodejs_addon_${platform}`);
     if (platform === 'darwin') {
-        await gz(['target', 'release', config.dylib], `tonclient_${version}_nodejs_dylib_${platform}`);
+        await gz(
+            ['target', 'release', config.dylib],
+            `tonclient_${version}_nodejs_dylib_${platform}`,
+            'libtonclientnodejs.dylib', // TODO: for backward compatibility. Remove this on 1.0.0
+        );
     }
 }
 
