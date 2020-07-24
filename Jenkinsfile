@@ -529,7 +529,7 @@ ton_client/platforms/ton-client-web"""
 				}
                 stage('Client macOS') {
                     agent {
-                        label "ios2"
+                        label "ios3 || ios2"
                     }
                     stages {
                         stage('Report versions') {
@@ -660,7 +660,7 @@ ton_client/platforms/ton-client-web"""
 				}
                 stage('react-native-ios') {
                     agent {
-                        label "ios2"
+                        label "ios3 || ios2"
                     }
                     stages {
                         stage('Report versions') {
@@ -739,7 +739,7 @@ ton_client/platforms/ton-client-web"""
 				}
                 stage('react-native-android') {
                     agent {
-                        label "ios2"
+                        label "ios3 || ios2"
                     }
                     stages {
                         stage('Report versions') {
@@ -818,7 +818,7 @@ ton_client/platforms/ton-client-web"""
 				}
                 stage('node-js for iOS') {
                     agent {
-                        label "ios2"
+                        label "ios3 || ios2"
                     }
                     stages {
                         stage('Report versions') {
