@@ -633,9 +633,7 @@ ton_client/platforms/ton-client-web"""
                         stage('Build') {
                             steps {
                                 dir('tonlabs/TON-SDK/ton_client/client') {
-                                    sshagent([G_gitcred]) {
-                                        bat 'node build.js'
-                                    }
+                                    bat 'node build.js'
                                 }
                             }
                         }
@@ -936,10 +934,8 @@ ton_client/platforms/ton-client-web"""
                         stage('Build') {
                             steps {
                                 echo 'Build ...'
-                                sshagent([G_gitcred]) {
-                                    dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js') {
-                                        bat 'node build.js'
-                                    }
+                                dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js') {
+                                    bat 'node build.js'
                                 }
                             }
                             post {
