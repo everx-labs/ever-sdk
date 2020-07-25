@@ -597,7 +597,7 @@ ton_client/platforms/ton-client-web"""
 				}
                 stage('Client Windows') {
                     agent {
-                        label "Win02" // "Win"
+                        label "Win"
                     }
                     stages {
                         stage('Report versions') {
@@ -897,7 +897,7 @@ ton_client/platforms/ton-client-web"""
 				}
                 stage('node-js for Windows') {
                     agent {
-                        label "Win02" // "Win"
+                        label "Win"
                     }
                     stages {
                         stage('Report versions') {
