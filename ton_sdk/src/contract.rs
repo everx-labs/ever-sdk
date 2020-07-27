@@ -658,7 +658,7 @@ impl Contract {
             id: acc.get_addr().unwrap().clone(),
             acc_type: acc.status(),
             balance: num_traits::ToPrimitive::to_u64(
-                acc.get_balance().unwrap().grams.value()).ok_or(
+                &acc.get_balance().unwrap().grams.value()).ok_or(
                 error!(SdkError::InvalidData {
                     msg: "Account's balance is too big".to_owned()
                 })
