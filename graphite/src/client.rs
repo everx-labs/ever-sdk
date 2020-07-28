@@ -28,7 +28,8 @@ impl GqlClient {
     pub fn new(queries_server: &str, subscriptions_server: &str) -> Result<Self, GraphiteError> {
         let client = ClientBuilder::new()  
             .build()
-            .map_err(|err| GraphiteError::new(err.to_string()))?;
+            .map_err(|err| GraphiteError::NetworkError(
+                format!("Can not create client: {}", err.to_string())))?;
 
         Ok(Self {
             client_htpp: client,
@@ -41,17 +42,18 @@ impl GqlClient {
     async fn process_response(response: Response) -> Result<serde_json::Value, GraphiteError> {
         match response.text().await {
             Ok(res_str) => {
-                if let Ok(value) = serde_json::from_str(res_str.as_str()) {
+                match serde_json::from_str(res_str.as_str()) {
+                Ok(value) => {
                     if let Some(error) = crate::types::try_extract_error(&value) {
                         return Err(error);
                     }
                     Ok(value)
-                } else {
-                    Err(GraphiteError::new(format!(
-                        "Invalid JSON: {}", res_str)))
+                },
+                Err(error) => Err(GraphiteError::SerdeError(error, res_str))
                 }
             },
-            Err(err) => Err(GraphiteError::new(err.to_string().clone()))
+            Err(err) => Err(GraphiteError::NetworkError(
+                format!("Can not get response text: {}", err.to_string())))
         }
     }
     
@@ -61,7 +63,7 @@ impl GqlClient {
             .send()
             .await
             .map_err(|err| 
-                GraphiteError::new(format!("Can't send request: {}", err)))?;
+                GraphiteError::NetworkError(format!("Can't send request: {}", err)))?;
         
         Self::process_response(response).await
     }
@@ -81,7 +83,7 @@ impl GqlClient {
             .send()
             .await
             .map_err(|err| 
-                GraphiteError::new(format!("Can't send request: {}", err)))?;
+                GraphiteError::NetworkError(format!("Can't send request: {}", err)))?;
 
         Self::process_response(response).await
     }
@@ -90,7 +92,7 @@ impl GqlClient {
         Ok(SubscribeStream::new(
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
-                .map_err(|err| GraphiteError::new(format!("Cannot get time: {}", err)))?
+                .map_err(|err| GraphiteError::Other(format!("Cannot get time: {}", err)))?
                 .subsec_nanos(),
             request,
             &self.graphql_socket_host)?)

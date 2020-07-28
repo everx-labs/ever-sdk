@@ -1,11 +1,11 @@
 [package]
 name = "ton_client_react_native"
-version = "0.24.0"
+version = "0.25.0"
 authors = ["Michael Vlasov"]
 license = "Apache-2.0"
 
 [lib]
-name = "ton_client_react_native"
+name = "tonclient"
 crate-type = ["staticlib", "cdylib"]
 
 [dependencies]

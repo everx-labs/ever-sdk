@@ -21,7 +21,10 @@ use reqwest::{ClientBuilder};
 use reqwest::StatusCode;
 use reqwest::redirect::Policy;
 use reqwest::header::LOCATION;
+use chrono::prelude::Utc;
 use ton_types::{error, Result};
+
+pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
 
 #[derive(Serialize, Deserialize)]
 pub enum SortDirection {
@@ -33,8 +36,8 @@ pub enum SortDirection {
 
 #[derive(Serialize, Deserialize)]
 pub struct OrderBy {
-    path: String,
-    direction: SortDirection
+    pub path: String,
+    pub direction: SortDirection
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -43,9 +46,31 @@ pub struct MutationRequest {
     pub body: String
 }
 
+#[allow(dead_code)]
 pub struct NodeClient {
     client: Option<GqlClient>,
-    timeouts: TimeoutsConfig
+    timeouts: TimeoutsConfig,
+    server_info: Option<ServerInfo>,
+}
+
+struct ServerInfo {
+    pub version: u64,
+    pub supports_time: bool
+}
+
+impl ServerInfo {
+    pub fn from_version(version: &str) -> Result<Self> {
+        let mut vec: Vec<&str> = version.split(".").collect();
+        vec.resize(3, "0");
+        let version = u64::from_str_radix(vec[0], 10)? * 1000000
+            + u64::from_str_radix(vec[1], 10)? * 1000
+            + u64::from_str_radix(vec[2], 10)?;
+
+        Ok(ServerInfo {
+            version,
+            supports_time: version >= 26003,
+        })
+    }
 }
 
 impl NodeClient {
@@ -97,10 +122,46 @@ impl NodeClient {
 
         (queries_url, subscriptions_url)
     }
-    
+
+    async fn query_server_info(client: &GqlClient) -> Result<ServerInfo> {
+        let response = client.query("%7Binfo%7Bversion%7D%7D".to_owned()).await?;
+        let version = response["data"]["info"]["version"]
+            .as_str()
+            .ok_or(SdkError::InvalidServerResponse(
+                format!("No version in response: {}", response)))?;
+
+        ServerInfo::from_version(version)
+    }
+
+    async fn get_time_delta(client: &GqlClient) -> Result<i64>{
+        let start = Utc::now().timestamp_millis();
+        let response = client.query("%7Binfo%7Btime%7D%7D".to_owned()).await?;
+        let end = Utc::now().timestamp_millis();
+        let server_time = response["data"]["info"]["time"]
+            .as_i64()
+            .ok_or(SdkError::InvalidServerResponse(
+                format!("No time in response: {}", response)))?;
+
+        Ok(server_time - (start + (end - start) / 2))
+    }
+
+    async fn check_time_delta(client: &GqlClient, timeouts: &TimeoutsConfig) -> Result<()> {
+        let delta = Self::get_time_delta(client).await?;
+        if delta.abs() >= timeouts.out_of_sync_threshold || delta.abs() >= timeouts.message_expiration_timeout as i64 {
+            Err(SdkError::ClockOutOfSync {
+                delta_ms: delta,
+                threshold_ms: timeouts.out_of_sync_threshold,
+                expiration_timeout: timeouts.message_expiration_timeout
+            }.into())
+        } else {
+            Ok(())
+        }
+    }
+
     // Globally initializes client with server address
     pub async fn new(config: NodeClientConfig) -> Result<NodeClient> {
-        let client = if let Some(base_url) = config.base_url {
+        let timeouts = config.timeouts.unwrap_or_default();
+        let (client, server_info) = if let Some(base_url) = config.base_url {
             let (mut queries_server, mut subscriptions_server) = Self::expand_address(base_url);
             if let Some(redirected) = Self::check_redirect(&queries_server).await? {
                 queries_server = redirected.clone();
@@ -108,14 +169,22 @@ impl NodeClient {
                     .replace("https://", "wss://")
                     .replace("http://", "ws://");
             }
-            Some(GqlClient::new(&queries_server, &subscriptions_server)?)
+
+            let client = GqlClient::new(&queries_server, &subscriptions_server)?;
+            let server_info = Self::query_server_info(&client).await?;
+            if server_info.supports_time {
+                Self::check_time_delta(&client, &timeouts).await?;
+            }
+
+            (Some(client), Some(server_info))
         } else {
-            None
+            (None, None)
         };
 
         Ok(NodeClient {
             client,
-            timeouts: config.timeouts.unwrap_or_default()
+            timeouts: timeouts,
+            server_info
         })
     }
 
@@ -141,9 +210,9 @@ impl NodeClient {
                             let record_value = &value["payload"]["data"][&closure_table];
                             
                             if record_value.is_null() {
-                                Err(error!(SdkError::InvalidData {
-                                    msg: format!("Invalid subscription answer: {}", value)
-                                }).into())
+                                Err(error!(SdkError::InvalidServerResponse(
+                                    format!("Invalid subscription answer: {}", value)
+                                )).into())
                             } else {
                                 Ok(record_value.clone())
                             }
@@ -187,7 +256,7 @@ impl NodeClient {
         // try to extract the record value from the answer
         let records_array = &result["data"][&table];
         if records_array.is_null() {
-            Err(SdkError::InvalidData { msg: format!("Invalid query answer: {}", result) }.into())
+            Err(SdkError::InvalidServerResponse(format!("Invalid query answer: {}", result)).into())
         } else {
             Ok(records_array.clone())
         }

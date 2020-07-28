@@ -40,7 +40,7 @@ async fn full_test_piggy_bank() {
 
     // get goal from piggy
     println!("Get goal from piggy...\n");
-    //let (get_goal_answer, _) = call_contract_and_wait(piggy_bank_address.clone(), "getGoal", "{}".to_string(), PIGGY_BANK_CONTRACT_ABI, None);
+    //let get_goal_answer = call_contract_and_wait(piggy_bank_address.clone(), "getGoal", "{}".to_string(), PIGGY_BANK_CONTRACT_ABI, None);
     let get_goal_answer = contract_call_local(&client, piggy_bank_address.clone(), "getGoal", "{}", &PIGGY_BANK_CONTRACT_ABI, None).await;
     println!("piggy answer {}", get_goal_answer);
 

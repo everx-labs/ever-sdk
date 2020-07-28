@@ -16,7 +16,7 @@
 use std::fmt::Display;
 use ApiSdkErrorCode::*;
 use ton_block::{AccStatusChange, ComputeSkipReason, MsgAddressInt};
-use ton_sdk::SdkError;
+use ton_sdk::{SdkError, MessageProcessingState};
 use ton_types::ExceptionCode;
 use chrono::TimeZone;
 
@@ -60,9 +60,11 @@ impl ApiErrorSource {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 #[serde(default)]
 pub struct ApiError {
+    pub core_version: String,
     pub source: String,
     pub code: isize,
     pub message: String,
+    pub message_processing_state: Option<MessageProcessingState>,
     pub data: serde_json::Value
 }
 
@@ -95,9 +97,11 @@ macro_rules! as_number_impl {
 impl ApiError {
     fn new(source: ApiErrorSource, code: &dyn ApiErrorCode, message: String) -> Self {
         Self {
+            core_version: env!("CARGO_PKG_VERSION").to_owned(),
             source: source.to_string(),
             code: code.as_number(),
             message,
+            message_processing_state: None,
             data: serde_json::Value::Null,
         }
     }
@@ -115,7 +119,7 @@ impl ApiError {
 
     pub fn invalid_params<E: Display>(params_json: &str, err: E) -> Self {
         sdk_err!(InvalidParams,
-            "Invalid params: {}\nparams: [{}]", err, params_json)
+            "Invalid parameters: {}\nparams: [{}]", err, params_json)
     }
 
     pub fn invalid_context_handle(context: u32) -> Self {
@@ -134,7 +138,6 @@ impl ApiError {
     }
 
 
-
     // SDK Config
 
     pub fn config_init_failed<E: Display>(err: E) -> Self {
@@ -144,73 +147,59 @@ impl ApiError {
 
     pub fn wait_for_timeout() -> Self {
         sdk_err!(WaitForTimeout,
-            "Wait for operation rejected on timeout")
+            "WaitFor operation did not return anything during the specified timeout")
     }
 
-    pub fn message_expired(msg_id: String, send_time: u32, expire: u32, block_time: u32) -> Self {
+    pub fn message_expired(msg_id: String, sending_time: u32, expire: u32, block_time: u32, block_id: String) -> Self {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ApiSdkErrorCode::MessageExpired,
-            "Message expired".to_owned(),
+            "Message was not delivered within the specified timeout".to_owned(),
         );
 
         error.data = serde_json::json!({
             "message_id": msg_id,
-            "send_time": format_time(send_time),
+            "sending_time": format_time(sending_time),
             "expiration_time": format_time(expire),
-            "block_time": format_time(block_time)
+            "block_time": format_time(block_time),
+            "block_id": block_id,
         });
         error
     }
 
     pub fn address_reqired_for_runget() -> Self {
         sdk_err!(AddressRequiredForRunGet,
-            "Address required for run local. You haven't specified contract code or data so address is required to load missing parts from network.")
+            "Address is required for run local. You haven't specified contract code or data so address is required to load missing parts from network.")
     }
 
-    pub fn network_silent(msg_id: String, send_time: u32, expire: u32, timeout: u32) -> Self {
+    pub fn network_silent(msg_id: String, timeout: u32, block_id: String, state: MessageProcessingState) -> Self {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ApiSdkErrorCode::NetworkSilent,
-            "No blocks produced during timeout".to_owned(),
+            "No blocks were produced during the specified timeout".to_owned(),
         );
+        error.message_processing_state = Some(state);
 
         error.data = serde_json::json!({
             "message_id": msg_id,
-            "send_time": format_time(send_time),
-            "expiration_time": format_time(expire),
             "timeout": timeout,
+            "last_block_id": block_id,
         });
         error
     }
 
-    pub fn transactions_lag(msg_id: String, send_time: u32, block_id: String, timeout: u32) -> Self {
-        let mut error = ApiError::new(
-            ApiErrorSource::Node,
-            &ApiSdkErrorCode::TransactionsLag,
-            "Existing block transaction not found".to_owned(),
-        );
-
-        error.data = serde_json::json!({
-            "message_id": msg_id,
-            "send_time": format_time(send_time),
-            "block_id": block_id,
-            "timeout": timeout
-        });
-        error
-    }
-
-    pub fn transaction_wait_timeout(msg_id: String, send_time: u32, timeout: u32) -> Self {
+    pub fn transaction_wait_timeout(msg_id: String, sending_time: u32, timeout: u32, state: MessageProcessingState) -> Self {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ApiSdkErrorCode::TransactionWaitTimeout,
-            "Transaction did not produced during specified timeout".to_owned(),
+            "Transaction was not produced during the specified timeout".to_owned(),
         );
+        error.message_processing_state = Some(state);
 
         error.data = serde_json::json!({
             "message_id": msg_id,
-            "send_time": format_time(send_time),
-            "timeout": timeout
+            "sending_time": format_time(sending_time),
+            "timeout": timeout,
         });
         error
     }
@@ -233,7 +222,7 @@ impl ApiError {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ApiSdkErrorCode::LowBalance,
-            "Account has insufficient balance for requested operation".to_owned(),
+            "Account has insufficient balance for the requested operation".to_owned(),
         );
 
         error.data = serde_json::json!({
@@ -247,7 +236,7 @@ impl ApiError {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ApiSdkErrorCode::AccountFrozenOrDeleted,
-            "Account has bad state. It is frozen or deleted".to_owned(),
+            "Account is in a bad state. It is frozen or deleted".to_owned(),
         );
 
         error.data = serde_json::json!({
@@ -265,7 +254,23 @@ impl ApiError {
 
         error.data = serde_json::json!({
             "address": address.to_string(),
-            "tip": "You have to prepaid this account to have a positive balance on them and then deploy a contract code."
+            "tip": "You need to transfer funds to this account first to have a positive balance and then deploy its code."
+        });
+        error
+    }
+
+    pub fn clock_out_of_sync(delta_ms: i64, threshold: i64, expiration_timout: u32) -> Self {
+        let mut error = ApiError::new(
+            ApiErrorSource::Node,
+            &ApiSdkErrorCode::ClockOutOfSync,
+            "The time on the device is out of sync with the time on the server".to_owned(),
+        );
+
+        error.data = serde_json::json!({
+            "delta_ms": delta_ms,
+            "threshold_ms": threshold,
+            "expiration_timout_ms": expiration_timout,
+            "tip": "Synchronize your device time with internet time"
         });
         error
     }
@@ -515,6 +520,11 @@ impl ApiError {
             "Process message failed: {}", err)
     }
 
+    pub fn contracts_find_shard_failed<E: Display>(err: E) -> Self {
+        sdk_err!(ContractsFindShardFailed,
+            "Account shard search failed: {}", err)
+    }
+
     // SDK queries
 
     pub fn queries_query_failed<E: Display>(err: E) -> Self {
@@ -543,7 +553,7 @@ impl ApiError {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &(-1i32),
-            "Transaction aborted".to_string()
+            "Transaction was aborted".to_string()
         );
          error.data = serde_json::json!({
             "transaction_id": tr_id,
@@ -573,7 +583,7 @@ impl ApiError {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ContractsTvmError,
-            format!("Contract execution terminated with error"),
+            format!("Contract execution was terminated with error"),
         );
 
         let mut data = serde_json::json!({
@@ -608,8 +618,8 @@ impl ApiError {
         error.data["transaction_id"] = tr_id.map(|s| s.into()).unwrap_or(serde_json::Value::Null);
         error.data["phase"] = "storage".into();
         error.data["reason"] = match reason {
-                AccStatusChange::Frozen => "Account frozen",
-                AccStatusChange::Deleted => "Account deleted",
+                AccStatusChange::Frozen => "Account is frozen",
+                AccStatusChange::Deleted => "Account is deleted",
                 _ => "null"
             }.into();
         error
@@ -638,7 +648,7 @@ impl ApiError {
         };
         error.data["transaction_id"] = tr_id.map(|s| s.into()).unwrap_or(serde_json::Value::Null);
         error.data["phase"] = "action".into();
-        error.data["result code"] = result_code.into();
+        error.data["result_code"] = result_code.into();
         error
     }
 }
@@ -650,13 +660,13 @@ pub enum ApiSdkErrorCode {
     InvalidContextHandle = 3,
     CannotCreateRuntime = 4,
     SdkNotInit = 5,
+    WasmUnreachableCode = 6,
 
     ConfigInitFailed = 1001,
     WaitForTimeout = 1003,
     MessageExpired = 1006,
     AddressRequiredForRunGet = 1009,
     NetworkSilent = 1010,
-    TransactionsLag = 1011,
     TransactionWaitTimeout = 1012,
     ClockOutOfSync = 1013,
     AccountMissing = 1014,
@@ -715,6 +725,7 @@ pub enum ApiSdkErrorCode {
     ContractsCannotSerializeMessage = 3022,
     ContractsProcessMessageFailed = 3023,
     ContractsTvmError = 3025,
+    ContractsFindShardFailed = 3026,
 
     QueriesQueryFailed = 4001,
     QueriesSubscribeFailed = 4002,
@@ -736,7 +747,7 @@ impl AsString for ComputeSkipReason {
     fn as_string(&self) -> String {
         match self {
             ComputeSkipReason::NoState => "Account has no code and data",
-            ComputeSkipReason::BadState => "Account has bad state: frozen or deleted",
+            ComputeSkipReason::BadState => "Account is in a bad state: frozen or deleted",
             ComputeSkipReason::NoGas => "No gas to execute VM",
         }.to_string()
     }
@@ -747,7 +758,7 @@ as_number_impl!(AccStatusChange);
 impl AsString for AccStatusChange {
     fn as_string(&self) -> String {
         match self {
-            AccStatusChange::Unchanged => "Account unchanged",
+            AccStatusChange::Unchanged => "Account was unchanged",
             AccStatusChange::Frozen => "Account was frozen due storage phase",
             AccStatusChange::Deleted => "Account was deleted due storage phase",
         }.to_string()
@@ -787,7 +798,7 @@ impl ApiActionCode{
     }
     pub fn as_string(&self) -> String {
         if self.no_funds {
-            "Too low balance to send outbound message"
+            "Too low balance to send an outbound message"
         } else if !self.valid {
             "Outbound message is invalid"
         } else {
@@ -808,14 +819,19 @@ where
 {
     match err.downcast_ref::<SdkError>() {
         Some(SdkError::WaitForTimeout) => ApiError::wait_for_timeout(),
-        Some(SdkError::MessageExpired{msg_id, msg: _, expire, send_time, block_time}) => 
-            ApiError::message_expired(msg_id.to_string(), *send_time, *expire, *block_time),
-        Some(SdkError::NetworkSilent{msg_id, send_time, expire, timeout}) =>
-            ApiError::network_silent(msg_id.to_string(), *send_time, *expire, *timeout),
-        Some(SdkError::TransactionsLag{msg_id, send_time, block_id, timeout}) =>
-            ApiError::transactions_lag(msg_id.to_string(), *send_time, block_id.clone(), *timeout),
-        Some(SdkError::TransactionWaitTimeout{msg_id, msg: _, send_time, timeout}) =>
-            ApiError::transaction_wait_timeout(msg_id.to_string(), *send_time, *timeout),
+        Some(SdkError::MessageExpired{msg_id, expire, sending_time, block_time, block_id}) =>
+            ApiError::message_expired(msg_id.to_string(), *sending_time, *expire, *block_time, block_id.to_string()),
+        Some(SdkError::NetworkSilent{msg_id, timeout, block_id, state}) =>
+            ApiError::network_silent(msg_id.to_string(), *timeout, block_id.to_string(), state.clone()),
+        Some(SdkError::TransactionWaitTimeout{msg_id, sending_time, timeout, state}) =>
+            ApiError::transaction_wait_timeout(msg_id.to_string(), *sending_time, *timeout, state.clone()),
+        Some(SdkError::ClockOutOfSync{delta_ms, threshold_ms, expiration_timeout}) =>
+            ApiError::clock_out_of_sync(*delta_ms, *threshold_ms, *expiration_timeout),
+        Some(SdkError::ResumableNetworkError{state, error}) => {
+            let mut api_error = apierror_from_sdkerror(error, default_err);
+            api_error.message_processing_state = Some(state.clone());
+            api_error
+        }
         _ => default_err(err.to_string())
     }
 }
@@ -824,27 +840,27 @@ where
 pub enum StdContractError {
     #[fail(display = "Invalid signature")]
     InvalidSignature = 40,
-    #[fail(display = "Requested method not found in the contract")]
+    #[fail(display = "Requested method was not found in the contract")]
     MethodNotFound = 41,
-    #[fail(display = "Dictionary of methods not found")]
+    #[fail(display = "Dictionary of methods was not found")]
     MethodsDictNotFound = 42,
     #[fail(display = "Unsupported ABI version")]
     UnsupportedAbiVersion = 43,
-    #[fail(display = "Public key not found in persistent data")]
+    #[fail(display = "Public key was not found in persistent data")]
     PubKeyNotFound = 44,
-    #[fail(display = "Signature not found in the message")]
+    #[fail(display = "Signature was not found in the message")]
     SignNotFount = 45,
     #[fail(display = "Global data dictionary is invalid")]
     DataDictInvalid = 46,
-    #[fail(display = "Smart contract info not found")]
+    #[fail(display = "Smart contract info was not found")]
     ScInfoNotFound = 47,
     #[fail(display = "Invalid inbound message")]
     InvalidMsg = 48,
     #[fail(display = "Invalid state of persistent data")]
     InvalidDataState = 49,
-    #[fail(display = "Array index out of range")]
+    #[fail(display = "Array index is out of range")]
     IndexOutOfRange = 50,
-    #[fail(display = "Constructor is already called")]
+    #[fail(display = "Constructor was already called")]
     ConstructorAlreadyCalled = 51,
     #[fail(display = "Replay protection exception")]
     ReplayProtection = 52,
@@ -852,13 +868,13 @@ pub enum StdContractError {
     AddressUnpackError = 53,
     #[fail(display = "Pop from empty array")]
     PopEmptyArray = 54,
-    #[fail(display = "Bad StateInit cell for tvm_insert_pubkey. Data not found.")]
+    #[fail(display = "Bad StateInit cell for tvm_insert_pubkey. Data was not found.")]
     DataNotFound = 55,
     #[fail(display = "map.pollFisrt() for empty map")]
     PollEmptyMap = 56,
     #[fail(display = "External inbound message is expired")]
     ExtMessageExpired = 57,
-    #[fail(display = "External inbound message have no signature but have public key")]
+    #[fail(display = "External inbound message has no signature but has public key")]
     MsgHasNoSignButHasKey = 58,
     #[fail(display = "Contract has no receive or no fallback functions")]
     NoFallback = 59,
@@ -876,9 +892,9 @@ impl StdContractError {
     pub fn tip(&self) -> Option<&str> {
         let tip = match self {
             StdContractError::InvalidSignature => "Check sign keys",
-            StdContractError::MethodNotFound => "Check contract ABI. It may be invalid or from old contract version",
+            StdContractError::MethodNotFound => "Check contract ABI. It may be invalid or from an old contract version",
             StdContractError::UnsupportedAbiVersion => "Check contract ABI. It may be invalid or from old contract version",
-            StdContractError::PubKeyNotFound => "Contract probably deployed incorrectly",
+            StdContractError::PubKeyNotFound => "Contract is probably deployed incorrectly",
             StdContractError::SignNotFount => "Check call parameters. Sign keys should be passed to sign message",
             StdContractError::InvalidMsg => "Check call parameters",
             StdContractError::IndexOutOfRange => "Check call parameters. Probably contract doesn't have needed data",
@@ -888,7 +904,7 @@ impl StdContractError {
             StdContractError::PopEmptyArray => "Check call parameters. Probably contract doesn't have needed data",
             StdContractError::ExtMessageExpired => "Try again",
             StdContractError::MsgHasNoSignButHasKey => "Check call parameters. Sign keys should be passed to sign message",
-            StdContractError::NoKeyInData =>"Contract probably deployed incorrectly",
+            StdContractError::NoKeyInData =>"Contract is probably deployed incorrectly",
             _ => ""
         };
         if tip.len() > 0 {
