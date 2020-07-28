@@ -529,7 +529,7 @@ ton_client/platforms/ton-client-web"""
 				}
                 stage('Client macOS') {
                     agent {
-                        label "ios2"
+                        label "ios3 || ios2"
                     }
                     stages {
                         stage('Report versions') {
@@ -597,7 +597,7 @@ ton_client/platforms/ton-client-web"""
 				}
                 stage('Client Windows') {
                     agent {
-                        label "Win02" // "Win"
+                        label "Win"
                     }
                     stages {
                         stage('Report versions') {
@@ -633,9 +633,7 @@ ton_client/platforms/ton-client-web"""
                         stage('Build') {
                             steps {
                                 dir('tonlabs/TON-SDK/ton_client/client') {
-                                    sshagent([G_gitcred]) {
-                                        bat 'node build.js'
-                                    }
+                                    bat 'node build.js'
                                 }
                             }
                         }
@@ -660,7 +658,7 @@ ton_client/platforms/ton-client-web"""
 				}
                 stage('react-native-ios') {
                     agent {
-                        label "ios2"
+                        label "ios3 || ios2"
                     }
                     stages {
                         stage('Report versions') {
@@ -739,7 +737,7 @@ ton_client/platforms/ton-client-web"""
 				}
                 stage('react-native-android') {
                     agent {
-                        label "ios2"
+                        label "ios3 || ios2"
                     }
                     stages {
                         stage('Report versions') {
@@ -818,7 +816,7 @@ ton_client/platforms/ton-client-web"""
 				}
                 stage('node-js for iOS') {
                     agent {
-                        label "ios2"
+                        label "ios3 || ios2"
                     }
                     stages {
                         stage('Report versions') {
@@ -897,7 +895,7 @@ ton_client/platforms/ton-client-web"""
 				}
                 stage('node-js for Windows') {
                     agent {
-                        label "Win02" // "Win"
+                        label "Win"
                     }
                     stages {
                         stage('Report versions') {
@@ -936,10 +934,8 @@ ton_client/platforms/ton-client-web"""
                         stage('Build') {
                             steps {
                                 echo 'Build ...'
-                                sshagent([G_gitcred]) {
-                                    dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js') {
-                                        bat 'node build.js'
-                                    }
+                                dir('tonlabs/TON-SDK/ton_client/platforms/ton-client-node-js') {
+                                    bat 'node build.js'
                                 }
                             }
                             post {
