@@ -422,7 +422,7 @@ impl Contract {
     ) -> Result<RecievedTransaction> {
         let state = Self::send_message(
             client, &msg.address, &msg.id.to_bytes()?, &msg.serialized_message, msg.expire).await?;
-        log::debug!("msg is sent, id: {}", msg.id);
+        log::info!("Message sent {}", msg.id);
         Self::wait_transaction_processing(
             client, &msg.address, &msg.id, state, msg.expire, infinite_wait).await
     }
