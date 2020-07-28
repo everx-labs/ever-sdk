@@ -18,6 +18,7 @@ use crate::{AbiContract, BlockId, Message, MessageId, TimeoutsConfig, Transactio
 
 use ed25519_dalek::{Keypair, PublicKey};
 use chrono::prelude::Utc;
+use num_bigint::BigInt;
 use serde_json::Value;
 use std::convert::{Into, TryFrom};
 use std::io::{Cursor, Read, Seek};
@@ -27,7 +28,8 @@ use std::sync::Arc;
 use ton_block::{
     Account, AccountIdPrefixFull, AccountState, AccountStatus, AccountStorage, CurrencyCollection,
     Deserializable, ExternalInboundMessageHeader, GetRepresentationHash, Message as TvmMessage,
-    MsgAddressInt, Serializable, ShardIdent, StateInit, StorageInfo};
+    MsgAddressInt, Serializable, ShardIdent, StateInit, StorageInfo
+};
 use ton_types::cells_serialization::{deserialize_cells_tree, BagOfCells};
 use ton_types::{error, fail, Result, AccountId, Cell, SliceData, HashmapE};
 use ton_abi::json_abi::DecodedMessage;
@@ -636,33 +638,30 @@ impl Contract {
 
     /// Creates `Contract` struct by deserialized contract's tree of cells
     pub fn from_cells(mut root_cell_slice: SliceData) -> Result<Self> {
-        let acc: ton_block::Account = ton_block::Account::construct_from(&mut root_cell_slice)?;
+        let acc = Account::construct_from(&mut root_cell_slice)?;
         if acc.is_none() {
             bail!(SdkError::InvalidData { msg: "Account is none.".into() } );
+        }
+        fn big_int_to_u64(value: &BigInt, msg: &'static str) -> Result<u64> {
+            num_traits::ToPrimitive::to_u64(value).ok_or_else(||
+                error!(SdkError::InvalidData { msg: msg.to_string() })
+            )
         }
 
         let mut balance_other = vec!();
         &acc.get_balance().unwrap().other.iterate_with_keys(
             |currency, value| -> Result<bool> {
-                balance_other.push(OtherCurrencyValue {
-                    currency,
-                    value: num_traits::ToPrimitive::to_u64(value.value()).ok_or(
-                        error!(SdkError::InvalidData { msg: "Account's other currency balance is too big".to_owned() })
-                    )?,
-                });
+                let value = big_int_to_u64(&value.value(), "Account's other currency balance is too big")?;
+                balance_other.push(OtherCurrencyValue {currency, value});
                 Ok(true)
             }).unwrap();
 
         // All unwraps below won't panic because the account is checked for none.
+        let balance = big_int_to_u64(&acc.get_balance().unwrap().grams.value(), "Account's balance is too big")?;
         Ok(Contract {
             id: acc.get_addr().unwrap().clone(),
             acc_type: acc.status(),
-            balance: num_traits::ToPrimitive::to_u64(
-                acc.get_balance().unwrap().grams.value()).ok_or(
-                error!(SdkError::InvalidData {
-                    msg: "Account's balance is too big".to_owned()
-                })
-            )?,
+            balance,
             balance_other: if balance_other.len() > 0 { Some(balance_other) } else { None },
             code: acc.get_code(),
             data: acc.get_data(),
