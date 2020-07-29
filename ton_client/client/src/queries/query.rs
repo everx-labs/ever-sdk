@@ -65,7 +65,8 @@ pub(crate) async fn query(context: &mut ClientContext, params: ParamsOfQuery) ->
     let client = context.get_client()?;
     let result = client.query(&params.table, &params.filter, &params.result, params.order, params.limit, Some(0))
         .await
-        .map_err(|err| crate::types::apierror_from_sdkerror(&err, ApiError::queries_query_failed))?;
+        .map_err(|err| crate::types::apierror_from_sdkerror(
+            &err, ApiError::queries_query_failed, Some(client)))?;
 
     Ok(ResultOfQuery{ result })
 }
@@ -74,7 +75,8 @@ pub(crate) async fn wait_for(context: &mut ClientContext, params: ParamsOfWaitFo
     let client = context.get_client()?;
     let result = client.wait_for(&params.table, &params.filter, &params.result, params.timeout)
         .await
-        .map_err(|err| crate::types::apierror_from_sdkerror(&err, ApiError::queries_wait_for_failed))?;
+        .map_err(|err| crate::types::apierror_from_sdkerror(
+            &err, ApiError::queries_wait_for_failed, Some(client)))?;
 
     Ok(ResultOfQuery{ result })
 }
@@ -82,7 +84,7 @@ pub(crate) async fn wait_for(context: &mut ClientContext, params: ParamsOfWaitFo
 pub(crate) fn subscribe(context: &mut ClientContext, params: ParamsOfSubscribe) -> ApiResult<SubscribeHandle> {
     let client = context.get_client()?;
     let stream = client.subscribe(&params.table, &params.filter, &params.result)
-        .map_err(|err| ApiError::queries_subscribe_failed(err))?;
+        .map_err(|err| ApiError::queries_subscribe_failed(err).add_network_url(client))?;
 
     let handle =  rand::thread_rng().next_u32();
 
@@ -91,7 +93,7 @@ pub(crate) fn subscribe(context: &mut ClientContext, params: ParamsOfSubscribe) 
     Ok(SubscribeHandle{ handle })
 }
 
-pub(crate) async fn get_next(_context: &mut ClientContext, params: SubscribeHandle) -> ApiResult<ResultOfQuery> {
+pub(crate) async fn get_next(context: &mut ClientContext, params: SubscribeHandle) -> ApiResult<ResultOfQuery> {
     let mut stream = extract_handle(&params.handle)
         .ok_or(ApiError::queries_get_next_failed("Invalid handle"))?;
 
@@ -99,7 +101,8 @@ pub(crate) async fn get_next(_context: &mut ClientContext, params: SubscribeHand
         .next()
         .await
         .ok_or(ApiError::queries_get_next_failed("None value"))?
-        .map_err(|err| crate::types::apierror_from_sdkerror(&err, ApiError::queries_get_next_failed))?;
+        .map_err(|err| crate::types::apierror_from_sdkerror(
+            &err, ApiError::queries_get_next_failed, context.get_client().ok()))?;
 
     add_handle(params.handle, stream);
 

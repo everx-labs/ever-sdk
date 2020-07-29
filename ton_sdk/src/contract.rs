@@ -605,18 +605,18 @@ impl Contract {
     }
 
     /// Returns contract's identifier
-    pub fn id(&self) -> Result<AccountId> {
-        Ok(self.id.get_address())
+    pub fn id(&self) -> AccountId {
+        self.id.get_address()
     }
 
     /// Returns contract's balance in NANO grams
-    pub fn balance_grams(&self) -> Result<u64> {
-        Ok(self.balance)
+    pub fn balance_grams(&self) -> u64 {
+        self.balance
     }
 
     /// Returns contract's balance in NANO grams
-    pub fn balance_other(&self) -> Result<Vec<OtherCurrencyValue>> {
-        Ok(self.balance_other.clone().unwrap_or_default())
+    pub fn balance_other(&self) -> Vec<OtherCurrencyValue> {
+        self.balance_other.clone().unwrap_or_default()
     }
 
     // ------- Decoding functions -------

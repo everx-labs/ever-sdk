@@ -34,6 +34,7 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 #[serde(rename_all="camelCase")]
 pub(crate) struct SetupParams {
     pub base_url: Option<String>,
+    pub servers: Option<Vec<String>>,
     pub message_retries_count: Option<u8>,
     pub message_expiration_timeout: Option<u32>,
     pub message_expiration_timeout_grow_factor: Option<f32>,
@@ -56,7 +57,7 @@ impl Into<NodeClientConfig> for SetupParams {
                 out_of_sync_threshold: self.out_of_sync_threshold.unwrap_or(default.out_of_sync_threshold),
             }),
             #[cfg(feature = "node_interaction")]
-            base_url: self.base_url,
+            base_url: self.base_url.or(self.servers.as_ref().unwrap_or(&vec![]).get(0).cloned()),
             #[cfg(feature = "node_interaction")]
             access_key: self.access_key,
         }
@@ -74,7 +75,7 @@ fn setup(context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
         .map_err(|err| ApiError::cannot_create_runtime(err))?;
 
     let client = runtime.block_on(ton_sdk::init(config.into()))
-        .map_err(|err| crate::types::apierror_from_sdkerror(&err, ApiError::config_init_failed))?;
+        .map_err(|err| crate::types::apierror_from_sdkerror(&err, ApiError::config_init_failed, None))?;
 
     context.client = Some(client);
     context.runtime = Some(runtime);

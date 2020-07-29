@@ -51,6 +51,8 @@ pub struct NodeClient {
     client: Option<GqlClient>,
     timeouts: TimeoutsConfig,
     server_info: Option<ServerInfo>,
+    config_server: Option<String>,
+    query_url: Option<String>,
 }
 
 struct ServerInfo {
@@ -103,11 +105,11 @@ impl NodeClient {
         }
     }
 
-    fn expand_address(base_url: String) -> (String, String) {
+    fn expand_address(base_url: &str) -> (String, String) {
         let base_url =  if  base_url.starts_with("http://") ||
                             base_url.starts_with("https://")
         {
-            base_url
+            base_url.to_owned()
         } else {
             format!("https://{}", base_url)
         };
@@ -161,8 +163,8 @@ impl NodeClient {
     // Globally initializes client with server address
     pub async fn new(config: NodeClientConfig) -> Result<NodeClient> {
         let timeouts = config.timeouts.unwrap_or_default();
-        let (client, server_info) = if let Some(base_url) = config.base_url {
-            let (mut queries_server, mut subscriptions_server) = Self::expand_address(base_url);
+        let (client, server_info) = if let Some(base_url) = &config.base_url {
+            let (mut queries_server, mut subscriptions_server) = Self::expand_address(&base_url);
             if let Some(redirected) = Self::check_redirect(&queries_server).await? {
                 queries_server = redirected.clone();
                 subscriptions_server = redirected
@@ -182,14 +184,25 @@ impl NodeClient {
         };
 
         Ok(NodeClient {
+            config_server: config.base_url,
+            query_url: client.as_ref()
+                .map(|client| client.queries_server().trim_end_matches("/graphql").to_owned()),
             client,
             timeouts: timeouts,
-            server_info
+            server_info,
         })
     }
 
     pub fn timeouts(&self) -> &TimeoutsConfig {
         &self.timeouts
+    }
+
+    pub fn config_server(&self) -> Option<&str> {
+        self.config_server.as_ref().map(|string| string.as_str())
+    }
+
+    pub fn query_url(&self) -> Option<&str> {
+        self.query_url.as_ref().map(|string| string.as_str())
     }
     
     // Returns Stream with updates database fileds by provided filter
