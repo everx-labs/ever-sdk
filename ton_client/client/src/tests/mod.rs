@@ -41,6 +41,10 @@ impl log::Log for SimpleLogger {
     fn flush(&self) {}
 }
 
+fn get_network_address() -> String {
+    std::env::var("TON_NETWORK_ADDRESS").unwrap_or("http://localhost:80".to_owned())
+}
+
 #[derive(Clone)]
 struct TestClient {
     context: InteropContext,
@@ -48,6 +52,12 @@ struct TestClient {
 
 impl TestClient {
     fn new() -> Self {
+        Self::new_with_config(json!({
+            "baseUrl": get_network_address()
+        }))
+    }
+
+    fn new_with_config(config: Value) -> Self {
         let _ = log::set_boxed_logger(Box::new(SimpleLogger))
             .map(|()| log::set_max_level(LevelFilter::Debug));
 
@@ -55,7 +65,11 @@ impl TestClient {
         unsafe {
             context = tc_create_context()
         }
-        Self { context }
+        let client = Self { context };
+        if config != Value::Null {
+            client.request("setup", config).unwrap();
+        }
+        client
     }
 
     fn request(
@@ -254,9 +268,6 @@ fn test_wallet_deploy() {
     let client = TestClient::new();
     let version = client.request("version", Value::Null).unwrap();
     println!("result: {}", version.to_string());
-
-    let _deployed = client.request("setup",
-        json!({"baseUrl": "http://localhost"})).unwrap();
 
     let keys = client.request("crypto.ed25519.keypair", json!({})).unwrap();
 
@@ -503,15 +514,15 @@ fn test_address_parsing() {
 
 #[test]
 fn test_out_of_sync() {
-    let client = TestClient::new();
+    let client = TestClient::new_with_config(Value::Null);
 
-    let result = client.request("setup",
+    let error = client.request("setup",
         json!({
-            "baseUrl": "http://localhost",
+            "baseUrl": get_network_address(),
             "outOfSyncThreshold": -1
         })).unwrap_err();
 
-    let value: Value = serde_json::from_str(&result).unwrap();
+    let value: Value = serde_json::from_str(&error).unwrap();
 
    assert_eq!(value["code"], 1013);
 }
@@ -522,11 +533,6 @@ fn test_parallel_requests() {
     let client1 = TestClient::new();
     let client2 = TestClient::new();
     let client3 = client1.clone();
-
-    client1.request("setup",
-        json!({"baseUrl": "http://localhost"})).unwrap();
-    client2.request("setup",
-        json!({"baseUrl": "http://localhost"})).unwrap();
 
     let start = std::time::Instant::now();
     let timeout: u32 = 5000;
@@ -546,10 +552,10 @@ fn test_parallel_requests() {
 
     std::thread::sleep(std::time::Duration::from_millis(500));
 
-    // check that request with another context don't wait 
+    // check that request with another context don't wait
     client2.request("crypto.ed25519.keypair", json!({})).unwrap();
     assert!(start.elapsed().as_millis() < timeout as u128);
-    
+
     // check that request with same context waits for previous call
     client1.request("crypto.ed25519.keypair", json!({})).unwrap();
     assert!(start.elapsed().as_millis() > timeout as u128);
@@ -653,4 +659,25 @@ fn test_find_shard() {
     )).unwrap();
 
     assert_eq!(result, Value::Null.to_string());
+}
+
+#[test]
+fn test_account_boc_usage() {
+    let client = TestClient::new();
+    let contract1 = Contract::from_json(r#"{
+        "id": "-1:6666666666666666666666666666666666666666666666666666666666666666",
+        "acc_type": 1,
+        "balance": "0xe8d4a51000",
+        "balance_other": null,
+        "code": "te6ccgEBAQEAQAAAfP8AIN0gggFMl7qXMO1E0NcLH+Ck8mDTHwHtRNDTH9FmuvKh+AAB0wfU0YIYBKgXyABz+wIB+wCkyMsfye1U",
+        "data": "te6ccgEBAQEABgAACAAAAAA=",
+        "last_paid": 0
+      }"#).unwrap();
+
+    let smc2 = Contract::from_bytes(&base64::decode(
+        "te6ccuECAwEAAIMAAHoA+gEGAnHP9mZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZiBoCgwAAAAAAAAAAAAAAAAXo1KUQAE0ABAgB8/wAg3SCCAUyXupcw7UTQ1wsf4KTyYNMfAe1E0NMf0Wa68qH4AAHTB9TRghgEqBfIAHP7AgH7AKTIyx/J7VQACAAAAAB1qkcn"
+    ).unwrap()).unwrap();
+
+
+    println!("Hi")
 }

@@ -22,6 +22,7 @@ use crate::dispatch::DispatchTable;
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
 pub(crate) struct ParamsOfLocalRunGet {
+    pub bocBase64: Option<String>,
     pub codeBase64: Option<String>,
     pub dataBase64: Option<String>,
     pub functionName: String,
@@ -48,7 +49,13 @@ pub(crate) fn get(
         params.functionName,
     );
 
-    let contract = match &params.codeBase64 {
+    let (codeBase64, dataBase64) = Contract::resolve_code_and_data(
+        &params.bocBase64,
+        &params.codeBase64,
+        &params.dataBase64,
+    );
+
+    let contract = match &codeBase64 {
         // load contract data from node manually
         #[cfg(feature = "node_interaction")]
         None => {
@@ -75,7 +82,7 @@ pub(crate) fn get(
                 "acc_type": 1,
                 "balance": params.balance.unwrap_or(DEFAULT_BALANCE.to_string()),
                 "code": code,
-                "data": params.dataBase64,
+                "data": dataBase64,
                 "last_paid": last_paid,
             });
             Contract::from_json(contract_json.to_string().as_str())
@@ -85,7 +92,7 @@ pub(crate) fn get(
 
     let output = contract.local_call_tvm_get_json(
         &params.functionName,
-        params.input.as_ref()
+        params.input.as_ref(),
     ).map_err(|err| ApiError::contracts_local_run_failed(err))?;
     Ok(ResultOfLocalRunGet { output })
 }

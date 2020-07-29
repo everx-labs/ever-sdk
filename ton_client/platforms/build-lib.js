@@ -90,7 +90,7 @@ function gz(src, dst, devPath) {
         const srcPath = root_path(src);
         const dstPath = root_path('bin', dst);
 
-        if (devOut) {
+        if (devOut || devPath) {
             let dstDevPath = appendFileNameIfMissing(
                 devPath ? path.resolve(devOut, ...devPath) : devOut,
                 src[src.length - 1],

@@ -6,7 +6,7 @@ edition = "2018"
 license = "Apache-2.0"
 
 [lib]
-name = "ton_client"
+name = "tonclient"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
