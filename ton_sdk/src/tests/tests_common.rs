@@ -117,8 +117,8 @@ async fn check_giver(client: &NodeClient) {
         .await
         .expect("Error unwrap result while loading Contract");
 
-    if let Some(contract) = contract {
-        if contract.balance_grams().unwrap() < 500_000_000 {
+    if let  Some(contract) = contract {
+        if contract.balance_grams() < 500_000_000 {
             panic!(format!(
                 "Giver has no money. Send some grams to {}",
                 WALLET_ADDRESS.to_string()));
