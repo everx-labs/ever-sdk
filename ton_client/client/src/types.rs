@@ -123,14 +123,14 @@ impl ApiError {
 
     pub fn add_function(mut self, function: Option<&str>) -> ApiError {
         if let Some(function) = function {
-            self.data["function"] = function.into();
+            self.data["function_name"] = function.into();
         }
 
         self
     }
 
     pub fn add_address(mut self, address: &MsgAddressInt) -> ApiError {
-        self.data["address"] = address.to_string().into();
+        self.data["account_address"] = address.to_string().into();
         self
     }
 
@@ -237,7 +237,7 @@ impl ApiError {
 
         error.data = serde_json::json!({
             "tip": "Contract code should be deployed before calling contract functions",
-            "address": address.to_string(),
+            "account_address": address.to_string(),
         });
         error
     }
@@ -250,11 +250,11 @@ impl ApiError {
         );
 
         error.data = serde_json::json!({
-            "address": address.to_string(),
+            "account_address": address.to_string(),
             "tip": "Send some value to account balance",
         });
         if let Some(balance) = balance {
-            error.data["balance"] = balance.into();
+            error.data["account_balance"] = balance.into();
         }
         error
     }
@@ -267,7 +267,7 @@ impl ApiError {
         );
 
         error.data = serde_json::json!({
-            "address": address.to_string(),
+            "account_address": address.to_string(),
         });
         error
     }
@@ -280,7 +280,7 @@ impl ApiError {
         );
 
         error.data = serde_json::json!({
-            "address": address.to_string(),
+            "account_address": address.to_string(),
             "tip": "You need to transfer funds to this account first to have a positive balance and then deploy its code."
         });
         error
@@ -622,7 +622,7 @@ impl ApiError {
             "transaction_id": tr_id,
             "phase": "computeVm",
             "exit_code": exit_code,
-            "address": address.to_string()
+            "account_address": address.to_string()
         });
 
         if let Some(error_code) = ExceptionCode::from_usize(exit_code as usize) {
