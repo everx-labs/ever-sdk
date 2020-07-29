@@ -1,7 +1,7 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
-## Jul 29, 2020
+## 0.25.2 Jul 29, 2020
 ### New
 - `error.data` object extended with fields `address`, `function_name`, `account_balance`, 
 `account_address`, `query_url`, `config_server` for appropriate errors
