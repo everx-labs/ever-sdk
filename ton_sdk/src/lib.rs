@@ -81,6 +81,14 @@ pub mod node_client {
         pub fn timeouts(&self) -> &TimeoutsConfig {
             &self.timeouts
         }
+
+        pub fn config_server(&self) -> Option<&str> {
+            None
+        }
+    
+        pub fn query_url(&self) -> Option<&str> {
+            None
+        }
     }
 }
 

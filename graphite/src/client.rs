@@ -97,4 +97,12 @@ impl GqlClient {
             request,
             &self.graphql_socket_host)?)
     }
+
+    pub fn queries_server(&self) -> &str {
+        &self.graphql_host
+    }
+
+    pub fn subscriptions_server(&self) -> &str {
+        &self.graphql_socket_host
+    }
 }

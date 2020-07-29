@@ -137,7 +137,7 @@ pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) 
     trace!("-> -> deploy transaction: {}", tr.parsed.id());
 
     trace!("<-");
-    super::run::check_transaction_status(&tr.parsed, true, &account_id)?;
+    super::run::check_transaction_status(&tr.parsed, true, &account_id, None)?;
     Ok(ResultOfDeploy {
         address: account_encode(&account_id),
         already_deployed: false,
@@ -301,14 +301,14 @@ async fn deploy_contract(client: &NodeClient, params: ParamsOfDeploy, image: Con
                 workchain,
                 Some(client.timeouts()),
                 Some(try_index))
-                .map_err(|err| ApiError::contracts_create_run_message_failed(err))?;
+                .map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
     
             let result = Contract::process_message(client, &msg, true).await;
             
             match result {
                 Err(err) => 
                     Err(resolve_msg_sdk_error(
-                        client, err, &msg.serialized_message, ApiError::contracts_deploy_failed).await?),
+                        client, err, &msg, ApiError::contracts_deploy_failed).await?),
                 Ok(tr) => Ok(tr)
             }
         }

@@ -110,6 +110,30 @@ impl ApiError {
         Self::new(ApiErrorSource::Client, &code, message)
     }
 
+    pub fn add_network_url(mut self, client: &ton_sdk::NodeClient) -> ApiError {
+        if let Some(server) = client.config_server() {
+            self.data["config_server"] = server.into();
+        }
+        if let Some(url) = client.query_url() {
+            self.data["query_url"] = url.into();
+        }
+
+        self
+    }
+
+    pub fn add_function(mut self, function: Option<&str>) -> ApiError {
+        if let Some(function) = function {
+            self.data["function_name"] = function.into();
+        }
+
+        self
+    }
+
+    pub fn add_address(mut self, address: &MsgAddressInt) -> ApiError {
+        self.data["account_address"] = address.to_string().into();
+        self
+    }
+
     // SDK Common
 
     pub fn unknown_method(method: &String) -> ApiError {
@@ -213,12 +237,12 @@ impl ApiError {
 
         error.data = serde_json::json!({
             "tip": "Contract code should be deployed before calling contract functions",
-            "address": address.to_string(),
+            "account_address": address.to_string(),
         });
         error
     }
 
-    pub fn low_balance(address: &MsgAddressInt) -> Self {
+    pub fn low_balance(address: &MsgAddressInt, balance: Option<u64>) -> Self {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ApiSdkErrorCode::LowBalance,
@@ -226,9 +250,12 @@ impl ApiError {
         );
 
         error.data = serde_json::json!({
-            "address": address.to_string(),
+            "account_address": address.to_string(),
             "tip": "Send some value to account balance",
         });
+        if let Some(balance) = balance {
+            error.data["account_balance"] = balance.into();
+        }
         error
     }
 
@@ -240,7 +267,7 @@ impl ApiError {
         );
 
         error.data = serde_json::json!({
-            "address": address.to_string(),
+            "account_address": address.to_string(),
         });
         error
     }
@@ -253,7 +280,7 @@ impl ApiError {
         );
 
         error.data = serde_json::json!({
-            "address": address.to_string(),
+            "account_address": address.to_string(),
             "tip": "You need to transfer funds to this account first to have a positive balance and then deploy its code."
         });
         error
@@ -426,9 +453,10 @@ impl ApiError {
             "Create deploy message failed: {}", err)
     }
 
-    pub fn contracts_create_run_message_failed<E: Display>(err: E) -> Self {
+    pub fn contracts_create_run_message_failed<E: Display>(err: E, function: &str) -> Self {
         sdk_err!(ContractsCreateRunMessageFailed,
-            "Create run message failed: {}", err)
+            "Create run message failed: {}", err
+        ).add_function(Some(function))
     }
 
     pub fn contracts_create_send_grams_message_failed<E: Display>(err: E) -> Self {
@@ -436,14 +464,16 @@ impl ApiError {
             "Create send grams message failed: {}", err)
     }
 
-    pub fn contracts_decode_run_output_failed<E: Display>(err: E) -> Self {
+    pub fn contracts_decode_run_output_failed<E: Display>(err: E, function: Option<&str>) -> Self {
         sdk_err!(ContractsDecodeRunOutputFailed,
-            "Decode run output failed: {}", err)
+            "Decode run output failed: {}", err
+        ).add_function(function)
     }
 
-    pub fn contracts_decode_run_input_failed<E: Display>(err: E) -> Self {
+    pub fn contracts_decode_run_input_failed<E: Display>(err: E, function: Option<&str>) -> Self {
         sdk_err!(ContractsDecodeRunInputFailed,
-            "Decode run input failed: {}", err)
+            "Decode run input failed: {}", err
+        ).add_function(function)
     }
 
     pub fn contracts_run_failed<E: Display>(err: E) -> ApiError {
@@ -485,9 +515,10 @@ impl ApiError {
             "Encoding message with sign failed: {}", err)
     }
 
-    pub fn contracts_get_function_id_failed<E: Display>(err: E) -> Self {
+    pub fn contracts_get_function_id_failed<E: Display>(err: E, function: &str) -> Self {
         sdk_err!(ContractsGetFunctionIdFailed,
-            "Get function ID failed: {}", err)
+            "Get function ID failed: {}", err
+        ).add_function(Some(function))
     }
 
     pub fn contracts_local_run_failed<E: Display>(err: E) -> Self {
@@ -566,11 +597,12 @@ impl ApiError {
         tr_id: Option<String>,
         reason: &ComputeSkipReason,
         address: &MsgAddressInt,
+        balance: Option<u64>
     ) -> ApiError {
         let mut error = match reason {
             ComputeSkipReason::NoState => Self::account_code_missing(address),
             ComputeSkipReason::BadState => Self::account_frozen_or_deleted(address),
-            ComputeSkipReason::NoGas => Self::low_balance(address)
+            ComputeSkipReason::NoGas => Self::low_balance(address, balance)
         };
 
         error.data["transaction_id"] = tr_id.map(|s| s.into()).unwrap_or(serde_json::Value::Null);
@@ -590,7 +622,7 @@ impl ApiError {
             "transaction_id": tr_id,
             "phase": "computeVm",
             "exit_code": exit_code,
-            "address": address.to_string()
+            "account_address": address.to_string()
         });
 
         if let Some(error_code) = ExceptionCode::from_usize(exit_code as usize) {
@@ -613,8 +645,9 @@ impl ApiError {
         tr_id: Option<String>,
         reason: &AccStatusChange,
         address: &MsgAddressInt,
+        balance: Option<u64>
     ) -> ApiError {
-        let mut error = Self::low_balance(address);
+        let mut error = Self::low_balance(address, balance);
         error.data["transaction_id"] = tr_id.map(|s| s.into()).unwrap_or(serde_json::Value::Null);
         error.data["phase"] = "storage".into();
         error.data["reason"] = match reason {
@@ -631,16 +664,17 @@ impl ApiError {
         valid: bool,
         no_funds: bool,
         address: &MsgAddressInt,
+        balance: Option<u64>
     ) -> ApiError {
         let mut error = if no_funds {
-            let mut error = Self::low_balance(address);
+            let mut error = Self::low_balance(address, balance);
             error.data["description"] = "Contract tried to send value exceeding account balance".into();
             error
         } else {
             let mut error = ApiError::new(
                 ApiErrorSource::Node,
                 &ActionPhaseFailed,
-                "Action phase failed".to_owned());
+                "Transaction failed at action phase".to_owned());
             if !valid {
                 error.data["description"] = "Contract tried to send invalid oubound message".into();
             }
@@ -813,11 +847,11 @@ impl ApiErrorCode for i32 {
     }
 }
 
-pub fn apierror_from_sdkerror<F>(err: &failure::Error, default_err: F) -> ApiError
+pub fn apierror_from_sdkerror<F>(err: &failure::Error, default_err: F, client: Option<&ton_sdk::NodeClient>) -> ApiError
 where
     F: Fn(String) -> ApiError,
 {
-    match err.downcast_ref::<SdkError>() {
+    let err = match err.downcast_ref::<SdkError>() {
         Some(SdkError::WaitForTimeout) => ApiError::wait_for_timeout(),
         Some(SdkError::MessageExpired{msg_id, expire, sending_time, block_time, block_id}) =>
             ApiError::message_expired(msg_id.to_string(), *sending_time, *expire, *block_time, block_id.to_string()),
@@ -828,11 +862,17 @@ where
         Some(SdkError::ClockOutOfSync{delta_ms, threshold_ms, expiration_timeout}) =>
             ApiError::clock_out_of_sync(*delta_ms, *threshold_ms, *expiration_timeout),
         Some(SdkError::ResumableNetworkError{state, error}) => {
-            let mut api_error = apierror_from_sdkerror(error, default_err);
+            let mut api_error = apierror_from_sdkerror(error, default_err, client);
             api_error.message_processing_state = Some(state.clone());
             api_error
         }
         _ => default_err(err.to_string())
+    };
+
+    if let Some(client) = client {
+        err.add_network_url(client)
+    } else {
+        err
     }
 }
 
