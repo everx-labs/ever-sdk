@@ -211,10 +211,10 @@ pub(crate) fn encode_message_with_sign(_context: &mut ClientContext, params: Par
 
 pub(crate) fn get_function_id(_context: &mut ClientContext, params: ParamsOfGetFunctionId) -> ApiResult<ResultOfGetFunctionId> {
     let contract = AbiContract::load(params.abi.to_string().as_bytes())
-        .map_err(|err|ApiError::contracts_get_function_id_failed(err))?;
+        .map_err(|err|ApiError::contracts_get_function_id_failed(err, &params.function))?;
 
     let function = contract.function(&params.function)
-        .map_err(|err|ApiError::contracts_get_function_id_failed(err))?;
+        .map_err(|err|ApiError::contracts_get_function_id_failed(err, &params.function))?;
 
     Ok(ResultOfGetFunctionId {
        id: if params.input { function.get_input_id() } else { function.get_input_id() }
@@ -296,7 +296,7 @@ pub(crate) async fn process_message(context: &mut ClientContext, params: ParamsO
     let transaction = match result {
             Err(err) => 
                 return Err(run::resolve_msg_sdk_error(
-                        client, err, &msg.serialized_message, ApiError::contracts_process_message_failed
+                        client, err, &msg, ApiError::contracts_process_message_failed
                     ).await?),
             Ok(tr) => tr
     };
@@ -307,6 +307,7 @@ pub(crate) async fn process_message(context: &mut ClientContext, params: ParamsO
         params.abi,
         params.function_name,
         &msg.address,
+        None,
         true)
 }
 
@@ -318,7 +319,8 @@ pub(crate) fn process_transaction(
     let transaction = serde_json::from_value(params.transaction.clone())
         .map_err(|err| ApiError::invalid_params(&params.transaction.to_string(), err))?;
 
-    run::process_transaction(transaction, params.transaction, params.abi, params.function_name, &address, true)
+    run::process_transaction(
+        transaction, params.transaction, params.abi, params.function_name, &address, None, true)
 }
 
 pub(crate) fn parse_message(_context: &mut ClientContext, params: InputBoc) -> ApiResult<serde_json::Value> {
@@ -366,7 +368,7 @@ pub(crate) async fn wait_transaction(context: &mut ClientContext, params: Params
     let transaction = match result {
             Err(err) => 
                 return Err(run::resolve_msg_sdk_error(
-                        client, err, &msg.serialized_message, ApiError::contracts_process_message_failed
+                        client, err, &msg, ApiError::contracts_process_message_failed
                     ).await?),
             Ok(tr) => tr
     };
@@ -377,6 +379,7 @@ pub(crate) async fn wait_transaction(context: &mut ClientContext, params: Params
         params.abi,
         params.function_name,
         &msg.address,
+        None,
         true)
 }
 

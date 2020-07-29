@@ -1,6 +1,6 @@
 [package]
 name = "ton_client_node_js"
-version = "0.25.0"
+version = "0.25.2"
 authors = ["Michael Vlasov"]
 license = "Apache-2.0"
 
