@@ -661,23 +661,3 @@ fn test_find_shard() {
     assert_eq!(result, Value::Null.to_string());
 }
 
-#[test]
-fn test_account_boc_usage() {
-    let client = TestClient::new();
-    let contract1 = Contract::from_json(r#"{
-        "id": "-1:6666666666666666666666666666666666666666666666666666666666666666",
-        "acc_type": 1,
-        "balance": "0xe8d4a51000",
-        "balance_other": null,
-        "code": "te6ccgEBAQEAQAAAfP8AIN0gggFMl7qXMO1E0NcLH+Ck8mDTHwHtRNDTH9FmuvKh+AAB0wfU0YIYBKgXyABz+wIB+wCkyMsfye1U",
-        "data": "te6ccgEBAQEABgAACAAAAAA=",
-        "last_paid": 0
-      }"#).unwrap();
-
-    let smc2 = Contract::from_bytes(&base64::decode(
-        "te6ccuECAwEAAIMAAHoA+gEGAnHP9mZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZiBoCgwAAAAAAAAAAAAAAAAXo1KUQAE0ABAgB8/wAg3SCCAUyXupcw7UTQ1wsf4KTyYNMfAe1E0NMf0Wa68qH4AAHTB9TRghgEqBfIAHP7AgH7AKTIyx/J7VQACAAAAAB1qkcn"
-    ).unwrap()).unwrap();
-
-
-    println!("Hi")
-}

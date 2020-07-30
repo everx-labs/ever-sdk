@@ -18,6 +18,7 @@ use ton_sdk::Contract;
 use crate::client::ClientContext;
 use crate::types::{ApiResult, ApiError};
 use crate::dispatch::DispatchTable;
+use ton_block::MsgAddressInt;
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
@@ -49,13 +50,21 @@ pub(crate) fn get(
         params.functionName,
     );
 
-    let (codeBase64, dataBase64) = Contract::resolve_code_and_data(
+    let (code_base64, data_base64) = Contract::resolve_code_and_data(
         &params.bocBase64,
         &params.codeBase64,
         &params.dataBase64,
-    );
+    ).map_err(
+        |_| {
+            let address = params.address.as_ref().map(|a|
+                crate::crypto::keys::account_decode(a)
+                    .unwrap_or(MsgAddressInt::default()
+                    )).unwrap_or(MsgAddressInt::default());
+            ApiError::account_code_missing(&address)
+        }
+    )?;
 
-    let contract = match &codeBase64 {
+    let contract = match &code_base64 {
         // load contract data from node manually
         #[cfg(feature = "node_interaction")]
         None => {
@@ -82,7 +91,7 @@ pub(crate) fn get(
                 "acc_type": 1,
                 "balance": params.balance.unwrap_or(DEFAULT_BALANCE.to_string()),
                 "code": code,
-                "data": dataBase64,
+                "data": data_base64,
                 "last_paid": last_paid,
             });
             Contract::from_json(contract_json.to_string().as_str())
