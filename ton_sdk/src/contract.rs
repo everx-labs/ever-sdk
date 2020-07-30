@@ -672,11 +672,11 @@ impl Contract {
             acc_type: acc.status(),
             balance,
             balance_other: if balance_other.len() > 0 { Some(balance_other) } else { None },
-            _code: acc.get_code(),
-            _data: acc.get_data(),
-            code_hash: None,
-            data_hash: None,
-            boc: None,
+            _code: None,
+            _data: None,
+            code_hash: acc.get_code().map(|x|x.repr_hash().to_hex_string()),
+            data_hash: acc.get_data().map(|x|x.repr_hash().to_hex_string()),
+            boc: Some(acc.serialize()?),
             last_paid: acc.storage_info().unwrap().last_paid,
         })
     }
