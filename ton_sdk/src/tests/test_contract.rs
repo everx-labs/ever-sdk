@@ -192,6 +192,14 @@ fn test_contract_from_bytes() {
         "te6ccuECAwEAAIMAAHoA+gEGAnHP9mZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZiBoCgwAAAAAAAAAAAAAAAAXo1KUQAE0ABAgB8/wAg3SCCAUyXupcw7UTQ1wsf4KTyYNMfAe1E0NMf0Wa68qH4AAHTB9TRghgEqBfIAHP7AgH7AKTIyx/J7VQACAAAAAB1qkcn"
     ).unwrap()).unwrap();
 
+    assert_eq!(format!("{:?}", smc1.id), format!("{:?}", smc2.id));
+    assert_eq!(format!("{:?}", smc1.acc_type), format!("{:?}", smc2.acc_type));
+    assert_eq!(format!("{:?}", smc1.balance), format!("{:?}", smc2.balance));
+    assert_eq!(format!("{:?}", smc1.balance_other), format!("{:?}", smc2.balance_other));
+    assert_eq!(format!("{:?}", smc1.get_code()), format!("{:?}", smc2.get_code()));
+    assert_eq!(format!("{:?}", smc1.get_data()), format!("{:?}", smc2.get_data()));
+    assert_eq!(format!("{:?}", smc1.last_paid), format!("{:?}", smc2.last_paid));
+
     let smc3 = Contract::from_json(r#"{
         "id": "-1:6666666666666666666666666666666666666666666666666666666666666666",
         "acc_type": 1,
@@ -202,7 +210,6 @@ fn test_contract_from_bytes() {
         "last_paid": 100
       }"#).unwrap();
 
-    assert_eq!(format!("{:?}", smc1), format!("{:?}", smc2));
     assert_ne!(format!("{:?}", smc2), format!("{:?}", smc3));
 }
 
@@ -216,6 +223,6 @@ fn test_resolving_code_and_data_from_boc() {
         "boc": "te6ccuECAwEAAIMAAHoA+gEGAnHP9mZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZiBoCgwAAAAAAAAAAAAAAAAXo1KUQAE0ABAgB8/wAg3SCCAUyXupcw7UTQ1wsf4KTyYNMfAe1E0NMf0Wa68qH4AAHTB9TRghgEqBfIAHP7AgH7AKTIyx/J7VQACAAAAAB1qkcn",
         "last_paid": 0
       }"#).unwrap();
-    assert_eq!(cell_to_base64(&contract.get_code().unwrap()).unwrap(), "te6ccgEBAQEAQAAAfP8AIN0gggFMl7qXMO1E0NcLH+Ck8mDTHwHtRNDTH9FmuvKh+AAB0wfU0YIYBKgXyABz+wIB+wCkyMsfye1U");
-    assert_eq!(cell_to_base64(&contract.get_data().unwrap()).unwrap(), "te6ccgEBAQEABgAACAAAAAA=");
+    assert_eq!(toc_to_base64(&contract.get_code().unwrap()).unwrap(), "te6ccgEBAQEAQAAAfP8AIN0gggFMl7qXMO1E0NcLH+Ck8mDTHwHtRNDTH9FmuvKh+AAB0wfU0YIYBKgXyABz+wIB+wCkyMsfye1U");
+    assert_eq!(toc_to_base64(&contract.get_data().unwrap()).unwrap(), "te6ccgEBAQEABgAACAAAAAA=");
 }

@@ -30,7 +30,7 @@ use ton_block::{
     Deserializable, ExternalInboundMessageHeader, GetRepresentationHash, Message as TvmMessage,
     MsgAddressInt, Serializable, ShardIdent, StateInit, StorageInfo,
 };
-use ton_types::cells_serialization::{deserialize_cells_tree, BagOfCells};
+use ton_types::cells_serialization::{deserialize_cells_tree};
 use ton_types::{error, fail, Result, AccountId, Cell, SliceData, HashmapE};
 use ton_abi::json_abi::DecodedMessage;
 use ton_abi::token::{Detokenizer, Tokenizer, TokenValue};
@@ -139,15 +139,8 @@ impl StackItemJSON {
     }
 }
 
-fn cell_to_bytes(cell: &Cell) -> Result<Vec<u8>> {
-    let mut data = Vec::new();
-    let bag = BagOfCells::with_root(cell);
-    bag.write_to(&mut data, false)?;
-    Ok(data)
-}
-
-fn cell_to_base64(cell: &Cell) -> Result<String> {
-    Ok(base64::encode(&cell_to_bytes(cell)?))
+fn toc_to_base64(cell: &Cell) -> Result<String> {
+    Ok(base64::encode(&ton_types::serialize_toc(cell)?))
 }
 
 #[cfg(feature = "node_interaction")]
@@ -321,20 +314,20 @@ impl ContractImage {
 
     pub fn get_serialized_code(&self) -> Result<Vec<u8>> {
         match &self.state_init.code {
-            Some(cell) => cell_to_bytes(cell),
+            Some(cell) => ton_types::serialize_toc(cell),
             None => bail!(SdkError::InvalidData { msg: "State init has no code".to_owned() } )
         }
     }
 
     pub fn get_serialized_data(&self) -> Result<Vec<u8>> {
         match &self.state_init.data {
-            Some(cell) => cell_to_bytes(cell),
+            Some(cell) => ton_types::serialize_toc(cell),
             None => bail!(SdkError::InvalidData { msg: "State init has no data".to_owned() } )
         }
     }
 
     pub fn serialize(&self) -> Result<Vec<u8>> {
-        cell_to_bytes(&(self.state_init.write_to_new_cell()?).into())
+        ton_types::serialize_toc(&(self.state_init.write_to_new_cell()?).into())
     }
 
     // Returns future contract's state_init struct
@@ -693,12 +686,12 @@ impl Contract {
                 let acc = Account::construct_from_base64(&boc_base64)?;
                 if code.is_none() {
                     if let Some(acc_code) = acc.get_code() {
-                        code = Some(cell_to_base64(&acc_code)?);
+                        code = Some(toc_to_base64(&acc_code)?);
                     }
                 }
                 if data.is_none() {
                     if let Some(acc_data) = acc.get_data() {
-                        data = Some(cell_to_base64(&acc_data)?);
+                        data = Some(toc_to_base64(&acc_data)?);
                     }
                 }
             }
@@ -1128,7 +1121,7 @@ impl Contract {
 
     pub fn serialize_message(msg: &TvmMessage) -> Result<(Vec<u8>, MessageId)> {
         let cells = msg.write_to_new_cell()?.into();
-        Ok((cell_to_bytes(&cells)?, (&cells.repr_hash().as_slice()[..]).into()))
+        Ok((ton_types::serialize_toc(&cells)?, (&cells.repr_hash().as_slice()[..]).into()))
     }
 
     /// Deserializes tree of cells from byte array into `SliceData`
@@ -1176,6 +1169,9 @@ impl Contract {
     }
 
     pub fn to_account(&self) -> Result<Account> {
+        if let Some(boc) = &self.boc {
+            return Ok(Account::construct_from(&mut SliceData::from(boc))?)
+        }
         if AccountStatus::AccStateFrozen == self.acc_type {
             return Err(SdkError::InvalidData { msg: "Account is frozen".to_owned() }.into());
         }
