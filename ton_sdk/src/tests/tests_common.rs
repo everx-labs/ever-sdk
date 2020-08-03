@@ -18,8 +18,8 @@ use ton_block::MsgAddressInt;
 
 const NODE_SE: bool = true;
 
-const GIVER_ADDRESS_STR:  &str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
-const WALLET_ADDRESS_STR:  &str = "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13";
+const GIVER_ADDRESS_STR: &str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
+const WALLET_ADDRESS_STR: &str = "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13";
 
 pub const CONTRACTS_PATH: &str = "src/tests/contracts/";
 
@@ -34,7 +34,7 @@ lazy_static::lazy_static! {
     pub static ref SIMPLE_WALLET_ABI: String = std::fs::read_to_string(CONTRACTS_PATH.to_owned() + "Wallet.abi.json").unwrap();
     pub static ref GIVER_ABI: String = std::fs::read_to_string(CONTRACTS_PATH.to_owned() + "Giver.abi.json").unwrap();
     pub static ref PROFESSOR_ABI: String = std::fs::read_to_string(CONTRACTS_PATH.to_owned() + "Professor.abi.json").unwrap();
-    
+
     pub static ref SUBSCRIBE_CONTRACT_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.to_owned() + "Subscription.tvc").unwrap();
 	pub static ref PIGGY_BANK_CONTRACT_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.to_owned() + "Piggy.tvc").unwrap();
     pub static ref WALLET_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.to_owned() + "LimitWallet.tvc").unwrap();
@@ -49,15 +49,15 @@ const DEFAULT_GIVER_KEYS: &str = r#"
 }"#;
 
 pub fn get_config() -> serde_json::Value {
-    if NODE_SE {
-        json!({
-            "base_url": "http://localhost"
-        })
-    } else {
-        json!({
-            "base_url": "net.ton.dev"//"cinet.tonlabs.io"
-        })
-    }
+    let network = std::env::var("TON_NETWORK_ADDRESS")
+        .unwrap_or(if NODE_SE {
+            "http://localhost:80"
+        } else {
+            "net.ton.dev"
+        }.to_owned());
+    json!({
+        "base_url": network
+    })
 }
 
 pub async fn init_node_connection() -> NodeClient {
@@ -70,7 +70,7 @@ fn get_wallet_keys() -> Keypair {
     let mut keys_file = dirs::home_dir().unwrap();
     keys_file.push("giverKeys.json");
     let keys = std::fs::read_to_string(keys_file).unwrap_or(DEFAULT_GIVER_KEYS.to_owned());
-    
+
     let keys: serde_json::Value = serde_json::from_str(&keys).unwrap();
 
     println!("Using keys\n{}", keys);
@@ -124,7 +124,7 @@ async fn check_giver(client: &NodeClient) {
                 WALLET_ADDRESS.to_string()));
         }
 
-        if contract.code.is_some() { return; }
+        if contract.code_hash.is_some() || contract.get_code().is_some() { return; }
     } else {
         panic!(format!(
             "Giver does not exist. Send some grams to {}",
@@ -195,7 +195,7 @@ pub async fn deploy_contract_and_wait(
     abi: &str,
     constructor_params: &str,
     key_pair: &Keypair,
-    workchain_id: i32
+    workchain_id: i32,
 ) -> MsgAddressInt {
     let contract_image = ContractImage::from_state_init_and_key(&mut contract_image, &key_pair.public).expect("Unable to parse contract code file");
 
@@ -217,7 +217,7 @@ pub async fn deploy_contract_and_wait(
         Some(key_pair),
         workchain_id,
         Some(client.timeouts()),
-        None
+        None,
     ).unwrap();
 
     let tr = Contract::process_message(&client, &msg, false).await;
@@ -242,7 +242,7 @@ pub async fn call_contract(
     func: &str,
     input: String,
     abi: &str,
-    key_pair: Option<&Keypair>
+    key_pair: Option<&Keypair>,
 ) -> Transaction {
     let now = std::time::Instant::now();
     // call needed method
@@ -257,7 +257,7 @@ pub async fn call_contract(
         false,
         key_pair,
         Some(client.timeouts()),
-        None
+        None,
     ).unwrap();
 
     let tr = Contract::process_message(&client, &msg, false).await;
@@ -265,7 +265,7 @@ pub async fn call_contract(
     let t = now.elapsed();
     println!("Call time {}.{:03} ", t.as_secs(), t.subsec_millis());
     println!("now {}", Contract::now());
-    
+
     let tr = tr.expect("Error calling contract method");
 
     println!("Transaction now {}", tr.parsed.now);
@@ -283,7 +283,7 @@ pub async fn call_contract_and_wait(
     func: &str,
     input: String,
     abi: &str,
-    key_pair: Option<&Keypair>
+    key_pair: Option<&Keypair>,
 ) -> String {
     let now = std::time::Instant::now();
     // call needed method
@@ -298,7 +298,7 @@ pub async fn call_contract_and_wait(
         false,
         key_pair,
         Some(client.timeouts()),
-        None
+        None,
     ).unwrap();
 
     let tr = Contract::process_message(&client, &msg, false)
@@ -307,7 +307,7 @@ pub async fn call_contract_and_wait(
     let t = now.elapsed();
     println!("Call time {}.{:03} ", t.as_secs(), t.subsec_millis());
     println!("now {}", Contract::now());
-    
+
     let tr = tr.expect("Error calling contract method");
 
     if tr.parsed.is_aborted() {
@@ -321,7 +321,7 @@ pub async fn call_contract_and_wait(
 
     // decode the body by ABI
     for msg in tr.parsed.out_messages {
-        if  msg.msg_type() == MessageType::ExternalOutbound &&
+        if msg.msg_type() == MessageType::ExternalOutbound &&
             abi_function.is_my_output_message(msg.body().unwrap(), false).unwrap()
         {
             result = Contract::decode_function_response_json(
@@ -340,7 +340,7 @@ pub async fn contract_call_local(
     func: &str,
     input: &str,
     abi: &str,
-    key_pair: Option<&Keypair>
+    key_pair: Option<&Keypair>,
 ) -> String {
     let contract = Contract::load_wait(client, &address, true, None)
         .await
@@ -354,9 +354,9 @@ pub async fn contract_call_local(
         if msg.msg_type() == MessageType::ExternalOutbound {
             return Contract::decode_function_response_json(
                 abi.to_owned(), func.to_owned(), msg.body().expect("Message has no body"), false)
-                    .expect("Error decoding result");
+                .expect("Error decoding result");
         }
     }
 
-   "{}".to_owned()
+    "{}".to_owned()
 }

@@ -21,3 +21,5 @@ Cargo.lock
 /ton_client/platforms/ton-client-react-native/build/
 /ton_client/platforms/ton-client-web/build/tonclient.wasm
 /ton_client/platforms/ton-client-web/build/index.js
+/ton_client/client/bin/
+/ton_client/client/build/
