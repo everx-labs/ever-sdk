@@ -23,7 +23,7 @@ pub const BLOCKS_TABLE_NAME: &str = "blocks";
 pub const TRANSACTIONS_TABLE_NAME: &str = "transactions";
 
 pub const DEFAULT_RETRIES_COUNT: u8 = 5;
-pub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 10000;
+pub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 40000;
 pub const DEFAULT_PROCESSING_TIMEOUT: u32 = 40000;
 pub const DEFAULT_TIMEOUT_GROW_FACTOR: f32 = 1.5;
 pub const DEFAULT_WAIT_TIMEOUT: u32 = 40000;
