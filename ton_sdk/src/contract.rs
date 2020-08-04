@@ -640,6 +640,7 @@ impl Contract {
 
     /// Creates `Contract` struct by deserialized contract's tree of cells
     pub fn from_cells(mut root_cell_slice: SliceData) -> Result<Self> {
+        let boc = root_cell_slice.into_cell();
         let acc = Account::construct_from(&mut root_cell_slice)?;
         if acc.is_none() {
             bail!(SdkError::InvalidData { msg: "Account is none.".into() } );
@@ -660,16 +661,20 @@ impl Contract {
 
         // All unwraps below won't panic because the account is checked for none.
         let balance = big_int_to_u64(&acc.get_balance().unwrap().grams.value(), "Account's balance is too big")?;
+        let code = acc.get_code();
+        let data = acc.get_data();
+        let code_hash = code.as_ref().map(|x|x.repr_hash().to_hex_string());
+        let data_hash = data.as_ref().map(|x|x.repr_hash().to_hex_string());
         Ok(Contract {
             id: acc.get_addr().unwrap().clone(),
             acc_type: acc.status(),
             balance,
             balance_other: if balance_other.len() > 0 { Some(balance_other) } else { None },
-            _code: None,
-            _data: None,
-            code_hash: acc.get_code().map(|x|x.repr_hash().to_hex_string()),
-            data_hash: acc.get_data().map(|x|x.repr_hash().to_hex_string()),
-            boc: Some(acc.serialize()?),
+            _code: code,
+            _data: data,
+            code_hash,
+            data_hash,
+            boc: Some(boc),
             last_paid: acc.storage_info().unwrap().last_paid,
         })
     }
