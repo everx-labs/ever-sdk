@@ -29,7 +29,7 @@ const KEYS: &str = r"f65b410f0c7e17850807749b17e11bb0754bcbdd15e399ccec49116b113
 
 #[test]
 fn test_local_piggy_call() {
-    let contract: crate::Contract = serde_json::from_str(CONTRACT).expect("Error parsing state init");
+    let contract = crate::Contract::from_json(CONTRACT).expect("Error parsing state init");
     let messages = contract.local_call_tvm_json(
         "getTargetAmount".to_owned(),
         None,
@@ -51,7 +51,7 @@ fn test_local_piggy_call() {
 
 #[test]
 fn test_local_call_accept_error() {
-    let contract: crate::Contract = serde_json::from_str(CONTRACT).expect("Error parsing state init");
+    let contract = crate::Contract::from_json(CONTRACT).expect("Error parsing state init");
     let result = contract.local_call_json(
         "getGoal".to_owned(),
         None,
@@ -64,7 +64,7 @@ fn test_local_call_accept_error() {
 
 #[test]
 fn test_executor_call() {
-    let contract: crate::Contract = serde_json::from_str(CONTRACT).expect("Error parsing state init");
+    let contract = crate::Contract::from_json(CONTRACT).expect("Error parsing state init");
     let keypair = ed25519_dalek::Keypair::from_bytes(&hex::decode(KEYS).unwrap()).unwrap();
 
     let result = contract.local_call_json(

@@ -27,7 +27,7 @@ use crate::types::{
     long_num_to_json_string};
 
 #[cfg(feature = "node_interaction")]
-use ton_sdk::{NodeClient, RecievedTransaction, SdkError};
+use ton_sdk::{NodeClient, ReceivedTransaction, SdkError};
 #[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
@@ -131,7 +131,7 @@ pub(crate) struct ResultOfRun {
 pub(crate) struct ResultOfLocalRun {
     pub output: serde_json::Value,
     pub fees: Option<RunFees>,
-    pub account: Option<Contract>
+    pub account: Option<Contract>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -147,7 +147,7 @@ pub struct RunFees {
     pub gas_fee: String,
     pub out_msgs_fwd_fee: String,
     pub total_account_fees: String,
-    pub total_output: String
+    pub total_output: String,
 }
 
 impl From<TransactionFees> for RunFees {
@@ -161,12 +161,12 @@ impl From<TransactionFees> for RunFees {
             total_output: long_num_to_json_string(value.total_output),
         }
     }
- }
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct ResultOfDecodeUnknownRun {
     pub function: String,
-    pub output: serde_json::Value
+    pub output: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -231,7 +231,7 @@ pub(crate) async fn run(context: &mut ClientContext, params: ParamsOfRun) -> Api
 pub(crate) fn process_out_messages(
     messages: &Vec<Message>,
     abi: Option<serde_json::Value>,
-    function: Option<String>
+    function: Option<String>,
 ) -> ApiResult<serde_json::Value> {
     if let Some(abi) = abi {
         let function = function.ok_or(ApiError::contracts_decode_run_output_failed("No function name provided", None))?;
@@ -239,29 +239,29 @@ pub(crate) fn process_out_messages(
         let abi_contract = AbiContract::load(abi.to_string().as_bytes()).expect("Couldn't parse ABI");
         let abi_function = abi_contract.function(&function).expect("Couldn't find function");
 
-        if  messages.len() == 0 || !abi_function.has_output() {
+        if messages.len() == 0 || !abi_function.has_output() {
             trace!("out messages missing");
             Ok(serde_json::Value::Null)
         } else {
             trace!("processing out messages");
 
             for msg in messages {
-                if  msg.msg_type() == MessageType::ExternalOutbound &&
+                if msg.msg_type() == MessageType::ExternalOutbound &&
                     abi_function.is_my_output_message(
                         msg.body().ok_or(ApiError::contracts_decode_run_output_failed(
                             "Message has no body", Some(&function)))?,
                         false)
-                            .map_err(|err| 
-                                ApiError::contracts_decode_run_output_failed(err, Some(&function)))?
+                        .map_err(|err|
+                            ApiError::contracts_decode_run_output_failed(err, Some(&function)))?
                 {
                     let output = Contract::decode_function_response_json(
                         abi.to_string(), function.clone(), msg.body().expect("Message has no body"), false)
-                            .map_err(|err| ApiError::contracts_decode_run_output_failed(err, Some(&function)))?;
-    
+                        .map_err(|err| ApiError::contracts_decode_run_output_failed(err, Some(&function)))?;
+
                     let output: serde_json::Value = serde_json::from_str(&output)
-                        .map_err(|err| 
+                        .map_err(|err|
                             ApiError::contracts_decode_run_output_failed(err, Some(&function)))?;
-    
+
                     return Ok(output);
                 }
             }
@@ -291,8 +291,8 @@ pub(crate) fn process_transaction(
             .add_function(function.as_ref().map(|string| string.as_str()))
             .add_address(address)
         )?;
-    
-    Ok( ResultOfRun { output, fees: fees, transaction: json } )
+
+    Ok(ResultOfRun { output, fees: fees, transaction: json })
 }
 
 pub(crate) fn local_run(context: &mut ClientContext, params: ParamsOfLocalRun) -> ApiResult<ResultOfLocalRun> {
@@ -305,13 +305,22 @@ pub(crate) fn local_run(context: &mut ClientContext, params: ParamsOfLocalRun) -
 
     let key_pair = params.key_pair.map(|pair| pair.decode()).transpose()?;
 
-    let account = params.account.as_ref().map(|acc| 
+    let account = params.account
+        .as_ref()
+        .map(|acc|
             Contract::from_json(&acc.to_string())
-                .map_err(|err| ApiError::invalid_params(&acc.to_string(), err)))
+                .map_err(|err| ApiError::invalid_params(&acc.to_string(), err))
+        )
         .transpose()?;
 
     do_local_run(
-        Some(context), params.call_set, key_pair.as_ref(), address, account, params.full_run, params.time
+        Some(context),
+        params.call_set,
+        key_pair.as_ref(),
+        address,
+        account,
+        params.full_run,
+        params.time,
     ).map_err(|err| match context.get_client() {
         Ok(client) => err.add_network_url(client),
         Err(_) => err
@@ -327,18 +336,27 @@ pub(crate) fn local_run_msg(context: &mut ClientContext, params: ParamsOfLocalRu
 
     let address = account_decode(&params.address)?;
 
-    let account = params.account.as_ref().map(|acc| 
+    let account = params.account
+        .as_ref()
+        .map(|acc|
             Contract::from_json(&acc.to_string())
-                .map_err(|err| ApiError::invalid_params(&acc.to_string(), err)))
+                .map_err(|err| ApiError::invalid_params(&acc.to_string(), err))
+        )
         .transpose()?;
 
-    let msg = Contract::deserialize_message(
-        &base64::decode(&params.message_base64)
-            .map_err(|err| ApiError::crypto_invalid_base64(&params.message_base64, err))?)
+    let msg = Contract::deserialize_message(&base64::decode(&params.message_base64)
+        .map_err(|err| ApiError::crypto_invalid_base64(&params.message_base64, err))?)
         .map_err(|err| ApiError::invalid_params(&params.message_base64, err))?;
 
     do_local_run_msg(
-        Some(context), address, account, params.abi, params.function_name, msg, params.full_run, params.time
+        Some(context),
+        address,
+        account,
+        params.abi,
+        params.function_name,
+        msg,
+        params.full_run,
+        params.time,
     ).map_err(|err| match context.get_client() {
         Ok(client) => err.add_network_url(client),
         Err(_) => err
@@ -374,12 +392,12 @@ pub(crate) fn encode_unsigned_message(context: &mut ClientContext, params: Param
         account_decode(&params.address)?,
         params.call_set.into(),
         Some(context.get_client()?.timeouts()),
-        None
+        None,
     ).map_err(|err| ApiError::contracts_create_run_message_failed(err, &function))?;
     Ok(EncodedUnsignedMessage {
         unsigned_bytes_base64: base64::encode(&encoded.message),
         bytes_to_sign_base64: base64::encode(&encoded.data_to_sign),
-        expire: encoded.expire
+        expire: encoded.expire,
     })
 }
 
@@ -390,7 +408,7 @@ pub(crate) fn decode_output(_context: &mut ClientContext, params: ParamsOfDecode
         params.function_name.to_owned(),
         &body,
         params.internal)
-            .map_err(|err| ApiError::contracts_decode_run_output_failed(err, Some(&params.function_name)))?;
+        .map_err(|err| ApiError::contracts_decode_run_output_failed(err, Some(&params.function_name)))?;
     Ok(ResultOfDecode {
         output: serde_json::from_str(result.as_str())
             .map_err(|err| ApiError::contracts_decode_run_output_failed(err, Some(&params.function_name)))?
@@ -403,7 +421,7 @@ pub(crate) fn decode_unknown_input(_context: &mut ClientContext, params: ParamsO
         params.abi.to_string().to_owned(),
         &body,
         params.internal)
-            .map_err(|err|ApiError::contracts_decode_run_input_failed(err, None))?;
+        .map_err(|err| ApiError::contracts_decode_run_input_failed(err, None))?;
     Ok(ResultOfDecodeUnknownRun {
         output: serde_json::from_str(result.params.as_str())
             .map_err(|err| ApiError::contracts_decode_run_input_failed(err, Some(&result.function_name)))?,
@@ -417,7 +435,7 @@ pub(crate) fn decode_unknown_output(_context: &mut ClientContext, params: Params
         params.abi.to_string().to_owned(),
         &body,
         params.internal)
-            .map_err(|err|ApiError::contracts_decode_run_output_failed(err, None))?;
+        .map_err(|err| ApiError::contracts_decode_run_output_failed(err, None))?;
     Ok(ResultOfDecodeUnknownRun {
         output: serde_json::from_str(result.params.as_str())
             .map_err(|err| ApiError::contracts_decode_run_output_failed(err, Some(&result.function_name)))?,
@@ -440,7 +458,7 @@ pub(crate) fn get_run_body(_context: &mut ClientContext, params: ParamsOfGetRunB
         params.params.to_string(),
         params.internal,
         keys.as_ref())
-            .map_err(|err| ApiError::contracts_run_body_creation_failed(err))?;
+        .map_err(|err| ApiError::contracts_run_body_creation_failed(err))?;
 
     let mut data = Vec::new();
     let bag = BagOfCells::with_root(&body.into());
@@ -464,7 +482,7 @@ pub(crate) fn check_transaction_status(
     transaction: &Transaction,
     real_tr: bool,
     address: &MsgAddressInt,
-    balance: Option<u64>
+    balance: Option<u64>,
 ) -> ApiResult<()> {
     if !transaction.is_aborted() {
         return Ok(());
@@ -495,13 +513,13 @@ pub(crate) fn check_transaction_status(
     if let Some(action) = &transaction.action {
         if !action.success {
             Err(ApiError::action_phase_failed(
-                    id.clone(),
-                    action.result_code,
-                    action.valid,
-                    action.no_funds,
-                    address,
-                    balance
-                ))?;
+                id.clone(),
+                action.result_code,
+                action.valid,
+                action.no_funds,
+                address,
+                balance,
+            ))?;
         }
     }
 
@@ -539,10 +557,10 @@ pub(crate) async fn load_contract(context: &ClientContext, address: &MsgAddressI
 }
 
 #[cfg(feature = "node_interaction")]
-pub async fn retry_call<F, Fut>(retries_count: u8, func: F) -> ApiResult<RecievedTransaction>
+pub async fn retry_call<F, Fut>(retries_count: u8, func: F) -> ApiResult<ReceivedTransaction>
     where
         F: Fn(u8) -> Fut,
-        Fut: futures::Future<Output=ApiResult<RecievedTransaction>>
+        Fut: futures::Future<Output=ApiResult<ReceivedTransaction>>
 {
     let mut result = Err(ApiError::contracts_send_message_failed("Unreacheable"));
     for i in 0..(retries_count + 1) {
@@ -552,14 +570,14 @@ pub async fn retry_call<F, Fut>(retries_count: u8, func: F) -> ApiResult<Recieve
         result = func(i).await;
         match &result {
             Err(error) => {
-                // retry if message expired or if resolving returned that message expired/replay 
+                // retry if message expired or if resolving returned that message expired/replay
                 // protection error or if transaction with message expired/replay protection error
                 // returned
                 let retry = error.code == ApiSdkErrorCode::MessageExpired as isize ||
                     ((error.data["exit_code"] == StdContractError::ReplayProtection as i32 ||
-                      error.data["exit_code"] == StdContractError::ExtMessageExpired as i32) &&
-                        (error.data["original_error"].is_null() || 
-                         error.data["original_error"]["code"] == ApiSdkErrorCode::MessageExpired as isize));
+                        error.data["exit_code"] == StdContractError::ExtMessageExpired as i32) &&
+                        (error.data["original_error"].is_null() ||
+                            error.data["original_error"]["code"] == ApiSdkErrorCode::MessageExpired as isize));
                 if retry {
                     continue;
                 } else {
@@ -578,7 +596,7 @@ async fn call_contract(
     address: MsgAddressInt,
     params: &ParamsOfRun,
     key_pair: Option<&Keypair>,
-) -> ApiResult<RecievedTransaction> {
+) -> ApiResult<ReceivedTransaction> {
     retry_call(client.timeouts().message_retries_count, |try_index: u8| {
         let address = address.clone();
         let call_set = params.call_set.clone();
@@ -592,11 +610,11 @@ async fn call_contract(
                 Some(try_index))
                 .map_err(|err| ApiError::contracts_create_run_message_failed(
                     err, &params.call_set.function_name))?;
-    
+
             let result = Contract::process_message(client, &msg, true).await;
-            
+
             match result {
-                Err(err) => 
+                Err(err) =>
                     Err(resolve_msg_sdk_error(
                         client, err, &msg, ApiError::contracts_run_failed).await?),
                 Ok(tr) => Ok(tr)
@@ -614,10 +632,9 @@ pub(crate) fn do_local_run(
     full_run: bool,
     time: Option<u32>,
 ) -> ApiResult<ResultOfLocalRun> {
-
     let msg = Contract::construct_call_message_json(
         address.clone(), call_set.clone().into(), false, keys, None, None)
-    .map_err(|err| ApiError::contracts_create_run_message_failed(err, &call_set.function_name))?;
+        .map_err(|err| ApiError::contracts_create_run_message_failed(err, &call_set.function_name))?;
 
     do_local_run_msg(
         context,
@@ -640,7 +657,6 @@ pub(crate) fn do_local_run_msg(
     full_run: bool,
     time: Option<u32>,
 ) -> ApiResult<ResultOfLocalRun> {
-
     let contract = match account {
         // load contract data from node manually
         #[cfg(feature = "node_interaction")]
@@ -669,7 +685,7 @@ pub(crate) fn do_local_run_msg(
 
     if full_run {
         let result = contract.local_call(msg, time)
-            .map_err(|err| 
+            .map_err(|err|
                 match err.downcast_ref::<ton_sdk::SdkError>() {
                     Some(ton_sdk::SdkError::ContractError(exit_code)) =>
                         ApiError::tvm_execution_failed(None, *exit_code, &address),
@@ -677,7 +693,7 @@ pub(crate) fn do_local_run_msg(
                         ApiError::low_balance(&address, Some(contract.balance_grams())),
                     _ => ApiError::contracts_local_run_failed(err)
                 }
-                .add_function(function_name.as_ref().map(|string| string.as_str()))
+                    .add_function(function_name.as_ref().map(|string| string.as_str()))
             )?;
         let run_result = process_transaction(
             result.transaction,
@@ -704,7 +720,7 @@ pub(crate) fn do_local_run_msg(
         Ok(ResultOfLocalRun {
             output: output,
             fees: None,
-            account: None
+            account: None,
         })
     }
 }
@@ -739,20 +755,20 @@ pub(crate) async fn resolve_msg_sdk_error<F: Fn(String) -> ApiError>(
     client: &NodeClient,
     error: failure::Error,
     msg: &ton_sdk::SdkMessage,
-    default_error: F
+    default_error: F,
 ) -> ApiResult<ApiError> {
     match error.downcast_ref::<SdkError>() {
-        Some(SdkError::MessageExpired{msg_id: _, expire: _, sending_time, block_time: _, block_id: _}) | 
-        Some(SdkError::TransactionWaitTimeout{msg_id: _, sending_time, timeout: _, state: _}) => {
+        Some(SdkError::MessageExpired { msg_id: _, expire: _, sending_time, block_time: _, block_id: _ }) |
+        Some(SdkError::TransactionWaitTimeout { msg_id: _, sending_time, timeout: _, state: _ }) => {
             let account = Contract::load(client, &msg.address)
                 .await
                 .map_err(|err| apierror_from_sdkerror(
-                        &err, ApiError::contracts_run_contract_load_failed, Some(client)
-                    ).add_address(&msg.address))?
+                    &err, ApiError::contracts_run_contract_load_failed, Some(client),
+                ).add_address(&msg.address))?
                 .ok_or(ApiError::account_missing(&msg.address))?;
             let main_error = apierror_from_sdkerror(&error, default_error, None);
             let resolved = resolve_msg_error(
-                msg.address.clone(), account, &msg.serialized_message, *sending_time, main_error
+                msg.address.clone(), account, &msg.serialized_message, *sending_time, main_error,
             ).add_network_url(client);
             Ok(resolved)
         }

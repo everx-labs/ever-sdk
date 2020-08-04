@@ -1,6 +1,6 @@
 [package]
 name = "ton_client"
-version = "0.25.2"
+version = "0.25.3"
 authors = ["Michael Vlasov"]
 edition = "2018"
 license = "Apache-2.0"

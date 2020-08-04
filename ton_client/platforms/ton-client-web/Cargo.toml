@@ -1,6 +1,6 @@
 [package]
 name = "ton_client_wasm"
-version = "0.25.2"
+version = "0.25.3"
 edition = "2018"
 description = "TON Client WASM binding"
 license = "Apache-2.0"

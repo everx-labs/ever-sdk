@@ -36,7 +36,7 @@ pub use contract::{
     ContractImage,
     FunctionCallSet,
     MessageProcessingState,
-    RecievedTransaction,
+    ReceivedTransaction,
     SdkMessage};
 
 mod message;
@@ -96,7 +96,7 @@ pub mod json_helper;
 
 /// Init SDK. Globally saves queries and requests server URLs
 #[cfg(feature = "node_interaction")]
-pub async fn init(config: NodeClientConfig) -> Result<NodeClient> { 
+pub async fn init(config: NodeClientConfig) -> Result<NodeClient> {
     NodeClient::new(config).await
 }
 
@@ -109,7 +109,7 @@ pub async fn init_json(config: &str) -> Result<NodeClient> {
 
 /// Init SDK. Globally saves queries and requests server URLs
 #[cfg(not(feature = "node_interaction"))]
-pub fn init(config: NodeClientConfig) -> Result<NodeClient> { 
+pub fn init(config: NodeClientConfig) -> Result<NodeClient> {
     NodeClient::new(config)
 }
 
