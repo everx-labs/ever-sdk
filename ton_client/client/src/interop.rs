@@ -35,6 +35,10 @@ pub fn json_sync_request(
         params_json)
 }
 
+pub fn get_method_names() -> Vec<String> {
+    Client::shared().get_method_names()
+}
+
 // C-library exported functions
 
 pub type OnResult = extern fn(request_id: i32, result_json: InteropString, error_json: InteropString, flags: i32);

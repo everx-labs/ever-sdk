@@ -133,6 +133,9 @@ impl Client {
         }
     }
 
+    pub fn get_method_names(&self) -> Vec<String> {
+        HANDLERS.get_method_names()
+    }
 }
 
 
