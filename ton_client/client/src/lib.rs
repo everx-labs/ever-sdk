@@ -20,6 +20,7 @@ extern crate lazy_static;
 #[macro_use]
 extern crate log;
 
+mod open_doc;
 mod types;
 mod dispatch;
 mod client;
