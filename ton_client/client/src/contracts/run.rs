@@ -32,6 +32,7 @@ use ton_sdk::{NodeClient, ReceivedTransaction, SdkError};
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
 use crate::types::{apierror_from_sdkerror, ApiErrorCode, ApiSdkErrorCode, StdContractError};
+use crate::open_doc::{DocContentDescriptor, DocMethod};
 
 
 fn bool_false() -> bool { false }
@@ -180,6 +181,19 @@ pub(crate) struct ParamsOfGetRunBody {
     pub internal: bool,
     pub key_pair: Option<KeyPair>,
 }
+
+// impl DescribeMethodParams for ParamsOfGetRunBody {
+//     fn describe_method_params() -> Vec<DocContentDescriptor> {
+//         DocMethod::params(vec![
+//             ("abi", DocSchema::any(true)),
+//             ("function", DocSchema::string(true)),
+//             ("header", DocSchema::any(false)),
+//             ("params", DocSchema::any(true)),
+//             ("internal", DocSchema::boolean(false)),
+//             ("key_pair", DocSchema::any(false))
+//         ])
+//     }
+// }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

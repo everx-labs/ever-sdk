@@ -2,7 +2,28 @@ use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct DocSchema {}
+pub(crate) struct DocSchema {
+    #[serde(rename = "type")]
+    type_: String,
+}
+
+impl DocSchema {
+    fn with_type(type_: &str) -> DocSchema {
+        DocSchema { type_: type_.into() }
+    }
+
+    fn string() -> Self {
+        Self::with_type("string")
+    }
+
+    fn any() -> Self {
+        Self::with_type("any")
+    }
+
+    fn boolean() -> Self {
+        Self::with_type("boolean")
+    }
+}
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -146,3 +167,5 @@ pub(crate) struct OpenDoc {
     external_docs: Option<DocExternalDocumentation>,
     components: Option<DocComponents>,
 }
+
+
