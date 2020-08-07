@@ -1,6 +1,13 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## 0.26.0 Aug 7, 2020
+### New
+- `crypto` function `crypto.derive_sign_keys_from_mnemonic`
+
+### Fixed
+- incorrect block walking in `wait_for_transaction` in case of shard merging.    
+
 ## 0.25.3 Jul 30, 2020
 ### New
 - All methods that require contract's code/data can use field `boc` 
