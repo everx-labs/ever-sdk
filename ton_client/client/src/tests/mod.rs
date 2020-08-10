@@ -195,7 +195,17 @@ fn test_tg_mnemonic() {
     let keys = parse_object(client.request(
         "crypto.mnemonic.derive.sign.keys",
         json!({
-            "phrase": "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle"
+            "phrase": "owner stock veteran sort resource round smart plug tent picture ozone fury",
+        }),
+    ));
+    assert_eq!(get_map_string(&keys, "public"), "36cf573461971289477d65ebc67664805207d07d1cfb337bc28ff86a3f4fa8c7");
+
+    let keys = parse_object(client.request(
+        "crypto.mnemonic.derive.sign.keys",
+        json!({
+            "phrase": "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle",
+            "dictionary": 0,
+            "wordCount": 24,
         }),
     ));
     let ton_public = parse_string(client.request(
@@ -210,18 +220,28 @@ fn test_tg_mnemonic() {
 
     let phrase = parse_string(client.request("crypto.mnemonic.from.random", json!({
     })));
+    assert_eq!(phrase.split(" ").count(), 12);
+
+    let phrase = parse_string(client.request("crypto.mnemonic.from.random", json!({
+        "dictionary": 1,
+        "wordCount": 24,
+    })));
     assert_eq!(phrase.split(" ").count(), 24);
 
     let entropy = "2199ebe996f14d9e4e2595113ad1e6276bd05e2e147e16c8ab8ad5d47d13b44fcf";
     let mnemonic = parse_string(client.request("crypto.mnemonic.from.entropy", json!({
+        "dictionary": 0,
+        "wordCount": 24,
         "entropy": json!({
-            "hex": entropy
+            "hex": entropy,
         }),
     })));
     let public = get_map_string(&parse_object(client.request(
         "crypto.mnemonic.derive.sign.keys",
         json!({
-            "phrase": mnemonic
+            "phrase": mnemonic,
+            "dictionary": 0,
+            "wordCount": 24
         }),
     )), "public");
     let ton_public = parse_string(client.request(
@@ -229,11 +249,14 @@ fn test_tg_mnemonic() {
         Value::String(public),
     ));
     assert_eq!(ton_public, "PuYGEX9Zreg-CX4Psz5dKehzW9qCs794oBVUKqqFO7aWAOTD");
+
 //    let ton_phrase = "shove often foil innocent soft slim pioneer day uncle drop nephew soccer worry renew public hand word nut again dry first delay first maple";
     let is_valid = client.request(
         "crypto.mnemonic.verify",
         json!({
-            "phrase": "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle"
+            "phrase": "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle",
+            "dictionary": 0,
+            "wordCount": 24,
         }),
     ).unwrap();
     assert_eq!(is_valid, "true");
