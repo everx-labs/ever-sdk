@@ -97,7 +97,7 @@ impl Block {
                     None)
                     .await
                     .map_err(|err|  match err.downcast_ref::<SdkError>() {
-                        Some(SdkError::WaitForTimeout) => 
+                        Some(SdkError::WaitForTimeout) =>
                             SdkError::NotFound(format!(
                                 "No blocks for workchain {} found", workchain)).into(),
                         _ => err
@@ -142,12 +142,12 @@ impl Block {
                 if shard_block.is_null() {
                     fail!(SdkError::NotFound(format!("No matching shard for account {}", address)));
                 }
-                
+
                 shard_block["descr"]["root_hash"]
                     .as_str()
                     .map(|val| val.to_owned().into())
                     .ok_or(SdkError::InvalidData {
-                        msg: "No `root_hash` field in shard descr".to_owned() }.into()) 
+                        msg: "No `root_hash` field in shard descr".to_owned() }.into())
             }
         }
     }
@@ -160,11 +160,16 @@ impl Block {
             &json!({
                 "prev_ref": {
                     "root_hash": { "eq": current.to_string() }
+                },
+                "OR": {
+                    "prev_alt_ref": {
+                        "root_hash": { "eq": current.to_string() }
+                    }
                 }
             }).to_string(),
             BLOCK_FIELDS,
             timeout).await?;
-        debug!("{}: block recieved {:#}", crate::Contract::now(), block);
+        debug!("{}: block received {:#}", crate::Contract::now(), block);
 
         if block["after_split"] == true && !Contract::check_shard_match(block.clone(), address)? {
             client.wait_for(
