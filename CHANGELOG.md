@@ -5,9 +5,10 @@ All notable changes to this project will be documented in this file.
 ### New
 - `crypto` function `crypto.derive_sign_keys_from_mnemonic`
 
+## 0.25.4 Aug 5, 2020
 ### Fixed
-- incorrect block walking in `wait_for_transaction` in case of shard merging.    
-
+- `waitForTransaction` didn't use prev_alt_ref for block walking
+ 
 ## 0.25.3 Jul 30, 2020
 ### New
 - All methods that require contract's code/data can use field `boc` 
