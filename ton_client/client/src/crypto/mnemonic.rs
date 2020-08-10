@@ -36,6 +36,14 @@ pub trait CryptoMnemonic {
     fn entropy_from_phrase(&self, phrase: &String) -> ApiResult<String>;
 }
 
+fn check_phrase(mnemonic: &dyn CryptoMnemonic, phrase: &String) -> ApiResult<()> {
+    if mnemonic.is_phrase_valid(phrase)? {
+        Ok(())
+    } else {
+        Err(ApiError::crypto_bip39_invalid_phrase(phrase))
+    }
+}
+
 pub struct Bip39Mnemonic {
     mnemonic_type: MnemonicType,
     language: Language,
@@ -84,6 +92,7 @@ impl CryptoMnemonic for Bip39Mnemonic {
         path: &String,
         compliant: bool,
     ) -> ApiResult<KeyPair> {
+        check_phrase(self, phrase)?;
         let derived = HDPrivateKey::from_mnemonic(phrase)?.derive_path(path, compliant)?;
         ed25519_keys_from_secret_bytes(&derived.secret())
     }
@@ -99,6 +108,7 @@ impl CryptoMnemonic for Bip39Mnemonic {
     }
 
     fn seed_from_phrase_and_salt(&self, phrase: &String, salt: &String) -> ApiResult<String> {
+        check_phrase(self, phrase)?;
         let mnemonic = Mnemonic::from_phrase(phrase, self.language)
             .map_err(|err| ApiError::crypto_bip39_invalid_phrase(err))?;
 
@@ -115,6 +125,7 @@ impl CryptoMnemonic for Bip39Mnemonic {
 
     #[allow(dead_code)]
     fn entropy_from_phrase(&self, phrase: &String) -> ApiResult<String> {
+        check_phrase(self, phrase)?;
         let mnemonic = Mnemonic::from_phrase(phrase, self.language)
             .map_err(|err| ApiError::crypto_bip39_invalid_phrase(err))?;
         Ok(hex::encode(mnemonic.entropy()))
@@ -169,14 +180,6 @@ impl TonMnemonic {
         };
         count == self.word_count && Self::is_basic_seed(phrase)
     }
-
-    fn check_phrase(&self, phrase: &String) -> ApiResult<()> {
-        if self.internal_is_phrase_valid(phrase) {
-            Ok(())
-        } else {
-            Err(ApiError::crypto_bip39_invalid_phrase(phrase))
-        }
-    }
 }
 
 
@@ -205,7 +208,7 @@ impl CryptoMnemonic for TonMnemonic {
         _path: &String,
         _compliant: bool,
     ) -> ApiResult<KeyPair> {
-        self.check_phrase(phrase)?;
+        check_phrase(self, phrase)?;
         let seed = Self::seed_from_string(&phrase, "TON default seed", 100_000);
         ed25519_keys_from_secret_bytes(&seed[..32])
     }
@@ -227,12 +230,12 @@ impl CryptoMnemonic for TonMnemonic {
     }
 
     fn seed_from_phrase_and_salt(&self, phrase: &String, salt: &String) -> ApiResult<String> {
-        self.check_phrase(phrase)?;
+        check_phrase(self, phrase)?;
         Ok(hex::encode(Self::seed_from_string(phrase, salt, 100_000).as_ref()))
     }
 
     fn entropy_from_phrase(&self, phrase: &String) -> ApiResult<String> {
-        self.check_phrase(phrase)?;
+        check_phrase(self, phrase)?;
         Ok(hex::encode(Self::entropy_from_string(&phrase).as_ref()))
     }
 }

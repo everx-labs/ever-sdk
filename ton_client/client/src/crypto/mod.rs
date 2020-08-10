@@ -206,11 +206,11 @@ pub(crate) struct HDKeyGetKeyParams {
 }
 
 fn default_dictionary() -> u8 {
-    0
+    1
 }
 
 fn default_word_count() -> u8 {
-    24
+    12
 }
 
 fn default_hardened() -> bool {
@@ -222,7 +222,7 @@ fn default_compliant() -> bool {
 }
 
 fn default_path() -> String {
-    String::new()
+    "m/44'/396'/0'/0/0".into()
 }
 
 fn default_result_encoding_hex() -> OutputEncoding {
