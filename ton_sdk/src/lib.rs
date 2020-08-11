@@ -37,7 +37,7 @@ pub use contract::{
     FunctionCallSet,
     LocalRunContext,
     MessageProcessingState,
-    RecievedTransaction,
+    ReceivedTransaction,
     SdkMessage};
 
 mod message;
@@ -82,6 +82,14 @@ pub mod node_client {
         pub fn timeouts(&self) -> &TimeoutsConfig {
             &self.timeouts
         }
+
+        pub fn config_server(&self) -> Option<&str> {
+            None
+        }
+    
+        pub fn query_url(&self) -> Option<&str> {
+            None
+        }
     }
 }
 
@@ -89,7 +97,7 @@ pub mod json_helper;
 
 /// Init SDK. Globally saves queries and requests server URLs
 #[cfg(feature = "node_interaction")]
-pub async fn init(config: NodeClientConfig) -> Result<NodeClient> { 
+pub async fn init(config: NodeClientConfig) -> Result<NodeClient> {
     NodeClient::new(config).await
 }
 
@@ -102,7 +110,7 @@ pub async fn init_json(config: &str) -> Result<NodeClient> {
 
 /// Init SDK. Globally saves queries and requests server URLs
 #[cfg(not(feature = "node_interaction"))]
-pub fn init(config: NodeClientConfig) -> Result<NodeClient> { 
+pub fn init(config: NodeClientConfig) -> Result<NodeClient> {
     NodeClient::new(config)
 }
 

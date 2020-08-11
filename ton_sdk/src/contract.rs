@@ -18,6 +18,7 @@ use crate::{AbiContract, BlockId, Message, MessageId, TimeoutsConfig, Transactio
 
 use ed25519_dalek::{Keypair, PublicKey};
 use chrono::prelude::Utc;
+use num_bigint::BigInt;
 use serde_json::Value;
 use std::convert::{Into, TryFrom};
 use std::io::{Cursor, Read, Seek};
@@ -27,8 +28,9 @@ use std::sync::Arc;
 use ton_block::{
     Account, AccountIdPrefixFull, AccountState, AccountStatus, AccountStorage, CurrencyCollection,
     Deserializable, ExternalInboundMessageHeader, GetRepresentationHash, Message as TvmMessage,
-    MsgAddressInt, Serializable, ShardIdent, StateInit, StorageInfo};
-use ton_types::cells_serialization::{deserialize_cells_tree, BagOfCells};
+    MsgAddressInt, Serializable, ShardIdent, StateInit, StorageInfo,
+};
+use ton_types::cells_serialization::{deserialize_cells_tree};
 use ton_types::{error, fail, Result, AccountId, Cell, SliceData, HashmapE};
 use ton_abi::json_abi::DecodedMessage;
 use ton_abi::token::{Detokenizer, Tokenizer, TokenValue};
@@ -137,6 +139,10 @@ impl StackItemJSON {
     }
 }
 
+fn toc_to_base64(cell: &Cell) -> Result<String> {
+    Ok(base64::encode(&ton_types::serialize_toc(cell)?))
+}
+
 #[cfg(feature = "node_interaction")]
 const ACCOUNT_FIELDS: &str = r#"
     id
@@ -146,12 +152,13 @@ const ACCOUNT_FIELDS: &str = r#"
         currency
         value
     }
-    code
-    data
+    code_hash
+    data_hash
+    boc
     last_paid
 "#;
 
-// The struct represents value of some addititonal currency
+// The struct represents value of some additional currency
 #[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub struct OtherCurrencyValue {
     currency: u32,
@@ -172,10 +179,22 @@ pub struct Contract {
     #[serde(with = "json_helper::uint")]
     pub balance: u64,
     pub balance_other: Option<Vec<OtherCurrencyValue>>,
+
+    // Obsolete. You must use the `boc` instead.
+    #[serde(with = "json_helper::opt_cell", rename = "code")]
+    pub _code: Option<Cell>,
+
+    pub code_hash: Option<String>,
+
+    pub data_hash: Option<String>,
+
+    // Obsolete. You must use the `boc` instead.
+    #[serde(with = "json_helper::opt_cell", rename = "data")]
+    pub _data: Option<Cell>,
+
     #[serde(with = "json_helper::opt_cell")]
-    pub code: Option<Cell>,
-    #[serde(with = "json_helper::opt_cell")]
-    pub data: Option<Cell>,
+    pub boc: Option<Cell>,
+
     pub last_paid: u32,
 }
 
@@ -210,9 +229,9 @@ pub struct MessageProcessingState {
 }
 
 #[derive(Debug)]
-pub struct RecievedTransaction {
+pub struct ReceivedTransaction {
     pub value: Value,
-    pub parsed: Transaction
+    pub parsed: Transaction,
 }
 
 #[allow(dead_code)]
@@ -295,38 +314,20 @@ impl ContractImage {
 
     pub fn get_serialized_code(&self) -> Result<Vec<u8>> {
         match &self.state_init.code {
-            Some(cell) => {
-                let mut data = Vec::new();
-                let bag = BagOfCells::with_root(&cell);
-                bag.write_to(&mut data, false)?;
-
-                Ok(data)
-            }
+            Some(cell) => ton_types::serialize_toc(cell),
             None => bail!(SdkError::InvalidData { msg: "State init has no code".to_owned() } )
         }
     }
 
     pub fn get_serialized_data(&self) -> Result<Vec<u8>> {
         match &self.state_init.data {
-            Some(cell) => {
-                let mut data = Vec::new();
-                let bag = BagOfCells::with_root(&cell);
-                bag.write_to(&mut data, false)?;
-
-                Ok(data)
-            }
+            Some(cell) => ton_types::serialize_toc(cell),
             None => bail!(SdkError::InvalidData { msg: "State init has no data".to_owned() } )
         }
     }
 
     pub fn serialize(&self) -> Result<Vec<u8>> {
-        let cell = self.state_init.write_to_new_cell()?;
-
-        let mut data = Vec::new();
-        let bag = BagOfCells::with_root(&cell.into());
-        bag.write_to(&mut data, false)?;
-
-        Ok(data)
+        ton_types::serialize_toc(&(self.state_init.write_to_new_cell()?).into())
     }
 
     // Returns future contract's state_init struct
@@ -376,16 +377,13 @@ impl Contract {
         if value == serde_json::Value::Null {
             Ok(None)
         } else {
-            Ok(Some(serde_json::from_value(value)
-                .map_err(|err| SdkError::InvalidData {
-                    msg: format!("error parsing account: {}", err)
-                })?))
+            Ok(Some(Self::from_value(value)?))
         }
     }
 
     // Asynchronously loads a Contract instance or None if contract with given id is not exists
     pub async fn load_wait(
-        client: &NodeClient, address: &MsgAddressInt, deployed: bool, timeout: Option<u32>
+        client: &NodeClient, address: &MsgAddressInt, deployed: bool, timeout: Option<u32>,
     ) -> Result<Contract> {
         let mut filter = json!({
             "id": {
@@ -395,16 +393,11 @@ impl Contract {
         if deployed {
             filter["acc_type"] = json!({ "eq": account_status_to_u8(AccountStatus::AccStateActive)});
         }
-        let value = client.wait_for(
+        Self::from_value(client.wait_for(
             CONTRACTS_TABLE_NAME,
             &filter.to_string(),
             ACCOUNT_FIELDS,
-            timeout).await?;
-
-        serde_json::from_value(value)
-            .map_err(|err| SdkError::InvalidData {
-                msg: format!("error parsing account: {}", err)
-            }.into())
+            timeout).await?)
     }
 
     // Asynchronously loads a Contract's json representation
@@ -418,11 +411,11 @@ impl Contract {
     pub async fn process_message(
         client: &NodeClient,
         msg: &SdkMessage,
-        infinite_wait: bool
-    ) -> Result<RecievedTransaction> {
+        infinite_wait: bool,
+    ) -> Result<ReceivedTransaction> {
         let state = Self::send_message(
             client, &msg.address, &msg.id.to_bytes()?, &msg.serialized_message, msg.expire).await?;
-        log::debug!("msg is sent, id: {}", msg.id);
+        log::info!("Message sent {}", msg.id);
         Self::wait_transaction_processing(
             client, &msg.address, &msg.id, state, msg.expire, infinite_wait).await
     }
@@ -432,7 +425,7 @@ impl Contract {
         address: &MsgAddressInt,
         id: &[u8],
         msg: &[u8],
-        expire: Option<u32>
+        expire: Option<u32>,
     ) -> Result<MessageProcessingState> {
         let now = Self::now();
         if let Some(expire) = expire {
@@ -457,8 +450,8 @@ impl Contract {
         message_id: &MessageId,
         mut state: MessageProcessingState,
         expire: Option<u32>,
-        infinite_wait: bool
-    ) -> Result<RecievedTransaction>
+        infinite_wait: bool,
+    ) -> Result<ReceivedTransaction>
     {
         let stop_time = match expire {
             Some(expire) => expire,
@@ -492,7 +485,7 @@ impl Contract {
                     } else if let Some(GraphiteError::NetworkError(_)) = err.downcast_ref::<GraphiteError>() {
                         if infinite_wait {
                             log::warn!(
-                                "Network error while awaiting next block for {}. Trying again.\n{}", 
+                                "Network error while awaiting next block for {}. Trying again.\n{}",
                                 state.last_block_id, err);
                             futures_timer::Delay::new(
                                 std::time::Duration::from_secs(1)
@@ -517,7 +510,8 @@ impl Contract {
                 if Some(message_id) == block_msg.msg_id.as_ref() {
                     let tr_id = block_msg.transaction_id.clone()
                         .ok_or(SdkError::InvalidData {
-                            msg: "No field `transaction_id` in block".to_owned() })?;
+                            msg: "No field `transaction_id` in block".to_owned()
+                        })?;
 
                     transaction = client.wait_for(
                         TRANSACTIONS_TABLE_NAME,
@@ -552,26 +546,25 @@ impl Contract {
                         state
                     });
                 }
-                
             }
         }
 
-        //println!("transaction recieved {:#}", transaction);
+        //println!("transaction received {:#}", transaction);
         let parsed = serde_json::from_value::<Transaction>(transaction.clone())?;
         if parsed.compute.exit_code == Some(Self::MESSAGE_EXPIRED_CODE) ||
-        parsed.compute.exit_code == Some(Self::REPLAY_PROTECTION_CODE)
+            parsed.compute.exit_code == Some(Self::REPLAY_PROTECTION_CODE)
         {
-            Err(SdkError::MessageExpired{
+            Err(SdkError::MessageExpired {
                 msg_id: message_id.clone(),
                 sending_time: state.sending_time,
                 expire: expire.unwrap_or(0),
                 block_time: parsed.now,
-                block_id: transaction["block_id"].as_str().unwrap_or("null").into()
+                block_id: transaction["block_id"].as_str().unwrap_or("null").into(),
             }.into())
         } else {
-            Ok(RecievedTransaction { 
+            Ok(ReceivedTransaction {
                 parsed,
-                value: transaction
+                value: transaction,
             })
         }
     }
@@ -586,7 +579,7 @@ pub struct MessageToSign {
 pub struct LocalCallResult {
     pub transaction: Transaction,
     pub updated_account: Contract,
-    pub updated_account_root: Cell
+    pub updated_account_root: Cell,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -613,26 +606,37 @@ impl Contract {
     }
 
     /// Returns contract's identifier
-    pub fn id(&self) -> Result<AccountId> {
-        Ok(self.id.get_address())
+    pub fn id(&self) -> AccountId {
+        self.id.get_address()
     }
 
     /// Returns contract's balance in NANO grams
-    pub fn balance_grams(&self) -> Result<u64> {
-        Ok(self.balance)
+    pub fn balance_grams(&self) -> u64 {
+        self.balance
     }
 
     /// Returns contract's balance in NANO grams
-    pub fn balance_other(&self) -> Result<Vec<OtherCurrencyValue>> {
-        Ok(self.balance_other.clone().unwrap_or_default())
+    pub fn balance_other(&self) -> Vec<OtherCurrencyValue> {
+        self.balance_other.clone().unwrap_or_default()
     }
 
     // ------- Decoding functions -------
 
     /// Creates `Contract` struct by data from database
     pub fn from_json(json: &str) -> Result<Self> {
-        let acc: Contract = serde_json::from_str(json)?;
+        let acc: Contract = serde_json::from_str(json)
+            .map_err(|err| SdkError::InvalidData {
+                msg: format!("error parsing account: {}", err)
+            })?;
+        Ok(acc)
+    }
 
+    /// Creates `Contract` struct by data from database
+    pub fn from_value(value: Value) -> Result<Self> {
+        let acc: Contract = serde_json::from_value(value)
+            .map_err(|err| SdkError::InvalidData {
+                msg: format!("error parsing account: {}", err)
+            })?;
         Ok(acc)
     }
 
@@ -646,44 +650,100 @@ impl Contract {
 
     /// Creates `Contract` struct by deserialized contract's tree of cells
     pub fn from_cells(mut root_cell_slice: SliceData) -> Result<Self> {
-        let acc: ton_block::Account = ton_block::Account::construct_from(&mut root_cell_slice)?;
+        let boc = root_cell_slice.into_cell();
+        let acc = Account::construct_from(&mut root_cell_slice)?;
         if acc.is_none() {
             bail!(SdkError::InvalidData { msg: "Account is none.".into() } );
+        }
+        fn big_int_to_u64(value: &BigInt, msg: &'static str) -> Result<u64> {
+            num_traits::ToPrimitive::to_u64(value).ok_or_else(||
+                error!(SdkError::InvalidData { msg: msg.to_string() })
+            )
         }
 
         let mut balance_other = vec!();
         &acc.get_balance().unwrap().other.iterate_with_keys(
             |currency, value| -> Result<bool> {
-                balance_other.push(OtherCurrencyValue {
-                    currency,
-                    value: num_traits::ToPrimitive::to_u64(value.value()).ok_or(
-                        error!(SdkError::InvalidData { msg: "Account's other currency balance is too big".to_owned() })
-                    )?,
-                });
+                let value = big_int_to_u64(&value.value(), "Account's other currency balance is too big")?;
+                balance_other.push(OtherCurrencyValue { currency, value });
                 Ok(true)
             }).unwrap();
 
         // All unwraps below won't panic because the account is checked for none.
+        let balance = big_int_to_u64(&acc.get_balance().unwrap().grams.value(), "Account's balance is too big")?;
+        let code = acc.get_code();
+        let data = acc.get_data();
+        let code_hash = code.as_ref().map(|x|x.repr_hash().to_hex_string());
+        let data_hash = data.as_ref().map(|x|x.repr_hash().to_hex_string());
         Ok(Contract {
             id: acc.get_addr().unwrap().clone(),
             acc_type: acc.status(),
-            balance: num_traits::ToPrimitive::to_u64(
-                acc.get_balance().unwrap().grams.value()).ok_or(
-                error!(SdkError::InvalidData {
-                    msg: "Account's balance is too big".to_owned()
-                })
-            )?,
+            balance,
             balance_other: if balance_other.len() > 0 { Some(balance_other) } else { None },
-            code: acc.get_code(),
-            data: acc.get_data(),
+            _code: code,
+            _data: data,
+            code_hash,
+            data_hash,
+            boc: Some(boc),
             last_paid: acc.storage_info().unwrap().last_paid,
         })
+    }
+
+    pub fn resolve_code_and_data(
+        boc_base64: &Option<String>,
+        code_base64: &Option<String>,
+        data_base64: &Option<String>,
+    ) -> Result<(Option<String>, Option<String>)> {
+        let mut code = code_base64.as_ref().map(|x| x.clone());
+        let mut data = data_base64.as_ref().map(|x| x.clone());
+        if code == None || data == None {
+            if let Some(boc_base64) = boc_base64 {
+                let acc = Account::construct_from_base64(&boc_base64)?;
+                if code.is_none() {
+                    if let Some(acc_code) = acc.get_code() {
+                        code = Some(toc_to_base64(&acc_code)?);
+                    }
+                }
+                if data.is_none() {
+                    if let Some(acc_data) = acc.get_data() {
+                        data = Some(toc_to_base64(&acc_data)?);
+                    }
+                }
+            }
+        }
+        Ok((code, data))
+    }
+
+    fn get_acc_cell(
+        &self,
+        existing: &Option<Cell>,
+        cell_from_acc: fn(acc: &Account) -> Option<Cell>,
+    ) -> Option<Cell> {
+        if let Some(existing) = existing {
+            Some(existing.clone())
+        } else if let Some(boc) = &self.boc {
+            if let Ok(acc) = Account::construct_from(&mut SliceData::from(boc)) {
+                cell_from_acc(&acc)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    pub fn get_code(&self) -> Option<Cell> {
+        self.get_acc_cell(&self._code, |acc| acc.get_code())
+    }
+
+    pub fn get_data(&self) -> Option<Cell> {
+        self.get_acc_cell(&self._data, |acc| acc.get_data())
     }
 
     /// Invokes local TVM instance with provided inbound message.
     /// Returns outbound messages generated by contract function and gas fee function consumed
     pub fn local_call_tvm(&self, message: TvmMessage) -> Result<Vec<Message>> {
-        let code = self.code.clone().ok_or(
+        let code = self.get_code().ok_or(
             error!(SdkError::InvalidData { msg: "Account has no code".to_owned() }))?;
 
         let (tvm_messages, _) = local_tvm::call_tvm(
@@ -693,7 +753,7 @@ impl Contract {
             None,
             Self::now(),
             code,
-            self.data.clone(),
+            self.get_data(),
             &message)?;
 
         let mut messages = vec![];
@@ -713,7 +773,7 @@ impl Contract {
         function_name: &str,
         input: Option<&Value>,
     ) -> Result<Value> {
-        let code = self.code.clone().ok_or(
+        let code = self.get_code().ok_or(
             error!(SdkError::InvalidData { msg: "Account has no code".to_owned() }))?;
         let mut crc = crc_any::CRC::crc16xmodem();
         crc.digest(function_name.as_bytes());
@@ -736,7 +796,7 @@ impl Contract {
             None,
             Self::now(),
             code,
-            self.data.clone(),
+            self.get_data(),
             stack_in)?;
         StackItemJSON::json_array_from_items(stack_out.iter())
     }
@@ -781,7 +841,7 @@ impl Contract {
         Ok(LocalCallResult {
             transaction,
             updated_account,
-            updated_account_root: account_root
+            updated_account_root: account_root,
         })
     }
 
@@ -971,7 +1031,8 @@ impl Contract {
         let msg = Self::create_deploy_message(Some(cell), image, workchain_id)?;
 
         let address = msg.dst().ok_or_else(|| error!(SdkError::InternalError {
-            msg: "No address in created deploy message".to_owned() }))?;
+            msg: "No address in created deploy message".to_owned()
+        }))?;
         let (body, id) = Self::serialize_message(&msg)?;
 
         Ok(SdkMessage {
@@ -1033,7 +1094,7 @@ impl Contract {
         abi: String,
         signature: &[u8],
         public_key: Option<&[u8]>,
-        message: &[u8]
+        message: &[u8],
     ) -> Result<SdkMessage> {
         let mut slice = Self::deserialize_tree_to_slice(message)?;
 
@@ -1046,7 +1107,8 @@ impl Contract {
         message.set_body(signed_body.into());
 
         let address = message.dst().ok_or_else(|| error!(SdkError::InternalError {
-            msg: "No address in signed message".to_owned() }))?;
+            msg: "No address in signed message".to_owned()
+        }))?;
         let (body, id) = Self::serialize_message(&message)?;
 
         Ok(SdkMessage {
@@ -1054,7 +1116,7 @@ impl Contract {
             address,
             serialized_message: body,
             message,
-            expire: None
+            expire: None,
         })
     }
 
@@ -1083,12 +1145,7 @@ impl Contract {
 
     pub fn serialize_message(msg: &TvmMessage) -> Result<(Vec<u8>, MessageId)> {
         let cells = msg.write_to_new_cell()?.into();
-
-        let mut data = Vec::new();
-        let bag = BagOfCells::with_root(&cells);
-        bag.write_to(&mut data, false)?;
-
-        Ok((data, (&cells.repr_hash().as_slice()[..]).into()))
+        Ok((ton_types::serialize_toc(&cells)?, (&cells.repr_hash().as_slice()[..]).into()))
     }
 
     /// Deserializes tree of cells from byte array into `SliceData`
@@ -1104,9 +1161,10 @@ impl Contract {
 
     pub fn get_dst_from_msg(msg: &[u8]) -> Result<MsgAddressInt> {
         let msg = Contract::deserialize_message(msg)?;
-    
+
         msg.dst().ok_or(SdkError::InvalidData {
-            msg: "Wrong message type (extOut)".to_owned() }.into())
+            msg: "Wrong message type (extOut)".to_owned()
+        }.into())
     }
 
     /// Deserializes TvmMessage from byte array
@@ -1135,14 +1193,17 @@ impl Contract {
     }
 
     pub fn to_account(&self) -> Result<Account> {
-        if AccountStatus::AccStateFrozen == self.acc_type {
-            return Err(SdkError::InvalidData { msg: "Account is frozen".to_owned()}.into());
+        if let Some(boc) = &self.boc {
+            return Ok(Account::construct_from(&mut SliceData::from(boc))?)
         }
-        let state = match &self.code {
+        if AccountStatus::AccStateFrozen == self.acc_type {
+            return Err(SdkError::InvalidData { msg: "Account is frozen".to_owned() }.into());
+        }
+        let state = match self.get_code() {
             Some(code) => {
                 let mut state_init = StateInit::default();
-                state_init.code = Some(code.clone());
-                state_init.data = self.data.clone();
+                state_init.code = Some(code);
+                state_init.data = self.get_data();
                 AccountState::with_state(state_init)
             }
             // account without code is considered uninit

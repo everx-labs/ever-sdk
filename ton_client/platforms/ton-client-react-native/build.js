@@ -139,7 +139,7 @@ async function buildReactNativeIosLibrary() {
         fs.copyFileSync(header_src, header_dst);
         await gz(
             [...buildRel, ios.lib],
-            `tonclient_${version}_react_native_ios.gz`,
+            `tonclient_${version}_react_native_ios`,
             ['ios'],
         );
     }
@@ -164,7 +164,7 @@ async function buildReactNativeAndroidLibrary() {
             process.stdout.write(`Android library for [${arch.target}] copied to "${dst}".\n`);
             await gz(
                 [...archBuildRel, android.lib],
-                `tonclient_${version}_react_native_${arch.target}.gz`,
+                `tonclient_${version}_react_native_${arch.target}`,
                 ['android', 'src', 'main', 'jniLibs', arch.jni],
             );
         } else {

@@ -28,7 +28,6 @@ const FUNCTION_PARAMS: &str = r#"
 #[tokio::main]
 #[test]
 pub async fn test_deploy_and_call_contract() {
-   
     let client = init_node_connection().await;
 
     let mut csprng = rand::thread_rng();
@@ -37,7 +36,7 @@ pub async fn test_deploy_and_call_contract() {
     let address = deploy_contract_and_wait(&client, &WALLET_IMAGE, &WALLET_ABI, "{}", &keypair, 0).await;
 
     let result = call_contract_and_wait(
-        &client, address, "createOperationLimit", FUNCTION_PARAMS.to_owned(), &WALLET_ABI, Some(&keypair)
+        &client, address, "createOperationLimit", FUNCTION_PARAMS.to_owned(), &WALLET_ABI, Some(&keypair),
     ).await;
 
     println!("Contract response {}", result);
@@ -45,7 +44,6 @@ pub async fn test_deploy_and_call_contract() {
 
 #[test]
 fn test_contract_image_from_file() {
-
     let mut csprng = rand::thread_rng();
     let keypair = Keypair::generate(&mut csprng);
 
@@ -87,15 +85,15 @@ fn test_update_contract_data() {
     let key_slice = new_map.get(
         0u64.write_to_new_cell().unwrap().into(),
     )
-    .unwrap()
-    .unwrap();
+        .unwrap()
+        .unwrap();
 
     assert_eq!(key_slice.get_bytestring(0), keypair.public.as_bytes().to_vec());
     let mywallet_slice = new_map.get(
         100u64.write_to_new_cell().unwrap().into(),
     )
-    .unwrap()
-    .unwrap();
+        .unwrap()
+        .unwrap();
 
     assert_eq!(
         mywallet_slice,
@@ -108,9 +106,9 @@ async fn test_expire() {
     let mut config = get_config();
     config["timeouts"]["message_retries_count"] = serde_json::Value::from(0);
     // connect to node
-	let client = init_json(&config.to_string()).await.unwrap();
+    let client = init_json(&config.to_string()).await.unwrap();
 
-	// generate key pair
+    // generate key pair
     let mut csprng = rand::thread_rng();
     let keypair = Keypair::generate(&mut csprng);
 
@@ -141,7 +139,7 @@ async fn test_expire() {
         Err(error) => {
             println!("{}", error);
             match error.downcast_ref::<SdkError>().unwrap() {
-                SdkError::MessageExpired{msg_id: _, expire: _, sending_time: _, block_time: _, block_id: _} => {},
+                SdkError::MessageExpired { msg_id: _, expire: _, sending_time: _, block_time: _, block_id: _ } => {}
                 _ => panic!("Error `SdkError::MessageExpired` expected")
             };
         }
@@ -194,6 +192,14 @@ fn test_contract_from_bytes() {
         "te6ccuECAwEAAIMAAHoA+gEGAnHP9mZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZiBoCgwAAAAAAAAAAAAAAAAXo1KUQAE0ABAgB8/wAg3SCCAUyXupcw7UTQ1wsf4KTyYNMfAe1E0NMf0Wa68qH4AAHTB9TRghgEqBfIAHP7AgH7AKTIyx/J7VQACAAAAAB1qkcn"
     ).unwrap()).unwrap();
 
+    assert_eq!(format!("{:?}", smc1.id), format!("{:?}", smc2.id));
+    assert_eq!(format!("{:?}", smc1.acc_type), format!("{:?}", smc2.acc_type));
+    assert_eq!(format!("{:?}", smc1.balance), format!("{:?}", smc2.balance));
+    assert_eq!(format!("{:?}", smc1.balance_other), format!("{:?}", smc2.balance_other));
+    assert_eq!(format!("{:?}", smc1.get_code()), format!("{:?}", smc2.get_code()));
+    assert_eq!(format!("{:?}", smc1.get_data()), format!("{:?}", smc2.get_data()));
+    assert_eq!(format!("{:?}", smc1.last_paid), format!("{:?}", smc2.last_paid));
+
     let smc3 = Contract::from_json(r#"{
         "id": "-1:6666666666666666666666666666666666666666666666666666666666666666",
         "acc_type": 1,
@@ -204,6 +210,19 @@ fn test_contract_from_bytes() {
         "last_paid": 100
       }"#).unwrap();
 
-    assert_eq!(format!("{:?}", smc1), format!("{:?}", smc2));
     assert_ne!(format!("{:?}", smc2), format!("{:?}", smc3));
+}
+
+#[test]
+fn test_resolving_code_and_data_from_boc() {
+    let contract = Contract::from_json(r#"{
+        "id": "-1:6666666666666666666666666666666666666666666666666666666666666666",
+        "acc_type": 1,
+        "balance": "0xe8d4a51000",
+        "balance_other": null,
+        "boc": "te6ccuECAwEAAIMAAHoA+gEGAnHP9mZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZiBoCgwAAAAAAAAAAAAAAAAXo1KUQAE0ABAgB8/wAg3SCCAUyXupcw7UTQ1wsf4KTyYNMfAe1E0NMf0Wa68qH4AAHTB9TRghgEqBfIAHP7AgH7AKTIyx/J7VQACAAAAAB1qkcn",
+        "last_paid": 0
+      }"#).unwrap();
+    assert_eq!(toc_to_base64(&contract.get_code().unwrap()).unwrap(), "te6ccgEBAQEAQAAAfP8AIN0gggFMl7qXMO1E0NcLH+Ck8mDTHwHtRNDTH9FmuvKh+AAB0wfU0YIYBKgXyABz+wIB+wCkyMsfye1U");
+    assert_eq!(toc_to_base64(&contract.get_data().unwrap()).unwrap(), "te6ccgEBAQEABgAACAAAAAA=");
 }

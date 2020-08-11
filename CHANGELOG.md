@@ -1,6 +1,23 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## 0.25.4 Aug 5, 2020
+### Fixed
+- `waitForTransaction` didn't use prev_alt_ref for block walking
+ 
+## 0.25.3 Jul 30, 2020
+### New
+- All methods that require contract's code/data can use field `boc` 
+  in account document to extract code and data 
+  (instead of `code` and `data` fields).
+- Optional `bocBase64` parameter of method `tvm.get` that can be used 
+  instead of `codeBase64` and `dataBase64`.   
+
+## 0.25.2 Jul 29, 2020
+### New
+- `error.data` object extended with fields `address`, `function_name`, `account_balance`, 
+`account_address`, `query_url`, `config_server` for appropriate errors
+
 ## 0.25.0 Jul 8, 2020
 ### New
 - supports for core context in all platforms

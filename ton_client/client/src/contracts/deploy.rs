@@ -17,7 +17,7 @@ use crate::contracts::run::RunFees;
 use ton_sdk::{Contract, ContractImage, FunctionCallSet};
 
 #[cfg(feature = "node_interaction")]
-use ton_sdk::{NodeClient, RecievedTransaction};
+use ton_sdk::{NodeClient, ReceivedTransaction};
 #[cfg(feature = "node_interaction")]
 use crate::contracts::run::{resolve_msg_sdk_error, retry_call};
 
@@ -123,7 +123,7 @@ pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) 
     trace!("-> -> image prepared with address: {}", account_id);
 
     if check_deployed(context, &account_id).await? {
-        return Ok(ResultOfDeploy { 
+        return Ok(ResultOfDeploy {
             address: account_encode(&account_id),
             already_deployed: true,
             fees: None,
@@ -137,7 +137,7 @@ pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) 
     trace!("-> -> deploy transaction: {}", tr.parsed.id());
 
     trace!("<-");
-    super::run::check_transaction_status(&tr.parsed, true, &account_id)?;
+    super::run::check_transaction_status(&tr.parsed, true, &account_id, None)?;
     Ok(ResultOfDeploy {
         address: account_encode(&account_id),
         already_deployed: false,
@@ -288,7 +288,7 @@ fn create_image(abi: &serde_json::Value, init_params: Option<&serde_json::Value>
 }
 
 #[cfg(feature = "node_interaction")]
-async fn deploy_contract(client: &NodeClient, params: ParamsOfDeploy, image: ContractImage, keys: &Keypair) -> ApiResult<RecievedTransaction> {
+async fn deploy_contract(client: &NodeClient, params: ParamsOfDeploy, image: ContractImage, keys: &Keypair) -> ApiResult<ReceivedTransaction> {
     retry_call(client.timeouts().message_retries_count, |try_index: u8| {
         let call_set = params.call_set.clone();
         let workchain = params.workchain_id.unwrap_or(DEFAULT_WORKCHAIN);
@@ -301,14 +301,14 @@ async fn deploy_contract(client: &NodeClient, params: ParamsOfDeploy, image: Con
                 workchain,
                 Some(client.timeouts()),
                 Some(try_index))
-                .map_err(|err| ApiError::contracts_create_run_message_failed(err))?;
-    
+                .map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
+
             let result = Contract::process_message(client, &msg, true).await;
-            
+
             match result {
-                Err(err) => 
+                Err(err) =>
                     Err(resolve_msg_sdk_error(
-                        client, err, &msg.serialized_message, ApiError::contracts_deploy_failed).await?),
+                        client, err, &msg, ApiError::contracts_deploy_failed).await?),
                 Ok(tr) => Ok(tr)
             }
         }
