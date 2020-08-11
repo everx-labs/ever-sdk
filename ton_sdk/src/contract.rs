@@ -181,16 +181,16 @@ pub struct Contract {
     pub balance_other: Option<Vec<OtherCurrencyValue>>,
 
     // Obsolete. You must use the `boc` instead.
-    #[serde(with = "json_helper::opt_cell", rename = "code")]
-    pub _code: Option<Cell>,
+    #[serde(with = "json_helper::opt_cell")]
+    pub code: Option<Cell>,
 
     pub code_hash: Option<String>,
 
     pub data_hash: Option<String>,
 
     // Obsolete. You must use the `boc` instead.
-    #[serde(with = "json_helper::opt_cell", rename = "data")]
-    pub _data: Option<Cell>,
+    #[serde(with = "json_helper::opt_cell")]
+    pub data: Option<Cell>,
 
     #[serde(with = "json_helper::opt_cell")]
     pub boc: Option<Cell>,
@@ -680,8 +680,8 @@ impl Contract {
             acc_type: acc.status(),
             balance,
             balance_other: if balance_other.len() > 0 { Some(balance_other) } else { None },
-            _code: code,
-            _data: data,
+            code: code,
+            data: data,
             code_hash,
             data_hash,
             boc: Some(boc),
@@ -733,11 +733,11 @@ impl Contract {
     }
 
     pub fn get_code(&self) -> Option<Cell> {
-        self.get_acc_cell(&self._code, |acc| acc.get_code())
+        self.get_acc_cell(&self.code, |acc| acc.get_code())
     }
 
     pub fn get_data(&self) -> Option<Cell> {
-        self.get_acc_cell(&self._data, |acc| acc.get_data())
+        self.get_acc_cell(&self.data, |acc| acc.get_data())
     }
 
     /// Invokes local TVM instance with provided inbound message.
