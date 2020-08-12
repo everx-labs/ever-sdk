@@ -1,6 +1,10 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## 0.26.0 Aug 7, 2020
+### New
+- `crypto` function `crypto.derive_sign_keys_from_mnemonic`
+
 ## 0.25.4 Aug 5, 2020
 ### Fixed
 - `waitForTransaction` didn't use prev_alt_ref for block walking
