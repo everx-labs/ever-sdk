@@ -185,6 +185,47 @@ fn test_query_cell() {
 }
 
 #[test]
+fn test_tonos_key_derivation() {
+    let client = TestClient::new();
+    let phrase = "smart payment illness art loud virus orbit suspect enjoy hotel people about";
+
+    // Default TONOS Key Derivation
+    let keys = parse_object(client.request(
+        "crypto.mnemonic.derive.sign.keys",
+        json!({
+            "phrase": phrase,
+        }),
+    ));
+    assert_eq!(get_map_string(&keys, "public"), "f4c8c7eb4f81f1153703b76a23827f370a7a776da6f7f74b2fd692a5bc4edab3");
+    assert_eq!(get_map_string(&keys, "secret"), "eab2364790e3d8629f4ed019148d373cd6acc5b7af3ec2ada35c591c5de48fec");
+
+    // Surf Style TONOS Key Derivation
+    let hdk_master = parse_string(client.request("crypto.hdkey.xprv.from.mnemonic", json!({
+            "dictionary": 1,
+            "wordCount": 12,
+            "phrase": phrase
+        })));
+    let hdk_root = parse_string(client.request("crypto.hdkey.xprv.derive.path", json!({
+        "serialized": hdk_master,
+        "path": "m/44'/396'/0'/0/0",
+        "compliant": false,
+    })));
+    let secret = parse_string(client.request("crypto.hdkey.xprv.secret", json!({
+        "serialized": hdk_root
+    })));
+    let keys = parse_object(client.request("crypto.nacl.sign.keypair.fromSecretKey",
+        Value::String(secret),
+    ));
+    let public = get_map_string(&keys, "public");
+    let mut secret = get_map_string(&keys, "secret");
+    if secret.len() > public.len() {
+        secret = secret[..public.len()].into();
+    }
+    assert_eq!(public, "f4c8c7eb4f81f1153703b76a23827f370a7a776da6f7f74b2fd692a5bc4edab3");
+    assert_eq!(secret, "eab2364790e3d8629f4ed019148d373cd6acc5b7af3ec2ada35c591c5de48fec");
+}
+
+#[test]
 fn test_tg_mnemonic() {
     let client = TestClient::new();
     let crc16 = client.request("crypto.ton_crc16", json!({
@@ -524,7 +565,7 @@ fn test_out_of_sync() {
 
     let value: Value = serde_json::from_str(&error).unwrap();
 
-   assert_eq!(value["code"], 1013);
+    assert_eq!(value["code"], 1013);
 }
 
 
