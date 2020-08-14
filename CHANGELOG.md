@@ -1,9 +1,10 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
-## 0.26.0 Aug 7, 2020
+## 0.26.0 Aug 15, 2020
 ### New
-- `crypto` function `crypto.derive_sign_keys_from_mnemonic`
+- `config.get_api_reference` api function (pre release).
+- `ton_sdk_cli` cli tool (pre release).
 
 ## 0.25.4 Aug 5, 2020
 ### Fixed

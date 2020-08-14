@@ -1,6 +1,6 @@
 [package]
 name = "tonsdk"
-version = "0.1.7"
+version = "0.26.0"
 description = "Command line tool for TON SDK"
 authors = ["TON DEV SOLUTIONS LTD <support@tonlabs.io>"]
 repository = "https://github.com/tonlabs/TON-SDK"
