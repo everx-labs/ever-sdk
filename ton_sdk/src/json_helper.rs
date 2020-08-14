@@ -44,6 +44,10 @@ impl<'de> serde::de::Visitor<'de> for StringVisitor {
     {
         d.deserialize_string(StringVisitor)
     }
+
+    fn visit_unit<E>(self) -> Result<Self::Value, E> {
+        Ok("null".to_owned())
+    }
 }
 
 struct U8Visitor;

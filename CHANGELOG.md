@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 ## 0.26.0 Aug 7, 2020
 ### New
 - `crypto` function `crypto.derive_sign_keys_from_mnemonic`
+- full local run functions use `LocalRunContext` to exactly reproduce all transaction parameters and
+produce the same result as node
 
 ## 0.25.4 Aug 5, 2020
 ### Fixed
