@@ -31,20 +31,30 @@ use crate::crypto::math::ton_crc16;
 use crate::crypto::mnemonic::{CryptoMnemonic, TonMnemonic, Bip39Mnemonic};
 use bip39::{MnemonicType, Language};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, TypeInfo)]
 pub(crate) struct FactorizeResult {
     pub a: String,
     pub b: String,
 }
 
-#[derive(Deserialize)]
-pub(crate) struct ModularPowerParams {
-    pub base: String,
-    pub exponent: String,
-    pub modulus: String,
+/// Calculates modular power
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ModularPowerParams {
+    /// It is base
+    base: String,
+    /// It is exponent
+    exponent: String,
+    /// It is modulus
+    modulus: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ModularPowerResult {
+    /// the result of
+    result: String,
+}
+
+#[derive(Deserialize, TypeInfo)]
 pub(crate) struct InputMessage {
     pub text: Option<String>,
     pub hex: Option<String>,
@@ -67,7 +77,7 @@ pub(crate) struct GenerateParams {
     pub output_encoding: OutputEncoding,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, TypeInfo)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ShaParams {
     pub message: InputMessage,
@@ -75,7 +85,7 @@ pub(crate) struct ShaParams {
     pub output_encoding: OutputEncoding,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, TypeInfo)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ScryptParams {
     pub password: InputMessage,
@@ -88,7 +98,7 @@ pub(crate) struct ScryptParams {
     pub output_encoding: OutputEncoding,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, TypeInfo)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct NaclBoxParams {
     pub message: InputMessage,
@@ -100,7 +110,7 @@ pub(crate) struct NaclBoxParams {
     pub output_encoding: OutputEncoding,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, TypeInfo)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct NaclSecretBoxParams {
     pub message: InputMessage,
@@ -111,7 +121,7 @@ pub(crate) struct NaclSecretBoxParams {
     pub output_encoding: OutputEncoding,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, TypeInfo)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct NaclSignParams {
     pub message: InputMessage,
@@ -121,7 +131,7 @@ pub(crate) struct NaclSignParams {
     pub output_encoding: OutputEncoding,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, TypeInfo)]
 pub(crate) struct MnemonicWordsParams {
     #[serde(default = "default_dictionary")]
     pub dictionary: u8,
@@ -129,7 +139,7 @@ pub(crate) struct MnemonicWordsParams {
     pub word_count: u8,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, TypeInfo)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct MnemonicGenerateParams {
     #[serde(default = "default_dictionary")]
@@ -138,7 +148,7 @@ pub(crate) struct MnemonicGenerateParams {
     pub word_count: u8,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, TypeInfo)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct MnemonicFromEntropyParams {
     #[serde(default = "default_dictionary")]
@@ -148,7 +158,7 @@ pub(crate) struct MnemonicFromEntropyParams {
     pub entropy: InputMessage,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, TypeInfo)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct MnemonicVerifyParams {
     #[serde(default = "default_dictionary")]
@@ -158,7 +168,7 @@ pub(crate) struct MnemonicVerifyParams {
     pub phrase: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, TypeInfo)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct HDKeyFromMnemonicParams {
     #[serde(default = "default_dictionary")]
@@ -168,7 +178,7 @@ pub(crate) struct HDKeyFromMnemonicParams {
     pub phrase: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, TypeInfo)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct MnemonicDeriveSignKeysParams {
     #[serde(default = "default_dictionary")]
@@ -182,7 +192,7 @@ pub(crate) struct MnemonicDeriveSignKeysParams {
     pub compliant: bool,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, TypeInfo)]
 pub(crate) struct HDKeyDeriveParams {
     pub serialized: String,
     pub index: u32,
@@ -192,7 +202,7 @@ pub(crate) struct HDKeyDeriveParams {
     pub compliant: bool,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, TypeInfo)]
 pub(crate) struct HDKeyDerivePathParams {
     pub serialized: String,
     pub path: String,
@@ -200,7 +210,7 @@ pub(crate) struct HDKeyDerivePathParams {
     pub compliant: bool,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, TypeInfo)]
 pub(crate) struct HDKeyGetKeyParams {
     pub serialized: String,
 }
@@ -449,7 +459,9 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         mnemonics(params.dictionary, params.word_count)?.is_phrase_valid(&params.phrase)
     });
 
-    handlers.spawn("crypto.mnemonic.derive.sign.keys", |_context: &mut ClientContext, params: MnemonicDeriveSignKeysParams| {
+    handlers.spawn(
+        "crypto.mnemonic.derive.sign.keys",
+        |_context: &mut ClientContext, params: MnemonicDeriveSignKeysParams| {
         mnemonics(params.dictionary, params.word_count)?.derive_ed25519_keys_from_phrase(
             &params.phrase,
             &params.path,

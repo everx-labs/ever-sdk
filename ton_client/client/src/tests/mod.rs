@@ -42,7 +42,7 @@ impl log::Log for SimpleLogger {
 }
 
 fn get_network_address() -> String {
-    std::env::var("TON_NETWORK_ADDRESS").unwrap_or("http://localhost:80".to_owned())
+    std::env::var("TON_NETWORK_ADDRESS").unwrap_or("http://localhost:8080".to_owned())
 }
 
 #[derive(Clone)]
@@ -725,3 +725,13 @@ fn test_find_shard() {
     assert_eq!(result, Value::Null.to_string());
 }
 
+#[test]
+fn test_api_reference() {
+    let client = TestClient::new();
+    let result = serde_json::from_str::<Value>(&client.request(
+        "config.get_api_reference",
+        Value::Null
+    ).unwrap()).unwrap();
+
+    println!("{}", serde_json::to_string_pretty(&result).unwrap());
+}

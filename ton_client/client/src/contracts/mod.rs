@@ -294,7 +294,7 @@ pub(crate) async fn process_message(context: &mut ClientContext, params: ParamsO
         .await;
 
     let transaction = match result {
-            Err(err) => 
+            Err(err) =>
                 return Err(run::resolve_msg_sdk_error(
                         client, err, &msg, ApiError::contracts_process_message_failed
                     ).await?),
@@ -366,7 +366,7 @@ pub(crate) async fn wait_transaction(context: &mut ClientContext, params: Params
         .await;
 
     let transaction = match result {
-            Err(err) => 
+            Err(err) =>
                 return Err(run::resolve_msg_sdk_error(
                         client, err, &msg, ApiError::contracts_process_message_failed
                     ).await?),
@@ -386,7 +386,7 @@ pub(crate) async fn wait_transaction(context: &mut ClientContext, params: Params
 pub(crate) fn register(handlers: &mut DispatchTable) {
     // Load
     #[cfg(feature = "node_interaction")]
-    handlers.spawn("contracts.load",
+    handlers.spawn_no_api("contracts.load",
         |context: &mut crate::client::ClientContext, params: load::LoadParams| {
             let mut runtime = context.take_runtime()?;
             let result = runtime.block_on(load::load(context, params));
@@ -396,7 +396,7 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 
     // Deploy
     #[cfg(feature = "node_interaction")]
-    handlers.spawn("contracts.deploy",
+    handlers.spawn_no_api("contracts.deploy",
         |context: &mut crate::client::ClientContext, params: deploy::ParamsOfDeploy| {
             let mut runtime = context.take_runtime()?;
             let result = runtime.block_on(deploy::deploy(context, params));
@@ -404,18 +404,18 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
             result
         });
 
-    handlers.spawn("contracts.deploy.message",
+    handlers.spawn_no_api("contracts.deploy.message",
         deploy::encode_message);
-    handlers.spawn("contracts.deploy.encode_unsigned_message",
+    handlers.spawn_no_api("contracts.deploy.encode_unsigned_message",
         deploy::encode_unsigned_message);
-    handlers.spawn("contracts.deploy.address",
+    handlers.spawn_no_api("contracts.deploy.address",
         deploy::get_address);
-    handlers.spawn("contracts.deploy.data",
+    handlers.spawn_no_api("contracts.deploy.data",
         deploy::get_deploy_data);
 
     // Run
     #[cfg(feature = "node_interaction")]
-    handlers.spawn("contracts.run",
+    handlers.spawn_no_api("contracts.run",
         |context: &mut crate::client::ClientContext, params: run::ParamsOfRun| {
             let mut runtime = context.take_runtime()?;
             let result = runtime.block_on(run::run(context, params));
@@ -423,56 +423,56 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
             result
         });
 
-    handlers.spawn("contracts.run.message",
+    handlers.spawn_no_api("contracts.run.message",
         run::encode_message);
-    handlers.spawn("contracts.run.encode_unsigned_message",
+    handlers.spawn_no_api("contracts.run.encode_unsigned_message",
         run::encode_unsigned_message);
-    handlers.spawn("contracts.run.output",
+    handlers.spawn_no_api("contracts.run.output",
         run::decode_output);
-    handlers.spawn("contracts.run.unknown.input",
+    handlers.spawn_no_api("contracts.run.unknown.input",
         run::decode_unknown_input);
-    handlers.spawn("contracts.run.unknown.output",
+    handlers.spawn_no_api("contracts.run.unknown.output",
         run::decode_unknown_output);
-    handlers.spawn("contracts.run.body",
+    handlers.spawn_no_api("contracts.run.body",
         run::get_run_body);
-    handlers.spawn("contracts.run.local",
+    handlers.spawn_no_api("contracts.run.local",
         run::local_run);
-    handlers.spawn("contracts.run.local.msg",
+    handlers.spawn_no_api("contracts.run.local.msg",
         run::local_run_msg);
-    handlers.spawn("contracts.run.fee",
+    handlers.spawn_no_api("contracts.run.fee",
         |context, mut params: run::ParamsOfLocalRun| {
             params.full_run = true;
             run::local_run(context, params)
         });
-    handlers.spawn("contracts.run.fee.msg",
+    handlers.spawn_no_api("contracts.run.fee.msg",
         |context, mut params: run::ParamsOfLocalRunWithMsg| {
             params.full_run = true;
             run::local_run_msg(context, params)
         });
 
     // Contracts
-    handlers.spawn("contracts.encode_message_with_sign",
+    handlers.spawn_no_api("contracts.encode_message_with_sign",
         encode_message_with_sign);
-    handlers.spawn("contracts.function.id",
+    handlers.spawn_no_api("contracts.function.id",
         get_function_id);
-    handlers.spawn("contracts.image.code",
+    handlers.spawn_no_api("contracts.image.code",
         get_code_from_image);
-    handlers.spawn("contracts.find.shard",
+    handlers.spawn_no_api("contracts.find.shard",
         find_matching_shard);
 
     // Addresses
-    handlers.spawn("contracts.address.convert",
+    handlers.spawn_no_api("contracts.address.convert",
         convert_address);
 
     // Bag of cells
-    handlers.spawn("contracts.boc.hash",
+    handlers.spawn_no_api("contracts.boc.hash",
         get_boc_root_hash);
-    handlers.spawn("contracts.parse.message",
+    handlers.spawn_no_api("contracts.parse.message",
         parse_message);
 
     // messages processing
     #[cfg(feature = "node_interaction")]
-    handlers.spawn("contracts.send.message",
+    handlers.spawn_no_api("contracts.send.message",
         |context: &mut crate::client::ClientContext, params: EncodedMessage| {
             let mut runtime = context.take_runtime()?;
             let result = runtime.block_on(send_message(context, params));
@@ -480,7 +480,7 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
             result
         });
     #[cfg(feature = "node_interaction")]
-    handlers.spawn("contracts.process.message",
+    handlers.spawn_no_api("contracts.process.message",
         |context: &mut crate::client::ClientContext, params: ParamsOfProcessMessage| {
             let mut runtime = context.take_runtime()?;
             let result = runtime.block_on(process_message(context, params));
@@ -488,7 +488,7 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
             result
         });
     #[cfg(feature = "node_interaction")]
-    handlers.spawn("contracts.wait.transaction",
+    handlers.spawn_no_api("contracts.wait.transaction",
         |context: &mut crate::client::ClientContext, params: ParamsOfWaitTransaction| {
             let mut runtime = context.take_runtime()?;
             let result = runtime.block_on(wait_transaction(context, params));
@@ -497,9 +497,9 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         });
 
     // errors
-    handlers.spawn("contracts.resolve.error",
+    handlers.spawn_no_api("contracts.resolve.error",
         run::resolve_error);
 
-    handlers.spawn("contracts.process.transaction",
+    handlers.spawn_no_api("contracts.process.transaction",
         process_transaction);
 }

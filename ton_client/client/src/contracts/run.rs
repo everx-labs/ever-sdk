@@ -32,7 +32,6 @@ use ton_sdk::{NodeClient, ReceivedTransaction, SdkError};
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
 use crate::types::{apierror_from_sdkerror, ApiErrorCode, ApiSdkErrorCode, StdContractError};
-use crate::open_doc::{DocContentDescriptor, DocMethod};
 
 
 fn bool_false() -> bool { false }

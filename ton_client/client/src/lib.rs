@@ -11,6 +11,9 @@
 * limitations under the License.
 */
 
+extern crate opendoc;
+#[macro_use]
+extern crate opendoc_derive;
 #[macro_use]
 extern crate serde_json;
 #[macro_use]
@@ -20,7 +23,6 @@ extern crate lazy_static;
 #[macro_use]
 extern crate log;
 
-mod open_doc;
 mod types;
 mod dispatch;
 mod client;

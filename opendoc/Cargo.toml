@@ -1,0 +1,13 @@
+[package]
+name = "opendoc"
+version = "0.1.0"
+authors = ["Michael Vlasov <melsomino@gmail.com>"]
+edition = "2018"
+
+[lib]
+name = "opendoc"
+
+[dependencies]
+serde = "1.0.115"
+serde_json = "1.0.57"
+serde_derive = "1.0.104"

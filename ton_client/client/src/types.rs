@@ -20,6 +20,17 @@ use ton_sdk::{SdkError, MessageProcessingState};
 use ton_types::ExceptionCode;
 use chrono::TimeZone;
 
+pub(crate) fn method_api(name: &str) -> opendoc::api::Method {
+    opendoc::api::Method {
+        name: name.into(),
+        summary: None,
+        description: None,
+        params: vec![],
+        result: opendoc::api::Type::None,
+        errors: None,
+    }
+}
+
 pub fn hex_decode(hex: &String) -> ApiResult<Vec<u8>> {
     if hex.starts_with("x") || hex.starts_with("X") {
         hex_decode(&hex.chars().skip(1).collect())
@@ -39,13 +50,13 @@ pub fn long_num_to_json_string(num: u64) -> String {
 }
 
 fn format_time(time: u32) -> String {
-    format!("{} ({})", chrono::Local.timestamp(time as i64 , 0).to_rfc2822(), time)
+    format!("{} ({})", chrono::Local.timestamp(time as i64, 0).to_rfc2822(), time)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum ApiErrorSource {
     Client,
-    Node
+    Node,
 }
 
 impl ApiErrorSource {
@@ -65,7 +76,7 @@ pub struct ApiError {
     pub code: isize,
     pub message: String,
     pub message_processing_state: Option<MessageProcessingState>,
-    pub data: serde_json::Value
+    pub data: serde_json::Value,
 }
 
 pub type ApiResult<T> = Result<T, ApiError>;
@@ -502,7 +513,7 @@ impl ApiError {
 
     pub fn contracts_deploy_transaction_aborted() -> Self {
         ApiError::sdk(ContractsDeployTransactionAborted,
-        "Deploy failed: transaction aborted".into())
+            "Deploy failed: transaction aborted".into())
     }
 
     pub fn contracts_run_body_creation_failed<E: Display>(err: E) -> Self {
@@ -584,9 +595,9 @@ impl ApiError {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &(-1i32),
-            "Transaction was aborted".to_string()
+            "Transaction was aborted".to_string(),
         );
-         error.data = serde_json::json!({
+        error.data = serde_json::json!({
             "transaction_id": tr_id,
             "phase": "unknown",
         });
@@ -597,7 +608,7 @@ impl ApiError {
         tr_id: Option<String>,
         reason: &ComputeSkipReason,
         address: &MsgAddressInt,
-        balance: Option<u64>
+        balance: Option<u64>,
     ) -> ApiError {
         let mut error = match reason {
             ComputeSkipReason::NoState => Self::account_code_missing(address),
@@ -645,16 +656,16 @@ impl ApiError {
         tr_id: Option<String>,
         reason: &AccStatusChange,
         address: &MsgAddressInt,
-        balance: Option<u64>
+        balance: Option<u64>,
     ) -> ApiError {
         let mut error = Self::low_balance(address, balance);
         error.data["transaction_id"] = tr_id.map(|s| s.into()).unwrap_or(serde_json::Value::Null);
         error.data["phase"] = "storage".into();
         error.data["reason"] = match reason {
-                AccStatusChange::Frozen => "Account is frozen",
-                AccStatusChange::Deleted => "Account is deleted",
-                _ => "null"
-            }.into();
+            AccStatusChange::Frozen => "Account is frozen",
+            AccStatusChange::Deleted => "Account is deleted",
+            _ => "null"
+        }.into();
         error
     }
 
@@ -664,7 +675,7 @@ impl ApiError {
         valid: bool,
         no_funds: bool,
         address: &MsgAddressInt,
-        balance: Option<u64>
+        balance: Option<u64>,
     ) -> ApiError {
         let mut error = if no_funds {
             let mut error = Self::low_balance(address, balance);
@@ -822,7 +833,7 @@ impl ApiErrorCode for ApiActionCode {
     }
 }
 
-impl ApiActionCode{
+impl ApiActionCode {
     pub fn new(result_code: i32, valid: bool, no_funds: bool) -> Self {
         Self {
             result_code,
@@ -848,20 +859,20 @@ impl ApiErrorCode for i32 {
 }
 
 pub fn apierror_from_sdkerror<F>(err: &failure::Error, default_err: F, client: Option<&ton_sdk::NodeClient>) -> ApiError
-where
-    F: Fn(String) -> ApiError,
+    where
+        F: Fn(String) -> ApiError,
 {
     let err = match err.downcast_ref::<SdkError>() {
         Some(SdkError::WaitForTimeout) => ApiError::wait_for_timeout(),
-        Some(SdkError::MessageExpired{msg_id, expire, sending_time, block_time, block_id}) =>
+        Some(SdkError::MessageExpired { msg_id, expire, sending_time, block_time, block_id }) =>
             ApiError::message_expired(msg_id.to_string(), *sending_time, *expire, *block_time, block_id.to_string()),
-        Some(SdkError::NetworkSilent{msg_id, timeout, block_id, state}) =>
+        Some(SdkError::NetworkSilent { msg_id, timeout, block_id, state }) =>
             ApiError::network_silent(msg_id.to_string(), *timeout, block_id.to_string(), state.clone()),
-        Some(SdkError::TransactionWaitTimeout{msg_id, sending_time, timeout, state}) =>
+        Some(SdkError::TransactionWaitTimeout { msg_id, sending_time, timeout, state }) =>
             ApiError::transaction_wait_timeout(msg_id.to_string(), *sending_time, *timeout, state.clone()),
-        Some(SdkError::ClockOutOfSync{delta_ms, threshold_ms, expiration_timeout}) =>
+        Some(SdkError::ClockOutOfSync { delta_ms, threshold_ms, expiration_timeout }) =>
             ApiError::clock_out_of_sync(*delta_ms, *threshold_ms, *expiration_timeout),
-        Some(SdkError::ResumableNetworkError{state, error}) => {
+        Some(SdkError::ResumableNetworkError { state, error }) => {
             let mut api_error = apierror_from_sdkerror(error, default_err, client);
             api_error.message_processing_state = Some(state.clone());
             api_error
@@ -944,7 +955,7 @@ impl StdContractError {
             StdContractError::PopEmptyArray => "Check call parameters. Probably contract doesn't have needed data",
             StdContractError::ExtMessageExpired => "Try again",
             StdContractError::MsgHasNoSignButHasKey => "Check call parameters. Sign keys should be passed to sign message",
-            StdContractError::NoKeyInData =>"Contract is probably deployed incorrectly",
+            StdContractError::NoKeyInData => "Contract is probably deployed incorrectly",
             _ => ""
         };
         if tip.len() > 0 {

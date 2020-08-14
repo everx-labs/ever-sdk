@@ -35,8 +35,8 @@ pub fn json_sync_request(
         params_json)
 }
 
-pub fn get_method_names() -> Vec<String> {
-    Client::shared().get_method_names()
+pub fn get_api() -> opendoc::api::API {
+    Client::shared().get_api()
 }
 
 // C-library exported functions

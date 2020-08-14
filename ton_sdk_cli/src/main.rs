@@ -141,13 +141,13 @@ fn main_internal() -> Result<(), CliError> {
         return Err(CliError {
             message: format!(
                 "Method doesn't specified. Available methods are:\n{}",
-                ton_client::get_method_names().join("\n")
+                ton_client::get_api_reference().join("\n")
             )
         });
     }
 
     let mut names = Vec::<String>::new();
-    for name in ton_client::get_method_names() {
+    for name in ton_client::get_api_reference() {
         if name == method {
             names.clear();
             names.push(name);
