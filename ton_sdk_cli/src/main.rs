@@ -91,6 +91,7 @@ fn main_internal() -> Result<(), CliError> {
     let mut option = String::new();
     let mut method = String::new();
     let mut parameters = String::new();
+    let api = ton_client::get_api();
     for arg in env::args().skip(1) {
         match state {
             ParseState::OptionOrMethodName if arg.starts_with("-") => {
@@ -137,17 +138,18 @@ fn main_internal() -> Result<(), CliError> {
         parameters = json.to_string();
     }
 
+    let method_names: Vec<String> = api.methods.iter().map(|x|x.name.clone()).collect();
     if method.is_empty() {
         return Err(CliError {
             message: format!(
                 "Method doesn't specified. Available methods are:\n{}",
-                ton_client::get_api_reference().join("\n")
+                method_names.join("\n")
             )
         });
     }
 
     let mut names = Vec::<String>::new();
-    for name in ton_client::get_api_reference() {
+    for name in method_names {
         if name == method {
             names.clear();
             names.push(name);

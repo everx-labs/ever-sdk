@@ -21,6 +21,7 @@ use crate::{tc_create_context, tc_destroy_context};
 use ton_block::MsgAddressInt;
 use std::str::FromStr;
 use crate::types::{ApiError};
+use opendoc::api::API;
 
 //mod resolve_error;
 
@@ -728,10 +729,11 @@ fn test_find_shard() {
 #[test]
 fn test_api_reference() {
     let client = TestClient::new();
-    let result = serde_json::from_str::<Value>(&client.request(
+    let api = serde_json::from_str::<API>(&client.request(
         "config.get_api_reference",
         Value::Null
     ).unwrap()).unwrap();
-
-    println!("{}", serde_json::to_string_pretty(&result).unwrap());
+    let m = api.methods.iter().find(|x|x.name == "crypto.ton_crc16").unwrap();
+    assert_eq!(m.params.len(), 3);
+    // println!("{}", serde_json::to_string_pretty(&api).unwrap());
 }
