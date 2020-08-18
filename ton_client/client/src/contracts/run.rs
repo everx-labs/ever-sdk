@@ -11,8 +11,8 @@
 * limitations under the License.
 */
 
-use ton_sdk::{AbiContract, Contract, FunctionCallSet, LocalRunContext, MessageType, Message,
-    Transaction, TransactionFees};
+use ton_sdk::{Contract, MessageType, AbiContract, FunctionCallSet, Transaction, Message,
+    TransactionFees};
 use ton_sdk::json_abi::encode_function_call;
 use ton_types::cells_serialization::BagOfCells;
 use ton_block::{AccStatusChange, Message as TvmMessage, MsgAddressInt};
@@ -618,7 +618,8 @@ async fn call_contract(
             match result {
                 Err(err) =>
                     Err(resolve_msg_sdk_error(
-                        client, err, &msg, ApiError::contracts_run_failed).await?),
+                        client, err, &msg, Some(&params.call_set.function_name), ApiError::contracts_run_failed
+                    ).await?),
                 Ok(tr) => Ok(tr)
             }
         }
@@ -750,7 +751,7 @@ pub(crate) fn resolve_msg_error(
         err
     } else {
         main_error.data["disclaimer"] = "Local contract call succeded. Can not resolve extended error".into();
-        main_error
+        main_error.add_address(&address)
     }
 }
 
@@ -759,23 +760,30 @@ pub(crate) async fn resolve_msg_sdk_error<F: Fn(String) -> ApiError>(
     client: &NodeClient,
     error: failure::Error,
     msg: &ton_sdk::SdkMessage,
+    function: Option<&str>,
     default_error: F,
 ) -> ApiResult<ApiError> {
-    match error.downcast_ref::<SdkError>() {
-        Some(SdkError::MessageExpired { msg_id: _, expire: _, sending_time, block_time: _, block_id: _ }) |
-        Some(SdkError::TransactionWaitTimeout { msg_id: _, sending_time, timeout: _, state: _ }) => {
-            let account = Contract::load(client, &msg.address)
-                .await
-                .map_err(|err| apierror_from_sdkerror(
-                    &err, ApiError::contracts_run_contract_load_failed, Some(client),
-                ).add_address(&msg.address))?
-                .ok_or(ApiError::account_missing(&msg.address))?;
-            let main_error = apierror_from_sdkerror(&error, default_error, None);
-            let resolved = resolve_msg_error(
-                msg.address.clone(), account, &msg.serialized_message, *sending_time, main_error,
-            ).add_network_url(client);
-            Ok(resolved)
+    let err = {
+        match error.downcast_ref::<SdkError>() {
+            Some(SdkError::MessageExpired { msg_id: _, expire: _, sending_time, block_time: _, block_id: _ }) |
+            Some(SdkError::TransactionWaitTimeout { msg_id: _, sending_time, timeout: _, state: _ }) => {
+                let account = Contract::load(client, &msg.address)
+                    .await
+                    .map_err(|err| apierror_from_sdkerror(
+                            &err, ApiError::contracts_run_contract_load_failed, Some(client),
+                        ).add_address(&msg.address))?
+                    .ok_or(ApiError::account_missing(&msg.address))?;
+                let main_error = apierror_from_sdkerror(&error, default_error, None);
+                let resolved = resolve_msg_error(
+                    msg.address.clone(), account, &msg.serialized_message, *sending_time, main_error,
+                );
+                Ok(resolved)
+            }
+            _ => Err(apierror_from_sdkerror(&error, default_error, Some(client)))
         }
-        _ => Err(apierror_from_sdkerror(&error, default_error, Some(client)))
-    }
+    }?;
+    Ok(err
+        .add_network_url(client)
+        .add_function(function)
+        .add_address(&msg.address))
 }

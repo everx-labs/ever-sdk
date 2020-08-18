@@ -296,8 +296,9 @@ pub(crate) async fn process_message(context: &mut ClientContext, params: ParamsO
     let transaction = match result {
             Err(err) => 
                 return Err(run::resolve_msg_sdk_error(
-                        client, err, &msg, ApiError::contracts_process_message_failed
-                    ).await?),
+                        client, err, &msg, params.function_name.as_ref().map(|string| string.as_str()), ApiError::contracts_process_message_failed
+                    ).await?
+                ),
             Ok(tr) => tr
     };
 
@@ -368,7 +369,9 @@ pub(crate) async fn wait_transaction(context: &mut ClientContext, params: Params
     let transaction = match result {
             Err(err) => 
                 return Err(run::resolve_msg_sdk_error(
-                        client, err, &msg, ApiError::contracts_process_message_failed
+                        client, err, &msg,
+                        params.function_name.as_ref().map(|string| string.as_str()),
+                        ApiError::contracts_process_message_failed
                     ).await?),
             Ok(tr) => tr
     };
