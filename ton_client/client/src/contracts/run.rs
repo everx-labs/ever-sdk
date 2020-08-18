@@ -12,7 +12,7 @@
 */
 
 use ton_sdk::{Contract, MessageType, AbiContract, FunctionCallSet, Transaction, Message,
-    TransactionFees};
+    TransactionFees, LocalRunContext};
 use ton_sdk::json_abi::encode_function_call;
 use ton_types::cells_serialization::BagOfCells;
 use ton_block::{AccStatusChange, Message as TvmMessage, MsgAddressInt};
@@ -744,7 +744,7 @@ pub(crate) fn resolve_msg_error(
 
     let mut context = LocalRunContext::default();
     context.time = Some(time);
-    let result = do_local_run_msg(None, address, Some(account), None, None, msg, true, context);
+    let result = do_local_run_msg(None, address.clone(), Some(account), None, None, msg, true, context);
 
     if let Err(mut err) = result {
         err.data["original_error"] = serde_json::to_value(main_error).unwrap_or_default();
