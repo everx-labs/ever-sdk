@@ -21,25 +21,37 @@ use crate::types::{ApiResult, ApiError};
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ParamsOfQuery {
+    // collection name (accounts, blocks, transactions, messages, block_signatures)
     pub table: String,
+    // filter string
     pub filter: String,
+    // projection (result) string
     pub result: String,
+    // sorting order
     pub order: Option<ton_sdk::OrderBy>,
+    // number of documents to return
     pub limit: Option<u32>
 }
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ParamsOfSubscribe {
+    // collection name (accounts, blocks, transactions, messages, block_signatures)
     pub table: String,
+    // filter string
     pub filter: String,
+    // projection (result) string
     pub result: String
 }
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ParamsOfWaitFor {
+    // collection name (accounts, blocks, transactions, messages, block_signatures)
     pub table: String,
+    // filter string
     pub filter: String,
+    // projection (result) string
     pub result: String,
+    // query timeout
     pub timeout: Option<u32>
 }
 

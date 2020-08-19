@@ -39,9 +39,13 @@ fn bool_false() -> bool { false }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RunFunctionCallSet {
+    // contract ABI
     pub abi: serde_json::Value,
+    // function name
     pub function_name: String,
+    // header parameters
     pub header: Option<serde_json::Value>,
+    // input parameters
     pub input: serde_json::Value,
 }
 
@@ -59,94 +63,132 @@ impl Into<FunctionCallSet> for RunFunctionCallSet {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfRun {
+    /// account address
     pub address: String,
     #[serde(flatten)]
     pub call_set: RunFunctionCallSet,
+    /// key pair to sign the message
     pub key_pair: Option<KeyPair>,
+    // ???
     pub try_index: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfLocalRun {
+    /// account address (used if boc is not defined to load it)
     pub address: String,
+    /// [1.0.0] account boc 
     pub account: Option<serde_json::Value>,
     #[serde(flatten)]
     pub call_set: RunFunctionCallSet,
+    /// key pair to sign the message
     pub key_pair: Option<KeyPair>,
     #[serde(default)]
+    /// flag that enables/disables full run with transaction executor. 
     pub full_run: bool,
+    /// ???(will be changed to context)
     pub time: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfLocalRunWithMsg {
+    // account address
     pub address: String,
+    // ???
     pub account: Option<serde_json::Value>,
+    // contract ABI
     pub abi: Option<serde_json::Value>,
+    // function name
     pub function_name: Option<String>,
+    // message boc
     pub message_base64: String,
     #[serde(default)]
+    // flag that enables/disables full run with transaction executor. 
     pub full_run: bool,
+    /// ??? (will be changed to context)
     pub time: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfEncodeUnsignedRunMessage {
+    // account address
     pub address: String,
     #[serde(flatten)]
+    // ???
     pub call_set: RunFunctionCallSet,
+    // ???
     pub try_index: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfDecodeRunOutput {
+    // contract ABI
     pub abi: serde_json::Value,
+    // contract's function name
     pub function_name: String,
+    // boc of message body
     pub body_base64: String,
     #[serde(default = "bool_false")]
+    // flag that specifies the message type: internal or not
     pub internal: bool,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ParamsOfDecodeUnknownRun {
+    // contract ABI
     pub abi: serde_json::Value,
+    // message body
     pub body_base64: String,
     #[serde(default = "bool_false")]
+    // flag that specifies the message type: internal or not
     pub internal: bool,
 }
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfRun {
+    // list of decoded parameters returned by the contract's function
     pub output: serde_json::Value,
+    // fees spent on transaction
     pub fees: RunFees,
+    // transaction object
     pub transaction: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfLocalRun {
+    // list of decoded parameters returned by the contract's function
     pub output: serde_json::Value,
+    // fees spent on transaction
     pub fees: Option<RunFees>,
+    // ??
     pub account: Option<Contract>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfDecode {
+    // list of decoded parameters
     pub output: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RunFees {
+    // fee paid for internal message delivery
     pub in_msg_fwd_fee: String,
+    // storage fee
     pub storage_fee: String,
+    // gas fee for transaction execution
     pub gas_fee: String,
+    //fee paid for external message delivery
     pub out_msgs_fwd_fee: String,
+    // total fee
     pub total_account_fees: String,
+    // ??
     pub total_output: String,
 }
 
@@ -165,19 +207,27 @@ impl From<TransactionFees> for RunFees {
 
 #[derive(Serialize, Deserialize)]
 pub struct ResultOfDecodeUnknownRun {
+    // function name
     pub function: String,
+    // list of decoded parameters returned by the contract's function
     pub output: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfGetRunBody {
+    // contract ABI
     pub abi: serde_json::Value,
+    // function name
     pub function: String,
+    // message header
     pub header: Option<serde_json::Value>,
+    // function parameters
     pub params: serde_json::Value,
     #[serde(default = "bool_false")]
+    // ???
     pub internal: bool,
+    // key pair for signature
     pub key_pair: Option<KeyPair>,
 }
 
@@ -197,16 +247,22 @@ pub(crate) struct ParamsOfGetRunBody {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ResultOfGetRunBody {
+    // message body boc
     pub body_base64: String,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfResolveError {
+    // account address
     pub address: String,
+    // ???
     pub account: Contract,
+    // message boc (header+body)
     pub message_base64: String,
+    // ???
     pub time: u32,
+    // original error
     pub main_error: ApiError,
 }
 

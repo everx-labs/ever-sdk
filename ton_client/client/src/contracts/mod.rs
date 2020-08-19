@@ -38,9 +38,13 @@ pub(crate) mod load;
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct EncodedMessage {
+    // account address
     pub address: Option<String>,
+    // message id
     pub message_id: String,
+    // message boc (header+body)
     pub message_body_base64: String,
+    // message expiration timestamp - message will not be processed by the contract after message expiration time
     pub expire: Option<u32>,
 }
 
@@ -86,48 +90,67 @@ impl EncodedMessage {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfProcessMessage {
+    // contract ABI
     pub abi: Option<serde_json::Value>,
+    // name of the called function
     pub function_name: Option<String>,
+    // structure, containing message boc and additional fields
     pub message: EncodedMessage,
     #[serde(default)]
+    // flag that enables/disables infinite waiting of network recovery and infinite waiting of shard blocks
     pub infinite_wait: bool,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct EncodedUnsignedMessage {
+    // ???
     pub unsigned_bytes_base64: String,
+    // ???
     pub bytes_to_sign_base64: String,
+    // message expiration timestamp - message will not be processed by the contract after message expiration time
     pub expire: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfEncodeMessageWithSign {
+    // contract ABI
     pub abi: serde_json::Value,
+    // ???
     pub unsigned_bytes_base64: String,
+    // signature
     pub sign_bytes_base64: String,
+    // public key in hex 
     pub public_key_hex: Option<String>,
+    // message expiration timestamp - message will not be processed by the contract after message expiration time
     pub expire: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ParamsOfGetFunctionId {
+    // contract ABI
     pub abi: serde_json::Value,
+    // function name
     pub function: String,
+    // ???
     pub input: bool,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfConvertAddress {
+    // account address in any format
     pub address: String,
+    // specify the format to convert to
     pub convert_to: AccountAddressType,
+    // parameters of base64 format
     pub base64_params: Option<Base64AddressParams>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfGetFunctionId {
+    // function id
     pub id: u32
 }
 
@@ -140,37 +163,47 @@ pub(crate) struct ParamsOfGetCodeFromImage {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ResultOfGetCodeFromImage {
+    // contract code in base64
     pub code_base64: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfConvertAddress {
+    // address in the specified format
     pub address: String,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct InputBoc {
+    // boc in base64
     pub boc_base64: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfGetBocHash {
+    // boc hash
     pub hash: String,
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfProcessTransaction {
+    // transaction
     pub transaction: serde_json::Value,
+    // contract ABI
     pub abi: Option<serde_json::Value>,
+    // function name
     pub function_name: Option<String>,
+    // account address
     pub address: String,
 }
 
 #[derive(Deserialize)]
 pub(crate) struct ParamsOfFindShard {
+    // list of shards that are checked
     pub shards: Vec<serde_json::Value>,
+    // address which shard we look for 
     pub address: String,
 }
 
@@ -178,11 +211,16 @@ pub(crate) struct ParamsOfFindShard {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfWaitTransaction {
+    // contract ABI
     pub abi: Option<serde_json::Value>,
+    // contract's function name
     pub function_name: Option<String>,
+    // message object
     pub message: EncodedMessage,
+    // message processing state
     pub message_processing_state: MessageProcessingState,
     #[serde(default)]
+    // flag that enables/disables infinite waiting of network recovery and infinite waiting of shard blocks
     pub infinite_wait: bool
 }
 

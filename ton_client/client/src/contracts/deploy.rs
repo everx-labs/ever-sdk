@@ -27,8 +27,11 @@ const DEFAULT_WORKCHAIN: i32 = 0;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DeployFunctionCallSet {
+    /// contract ABI
     pub abi: serde_json::Value,
+    /// constructor message header according to contract ABI
     pub constructor_header: Option<serde_json::Value>,
+    /// function input parameters according to contract ABI
     pub constructor_params: serde_json::Value,
 }
 
@@ -43,15 +46,25 @@ impl Into<FunctionCallSet> for DeployFunctionCallSet {
     }
 }
 
+#[doc(summary="Method that deploys a contract")]
+/// deploy description
+/// 
+/// 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfDeploy {
     #[serde(flatten)]
+    /// deploy message parameters
     pub call_set: DeployFunctionCallSet,
+    /// list of initial values for contract public variables
     pub init_params: Option<serde_json::Value>,
+    /// tvc converted to base64
     pub image_base64: String,
+    /// key pair for signature
     pub key_pair: KeyPair,
+    /// target workchain for deploy
     pub workchain_id: Option<i32>,
+    /// ???
     pub try_index: Option<u8>,
 }
 
@@ -60,55 +73,80 @@ pub(crate) struct ParamsOfDeploy {
 pub(crate) struct ParamsOfEncodeUnsignedDeployMessage {
     #[serde(flatten)]
     pub call_set: DeployFunctionCallSet,
+    // list of initial values for contract public variables
     pub init_params: Option<serde_json::Value>,
+    // tvc converted to base64
     pub image_base64: String,
+    // public key
     pub public_key_hex: String,
+    // target workchain for deploy    
     pub workchain_id: Option<i32>,
+    // ???
     pub try_index: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ResultOfEncodeUnsignedDeployMessage {
+    // struccture with encodedd unsigned message
     pub encoded: EncodedUnsignedMessage,
+    // future contract address in raw format
     pub address_hex: String,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfGetDeployAddress {
+    // contract ABI
     pub abi: serde_json::Value,
+    // list of initial values for contract public variables
     pub init_params: Option<serde_json::Value>,
+    // tvc converted to base64
     pub image_base64: String,
+    // key pair for signature
     pub key_pair: KeyPair,
+    // target workchain for deploy
     pub workchain_id: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ResultOfDeploy {
+    // acccount address
     pub address: String,
+    // flag that indicates that the contract was already deployed
     pub already_deployed: bool,
+    // fees collected for deploy
     pub fees: Option<RunFees>,
+    // transaction object
     pub transaction: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfGetDeployData {
+    // contract ABI
     pub abi: Option<serde_json::Value>,
+    // list of initial values for contract public variables
     pub init_params: Option<serde_json::Value>,
+    // tvc converted to base64
     pub image_base64: Option<String>,
+    // public key
     pub public_key_hex: String,
+    // target workchain for deploy
     pub workchain_id: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ResultOfGetDeployData {
+    // tvc converted to base64
     pub image_base64: Option<String>,
+    // ???
     pub account_id: Option<String>,
+    // ???
     pub address: Option<String>,
+    // ???
     pub data_base64: String,
 }
 
