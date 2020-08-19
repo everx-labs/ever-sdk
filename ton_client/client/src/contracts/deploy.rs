@@ -35,10 +35,16 @@ pub struct DeployFunctionCallSet {
     pub constructor_params: serde_json::Value,
 }
 
+impl DeployFunctionCallSet {
+    pub fn function_name() -> &'static str {
+        "constructor"
+    }
+}
+
 impl Into<FunctionCallSet> for DeployFunctionCallSet {
     fn into(self) -> FunctionCallSet {
         FunctionCallSet {
-            func: "constructor".to_owned(),
+            func: Self::function_name().to_owned(),
             header: self.constructor_header.map(|value| value.to_string().to_owned()),
             input: self.constructor_params.to_string(),
             abi: self.abi.to_string(),
@@ -171,11 +177,20 @@ pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) 
 
     let client = context.get_client()?;
     trace!("-> -> deploy");
-    let tr = deploy_contract(client, params, contract_image, &key_pair).await?;
+    let tr = deploy_contract(client, params, contract_image, &key_pair)
+        .await
+        .map_err(|err| err
+            .add_function(Some(&DeployFunctionCallSet::function_name()))
+            .add_network_url(client)
+        )?;
     trace!("-> -> deploy transaction: {}", tr.parsed.id());
 
     trace!("<-");
-    super::run::check_transaction_status(&tr.parsed, true, &account_id, None)?;
+    super::run::check_transaction_status(&tr.parsed, true, &account_id, None)
+        .map_err(|err| err
+            .add_function(Some(&DeployFunctionCallSet::function_name()))
+            .add_network_url(client)
+        )?;
     Ok(ResultOfDeploy {
         address: account_encode(&account_id),
         already_deployed: false,
@@ -346,7 +361,9 @@ async fn deploy_contract(client: &NodeClient, params: ParamsOfDeploy, image: Con
             match result {
                 Err(err) =>
                     Err(resolve_msg_sdk_error(
-                        client, err, &msg, ApiError::contracts_deploy_failed).await?),
+                        client, err, &msg, None,
+                        ApiError::contracts_deploy_failed).await?
+                    ),
                 Ok(tr) => Ok(tr)
             }
         }

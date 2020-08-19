@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ### New
 - `config.get_api_reference` api function (pre release).
 - `ton_sdk_cli` cli tool (pre release).
+- full local run functions use `LocalRunContext` to exactly reproduce all transaction parameters and
+produce the same result as node
 
 ## 0.25.4 Aug 5, 2020
 ### Fixed

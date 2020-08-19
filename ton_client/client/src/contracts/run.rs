@@ -11,11 +11,11 @@
 * limitations under the License.
 */
 
-use ton_sdk::{Contract, MessageType, AbiContract, FunctionCallSet};
+use ton_sdk::{Contract, MessageType, AbiContract, FunctionCallSet, Transaction, Message,
+    TransactionFees, LocalRunContext};
 use ton_sdk::json_abi::encode_function_call;
 use ton_types::cells_serialization::BagOfCells;
 use ton_block::{AccStatusChange, Message as TvmMessage, MsgAddressInt};
-use ton_sdk::{Transaction, Message, TransactionFees};
 
 use crate::contracts::{EncodedMessage, EncodedUnsignedMessage};
 use crate::client::ClientContext;
@@ -78,17 +78,19 @@ pub(crate) struct ParamsOfRun {
 pub(crate) struct ParamsOfLocalRun {
     /// account address (used if boc is not defined to load it)
     pub address: String,
-    /// [1.0.0] account boc 
+    /// [1.0.0] account boc
     pub account: Option<serde_json::Value>,
     #[serde(flatten)]
     pub call_set: RunFunctionCallSet,
     /// key pair to sign the message
     pub key_pair: Option<KeyPair>,
     #[serde(default)]
-    /// flag that enables/disables full run with transaction executor. 
+    /// flag that enables/disables full run with transaction executor.
     pub full_run: bool,
     /// ???(will be changed to context)
     pub time: Option<u32>,
+    #[serde(flatten)]
+    pub context: LocalRunContext,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -105,10 +107,12 @@ pub(crate) struct ParamsOfLocalRunWithMsg {
     // message boc
     pub message_base64: String,
     #[serde(default)]
-    // flag that enables/disables full run with transaction executor. 
+    // flag that enables/disables full run with transaction executor.
     pub full_run: bool,
     /// ??? (will be changed to context)
     pub time: Option<u32>,
+    #[serde(flatten)]
+    pub context: LocalRunContext,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -230,19 +234,6 @@ pub(crate) struct ParamsOfGetRunBody {
     // key pair for signature
     pub key_pair: Option<KeyPair>,
 }
-
-// impl DescribeMethodParams for ParamsOfGetRunBody {
-//     fn describe_method_params() -> Vec<DocContentDescriptor> {
-//         DocMethod::params(vec![
-//             ("abi", DocSchema::any(true)),
-//             ("function", DocSchema::string(true)),
-//             ("header", DocSchema::any(false)),
-//             ("params", DocSchema::any(true)),
-//             ("internal", DocSchema::boolean(false)),
-//             ("key_pair", DocSchema::any(false))
-//         ])
-//     }
-// }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -389,7 +380,7 @@ pub(crate) fn local_run(context: &mut ClientContext, params: ParamsOfLocalRun) -
         address,
         account,
         params.full_run,
-        params.time,
+        params.context,
     ).map_err(|err| match context.get_client() {
         Ok(client) => err.add_network_url(client),
         Err(_) => err
@@ -425,7 +416,7 @@ pub(crate) fn local_run_msg(context: &mut ClientContext, params: ParamsOfLocalRu
         params.function_name,
         msg,
         params.full_run,
-        params.time,
+        params.context,
     ).map_err(|err| match context.get_client() {
         Ok(client) => err.add_network_url(client),
         Err(_) => err
@@ -685,7 +676,8 @@ async fn call_contract(
             match result {
                 Err(err) =>
                     Err(resolve_msg_sdk_error(
-                        client, err, &msg, ApiError::contracts_run_failed).await?),
+                        client, err, &msg, Some(&params.call_set.function_name), ApiError::contracts_run_failed
+                    ).await?),
                 Ok(tr) => Ok(tr)
             }
         }
@@ -699,7 +691,7 @@ pub(crate) fn do_local_run(
     address: MsgAddressInt,
     account: Option<Contract>,
     full_run: bool,
-    time: Option<u32>,
+    run_context: LocalRunContext,
 ) -> ApiResult<ResultOfLocalRun> {
     let msg = Contract::construct_call_message_json(
         address.clone(), call_set.clone().into(), false, keys, None, None)
@@ -713,7 +705,7 @@ pub(crate) fn do_local_run(
         Some(call_set.function_name),
         msg.message,
         full_run,
-        time)
+        run_context)
 }
 
 pub(crate) fn do_local_run_msg(
@@ -724,7 +716,7 @@ pub(crate) fn do_local_run_msg(
     function_name: Option<String>,
     msg: TvmMessage,
     full_run: bool,
-    time: Option<u32>,
+    run_context: LocalRunContext,
 ) -> ApiResult<ResultOfLocalRun> {
     let contract = match account {
         // load contract data from node manually
@@ -753,7 +745,7 @@ pub(crate) fn do_local_run_msg(
     };
 
     if full_run {
-        let result = contract.local_call(msg, time)
+        let result = contract.local_call(msg, run_context)
             .map_err(|err|
                 match err.downcast_ref::<ton_sdk::SdkError>() {
                     Some(ton_sdk::SdkError::ContractError(exit_code)) =>
@@ -808,14 +800,16 @@ pub(crate) fn resolve_msg_error(
         Err(err) => return err
     };
 
-    let result = do_local_run_msg(None, address, Some(account), None, None, msg, true, Some(time));
+    let mut context = LocalRunContext::default();
+    context.time = Some(time);
+    let result = do_local_run_msg(None, address.clone(), Some(account), None, None, msg, true, context);
 
     if let Err(mut err) = result {
         err.data["original_error"] = serde_json::to_value(main_error).unwrap_or_default();
         err
     } else {
         main_error.data["disclaimer"] = "Local contract call succeded. Can not resolve extended error".into();
-        main_error
+        main_error.add_address(&address)
     }
 }
 
@@ -824,23 +818,30 @@ pub(crate) async fn resolve_msg_sdk_error<F: Fn(String) -> ApiError>(
     client: &NodeClient,
     error: failure::Error,
     msg: &ton_sdk::SdkMessage,
+    function: Option<&str>,
     default_error: F,
 ) -> ApiResult<ApiError> {
-    match error.downcast_ref::<SdkError>() {
-        Some(SdkError::MessageExpired { msg_id: _, expire: _, sending_time, block_time: _, block_id: _ }) |
-        Some(SdkError::TransactionWaitTimeout { msg_id: _, sending_time, timeout: _, state: _ }) => {
-            let account = Contract::load(client, &msg.address)
-                .await
-                .map_err(|err| apierror_from_sdkerror(
-                    &err, ApiError::contracts_run_contract_load_failed, Some(client),
-                ).add_address(&msg.address))?
-                .ok_or(ApiError::account_missing(&msg.address))?;
-            let main_error = apierror_from_sdkerror(&error, default_error, None);
-            let resolved = resolve_msg_error(
-                msg.address.clone(), account, &msg.serialized_message, *sending_time, main_error,
-            ).add_network_url(client);
-            Ok(resolved)
+    let err = {
+        match error.downcast_ref::<SdkError>() {
+            Some(SdkError::MessageExpired { msg_id: _, expire: _, sending_time, block_time: _, block_id: _ }) |
+            Some(SdkError::TransactionWaitTimeout { msg_id: _, sending_time, timeout: _, state: _ }) => {
+                let account = Contract::load(client, &msg.address)
+                    .await
+                    .map_err(|err| apierror_from_sdkerror(
+                            &err, ApiError::contracts_run_contract_load_failed, Some(client),
+                        ).add_address(&msg.address))?
+                    .ok_or(ApiError::account_missing(&msg.address))?;
+                let main_error = apierror_from_sdkerror(&error, default_error, None);
+                let resolved = resolve_msg_error(
+                    msg.address.clone(), account, &msg.serialized_message, *sending_time, main_error,
+                );
+                Ok(resolved)
+            }
+            _ => Err(apierror_from_sdkerror(&error, default_error, Some(client)))
         }
-        _ => Err(apierror_from_sdkerror(&error, default_error, Some(client)))
-    }
+    }?;
+    Ok(err
+        .add_network_url(client)
+        .add_function(function)
+        .add_address(&msg.address))
 }
