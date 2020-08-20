@@ -15,7 +15,7 @@ use crate::{NodeClientConfig, TimeoutsConfig};
 use crate::error::SdkError;
 use graphite::client::GqlClient;
 use graphite::types::{VariableRequest};
-use futures::{TryFutureExt, Stream, StreamExt};
+use futures::{Stream, StreamExt};
 use serde_json::Value;
 use reqwest::{ClientBuilder};
 use reqwest::StatusCode;
@@ -365,11 +365,14 @@ impl NodeClient {
         };
 
         let client = self.client.as_ref().ok_or(SdkError::SdkNotInitialized)?;
-        client.query_vars(Self::generate_post_mutation(&[request])?)
-            .map_err(|_| SdkError::NetworkError {
-                    msg: "Post message error: server did not responded".to_owned()
-                }.into())
-            .map_ok(|_| ())
-            .await
+        let result = client.query_vars(Self::generate_post_mutation(&[request])?).await;
+
+        // send message is always successful in order to process case when server received message
+        // but client didn't receive responce
+        if let Err(err) = result {
+            log::warn!("Post message error: {}", err);
+        }
+
+        Ok(())
     }
 }
