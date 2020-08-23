@@ -38,13 +38,13 @@ pub(crate) mod load;
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct EncodedMessage {
-    // account address
+    /// account address
     pub address: Option<String>,
-    // message id
+    /// message id
     pub message_id: String,
-    // message boc (header+body)
+    /// message boc (header+body)
     pub message_body_base64: String,
-    // message expiration timestamp - message will not be processed by the contract after message expiration time
+    /// message expiration timestamp - message will not be processed by the contract after message expiration time
     pub expire: Option<u32>,
 }
 
@@ -86,65 +86,77 @@ impl EncodedMessage {
     }
 }
 
+#[doc(summary="Method that sends the message to blockchain and waits for the result transaction")]
+/// Method sends the previously created message,
+/// waits for the result transaction
+/// and decodes the parameters returned by the contract function
+/// according to ABI
 #[cfg(feature = "node_interaction")]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfProcessMessage {
-    // contract ABI
+    /// contract ABI
     pub abi: Option<serde_json::Value>,
-    // name of the called function
+    /// name of the called function
     pub function_name: Option<String>,
-    // structure, containing message boc and additional fields
+    /// structure, containing message boc and additional fields
     pub message: EncodedMessage,
+    /// flag that enables/disables infinite waiting for network recovery and infinite waiting for shard blocks
+    /// (in case of increasing time intervals between shard blocks)
     #[serde(default)]
-    // flag that enables/disables infinite waiting of network recovery and infinite waiting of shard blocks
     pub infinite_wait: bool,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct EncodedUnsignedMessage {
-    // ???
+    /// part of message body without signature containing encoded function parameters
     pub unsigned_bytes_base64: String,
-    // ???
+    /// bytes that must be signed with user key pair (see crypto.sign)
     pub bytes_to_sign_base64: String,
-    // message expiration timestamp - message will not be processed by the contract after message expiration time
+    /// message expiration timestamp - message will not be processed by the contract after message expiration time
     pub expire: Option<u32>,
 }
 
+#[doc(summary="Method that prepares a signed message")]
+/// Method takes unsigned message and other parameters 
+/// to construct a signed message, that is ready to be sent.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfEncodeMessageWithSign {
-    // contract ABI
+    /// contract ABI
     pub abi: serde_json::Value,
-    // ???
+    /// part of message body without signature containing encoded function parameters
     pub unsigned_bytes_base64: String,
-    // signature
+    /// signature
     pub sign_bytes_base64: String,
-    // public key in hex 
+    /// public key 
     pub public_key_hex: Option<String>,
-    // message expiration timestamp - message will not be processed by the contract after message expiration time
+    /// message expiration timestamp - message will not be processed by the contract after message expiration time
     pub expire: Option<u32>,
 }
 
+#[doc(summary="Method that calculates the function id for the specifiad ABI method")]
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ParamsOfGetFunctionId {
-    // contract ABI
+    /// contract ABI
     pub abi: serde_json::Value,
-    // function name
+    /// function name
     pub function: String,
-    // ???
+    /// specifies if the function id is calculated for contract function (true) or event/return (false)
     pub input: bool,
 }
-
+#[doc(summary="Method that converts address to a specified format")]
+/// method takes address in any TON address format: raw or user-friendly(base64 
+/// or base64url), and converts it into a specified format.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfConvertAddress {
-    // account address in any format
+    /// account address in any format
     pub address: String,
-    // specify the format to convert to
+    /// specify the format to convert to
     pub convert_to: AccountAddressType,
-    // parameters of base64 format
+    /// parameters of base64 format
     pub base64_params: Option<Base64AddressParams>,
 }
 
@@ -154,73 +166,93 @@ pub(crate) struct ResultOfGetFunctionId {
     pub id: u32
 }
 
+#[doc(summary="??? Method that extracts the code from a contract image.")]
+/// Method takes the contract image (tvc converted to base64),
+/// extracts the contract's boc with code and returns it.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfGetCodeFromImage {
+    /// tvc converted to base64
     pub image_base64: String,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ResultOfGetCodeFromImage {
-    // contract code in base64
+    /// contract's boc with code in base64
     pub code_base64: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfConvertAddress {
-    // address in the specified format
+    /// address in the specified format
     pub address: String,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct InputBoc {
-    // boc in base64
+    /// boc in base64
     pub boc_base64: String,
 }
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfGetBocHash {
-    // boc hash
+    /// boc hash
     pub hash: String,
 }
 
+#[doc(summary="Method that extracts the code from a contract image.")]
+/// Method checks if the transaction is aborted or not and 
+/// - if aborted - exits with the exit_code from the transaction
+/// - if not - checks if there is an output message generated by the function's return
+/// operator, if it finds it - decodes it according to ABI and returns the result output. 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfProcessTransaction {
-    // transaction
+    /// transaction in json format according to GraphQL schema
     pub transaction: serde_json::Value,
-    // contract ABI
+    /// contract ABI
     pub abi: Option<serde_json::Value>,
-    // function name
+    /// function name
     pub function_name: Option<String>,
-    // account address
+    /// account address
     pub address: String,
 }
 
+#[doc(summary="Method that searches for the account shard")]
+/// Method takes the list of shard hashes and searches
+/// which shard the specified account belongs to
 #[derive(Deserialize)]
 pub(crate) struct ParamsOfFindShard {
-    // list of shards that are checked
+    /// list of shards that are checked
     pub shards: Vec<serde_json::Value>,
-    // address which shard we look for 
+    /// address which shard we look for 
     pub address: String,
 }
 
+#[doc(summary="Method that waits for the result transaction")]
+/// Method waits for the result transaction generated by the message,
+/// starting from message_processing_state.last_block_id
+/// checks if there is an output message generated by the function's return
+/// operator, if it finds it - decodes it according to ABI and returns the result output. 
 #[cfg(feature = "node_interaction")]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfWaitTransaction {
-    // contract ABI
+    /// contract ABI
     pub abi: Option<serde_json::Value>,
-    // contract's function name
+    /// contract's function name
     pub function_name: Option<String>,
-    // message object
+    /// message object
     pub message: EncodedMessage,
-    // message processing state
+    /// message processing state
     pub message_processing_state: MessageProcessingState,
     #[serde(default)]
-    // flag that enables/disables infinite waiting of network recovery and infinite waiting of shard blocks
+    /// flag that enables/disables infinite waiting of the network recovery and infinite waiting of the shard blocks
+    /// if set to false - method ends with exeption in case of network lags
+    /// Lag maximum timeout is specified in Client Config:
+    /// message_processing_timeout
     pub infinite_wait: bool
 }
 

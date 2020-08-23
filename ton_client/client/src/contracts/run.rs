@@ -60,6 +60,19 @@ impl Into<FunctionCallSet> for RunFunctionCallSet {
     }
 }
 
+#[doc(summary="Method that calls a contract's function")]
+/// Method creates a run message signed with key_pair, sends it to the targer workchain,
+/// waits for the result transaction and outbound messages and decodes the result parameters using ABI.
+/// If the contract implements Pragma Expire, the method repeats the algorithm
+/// for message_retries_count times 
+/// if the message was not delivered during message_expiration_timeout (see setup.SetupParams).
+/// If the contract does not implement Pragra Expire - the method waits for the result
+/// transaction for message_processing_timeout (defined in the Client Config),
+/// and exits with 1012 original error.
+/// Before retrying or exiting with 1012, the message is processed on the local transaction executor to check the possible reason
+/// why the transaction was not finalized
+/// and  if such error is found - stops retrying and returns it,
+/// if not - continues retrying or returns disclainmer that the local execution was successful.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfRun {
@@ -69,14 +82,28 @@ pub(crate) struct ParamsOfRun {
     pub call_set: RunFunctionCallSet,
     /// key pair to sign the message
     pub key_pair: Option<KeyPair>,
-    // ???
+    // [1.0.0] will be deprecated 
     pub try_index: Option<u8>,
 }
+
+#[doc(summary="Method that calls a contract on a local TVM")]
+/// Method calls a contract's function on a local TVM
+/// Method can work in 2 modes: TVM mode and Transaction Executor mode.
+/// Mode is defined by full_run parameter. If true - Transaction Executor mode is on.
+///
+/// TVM mode:
+/// used for running get methods. Works same as 'run' but the message is processed on the local TVM:
+/// creates a message, runs it on the local TVM and decodes the return result.
+/// can be used for methods without ACCEPT.
+///
+/// Transaction executor mode:
+/// used to fully emulate message processing to calculate fees and check if all the phases are passed successfully 
+/// If not- returns the error with the exit code and phase.
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfLocalRun {
-    /// account address (used if boc is not defined to load it)
+    /// account address (used to load boc from graphql API if boc is not defined)
     pub address: String,
     /// [1.0.0] account boc
     pub account: Option<serde_json::Value>,
@@ -87,112 +114,124 @@ pub(crate) struct ParamsOfLocalRun {
     #[serde(default)]
     /// flag that enables/disables full run with transaction executor.
     pub full_run: bool,
-    /// ???(will be changed to context)
+    /// will be deprecated
     pub time: Option<u32>,
     #[serde(flatten)]
     pub context: LocalRunContext,
 }
 
+#[doc(summary="Method that processes a specified message on a local TVM")]
+/// Method works as LocalRun, but takes an already prepared message
+/// as a parameter. 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfLocalRunWithMsg {
-    // account address
+    /// account address (used to load boc from graphql API if boc is not defined)
     pub address: String,
-    // ???
+    // [1.0.0] account boc
     pub account: Option<serde_json::Value>,
-    // contract ABI
+    /// contract ABI
     pub abi: Option<serde_json::Value>,
-    // function name
+    /// function name
     pub function_name: Option<String>,
-    // message boc
+    /// message boc
     pub message_base64: String,
     #[serde(default)]
-    // flag that enables/disables full run with transaction executor.
+    /// flag that enables/disables full run with transaction executor (see localRun documentation).
     pub full_run: bool,
-    /// ??? (will be changed to context)
+    /// will be deprecated
     pub time: Option<u32>,
     #[serde(flatten)]
     pub context: LocalRunContext,
 }
 
+#[doc(summary="Method that creates an unsigned message")]
+/// Method prepares an unsigned message that can be signed and sent later. 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfEncodeUnsignedRunMessage {
     // account address
     pub address: String,
     #[serde(flatten)]
-    // ???
     pub call_set: RunFunctionCallSet,
-    // ???
+    /// Parameter is used only for contracts that support Expire Pragma
+    /// to calculate expire header for subsequent retries. 
+    /// Specify 1 for the first retry, 2 - for the second and so on.
+    /// The formula is: expire = now + message_expiration_timeout * message_expiration_timeout_grow_factor * try_index
     pub try_index: Option<u8>,
 }
 
+
+#[doc(summary="??? Method that decodes")]
+/// ??? 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfDecodeRunOutput {
-    // contract ABI
+    /// contract ABI
     pub abi: serde_json::Value,
-    // contract's function name
+    /// contract's function name
     pub function_name: String,
-    // boc of message body
+    /// boc of message body in base64
     pub body_base64: String,
     #[serde(default = "bool_false")]
-    // flag that specifies the message type: internal or not
+    /// flag that specifies the message type: internal or external
     pub internal: bool,
 }
 
+#[doc(summary="??? Method that decodes")]
+/// ??? 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ParamsOfDecodeUnknownRun {
-    // contract ABI
+    /// contract ABI
     pub abi: serde_json::Value,
-    // message body
+    /// boc of message body in base64
     pub body_base64: String,
     #[serde(default = "bool_false")]
-    // flag that specifies the message type: internal or not
+    /// flag that specifies the message type: internal or external
     pub internal: bool,
 }
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfRun {
-    // list of decoded parameters returned by the contract's function
+    /// list of decoded parameters returned by the contract's function
     pub output: serde_json::Value,
-    // fees spent on transaction
+    /// fees spent on transaction
     pub fees: RunFees,
-    // transaction object
+    /// transaction object in json format according to graphQL schema
     pub transaction: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfLocalRun {
-    // list of decoded parameters returned by the contract's function
+    /// list of decoded parameters returned by the contract's function
     pub output: serde_json::Value,
-    // fees spent on transaction
+    /// fees spent on transaction
     pub fees: Option<RunFees>,
-    // ??
+    /// [1.0.0] account boc after the local execution
     pub account: Option<Contract>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ResultOfDecode {
-    // list of decoded parameters
+    /// list of decoded parameters
     pub output: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RunFees {
-    // fee paid for internal message delivery
+    /// fee paid for internal message delivery
     pub in_msg_fwd_fee: String,
-    // storage fee
+    /// fee paid for storage
     pub storage_fee: String,
-    // gas fee for transaction execution
+    /// fee paid for transaction execution
     pub gas_fee: String,
-    //fee paid for external message delivery
+    /// fee paid for external message delivery
     pub out_msgs_fwd_fee: String,
-    // total fee
+    /// total fees paid
     pub total_account_fees: String,
-    // ??
+    /// total value for all internal outbound messaged
     pub total_output: String,
 }
 
@@ -211,49 +250,81 @@ impl From<TransactionFees> for RunFees {
 
 #[derive(Serialize, Deserialize)]
 pub struct ResultOfDecodeUnknownRun {
-    // function name
+    /// function name
     pub function: String,
-    // list of decoded parameters returned by the contract's function
+    /// list of decoded parameters returned by the contract's function
     pub output: serde_json::Value,
 }
 
+#[doc(summary="Method that generates a message and extracts the body from it")]
+/// Method generates a message of internal (internal==true) or external (internal==false) type
+/// according to ABI and specified header, extracts the body boc in base64 from it
+/// and returns it.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfGetRunBody {
-    // contract ABI
+    /// contract ABI
     pub abi: serde_json::Value,
-    // function name
+    /// function name
     pub function: String,
-    // message header
+    /// message header
     pub header: Option<serde_json::Value>,
-    // function parameters
+    /// function parameters
     pub params: serde_json::Value,
     #[serde(default = "bool_false")]
-    // ???
+    /// internal (true) or external (false) message type 
     pub internal: bool,
-    // key pair for signature
+    /// key pair for signature
     pub key_pair: Option<KeyPair>,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ResultOfGetRunBody {
-    // message body boc
+    /// message body boc in base64
     pub body_base64: String,
 }
 
+#[doc(summary="Method that processes the message on local Transaction Executor to investigate why the transaction was not finalized in blockchain.")]
+/// Method investigates why the specified external message was not delivered
+/// It is used in the following methods: run, deploy, process_message, wait_for_transactoin:
+/// in case of not finding the transaction within the specified timeout, the message is processed locally 
+/// on Transaction Executor and if there is an exception, it returns it as 3025 error code and places
+/// exit_code and phase inside of data field of error object. If local processing was successful it returns 
+/// a disclamer that it was successfull. Which means that you need to wait more.
+///
+/// Let's imagine a transaction was not found within the specified timeout.
+/// This may happen for several reasons, including network lag 
+/// or real TVM exception that happened before ACCEPT in the contract on the real network. 
+/// If TVM exception happens before ACCEPT for external inbound messages, such transactions 
+/// are not finalized and will never appear on blockchain. 
+/// So, ResolveError method diagnoses such problems locally so that user can get a hint of what 
+/// the reason may be.  
+/// Although, this method does not give 100% guarantee that the transaction will never be 
+/// finalized because of the locally received exception . 
+/// For instance, if it was not finalized for the reason of not enough balance, and 
+/// value was send to the account before or after the method execution even after some period of time - if it was, there is a probability that
+/// the value can finally be delivered later and the message can eventually succeed, 
+/// because it is in fact broadcasted between validators for some (not defined) period of time and circulates in the network, 
+/// and while it failed on 1/2 of validators before the value was delivered it can succeed on the other 1/2
+/// of validators after the value is delivered.
+/// If in such situation a developer just blindly performs a retry - she may get a double spend. 
+/// Only developer knows which operations and in what
+/// sequence she performs to diagnoze the result of this method and make a decision.
+/// To avoid double spending we recommend using Pragma Expire that at least helps to ensure that the transaction will 
+/// not happen 100% after message is expired. 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfResolveError {
-    // account address
+    /// account address 
     pub address: String,
-    // ???
+    /// [1.0.0] account boc
     pub account: Contract,
-    // message boc (header+body)
+    /// message boc (header+body)
     pub message_base64: String,
-    // ???
+    /// ???
     pub time: u32,
-    // original error
+    /// original error received. For instance - 1012 - the transaction was not delivered during the specified timeout
     pub main_error: ApiError,
 }
 
