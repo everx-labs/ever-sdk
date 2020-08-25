@@ -1093,6 +1093,11 @@ ton_client/platforms/ton-client-web"""
                         if [ -e 'toDeploy' ] ; then echo 'Remove...' ; rm -rf toDeploy ; fi
                         mkdir toDeploy
                     """
+
+                    /* Compile string for bucket tag */
+                    BRANCH_NAME_STRIPPED = "${BRANCH_NAME}".replaceAll("[^a-zA-Z0-9_-]+","__")
+                    BUCKET_TAG = "${BRANCH_NAME_STRIPPED}_b${BUILD_ID}"
+
                     dir('toDeploy') {
                         unstash 'cl-linux-bin'
                         unstash 'cl-darwin-bin'
@@ -1105,6 +1110,9 @@ ton_client/platforms/ton-client-web"""
                         unstash 'web-bin'
                         def deployPath = 'tmp_sdk'
                         if(GIT_BRANCH == "${getVar(G_binversion)}-rc") {
+                            
+                            TON_SDK_BIN_VERSION = GIT_BRANCH.replaceAll(".", "_")
+
                             deployPath = ''
                             sh """
                                 for it in \$(ls)
@@ -1112,7 +1120,24 @@ ton_client/platforms/ton-client-web"""
                                     mv \$it \$(echo \$it | sed -E \"s/([0-9]+_[0-9]+_[0-9]+)/\\1-rc/\");
                                 done
                             """
+
+                            def params = [
+                                [
+                                    $class: 'StringParameterValue',
+                                    name: 'TON_SDK_BIN_VERSION',
+                                    value: "${TON_SDK_BIN_VERSION}"
+                                ],
+                                [
+                                    $class: 'BooleanParameterValue',
+                                    name: 'RUN_TESTS_TON_SURF',
+                                    value: true
+                                ],
+                            ] 
+
+                            build job: "Integration/integration-tests/master", parameters: params
+
                         }
+                        
                         withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
                             identity = awsIdentity()
                             s3Upload \
