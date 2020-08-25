@@ -195,10 +195,10 @@ fn test_tg_mnemonic() {
     let keys = parse_object(client.request(
         "crypto.mnemonic.derive.sign.keys",
         json!({
-            "phrase": "owner stock veteran sort resource round smart plug tent picture ozone fury",
+            "phrase": "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle",
         }),
     ));
-    assert_eq!(get_map_string(&keys, "public"), "36cf573461971289477d65ebc67664805207d07d1cfb337bc28ff86a3f4fa8c7");
+    assert_eq!(get_map_string(&keys, "public"), "c374990ccacb36a87cb016e54fd6fcf0c344e9b0bc6744d9db89f4c272ef9712");
 
     let keys = parse_object(client.request(
         "crypto.mnemonic.derive.sign.keys",
@@ -220,7 +220,7 @@ fn test_tg_mnemonic() {
 
     let phrase = parse_string(client.request("crypto.mnemonic.from.random", json!({
     })));
-    assert_eq!(phrase.split(" ").count(), 12);
+    assert_eq!(phrase.split(" ").count(), 24);
 
     let phrase = parse_string(client.request("crypto.mnemonic.from.random", json!({
         "dictionary": 1,
