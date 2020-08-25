@@ -11,12 +11,14 @@
 * limitations under the License.
 */
 
-use crate::types::{ApiError, ApiResult};
+use crate::types::{ApiError, ApiResult, method_api};
 use crate::client::ClientContext;
 use super::{JsonResponse};
 use std::collections::HashMap;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+use opendoc::api::{Method};
+use opendoc::reflect::TypeInfo;
 
 impl JsonResponse {
     pub(crate) fn from_result(result_json: String) -> Self {
@@ -36,6 +38,7 @@ impl JsonResponse {
 }
 
 trait SyncHandler {
+    fn get_api(&self) -> &Method;
     fn handle(&self, context: &mut ClientContext, params_json: &str) -> JsonResponse;
 }
 
@@ -49,10 +52,14 @@ fn parse_params<P: DeserializeOwned>(params_json: &str) -> ApiResult<P> {
 }
 
 struct CallHandler<P: Send + DeserializeOwned, R: Send + Serialize> {
+    api: Method,
     handler: fn(context: &mut ClientContext, params: P) -> ApiResult<R>,
 }
 
 impl<P: Send + DeserializeOwned, R: Send + Serialize> SyncHandler for CallHandler<P, R> {
+    fn get_api(&self) -> &Method {
+        &self.api
+    }
     fn handle(&self, context: &mut ClientContext, params_json: &str) -> JsonResponse {
         match parse_params(params_json) {
             Ok(params) => {
@@ -71,10 +78,15 @@ impl<P: Send + DeserializeOwned, R: Send + Serialize> SyncHandler for CallHandle
 }
 
 struct CallNoArgsHandler<R: Send + Serialize> {
+    api: Method,
     handler: fn(context: &mut ClientContext) -> ApiResult<R>,
 }
 
 impl<R: Send + Serialize> SyncHandler for CallNoArgsHandler<R> {
+    fn get_api(&self) -> &Method {
+        &self.api
+    }
+
     fn handle(&self, context: &mut ClientContext, _params_json: &str) -> JsonResponse {
         let handler = self.handler;
         let result = handler(context);
@@ -94,10 +106,33 @@ impl DispatchTable {
         }
     }
 
-    pub fn spawn<P, R>(&mut self, method: &str, handler: fn(context: &mut ClientContext, params: P) -> ApiResult<R>)
+    pub fn get_api(&self) -> opendoc::api::API {
+        opendoc::api::API {
+            version: "1.0.0".into(),
+            methods: self.sync_runners.values().map(|x| (*x.get_api()).clone()).collect(),
+            types: Vec::new(),
+        }
+    }
+
+    pub fn spawn_no_api<P, R>(
+        &mut self,
+        method: &str,
+        handler: fn(context: &mut ClientContext, params: P) -> ApiResult<R>,
+    )
         where P: Send + DeserializeOwned + 'static, R: Send + Serialize + 'static
     {
-        self.sync_runners.insert(method.to_string(), Box::new(CallHandler { handler }));
+        self.sync_runners.insert(method.into(), Box::new(CallHandler { api: method_api(method), handler }));
+    }
+
+    pub fn spawn<P, R>(
+        &mut self,
+        method: &str,
+        handler: fn(context: &mut ClientContext, params: P) -> ApiResult<R>,
+    )
+        where P: TypeInfo + Send + DeserializeOwned + 'static, R: TypeInfo + Send + Serialize + 'static
+    {
+        let api = Method::from_types::<P, R>(method);
+        self.sync_runners.insert(method.into(), Box::new(CallHandler { api, handler }));
     }
 
 //    pub fn spawn_no_args<R>(&mut self, method: &str, handler: fn(context: &mut ClientContext) -> ApiResult<R>)
@@ -106,28 +141,36 @@ impl DispatchTable {
 //        self.sync_runners.insert(method.to_string(), Box::new(CallNoArgsHandler { handler }));
 //    }
 
-    pub fn call<P, R>(&mut self, method: &str, handler: fn(context: &mut ClientContext, params: P) -> ApiResult<R>)
+    pub fn call<P, R>(
+        &mut self,
+        method: &str,
+        handler: fn(context: &mut ClientContext, params: P) -> ApiResult<R>
+    )
         where P: Send + DeserializeOwned + 'static, R: Send + Serialize + 'static
     {
-        self.sync_runners.insert(method.to_string(), Box::new(CallHandler { handler }));
+        self.sync_runners.insert(method.into(), Box::new(CallHandler { api: method_api(method), handler }));
     }
 
-    pub fn call_no_args<R>(&mut self, method: &str, handler: fn(context: &mut ClientContext) -> ApiResult<R>)
+    pub fn call_no_args<R>(
+        &mut self,
+        method: &str,
+        handler: fn(context: &mut ClientContext) -> ApiResult<R>
+    )
         where R: Send + Serialize + 'static
     {
-        self.sync_runners.insert(method.to_string(), Box::new(CallNoArgsHandler { handler }));
+        self.sync_runners.insert(method.into(), Box::new(CallNoArgsHandler { api: method_api(method), handler }));
     }
 
     pub fn sync_dispatch(&self, context: &mut ClientContext, method: String, params_json: String) -> JsonResponse {
         // TODO: delete when JS bindings will save context
         #[cfg(not(feature = "node_interaction"))]
-        {
-            if context.client.is_none() {
-                context.client = Some(ton_sdk::init(ton_sdk::NodeClientConfig {
-                    timeouts: Some(ton_sdk::TimeoutsConfig::default())
-                }).unwrap())
+            {
+                if context.client.is_none() {
+                    context.client = Some(ton_sdk::init(ton_sdk::NodeClientConfig {
+                        timeouts: Some(ton_sdk::TimeoutsConfig::default())
+                    }).unwrap())
+                }
             }
-        }
         match self.sync_runners.get(&method) {
             Some(handler) => handler.handle(context, params_json.as_str()),
             None => JsonResponse::from_error(ApiError::unknown_method(&method))

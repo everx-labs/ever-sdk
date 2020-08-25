@@ -20,6 +20,7 @@ use ton_sdk::NodeClient;
 
 #[cfg(feature = "node_interaction")]
 use tokio::runtime::Runtime;
+use crate::get_api;
 
 fn create_handlers() -> DispatchTable {
     let mut handlers = DispatchTable::new();
@@ -32,8 +33,12 @@ fn create_handlers() -> DispatchTable {
     // crate::cell::register(&mut handlers);
 
     #[cfg(feature = "node_interaction")]
-    crate::queries::register(&mut handlers);
+        crate::queries::register(&mut handlers);
 
+    handlers.call_no_args(
+        "config.get_api_reference",
+        |_context| Ok(get_api()),
+    );
     handlers
 }
 
@@ -50,7 +55,7 @@ pub(crate) struct ClientContext {
     pub client: Option<NodeClient>,
     #[cfg(feature = "node_interaction")]
     pub runtime: Option<Runtime>,
-    pub handle: InteropContext
+    pub handle: InteropContext,
 }
 
 impl ClientContext {
@@ -93,14 +98,14 @@ impl Client {
         self.next_context_handle = handle.wrapping_add(1);
 
         #[cfg(feature = "node_interaction")]
-        self.contexts.insert(handle, Arc::new(Mutex::new(ClientContext {
+            self.contexts.insert(handle, Arc::new(Mutex::new(ClientContext {
             handle,
             client: None,
             runtime: None,
         })));
 
         #[cfg(not(feature = "node_interaction"))]
-        self.contexts.insert(handle,  Arc::new(Mutex::new(ClientContext {
+            self.contexts.insert(handle, Arc::new(Mutex::new(ClientContext {
             handle,
             client: None,
         })));
@@ -133,6 +138,9 @@ impl Client {
         }
     }
 
+    pub fn get_api(&self) -> opendoc::api::API {
+        HANDLERS.get_api()
+    }
 }
 
 

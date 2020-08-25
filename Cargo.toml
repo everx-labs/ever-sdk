@@ -1,7 +1,9 @@
 [workspace]
 members = [
     "ton_sdk",
-    "ton_client/client"
+    "ton_client/client",
+    "ton_sdk_cli",
+    "opendoc_test",
 ]
 
 exclude = [

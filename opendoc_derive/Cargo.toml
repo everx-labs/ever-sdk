@@ -1,0 +1,14 @@
+[package]
+name = "opendoc_derive"
+version = "0.1.0"
+authors = ["Michael Vlasov <melsomino@gmail.com>"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "1.0"
+quote = "1.0"
+opendoc = { path = "../opendoc" }
+

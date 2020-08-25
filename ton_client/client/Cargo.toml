@@ -10,8 +10,14 @@ name = "ton_client"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+ton_sdk = { path = "../../ton_sdk", default-features = false }
+opendoc = { path = "../../opendoc" }
+opendoc_derive = { path = "../../opendoc_derive" }
+
 ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }
 ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git" }
+sodalite = { git = "https://github.com/tonlabs/sodalite.git", features = ["rand"] }
+bip39 = { git = "https://github.com/tonlabs/bip39-rs.git" }
 
 rand = "0.7.3"
 hex = "0.3.2"
@@ -23,10 +29,8 @@ sha2 = "0.8"
 base64 = "0.10.0"
 lazy_static = "1.1.0"
 num-bigint = "0.2.2"
-sodalite = { git = "https://github.com/tonlabs/sodalite.git", features = ["rand"] }
 chrono = "0.4.6"
 scrypt = { version = "0.2.0", default-features = false }
-bip39 = { git = "https://github.com/tonlabs/bip39-rs.git" }
 hmac = "0.7.1"
 base58 = "0.1.0"
 pbkdf2 = { version = "0.3.0", default-features = false, features = [] }
@@ -37,8 +41,6 @@ crc-any = "2.2.3"
 failure = "0.1"
 num-traits = "0.2"
 num-derive = "0.3"
-
-ton_sdk = { path = "../../ton_sdk", default-features = false }
 
 [dev-dependencies]
 log4rs = "^0"
