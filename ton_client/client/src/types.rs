@@ -20,6 +20,51 @@ use ton_sdk::{SdkError, MessageProcessingState};
 use ton_types::ExceptionCode;
 use chrono::TimeZone;
 
+#[derive(Deserialize, TypeInfo)]
+pub(crate) struct InputMessage {
+    pub text: Option<String>,
+    pub hex: Option<String>,
+    pub base64: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub(crate) enum OutputEncoding {
+    Text,
+    Hex,
+    HexUppercase,
+    Base64,
+}
+
+impl InputMessage {
+    pub(crate) fn decode(&self) -> ApiResult<Vec<u8>> {
+        if let Some(ref text) = self.text {
+            Ok(text.as_bytes().to_vec())
+        } else if let Some(ref hex) = self.hex {
+            hex_decode(hex)
+        } else if let Some(ref base64) = self.base64 {
+            base64_decode(base64)
+        } else {
+            Err(ApiError::crypto_convert_input_data_missing())
+        }
+    }
+}
+
+impl OutputEncoding {
+    pub(crate) fn encode(&self, output: Vec<u8>) -> ApiResult<String> {
+        match self {
+            OutputEncoding::Text => Ok(String::from_utf8(output)
+                .map_err(|err| ApiError::crypto_convert_output_can_not_be_encoded_to_utf8(err))?),
+            OutputEncoding::Hex => Ok(hex::encode(output)),
+            OutputEncoding::HexUppercase => Ok(hex::encode_upper(output)),
+            OutputEncoding::Base64 => Ok(base64::encode(&output))
+        }
+    }
+}
+
+
+
+//------------------------------------------------------------------------------------------------------
+
 pub(crate) fn method_api(name: &str) -> opendoc::api::Method {
     opendoc::api::Method {
         name: name.into(),

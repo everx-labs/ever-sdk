@@ -22,14 +22,15 @@ pub(crate) mod mnemonic;
 pub(crate) mod hdkey;
 
 use crate::crypto as api;
-use crate::types::{base64_decode, ApiError, ApiResult, hex_decode};
+use crate::types::{base64_decode, ApiError, ApiResult, hex_decode, OutputEncoding, InputMessage};
 use crate::crypto::keys::{KeyPair, key_to_ton_string};
 use crate::crypto::keys::KeyStore;
 use crate::dispatch::DispatchTable;
 use crate::client::ClientContext;
-use crate::crypto::math::ton_crc16;
+use crate::crypto::math::{ton_crc16, modular_power, factorize, generate_random_bytes};
 use crate::crypto::mnemonic::{CryptoMnemonic, TonMnemonic, Bip39Mnemonic};
 use bip39::{MnemonicType, Language};
+use crate::serialization::default_output_encoding_base64;
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub(crate) struct FactorizeResult {
@@ -52,21 +53,6 @@ pub struct ModularPowerParams {
 pub struct ModularPowerResult {
     /// the result of
     result: String,
-}
-
-#[derive(Deserialize, TypeInfo)]
-pub(crate) struct InputMessage {
-    pub text: Option<String>,
-    pub hex: Option<String>,
-    pub base64: Option<String>,
-}
-
-#[derive(Deserialize)]
-pub(crate) enum OutputEncoding {
-    Text,
-    Hex,
-    HexUppercase,
-    Base64,
 }
 
 #[derive(Deserialize)]
@@ -235,35 +221,6 @@ fn default_path() -> String {
     "m/44'/396'/0'/0/0".into()
 }
 
-fn default_result_encoding_hex() -> OutputEncoding {
-    OutputEncoding::Hex
-}
-
-impl InputMessage {
-    pub(crate) fn decode(&self) -> ApiResult<Vec<u8>> {
-        if let Some(ref text) = self.text {
-            Ok(text.as_bytes().to_vec())
-        } else if let Some(ref hex) = self.hex {
-            hex_decode(hex)
-        } else if let Some(ref base64) = self.base64 {
-            base64_decode(base64)
-        } else {
-            Err(ApiError::crypto_convert_input_data_missing())
-        }
-    }
-}
-
-impl OutputEncoding {
-    pub(crate) fn encode(&self, output: Vec<u8>) -> ApiResult<String> {
-        match self {
-            OutputEncoding::Text => Ok(String::from_utf8(output)
-                .map_err(|err| ApiError::crypto_convert_output_can_not_be_encoded_to_utf8(err))?),
-            OutputEncoding::Hex => Ok(hex::encode(output)),
-            OutputEncoding::HexUppercase => Ok(hex::encode_upper(output)),
-            OutputEncoding::Base64 => Ok(base64::encode(&output))
-        }
-    }
-}
 
 const TON_DICTIONARY: u8 = 0;
 const ENGLISH_DICTIONARY: u8 = 1;
@@ -305,35 +262,10 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 
     // Math
 
-    handlers.spawn("crypto.math.factorize", |_context: &mut ClientContext, hex: String| {
-        let challenge = u64::from_str_radix(hex.as_str(), 16).
-            map_err(|err| ApiError::crypto_invalid_factorize_challenge(&hex, err))?;
-        if challenge == 0 {
-            return Err(ApiError::crypto_invalid_factorize_challenge(&hex, "Challenge can not be zero"));
-        }
-        let answer = api::math::factorize(challenge);
-        if answer.len() != 2 {
-            return Err(ApiError::crypto_invalid_factorize_challenge(&hex, "Challenge can not be factorized"));
-        }
-        Ok(FactorizeResult {
-            a: format!("{:X}", answer[0]),
-            b: format!("{:X}", answer[1]),
-        })
-    });
-    handlers.spawn("crypto.math.modularPower", |_context: &mut ClientContext, params: ModularPowerParams| {
-        api::math::modular_power(&params.base, &params.exponent, &params.modulus)
-    });
-
-    handlers.spawn("crypto.ton_crc16", |_context: &mut ClientContext, params: InputMessage| {
-        let bytes = params.decode()?;
-        Ok(ton_crc16(&bytes))
-    });
-
-    // Random
-
-    handlers.call("crypto.random.generateBytes", |_context: &mut ClientContext, params: GenerateParams| {
-        params.output_encoding.encode(api::random::generate_bytes(params.length))
-    });
+    handlers.spawn("crypto.factorize", factorize);
+    handlers.spawn("crypto.modular_power", modular_power);
+    handlers.spawn("crypto.ton_crc16", ton_crc16);
+    handlers.call("crypto.generate_random_bytes", generate_random_bytes);
 
     // Keys
 

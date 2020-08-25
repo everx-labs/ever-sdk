@@ -14,37 +14,74 @@
 use crate::types::{ApiResult, ApiError};
 use num_bigint::BigInt;
 use rand::RngCore;
+use serde::{Deserializer, Serializer};
+use crate::client::ClientContext;
+use crate::crypto::{InputMessage, OutputEncoding};
+use crate::serialization::{default_output_encoding_base64};
 
-fn parse_big_int(hex: &str) -> ApiResult<BigInt> {
-    BigInt::parse_bytes(hex.as_bytes(), 16)
-        .ok_or(ApiError::crypto_invalid_big_int(&hex.to_string()))
+
+//----------------------------------------------------------------------------------- modular_power
+
+#[derive(Deserialize)]
+pub struct ParamsOfModularPower {
+    /// `base` argument of calculation.
+    pub base: String,
+    /// `exponent` argument of calculation.
+    pub exponent: String,
+    /// `modulus` argument of calculation.
+    pub modulus: String,
 }
 
-pub(crate) fn ton_crc16(data: &[u8]) -> u16 {
-    let mut crc = crc_any::CRC::crc16xmodem();
-    crc.digest(data);
-    crc.get_crc() as u16
+#[derive(Serialize)]
+pub struct ResultOfModularPower {
+    pub modular_power: String,
 }
 
-pub fn modular_power(base: &String, exponent: &String, modulus: &String) -> ApiResult<String> {
-    let base = parse_big_int(&base)?;
-    let exp = parse_big_int(&exponent)?;
-    let modulus = parse_big_int(&modulus)?;
-    let answer = base.modpow(&exp, &modulus);
-    Ok(answer.to_str_radix(16))
+/// Performs modular exponentiation for big integers (`base`^`exponent` mod `modulus`).
+/// See [https://en.wikipedia.org/wiki/Modular_exponentiation]
+pub fn modular_power(
+    _context: &mut ClientContext,
+    params: ParamsOfModularPower,
+) -> ApiResult<ResultOfModularPower> {
+    Ok(ResultOfModularPower {
+        modular_power: base.modpow(&params.exponent, &params.modulus)
+    })
 }
 
-pub fn factorize(what: u64) -> Vec<u64> {
+//--------------------------------------------------------------------------------------- factorize
+
+#[derive(Deserialize)]
+pub struct ParamsOfFactorize {
+    /// Hexadecimal representation of u64 composite number.
+    pub composite_number: String,
+}
+
+#[derive(Serialize)]
+pub struct ResultOfFactorize {
+    /// Two products of composite or empty if composite can't be factorized.
+    products: Vec<String>,
+}
+
+/// Performs prime factorization – decomposition of a composite number
+/// into a product of smaller prime integers.
+/// See [https://en.wikipedia.org/wiki/Integer_factorization]
+pub fn factorize(_context: &mut ClientContext, params: ParamsOfFactorize) -> ApiResult<ResultOfFactorize> {
+    let challenge = u64::from_str_radix(&params.composite_number, 16).
+        map_err(|err| ApiError::crypto_invalid_factorize_challenge(&hex, err))?;
+    if challenge == 0 {
+        return Err(ApiError::crypto_invalid_factorize_challenge(&hex, "Challenge can not be zero"));
+    }
+
     let mut it = 0;
     let mut i = 0;
     let mut g: u64 = 0;
     let mut rng = rand::thread_rng();
 
     while i < 3 || it < 1000 {
-        let mut x = rng.next_u64() % (what - 1) + 1;
+        let mut x = rng.next_u64() % (challenge - 1) + 1;
         let mut y = x;
 
-        let q = ((rng.next_u64() & 0xF) + 17) % what;
+        let q = ((rng.next_u64() & 0xF) + 17) % challenge;
         let lim = 1 << (i + 18);
 
         for j in 1..lim {
@@ -56,15 +93,15 @@ pub fn factorize(what: u64) -> Vec<u64> {
             while b != 0 {
                 if b & 1 != 0 {
                     c += a;
-                    if c >= what {
-                        c -= what;
+                    if c >= challenge {
+                        c -= challenge;
                     }
                 }
 
                 a += a;
 
-                if a >= what {
-                    a -= what;
+                if a >= challenge {
+                    a -= challenge;
                 }
                 b >>= 1;
             }
@@ -72,12 +109,12 @@ pub fn factorize(what: u64) -> Vec<u64> {
             x = c;
 
             let z = if x < y {
-                what + x - y
+                challenge + x - y
             } else {
                 x - y
             };
 
-            g = gcd(z, what);
+            g = gcd(z, challenge);
 
             if g != 1 {
                 break;
@@ -88,25 +125,27 @@ pub fn factorize(what: u64) -> Vec<u64> {
             }
         }
 
-        if g > 1 && g < what {
+        if g > 1 && g < challenge {
             break;
         }
 
         i += 1;
     }
 
-    if g > 1 && g < what {
+    if g > 1 && g < challenge {
         let mut p1 = g;
-        let mut p2 = what / g;
+        let mut p2 = challenge / g;
         if p1 > p2 {
             let tmp = p1;
             p1 = p2;
             p2 = tmp;
         }
-
-        vec![p1, p2]
+        Ok(ResultOfFactorize {
+            a: format!("{:X}", p1),
+            b: format!("{:X}", p2),
+        })
     } else {
-        vec![]
+        return Err(ApiError::crypto_invalid_factorize_challenge(&hex, "Challenge can not be factorized"));
     }
 }
 
@@ -134,3 +173,61 @@ fn gcd(mut a: u64, mut b: u64) -> u64 {
     }
 }
 
+//------------------------------------------------------------------- ton_crc16
+
+#[derive(Deserialize)]
+pub struct ParamsOfTonCrc16 {
+    /// Input data for CRC calculation.
+    data: InputMessage,
+}
+
+#[derive(Serialize)]
+pub struct ResultOfTonCrc16 {
+    /// Calculated CRC for input data.
+    crc: u16,
+}
+
+/// Calculates CRC16 using TON algorithm.
+pub fn ton_crc16(_context: &mut ClientContext, params: ParamsOfTonCrc16) -> ApiResult<ResultOfTonCrc16> {
+    Ok(ResultOfTonCrc16 {
+        crc: internal_ton_crc16(&(params.data.decode()?))
+    })
+}
+
+pub(crate) fn internal_ton_crc16(data: &[u8]) -> u16 {
+    let mut crc = crc_any::CRC::crc16xmodem();
+    crc.digest(data);
+    crc.get_crc() as u16
+}
+
+//------------------------------------------------------------------- generate_random_bytes
+
+#[derive(Deserialize)]
+pub struct ParamsOfGenerateRandomBytes {
+    /// Size of random byte array.
+    length: u32,
+    /// Encoding of generated bytes. Default is `base64`.
+    #[serde(default = "default_output_encoding_base64")]
+    output_encoding: OutputEncoding,
+}
+
+#[derive(Serialize)]
+pub struct ResultOfGenerateRandomBytes {
+    /// Generated bytes, encoded into string using `output_encoding` parameter.
+    bytes: String,
+}
+
+/// Generates random byte array of specified length.
+pub fn generate_random_bytes(
+    _context: &mut ClientContext,
+    params: ParamsOfGenerateRandomBytes,
+) -> ApiResult<ResultOfGenerateRandomBytes> {
+    let mut rng = rand::thread_rng();
+    let mut bytes: Vec<u8> = Vec::new();
+    bytes.resize(len, 0);
+    rng.fill_bytes(&mut bytes);
+
+    Ok(ResultOfGenerateRandomBytes {
+        bytes: params.output_encoding.encode(bytes)?
+    })
+}
