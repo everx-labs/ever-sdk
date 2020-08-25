@@ -21,6 +21,7 @@ use crate::{tc_create_context, tc_destroy_context};
 use ton_block::MsgAddressInt;
 use std::str::FromStr;
 use crate::types::{ApiError};
+use opendoc::api::API;
 
 //mod resolve_error;
 
@@ -42,7 +43,7 @@ impl log::Log for SimpleLogger {
 }
 
 fn get_network_address() -> String {
-    std::env::var("TON_NETWORK_ADDRESS").unwrap_or("http://localhost:80".to_owned())
+    std::env::var("TON_NETWORK_ADDRESS").unwrap_or("http://localhost:8080".to_owned())
 }
 
 #[derive(Clone)]
@@ -182,6 +183,47 @@ fn test_query_cell() {
 
     println!("{}", result2);
     println!("{}", result.unwrap())
+}
+
+#[test]
+fn test_tonos_key_derivation() {
+    let client = TestClient::new();
+    let phrase = "smart payment illness art loud virus orbit suspect enjoy hotel people about";
+
+    // Default TONOS Key Derivation
+    let keys = parse_object(client.request(
+        "crypto.mnemonic.derive.sign.keys",
+        json!({
+            "phrase": phrase,
+        }),
+    ));
+    assert_eq!(get_map_string(&keys, "public"), "f4c8c7eb4f81f1153703b76a23827f370a7a776da6f7f74b2fd692a5bc4edab3");
+    assert_eq!(get_map_string(&keys, "secret"), "eab2364790e3d8629f4ed019148d373cd6acc5b7af3ec2ada35c591c5de48fec");
+
+    // Surf Style TONOS Key Derivation
+    let hdk_master = parse_string(client.request("crypto.hdkey.xprv.from.mnemonic", json!({
+            "dictionary": 1,
+            "wordCount": 12,
+            "phrase": phrase
+        })));
+    let hdk_root = parse_string(client.request("crypto.hdkey.xprv.derive.path", json!({
+        "serialized": hdk_master,
+        "path": "m/44'/396'/0'/0/0",
+        "compliant": false,
+    })));
+    let secret = parse_string(client.request("crypto.hdkey.xprv.secret", json!({
+        "serialized": hdk_root
+    })));
+    let keys = parse_object(client.request("crypto.nacl.sign.keypair.fromSecretKey",
+        Value::String(secret),
+    ));
+    let public = get_map_string(&keys, "public");
+    let mut secret = get_map_string(&keys, "secret");
+    if secret.len() > public.len() {
+        secret = secret[..public.len()].into();
+    }
+    assert_eq!(public, "f4c8c7eb4f81f1153703b76a23827f370a7a776da6f7f74b2fd692a5bc4edab3");
+    assert_eq!(secret, "eab2364790e3d8629f4ed019148d373cd6acc5b7af3ec2ada35c591c5de48fec");
 }
 
 #[test]
@@ -547,7 +589,7 @@ fn test_out_of_sync() {
 
     let value: Value = serde_json::from_str(&error).unwrap();
 
-   assert_eq!(value["code"], 1013);
+    assert_eq!(value["code"], 1013);
 }
 
 
@@ -684,3 +726,14 @@ fn test_find_shard() {
     assert_eq!(result, Value::Null.to_string());
 }
 
+#[test]
+fn test_api_reference() {
+    let client = TestClient::new();
+    let api = serde_json::from_str::<API>(&client.request(
+        "config.get_api_reference",
+        Value::Null
+    ).unwrap()).unwrap();
+    let m = api.methods.iter().find(|x|x.name == "crypto.ton_crc16").unwrap();
+    assert_eq!(m.params.len(), 3);
+    // println!("{}", serde_json::to_string_pretty(&api).unwrap());
+}

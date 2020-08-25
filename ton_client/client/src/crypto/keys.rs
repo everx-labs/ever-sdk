@@ -27,7 +27,7 @@ pub type Key256 = [u8; 32];
 pub type Key264 = [u8; 33];
 pub type Key512 = [u8; 64];
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, TypeInfo)]
 pub struct KeyPair {
     pub public: String,
     pub secret: String,
@@ -149,7 +149,7 @@ pub(crate) fn account_encode_ex(
 }
 
 pub fn account_decode(string: &str) -> ApiResult<MsgAddressInt> {
-    match MsgAddressInt::from_str(string) { 
+    match MsgAddressInt::from_str(string) {
         Ok(address) => Ok(address),
         Err(_) if string.len() == 48 => {
             decode_std_base64(string)
@@ -196,7 +196,7 @@ fn encode_base64(address: &MsgAddressInt, bounceable: bool, test: bool, as_url: 
         } else {
             Ok(result)
         }
-    } else { 
+    } else {
         Err(ApiError::crypto_invalid_address("Non-std address", &address.to_string()).into())
     }
 }

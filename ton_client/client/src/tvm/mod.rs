@@ -107,5 +107,5 @@ pub(crate) fn get(
 }
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.spawn("tvm.get", get);
+    handlers.spawn_no_api("tvm.get", get);
 }

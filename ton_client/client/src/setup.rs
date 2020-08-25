@@ -13,7 +13,7 @@
 
 use crate::client::ClientContext;
 use crate::dispatch::DispatchTable;
-use crate::types::ApiResult;
+use crate::types::{ApiResult};
 use crate::types::ApiError;
 
 use ton_sdk::{NodeClientConfig, TimeoutsConfig};
@@ -28,7 +28,6 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
     handlers.call_no_args("version", |_|Ok(env!("CARGO_PKG_VERSION")));
     handlers.call_no_args("context.get", |context|Ok(context.handle));
 }
-
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all="camelCase")]
@@ -82,7 +81,6 @@ fn setup(context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
 
     Ok(())
 }
-
 
 #[cfg(not(feature = "node_interaction"))]
 fn setup(context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
