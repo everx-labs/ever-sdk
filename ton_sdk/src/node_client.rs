@@ -26,7 +26,7 @@ use ton_types::{error, Result};
 
 pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum SortDirection {
     #[serde(rename = "ASC")]
     Ascending,
@@ -34,7 +34,7 @@ pub enum SortDirection {
     Descending
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct OrderBy {
     pub path: String,
     pub direction: SortDirection
@@ -302,8 +302,15 @@ impl NodeClient {
         limit: Option<u32>,
         timeout: Option<u32>
     ) -> Result<VariableRequest> {
-        let mut scheme_type = (&table[0 .. table.len() - 1]).to_owned() + "Filter";
-        scheme_type[..1].make_ascii_uppercase();
+        let mut scheme_type: Vec<String> = table.split_terminator("_")
+            .map(|word| {
+                let mut word = word.to_owned();
+                word[..1].make_ascii_uppercase();
+                word
+            })
+            .collect();
+        scheme_type[0] = scheme_type[0].trim_end_matches("s").to_owned();
+        let scheme_type: String = scheme_type.join("") + "Filter";
 
         let mut query = format!(
             r#"query {table}

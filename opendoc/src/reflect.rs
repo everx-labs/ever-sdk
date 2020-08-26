@@ -36,3 +36,14 @@ impl TypeInfo for bool {
         }
     }
 }
+
+impl TypeInfo for () {
+    fn type_info() -> Field {
+        Field {
+            name: "unit".into(),
+            summary: None,
+            description: None,
+            value: Type::None,
+        }
+    }
+}

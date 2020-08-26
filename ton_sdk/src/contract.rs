@@ -169,7 +169,7 @@ pub struct OtherCurrencyValue {
 // The struct represents smart contract and allows
 // to deploy and call it, to get some contract's properties.
 // Don't forget - in TON blockchain Contract and Account are the same substances.
-#[derive(Serialize, Deserialize, Default, Debug)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone)]
 #[serde(default)]
 pub struct Contract {
     #[serde(with = "json_helper::address")]

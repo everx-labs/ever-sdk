@@ -1,0 +1,98 @@
+{
+	"ABI version": 1,
+	"functions": [
+		{
+			"name": "constructor",
+			"inputs": [
+				{"name":"wallet","type":"address"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "sendTransaction",
+			"inputs": [
+				{"name":"dest","type":"address"},
+				{"name":"value","type":"uint128"},
+				{"name":"bounce","type":"bool"},
+				{"name":"flags","type":"uint8"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getWallet",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"wallet","type":"address"}
+			]
+		},
+		{
+			"name": "getOwnerKey",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"ownerKey","type":"uint256"}
+			]
+		},
+		{
+			"name": "getSubscription",
+			"inputs": [
+				{"name":"subscriptionId","type":"uint256"}
+			],
+			"outputs": [
+				{"components":[{"name":"pubkey","type":"uint256"},{"name":"to","type":"address"},{"name":"value","type":"uint64"},{"name":"period","type":"uint32"},{"name":"start","type":"uint32"},{"name":"status","type":"uint8"}],"name":"subscription","type":"tuple"}
+			]
+		},
+		{
+			"name": "getSubscriptions",
+			"inputs": [
+			],
+			"outputs": [
+				{"components":[{"name":"pubkey","type":"uint256"},{"name":"to","type":"address"},{"name":"value","type":"uint64"},{"name":"period","type":"uint32"},{"name":"start","type":"uint32"},{"name":"status","type":"uint8"}],"name":"subscriptions","type":"tuple[]"}
+			]
+		},
+		{
+			"name": "subscribe",
+			"inputs": [
+				{"name":"subscriptionId","type":"uint256"},
+				{"name":"pubkey","type":"uint256"},
+				{"name":"to","type":"address"},
+				{"name":"value","type":"uint64"},
+				{"name":"period","type":"uint32"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "cancel",
+			"inputs": [
+				{"name":"subscriptionId","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "executeSubscription",
+			"inputs": [
+				{"name":"subscriptionId","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "transfer",
+			"inputs": [
+				{"name":"to","type":"address"},
+				{"name":"value","type":"uint128"},
+				{"name":"bounce","type":"bool"},
+				{"name":"flags","type":"uint16"}
+			],
+			"outputs": [
+			]
+		}
+	],
+	"events": [
+	]
+}
