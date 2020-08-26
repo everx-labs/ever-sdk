@@ -1094,10 +1094,6 @@ ton_client/platforms/ton-client-web"""
                         mkdir toDeploy
                     """
 
-                    /* Compile string for bucket tag */
-                    BRANCH_NAME_STRIPPED = "${BRANCH_NAME}".replaceAll("[^a-zA-Z0-9_-]+","__")
-                    BUCKET_TAG = "${BRANCH_NAME_STRIPPED}_b${BUILD_ID}"
-
                     dir('toDeploy') {
                         unstash 'cl-linux-bin'
                         unstash 'cl-darwin-bin'
