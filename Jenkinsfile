@@ -1107,7 +1107,8 @@ ton_client/platforms/ton-client-web"""
                         def deployPath = 'tmp_sdk'
                         if(GIT_BRANCH == "${getVar(G_binversion)}-rc") {
                             
-                            TON_SDK_BIN_VERSION = GIT_BRANCH.replace(".", "_")
+                            TON_SDK_BIN_VERSION = GIT_BRANCH.replaceAll("\\.", "_")
+                            echo "TON_SDK_BIN_VERSION: ${TON_SDK_BIN_VERSION}"
 
                             deployPath = ''
                             sh """
