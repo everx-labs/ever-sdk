@@ -11,14 +11,12 @@
 * limitations under the License.
 */
 
-use crate::types::{ApiResult, ApiError};
+use crate::types::{ApiResult, ApiError, InputData, OutputEncoding};
 use num_bigint::BigInt;
 use rand::RngCore;
 use serde::{Deserializer, Serializer};
 use crate::client::ClientContext;
-use crate::crypto::{InputMessage, OutputEncoding};
 use crate::serialization::{default_output_encoding_base64};
-
 
 //----------------------------------------------------------------------------------- modular_power
 
@@ -53,23 +51,28 @@ pub fn modular_power(
 #[derive(Deserialize)]
 pub struct ParamsOfFactorize {
     /// Hexadecimal representation of u64 composite number.
-    pub composite_number: String,
+    pub composite: String,
 }
 
 #[derive(Serialize)]
 pub struct ResultOfFactorize {
     /// Two products of composite or empty if composite can't be factorized.
-    products: Vec<String>,
+    pub products: [String; 2],
 }
 
 /// Performs prime factorization – decomposition of a composite number
 /// into a product of smaller prime integers.
 /// See [https://en.wikipedia.org/wiki/Integer_factorization]
-pub fn factorize(_context: &mut ClientContext, params: ParamsOfFactorize) -> ApiResult<ResultOfFactorize> {
-    let challenge = u64::from_str_radix(&params.composite_number, 16).
-        map_err(|err| ApiError::crypto_invalid_factorize_challenge(&hex, err))?;
-    if challenge == 0 {
-        return Err(ApiError::crypto_invalid_factorize_challenge(&hex, "Challenge can not be zero"));
+pub fn factorize(
+    _context: &mut ClientContext,
+    params: ParamsOfFactorize,
+) -> ApiResult<ResultOfFactorize> {
+    let invalid_composite = |err|
+        Err(ApiError::crypto_invalid_factorize_challenge(&params.composite, err));
+    let composite = u64::from_str_radix(&params.composite, 16).
+        map_err(|err| invalid_composite(err))?;
+    if composite == 0 {
+        return invalid_composite("Composite number can not be zero");
     }
 
     let mut it = 0;
@@ -78,10 +81,10 @@ pub fn factorize(_context: &mut ClientContext, params: ParamsOfFactorize) -> Api
     let mut rng = rand::thread_rng();
 
     while i < 3 || it < 1000 {
-        let mut x = rng.next_u64() % (challenge - 1) + 1;
+        let mut x = rng.next_u64() % (composite - 1) + 1;
         let mut y = x;
 
-        let q = ((rng.next_u64() & 0xF) + 17) % challenge;
+        let q = ((rng.next_u64() & 0xF) + 17) % composite;
         let lim = 1 << (i + 18);
 
         for j in 1..lim {
@@ -93,15 +96,15 @@ pub fn factorize(_context: &mut ClientContext, params: ParamsOfFactorize) -> Api
             while b != 0 {
                 if b & 1 != 0 {
                     c += a;
-                    if c >= challenge {
-                        c -= challenge;
+                    if c >= composite {
+                        c -= composite;
                     }
                 }
 
                 a += a;
 
-                if a >= challenge {
-                    a -= challenge;
+                if a >= composite {
+                    a -= composite;
                 }
                 b >>= 1;
             }
@@ -109,12 +112,12 @@ pub fn factorize(_context: &mut ClientContext, params: ParamsOfFactorize) -> Api
             x = c;
 
             let z = if x < y {
-                challenge + x - y
+                composite + x - y
             } else {
                 x - y
             };
 
-            g = gcd(z, challenge);
+            g = gcd(z, composite);
 
             if g != 1 {
                 break;
@@ -125,27 +128,26 @@ pub fn factorize(_context: &mut ClientContext, params: ParamsOfFactorize) -> Api
             }
         }
 
-        if g > 1 && g < challenge {
+        if g > 1 && g < composite {
             break;
         }
 
         i += 1;
     }
 
-    if g > 1 && g < challenge {
+    if g > 1 && g < composite {
         let mut p1 = g;
-        let mut p2 = challenge / g;
+        let mut p2 = composite / g;
         if p1 > p2 {
             let tmp = p1;
             p1 = p2;
             p2 = tmp;
         }
         Ok(ResultOfFactorize {
-            a: format!("{:X}", p1),
-            b: format!("{:X}", p2),
+            products: [format!("{:X}", p1), format!("{:X}", p2)],
         })
     } else {
-        return Err(ApiError::crypto_invalid_factorize_challenge(&hex, "Challenge can not be factorized"));
+        invalid_composite("Composite number can't be factorized");
     }
 }
 
@@ -178,7 +180,7 @@ fn gcd(mut a: u64, mut b: u64) -> u64 {
 #[derive(Deserialize)]
 pub struct ParamsOfTonCrc16 {
     /// Input data for CRC calculation.
-    data: InputMessage,
+    data: InputData,
 }
 
 #[derive(Serialize)]
@@ -188,7 +190,10 @@ pub struct ResultOfTonCrc16 {
 }
 
 /// Calculates CRC16 using TON algorithm.
-pub fn ton_crc16(_context: &mut ClientContext, params: ParamsOfTonCrc16) -> ApiResult<ResultOfTonCrc16> {
+pub fn ton_crc16(
+    _context: &mut ClientContext,
+    params: ParamsOfTonCrc16,
+) -> ApiResult<ResultOfTonCrc16> {
     Ok(ResultOfTonCrc16 {
         crc: internal_ton_crc16(&(params.data.decode()?))
     })
@@ -200,7 +205,7 @@ pub(crate) fn internal_ton_crc16(data: &[u8]) -> u16 {
     crc.get_crc() as u16
 }
 
-//------------------------------------------------------------------- generate_random_bytes
+//--------------------------------------------------------------------------- generate_random_bytes
 
 #[derive(Deserialize)]
 pub struct ParamsOfGenerateRandomBytes {

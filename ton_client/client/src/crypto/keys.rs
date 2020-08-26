@@ -12,7 +12,7 @@
 */
 
 use crate::types::{ApiResult, ApiError, hex_decode};
-use crate::crypto::math::ton_crc16;
+use crate::crypto::math::{ton_crc16, internal_ton_crc16};
 use std::sync::Mutex;
 use ton_block::MsgAddressInt;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey};
@@ -21,11 +21,14 @@ use base64::URL_SAFE;
 use hmac::*;
 use sha2::Sha512;
 use std::str::FromStr;
+use crate::client::ClientContext;
 
 pub type Key192 = [u8; 24];
 pub type Key256 = [u8; 32];
 pub type Key264 = [u8; 33];
 pub type Key512 = [u8; 64];
+
+//----------------------------------------------------------------------------------------- KeyPair
 
 #[derive(Serialize, Deserialize, Clone, TypeInfo)]
 pub struct KeyPair {
@@ -46,64 +49,64 @@ impl KeyPair {
     }
 }
 
-type KeyPairHandle = String;
+//----------------------------------------------------------- convert_public_key_to_ton_safe_format
 
-pub struct KeyStore {
-    next_handle: u32,
-    keys: HashMap<KeyPairHandle, KeyPair>
+#[derive(Deserialize)]
+pub struct ParamsOfConvertPublicKeyToTonSafeFormat {
+    /// Public key.
+    pub public_key: String,
 }
 
-lazy_static! {
-    static ref KEY_STORE: Mutex<KeyStore> = Mutex::new(KeyStore::new());
+#[derive(Serialize)]
+pub struct ResultOfConvertPublicKeyToTonSafeFormat {
+    /// Public key represented in TON safe format.
+    pub ton_public_key: String,
 }
 
-impl KeyStore {
-    pub fn new() -> KeyStore {
-        KeyStore {
-            next_handle: 1,
-            keys: HashMap::new(),
-        }
-    }
+/// Converts public key to ton safe_format.
+pub fn convert_public_key_to_ton_safe_format(
+    _context: &mut ClientContext,
+    params: ParamsOfConvertPublicKeyToTonSafeFormat,
+) -> ApiResult<ResultOfConvertPublicKeyToTonSafeFormat> {
+    let public_key = hex_decode(&params.puplic_key)?;
+    let mut ton_public_key: Vec<u8> = Vec::new();
+    ton_public_key.push(0x3e);
+    ton_public_key.push(0xe6);
+    ton_public_key.extend_from_slice(&public_key);
+    let hash = internal_ton_crc16(&ton_public_key);
+    ton_public_key.push((hash >> 8) as u8);
+    ton_public_key.push((hash & 255) as u8);
+    Ok(ResultOfConvertPublicKeyToTonSafeFormat {
+        ton_public_key: base64::encode_config(&ton_public_key, URL_SAFE)
+    })
+}
 
-    pub fn add(keys: &KeyPair) -> KeyPairHandle {
-        let mut store = KEY_STORE.lock().unwrap();
-        let handle: String = format!("{:x}", store.next_handle);
-        store.next_handle += 1;
-        store.keys.insert(handle.clone(), (*keys).clone());
-        handle
-    }
+//----------------------------------------------------------------------- generate_random_sign_keys
 
-    pub fn get(handle: &KeyPairHandle) -> Option<KeyPair> {
-        let store = KEY_STORE.lock().unwrap();
-        store.keys.get(handle).map(|key_ref|(*key_ref).clone())
-    }
+#[derive(Deserialize)]
+pub struct ParamsOfGenerateRandomSignKeys {}
 
-    pub fn remove(handle: &KeyPairHandle) {
-        let mut store = KEY_STORE.lock().unwrap();
-        store.keys.remove(handle);
-    }
+#[derive(Serialize)]
+pub struct ResultOfGenerateRandomSignKeys {
+    /// Generated ed25519 key pair.
+    pub keys: KeyPair,
+}
 
-    pub fn clear() {
-        let mut store = KEY_STORE.lock().unwrap();
-        store.keys.clear();
-    }
-
-    pub fn decode_secret(secret: &Option<String>, handle: &Option<String>) -> ApiResult<Vec<u8>> {
-        if let Some(secret) = secret {
-            hex_decode(secret)
-        } else if let Some(handle) = handle {
-            if let Some(keys) = Self::get(handle) {
-                hex_decode(&keys.secret)
-            } else {
-                Err(ApiError::crypto_invalid_keystore_handle())
-            }
-        } else {
-            Err(ApiError::crypto_missing_key_source())
-        }
-    }
+/// Generates random ed25519 key pair.
+pub fn generate_random_sign_keys(
+    _context: &mut ClientContext,
+    _params: ParamsOfGenerateRandomSignKeys,
+) -> ApiResult<KeyPair> {
+    let mut rng = rand::thread_rng();
+    let keypair = ed25519_dalek::Keypair::generate(&mut rng);
+    Ok(KeyPair::new(
+        hex::encode(keypair.public.to_bytes()),
+        hex::encode(keypair.secret.to_bytes()),
+    ))
 }
 
 
+//--------------------------------------------------------------------------------------
 pub fn decode_public_key(string: &String) -> ApiResult<PublicKey> {
     PublicKey::from_bytes(parse_key(string)?.as_slice())
         .map_err(|err| ApiError::crypto_invalid_public_key(err, string))
@@ -129,13 +132,13 @@ pub(crate) enum AccountAddressType {
 pub(crate) struct Base64AddressParams {
     pub url: bool,
     pub test: bool,
-    pub bounce: bool
+    pub bounce: bool,
 }
 
 pub(crate) fn account_encode_ex(
     value: &MsgAddressInt,
     addr_type: AccountAddressType,
-    base64_params: Option<Base64AddressParams>
+    base64_params: Option<Base64AddressParams>,
 ) -> ApiResult<String> {
     match addr_type {
         AccountAddressType::AccountId => Ok(value.get_address().to_hex_string()),
@@ -153,7 +156,7 @@ pub fn account_decode(string: &str) -> ApiResult<MsgAddressInt> {
         Ok(address) => Ok(address),
         Err(_) if string.len() == 48 => {
             decode_std_base64(string)
-        },
+        }
         Err(err) => Err(ApiError::crypto_invalid_address(err, string))
     }
 }
@@ -243,29 +246,76 @@ pub(crate) fn key192(slice: &[u8]) -> ApiResult<Key192> {
 }
 
 
-pub(crate) fn key_to_ton_string(key: &[u8]) -> String {
-    let mut public_key: Vec<u8> = Vec::new();
-    public_key.push(0x3e);
-    public_key.push(0xe6);
-    public_key.extend_from_slice(key);
-    let hash = ton_crc16(&public_key);
-    public_key.push((hash >> 8) as u8);
-    public_key.push((hash & 255) as u8);
-    return base64::encode_config(&public_key, URL_SAFE);
-}
-
 pub(crate) fn hmac_sha512(key: &[u8], data: &[u8]) -> [u8; 64] {
     let mut hmac = Hmac::<Sha512>::new_varkey(key).unwrap();
     hmac.input(&data);
     let mut result = [0u8; 64];
     result.copy_from_slice(&hmac.result().code());
     result
-
 }
 
 pub(crate) fn pbkdf2_hmac_sha512(password: &[u8], salt: &[u8], c: usize) -> [u8; 64] {
     let mut result = [0u8; 64];
     pbkdf2::pbkdf2::<Hmac<Sha512>>(password, salt, c, &mut result);
     result
+}
+
+//------------------------------------------------------------------------------------------
+
+type KeyPairHandle = String;
+
+pub struct KeyStore {
+    next_handle: u32,
+    keys: HashMap<KeyPairHandle, KeyPair>,
+}
+
+lazy_static! {
+    static ref KEY_STORE: Mutex<KeyStore> = Mutex::new(KeyStore::new());
+}
+
+impl KeyStore {
+    pub fn new() -> KeyStore {
+        KeyStore {
+            next_handle: 1,
+            keys: HashMap::new(),
+        }
+    }
+
+    pub fn add(keys: &KeyPair) -> KeyPairHandle {
+        let mut store = KEY_STORE.lock().unwrap();
+        let handle: String = format!("{:x}", store.next_handle);
+        store.next_handle += 1;
+        store.keys.insert(handle.clone(), (*keys).clone());
+        handle
+    }
+
+    pub fn get(handle: &KeyPairHandle) -> Option<KeyPair> {
+        let store = KEY_STORE.lock().unwrap();
+        store.keys.get(handle).map(|key_ref| (*key_ref).clone())
+    }
+
+    pub fn remove(handle: &KeyPairHandle) {
+        let mut store = KEY_STORE.lock().unwrap();
+        store.keys.remove(handle);
+    }
+
+    pub fn clear() {
+        let mut store = KEY_STORE.lock().unwrap();
+        store.keys.clear();
+    }
+
+    pub fn decode_secret(secret: &Option<String>, handle: &Option<String>) -> ApiResult<Vec<u8>> {
+        if let Some(secret) = secret {
+            hex_decode(secret)
+        } else if let Some(handle) = handle {
+            if let Some(keys) = Self::get(handle) {
+                hex_decode(&keys.secret)
+            } else {
+                Err(ApiError::crypto_invalid_keystore_handle())
+            }
+        } else {
+            Err(ApiError::crypto_missing_key_source())
+        }
+    }
 }
 

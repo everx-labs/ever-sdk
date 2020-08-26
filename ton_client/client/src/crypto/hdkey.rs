@@ -13,7 +13,7 @@
 
 use crate::types::{ApiResult, ApiError};
 use crate::crypto::keys::{key512, Key256, key256, Key264};
-use crate::crypto::sha::sha256;
+use crate::crypto::hash::sha256;
 use hmac::*;
 use sha2::{Sha512, Digest};
 use base58::*;

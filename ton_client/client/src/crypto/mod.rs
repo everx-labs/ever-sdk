@@ -11,62 +11,176 @@
 * limitations under the License.
 */
 
-pub(crate) mod math;
-pub(crate) mod random;
-pub(crate) mod sha;
-pub(crate) mod scrypt;
-pub(crate) mod nacl;
-pub(crate) mod keys;
-pub(crate) mod ed25519;
-pub(crate) mod mnemonic;
-pub(crate) mod hdkey;
+pub mod math;
+pub mod hash;
+pub mod scrypt;
+pub mod nacl;
+pub mod keys;
+pub mod mnemonic;
+pub mod hdkey;
+mod tests;
 
 use crate::crypto as api;
-use crate::types::{base64_decode, ApiError, ApiResult, hex_decode, OutputEncoding, InputMessage};
-use crate::crypto::keys::{KeyPair, key_to_ton_string};
-use crate::crypto::keys::KeyStore;
+use crate::types::{base64_decode, ApiError, ApiResult, hex_decode, OutputEncoding, InputData};
+use crate::crypto::keys::{KeyPair, KeyStore};
 use crate::dispatch::DispatchTable;
 use crate::client::ClientContext;
-use crate::crypto::math::{ton_crc16, modular_power, factorize, generate_random_bytes};
 use crate::crypto::mnemonic::{CryptoMnemonic, TonMnemonic, Bip39Mnemonic};
 use bip39::{MnemonicType, Language};
 use crate::serialization::default_output_encoding_base64;
 
-#[derive(Serialize, Deserialize, TypeInfo)]
-pub(crate) struct FactorizeResult {
-    pub a: String,
-    pub b: String,
-}
 
-/// Calculates modular power
-#[derive(Serialize, Deserialize, TypeInfo)]
-pub struct ModularPowerParams {
-    /// It is base
-    base: String,
-    /// It is exponent
-    exponent: String,
-    /// It is modulus
-    modulus: String,
-}
+pub(crate) fn register(handlers: &mut DispatchTable) {
 
-#[derive(Serialize, Deserialize, TypeInfo)]
-pub struct ModularPowerResult {
-    /// the result of
-    result: String,
-}
+    // Math
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct GenerateParams {
-    pub length: usize,
-    #[serde(default = "default_result_encoding_hex")]
-    pub output_encoding: OutputEncoding,
+    handlers.spawn("crypto.factorize", math::factorize);
+    handlers.spawn("crypto.modular_power", math::modular_power);
+    handlers.spawn("crypto.ton_crc16", math::ton_crc16);
+    handlers.call("crypto.generate_random_bytes", math::generate_random_bytes);
+
+    // Keys
+
+    handlers.spawn(
+        "crypto.convert_public_key_to_ton_safe_format",
+        keys::convert_public_key_to_ton_safe_format,
+    );
+
+    handlers.call("crypto.generate_random_sign_keys", keys::generate_random_sign_keys);
+
+    // Sha
+
+    handlers.spawn("crypto.sha256", hash::sha256);
+    handlers.spawn("crypto.sha512", hash::sha512);
+
+    // Scrypt
+
+    handlers.spawn("crypto.scrypt", scrypt::scrypt);
+
+    // NaCl
+
+    handlers.call_no_args("crypto.nacl_generate_box_keys", |_context: &mut ClientContext|
+        api::nacl::box_keypair(),
+    );
+    handlers.call("crypto.nacl_box_keys_from_secret_key", |_context: &mut ClientContext, secret: String| {
+        api::nacl::box_keypair_from_secret_key(&secret)
+    });
+    handlers.call_no_args("crypto.nacl.sign.keypair", |_context: &mut ClientContext|
+        api::nacl::sign_keypair(),
+    );
+    handlers.call("crypto.nacl.sign.keypair.fromSecretKey", |_context: &mut ClientContext, secret: String| {
+        api::nacl::sign_keypair_from_secret_key(&secret)
+    });
+    handlers.spawn("crypto.nacl.box", |_context: &mut ClientContext, params: NaclBoxParams| {
+        params.output_encoding.encode(api::nacl::box_(
+            params.message.decode()?,
+            hex_decode(&params.nonce)?,
+            hex_decode(&params.their_public_key)?,
+            KeyStore::decode_secret(&params.secret_key, &params.keystore_handle)?,
+        )?)
+    });
+    handlers.spawn("crypto.nacl.box.open", |_context: &mut ClientContext, params: NaclBoxParams| {
+        params.output_encoding.encode(api::nacl::box_open(
+            params.message.decode()?,
+            hex_decode(&params.nonce)?,
+            hex_decode(&params.their_public_key)?,
+            KeyStore::decode_secret(&params.secret_key, &params.keystore_handle)?,
+        )?)
+    });
+    handlers.spawn("crypto.nacl.secret.box", |_context: &mut ClientContext, params: NaclSecretBoxParams| {
+        params.output_encoding.encode(api::nacl::secret_box(
+            params.message.decode()?,
+            hex_decode(&params.nonce)?,
+            KeyStore::decode_secret(&params.key, &params.keystore_handle)?,
+        )?)
+    });
+    handlers.spawn("crypto.nacl.secret.box.open", |_context: &mut ClientContext, params: NaclSecretBoxParams| {
+        params.output_encoding.encode(api::nacl::secret_box_open(
+            params.message.decode()?,
+            hex_decode(&params.nonce)?,
+            KeyStore::decode_secret(&params.key, &params.keystore_handle)?,
+        )?)
+    });
+    handlers.spawn("crypto.nacl.sign", |_context: &mut ClientContext, params: NaclSignParams| {
+        params.output_encoding.encode(api::nacl::sign(
+            params.message.decode()?,
+            KeyStore::decode_secret(&params.key, &params.keystore_handle)?,
+        )?)
+    });
+    handlers.spawn("crypto.nacl.sign.open", |_context: &mut ClientContext, params: NaclSignParams| {
+        params.output_encoding.encode(api::nacl::sign_open(
+            params.message.decode()?,
+            KeyStore::decode_secret(&params.key, &params.keystore_handle)?,
+        )?)
+    });
+    handlers.spawn("crypto.nacl.sign.detached", |_context: &mut ClientContext, params: NaclSignParams| {
+        params.output_encoding.encode(api::nacl::sign_detached(
+            params.message.decode()?,
+            KeyStore::decode_secret(&params.key, &params.keystore_handle)?,
+        )?)
+    });
+
+    // Mnemonic
+
+    handlers.spawn("crypto.mnemonic.words", |_context: &mut ClientContext, params: MnemonicWordsParams|
+        mnemonics(params.dictionary, params.word_count)?.get_words(),
+    );
+
+    handlers.spawn("crypto.mnemonic.from.random", |_context: &mut ClientContext, params: MnemonicGenerateParams|
+        mnemonics(params.dictionary, params.word_count)?.generate_random_phrase(),
+    );
+
+    handlers.spawn("crypto.mnemonic.from.entropy", |_context: &mut ClientContext, params: MnemonicFromEntropyParams| {
+        mnemonics(params.dictionary, params.word_count)?.phrase_from_entropy(&params.entropy.decode()?)
+    });
+
+    handlers.spawn("crypto.mnemonic.verify", |_context: &mut ClientContext, params: MnemonicVerifyParams| {
+        mnemonics(params.dictionary, params.word_count)?.is_phrase_valid(&params.phrase)
+    });
+
+    handlers.spawn(
+        "crypto.mnemonic.derive.sign.keys",
+        |_context: &mut ClientContext, params: MnemonicDeriveSignKeysParams| {
+            mnemonics(params.dictionary, params.word_count)?.derive_ed25519_keys_from_phrase(
+                &params.phrase,
+                &params.path,
+                params.compliant)
+        });
+
+    // HDKey
+
+    handlers.spawn("crypto.hdkey.xprv.from.mnemonic", |_context: &mut ClientContext, params: HDKeyFromMnemonicParams| {
+        api::hdkey::hdkey_xprv_from_mnemonic(&params.phrase)
+    });
+
+    handlers.spawn("crypto.hdkey.xprv.derive", |_context: &mut ClientContext, params: HDKeyDeriveParams| {
+        api::hdkey::hdkey_derive_from_xprv(
+            &params.serialized,
+            params.index,
+            params.hardened,
+            params.compliant)
+    });
+
+    handlers.spawn("crypto.hdkey.xprv.derive.path", |_context: &mut ClientContext, params: HDKeyDerivePathParams| {
+        api::hdkey::hdkey_derive_from_xprv_path(
+            &params.serialized,
+            &params.path,
+            params.compliant)
+    });
+
+    handlers.spawn("crypto.hdkey.xprv.secret", |_context: &mut ClientContext, params: HDKeyGetKeyParams| {
+        api::hdkey::hdkey_secret_from_xprv(&params.serialized)
+    });
+
+    handlers.spawn("crypto.hdkey.xprv.public", |_context: &mut ClientContext, params: HDKeyGetKeyParams| {
+        api::hdkey::hdkey_public_from_xprv(&params.serialized)
+    });
 }
 
 #[derive(Deserialize, TypeInfo)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ShaParams {
-    pub message: InputMessage,
+    pub message: InputData,
     #[serde(default = "default_result_encoding_hex")]
     pub output_encoding: OutputEncoding,
 }
@@ -74,8 +188,8 @@ pub(crate) struct ShaParams {
 #[derive(Deserialize, TypeInfo)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ScryptParams {
-    pub password: InputMessage,
-    pub salt: InputMessage,
+    pub password: InputData,
+    pub salt: InputData,
     pub log_n: u8,
     pub r: u32,
     pub p: u32,
@@ -87,7 +201,7 @@ pub(crate) struct ScryptParams {
 #[derive(Deserialize, TypeInfo)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct NaclBoxParams {
-    pub message: InputMessage,
+    pub message: InputData,
     pub nonce: String,
     pub their_public_key: String,
     pub secret_key: Option<String>,
@@ -99,7 +213,7 @@ pub(crate) struct NaclBoxParams {
 #[derive(Deserialize, TypeInfo)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct NaclSecretBoxParams {
-    pub message: InputMessage,
+    pub message: InputData,
     pub nonce: String,
     pub key: Option<String>,
     pub keystore_handle: Option<String>,
@@ -110,7 +224,7 @@ pub(crate) struct NaclSecretBoxParams {
 #[derive(Deserialize, TypeInfo)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct NaclSignParams {
-    pub message: InputMessage,
+    pub message: InputData,
     pub key: Option<String>,
     pub keystore_handle: Option<String>,
     #[serde(default = "default_result_encoding_hex")]
@@ -141,7 +255,7 @@ pub(crate) struct MnemonicFromEntropyParams {
     pub dictionary: u8,
     #[serde(default = "default_word_count")]
     pub word_count: u8,
-    pub entropy: InputMessage,
+    pub entropy: InputData,
 }
 
 #[derive(Deserialize, TypeInfo)]
@@ -256,177 +370,5 @@ fn mnemonics(dictionary: u8, word_count: u8) -> ApiResult<Box<dyn CryptoMnemonic
         _ => return Err(ApiError::crypto_bip39_invalid_dictionary(dictionary))
     };
     Ok(Box::new(Bip39Mnemonic::new(mnemonic_type, language)))
-}
-
-pub(crate) fn register(handlers: &mut DispatchTable) {
-
-    // Math
-
-    handlers.spawn("crypto.factorize", factorize);
-    handlers.spawn("crypto.modular_power", modular_power);
-    handlers.spawn("crypto.ton_crc16", ton_crc16);
-    handlers.call("crypto.generate_random_bytes", generate_random_bytes);
-
-    // Keys
-
-    handlers.spawn("crypto.ton_public_key_string", |_context: &mut ClientContext, params: String| {
-        Ok(key_to_ton_string(&hex_decode(&params)?))
-    });
-
-    handlers.call_no_args("crypto.ed25519.keypair", |_context: &mut ClientContext|
-        api::ed25519::generate_keypair());
-    handlers.call("crypto.keystore.add", |_context: &mut ClientContext, keys: KeyPair| {
-        Ok(KeyStore::add(&keys))
-    });
-    handlers.call("crypto.keystore.remove", |_context: &mut ClientContext, handle: String| {
-        KeyStore::remove(&handle);
-        Ok(())
-    });
-    handlers.call_no_args("crypto.keystore.clear", |_context: &mut ClientContext| {
-        KeyStore::clear();
-        Ok(())
-    });
-
-    // Sha
-
-    handlers.spawn("crypto.sha256", |_context: &mut ClientContext, params: ShaParams| {
-        params.output_encoding.encode(api::sha::sha256(&params.message.decode()?))
-    });
-
-    handlers.spawn("crypto.sha512", |_context: &mut ClientContext, params: ShaParams| {
-        params.output_encoding.encode(api::sha::sha512(&params.message.decode()?))
-    });
-
-    // Scrypt
-
-    handlers.spawn("crypto.scrypt", |_context: &mut ClientContext, params: ScryptParams| {
-        params.output_encoding.encode(api::scrypt::scrypt(
-            &params.password.decode()?,
-            &params.salt.decode()?,
-            params.log_n,
-            params.r,
-            params.p,
-            params.dk_len,
-        )?)
-    });
-
-    // NaCl
-
-    handlers.call_no_args("crypto.nacl.box.keypair", |_context: &mut ClientContext|
-        api::nacl::box_keypair(),
-    );
-    handlers.call("crypto.nacl.box.keypair.fromSecretKey", |_context: &mut ClientContext, secret: String| {
-        api::nacl::box_keypair_from_secret_key(&secret)
-    });
-    handlers.call_no_args("crypto.nacl.sign.keypair", |_context: &mut ClientContext|
-        api::nacl::sign_keypair(),
-    );
-    handlers.call("crypto.nacl.sign.keypair.fromSecretKey", |_context: &mut ClientContext, secret: String| {
-        api::nacl::sign_keypair_from_secret_key(&secret)
-    });
-    handlers.spawn("crypto.nacl.box", |_context: &mut ClientContext, params: NaclBoxParams| {
-        params.output_encoding.encode(api::nacl::box_(
-            params.message.decode()?,
-            hex_decode(&params.nonce)?,
-            hex_decode(&params.their_public_key)?,
-            KeyStore::decode_secret(&params.secret_key, &params.keystore_handle)?,
-        )?)
-    });
-    handlers.spawn("crypto.nacl.box.open", |_context: &mut ClientContext, params: NaclBoxParams| {
-        params.output_encoding.encode(api::nacl::box_open(
-            params.message.decode()?,
-            hex_decode(&params.nonce)?,
-            hex_decode(&params.their_public_key)?,
-            KeyStore::decode_secret(&params.secret_key, &params.keystore_handle)?,
-        )?)
-    });
-    handlers.spawn("crypto.nacl.secret.box", |_context: &mut ClientContext, params: NaclSecretBoxParams| {
-        params.output_encoding.encode(api::nacl::secret_box(
-            params.message.decode()?,
-            hex_decode(&params.nonce)?,
-            KeyStore::decode_secret(&params.key, &params.keystore_handle)?,
-        )?)
-    });
-    handlers.spawn("crypto.nacl.secret.box.open", |_context: &mut ClientContext, params: NaclSecretBoxParams| {
-        params.output_encoding.encode(api::nacl::secret_box_open(
-            params.message.decode()?,
-            hex_decode(&params.nonce)?,
-            KeyStore::decode_secret(&params.key, &params.keystore_handle)?,
-        )?)
-    });
-    handlers.spawn("crypto.nacl.sign", |_context: &mut ClientContext, params: NaclSignParams| {
-        params.output_encoding.encode(api::nacl::sign(
-            params.message.decode()?,
-            KeyStore::decode_secret(&params.key, &params.keystore_handle)?,
-        )?)
-    });
-    handlers.spawn("crypto.nacl.sign.open", |_context: &mut ClientContext, params: NaclSignParams| {
-        params.output_encoding.encode(api::nacl::sign_open(
-            params.message.decode()?,
-            KeyStore::decode_secret(&params.key, &params.keystore_handle)?,
-        )?)
-    });
-    handlers.spawn("crypto.nacl.sign.detached", |_context: &mut ClientContext, params: NaclSignParams| {
-        params.output_encoding.encode(api::nacl::sign_detached(
-            params.message.decode()?,
-            KeyStore::decode_secret(&params.key, &params.keystore_handle)?,
-        )?)
-    });
-
-    // Mnemonic
-
-    handlers.spawn("crypto.mnemonic.words", |_context: &mut ClientContext, params: MnemonicWordsParams|
-        mnemonics(params.dictionary, params.word_count)?.get_words(),
-    );
-
-    handlers.spawn("crypto.mnemonic.from.random", |_context: &mut ClientContext, params: MnemonicGenerateParams|
-        mnemonics(params.dictionary, params.word_count)?.generate_random_phrase()
-    );
-
-    handlers.spawn("crypto.mnemonic.from.entropy", |_context: &mut ClientContext, params: MnemonicFromEntropyParams| {
-        mnemonics(params.dictionary, params.word_count)?.phrase_from_entropy(&params.entropy.decode()?)
-    });
-
-    handlers.spawn("crypto.mnemonic.verify", |_context: &mut ClientContext, params: MnemonicVerifyParams| {
-        mnemonics(params.dictionary, params.word_count)?.is_phrase_valid(&params.phrase)
-    });
-
-    handlers.spawn(
-        "crypto.mnemonic.derive.sign.keys",
-        |_context: &mut ClientContext, params: MnemonicDeriveSignKeysParams| {
-        mnemonics(params.dictionary, params.word_count)?.derive_ed25519_keys_from_phrase(
-            &params.phrase,
-            &params.path,
-            params.compliant)
-    });
-
-    // HDKey
-
-    handlers.spawn("crypto.hdkey.xprv.from.mnemonic", |_context: &mut ClientContext, params: HDKeyFromMnemonicParams| {
-        api::hdkey::hdkey_xprv_from_mnemonic(&params.phrase)
-    });
-
-    handlers.spawn("crypto.hdkey.xprv.derive", |_context: &mut ClientContext, params: HDKeyDeriveParams| {
-        api::hdkey::hdkey_derive_from_xprv(
-            &params.serialized,
-            params.index,
-            params.hardened,
-            params.compliant)
-    });
-
-    handlers.spawn("crypto.hdkey.xprv.derive.path", |_context: &mut ClientContext, params: HDKeyDerivePathParams| {
-        api::hdkey::hdkey_derive_from_xprv_path(
-            &params.serialized,
-            &params.path,
-            params.compliant)
-    });
-
-    handlers.spawn("crypto.hdkey.xprv.secret", |_context: &mut ClientContext, params: HDKeyGetKeyParams| {
-        api::hdkey::hdkey_secret_from_xprv(&params.serialized)
-    });
-
-    handlers.spawn("crypto.hdkey.xprv.public", |_context: &mut ClientContext, params: HDKeyGetKeyParams| {
-        api::hdkey::hdkey_public_from_xprv(&params.serialized)
-    });
 }
 

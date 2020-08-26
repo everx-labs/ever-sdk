@@ -11,7 +11,6 @@
 * limitations under the License.
 */
 
-mod test_crypto;
 mod test_misc;
 
 use serde_json::{Value, Map};

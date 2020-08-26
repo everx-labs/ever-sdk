@@ -21,7 +21,7 @@ use ton_types::ExceptionCode;
 use chrono::TimeZone;
 
 #[derive(Deserialize, TypeInfo)]
-pub(crate) struct InputMessage {
+pub(crate) struct InputData {
     pub text: Option<String>,
     pub hex: Option<String>,
     pub base64: Option<String>,
@@ -35,7 +35,7 @@ pub(crate) enum OutputEncoding {
     Base64,
 }
 
-impl InputMessage {
+impl InputData {
     pub(crate) fn decode(&self) -> ApiResult<Vec<u8>> {
         if let Some(ref text) = self.text {
             Ok(text.as_bytes().to_vec())
