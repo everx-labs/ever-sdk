@@ -1094,10 +1094,6 @@ ton_client/platforms/ton-client-web"""
                         mkdir toDeploy
                     """
 
-                    /* Compile string for bucket tag */
-                    BRANCH_NAME_STRIPPED = "${BRANCH_NAME}".replaceAll("[^a-zA-Z0-9_-]+","__")
-                    BUCKET_TAG = "${BRANCH_NAME_STRIPPED}_b${BUILD_ID}"
-
                     dir('toDeploy') {
                         unstash 'cl-linux-bin'
                         unstash 'cl-darwin-bin'
@@ -1111,7 +1107,8 @@ ton_client/platforms/ton-client-web"""
                         def deployPath = 'tmp_sdk'
                         if(GIT_BRANCH == "${getVar(G_binversion)}-rc") {
                             
-                            TON_SDK_BIN_VERSION = GIT_BRANCH.replaceAll(".", "_")
+                            TON_SDK_BIN_VERSION = GIT_BRANCH.replaceAll("\\.", "_")
+                            echo "TON_SDK_BIN_VERSION: ${TON_SDK_BIN_VERSION}"
 
                             deployPath = ''
                             sh """
