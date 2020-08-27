@@ -19,19 +19,16 @@ use ton_block::{AccStatusChange, Message as TvmMessage, MsgAddressInt};
 
 use crate::contracts::{EncodedMessage, EncodedUnsignedMessage};
 use crate::client::ClientContext;
-use crate::crypto::keys::{KeyPair, account_decode};
-use crate::types::{
-    ApiResult,
-    ApiError,
-    base64_decode,
-    long_num_to_json_string};
+use crate::crypto::keys::{KeyPair};
+use crate::error::{ApiResult, ApiError};
+use crate::encoding::{account_decode, base64_decode, long_num_to_json_string};
 
 #[cfg(feature = "node_interaction")]
 use ton_sdk::{NodeClient, ReceivedTransaction, SdkError};
 #[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
-use crate::types::{apierror_from_sdkerror, ApiErrorCode, ApiSdkErrorCode, StdContractError};
+use crate::error::{apierror_from_sdkerror, ApiErrorCode, ApiSdkErrorCode, StdContractError};
 
 
 fn bool_false() -> bool { false }
@@ -60,11 +57,11 @@ impl Into<FunctionCallSet> for RunFunctionCallSet {
     }
 }
 
-#[doc(summary="Method that calls a contract's function")]
+#[doc(summary = "Method that calls a contract's function")]
 /// Method creates a run message signed with key_pair, sends it to the targer workchain,
 /// waits for the result transaction and outbound messages and decodes the result parameters using ABI.
 /// If the contract implements Pragma Expire, the method repeats the algorithm
-/// for message_retries_count times 
+/// for message_retries_count times
 /// if the message was not delivered during message_expiration_timeout (see setup.SetupParams).
 /// If the contract does not implement Pragra Expire - the method waits for the result
 /// transaction for message_processing_timeout (defined in the Client Config),
@@ -82,11 +79,11 @@ pub(crate) struct ParamsOfRun {
     pub call_set: RunFunctionCallSet,
     /// key pair to sign the message
     pub key_pair: Option<KeyPair>,
-    // [1.0.0] will be deprecated 
+    // [1.0.0] will be deprecated
     pub try_index: Option<u8>,
 }
 
-#[doc(summary="Method that calls a contract on a local TVM")]
+#[doc(summary = "Method that calls a contract on a local TVM")]
 /// Method calls a contract's function on a local TVM
 /// Method can work in 2 modes: TVM mode and Transaction Executor mode.
 /// Mode is defined by full_run parameter. If true - Transaction Executor mode is on.
@@ -97,9 +94,8 @@ pub(crate) struct ParamsOfRun {
 /// can be used for methods without ACCEPT.
 ///
 /// Transaction executor mode:
-/// used to fully emulate message processing to calculate fees and check if all the phases are passed successfully 
+/// used to fully emulate message processing to calculate fees and check if all the phases are passed successfully
 /// If not- returns the error with the exit code and phase.
-
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfLocalRun {
@@ -120,9 +116,9 @@ pub(crate) struct ParamsOfLocalRun {
     pub context: LocalRunContext,
 }
 
-#[doc(summary="Method that processes a specified message on a local TVM")]
+#[doc(summary = "Method that processes a specified message on a local TVM")]
 /// Method works as LocalRun, but takes an already prepared message
-/// as a parameter. 
+/// as a parameter.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfLocalRunWithMsg {
@@ -145,8 +141,8 @@ pub(crate) struct ParamsOfLocalRunWithMsg {
     pub context: LocalRunContext,
 }
 
-#[doc(summary="Method that creates an unsigned message")]
-/// Method prepares an unsigned message that can be signed and sent later. 
+#[doc(summary = "Method that creates an unsigned message")]
+/// Method prepares an unsigned message that can be signed and sent later.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfEncodeUnsignedRunMessage {
@@ -155,15 +151,15 @@ pub(crate) struct ParamsOfEncodeUnsignedRunMessage {
     #[serde(flatten)]
     pub call_set: RunFunctionCallSet,
     /// Parameter is used only for contracts that support Expire Pragma
-    /// to calculate expire header for subsequent retries. 
+    /// to calculate expire header for subsequent retries.
     /// Specify 1 for the first retry, 2 - for the second and so on.
     /// The formula is: expire = now + message_expiration_timeout * message_expiration_timeout_grow_factor * try_index
     pub try_index: Option<u8>,
 }
 
 
-#[doc(summary="??? Method that decodes")]
-/// ??? 
+#[doc(summary = "??? Method that decodes")]
+/// ???
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfDecodeRunOutput {
@@ -178,8 +174,8 @@ pub(crate) struct ParamsOfDecodeRunOutput {
     pub internal: bool,
 }
 
-#[doc(summary="??? Method that decodes")]
-/// ??? 
+#[doc(summary = "??? Method that decodes")]
+/// ???
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ParamsOfDecodeUnknownRun {
@@ -256,7 +252,7 @@ pub struct ResultOfDecodeUnknownRun {
     pub output: serde_json::Value,
 }
 
-#[doc(summary="Method that generates a message and extracts the body from it")]
+#[doc(summary = "Method that generates a message and extracts the body from it")]
 /// Method generates a message of internal (internal==true) or external (internal==false) type
 /// according to ABI and specified header, extracts the body boc in base64 from it
 /// and returns it.
@@ -272,7 +268,7 @@ pub(crate) struct ParamsOfGetRunBody {
     /// function parameters
     pub params: serde_json::Value,
     #[serde(default = "bool_false")]
-    /// internal (true) or external (false) message type 
+    /// internal (true) or external (false) message type
     pub internal: bool,
     /// key pair for signature
     pub key_pair: Option<KeyPair>,
@@ -285,38 +281,38 @@ pub(crate) struct ResultOfGetRunBody {
     pub body_base64: String,
 }
 
-#[doc(summary="Method that processes the message on local Transaction Executor to investigate why the transaction was not finalized in blockchain.")]
+#[doc(summary = "Method that processes the message on local Transaction Executor to investigate why the transaction was not finalized in blockchain.")]
 /// Method investigates why the specified external message was not delivered
 /// It is used in the following methods: run, deploy, process_message, wait_for_transactoin:
-/// in case of not finding the transaction within the specified timeout, the message is processed locally 
+/// in case of not finding the transaction within the specified timeout, the message is processed locally
 /// on Transaction Executor and if there is an exception, it returns it as 3025 error code and places
-/// exit_code and phase inside of data field of error object. If local processing was successful it returns 
+/// exit_code and phase inside of data field of error object. If local processing was successful it returns
 /// a disclamer that it was successfull. Which means that you need to wait more.
 ///
 /// Let's imagine a transaction was not found within the specified timeout.
-/// This may happen for several reasons, including network lag 
-/// or real TVM exception that happened before ACCEPT in the contract on the real network. 
-/// If TVM exception happens before ACCEPT for external inbound messages, such transactions 
-/// are not finalized and will never appear on blockchain. 
-/// So, ResolveError method diagnoses such problems locally so that user can get a hint of what 
-/// the reason may be.  
-/// Although, this method does not give 100% guarantee that the transaction will never be 
-/// finalized because of the locally received exception . 
-/// For instance, if it was not finalized for the reason of not enough balance, and 
+/// This may happen for several reasons, including network lag
+/// or real TVM exception that happened before ACCEPT in the contract on the real network.
+/// If TVM exception happens before ACCEPT for external inbound messages, such transactions
+/// are not finalized and will never appear on blockchain.
+/// So, ResolveError method diagnoses such problems locally so that user can get a hint of what
+/// the reason may be.
+/// Although, this method does not give 100% guarantee that the transaction will never be
+/// finalized because of the locally received exception .
+/// For instance, if it was not finalized for the reason of not enough balance, and
 /// value was send to the account before or after the method execution even after some period of time - if it was, there is a probability that
-/// the value can finally be delivered later and the message can eventually succeed, 
-/// because it is in fact broadcasted between validators for some (not defined) period of time and circulates in the network, 
+/// the value can finally be delivered later and the message can eventually succeed,
+/// because it is in fact broadcasted between validators for some (not defined) period of time and circulates in the network,
 /// and while it failed on 1/2 of validators before the value was delivered it can succeed on the other 1/2
 /// of validators after the value is delivered.
-/// If in such situation a developer just blindly performs a retry - she may get a double spend. 
+/// If in such situation a developer just blindly performs a retry - she may get a double spend.
 /// Only developer knows which operations and in what
 /// sequence she performs to diagnoze the result of this method and make a decision.
-/// To avoid double spending we recommend using Pragma Expire that at least helps to ensure that the transaction will 
-/// not happen 100% after message is expired. 
+/// To avoid double spending we recommend using Pragma Expire that at least helps to ensure that the transaction will
+/// not happen 100% after message is expired.
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfResolveError {
-    /// account address 
+    /// account address
     pub address: String,
     /// [1.0.0] account boc
     pub account: Contract,
@@ -663,12 +659,12 @@ pub(crate) async fn load_contract(context: &ClientContext, address: &MsgAddressI
     let client = context.get_client()?;
     let result = Contract::load_wait(client, address, deployed, None)
         .await
-        .map_err(|err| crate::types::apierror_from_sdkerror(
+        .map_err(|err| apierror_from_sdkerror(
             &err, ApiError::contracts_run_contract_load_failed, Some(client)));
     if let Err(err) = result {
-        if err.code == crate::types::ApiSdkErrorCode::WaitForTimeout.as_number() {
+        if err.code == crate::error::ApiSdkErrorCode::WaitForTimeout.as_number() {
             let result = Contract::load(context.get_client()?, address).await
-                .map_err(|err| crate::types::apierror_from_sdkerror(
+                .map_err(|err| apierror_from_sdkerror(
                     &err, ApiError::contracts_run_contract_load_failed, Some(client)))?;
             if let Some(contract) = result {
                 if contract.acc_type == ton_block::AccountStatus::AccStateActive {
@@ -747,7 +743,7 @@ async fn call_contract(
             match result {
                 Err(err) =>
                     Err(resolve_msg_sdk_error(
-                        client, err, &msg, Some(&params.call_set.function_name), ApiError::contracts_run_failed
+                        client, err, &msg, Some(&params.call_set.function_name), ApiError::contracts_run_failed,
                     ).await?),
                 Ok(tr) => Ok(tr)
             }
@@ -899,8 +895,8 @@ pub(crate) async fn resolve_msg_sdk_error<F: Fn(String) -> ApiError>(
                 let account = Contract::load(client, &msg.address)
                     .await
                     .map_err(|err| apierror_from_sdkerror(
-                            &err, ApiError::contracts_run_contract_load_failed, Some(client),
-                        ).add_address(&msg.address))?
+                        &err, ApiError::contracts_run_contract_load_failed, Some(client),
+                    ).add_address(&msg.address))?
                     .ok_or(ApiError::account_missing(&msg.address))?;
                 let main_error = apierror_from_sdkerror(&error, default_error, None);
                 let resolved = resolve_msg_error(

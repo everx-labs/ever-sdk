@@ -12,7 +12,7 @@
 */
 
 use crate::dispatch::DispatchTable;
-use crate::types::{ApiResult, ApiError};
+use crate::error::{ApiResult, ApiError};
 use super::{JsonResponse, InteropContext};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -51,7 +51,7 @@ fn sync_request(context: &mut ClientContext, method: String, params_json: String
     HANDLERS.sync_dispatch(context, method, params_json)
 }
 
-pub(crate) struct ClientContext {
+pub struct ClientContext {
     pub client: Option<NodeClient>,
     #[cfg(feature = "node_interaction")]
     pub runtime: Option<Runtime>,

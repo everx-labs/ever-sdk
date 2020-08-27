@@ -11,15 +11,173 @@
 * limitations under the License.
 */
 
-use crate::crypto::hdkey::HDPrivateKey;
-use crate::crypto::keys::{hmac_sha512, pbkdf2_hmac_sha512, KeyPair};
-use crate::types::{ApiResult, ApiError};
-use crate::crypto::random::generate_bytes;
+use crate::crypto::hdkey::{HDPrivateKey, DEFAULT_COMPLIANT};
+use crate::crypto::keys::{KeyPair};
+use crate::crypto::internal::{hmac_sha512, pbkdf2_hmac_sha512};
+use crate::error::{ApiResult, ApiError};
 use bip39::{Language, Mnemonic, MnemonicType};
 use ed25519_dalek::{PublicKey, SecretKey};
 use hmac::Hmac;
 use pbkdf2::pbkdf2;
 use sha2::Sha512;
+use rand::RngCore;
+use crate::client::ClientContext;
+use crate::encoding::InputData;
+
+const TON_DICTIONARY: u8 = 0;
+const ENGLISH_DICTIONARY: u8 = 1;
+const CHINESE_SIMPLIFIED_DICTIONARY: u8 = 2;
+const CHINESE_TRADITIONAL_DICTIONARY: u8 = 3;
+const FRENCH_DICTIONARY: u8 = 4;
+const ITALIAN_DICTIONARY: u8 = 5;
+const JAPANESE_DICTIONARY: u8 = 6;
+const KOREAN_DICTIONARY: u8 = 7;
+const SPANISH_DICTIONARY: u8 = 8;
+
+const DEFAULT_DICTIONARY: u8 = TON_DICTIONARY;
+const DEFAULT_WORD_COUNT: u8 = 24;
+const DEFAULT_PATH: &str = "m/44'/396'/0'/0/0";
+
+//---------------------------------------------------------------------------------- mnemonic_words
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ParamsOfMnemonicWords {
+    pub dictionary: Option<u8>,
+}
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ResultOfMnemonicWords {
+    pub words: String,
+}
+
+pub fn mnemonic_words(
+    _context: &mut ClientContext,
+    params: ParamsOfMnemonicWords,
+) -> ApiResult<ResultOfMnemonicWords> {
+    Ok(ResultOfMnemonicWords {
+        words: mnemonics(params.dictionary, Some(DEFAULT_WORD_COUNT))?.get_words()?
+    })
+}
+
+//---------------------------------------------------------------------------- mnemonic_from_random
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ParamsOfMnemonicFromRandom {
+    pub dictionary: Option<u8>,
+    pub word_count: Option<u8>,
+}
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ResultOfMnemonicFromRandom {
+    pub phrase: String,
+}
+
+pub fn mnemonic_from_random(
+    _context: &mut ClientContext,
+    params: ParamsOfMnemonicFromRandom,
+) -> ApiResult<ResultOfMnemonicFromRandom> {
+    Ok(ResultOfMnemonicFromRandom {
+        phrase: mnemonics(params.dictionary, params.word_count)?.generate_random_phrase()?
+    })
+}
+
+//--------------------------------------------------------------------------- mnemonic_from_entropy
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ParamsOfMnemonicFromEntropy {
+    pub entropy: InputData,
+    pub dictionary: Option<u8>,
+    pub word_count: Option<u8>,
+}
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ResultOfMnemonicFromEntropy {
+    pub phrase: String,
+}
+
+pub fn mnemonic_from_entropy(
+    _context: &mut ClientContext,
+    params: ParamsOfMnemonicFromEntropy,
+) -> ApiResult<ResultOfMnemonicFromEntropy> {
+    let mnemonic = mnemonics(params.dictionary, params.word_count)?;
+    Ok(ResultOfMnemonicFromEntropy {
+        phrase: mnemonic.phrase_from_entropy(&params.entropy.decode()?)?
+    })
+}
+
+//--------------------------------------------------------------------------- mnemonic_verify
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ParamsOfMnemonicVerify {
+    pub phrase: String,
+    pub dictionary: Option<u8>,
+    pub word_count: Option<u8>,
+}
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ResultOfMnemonicVerify {
+    pub valid: bool,
+}
+
+pub fn mnemonic_verify(
+    _context: &mut ClientContext,
+    params: ParamsOfMnemonicVerify,
+) -> ApiResult<ResultOfMnemonicVerify> {
+    let mnemonic = mnemonics(params.dictionary, params.word_count)?;
+    Ok(ResultOfMnemonicVerify {
+        valid: mnemonic.is_phrase_valid(&params.phrase)?,
+    })
+}
+
+//----------------------------------------------------------------------- mnemonic_derive_sign_keys
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ParamsOfMnemonicDeriveSignKeys {
+    pub phrase: String,
+    pub path: Option<String>,
+    pub dictionary: Option<u8>,
+    pub word_count: Option<u8>,
+}
+
+pub fn mnemonic_derive_sign_keys(
+    _context: &mut ClientContext,
+    params: ParamsOfMnemonicDeriveSignKeys,
+) -> ApiResult<KeyPair> {
+    let mnemonic = mnemonics(params.dictionary, params.word_count)?;
+    let path = params.path.unwrap_or(DEFAULT_PATH.into());
+    Ok(mnemonic.derive_ed25519_keys_from_phrase(&params.phrase, &path, DEFAULT_COMPLIANT)?)
+}
+
+// Internals
+
+fn mnemonics(dictionary: Option<u8>, word_count: Option<u8>) -> ApiResult<Box<dyn CryptoMnemonic>> {
+    let dictionary = dictionary.unwrap_or(DEFAULT_DICTIONARY);
+    let word_count = word_count.unwrap_or(DEFAULT_WORD_COUNT);
+    if dictionary == TON_DICTIONARY {
+        return Ok(Box::new(TonMnemonic::new(word_count)));
+    }
+    let mnemonic_type = match word_count {
+        12 => MnemonicType::Words12,
+        15 => MnemonicType::Words15,
+        18 => MnemonicType::Words18,
+        21 => MnemonicType::Words21,
+        24 => MnemonicType::Words24,
+        _ => return Err(ApiError::crypto_bip39_invalid_word_count(word_count)),
+    };
+    let language = match dictionary {
+        ENGLISH_DICTIONARY => Language::English,
+        CHINESE_SIMPLIFIED_DICTIONARY => Language::ChineseSimplified,
+        CHINESE_TRADITIONAL_DICTIONARY => Language::ChineseTraditional,
+        FRENCH_DICTIONARY => Language::French,
+        ITALIAN_DICTIONARY => Language::Italian,
+        JAPANESE_DICTIONARY => Language::Japanese,
+        KOREAN_DICTIONARY => Language::Korean,
+        SPANISH_DICTIONARY => Language::Spanish,
+        _ => return Err(ApiError::crypto_bip39_invalid_dictionary(dictionary))
+    };
+    Ok(Box::new(Bip39Mnemonic::new(mnemonic_type, language)))
+}
+
 
 pub trait CryptoMnemonic {
     fn get_words(&self) -> ApiResult<String>;
@@ -191,7 +349,10 @@ impl CryptoMnemonic for TonMnemonic {
     fn generate_random_phrase(&self) -> ApiResult<String> {
         let max_iterations: i32 = 256 * 20;
         for _ in 0..max_iterations {
-            let rnd = generate_bytes(((self.word_count as usize) * 11 + 7) / 8);
+            let mut rng = rand::thread_rng();
+            let mut rnd: Vec<u8> = Vec::new();
+            rnd.resize(((self.word_count as usize) * 11 + 7) / 8, 0);
+            rng.fill_bytes(&mut rnd);
             let words = self.words_from_bytes(&rnd);
             let phrase: String = words.join(" ");
             if !Self::is_basic_seed(&phrase) {

@@ -16,6 +16,9 @@ mod test_misc;
 use serde_json::{Value, Map};
 use log::{Metadata, Record, LevelFilter};
 use crate::{InteropContext, tc_create_context, tc_json_request, InteropString, tc_read_json_response, tc_destroy_json_response, tc_destroy_context};
+use serde::{Serialize};
+use crate::error::{ApiError, ApiResult};
+use serde::de::DeserializeOwned;
 
 pub const LOG_CGF_PATH: &str = "src/tests/log_cfg.yaml";
 
@@ -68,54 +71,64 @@ impl TestClient {
         }
         let client = Self { context };
         if config != Value::Null {
-            client.request("setup", config).unwrap();
+            client.request_json("setup", config).unwrap();
         }
         client
     }
 
-    pub(crate) fn request(
-        &self,
-        method_name: &str,
-        params: Value,
-    ) -> Result<String, String> {
-        unsafe {
+    pub(crate) fn request_json(&self, method: &str, params: Value) -> ApiResult<Value> {
+        let response = unsafe {
             let params_json = if params.is_null() { String::new() } else { params.to_string() };
             let response_ptr = tc_json_request(
                 self.context,
-                InteropString::from(&method_name.to_string()),
+                InteropString::from(&method.to_string()),
                 InteropString::from(&params_json),
             );
             let interop_response = tc_read_json_response(response_ptr);
             let response = interop_response.to_response();
             tc_destroy_json_response(response_ptr);
-            if response.error_json.is_empty() {
-                Ok(response.result_json)
+            response
+        };
+        if response.error_json.is_empty() {
+            if response.result_json.is_empty() {
+                Ok(Value::Null)
             } else {
-                Err(response.error_json)
+                Ok(serde_json::from_str(&response.result_json).unwrap())
             }
+        } else {
+            Err(serde_json::from_str(&response.error_json).unwrap())
         }
     }
 
-    pub(crate) fn request_map(
-        &self,
-        method_name: &str,
-        params: Value,
-    ) -> Map<String, Value> {
-        Self::parse_object(self.request(method_name, params))
+    pub(crate) fn request<P, R>(&self, method: &str, params: P) -> R
+        where P: Serialize, R: DeserializeOwned {
+        let params = serde_json::to_value(params)
+            .map_err(|err| ApiError::invalid_params("", err)).unwrap();
+        let result = self.request_json(method, params).unwrap();
+        serde_json::from_value(result)
+            .map_err(|err| ApiError::invalid_params("", err))
+            .unwrap()
     }
 
-    pub(crate) fn parse_object(s: Result<String, String>) -> Map<String, Value> {
-        if let Value::Object(m) = serde_json::from_str(s.unwrap().as_str()).unwrap() {
-            return m.clone();
-        }
-        panic!("Object expected");
+    pub(crate) fn request_no_params<R: DeserializeOwned>(&self, method: &str) -> R {
+        let result = self.request_json(method, Value::Null).unwrap();
+        serde_json::from_value(result)
+            .map_err(|err| ApiError::invalid_params("", err))
+            .unwrap()
     }
 
-    pub(crate) fn parse_string(r: Result<String, String>) -> String {
-        if let Value::String(s) = serde_json::from_str(r.unwrap().as_str()).unwrap() {
-            return s.clone();
-        }
-        panic!("String expected");
+    pub(crate) fn request_map<P: Serialize>(&self, method_name: &str, params: P) -> Map<String, Value> {
+        let params = serde_json::to_value(params)
+            .map_err(|err| ApiError::invalid_params("", err)).unwrap();
+        Self::parse_object(self.request_json(method_name, params))
+    }
+
+    pub(crate) fn parse_object(s: ApiResult<Value>) -> Map<String, Value> {
+        s.unwrap().as_object().unwrap().clone()
+    }
+
+    pub(crate) fn parse_string(r: ApiResult<Value>) -> String {
+        r.unwrap().as_str().unwrap().into()
     }
 
     pub(crate) fn get_map_string(m: &Map<String, Value>, f: &str) -> String {

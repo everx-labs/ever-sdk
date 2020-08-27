@@ -11,11 +11,11 @@
 * limitations under the License.
 */
 
-use crate::crypto::keys::{account_decode, account_encode_ex, AccountAddressType, Base64AddressParams};
+use crate::encoding::{account_decode, account_encode_ex, AccountAddressType, Base64AddressParams};
 use serde_json::{Value};
 use ton_block::MsgAddressInt;
 use std::str::FromStr;
-use crate::types::{ApiError};
+use crate::error::{ApiError};
 use opendoc::api::API;
 use crate::tests::TestClient;
 
@@ -44,8 +44,8 @@ fn test_contexts() {
     TestClient::init_log();
     let foo = TestClient::new();
     let bar = TestClient::new();
-    let foo_context = foo.request("context.get", TestClient::missing_params()).unwrap().parse::<u32>().unwrap();
-    let bar_context = bar.request("context.get", TestClient::missing_params()).unwrap().parse::<u32>().unwrap();
+    let foo_context = foo.request_json("context.get", TestClient::missing_params()).unwrap().as_u64().unwrap();
+    let bar_context = bar.request_json("context.get", TestClient::missing_params()).unwrap().as_u64().unwrap();
     assert_ne!(foo_context, bar_context);
 }
 
@@ -61,18 +61,18 @@ fn test_query_cell() {
         members:dict()
         failed:i1
         finished:i1";
-    let result = client.request("cell.query", json!({
+    let result = client.request_json("cell.query", json!({
         "cellBase64": ELECTOR_DATA,
         "query": participant_list,
-    }));
+    })).unwrap();
 
-    let result2 = client.request("cell.query", json!({
+    let result2 = client.request_json("cell.query", json!({
         "cellBase64": ELECTOR_DATA,
         "query": participant_list,
     })).unwrap();
 
     println!("{}", result2);
-    println!("{}", result.unwrap())
+    println!("{}", result)
 }
 
 #[test]
@@ -119,10 +119,10 @@ fn test_tonos_key_derivation() {
 #[test]
 fn test_tg_mnemonic() {
     let client = TestClient::new();
-    let crc16 = client.request("crypto.ton_crc16", json!({
+    let crc16 = client.request_json("crypto.ton_crc16", json!({
         "hex": "0123456789abcdef"
     })).unwrap();
-    assert_eq!(crc16, "43349");
+    assert_eq!(crc16, 43349);
 
     let keys = client.request_map(
         "crypto.mnemonic.derive.sign.keys",
@@ -183,7 +183,7 @@ fn test_tg_mnemonic() {
     assert_eq!(ton_public, "PuYGEX9Zreg-CX4Psz5dKehzW9qCs794oBVUKqqFO7aWAOTD");
 
 //    let ton_phrase = "shove often foil innocent soft slim pioneer day uncle drop nephew soccer worry renew public hand word nut again dry first delay first maple";
-    let is_valid = client.request(
+    let is_valid = client.request_json(
         "crypto.mnemonic.verify",
         json!({
             "phrase": "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle",
@@ -191,45 +191,44 @@ fn test_tg_mnemonic() {
             "wordCount": 24,
         }),
     ).unwrap();
-    assert_eq!(is_valid, "true");
-    let is_valid = client.request(
+    assert_eq!(is_valid, Value::Bool(true));
+    let is_valid = client.request_json(
         "crypto.mnemonic.verify",
         json!({
             "phrase": "unit follow"
         }),
     ).unwrap();
-    assert_eq!(is_valid, "false");
-    let is_valid = client.request(
+    assert_eq!(is_valid, Value::Bool(false));
+    let is_valid = client.request_json(
         "crypto.mnemonic.verify",
         json!({
             "phrase": "unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit"
         }),
     ).unwrap();
-    assert_eq!(is_valid, "false");
+    assert_eq!(is_valid, Value::Bool(false));
 
     let invalid_phrase = "invalid phrase for TON dictionary";
-    let result = client.request(
+    let result = client.request_json(
         "crypto.mnemonic.derive.sign.keys",
         json!({
             "phrase": invalid_phrase
         }),
     );
     let expected_error = ApiError::crypto_bip39_invalid_phrase(invalid_phrase);
-    assert_eq!(result.unwrap_err(), serde_json::to_string(&expected_error).unwrap());
+    assert_eq!(result.unwrap_err().code, expected_error.code);
 }
 
 #[test]
 fn test_wallet_deploy() {
     let client = TestClient::new();
-    let version = client.request("version", Value::Null).unwrap();
+    let version = client.request_json("version", Value::Null).unwrap();
     println!("result: {}", version.to_string());
 
-    let keys = client.request("crypto.ed25519.keypair", json!({})).unwrap();
+    let keys = client.request_json("crypto.ed25519.keypair", json!({})).unwrap();
 
     let abi: Value = serde_json::from_str(WALLET_ABI).unwrap();
-    let keys: Value = serde_json::from_str(&keys).unwrap();
 
-    let address = client.request("contracts.deploy.message",
+    let address = client.request_json("contracts.deploy.message",
         json!({
                 "abi": abi.clone(),
                 "constructorParams": json!({}),
@@ -239,12 +238,12 @@ fn test_wallet_deploy() {
             }),
     ).unwrap();
 
-    let address = serde_json::from_str::<Value>(&address).unwrap()["address"].clone();
+    let address = address["address"].clone();
     let address = MsgAddressInt::from_str(address.as_str().unwrap()).unwrap();
 
     let giver_abi: Value = serde_json::from_str(GIVER_ABI).unwrap();
 
-    let _ = client.request("contracts.run",
+    let _ = client.request_json("contracts.run",
         json!({
                 "address": GIVER_ADDRESS,
                 "abi": giver_abi,
@@ -256,7 +255,7 @@ fn test_wallet_deploy() {
             }),
     ).unwrap();
 
-    let _ = client.request("queries.wait.for",
+    let _ = client.request_json("queries.wait.for",
         json!({
                 "table": "accounts".to_owned(),
                 "filter": json!({
@@ -267,7 +266,7 @@ fn test_wallet_deploy() {
             }),
     ).unwrap();
 
-    let deployed = TestClient::parse_object(client.request("contracts.deploy",
+    let deployed = client.request_map("contracts.deploy",
         json!({
                 "abi": abi.clone(),
                 "constructorParams": json!({}),
@@ -275,12 +274,12 @@ fn test_wallet_deploy() {
                 "keyPair": keys,
                 "workchainId": 0,
             }),
-    ));
+    );
 
     assert_eq!(deployed["address"], address.to_string());
     assert_eq!(deployed["alreadyDeployed"], false);
 
-    let result = TestClient::parse_object(client.request("contracts.run",
+    let result = client.request_map("contracts.run",
         json!({
                 "address": address.to_string(),
                 "abi": abi.clone(),
@@ -290,7 +289,7 @@ fn test_wallet_deploy() {
 				}),
                 "keyPair": keys,
             }),
-    ));
+    );
     assert_eq!(result["output"]["value0"], "0x0");
 }
 
@@ -471,15 +470,13 @@ fn test_address_parsing() {
 fn test_out_of_sync() {
     let client = TestClient::new_with_config(Value::Null);
 
-    let error = client.request("setup",
+    let error = client.request_json("setup",
         json!({
             "baseUrl": TestClient::get_network_address(),
             "outOfSyncThreshold": -1
         })).unwrap_err();
 
-    let value: Value = serde_json::from_str(&error).unwrap();
-
-    assert_eq!(value["code"], 1013);
+    assert_eq!(error.code, 1013);
 }
 
 
@@ -492,7 +489,7 @@ fn test_parallel_requests() {
     let start = std::time::Instant::now();
     let timeout: u32 = 5000;
     let long_wait = std::thread::spawn(move || {
-        client3.request("queries.wait.for",
+        client3.request_json("queries.wait.for",
             json!({
                     "table": "accounts".to_owned(),
                     "filter": json!({
@@ -508,11 +505,11 @@ fn test_parallel_requests() {
     std::thread::sleep(std::time::Duration::from_millis(500));
 
     // check that request with another context don't wait
-    client2.request("crypto.ed25519.keypair", json!({})).unwrap();
+    client2.request_json("crypto.ed25519.keypair", json!({})).unwrap();
     assert!(start.elapsed().as_millis() < timeout as u128);
 
     // check that request with same context waits for previous call
-    client1.request("crypto.ed25519.keypair", json!({})).unwrap();
+    client1.request_json("crypto.ed25519.keypair", json!({})).unwrap();
     assert!(start.elapsed().as_millis() > timeout as u128);
     long_wait.join().unwrap();
 }
@@ -591,7 +588,7 @@ fn test_find_shard() {
 
     let address = "0:2222222222222222222222222222222222222222222222222222222222222222";
 
-    let result = client.request(
+    let result = client.request_json(
         "contracts.find.shard",
         json!({
             "address": address,
@@ -605,7 +602,7 @@ fn test_find_shard() {
         "hello": "my shard"
       }).to_string());
 
-    let result = client.request(
+    let result = client.request_json(
         "contracts.find.shard",
         json!({
             "address": address,
@@ -613,13 +610,13 @@ fn test_find_shard() {
         }
     )).unwrap();
 
-    assert_eq!(result, Value::Null.to_string());
+    assert_eq!(result, Value::Null);
 }
 
 #[test]
 fn test_api_reference() {
     let client = TestClient::new();
-    let api = serde_json::from_str::<API>(&client.request(
+    let api = serde_json::from_value::<API>(client.request_json(
         "config.get_api_reference",
         Value::Null,
     ).unwrap()).unwrap();

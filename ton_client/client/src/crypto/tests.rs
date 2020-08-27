@@ -1,15 +1,386 @@
 use crate::tests::TestClient;
+use crate::crypto::math::{
+    ResultOfFactorize, ParamsOfFactorize, ResultOfModularPower, ParamsOfModularPower,
+    ResultOfTonCrc16, ParamsOfTonCrc16, ResultOfGenerateRandomBytes, ParamsOfGenerateRandomBytes,
+};
+use crate::encoding::{InputData, OutputEncoding};
+use crate::crypto::hash::{ResultOfHash, ParamsOfHash};
+use crate::crypto::keys::{
+    ResultOfConvertPublicKeyToTonSafeFormat, ParamsOfConvertPublicKeyToTonSafeFormat, KeyPair,
+};
+use crate::crypto::scrypt::{ResultOfScrypt, ParamsOfScrypt};
+use crate::crypto::nacl::{ParamsOfNaclSignKeyPairFromSecret, ParamsOfNaclSign, ResultOfNaclSign, ResultOfNaclSignOpen, ParamsOfNaclSignOpen, ResultOfNaclSignDetached, ParamsOfNaclBoxKeyPairFromSecret, ResultOfNaclBox, ParamsOfNaclBox, ResultOfNaclBoxOpen, ParamsOfNaclBoxOpen, ParamsOfNaclSecretBox, ParamsOfNaclSecretBoxOpen};
+use crate::crypto::mnemonic::{ResultOfMnemonicWords, ParamsOfMnemonicWords, ParamsOfMnemonicFromRandom, ResultOfMnemonicFromRandom, ResultOfMnemonicFromEntropy, ParamsOfMnemonicFromEntropy, ResultOfMnemonicVerify, ParamsOfMnemonicVerify, ParamsOfMnemonicDeriveSignKeys};
+use crate::crypto::hdkey::{ResultOfHDKeyXPrvFromMnemonic, ParamsOfHDKeyXPrvFromMnemonic, ResultOfHDKeySecretFromXPrv, ParamsOfHDKeySecretFromXPrv, ResultOfHDKeyPublicFromXPrv, ParamsOfHDKeyPublicFromXPrv, ResultOfHDKeyDeriveFromXPrv, ParamsOfHDKeyDeriveFromXPrv, ResultOfHDKeyDeriveFromXPrvPath, ParamsOfHDKeyDeriveFromXPrvPath};
 
 #[test]
 fn math() {
     TestClient::init_log();
     let client = TestClient::new();
-    let result = client.request_map("tvm.get", json!({
-        "functionName": "participant_list",
-        "codeBase64": ELECTOR_CODE,
-        "dataBase64": ELECTOR_DATA,
-    }));
-    let expected_result = r#"{"output":[[["0x101b6d65a384b9c70deb49fd6c43ffc0f60ed22fcc3a4966f7043794a749228","0x36b1f820a400"],[["0x3de5d8590fe6ad191bf94d4136dfb630e9b3447bb2f1a6ae2d8e3e4cbee1d9f","0x377aab54d000"],[["0x558f90c0682d677b46005ce2e04206c255ea9a05bfac0ff5aea9d7182a28913","0x36b1f820a400"],[["0x7698228973a595751d79e1fafd5a4145b3d35349bf0b43322afb61b138f01eb","0x36b1f820a400"],[["0x9d1ef8a40a9fbf1ca505f072258048ec15e0637baa085649d77b9a90220003e","0x36b1f820a400"],[["0xac21ef27c8ed4487270f1c45e99dac091ca4007951217ece344452df7047e5a","0x36b1f820a400"],[["0xaed529418ab67a31a4b98c224f8fdb2fec11f0100c23751e67b312cba11fb23","0x36b1f820a400"],[["0xbd14cdade9067c523f44fd208dee5daa7d852151725d713b92c840a031018a6","0x36b1f820a400"],[["0xbddff0d98f42a3155e577a5579623a911e3b03401835166553f88375cbd9657","0x36b1f820a400"],[["0x12893bbd649bf2e1e79cb084025638cdd7906eebca40efeee7fdbd548cc96391","0x36b1f820a400"],[["0x15546bc7b5124f6d83d6c5a62b8890a48b933168e141c01229431a6c0c499780","0x36b1f820a400"],[["0x1cbea6a399ba200958db255579cda2195006f3a3108b2d6ef7e258e42c101479","0x36b1f820a400"],[["0x1f8ee6ba2902715804c769c3845b6b3a37802e462e8df63ba19f827a92dbbda0","0x36b1f820a400"],[["0x1fdd556d84d1d9f24a739c2600ec72256cc00920d85ad3a2edb3e0d72146789d","0x36b1f820a400"],[["0x20f20c2cfa4d72afb9c5f64d4735070962b3323b3629892c75f56427f175ebe4","0x36b1f820a400"],[["0x219d32737b0f3769869b8fa750ba8e3cd9f19b21a4d669c7c79d420d7f7cdb24","0x36b1f820a400"],[["0x2615b4aeb69140531228248a9d84593117b64e22d462e3968e39c1840a260523","0x36b1f820a400"],[["0x26984c9f04bc1889061e98bd9caf6955f750219d8e8dbc0986feb9d770e5a15b","0x36b1f820a400"],[["0x28bb07d80e20aa624ae47dfe53f915b23a666bf825ff283bac06c14bea1eaa74","0x36b1f820a400"],[["0x2a23566008fd4f87105b09d02c739452e45187fbada5e7e52ada356264cd6751","0x36b1f820a400"],[["0x2dcc70859876106b21b598ba9a10c9932259c36f44adeb95a178e67f6afd2f7a","0x36b1f820a400"],[["0x30b854226ef943d738d2dfcc72ede3b39d08604ca7211abf3c76f488441c77fc","0x36b1f820a400"],[["0x31bb74a5a53769d3db789d961375ea569d4da0bd6ac2b12f830dd6be81968ef1","0x36b1f820a400"],[["0x334f22e0de2e24a070fec7c1d77d7a988a79d66b79e2d654310a963964edd337","0x36b1f820a400"],[["0x36c44eddf773390cdb42f93f8454ea9c7ca45aa8948346df8f642a59ce44c442","0x36b1f820a400"],[["0x3d29d2b5ceef46703255ce8cfe3aad3c4fefd3a2025e5a48ce78a63f20887eff","0x36b1f820a400"],[["0x41b047a20ed691e9376f7f2f60d6571290e34ef4e1b85467dcc3d7c0cf7fae90","0x36b1f820a400"],[["0x41e7541c377b58a0cfc4ca954731e971f6dc9fa6806eaa1709d011d3d32593ce","0x36b1f820a400"],[["0x426a52d3b3d016451c46b3a0eacb382fbbb38739e00d041d4038f795a54e25b5","0x36b1f820a400"],[["0x42f89915ca540af691f623f201b616caa7f5e104f8293698f8b46c4e7bb5b292","0x36b1f820a400"],[["0x4449521e793b02b036ce698c3af951e9548cd5b862b704fa5cc9e80b171a3c61","0x36b1f820a400"],[["0x492f4fee6a035a09e9ff09d65a65768899b04797cff08dc2c64ae11cd94d1968","0x36b1f820a400"],[["0x4947018f9c0c9302b2783eb5edacb76ccae3b5c5a2f6355b5b51afd1a18075f8","0x36b1f820a400"],[["0x4c27708e4ce81a0bbeb315ece024ba495f3e3fab5f83a2941b7731a58ad32160","0x36b1f820a400"],[["0x5059d40f80f578c3c384239415f54af35ab4dbdea0251618d4c3c7b4937e7e69","0x36b1f820a400"],[["0x5191f8cbfe1ce25a68c337ede75638321374112b868584092a335f83caad59a4","0x36b1f820a400"],[["0x531296c32ea64d09dcb44ff0b99843dc9855143c70b9fad42deb33881525fb84","0x36b1f820a400"],[["0x54c9860aa34ddba2a16e4f4271e1771f61f1e8a7a116fbbfa62f0e535b95559e","0x36b1f820a400"],[["0x54ce2d6b35d0d670e37fcd533ff17c2116e0acead719194e46d478944b33108e","0x36b1f820a400"],[["0x576af5e4af963a0caa957629d009906119e418e7f7778f5a55d41c0905b73a4f","0x36b1f820a400"],[["0x59905476f4781f6a79359079bfa3fe295c65d6b918afadbc352edcdb558ad094","0x36b1f820a400"],[["0x5a4e95cdf94bed240ebabded084b70b2548601686d94a751f240aedd2032e4f2","0x36b1f820a400"],[["0x5a7500f11becf6741fe5624d2298f6b830ead261871a48a81f80bf9be09ed866","0xa3b5840f4000"],[["0x5c26942bf33c49485db3b2693e5d582708b44705f712c4e24af1ee84744c079e","0x36b1f820a400"],[["0x5fcdcc107e81ef4399c9d603a25fcba75cb78f1fa1bafd3acb39e3521d7fc9ce","0x36b1f820a400"],[["0x6107f5b2974fabf6f0aa1a7898340b3f76c4ba272b95a3e4bb809c1d529b6997","0x36b1f820a400"],[["0x647b9a476f733ec5ee9cbc0bfb021335cd3166b9aaa8ad27ed0f88d9f6bf9dbe","0x36b1f820a400"],[["0x658c461d8dad54a5a9cbbbb2711920a541ba58003e7029cc228dfdfbc17ede3f","0x36b1f820a400"],[["0x661336351b889e0124fbc19f9f35f6a0f6e8c4fa9b89e9ef527718bd6aa254be","0x36b1f820a400"],[["0x6852746bbfb41e556daae99d375b2839ad62b35355c3b9fbbd54b4946ae2050f","0x36b1f820a400"],[["0x68ad3d98642913848b605dbad3f1df971f21908d360c37af4a493e9b4646b45e","0x36b1f820a400"],[["0x6c07c6be93940a83b30514b21531fd3dd204bb89e7f77b5a2421a41d4e85c74d","0x36b1f820a400"],[["0x6d4ad504054f292b7f66c7ed32f3b123bfa5c7be9c45faf26d77ad85efa64a38","0x36b1f820a400"],[["0x6e77d45d07651565be5cdb11b80c91fa18def0a434f246c0b25bb50fc4877dd4","0x36b1f820a400"],[["0x738600c570c19ef1b91bf2cd83709d71899c246bfabb5b08dc70fe32b5c81f7d","0x36b1f820a400"],[["0x7469b663b9fa7be185aa1819bfb48a4eda6e4d8af33e1955d95fa5e156d50f12","0x36b1f820a400"],[["0x77410e09363239b0999198a701e37f75775cc55049ba541497967f5d8ba74ef4","0x36b1f820a400"],[["0x781c96175cf45b791142326964347095fd0fbdd3c8579c42cea108798e025152","0x36b1f820a400"],[["0x79b43e9c18241636ae7c554097bb4bc5da03249bee67abe5366a5b093b708cab","0x36b1f820a400"],[["0x7ad807b91790868497768476e8c8e6b53ff9b1a91fbfe6a7edae8de0307a8157","0x36b1f820a400"],[["0x8308ff2b214d509d3781d7361a7ccb5f4fb976f8e386ce3c9082bcad8805d13d","0x36b1f820a400"],[["0x845a0fff44669c941475eb3f3ffd6e065ee94cfbfdcb820877744d6f9647a5d0","0x2d62042b6e00"],[["0x88700f083f3bc7971c348de8357ee36b2551d8cdb7ea4b4e4e8aae558d67a231","0x36b1f820a400"],[["0x8b08c457cac18642f49ab7de0ef7551b93e11dbc2979062f22b271b890e8d2f0","0x36b1f820a400"],[["0x8bc840e0c5a98e608e70307ada41aa94a745a51f6065111942021a4e601dc328","0x36b1f820a400"],[["0x93e518529faa2244ee1bdc24a5459d4b3d2047f8756b12636e2cba3b766ec201","0x36b1f820a400"],[["0x993d90fac526bdad11549104105452e9198da8d485dbb4af17b044a721fa8b82","0x36b1f820a400"],[["0x9997880b1dcc011ce4fefeb587eca16c027c81aafeb4305d3a1755182c269b5e","0x36b1f820a400"],[["0x9d998de650f13c85da4ab08de0fa7960771d4269081fa1ed1f9940c5cd8bb57c","0x36b1f820a400"],[["0x9fab138505d28c3c2d68509c5414abe933ab7de90610d8cc84edaf380e739f48","0x36b1f820a400"],[["0x9fd585f4d71c50ff54b69255ddbaa4a30eae31cde2d02ba6d4c0f87faf288f9a","0x36b1f820a400"],[["0xa42d598e3d6c051880488bfd139705c9853ff2e93046c6e096eba5f5b8dd714e","0x36b1f820a400"],[["0xa6e3ff7b1f340f7d02a1b64ade185c9039cd2751ef47ac5d7950b527b377d566","0x36b1f820a400"],[["0xa79d52472a9343b4f91c61b7e065cd736844064c11188fb86fef32447b163462","0x36b1f820a400"],[["0xa82bdb918a99f7192b0ebe745f04217991d2077dc43ffe75956782f55c7c9805","0x36b1f820a400"],[["0xa87f60cfad2f10ec420d4660d98a43a1105a867aac63a2724075f155b991fd35","0x36b1f820a400"],[["0xad1e503c43f7f62bb672b234eb1510b8ccef4d23b6de1f53a8a0d738c961cee2","0x36b1f820a400"],[["0xad8dd15447ac5c3b0ac9ed9ebae3b32cfe3cda5442bfce7843443a353701eb34","0x36b1f820a400"],[["0xade82619842d2257fb19097c990b77818f2352e3809b9c179b3b66989b8e01c3","0x36b1f820a400"],[["0xb739a017b3b9c9577eeba0d3b94fe2027333ccdad378f0aa67b441eb8cbd675a","0x36b1f820a400"],[["0xb85ed5c5a48abadc5bf4a85185f781aa60eebe7ef20642f660c7e90d481984cf","0x36b1f820a400"],[["0xbcb7406f71b46a5171b822f609d50df1a485bbae832f76db0a356b243616ca8e","0x36b1f820a400"],[["0xbedc1da66f906866cf8af7e57cda645018c39d1b028e9ed4682643941c940348","0x36b1f820a400"],[["0xc2660177ec158c05676b396baab45f8f8a63f74a0eaf1a7cfe011c7eea0cd8a4","0x340141969800"],[["0xc536058376e87f6481ce31b0e088235b4be9df00145c97081c45a28cce64c684","0x36b1f820a400"],[["0xc8fd550fcf32a9ea6aef295e788e4394e744f0939ab5fa8b9009577e274a477e","0x36b1f820a400"],[["0xcbfe056a9e9fafd246a8fa3025c3d870dac6b01f68adc847f03277eac906452f","0x36b1f820a400"],[["0xd023735d89cb9d29c5301b87f00d3f7a42aa6f0320086473e50b7e3b8b9acb12","0x36b1f820a400"],[["0xd17002d5872d62876fc4cae771c472ececae0b50820d760718a753acf431f31c","0x36b1f820a400"],[["0xd847bac558e925bd87b15a9e8c077df36537e6fc52d5c2019004c0c570fd0266","0x36b1f820a400"],[["0xdab17536c875995ce144f17771c79e7e9d6adcaaa66cce64947c8d17a363a2dd","0x36b1f820a400"],[["0xdf0b5c031ece9dadfd23c63a41e4e7f1ae4138b157ff7588c21083853d585789","0x36b1f820a400"],[["0xe087dae3faaf4748c8bcd237ca7ece5f8bcddf6b60db216252c5e29a7f6a33a4","0x36b1f820a400"],[["0xe09755d90d62160409b67ff28584f2800087f9063d76b3240c4d3f94f0880c41","0x36b1f820a400"],[["0xe23c47f9c2e9d2d87d9f1fcc0352ef28d13f322f8003d4210bb33692e77fd988","0x36b1f820a400"],[["0xeb2269b0ea934046a59399bd824f6a7fae4c7d696bb163e1bd235cbc21aa2b55","0x36b1f820a400"],[["0xedf8d203bebac7d629840ca0a704cbff92607d6bf538bc99ab65fada6a7b3c65","0x36b1f820a400"],[["0xf179ca30b1a9c8c33e33863b04d8d0078dddbf974a1e8666d072e0403c997f21","0x36b1f820a400"],[["0xf199c75a842c96c459272502b7010a78f29e7d00ad649f7756dd11c8d321a97c","0x36b1f820a400"],[["0xf19a880d58384bfaf5c839e7b6502ff7e6dc11cc38a77f651c948ea8475a37f7","0x36b1f820a400"],[["0xf25841168bb223f03cc01f5934474e56ae3ac0307a048ab167326c7d655c25db","0x4ef873b38200"],[["0xf25e305cc44404dae89a8f3b577cf94c367ab28a8ebc81a5c551d39303e254c2","0x36b1f820a400"],[["0xf3c0eed928d059ec9c99fd55ef4df9ccdaa30626e14b833f064936099b8088e1","0x36b1f820a400"],[["0xf6fe4424c9df211b1d2e92f7a91889aac643c605de458fa8f2af90534b885654","0x8cbf79329400"],[["0xf8a26375e76f1f8ff763787507fe2e01ed257b1a6b1772e48338606862a80da4","0x36b1f820a400"],[["0xfb471071aa87f25465da8c98bdeb1b24165b4a1694c5a6ab9f59eb57ce9e451d","0x36b1f820a400"],[["0xfb66f351a3b27e1702a21bfd189f3db5053f9f0089b26e7f05218fa87b925e2e","0x36b1f820a400"],[["0xfbcd15956e466a3c945c8bee6e6bc6bdab6b1b2ec0c07a3ba431091795751bef","0x36b1f820a400"],[["0xfced4379f1cb13157b34d50301a65ab47dc3452f4cd0e2a2d8e0b33a07350f43","0x36b1f820a400"],null]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}"#;
-    assert_eq!(expected_result, serde_json::Value::Object(result).to_string());
+
+    let result: ResultOfFactorize = client.request("crypto.factorize", ParamsOfFactorize {
+        composite: "17ED48941A08F981".into()
+    });
+    assert_eq!("494C553B", result.products[0]);
+    assert_eq!("53911073", result.products[1]);
+
+    let result: ResultOfModularPower = client.request("crypto.modular_power",
+        ParamsOfModularPower {
+            base: "0123456789ABCDEF".into(),
+            exponent: "0123".into(),
+            modulus: "01234567".into(),
+        });
+    assert_eq!("63bfdf", result.modular_power);
+
+    let result: ResultOfTonCrc16 = client.request("crypto.ton_crc16", ParamsOfTonCrc16 {
+        data: InputData::hex("0123456789abcdef"),
+    });
+    assert_eq!(result.crc, 43349);
+
+    let result: ResultOfGenerateRandomBytes = client.request("crypto.generate_random_bytes",
+        ParamsOfGenerateRandomBytes {
+            length: 32,
+            output_encoding: Some(OutputEncoding::Hex),
+        });
+    assert_eq!(result.bytes.len(), 64);
+
+    let result: ResultOfGenerateRandomBytes = client.request("crypto.generate_random_bytes",
+        ParamsOfGenerateRandomBytes {
+            length: 32,
+            output_encoding: Some(OutputEncoding::HexUppercase),
+        });
+    assert_eq!(result.bytes.len(), 64);
+
+    let result: ResultOfGenerateRandomBytes = client.request("crypto.generate_random_bytes",
+        ParamsOfGenerateRandomBytes {
+            length: 32,
+            output_encoding: Some(OutputEncoding::Base64),
+        });
+    assert_eq!(result.bytes.len(), 44);
 }
 
+
+#[test]
+fn hash() {
+    TestClient::init_log();
+    let client = TestClient::new();
+
+    let result: ResultOfHash = client.request("crypto.sha512", ParamsOfHash {
+        data: InputData::text("Message to hash with sha 512"),
+        output_encoding: None,
+    });
+    assert_eq!("2616a44e0da827f0244e93c2b0b914223737a6129bc938b8edf2780ac9482960baa9b7c7cdb11457c1cebd5ae77e295ed94577f32d4c963dc35482991442daa5", result.hash);
+
+    let result: ResultOfHash = client.request("crypto.sha256", ParamsOfHash {
+        data: InputData::text("Message to hash with sha 256"),
+        output_encoding: None,
+    });
+    assert_eq!("16fd057308dd358d5a9b3ba2de766b2dfd5e308478fc1f7ba5988db2493852f5", result.hash);
+
+    let result: ResultOfHash = client.request("crypto.sha256", ParamsOfHash {
+        data: InputData::hex("4d65737361676520746f206861736820776974682073686120323536"),
+        output_encoding: None,
+    });
+    assert_eq!("16fd057308dd358d5a9b3ba2de766b2dfd5e308478fc1f7ba5988db2493852f5", result.hash);
+
+    let result: ResultOfHash = client.request("crypto.sha256", ParamsOfHash {
+        data: InputData::base64("TWVzc2FnZSB0byBoYXNoIHdpdGggc2hhIDI1Ng=="),
+        output_encoding: None,
+    });
+    assert_eq!("16fd057308dd358d5a9b3ba2de766b2dfd5e308478fc1f7ba5988db2493852f5", result.hash);
+
+    let result: ResultOfHash = client.request("crypto.sha256", ParamsOfHash {
+        data: InputData::text("Message to hash with sha 256"),
+        output_encoding: Some(OutputEncoding::Base64),
+    });
+    assert_eq!("Fv0FcwjdNY1amzui3nZrLf1eMIR4/B97pZiNskk4UvU=", result.hash);
+}
+
+#[test]
+fn keys() {
+    TestClient::init_log();
+    let client = TestClient::new();
+
+    let result: ResultOfConvertPublicKeyToTonSafeFormat = client.request("crypto.convert_public_key_to_ton_safe_format", ParamsOfConvertPublicKeyToTonSafeFormat {
+        public_key: "06117f59ade83e097e0fb33e5d29e8735bda82b3bf78a015542aaa853bb69600".into(),
+    });
+    assert_eq!("PuYGEX9Zreg-CX4Psz5dKehzW9qCs794oBVUKqqFO7aWAOTD", result.ton_public_key);
+
+    let result: KeyPair = client.request_no_params("crypto.generate_random_sign_keys");
+    assert_eq!(result.public.len(), 64);
+    assert_eq!(result.secret.len(), 64);
+    assert_ne!(result.secret, result.public);
+}
+
+#[test]
+fn scrypt() {
+    TestClient::init_log();
+    let client = TestClient::new();
+
+    let result: ResultOfScrypt = client.request("crypto.scrypt", ParamsOfScrypt {
+        password: InputData::text("Test Password"),
+        salt: InputData::text("Test Salt"),
+        log_n: 10,
+        r: 8,
+        p: 16,
+        dk_len: 64,
+        output_encoding: Some(OutputEncoding::Hex),
+    });
+    assert_eq!("52e7fcf91356eca55fc5d52f16f5d777e3521f54e3c570c9bbb7df58fc15add73994e5db42be368de7ebed93c9d4f21f9be7cc453358d734b04a057d0ed3626d", result.bytes);
+}
+
+#[test]
+fn nacl() {
+    TestClient::init_log();
+    let client = TestClient::new();
+
+    // Sign
+
+    let result: KeyPair = client.request_no_params("crypto.nacl_sign_keypair");
+    assert_eq!(result.public.len(), 64);
+    assert_eq!(result.secret.len(), 128);
+
+    let result: KeyPair = client.request("crypto.nacl_sign_keypair_from_secret", ParamsOfNaclSignKeyPairFromSecret {
+        secret: "8fb4f2d256e57138fb310b0a6dac5bbc4bee09eb4821223a720e5b8e1f3dd674".into(),
+    });
+    assert_eq!(result.public, "aa5533618573860a7e1bf19f34bd292871710ed5b2eafa0dcdbb33405f2231c6");
+
+    let result: ResultOfNaclSign = client.request("crypto.nacl_sign", ParamsOfNaclSign {
+        unsigned: InputData::text("Test Message"),
+        secret: "56b6a77093d6fdf14e593f36275d872d75de5b341942376b2a08759f3cbae78f1869b7ef29d58026217e9cf163cbfbd0de889bdf1bf4daebf5433a312f5b8d6e".into(),
+        output_encoding: None,
+    });
+    assert_eq!(result.signed, "+wz+QO6l1slgZS5s65BNqKcu4vz24FCJz4NSAxef9lu0jFfs8x3PzSZRC+pn5k8+aJi3xYMA3BQzglQmjK3hA1Rlc3QgTWVzc2FnZQ==");
+
+    let result: ResultOfNaclSignOpen = client.request("crypto.nacl_sign_open", ParamsOfNaclSignOpen {
+        signed: InputData::hex("fb0cfe40eea5d6c960652e6ceb904da8a72ee2fcf6e05089cf835203179ff65bb48c57ecf31dcfcd26510bea67e64f3e6898b7c58300dc14338254268cade10354657374204d657373616765"),
+        public: "1869b7ef29d58026217e9cf163cbfbd0de889bdf1bf4daebf5433a312f5b8d6e".into(),
+        output_encoding: Some(OutputEncoding::Text),
+    });
+    assert_eq!(result.unsigned, "Test Message");
+
+    let result: ResultOfNaclSignDetached = client.request("crypto.nacl_sign_detached", ParamsOfNaclSign {
+        unsigned: InputData::text("Test Message"),
+        secret: "56b6a77093d6fdf14e593f36275d872d75de5b341942376b2a08759f3cbae78f1869b7ef29d58026217e9cf163cbfbd0de889bdf1bf4daebf5433a312f5b8d6e".into(),
+        output_encoding: None,
+    });
+    assert_eq!(result.sign, "fb0cfe40eea5d6c960652e6ceb904da8a72ee2fcf6e05089cf835203179ff65bb48c57ecf31dcfcd26510bea67e64f3e6898b7c58300dc14338254268cade103");
+
+    // Box
+
+    let result: KeyPair = client.request_no_params("crypto.nacl_box_keypair");
+    assert_eq!(result.public.len(), 64);
+    assert_eq!(result.secret.len(), 64);
+    assert_ne!(result.public, result.secret);
+
+    let result: KeyPair = client.request("crypto.nacl_box_keypair_from_secret", ParamsOfNaclBoxKeyPairFromSecret {
+        secret: "e207b5966fb2c5be1b71ed94ea813202706ab84253bdf4dc55232f82a1caf0d4".into(),
+    });
+    assert_eq!(result.public, "a53b003d3ffc1e159355cb37332d67fc235a7feb6381e36c803274074dc3933a");
+
+    let result: ResultOfNaclBox = client.request("crypto.nacl_box", ParamsOfNaclBox {
+        decrypted: InputData::text("Test Message"),
+        nonce: "cd7f99924bf422544046e83595dd5803f17536f5c9a11746".into(),
+        their_public: "c4e2d9fe6a6baf8d1812b799856ef2a306291be7a7024837ad33a8530db79c6b".into(),
+        secret: "d9b9dc5033fb416134e5d2107fdbacab5aadb297cb82dbdcd137d663bac59f7f".into(),
+        output_encoding: None,
+    });
+    assert_eq!(result.encrypted, "li4XED4kx/pjQ2qdP0eR2d/K30uN94voNADxwA==");
+
+    let result: ResultOfNaclBoxOpen = client.request("crypto.nacl_box_open", ParamsOfNaclBoxOpen {
+        encrypted: InputData::hex("962e17103e24c7fa63436a9d3f4791d9dfcadf4b8df78be83400f1c0"),
+        nonce: "cd7f99924bf422544046e83595dd5803f17536f5c9a11746".into(),
+        their_public: "c4e2d9fe6a6baf8d1812b799856ef2a306291be7a7024837ad33a8530db79c6b".into(),
+        secret: "d9b9dc5033fb416134e5d2107fdbacab5aadb297cb82dbdcd137d663bac59f7f".into(),
+        output_encoding: Some(OutputEncoding::Text),
+    });
+    assert_eq!(result.decrypted, "Test Message");
+
+    // Secret box
+
+    let result: ResultOfNaclBox = client.request("crypto.nacl_secret_box", ParamsOfNaclSecretBox {
+        decrypted: InputData::text("Test Message"),
+        nonce: "2a33564717595ebe53d91a785b9e068aba625c8453a76e45".into(),
+        key: "8f68445b4e78c000fe4d6b7fc826879c1e63e3118379219a754ae66327764bd8".into(),
+        output_encoding: None,
+    });
+    assert_eq!(result.encrypted, "JL7ejKWe2KXmrsns41yfXoQF0t/C1Q8RGyzQ2A==");
+
+    let result: ResultOfNaclBoxOpen = client.request("crypto.nacl_secret_box_open", ParamsOfNaclSecretBoxOpen {
+        encrypted: InputData::hex("24bede8ca59ed8a5e6aec9ece35c9f5e8405d2dfc2d50f111b2cd0d8"),
+        nonce: "2a33564717595ebe53d91a785b9e068aba625c8453a76e45".into(),
+        key: "8f68445b4e78c000fe4d6b7fc826879c1e63e3118379219a754ae66327764bd8".into(),
+        output_encoding: Some(OutputEncoding::Text),
+    });
+    assert_eq!(result.decrypted, "Test Message");
+
+    let e: ResultOfNaclBox = client.request("crypto.nacl_secret_box", ParamsOfNaclSecretBox {
+        decrypted: InputData::text("Text with \' and \" and : {}"),
+        nonce: "2a33564717595ebe53d91a785b9e068aba625c8453a76e45".into(),
+        key: "8f68445b4e78c000fe4d6b7fc826879c1e63e3118379219a754ae66327764bd8".into(),
+        output_encoding: Some(OutputEncoding::Base64),
+    });
+    let d: ResultOfNaclBoxOpen = client.request("crypto.nacl_secret_box_open", ParamsOfNaclSecretBoxOpen {
+        encrypted: InputData::base64(&e.encrypted),
+        nonce: "2a33564717595ebe53d91a785b9e068aba625c8453a76e45".into(),
+        key: "8f68445b4e78c000fe4d6b7fc826879c1e63e3118379219a754ae66327764bd8".into(),
+        output_encoding: Some(OutputEncoding::Text),
+    });
+    assert_eq!(d.decrypted, "Text with \' and \" and : {}");
+
+
+}
+
+#[test]
+fn mnemonic() {
+    TestClient::init_log();
+    let client = TestClient::new();
+
+    let result: ResultOfMnemonicWords = client.request("crypto.mnemonic_words", ParamsOfMnemonicWords {
+        dictionary: None,
+    });
+    assert_eq!(result.words.split(" ").count(), 2048);
+
+    for dictionary in 0..9 {
+        for word_count in &[12u8, 15, 18, 21, 24] {
+            let result: ResultOfMnemonicFromRandom = client.request("crypto.mnemonic_from_random", ParamsOfMnemonicFromRandom {
+                dictionary: Some(dictionary),
+                word_count: Some(*word_count),
+            });
+            assert_eq!(result.phrase.split(" ").count(), *word_count as usize);
+        }
+    }
+
+    let result: ResultOfMnemonicFromEntropy = client.request("crypto.mnemonic_from_entropy", ParamsOfMnemonicFromEntropy {
+        entropy: InputData::hex("00112233445566778899AABBCCDDEEFF"),
+        dictionary: Some(1),
+        word_count: Some(12),
+    });
+    assert_eq!(result.phrase, "abandon math mimic master filter design carbon crystal rookie group knife young");
+
+    for dictionary in 0..9 {
+        for word_count in &[12u8, 15, 18, 21, 24] {
+            let result: ResultOfMnemonicFromRandom = client.request("crypto.mnemonic_from_random", ParamsOfMnemonicFromRandom {
+                dictionary: Some(dictionary),
+                word_count: Some(*word_count),
+            });
+            let verify_result: ResultOfMnemonicVerify = client.request("crypto.mnemonic_verify", ParamsOfMnemonicVerify {
+                phrase: result.phrase,
+                dictionary: Some(dictionary),
+                word_count: Some(*word_count),
+            });
+            assert_eq!(verify_result.valid, true);
+        }
+    }
+
+    let result: ResultOfMnemonicVerify = client.request("crypto.mnemonic_verify", ParamsOfMnemonicVerify {
+        phrase: "one two".into(),
+        dictionary: None,
+        word_count: None,
+    });
+    assert_eq!(result.valid, false);
+
+    let result: KeyPair = client.request("crypto.mnemonic_derive_sign_keys", ParamsOfMnemonicDeriveSignKeys {
+        phrase: "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle".into(),
+        path: None,
+        dictionary: None,
+        word_count: None,
+    });
+
+    let result: ResultOfConvertPublicKeyToTonSafeFormat = client.request("crypto.convert_public_key_to_ton_safe_format", ParamsOfConvertPublicKeyToTonSafeFormat {
+        public_key: result.public,
+    });
+    assert_eq!(result.ton_public_key, "PubDdJkMyss2qHywFuVP1vzww0TpsLxnRNnbifTCcu-XEgW0");
+
+
+    let result: ResultOfMnemonicFromRandom = client.request("crypto.mnemonic_from_random", ParamsOfMnemonicFromRandom {
+        dictionary: None,
+        word_count: None,
+    });
+    assert_eq!(result.phrase.split(" ").count(), 24);
+
+
+    let result: ResultOfMnemonicFromRandom = client.request("crypto.mnemonic_from_random", ParamsOfMnemonicFromRandom {
+        dictionary: Some(0),
+        word_count: Some(12),
+    });
+    assert_eq!(result.phrase.split(" ").count(), 12);
+
+
+    let result: ResultOfMnemonicFromRandom = client.request("crypto.mnemonic_from_random", ParamsOfMnemonicFromRandom {
+        dictionary: Some(1),
+        word_count: Some(12),
+    });
+    assert_eq!(result.phrase.split(" ").count(), 12);
+
+    let result: ResultOfMnemonicFromEntropy = client.request("crypto.mnemonic_from_entropy", ParamsOfMnemonicFromEntropy {
+        entropy: InputData::hex("2199ebe996f14d9e4e2595113ad1e6276bd05e2e147e16c8ab8ad5d47d13b44fcf"),
+        dictionary: None,
+        word_count: None,
+    });
+    let result: KeyPair = client.request("crypto.mnemonic_derive_sign_keys", ParamsOfMnemonicDeriveSignKeys {
+        phrase: result.phrase,
+        path: None,
+        dictionary: None,
+        word_count: None,
+    });
+    let result: ResultOfConvertPublicKeyToTonSafeFormat = client.request("crypto.convert_public_key_to_ton_safe_format", ParamsOfConvertPublicKeyToTonSafeFormat {
+        public_key: result.public,
+    });
+    assert_eq!(result.ton_public_key, "PuYGEX9Zreg-CX4Psz5dKehzW9qCs794oBVUKqqFO7aWAOTD");
+}
+
+#[test]
+fn hdkey() {
+    TestClient::init_log();
+    let client = TestClient::new();
+
+    let master: ResultOfHDKeyXPrvFromMnemonic = client.request("crypto.hdkey_xprv_from_mnemonic", ParamsOfHDKeyXPrvFromMnemonic {
+        phrase: "abuse boss fly battle rubber wasp afraid hamster guide essence vibrant tattoo".into(),
+    });
+    assert_eq!(master.xprv, "xprv9s21ZrQH143K25JhKqEwvJW7QAiVvkmi4WRenBZanA6kxHKtKAQQKwZG65kCyW5jWJ8NY9e3GkRoistUjjcpHNsGBUv94istDPXvqGNuWpC");
+
+    let result: ResultOfHDKeySecretFromXPrv = client.request("crypto.hdkey_secret_from_xprv", ParamsOfHDKeySecretFromXPrv {
+        xprv: master.xprv.clone(),
+    });
+    assert_eq!(result.secret, "0c91e53128fa4d67589d63a6c44049c1068ec28a63069a55ca3de30c57f8b365");
+
+    let result: ResultOfHDKeyPublicFromXPrv = client.request("crypto.hdkey_public_from_xprv", ParamsOfHDKeyPublicFromXPrv {
+        xprv: master.xprv.clone(),
+    });
+    assert_eq!(result.public, "02a8eb63085f73c33fa31b4d1134259406347284f8dab6fc68f4bf8c96f6c39b75");
+
+    let child: ResultOfHDKeyDeriveFromXPrv = client.request("crypto.hdkey_derive_from_xprv", ParamsOfHDKeyDeriveFromXPrv {
+        xprv: master.xprv.clone(),
+        child_index: 0,
+        hardened: false,
+    });
+    assert_eq!(child.xprv, "xprv9uZwtSeoKf1swgAkVVCEUmC2at6t7MCJoHnBbn1MWJZyxQ4cySkVXPyNh7zjf9VjsP4vEHDDD2a6R35cHubg4WpzXRzniYiy8aJh1gNnBKv");
+
+    let result: ResultOfHDKeySecretFromXPrv = client.request("crypto.hdkey_secret_from_xprv", ParamsOfHDKeySecretFromXPrv {
+        xprv: child.xprv.clone(),
+    });
+    assert_eq!(result.secret, "518afc6489b61d4b738ee9ad9092815fa014ffa6e9a280fa17f84d95f31adb91");
+
+    let result: ResultOfHDKeyPublicFromXPrv = client.request("crypto.hdkey_public_from_xprv", ParamsOfHDKeyPublicFromXPrv {
+        xprv: child.xprv.clone(),
+    });
+    assert_eq!(result.public, "027a598c7572dbb4fbb9663a0c805576babf7faa173a4288a48a52f6f427e12be1");
+
+
+    let second: ResultOfHDKeyDeriveFromXPrvPath = client.request("crypto.hdkey_derive_from_xprv_path", ParamsOfHDKeyDeriveFromXPrvPath {
+        xprv: master.xprv.clone(),
+        path: "m/44'/60'/0'/0'".into(),
+    });
+    assert_eq!(second.xprv, "xprvA1KNMo63UcGjmDF1bX39Cw2BXGUwrwMjeD5qvQ3tA3qS3mZQkGtpf4DHq8FDLKAvAjXsYGLHDP2dVzLu9ycta8PXLuSYib2T3vzLf3brVgZ");
+
+    let result: ResultOfHDKeySecretFromXPrv = client.request("crypto.hdkey_secret_from_xprv", ParamsOfHDKeySecretFromXPrv {
+        xprv: second.xprv.clone(),
+    });
+    assert_eq!(result.secret, "1c566ade41169763b155761406d3cef08b29b31cf8014f51be08c0cb4e67c5e1");
+
+    let result: ResultOfHDKeyPublicFromXPrv = client.request("crypto.hdkey_public_from_xprv", ParamsOfHDKeyPublicFromXPrv {
+        xprv: second.xprv.clone(),
+    });
+    assert_eq!(result.public, "02a87d9764eedaacee45b0f777b5a242939b05fa06873bf511ca9a59cb46a5f526");
+}

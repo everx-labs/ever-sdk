@@ -12,8 +12,8 @@
 */
 
 use ton_sdk::Contract;
-use crate::types::{ApiResult, ApiError};
-use crate::crypto::keys::{account_decode};
+use crate::error::{ApiResult, ApiError};
+use crate::encoding::{account_decode};
 use crate::client::ClientContext;
 
 #[derive(Deserialize)]

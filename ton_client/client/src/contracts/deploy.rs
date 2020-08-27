@@ -11,7 +11,9 @@
 * limitations under the License.
 */
 
-use crate::crypto::keys::{KeyPair, decode_public_key, account_encode};
+use crate::crypto::keys::{KeyPair};
+use crate::encoding::{account_encode};
+use crate::crypto::internal::{decode_public_key};
 use crate::contracts::{EncodedUnsignedMessage, EncodedMessage};
 use crate::contracts::run::RunFees;
 use ton_sdk::{Contract, ContractImage, FunctionCallSet};
@@ -54,11 +56,11 @@ impl Into<FunctionCallSet> for DeployFunctionCallSet {
 
 #[doc(summary="Method that deploys a contract")]
 /// Method creates a deploy message signed with key_pair, sends it to the targer workchain,
-/// waits for the result transaction and outbound messages and decodes the parameters 
+/// waits for the result transaction and outbound messages and decodes the parameters
 /// returned by the constructor, using ABI.
 ///
 /// If the contract implements Pragma Expire, the method repeats the algorithm
-/// for message_retries_count times 
+/// for message_retries_count times
 /// if the message was not delivered during message_expiration_timeout (see setup.SetupParams).
 ///
 /// If the contract does not implement Pragra Expire - the method waits for the result
@@ -81,12 +83,12 @@ pub(crate) struct ParamsOfDeploy {
     pub key_pair: KeyPair,
     /// target workchain for deploy
     pub workchain_id: Option<i32>,
-    /// [1.0.0] will be deprecated 
+    /// [1.0.0] will be deprecated
     pub try_index: Option<u8>,
 }
 
 #[doc(summary="Method that creates an unsigned deploy message")]
-/// Method that creates an unsigned deploy message that can be signed, 
+/// Method that creates an unsigned deploy message that can be signed,
 /// for instance, outside the application
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -99,9 +101,9 @@ pub(crate) struct ParamsOfEncodeUnsignedDeployMessage {
     pub image_base64: String,
     /// public key
     pub public_key_hex: String,
-    /// target workchain for deploy    
+    /// target workchain for deploy
     pub workchain_id: Option<i32>,
-    /// [1.0.0] will be deprecated 
+    /// [1.0.0] will be deprecated
     pub try_index: Option<u8>,
 }
 
@@ -146,9 +148,9 @@ pub(crate) struct ResultOfDeploy {
 }
 
 #[doc(summary="Method that ...???")]
-/// 
-/// 
-/// 
+///
+///
+///
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfGetDeployData {
@@ -333,7 +335,7 @@ pub(crate) fn encode_unsigned_message(context: &mut ClientContext, params: Param
 // Internals
 
 use ed25519_dalek::PublicKey;
-use crate::types::{ApiResult, ApiError};
+use crate::error::{ApiResult, ApiError};
 
 use crate::client::ClientContext;
 

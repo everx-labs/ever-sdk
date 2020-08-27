@@ -13,10 +13,10 @@
 
 use crate::client::ClientContext;
 use crate::dispatch::DispatchTable;
-use crate::types::{ApiResult};
-use crate::types::ApiError;
+use crate::error::{ApiResult, ApiError};
 
 use ton_sdk::{NodeClientConfig, TimeoutsConfig};
+use crate::error::apierror_from_sdkerror;
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
     #[cfg(feature = "node_interaction")]
@@ -74,7 +74,7 @@ fn setup(context: &mut ClientContext, config: SetupParams) -> ApiResult<()> {
         .map_err(|err| ApiError::cannot_create_runtime(err))?;
 
     let client = runtime.block_on(ton_sdk::init(config.into()))
-        .map_err(|err| crate::types::apierror_from_sdkerror(&err, ApiError::config_init_failed, None))?;
+        .map_err(|err| apierror_from_sdkerror(&err, ApiError::config_init_failed, None))?;
 
     context.client = Some(client);
     context.runtime = Some(runtime);

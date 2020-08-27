@@ -16,9 +16,10 @@ use serde_json::Value;
 use ton_sdk::Contract;
 
 use crate::client::ClientContext;
-use crate::types::{ApiResult, ApiError};
+use crate::error::{ApiResult, ApiError};
 use crate::dispatch::DispatchTable;
 use ton_block::MsgAddressInt;
+use crate::encoding::{account_decode};
 
 #[derive(Serialize, Deserialize)]
 #[allow(non_snake_case)]
@@ -57,9 +58,8 @@ pub(crate) fn get(
     ).map_err(
         |_| {
             let address = params.address.as_ref().map(|a|
-                crate::crypto::keys::account_decode(a)
-                    .unwrap_or(MsgAddressInt::default()
-                    )).unwrap_or(MsgAddressInt::default());
+                account_decode(a).unwrap_or(MsgAddressInt::default())
+            ).unwrap_or(MsgAddressInt::default());
             ApiError::account_code_missing(&address)
         }
     )?;
@@ -70,7 +70,7 @@ pub(crate) fn get(
         None => {
             trace!("load contract");
             let address = params.address.ok_or_else(|| ApiError::address_reqired_for_runget())?;
-            let address = crate::crypto::keys::account_decode(&address)?;
+            let address = account_decode(&address)?;
             let mut runtime = context.take_runtime()?;
             let result = runtime.block_on(crate::contracts::run::load_contract(context, &address, true));
             context.runtime = Some(runtime);

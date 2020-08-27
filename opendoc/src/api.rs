@@ -63,6 +63,7 @@ pub enum Type {
     Boolean,
     String,
     Number,
+    BigInt,
     Ref(String),
     Optional(Box<Type>),
     Array(Box<Type>),

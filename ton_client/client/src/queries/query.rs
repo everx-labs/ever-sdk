@@ -17,7 +17,7 @@ use std::sync::Mutex;
 use rand::RngCore;
 
 use crate::client::ClientContext;
-use crate::types::{ApiResult, ApiError};
+use crate::error::{ApiResult, ApiError, apierror_from_sdkerror};
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct ParamsOfQuery {
@@ -68,7 +68,7 @@ pub(crate) struct SubscribeHandle {
 type StreamHandle = u32;
 
 lazy_static! {
-    static ref STREAMS: 
+    static ref STREAMS:
         Mutex<HashMap<StreamHandle, Box<dyn Stream<Item=Result<serde_json::Value, failure::Error>> + Send + Unpin>>>
             = Mutex::new(HashMap::new());
 }
@@ -77,7 +77,7 @@ pub(crate) async fn query(context: &mut ClientContext, params: ParamsOfQuery) ->
     let client = context.get_client()?;
     let result = client.query(&params.table, &params.filter, &params.result, params.order, params.limit, Some(0))
         .await
-        .map_err(|err| crate::types::apierror_from_sdkerror(
+        .map_err(|err| apierror_from_sdkerror(
             &err, ApiError::queries_query_failed, Some(client)))?;
 
     Ok(ResultOfQuery{ result })
@@ -87,7 +87,7 @@ pub(crate) async fn wait_for(context: &mut ClientContext, params: ParamsOfWaitFo
     let client = context.get_client()?;
     let result = client.wait_for(&params.table, &params.filter, &params.result, params.timeout)
         .await
-        .map_err(|err| crate::types::apierror_from_sdkerror(
+        .map_err(|err| apierror_from_sdkerror(
             &err, ApiError::queries_wait_for_failed, Some(client)))?;
 
     Ok(ResultOfQuery{ result })
@@ -113,7 +113,7 @@ pub(crate) async fn get_next(context: &mut ClientContext, params: SubscribeHandl
         .next()
         .await
         .ok_or(ApiError::queries_get_next_failed("None value"))?
-        .map_err(|err| crate::types::apierror_from_sdkerror(
+        .map_err(|err| apierror_from_sdkerror(
             &err, ApiError::queries_get_next_failed, context.get_client().ok()))?;
 
     add_handle(params.handle, stream);

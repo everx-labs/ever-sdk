@@ -11,55 +11,134 @@
 * limitations under the License.
 */
 
-use crate::types::{ApiResult, ApiError};
-use crate::crypto::keys::{key512, Key256, key256, Key264};
-use crate::crypto::hash::sha256;
+use crate::error::{ApiResult, ApiError};
+use crate::crypto::internal::{key512, Key256, key256, Key264};
+use crate::crypto::hash::{internal_sha256};
 use hmac::*;
 use sha2::{Sha512, Digest};
 use base58::*;
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use pbkdf2::pbkdf2;
 use secp256k1::{PublicKey, SecretKey};
+use crate::client::ClientContext;
 
-pub fn hdkey_xprv_from_mnemonic(phrase: &String) -> ApiResult<String> {
-    Ok(HDPrivateKey::from_mnemonic(phrase)?.serialize_to_string())
+pub(crate) const DEFAULT_COMPLIANT: bool = true;
+
+//----------------------------------------------------------------- crypto.hdkey_xprv_from_mnemonic
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ParamsOfHDKeyXPrvFromMnemonic {
+    pub phrase: String,
 }
 
-pub fn hdkey_secret_from_xprv(serialized: &String) -> ApiResult<String> {
-    Ok(hex::encode(
-        HDPrivateKey::from_serialized_string(serialized)?.secret(),
-    ))
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ResultOfHDKeyXPrvFromMnemonic {
+    pub xprv: String,
 }
 
-pub fn hdkey_public_from_xprv(serialized: &String) -> ApiResult<String> {
-    Ok(hex::encode(
-        HDPrivateKey::from_serialized_string(serialized)?
-            .public()
-            .as_ref(),
-    ))
+pub fn hdkey_xprv_from_mnemonic(
+    _context: &mut ClientContext,
+    params: ParamsOfHDKeyXPrvFromMnemonic,
+) -> ApiResult<ResultOfHDKeyXPrvFromMnemonic> {
+    Ok(ResultOfHDKeyXPrvFromMnemonic {
+        xprv: HDPrivateKey::from_mnemonic(&params.phrase)?.serialize_to_string()
+    })
+}
+
+//------------------------------------------------------------------- crypto.hdkey_secret_from_xprv
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ParamsOfHDKeySecretFromXPrv {
+    pub xprv: String,
+}
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ResultOfHDKeySecretFromXPrv {
+    pub secret: String,
+}
+
+pub fn hdkey_secret_from_xprv(
+    _context: &mut ClientContext,
+    params: ParamsOfHDKeySecretFromXPrv,
+) -> ApiResult<ResultOfHDKeySecretFromXPrv> {
+    Ok(ResultOfHDKeySecretFromXPrv {
+        secret: hex::encode(HDPrivateKey::from_serialized_string(&params.xprv)?.secret())
+    })
+}
+
+
+//------------------------------------------------------------------- crypto.hdkey_public_from_xprv
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ParamsOfHDKeyPublicFromXPrv {
+    pub xprv: String,
+}
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ResultOfHDKeyPublicFromXPrv {
+    pub public: String,
+}
+
+pub fn hdkey_public_from_xprv(
+    _context: &mut ClientContext,
+    params: ParamsOfHDKeyPublicFromXPrv,
+) -> ApiResult<ResultOfHDKeyPublicFromXPrv> {
+    let key = HDPrivateKey::from_serialized_string(&params.xprv)?;
+    Ok(ResultOfHDKeyPublicFromXPrv {
+        public: hex::encode(key.public().as_ref())
+    })
+}
+
+//------------------------------------------------------------------- crypto.hdkey_derive_from_xprv
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ParamsOfHDKeyDeriveFromXPrv {
+    pub xprv: String,
+    pub child_index: u32,
+    pub hardened: bool,
+}
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ResultOfHDKeyDeriveFromXPrv {
+    pub xprv: String,
 }
 
 pub fn hdkey_derive_from_xprv(
-    serialized: &String,
-    child_index: u32,
-    hardened: bool,
-    compliant: bool,
-) -> ApiResult<String> {
-    let xprv = HDPrivateKey::from_serialized_string(serialized)?;
-    let derived = xprv.derive(child_index, hardened, compliant)?;
-    //TODO:    println!("HEX: {}", hex::encode(&derived.serialize()));
+    _context: &mut ClientContext,
+    params: ParamsOfHDKeyDeriveFromXPrv,
+) -> ApiResult<ResultOfHDKeyDeriveFromXPrv> {
+    let xprv = HDPrivateKey::from_serialized_string(&params.xprv)?;
+    let derived = xprv.derive(params.child_index, params.hardened, DEFAULT_COMPLIANT)?;
+    Ok(ResultOfHDKeyDeriveFromXPrv {
+        xprv: derived.serialize_to_string()
+    })
+}
 
-    Ok(derived.serialize_to_string())
+//-------------------------------------------------------------- crypto.hdkey_derive_from_xprv_path
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ParamsOfHDKeyDeriveFromXPrvPath {
+    pub xprv: String,
+    pub path: String,
+}
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ResultOfHDKeyDeriveFromXPrvPath {
+    pub xprv: String,
 }
 
 pub fn hdkey_derive_from_xprv_path(
-    serialized: &String,
-    path: &String,
-    compliant: bool,
-) -> ApiResult<String> {
-    let xprv = HDPrivateKey::from_serialized_string(serialized)?;
-    Ok(xprv.derive_path(path, compliant)?.serialize_to_string())
+    _context: &mut ClientContext,
+    params: ParamsOfHDKeyDeriveFromXPrvPath,
+) -> ApiResult<ResultOfHDKeyDeriveFromXPrvPath> {
+    let xprv = HDPrivateKey::from_serialized_string(&params.xprv)?;
+    Ok(ResultOfHDKeyDeriveFromXPrvPath {
+        xprv: xprv.derive_path(&params.path, DEFAULT_COMPLIANT)?.serialize_to_string()
+    })
 }
+
+
+// Internals
 
 #[derive(Default, Clone)]
 pub(crate) struct HDPrivateKey {
@@ -197,16 +276,15 @@ impl HDPrivateKey {
     pub fn derive_path(&self, path: &String, compliant: bool) -> ApiResult<HDPrivateKey> {
         let mut child: HDPrivateKey = self.clone();
         for step in path.split("/") {
-            if step == "m" {
-            } else {
+            if step == "m" {} else {
                 let hardened = step.ends_with('\'');
                 let index: u32 = (if hardened {
                     &step[0..(step.len() - 1)]
                 } else {
                     step
                 })
-                .parse()
-                .map_err(|_| ApiError::crypto_bip32_invalid_derive_path(path))?;
+                    .parse()
+                    .map_err(|_| ApiError::crypto_bip32_invalid_derive_path(path))?;
                 child = child.derive(index, hardened, compliant)?;
             }
         }
@@ -245,7 +323,7 @@ impl HDPrivateKey {
         bytes.extend(&self.child_chain);
         bytes.push(0);
         bytes.extend(&self.key);
-        bytes.extend(&sha256(&sha256(&bytes))[0..4]);
+        bytes.extend(&internal_sha256(&internal_sha256(&bytes))[0..4]);
         bytes
     }
 

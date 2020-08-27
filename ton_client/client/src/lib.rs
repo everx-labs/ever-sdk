@@ -23,8 +23,8 @@ extern crate lazy_static;
 #[macro_use]
 extern crate log;
 
-mod serialization;
-mod types;
+mod encoding;
+mod error;
 mod dispatch;
 mod client;
 mod setup;
@@ -42,6 +42,7 @@ mod interop;
 
 #[cfg(test)]
 mod tests;
+
 
 pub use self::interop::*;
 

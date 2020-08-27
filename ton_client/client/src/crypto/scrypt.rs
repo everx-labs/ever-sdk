@@ -13,13 +13,13 @@
 
 extern crate scrypt;
 
-use crate::types::{ApiResult, ApiError, InputData, OutputEncoding};
+use crate::error::{ApiResult, ApiError};
+use crate::encoding::{InputData, OutputEncoding};
 use crate::client::ClientContext;
-use crate::serialization::default_output_encoding_base64;
 
 //------------------------------------------------------------------------------------------ scrypt
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfScrypt {
     pub password: InputData,
     pub salt: InputData,
@@ -27,13 +27,12 @@ pub struct ParamsOfScrypt {
     pub r: u32,
     pub p: u32,
     pub dk_len: usize,
-    #[serde(default = "default_result_encoding_base64")]
-    pub output_encoding: OutputEncoding,
+    pub output_encoding: Option<OutputEncoding>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ResultOfScrypt {
-    bytes: String,
+    pub bytes: String,
 }
 
 /// Perform `scrypt` encryption.
@@ -43,7 +42,7 @@ pub fn scrypt(
     params: ParamsOfScrypt,
 ) -> ApiResult<ResultOfScrypt> {
     let mut result = Vec::new();
-    result.resize(dk_len, 0);
+    result.resize(params.dk_len, 0);
     let scrypt_params = scrypt::ScryptParams::new(params.log_n, params.r, params.p)
         .map_err(|err| ApiError::crypto_scrypt_failed(err))?;
     scrypt::scrypt(
@@ -52,8 +51,9 @@ pub fn scrypt(
         &scrypt_params,
         &mut result,
     ).map_err(|err| ApiError::crypto_scrypt_failed(err))?;
+    let encoding = params.output_encoding.unwrap_or(OutputEncoding::Base64);
     Ok(ResultOfScrypt {
-        bytes: scrypt_params.output_encoding.encode(bytes)?
+        bytes: encoding.encode(result)?
     })
 }
 

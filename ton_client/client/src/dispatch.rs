@@ -11,7 +11,7 @@
 * limitations under the License.
 */
 
-use crate::types::{ApiError, ApiResult, method_api};
+use crate::error::{ApiError, ApiResult};
 use crate::client::ClientContext;
 use super::{JsonResponse};
 use std::collections::HashMap;
@@ -19,6 +19,7 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use opendoc::api::{Method};
 use opendoc::reflect::TypeInfo;
+use crate::encoding::method_api;
 
 impl JsonResponse {
     pub(crate) fn from_result(result_json: String) -> Self {
