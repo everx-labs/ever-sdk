@@ -1,0 +1,110 @@
+{
+	"ABI version": 2,
+	"header": ["time", "expire"],
+	"functions": [
+		{
+			"name": "sendTransaction",
+			"inputs": [
+				{"name":"dest","type":"address"},
+				{"name":"value","type":"uint128"},
+				{"name":"bounce","type":"bool"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "fallback",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setSubscriptionAccount",
+			"inputs": [
+				{"name":"addr","type":"address"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getSubscriptionAccount",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"value0","type":"address"}
+			]
+		},
+		{
+			"name": "createOperationLimit",
+			"inputs": [
+				{"name":"value","type":"uint256"}
+			],
+			"outputs": [
+				{"name":"value0","type":"uint256"}
+			]
+		},
+		{
+			"name": "createArbitraryLimit",
+			"inputs": [
+				{"name":"value","type":"uint256"},
+				{"name":"period","type":"uint32"}
+			],
+			"outputs": [
+				{"name":"value0","type":"uint64"}
+			]
+		},
+		{
+			"name": "changeLimit",
+			"inputs": [
+				{"name":"limitId","type":"uint64"},
+				{"name":"value","type":"uint256"},
+				{"name":"period","type":"uint32"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "deleteLimit",
+			"inputs": [
+				{"name":"limitId","type":"uint64"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getLimit",
+			"inputs": [
+				{"name":"limitId","type":"uint64"}
+			],
+			"outputs": [
+				{"components":[{"name":"value","type":"uint256"},{"name":"period","type":"uint32"},{"name":"ltype","type":"uint8"},{"name":"spent","type":"uint256"},{"name":"start","type":"uint32"}],"name":"value0","type":"tuple"}
+			]
+		},
+		{
+			"name": "getLimitCount",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"value0","type":"uint64"}
+			]
+		},
+		{
+			"name": "getLimits",
+			"inputs": [
+			],
+			"outputs": [
+				{"components":[{"name":"value","type":"uint256"},{"name":"period","type":"uint32"},{"name":"ltype","type":"uint8"},{"name":"spent","type":"uint256"},{"name":"start","type":"uint32"}],"name":"limits","type":"tuple[]"}
+			]
+		},
+		{
+			"name": "constructor",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		}
+	],
+	"events": [
+	]
+}

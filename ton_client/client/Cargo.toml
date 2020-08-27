@@ -44,6 +44,7 @@ num-derive = "0.3"
 
 [dev-dependencies]
 log4rs = "^0"
+dirs = "2.0.2"
 
 [dependencies.tokio]
 version = "0.2.13"

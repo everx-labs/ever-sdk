@@ -70,7 +70,7 @@ impl Into<FunctionCallSet> for DeployFunctionCallSet {
 /// why the transaction was not finalized (see resolve_error method documentation)
 /// and  if such error is found returns it,
 /// if not - returns disclainmer that the local execution was successful.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfDeploy {
     #[serde(flatten)]
@@ -90,7 +90,7 @@ pub(crate) struct ParamsOfDeploy {
 #[doc(summary="Method that creates an unsigned deploy message")]
 /// Method that creates an unsigned deploy message that can be signed,
 /// for instance, outside the application
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfEncodeUnsignedDeployMessage {
     #[serde(flatten)]
@@ -107,7 +107,7 @@ pub(crate) struct ParamsOfEncodeUnsignedDeployMessage {
     pub try_index: Option<u8>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ResultOfEncodeUnsignedDeployMessage {
     /// struccture with encoded unsigned message
@@ -119,7 +119,7 @@ pub(crate) struct ResultOfEncodeUnsignedDeployMessage {
 #[doc(summary="Method that calculates the future contract address")]
 /// Method that calculates the future contract address
 /// from contract image, initial parameters, key pair and target workchain
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfGetDeployAddress {
     /// contract ABI
@@ -134,7 +134,7 @@ pub(crate) struct ParamsOfGetDeployAddress {
     pub workchain_id: Option<i32>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ResultOfDeploy {
     /// account address
@@ -151,7 +151,7 @@ pub(crate) struct ResultOfDeploy {
 ///
 ///
 ///
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfGetDeployData {
     /// contract ABI
@@ -166,7 +166,7 @@ pub(crate) struct ParamsOfGetDeployData {
     pub workchain_id: Option<i32>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ResultOfGetDeployData {
     /// tvc converted to base64
@@ -340,7 +340,7 @@ use crate::error::{ApiResult, ApiError};
 use crate::client::ClientContext;
 
 #[cfg(feature = "node_interaction")]
-use crate::queries::query::{query, ParamsOfQuery};
+use crate::queries::{query_collection, ParamsOfQueryCollection};
 #[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
@@ -395,19 +395,19 @@ async fn deploy_contract(client: &NodeClient, params: ParamsOfDeploy, image: Con
 
 #[cfg(feature = "node_interaction")]
 async fn check_deployed(context: &mut ClientContext, address: &ton_block::MsgAddressInt) -> ApiResult<bool> {
-    let filter = json!({
+    let filter = Some(json!({
         "id": { "eq": address.to_string() },
         "acc_type": { "eq":  account_status_to_u8(AccountStatus::AccStateActive) }
-    }).to_string();
+    }));
 
-    let result = query(context, ParamsOfQuery {
-        table: ton_sdk::types::CONTRACTS_TABLE_NAME.to_owned(),
+    let result = query_collection(context, ParamsOfQueryCollection {
+        collection: ton_sdk::types::CONTRACTS_TABLE_NAME.to_owned(),
         filter,
         result: "id".to_owned(),
         limit: None,
-        order: None
+        order: None,
     })
         .await?;
 
-    Ok(result.result.as_array().and_then(|value| value.get(0)).is_some())
+    Ok(result.result.get(0).is_some())
 }

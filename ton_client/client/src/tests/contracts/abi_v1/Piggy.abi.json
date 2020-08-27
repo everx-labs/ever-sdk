@@ -1,0 +1,44 @@
+{
+	"ABI version": 1,
+	"functions": [
+		{
+			"name": "constructor",
+			"inputs": [
+				{"name":"amount","type":"uint64"},
+				{"name":"goal","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "transfer",
+			"inputs": [
+				{"name":"to","type":"address"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getGoal",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"value0","type":"bytes"}
+			]
+		},
+		{
+			"name": "getTargetAmount",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"value0","type":"uint64"}
+			]
+		}
+	],
+	"events": [
+	],
+	"data": [
+		{"key":100,"name":"targetGoal","type":"bytes"},
+		{"key":101,"name":"targetAmount","type":"uint64"}
+	]
+}

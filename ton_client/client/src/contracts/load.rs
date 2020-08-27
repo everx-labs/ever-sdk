@@ -21,7 +21,7 @@ pub(crate) struct LoadParams {
     pub address: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct LoadResult {
     pub id: Option<String>,

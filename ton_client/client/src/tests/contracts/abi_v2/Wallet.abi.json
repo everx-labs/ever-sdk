@@ -1,0 +1,33 @@
+{
+	"ABI version": 2,
+	"header": ["time", "expire"],
+	"functions": [
+		{
+			"name": "constructor",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "sendTransaction",
+			"inputs": [
+				{"name":"dest","type":"address"},
+				{"name":"value","type":"uint128"},
+				{"name":"bounce","type":"bool"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "sendAllMoney",
+			"inputs": [
+				{"name":"dest_addr","type":"address"}
+			],
+			"outputs": [
+			]
+		}
+	],
+	"events": [
+	]
+}

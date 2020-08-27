@@ -169,7 +169,7 @@ pub struct OtherCurrencyValue {
 // The struct represents smart contract and allows
 // to deploy and call it, to get some contract's properties.
 // Don't forget - in TON blockchain Contract and Account are the same substances.
-#[derive(Serialize, Deserialize, Default, Debug)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone)]
 #[serde(default)]
 pub struct Contract {
     #[serde(with = "json_helper::address")]
@@ -595,14 +595,14 @@ pub struct ShardDescr {
 #[derive(Deserialize, Serialize, Debug, Default, Clone)]
 #[serde(default, rename_all = "camelCase")]
 pub struct LocalRunContext {
-    /// ???
+    /// boc with config
     #[serde(with = "json_helper::opt_cell")]
     pub config_boc: Option<Cell>,
-    /// ???
+    /// time that is used as transaction time
     pub time: Option<u32>,
-    // transaction logical time
+    /// transaction logical time
     pub transaction_lt: Option<u64>,
-    // ???
+    /// block logical time
     pub block_lt: Option<u64>
 }
 

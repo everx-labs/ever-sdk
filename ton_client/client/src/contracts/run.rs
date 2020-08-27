@@ -70,7 +70,7 @@ impl Into<FunctionCallSet> for RunFunctionCallSet {
 /// why the transaction was not finalized
 /// and  if such error is found - stops retrying and returns it,
 /// if not - continues retrying or returns disclainmer that the local execution was successful.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfRun {
     /// account address
@@ -96,7 +96,8 @@ pub(crate) struct ParamsOfRun {
 /// Transaction executor mode:
 /// used to fully emulate message processing to calculate fees and check if all the phases are passed successfully
 /// If not- returns the error with the exit code and phase.
-#[derive(Serialize, Deserialize)]
+
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfLocalRun {
     /// account address (used to load boc from graphql API if boc is not defined)
@@ -119,7 +120,7 @@ pub(crate) struct ParamsOfLocalRun {
 #[doc(summary = "Method that processes a specified message on a local TVM")]
 /// Method works as LocalRun, but takes an already prepared message
 /// as a parameter.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfLocalRunWithMsg {
     /// account address (used to load boc from graphql API if boc is not defined)
@@ -141,9 +142,9 @@ pub(crate) struct ParamsOfLocalRunWithMsg {
     pub context: LocalRunContext,
 }
 
-#[doc(summary = "Method that creates an unsigned message")]
+#[doc(summary="Method that creates an unsigned message")]
 /// Method prepares an unsigned message that can be signed and sent later.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfEncodeUnsignedRunMessage {
     // account address
@@ -158,9 +159,9 @@ pub(crate) struct ParamsOfEncodeUnsignedRunMessage {
 }
 
 
-#[doc(summary = "??? Method that decodes")]
+#[doc(summary="??? Method that decodes")]
 /// ???
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfDecodeRunOutput {
     /// contract ABI
@@ -174,9 +175,9 @@ pub(crate) struct ParamsOfDecodeRunOutput {
     pub internal: bool,
 }
 
-#[doc(summary = "??? Method that decodes")]
+#[doc(summary="??? Method that decodes")]
 /// ???
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ParamsOfDecodeUnknownRun {
     /// contract ABI
@@ -188,7 +189,7 @@ pub struct ParamsOfDecodeUnknownRun {
     pub internal: bool,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub(crate) struct ResultOfRun {
     /// list of decoded parameters returned by the contract's function
     pub output: serde_json::Value,
@@ -198,7 +199,7 @@ pub(crate) struct ResultOfRun {
     pub transaction: serde_json::Value,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub(crate) struct ResultOfLocalRun {
     /// list of decoded parameters returned by the contract's function
     pub output: serde_json::Value,
@@ -208,13 +209,13 @@ pub(crate) struct ResultOfLocalRun {
     pub account: Option<Contract>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub(crate) struct ResultOfDecode {
     /// list of decoded parameters
     pub output: serde_json::Value,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RunFees {
     /// fee paid for internal message delivery
@@ -244,7 +245,7 @@ impl From<TransactionFees> for RunFees {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ResultOfDecodeUnknownRun {
     /// function name
     pub function: String,
@@ -256,7 +257,7 @@ pub struct ResultOfDecodeUnknownRun {
 /// Method generates a message of internal (internal==true) or external (internal==false) type
 /// according to ABI and specified header, extracts the body boc in base64 from it
 /// and returns it.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfGetRunBody {
     /// contract ABI
@@ -274,7 +275,7 @@ pub(crate) struct ParamsOfGetRunBody {
     pub key_pair: Option<KeyPair>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ResultOfGetRunBody {
     /// message body boc in base64

@@ -22,7 +22,7 @@ use ton_types::Cell;
 pub(crate) mod query;
 pub(crate) mod parser;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[allow(non_snake_case)]
 pub(crate) struct ParamsOfCellQuery {
     pub cellBase64: String,

@@ -21,7 +21,7 @@ use crate::dispatch::DispatchTable;
 use ton_block::MsgAddressInt;
 use crate::encoding::{account_decode};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[allow(non_snake_case)]
 pub(crate) struct ParamsOfLocalRunGet {
     pub bocBase64: Option<String>,
@@ -35,7 +35,7 @@ pub(crate) struct ParamsOfLocalRunGet {
 }
 
 #[allow(non_snake_case)]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub(crate) struct ResultOfLocalRunGet {
     pub output: Value,
 }
