@@ -63,10 +63,10 @@ impl Block {
                 "workchain_id": { "eq": MASTERCHAIN_ID }
             }).to_string(),
             "id master { shard_hashes { workchain_id shard descr { root_hash } } }",
-            Some(OrderBy {
+            Some(vec![OrderBy {
                 path: "seq_no".to_owned(),
                 direction: SortDirection::Descending
-            }),
+            }]),
             Some(1),
             None
         ).await?;
@@ -89,10 +89,10 @@ impl Block {
                         "workchain_id": { "eq": workchain },
                     }).to_string(),
                     "after_merge shard",
-                    Some(OrderBy {
+                    Some(vec![OrderBy {
                         path: "seq_no".to_owned(),
                         direction: SortDirection::Descending
-                    }),
+                    }]),
                     Some(1),
                     None)
                     .await
@@ -120,10 +120,10 @@ impl Block {
                         "shard": { "eq": "8000000000000000" },
                     }).to_string(),
                     "id",
-                    Some(OrderBy {
+                    Some(vec![OrderBy {
                         path: "seq_no".to_owned(),
                         direction: SortDirection::Descending
-                    }),
+                    }]),
                     Some(1),
                     None
                 ).await?;

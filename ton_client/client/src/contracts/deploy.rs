@@ -404,7 +404,6 @@ async fn check_deployed(context: &mut ClientContext, address: &ton_block::MsgAdd
         result: "id".to_owned(),
         limit: None,
         order: None,
-        timeout: None
     })
         .await?;
 

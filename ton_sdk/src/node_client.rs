@@ -257,7 +257,7 @@ impl NodeClient {
         table: &str,
         filter: &str,
         fields: &str,
-        order_by: Option<OrderBy>,
+        order_by: Option<Vec<OrderBy>>,
         limit: Option<u32>,
         timeout: Option<u32>
     ) -> Result<Value> {
@@ -298,7 +298,7 @@ impl NodeClient {
         table: &str,
         filter: &str,
         fields: &str,
-        order_by: Option<OrderBy>,
+        order_by: Option<Vec<OrderBy>>,
         limit: Option<u32>,
         timeout: Option<u32>
     ) -> Result<VariableRequest> {

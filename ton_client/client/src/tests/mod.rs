@@ -15,7 +15,7 @@ use crate::{
     tc_create_context, tc_destroy_context,
     types::{ApiError, ApiResult},
     crypto::keys::KeyPair,
-    queries::{ParamsOfQueryCollection, ResultOfQueryCollection},
+    queries::{ParamsOfWaitForCollection, ResultOfWaitForCollection},
     contracts::{
         EncodedMessage,
         deploy::{ParamsOfDeploy, ResultOfDeploy},
@@ -205,16 +205,14 @@ impl TestClient {
         for message in run_result.transaction["out_messages"].as_array().unwrap() {
             let message: ton_sdk::Message = serde_json::from_value(message.clone()).unwrap();
             if ton_sdk::MessageType::Internal == message.msg_type() {
-                let _: ResultOfQueryCollection = self.request(
-                    "queries.query_collection",
-                    ParamsOfQueryCollection {
+                let _: ResultOfWaitForCollection = self.request(
+                    "queries.wait_for_collection",
+                    ParamsOfWaitForCollection {
                         collection: "transactions".to_owned(),
                         filter: Some(json!({
                             "in_msg": { "eq": message.id()}
                         })),
                         result: "id".to_owned(),
-                        order: None,
-                        limit: None,
                         timeout: Some(ton_sdk::types::DEFAULT_WAIT_TIMEOUT)
                     }
                 ).unwrap();
@@ -237,6 +235,11 @@ impl TestClient {
 
         result.address
     }
+
+    pub(crate) fn generate_kepair(&self) -> KeyPair {
+        self.request("crypto.ed25519.keypair", ()).unwrap()
+    }
+    
 
     pub(crate) fn get_giver_address() -> String {
         if *NODE_SE {
