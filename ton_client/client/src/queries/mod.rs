@@ -13,7 +13,7 @@
 
 use crate::client::ClientContext;
 use crate::dispatch::DispatchTable;
-use crate::types::{ApiError, ApiResult};
+use crate::error::{ApiError, ApiResult};
 use futures::{Stream, StreamExt};
 use rand::RngCore;
 use std::collections::HashMap;
@@ -121,7 +121,7 @@ pub(crate) async fn query_collection(
         )
         .await
         .map_err(|err| {
-            crate::types::apierror_from_sdkerror(&err, ApiError::queries_query_failed, Some(client))
+            crate::error::apierror_from_sdkerror(&err, ApiError::queries_query_failed, Some(client))
         })?;
 
     let result = serde_json::from_value(result)
@@ -144,7 +144,7 @@ pub(crate) async fn wait_for_collection(
         )
         .await
         .map_err(|err| {
-            crate::types::apierror_from_sdkerror(
+            crate::error::apierror_from_sdkerror(
                 &err,
                 ApiError::queries_wait_for_failed,
                 Some(client),
@@ -187,7 +187,7 @@ pub(crate) async fn get_next_subscription_data(
         .await
         .ok_or(ApiError::queries_get_next_failed("None value"))?
         .map_err(|err| {
-            crate::types::apierror_from_sdkerror(
+            crate::error::apierror_from_sdkerror(
                 &err,
                 ApiError::queries_get_next_failed,
                 context.get_client().ok(),

@@ -89,14 +89,14 @@ pub(crate) fn account_encode(value: &MsgAddressInt) -> String {
     value.to_string()
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) enum AccountAddressType {
     AccountId,
     Hex,
     Base64,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct Base64AddressParams {
     pub url: bool,
     pub test: bool,

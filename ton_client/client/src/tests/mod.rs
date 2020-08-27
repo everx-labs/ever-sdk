@@ -13,21 +13,24 @@
 
 use crate::{
     tc_create_context, tc_destroy_context,
-    types::{ApiError, ApiResult},
+    error::{ApiError, ApiResult},
     crypto::keys::KeyPair,
     queries::{ParamsOfWaitForCollection, ResultOfWaitForCollection},
     contracts::{
         EncodedMessage,
         deploy::{ParamsOfDeploy, ResultOfDeploy},
-        run::{ParamsOfRun, ResultOfRun, RunFunctionCallSet}
-    }
+        run::{ParamsOfRun, ResultOfRun, RunFunctionCallSet},
+    },
 };
 use super::InteropContext;
 use super::{tc_json_request, InteropString};
 use super::{tc_read_json_response, tc_destroy_json_response};
-use serde_json::{Value};
+use serde_json::{Value, Map};
+use serde::Serialize;
+use serde::de::DeserializeOwned;
 
 const ROOT_CONTRACTS_PATH: &str = "src/tests/contracts/";
+const LOG_CGF_PATH: &str = "src/tests/log_cfg.yaml";
 
 lazy_static::lazy_static! {
     static ref GIVER_ADDRESS: &'static str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
@@ -50,7 +53,6 @@ lazy_static::lazy_static! {
 	pub static ref GIVER_WALLET_ABI: Value = read_abi(ROOT_CONTRACTS_PATH.to_owned() + "GiverWallet.abi.json");
 	pub static ref HELLO_ABI: Value = read_abi(CONTRACTS_PATH.clone() + "Hello.abi.json");
 
-pub const LOG_CGF_PATH: &str = "src/tests/log_cfg.yaml";
     pub static ref SUBSCRIBE_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.clone() + "Subscription.tvc").unwrap();
 	pub static ref PIGGY_BANK_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.clone() + "Piggy.tvc").unwrap();
 	pub static ref WALLET_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.clone() + "LimitWallet.tvc").unwrap();
@@ -65,9 +67,9 @@ fn read_abi(path: String) -> Value {
 }
 
 fn get_wallet_keys() -> Option<KeyPair> {
-	if *NODE_SE {
-		return None;
-	}
+    if *NODE_SE {
+        return None;
+    }
 
     let mut keys_file = dirs::home_dir().unwrap();
     keys_file.push("giverKeys.json");
@@ -86,14 +88,14 @@ impl log::Log for SimpleLogger {
     }
 
     fn log(&self, record: &log::Record) {
-		match record.level() {
-			log::Level::Error | log::Level::Warn => {
-				eprintln!("{}", record.args());
-			}
-			_ => {
-				println!("{}", record.args());
-			}
-		}
+        match record.level() {
+            log::Level::Error | log::Level::Warn => {
+                eprintln!("{}", record.args());
+            }
+            _ => {
+                println!("{}", record.args());
+            }
+        }
     }
 
     fn flush(&self) {}
@@ -167,74 +169,6 @@ impl TestClient {
         }
     }
 
-    pub(crate) fn request<P, R>(&self, method_name: &str, params: P) -> ApiResult<R>
-        where P: serde::Serialize, R: serde::de::DeserializeOwned
-    {
-        let params = serde_json::to_value(params)
-            .map_err(|err| ApiError::invalid_params("", err))?;
-        self.request_json(method_name, params).map(|x| serde_json::from_value(x).unwrap())
-    }
-
-    pub(crate) fn get_grams_from_giver(&self, account: &str, value: Option<u64>) {
-        let run_result: ResultOfRun = if *NODE_SE {
-            self.request(
-                "contracts.run",
-                ParamsOfRun {
-                    address: GIVER_ADDRESS.to_owned(),
-                    call_set: RunFunctionCallSet {
-                        abi: GIVER_ABI.clone(),
-                        function_name: "sendGrams".to_owned(),
-                        header: None,
-                        input: json!({
-                            "dest": account,
-                            "amount": value.unwrap_or(500_000_000u64)
-                        }),
-                    },
-                    key_pair: None,
-                    try_index: None
-                }
-            ).unwrap()
-        } else {
-            self.request(
-                "contracts.run",
-                ParamsOfRun {
-                    address: WALLET_ADDRESS.to_owned(),
-                    call_set: RunFunctionCallSet {
-                        abi: GIVER_WALLET_ABI.clone(),
-                        function_name: "sendTransaction".to_owned(),
-                        header: None,
-                        input: json!({
-                            "dest": account.to_string(),
-                            "value": value.unwrap_or(500_000_000u64),
-                            "bounce": false
-                        }),
-                    },
-                    key_pair: WALLET_KEYS.clone(),
-                    try_index: None
-                }
-            ).unwrap()
-        };
-
-        // wait for grams recieving
-        for message in run_result.transaction["out_messages"].as_array().unwrap() {
-            let message: ton_sdk::Message = serde_json::from_value(message.clone()).unwrap();
-            if ton_sdk::MessageType::Internal == message.msg_type() {
-                let _: ResultOfWaitForCollection = self.request(
-                    "queries.wait_for_collection",
-                    ParamsOfWaitForCollection {
-                        collection: "transactions".to_owned(),
-                        filter: Some(json!({
-                            "in_msg": { "eq": message.id()}
-                        })),
-                        result: "id".to_owned(),
-                        timeout: Some(ton_sdk::types::DEFAULT_WAIT_TIMEOUT)
-                    }
-                ).unwrap();
-            }
-        } else {
-            Err(serde_json::from_str(&response.error_json).unwrap())
-        }
-    }
 
     pub(crate) fn request<P, R>(&self, method: &str, params: P) -> R
         where P: Serialize, R: DeserializeOwned {
@@ -274,24 +208,83 @@ impl TestClient {
         panic!("Field not fount");
     }
 
-    pub(crate) fn deploy_with_giver(&self, params: ParamsOfDeploy, value: Option<u64>,) -> String {
+    pub(crate) fn get_grams_from_giver(&self, account: &str, value: Option<u64>) {
+        let run_result: ResultOfRun = if *NODE_SE {
+            self.request(
+                "contracts.run",
+                ParamsOfRun {
+                    address: GIVER_ADDRESS.to_owned(),
+                    call_set: RunFunctionCallSet {
+                        abi: GIVER_ABI.clone(),
+                        function_name: "sendGrams".to_owned(),
+                        header: None,
+                        input: json!({
+                            "dest": account,
+                            "amount": value.unwrap_or(500_000_000u64)
+                        }),
+                    },
+                    key_pair: None,
+                    try_index: None,
+                },
+            )
+        } else {
+            self.request(
+                "contracts.run",
+                ParamsOfRun {
+                    address: WALLET_ADDRESS.to_owned(),
+                    call_set: RunFunctionCallSet {
+                        abi: GIVER_WALLET_ABI.clone(),
+                        function_name: "sendTransaction".to_owned(),
+                        header: None,
+                        input: json!({
+                            "dest": account.to_string(),
+                            "value": value.unwrap_or(500_000_000u64),
+                            "bounce": false
+                        }),
+                    },
+                    key_pair: WALLET_KEYS.clone(),
+                    try_index: None,
+                },
+            )
+        };
+
+        // wait for grams recieving
+        for message in run_result.transaction["out_messages"].as_array().unwrap() {
+            let message: ton_sdk::Message = serde_json::from_value(message.clone()).unwrap();
+            if ton_sdk::MessageType::Internal == message.msg_type() {
+                let _: ResultOfWaitForCollection = self.request(
+                    "queries.wait_for_collection",
+                    ParamsOfWaitForCollection {
+                        collection: "transactions".to_owned(),
+                        filter: Some(json!({
+                            "in_msg": { "eq": message.id()}
+                        })),
+                        result: "id".to_owned(),
+                        timeout: Some(ton_sdk::types::DEFAULT_WAIT_TIMEOUT),
+                    },
+                );
+            }
+        }
+    }
+
+    pub(crate) fn deploy_with_giver(&self, params: ParamsOfDeploy, value: Option<u64>) -> String {
         let msg: EncodedMessage = self.request(
             "contracts.deploy.message",
-            params.clone()
-        ).unwrap();
+            params.clone(),
+        );
 
         self.get_grams_from_giver(&msg.address.unwrap(), value);
 
         let result: ResultOfDeploy = self.request(
             "contracts.deploy",
-            params
-        ).unwrap();
+            params,
+        );
 
         result.address
     }
 
     pub(crate) fn generate_kepair(&self) -> KeyPair {
-        self.request("crypto.ed25519.keypair", ()).unwrap()
+        self.request("crypto.ed25519.keypair", ())
     }
 
 

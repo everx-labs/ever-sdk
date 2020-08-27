@@ -18,7 +18,7 @@ fn block_signatures() {
             limit: Some(1),
             order: None,
         }
-    ).unwrap();
+    );
 }
 
 #[test]
@@ -34,7 +34,7 @@ fn all_accounts() {
             limit: None,
             order: None,
         }
-    ).unwrap();
+    );
 
     assert!(accounts.result.len() > 0);
 }
@@ -54,7 +54,7 @@ fn ranges() {
             limit: None,
             order: None,
         }
-    ).unwrap();
+    );
 
     assert!(accounts.result[0]["created_at"].as_u64().unwrap() > 1562342740);
 }
@@ -74,7 +74,7 @@ fn wait_for() {
                 result: "id now".to_owned(),
                 timeout: None
             }
-        ).unwrap();
+        );
 
         assert!(transactions.result["now"].as_u64().unwrap() > now as u64);
     });
@@ -106,7 +106,7 @@ fn subscribe_for_transactions_with_addresses() {
     let msg: EncodedMessage = client.request(
         "contracts.deploy.message",
         deploy_params.clone()
-    ).unwrap();
+    );
 
     let handle: ResultOfSubscribeCollection = client.request(
             "queries.subscribe_collection",
@@ -118,7 +118,7 @@ fn subscribe_for_transactions_with_addresses() {
                 })),
                 result: "id account_addr".to_owned(),
             }
-        ).unwrap();
+        );
 
     client.deploy_with_giver(deploy_params, None);
 
@@ -126,12 +126,12 @@ fn subscribe_for_transactions_with_addresses() {
 
     for _ in 0..2 {
         let result: ResultOfGetNextSubscriptionData = client.request(
-            "queries.get_next_subscription_data", handle.clone()).unwrap();
+            "queries.get_next_subscription_data", handle.clone());
         assert_eq!(result.result["account_addr"], msg.address.clone().unwrap());
         transactions.push(result.result);
     }
 
     assert_ne!(transactions[0]["id"], transactions[1]["id"]);
 
-    let _: () = client.request("queries.unsubscribe", handle).unwrap();
+    let _: () = client.request("queries.unsubscribe", handle);
 }
