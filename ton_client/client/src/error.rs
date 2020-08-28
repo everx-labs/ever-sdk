@@ -383,16 +383,6 @@ impl ApiError {
             "Invalid key [{}]: {}", err, key)
     }
 
-    pub fn crypto_invalid_keystore_handle() -> Self {
-        ApiError::sdk(CryptoInvalidKeystoreHandle,
-            "Keystore Handle is invalid or has removed".into())
-    }
-
-    pub fn crypto_missing_key_source() -> Self {
-        ApiError::sdk(CryptoMissingKeySource,
-            "Either Key or Keystore Handle must be specified".into())
-    }
-
     pub fn crypto_mnemonic_generation_failed() -> Self {
         ApiError::sdk(CryptoMnemonicGenerationFailed,
             "Mnemonic generation failed".into())
@@ -696,8 +686,6 @@ pub enum ApiSdkErrorCode {
     CryptoBip39InvalidPhrase = 2017,
     CryptoBip32InvalidKey = 2018,
     CryptoBip32InvalidDerivePath = 2019,
-    CryptoInvalidKeystoreHandle = 2020,
-    CryptoMissingKeySource = 2021,
     CryptoBip39InvalidDictionary = 2022,
     CryptoBip39InvalidWordCount = 2023,
     CryptoMnemonicGenerationFailed = 2024,

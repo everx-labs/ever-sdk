@@ -25,7 +25,7 @@ use crate::{
 use super::InteropContext;
 use super::{tc_json_request, InteropString};
 use super::{tc_read_json_response, tc_destroy_json_response};
-use serde_json::{Value, Map};
+use serde_json::{Value};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
@@ -116,10 +116,6 @@ impl TestClient {
         let _ = log4rs::init_file(log_cfg_path, Default::default());
     }
 
-    pub(crate) fn missing_params() -> Value {
-        Value::String(String::new())
-    }
-
     pub(crate) fn get_network_address() -> String {
         std::env::var("TON_NETWORK_ADDRESS").unwrap_or("http://localhost:8080".to_owned())
     }
@@ -185,27 +181,6 @@ impl TestClient {
         serde_json::from_value(result)
             .map_err(|err| ApiError::invalid_params("", err))
             .unwrap()
-    }
-
-    pub(crate) fn request_map<P: Serialize>(&self, method_name: &str, params: P) -> Map<String, Value> {
-        let params = serde_json::to_value(params)
-            .map_err(|err| ApiError::invalid_params("", err)).unwrap();
-        Self::parse_object(self.request_json(method_name, params))
-    }
-
-    pub(crate) fn parse_object(s: ApiResult<Value>) -> Map<String, Value> {
-        s.unwrap().as_object().unwrap().clone()
-    }
-
-    pub(crate) fn parse_string(r: ApiResult<Value>) -> String {
-        r.unwrap().as_str().unwrap().into()
-    }
-
-    pub(crate) fn get_map_string(m: &Map<String, Value>, f: &str) -> String {
-        if let Value::String(s) = m.get(f).unwrap() {
-            return s.clone();
-        }
-        panic!("Field not fount");
     }
 
     pub(crate) fn get_grams_from_giver(&self, account: &str, value: Option<u64>) {
@@ -284,7 +259,7 @@ impl TestClient {
     }
 
     pub(crate) fn generate_kepair(&self) -> KeyPair {
-        self.request("crypto.ed25519.keypair", ())
+        self.request("crypto.generate_random_sign_keys", ())
     }
 
 

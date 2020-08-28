@@ -19,6 +19,8 @@ pub mod keys;
 pub mod mnemonic;
 pub mod hdkey;
 pub(crate) mod internal;
+
+#[cfg(test)]
 mod tests;
 
 use crate::dispatch::DispatchTable;

@@ -105,7 +105,7 @@ pub fn mnemonic_from_entropy(
     })
 }
 
-//--------------------------------------------------------------------------- mnemonic_verify
+//--------------------------------------------------------------------------------- mnemonic_verify
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfMnemonicVerify {

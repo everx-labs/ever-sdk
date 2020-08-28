@@ -13,7 +13,7 @@
 
 use sha2::{Digest};
 use crate::client::ClientContext;
-use crate::encoding::{InputData, OutputEncoding};
+use crate::encoding::{InputData};
 use crate::error::{ApiResult};
 
 //--------------------------------------------------------------------------------------------- sha
@@ -22,13 +22,11 @@ use crate::error::{ApiResult};
 pub struct ParamsOfHash {
     /// Input data for hash calculation.
     pub data: InputData,
-    /// Encoding of calculated hash. Default is `hex`.
-    pub output_encoding: Option<OutputEncoding>,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ResultOfHash {
-    /// Calculated hash of input `data` encoded according to `output_encoding`.
+    /// Hex encoded hash of input `data`.
     pub hash: String,
 }
 
@@ -39,9 +37,8 @@ pub fn sha256(
 ) -> ApiResult<ResultOfHash> {
     let mut hasher = sha2::Sha256::new();
     hasher.input(params.data.decode()?);
-    let encoding = params.output_encoding.unwrap_or(OutputEncoding::Hex);
     Ok(ResultOfHash {
-        hash: encoding.encode(hasher.result().to_vec())?
+        hash: hex::encode(hasher.result().to_vec())
     })
 }
 
@@ -53,9 +50,8 @@ pub fn sha512(
 ) -> ApiResult<ResultOfHash> {
     let mut hasher = sha2::Sha512::new();
     hasher.input(params.data.decode()?);
-    let encoding = params.output_encoding.unwrap_or(OutputEncoding::Hex);
     Ok(ResultOfHash {
-        hash: encoding.encode(hasher.result().to_vec())?
+        hash: hex::encode(hasher.result().to_vec())
     })
 }
 

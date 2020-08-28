@@ -88,8 +88,16 @@ pub fn nacl_sign(_context: &mut ClientContext, params: ParamsOfNaclSign) -> ApiR
 //------------------------------------------------------------------------------ nacl_sign_detached
 
 #[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ParamsOfNaclSignDetached {
+    /// Data that must be signed.
+    pub unsigned: InputData,
+    /// Signer's secret key.
+    pub secret: String,
+}
+
+#[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ResultOfNaclSignDetached {
-    /// Sign, encoded with `output_encoding`.
+    /// Hex encoded sign.
     pub sign: String,
 }
 
@@ -100,9 +108,8 @@ pub fn nacl_sign_detached(_context: &mut ClientContext, params: ParamsOfNaclSign
     for (place, element) in sign.iter_mut().zip(signed.iter()) {
         *place = *element;
     }
-    let encoding = params.output_encoding.unwrap_or(OutputEncoding::Hex);
     Ok(ResultOfNaclSignDetached {
-        sign: encoding.encode(sign)?,
+        sign: hex::encode(sign),
     })
 }
 

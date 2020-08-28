@@ -67,33 +67,28 @@ fn hash() {
 
     let result: ResultOfHash = client.request("crypto.sha512", ParamsOfHash {
         data: InputData::text("Message to hash with sha 512"),
-        output_encoding: None,
     });
     assert_eq!("2616a44e0da827f0244e93c2b0b914223737a6129bc938b8edf2780ac9482960baa9b7c7cdb11457c1cebd5ae77e295ed94577f32d4c963dc35482991442daa5", result.hash);
 
     let result: ResultOfHash = client.request("crypto.sha256", ParamsOfHash {
         data: InputData::text("Message to hash with sha 256"),
-        output_encoding: None,
     });
     assert_eq!("16fd057308dd358d5a9b3ba2de766b2dfd5e308478fc1f7ba5988db2493852f5", result.hash);
 
     let result: ResultOfHash = client.request("crypto.sha256", ParamsOfHash {
         data: InputData::hex("4d65737361676520746f206861736820776974682073686120323536"),
-        output_encoding: None,
     });
     assert_eq!("16fd057308dd358d5a9b3ba2de766b2dfd5e308478fc1f7ba5988db2493852f5", result.hash);
 
     let result: ResultOfHash = client.request("crypto.sha256", ParamsOfHash {
         data: InputData::base64("TWVzc2FnZSB0byBoYXNoIHdpdGggc2hhIDI1Ng=="),
-        output_encoding: None,
     });
     assert_eq!("16fd057308dd358d5a9b3ba2de766b2dfd5e308478fc1f7ba5988db2493852f5", result.hash);
 
     let result: ResultOfHash = client.request("crypto.sha256", ParamsOfHash {
         data: InputData::text("Message to hash with sha 256"),
-        output_encoding: Some(OutputEncoding::Base64),
     });
-    assert_eq!("Fv0FcwjdNY1amzui3nZrLf1eMIR4/B97pZiNskk4UvU=", result.hash);
+    assert_eq!("16fd057308dd358d5a9b3ba2de766b2dfd5e308478fc1f7ba5988db2493852f5", result.hash);
 }
 
 #[test]
@@ -241,7 +236,8 @@ fn mnemonic() {
     });
     assert_eq!(result.words.split(" ").count(), 2048);
 
-    for dictionary in 0..9 {
+
+    for dictionary in 1..9 {
         for word_count in &[12u8, 15, 18, 21, 24] {
             let result: ResultOfMnemonicFromRandom = client.request("crypto.mnemonic_from_random", ParamsOfMnemonicFromRandom {
                 dictionary: Some(dictionary),
@@ -258,7 +254,7 @@ fn mnemonic() {
     });
     assert_eq!(result.phrase, "abandon math mimic master filter design carbon crystal rookie group knife young");
 
-    for dictionary in 0..9 {
+    for dictionary in 1..9 {
         for word_count in &[12u8, 15, 18, 21, 24] {
             let result: ResultOfMnemonicFromRandom = client.request("crypto.mnemonic_from_random", ParamsOfMnemonicFromRandom {
                 dictionary: Some(dictionary),
@@ -292,20 +288,17 @@ fn mnemonic() {
     });
     assert_eq!(result.ton_public_key, "PubDdJkMyss2qHywFuVP1vzww0TpsLxnRNnbifTCcu-XEgW0");
 
-
     let result: ResultOfMnemonicFromRandom = client.request("crypto.mnemonic_from_random", ParamsOfMnemonicFromRandom {
         dictionary: None,
         word_count: None,
     });
     assert_eq!(result.phrase.split(" ").count(), 24);
 
-
     let result: ResultOfMnemonicFromRandom = client.request("crypto.mnemonic_from_random", ParamsOfMnemonicFromRandom {
         dictionary: Some(0),
         word_count: Some(12),
     });
     assert_eq!(result.phrase.split(" ").count(), 12);
-
 
     let result: ResultOfMnemonicFromRandom = client.request("crypto.mnemonic_from_random", ParamsOfMnemonicFromRandom {
         dictionary: Some(1),
@@ -318,6 +311,7 @@ fn mnemonic() {
         dictionary: None,
         word_count: None,
     });
+
     let result: KeyPair = client.request("crypto.mnemonic_derive_sign_keys", ParamsOfMnemonicDeriveSignKeys {
         phrase: result.phrase,
         path: None,
