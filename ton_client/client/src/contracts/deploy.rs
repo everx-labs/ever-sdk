@@ -93,11 +93,12 @@ pub(crate) struct ParamsOfDeploy {
 pub(crate) struct ParamsOfEncodeUnsignedDeployMessage {
     #[serde(flatten)]
     pub call_set: DeployFunctionCallSet,
-    /// list of initial values for contract public variables
+    /// list of initial values of contract public variables.
+    /// They are placed into the persistent strorage of an account and influence the contract future address.
     pub init_params: Option<serde_json::Value>,
-    /// tvc converted to base64
+    /// initial contract image - tvc file - result of contract compilation - converted to base64
     pub image_base64: String,
-    /// public key
+    /// public key, that will be placed to the persistent storage along with init_params. It also influences the future address.
     pub public_key_hex: String,
     /// target workchain for deploy    
     pub workchain_id: Option<i32>,
@@ -122,9 +123,10 @@ pub(crate) struct ResultOfEncodeUnsignedDeployMessage {
 pub(crate) struct ParamsOfGetDeployAddress {
     /// contract ABI
     pub abi: serde_json::Value,
-    /// list of initial values of contract public variables
+    /// list of initial values of contract public variables.
+    /// They are placed into the persistent strorage of an account and influence the contract future address.
     pub init_params: Option<serde_json::Value>,
-    /// tvc converted to base64
+    /// initial contract image - tvc file - result of contract compilation - converted to base64
     pub image_base64: String,
     /// key pair for signature
     pub key_pair: KeyPair,
@@ -145,20 +147,21 @@ pub(crate) struct ResultOfDeploy {
     pub transaction: serde_json::Value,
 }
 
-#[doc(summary="Method that ...???")]
-/// 
-/// 
-/// 
+#[doc(summary="Calculates contract deploy image and/or initial data from initial image and/or data ")]
+/// Places the initial data and public key into initial image and
+/// generates the deploy image and deploy data of the contract.
+/// If initial image is not provided - will calculate deploy data only
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfGetDeployData {
     /// contract ABI
     pub abi: Option<serde_json::Value>,
-    /// list of initial values of contract public variables
+    /// list of initial values of contract public variables.
+    /// They are placed into the persistent strorage of an account and influence the contract future address.
     pub init_params: Option<serde_json::Value>,
-    /// tvc converted to base64
+    /// initial contract image - tvc file - result of contract compilation - converted to base64
     pub image_base64: Option<String>,
-    /// public key
+    /// public key, that will be placed to the persistent storage along with init_params. It also influences the future address.
     pub public_key_hex: String,
     /// target workchain for deploy
     pub workchain_id: Option<i32>,
@@ -167,13 +170,14 @@ pub(crate) struct ParamsOfGetDeployData {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ResultOfGetDeployData {
-    /// tvc converted to base64
+    /// Deploy contract image: initial contract data and public key are placed into the initial contract image. Returned only if initial image is specified.
     pub image_base64: Option<String>,
-    /// ??? future contract address
+    /// Account identifier, calculated from the result contract image. Returned only if initial image is specified.
     pub account_id: Option<String>,
-    /// ???
+    /// Full contract address, including  account_id and workchain. Returned only if initial image is specified.
     pub address: Option<String>,
-    /// ??? initial contract data
+    /// The deploy data of the contract: initial parameters and public key to be placed into the persistent strorage -
+    /// into <data> field of <StateInit> structure - see p. 4.1.6 сblockchain spec. Always returned.
     pub data_base64: String,
 }
 

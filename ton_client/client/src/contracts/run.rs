@@ -60,8 +60,8 @@ impl Into<FunctionCallSet> for RunFunctionCallSet {
     }
 }
 
-#[doc(summary="Method that calls a contract's function")]
-/// Method creates a run message signed with key_pair, sends it to the targer workchain,
+#[doc(summary="Calls a contract's function on the real network")]
+/// Creates a run message signed with key_pair, sends it to the targer workchain,
 /// waits for the result transaction and outbound messages and decodes the result parameters using ABI.
 /// If the contract implements Pragma Expire, the method repeats the algorithm
 /// for message_retries_count times 
@@ -145,7 +145,7 @@ pub(crate) struct ParamsOfLocalRunWithMsg {
     pub context: LocalRunContext,
 }
 
-#[doc(summary="Method that creates an unsigned message")]
+#[doc(summary="Creates an unsigned message")]
 /// Method prepares an unsigned message that can be signed and sent later. 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -162,7 +162,7 @@ pub(crate) struct ParamsOfEncodeUnsignedRunMessage {
 }
 
 
-#[doc(summary="??? Method that decodes")]
+#[doc(summary="Decodes the message body if ABI function name is known")]
 /// ??? 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -178,8 +178,14 @@ pub(crate) struct ParamsOfDecodeRunOutput {
     pub internal: bool,
 }
 
-#[doc(summary="??? Method that decodes")]
-/// ??? 
+#[doc(summary="Decodes the message body")]
+/// Values encoded into a message body can belong to one of the following types:
+/// - function input (parameters)
+/// - function output (return statement)
+/// - event fields
+/// Function tries to looks for the right input, output or event signature in ABI,
+/// then it decodes the message according to it and returns the decoded list of parameters and their values
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ParamsOfDecodeUnknownRun {
