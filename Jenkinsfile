@@ -1,3 +1,5 @@
+@Library('infrastructure-jenkins-shared-library') _
+
 G_giturl = "git@github.com:tonlabs/TON-SDK.git"
 G_gitcred = 'TonJenSSH'
 G_docker_creds = 'dockerhubLanin'
@@ -341,10 +343,7 @@ pipeline {
                         echo "Set version from branch: ${G_binversion}"
                     } else {
                         lock('bucket') {
-                            withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
-                                identity = awsIdentity()
-                                s3Download bucket: 'sdkbinaries-ws.tonlabs.io', file: 'version.json', force: true, path: 'version.json'
-                            }
+                            bucketFunctions._downloadFromBucket ".", "version.json", "."
                             def folders = """ton_sdk \
 ton_client/client \
 ton_client/platforms/ton-client-node-js \
@@ -357,13 +356,7 @@ ton_client/platforms/ton-client-web"""
                             }
 
                             if(!isUpstream() && (GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc")) {
-                                withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
-                                    identity = awsIdentity()
-                                    s3Upload \
-                                        bucket: 'sdkbinaries-ws.tonlabs.io', \
-                                        includePathPattern:'version.json', path: '', \
-                                        workingDir:'.'
-                                }
+                                bucketFunctions._uploadToBucket ".", "version.json", "."
                             }
                         }
                     }
@@ -1132,16 +1125,8 @@ ton_client/platforms/ton-client-web"""
                             ] 
 
                             build job: "Integration/integration-tests/master", parameters: params
-
                         }
-                        
-                        withAWS(credentials: 'CI_bucket_writer', region: 'eu-central-1') {
-                            identity = awsIdentity()
-                            s3Upload \
-                                bucket: 'sdkbinaries-ws.tonlabs.io', \
-                                includePathPattern:'*.gz', path: deployPath, \
-                                workingDir:'.'
-                        }
+                        bucketFunctions._uploadToBucket ".", "*.gz", "${deployPath}"
                     }
                 }
             }
