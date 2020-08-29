@@ -6,14 +6,14 @@
 **Documentation**  
 [GraphQL API and SDK documentation](https://docs.ton.dev/86757ecb2/p/92b041-overview)
 
-## What is Core Library
+# What is Core Library
 
 All TON SDK Client Libraries have following structure:
 
 - *Core* – is a library itself written on Rust. Provided as a dynamic link library and exposed all functionality through a couple of exported functions. All interaction with core library is performed using OPEN-RPC like protocol.
 - *Binding* – is a thin client library written on the specific language and acts like a bridge between a core library and an application code written on that language.
 
-## Build Core Library
+# Build Core Library
 
 The best way to build client libraries is to use build scripts from this repo. 
 
