@@ -19,7 +19,7 @@ use crate::client::ClientContext;
 
 // Signing
 
-pub fn sign(unsigned: Vec<u8>, secret: Vec<u8>) -> ApiResult<Vec<u8>> {
+fn sign(unsigned: Vec<u8>, secret: Vec<u8>) -> ApiResult<Vec<u8>> {
     let mut signed: Vec<u8> = Vec::new();
     signed.resize(unsigned.len() + sodalite::SIGN_LEN, 0);
     sodalite::sign_attached(&mut signed, &unsigned, &key512(&secret)?);
@@ -27,8 +27,7 @@ pub fn sign(unsigned: Vec<u8>, secret: Vec<u8>) -> ApiResult<Vec<u8>> {
 }
 
 //------------------------------------------------------------------------------- nacl_sign_keypair
-
-/// Randomly generates a secret key and a corresponding public key
+#[doc(summary = "Randomly generates a key pair")]
 pub fn nacl_sign_keypair(_context: &mut ClientContext) -> ApiResult<KeyPair> {
     let mut sk = [0u8; 64];
     let mut pk = [0u8; 32];
@@ -37,7 +36,8 @@ pub fn nacl_sign_keypair(_context: &mut ClientContext) -> ApiResult<KeyPair> {
 }
 
 //------------------------------------------------------------------------ sign_keypair_from_secret
-
+#[doc(summary = "")]
+/// 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclSignKeyPairFromSecret {
     /// Signer's secret key.
@@ -59,7 +59,8 @@ pub fn nacl_sign_keypair_from_secret_key(
 
 
 //--------------------------------------------------------------------------------------- nacl_sign
-
+#[doc(summary = "")]
+/// 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclSign {
     /// Data that must be signed.
@@ -86,7 +87,8 @@ pub fn nacl_sign(_context: &mut ClientContext, params: ParamsOfNaclSign) -> ApiR
 }
 
 //------------------------------------------------------------------------------ nacl_sign_detached
-
+#[doc(summary = "")]
+/// 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclSignDetached {
     /// Data that must be signed.
@@ -114,7 +116,8 @@ pub fn nacl_sign_detached(_context: &mut ClientContext, params: ParamsOfNaclSign
 }
 
 //---------------------------------------------------------------------------------- nacl_sign_open
-
+#[doc(summary = "")]
+/// 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclSignOpen {
     /// Signed data that must be unsigned.
@@ -160,7 +163,8 @@ fn prepare_to_convert(input: &Vec<u8>, nonce: &Vec<u8>, key: &Vec<u8>, pad_len: 
 }
 
 //-------------------------------------------------------------------------------- nacl_box_keypair
-
+#[doc(summary = "")]
+/// 
 pub fn nacl_box_keypair(_context: &mut ClientContext) -> ApiResult<KeyPair> {
     let mut sk = [0u8; 32];
     let mut pk = [0u8; 32];
@@ -169,7 +173,8 @@ pub fn nacl_box_keypair(_context: &mut ClientContext) -> ApiResult<KeyPair> {
 }
 
 //-------------------------------------------------------------------- nacl_box_keypair_from_secret
-
+#[doc(summary = "")]
+/// 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclBoxKeyPairFromSecret {
     /// Hex encoded secret key.
@@ -190,7 +195,8 @@ pub fn nacl_box_keypair_from_secret_key(
 }
 
 //---------------------------------------------------------------------------------------- nacl_box
-
+#[doc(summary = "")]
+/// 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclBox {
     pub decrypted: InputData,
@@ -227,7 +233,8 @@ pub fn nacl_box(_context: &mut ClientContext, params: ParamsOfNaclBox) -> ApiRes
 }
 
 //----------------------------------------------------------------------------------- nacl_box_open
-
+#[doc(summary = "")]
+/// 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclBoxOpen {
     pub encrypted: InputData,
@@ -268,7 +275,8 @@ pub fn nacl_box_open(
 // Secret Box
 
 //--------------------------------------------------------------------------------- nacl_secret_box
-
+#[doc(summary = "")]
+/// 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclSecretBox {
     pub decrypted: InputData,
@@ -297,7 +305,8 @@ pub fn nacl_secret_box(
 }
 
 //---------------------------------------------------------------------------- nacl_secret_box_open
-
+#[doc(summary = "")]
+/// 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclSecretBoxOpen {
     pub encrypted: InputData,

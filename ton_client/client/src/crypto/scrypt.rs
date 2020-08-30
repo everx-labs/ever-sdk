@@ -21,20 +21,29 @@ use crate::client::ClientContext;
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfScrypt {
+    /// The string of characters to be hashed
     pub password: InputData,
+    /// A string of characters that modifies the hash to protect against Rainbow table attacks
     pub salt: InputData,
+    /// CPU/memory cost parameter
     pub log_n: u8,
+    /// The blocksize parameter, which fine-tunes sequential memory read size and performance. 8 is commonly used
     pub r: u32,
+    /// Parallelization parameter
     pub p: u32,
+    /// Intended output length in octets of the derived key
     pub dk_len: usize,
+    /// Encoding format
     pub output_encoding: Option<OutputEncoding>,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ResultOfScrypt {
+    /// scrypt result
     pub bytes: String,
 }
 
+#[doc(summary = "Perform `scrypt` encryption")]
 /// Perform `scrypt` encryption.
 /// See [https://en.wikipedia.org/wiki/Scrypt].
 pub fn scrypt(
