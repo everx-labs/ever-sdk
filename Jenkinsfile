@@ -201,23 +201,18 @@ def buildParams() {
 
 def changeParam(sKey, setValue) {
     echo "Changing param for ${sKey} ..."
+    
     // change in params
-    def done = false
-    G_params.each { item ->
-        echo "${item}"
-        if("${item}" ==~ "name=${sKey},") {
-            item = string("name": sKey, "value": setValue)
-            done = true
+    G_params.eachWithIndex { item, index ->
+        if("${item}" ==~ ".*name=${sKey},.*") {
+            echo "Removing from G_params: ${item}"
+            G_params.remove(index)
         }
     }
-    if(!done) {
-        def item = [
-            "\$class": 'StringParameterValue',
-            "name": sKey,
-            "value": setValue
-        ]
-        G_params.push(item)
-    }
+    def item = string("name": sKey, "value": setValue)
+    echo "Adding to G_params: ${item}"
+    G_params.push(item)
+
     //change in images
     G_images.eachWithIndex { key, val, index ->
         if(key.replaceAll('-','_').toLowerCase() == sKey.replaceAll('image_','').replaceAll('-','_').toLowerCase()) {
