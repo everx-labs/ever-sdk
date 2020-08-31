@@ -168,9 +168,9 @@ pub(crate) fn doc_from(attrs: &Vec<Attribute>) -> (Option<String>, Option<String
     }
 
     for attr in attrs.iter() {
-        match doc_attr_from(&attr) {
-            Some(("doc", text)) => try_add(&mut description, &text),
-            Some(("summary", text)) => try_add(&mut summary, &text),
+        match DocAttr::from(&attr) {
+            DocAttr::Doc(text) => try_add(&mut description, &text),
+            DocAttr::Summary(text) => try_add(&mut summary, &text),
             _ => ()
         }
     }
@@ -186,28 +186,32 @@ pub(crate) fn doc_from(attrs: &Vec<Attribute>) -> (Option<String>, Option<String
     (non_empty(summary), non_empty(description))
 }
 
-fn doc_attr_from(attr: &Attribute) -> Option<(&'static str, String)> {
-    match attr.parse_meta() {
-        Ok(Meta::NameValue(ref meta)) => {
-            return name_value_from_meta_if_name_is("doc", meta);
-        }
-        Ok(Meta::List(ref list)) => {
-            if path_is(&list.path, "doc") {
-                if let Some(NestedMeta::Meta(Meta::NameValue(meta))) = list.nested.first() {
-                    return name_value_from_meta_if_name_is("summary", &meta);
+enum DocAttr {
+    None,
+    Summary(String),
+    Doc(String),
+}
+
+impl DocAttr {
+    fn from(attr: &Attribute) -> DocAttr {
+        match attr.parse_meta() {
+            Ok(Meta::NameValue(ref meta)) => {
+                return get_value_of("doc", meta).map(|x| DocAttr::Doc(x)).unwrap_or(DocAttr::None);
+            }
+            Ok(Meta::List(ref list)) => {
+                if path_is(&list.path, "doc") {
+                    if let Some(NestedMeta::Meta(Meta::NameValue(meta))) = list.nested.first() {
+                        return get_value_of("summary", &meta).map(|x| DocAttr::Summary(x)).unwrap_or(DocAttr::None);
+                    }
                 }
             }
-        }
-        _ => ()
-    };
-    None
+            _ => ()
+        };
+        DocAttr::None
+    }
 }
 
-fn name_value_from_meta_if_name_is(name: &'static str, meta: &MetaNameValue) -> Option<(&'static str, String)> {
-    value_from_meta_if_name_is(name, meta).map(|x|(name, x))
-}
-
-pub(crate) fn value_from_meta_if_name_is(name: &'static str, meta: &MetaNameValue) -> Option<String> {
+pub(crate) fn get_value_of(name: &'static str, meta: &MetaNameValue) -> Option<String> {
     if path_is(&meta.path, name) {
         if let Lit::Str(lit) = &meta.lit {
             return Some(lit.value());

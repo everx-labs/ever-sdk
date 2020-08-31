@@ -2,7 +2,7 @@ use quote::{quote};
 use syn::{Item, ItemFn, Meta, ReturnType, FnArg, Pat};
 use quote::__private::{Ident, Span};
 use api_doc::api;
-use crate::utils::{method_to_tokens, doc_from, field_from, type_from, value_from_meta_if_name_is};
+use crate::utils::{method_to_tokens, doc_from, field_from, type_from, get_value_of};
 
 pub fn impl_method_info(attr: proc_macro::TokenStream, item: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let syn_meta = syn::parse::<Meta>(attr).unwrap();
@@ -31,7 +31,7 @@ fn method_from(meta: &Meta, func: &ItemFn) -> api::Method {
     let name = func.sig.ident.to_string();
     let api_name = match meta {
         Meta::NameValue(nv) => {
-            value_from_meta_if_name_is("name", nv).unwrap_or(name.clone())
+            get_value_of("name", nv).unwrap_or(name.clone())
         },
         _ => name.clone(),
     };
