@@ -189,13 +189,74 @@ def buildParams() {
                 item = string("name": key, "value": G_images["${nKey}"])
             } else {
                 if(key == 'common_version') {
-                    item = string("name": 'key', "value": G_binversion)
+                    item = string("name": key, "value": G_binversion)
                 } else {
                     item = string("name": key, "value": value)
                 }
             }
         }
         G_params.push(item)
+    }
+}
+
+def changeParam(sKey, setValue) {
+    echo "Changing param for ${sKey} ..."
+    
+    // change in params
+    G_params.eachWithIndex { item, index ->
+        if("${item}" ==~ ".*name=${sKey},.*") {
+            echo "Removing from G_params: ${item}"
+            G_params.remove(index)
+        }
+    }
+    def item = string("name": sKey, "value": setValue)
+    echo "Adding to G_params: ${item}"
+    G_params.push(item)
+
+    //change in images
+    G_images.eachWithIndex { key, val, index ->
+        if(key.replaceAll('-','_').toLowerCase() == sKey.replaceAll('image_','').replaceAll('-','_').toLowerCase()) {
+            G_images[key] = setValue
+            echo "New value for \"${key}\": \"${setValue}\""
+        }
+    }
+}
+
+def fetchJobData(job_data) {
+    job_data.getBuildVariables().eachWithIndex { key, val, index ->
+        echo "${key}: ${val}"
+        if(key ==~ 'TON_.*' && val) {
+            echo "Processing key ${key} ..."
+            switch("${key}") {
+                case "TON_TYPES":
+                    changeParam('image_ton_types', "${val}")
+                    break
+                case "TON_LABS_TYPES":
+                    changeParam('image_ton_labs_types', "${val}")
+                    break
+                case "TON_BLOCK":
+                    changeParam('image_ton_block', "${val}")
+                    break
+                case "TON_LABS_BLOCK":
+                    changeParam('image_ton_labs_block', "${val}")
+                    break
+                case "TON_VM":
+                    changeParam('image_ton_vm', "${val}")
+                    break
+                case "TON_LABS_VM":
+                    changeParam('image_ton_labs_vm', "${val}")
+                    break
+                case "TON_EXECUTOR":
+                    changeParam('image_ton_executor', "${val}")
+                    break
+                case "TON_LABS_EXECUTOR":
+                    changeParam('image_ton_labs_executor', "${val}")
+                    break
+                case "TON_LABS_ABI":
+                    changeParam('image_ton_labs_abi', "${val}")
+                    break
+            }
+        }
     }
 }
 
@@ -400,7 +461,10 @@ ton_client/platforms/ton-client-web"""
                     def beforeParams = G_params
                     beforeParams.push(string("name": "project_name", "value": "ton-sdk"))
                     beforeParams.push(string("name": "stage", "value": "before"))
-                    build job: 'Builder/build-flow', parameters: beforeParams
+                    def job_data = build job: 'Builder/build-flow', parameters: beforeParams
+                    fetchJobData(job_data)
+                    echo "${G_images}"
+                    echo "${G_params}"
                 }
             }
         }
@@ -474,7 +538,8 @@ ton_client/platforms/ton-client-web"""
                             def intimeParams = G_params
                             intimeParams.push(string("name": "project_name", "value": "ton-sdk"))
                             intimeParams.push(string("name": "stage", "value": "in_time"))
-                            build job: 'Builder/build-flow', parameters: intimeParams
+                            def job_data = build job: 'Builder/build-flow', parameters: intimeParams
+                            fetchJobData(job_data)
                         }
                     }
                 }
