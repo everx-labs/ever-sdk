@@ -1,5 +1,5 @@
 [package]
-name = "opendoc_derive"
+name = "api_doc_derive"
 version = "0.1.0"
 authors = ["Michael Vlasov <melsomino@gmail.com>"]
 edition = "2018"
@@ -8,7 +8,7 @@ edition = "2018"
 proc-macro = true
 
 [dependencies]
-syn = "1.0"
+syn = { version = "1.0", features = ["full"] }
 quote = "1.0"
-opendoc = { path = "../opendoc" }
+api_doc = { path = "../api_doc" }
 

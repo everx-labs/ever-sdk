@@ -12,8 +12,7 @@
 */
 
 use crate::error::{ApiResult, ApiError};
-use crate::crypto::internal::{key512, Key256, key256, Key264};
-use crate::crypto::hash::{internal_sha256};
+use crate::crypto::internal::{sha256, key512, Key256, key256, Key264};
 use hmac::*;
 use sha2::{Sha512, Digest};
 use base58::*;
@@ -21,8 +20,7 @@ use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use pbkdf2::pbkdf2;
 use secp256k1::{PublicKey, SecretKey};
 use crate::client::ClientContext;
-
-pub(crate) const DEFAULT_COMPLIANT: bool = true;
+use crate::crypto::DEFAULT_HDKEY_COMPLIANT;
 
 //----------------------------------------------------------------- crypto.hdkey_xprv_from_mnemonic
 
@@ -108,7 +106,7 @@ pub fn hdkey_derive_from_xprv(
     params: ParamsOfHDKeyDeriveFromXPrv,
 ) -> ApiResult<ResultOfHDKeyDeriveFromXPrv> {
     let xprv = HDPrivateKey::from_serialized_string(&params.xprv)?;
-    let derived = xprv.derive(params.child_index, params.hardened, DEFAULT_COMPLIANT)?;
+    let derived = xprv.derive(params.child_index, params.hardened, DEFAULT_HDKEY_COMPLIANT)?;
     Ok(ResultOfHDKeyDeriveFromXPrv {
         xprv: derived.serialize_to_string()
     })
@@ -133,7 +131,7 @@ pub fn hdkey_derive_from_xprv_path(
 ) -> ApiResult<ResultOfHDKeyDeriveFromXPrvPath> {
     let xprv = HDPrivateKey::from_serialized_string(&params.xprv)?;
     Ok(ResultOfHDKeyDeriveFromXPrvPath {
-        xprv: xprv.derive_path(&params.path, DEFAULT_COMPLIANT)?.serialize_to_string()
+        xprv: xprv.derive_path(&params.path, DEFAULT_HDKEY_COMPLIANT)?.serialize_to_string()
     })
 }
 
@@ -152,7 +150,7 @@ pub(crate) struct HDPrivateKey {
 static XPRV_VERSION: [u8; 4] = [0x04, 0x88, 0xAD, 0xE4];
 
 impl HDPrivateKey {
-    fn master(child_chain: &Key256, key: &Key256) -> HDPrivateKey {
+    pub(crate) fn master(child_chain: &Key256, key: &Key256) -> HDPrivateKey {
         HDPrivateKey {
             depth: 0,
             parent_fingerprint: [0; 4],
@@ -162,7 +160,7 @@ impl HDPrivateKey {
         }
     }
 
-    pub fn from_mnemonic(phrase: &String) -> ApiResult<HDPrivateKey> {
+    pub(crate) fn from_mnemonic(phrase: &String) -> ApiResult<HDPrivateKey> {
         let salt = "mnemonic";
         let mut seed = vec![0u8; 64];
         pbkdf2::<Hmac<Sha512>>(
@@ -216,7 +214,7 @@ impl HDPrivateKey {
         }
     }
 
-    pub fn derive(
+    pub(crate) fn derive(
         &self,
         child_index: u32,
         hardened: bool,
@@ -273,7 +271,7 @@ impl HDPrivateKey {
         Ok(child)
     }
 
-    pub fn derive_path(&self, path: &String, compliant: bool) -> ApiResult<HDPrivateKey> {
+    pub(crate) fn derive_path(&self, path: &String, compliant: bool) -> ApiResult<HDPrivateKey> {
         let mut child: HDPrivateKey = self.clone();
         for step in path.split("/") {
             if step == "m" {} else {
@@ -323,7 +321,7 @@ impl HDPrivateKey {
         bytes.extend(&self.child_chain);
         bytes.push(0);
         bytes.extend(&self.key);
-        bytes.extend(&internal_sha256(&internal_sha256(&bytes))[0..4]);
+        bytes.extend(&sha256(&sha256(&bytes))[0..4]);
         bytes
     }
 

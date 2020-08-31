@@ -11,9 +11,9 @@
 * limitations under the License.
 */
 
-use crate::crypto::hdkey::{HDPrivateKey, DEFAULT_COMPLIANT};
+use crate::crypto::hdkey::{HDPrivateKey};
 use crate::crypto::keys::{KeyPair};
-use crate::crypto::internal::{hmac_sha512, pbkdf2_hmac_sha512};
+use crate::crypto::internal::{hmac_sha512, pbkdf2_hmac_sha512, key256};
 use crate::error::{ApiResult, ApiError};
 use bip39::{Language, Mnemonic, MnemonicType};
 use ed25519_dalek::{PublicKey, SecretKey};
@@ -23,6 +23,10 @@ use sha2::Sha512;
 use rand::RngCore;
 use crate::client::ClientContext;
 use crate::encoding::InputData;
+use crate::crypto::{
+    DEFAULT_MNEMONIC_WORD_COUNT, DEFAULT_HDKEY_DERIVATION_PATH, DEFAULT_HDKEY_COMPLIANT,
+    DEFAULT_MNEMONIC_DICTIONARY,
+};
 
 const TON_DICTIONARY: u8 = 0;
 const ENGLISH_DICTIONARY: u8 = 1;
@@ -33,10 +37,6 @@ const ITALIAN_DICTIONARY: u8 = 5;
 const JAPANESE_DICTIONARY: u8 = 6;
 const KOREAN_DICTIONARY: u8 = 7;
 const SPANISH_DICTIONARY: u8 = 8;
-
-const DEFAULT_DICTIONARY: u8 = TON_DICTIONARY;
-const DEFAULT_WORD_COUNT: u8 = 24;
-const DEFAULT_PATH: &str = "m/44'/396'/0'/0/0";
 
 //---------------------------------------------------------------------------------- mnemonic_words
 
@@ -55,7 +55,7 @@ pub fn mnemonic_words(
     params: ParamsOfMnemonicWords,
 ) -> ApiResult<ResultOfMnemonicWords> {
     Ok(ResultOfMnemonicWords {
-        words: mnemonics(params.dictionary, Some(DEFAULT_WORD_COUNT))?.get_words()?
+        words: mnemonics(params.dictionary, Some(DEFAULT_MNEMONIC_WORD_COUNT))?.get_words()?
     })
 }
 
@@ -144,15 +144,15 @@ pub fn mnemonic_derive_sign_keys(
     params: ParamsOfMnemonicDeriveSignKeys,
 ) -> ApiResult<KeyPair> {
     let mnemonic = mnemonics(params.dictionary, params.word_count)?;
-    let path = params.path.unwrap_or(DEFAULT_PATH.into());
-    Ok(mnemonic.derive_ed25519_keys_from_phrase(&params.phrase, &path, DEFAULT_COMPLIANT)?)
+    let path = params.path.unwrap_or(DEFAULT_HDKEY_DERIVATION_PATH.into());
+    Ok(mnemonic.derive_ed25519_keys_from_phrase(&params.phrase, &path)?)
 }
 
 // Internals
 
 fn mnemonics(dictionary: Option<u8>, word_count: Option<u8>) -> ApiResult<Box<dyn CryptoMnemonic>> {
-    let dictionary = dictionary.unwrap_or(DEFAULT_DICTIONARY);
-    let word_count = word_count.unwrap_or(DEFAULT_WORD_COUNT);
+    let dictionary = dictionary.unwrap_or(DEFAULT_MNEMONIC_DICTIONARY);
+    let word_count = word_count.unwrap_or(DEFAULT_MNEMONIC_WORD_COUNT);
     if dictionary == TON_DICTIONARY {
         return Ok(Box::new(TonMnemonic::new(word_count)));
     }
@@ -186,7 +186,6 @@ pub trait CryptoMnemonic {
         &self,
         phrase: &String,
         path: &String,
-        compliant: bool,
     ) -> ApiResult<KeyPair>;
     fn phrase_from_entropy(&self, entropy: &[u8]) -> ApiResult<String>;
     fn is_phrase_valid(&self, phrase: &String) -> ApiResult<bool>;
@@ -202,13 +201,13 @@ fn check_phrase(mnemonic: &dyn CryptoMnemonic, phrase: &String) -> ApiResult<()>
     }
 }
 
-pub struct Bip39Mnemonic {
+pub(crate) struct Bip39Mnemonic {
     mnemonic_type: MnemonicType,
     language: Language,
 }
 
 impl Bip39Mnemonic {
-    pub fn new(mnemonic_type: MnemonicType, language: Language) -> Self {
+    pub(crate) fn new(mnemonic_type: MnemonicType, language: Language) -> Self {
         Bip39Mnemonic {
             mnemonic_type,
             language,
@@ -248,10 +247,9 @@ impl CryptoMnemonic for Bip39Mnemonic {
         &self,
         phrase: &String,
         path: &String,
-        compliant: bool,
     ) -> ApiResult<KeyPair> {
         check_phrase(self, phrase)?;
-        let derived = HDPrivateKey::from_mnemonic(phrase)?.derive_path(path, compliant)?;
+        let derived = HDPrivateKey::from_mnemonic(phrase)?.derive_path(path, DEFAULT_HDKEY_COMPLIANT)?;
         ed25519_keys_from_secret_bytes(&derived.secret())
     }
 
@@ -290,7 +288,7 @@ impl CryptoMnemonic for Bip39Mnemonic {
     }
 }
 
-pub struct TonMnemonic {
+pub(crate) struct TonMnemonic {
     word_count: u8,
 }
 
@@ -366,12 +364,17 @@ impl CryptoMnemonic for TonMnemonic {
     fn derive_ed25519_keys_from_phrase(
         &self,
         phrase: &String,
-        _path: &String,
-        _compliant: bool,
+        path: &String,
     ) -> ApiResult<KeyPair> {
         check_phrase(self, phrase)?;
+
         let seed = Self::seed_from_string(&phrase, "TON default seed", 100_000);
-        ed25519_keys_from_secret_bytes(&seed[..32])
+        let master = HDPrivateKey::master(
+            &key256(&seed[32..])?,
+            &key256(&seed[..32])?,
+        );
+        let derived = master.derive_path(path, DEFAULT_HDKEY_COMPLIANT)?;
+        ed25519_keys_from_secret_bytes(&derived.secret())
     }
 
     fn phrase_from_entropy(&self, entropy: &[u8]) -> ApiResult<String> {

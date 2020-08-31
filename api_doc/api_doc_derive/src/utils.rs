@@ -3,12 +3,12 @@ use syn::{
     Type, Path, Meta, Lit, PathArguments, GenericArgument, AngleBracketedGenericArguments,
     Attribute, NestedMeta, MetaNameValue, TypeArray,
 };
-use opendoc::api;
+use api_doc::api;
 use quote::__private::TokenStream;
 
 
-pub(crate) fn parse_field(name: &syn::Ident, attrs: &Vec<Attribute>, value: api::Type) -> api::Field {
-    let (summary, description) = get_doc(attrs);
+pub(crate) fn field_from(name: &syn::Ident, attrs: &Vec<Attribute>, value: api::Type) -> api::Field {
+    let (summary, description) = doc_from(attrs);
     api::Field {
         name: name.to_string(),
         summary,
@@ -17,19 +17,27 @@ pub(crate) fn parse_field(name: &syn::Ident, attrs: &Vec<Attribute>, value: api:
     }
 }
 
+pub(crate) fn doc_to_tokens(
+    summary: &Option<String>,
+    description: &Option<String>
+) -> (TokenStream, TokenStream) {
+    let summary = match summary {
+        Some(s) => quote! { Some(#s.into()) },
+        None => quote! { None }
+    };
+    let description = match description {
+        Some(s) => quote! { Some(#s.into()) },
+        None => quote! { None }
+    };
+    (summary, description)
+}
+
 pub(crate) fn field_to_tokens(f: &api::Field) -> TokenStream {
     let name = &f.name;
-    let value = api_type_to_tokens(&f.value);
-    let summary = match &f.summary {
-        Some(s) => quote! { Some(#s.into()) },
-        None => quote! { None }
-    };
-    let description = match &f.description {
-        Some(s) => quote! { Some(#s.into()) },
-        None => quote! { None }
-    };
+    let value = type_to_tokens(&f.value);
+    let (summary, description) = doc_to_tokens(&f.summary, &f.description);
     quote! {
-        opendoc::api::Field {
+        api_doc::api::Field {
             name: #name.into(),
             summary: #summary,
             description: #description,
@@ -38,35 +46,52 @@ pub(crate) fn field_to_tokens(f: &api::Field) -> TokenStream {
     }
 }
 
-fn api_type_to_tokens(t: &api::Type) -> TokenStream {
-    match t {
-        api::Type::None => quote! { opendoc::api::Type::None },
-        api::Type::Any => quote! { opendoc::api::Type::Any },
-        api::Type::Boolean => quote! { opendoc::api::Type::Boolean },
-        api::Type::Number => quote! { opendoc::api::Type::Number },
-        api::Type::BigInt => quote! { opendoc::api::Type::BigInt },
-        api::Type::String => quote! { opendoc::api::Type::String },
-        api::Type::Ref(type_name) => {
-            quote! { opendoc::api::Type::Ref(#type_name.into()) }
-        }
-        api::Type::Optional(inner) => {
-            let inner_type = api_type_to_tokens(inner);
-            quote! { opendoc::api::Type::Optional(#inner_type.into()) }
-        }
-        api::Type::Array(items) => {
-            let items_type = api_type_to_tokens(items);
-            quote! { opendoc::api::Type::Array(#items_type.into()) }
-        }
-        api::Type::Struct(fields) => {
-            let field_types = fields.iter().map(|x| field_to_tokens(x));
-            quote! { opendoc::api::Type::Struct([#(#field_types),*].into()) }
+pub(crate) fn method_to_tokens(m: &api::Method) -> TokenStream {
+    let name = &m.name;
+    let params = m.params.iter().map(|x|field_to_tokens(x));
+    let result = type_to_tokens(&m.result);
+    let (summary, description) = doc_to_tokens(&m.summary, &m.description);
+    quote! {
+        api_doc::api::Method {
+            name: #name.into(),
+            summary: #summary,
+            description: #description,
+            params: [#(#params), *].into(),
+            result: #result,
+            errors: None,
         }
     }
 }
 
-pub(crate) fn get_type(ty: &Type) -> api::Type {
+fn type_to_tokens(t: &api::Type) -> TokenStream {
+    match t {
+        api::Type::None => quote! { api_doc::api::Type::None },
+        api::Type::Any => quote! { api_doc::api::Type::Any },
+        api::Type::Boolean => quote! { api_doc::api::Type::Boolean },
+        api::Type::Number => quote! { api_doc::api::Type::Number },
+        api::Type::BigInt => quote! { api_doc::api::Type::BigInt },
+        api::Type::String => quote! { api_doc::api::Type::String },
+        api::Type::Ref(type_name) => {
+            quote! { api_doc::api::Type::Ref(#type_name.into()) }
+        }
+        api::Type::Optional(inner) => {
+            let inner_type = type_to_tokens(inner);
+            quote! { api_doc::api::Type::Optional(#inner_type.into()) }
+        }
+        api::Type::Array(items) => {
+            let items_type = type_to_tokens(items);
+            quote! { api_doc::api::Type::Array(#items_type.into()) }
+        }
+        api::Type::Struct(fields) => {
+            let field_types = fields.iter().map(|x| field_to_tokens(x));
+            quote! { api_doc::api::Type::Struct([#(#field_types),*].into()) }
+        }
+    }
+}
+
+pub(crate) fn type_from(ty: &Type) -> api::Type {
     match ty {
-        Type::Array(a) => get_array_type(a),
+        Type::Array(a) => array_type_from(a),
         Type::BareFn(_f) => panic!("function is unsupported"),
         Type::Group(_g) => panic!("group is unsupported"),
         Type::ImplTrait(_t) => panic!("impl_trait is unsupported"),
@@ -75,7 +100,7 @@ pub(crate) fn get_type(ty: &Type) -> api::Type {
         Type::Never(_n) => panic!("never is unsupported"),
         Type::Paren(_p) => panic!("paren is unsupported"),
         Type::Path(p) => {
-            get_path_type(&p.path)
+            type_from_path(&p.path)
         }
         Type::Ptr(_p) => panic!("ptr is unsupported"),
         Type::Reference(_r) => panic!("reference is unsupported"),
@@ -87,18 +112,18 @@ pub(crate) fn get_type(ty: &Type) -> api::Type {
     }
 }
 
-fn get_array_type(ty: &TypeArray) -> api::Type {
-    api::Type::Array(Box::new(get_type(ty.elem.as_ref())))
+fn array_type_from(ty: &TypeArray) -> api::Type {
+    api::Type::Array(Box::new(type_from(ty.elem.as_ref())))
 }
 
-fn get_path_type(path: &Path) -> api::Type {
+fn type_from_path(path: &Path) -> api::Type {
     if let Some(segment) = path.segments.last() {
         let name = unqualified_type_name(segment.ident.to_string());
         if let Some(result) = match &segment.arguments {
             PathArguments::None =>
                 Some(resolve_type_name(name)),
             PathArguments::AngleBracketed(args) =>
-                get_generic_type(name, &args),
+                generic_type_from(name, &args),
             _ => None
         } {
             return result;
@@ -119,9 +144,9 @@ fn resolve_type_name(name: String) -> api::Type {
     }
 }
 
-fn get_generic_type(name: String, args: &AngleBracketedGenericArguments) -> Option<api::Type> {
+fn generic_type_from(name: String, args: &AngleBracketedGenericArguments) -> Option<api::Type> {
     let get_inner_type = || match (args.args.len(), args.args.first()) {
-        (1, Some(GenericArgument::Type(t))) => Some(get_type(t)),
+        (1, Some(GenericArgument::Type(t))) => Some(type_from(t)),
         _ => None
     };
     match name.as_ref() {
@@ -131,7 +156,7 @@ fn get_generic_type(name: String, args: &AngleBracketedGenericArguments) -> Opti
     }
 }
 
-fn get_doc(attrs: &Vec<Attribute>) -> (Option<String>, Option<String>) {
+pub(crate) fn doc_from(attrs: &Vec<Attribute>) -> (Option<String>, Option<String>) {
     let mut summary = String::new();
     let mut description = String::new();
 
@@ -143,7 +168,7 @@ fn get_doc(attrs: &Vec<Attribute>) -> (Option<String>, Option<String>) {
     }
 
     for attr in attrs.iter() {
-        match parse_doc(&attr) {
+        match doc_attr_from(&attr) {
             Some(("doc", text)) => try_add(&mut description, &text),
             Some(("summary", text)) => try_add(&mut summary, &text),
             _ => ()
@@ -161,15 +186,15 @@ fn get_doc(attrs: &Vec<Attribute>) -> (Option<String>, Option<String>) {
     (non_empty(summary), non_empty(description))
 }
 
-fn parse_doc(attr: &Attribute) -> Option<(&'static str, String)> {
+fn doc_attr_from(attr: &Attribute) -> Option<(&'static str, String)> {
     match attr.parse_meta() {
         Ok(Meta::NameValue(ref meta)) => {
-            return meta_value("doc", meta);
+            return name_value_from_meta_if_name_is("doc", meta);
         }
         Ok(Meta::List(ref list)) => {
             if path_is(&list.path, "doc") {
                 if let Some(NestedMeta::Meta(Meta::NameValue(meta))) = list.nested.first() {
-                    return meta_value("summary", &meta);
+                    return name_value_from_meta_if_name_is("summary", &meta);
                 }
             }
         }
@@ -178,10 +203,14 @@ fn parse_doc(attr: &Attribute) -> Option<(&'static str, String)> {
     None
 }
 
-fn meta_value(name: &'static str, meta: &MetaNameValue) -> Option<(&'static str, String)> {
+fn name_value_from_meta_if_name_is(name: &'static str, meta: &MetaNameValue) -> Option<(&'static str, String)> {
+    value_from_meta_if_name_is(name, meta).map(|x|(name, x))
+}
+
+pub(crate) fn value_from_meta_if_name_is(name: &'static str, meta: &MetaNameValue) -> Option<String> {
     if path_is(&meta.path, name) {
         if let Lit::Str(lit) = &meta.lit {
-            return Some((name, lit.value()));
+            return Some(lit.value());
         }
     }
     None
@@ -194,7 +223,7 @@ fn unqualified_type_name(qualified_name: String) -> String {
     }
 }
 
-fn path_is(path: &Path, expected: &str) -> bool {
+pub(crate) fn path_is(path: &Path, expected: &str) -> bool {
     if let Some(ident) = path.get_ident() {
         ident.to_string() == expected
     } else {

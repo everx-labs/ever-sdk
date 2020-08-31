@@ -1,8 +1,8 @@
-use opendoc::reflect::TypeInfo;
-use opendoc_derive::{TypeInfo, method_info};
-use opendoc;
+use api_doc::reflect::TypeInfo;
+use api_doc_derive::{TypeInfo, method_info};
+use api_doc;
 use serde_derive::{Serialize, Deserialize};
-use opendoc::api::{Type, Method};
+use api_doc::api::{Method};
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq)]
 pub struct StringId (String);
@@ -34,6 +34,7 @@ struct Bar {
 }
 
 #[method_info(name = "module.baz")]
+/// This is baz method
 fn baz(_params: Foo) -> Bar {
     Bar::default()
 }

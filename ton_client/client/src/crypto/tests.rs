@@ -279,20 +279,41 @@ fn mnemonic() {
     let result: KeyPair = client.request("crypto.mnemonic_derive_sign_keys", ParamsOfMnemonicDeriveSignKeys {
         phrase: "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle".into(),
         path: None,
-        dictionary: None,
-        word_count: None,
+        dictionary: Some(0),
+        word_count: Some(24),
     });
+    let result: ResultOfConvertPublicKeyToTonSafeFormat = client.request("crypto.convert_public_key_to_ton_safe_format", ParamsOfConvertPublicKeyToTonSafeFormat {
+        public_key: result.public,
+    });
+    assert_eq!(result.ton_public_key, "PuYTvCuf__YXhp-4jv3TXTHL0iK65ImwxG0RGrYc1sP3H4KS");
 
+    let result: KeyPair = client.request("crypto.mnemonic_derive_sign_keys", ParamsOfMnemonicDeriveSignKeys {
+        phrase: "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle".into(),
+        path: Some("m".into()),
+        dictionary: Some(0),
+        word_count: Some(24),
+    });
     let result: ResultOfConvertPublicKeyToTonSafeFormat = client.request("crypto.convert_public_key_to_ton_safe_format", ParamsOfConvertPublicKeyToTonSafeFormat {
         public_key: result.public,
     });
     assert_eq!(result.ton_public_key, "PubDdJkMyss2qHywFuVP1vzww0TpsLxnRNnbifTCcu-XEgW0");
 
+    let result: KeyPair = client.request("crypto.mnemonic_derive_sign_keys", ParamsOfMnemonicDeriveSignKeys {
+        phrase: "abandon math mimic master filter design carbon crystal rookie group knife young".into(),
+        path: None,
+        dictionary: None,
+        word_count: None,
+    });
+    let result: ResultOfConvertPublicKeyToTonSafeFormat = client.request("crypto.convert_public_key_to_ton_safe_format", ParamsOfConvertPublicKeyToTonSafeFormat {
+        public_key: result.public,
+    });
+    assert_eq!(result.ton_public_key, "PuZhw8W5ejPJwKA68RL7sn4_RNmeH4BIU_mEK7em5d4_-cIx");
+
     let result: ResultOfMnemonicFromRandom = client.request("crypto.mnemonic_from_random", ParamsOfMnemonicFromRandom {
         dictionary: None,
         word_count: None,
     });
-    assert_eq!(result.phrase.split(" ").count(), 24);
+    assert_eq!(result.phrase.split(" ").count(), 12);
 
     let result: ResultOfMnemonicFromRandom = client.request("crypto.mnemonic_from_random", ParamsOfMnemonicFromRandom {
         dictionary: Some(0),
@@ -307,7 +328,7 @@ fn mnemonic() {
     assert_eq!(result.phrase.split(" ").count(), 12);
 
     let result: ResultOfMnemonicFromEntropy = client.request("crypto.mnemonic_from_entropy", ParamsOfMnemonicFromEntropy {
-        entropy: InputData::hex("2199ebe996f14d9e4e2595113ad1e6276bd05e2e147e16c8ab8ad5d47d13b44fcf"),
+        entropy: InputData::hex("2199ebe996f14d9e4e2595113ad1e627"),
         dictionary: None,
         word_count: None,
     });
@@ -321,7 +342,7 @@ fn mnemonic() {
     let result: ResultOfConvertPublicKeyToTonSafeFormat = client.request("crypto.convert_public_key_to_ton_safe_format", ParamsOfConvertPublicKeyToTonSafeFormat {
         public_key: result.public,
     });
-    assert_eq!(result.ton_public_key, "PuYGEX9Zreg-CX4Psz5dKehzW9qCs794oBVUKqqFO7aWAOTD");
+    assert_eq!(result.ton_public_key, "PuZdw_KyXIzo8IksTrERN3_WoAoYTyK7OvM-yaLk711sUIB3");
 }
 
 #[test]

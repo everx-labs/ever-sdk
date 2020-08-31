@@ -1,11 +1,11 @@
 [package]
-name = "opendoc"
+name = "api_doc"
 version = "0.1.0"
 authors = ["Michael Vlasov <melsomino@gmail.com>"]
 edition = "2018"
 
 [lib]
-name = "opendoc"
+name = "api_doc"
 
 [dependencies]
 serde = "1.0.115"

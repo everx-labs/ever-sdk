@@ -2,7 +2,7 @@ mod method_info;
 mod type_info;
 mod utils;
 
-extern crate opendoc;
+extern crate api_doc;
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
