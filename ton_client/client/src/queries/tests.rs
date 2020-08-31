@@ -135,3 +135,37 @@ fn subscribe_for_transactions_with_addresses() {
 
     let _: () = client.request("queries.unsubscribe", handle);
 }
+
+#[test]
+fn subscribe_for_messages() {
+    let messages = std::sync::Arc::new(Mutex::new(Vec::new()));
+    let messages_copy = messages.clone();
+
+    std::thread::spawn(move || {
+        let client = TestClient::new();
+
+        let handle: ResultOfSubscribeCollection = client.request(
+            "queries.subscribe_collection",
+            ParamsOfSubscribeCollection {
+                collection: "messages".to_owned(),
+                filter: Some(json!({
+                    "dst": { "eq": "1" }
+                })),
+                result: "id".to_owned(),
+            }
+        );
+
+        loop {
+            println!("Before get_next");
+            let result: ResultOfGetNextSubscriptionData = client.request(
+                "queries.get_next_subscription_data", handle.clone());
+            println!("After get_next");
+            messages_copy.lock().unwrap().push(result.result);
+        }
+    });
+
+    let client = TestClient::new();
+    client.get_grams_from_giver(&TestClient::get_giver_address(), None);
+
+    assert_eq!(messages.lock().unwrap().len(), 0);
+}
