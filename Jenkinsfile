@@ -45,6 +45,12 @@ def buildImagesMap() {
         G_images.put('ton-labs-block', params.image_ton_labs_block)
     }
 
+    if (params.image_ton_labs_block_json == '') {
+        G_images.put('ton-labs-block-json', "tonlabs/ton-labs-block-json:ton-sdk-${GIT_COMMIT}")
+    } else {
+        G_images.put('ton-labs-block-json', params.image_ton_labs_block_json)
+    }
+
     if (params.image_ton_vm == '') {
         G_images.put('ton-vm', "tonlabs/ton-vm:ton-sdk-${GIT_COMMIT}")
     } else {
@@ -169,6 +175,7 @@ def buildParams() {
         G_images['ton-labs-types'] = 'tonlabs/ton-labs-types:latest'
         G_images['ton-block'] = 'tonlabs/ton-block:latest'
         G_images['ton-labs-block'] = 'tonlabs/ton-labs-block:latest'
+        G_images['ton-labs-block-json'] = 'tonlabs/ton-labs-block-json:latest'
         G_images['ton-vm'] = 'tonlabs/ton-vm:latest'
         G_images['ton-labs-vm'] = 'tonlabs/ton-labs-vm:latest'
         G_images['ton-executor'] = 'tonlabs/ton-executor:latest'
@@ -255,6 +262,11 @@ pipeline {
             name:'image_ton_labs_block',
             defaultValue: '',
             description: 'ton-labs-block image name'
+        )
+        string(
+            name:'image_ton_labs_block_json',
+            defaultValue: '',
+            description: 'ton-labs-block-json image name'
         )
         string(
             name:'branch_ton_vm',
@@ -450,6 +462,7 @@ ton_client/platforms/ton-client-web"""
                     additionalBuildArgs "--pull --target ton-sdk-full " + 
                                         "--build-arg \"TON_LABS_TYPES_IMAGE=${G_images['ton-labs-types']}\" " +
                                         "--build-arg \"TON_LABS_BLOCK_IMAGE=${G_images['ton-labs-block']}\" " + 
+                                        "--build-arg \"TON_LABS_BLOCK_JSON_IMAGE=${G_images['ton-labs-block-json']}\" " + 
                                         "--build-arg \"TON_LABS_VM_IMAGE=${G_images['ton-labs-vm']}\" " + 
                                         "--build-arg \"TON_LABS_ABI_IMAGE=${G_images['ton-labs-abi']}\" " + 
                                         "--build-arg \"TON_LABS_EXECUTOR_IMAGE=${G_images['ton-labs-executor']}\" " +
@@ -492,6 +505,7 @@ ton_client/platforms/ton-client-web"""
                             additionalBuildArgs "--pull --target ton-sdk-rust " + 
                                                 "--build-arg \"TON_LABS_TYPES_IMAGE=${G_images['ton-labs-types']}\" " +
                                                 "--build-arg \"TON_LABS_BLOCK_IMAGE=${G_images['ton-labs-block']}\" " + 
+                                                "--build-arg \"TON_LABS_BLOCK_JSON_IMAGE=${G_images['ton-labs-block-json']}\" " + 
                                                 "--build-arg \"TON_LABS_VM_IMAGE=${G_images['ton-labs-vm']}\" " + 
                                                 "--build-arg \"TON_LABS_ABI_IMAGE=${G_images['ton-labs-abi']}\" " + 
                                                 "--build-arg \"TON_LABS_EXECUTOR_IMAGE=${G_images['ton-labs-executor']}\" " +
@@ -974,6 +988,7 @@ ton_client/platforms/ton-client-web"""
                             registryCredentialsId "${G_docker_creds}"
                             additionalBuildArgs "--pull --target ton-sdk-rust " + 
                                                 "--build-arg \"TON_LABS_TYPES_IMAGE=${G_images['ton-labs-types']}\" " +
+                                                "--build-arg \"TON_LABS_BLOCK_JSON_IMAGE=${G_images['ton-labs-block-json']}\" " + 
                                                 "--build-arg \"TON_LABS_BLOCK_IMAGE=${G_images['ton-labs-block']}\" " + 
                                                 "--build-arg \"TON_LABS_VM_IMAGE=${G_images['ton-labs-vm']}\" " + 
                                                 "--build-arg \"TON_LABS_ABI_IMAGE=${G_images['ton-labs-abi']}\" " + 
@@ -1027,6 +1042,7 @@ ton_client/platforms/ton-client-web"""
                             additionalBuildArgs "--pull --target ton-sdk-rust " + 
                                                 "--build-arg \"TON_LABS_TYPES_IMAGE=${G_images['ton-labs-types']}\" " +
                                                 "--build-arg \"TON_LABS_BLOCK_IMAGE=${G_images['ton-labs-block']}\" " + 
+                                                "--build-arg \"TON_LABS_BLOCK_JSON_IMAGE=${G_images['ton-labs-block-json']}\" " + 
                                                 "--build-arg \"TON_LABS_VM_IMAGE=${G_images['ton-labs-vm']}\" " + 
                                                 "--build-arg \"TON_LABS_ABI_IMAGE=${G_images['ton-labs-abi']}\" " + 
                                                 "--build-arg \"TON_LABS_EXECUTOR_IMAGE=${G_images['ton-labs-executor']}\" " +
