@@ -1,12 +1,12 @@
 [package]
-name = "opendoc_test"
+name = "api_doc_test"
 version = "0.1.0"
 authors = ["Michael Vlasov <melsomino@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-opendoc = { path = "../opendoc" }
-opendoc_derive = { path = "../opendoc_derive" }
+api_doc = { path = "../api_doc" }
+api_doc_derive = { path = "../api_doc_derive" }
 serde = "1.0.115"
 serde_json = "1.0.57"
 serde_derive = "1.0.115"

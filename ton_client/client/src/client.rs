@@ -138,7 +138,7 @@ impl Client {
         }
     }
 
-    pub fn get_api(&self) -> opendoc::api::API {
+    pub fn get_api(&self) -> api_doc::api::API {
         HANDLERS.get_api()
     }
 }

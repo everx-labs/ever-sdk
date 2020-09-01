@@ -55,8 +55,3 @@ pub fn sha512(
     })
 }
 
-pub fn internal_sha256(bytes: &[u8]) -> Vec<u8> {
-    let mut hasher = sha2::Sha256::new();
-    hasher.input(bytes);
-    hasher.result().to_vec()
-}

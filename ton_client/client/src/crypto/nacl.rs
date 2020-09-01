@@ -19,13 +19,6 @@ use crate::client::ClientContext;
 
 // Signing
 
-pub fn sign(unsigned: Vec<u8>, secret: Vec<u8>) -> ApiResult<Vec<u8>> {
-    let mut signed: Vec<u8> = Vec::new();
-    signed.resize(unsigned.len() + sodalite::SIGN_LEN, 0);
-    sodalite::sign_attached(&mut signed, &unsigned, &key512(&secret)?);
-    Ok(signed)
-}
-
 //------------------------------------------------------------------------------- nacl_sign_keypair
 
 /// Randomly generates a secret key and a corresponding public key
@@ -325,3 +318,11 @@ pub fn nacl_secret_box_open(
     Ok(ResultOfNaclBoxOpen { decrypted: encoding.encode(padded_output)? })
 }
 
+// Internals
+
+fn sign(unsigned: Vec<u8>, secret: Vec<u8>) -> ApiResult<Vec<u8>> {
+    let mut signed: Vec<u8> = Vec::new();
+    signed.resize(unsigned.len() + sodalite::SIGN_LEN, 0);
+    sodalite::sign_attached(&mut signed, &unsigned, &key512(&secret)?);
+    Ok(signed)
+}

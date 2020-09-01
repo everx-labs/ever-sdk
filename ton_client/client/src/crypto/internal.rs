@@ -2,12 +2,18 @@ use crate::error::{ApiResult, ApiError};
 use ed25519_dalek::{PublicKey, SecretKey};
 use hmac::*;
 use sha2::Sha512;
+use sha2::{Digest};
 
 pub(crate) type Key192 = [u8; 24];
 pub(crate) type Key256 = [u8; 32];
 pub(crate) type Key264 = [u8; 33];
 pub(crate) type Key512 = [u8; 64];
 
+pub(crate) fn sha256(bytes: &[u8]) -> Vec<u8> {
+    let mut hasher = sha2::Sha256::new();
+    hasher.input(bytes);
+    hasher.result().to_vec()
+}
 
 pub(crate) fn ton_crc16(data: &[u8]) -> u16 {
     let mut crc = crc_any::CRC::crc16xmodem();

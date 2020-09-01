@@ -17,8 +17,8 @@ use super::{JsonResponse};
 use std::collections::HashMap;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use opendoc::api::{Method};
-use opendoc::reflect::TypeInfo;
+use api_doc::api::{Method};
+use api_doc::reflect::TypeInfo;
 use crate::encoding::method_api;
 
 impl JsonResponse {
@@ -107,8 +107,8 @@ impl DispatchTable {
         }
     }
 
-    pub fn get_api(&self) -> opendoc::api::API {
-        opendoc::api::API {
+    pub fn get_api(&self) -> api_doc::api::API {
+        api_doc::api::API {
             version: "1.0.0".into(),
             methods: self.sync_runners.values().map(|x| (*x.get_api()).clone()).collect(),
             types: Vec::new(),
