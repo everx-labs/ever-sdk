@@ -9,6 +9,7 @@ FROM alpine:latest as ton-sdk-src
 RUN addgroup --gid 1000 jenkins && \
     adduser -D -G jenkins jenkins
 COPY --chown=jenkins:jenkins Cargo.* *.md LICENSE /tonlabs/TON-SDK/
+COPY --chown=jenkins:jenkins api_doc      /tonlabs/TON-SDK/api_doc
 COPY --chown=jenkins:jenkins graphite      /tonlabs/TON-SDK/graphite
 COPY --chown=jenkins:jenkins ton_client    /tonlabs/TON-SDK/ton_client
 COPY --chown=jenkins:jenkins ton_sdk       /tonlabs/TON-SDK/ton_sdk
