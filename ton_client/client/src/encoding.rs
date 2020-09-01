@@ -74,13 +74,13 @@ impl OutputEncoding {
 
 //------------------------------------------------------------------------------------------------------
 
-pub(crate) fn method_api(name: &str) -> opendoc::api::Method {
-    opendoc::api::Method {
+pub(crate) fn method_api(name: &str) -> api_doc::api::Method {
+    api_doc::api::Method {
         name: name.into(),
         summary: None,
         description: None,
         params: vec![],
-        result: opendoc::api::Type::None,
+        result: api_doc::api::Type::None,
         errors: None,
     }
 }

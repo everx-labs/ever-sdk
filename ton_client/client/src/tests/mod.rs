@@ -101,10 +101,6 @@ impl log::Log for SimpleLogger {
     fn flush(&self) {}
 }
 
-pub(crate) fn get_network_address() -> String {
-    NODE_ADDRESS.clone()
-}
-
 #[derive(Clone)]
 pub(crate) struct TestClient {
     context: InteropContext,
@@ -117,7 +113,7 @@ impl TestClient {
     }
 
     pub(crate) fn get_network_address() -> String {
-        std::env::var("TON_NETWORK_ADDRESS").unwrap_or("http://localhost:8080".to_owned())
+        NODE_ADDRESS.clone()
     }
 
     pub(crate) fn new() -> Self {

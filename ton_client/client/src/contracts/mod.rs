@@ -581,3 +581,4 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
     handlers.spawn_no_api("contracts.process.transaction",
         process_transaction);
 }
+

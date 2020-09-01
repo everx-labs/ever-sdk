@@ -35,7 +35,7 @@ pub fn json_sync_request(
         params_json)
 }
 
-pub fn get_api() -> opendoc::api::API {
+pub fn get_api() -> api_doc::api::API {
     Client::shared().get_api()
 }
 
