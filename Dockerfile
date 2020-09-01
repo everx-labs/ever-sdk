@@ -13,6 +13,7 @@ COPY --chown=jenkins:jenkins api_doc      /tonlabs/TON-SDK/api_doc
 COPY --chown=jenkins:jenkins graphite      /tonlabs/TON-SDK/graphite
 COPY --chown=jenkins:jenkins ton_client    /tonlabs/TON-SDK/ton_client
 COPY --chown=jenkins:jenkins ton_sdk       /tonlabs/TON-SDK/ton_sdk
+COPY --chown=jenkins:jenkins ton_sdk_cli       /tonlabs/TON-SDK/ton_sdk_cli
 VOLUME /tonlabs/TON-SDK
 
 FROM $TON_LABS_TYPES_IMAGE as ton-labs-types-src
