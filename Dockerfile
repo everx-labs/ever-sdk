@@ -10,9 +10,12 @@ FROM alpine:latest as ton-sdk-src
 RUN addgroup --gid 1000 jenkins && \
     adduser -D -G jenkins jenkins
 COPY --chown=jenkins:jenkins Cargo.* *.md LICENSE /tonlabs/TON-SDK/
-COPY --chown=jenkins:jenkins graphite      /tonlabs/TON-SDK/graphite
-COPY --chown=jenkins:jenkins ton_client    /tonlabs/TON-SDK/ton_client
-COPY --chown=jenkins:jenkins ton_sdk       /tonlabs/TON-SDK/ton_sdk
+COPY --chown=jenkins:jenkins graphite       /tonlabs/TON-SDK/graphite
+COPY --chown=jenkins:jenkins opendoc        /tonlabs/TON-SDK/opendoc
+COPY --chown=jenkins:jenkins opendoc_derive /tonlabs/TON-SDK/opendoc_derive
+COPY --chown=jenkins:jenkins opendoc_test   /tonlabs/TON-SDK/opendoc_test
+COPY --chown=jenkins:jenkins ton_client     /tonlabs/TON-SDK/ton_client
+COPY --chown=jenkins:jenkins ton_sdk        /tonlabs/TON-SDK/ton_sdk
 VOLUME /tonlabs/TON-SDK
 
 FROM $TON_LABS_TYPES_IMAGE as ton-labs-types-src
