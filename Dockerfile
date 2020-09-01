@@ -16,6 +16,7 @@ COPY --chown=jenkins:jenkins opendoc_derive /tonlabs/TON-SDK/opendoc_derive
 COPY --chown=jenkins:jenkins opendoc_test   /tonlabs/TON-SDK/opendoc_test
 COPY --chown=jenkins:jenkins ton_client     /tonlabs/TON-SDK/ton_client
 COPY --chown=jenkins:jenkins ton_sdk        /tonlabs/TON-SDK/ton_sdk
+COPY --chown=jenkins:jenkins ton_sdk_cli    /tonlabs/TON-SDK/ton_sdk_cli
 VOLUME /tonlabs/TON-SDK
 
 FROM $TON_LABS_TYPES_IMAGE as ton-labs-types-src
