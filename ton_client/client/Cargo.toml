@@ -16,6 +16,7 @@ api_doc_derive = { path = "../../api_doc/api_doc_derive" }
 
 ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }
 ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git" }
+ton_block_json = { git = "https://github.com/tonlabs/ton-labs-block-json.git" }
 sodalite = { git = "https://github.com/tonlabs/sodalite.git", features = ["rand"] }
 bip39 = { git = "https://github.com/tonlabs/bip39-rs.git" }
 
