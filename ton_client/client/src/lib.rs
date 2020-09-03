@@ -31,6 +31,7 @@ mod setup;
 mod contracts;
 mod crypto;
 mod tvm;
+mod abi;
 
 // TODO: uncomment when module will be ready
 // mod cell;

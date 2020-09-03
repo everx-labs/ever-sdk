@@ -19,6 +19,7 @@ pub mod keys;
 pub mod mnemonic;
 pub mod hdkey;
 pub(crate) mod internal;
+mod boxes;
 
 #[cfg(test)]
 mod tests;

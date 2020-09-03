@@ -55,7 +55,7 @@ impl Into<FunctionCallSet> for DeployFunctionCallSet {
 }
 
 #[doc(summary="Method that deploys a contract")]
-/// Method creates a deploy message signed with key_pair, sends it to the targer workchain,
+/// Method creates a deploy message signed with key_pair, sends it to the target workchain,
 /// waits for the result transaction and outbound messages and decodes the parameters
 /// returned by the constructor, using ABI.
 ///
@@ -63,13 +63,13 @@ impl Into<FunctionCallSet> for DeployFunctionCallSet {
 /// for message_retries_count times
 /// if the message was not delivered during message_expiration_timeout (see setup.SetupParams).
 ///
-/// If the contract does not implement Pragra Expire - the method waits for the result
+/// If the contract does not implement Pragma Expire - the method waits for the result
 /// transaction for message_processing_timeout (see setup.SetupParams),
 /// and exits with 1012 original error
 /// Before exiting, message is processed on the local transaction executor to check the possible reason
 /// why the transaction was not finalized (see resolve_error method documentation)
 /// and  if such error is found returns it,
-/// if not - returns disclainmer that the local execution was successful.
+/// if not - returns disclaimer that the local execution was successful.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ParamsOfDeploy {
@@ -96,7 +96,7 @@ pub(crate) struct ParamsOfEncodeUnsignedDeployMessage {
     #[serde(flatten)]
     pub call_set: DeployFunctionCallSet,
     /// list of initial values of contract public variables.
-    /// They are placed into the persistent strorage of an account and influence the contract future address.
+    /// They are placed into the persistent storage of an account and influence the contract future address.
     pub init_params: Option<serde_json::Value>,
     /// initial contract image - tvc file - result of contract compilation - converted to base64
     pub image_base64: String,
@@ -111,7 +111,7 @@ pub(crate) struct ParamsOfEncodeUnsignedDeployMessage {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ResultOfEncodeUnsignedDeployMessage {
-    /// struccture with encoded unsigned message
+    /// structure with encoded unsigned message
     pub encoded: EncodedUnsignedMessage,
     /// future contract address in raw format
     pub address_hex: String,
@@ -159,7 +159,7 @@ pub(crate) struct ParamsOfGetDeployData {
     /// contract ABI
     pub abi: Option<serde_json::Value>,
     /// list of initial values of contract public variables.
-    /// They are placed into the persistent strorage of an account and influence the contract future address.
+    /// They are placed into the persistent storage of an account and influence the contract future address.
     pub init_params: Option<serde_json::Value>,
     /// initial contract image - tvc file - result of contract compilation - converted to base64
     pub image_base64: Option<String>,
