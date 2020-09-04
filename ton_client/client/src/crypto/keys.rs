@@ -20,7 +20,8 @@ use ed25519_dalek::Keypair;
 use crate::crypto::internal::ton_crc16;
 
 //----------------------------------------------------------------------------------------- KeyPair
-
+#[doc(summary = "")]
+/// 
 #[derive(Serialize, Deserialize, Clone, TypeInfo)]
 pub struct KeyPair {
     pub public: String,
@@ -41,7 +42,8 @@ impl KeyPair {
 }
 
 //----------------------------------------------------------- convert_public_key_to_ton_safe_format
-
+#[doc(summary = "")]
+/// 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfConvertPublicKeyToTonSafeFormat {
     /// Public key.
@@ -54,7 +56,7 @@ pub struct ResultOfConvertPublicKeyToTonSafeFormat {
     pub ton_public_key: String,
 }
 
-/// Converts public key to ton safe_format.
+#[doc(summary = "Converts public key to ton safe_format")]
 pub fn convert_public_key_to_ton_safe_format(
     _context: &mut ClientContext,
     params: ParamsOfConvertPublicKeyToTonSafeFormat,
@@ -73,8 +75,7 @@ pub fn convert_public_key_to_ton_safe_format(
 }
 
 //----------------------------------------------------------------------- generate_random_sign_keys
-
-/// Generates random ed25519 key pair.
+#[doc(summary = "Generates random ed25519 key pair")]
 pub fn generate_random_sign_keys(_context: &mut ClientContext) -> ApiResult<KeyPair> {
     let mut rng = rand::thread_rng();
     let keypair = ed25519_dalek::Keypair::generate(&mut rng);

@@ -32,9 +32,11 @@ pub struct ParamsOfModularPower {
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ResultOfModularPower {
+    /// result of modular exponentiation
     pub modular_power: String,
 }
 
+#[doc(summary = "Modular exponentiation")]
 /// Performs modular exponentiation for big integers (`base`^`exponent` mod `modulus`).
 /// See [https://en.wikipedia.org/wiki/Modular_exponentiation]
 pub fn modular_power(
@@ -70,8 +72,9 @@ pub struct ResultOfFactorize {
     pub factors: [String; 2],
 }
 
+#[doc(summary = "Integer factorization")]
 /// Performs prime factorization – decomposition of a composite number
-/// into a product of smaller prime integers.
+/// into a product of smaller prime integers (factors).
 /// See [https://en.wikipedia.org/wiki/Integer_factorization]
 pub fn factorize(
     _context: &mut ClientContext,
@@ -200,7 +203,7 @@ pub struct ResultOfTonCrc16 {
     pub crc: u16,
 }
 
-/// Calculates CRC16 using TON algorithm.
+#[doc(summary = "Calculates CRC16 using TON algorithm.")]
 pub fn ton_crc16(
     _context: &mut ClientContext,
     params: ParamsOfTonCrc16,
@@ -224,7 +227,7 @@ pub struct ResultOfGenerateRandomBytes {
     pub bytes: String,
 }
 
-/// Generates random byte array of specified length.
+#[doc(summary = "Generates random byte array of the specified length in the spesified encoding")]
 pub fn generate_random_bytes(
     _context: &mut ClientContext,
     params: ParamsOfGenerateRandomBytes,

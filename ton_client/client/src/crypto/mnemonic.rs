@@ -42,14 +42,17 @@ const SPANISH_DICTIONARY: u8 = 8;
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfMnemonicWords {
+    /// dictionary identifier
     pub dictionary: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ResultOfMnemonicWords {
+    /// the list of mnemonic words
     pub words: String,
 }
 
+#[doc(summary = "Prints the list of words from the specified dictionary")]
 pub fn mnemonic_words(
     _context: &mut ClientContext,
     params: ParamsOfMnemonicWords,
@@ -63,15 +66,20 @@ pub fn mnemonic_words(
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfMnemonicFromRandom {
+    /// dictionary identifier
     pub dictionary: Option<u8>,
+    /// mnemonic word count
     pub word_count: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ResultOfMnemonicFromRandom {
+    /// string of mnemonic words
     pub phrase: String,
 }
 
+#[doc(summary = "Generates a random mnemonic")]
+/// Generates a random mnemnonic from the specified dictionary and word count
 pub fn mnemonic_from_random(
     _context: &mut ClientContext,
     params: ParamsOfMnemonicFromRandom,
@@ -96,6 +104,8 @@ pub struct ResultOfMnemonicFromEntropy {
     pub phrase: String,
 }
 
+#[doc(summary = "Generates mnemonic from the specified entropy")]
+/// Generates mnemonic from pre-generated entropy
 pub fn mnemonic_from_entropy(
     _context: &mut ClientContext,
     params: ParamsOfMnemonicFromEntropy,
@@ -110,16 +120,23 @@ pub fn mnemonic_from_entropy(
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfMnemonicVerify {
+    /// phrase
     pub phrase: String,
+    /// dictionary identifier
     pub dictionary: Option<u8>,
+    /// word count
     pub word_count: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ResultOfMnemonicVerify {
+    /// flag indicating the mnemonic is valid or not
     pub valid: bool,
 }
 
+#[doc(summary = "Validates a mnemonic phrase")]
+/// The phrase supplied will be checked for word length and validated according to the checksum
+/// specified in BIP0039.
 pub fn mnemonic_verify(
     _context: &mut ClientContext,
     params: ParamsOfMnemonicVerify,
@@ -134,12 +151,19 @@ pub fn mnemonic_verify(
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfMnemonicDeriveSignKeys {
+    /// phrase
     pub phrase: String,
+    /// derivation path, for instance "m/44'/396'/0'/0/0"
     pub path: Option<String>,
+    /// dictionary identifier
     pub dictionary: Option<u8>,
+    /// word count
     pub word_count: Option<u8>,
 }
 
+#[doc(summary = "Derives a key pair for signing from the seed phrase")]
+/// Validates the seed phrase, generates master key and then derives
+/// the key pair from the master key and the specified path
 pub fn mnemonic_derive_sign_keys(
     _context: &mut ClientContext,
     params: ParamsOfMnemonicDeriveSignKeys,

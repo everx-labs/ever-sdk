@@ -26,11 +26,11 @@ pub struct ParamsOfHash {
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ResultOfHash {
-    /// Hex encoded hash of input `data`.
+    /// Hex-encoded hash of input `data`.
     pub hash: String,
 }
 
-/// Calculates SHA256 hash of specified data.
+#[doc(summary = "Calculates SHA256 hash of the specified data.")]
 pub fn sha256(
     _context: &mut ClientContext,
     params: ParamsOfHash,
@@ -43,7 +43,7 @@ pub fn sha256(
 }
 
 
-/// Calculates SHA512 hash of specified data.
+#[doc(summary = "Calculates SHA512 hash of the specified data.")]
 pub fn sha512(
     _context: &mut ClientContext,
     params: ParamsOfHash,
