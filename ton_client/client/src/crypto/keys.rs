@@ -24,7 +24,9 @@ use crate::crypto::internal::ton_crc16;
 /// 
 #[derive(Serialize, Deserialize, Clone, TypeInfo)]
 pub struct KeyPair {
+    /// public key
     pub public: String,
+    /// private key
     pub secret: String,
 }
 
@@ -42,8 +44,7 @@ impl KeyPair {
 }
 
 //----------------------------------------------------------- convert_public_key_to_ton_safe_format
-#[doc(summary = "")]
-/// 
+
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfConvertPublicKeyToTonSafeFormat {
     /// Public key.

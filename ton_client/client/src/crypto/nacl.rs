@@ -27,7 +27,7 @@ fn sign(unsigned: Vec<u8>, secret: Vec<u8>) -> ApiResult<Vec<u8>> {
 }
 
 //------------------------------------------------------------------------------- nacl_sign_keypair
-#[doc(summary = "Randomly generates a key pair")]
+#[doc(summary = "Generates a key pair from random seed")]
 pub fn nacl_sign_keypair(_context: &mut ClientContext) -> ApiResult<KeyPair> {
     let mut sk = [0u8; 64];
     let mut pk = [0u8; 32];
@@ -36,14 +36,14 @@ pub fn nacl_sign_keypair(_context: &mut ClientContext) -> ApiResult<KeyPair> {
 }
 
 //------------------------------------------------------------------------ sign_keypair_from_secret
-#[doc(summary = "")]
-/// 
+
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclSignKeyPairFromSecret {
-    /// Signer's secret key.
+    /// secret key
     pub secret: String,
 }
 
+/// Generates a key pair for signing from the secret key
 pub fn nacl_sign_keypair_from_secret_key(
     _context: &mut ClientContext,
     params: ParamsOfNaclSignKeyPairFromSecret,
@@ -59,8 +59,7 @@ pub fn nacl_sign_keypair_from_secret_key(
 
 
 //--------------------------------------------------------------------------------------- nacl_sign
-#[doc(summary = "")]
-/// 
+
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclSign {
     /// Data that must be signed.
@@ -77,7 +76,7 @@ pub struct ResultOfNaclSign {
     pub signed: String,
 }
 
-/// Signs a data using the signer's secret key.
+/// Signs data using the signer's secret key.
 pub fn nacl_sign(_context: &mut ClientContext, params: ParamsOfNaclSign) -> ApiResult<ResultOfNaclSign> {
     let signed = sign(params.unsigned.decode()?, hex_decode(&params.secret)?)?;
     let encoding = params.output_encoding.unwrap_or(OutputEncoding::Base64);
@@ -87,8 +86,7 @@ pub fn nacl_sign(_context: &mut ClientContext, params: ParamsOfNaclSign) -> ApiR
 }
 
 //------------------------------------------------------------------------------ nacl_sign_detached
-#[doc(summary = "")]
-/// 
+
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclSignDetached {
     /// Data that must be signed.
@@ -103,6 +101,7 @@ pub struct ResultOfNaclSignDetached {
     pub sign: String,
 }
 
+///???
 pub fn nacl_sign_detached(_context: &mut ClientContext, params: ParamsOfNaclSign) -> ApiResult<ResultOfNaclSignDetached> {
     let signed = sign(params.unsigned.decode()?, hex_decode(&params.secret)?)?;
     let mut sign: Vec<u8> = Vec::new();
@@ -116,8 +115,7 @@ pub fn nacl_sign_detached(_context: &mut ClientContext, params: ParamsOfNaclSign
 }
 
 //---------------------------------------------------------------------------------- nacl_sign_open
-#[doc(summary = "")]
-/// 
+
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclSignOpen {
     /// Signed data that must be unsigned.
