@@ -18,8 +18,8 @@ pub mod nacl;
 pub mod keys;
 pub mod mnemonic;
 pub mod hdkey;
+pub mod boxes;
 pub(crate) mod internal;
-mod boxes;
 
 #[cfg(test)]
 mod tests;

@@ -13,15 +13,15 @@
 
 use sha2::{Digest};
 use crate::client::ClientContext;
-use crate::encoding::{InputData};
 use crate::error::{ApiResult};
+use crate::encoding::base64_decode;
 
 //--------------------------------------------------------------------------------------------- sha
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfHash {
-    /// Input data for hash calculation.
-    pub data: InputData,
+    /// Input data for hash calculation. Encoded with `base64`.
+    pub data: String,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo)]
@@ -36,7 +36,7 @@ pub fn sha256(
     params: ParamsOfHash,
 ) -> ApiResult<ResultOfHash> {
     let mut hasher = sha2::Sha256::new();
-    hasher.input(params.data.decode()?);
+    hasher.input(base64_decode(&params.data)?);
     Ok(ResultOfHash {
         hash: hex::encode(hasher.result().to_vec())
     })
@@ -49,7 +49,7 @@ pub fn sha512(
     params: ParamsOfHash,
 ) -> ApiResult<ResultOfHash> {
     let mut hasher = sha2::Sha512::new();
-    hasher.input(params.data.decode()?);
+    hasher.input(base64_decode(&params.data)?);
     Ok(ResultOfHash {
         hash: hex::encode(hasher.result().to_vec())
     })

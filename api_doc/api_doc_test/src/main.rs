@@ -8,6 +8,17 @@ use api_doc::api::{Method};
 pub struct StringId (String);
 pub type BlockId = StringId;
 
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub enum EnumWithValues {
+    Foo = 2, Bar
+}
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub enum EnumWithTypes {
+    Foo(String, String),
+    Bar(u32)
+}
+
 #[doc(summary = "Foo")]
 /// Foo struct
 #[derive(Serialize, Deserialize, TypeInfo, Default)]
@@ -33,6 +44,9 @@ struct Bar {
     pub arr: [u64; 2],
 }
 
+#[derive(Serialize, Deserialize, TypeInfo)]
+struct FooHandle(u32);
+
 #[method_info(name = "module.baz")]
 /// This is baz method
 fn baz(_params: Foo) -> Bar {
@@ -48,6 +62,9 @@ fn reflect<T: TypeInfo>() {
 fn main() {
     reflect::<Foo>();
     reflect::<Bar>();
+    reflect::<EnumWithValues>();
+    reflect::<EnumWithTypes>();
+    reflect::<FooHandle>();
     println!("{:?}", baz_method());
 
     let _ = baz(Foo::default());

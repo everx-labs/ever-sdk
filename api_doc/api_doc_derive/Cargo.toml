@@ -9,6 +9,7 @@ proc-macro = true
 
 [dependencies]
 syn = { version = "1.0", features = ["full"] }
+serde_json = "1.0.57"
 quote = "1.0"
 api_doc = { path = "../api_doc" }
 

@@ -2,6 +2,7 @@ use serde_json::Value;
 use crate::abi::abi::Abi;
 use crate::error::ApiResult;
 
+#[derive(Serialize, Deserialize, TypeInfo)]
 pub enum MessageType {
     FunctionInput,
     FunctionOutput,

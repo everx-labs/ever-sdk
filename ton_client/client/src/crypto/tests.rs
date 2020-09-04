@@ -3,7 +3,6 @@ use crate::crypto::math::{
     ResultOfFactorize, ParamsOfFactorize, ResultOfModularPower, ParamsOfModularPower,
     ResultOfTonCrc16, ParamsOfTonCrc16, ResultOfGenerateRandomBytes, ParamsOfGenerateRandomBytes,
 };
-use crate::encoding::{InputData, OutputEncoding};
 use crate::crypto::hash::{ResultOfHash, ParamsOfHash};
 use crate::crypto::keys::{
     ResultOfConvertPublicKeyToTonSafeFormat, ParamsOfConvertPublicKeyToTonSafeFormat, KeyPair,
@@ -13,6 +12,18 @@ use crate::crypto::nacl::{ParamsOfNaclSignKeyPairFromSecret, ParamsOfNaclSign, R
 use crate::crypto::mnemonic::{ResultOfMnemonicWords, ParamsOfMnemonicWords, ParamsOfMnemonicFromRandom, ResultOfMnemonicFromRandom, ResultOfMnemonicFromEntropy, ParamsOfMnemonicFromEntropy, ResultOfMnemonicVerify, ParamsOfMnemonicVerify, ParamsOfMnemonicDeriveSignKeys};
 use crate::crypto::hdkey::{ResultOfHDKeyXPrvFromMnemonic, ParamsOfHDKeyXPrvFromMnemonic, ResultOfHDKeySecretFromXPrv, ParamsOfHDKeySecretFromXPrv, ResultOfHDKeyPublicFromXPrv, ParamsOfHDKeyPublicFromXPrv, ResultOfHDKeyDeriveFromXPrv, ParamsOfHDKeyDeriveFromXPrv, ResultOfHDKeyDeriveFromXPrvPath, ParamsOfHDKeyDeriveFromXPrvPath};
 
+fn base64_from_hex(hex: &str) -> String {
+    base64::encode(&hex::decode(hex).unwrap())
+}
+
+fn hex_from_base64(b64: &str) -> String {
+    hex::encode(&base64::decode(b64).unwrap())
+}
+
+fn text_from_base64(b64: &str) -> String {
+    String::from_utf8(base64::decode(b64).unwrap()).unwrap()
+}
+
 #[test]
 fn math() {
     TestClient::init_log();
@@ -21,8 +32,8 @@ fn math() {
     let result: ResultOfFactorize = client.request("crypto.factorize", ParamsOfFactorize {
         composite: "17ED48941A08F981".into()
     });
-    assert_eq!("494C553B", result.products[0]);
-    assert_eq!("53911073", result.products[1]);
+    assert_eq!("494C553B", result.factors[0]);
+    assert_eq!("53911073", result.factors[1]);
 
     let result: ResultOfModularPower = client.request("crypto.modular_power",
         ParamsOfModularPower {
@@ -33,28 +44,13 @@ fn math() {
     assert_eq!("63bfdf", result.modular_power);
 
     let result: ResultOfTonCrc16 = client.request("crypto.ton_crc16", ParamsOfTonCrc16 {
-        data: InputData::hex("0123456789abcdef"),
+        data: base64_from_hex("0123456789abcdef"),
     });
     assert_eq!(result.crc, 43349);
 
     let result: ResultOfGenerateRandomBytes = client.request("crypto.generate_random_bytes",
         ParamsOfGenerateRandomBytes {
             length: 32,
-            output_encoding: Some(OutputEncoding::Hex),
-        });
-    assert_eq!(result.bytes.len(), 64);
-
-    let result: ResultOfGenerateRandomBytes = client.request("crypto.generate_random_bytes",
-        ParamsOfGenerateRandomBytes {
-            length: 32,
-            output_encoding: Some(OutputEncoding::HexUppercase),
-        });
-    assert_eq!(result.bytes.len(), 64);
-
-    let result: ResultOfGenerateRandomBytes = client.request("crypto.generate_random_bytes",
-        ParamsOfGenerateRandomBytes {
-            length: 32,
-            output_encoding: Some(OutputEncoding::Base64),
         });
     assert_eq!(result.bytes.len(), 44);
 }
@@ -66,27 +62,27 @@ fn hash() {
     let client = TestClient::new();
 
     let result: ResultOfHash = client.request("crypto.sha512", ParamsOfHash {
-        data: InputData::text("Message to hash with sha 512"),
+        data: base64::encode("Message to hash with sha 512"),
     });
     assert_eq!("2616a44e0da827f0244e93c2b0b914223737a6129bc938b8edf2780ac9482960baa9b7c7cdb11457c1cebd5ae77e295ed94577f32d4c963dc35482991442daa5", result.hash);
 
     let result: ResultOfHash = client.request("crypto.sha256", ParamsOfHash {
-        data: InputData::text("Message to hash with sha 256"),
+        data: base64::encode("Message to hash with sha 256"),
     });
     assert_eq!("16fd057308dd358d5a9b3ba2de766b2dfd5e308478fc1f7ba5988db2493852f5", result.hash);
 
     let result: ResultOfHash = client.request("crypto.sha256", ParamsOfHash {
-        data: InputData::hex("4d65737361676520746f206861736820776974682073686120323536"),
+        data: base64_from_hex("4d65737361676520746f206861736820776974682073686120323536"),
     });
     assert_eq!("16fd057308dd358d5a9b3ba2de766b2dfd5e308478fc1f7ba5988db2493852f5", result.hash);
 
     let result: ResultOfHash = client.request("crypto.sha256", ParamsOfHash {
-        data: InputData::base64("TWVzc2FnZSB0byBoYXNoIHdpdGggc2hhIDI1Ng=="),
+        data: "TWVzc2FnZSB0byBoYXNoIHdpdGggc2hhIDI1Ng==".into(),
     });
     assert_eq!("16fd057308dd358d5a9b3ba2de766b2dfd5e308478fc1f7ba5988db2493852f5", result.hash);
 
     let result: ResultOfHash = client.request("crypto.sha256", ParamsOfHash {
-        data: InputData::text("Message to hash with sha 256"),
+        data: base64::encode("Message to hash with sha 256"),
     });
     assert_eq!("16fd057308dd358d5a9b3ba2de766b2dfd5e308478fc1f7ba5988db2493852f5", result.hash);
 }
@@ -113,15 +109,14 @@ fn scrypt() {
     let client = TestClient::new();
 
     let result: ResultOfScrypt = client.request("crypto.scrypt", ParamsOfScrypt {
-        password: InputData::text("Test Password"),
-        salt: InputData::text("Test Salt"),
+        password: base64::encode("Test Password"),
+        salt: base64::encode("Test Salt"),
         log_n: 10,
         r: 8,
         p: 16,
         dk_len: 64,
-        output_encoding: Some(OutputEncoding::Hex),
     });
-    assert_eq!("52e7fcf91356eca55fc5d52f16f5d777e3521f54e3c570c9bbb7df58fc15add73994e5db42be368de7ebed93c9d4f21f9be7cc453358d734b04a057d0ed3626d", result.bytes);
+    assert_eq!(hex_from_base64(&result.bytes), "52e7fcf91356eca55fc5d52f16f5d777e3521f54e3c570c9bbb7df58fc15add73994e5db42be368de7ebed93c9d4f21f9be7cc453358d734b04a057d0ed3626d");
 }
 
 #[test]
@@ -141,25 +136,22 @@ fn nacl() {
     assert_eq!(result.public, "aa5533618573860a7e1bf19f34bd292871710ed5b2eafa0dcdbb33405f2231c6");
 
     let result: ResultOfNaclSign = client.request("crypto.nacl_sign", ParamsOfNaclSign {
-        unsigned: InputData::text("Test Message"),
+        unsigned: base64::encode("Test Message"),
         secret: "56b6a77093d6fdf14e593f36275d872d75de5b341942376b2a08759f3cbae78f1869b7ef29d58026217e9cf163cbfbd0de889bdf1bf4daebf5433a312f5b8d6e".into(),
-        output_encoding: None,
     });
     assert_eq!(result.signed, "+wz+QO6l1slgZS5s65BNqKcu4vz24FCJz4NSAxef9lu0jFfs8x3PzSZRC+pn5k8+aJi3xYMA3BQzglQmjK3hA1Rlc3QgTWVzc2FnZQ==");
 
     let result: ResultOfNaclSignOpen = client.request("crypto.nacl_sign_open", ParamsOfNaclSignOpen {
-        signed: InputData::hex("fb0cfe40eea5d6c960652e6ceb904da8a72ee2fcf6e05089cf835203179ff65bb48c57ecf31dcfcd26510bea67e64f3e6898b7c58300dc14338254268cade10354657374204d657373616765"),
+        signed: base64_from_hex("fb0cfe40eea5d6c960652e6ceb904da8a72ee2fcf6e05089cf835203179ff65bb48c57ecf31dcfcd26510bea67e64f3e6898b7c58300dc14338254268cade10354657374204d657373616765"),
         public: "1869b7ef29d58026217e9cf163cbfbd0de889bdf1bf4daebf5433a312f5b8d6e".into(),
-        output_encoding: Some(OutputEncoding::Text),
     });
-    assert_eq!(result.unsigned, "Test Message");
+    assert_eq!(text_from_base64(&result.unsigned), "Test Message");
 
     let result: ResultOfNaclSignDetached = client.request("crypto.nacl_sign_detached", ParamsOfNaclSign {
-        unsigned: InputData::text("Test Message"),
+        unsigned: base64::encode("Test Message"),
         secret: "56b6a77093d6fdf14e593f36275d872d75de5b341942376b2a08759f3cbae78f1869b7ef29d58026217e9cf163cbfbd0de889bdf1bf4daebf5433a312f5b8d6e".into(),
-        output_encoding: None,
     });
-    assert_eq!(result.sign, "fb0cfe40eea5d6c960652e6ceb904da8a72ee2fcf6e05089cf835203179ff65bb48c57ecf31dcfcd26510bea67e64f3e6898b7c58300dc14338254268cade103");
+    assert_eq!(result.signature, "fb0cfe40eea5d6c960652e6ceb904da8a72ee2fcf6e05089cf835203179ff65bb48c57ecf31dcfcd26510bea67e64f3e6898b7c58300dc14338254268cade103");
 
     // Box
 
@@ -174,54 +166,48 @@ fn nacl() {
     assert_eq!(result.public, "a53b003d3ffc1e159355cb37332d67fc235a7feb6381e36c803274074dc3933a");
 
     let result: ResultOfNaclBox = client.request("crypto.nacl_box", ParamsOfNaclBox {
-        decrypted: InputData::text("Test Message"),
+        decrypted: base64::encode("Test Message"),
         nonce: "cd7f99924bf422544046e83595dd5803f17536f5c9a11746".into(),
         their_public: "c4e2d9fe6a6baf8d1812b799856ef2a306291be7a7024837ad33a8530db79c6b".into(),
         secret: "d9b9dc5033fb416134e5d2107fdbacab5aadb297cb82dbdcd137d663bac59f7f".into(),
-        output_encoding: None,
     });
     assert_eq!(result.encrypted, "li4XED4kx/pjQ2qdP0eR2d/K30uN94voNADxwA==");
 
     let result: ResultOfNaclBoxOpen = client.request("crypto.nacl_box_open", ParamsOfNaclBoxOpen {
-        encrypted: InputData::hex("962e17103e24c7fa63436a9d3f4791d9dfcadf4b8df78be83400f1c0"),
+        encrypted: base64_from_hex("962e17103e24c7fa63436a9d3f4791d9dfcadf4b8df78be83400f1c0"),
         nonce: "cd7f99924bf422544046e83595dd5803f17536f5c9a11746".into(),
         their_public: "c4e2d9fe6a6baf8d1812b799856ef2a306291be7a7024837ad33a8530db79c6b".into(),
         secret: "d9b9dc5033fb416134e5d2107fdbacab5aadb297cb82dbdcd137d663bac59f7f".into(),
-        output_encoding: Some(OutputEncoding::Text),
     });
-    assert_eq!(result.decrypted, "Test Message");
+    assert_eq!(text_from_base64(&result.decrypted), "Test Message");
 
     // Secret box
 
     let result: ResultOfNaclBox = client.request("crypto.nacl_secret_box", ParamsOfNaclSecretBox {
-        decrypted: InputData::text("Test Message"),
+        decrypted: base64::encode("Test Message"),
         nonce: "2a33564717595ebe53d91a785b9e068aba625c8453a76e45".into(),
         key: "8f68445b4e78c000fe4d6b7fc826879c1e63e3118379219a754ae66327764bd8".into(),
-        output_encoding: None,
     });
     assert_eq!(result.encrypted, "JL7ejKWe2KXmrsns41yfXoQF0t/C1Q8RGyzQ2A==");
 
     let result: ResultOfNaclBoxOpen = client.request("crypto.nacl_secret_box_open", ParamsOfNaclSecretBoxOpen {
-        encrypted: InputData::hex("24bede8ca59ed8a5e6aec9ece35c9f5e8405d2dfc2d50f111b2cd0d8"),
+        encrypted: base64_from_hex("24bede8ca59ed8a5e6aec9ece35c9f5e8405d2dfc2d50f111b2cd0d8"),
         nonce: "2a33564717595ebe53d91a785b9e068aba625c8453a76e45".into(),
         key: "8f68445b4e78c000fe4d6b7fc826879c1e63e3118379219a754ae66327764bd8".into(),
-        output_encoding: Some(OutputEncoding::Text),
     });
-    assert_eq!(result.decrypted, "Test Message");
+    assert_eq!(text_from_base64(&result.decrypted), "Test Message");
 
     let e: ResultOfNaclBox = client.request("crypto.nacl_secret_box", ParamsOfNaclSecretBox {
-        decrypted: InputData::text("Text with \' and \" and : {}"),
+        decrypted: base64::encode("Text with \' and \" and : {}"),
         nonce: "2a33564717595ebe53d91a785b9e068aba625c8453a76e45".into(),
         key: "8f68445b4e78c000fe4d6b7fc826879c1e63e3118379219a754ae66327764bd8".into(),
-        output_encoding: Some(OutputEncoding::Base64),
     });
     let d: ResultOfNaclBoxOpen = client.request("crypto.nacl_secret_box_open", ParamsOfNaclSecretBoxOpen {
-        encrypted: InputData::base64(&e.encrypted),
+        encrypted: e.encrypted,
         nonce: "2a33564717595ebe53d91a785b9e068aba625c8453a76e45".into(),
         key: "8f68445b4e78c000fe4d6b7fc826879c1e63e3118379219a754ae66327764bd8".into(),
-        output_encoding: Some(OutputEncoding::Text),
     });
-    assert_eq!(d.decrypted, "Text with \' and \" and : {}");
+    assert_eq!(text_from_base64(&d.decrypted), "Text with \' and \" and : {}");
 
 
 }
@@ -248,7 +234,7 @@ fn mnemonic() {
     }
 
     let result: ResultOfMnemonicFromEntropy = client.request("crypto.mnemonic_from_entropy", ParamsOfMnemonicFromEntropy {
-        entropy: InputData::hex("00112233445566778899AABBCCDDEEFF"),
+        entropy: "00112233445566778899AABBCCDDEEFF".into(),
         dictionary: Some(1),
         word_count: Some(12),
     });
@@ -328,7 +314,7 @@ fn mnemonic() {
     assert_eq!(result.phrase.split(" ").count(), 12);
 
     let result: ResultOfMnemonicFromEntropy = client.request("crypto.mnemonic_from_entropy", ParamsOfMnemonicFromEntropy {
-        entropy: InputData::hex("2199ebe996f14d9e4e2595113ad1e627"),
+        entropy: "2199ebe996f14d9e4e2595113ad1e627".into(),
         dictionary: None,
         word_count: None,
     });

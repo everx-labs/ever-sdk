@@ -52,7 +52,7 @@ fn method_from(meta: &Meta, func: &ItemFn) -> api::Method {
 fn field_from_fn_arg(a: &FnArg) -> api::Field {
     if let FnArg::Typed(ref a) = a {
         if let Pat::Ident(i) = a.pat.as_ref() {
-            return field_from(&i.ident, &a.attrs, type_from(&a.ty));
+            return field_from(Some(&i.ident), &a.attrs, type_from(&a.ty));
         }
     }
     panic!("Function can't be struct member");

@@ -22,11 +22,11 @@ use pbkdf2::pbkdf2;
 use sha2::Sha512;
 use rand::RngCore;
 use crate::client::ClientContext;
-use crate::encoding::InputData;
 use crate::crypto::{
     DEFAULT_MNEMONIC_WORD_COUNT, DEFAULT_HDKEY_DERIVATION_PATH, DEFAULT_HDKEY_COMPLIANT,
     DEFAULT_MNEMONIC_DICTIONARY,
 };
+use crate::encoding::hex_decode;
 
 const TON_DICTIONARY: u8 = 0;
 const ENGLISH_DICTIONARY: u8 = 1;
@@ -85,7 +85,8 @@ pub fn mnemonic_from_random(
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfMnemonicFromEntropy {
-    pub entropy: InputData,
+    // Entropy bytes. Hex encoded.
+    pub entropy: String,
     pub dictionary: Option<u8>,
     pub word_count: Option<u8>,
 }
@@ -101,7 +102,7 @@ pub fn mnemonic_from_entropy(
 ) -> ApiResult<ResultOfMnemonicFromEntropy> {
     let mnemonic = mnemonics(params.dictionary, params.word_count)?;
     Ok(ResultOfMnemonicFromEntropy {
-        phrase: mnemonic.phrase_from_entropy(&params.entropy.decode()?)?
+        phrase: mnemonic.phrase_from_entropy(&hex_decode(&params.entropy)?)?
     })
 }
 

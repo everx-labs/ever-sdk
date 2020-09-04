@@ -89,7 +89,7 @@ fn wait_for() {
 #[test]
 fn subscribe_for_transactions_with_addresses() {
     let client = TestClient::new();
-    let keys = client.generate_kepair();
+    let keys = client.generate_sign_keys();
     let deploy_params = ParamsOfDeploy{
         call_set: DeployFunctionCallSet {
             abi: HELLO_ABI.clone(),

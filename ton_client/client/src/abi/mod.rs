@@ -21,4 +21,7 @@ mod abi;
 mod decode;
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
+    handlers.call("abi.encode_deploy_message", encode::encode_deploy_message);
+    handlers.call("abi.encode_run_message", encode::encode_run_message);
+    handlers.call("abi.encode_with_signature", encode::encode_with_signature);
 }

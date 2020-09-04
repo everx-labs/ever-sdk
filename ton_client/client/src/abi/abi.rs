@@ -1,8 +1,10 @@
 use serde_json::Value;
 
+#[derive(Serialize, Deserialize, TypeInfo)]
 pub struct AbiHandle(u32);
 
+#[derive(Serialize, Deserialize, TypeInfo)]
 pub enum Abi {
-    Abi(Value),
+    Value(Value),
     Handle(AbiHandle)
 }

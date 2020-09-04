@@ -50,9 +50,26 @@ impl Method {
 #[serde(rename_all = "camelCase")]
 pub struct Field {
     pub name: String,
+    pub value: Type,
     pub summary: Option<String>,
     pub description: Option<String>,
-    pub value: Type,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum ConstValue {
+    None,
+    Bool(String),
+    String(String),
+    Number(String),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Const {
+    pub name: String,
+    pub value: ConstValue,
+    pub summary: Option<String>,
+    pub description: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -68,6 +85,8 @@ pub enum Type {
     Optional(Box<Type>),
     Array(Box<Type>),
     Struct(Vec<Field>),
+    EnumOfConsts(Vec<Const>),
+    EnumOfTypes(Vec<Field>),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

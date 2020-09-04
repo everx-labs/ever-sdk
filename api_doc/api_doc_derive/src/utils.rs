@@ -7,10 +7,10 @@ use api_doc::api;
 use quote::__private::TokenStream;
 
 
-pub(crate) fn field_from(name: &syn::Ident, attrs: &Vec<Attribute>, value: api::Type) -> api::Field {
+pub(crate) fn field_from(name: Option<&syn::Ident>, attrs: &Vec<Attribute>, value: api::Type) -> api::Field {
     let (summary, description) = doc_from(attrs);
     api::Field {
-        name: name.to_string(),
+        name: name.map(|x|x.to_string()).unwrap_or("".into()),
         summary,
         description,
         value,
@@ -38,6 +38,29 @@ pub(crate) fn field_to_tokens(f: &api::Field) -> TokenStream {
     let (summary, description) = doc_to_tokens(&f.summary, &f.description);
     quote! {
         api_doc::api::Field {
+            name: #name.into(),
+            summary: #summary,
+            description: #description,
+            value: #value,
+        }
+    }
+}
+
+pub(crate) fn const_value_to_tokens(v: &api::ConstValue) -> TokenStream {
+    match v {
+        api::ConstValue::None => quote! { api_doc::api::ConstValue::None },
+        api::ConstValue::Bool(repr) => quote! { api_doc::api::ConstValue::Bool(#repr.into()) },
+        api::ConstValue::String(repr) => quote! { api_doc::api::ConstValue::String(#repr.into()) },
+        api::ConstValue::Number(repr) => quote! { api_doc::api::ConstValue::Number(#repr.into()) },
+    }
+}
+
+pub(crate) fn const_to_tokens(c: &api::Const) -> TokenStream {
+    let name = &c.name;
+    let value = const_value_to_tokens(&c.value);
+    let (summary, description) = doc_to_tokens(&c.summary, &c.description);
+    quote! {
+        api_doc::api::Const {
             name: #name.into(),
             summary: #summary,
             description: #description,
@@ -85,6 +108,14 @@ fn type_to_tokens(t: &api::Type) -> TokenStream {
         api::Type::Struct(fields) => {
             let field_types = fields.iter().map(|x| field_to_tokens(x));
             quote! { api_doc::api::Type::Struct([#(#field_types),*].into()) }
+        }
+        api::Type::EnumOfConsts(consts) => {
+            let consts = consts.iter().map(|x| const_to_tokens(x));
+            quote! { api_doc::api::Type::EnumOfConsts([#(#consts),*].into()) }
+        }
+        api::Type::EnumOfTypes(types) => {
+            let types = types.iter().map(|x| field_to_tokens(x));
+            quote! { api_doc::api::Type::EnumOfTypes([#(#types),*].into()) }
         }
     }
 }

@@ -28,6 +28,7 @@ use super::{tc_read_json_response, tc_destroy_json_response};
 use serde_json::{Value};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
+use crate::crypto::nacl::{ParamsOfNaclSignKeyPairFromSecret, ParamsOfNaclSignDetached, ResultOfNaclSignDetached};
 
 const ROOT_CONTRACTS_PATH: &str = "src/tests/contracts/";
 const LOG_CGF_PATH: &str = "src/tests/log_cfg.yaml";
@@ -101,12 +102,57 @@ impl log::Log for SimpleLogger {
     fn flush(&self) {}
 }
 
+pub const SUBSCRIBE: &str = "Subscription";
+pub const PIGGY_BANK: &str = "Piggy";
+pub const WALLET: &str = "LimitWallet";
+pub const SIMPLE_WALLET: &str = "Wallet";
+pub const GIVER: &str = "Giver";
+pub const GIVER_WALLET: &str = "GiverWallet";
+pub const HELLO: &str = "Hello";
+pub const EVENTS: &str = "Events";
+
 #[derive(Clone)]
 pub(crate) struct TestClient {
     context: InteropContext,
 }
 
+
 impl TestClient {
+    pub fn giver_address() -> &'static str {
+        "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94"
+    }
+    pub fn wallet_address() -> &'static str {
+        "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13"
+    }
+    pub fn wallet_keys() -> Option<KeyPair> { get_wallet_keys() }
+
+    pub fn contracts_path(abi_version: u8) -> String {
+        format!("{}abi_v{}/", ROOT_CONTRACTS_PATH, abi_version)
+    }
+
+    pub fn node_address() -> String {
+        std::env::var("TON_NETWORK_ADDRESS")
+            //.unwrap_or("cinet.tonlabs.io".to_owned())
+            .unwrap_or("http://localhost".to_owned())
+        //.unwrap_or("net.ton.dev".to_owned())
+    }
+
+    pub fn node_se() -> bool {
+        std::env::var("USE_NODE_SE").unwrap_or("true".to_owned()) == "true".to_owned()
+    }
+
+    pub fn abi(name: &str, version: u8) -> Value {
+        read_abi(format!("{}{}.abi.json", Self::contracts_path(version), name))
+    }
+
+    pub fn tvc(name: &str, abi_version: u8) -> String {
+        base64::encode(&std::fs::read(format!("{}{}.tvc", Self::contracts_path(abi_version), name)).unwrap())
+    }
+
+    pub fn package(name: &str, abi_version: u8) -> (Value, String) {
+        (Self::abi(name, abi_version), Self::tvc(name, abi_version))
+    }
+
     pub(crate) fn init_log() {
         let log_cfg_path = LOG_CGF_PATH;
         let _ = log4rs::init_file(log_cfg_path, Default::default());
@@ -254,10 +300,21 @@ impl TestClient {
         result.address
     }
 
-    pub(crate) fn generate_kepair(&self) -> KeyPair {
+    pub(crate) fn generate_sign_keys(&self) -> KeyPair {
         self.request("crypto.generate_random_sign_keys", ())
     }
 
+    pub fn sign_detached(&self, data: &str, keys: &KeyPair) -> String {
+        let sign_keys: KeyPair = self.request("crypto.nacl_sign_keypair_from_secret", ParamsOfNaclSignKeyPairFromSecret {
+            secret: keys.secret.clone(),
+        });
+        let result: ResultOfNaclSignDetached = self.request("crypto.nacl_sign_detached", ParamsOfNaclSignDetached {
+            unsigned: data.into(),
+            secret: sign_keys.secret.clone(),
+
+        });
+        result.signature
+    }
 
     pub(crate) fn get_giver_address() -> String {
         if *NODE_SE {

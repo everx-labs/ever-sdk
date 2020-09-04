@@ -14,24 +14,26 @@
 extern crate scrypt;
 
 use crate::error::{ApiResult, ApiError};
-use crate::encoding::{InputData, OutputEncoding};
 use crate::client::ClientContext;
+use crate::encoding::base64_decode;
 
 //------------------------------------------------------------------------------------------ scrypt
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfScrypt {
-    pub password: InputData,
-    pub salt: InputData,
+    /// Password encoded with 'base64'.
+    pub password: String,
+    /// Salt encoded with `base64`.
+    pub salt: String,
     pub log_n: u8,
     pub r: u32,
     pub p: u32,
     pub dk_len: usize,
-    pub output_encoding: Option<OutputEncoding>,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ResultOfScrypt {
+    /// Bytes encoded with `Base64`.
     pub bytes: String,
 }
 
@@ -46,14 +48,13 @@ pub fn scrypt(
     let scrypt_params = scrypt::ScryptParams::new(params.log_n, params.r, params.p)
         .map_err(|err| ApiError::crypto_scrypt_failed(err))?;
     scrypt::scrypt(
-        &(params.password.decode()?),
-        &(params.salt.decode()?),
+        &(base64_decode(&params.password)?),
+        &(base64_decode(&params.salt)?),
         &scrypt_params,
         &mut result,
     ).map_err(|err| ApiError::crypto_scrypt_failed(err))?;
-    let encoding = params.output_encoding.unwrap_or(OutputEncoding::Base64);
     Ok(ResultOfScrypt {
-        bytes: encoding.encode(result)?
+        bytes: base64::encode(&result)
     })
 }
 

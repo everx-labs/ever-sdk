@@ -1,12 +1,13 @@
-use crate::abi::types::{Abi, Signing};
 use serde_json::Value;
 use crate::abi::abi::Abi;
 use crate::error::ApiResult;
+use crate::crypto::boxes::Signing;
+use crate::client::ClientContext;
 
 #[derive(Serialize, Deserialize, TypeInfo)]
-pub struct ResultOfCreateMessage {
-    message: String,
-    bytes_to_sign: Option<Stroing>,
+pub struct ResultOfEncodeMessage {
+    pub message: String,
+    pub bytes_to_sign: Option<String>,
 }
 
 //--------------------------------------------------------------------------- encode_deploy_message
@@ -15,11 +16,11 @@ pub struct ResultOfCreateMessage {
 pub struct ParamsOfDeployMessage {
     /// contract ABI
     pub abi: Abi,
+    /// TVC file encoded with `base64`.
+    pub tvc: String,
 
     /// List of initial values for contract public variables
     pub data: Option<Value>,
-    /// Offchain constructor input parameters according to contract ABI.
-    pub constructor_input: Option<Value>,
 
     /// Init function name. Default is `constructor`.
     pub function_name: Option<String>,
@@ -28,16 +29,17 @@ pub struct ParamsOfDeployMessage {
     /// Init function input parameters according to ABI.
     pub input: Value,
 
-    /// TVC file encoded with base64
-    pub image: String,
     /// Signing parameters. If omitted, message will be created unsigned.
     pub signing: Option<Signing>,
     /// Target workchain for destination address. Default is `0`.
     pub workchain_id: Option<i32>,
 }
 
-pub fn encode_deploy_message(params: ParamsOfDeployMessage) -> ApiResult<ResultOfCreateMessage> {
-    Ok(ResultOfCreateMessage {
+pub fn encode_deploy_message(
+    _context: &mut ClientContext,
+    params: ParamsOfDeployMessage
+) -> ApiResult<ResultOfEncodeMessage> {
+    Ok(ResultOfEncodeMessage {
         message: "".into(),
         bytes_to_sign: None,
     })
@@ -64,8 +66,11 @@ pub struct ParamsOfRunMessage {
     pub signing: Option<Signing>,
 }
 
-pub fn encode_run_message(params: ParamsOfRunMessage) -> ApiResult<ResultOfCreateMessage> {
-    Ok(ResultOfCreateMessage {
+pub fn encode_run_message(
+    _context: &mut ClientContext,
+    params: ParamsOfRunMessage
+) -> ApiResult<ResultOfEncodeMessage> {
+    Ok(ResultOfEncodeMessage {
         message: "".into(),
         bytes_to_sign: None,
     })
@@ -87,7 +92,10 @@ pub struct ResultOfEncodeWithSignature {
     pub message: String,
 }
 
-pub fn encode_with_signature(params: ParamsOfEncodeWithSignature) -> ApiResult<ResultOfEncodeWithSignature> {
+pub fn encode_with_signature(
+    _context: &mut ClientContext,
+    params: ParamsOfEncodeWithSignature
+) -> ApiResult<ResultOfEncodeWithSignature> {
     Ok(ResultOfEncodeWithSignature {
         message: "".into(),
     })

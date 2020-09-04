@@ -14,7 +14,7 @@
 use crate::crypto::keys::{KeyPair};
 use crate::crypto::internal::{key512, key256, key192};
 use crate::error::{ApiResult, ApiError};
-use crate::encoding::{InputData, OutputEncoding, hex_decode};
+use crate::encoding::{hex_decode, base64_decode};
 use crate::client::ClientContext;
 
 // Signing
@@ -55,26 +55,23 @@ pub fn nacl_sign_keypair_from_secret_key(
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclSign {
-    /// Data that must be signed.
-    pub unsigned: InputData,
+    /// Data that must be signed. Encoded with `base64`.
+    pub unsigned: String,
     /// Signer's secret key.
     pub secret: String,
-    /// Encoding for signed data. Default is `base64`.
-    pub output_encoding: Option<OutputEncoding>,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ResultOfNaclSign {
-    /// Signed data, encoded with `output_encoding`.
+    /// Signed data, encoded with `base64`.
     pub signed: String,
 }
 
 /// Signs a data using the signer's secret key.
 pub fn nacl_sign(_context: &mut ClientContext, params: ParamsOfNaclSign) -> ApiResult<ResultOfNaclSign> {
-    let signed = sign(params.unsigned.decode()?, hex_decode(&params.secret)?)?;
-    let encoding = params.output_encoding.unwrap_or(OutputEncoding::Base64);
+    let signed = sign(base64_decode(&params.unsigned)?, hex_decode(&params.secret)?)?;
     Ok(ResultOfNaclSign {
-        signed: encoding.encode(signed)?,
+        signed: base64::encode(&signed),
     })
 }
 
@@ -82,8 +79,8 @@ pub fn nacl_sign(_context: &mut ClientContext, params: ParamsOfNaclSign) -> ApiR
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclSignDetached {
-    /// Data that must be signed.
-    pub unsigned: InputData,
+    /// Data that must be signed. Encoded with `base64`.
+    pub unsigned: String,
     /// Signer's secret key.
     pub secret: String,
 }
@@ -91,18 +88,18 @@ pub struct ParamsOfNaclSignDetached {
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ResultOfNaclSignDetached {
     /// Hex encoded sign.
-    pub sign: String,
+    pub signature: String,
 }
 
 pub fn nacl_sign_detached(_context: &mut ClientContext, params: ParamsOfNaclSign) -> ApiResult<ResultOfNaclSignDetached> {
-    let signed = sign(params.unsigned.decode()?, hex_decode(&params.secret)?)?;
+    let signed = sign(base64_decode(&params.unsigned)?, hex_decode(&params.secret)?)?;
     let mut sign: Vec<u8> = Vec::new();
     sign.resize(64, 0);
     for (place, element) in sign.iter_mut().zip(signed.iter()) {
         *place = *element;
     }
     Ok(ResultOfNaclSignDetached {
-        sign: hex::encode(sign),
+        signature: hex::encode(sign),
     })
 }
 
@@ -110,23 +107,21 @@ pub fn nacl_sign_detached(_context: &mut ClientContext, params: ParamsOfNaclSign
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclSignOpen {
-    /// Signed data that must be unsigned.
-    pub signed: InputData,
+    /// Signed data that must be unsigned. Encoded with `base64`.
+    pub signed: String,
     /// Signer's public key.
     pub public: String,
-    /// Encoding for verified data. Default is `base64`.
-    pub output_encoding: Option<OutputEncoding>,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ResultOfNaclSignOpen {
-    /// Unsigned data, encoded with `output_encoding`.
+    /// Unsigned data, encoded with `base64`.
     pub unsigned: String,
 }
 
 pub fn nacl_sign_open(_context: &mut ClientContext, params: ParamsOfNaclSignOpen) -> ApiResult<ResultOfNaclSignOpen> {
     let mut unsigned: Vec<u8> = Vec::new();
-    let signed = params.signed.decode()?;
+    let signed = base64_decode(&params.signed)?;
     unsigned.resize(signed.len(), 0);
     let len = sodalite::sign_attached_open(
         &mut unsigned,
@@ -134,9 +129,8 @@ pub fn nacl_sign_open(_context: &mut ClientContext, params: ParamsOfNaclSignOpen
         &key256(&hex_decode(&params.public)?)?,
     ).map_err(|_| ApiError::crypto_nacl_sign_failed("box sign open failed"))?;
     unsigned.resize(len, 0);
-    let encoding = params.output_encoding.unwrap_or(OutputEncoding::Hex);
     Ok(ResultOfNaclSignOpen {
-        unsigned: encoding.encode(unsigned)?,
+        unsigned: base64::encode(&unsigned),
     })
 }
 
@@ -186,22 +180,23 @@ pub fn nacl_box_keypair_from_secret_key(
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclBox {
-    pub decrypted: InputData,
+    /// Data that must be encrypted. Encoded with `base64`.
+    pub decrypted: String,
     pub nonce: String,
     pub their_public: String,
     pub secret: String,
-    pub output_encoding: Option<OutputEncoding>,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ResultOfNaclBox {
+    /// Encrypted data. Encoded with `base64`.
     pub encrypted: String,
 }
 
 pub fn nacl_box(_context: &mut ClientContext, params: ParamsOfNaclBox) -> ApiResult<ResultOfNaclBox> {
     let (mut padded_output, padded_input, nonce, secret) =
         prepare_to_convert(
-            &params.decrypted.decode()?,
+            &base64_decode(&params.decrypted)?,
             &hex_decode(&params.nonce)?,
             &hex_decode(&params.secret)?,
             32,
@@ -215,23 +210,23 @@ pub fn nacl_box(_context: &mut ClientContext, params: ParamsOfNaclBox) -> ApiRes
         &secret,
     ).map_err(|_| ApiError::crypto_nacl_box_failed("box failed"))?;
     padded_output.drain(..16);
-    let encoding = params.output_encoding.unwrap_or(OutputEncoding::Base64);
-    Ok(ResultOfNaclBox { encrypted: encoding.encode(padded_output)? })
+    Ok(ResultOfNaclBox { encrypted: base64::encode(&padded_output) })
 }
 
 //----------------------------------------------------------------------------------- nacl_box_open
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclBoxOpen {
-    pub encrypted: InputData,
+    /// Data that must be decrypted. Encoded with `base64`.
+    pub encrypted: String,
     pub nonce: String,
     pub their_public: String,
     pub secret: String,
-    pub output_encoding: Option<OutputEncoding>,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ResultOfNaclBoxOpen {
+    /// Decrypted data. Encoded with `base64`.
     pub decrypted: String,
 }
 
@@ -241,7 +236,7 @@ pub fn nacl_box_open(
 ) -> ApiResult<ResultOfNaclBoxOpen> {
     let (mut padded_output, padded_input, nonce, secret) =
         prepare_to_convert(
-            &params.encrypted.decode()?,
+            &base64_decode(&params.encrypted)?,
             &hex_decode(&params.nonce)?,
             &hex_decode(&params.secret)?,
             16,
@@ -254,8 +249,7 @@ pub fn nacl_box_open(
         &secret,
     ).map_err(|_| ApiError::crypto_nacl_box_failed("box open failed"))?;
     padded_output.drain(..32);
-    let encoding = params.output_encoding.unwrap_or(OutputEncoding::Base64);
-    Ok(ResultOfNaclBoxOpen { decrypted: encoding.encode(padded_output)? })
+    Ok(ResultOfNaclBoxOpen { decrypted: base64::encode(&padded_output) })
 }
 
 // Secret Box
@@ -264,10 +258,10 @@ pub fn nacl_box_open(
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclSecretBox {
-    pub decrypted: InputData,
+    /// Data that must be encrypted. Encoded with `base64`.
+    pub decrypted: String,
     pub nonce: String,
     pub key: String,
-    pub output_encoding: Option<OutputEncoding>,
 }
 
 pub fn nacl_secret_box(
@@ -276,7 +270,7 @@ pub fn nacl_secret_box(
 ) -> ApiResult<ResultOfNaclBox> {
     let (mut padded_output, padded_input, nonce, key) =
         prepare_to_convert(
-            &params.decrypted.decode()?,
+            &base64_decode(&params.decrypted)?,
             &hex_decode(&params.nonce)?,
             &hex_decode(&params.key)?,
             32,
@@ -285,18 +279,17 @@ pub fn nacl_secret_box(
     sodalite::secretbox(&mut padded_output, &padded_input, &nonce, &key)
         .map_err(|_| ApiError::crypto_nacl_secret_box_failed("secret box failed"))?;
     padded_output.drain(..16);
-    let encoding = params.output_encoding.unwrap_or(OutputEncoding::Base64);
-    Ok(ResultOfNaclBox { encrypted: encoding.encode(padded_output)? })
+    Ok(ResultOfNaclBox { encrypted: base64::encode(&padded_output) })
 }
 
 //---------------------------------------------------------------------------- nacl_secret_box_open
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclSecretBoxOpen {
-    pub encrypted: InputData,
+    /// Data that must be decrypted. Encoded with `base64`.
+    pub encrypted: String,
     pub nonce: String,
     pub key: String,
-    pub output_encoding: Option<OutputEncoding>,
 }
 
 pub fn nacl_secret_box_open(
@@ -305,7 +298,7 @@ pub fn nacl_secret_box_open(
 ) -> ApiResult<ResultOfNaclBoxOpen> {
     let (mut padded_output, padded_input, nonce, key) =
         prepare_to_convert(
-            &params.encrypted.decode()?,
+            &base64_decode(&params.encrypted)?,
             &hex_decode(&params.nonce)?,
             &hex_decode(&params.key)?,
             16,
@@ -314,8 +307,7 @@ pub fn nacl_secret_box_open(
     sodalite::secretbox_open(&mut padded_output, &padded_input, &nonce, &key)
         .map_err(|_| ApiError::crypto_nacl_secret_box_failed("secret box open failed"))?;
     padded_output.drain(..32);
-    let encoding = params.output_encoding.unwrap_or(OutputEncoding::Base64);
-    Ok(ResultOfNaclBoxOpen { decrypted: encoding.encode(padded_output)? })
+    Ok(ResultOfNaclBoxOpen { decrypted: base64::encode(&padded_output) })
 }
 
 // Internals

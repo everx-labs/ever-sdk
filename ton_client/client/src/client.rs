@@ -27,6 +27,7 @@ fn create_handlers() -> DispatchTable {
     crate::setup::register(&mut handlers);
     crate::crypto::register(&mut handlers);
     crate::contracts::register(&mut handlers);
+    crate::abi::register(&mut handlers);
     crate::tvm::register(&mut handlers);
 
     //TODO: uncomment this when cell module will be ready
