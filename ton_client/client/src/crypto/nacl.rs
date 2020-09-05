@@ -12,21 +12,13 @@
 */
 
 use crate::crypto::keys::{KeyPair};
-use crate::crypto::internal::{key512, key256, key192};
+use crate::crypto::internal::{key256, key192};
 use crate::error::{ApiResult, ApiError};
 use crate::encoding::{hex_decode, base64_decode};
 use crate::client::ClientContext;
+use crate::crypto::internal;
 
 // Signing
-
-//------------------------------------------------------------------------------- nacl_sign_keypair
-#[doc(summary = "Randomly generates a key pair")]
-pub fn nacl_sign_keypair(_context: &mut ClientContext) -> ApiResult<KeyPair> {
-    let mut sk = [0u8; 64];
-    let mut pk = [0u8; 32];
-    sodalite::sign_keypair(&mut pk, &mut sk);
-    Ok(KeyPair::new(hex::encode(pk), hex::encode(sk.as_ref())))
-}
 
 //------------------------------------------------------------------------ sign_keypair_from_secret
 #[doc(summary = "")]
@@ -70,7 +62,10 @@ pub struct ResultOfNaclSign {
 
 /// Signs a data using the signer's secret key.
 pub fn nacl_sign(_context: &mut ClientContext, params: ParamsOfNaclSign) -> ApiResult<ResultOfNaclSign> {
-    let signed = sign(base64_decode(&params.unsigned)?, hex_decode(&params.secret)?)?;
+    let signed = internal::sign_using_secret(
+        &base64_decode(&params.unsigned)?,
+        &hex_decode(&params.secret)?
+    )?;
     Ok(ResultOfNaclSign {
         signed: base64::encode(&signed),
     })
@@ -94,7 +89,10 @@ pub struct ResultOfNaclSignDetached {
 }
 
 pub fn nacl_sign_detached(_context: &mut ClientContext, params: ParamsOfNaclSign) -> ApiResult<ResultOfNaclSignDetached> {
-    let signed = sign(base64_decode(&params.unsigned)?, hex_decode(&params.secret)?)?;
+    let signed = internal::sign_using_secret(
+        &base64_decode(&params.unsigned)?,
+        &hex_decode(&params.secret)?
+    )?;
     let mut sign: Vec<u8> = Vec::new();
     sign.resize(64, 0);
     for (place, element) in sign.iter_mut().zip(signed.iter()) {
@@ -321,9 +319,3 @@ pub fn nacl_secret_box_open(
 
 // Internals
 
-fn sign(unsigned: Vec<u8>, secret: Vec<u8>) -> ApiResult<Vec<u8>> {
-    let mut signed: Vec<u8> = Vec::new();
-    signed.resize(unsigned.len() + sodalite::SIGN_LEN, 0);
-    sodalite::sign_attached(&mut signed, &unsigned, &key512(&secret)?);
-    Ok(signed)
-}

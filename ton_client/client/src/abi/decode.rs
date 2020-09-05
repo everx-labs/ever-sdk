@@ -27,7 +27,7 @@ pub struct ParamsOfDecodeMessage {
     pub message: String,
 }
 
-pub fn decode_message(params: ParamsOfDecodeMessage) -> ApiResult<ResultOfDecodeMessage> {
+pub fn decode_message(_params: ParamsOfDecodeMessage) -> ApiResult<ResultOfDecodeMessage> {
     Ok(ResultOfDecodeMessage {
         message_type: MessageType::FunctionInput,
         name: "".into(),

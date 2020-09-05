@@ -4,27 +4,31 @@ use crate::abi::encode::{
     ParamsOfEncodeWithSignature,
 };
 use crate::abi::abi::Abi;
-use serde_json::{Value, Map};
 use crate::crypto::boxes::Signing;
+use crate::crypto::keys::KeyPair;
 
 #[test]
 fn encode() {
     TestClient::init_log();
     let client = TestClient::new();
     let (events_abi, events_tvc) = TestClient::package(EVENTS, 2);
-    let keys = client.generate_sign_keys();
+    let keys = KeyPair {
+        public: "4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499".into(),
+        secret: "cc8929d635719612a9478b9cd17675a39cfad52d8959e8a177389b8c0b9122a7".into(),
+    };
 
-    let deploy_params = |signing: Option<Signing>| ParamsOfDeployMessage {
+    let deploy_params = |public_key: Option<String>, signing: Option<Signing>| ParamsOfDeployMessage {
         abi: Abi::Value(events_abi.clone()),
         tvc: events_tvc.clone(),
-        data: None,
+        initial_data: None,
         function_name: None,
+        public_key,
         header: Some(json!({
-                "pubkey": keys.public,
-                "time": 1,
-                "expire": 2,
-            })),
-        input: Value::Object(Map::new()),
+            "pubkey": keys.public,
+            "time": 1,
+            "expire": 2,
+        })),
+        input: None,
         signing,
         workchain_id: None,
     };
@@ -32,16 +36,17 @@ fn encode() {
 
     let unsigned: ResultOfEncodeMessage = client.request(
         "abi.encode_deploy_message",
-        deploy_params(None),
+        deploy_params(Some(keys.public.clone()), None),
     );
-    let signature = client.sign_detached(&unsigned.bytes_to_sign.unwrap(), &keys);
+    println!(">>> {} {:?}", unsigned.message, unsigned.data_to_sign);
+    let signature = client.sign_detached(&unsigned.data_to_sign.unwrap(), &keys);
     let signed: ResultOfEncodeWithSignature = client.request("abi.encode_with_signature", ParamsOfEncodeWithSignature {
         message: unsigned.message.clone(),
         signature,
     });
     let message: ResultOfEncodeMessage = client.request(
         "abi.encode_deploy_message",
-        deploy_params(Some(Signing::Keys(keys.clone()))),
+        deploy_params(None, Some(Signing::Keys(keys.clone()))),
     );
     assert_eq!(signed.message, message.message);
 

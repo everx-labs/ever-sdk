@@ -17,61 +17,6 @@ use crate::error::{ApiResult, ApiError};
 use ton_block::MsgAddressInt;
 use std::str::FromStr;
 
-
-#[derive(Serialize, Deserialize, TypeInfo)]
-pub struct InputData {
-    pub text: Option<String>,
-    pub hex: Option<String>,
-    pub base64: Option<String>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub enum OutputEncoding {
-    Text,
-    Hex,
-    HexUppercase,
-    Base64,
-}
-
-impl InputData {
-    pub fn text(value: &str) -> Self {
-        Self { text: Some(value.into()), hex: None, base64: None }
-    }
-
-    pub fn hex(value: &str) -> Self {
-        Self { text: None, hex: Some(value.into()), base64: None }
-    }
-
-    pub fn base64(value: &str) -> Self {
-        Self { text: None, hex: None, base64: Some(value.into()) }
-    }
-
-    pub fn decode(&self) -> ApiResult<Vec<u8>> {
-        if let Some(ref text) = self.text {
-            Ok(text.as_bytes().to_vec())
-        } else if let Some(ref hex) = self.hex {
-            hex_decode(hex)
-        } else if let Some(ref base64) = self.base64 {
-            base64_decode(base64)
-        } else {
-            Err(ApiError::crypto_convert_input_data_missing())
-        }
-    }
-}
-
-impl OutputEncoding {
-    pub fn encode(&self, output: Vec<u8>) -> ApiResult<String> {
-        match self {
-            OutputEncoding::Text => Ok(String::from_utf8(output)
-                .map_err(|err| ApiError::crypto_convert_output_can_not_be_encoded_to_utf8(err))?),
-            OutputEncoding::Hex => Ok(hex::encode(output)),
-            OutputEncoding::HexUppercase => Ok(hex::encode_upper(output)),
-            OutputEncoding::Base64 => Ok(base64::encode(&output))
-        }
-    }
-}
-
-
 //------------------------------------------------------------------------------------------------------
 
 pub(crate) fn method_api(name: &str) -> api_doc::api::Method {
@@ -190,6 +135,3 @@ pub(crate) fn long_num_to_json_string(num: u64) -> String {
     format!("0x{:x}", num)
 }
 
-pub(crate) fn default_output_encoding_hex() -> OutputEncoding {
-    OutputEncoding::Hex
-}

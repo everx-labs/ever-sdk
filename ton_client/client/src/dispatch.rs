@@ -157,9 +157,10 @@ impl DispatchTable {
         method: &str,
         handler: fn(context: &mut ClientContext) -> ApiResult<R>
     )
-        where R: Send + Serialize + 'static
+        where R: TypeInfo + Send + Serialize + 'static
     {
-        self.sync_runners.insert(method.into(), Box::new(CallNoArgsHandler { api: method_api(method), handler }));
+        let api = Method::from_types::<(), R>(method);
+        self.sync_runners.insert(method.into(), Box::new(CallNoArgsHandler { api, handler }));
     }
 
     pub fn sync_dispatch(&self, context: &mut ClientContext, method: String, params_json: String) -> JsonResponse {

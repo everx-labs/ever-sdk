@@ -26,10 +26,10 @@ mod tests;
 
 use crate::dispatch::DispatchTable;
 use crate::crypto::math::{factorize, modular_power, ton_crc16, generate_random_bytes};
-use crate::crypto::keys::{convert_public_key_to_ton_safe_format, generate_random_sign_keys};
+use crate::crypto::keys::{convert_public_key_to_ton_safe_format, generate_random_sign_keys, verify_signature, sign};
 use crate::crypto::hash::{sha256, sha512};
 use crate::crypto::nacl::{
-    nacl_sign_keypair, nacl_sign, nacl_sign_open, nacl_sign_keypair_from_secret_key,
+    nacl_sign, nacl_sign_open, nacl_sign_keypair_from_secret_key,
     nacl_sign_detached, nacl_box_keypair, nacl_box_keypair_from_secret_key, nacl_box,
     nacl_box_open, nacl_secret_box, nacl_secret_box_open,
 };
@@ -64,6 +64,8 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
     );
 
     handlers.call_no_args("crypto.generate_random_sign_keys", generate_random_sign_keys);
+    handlers.spawn("crypto.sign", sign);
+    handlers.spawn("crypto.verify_signature", verify_signature);
 
     // Sha
 
@@ -76,7 +78,6 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 
     // NaCl
 
-    handlers.call_no_args("crypto.nacl_sign_keypair", nacl_sign_keypair);
     handlers.call("crypto.nacl_sign_keypair_from_secret", nacl_sign_keypair_from_secret_key);
     handlers.spawn("crypto.nacl_sign", nacl_sign);
     handlers.spawn("crypto.nacl_sign_open", nacl_sign_open);

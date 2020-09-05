@@ -352,7 +352,7 @@ use ton_block::{AccountStatus};
 #[cfg(feature = "node_interaction")]
 use ton_sdk::json_helper::account_status_to_u8;
 
-fn create_image(abi: &serde_json::Value, init_params: Option<&serde_json::Value>, image_base64: &String, public_key: &PublicKey) -> ApiResult<ContractImage> {
+pub(crate) fn create_image(abi: &serde_json::Value, init_params: Option<&serde_json::Value>, image_base64: &String, public_key: &PublicKey) -> ApiResult<ContractImage> {
     let bytes = base64::decode(image_base64)
         .map_err(|err| ApiError::contracts_invalid_image(err))?;
     let mut image = ContractImage::from_state_init_and_key(&mut bytes.as_slice(), public_key)

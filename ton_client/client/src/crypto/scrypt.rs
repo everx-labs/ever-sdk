@@ -21,45 +21,46 @@ use crate::encoding::base64_decode;
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfScrypt {
-    /// The string of characters to be hashed
+    /// The password bytes to be hashed.
+    /// Must be encoded with `base64`.
     pub password: String,
-    /// A string of characters that modifies the hash to protect against Rainbow table attacks
+    /// A salt bytes that modifies the hash to protect against Rainbow table attacks.
+    /// Must be encoded with `base64`.
     pub salt: String,
     /// CPU/memory cost parameter
     pub log_n: u8,
-    /// The blocksize parameter, which fine-tunes sequential memory read size and performance. 8 is commonly used
+    /// The block size parameter, which fine-tunes sequential memory read size and performance.
+    /// 8 is commonly used
     pub r: u32,
-    /// Parallelization parameter
+    /// Parallelization parameter.
     pub p: u32,
-    /// Intended output length in octets of the derived key
+    /// Intended output length in octets of the derived key.
     pub dk_len: usize,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ResultOfScrypt {
-    /// Scrypt result hash. Encoded with `hex`.
-    pub bytes: String,
+    /// Derived key. Encoded with `hex`.
+    pub key: String,
 }
 
 #[doc(summary = "Perform `scrypt` encryption")]
-/// Perform `scrypt` encryption.
+/// Derives key from `password` and `key` using `scrypt` algorithm.
 /// See [https://en.wikipedia.org/wiki/Scrypt].
 pub fn scrypt(
     _context: &mut ClientContext,
     params: ParamsOfScrypt,
 ) -> ApiResult<ResultOfScrypt> {
-    let mut result = Vec::new();
-    result.resize(params.dk_len, 0);
+    let mut key = Vec::new();
+    key.resize(params.dk_len, 0);
     let scrypt_params = scrypt::ScryptParams::new(params.log_n, params.r, params.p)
         .map_err(|err| ApiError::crypto_scrypt_failed(err))?;
-    scrypt::scrypt(
-        &(base64_decode(&params.password)?),
-        &(base64_decode(&params.salt)?),
-        &scrypt_params,
-        &mut result,
-    ).map_err(|err| ApiError::crypto_scrypt_failed(err))?;
+    let password = base64_decode(&params.password)?;
+    let salt = base64_decode(&params.salt)?;
+    scrypt::scrypt(&password, &salt, &scrypt_params, &mut key)
+        .map_err(|err| ApiError::crypto_scrypt_failed(err))?;
     Ok(ResultOfScrypt {
-        bytes: base64::encode(&result)
+        key: hex::encode(&key)
     })
 }
 

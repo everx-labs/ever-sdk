@@ -11,18 +11,18 @@
 * limitations under the License.
 */
 
-use crate::error::{ApiResult};
-use crate::encoding::{hex_decode};
+use crate::error::{ApiResult, ApiError};
+use crate::encoding::{hex_decode, base64_decode};
 use base64::URL_SAFE;
 use crate::client::ClientContext;
 use crate::crypto::internal;
 use ed25519_dalek::Keypair;
-use crate::crypto::internal::ton_crc16;
+use crate::crypto::internal::{ton_crc16, key256};
 
 //----------------------------------------------------------------------------------------- KeyPair
 #[doc(summary = "")]
-/// 
-#[derive(Serialize, Deserialize, Clone, TypeInfo)]
+///
+#[derive(Serialize, Deserialize, Clone, Debug, TypeInfo)]
 pub struct KeyPair {
     pub public: String,
     pub secret: String,
@@ -31,6 +31,13 @@ pub struct KeyPair {
 impl KeyPair {
     pub fn new(public: String, secret: String) -> KeyPair {
         KeyPair { public, secret }
+    }
+
+    pub fn from(keys: &Keypair) -> Self {
+        Self {
+            public: hex::encode(keys.public.as_bytes()),
+            secret: hex::encode(keys.secret.as_bytes()),
+        }
     }
 
     pub fn decode(&self) -> ApiResult<Keypair> {
@@ -43,7 +50,7 @@ impl KeyPair {
 
 //----------------------------------------------------------- convert_public_key_to_ton_safe_format
 #[doc(summary = "")]
-/// 
+///
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfConvertPublicKeyToTonSafeFormat {
     /// Public key.
@@ -75,6 +82,7 @@ pub fn convert_public_key_to_ton_safe_format(
 }
 
 //----------------------------------------------------------------------- generate_random_sign_keys
+
 #[doc(summary = "Generates random ed25519 key pair")]
 pub fn generate_random_sign_keys(_context: &mut ClientContext) -> ApiResult<KeyPair> {
     let mut rng = rand::thread_rng();
@@ -84,3 +92,83 @@ pub fn generate_random_sign_keys(_context: &mut ClientContext) -> ApiResult<KeyP
         hex::encode(keypair.secret.to_bytes()),
     ))
 }
+
+//-------------------------------------------------------------------------------------------- sign
+
+#[doc(summary = "")]
+///
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ParamsOfSign {
+    /// Data that must be signed.
+    /// Must be encoded with `base64`.
+    pub unsigned: String,
+    /// Sign keys.
+    pub keys: KeyPair,
+}
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ResultOfSign {
+    /// Signed data combined with signature. Encoded with `base64`.
+    pub signed: String,
+    /// Signature. Encoded with `base64`.
+    pub signature: String,
+}
+
+/// Signs a data using the provided keys.
+pub fn sign(_context: &mut ClientContext, params: ParamsOfSign) -> ApiResult<ResultOfSign> {
+    let signed = internal::sign_using_keys(
+        &base64_decode(&params.unsigned)?,
+        &params.keys.decode()?
+    )?;
+    let mut signature: Vec<u8> = Vec::new();
+    signature.resize(64, 0);
+    for (place, element) in signature.iter_mut().zip(signed.iter()) {
+        *place = *element;
+    }
+    Ok(ResultOfSign {
+        signed: base64::encode(&signed),
+        signature: hex::encode(signature),
+    })
+}
+
+//-------------------------------------------------------------------------------- verify_signature
+
+#[doc(summary = "")]
+///
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ParamsOfVerifySignature {
+    /// Signed data that must be verified.
+    /// Must be encoded with `base64`.
+    pub signed: String,
+    /// Signer's public key.
+    /// Must be encoded with `hex`.
+    pub public: String,
+}
+
+#[derive(Serialize, Deserialize, TypeInfo)]
+pub struct ResultOfVerifySignature {
+    /// Unsigned data.
+    /// Encoded with `base64`.
+    pub unsigned: String,
+}
+
+/// Verifies signed data using the provided public key.
+/// Raises error in case when verification is failed.
+pub fn verify_signature(
+    _context: &mut ClientContext,
+    params: ParamsOfVerifySignature,
+) -> ApiResult<ResultOfVerifySignature> {
+    let mut unsigned: Vec<u8> = Vec::new();
+    let signed = base64_decode(&params.signed)?;
+    unsigned.resize(signed.len(), 0);
+    let len = sodalite::sign_attached_open(
+        &mut unsigned,
+        &signed,
+        &key256(&hex_decode(&params.public)?)?,
+    ).map_err(|_| ApiError::crypto_nacl_sign_failed("verify signature failed"))?;
+    unsigned.resize(len, 0);
+    Ok(ResultOfVerifySignature {
+        unsigned: base64::encode(&unsigned),
+    })
+}
+

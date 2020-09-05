@@ -4,9 +4,7 @@ use crate::crypto::math::{
     ResultOfTonCrc16, ParamsOfTonCrc16, ResultOfGenerateRandomBytes, ParamsOfGenerateRandomBytes,
 };
 use crate::crypto::hash::{ResultOfHash, ParamsOfHash};
-use crate::crypto::keys::{
-    ResultOfConvertPublicKeyToTonSafeFormat, ParamsOfConvertPublicKeyToTonSafeFormat, KeyPair,
-};
+use crate::crypto::keys::{ResultOfConvertPublicKeyToTonSafeFormat, ParamsOfConvertPublicKeyToTonSafeFormat, KeyPair, ResultOfSign, ParamsOfSign, ResultOfVerifySignature, ParamsOfVerifySignature};
 use crate::crypto::scrypt::{ResultOfScrypt, ParamsOfScrypt};
 use crate::crypto::nacl::{ParamsOfNaclSignKeyPairFromSecret, ParamsOfNaclSign, ResultOfNaclSign, ResultOfNaclSignOpen, ParamsOfNaclSignOpen, ResultOfNaclSignDetached, ParamsOfNaclBoxKeyPairFromSecret, ResultOfNaclBox, ParamsOfNaclBox, ResultOfNaclBoxOpen, ParamsOfNaclBoxOpen, ParamsOfNaclSecretBox, ParamsOfNaclSecretBoxOpen};
 use crate::crypto::mnemonic::{ResultOfMnemonicWords, ParamsOfMnemonicWords, ParamsOfMnemonicFromRandom, ResultOfMnemonicFromRandom, ResultOfMnemonicFromEntropy, ParamsOfMnemonicFromEntropy, ResultOfMnemonicVerify, ParamsOfMnemonicVerify, ParamsOfMnemonicDeriveSignKeys};
@@ -101,6 +99,22 @@ fn keys() {
     assert_eq!(result.public.len(), 64);
     assert_eq!(result.secret.len(), 64);
     assert_ne!(result.secret, result.public);
+
+    let result: ResultOfSign = client.request("crypto.sign", ParamsOfSign {
+        unsigned: base64::encode("Test Message"),
+        keys: KeyPair {
+            public: "1869b7ef29d58026217e9cf163cbfbd0de889bdf1bf4daebf5433a312f5b8d6e".into(),
+            secret: "56b6a77093d6fdf14e593f36275d872d75de5b341942376b2a08759f3cbae78f".into(),
+        },
+    });
+    assert_eq!(result.signed, "+wz+QO6l1slgZS5s65BNqKcu4vz24FCJz4NSAxef9lu0jFfs8x3PzSZRC+pn5k8+aJi3xYMA3BQzglQmjK3hA1Rlc3QgTWVzc2FnZQ==");
+    assert_eq!(result.signature, "fb0cfe40eea5d6c960652e6ceb904da8a72ee2fcf6e05089cf835203179ff65bb48c57ecf31dcfcd26510bea67e64f3e6898b7c58300dc14338254268cade103");
+
+    let result: ResultOfVerifySignature = client.request("crypto.verify_signature", ParamsOfVerifySignature {
+        signed: base64_from_hex("fb0cfe40eea5d6c960652e6ceb904da8a72ee2fcf6e05089cf835203179ff65bb48c57ecf31dcfcd26510bea67e64f3e6898b7c58300dc14338254268cade10354657374204d657373616765"),
+        public: "1869b7ef29d58026217e9cf163cbfbd0de889bdf1bf4daebf5433a312f5b8d6e".into(),
+    });
+    assert_eq!(text_from_base64(&result.unsigned), "Test Message");
 }
 
 #[test]
@@ -116,7 +130,7 @@ fn scrypt() {
         p: 16,
         dk_len: 64,
     });
-    assert_eq!(hex_from_base64(&result.bytes), "52e7fcf91356eca55fc5d52f16f5d777e3521f54e3c570c9bbb7df58fc15add73994e5db42be368de7ebed93c9d4f21f9be7cc453358d734b04a057d0ed3626d");
+    assert_eq!(result.key, "52e7fcf91356eca55fc5d52f16f5d777e3521f54e3c570c9bbb7df58fc15add73994e5db42be368de7ebed93c9d4f21f9be7cc453358d734b04a057d0ed3626d");
 }
 
 #[test]
@@ -125,10 +139,6 @@ fn nacl() {
     let client = TestClient::new();
 
     // Sign
-
-    let result: KeyPair = client.request_no_params("crypto.nacl_sign_keypair");
-    assert_eq!(result.public.len(), 64);
-    assert_eq!(result.secret.len(), 128);
 
     let result: KeyPair = client.request("crypto.nacl_sign_keypair_from_secret", ParamsOfNaclSignKeyPairFromSecret {
         secret: "8fb4f2d256e57138fb310b0a6dac5bbc4bee09eb4821223a720e5b8e1f3dd674".into(),
