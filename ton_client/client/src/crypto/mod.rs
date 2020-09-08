@@ -21,6 +21,9 @@ pub mod hdkey;
 pub mod boxes;
 pub(crate) mod internal;
 
+pub use keys::{ KeyPair };
+pub use boxes::{ SigningBoxHandle };
+
 #[cfg(test)]
 mod tests;
 

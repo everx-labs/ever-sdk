@@ -116,15 +116,10 @@ pub struct ResultOfSign {
 
 /// Signs a data using the provided keys.
 pub fn sign(_context: &mut ClientContext, params: ParamsOfSign) -> ApiResult<ResultOfSign> {
-    let signed = internal::sign_using_keys(
+    let (signed, signature) = internal::sign_using_keys(
         &base64_decode(&params.unsigned)?,
         &params.keys.decode()?
     )?;
-    let mut signature: Vec<u8> = Vec::new();
-    signature.resize(64, 0);
-    for (place, element) in signature.iter_mut().zip(signed.iter()) {
-        *place = *element;
-    }
     Ok(ResultOfSign {
         signed: base64::encode(&signed),
         signature: hex::encode(signature),

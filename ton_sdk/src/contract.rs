@@ -1127,6 +1127,39 @@ impl Contract {
         })
     }
 
+    // Add sign to message, returned by `get_deploy_message_bytes_for_signing` or
+    // `get_run_message_bytes_for_signing` function.
+    // Returns serialized message and identifier.
+    pub fn attach_signature(
+        abi: &AbiContract,
+        signature: &[u8],
+        public_key: Option<&[u8]>,
+        message: &[u8],
+    ) -> Result<SdkMessage> {
+        let mut slice = Self::deserialize_tree_to_slice(message)?;
+
+        let mut message: TvmMessage = TvmMessage::construct_from(&mut slice)?;
+
+        let body = message.body()
+            .ok_or(error!(SdkError::InvalidData { msg: "No message body".to_owned() }))?;
+
+        let signed_body = abi.add_sign_to_encoded_input(signature, public_key, body)?;
+        message.set_body(signed_body.into());
+
+        let address = message.dst().ok_or_else(|| error!(SdkError::InternalError {
+            msg: "No address in signed message".to_owned()
+        }))?;
+        let (body, id) = Self::serialize_message(&message)?;
+
+        Ok(SdkMessage {
+            id,
+            address,
+            serialized_message: body,
+            message,
+            expire: None,
+        })
+    }
+
     fn create_message(address: MsgAddressInt, msg_body: SliceData) -> Result<TvmMessage> {
         let mut msg_header = ExternalInboundMessageHeader::default();
         msg_header.dst = address;

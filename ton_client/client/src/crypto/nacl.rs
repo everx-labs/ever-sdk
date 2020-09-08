@@ -62,7 +62,7 @@ pub struct ResultOfNaclSign {
 
 /// Signs a data using the signer's secret key.
 pub fn nacl_sign(_context: &mut ClientContext, params: ParamsOfNaclSign) -> ApiResult<ResultOfNaclSign> {
-    let signed = internal::sign_using_secret(
+    let (signed, _) = internal::sign_using_secret(
         &base64_decode(&params.unsigned)?,
         &hex_decode(&params.secret)?
     )?;
@@ -89,17 +89,12 @@ pub struct ResultOfNaclSignDetached {
 }
 
 pub fn nacl_sign_detached(_context: &mut ClientContext, params: ParamsOfNaclSign) -> ApiResult<ResultOfNaclSignDetached> {
-    let signed = internal::sign_using_secret(
+    let (_, signature) = internal::sign_using_secret(
         &base64_decode(&params.unsigned)?,
         &hex_decode(&params.secret)?
     )?;
-    let mut sign: Vec<u8> = Vec::new();
-    sign.resize(64, 0);
-    for (place, element) in sign.iter_mut().zip(signed.iter()) {
-        *place = *element;
-    }
     Ok(ResultOfNaclSignDetached {
-        signature: hex::encode(sign),
+        signature: hex::encode(signature),
     })
 }
 

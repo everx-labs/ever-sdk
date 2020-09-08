@@ -83,14 +83,19 @@ pub(crate) fn pbkdf2_hmac_sha512(password: &[u8], salt: &[u8], c: usize) -> [u8;
     result
 }
 
-pub(crate) fn sign_using_secret(unsigned: &[u8], secret: &[u8]) -> ApiResult<Vec<u8>> {
+pub(crate) fn sign_using_secret(unsigned: &[u8], secret: &[u8]) -> ApiResult<(Vec<u8>, Vec<u8>)> {
     let mut signed: Vec<u8> = Vec::new();
     signed.resize(unsigned.len() + sodalite::SIGN_LEN, 0);
     sodalite::sign_attached(&mut signed, unsigned, &key512(secret)?);
-    Ok(signed)
+    let mut signature: Vec<u8> = Vec::new();
+    signature.resize(64, 0);
+    for (place, element) in signature.iter_mut().zip(signed.iter()) {
+        *place = *element;
+    }
+    Ok((signed, signature))
 }
 
-pub(crate) fn sign_using_keys(unsigned: &[u8], keys: &Keypair) -> ApiResult<Vec<u8>> {
+pub(crate) fn sign_using_keys(unsigned: &[u8], keys: &Keypair) -> ApiResult<(Vec<u8>, Vec<u8>)> {
     let mut secret = Vec::<u8>::new();
     secret.extend(keys.secret.as_bytes());
     secret.extend(keys.public.as_bytes());

@@ -1,204 +1,182 @@
-use serde_json::Value;
-use crate::abi::abi::Abi;
-use crate::error::{ApiResult, ApiError};
-use crate::crypto::boxes::Signing;
+use crate::abi::internal::{
+    add_sign_to_message, create_tvc_image, resolve_abi, result_of_encode_message,
+};
+use crate::abi::{Abi, MessageSigning};
 use crate::client::ClientContext;
-use ton_sdk::{FunctionCallSet};
-use crate::crypto::internal::{decode_public_key, sign_using_keys};
-use ed25519_dalek::{Keypair, PublicKey};
-use crate::contracts::deploy::create_image;
+use crate::encoding::{account_decode, base64_decode, hex_decode};
+use crate::error::{ApiError, ApiResult};
+use serde_json::Value;
+use ton_sdk::FunctionCallSet;
+use crate::abi::defaults::DEFAULT_WORKCHAIN;
 
-const DEFAULT_WORKCHAIN: i32 = 0;
-const DEFAULT_CONSTRUCTOR_FUNCTION_NAME: &str = "constructor";
+//--------------------------------------------------------------------------- encode_deploy_message
+
+#[derive(Serialize, Deserialize, Clone, Debug, TypeInfo)]
+pub struct DeploySet {
+    /// Target workchain for destination address. Default is `0`.
+    pub workchain_id: Option<i32>,
+    /// Content of TVC file. Must be encoded with `base64`.
+    pub tvc: String,
+    /// List of initial values for contract public variables.
+    pub initial_data: Option<Value>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, TypeInfo)]
+pub struct CallSet {
+    /// Function name.
+    pub function_name: String,
+    /// Header parameters.
+    pub header: Option<Value>,
+    /// Init function input parameters according to ABI.
+    pub input: Option<Value>,
+}
+
+fn to_function_call_set(call_set: &Option<CallSet>, abi: &str) -> FunctionCallSet {
+    if let Some(call_set) = call_set.as_ref() {
+        FunctionCallSet {
+            abi: abi.to_string(),
+            func: call_set.function_name.clone(),
+            header: call_set.header.as_ref().map(|x| x.to_string()),
+            input: call_set.input.as_ref().map(|x| x.to_string()).unwrap_or("{}".into()),
+        }
+    } else {
+        FunctionCallSet {
+            abi: abi.to_string(),
+            func: "constructor".into(),
+            header: None,
+            input: "{}".into(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, TypeInfo)]
+pub struct ParamsOfEncodeMessage {
+    /// Contract ABI.
+    pub abi: Abi,
+    /// Contract address.
+    /// Must be specified in case of run message.
+    pub address: Option<String>,
+    /// Deploy parameters.
+    /// Must be specified in case of deploy message.
+    pub deploy_set: Option<DeploySet>,
+    /// Function call parameters.
+    /// Must be specified in run message.
+    /// In case of deploy message contains parameters of constructor.
+    pub call_set: Option<CallSet>,
+    /// Signing parameters.
+    pub signing: MessageSigning,
+}
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ResultOfEncodeMessage {
     /// Message BOC encoded with `base64`.
     pub message: String,
-    /// Optional data to sign. Presents when `message` is unsigned.
-    /// Can be used to external message signing.
+    /// Optional data to sign. Encoded with `base64`.
+    /// Presents when `message` is unsigned.
+    /// Can be used for external message signing.
     /// Is this case you need to sing this data and
     /// produce signed message using `abi.attach_signature`.
     pub data_to_sign: Option<String>,
 }
 
-//--------------------------------------------------------------------------- encode_deploy_message
-
-#[derive(Serialize, Deserialize, Clone, Debug, TypeInfo)]
-pub struct ParamsOfDeployMessage {
-    /// contract ABI
-    pub abi: Abi,
-    /// TVC file encoded with `base64`.
-    pub tvc: String,
-
-    pub public_key: Option<String>,
-
-    /// List of initial values for contract public variables
-    pub initial_data: Option<Value>,
-
-    /// Init function name. Default is `constructor`.
-    pub function_name: Option<String>,
-    /// Header parameters
-    pub header: Option<Value>,
-    /// Init function input parameters according to ABI.
-    pub input: Option<Value>,
-
-    /// Signing parameters. If omitted, message will be created unsigned.
-    pub signing: Option<Signing>,
-    /// Target workchain for destination address. Default is `0`.
-    pub workchain_id: Option<i32>,
-}
-
-fn resolve_abi(abi: &Abi) -> ApiResult<Value> {
-    if let Abi::Value(value) = abi {
-        Ok(value.clone())
-    } else {
-        Err(ApiError::contracts_create_deploy_message_failed("Abi handle doesn't supported yet"))
-    }
-}
-
-fn resolve_keys(signing: &Option<Signing>) -> ApiResult<Option<ed25519_dalek::Keypair>> {
-    if let Some(signing) = signing {
-        if let Signing::Keys(keys) = signing {
-            Ok(Some(keys.decode()?))
-        } else {
-            Err(ApiError::contracts_create_deploy_message_failed("Abi handle doesn't supported yet"))
-        }
-    } else {
-        Ok(None)
-    }
-}
-
-fn resolve_public_key(keys: &Option<Keypair>, public_key: &Option<String>) -> ApiResult<PublicKey> {
+fn required_public_key(public_key: Option<String>) -> ApiResult<String> {
     if let Some(public_key) = public_key {
-        decode_public_key(&public_key)
-    } else if let Some(keys) = keys {
-        Ok(keys.public.clone())
+        Ok(public_key)
     } else {
-        Err(ApiError::contracts_create_deploy_message_failed("Public key doesn't provided."))
+        Err(ApiError::contracts_create_deploy_message_failed(
+            "Public key doesn't provided.",
+        ))
     }
 }
 
-pub fn encode_deploy_message(
+pub fn encode_message(
     context: &mut ClientContext,
-    params: ParamsOfDeployMessage,
+    params: ParamsOfEncodeMessage,
 ) -> ApiResult<ResultOfEncodeMessage> {
     let abi = resolve_abi(&params.abi)?;
     trace!("-> abi.encode_deploy_message({:?})", params.clone());
 
-    let workchain = params.workchain_id.unwrap_or(DEFAULT_WORKCHAIN);
-    let keys = resolve_keys(&params.signing)?;
-    let public = resolve_public_key(&keys, &params.public_key)?;
-
-    let image = create_image(
-        &abi,
-        params.initial_data.as_ref(),
-        &params.tvc,
-        &public,
-    )?;
-    //TODO: let address = account_encode(&image.msg_address(workchain));
-    let unsigned = ton_sdk::Contract::get_deploy_message_bytes_for_signing(
-        FunctionCallSet {
-            abi: abi.to_string(),
-            func: params.function_name.unwrap_or(DEFAULT_CONSTRUCTOR_FUNCTION_NAME.into()).clone(),
-            header: params.header.map(|x| x.to_string()).clone(),
-            input: params.input.map(|x| x.to_string()).unwrap_or("{}".into()),
-        },
-        image,
-        workchain,
-        Some(context.get_client()?.timeouts()),
-        None, //TODO: params.try_index,
-    ).map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
-
-    trace!("<-");
-    let (message, data_to_sign) = if let Some(keys) = &keys {
-        let signature = sign_using_keys(&unsigned.data_to_sign, &keys)?;
-        let signed = add_sign_to_message(
-            &abi.to_string(),
-            &signature,
-            Some(public.as_bytes().as_ref()),
-            &unsigned.message,
+    let unsigned = if let Some(deploy_set) = params.deploy_set {
+        let workchain = deploy_set.workchain_id.unwrap_or(DEFAULT_WORKCHAIN);
+        let public = required_public_key(params.signing.resolve_public_key()?)?;
+        let image = create_tvc_image(
+            &abi,
+            deploy_set.initial_data.as_ref(),
+            &deploy_set.tvc,
+            &public,
         )?;
-        (signed, None)
+        //TODO: let address = account_encode(&image.msg_address(workchain));
+        ton_sdk::Contract::get_deploy_message_bytes_for_signing(
+            to_function_call_set(&params.call_set, &abi),
+            image,
+            workchain,
+            Some(context.get_client()?.timeouts()),
+            None, //TODO: params.try_index,
+        )
+        .map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?
+    } else if let Some(call_set) = &params.call_set {
+        let address = &params
+            .address
+            .ok_or(ApiError::abi_required_address_missing_for_encode_message())?;
+        ton_sdk::Contract::get_call_message_bytes_for_signing(
+            account_decode(address)?,
+            to_function_call_set(&params.call_set, &abi),
+            Some(context.get_client()?.timeouts()),
+            None,
+        )
+        .map_err(|err| {
+            ApiError::contracts_create_run_message_failed(err, &call_set.function_name)
+        })?
     } else {
-        (unsigned.message, Some(unsigned.data_to_sign))
+        return Err(ApiError::abi_missing_required_call_set_for_encode_message());
     };
 
+    trace!("<-");
+    let (message, data_to_sign) = result_of_encode_message(
+        &abi,
+        &unsigned.message,
+        &unsigned.data_to_sign,
+        &params.signing,
+    )?;
     Ok(ResultOfEncodeMessage {
-        message: base64::encode(&message),
-        data_to_sign: data_to_sign.map(|x|base64::encode(&x)),
+        message,
+        data_to_sign,
     })
 }
 
-/// Combines `hex` encoded `signature` with `base64` encoded `unsigned_message`.
-/// Returns signed message encoded with `base64`.
-fn add_sign_to_message(
-    abi: &String,
-    signature: &[u8],
-    public_key: Option<&[u8]>,
-    unsigned_message: &[u8],
-) -> ApiResult<Vec<u8>> {
-    let signed = ton_sdk::Contract::add_sign_to_message(
-        abi.clone(),
-        signature,
-        public_key,
-        unsigned_message,
-    ).map_err(|err| ApiError::contracts_encode_message_with_sign_failed(err))?;
-    Ok(signed.serialized_message)
-}
-
-//--------------------------------------------------------------------------- encode_run_message
+//------------------------------------------------------------------------------- attach_signature
 
 #[derive(Serialize, Deserialize, TypeInfo)]
-pub struct ParamsOfRunMessage {
-    /// contract ABI
+pub struct ParamsOfAttachSignature {
+    /// Contract ABI
     pub abi: Abi,
 
-    /// Contract address
-    pub address: String,
+    /// Public key. Must be encoded with `hex`.
+    pub public_key: String,
 
-    /// Init function name. Default is `constructor`.
-    pub function_name: Option<String>,
-    /// Header parameters
-    pub header: Option<Value>,
-    /// Init function input parameters according to ABI.
-    pub input: Value,
-
-    /// Signing parameters. If omitted, message will be created unsigned.
-    pub signing: Option<Signing>,
-}
-
-pub fn encode_run_message(
-    _context: &mut ClientContext,
-    _params: ParamsOfRunMessage,
-) -> ApiResult<ResultOfEncodeMessage> {
-    Ok(ResultOfEncodeMessage {
-        message: "".into(),
-        data_to_sign: None,
-    })
-}
-
-//-------------------------------------------------------------------------- encode_with_signature
-
-#[derive(Serialize, Deserialize, TypeInfo)]
-pub struct ParamsOfEncodeWithSignature {
-    /// Unsigned message BOC
+    /// Unsigned message BOC. Must be encoded with `base64`.
     pub message: String,
 
-    /// Signature
+    /// Signature. Must be encoded with `hex`.
     pub signature: String,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo)]
-pub struct ResultOfEncodeWithSignature {
+pub struct ResultOfAttachSignature {
     pub message: String,
 }
 
-pub fn encode_with_signature(
+pub fn attach_signature(
     _context: &mut ClientContext,
-    _params: ParamsOfEncodeWithSignature,
-) -> ApiResult<ResultOfEncodeWithSignature> {
-    Ok(ResultOfEncodeWithSignature {
-        message: "".into(),
+    params: ParamsOfAttachSignature,
+) -> ApiResult<ResultOfAttachSignature> {
+    let signed = add_sign_to_message(
+        &resolve_abi(&params.abi)?,
+        &hex_decode(&params.signature)?,
+        Some(&hex_decode(&params.public_key)?),
+        &base64_decode(&params.message)?,
+    )?;
+    Ok(ResultOfAttachSignature {
+        message: base64::encode(&signed),
     })
 }

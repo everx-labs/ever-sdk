@@ -16,12 +16,18 @@ use crate::dispatch::DispatchTable;
 #[cfg(test)]
 mod tests;
 
-mod encode;
-mod abi;
-mod decode;
+mod internal;
+
+pub mod encode;
+pub mod abi;
+pub mod decode;
+pub mod signing;
+pub mod defaults;
+
+pub use abi::{Abi, AbiHandle};
+pub use signing::{MessageSigning};
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.call("abi.encode_deploy_message", encode::encode_deploy_message);
-    handlers.call("abi.encode_run_message", encode::encode_run_message);
-    handlers.call("abi.encode_with_signature", encode::encode_with_signature);
+    handlers.call("abi.encode_message", encode::encode_message);
+    handlers.call("abi.attach_signature", encode::attach_signature);
 }

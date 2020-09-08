@@ -1,12 +1,16 @@
-use std::fmt::Display;
-use chrono::TimeZone;
-use ton_block::{AccStatusChange, ComputeSkipReason, MsgAddressInt};
-use ton_sdk::{SdkError, MessageProcessingState};
-use ton_types::ExceptionCode;
 use crate::error::ApiSdkErrorCode::*;
+use chrono::TimeZone;
+use std::fmt::Display;
+use ton_block::{AccStatusChange, ComputeSkipReason, MsgAddressInt};
+use ton_sdk::{MessageProcessingState, SdkError};
+use ton_types::ExceptionCode;
 
 fn format_time(time: u32) -> String {
-    format!("{} ({})", chrono::Local.timestamp(time as i64, 0).to_rfc2822(), time)
+    format!(
+        "{} ({})",
+        chrono::Local.timestamp(time as i64, 0).to_rfc2822(),
+        time
+    )
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -52,13 +56,13 @@ macro_rules! sdk_err {
 }
 
 macro_rules! as_number_impl {
-    ($name:ident) => (
+    ($name:ident) => {
         impl ApiErrorCode for $name {
             fn as_number(&self) -> isize {
                 self.clone() as isize
             }
         }
-    );
+    };
 }
 
 impl ApiError {
@@ -104,44 +108,50 @@ impl ApiError {
     // SDK Common
 
     pub fn unknown_method(method: &String) -> ApiError {
-        sdk_err!(UnknownMethod,
-            "Unknown method [{}]", method)
+        sdk_err!(UnknownMethod, "Unknown method [{}]", method)
     }
 
     pub fn invalid_params<E: Display>(params_json: &str, err: E) -> Self {
-        sdk_err!(InvalidParams,
-            "Invalid parameters: {}\nparams: [{}]", err, params_json)
+        sdk_err!(
+            InvalidParams,
+            "Invalid parameters: {}\nparams: [{}]",
+            err,
+            params_json
+        )
     }
 
     pub fn invalid_context_handle(context: u32) -> Self {
-        sdk_err!(InvalidContextHandle,
-            "Invalid context handle: {}", context)
+        sdk_err!(InvalidContextHandle, "Invalid context handle: {}", context)
     }
 
     pub fn cannot_create_runtime<E: Display>(err: E) -> Self {
-        sdk_err!(CannotCreateRuntime,
-            "Can not create runtime: {}", err)
+        sdk_err!(CannotCreateRuntime, "Can not create runtime: {}", err)
     }
 
     pub fn sdk_not_init() -> Self {
-        ApiError::sdk(SdkNotInit,
-            "SDK is not initialized".into())
+        ApiError::sdk(SdkNotInit, "SDK is not initialized".into())
     }
-
 
     // SDK Config
 
     pub fn config_init_failed<E: Display>(err: E) -> Self {
-        sdk_err!(ConfigInitFailed,
-            "Config init failed: {}", err)
+        sdk_err!(ConfigInitFailed, "Config init failed: {}", err)
     }
 
     pub fn wait_for_timeout() -> Self {
-        sdk_err!(WaitForTimeout,
-            "WaitFor operation did not return anything during the specified timeout")
+        sdk_err!(
+            WaitForTimeout,
+            "WaitFor operation did not return anything during the specified timeout"
+        )
     }
 
-    pub fn message_expired(msg_id: String, sending_time: u32, expire: u32, block_time: u32, block_id: String) -> Self {
+    pub fn message_expired(
+        msg_id: String,
+        sending_time: u32,
+        expire: u32,
+        block_time: u32,
+        block_id: String,
+    ) -> Self {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ApiSdkErrorCode::MessageExpired,
@@ -163,7 +173,12 @@ impl ApiError {
             "Address is required for run local. You haven't specified contract code or data so address is required to load missing parts from network.")
     }
 
-    pub fn network_silent(msg_id: String, timeout: u32, block_id: String, state: MessageProcessingState) -> Self {
+    pub fn network_silent(
+        msg_id: String,
+        timeout: u32,
+        block_id: String,
+        state: MessageProcessingState,
+    ) -> Self {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ApiSdkErrorCode::NetworkSilent,
@@ -179,7 +194,12 @@ impl ApiError {
         error
     }
 
-    pub fn transaction_wait_timeout(msg_id: String, sending_time: u32, timeout: u32, state: MessageProcessingState) -> Self {
+    pub fn transaction_wait_timeout(
+        msg_id: String,
+        sending_time: u32,
+        timeout: u32,
+        state: MessageProcessingState,
+    ) -> Self {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ApiSdkErrorCode::TransactionWaitTimeout,
@@ -272,30 +292,40 @@ impl ApiError {
     // SDK Cell
 
     pub fn cell_invalid_query<E: Display>(s: E) -> Self {
-        sdk_err!(CellInvalidQuery,
-            "Invalid cell query: {}", s)
+        sdk_err!(CellInvalidQuery, "Invalid cell query: {}", s)
     }
 
     // SDK Crypto
 
     pub fn crypto_invalid_hex<E: Display>(s: &String, err: E) -> Self {
-        sdk_err!(CryptoInvalidHex,
-            "Invalid hex string: {}\r\nhex: [{}]", err, s)
+        sdk_err!(
+            CryptoInvalidHex,
+            "Invalid hex string: {}\r\nhex: [{}]",
+            err,
+            s
+        )
     }
 
     pub fn crypto_invalid_base64<E: Display>(s: &String, err: E) -> Self {
-        sdk_err!(CryptoInvalidHex,
-            "Invalid base64 string: {}\r\nbase64: [{}]", err, s)
+        sdk_err!(
+            CryptoInvalidHex,
+            "Invalid base64 string: {}\r\nbase64: [{}]",
+            err,
+            s
+        )
     }
 
     pub fn crypto_invalid_factorize_challenge<E: Display>(hex: &String, err: E) -> Self {
-        sdk_err!(CryptoInvalidFactorizeChallenge,
-            "Invalid factorize challenge: {}\r\nchallenge: [{}]", err, hex)
+        sdk_err!(
+            CryptoInvalidFactorizeChallenge,
+            "Invalid factorize challenge: {}\r\nchallenge: [{}]",
+            err,
+            hex
+        )
     }
 
     pub fn crypto_invalid_big_int(hex: &String) -> Self {
-        sdk_err!(CryptoInvalidBigInt,
-            "Invalid big int [{}]", hex)
+        sdk_err!(CryptoInvalidBigInt, "Invalid big int [{}]", hex)
     }
 
     pub fn crypto_convert_input_data_missing() -> Self {
@@ -303,134 +333,175 @@ impl ApiError {
             r#"Input data for conversion function is missing. Expected one of { text: "..." }, { hex: "..." } or { base64: "..." }"#.to_string())
     }
     pub fn crypto_convert_output_can_not_be_encoded_to_utf8<E: Display>(err: E) -> Self {
-        sdk_err!(CryptoConvertOutputCanNotBeEncodedToUtf8,
+        sdk_err!(
+            CryptoConvertOutputCanNotBeEncodedToUtf8,
             r#"Output data for conversion function can not be encoded to utf8: {}"#,
-            err)
+            err
+        )
     }
 
     pub fn crypto_scrypt_failed<E: Display>(err: E) -> Self {
-        sdk_err!(CryptoScryptFailed,
-            r#"Scrypt failed: {}"#, err)
+        sdk_err!(CryptoScryptFailed, r#"Scrypt failed: {}"#, err)
     }
 
     pub fn crypto_invalid_key_size(actual: usize, expected: usize) -> Self {
-        sdk_err!(CryptoInvalidKeySize,
-            "Invalid key size {}. Expected {}.", actual, expected)
+        sdk_err!(
+            CryptoInvalidKeySize,
+            "Invalid key size {}. Expected {}.",
+            actual,
+            expected
+        )
     }
 
     pub fn crypto_nacl_secret_box_failed<E: Display>(err: E) -> Self {
-        sdk_err!(CryptoNaclSecretBoxFailed,
-            "Secretbox failed: {}", err)
+        sdk_err!(CryptoNaclSecretBoxFailed, "Secretbox failed: {}", err)
     }
 
     pub fn crypto_nacl_box_failed<E: Display>(err: E) -> Self {
-        sdk_err!(CryptoNaclBoxFailed,
-            "Box failed: {}", err)
+        sdk_err!(CryptoNaclBoxFailed, "Box failed: {}", err)
     }
 
     pub fn crypto_nacl_sign_failed<E: Display>(err: E) -> Self {
-        sdk_err!(CryptoNaclSignFailed,
-            "Sign failed: {}", err)
+        sdk_err!(CryptoNaclSignFailed, "Sign failed: {}", err)
     }
 
     pub fn crypto_bip39_invalid_entropy<E: Display>(err: E) -> Self {
-        sdk_err!(CryptoBip39InvalidEntropy,
-            "Invalid bip39 entropy: {}", err)
+        sdk_err!(CryptoBip39InvalidEntropy, "Invalid bip39 entropy: {}", err)
     }
 
     pub fn crypto_bip39_invalid_phrase<E: Display>(err: E) -> Self {
-        sdk_err!(CryptoBip39InvalidPhrase,
-            "Invalid bip39 phrase: {}", err)
+        sdk_err!(CryptoBip39InvalidPhrase, "Invalid bip39 phrase: {}", err)
     }
 
     pub fn crypto_bip32_invalid_key<E: Display>(key: E) -> Self {
-        sdk_err!(CryptoBip32InvalidKey,
-            "Invalid bip32 key: {}", key)
+        sdk_err!(CryptoBip32InvalidKey, "Invalid bip32 key: {}", key)
     }
 
     pub fn crypto_bip32_invalid_derive_path<E: Display>(path: E) -> Self {
-        sdk_err!(CryptoBip32InvalidDerivePath,
-            "Invalid bip32 derive path: {}", path)
+        sdk_err!(
+            CryptoBip32InvalidDerivePath,
+            "Invalid bip32 derive path: {}",
+            path
+        )
     }
 
     pub fn crypto_bip39_invalid_dictionary(dictionary: u8) -> Self {
-        sdk_err!(CryptoBip39InvalidDictionary,
-            "Invalid mnemonic dictionary: {}", dictionary)
+        sdk_err!(
+            CryptoBip39InvalidDictionary,
+            "Invalid mnemonic dictionary: {}",
+            dictionary
+        )
     }
 
     pub fn crypto_bip39_invalid_word_count(word_count: u8) -> Self {
-        sdk_err!(CryptoBip39InvalidWordCount,
-            "Invalid mnemonic word count: {}", word_count)
+        sdk_err!(
+            CryptoBip39InvalidWordCount,
+            "Invalid mnemonic word count: {}",
+            word_count
+        )
     }
 
     pub fn crypto_invalid_secret_key<E: Display>(err: E, key: &String) -> Self {
-        sdk_err!(CryptoInvalidSecretKey,
-            "Invalid secret key [{}]: {}", err, key)
+        sdk_err!(
+            CryptoInvalidSecretKey,
+            "Invalid secret key [{}]: {}",
+            err,
+            key
+        )
     }
 
     pub fn crypto_invalid_public_key<E: Display>(err: E, key: &String) -> Self {
-        sdk_err!(CryptoInvalidPublicKey,
-            "Invalid public key [{}]: {}", err, key)
+        sdk_err!(
+            CryptoInvalidPublicKey,
+            "Invalid public key [{}]: {}",
+            err,
+            key
+        )
     }
 
     pub fn crypto_invalid_address<E: Display>(err: E, address: &str) -> Self {
-        sdk_err!(CryptoInvalidAddress,
-            "Invalid address [{}]: {}", err, address)
+        sdk_err!(
+            CryptoInvalidAddress,
+            "Invalid address [{}]: {}",
+            err,
+            address
+        )
     }
 
     pub fn crypto_invalid_key<E: Display>(err: E, key: &String) -> Self {
-        sdk_err!(CryptoInvalidKey,
-            "Invalid key [{}]: {}", err, key)
+        sdk_err!(CryptoInvalidKey, "Invalid key [{}]: {}", err, key)
     }
 
     pub fn crypto_mnemonic_generation_failed() -> Self {
-        ApiError::sdk(CryptoMnemonicGenerationFailed,
-            "Mnemonic generation failed".into())
+        ApiError::sdk(
+            CryptoMnemonicGenerationFailed,
+            "Mnemonic generation failed".into(),
+        )
     }
 
     pub fn crypto_mnemonic_from_entropy_failed(reason: &str) -> Self {
-        ApiError::sdk(CryptoMnemonicFromEntropyFailed,
-            format!("Mnemonic from entropy failed: {}", reason))
+        ApiError::sdk(
+            CryptoMnemonicFromEntropyFailed,
+            format!("Mnemonic from entropy failed: {}", reason),
+        )
     }
 
-// SDK Contracts
+    // SDK Contracts
 
     pub fn contracts_load_failed<E: Display>(err: E, address: &String) -> Self {
-        sdk_err!(ContractsLoadFailed,
-            "Load contract [{}] failed: {}", address, err)
+        sdk_err!(
+            ContractsLoadFailed,
+            "Load contract [{}] failed: {}",
+            address,
+            err
+        )
     }
 
     pub fn contracts_send_message_failed<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsSendMessageFailed,
-            "Send message failed: {}", err)
+        sdk_err!(ContractsSendMessageFailed, "Send message failed: {}", err)
     }
 
     pub fn contracts_create_deploy_message_failed<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsCreateDeployMessageFailed,
-            "Create deploy message failed: {}", err)
+        sdk_err!(
+            ContractsCreateDeployMessageFailed,
+            "Create deploy message failed: {}",
+            err
+        )
     }
 
     pub fn contracts_create_run_message_failed<E: Display>(err: E, function: &str) -> Self {
-        sdk_err!(ContractsCreateRunMessageFailed,
-            "Create run message failed: {}", err
-        ).add_function(Some(function))
+        sdk_err!(
+            ContractsCreateRunMessageFailed,
+            "Create run message failed: {}",
+            err
+        )
+        .add_function(Some(function))
     }
 
     pub fn contracts_create_send_grams_message_failed<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsCreateSendGramsMessageFailed,
-            "Create send grams message failed: {}", err)
+        sdk_err!(
+            ContractsCreateSendGramsMessageFailed,
+            "Create send grams message failed: {}",
+            err
+        )
     }
 
     pub fn contracts_decode_run_output_failed<E: Display>(err: E, function: Option<&str>) -> Self {
-        sdk_err!(ContractsDecodeRunOutputFailed,
-            "Decode run output failed: {}", err
-        ).add_function(function)
+        sdk_err!(
+            ContractsDecodeRunOutputFailed,
+            "Decode run output failed: {}",
+            err
+        )
+        .add_function(function)
     }
 
     pub fn contracts_decode_run_input_failed<E: Display>(err: E, function: Option<&str>) -> Self {
-        sdk_err!(ContractsDecodeRunInputFailed,
-            "Decode run input failed: {}", err
-        ).add_function(function)
+        sdk_err!(
+            ContractsDecodeRunInputFailed,
+            "Decode run input failed: {}",
+            err
+        )
+        .add_function(function)
     }
 
     pub fn contracts_run_failed<E: Display>(err: E) -> ApiError {
@@ -438,101 +509,137 @@ impl ApiError {
     }
 
     pub fn contracts_run_contract_load_failed<E: Display>(err: E) -> ApiError {
-        sdk_err!(ContractsRunContractLoadFailed,
-            "Contract load failed: {}", err)
+        sdk_err!(
+            ContractsRunContractLoadFailed,
+            "Contract load failed: {}",
+            err
+        )
     }
 
     pub fn contracts_invalid_image<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsInvalidImage,
-            "Invalid contract image: {}", err)
+        sdk_err!(ContractsInvalidImage, "Invalid contract image: {}", err)
     }
 
     pub fn contracts_image_creation_failed<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsImageCreationFailed,
-            "Image creation failed: {}", err)
+        sdk_err!(
+            ContractsImageCreationFailed,
+            "Image creation failed: {}",
+            err
+        )
     }
 
     pub fn contracts_deploy_failed<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsDeployFailed,
-            "Deploy failed: {}", err)
+        sdk_err!(ContractsDeployFailed, "Deploy failed: {}", err)
     }
 
     pub fn contracts_deploy_transaction_aborted() -> Self {
-        ApiError::sdk(ContractsDeployTransactionAborted,
-            "Deploy failed: transaction aborted".into())
+        ApiError::sdk(
+            ContractsDeployTransactionAborted,
+            "Deploy failed: transaction aborted".into(),
+        )
     }
 
     pub fn contracts_run_body_creation_failed<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsRunBodyCreationFailed,
-        "Run body creation failed: {}", err)
+        sdk_err!(
+            ContractsRunBodyCreationFailed,
+            "Run body creation failed: {}",
+            err
+        )
     }
 
     pub fn contracts_encode_message_with_sign_failed<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsEncodeMessageWithSignFailed,
-            "Encoding message with sign failed: {}", err)
+        sdk_err!(
+            ContractsEncodeMessageWithSignFailed,
+            "Encoding message with sign failed: {}",
+            err
+        )
     }
 
     pub fn contracts_get_function_id_failed<E: Display>(err: E, function: &str) -> Self {
-        sdk_err!(ContractsGetFunctionIdFailed,
-            "Get function ID failed: {}", err
-        ).add_function(Some(function))
+        sdk_err!(
+            ContractsGetFunctionIdFailed,
+            "Get function ID failed: {}",
+            err
+        )
+        .add_function(Some(function))
     }
 
     pub fn contracts_local_run_failed<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsLocalRunFailed,
-            "Local run failed: {}", err)
+        sdk_err!(ContractsLocalRunFailed, "Local run failed: {}", err)
     }
 
     pub fn contracts_address_conversion_failed<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsAddressConversionFailed,
-            "Address conversion failed: {}", err)
+        sdk_err!(
+            ContractsAddressConversionFailed,
+            "Address conversion failed: {}",
+            err
+        )
     }
 
     pub fn contracts_invalid_boc<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsInvalidBoc,
-            "Invalid Bag of Cells: {}", err)
+        sdk_err!(ContractsInvalidBoc, "Invalid Bag of Cells: {}", err)
     }
 
     pub fn contracts_load_messages_failed<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsLoadMessagesFailed,
-            "Load messages failed: {}", err)
+        sdk_err!(ContractsLoadMessagesFailed, "Load messages failed: {}", err)
     }
 
     pub fn contracts_cannot_serialize_message<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsCannotSerializeMessage,
-            "Can not serialize message: {}", err)
+        sdk_err!(
+            ContractsCannotSerializeMessage,
+            "Can not serialize message: {}",
+            err
+        )
     }
 
     pub fn contracts_process_message_failed<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsProcessMessageFailed,
-            "Process message failed: {}", err)
+        sdk_err!(
+            ContractsProcessMessageFailed,
+            "Process message failed: {}",
+            err
+        )
     }
 
     pub fn contracts_find_shard_failed<E: Display>(err: E) -> Self {
-        sdk_err!(ContractsFindShardFailed,
-            "Account shard search failed: {}", err)
+        sdk_err!(
+            ContractsFindShardFailed,
+            "Account shard search failed: {}",
+            err
+        )
     }
 
     // SDK queries
 
     pub fn queries_query_failed<E: Display>(err: E) -> Self {
-        sdk_err!(QueriesQueryFailed,
-            "Query failed: {}", err)
+        sdk_err!(QueriesQueryFailed, "Query failed: {}", err)
     }
 
     pub fn queries_subscribe_failed<E: Display>(err: E) -> Self {
-        sdk_err!(QueriesSubscribeFailed,
-            "Subscribe failed: {}", err)
+        sdk_err!(QueriesSubscribeFailed, "Subscribe failed: {}", err)
     }
 
     pub fn queries_wait_for_failed<E: Display>(err: E) -> Self {
-        sdk_err!(QueriesWaitForFailed,
-            "WaitFor failed: {}", err)
+        sdk_err!(QueriesWaitForFailed, "WaitFor failed: {}", err)
     }
 
     pub fn queries_get_next_failed<E: Display>(err: E) -> Self {
-        sdk_err!(QueriesGetNextFailed,
-            "Get next failed: {}", err)
+        sdk_err!(QueriesGetNextFailed, "Get next failed: {}", err)
+    }
+
+    // SDK Abi module
+
+    pub fn abi_required_address_missing_for_encode_message() -> Self {
+        Self::sdk(
+            AbiRequiredAddressMissingForEncodeMessage,
+            "Address must be provided to encode run message.".into(),
+        )
+    }
+
+    pub fn abi_missing_required_call_set_for_encode_message() -> Self {
+        Self::sdk(
+            AbiRequiredCallSetMissingForEncodeMessage,
+            "Call parameters must be provided to encode run message.".into(),
+        )
     }
 
     // Failed transaction phases
@@ -559,7 +666,7 @@ impl ApiError {
         let mut error = match reason {
             ComputeSkipReason::NoState => Self::account_code_missing(address),
             ComputeSkipReason::BadState => Self::account_frozen_or_deleted(address),
-            ComputeSkipReason::NoGas => Self::low_balance(address, balance)
+            ComputeSkipReason::NoGas => Self::low_balance(address, balance),
         };
 
         error.data["transaction_id"] = tr_id.map(|s| s.into()).unwrap_or(serde_json::Value::Null);
@@ -568,7 +675,11 @@ impl ApiError {
         error
     }
 
-    pub fn tvm_execution_failed(tr_id: Option<String>, exit_code: i32, address: &MsgAddressInt) -> ApiError {
+    pub fn tvm_execution_failed(
+        tr_id: Option<String>,
+        exit_code: i32,
+        address: &MsgAddressInt,
+    ) -> ApiError {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ContractsTvmError,
@@ -610,8 +721,9 @@ impl ApiError {
         error.data["reason"] = match reason {
             AccStatusChange::Frozen => "Account is frozen",
             AccStatusChange::Deleted => "Account is deleted",
-            _ => "null"
-        }.into();
+            _ => "null",
+        }
+        .into();
         error
     }
 
@@ -625,13 +737,15 @@ impl ApiError {
     ) -> ApiError {
         let mut error = if no_funds {
             let mut error = Self::low_balance(address, balance);
-            error.data["description"] = "Contract tried to send value exceeding account balance".into();
+            error.data["description"] =
+                "Contract tried to send value exceeding account balance".into();
             error
         } else {
             let mut error = ApiError::new(
                 ApiErrorSource::Node,
                 &ActionPhaseFailed,
-                "Transaction failed at action phase".to_owned());
+                "Transaction failed at action phase".to_owned(),
+            );
             if !valid {
                 error.data["description"] = "Contract tried to send invalid oubound message".into();
             }
@@ -722,6 +836,9 @@ pub enum ApiSdkErrorCode {
     QueriesGetNextFailed = 4004,
 
     CellInvalidQuery = 5001,
+
+    AbiRequiredAddressMissingForEncodeMessage = 6001,
+    AbiRequiredCallSetMissingForEncodeMessage = 6002,
 }
 
 impl ApiErrorCode for ApiSdkErrorCode {
@@ -738,7 +855,8 @@ impl AsString for ComputeSkipReason {
             ComputeSkipReason::NoState => "Account has no code and data",
             ComputeSkipReason::BadState => "Account is in a bad state: frozen or deleted",
             ComputeSkipReason::NoGas => "No gas to execute VM",
-        }.to_string()
+        }
+        .to_string()
     }
 }
 
@@ -750,13 +868,13 @@ impl AsString for AccStatusChange {
             AccStatusChange::Unchanged => "Account was unchanged",
             AccStatusChange::Frozen => "Account was frozen due storage phase",
             AccStatusChange::Deleted => "Account was deleted due storage phase",
-        }.to_string()
+        }
+        .to_string()
     }
 }
 
-
 pub struct ApiContractErrorCode {
-    exit_code: i32
+    exit_code: i32,
 }
 
 impl ApiErrorCode for ApiContractErrorCode {
@@ -792,7 +910,8 @@ impl ApiActionCode {
             "Outbound message is invalid"
         } else {
             "Action phase failed"
-        }.to_string()
+        }
+        .to_string()
     }
 }
 
@@ -802,26 +921,62 @@ impl ApiErrorCode for i32 {
     }
 }
 
-pub fn apierror_from_sdkerror<F>(err: &failure::Error, default_err: F, client: Option<&ton_sdk::NodeClient>) -> ApiError
-    where
-        F: Fn(String) -> ApiError,
+pub fn apierror_from_sdkerror<F>(
+    err: &failure::Error,
+    default_err: F,
+    client: Option<&ton_sdk::NodeClient>,
+) -> ApiError
+where
+    F: Fn(String) -> ApiError,
 {
     let err = match err.downcast_ref::<SdkError>() {
         Some(SdkError::WaitForTimeout) => ApiError::wait_for_timeout(),
-        Some(SdkError::MessageExpired { msg_id, expire, sending_time, block_time, block_id }) =>
-            ApiError::message_expired(msg_id.to_string(), *sending_time, *expire, *block_time, block_id.to_string()),
-        Some(SdkError::NetworkSilent { msg_id, timeout, block_id, state }) =>
-            ApiError::network_silent(msg_id.to_string(), *timeout, block_id.to_string(), state.clone()),
-        Some(SdkError::TransactionWaitTimeout { msg_id, sending_time, timeout, state }) =>
-            ApiError::transaction_wait_timeout(msg_id.to_string(), *sending_time, *timeout, state.clone()),
-        Some(SdkError::ClockOutOfSync { delta_ms, threshold_ms, expiration_timeout }) =>
-            ApiError::clock_out_of_sync(*delta_ms, *threshold_ms, *expiration_timeout),
+        Some(SdkError::MessageExpired {
+            msg_id,
+            expire,
+            sending_time,
+            block_time,
+            block_id,
+        }) => ApiError::message_expired(
+            msg_id.to_string(),
+            *sending_time,
+            *expire,
+            *block_time,
+            block_id.to_string(),
+        ),
+        Some(SdkError::NetworkSilent {
+            msg_id,
+            timeout,
+            block_id,
+            state,
+        }) => ApiError::network_silent(
+            msg_id.to_string(),
+            *timeout,
+            block_id.to_string(),
+            state.clone(),
+        ),
+        Some(SdkError::TransactionWaitTimeout {
+            msg_id,
+            sending_time,
+            timeout,
+            state,
+        }) => ApiError::transaction_wait_timeout(
+            msg_id.to_string(),
+            *sending_time,
+            *timeout,
+            state.clone(),
+        ),
+        Some(SdkError::ClockOutOfSync {
+            delta_ms,
+            threshold_ms,
+            expiration_timeout,
+        }) => ApiError::clock_out_of_sync(*delta_ms, *threshold_ms, *expiration_timeout),
         Some(SdkError::ResumableNetworkError { state, error }) => {
             let mut api_error = apierror_from_sdkerror(error, default_err, client);
             api_error.message_processing_state = Some(state.clone());
             api_error
         }
-        _ => default_err(err.to_string())
+        _ => default_err(err.to_string()),
     };
 
     if let Some(client) = client {
@@ -887,20 +1042,34 @@ impl StdContractError {
     pub fn tip(&self) -> Option<&str> {
         let tip = match self {
             StdContractError::InvalidSignature => "Check sign keys",
-            StdContractError::MethodNotFound => "Check contract ABI. It may be invalid or from an old contract version",
-            StdContractError::UnsupportedAbiVersion => "Check contract ABI. It may be invalid or from old contract version",
+            StdContractError::MethodNotFound => {
+                "Check contract ABI. It may be invalid or from an old contract version"
+            }
+            StdContractError::UnsupportedAbiVersion => {
+                "Check contract ABI. It may be invalid or from old contract version"
+            }
             StdContractError::PubKeyNotFound => "Contract is probably deployed incorrectly",
-            StdContractError::SignNotFount => "Check call parameters. Sign keys should be passed to sign message",
+            StdContractError::SignNotFount => {
+                "Check call parameters. Sign keys should be passed to sign message"
+            }
             StdContractError::InvalidMsg => "Check call parameters",
-            StdContractError::IndexOutOfRange => "Check call parameters. Probably contract doesn't have needed data",
+            StdContractError::IndexOutOfRange => {
+                "Check call parameters. Probably contract doesn't have needed data"
+            }
             StdContractError::ConstructorAlreadyCalled => "Contract cannot be redeployed",
             StdContractError::ReplayProtection => "Try again",
-            StdContractError::AddressUnpackError => "Check call parameters. Probably some address parameter is invalid (e.g. empty)",
-            StdContractError::PopEmptyArray => "Check call parameters. Probably contract doesn't have needed data",
+            StdContractError::AddressUnpackError => {
+                "Check call parameters. Probably some address parameter is invalid (e.g. empty)"
+            }
+            StdContractError::PopEmptyArray => {
+                "Check call parameters. Probably contract doesn't have needed data"
+            }
             StdContractError::ExtMessageExpired => "Try again",
-            StdContractError::MsgHasNoSignButHasKey => "Check call parameters. Sign keys should be passed to sign message",
+            StdContractError::MsgHasNoSignButHasKey => {
+                "Check call parameters. Sign keys should be passed to sign message"
+            }
             StdContractError::NoKeyInData => "Contract is probably deployed incorrectly",
-            _ => ""
+            _ => "",
         };
         if tip.len() > 0 {
             Some(tip)
