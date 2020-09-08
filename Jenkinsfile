@@ -405,7 +405,7 @@ pipeline {
                             withCredentials([file(credentialsId: 'ovh-s3-creds', variable: 'ovhs3')]) {
                                 sh """
                                     export AWS_CONFIG_FILE=\$(echo \"\${ovhs3}\")
-                                    aws s3 cp s3://sdkbinaries.tonlabs.io/version.json ./version.json
+                                    aws s3 cp s3://sdkbinariestonlabsio/version.json ./version.json
                                 """
                             }
 
@@ -424,7 +424,7 @@ ton_client/platforms/ton-client-web"""
                                 withCredentials([file(credentialsId: 'ovh-s3-creds', variable: 'ovhs3')]) {
                                     sh """
                                         export AWS_CONFIG_FILE=\$(echo \"\${ovhs3}\")
-                                        aws s3 cp ./version.json s3://sdkbinaries.tonlabs.io/version.json
+                                        aws s3 cp ./version.json s3://sdkbinariestonlabsio/version.json
                                     """
                                 }
                             }
@@ -1205,7 +1205,7 @@ ton_client/platforms/ton-client-web"""
                                 export AWS_CONFIG_FILE=\$(echo \"\${ovhs3}\")
                                 for it in \$(ls *.gz)
                                 do
-                                    aws s3 cp ./\$it s3://sdkbinaries.tonlabs.io/${deployPath}
+                                    aws s3 cp ./\$it s3://sdkbinariestonlabsio/${deployPath}
                                 done
                             """
                         }
