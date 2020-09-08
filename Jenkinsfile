@@ -1,5 +1,3 @@
-@Library('infrastructure-jenkins-shared-library') _
-
 G_giturl = "git@github.com:tonlabs/TON-SDK.git"
 G_gitcred = 'TonJenSSH'
 G_docker_creds = 'dockerhubLanin'
@@ -404,7 +402,13 @@ pipeline {
                         echo "Set version from branch: ${G_binversion}"
                     } else {
                         lock('bucket') {
-                            bucketFunctions._downloadFromBucket ".", "version.json", "."
+                            withCredentials([file(credentialsId: 'ovh-s3-creds', variable: 'ovhs3')]) {
+                                sh """
+                                    export AWS_CONFIG_FILE=\$(echo \"\${ovhs3}\")
+                                    aws s3 cp s3://sdkbinaries.tonlabs.io/version.json ./version.json
+                                """
+                            }
+
                             def folders = """ton_sdk \
 ton_client/client \
 ton_client/platforms/ton-client-node-js \
@@ -417,7 +421,12 @@ ton_client/platforms/ton-client-web"""
                             }
 
                             if(!isUpstream() && (GIT_BRANCH == 'master' || GIT_BRANCH ==~ '^PR-[0-9]+' || GIT_BRANCH == "${getVar(G_binversion)}-rc")) {
-                                bucketFunctions._uploadToBucket ".", "version.json", "."
+                                withCredentials([file(credentialsId: 'ovh-s3-creds', variable: 'ovhs3')]) {
+                                    sh """
+                                        export AWS_CONFIG_FILE=\$(echo \"\${ovhs3}\")
+                                        aws s3 cp ./version.json s3://sdkbinaries.tonlabs.io/version.json
+                                    """
+                                }
                             }
                         }
                     }
@@ -1191,7 +1200,15 @@ ton_client/platforms/ton-client-web"""
 
                             build job: "Integration/integration-tests/master", parameters: params
                         }
-                        bucketFunctions._uploadToBucket ".", "*.gz", "${deployPath}"
+                        withCredentials([file(credentialsId: 'ovh-s3-creds', variable: 'ovhs3')]) {
+                            sh """
+                                export AWS_CONFIG_FILE=\$(echo \"\${ovhs3}\")
+                                for it in \$(ls *.gz)
+                                do
+                                    aws s3 cp ./\$it s3://sdkbinaries.tonlabs.io/${deployPath}
+                                done
+                            """
+                        }
                     }
                 }
             }
