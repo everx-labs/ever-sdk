@@ -20,10 +20,10 @@ enum tc_response_flags_t {
 };
 
 typedef void (*tc_on_response_t)(
-    int32_t request_id,
+    uint32_t request_id,
     tc_string_t result_json,
     tc_string_t error_json,
-    int32_t flags);
+    uint32_t flags);
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,7 +35,7 @@ void tc_json_request_async(
     uint32_t context,
     tc_string_t method,
     tc_string_t params_json,
-    int32_t request_id,
+    uint32_t request_id,
     tc_on_response_t on_result);
 
 tc_response_handle_t* tc_json_request(

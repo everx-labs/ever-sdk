@@ -38,7 +38,7 @@ pub struct ResultOfScrypt {
 /// Perform `scrypt` encryption.
 /// See [https://en.wikipedia.org/wiki/Scrypt].
 pub fn scrypt(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfScrypt,
 ) -> ApiResult<ResultOfScrypt> {
     let mut result = Vec::new();

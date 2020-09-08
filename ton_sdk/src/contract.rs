@@ -14,7 +14,7 @@
 use crate::json_helper;
 use crate::local_tvm;
 use crate::error::SdkError;
-use crate::{AbiContract, BlockId, Message, MessageId, TimeoutsConfig, Transaction};
+use crate::{AbiContract, BlockId, Message, MessageId, AbiConfig, Transaction};
 
 use ed25519_dalek::{Keypair, PublicKey};
 use chrono::prelude::Utc;
@@ -458,11 +458,11 @@ impl Contract {
     {
         let stop_time = match expire {
             Some(expire) => expire,
-            None => Self::now() + client.timeouts().message_processing_timeout / 1000
+            None => Self::now() + client.config().message_processing_timeout() / 1000
         };
 
         let mut transaction = Value::Null;
-        let add_timeout = client.timeouts().message_processing_timeout;
+        let add_timeout = client.config().message_processing_timeout();
         loop {
             let now = Self::now();
             let timeout = std::cmp::max(stop_time, now) - now + add_timeout;
@@ -925,7 +925,7 @@ impl Contract {
 
     // Add `expire` parameter to contract functions header
     fn make_expire_header(
-        timeouts: Option<&TimeoutsConfig>,
+        abi_config: &AbiConfig,
         abi: String,
         header: Option<String>,
         try_index: Option<u8>,
@@ -933,13 +933,11 @@ impl Contract {
         let abi = AbiContract::load(abi.as_bytes())?;
         // use expire only if contract supports it
         if abi.header().contains(&serde_json::from_value::<ton_abi::Param>("expire".into())?) {
-            let default = TimeoutsConfig::default();
-            let timeouts = timeouts.unwrap_or(&default);
             let try_index = try_index.unwrap_or(0);
             // expire is `now + timeout`
             let timeout = Self::calc_timeout(
-                timeouts.message_expiration_timeout,
-                timeouts.message_expiration_timeout_grow_factor,
+                abi_config.message_expiration_timeout(),
+                abi_config.message_expiration_timeout_grow_factor(),
                 try_index);
             let expire = Self::now() + timeout / 1000;
 
@@ -972,7 +970,7 @@ impl Contract {
         params: FunctionCallSet,
         internal: bool,
         key_pair: Option<&Keypair>,
-        timeouts: Option<&TimeoutsConfig>,
+        timeouts: &AbiConfig,
         try_index: Option<u8>,
     ) -> Result<SdkMessage> {
         let (header, expire) = Self::make_expire_header(timeouts, params.abi.clone(), params.header, try_index)?;
@@ -999,7 +997,7 @@ impl Contract {
     pub fn get_call_message_bytes_for_signing(
         address: MsgAddressInt,
         params: FunctionCallSet,
-        timeouts: Option<&TimeoutsConfig>,
+        timeouts: &AbiConfig,
         try_index: Option<u8>,
     ) -> Result<MessageToSign> {
         let (header, expire) = Self::make_expire_header(timeouts, params.abi.clone(), params.header, try_index)?;
@@ -1026,7 +1024,7 @@ impl Contract {
         image: ContractImage,
         key_pair: Option<&Keypair>,
         workchain_id: i32,
-        timeouts: Option<&TimeoutsConfig>,
+        timeouts: &AbiConfig,
         try_index: Option<u8>,
     ) -> Result<SdkMessage> {
         let (header, expire) = Self::make_expire_header(timeouts, params.abi.clone(), params.header, try_index)?;
@@ -1077,7 +1075,7 @@ impl Contract {
         params: FunctionCallSet,
         image: ContractImage,
         workchain_id: i32,
-        timeouts: Option<&TimeoutsConfig>,
+        timeouts: &AbiConfig,
         try_index: Option<u8>,
     ) -> Result<MessageToSign> {
         let (header, expire) = Self::make_expire_header(timeouts, params.abi.clone(), params.header, try_index)?;

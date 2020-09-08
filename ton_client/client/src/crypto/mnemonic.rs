@@ -51,7 +51,7 @@ pub struct ResultOfMnemonicWords {
 }
 
 pub fn mnemonic_words(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicWords,
 ) -> ApiResult<ResultOfMnemonicWords> {
     Ok(ResultOfMnemonicWords {
@@ -73,7 +73,7 @@ pub struct ResultOfMnemonicFromRandom {
 }
 
 pub fn mnemonic_from_random(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicFromRandom,
 ) -> ApiResult<ResultOfMnemonicFromRandom> {
     Ok(ResultOfMnemonicFromRandom {
@@ -96,7 +96,7 @@ pub struct ResultOfMnemonicFromEntropy {
 }
 
 pub fn mnemonic_from_entropy(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicFromEntropy,
 ) -> ApiResult<ResultOfMnemonicFromEntropy> {
     let mnemonic = mnemonics(params.dictionary, params.word_count)?;
@@ -120,7 +120,7 @@ pub struct ResultOfMnemonicVerify {
 }
 
 pub fn mnemonic_verify(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicVerify,
 ) -> ApiResult<ResultOfMnemonicVerify> {
     let mnemonic = mnemonics(params.dictionary, params.word_count)?;
@@ -140,7 +140,7 @@ pub struct ParamsOfMnemonicDeriveSignKeys {
 }
 
 pub fn mnemonic_derive_sign_keys(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicDeriveSignKeys,
 ) -> ApiResult<KeyPair> {
     let mnemonic = mnemonics(params.dictionary, params.word_count)?;

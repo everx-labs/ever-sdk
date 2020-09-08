@@ -1,4 +1,4 @@
-use crate::api::{Field, Type};
+use crate::api::{API, Field, Type};
 
 pub trait TypeInfo {
     fn type_info() -> Field;
@@ -41,6 +41,17 @@ impl TypeInfo for () {
     fn type_info() -> Field {
         Field {
             name: "unit".into(),
+            summary: None,
+            description: None,
+            value: Type::None,
+        }
+    }
+}
+
+impl TypeInfo for API {
+    fn type_info() -> Field {
+        Field {
+            name: "API".into(),
             summary: None,
             description: None,
             value: Type::None,

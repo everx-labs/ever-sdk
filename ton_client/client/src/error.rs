@@ -1,7 +1,7 @@
 use std::fmt::Display;
 use chrono::TimeZone;
 use ton_block::{AccStatusChange, ComputeSkipReason, MsgAddressInt};
-use ton_sdk::{SdkError, MessageProcessingState};
+use ton_sdk::{MessageProcessingState};
 use ton_types::ExceptionCode;
 use crate::error::ApiSdkErrorCode::*;
 
@@ -77,10 +77,10 @@ impl ApiError {
         Self::new(ApiErrorSource::Client, &code, message)
     }
 
+    #[cfg(feature = "node_interaction")]
     pub fn add_network_url(mut self, client: &ton_sdk::NodeClient) -> ApiError {
-        if let Some(server) = client.config_server() {
-            self.data["config_server"] = server.into();
-        }
+        self.data["config_server"] = client.config_server().into();
+
         if let Some(url) = client.query_url() {
             self.data["query_url"] = url.into();
         }
@@ -253,7 +253,7 @@ impl ApiError {
         error
     }
 
-    pub fn clock_out_of_sync(delta_ms: i64, threshold: i64, expiration_timout: u32) -> Self {
+    pub fn clock_out_of_sync(delta_ms: i64, threshold: i64) -> Self {
         let mut error = ApiError::new(
             ApiErrorSource::Node,
             &ApiSdkErrorCode::ClockOutOfSync,
@@ -263,7 +263,6 @@ impl ApiError {
         error.data = serde_json::json!({
             "delta_ms": delta_ms,
             "threshold_ms": threshold,
-            "expiration_timout_ms": expiration_timout,
             "tip": "Synchronize your device time with internet time"
         });
         error
@@ -765,58 +764,28 @@ impl ApiErrorCode for ApiContractErrorCode {
     }
 }
 
-pub struct ApiActionCode {
-    pub result_code: i32,
-    pub valid: bool,
-    pub no_funds: bool,
-}
-
-impl ApiErrorCode for ApiActionCode {
-    fn as_number(&self) -> isize {
-        self.result_code as isize
-    }
-}
-
-impl ApiActionCode {
-    pub fn new(result_code: i32, valid: bool, no_funds: bool) -> Self {
-        Self {
-            result_code,
-            valid,
-            no_funds,
-        }
-    }
-    pub fn as_string(&self) -> String {
-        if self.no_funds {
-            "Too low balance to send an outbound message"
-        } else if !self.valid {
-            "Outbound message is invalid"
-        } else {
-            "Action phase failed"
-        }.to_string()
-    }
-}
-
 impl ApiErrorCode for i32 {
     fn as_number(&self) -> isize {
         self.clone() as isize
     }
 }
 
+#[cfg(feature = "node_interaction")]
 pub fn apierror_from_sdkerror<F>(err: &failure::Error, default_err: F, client: Option<&ton_sdk::NodeClient>) -> ApiError
     where
         F: Fn(String) -> ApiError,
 {
-    let err = match err.downcast_ref::<SdkError>() {
-        Some(SdkError::WaitForTimeout) => ApiError::wait_for_timeout(),
-        Some(SdkError::MessageExpired { msg_id, expire, sending_time, block_time, block_id }) =>
+    let err = match err.downcast_ref::<ton_sdk::SdkError>() {
+        Some(ton_sdk::SdkError::WaitForTimeout) => ApiError::wait_for_timeout(),
+        Some(ton_sdk::SdkError::MessageExpired { msg_id, expire, sending_time, block_time, block_id }) =>
             ApiError::message_expired(msg_id.to_string(), *sending_time, *expire, *block_time, block_id.to_string()),
-        Some(SdkError::NetworkSilent { msg_id, timeout, block_id, state }) =>
+        Some(ton_sdk::SdkError::NetworkSilent { msg_id, timeout, block_id, state }) =>
             ApiError::network_silent(msg_id.to_string(), *timeout, block_id.to_string(), state.clone()),
-        Some(SdkError::TransactionWaitTimeout { msg_id, sending_time, timeout, state }) =>
+        Some(ton_sdk::SdkError::TransactionWaitTimeout { msg_id, sending_time, timeout, state }) =>
             ApiError::transaction_wait_timeout(msg_id.to_string(), *sending_time, *timeout, state.clone()),
-        Some(SdkError::ClockOutOfSync { delta_ms, threshold_ms, expiration_timeout }) =>
-            ApiError::clock_out_of_sync(*delta_ms, *threshold_ms, *expiration_timeout),
-        Some(SdkError::ResumableNetworkError { state, error }) => {
+        Some(ton_sdk::SdkError::ClockOutOfSync { delta_ms, threshold_ms }) =>
+            ApiError::clock_out_of_sync(*delta_ms, *threshold_ms),
+        Some(ton_sdk::SdkError::ResumableNetworkError { state, error }) => {
             let mut api_error = apierror_from_sdkerror(error, default_err, client);
             api_error.message_processing_state = Some(state.clone());
             api_error
