@@ -115,3 +115,12 @@ fn encode_v2() {
     );
     assert_eq!(signed.message, "te6ccgEBAwEAvAABRYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIMAQHhrd/b+MJ5Za+AygBc5qS/dVIPnqxCsM9PvqfVxutK+lnQEKzQoRTLYO6+jfM8TF4841bdNjLQwIDWL4UVFdxIhdMfECP8d3ruNZAXul5xxahT91swIEkEHph08JVlwmUmQAAAXRnJcuDX1XMZBW+LBKACAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==");
 }
+
+
+#[test]
+fn decode() {
+    TestClient::init_log();
+    let client = TestClient::new();
+    let (events_abi, events_tvc) = TestClient::package(EVENTS, 2);
+
+}
