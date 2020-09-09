@@ -11,7 +11,7 @@
 * limitations under the License.
 */
 
-use crate::{NodeClientConfig, TimeoutsConfig};
+use crate::NetworkConfig;
 use crate::error::SdkError;
 use graphite::client::GqlClient;
 use graphite::types::{VariableRequest};
@@ -46,15 +46,6 @@ pub struct MutationRequest {
     pub body: String
 }
 
-#[allow(dead_code)]
-pub struct NodeClient {
-    client: Option<GqlClient>,
-    timeouts: TimeoutsConfig,
-    server_info: Option<ServerInfo>,
-    config_server: Option<String>,
-    query_url: Option<String>,
-}
-
 struct ServerInfo {
     pub version: u64,
     pub supports_time: bool
@@ -75,7 +66,28 @@ impl ServerInfo {
     }
 }
 
+struct InitedClientData {
+    pub client: GqlClient,
+    pub query_url: String,
+    pub server_info: ServerInfo
+}
+
+pub struct NodeClient {
+    config: NetworkConfig,
+    data: tokio::sync::RwLock<Option<InitedClientData>>,
+    // TODO: use tokio::sync:RwLock when SDK core is fully async
+    query_url: std::sync::RwLock<Option<String>>,
+}
+
 impl NodeClient {
+
+    pub fn new(config: NetworkConfig) -> Self {
+        NodeClient {
+            config,
+            query_url: std::sync::RwLock::new(None),
+            data: tokio::sync::RwLock::new(None)
+        }
+    }
 
     async fn check_redirect(address: &str) -> Result<Option<String>> {
         let client = ClientBuilder::new()
@@ -147,73 +159,81 @@ impl NodeClient {
         Ok(server_time - (start + (end - start) / 2))
     }
 
-    async fn check_time_delta(client: &GqlClient, timeouts: &TimeoutsConfig) -> Result<()> {
+    async fn check_time_delta(client: &GqlClient, config: &NetworkConfig) -> Result<()> {
         let delta = Self::get_time_delta(client).await?;
-        if delta.abs() >= timeouts.out_of_sync_threshold || delta.abs() >= timeouts.message_expiration_timeout as i64 {
+        if delta.abs() >= config.out_of_sync_threshold() {
             Err(SdkError::ClockOutOfSync {
                 delta_ms: delta,
-                threshold_ms: timeouts.out_of_sync_threshold,
-                expiration_timeout: timeouts.message_expiration_timeout
+                threshold_ms: config.out_of_sync_threshold()
             }.into())
         } else {
             Ok(())
         }
     }
 
-    // Globally initializes client with server address
-    pub async fn new(config: NodeClientConfig) -> Result<NodeClient> {
-        let timeouts = config.timeouts.unwrap_or_default();
-        let (client, server_info) = if let Some(base_url) = &config.base_url {
-            let (mut queries_server, mut subscriptions_server) = Self::expand_address(&base_url);
-            if let Some(redirected) = Self::check_redirect(&queries_server).await? {
-                queries_server = redirected.clone();
-                subscriptions_server = redirected
-                    .replace("https://", "wss://")
-                    .replace("http://", "ws://");
-            }
+    async fn init(config: &NetworkConfig) -> Result<InitedClientData> {
+        let (mut queries_server, mut subscriptions_server) = Self::expand_address(config.server_address());
+        if let Some(redirected) = Self::check_redirect(&queries_server).await? {
+            queries_server = redirected.clone();
+            subscriptions_server = redirected
+                .replace("https://", "wss://")
+                .replace("http://", "ws://");
+        }
 
-            let client = GqlClient::new(&queries_server, &subscriptions_server)?;
-            let server_info = Self::query_server_info(&client).await?;
-            if server_info.supports_time {
-                Self::check_time_delta(&client, &timeouts).await?;
-            }
+        let client = GqlClient::new(&queries_server, &subscriptions_server)?;
+        let server_info = Self::query_server_info(&client).await?;
+        if server_info.supports_time {
+            Self::check_time_delta(&client, config).await?;
+        }
 
-            (Some(client), Some(server_info))
-        } else {
-            (None, None)
-        };
-
-        Ok(NodeClient {
-            config_server: config.base_url,
-            query_url: client.as_ref()
-                .map(|client| client.queries_server().trim_end_matches("/graphql").to_owned()),
+        Ok(InitedClientData {
+            query_url: queries_server,
             client,
-            timeouts: timeouts,
             server_info,
         })
     }
 
-    pub fn timeouts(&self) -> &TimeoutsConfig {
-        &self.timeouts
+    async fn ensure_client<'a>(&'a self) -> Result<()> {
+        if self.data.read().await.is_some() {
+            return Ok(());
+        }
+
+        let mut data = self.data.write().await;
+        if data.is_some() {
+            return Ok(());
+        }
+
+        let inited_data = Self::init(&self.config).await?;
+        *self.query_url.write().unwrap() = Some(inited_data.query_url.clone());
+        *data = Some(inited_data);
+
+        Ok(())
     }
 
-    pub fn config_server(&self) -> Option<&str> {
-        self.config_server.as_ref().map(|string| string.as_str())
+    pub fn config(&self) -> &NetworkConfig {
+        &self.config
     }
 
-    pub fn query_url(&self) -> Option<&str> {
-        self.query_url.as_ref().map(|string| string.as_str())
+    pub fn config_server(&self) -> &str {
+        self.config.server_address()
+    }
+
+    pub fn query_url(&self) -> Option<String> {
+        self.query_url.read().unwrap().clone()
     }
 
     // Returns Stream with updates database fileds by provided filter
-    pub fn subscribe(&self, table: &str, filter: &str, fields: &str)
+    pub async fn subscribe(&self, table: &str, filter: &str, fields: &str)
         -> Result<impl Stream<Item=Result<Value>> + Send> {
 
         let request = Self::generate_subscription(table, filter, fields)?;
 
         let closure_table = table.to_owned();
 
-        let client = self.client.as_ref().ok_or(SdkError::SdkNotInitialized)?;
+        self.ensure_client().await?;
+        let client_lock = self.data.read().await;
+        let client = &client_lock.as_ref().unwrap().client;
+        // TODO: make client.subscribe function async
         let stream = client.subscribe(request)?
             .map(move |result| {
                     match result {
@@ -263,7 +283,10 @@ impl NodeClient {
     ) -> Result<Value> {
         let query = Self::generate_query_var(table, filter, fields, order_by, limit, timeout)?;
 
-        let client = self.client.as_ref().ok_or(SdkError::SdkNotInitialized)?;
+        self.ensure_client().await?;
+        let client_lock = self.data.read().await;
+        let client = &client_lock.as_ref().unwrap().client;
+
         let result = client.query_vars(query).await?;
 
         // try to extract the record value from the answer
@@ -285,7 +308,7 @@ impl NodeClient {
             fields,
             None,
             None,
-            timeout.or(Some(self.timeouts.wait_for_timeout))).await?;
+            timeout.or(Some(self.config.wait_for_timeout()))).await?;
 
         if !value[0].is_null() {
             Ok(value[0].clone())
@@ -371,7 +394,10 @@ impl NodeClient {
             body: base64::encode(value)
         };
 
-        let client = self.client.as_ref().ok_or(SdkError::SdkNotInitialized)?;
+        self.ensure_client().await?;
+        let client_lock = self.data.read().await;
+        let client = &client_lock.as_ref().unwrap().client;
+
         let result = client.query_vars(Self::generate_post_mutation(&[request])?).await;
 
         // send message is always successful in order to process case when server received message

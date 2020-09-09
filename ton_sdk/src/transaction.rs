@@ -23,8 +23,8 @@ use ton_block::{TransactionProcessingStatus, AccStatusChange, ComputeSkipReason,
 
 use std::convert::TryFrom;
 
-#[cfg(feature = "node_interaction")]
-use futures::{Stream, StreamExt};
+// #[cfg(feature = "node_interaction")]
+// use futures::{Stream, StreamExt};
 #[cfg(feature = "node_interaction")]
 use crate::node_client::NodeClient;
 #[cfg(feature = "node_interaction")]
@@ -260,13 +260,13 @@ impl Transaction {
     }
 
     // Asynchronously loads an instances of transaction's out messages
-    pub fn load_out_messages<'a>(&self, client: &'a NodeClient) -> Result<impl Stream<Item = Result<Message>> + Send + 'a> {
-        Ok(futures::stream::iter(self.out_messages_id().clone()).then(move |id| async move { 
-            match Message::load(client, &id).await {
-                Err(err) => Err(err),
-                Ok(msg) => msg.ok_or(SdkError::NoData.into())
-            }}))
-    }
+    // pub fn load_out_messages<'a>(&self, client: &'a NodeClient) -> Result<impl Stream<Item = Result<Message>> + Send + 'a> {
+    //     Ok(futures::stream::iter(self.out_messages_id().clone()).then(move |id| async move { 
+    //         match Message::load(client, &id).await {
+    //             Err(err) => Err(err),
+    //             Ok(msg) => msg.ok_or(SdkError::NoData.into())
+    //         }}))
+    // }
 
     // Asynchronously loads an instance of transaction's input message
     pub async fn load_in_message(&self, client: &NodeClient) -> Result<Option<Message>> {

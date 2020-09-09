@@ -12,7 +12,7 @@
 */
 
 use crate::{
-    tc_create_context, tc_destroy_context,
+    tc_create_context, tc_destroy_context, JsonResponse,
     error::{ApiError, ApiResult},
     crypto::keys::KeyPair,
     queries::{ParamsOfWaitForCollection, ResultOfWaitForCollection},
@@ -21,14 +21,22 @@ use crate::{
         deploy::{ParamsOfDeploy, ResultOfDeploy},
         run::{ParamsOfRun, ResultOfRun, RunFunctionCallSet},
     },
+    client::ResultOfCreateContext
 };
 use super::InteropContext;
-use super::{tc_json_request, InteropString};
+use super::{tc_json_request, tc_json_request_async, InteropString};
 use super::{tc_read_json_response, tc_destroy_json_response};
-use serde_json::{Value};
+use serde_json::Value;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
+use rand::Rng;
+use std::collections::HashMap;
+use std::sync::{
+    Mutex,
+    mpsc::{channel, Sender}};
 use crate::crypto::nacl::{ParamsOfNaclSignKeyPairFromSecret, ParamsOfNaclSignDetached, ResultOfNaclSignDetached};
+
+mod common;
 
 const ROOT_CONTRACTS_PATH: &str = "src/tests/contracts/";
 const LOG_CGF_PATH: &str = "src/tests/log_cfg.yaml";
@@ -58,7 +66,9 @@ lazy_static::lazy_static! {
 	pub static ref PIGGY_BANK_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.clone() + "Piggy.tvc").unwrap();
 	pub static ref WALLET_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.clone() + "LimitWallet.tvc").unwrap();
 	pub static ref SIMPLE_WALLET_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.clone() + "Wallet.tvc").unwrap();
-	pub static ref HELLO_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.clone() + "Hello.tvc").unwrap();
+    pub static ref HELLO_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.clone() + "Hello.tvc").unwrap();
+
+    pub static ref REQUESTS: Mutex<HashMap<u32, Sender<JsonResponse>>> = Mutex::new(HashMap::new());
 }
 
 fn read_abi(path: String) -> Value {
@@ -116,6 +126,9 @@ pub(crate) struct TestClient {
     context: InteropContext,
 }
 
+extern "C" fn on_result(request_id: u32, result_json: InteropString, error_json: InteropString, flags: u32) {
+    TestClient::on_result(request_id, result_json, error_json, flags)
+}
 
 impl TestClient {
     pub fn giver_address() -> &'static str {
@@ -164,7 +177,9 @@ impl TestClient {
 
     pub(crate) fn new() -> Self {
         Self::new_with_config(json!({
-            "baseUrl": Self::get_network_address()
+            "network": {
+                "server_address": Self::get_network_address()
+            }
         }))
     }
 
@@ -172,14 +187,22 @@ impl TestClient {
         let _ = log::set_boxed_logger(Box::new(SimpleLogger))
             .map(|()| log::set_max_level(MAX_LEVEL));
 
-        let context: InteropContext;
-        unsafe {
-            context = tc_create_context()
-        }
+        let response = unsafe {
+            let response_ptr = tc_create_context(InteropString::from(&config.to_string()));
+            let interop_response = tc_read_json_response(response_ptr);
+            let response = interop_response.to_response();
+            tc_destroy_json_response(response_ptr);
+            response
+        };
+
+        let context = if response.error_json.is_empty() {
+            let result: ResultOfCreateContext = serde_json::from_str(&response.result_json).unwrap();
+            result.handle
+        } else {
+            panic!("tc_create_context returned error: {}", response.error_json);
+        };
+
         let client = Self { context };
-        if config != Value::Null {
-            client.request_json("setup", config).unwrap();
-        }
         client
     }
 
@@ -207,7 +230,6 @@ impl TestClient {
         }
     }
 
-
     pub(crate) fn request<P, R>(&self, method: &str, params: P) -> R
         where P: Serialize, R: DeserializeOwned {
         let params = serde_json::to_value(params)
@@ -218,12 +240,66 @@ impl TestClient {
             .unwrap()
     }
 
+    fn on_result(request_id: u32, result_json: InteropString, error_json: InteropString, _flags: u32) {
+        let response = JsonResponse {
+            result_json: result_json.to_string(),
+            error_json: error_json.to_string()
+        };
+
+        REQUESTS.lock().unwrap()
+            .remove(&request_id)
+            .unwrap()
+            .send(response)
+            .unwrap()
+    }
+
+    pub(crate) fn request_json_async(&self, method: &str, params: Value) -> ApiResult<Value> {
+        let request_id = rand::thread_rng().gen::<u32>();
+        let (sender, receiver) = channel();
+        REQUESTS.lock().unwrap().insert(request_id, sender);
+
+        unsafe {
+            let params_json = if params.is_null() { String::new() } else { params.to_string() };
+            tc_json_request_async(
+                self.context,
+                InteropString::from(&method.to_string()),
+                InteropString::from(&params_json),
+                request_id,
+                on_result
+            );
+        };
+
+        let response = receiver.recv().unwrap();
+        if response.error_json.is_empty() {
+            if response.result_json.is_empty() {
+                Ok(Value::Null)
+            } else {
+                Ok(serde_json::from_str(&response.result_json).unwrap())
+            }
+        } else {
+            Err(serde_json::from_str(&response.error_json).unwrap())
+        }
+    }
+
+
+    pub(crate) fn request_async<P, R>(&self, method: &str, params: P) -> R
+        where P: Serialize, R: DeserializeOwned {
+        let params = serde_json::to_value(params)
+            .map_err(|err| ApiError::invalid_params("", err)).unwrap();
+        let result = self.request_json_async(method, params).unwrap();
+        serde_json::from_value(result)
+            .map_err(|err| ApiError::invalid_params("", err))
+            .unwrap()
+    }
+
+
     pub(crate) fn request_no_params<R: DeserializeOwned>(&self, method: &str) -> R {
         let result = self.request_json(method, Value::Null).unwrap();
         serde_json::from_value(result)
             .map_err(|err| ApiError::invalid_params("", err))
             .unwrap()
     }
+
 
     pub(crate) fn get_grams_from_giver(&self, account: &str, value: Option<u64>) {
         let run_result: ResultOfRun = if *NODE_SE {

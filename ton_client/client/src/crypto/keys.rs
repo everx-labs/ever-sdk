@@ -11,13 +11,13 @@
 * limitations under the License.
 */
 
-use crate::error::{ApiResult, ApiError};
-use crate::encoding::{hex_decode, base64_decode};
-use base64::URL_SAFE;
 use crate::client::ClientContext;
 use crate::crypto::internal;
+use crate::crypto::internal::{key256, ton_crc16};
+use crate::encoding::{base64_decode, hex_decode};
+use crate::error::{ApiError, ApiResult};
+use base64::URL_SAFE;
 use ed25519_dalek::Keypair;
-use crate::crypto::internal::{ton_crc16, key256};
 
 //----------------------------------------------------------------------------------------- KeyPair
 #[doc(summary = "")]
@@ -65,7 +65,7 @@ pub struct ResultOfConvertPublicKeyToTonSafeFormat {
 
 #[doc(summary = "Converts public key to ton safe_format")]
 pub fn convert_public_key_to_ton_safe_format(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfConvertPublicKeyToTonSafeFormat,
 ) -> ApiResult<ResultOfConvertPublicKeyToTonSafeFormat> {
     let public_key = hex_decode(&params.public_key)?;
@@ -77,14 +77,14 @@ pub fn convert_public_key_to_ton_safe_format(
     ton_public_key.push((hash >> 8) as u8);
     ton_public_key.push((hash & 255) as u8);
     Ok(ResultOfConvertPublicKeyToTonSafeFormat {
-        ton_public_key: base64::encode_config(&ton_public_key, URL_SAFE)
+        ton_public_key: base64::encode_config(&ton_public_key, URL_SAFE),
     })
 }
 
 //----------------------------------------------------------------------- generate_random_sign_keys
 
-#[doc(summary = "Generates random ed25519 key pair")]
-pub fn generate_random_sign_keys(_context: &mut ClientContext) -> ApiResult<KeyPair> {
+/// Generates random ed25519 key pair.
+pub fn generate_random_sign_keys(_context: std::sync::Arc<ClientContext>) -> ApiResult<KeyPair> {
     let mut rng = rand::thread_rng();
     let keypair = ed25519_dalek::Keypair::generate(&mut rng);
     Ok(KeyPair::new(
@@ -115,11 +115,12 @@ pub struct ResultOfSign {
 }
 
 /// Signs a data using the provided keys.
-pub fn sign(_context: &mut ClientContext, params: ParamsOfSign) -> ApiResult<ResultOfSign> {
-    let (signed, signature) = internal::sign_using_keys(
-        &base64_decode(&params.unsigned)?,
-        &params.keys.decode()?
-    )?;
+pub fn sign(
+    _context: std::sync::Arc<ClientContext>,
+    params: ParamsOfSign,
+) -> ApiResult<ResultOfSign> {
+    let (signed, signature) =
+        internal::sign_using_keys(&base64_decode(&params.unsigned)?, &params.keys.decode()?)?;
     Ok(ResultOfSign {
         signed: base64::encode(&signed),
         signature: hex::encode(signature),
@@ -150,7 +151,7 @@ pub struct ResultOfVerifySignature {
 /// Verifies signed data using the provided public key.
 /// Raises error in case when verification is failed.
 pub fn verify_signature(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfVerifySignature,
 ) -> ApiResult<ResultOfVerifySignature> {
     let mut unsigned: Vec<u8> = Vec::new();
@@ -160,10 +161,10 @@ pub fn verify_signature(
         &mut unsigned,
         &signed,
         &key256(&hex_decode(&params.public)?)?,
-    ).map_err(|_| ApiError::crypto_nacl_sign_failed("verify signature failed"))?;
+    )
+    .map_err(|_| ApiError::crypto_nacl_sign_failed("verify signature failed"))?;
     unsigned.resize(len, 0);
     Ok(ResultOfVerifySignature {
         unsigned: base64::encode(&unsigned),
     })
 }
-

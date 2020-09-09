@@ -40,7 +40,7 @@ pub struct ResultOfModularPower {
 /// Performs modular exponentiation for big integers (`base`^`exponent` mod `modulus`).
 /// See [https://en.wikipedia.org/wiki/Modular_exponentiation]
 pub fn modular_power(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfModularPower,
 ) -> ApiResult<ResultOfModularPower> {
     let base = parse_big_int(&params.base)?;
@@ -77,7 +77,7 @@ pub struct ResultOfFactorize {
 /// into a product of smaller prime integers (factors).
 /// See [https://en.wikipedia.org/wiki/Integer_factorization]
 pub fn factorize(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfFactorize,
 ) -> ApiResult<ResultOfFactorize> {
     fn invalid_composite<E: Display>(composite: &String, err: E) -> ApiError {
@@ -205,7 +205,7 @@ pub struct ResultOfTonCrc16 {
 
 #[doc(summary = "Calculates CRC16 using TON algorithm.")]
 pub fn ton_crc16(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfTonCrc16,
 ) -> ApiResult<ResultOfTonCrc16> {
     Ok(ResultOfTonCrc16 {
@@ -229,7 +229,7 @@ pub struct ResultOfGenerateRandomBytes {
 
 #[doc(summary = "Generates random byte array of the specified length in the spesified encoding")]
 pub fn generate_random_bytes(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfGenerateRandomBytes,
 ) -> ApiResult<ResultOfGenerateRandomBytes> {
     let mut rng = rand::thread_rng();

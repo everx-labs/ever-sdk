@@ -38,7 +38,7 @@ pub struct ResultOfHDKeyXPrvFromMnemonic {
 
 #[doc(summary = "Generate the extended master private key that will be the root for all the derived keys")]
 pub fn hdkey_xprv_from_mnemonic(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyXPrvFromMnemonic,
 ) -> ApiResult<ResultOfHDKeyXPrvFromMnemonic> {
     Ok(ResultOfHDKeyXPrvFromMnemonic {
@@ -62,7 +62,7 @@ pub struct ResultOfHDKeySecretFromXPrv {
 
 #[doc(summary = "Extracts the private key from the serialized extended private key")]
 pub fn hdkey_secret_from_xprv(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeySecretFromXPrv,
 ) -> ApiResult<ResultOfHDKeySecretFromXPrv> {
     Ok(ResultOfHDKeySecretFromXPrv {
@@ -86,7 +86,7 @@ pub struct ResultOfHDKeyPublicFromXPrv {
 
 #[doc(summary = "Extracts the public key from the serialized extended private key")]
 pub fn hdkey_public_from_xprv(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyPublicFromXPrv,
 ) -> ApiResult<ResultOfHDKeyPublicFromXPrv> {
     let key = HDPrivateKey::from_serialized_string(&params.xprv)?;
@@ -116,7 +116,7 @@ pub struct ResultOfHDKeyDeriveFromXPrv {
 #[doc(summary = "Derives the next child extended private key")]
 /// Returns derived extended private key derived from the specified extended private key and child index
 pub fn hdkey_derive_from_xprv(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyDeriveFromXPrv,
 ) -> ApiResult<ResultOfHDKeyDeriveFromXPrv> {
     let xprv = HDPrivateKey::from_serialized_string(&params.xprv)?;
@@ -144,7 +144,7 @@ pub struct ResultOfHDKeyDeriveFromXPrvPath {
 
 #[doc(summary = "Derives the exented private key from the specified key and path")]
 pub fn hdkey_derive_from_xprv_path(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyDeriveFromXPrvPath,
 ) -> ApiResult<ResultOfHDKeyDeriveFromXPrvPath> {
     let xprv = HDPrivateKey::from_serialized_string(&params.xprv)?;

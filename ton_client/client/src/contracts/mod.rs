@@ -36,9 +36,6 @@ use ton_block::MsgAddressInt;
 pub(crate) mod deploy;
 pub(crate) mod run;
 
-#[cfg(feature = "node_interaction")]
-pub(crate) mod load;
-
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct EncodedMessage {
@@ -265,7 +262,7 @@ use ton_sdk;
 use crate::dispatch::DispatchTable;
 use crate::client::ClientContext;
 
-pub(crate) fn encode_message_with_sign(_context: &mut ClientContext, params: ParamsOfEncodeMessageWithSign) -> ApiResult<EncodedMessage> {
+pub(crate) fn encode_message_with_sign(_context: std::sync::Arc<ClientContext>, params: ParamsOfEncodeMessageWithSign) -> ApiResult<EncodedMessage> {
     let key_array: [u8; ed25519_dalek::PUBLIC_KEY_LENGTH];
     let public_key = if let Some(key) = params.public_key_hex {
         key_array = decode_public_key(&key)?.to_bytes();
@@ -284,7 +281,7 @@ pub(crate) fn encode_message_with_sign(_context: &mut ClientContext, params: Par
     Ok(EncodedMessage::from_sdk_msg(msg))
 }
 
-pub(crate) fn get_function_id(_context: &mut ClientContext, params: ParamsOfGetFunctionId) -> ApiResult<ResultOfGetFunctionId> {
+pub(crate) fn get_function_id(_context: std::sync::Arc<ClientContext>, params: ParamsOfGetFunctionId) -> ApiResult<ResultOfGetFunctionId> {
     let contract = AbiContract::load(params.abi.to_string().as_bytes())
         .map_err(|err| ApiError::contracts_get_function_id_failed(err, &params.function))?;
 
@@ -296,7 +293,7 @@ pub(crate) fn get_function_id(_context: &mut ClientContext, params: ParamsOfGetF
     })
 }
 
-pub(crate) fn get_code_from_image(_context: &mut ClientContext, params: ParamsOfGetCodeFromImage) -> ApiResult<ResultOfGetCodeFromImage> {
+pub(crate) fn get_code_from_image(_context: std::sync::Arc<ClientContext>, params: ParamsOfGetCodeFromImage) -> ApiResult<ResultOfGetCodeFromImage> {
     trace!("-> contracts.image.code()");
 
     let bytes = base64::decode(&params.image_base64)
@@ -312,7 +309,7 @@ pub(crate) fn get_code_from_image(_context: &mut ClientContext, params: ParamsOf
     })
 }
 
-pub(crate) fn convert_address(_context: &mut ClientContext, params: ParamsOfConvertAddress) -> ApiResult<ResultOfConvertAddress> {
+pub(crate) fn convert_address(_context: std::sync::Arc<ClientContext>, params: ParamsOfConvertAddress) -> ApiResult<ResultOfConvertAddress> {
     trace!("-> contracts.image.code({}, {:?}, {:?})", params.address, params.convert_to, params.base64_params);
     let address = account_decode(&params.address)?;
     Ok(ResultOfConvertAddress {
@@ -326,7 +323,7 @@ fn decode_boc_base64(boc_base64: &String) -> ApiResult<ton_types::Cell> {
         .map_err(|err| ApiError::contracts_invalid_boc(err))
 }
 
-pub(crate) fn get_boc_root_hash(_context: &mut ClientContext, params: InputBoc) -> ApiResult<ResultOfGetBocHash> {
+pub(crate) fn get_boc_root_hash(_context: std::sync::Arc<ClientContext>, params: InputBoc) -> ApiResult<ResultOfGetBocHash> {
     trace!("-> contracts.boc.hash({})", params.boc_base64);
     let cells = decode_boc_base64(&params.boc_base64)?;
     Ok(ResultOfGetBocHash {
@@ -335,7 +332,7 @@ pub(crate) fn get_boc_root_hash(_context: &mut ClientContext, params: InputBoc) 
 }
 
 #[cfg(feature = "node_interaction")]
-pub(crate) async fn send_message(context: &mut ClientContext, params: EncodedMessage) -> ApiResult<Option<MessageProcessingState>> {
+pub(crate) async fn send_message(context: std::sync::Arc<ClientContext>, params: EncodedMessage) -> ApiResult<Option<MessageProcessingState>> {
     trace!("-> contracts.send.message({}, {})", params.message_id, params.expire.unwrap_or_default());
 
     let msg = base64_decode(&params.message_body_base64)?;
@@ -355,7 +352,7 @@ pub(crate) async fn send_message(context: &mut ClientContext, params: EncodedMes
 }
 
 #[cfg(feature = "node_interaction")]
-pub(crate) async fn process_message(context: &mut ClientContext, params: ParamsOfProcessMessage) -> ApiResult<run::ResultOfRun> {
+pub(crate) async fn process_message(context: std::sync::Arc<ClientContext>, params: ParamsOfProcessMessage) -> ApiResult<run::ResultOfRun> {
     trace!("-> contracts.process.message({}, {})",
         params.message.message_id,
         params.message.expire.unwrap_or_default());
@@ -388,7 +385,7 @@ pub(crate) async fn process_message(context: &mut ClientContext, params: ParamsO
 }
 
 pub(crate) fn process_transaction(
-    _context: &mut ClientContext, params: ParamsOfProcessTransaction,
+    _context: std::sync::Arc<ClientContext>, params: ParamsOfProcessTransaction,
 ) -> ApiResult<run::ResultOfRun> {
     trace!("-> contracts.process.transaction({}, {:?})", params.address, params.transaction);
     let address = account_decode(&params.address)?;
@@ -399,7 +396,7 @@ pub(crate) fn process_transaction(
         transaction, params.transaction, params.abi, params.function_name, &address, None, true)
 }
 
-pub(crate) fn parse_message(_context: &mut ClientContext, params: InputBoc) -> ApiResult<serde_json::Value> {
+pub(crate) fn parse_message(_context: std::sync::Arc<ClientContext>, params: InputBoc) -> ApiResult<serde_json::Value> {
     trace!("-> contracts.boc.hash({})", params.boc_base64);
     let cells = decode_boc_base64(&params.boc_base64)?;
     let mut message = ton_block::Message::default();
@@ -416,7 +413,7 @@ pub(crate) fn parse_message(_context: &mut ClientContext, params: InputBoc) -> A
     }))
 }
 
-pub(crate) fn find_matching_shard(_context: &mut ClientContext, params: ParamsOfFindShard) -> ApiResult<serde_json::Value> {
+pub(crate) fn find_matching_shard(_context: std::sync::Arc<ClientContext>, params: ParamsOfFindShard) -> ApiResult<serde_json::Value> {
     trace!("-> contracts.find.shard({}, {:#?})", params.address, params.shards);
     let address = account_decode(&params.address)?;
 
@@ -425,7 +422,7 @@ pub(crate) fn find_matching_shard(_context: &mut ClientContext, params: ParamsOf
 }
 
 #[cfg(feature = "node_interaction")]
-pub(crate) async fn wait_transaction(context: &mut ClientContext, params: ParamsOfWaitTransaction) -> ApiResult<run::ResultOfRun> {
+pub(crate) async fn wait_transaction(context: std::sync::Arc<ClientContext>, params: ParamsOfWaitTransaction) -> ApiResult<run::ResultOfRun> {
     trace!("-> contracts.wait.transaction({}, {})",
         params.message.message_id,
         params.message.expire.unwrap_or_default());
@@ -462,123 +459,93 @@ pub(crate) async fn wait_transaction(context: &mut ClientContext, params: Params
 }
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    // Load
-    #[cfg(feature = "node_interaction")]
-        handlers.spawn_no_api("contracts.load",
-        |context: &mut crate::client::ClientContext, params: load::LoadParams| {
-            let mut runtime = context.take_runtime()?;
-            let result = runtime.block_on(load::load(context, params));
-            context.runtime = Some(runtime);
-            result
-        });
-
     // Deploy
     #[cfg(feature = "node_interaction")]
-        handlers.spawn_no_api("contracts.deploy",
-        |context: &mut crate::client::ClientContext, params: deploy::ParamsOfDeploy| {
-            let mut runtime = context.take_runtime()?;
-            let result = runtime.block_on(deploy::deploy(context, params));
-            context.runtime = Some(runtime);
-            result
-        });
+        handlers.spawn_no_api(
+            "contracts.deploy",
+            deploy::deploy);
 
-    handlers.spawn_no_api("contracts.deploy.message",
+    handlers.call_no_api("contracts.deploy.message",
         deploy::encode_message);
-    handlers.spawn_no_api("contracts.deploy.encode_unsigned_message",
+    handlers.call_no_api("contracts.deploy.encode_unsigned_message",
         deploy::encode_unsigned_message);
-    handlers.spawn_no_api("contracts.deploy.address",
+    handlers.call_no_api("contracts.deploy.address",
         deploy::get_address);
-    handlers.spawn_no_api("contracts.deploy.data",
+    handlers.call_no_api("contracts.deploy.data",
         deploy::get_deploy_data);
 
     // Run
     #[cfg(feature = "node_interaction")]
-        handlers.spawn_no_api("contracts.run",
-        |context: &mut crate::client::ClientContext, params: run::ParamsOfRun| {
-            let mut runtime = context.take_runtime()?;
-            let result = runtime.block_on(run::run(context, params));
-            context.runtime = Some(runtime);
-            result
-        });
+        handlers.spawn_no_api(
+            "contracts.run",
+            run::run);
 
-    handlers.spawn_no_api("contracts.run.message",
+    handlers.call_no_api("contracts.run.message",
         run::encode_message);
-    handlers.spawn_no_api("contracts.run.encode_unsigned_message",
+    handlers.call_no_api("contracts.run.encode_unsigned_message",
         run::encode_unsigned_message);
-    handlers.spawn_no_api("contracts.run.output",
+    handlers.call_no_api("contracts.run.output",
         run::decode_output);
-    handlers.spawn_no_api("contracts.run.unknown.input",
+    handlers.call_no_api("contracts.run.unknown.input",
         run::decode_unknown_input);
-    handlers.spawn_no_api("contracts.run.unknown.output",
+    handlers.call_no_api("contracts.run.unknown.output",
         run::decode_unknown_output);
-    handlers.spawn_no_api("contracts.run.body",
+    handlers.call_no_api("contracts.run.body",
         run::get_run_body);
-    handlers.spawn_no_api("contracts.run.local",
+    handlers.call_no_api("contracts.run.local",
         run::local_run);
-    handlers.spawn_no_api("contracts.run.local.msg",
+    handlers.call_no_api("contracts.run.local.msg",
         run::local_run_msg);
-    handlers.spawn_no_api("contracts.run.fee",
+    handlers.call_no_api("contracts.run.fee",
         |context, mut params: run::ParamsOfLocalRun| {
             params.full_run = true;
             run::local_run(context, params)
         });
-    handlers.spawn_no_api("contracts.run.fee.msg",
+    handlers.call_no_api("contracts.run.fee.msg",
         |context, mut params: run::ParamsOfLocalRunWithMsg| {
             params.full_run = true;
             run::local_run_msg(context, params)
         });
 
     // Contracts
-    handlers.spawn_no_api("contracts.encode_message_with_sign",
+    handlers.call_no_api("contracts.encode_message_with_sign",
         encode_message_with_sign);
-    handlers.spawn_no_api("contracts.function.id",
+    handlers.call_no_api("contracts.function.id",
         get_function_id);
-    handlers.spawn_no_api("contracts.image.code",
+    handlers.call_no_api("contracts.image.code",
         get_code_from_image);
-    handlers.spawn_no_api("contracts.find.shard",
+    handlers.call_no_api("contracts.find.shard",
         find_matching_shard);
 
     // Addresses
-    handlers.spawn_no_api("contracts.address.convert",
+    handlers.call_no_api("contracts.address.convert",
         convert_address);
 
     // Bag of cells
-    handlers.spawn_no_api("contracts.boc.hash",
+    handlers.call_no_api("contracts.boc.hash",
         get_boc_root_hash);
-    handlers.spawn_no_api("contracts.parse.message",
+    handlers.call_no_api("contracts.parse.message",
         parse_message);
 
     // messages processing
     #[cfg(feature = "node_interaction")]
-        handlers.spawn_no_api("contracts.send.message",
-        |context: &mut crate::client::ClientContext, params: EncodedMessage| {
-            let mut runtime = context.take_runtime()?;
-            let result = runtime.block_on(send_message(context, params));
-            context.runtime = Some(runtime);
-            result
-        });
+    handlers.spawn_no_api(
+        "contracts.send.message",
+        send_message);
     #[cfg(feature = "node_interaction")]
-        handlers.spawn_no_api("contracts.process.message",
-        |context: &mut crate::client::ClientContext, params: ParamsOfProcessMessage| {
-            let mut runtime = context.take_runtime()?;
-            let result = runtime.block_on(process_message(context, params));
-            context.runtime = Some(runtime);
-            result
-        });
+    handlers.spawn_no_api(
+        "contracts.process.message",
+        process_message);
     #[cfg(feature = "node_interaction")]
-        handlers.spawn_no_api("contracts.wait.transaction",
-        |context: &mut crate::client::ClientContext, params: ParamsOfWaitTransaction| {
-            let mut runtime = context.take_runtime()?;
-            let result = runtime.block_on(wait_transaction(context, params));
-            context.runtime = Some(runtime);
-            result
-        });
+    handlers.spawn_no_api(
+        "contracts.wait.transaction",
+        wait_transaction);
 
     // errors
-    handlers.spawn_no_api("contracts.resolve.error",
+    handlers.call_no_api("contracts.resolve.error",
         run::resolve_error);
 
-    handlers.spawn_no_api("contracts.process.transaction",
+    handlers.call_no_api("contracts.process.transaction",
         process_transaction);
 }
 

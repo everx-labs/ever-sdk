@@ -54,7 +54,7 @@ pub struct ResultOfMnemonicWords {
 
 #[doc(summary = "Prints the list of words from the specified dictionary")]
 pub fn mnemonic_words(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicWords,
 ) -> ApiResult<ResultOfMnemonicWords> {
     Ok(ResultOfMnemonicWords {
@@ -81,7 +81,7 @@ pub struct ResultOfMnemonicFromRandom {
 #[doc(summary = "Generates a random mnemonic")]
 /// Generates a random mnemnonic from the specified dictionary and word count
 pub fn mnemonic_from_random(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicFromRandom,
 ) -> ApiResult<ResultOfMnemonicFromRandom> {
     Ok(ResultOfMnemonicFromRandom {
@@ -107,7 +107,7 @@ pub struct ResultOfMnemonicFromEntropy {
 #[doc(summary = "Generates mnemonic from the specified entropy")]
 /// Generates mnemonic from pre-generated entropy
 pub fn mnemonic_from_entropy(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicFromEntropy,
 ) -> ApiResult<ResultOfMnemonicFromEntropy> {
     let mnemonic = mnemonics(params.dictionary, params.word_count)?;
@@ -138,7 +138,7 @@ pub struct ResultOfMnemonicVerify {
 /// The phrase supplied will be checked for word length and validated according to the checksum
 /// specified in BIP0039.
 pub fn mnemonic_verify(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicVerify,
 ) -> ApiResult<ResultOfMnemonicVerify> {
     let mnemonic = mnemonics(params.dictionary, params.word_count)?;
@@ -165,7 +165,7 @@ pub struct ParamsOfMnemonicDeriveSignKeys {
 /// Validates the seed phrase, generates master key and then derives
 /// the key pair from the master key and the specified path
 pub fn mnemonic_derive_sign_keys(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicDeriveSignKeys,
 ) -> ApiResult<KeyPair> {
     let mnemonic = mnemonics(params.dictionary, params.word_count)?;

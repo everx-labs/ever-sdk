@@ -56,14 +56,14 @@ pub fn get_config() -> serde_json::Value {
             "net.ton.dev"
         }.to_owned());
     json!({
-        "base_url": network
+        "server_address": network
     })
 }
 
 pub async fn init_node_connection() -> NodeClient {
     let config_json = get_config().to_string();
 
-    init_json(&config_json).await.unwrap()
+    init_json(&config_json).unwrap()
 }
 
 fn get_wallet_keys() -> Keypair {
@@ -216,7 +216,7 @@ pub async fn deploy_contract_and_wait(
         contract_image,
         Some(key_pair),
         workchain_id,
-        Some(client.timeouts()),
+        &AbiConfig::default(),
         None,
     ).unwrap();
 
@@ -256,7 +256,7 @@ pub async fn call_contract(
         },
         false,
         key_pair,
-        Some(client.timeouts()),
+        &AbiConfig::default(),
         None,
     ).unwrap();
 
@@ -297,7 +297,7 @@ pub async fn call_contract_and_wait(
         },
         false,
         key_pair,
-        Some(client.timeouts()),
+        &AbiConfig::default(),
         None,
     ).unwrap();
 

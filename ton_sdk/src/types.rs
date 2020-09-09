@@ -32,43 +32,56 @@ pub const DEFAULT_OUT_OF_SYNC_THRESHOLD: i64 = 15000;
 pub const MASTERCHAIN_ID: i32 = -1;
 
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(default)]
-pub struct TimeoutsConfig {
-    pub message_retries_count: u8,
-    pub message_expiration_timeout: u32,
-    pub message_expiration_timeout_grow_factor: f32,
-    pub message_processing_timeout: u32,
-    pub wait_for_timeout: u32,
-    pub out_of_sync_threshold: i64
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct NetworkConfig {
+    server_address: String,
+    message_retries_count: Option<u8>,
+    message_processing_timeout: Option<u32>,
+    wait_for_timeout: Option<u32>,
+    out_of_sync_threshold: Option<i64>,
+    access_key: Option<String>,
 }
 
-impl Default for TimeoutsConfig {
-    fn default() -> Self {
-        Self {
-            message_retries_count: DEFAULT_RETRIES_COUNT,
-            message_expiration_timeout: DEFAULT_EXPIRATION_TIMEOUT,
-            message_expiration_timeout_grow_factor: DEFAULT_TIMEOUT_GROW_FACTOR,
-            message_processing_timeout: DEFAULT_PROCESSING_TIMEOUT,
-            wait_for_timeout: DEFAULT_WAIT_TIMEOUT,
-            out_of_sync_threshold: DEFAULT_OUT_OF_SYNC_THRESHOLD
-        }
+impl NetworkConfig {
+    pub fn server_address(&self) -> &str {
+        &self.server_address
+    }
+
+    pub fn message_retries_count(&self) -> u8 {
+        self.message_retries_count.unwrap_or(DEFAULT_RETRIES_COUNT)
+    }
+
+    pub fn message_processing_timeout(&self) -> u32 {
+        self.message_processing_timeout.unwrap_or(DEFAULT_PROCESSING_TIMEOUT)
+    }
+
+    pub fn wait_for_timeout(&self) -> u32 {
+        self.wait_for_timeout.unwrap_or(DEFAULT_WAIT_TIMEOUT)
+    }
+
+    pub fn out_of_sync_threshold(&self) -> i64 {
+        self.out_of_sync_threshold.unwrap_or(DEFAULT_OUT_OF_SYNC_THRESHOLD)
+    }
+
+    pub fn access_key(&self) -> Option<&str> {
+        self.access_key.as_ref().map(|string| string.as_str())
     }
 }
 
-// Represents config to connect node
-#[cfg(feature = "node_interaction")]
-#[derive(Debug, Deserialize, Serialize)]
-pub struct NodeClientConfig {
-    pub base_url: Option<String>,
-    pub timeouts: Option<TimeoutsConfig>,
-    pub access_key: Option<String>,
+#[derive(Deserialize, Debug, Default, Clone)]
+pub struct AbiConfig {
+    message_expiration_timeout: Option<u32>,
+    message_expiration_timeout_grow_factor: Option<f32>,
 }
 
-#[cfg(not(feature = "node_interaction"))]
-#[derive(Debug, Deserialize, Serialize)]
-pub struct NodeClientConfig {
-    pub timeouts: Option<TimeoutsConfig>,
+impl AbiConfig {
+    pub fn message_expiration_timeout(&self) -> u32 {
+        self.message_expiration_timeout.unwrap_or(DEFAULT_EXPIRATION_TIMEOUT)
+    }
+
+    pub fn message_expiration_timeout_grow_factor(&self) -> f32 {
+        self.message_expiration_timeout_grow_factor.unwrap_or(DEFAULT_TIMEOUT_GROW_FACTOR)
+    }
 }
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq)]
