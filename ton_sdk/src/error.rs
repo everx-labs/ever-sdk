@@ -96,8 +96,7 @@ pub enum SdkError {
     #[fail(display = "Clock out of sync: {}", delta_ms)]
     ClockOutOfSync {
         delta_ms: i64,
-        threshold_ms: i64,
-        expiration_timeout: u32
+        threshold_ms: i64
     },
 
     #[fail(display = "Existing block transaction not found")]

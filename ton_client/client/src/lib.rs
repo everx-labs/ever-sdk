@@ -26,8 +26,7 @@ extern crate log;
 mod encoding;
 mod error;
 mod dispatch;
-mod client;
-mod setup;
+pub mod client;
 mod contracts;
 mod crypto;
 mod tvm;
@@ -36,7 +35,7 @@ mod tvm;
 // mod cell;
 
 #[cfg(feature = "node_interaction")]
-mod queries;
+pub mod queries;
 
 mod interop;
 

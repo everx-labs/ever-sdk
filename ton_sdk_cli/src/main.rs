@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 use std::env;
-use ton_client::{create_context, json_sync_request, destroy_context};
+use ton_client::{create_context, json_sync_request, destroy_context, client::ResultOfCreateContext};
 use serde_json::Value;
 use regex::{Regex, Captures};
 
@@ -182,22 +182,27 @@ fn main_internal() -> Result<(), CliError> {
         method = names[0].clone();
     }
 
-    let context = create_context();
-    let mut config = serde_json::Map::new();
-    config.insert("baseUrl".to_string(), Value::String(network));
-    let setup_json = Value::Object(config);
-    let response = json_sync_request(context, "setup".to_string(), setup_json.to_string());
+    let config = serde_json::json!({
+        "network": {
+            "server_address": network
+        }
+    });
+    let response = create_context(config.to_string());
+
     if !response.error_json.trim().is_empty() {
         return Err(CliError { message: reformat_json(&response.error_json)? });
     };
-    let response = json_sync_request(context, method, parameters);
+
+    let context: ResultOfCreateContext = serde_json::from_str(&response.result_json)?;
+
+    let response = json_sync_request(context.handle, method, parameters);
     let result = if response.error_json.trim().is_empty() {
         println!("{}", reformat_json(&response.result_json)?);
         Ok(())
     } else {
         Err(CliError { message: reformat_json(&response.error_json)? })
     };
-    destroy_context(context);
+    destroy_context(context.handle);
     result
 }
 

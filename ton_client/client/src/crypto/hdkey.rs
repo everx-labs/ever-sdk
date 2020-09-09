@@ -35,7 +35,7 @@ pub struct ResultOfHDKeyXPrvFromMnemonic {
 }
 
 pub fn hdkey_xprv_from_mnemonic(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyXPrvFromMnemonic,
 ) -> ApiResult<ResultOfHDKeyXPrvFromMnemonic> {
     Ok(ResultOfHDKeyXPrvFromMnemonic {
@@ -56,7 +56,7 @@ pub struct ResultOfHDKeySecretFromXPrv {
 }
 
 pub fn hdkey_secret_from_xprv(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeySecretFromXPrv,
 ) -> ApiResult<ResultOfHDKeySecretFromXPrv> {
     Ok(ResultOfHDKeySecretFromXPrv {
@@ -78,7 +78,7 @@ pub struct ResultOfHDKeyPublicFromXPrv {
 }
 
 pub fn hdkey_public_from_xprv(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyPublicFromXPrv,
 ) -> ApiResult<ResultOfHDKeyPublicFromXPrv> {
     let key = HDPrivateKey::from_serialized_string(&params.xprv)?;
@@ -102,7 +102,7 @@ pub struct ResultOfHDKeyDeriveFromXPrv {
 }
 
 pub fn hdkey_derive_from_xprv(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyDeriveFromXPrv,
 ) -> ApiResult<ResultOfHDKeyDeriveFromXPrv> {
     let xprv = HDPrivateKey::from_serialized_string(&params.xprv)?;
@@ -126,7 +126,7 @@ pub struct ResultOfHDKeyDeriveFromXPrvPath {
 }
 
 pub fn hdkey_derive_from_xprv_path(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyDeriveFromXPrvPath,
 ) -> ApiResult<ResultOfHDKeyDeriveFromXPrvPath> {
     let xprv = HDPrivateKey::from_serialized_string(&params.xprv)?;

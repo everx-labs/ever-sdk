@@ -49,6 +49,7 @@ dirs = "2.0.2"
 
 [dependencies.tokio]
 version = "0.2.13"
+features = ["rt-threaded"]
 optional = true
 
 [dependencies.futures]

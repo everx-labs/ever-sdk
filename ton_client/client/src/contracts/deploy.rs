@@ -19,7 +19,7 @@ use crate::contracts::run::RunFees;
 use ton_sdk::{Contract, ContractImage, FunctionCallSet};
 
 #[cfg(feature = "node_interaction")]
-use ton_sdk::{NodeClient, ReceivedTransaction};
+use ton_sdk::{AbiConfig, NodeClient, ReceivedTransaction};
 #[cfg(feature = "node_interaction")]
 use crate::contracts::run::{resolve_msg_sdk_error, retry_call};
 
@@ -184,7 +184,7 @@ pub(crate) struct ResultOfGetDeployData {
 }
 
 #[cfg(feature = "node_interaction")]
-pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<ResultOfDeploy> {
+pub(crate) async fn deploy(context: std::sync::Arc<ClientContext>, params: ParamsOfDeploy) -> ApiResult<ResultOfDeploy> {
     trace!("-> contracts.deploy({:?})", params.call_set.clone());
 
     let key_pair = params.key_pair.decode()?;
@@ -193,7 +193,7 @@ pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) 
     let account_id = contract_image.msg_address(params.workchain_id.unwrap_or(DEFAULT_WORKCHAIN));
     trace!("-> -> image prepared with address: {}", account_id);
 
-    if check_deployed(context, &account_id).await? {
+    if check_deployed(context.clone(), &account_id).await? {
         return Ok(ResultOfDeploy {
             address: account_encode(&account_id),
             already_deployed: true,
@@ -204,7 +204,7 @@ pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) 
 
     let client = context.get_client()?;
     trace!("-> -> deploy");
-    let tr = deploy_contract(client, params, contract_image, &key_pair)
+    let tr = deploy_contract(client, &context.config.abi, params, contract_image, &key_pair)
         .await
         .map_err(|err| err
             .add_function(Some(&DeployFunctionCallSet::function_name()))
@@ -226,14 +226,14 @@ pub(crate) async fn deploy(context: &mut ClientContext, params: ParamsOfDeploy) 
     })
 }
 
-pub(crate) fn get_address(_context: &mut ClientContext, params: ParamsOfGetDeployAddress) -> ApiResult<String> {
+pub(crate) fn get_address(_context: std::sync::Arc<ClientContext>, params: ParamsOfGetDeployAddress) -> ApiResult<String> {
     let key_pair = params.key_pair.decode()?;
     let contract_image = create_image(&params.abi, params.init_params.as_ref(), &params.image_base64, &key_pair.public)?;
     let account_id = contract_image.msg_address(params.workchain_id.unwrap_or(DEFAULT_WORKCHAIN));
     Ok(account_encode(&account_id))
 }
 
-pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfDeploy) -> ApiResult<EncodedMessage> {
+pub(crate) fn encode_message(context: std::sync::Arc<ClientContext>, params: ParamsOfDeploy) -> ApiResult<EncodedMessage> {
     trace!("-> contracts.deploy.message({:?})", params.call_set.clone());
 
     let keys = params.key_pair.decode()?;
@@ -247,7 +247,7 @@ pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfDeploy
         contract_image,
         Some(&keys),
         workchain,
-        Some(context.get_client()?.timeouts()),
+        &context.config.abi,
         params.try_index
     ).map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
 
@@ -255,7 +255,7 @@ pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfDeploy
     Ok(EncodedMessage::from_sdk_msg(msg))
 }
 
-pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetDeployData) -> ApiResult<ResultOfGetDeployData> {
+pub(crate) fn get_deploy_data(_context: std::sync::Arc<ClientContext>, params: ParamsOfGetDeployData) -> ApiResult<ResultOfGetDeployData> {
     trace!("-> contracts.deploy.data({}, {}, {})",
         &params.abi.clone().unwrap_or_default(),
         &params.image_base64.clone().unwrap_or_default(),
@@ -314,7 +314,7 @@ pub(crate) fn get_deploy_data(_context: &mut ClientContext, params: ParamsOfGetD
     })
 }
 
-pub(crate) fn encode_unsigned_message(context: &mut ClientContext, params: ParamsOfEncodeUnsignedDeployMessage) -> ApiResult<ResultOfEncodeUnsignedDeployMessage> {
+pub(crate) fn encode_unsigned_message(context: std::sync::Arc<ClientContext>, params: ParamsOfEncodeUnsignedDeployMessage) -> ApiResult<ResultOfEncodeUnsignedDeployMessage> {
     let public = decode_public_key(&params.public_key_hex)?;
     let image = create_image(&params.call_set.abi, params.init_params.as_ref(), &params.image_base64, &public)?;
     let workchain = params.workchain_id.unwrap_or(DEFAULT_WORKCHAIN);
@@ -323,7 +323,7 @@ pub(crate) fn encode_unsigned_message(context: &mut ClientContext, params: Param
         params.call_set.into(),
         image,
         workchain,
-        Some(context.get_client()?.timeouts()),
+        &context.config.abi,
         params.try_index
     ).map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
     Ok(ResultOfEncodeUnsignedDeployMessage {
@@ -368,8 +368,13 @@ fn create_image(abi: &serde_json::Value, init_params: Option<&serde_json::Value>
 }
 
 #[cfg(feature = "node_interaction")]
-async fn deploy_contract(client: &NodeClient, params: ParamsOfDeploy, image: ContractImage, keys: &Keypair) -> ApiResult<ReceivedTransaction> {
-    retry_call(client.timeouts().message_retries_count, |try_index: u8| {
+async fn deploy_contract(
+    client: &NodeClient,
+    abi_config: &AbiConfig,
+    params: ParamsOfDeploy,
+    image: ContractImage,
+    keys: &Keypair) -> ApiResult<ReceivedTransaction> {
+    retry_call(client.config().message_retries_count(), |try_index: u8| {
         let call_set = params.call_set.clone();
         let workchain = params.workchain_id.unwrap_or(DEFAULT_WORKCHAIN);
         let image = image.clone();
@@ -379,7 +384,7 @@ async fn deploy_contract(client: &NodeClient, params: ParamsOfDeploy, image: Con
                 image,
                 Some(keys),
                 workchain,
-                Some(client.timeouts()),
+                abi_config,
                 Some(try_index))
                 .map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
 
@@ -398,7 +403,7 @@ async fn deploy_contract(client: &NodeClient, params: ParamsOfDeploy, image: Con
 }
 
 #[cfg(feature = "node_interaction")]
-async fn check_deployed(context: &mut ClientContext, address: &ton_block::MsgAddressInt) -> ApiResult<bool> {
+async fn check_deployed(context: std::sync::Arc<ClientContext>, address: &ton_block::MsgAddressInt) -> ApiResult<bool> {
     let filter = Some(json!({
         "id": { "eq": address.to_string() },
         "acc_type": { "eq":  account_status_to_u8(AccountStatus::AccStateActive) }

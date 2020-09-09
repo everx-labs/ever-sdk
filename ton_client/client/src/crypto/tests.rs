@@ -101,7 +101,7 @@ fn keys() {
     });
     assert_eq!("PuYGEX9Zreg-CX4Psz5dKehzW9qCs794oBVUKqqFO7aWAOTD", result.ton_public_key);
 
-    let result: KeyPair = client.request_no_params("crypto.generate_random_sign_keys");
+    let result: KeyPair = client.request("crypto.generate_random_sign_keys", ());
     assert_eq!(result.public.len(), 64);
     assert_eq!(result.secret.len(), 64);
     assert_ne!(result.secret, result.public);
@@ -131,7 +131,7 @@ fn nacl() {
 
     // Sign
 
-    let result: KeyPair = client.request_no_params("crypto.nacl_sign_keypair");
+    let result: KeyPair = client.request("crypto.nacl_sign_keypair", ());
     assert_eq!(result.public.len(), 64);
     assert_eq!(result.secret.len(), 128);
 
@@ -163,7 +163,7 @@ fn nacl() {
 
     // Box
 
-    let result: KeyPair = client.request_no_params("crypto.nacl_box_keypair");
+    let result: KeyPair = client.request("crypto.nacl_box_keypair", ());
     assert_eq!(result.public.len(), 64);
     assert_eq!(result.secret.len(), 64);
     assert_ne!(result.public, result.secret);
