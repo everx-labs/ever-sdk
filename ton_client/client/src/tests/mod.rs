@@ -34,6 +34,7 @@ use std::collections::HashMap;
 use std::sync::{
     Mutex,
     mpsc::{channel, Sender}};
+use crate::crypto::nacl::{ParamsOfNaclSignKeyPairFromSecret, ParamsOfNaclSignDetached, ResultOfNaclSignDetached};
 
 mod common;
 

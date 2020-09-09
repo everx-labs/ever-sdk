@@ -90,7 +90,7 @@ fn required_public_key(public_key: Option<String>) -> ApiResult<String> {
 }
 
 pub fn encode_message(
-    context: &mut ClientContext,
+    context: std::sync::Arc<ClientContext>,
     params: ParamsOfEncodeMessage,
 ) -> ApiResult<ResultOfEncodeMessage> {
     let abi = resolve_abi(&params.abi)?;
@@ -110,7 +110,7 @@ pub fn encode_message(
             to_function_call_set(&params.call_set, &abi),
             image,
             workchain,
-            Some(context.get_client()?.timeouts()),
+            &context.config.abi,
             None, //TODO: params.try_index,
         )
         .map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?
@@ -121,7 +121,7 @@ pub fn encode_message(
         ton_sdk::Contract::get_call_message_bytes_for_signing(
             account_decode(address)?,
             to_function_call_set(&params.call_set, &abi),
-            Some(context.get_client()?.timeouts()),
+            &context.config.abi,
             None,
         )
         .map_err(|err| {
@@ -167,7 +167,7 @@ pub struct ResultOfAttachSignature {
 }
 
 pub fn attach_signature(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfAttachSignature,
 ) -> ApiResult<ResultOfAttachSignature> {
     let signed = add_sign_to_message(

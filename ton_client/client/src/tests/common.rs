@@ -62,7 +62,7 @@ fn test_deferred_init() {
     );
 
     // local functions should work
-    client.generate_kepair();
+    client.generate_sign_keys();
 
     // deferred network init should fail due to wrong server address
     let result = client.request_json(

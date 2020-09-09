@@ -67,8 +67,8 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
     );
 
     handlers.call_no_args("crypto.generate_random_sign_keys", generate_random_sign_keys);
-    handlers.spawn("crypto.sign", sign);
-    handlers.spawn("crypto.verify_signature", verify_signature);
+    handlers.call("crypto.sign", sign);
+    handlers.call("crypto.verify_signature", verify_signature);
 
     // Sha
 

@@ -2,7 +2,7 @@ use crate::error::ApiSdkErrorCode::*;
 use chrono::TimeZone;
 use std::fmt::Display;
 use ton_block::{AccStatusChange, ComputeSkipReason, MsgAddressInt};
-use ton_sdk::{MessageProcessingState, SdkError};
+use ton_sdk::{MessageProcessingState};
 use ton_types::ExceptionCode;
 
 fn format_time(time: u32) -> String {

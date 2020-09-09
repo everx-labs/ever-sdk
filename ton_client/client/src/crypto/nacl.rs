@@ -12,7 +12,7 @@
 */
 
 use crate::crypto::keys::{KeyPair};
-use crate::crypto::internal::{key256, key192};
+use crate::crypto::internal::{key256, key192, key512};
 use crate::error::{ApiResult, ApiError};
 use crate::encoding::{hex_decode, base64_decode};
 use crate::client::ClientContext;
@@ -62,7 +62,7 @@ pub struct ResultOfNaclSign {
 
 /// Signs a data using the signer's secret key.
 pub fn nacl_sign(_context: std::sync::Arc<ClientContext>, params: ParamsOfNaclSign) -> ApiResult<ResultOfNaclSign> {
-    let signed = sign(params.unsigned.decode()?, hex_decode(&params.secret)?)?;
+    let signed = sign(base64_decode(&params.unsigned)?, hex_decode(&params.secret)?)?;
     Ok(ResultOfNaclSign {
         signed: base64::encode(&signed),
     })
@@ -310,3 +310,9 @@ pub fn nacl_secret_box_open(
 
 // Internals
 
+fn sign(unsigned: Vec<u8>, secret: Vec<u8>) -> ApiResult<Vec<u8>> {
+    let mut signed: Vec<u8> = Vec::new();
+    signed.resize(unsigned.len() + sodalite::SIGN_LEN, 0);
+    sodalite::sign_attached(&mut signed, &unsigned, &key512(&secret)?);
+    Ok(signed)
+}
