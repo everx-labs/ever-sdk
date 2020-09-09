@@ -223,10 +223,7 @@ Note that default values are used if parameters are omitted in config"#,
     pub fn json_sync_request(handle: InteropContext, method_name: String, params_json: String) -> JsonResponse {
         let context = Self::shared().required_context(handle);
         match context {
-            Ok(context) => {
-                let result = sync_request(context, method_name, params_json);
-                result
-            }
+            Ok(context) => sync_request(context, method_name, params_json),
             Err(err) => JsonResponse::from_error(err)
         }
     }
