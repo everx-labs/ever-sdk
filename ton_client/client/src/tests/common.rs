@@ -1,5 +1,6 @@
 use super::*;
 use crate::queries::{ParamsOfQueryCollection, ResultOfQueryCollection};
+use crate::error::ApiErrorCode;
 
 #[test]
 fn test_parallel_requests() {
@@ -48,4 +49,30 @@ fn test_parallel_requests() {
 
     long_wait.join().unwrap();
     assert!(start.elapsed().as_millis() > timeout as u128);
+}
+
+#[test]
+fn test_deferred_init() {
+    let client = TestClient::new_with_config(
+        json!({
+            "network": {
+                "server_address": "123"
+            }
+        })
+    );
+
+    // local functions should work
+    client.generate_kepair();
+
+    // deferred network init should fail due to wrong server address
+    let result = client.request_json(
+        "queries.query_collection",
+        json!({
+            "collection": "accounts",
+            "result": "id".to_owned(),
+        })
+    ).unwrap_err();
+    //println!("{:#?}", result);
+
+    assert_eq!(result.code, crate::error::ApiSdkErrorCode::QueriesQueryFailed.as_number());
 }
