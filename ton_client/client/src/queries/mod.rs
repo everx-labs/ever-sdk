@@ -23,7 +23,7 @@ use std::sync::Mutex;
 mod tests;
 
 #[derive(Serialize, Deserialize, TypeInfo, Clone)]
-pub(crate) struct ParamsOfQueryCollection {
+pub struct ParamsOfQueryCollection {
     /// collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
     /// collection filter
@@ -37,13 +37,13 @@ pub(crate) struct ParamsOfQueryCollection {
 }
 
 #[derive(Serialize, Deserialize, TypeInfo, Clone)]
-pub(crate) struct ResultOfQueryCollection {
+pub struct ResultOfQueryCollection {
     /// objects that match provided criteria
     pub result: Vec<serde_json::Value>,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo, Clone)]
-pub(crate) struct ParamsOfWaitForCollection {
+pub struct ParamsOfWaitForCollection {
     /// collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
     /// collection filter
@@ -55,13 +55,13 @@ pub(crate) struct ParamsOfWaitForCollection {
 }
 
 #[derive(Serialize, Deserialize, TypeInfo, Clone)]
-pub(crate) struct ResultOfWaitForCollection {
+pub struct ResultOfWaitForCollection {
     /// first found object that match provided criteria
     pub result: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo, Clone)]
-pub(crate) struct ParamsOfSubscribeCollection {
+pub struct ParamsOfSubscribeCollection {
     /// collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
     /// collection filter
@@ -71,14 +71,14 @@ pub(crate) struct ParamsOfSubscribeCollection {
 }
 
 #[derive(Serialize, Deserialize, TypeInfo, Clone)]
-pub(crate) struct ResultOfSubscribeCollection {
+pub struct ResultOfSubscribeCollection {
     /// handle to subscription. It then can be used in `get_next_subscription_data` function
     /// and must be closed with `unsubscribe`
     pub handle: u32,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo, Clone)]
-pub(crate) struct ResultOfGetNextSubscriptionData {
+pub struct ResultOfGetNextSubscriptionData {
     /// first appeared object that match provided criteria
     pub result: serde_json::Value,
 }
@@ -105,8 +105,8 @@ fn extract_handle(
     STREAMS.lock().unwrap().remove(handle)
 }
 
-pub(crate) async fn query_collection(
-    context: &mut ClientContext,
+pub async fn query_collection(
+    context: std::sync::Arc<ClientContext>,
     params: ParamsOfQueryCollection,
 ) -> ApiResult<ResultOfQueryCollection> {
     let client = context.get_client()?;
@@ -130,8 +130,8 @@ pub(crate) async fn query_collection(
     Ok(ResultOfQueryCollection { result })
 }
 
-pub(crate) async fn wait_for_collection(
-    context: &mut ClientContext,
+pub async fn wait_for_collection(
+    context: std::sync::Arc<ClientContext>,
     params: ParamsOfWaitForCollection,
 ) -> ApiResult<ResultOfWaitForCollection> {
     let client = context.get_client()?;
@@ -154,8 +154,8 @@ pub(crate) async fn wait_for_collection(
     Ok(ResultOfWaitForCollection { result })
 }
 
-pub(crate) fn subscribe_collection(
-    context: &mut ClientContext,
+pub async fn subscribe_collection(
+    context: std::sync::Arc<ClientContext>,
     params: ParamsOfSubscribeCollection,
 ) -> ApiResult<ResultOfSubscribeCollection> {
     let client = context.get_client()?;
@@ -165,6 +165,7 @@ pub(crate) fn subscribe_collection(
             &params.filter.unwrap_or(json!({})).to_string(),
             &params.result,
         )
+        .await
         .map_err(|err| ApiError::queries_subscribe_failed(err).add_network_url(client))?;
 
     let handle = rand::thread_rng().next_u32();
@@ -174,8 +175,8 @@ pub(crate) fn subscribe_collection(
     Ok(ResultOfSubscribeCollection { handle })
 }
 
-pub(crate) async fn get_next_subscription_data(
-    context: &mut ClientContext,
+pub async fn get_next_subscription_data(
+    context: std::sync::Arc<ClientContext>,
     params: ResultOfSubscribeCollection,
 ) -> ApiResult<ResultOfGetNextSubscriptionData> {
     let mut stream = extract_handle(&params.handle)
@@ -199,8 +200,8 @@ pub(crate) async fn get_next_subscription_data(
     Ok(ResultOfGetNextSubscriptionData { result })
 }
 
-pub(crate) fn unsubscribe(
-    _context: &mut ClientContext,
+pub fn unsubscribe(
+    _context: std::sync::Arc<ClientContext>,
     params: ResultOfSubscribeCollection,
 ) -> ApiResult<()> {
     let _stream = extract_handle(&params.handle)
@@ -212,31 +213,18 @@ pub(crate) fn unsubscribe(
 pub(crate) fn register(handlers: &mut DispatchTable) {
     handlers.spawn(
         "queries.query_collection",
-        |context: &mut crate::client::ClientContext, params: ParamsOfQueryCollection| {
-            let mut runtime = context.take_runtime()?;
-            let result = runtime.block_on(query_collection(context, params));
-            context.runtime = Some(runtime);
-            result
-        },
-    );
+        query_collection);
     handlers.spawn(
         "queries.wait_for_collection",
-        |context: &mut crate::client::ClientContext, params: ParamsOfWaitForCollection| {
-            let mut runtime = context.take_runtime()?;
-            let result = runtime.block_on(wait_for_collection(context, params));
-            context.runtime = Some(runtime);
-            result
-        },
-    );
-    handlers.spawn("queries.subscribe_collection", subscribe_collection);
+        wait_for_collection);
+    handlers.spawn(
+        "queries.subscribe_collection",
+        subscribe_collection);
     handlers.spawn(
         "queries.get_next_subscription_data",
-        |context: &mut crate::client::ClientContext, params: ResultOfSubscribeCollection| {
-            let mut runtime = context.take_runtime()?;
-            let result = runtime.block_on(get_next_subscription_data(context, params));
-            context.runtime = Some(runtime);
-            result
-        },
-    );
-    handlers.spawn("queries.unsubscribe", unsubscribe);
+        get_next_subscription_data);
+
+    handlers.call(
+        "queries.unsubscribe",
+        unsubscribe);
 }

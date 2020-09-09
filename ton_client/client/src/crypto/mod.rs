@@ -54,14 +54,14 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 
     // Math
 
-    handlers.spawn("crypto.factorize", factorize);
-    handlers.spawn("crypto.modular_power", modular_power);
-    handlers.spawn("crypto.ton_crc16", ton_crc16);
+    handlers.call("crypto.factorize", factorize);
+    handlers.call("crypto.modular_power", modular_power);
+    handlers.call("crypto.ton_crc16", ton_crc16);
     handlers.call("crypto.generate_random_bytes", generate_random_bytes);
 
     // Keys
 
-    handlers.spawn(
+    handlers.call(
         "crypto.convert_public_key_to_ton_safe_format",
         convert_public_key_to_ton_safe_format,
     );
@@ -72,40 +72,40 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 
     // Sha
 
-    handlers.spawn("crypto.sha256", sha256);
-    handlers.spawn("crypto.sha512", sha512);
+    handlers.call("crypto.sha256", sha256);
+    handlers.call("crypto.sha512", sha512);
 
     // Scrypt
 
-    handlers.spawn("crypto.scrypt", scrypt::scrypt);
+    handlers.call("crypto.scrypt", scrypt::scrypt);
 
     // NaCl
 
     handlers.call("crypto.nacl_sign_keypair_from_secret", nacl_sign_keypair_from_secret_key);
-    handlers.spawn("crypto.nacl_sign", nacl_sign);
-    handlers.spawn("crypto.nacl_sign_open", nacl_sign_open);
-    handlers.spawn("crypto.nacl_sign_detached", nacl_sign_detached);
+    handlers.call("crypto.nacl_sign", nacl_sign);
+    handlers.call("crypto.nacl_sign_open", nacl_sign_open);
+    handlers.call("crypto.nacl_sign_detached", nacl_sign_detached);
 
     handlers.call_no_args("crypto.nacl_box_keypair", nacl_box_keypair);
     handlers.call("crypto.nacl_box_keypair_from_secret", nacl_box_keypair_from_secret_key);
-    handlers.spawn("crypto.nacl_box", nacl_box);
-    handlers.spawn("crypto.nacl_box_open", nacl_box_open);
-    handlers.spawn("crypto.nacl_secret_box", nacl_secret_box);
-    handlers.spawn("crypto.nacl_secret_box_open", nacl_secret_box_open);
+    handlers.call("crypto.nacl_box", nacl_box);
+    handlers.call("crypto.nacl_box_open", nacl_box_open);
+    handlers.call("crypto.nacl_secret_box", nacl_secret_box);
+    handlers.call("crypto.nacl_secret_box_open", nacl_secret_box_open);
 
     // Mnemonic
 
-    handlers.spawn("crypto.mnemonic_words", mnemonic_words);
-    handlers.spawn("crypto.mnemonic_from_random", mnemonic_from_random);
-    handlers.spawn("crypto.mnemonic_from_entropy", mnemonic_from_entropy);
-    handlers.spawn("crypto.mnemonic_verify", mnemonic_verify);
-    handlers.spawn("crypto.mnemonic_derive_sign_keys", mnemonic_derive_sign_keys);
+    handlers.call("crypto.mnemonic_words", mnemonic_words);
+    handlers.call("crypto.mnemonic_from_random", mnemonic_from_random);
+    handlers.call("crypto.mnemonic_from_entropy", mnemonic_from_entropy);
+    handlers.call("crypto.mnemonic_verify", mnemonic_verify);
+    handlers.call("crypto.mnemonic_derive_sign_keys", mnemonic_derive_sign_keys);
 
     // HDKey
 
-    handlers.spawn("crypto.hdkey_xprv_from_mnemonic", hdkey_xprv_from_mnemonic);
-    handlers.spawn("crypto.hdkey_derive_from_xprv", hdkey_derive_from_xprv);
-    handlers.spawn("crypto.hdkey_derive_from_xprv_path", hdkey_derive_from_xprv_path);
-    handlers.spawn("crypto.hdkey_secret_from_xprv", hdkey_secret_from_xprv);
-    handlers.spawn("crypto.hdkey_public_from_xprv", hdkey_public_from_xprv);
+    handlers.call("crypto.hdkey_xprv_from_mnemonic", hdkey_xprv_from_mnemonic);
+    handlers.call("crypto.hdkey_derive_from_xprv", hdkey_derive_from_xprv);
+    handlers.call("crypto.hdkey_derive_from_xprv_path", hdkey_derive_from_xprv_path);
+    handlers.call("crypto.hdkey_secret_from_xprv", hdkey_secret_from_xprv);
+    handlers.call("crypto.hdkey_public_from_xprv", hdkey_public_from_xprv);
 }

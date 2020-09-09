@@ -24,7 +24,7 @@ use crate::error::{ApiResult, ApiError};
 use crate::encoding::{account_decode, base64_decode, long_num_to_json_string};
 
 #[cfg(feature = "node_interaction")]
-use ton_sdk::{NodeClient, ReceivedTransaction, SdkError};
+use ton_sdk::{AbiConfig, NodeClient, ReceivedTransaction, SdkError};
 #[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
@@ -332,7 +332,7 @@ pub(crate) struct ParamsOfResolveError {
 }
 
 #[cfg(feature = "node_interaction")]
-pub(crate) async fn run(context: &mut ClientContext, params: ParamsOfRun) -> ApiResult<ResultOfRun> {
+pub(crate) async fn run(context: std::sync::Arc<ClientContext>, params: ParamsOfRun) -> ApiResult<ResultOfRun> {
     trace!("-> contracts.run({}, {:?})",
         params.address.clone(),
         params.call_set.clone(),
@@ -343,7 +343,7 @@ pub(crate) async fn run(context: &mut ClientContext, params: ParamsOfRun) -> Api
 
     let client = context.get_client()?;
     trace!("run contract");
-    let tr = call_contract(client, address.clone(), &params, key_pair.as_ref()).await
+    let tr = call_contract(client, &context.config.abi, address.clone(), &params, key_pair.as_ref()).await
         .map_err(|err| err
             .add_function(Some(&params.call_set.function_name))
             .add_network_url(client)
@@ -429,7 +429,7 @@ pub(crate) fn process_transaction(
     Ok(ResultOfRun { output, fees: fees, transaction: json })
 }
 
-pub(crate) fn local_run(context: &mut ClientContext, params: ParamsOfLocalRun) -> ApiResult<ResultOfLocalRun> {
+pub(crate) fn local_run(context: std::sync::Arc<ClientContext>, params: ParamsOfLocalRun) -> ApiResult<ResultOfLocalRun> {
     trace!("-> contracts.run.local({}, {:?})",
         params.address.clone(),
         params.call_set.clone()
@@ -447,21 +447,25 @@ pub(crate) fn local_run(context: &mut ClientContext, params: ParamsOfLocalRun) -
         )
         .transpose()?;
 
-    do_local_run(
-        Some(context),
+    let result = do_local_run(
+        context.clone(),
         params.call_set,
         key_pair.as_ref(),
         address,
         account,
         params.full_run,
-        params.context,
-    ).map_err(|err| match context.get_client() {
+        params.context);
+
+    #[cfg(feature = "node_interaction")]
+    let result = result.map_err(|err| match context.get_client() {
         Ok(client) => err.add_network_url(client),
         Err(_) => err
-    })
+    });
+
+    result
 }
 
-pub(crate) fn local_run_msg(context: &mut ClientContext, params: ParamsOfLocalRunWithMsg) -> ApiResult<ResultOfLocalRun> {
+pub(crate) fn local_run_msg(context: std::sync::Arc<ClientContext>, params: ParamsOfLocalRunWithMsg) -> ApiResult<ResultOfLocalRun> {
     trace!("-> contracts.run.local.msg({}, {}, {})",
         params.address.clone(),
         params.function_name.clone().unwrap_or_default(),
@@ -482,22 +486,26 @@ pub(crate) fn local_run_msg(context: &mut ClientContext, params: ParamsOfLocalRu
         .map_err(|err| ApiError::crypto_invalid_base64(&params.message_base64, err))?)
         .map_err(|err| ApiError::invalid_params(&params.message_base64, err))?;
 
-    do_local_run_msg(
-        Some(context),
+    let result = do_local_run_msg(
+        Some(context.clone()),
         address,
         account,
         params.abi,
         params.function_name,
         msg,
         params.full_run,
-        params.context,
-    ).map_err(|err| match context.get_client() {
+        params.context);
+
+    #[cfg(feature = "node_interaction")]
+    let result = result.map_err(|err| match context.get_client() {
         Ok(client) => err.add_network_url(client),
         Err(_) => err
-    })
+    });
+
+    result
 }
 
-pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfRun) -> ApiResult<EncodedMessage> {
+pub(crate) fn encode_message(context: std::sync::Arc<ClientContext>, params: ParamsOfRun) -> ApiResult<EncodedMessage> {
     trace!("-> contracts.run.message({}, {:?})",
         params.address.clone(),
         params.call_set.clone()
@@ -512,7 +520,7 @@ pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfRun) -
         params.call_set.into(),
         false,
         key_pair.as_ref(),
-        Some(context.get_client()?.timeouts()),
+        &context.config.abi,
         None)
         .map_err(|err| ApiError::contracts_create_run_message_failed(err, &function))?;
 
@@ -520,12 +528,12 @@ pub(crate) fn encode_message(context: &mut ClientContext, params: ParamsOfRun) -
     Ok(EncodedMessage::from_sdk_msg(msg))
 }
 
-pub(crate) fn encode_unsigned_message(context: &mut ClientContext, params: ParamsOfEncodeUnsignedRunMessage) -> ApiResult<EncodedUnsignedMessage> {
+pub(crate) fn encode_unsigned_message(context: std::sync::Arc<ClientContext>, params: ParamsOfEncodeUnsignedRunMessage) -> ApiResult<EncodedUnsignedMessage> {
     let function = params.call_set.function_name.clone();
     let encoded = ton_sdk::Contract::get_call_message_bytes_for_signing(
         account_decode(&params.address)?,
         params.call_set.into(),
-        Some(context.get_client()?.timeouts()),
+        &context.config.abi,
         None,
     ).map_err(|err| ApiError::contracts_create_run_message_failed(err, &function))?;
     Ok(EncodedUnsignedMessage {
@@ -535,7 +543,7 @@ pub(crate) fn encode_unsigned_message(context: &mut ClientContext, params: Param
     })
 }
 
-pub(crate) fn decode_output(_context: &mut ClientContext, params: ParamsOfDecodeRunOutput) -> ApiResult<ResultOfDecode> {
+pub(crate) fn decode_output(_context: std::sync::Arc<ClientContext>, params: ParamsOfDecodeRunOutput) -> ApiResult<ResultOfDecode> {
     let body = base64_decode(&params.body_base64)?;
     let result = Contract::decode_function_response_from_bytes_json(
         params.abi.to_string().to_owned(),
@@ -549,7 +557,7 @@ pub(crate) fn decode_output(_context: &mut ClientContext, params: ParamsOfDecode
     })
 }
 
-pub(crate) fn decode_unknown_input(_context: &mut ClientContext, params: ParamsOfDecodeUnknownRun) -> ApiResult<ResultOfDecodeUnknownRun> {
+pub(crate) fn decode_unknown_input(_context: std::sync::Arc<ClientContext>, params: ParamsOfDecodeUnknownRun) -> ApiResult<ResultOfDecodeUnknownRun> {
     let body = base64_decode(&params.body_base64)?;
     let result = Contract::decode_unknown_function_call_from_bytes_json(
         params.abi.to_string().to_owned(),
@@ -563,7 +571,7 @@ pub(crate) fn decode_unknown_input(_context: &mut ClientContext, params: ParamsO
     })
 }
 
-pub(crate) fn decode_unknown_output(_context: &mut ClientContext, params: ParamsOfDecodeUnknownRun) -> ApiResult<ResultOfDecodeUnknownRun> {
+pub(crate) fn decode_unknown_output(_context: std::sync::Arc<ClientContext>, params: ParamsOfDecodeUnknownRun) -> ApiResult<ResultOfDecodeUnknownRun> {
     let body = base64_decode(&params.body_base64)?;
     let result = Contract::decode_unknown_function_response_from_bytes_json(
         params.abi.to_string().to_owned(),
@@ -577,7 +585,7 @@ pub(crate) fn decode_unknown_output(_context: &mut ClientContext, params: Params
     })
 }
 
-pub(crate) fn get_run_body(_context: &mut ClientContext, params: ParamsOfGetRunBody) -> ApiResult<ResultOfGetRunBody> {
+pub(crate) fn get_run_body(_context: std::sync::Arc<ClientContext>, params: ParamsOfGetRunBody) -> ApiResult<ResultOfGetRunBody> {
     trace!("-> contracts.run.body({})", params.params.to_string());
 
     let keys = match params.key_pair {
@@ -606,7 +614,7 @@ pub(crate) fn get_run_body(_context: &mut ClientContext, params: ParamsOfGetRunB
 }
 
 
-pub(crate) fn resolve_error(_context: &mut ClientContext, params: ParamsOfResolveError) -> ApiResult<()> {
+pub(crate) fn resolve_error(_context: std::sync::Arc<ClientContext>, params: ParamsOfResolveError) -> ApiResult<()> {
     let address = account_decode(&params.address)?;
     let msg = base64_decode(&params.message_base64)?;
     Err(resolve_msg_error(address, params.account, &msg, params.time, params.main_error))
@@ -662,7 +670,7 @@ pub(crate) fn check_transaction_status(
 }
 
 #[cfg(feature = "node_interaction")]
-pub(crate) async fn load_contract(context: &ClientContext, address: &MsgAddressInt, deployed: bool) -> ApiResult<Contract> {
+pub(crate) async fn load_contract(context: std::sync::Arc<ClientContext>, address: &MsgAddressInt, deployed: bool) -> ApiResult<Contract> {
     let client = context.get_client()?;
     let result = Contract::load_wait(client, address, deployed, None)
         .await
@@ -727,11 +735,12 @@ pub async fn retry_call<F, Fut>(retries_count: u8, func: F) -> ApiResult<Receive
 #[cfg(feature = "node_interaction")]
 async fn call_contract(
     client: &NodeClient,
+    abi_config: &AbiConfig,
     address: MsgAddressInt,
     params: &ParamsOfRun,
     key_pair: Option<&Keypair>,
 ) -> ApiResult<ReceivedTransaction> {
-    retry_call(client.timeouts().message_retries_count, |try_index: u8| {
+    retry_call(client.config().message_retries_count(), |try_index: u8| {
         let address = address.clone();
         let call_set = params.call_set.clone();
         async move {
@@ -740,7 +749,7 @@ async fn call_contract(
                 call_set.into(),
                 false,
                 key_pair,
-                Some(client.timeouts()),
+                &abi_config,
                 Some(try_index))
                 .map_err(|err| ApiError::contracts_create_run_message_failed(
                     err, &params.call_set.function_name))?;
@@ -759,7 +768,7 @@ async fn call_contract(
 }
 
 pub(crate) fn do_local_run(
-    context: Option<&mut ClientContext>,
+    context: std::sync::Arc<ClientContext>,
     call_set: RunFunctionCallSet,
     keys: Option<&ed25519_dalek::Keypair>,
     address: MsgAddressInt,
@@ -768,11 +777,11 @@ pub(crate) fn do_local_run(
     run_context: LocalRunContext,
 ) -> ApiResult<ResultOfLocalRun> {
     let msg = Contract::construct_call_message_json(
-        address.clone(), call_set.clone().into(), false, keys, None, None)
+        address.clone(), call_set.clone().into(), false, keys, &context.config.abi, None)
         .map_err(|err| ApiError::contracts_create_run_message_failed(err, &call_set.function_name))?;
 
     do_local_run_msg(
-        context,
+        Some(context),
         address,
         account,
         Some(call_set.abi),
@@ -783,7 +792,7 @@ pub(crate) fn do_local_run(
 }
 
 pub(crate) fn do_local_run_msg(
-    context: Option<&mut ClientContext>,
+    context: Option<std::sync::Arc<ClientContext>>,
     address: MsgAddressInt,
     account: Option<Contract>,
     abi: Option<serde_json::Value>,
@@ -798,10 +807,8 @@ pub(crate) fn do_local_run_msg(
         None => {
             trace!("load contract");
             if let Some(context) = context {
-                let mut runtime = context.take_runtime()?;
-                let result = runtime.block_on(load_contract(context, &address, !full_run));
-                context.runtime = Some(runtime);
-                result?
+                context.clone().runtime.handle().block_on(
+                    load_contract(context, &address, !full_run))?
             } else {
                 return Err(ApiError::sdk_not_init());
             }

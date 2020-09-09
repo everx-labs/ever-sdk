@@ -12,7 +12,7 @@
 */
 
 use super::*;
-use crate::{ContractImage, init_json};
+use crate::{AbiConfig, ContractImage, init_json};
 use ed25519_dalek::Keypair;
 use ton_block::{MsgAddressInt};
 use ton_types::{AccountId, HashmapE};
@@ -106,7 +106,7 @@ async fn test_expire() {
     let mut config = get_config();
     config["timeouts"]["message_retries_count"] = serde_json::Value::from(0);
     // connect to node
-    let client = init_json(&config.to_string()).await.unwrap();
+    let client = init_json(&config.to_string()).unwrap();
 
     // generate key pair
     let mut csprng = rand::thread_rng();
@@ -128,7 +128,7 @@ async fn test_expire() {
         },
         false,
         Some(&keypair),
-        None,
+        &AbiConfig::default(),
         None).unwrap();
 
     msg.expire = Some(Contract::now() + 1);
@@ -172,7 +172,7 @@ fn professor_test() {
         contract_image,
         Some(&keypair),
         0,
-        None,
+        &AbiConfig::default(),
         None).unwrap();
 }
 

@@ -48,7 +48,7 @@ pub struct ResultOfScrypt {
 /// Derives key from `password` and `key` using `scrypt` algorithm.
 /// See [https://en.wikipedia.org/wiki/Scrypt].
 pub fn scrypt(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfScrypt,
 ) -> ApiResult<ResultOfScrypt> {
     let mut key = Vec::new();

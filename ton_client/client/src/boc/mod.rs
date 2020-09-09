@@ -38,7 +38,7 @@ fn deserialize_tree_of_cells_from_base64(b64: &str) -> ApiResult<Cell>
         .map_err(|err| ApiError::cell_invalid_query(format!("BOC read error: {}", err)))
 }
 
-pub(crate) fn query(_context: &mut ClientContext, params: ParamsOfCellQuery) -> ApiResult<Value> {
+pub(crate) fn query(_context: std::sync::Arc<ClientContext>, params: ParamsOfCellQuery) -> ApiResult<Value> {
     let query = CellQuery::parse(params.query)?;
     let cell = deserialize_tree_of_cells_from_base64(params.cellBase64.as_str())?;
     query_cell(&query, &cell)
@@ -46,5 +46,5 @@ pub(crate) fn query(_context: &mut ClientContext, params: ParamsOfCellQuery) -> 
 
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.spawn("cell.query", query);
+    handlers.call("cell.query", query);
 }

@@ -65,7 +65,7 @@ pub struct ResultOfConvertPublicKeyToTonSafeFormat {
 
 #[doc(summary = "Converts public key to ton safe_format")]
 pub fn convert_public_key_to_ton_safe_format(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfConvertPublicKeyToTonSafeFormat,
 ) -> ApiResult<ResultOfConvertPublicKeyToTonSafeFormat> {
     let public_key = hex_decode(&params.public_key)?;
@@ -83,8 +83,8 @@ pub fn convert_public_key_to_ton_safe_format(
 
 //----------------------------------------------------------------------- generate_random_sign_keys
 
-#[doc(summary = "Generates random ed25519 key pair")]
-pub fn generate_random_sign_keys(_context: &mut ClientContext) -> ApiResult<KeyPair> {
+/// Generates random ed25519 key pair.
+pub fn generate_random_sign_keys(_context: std::sync::Arc<ClientContext>) -> ApiResult<KeyPair> {
     let mut rng = rand::thread_rng();
     let keypair = ed25519_dalek::Keypair::generate(&mut rng);
     Ok(KeyPair::new(

@@ -16,8 +16,8 @@ use std::ptr::null;
 
 // Rust exported functions
 
-pub fn create_context() -> InteropContext {
-    Client::shared().create_context()
+pub fn create_context(config: String) -> JsonResponse {
+    Client::shared().create_context(config)
 }
 
 pub fn destroy_context(context: InteropContext) {
@@ -35,17 +35,33 @@ pub fn json_sync_request(
         params_json)
 }
 
+pub fn json_async_request(
+    context: InteropContext,
+    method_name: String,
+    params_json: String,
+    request_id: u32,
+    on_result: OnResult,
+) {
+    Client::json_async_request(
+        context,
+        method_name,
+        params_json,
+        request_id,
+        on_result)
+}
+
 pub fn get_api() -> api_doc::api::API {
     Client::shared().get_api()
 }
 
 // C-library exported functions
 
-pub type OnResult = extern fn(request_id: i32, result_json: InteropString, error_json: InteropString, flags: i32);
+pub type OnResult = extern fn(request_id: u32, result_json: InteropString, error_json: InteropString, flags: u32);
 
 #[no_mangle]
-pub unsafe extern "C" fn tc_create_context() -> InteropContext {
-    create_context()
+pub unsafe extern "C" fn tc_create_context(config: InteropString) -> *const JsonResponse {
+    let response = create_context(config.to_string());
+    Box::into_raw(Box::new(response))
 }
 
 #[no_mangle]
@@ -58,19 +74,16 @@ pub unsafe extern "C" fn tc_json_request_async(
     context: InteropContext,
     method_name: InteropString,
     params_json: InteropString,
-    request_id: i32,
+    request_id: u32,
     on_result: OnResult,
 ) {
-    let response = json_sync_request(
+    json_async_request(
         context,
         method_name.to_string(),
         params_json.to_string(),
-    );
-    on_result(
         request_id,
-        InteropString::from(&response.result_json),
-        InteropString::from(&response.error_json),
-        1);
+        on_result
+    );
 }
 
 #[no_mangle]
@@ -132,6 +145,12 @@ pub struct JsonResponse {
     pub error_json: String,
 }
 
+impl JsonResponse {
+    pub fn send(&self, on_result: OnResult, request_id: u32, flags: u32) {
+        on_result(request_id, self.result_json.as_str().into(), self.error_json.as_str().into(), flags)
+    }
+}
+
 // Helpers
 
 impl InteropString {
@@ -142,17 +161,28 @@ impl InteropString {
         }
     }
 
-    pub fn from(s: &String) -> Self {
+    pub fn to_string(&self) -> String {
+        unsafe {
+            let utf8 = std::slice::from_raw_parts(self.content, self.len as usize);
+            String::from_utf8(utf8.to_vec()).unwrap()
+        }
+    }
+}
+
+impl From<&String> for InteropString {
+    fn from(s: &String) -> Self {
         Self {
             content: s.as_ptr(),
             len: s.len() as u32,
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
-        unsafe {
-            let utf8 = std::slice::from_raw_parts(self.content, self.len as usize);
-            String::from_utf8(utf8.to_vec()).unwrap()
+impl From<&str> for InteropString {
+    fn from(s: &str) -> Self {
+        Self {
+            content: s.as_ptr(),
+            len: s.len() as u32,
         }
     }
 }

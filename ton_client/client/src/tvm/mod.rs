@@ -44,7 +44,7 @@ const DEFAULT_ADDRESS: &str = "0:00000000000000000000000000000000000000000000000
 const DEFAULT_BALANCE: &str = "0xffffffffffffffff";
 
 pub(crate) fn get(
-    context: &mut ClientContext,
+    context: std::sync::Arc<ClientContext>,
     params: ParamsOfLocalRunGet,
 ) -> ApiResult<ResultOfLocalRunGet> {
     trace!("-> contracts.run.get({})",
@@ -71,10 +71,8 @@ pub(crate) fn get(
             trace!("load contract");
             let address = params.address.ok_or_else(|| ApiError::address_reqired_for_runget())?;
             let address = account_decode(&address)?;
-            let mut runtime = context.take_runtime()?;
-            let result = runtime.block_on(crate::contracts::run::load_contract(context, &address, true));
-            context.runtime = Some(runtime);
-            result?
+            context.runtime.handle().block_on(
+                crate::contracts::run::load_contract(context.clone(), &address, true))?
         }
         // can't load
         #[cfg(not(feature = "node_interaction"))]
@@ -107,5 +105,5 @@ pub(crate) fn get(
 }
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.spawn_no_api("tvm.get", get);
+    handlers.call_no_api("tvm.get", get);
 }

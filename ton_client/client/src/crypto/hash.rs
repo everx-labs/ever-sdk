@@ -32,7 +32,7 @@ pub struct ResultOfHash {
 
 #[doc(summary = "Calculates SHA256 hash of the specified data.")]
 pub fn sha256(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHash,
 ) -> ApiResult<ResultOfHash> {
     let mut hasher = sha2::Sha256::new();
@@ -45,7 +45,7 @@ pub fn sha256(
 
 #[doc(summary = "Calculates SHA512 hash of the specified data.")]
 pub fn sha512(
-    _context: &mut ClientContext,
+    _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHash,
 ) -> ApiResult<ResultOfHash> {
     let mut hasher = sha2::Sha512::new();

@@ -9,7 +9,7 @@ use super::*;
 fn block_signatures() {
     let client = TestClient::new();
 
-    let _: ResultOfQueryCollection = client.request(
+    let _: ResultOfQueryCollection = client.request_async(
         "queries.query_collection",
         ParamsOfQueryCollection {
             collection: "blocks_signatures".to_owned(),
@@ -25,7 +25,7 @@ fn block_signatures() {
 fn all_accounts() {
     let client = TestClient::new();
 
-    let accounts: ResultOfQueryCollection = client.request(
+    let accounts: ResultOfQueryCollection = client.request_async(
         "queries.query_collection",
         ParamsOfQueryCollection {
             collection: "accounts".to_owned(),
@@ -43,7 +43,7 @@ fn all_accounts() {
 fn ranges() {
     let client = TestClient::new();
 
-    let accounts: ResultOfQueryCollection = client.request(
+    let accounts: ResultOfQueryCollection = client.request_async(
         "queries.query_collection",
         ParamsOfQueryCollection {
             collection: "messages".to_owned(),
@@ -64,7 +64,7 @@ fn wait_for() {
     let handle = std::thread::spawn(|| {
         let client = TestClient::new();
         let now = ton_sdk::Contract::now();
-        let transactions: ResultOfWaitForCollection = client.request(
+        let transactions: ResultOfWaitForCollection = client.request_async(
             "queries.wait_for_collection",
             ParamsOfWaitForCollection {
                 collection: "transactions".to_owned(),
@@ -103,12 +103,12 @@ fn subscribe_for_transactions_with_addresses() {
         try_index: None
     };
 
-    let msg: EncodedMessage = client.request(
+    let msg: EncodedMessage = client.request_async(
         "contracts.deploy.message",
         deploy_params.clone()
     );
 
-    let handle: ResultOfSubscribeCollection = client.request(
+    let handle: ResultOfSubscribeCollection = client.request_async(
             "queries.subscribe_collection",
             ParamsOfSubscribeCollection {
                 collection: "transactions".to_owned(),
@@ -125,7 +125,7 @@ fn subscribe_for_transactions_with_addresses() {
     let mut transactions = vec![];
 
     for _ in 0..2 {
-        let result: ResultOfGetNextSubscriptionData = client.request(
+        let result: ResultOfGetNextSubscriptionData = client.request_async(
             "queries.get_next_subscription_data", handle.clone());
         assert_eq!(result.result["account_addr"], msg.address.clone().unwrap());
         transactions.push(result.result);
@@ -133,7 +133,7 @@ fn subscribe_for_transactions_with_addresses() {
 
     assert_ne!(transactions[0]["id"], transactions[1]["id"]);
 
-    let _: () = client.request("queries.unsubscribe", handle);
+    let _: () = client.request_async("queries.unsubscribe", handle);
 }
 
 #[test]
@@ -144,7 +144,7 @@ fn subscribe_for_messages() {
     std::thread::spawn(move || {
         let client = TestClient::new();
 
-        let handle: ResultOfSubscribeCollection = client.request(
+        let handle: ResultOfSubscribeCollection = client.request_async(
             "queries.subscribe_collection",
             ParamsOfSubscribeCollection {
                 collection: "messages".to_owned(),
@@ -157,7 +157,7 @@ fn subscribe_for_messages() {
 
         loop {
             println!("Before get_next");
-            let result: ResultOfGetNextSubscriptionData = client.request(
+            let result: ResultOfGetNextSubscriptionData = client.request_async(
                 "queries.get_next_subscription_data", handle.clone());
             println!("After get_next");
             messages_copy.lock().unwrap().push(result.result);
