@@ -48,10 +48,10 @@ lazy_static::lazy_static! {
 	static ref ABI_VERSION: u8 = u8::from_str_radix(&std::env::var("ABI_VERSION").unwrap_or("2".to_owned()), 10).unwrap();
 	static ref CONTRACTS_PATH: String = format!("{}abi_v{}/", ROOT_CONTRACTS_PATH, *ABI_VERSION);
 	static ref NODE_ADDRESS: String = std::env::var("TON_NETWORK_ADDRESS")
-		.unwrap_or("cinet.tonlabs.io".to_owned());
-		//.unwrap_or("http://localhost".to_owned());
+		//.unwrap_or("cinet.tonlabs.io".to_owned());
+		.unwrap_or("http://localhost".to_owned());
 		//.unwrap_or("net.ton.dev".to_owned());
-	static ref NODE_SE: bool = std::env::var("USE_NODE_SE").unwrap_or("true".to_owned()) == "tru".to_owned();
+	static ref NODE_SE: bool = std::env::var("USE_NODE_SE").unwrap_or("true".to_owned()) == "true".to_owned();
 
 	pub static ref SUBSCRIBE_ABI: Value = read_abi(CONTRACTS_PATH.clone() + "Subscription.abi.json");
 	pub static ref PIGGY_BANK_ABI: Value = read_abi(CONTRACTS_PATH.clone() + "Piggy.abi.json");
