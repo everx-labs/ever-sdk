@@ -29,7 +29,7 @@ typedef void (*tc_on_response_t)(
 extern "C" {
 #endif
 
-uint32_t tc_create_context();
+tc_response_handle_t* tc_create_context(tc_string_t config);
 void tc_destroy_context(uint32_t context);
 void tc_json_request_async(
     uint32_t context,
