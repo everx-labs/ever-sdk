@@ -1,4 +1,5 @@
 use crate::abi::abi::Abi;
+use crate::abi::decode::{DecodedMessageBody, ParamsOfDecodeMessage, ResultOfDecodeMessage};
 use crate::abi::encode::{
     CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfEncodeMessage, ResultOfAttachSignature,
     ResultOfEncodeMessage,
@@ -116,11 +117,46 @@ fn encode_v2() {
     assert_eq!(signed.message, "te6ccgEBAwEAvAABRYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIMAQHhrd/b+MJ5Za+AygBc5qS/dVIPnqxCsM9PvqfVxutK+lnQEKzQoRTLYO6+jfM8TF4841bdNjLQwIDWL4UVFdxIhdMfECP8d3ruNZAXul5xxahT91swIEkEHph08JVlwmUmQAAAXRnJcuDX1XMZBW+LBKACAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==");
 }
 
-
 #[test]
 fn decode() {
     TestClient::init_log();
     let client = TestClient::new();
-    let (events_abi, events_tvc) = TestClient::package(EVENTS, 2);
+    let (events_abi, _events_tvc) = TestClient::package(EVENTS, 2);
 
+    let decode_events = |message: &str| {
+        let result: ResultOfDecodeMessage = client.request(
+            "abi.decode_message",
+            ParamsOfDecodeMessage {
+                abi: Abi::Value(events_abi.clone()),
+                message: message.into(),
+            },
+        );
+        result.body
+    };
+
+    let expected = DecodedMessageBody::FunctionInput(
+        "returnValue".into(),
+        json!({
+            "id": "0x0"
+        }),
+    );
+    assert_eq!(expected, decode_events("te6ccgEBAwEAvAABRYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIMAQHhrd/b+MJ5Za+AygBc5qS/dVIPnqxCsM9PvqfVxutK+lnQEKzQoRTLYO6+jfM8TF4841bdNjLQwIDWL4UVFdxIhdMfECP8d3ruNZAXul5xxahT91swIEkEHph08JVlwmUmQAAAXRnJcuDX1XMZBW+LBKACAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="));
+
+
+    let expected = DecodedMessageBody::Event(
+        "EventThrown".into(),
+        json!({
+            "id": "0x0"
+        }),
+    );
+    assert_eq!(expected, decode_events("te6ccgEBAQEAVQAApeACvg5/pmQpY4m61HmJ0ne+zjHJu3MNG8rJxUDLbHKBu/AAAAAAAAAMJL6z6ro48sYvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA"));
+
+
+    let expected = DecodedMessageBody::FunctionOutput(
+        "returnValue".into(),
+        json!({
+            "value0": "0x0"
+        }),
+    );
+    assert_eq!(expected, decode_events("te6ccgEBAQEAVQAApeACvg5/pmQpY4m61HmJ0ne+zjHJu3MNG8rJxUDLbHKBu/AAAAAAAAAMKr6z6rxK3xYJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA"));
 }

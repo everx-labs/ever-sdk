@@ -14,6 +14,7 @@ ton_sdk = { path = "../../ton_sdk", default-features = false }
 api_doc = { path = "../../api_doc/api_doc" }
 api_doc_derive = { path = "../../api_doc/api_doc_derive" }
 
+ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git"}
 ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }
 ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git" }
 ton_block_json = { git = "https://github.com/tonlabs/ton-labs-block-json.git" }

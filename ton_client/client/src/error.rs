@@ -641,6 +641,14 @@ impl ApiError {
         )
     }
 
+    pub fn abi_invalid_json<E: Display>(err: E) -> Self {
+        sdk_err!(AbiInvalidJson, "Invalid ABI JSON: {}", err)
+    }
+
+    pub fn abi_invalid_message_for_decode<E: Display>(err: E) -> Self {
+        sdk_err!(AbiInvalidMessage, "Message can't be decoded: {}", err)
+    }
+
     // Failed transaction phases
 
     pub fn transaction_aborted(tr_id: Option<String>) -> ApiError {
@@ -838,6 +846,8 @@ pub enum ApiSdkErrorCode {
 
     AbiRequiredAddressMissingForEncodeMessage = 6001,
     AbiRequiredCallSetMissingForEncodeMessage = 6002,
+    AbiInvalidJson = 6003,
+    AbiInvalidMessage = 6004,
 }
 
 impl ApiErrorCode for ApiSdkErrorCode {
