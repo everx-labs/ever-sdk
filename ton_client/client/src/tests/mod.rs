@@ -21,7 +21,7 @@ use crate::{
         deploy::{ParamsOfDeploy, ResultOfDeploy},
         run::{ParamsOfRun, ResultOfRun, RunFunctionCallSet},
     },
-    client::ResultOfCreateContext
+    client::{ResultOfCreateContext, ParamsOfUnregisterCallback}
 };
 use super::InteropContext;
 use super::{tc_json_request, tc_json_request_async, InteropString};
@@ -68,6 +68,7 @@ lazy_static::lazy_static! {
     pub static ref HELLO_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.clone() + "Hello.tvc").unwrap();
 
     pub static ref REQUESTS: Mutex<HashMap<u32, Sender<JsonResponse>>> = Mutex::new(HashMap::new());
+    pub static ref CALLBACKS: Mutex<HashMap<u32, Box<dyn Fn(u32, String, String, u32) + Send>>> = Mutex::new(HashMap::new());
 }
 
 fn read_abi(path: String) -> Value {
@@ -118,6 +119,10 @@ pub(crate) struct TestClient {
 
 extern "C" fn on_result(request_id: u32, result_json: InteropString, error_json: InteropString, flags: u32) {
     TestClient::on_result(request_id, result_json, error_json, flags)
+}
+
+extern "C" fn on_callback(request_id: u32, result_json: InteropString, error_json: InteropString, flags: u32) {
+    TestClient::callback(request_id, result_json, error_json, flags)
 }
 
 impl TestClient {
@@ -236,7 +241,6 @@ impl TestClient {
         }
     }
 
-
     pub(crate) fn request_async<P, R>(&self, method: &str, params: P) -> R
         where P: Serialize, R: DeserializeOwned {
         let params = serde_json::to_value(params)
@@ -245,6 +249,51 @@ impl TestClient {
         serde_json::from_value(result)
             .map_err(|err| ApiError::invalid_params("", err))
             .unwrap()
+    }
+
+    fn callback(request_id: u32, result_json: InteropString, error_json: InteropString, flags: u32) {
+        let callbacks_lock = CALLBACKS.lock().unwrap();
+        let callback = callbacks_lock.get(&request_id).unwrap();
+        callback(request_id, result_json.to_string(), error_json.to_string(), flags);
+    }
+
+    pub(crate) fn register_callback<R: DeserializeOwned>(
+        &self,
+        callback_id: Option<u32>,
+        callback: impl Fn(u32, ApiResult<R>, u32) + Send + Sync + 'static
+    ) -> u32 {
+        let callback = move |request_id: u32, result_json: String, error_json: String, flags: u32| {
+            let result = if !result_json.is_empty() {
+                Ok(serde_json::from_str(&result_json).unwrap())
+            } else {
+                Err(serde_json::from_str(&error_json).unwrap())
+            };
+            callback(request_id, result, flags)
+        };
+        let callback_id = callback_id.unwrap_or_else(|| rand::thread_rng().gen::<u32>());
+        CALLBACKS.lock().unwrap().insert(callback_id, Box::new(callback));
+        unsafe {
+            tc_json_request_async(
+                self.context,
+                InteropString::from("client.register_callback"),
+                InteropString::from(""),
+                callback_id,
+                on_callback
+            );
+        };
+
+        callback_id
+    }
+
+    pub(crate) fn unregister_callback(&self, callback_id: u32) {
+        let _: () = self.request(
+            "client.unregister_callback",
+            ParamsOfUnregisterCallback {
+                callback_id
+            }
+        );
+
+        CALLBACKS.lock().unwrap().remove(&callback_id);
     }
 
     pub(crate) fn get_grams_from_giver(&self, account: &str, value: Option<u64>) {

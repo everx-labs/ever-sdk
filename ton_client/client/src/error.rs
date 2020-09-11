@@ -268,6 +268,11 @@ impl ApiError {
         error
     }
 
+    pub fn callback_not_registered(callback_id: u32) -> Self {
+        sdk_err!(CallbackNotRegistered,
+            "Callback with ID {} is not registered", callback_id)
+    }
+
     // SDK Cell
 
     pub fn cell_invalid_query<E: Display>(s: E) -> Self {
@@ -530,8 +535,8 @@ impl ApiError {
     }
 
     pub fn queries_get_next_failed<E: Display>(err: E) -> Self {
-        sdk_err!(QueriesGetNextFailed,
-            "Get next failed: {}", err)
+        sdk_err!(QueriesGetSubscriptionResultFailed,
+            "Receive subscription result failed: {}", err)
     }
 
     // Failed transaction phases
@@ -665,6 +670,7 @@ pub enum ApiSdkErrorCode {
     AccountFrozenOrDeleted = 1017,
     ActionPhaseFailed = 1018,
     ErrorNotResolved = 1019,
+    CallbackNotRegistered = 1020,
 
     CryptoInvalidPublicKey = 2001,
     CryptoInvalidSecretKey = 2002,
@@ -718,7 +724,7 @@ pub enum ApiSdkErrorCode {
     QueriesQueryFailed = 4001,
     QueriesSubscribeFailed = 4002,
     QueriesWaitForFailed = 4003,
-    QueriesGetNextFailed = 4004,
+    QueriesGetSubscriptionResultFailed = 4004,
 
     CellInvalidQuery = 5001,
 }
