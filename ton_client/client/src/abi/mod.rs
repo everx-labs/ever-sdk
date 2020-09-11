@@ -22,6 +22,7 @@ mod decode;
 mod defaults;
 mod encode;
 mod signing;
+mod errors;
 
 pub use abi::{Abi, AbiHandle};
 pub use decode::{
@@ -32,6 +33,7 @@ pub use encode::{
     ResultOfAttachSignature, ResultOfEncodeMessage,
 };
 pub use signing::MessageSigning;
+pub use errors::{Code, Error};
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
     handlers.call("abi.encode_message", encode::encode_message);

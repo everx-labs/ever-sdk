@@ -485,30 +485,6 @@ impl ApiError {
         sdk_err!(QueriesGetNextFailed, "Get next failed: {}", err)
     }
 
-    // SDK Abi module
-
-    pub fn abi_required_address_missing_for_encode_message() -> Self {
-        Self::sdk(
-            AbiRequiredAddressMissingForEncodeMessage,
-            "Address must be provided to encode run message.".into(),
-        )
-    }
-
-    pub fn abi_missing_required_call_set_for_encode_message() -> Self {
-        Self::sdk(
-            AbiRequiredCallSetMissingForEncodeMessage,
-            "Call parameters must be provided to encode run message.".into(),
-        )
-    }
-
-    pub fn abi_invalid_json<E: Display>(err: E) -> Self {
-        sdk_err!(AbiInvalidJson, "Invalid ABI JSON: {}", err)
-    }
-
-    pub fn abi_invalid_message_for_decode<E: Display>(err: E) -> Self {
-        sdk_err!(AbiInvalidMessage, "Message can't be decoded: {}", err)
-    }
-
     // Failed transaction phases
 
     pub fn transaction_aborted(tr_id: Option<String>) -> ApiError {
@@ -680,10 +656,6 @@ pub enum ApiSdkErrorCode {
 
     CellInvalidQuery = 5001,
 
-    AbiRequiredAddressMissingForEncodeMessage = 6001,
-    AbiRequiredCallSetMissingForEncodeMessage = 6002,
-    AbiInvalidJson = 6003,
-    AbiInvalidMessage = 6004,
 }
 
 impl ApiErrorCode for ApiSdkErrorCode {

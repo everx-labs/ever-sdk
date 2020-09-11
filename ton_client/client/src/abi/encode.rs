@@ -1,3 +1,4 @@
+use crate::abi;
 use crate::abi::defaults::DEFAULT_WORKCHAIN;
 use crate::abi::internal::{
     add_sign_to_message, create_tvc_image, resolve_abi, result_of_encode_message,
@@ -5,7 +6,7 @@ use crate::abi::internal::{
 use crate::abi::{Abi, MessageSigning};
 use crate::client::ClientContext;
 use crate::encoding::{account_decode, base64_decode, hex_decode};
-use crate::error::{ApiError, ApiResult};
+use crate::error::{ApiResult};
 use serde_json::Value;
 use ton_block::Serializable;
 use ton_sdk::{ContractImage, FunctionCallSet};
@@ -81,7 +82,7 @@ fn required_public_key(public_key: Option<String>) -> ApiResult<String> {
     if let Some(public_key) = public_key {
         Ok(public_key)
     } else {
-        Err(ApiError::contracts_create_deploy_message_failed(
+        Err(abi::Error::encode_deploy_message_failed(
             "Public key doesn't provided.",
         ))
     }
@@ -101,17 +102,17 @@ fn encode_deploy(
         &context.config.abi,
         None, //TODO: params.try_index,
     )
-    .map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
+    .map_err(|err| abi::Error::encode_deploy_message_failed(err))?;
     Ok((unsigned.message, unsigned.data_to_sign))
 }
 
 fn encode_empty_deploy(image: ContractImage, workchain: i32) -> ApiResult<(Vec<u8>, Vec<u8>)> {
     let message = ton_sdk::Contract::construct_deploy_message_no_constructor(image, workchain)
-        .map_err(|x| ApiError::contracts_create_deploy_message_failed(x))?;
+        .map_err(|x| abi::Error::encode_deploy_message_failed(x))?;
     Ok((
         message
             .serialize()
-            .map_err(|x| ApiError::contracts_create_deploy_message_failed(x))?
+            .map_err(|x| abi::Error::encode_deploy_message_failed(x))?
             .data()
             .into(),
         Vec::new(),
@@ -127,14 +128,14 @@ fn encode_run(
     let address = params
         .address
         .as_ref()
-        .ok_or(ApiError::abi_required_address_missing_for_encode_message())?;
+        .ok_or(abi::Error::required_address_missing_for_encode_message())?;
     let unsigned = ton_sdk::Contract::get_call_message_bytes_for_signing(
         account_decode(address)?,
         call_set.to_function_call_set(abi),
         &context.config.abi,
         None,
     )
-    .map_err(|err| ApiError::contracts_create_run_message_failed(err, &call_set.function_name))?;
+    .map_err(|err| abi::Error::encode_run_message_failed(err, &call_set.function_name))?;
     Ok((unsigned.message, unsigned.data_to_sign))
 }
 
@@ -163,7 +164,7 @@ pub fn encode_message(
     } else if let Some(call_set) = &params.call_set {
         encode_run(context, &params, &abi, call_set)?
     } else {
-        return Err(ApiError::abi_missing_required_call_set_for_encode_message());
+        return Err(abi::Error::missing_required_call_set_for_encode_message());
     };
 
     trace!("<-");

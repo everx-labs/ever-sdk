@@ -2,9 +2,10 @@ use crate::error::ApiError;
 use std::fmt::Display;
 
 pub enum Code {
-    InvalidHex = 10,
-    InvalidBase64 = 11,
-    InvalidAddress = 12,
+    NotImplemented = 1,
+    InvalidHex = 2,
+    InvalidBase64 = 3,
+    InvalidAddress = 4,
 }
 pub struct Error;
 
@@ -13,6 +14,10 @@ fn error(code: Code, message: String) -> ApiError {
 }
 
 impl Error {
+    pub fn not_implemented(message: &str) -> ApiError {
+        error(Code::NotImplemented, message.into())
+    }
+
     pub fn invalid_hex<E: Display>(s: &String, err: E) -> ApiError {
         error(
             Code::InvalidHex,
@@ -33,6 +38,4 @@ impl Error {
             format!("Invalid address [{}]: {}", err, address),
         )
     }
-
-
 }

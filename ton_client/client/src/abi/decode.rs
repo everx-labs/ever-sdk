@@ -1,8 +1,9 @@
 use crate::abi::abi::Abi;
 use crate::abi::internal::resolve_abi;
+use crate::abi::Error;
 use crate::client::ClientContext;
 use crate::encoding::base64_decode;
-use crate::error::{ApiError, ApiResult};
+use crate::error::ApiResult;
 use serde_json::Value;
 use std::sync::Arc;
 use ton_abi::contract::DecodedMessage;
@@ -56,6 +57,7 @@ pub struct ParamsOfDecodeMessage {
 }
 
 use DecodedMessageBody::*;
+
 pub fn decode_message(
     _context: Arc<ClientContext>,
     params: ParamsOfDecodeMessage,
@@ -83,15 +85,15 @@ pub fn decode_message(
 
 fn prepare_decode(params: &ParamsOfDecodeMessage) -> ApiResult<(AbiContract, ton_block::Message)> {
     let abi = resolve_abi(&params.abi)?;
-    let abi = AbiContract::load(abi.as_bytes()).map_err(|x| ApiError::abi_invalid_json(x))?;
+    let abi = AbiContract::load(abi.as_bytes()).map_err(|x| Error::invalid_json(x))?;
     let message = ton_sdk::Contract::deserialize_message(&base64_decode(&params.message)?)
-        .map_err(|x| ApiError::abi_invalid_message_for_decode(x))?;
+        .map_err(|x| Error::invalid_message_for_decode(x))?;
     Ok((abi, message))
 }
 
 fn get_values(decoded: &DecodedMessage) -> ApiResult<Value> {
     Ok(
         Detokenizer::detokenize_to_json_value(&decoded.params, &decoded.tokens)
-            .map_err(|x| ApiError::abi_invalid_message_for_decode(x))?,
+            .map_err(|x| Error::invalid_message_for_decode(x))?,
     )
 }
