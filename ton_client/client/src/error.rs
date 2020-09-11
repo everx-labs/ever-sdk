@@ -72,6 +72,7 @@ impl ApiError {
     pub const ABI: isize = 300;
     pub const TVM: isize = 400;
     pub const NET: isize = 500;
+    pub const QUERIES: isize = 600;
 
     fn new(source: ApiErrorSource, code: &dyn ApiErrorCode, message: String) -> Self {
         Self {
