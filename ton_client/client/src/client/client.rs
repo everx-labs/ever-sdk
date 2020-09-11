@@ -30,10 +30,19 @@ lazy_static! {
     static ref CLIENT: Mutex<Client> = Mutex::new(Client::new());
 }
 
+pub type Callback = dyn Fn(u32, &str, &str, u32) + Send + Sync;
+
+
 #[derive(Serialize, Deserialize, TypeInfo, Clone)]
 pub struct ResultOfVersion {
     /// core version
     pub version: String,
+}
+
+#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+pub struct ParamsOfUnregisterCallback {
+    /// Registered callback ID
+    pub callback_id: u32,
 }
 
 fn create_handlers() -> DispatchTable {
@@ -49,20 +58,42 @@ fn create_handlers() -> DispatchTable {
     #[cfg(feature = "node_interaction")]
     crate::queries::register(&mut handlers);
 
-    handlers.call_no_args("config.get_api_reference", |_context| Ok(get_api()));
-    handlers.call_no_args("version", |_| {
-        Ok(ResultOfVersion {
-            version: env!("CARGO_PKG_VERSION").to_owned(),
-        })
-    });
+    handlers.call_no_args(
+        "client.get_api_reference",
+        |_context| Ok(get_api()));
+    handlers.call_no_args(
+        "client.version",
+        |_| Ok(ResultOfVersion { version: env!("CARGO_PKG_VERSION").to_owned() }));
+
+    handlers.call_raw_async(
+        "client.register_callback",
+        register_callback);
+
+    handlers.call(
+        "client.unregister_callback",
+        unregister_callback);
+
     handlers
 }
 
-fn sync_request(
+pub fn register_callback(
     context: std::sync::Arc<ClientContext>,
-    method: String,
-    params_json: String,
-) -> JsonResponse {
+    _params_json: String,
+    request_id: u32,
+    on_result: Box<Callback>
+) {
+    context.callbacks.insert(request_id, on_result.into());
+}
+
+pub fn unregister_callback(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfUnregisterCallback,
+) -> ApiResult<()> {
+    context.callbacks.remove(&params.callback_id);
+    Ok(())
+}
+
+fn sync_request(context: std::sync::Arc<ClientContext>, method: String, params_json: String) -> JsonResponse {
     HANDLERS.sync_dispatch(context, method, params_json)
 }
 
@@ -71,7 +102,7 @@ fn async_request(
     method: String,
     params_json: String,
     request_id: u32,
-    on_result: OnResult,
+    on_result: Box<Callback>
 ) {
     HANDLERS.async_dispatch(context, method, params_json, request_id, on_result)
 }
@@ -83,6 +114,7 @@ pub struct ClientContext {
     pub runtime: Runtime,
     pub handle: InteropContext,
     pub config: InternalClientConfig,
+    pub callbacks: lockfree::map::Map<u32, std::sync::Arc<Callback>>
 }
 
 #[cfg(feature = "node_interaction")]
@@ -201,6 +233,7 @@ Note that default values are used if parameters are omitted in config"#,
                 client,
                 runtime,
                 config,
+            callbacks: Default::default()
             }),
         );
 
@@ -243,7 +276,7 @@ Note that default values are used if parameters are omitted in config"#,
         method_name: String,
         params_json: String,
         request_id: u32,
-        on_result: OnResult,
+        on_result: Box<Callback>
     ) {
         let context = Self::shared().required_context(handle);
         match context {
@@ -251,7 +284,7 @@ Note that default values are used if parameters are omitted in config"#,
                 async_request(context, method_name, params_json, request_id, on_result);
             }
             Err(err) => {
-                JsonResponse::from_error(err).send(on_result, request_id, 1);
+                JsonResponse::from_error(err).send(&*on_result, request_id, 1);
             }
         }
     }

@@ -12,8 +12,8 @@
 */
 
 use crate::error::{ApiError, ApiResult};
-use crate::client::{ClientContext};
-use super::{JsonResponse, OnResult};
+use crate::client::{Callback, ClientContext};
+use super::{JsonResponse};
 use std::collections::HashMap;
 use std::marker::PhantomData;
 use serde::de::DeserializeOwned;
@@ -49,17 +49,48 @@ trait SyncHandler {
 
 trait AsyncHandler {
     fn get_api(&self) -> &Method;
-    fn handle(&self, context: std::sync::Arc<ClientContext>, params_json: String, request_id: u32, on_result: OnResult);
+    fn handle(&self, context: std::sync::Arc<ClientContext>, params_json: String, request_id: u32, on_result: Box<Callback>);
 }
 
 pub(crate) struct DispatchTable {
     sync_runners: HashMap<String, Box<dyn SyncHandler + Sync>>,
-    #[cfg(feature = "node_interaction")]
     async_runners: HashMap<String, Box<dyn AsyncHandler + Sync>>
 }
 
 pub(crate) fn parse_params<P: DeserializeOwned>(params_json: &str) -> ApiResult<P> {
     serde_json::from_str(params_json).map_err(|err| ApiError::invalid_params(params_json, err))
+}
+
+struct RawAsyncHandler<F>
+where
+    F: Fn(std::sync::Arc<ClientContext>, String, u32, Box<Callback>),
+{
+    api: Method,
+    handler: F,
+}
+
+impl<F> RawAsyncHandler<F>
+where 
+    F: Fn(std::sync::Arc<ClientContext>, String, u32, Box<Callback>),
+{
+    pub fn new(api: Method, handler: F) -> Self {
+        Self {
+            api,
+            handler,
+        }
+    }
+}
+
+impl<F> AsyncHandler for RawAsyncHandler<F>
+where 
+    F: Fn(std::sync::Arc<ClientContext>, String, u32, Box<Callback>),
+{
+    fn get_api(&self) -> &Method {
+        &self.api
+    }
+    fn handle(&self, context: std::sync::Arc<ClientContext>, params_json: String, request_id: u32, on_result: Box<Callback>) {
+        (self.handler)(context, params_json, request_id, on_result)
+    }
 }
 
 #[cfg(feature = "node_interaction")]
@@ -104,7 +135,7 @@ where
     fn get_api(&self) -> &Method {
         &self.api
     }
-    fn handle(&self, context: std::sync::Arc<ClientContext>, params_json: String, request_id: u32, on_result: OnResult) {
+    fn handle(&self, context: std::sync::Arc<ClientContext>, params_json: String, request_id: u32, on_result: Box<Callback>) {
         let handler = self.handler.clone();
         let context_copy = context.clone();
         context.runtime.enter(move || {
@@ -121,7 +152,7 @@ where
                     }
                     Err(err) => JsonResponse::from_error(err)
                 };
-                result.send(on_result, request_id, 1);
+                result.send(&*on_result, request_id, 1);
             });
         });
     }
@@ -166,7 +197,7 @@ where
     fn get_api(&self) -> &Method {
         &self.api
     }
-    fn handle(&self, context: std::sync::Arc<ClientContext>, _params_json: String, request_id: u32, on_result: OnResult) {
+    fn handle(&self, context: std::sync::Arc<ClientContext>, _params_json: String, request_id: u32, on_result: Box<Callback>) {
         let handler = self.handler.clone();
         let context_copy = context.clone();
         context.runtime.enter(move || {
@@ -178,7 +209,7 @@ where
                     Err(err) =>
                         JsonResponse::from_error(err)
                 };
-                result.send(on_result, request_id, 1);
+                result.send(&*on_result, request_id, 1);
             });
         });
     }
@@ -415,6 +446,16 @@ impl DispatchTable {
         );
     }
 
+    pub fn call_raw_async(
+        &mut self,
+        method: &str,
+        handler: fn(context: std::sync::Arc<ClientContext>, params_json: String, request_id: u32, on_result: Box<Callback>),
+    ) {
+        self.async_runners.insert(
+            method.into(),
+            Box::new(RawAsyncHandler::new(method_api(method), handler)));
+    }
+
     pub fn sync_dispatch(&self, context: std::sync::Arc<ClientContext>, method: String, params_json: String) -> JsonResponse {
         match self.sync_runners.get(&method) {
             Some(handler) => handler.handle(context, params_json.as_str()),
@@ -423,16 +464,16 @@ impl DispatchTable {
     }
 
     #[cfg(feature = "node_interaction")]
-    pub fn async_dispatch(&self, context: std::sync::Arc<ClientContext>, method: String, params_json: String, request_id: u32, on_result: OnResult) {
+    pub fn async_dispatch(&self, context: std::sync::Arc<ClientContext>, method: String, params_json: String, request_id: u32, on_result: Box<Callback>) {
         match self.async_runners.get(&method) {
             Some(handler) => handler.handle(context, params_json, request_id, on_result),
             None => JsonResponse::from_error(ApiError::unknown_method(&method))
-                .send(on_result, request_id, 1)
+                .send(&*on_result, request_id, 1)
         }
     }
 
     #[cfg(not(feature = "node_interaction"))]
-    pub fn async_dispatch(&self, context: std::sync::Arc<ClientContext>, method: String, params_json: String, request_id: u32, on_result: OnResult) {
-        self.sync_dispatch(context, method, params_json).send(on_result, request_id, 1);
+    pub fn async_dispatch(&self, context: std::sync::Arc<ClientContext>, method: String, params_json: String, request_id: u32, on_result: Box<Callback>) {
+        self.sync_dispatch(context, method, params_json).send(&on_result, request_id, 1);
     }
 }
