@@ -1,25 +1,26 @@
 use crate::error::ApiError;
 use std::fmt::Display;
+const CRYPTO: isize = ApiError::CRYPTO; // 100
 
 pub enum Code {
-    InvalidPublicKey = 100,
-    InvalidSecretKey = 101,
-    InvalidKey = 102,
-    InvalidFactorizeChallenge = 106,
-    InvalidBigInt = 107,
-    ScryptFailed = 110,
-    InvalidKeySize = 111,
-    NaclSecretBoxFailed = 112,
-    NaclBoxFailed = 113,
-    NaclSignFailed = 114,
-    Bip39InvalidEntropy = 115,
-    Bip39InvalidPhrase = 116,
-    Bip32InvalidKey = 117,
-    Bip32InvalidDerivePath = 118,
-    Bip39InvalidDictionary = 120,
-    Bip39InvalidWordCount = 121,
-    MnemonicGenerationFailed = 122,
-    MnemonicFromEntropyFailed = 123,
+    InvalidPublicKey = CRYPTO + 0,
+    InvalidSecretKey = CRYPTO + 1,
+    InvalidKey = CRYPTO + 2,
+    InvalidFactorizeChallenge = CRYPTO + 6,
+    InvalidBigInt = CRYPTO + 7,
+    ScryptFailed = CRYPTO + 8,
+    InvalidKeySize = CRYPTO + 9,
+    NaclSecretBoxFailed = CRYPTO + 10,
+    NaclBoxFailed = CRYPTO + 11,
+    NaclSignFailed = CRYPTO + 12,
+    Bip39InvalidEntropy = CRYPTO + 13,
+    Bip39InvalidPhrase = CRYPTO + 14,
+    Bip32InvalidKey = CRYPTO + 15,
+    Bip32InvalidDerivePath = CRYPTO + 16,
+    Bip39InvalidDictionary = CRYPTO + 17,
+    Bip39InvalidWordCount = CRYPTO + 18,
+    MnemonicGenerationFailed = CRYPTO + 19,
+    MnemonicFromEntropyFailed = CRYPTO + 20,
 }
 pub struct Error;
 

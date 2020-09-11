@@ -1,15 +1,16 @@
 use crate::error::ApiError;
 use std::fmt::Display;
+const ABI: isize = ApiError::ABI; // 200
 
 pub enum Code {
-    RequiredAddressMissingForEncodeMessage = 300,
-    RequiredCallSetMissingForEncodeMessage = 301,
-    InvalidJson = 302,
-    InvalidMessage = 303,
-    EncodeDeployMessageFailed = 304,
-    EncodeRunMessageFailed = 305,
-    AttachSignatureFailed = 306,
-    InvalidTvcImage = 307,
+    RequiredAddressMissingForEncodeMessage = ABI + 0,
+    RequiredCallSetMissingForEncodeMessage = ABI + 1,
+    InvalidJson = ABI + 2,
+    InvalidMessage = ABI + 3,
+    EncodeDeployMessageFailed = ABI + 4,
+    EncodeRunMessageFailed = ABI + 5,
+    AttachSignatureFailed = ABI + 6,
+    InvalidTvcImage = ABI + 7,
 }
 
 pub struct Error;

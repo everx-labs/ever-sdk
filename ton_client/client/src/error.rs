@@ -66,6 +66,13 @@ macro_rules! as_number_impl {
 }
 
 impl ApiError {
+    pub const CLIENT: isize = 0;
+    pub const CRYPTO: isize = 100;
+    pub const BOC: isize = 200;
+    pub const ABI: isize = 300;
+    pub const TVM: isize = 400;
+    pub const NET: isize = 500;
+
     fn new(source: ApiErrorSource, code: &dyn ApiErrorCode, message: String) -> Self {
         Self {
             core_version: env!("CARGO_PKG_VERSION").to_owned(),
