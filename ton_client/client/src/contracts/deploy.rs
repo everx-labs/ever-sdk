@@ -11,7 +11,7 @@
 * limitations under the License.
 */
 
-use crate::crypto::keys::{KeyPair};
+use crate::crypto::{KeyPair};
 use crate::encoding::{account_encode};
 use crate::crypto::internal::{decode_public_key};
 use crate::contracts::{EncodedUnsignedMessage, EncodedMessage};

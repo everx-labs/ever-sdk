@@ -12,10 +12,12 @@
 */
 
 use crate::client::ClientContext;
-use crate::crypto::internal;
-use crate::crypto::internal::{key256, ton_crc16};
+use crate::crypto;
+use crate::crypto::internal::{
+    decode_public_key, decode_secret_key, key256, sign_using_keys, ton_crc16,
+};
 use crate::encoding::{base64_decode, hex_decode};
-use crate::error::{ApiError, ApiResult};
+use crate::error::{ApiResult};
 use base64::URL_SAFE;
 use ed25519_dalek::Keypair;
 
@@ -33,17 +35,10 @@ impl KeyPair {
         KeyPair { public, secret }
     }
 
-    pub fn from(keys: &Keypair) -> Self {
-        Self {
-            public: hex::encode(keys.public.as_bytes()),
-            secret: hex::encode(keys.secret.as_bytes()),
-        }
-    }
-
     pub fn decode(&self) -> ApiResult<Keypair> {
         Ok(Keypair {
-            public: internal::decode_public_key(&self.public)?,
-            secret: internal::decode_secret_key(&self.secret)?,
+            public: decode_public_key(&self.public)?,
+            secret: decode_secret_key(&self.secret)?,
         })
     }
 }
@@ -120,7 +115,7 @@ pub fn sign(
     params: ParamsOfSign,
 ) -> ApiResult<ResultOfSign> {
     let (signed, signature) =
-        internal::sign_using_keys(&base64_decode(&params.unsigned)?, &params.keys.decode()?)?;
+        sign_using_keys(&base64_decode(&params.unsigned)?, &params.keys.decode()?)?;
     Ok(ResultOfSign {
         signed: base64::encode(&signed),
         signature: hex::encode(signature),
@@ -162,7 +157,7 @@ pub fn verify_signature(
         &signed,
         &key256(&hex_decode(&params.public)?)?,
     )
-    .map_err(|_| ApiError::crypto_nacl_sign_failed("verify signature failed"))?;
+    .map_err(|_| crypto::Error::nacl_sign_failed("verify signature failed"))?;
     unsigned.resize(len, 0);
     Ok(ResultOfVerifySignature {
         unsigned: base64::encode(&unsigned),

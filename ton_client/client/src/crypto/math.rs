@@ -11,6 +11,7 @@
 * limitations under the License.
 */
 
+use crate::crypto;
 use crate::error::{ApiResult, ApiError};
 use num_bigint::BigInt;
 use rand::RngCore;
@@ -54,7 +55,7 @@ pub fn modular_power(
 
 fn parse_big_int(hex: &str) -> ApiResult<BigInt> {
     BigInt::parse_bytes(hex.as_bytes(), 16)
-        .ok_or(ApiError::crypto_invalid_big_int(&hex.to_string()))
+        .ok_or(crypto::Error::invalid_big_int(&hex.to_string()))
 }
 
 
@@ -81,7 +82,7 @@ pub fn factorize(
     params: ParamsOfFactorize,
 ) -> ApiResult<ResultOfFactorize> {
     fn invalid_composite<E: Display>(composite: &String, err: E) -> ApiError {
-        ApiError::crypto_invalid_factorize_challenge(composite, err)
+        crypto::Error::invalid_factorize_challenge(composite, err)
     }
     let composite = u64::from_str_radix(&params.composite, 16).
         map_err(|err| invalid_composite(&params.composite, err))?;

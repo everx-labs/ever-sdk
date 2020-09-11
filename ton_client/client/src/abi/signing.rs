@@ -1,6 +1,5 @@
-use crate::crypto::keys::KeyPair;
-use crate::crypto::boxes::SigningBoxHandle;
-use crate::error::{ApiResult, ApiError};
+use crate::crypto::{KeyPair, SigningBoxHandle};
+use crate::error::{ApiError, ApiResult};
 
 #[derive(Serialize, Deserialize, Clone, Debug, TypeInfo)]
 pub enum MessageSigning {
@@ -38,4 +37,3 @@ impl MessageSigning {
         }
     }
 }
-

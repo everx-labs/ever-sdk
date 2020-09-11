@@ -11,10 +11,11 @@
 * limitations under the License.
 */
 
+use crate::crypto;
 use crate::crypto::hdkey::{HDPrivateKey};
 use crate::crypto::keys::{KeyPair};
 use crate::crypto::internal::{hmac_sha512, pbkdf2_hmac_sha512, key256};
-use crate::error::{ApiResult, ApiError};
+use crate::error::{ApiResult};
 use bip39::{Language, Mnemonic, MnemonicType};
 use ed25519_dalek::{PublicKey, SecretKey};
 use hmac::Hmac;
@@ -187,7 +188,7 @@ fn mnemonics(dictionary: Option<u8>, word_count: Option<u8>) -> ApiResult<Box<dy
         18 => MnemonicType::Words18,
         21 => MnemonicType::Words21,
         24 => MnemonicType::Words24,
-        _ => return Err(ApiError::crypto_bip39_invalid_word_count(word_count)),
+        _ => return Err(crypto::Error::bip39_invalid_word_count(word_count)),
     };
     let language = match dictionary {
         ENGLISH_DICTIONARY => Language::English,
@@ -198,7 +199,7 @@ fn mnemonics(dictionary: Option<u8>, word_count: Option<u8>) -> ApiResult<Box<dy
         JAPANESE_DICTIONARY => Language::Japanese,
         KOREAN_DICTIONARY => Language::Korean,
         SPANISH_DICTIONARY => Language::Spanish,
-        _ => return Err(ApiError::crypto_bip39_invalid_dictionary(dictionary))
+        _ => return Err(crypto::Error::bip39_invalid_dictionary(dictionary))
     };
     Ok(Box::new(Bip39Mnemonic::new(mnemonic_type, language)))
 }
@@ -222,7 +223,7 @@ fn check_phrase(mnemonic: &dyn CryptoMnemonic, phrase: &String) -> ApiResult<()>
     if mnemonic.is_phrase_valid(phrase)? {
         Ok(())
     } else {
-        Err(ApiError::crypto_bip39_invalid_phrase(phrase))
+        Err(crypto::Error::bip39_invalid_phrase(phrase))
     }
 }
 
@@ -242,7 +243,7 @@ impl Bip39Mnemonic {
 
 fn ed25519_keys_from_secret_bytes(bytes: &[u8]) -> ApiResult<KeyPair> {
     let secret = SecretKey::from_bytes(bytes)
-        .map_err(|_| ApiError::crypto_bip32_invalid_key(&hex::encode(bytes)))?;
+        .map_err(|_| crypto::Error::bip32_invalid_key(&hex::encode(bytes)))?;
     let public = PublicKey::from(&secret);
     Ok(KeyPair::new(
         hex::encode(public.to_bytes()),
@@ -280,7 +281,7 @@ impl CryptoMnemonic for Bip39Mnemonic {
 
     fn phrase_from_entropy(&self, entropy: &[u8]) -> ApiResult<String> {
         let mnemonic = Mnemonic::from_entropy(&entropy, self.language)
-            .map_err(|err| ApiError::crypto_bip39_invalid_entropy(err))?;
+            .map_err(|err| crypto::Error::bip39_invalid_entropy(err))?;
         Ok(mnemonic.phrase().into())
     }
 
@@ -291,7 +292,7 @@ impl CryptoMnemonic for Bip39Mnemonic {
     fn seed_from_phrase_and_salt(&self, phrase: &String, salt: &String) -> ApiResult<String> {
         check_phrase(self, phrase)?;
         let mnemonic = Mnemonic::from_phrase(phrase, self.language)
-            .map_err(|err| ApiError::crypto_bip39_invalid_phrase(err))?;
+            .map_err(|err| crypto::Error::bip39_invalid_phrase(err))?;
 
         let salt = format!("mnemonic{}", salt);
         let mut seed = vec![0u8; 64];
@@ -308,7 +309,7 @@ impl CryptoMnemonic for Bip39Mnemonic {
     fn entropy_from_phrase(&self, phrase: &String) -> ApiResult<String> {
         check_phrase(self, phrase)?;
         let mnemonic = Mnemonic::from_phrase(phrase, self.language)
-            .map_err(|err| ApiError::crypto_bip39_invalid_phrase(err))?;
+            .map_err(|err| crypto::Error::bip39_invalid_phrase(err))?;
         Ok(hex::encode(mnemonic.entropy()))
     }
 }
@@ -383,7 +384,7 @@ impl CryptoMnemonic for TonMnemonic {
             }
             return Ok(phrase);
         }
-        return Err(ApiError::crypto_mnemonic_generation_failed());
+        return Err(crypto::Error::mnemonic_generation_failed());
     }
 
     fn derive_ed25519_keys_from_phrase(
@@ -404,13 +405,13 @@ impl CryptoMnemonic for TonMnemonic {
 
     fn phrase_from_entropy(&self, entropy: &[u8]) -> ApiResult<String> {
         if entropy.len() != 24 * 11 / 8 {
-            return Err(ApiError::crypto_mnemonic_from_entropy_failed("Invalid entropy size"));
+            return Err(crypto::Error::mnemonic_from_entropy_failed("Invalid entropy size"));
         }
         let phrase = self.words_from_bytes(entropy).join(" ");
         if Self::is_basic_seed(&phrase) {
             Ok(phrase)
         } else {
-            Err(ApiError::crypto_mnemonic_from_entropy_failed("Invalid entropy"))
+            Err(crypto::Error::mnemonic_from_entropy_failed("Invalid entropy"))
         }
     }
 

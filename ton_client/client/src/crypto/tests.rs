@@ -14,10 +14,6 @@ fn base64_from_hex(hex: &str) -> String {
     base64::encode(&hex::decode(hex).unwrap())
 }
 
-fn hex_from_base64(b64: &str) -> String {
-    hex::encode(&base64::decode(b64).unwrap())
-}
-
 fn text_from_base64(b64: &str) -> String {
     String::from_utf8(base64::decode(b64).unwrap()).unwrap()
 }

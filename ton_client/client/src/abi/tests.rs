@@ -5,7 +5,7 @@ use crate::abi::encode::{
     ResultOfEncodeMessage,
 };
 use crate::abi::MessageSigning;
-use crate::crypto::keys::KeyPair;
+use crate::crypto::KeyPair;
 use crate::tests::{TestClient, EVENTS};
 
 #[test]

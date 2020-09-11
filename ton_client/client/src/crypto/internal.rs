@@ -1,4 +1,5 @@
-use crate::error::{ApiResult, ApiError};
+use crate::crypto;
+use crate::error::{ApiResult};
 use ed25519_dalek::{PublicKey, SecretKey, Keypair};
 use hmac::*;
 use sha2::Sha512;
@@ -23,21 +24,21 @@ pub(crate) fn ton_crc16(data: &[u8]) -> u16 {
 
 pub(crate) fn decode_public_key(string: &String) -> ApiResult<PublicKey> {
     PublicKey::from_bytes(parse_key(string)?.as_slice())
-        .map_err(|err| ApiError::crypto_invalid_public_key(err, string))
+        .map_err(|err| crypto::Error::invalid_public_key(err, string))
 }
 
 pub(crate) fn decode_secret_key(string: &String) -> ApiResult<SecretKey> {
     SecretKey::from_bytes(parse_key(string)?.as_slice())
-        .map_err(|err| ApiError::crypto_invalid_secret_key(err, string))
+        .map_err(|err| crypto::Error::invalid_secret_key(err, string))
 }
 
 fn parse_key(s: &String) -> ApiResult<Vec<u8>> {
-    hex::decode(s).map_err(|err| ApiError::crypto_invalid_key(err, s))
+    hex::decode(s).map_err(|err| crypto::Error::invalid_key(err, s))
 }
 
 pub(crate) fn key512(slice: &[u8]) -> ApiResult<Key512> {
     if slice.len() != 64 {
-        return Err(ApiError::crypto_invalid_key_size(slice.len(), 64));
+        return Err(crypto::Error::invalid_key_size(slice.len(), 64));
     }
     let mut key = [0u8; 64];
     for (place, element) in key.iter_mut().zip(slice.iter()) {
@@ -48,7 +49,7 @@ pub(crate) fn key512(slice: &[u8]) -> ApiResult<Key512> {
 
 pub(crate) fn key256(slice: &[u8]) -> ApiResult<Key256> {
     if slice.len() != 32 {
-        return Err(ApiError::crypto_invalid_key_size(slice.len(), 32));
+        return Err(crypto::Error::invalid_key_size(slice.len(), 32));
     }
     let mut key = [0u8; 32];
     for (place, element) in key.iter_mut().zip(slice.iter()) {
@@ -59,7 +60,7 @@ pub(crate) fn key256(slice: &[u8]) -> ApiResult<Key256> {
 
 pub(crate) fn key192(slice: &[u8]) -> ApiResult<Key192> {
     if slice.len() != 24 {
-        return Err(ApiError::crypto_invalid_key_size(slice.len(), 24));
+        return Err(crypto::Error::invalid_key_size(slice.len(), 24));
     }
     let mut key = [0u8; 24];
     for (place, element) in key.iter_mut().zip(slice.iter()) {

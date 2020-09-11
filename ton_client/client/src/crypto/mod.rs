@@ -11,39 +11,49 @@
 * limitations under the License.
 */
 
-pub mod math;
-pub mod hash;
-pub mod scrypt;
-pub mod nacl;
-pub mod keys;
-pub mod mnemonic;
-pub mod hdkey;
-pub mod boxes;
+mod boxes;
+mod errors;
+mod hash;
+mod hdkey;
 pub(crate) mod internal;
+mod keys;
+mod math;
+mod mnemonic;
+mod nacl;
+mod scrypt;
 
-pub use keys::{ KeyPair };
-pub use boxes::{ SigningBoxHandle };
+pub use boxes::SigningBoxHandle;
+pub use errors::Error;
+pub use keys::KeyPair;
+pub use nacl::{
+    ParamsOfNaclBox, ParamsOfNaclBoxKeyPairFromSecret, ParamsOfNaclBoxOpen, ParamsOfNaclSecretBox,
+    ParamsOfNaclSecretBoxOpen, ParamsOfNaclSign, ParamsOfNaclSignDetached,
+    ParamsOfNaclSignKeyPairFromSecret, ParamsOfNaclSignOpen, ResultOfNaclBox, ResultOfNaclBoxOpen,
+    ResultOfNaclSign, ResultOfNaclSignDetached, ResultOfNaclSignOpen,
+};
 
 #[cfg(test)]
 mod tests;
 
+pub use crate::crypto::hash::{sha256, sha512};
+pub use crate::crypto::hdkey::{
+    hdkey_derive_from_xprv, hdkey_derive_from_xprv_path, hdkey_public_from_xprv,
+    hdkey_secret_from_xprv, hdkey_xprv_from_mnemonic,
+};
+pub use crate::crypto::keys::{
+    convert_public_key_to_ton_safe_format, generate_random_sign_keys, sign, verify_signature,
+};
+pub use crate::crypto::math::{factorize, generate_random_bytes, modular_power, ton_crc16};
+pub use crate::crypto::mnemonic::{
+    mnemonic_derive_sign_keys, mnemonic_from_entropy, mnemonic_from_random, mnemonic_verify,
+    mnemonic_words,
+};
+pub use crate::crypto::nacl::{
+    nacl_box, nacl_box_keypair, nacl_box_keypair_from_secret_key, nacl_box_open, nacl_secret_box,
+    nacl_secret_box_open, nacl_sign, nacl_sign_detached, nacl_sign_keypair_from_secret_key,
+    nacl_sign_open,
+};
 use crate::dispatch::DispatchTable;
-use crate::crypto::math::{factorize, modular_power, ton_crc16, generate_random_bytes};
-use crate::crypto::keys::{convert_public_key_to_ton_safe_format, generate_random_sign_keys, verify_signature, sign};
-use crate::crypto::hash::{sha256, sha512};
-use crate::crypto::nacl::{
-    nacl_sign, nacl_sign_open, nacl_sign_keypair_from_secret_key,
-    nacl_sign_detached, nacl_box_keypair, nacl_box_keypair_from_secret_key, nacl_box,
-    nacl_box_open, nacl_secret_box, nacl_secret_box_open,
-};
-use crate::crypto::mnemonic::{
-    mnemonic_words, mnemonic_from_random, mnemonic_from_entropy, mnemonic_verify,
-    mnemonic_derive_sign_keys,
-};
-use crate::crypto::hdkey::{
-    hdkey_xprv_from_mnemonic, hdkey_derive_from_xprv, hdkey_derive_from_xprv_path,
-    hdkey_secret_from_xprv, hdkey_public_from_xprv,
-};
 
 pub(crate) const DEFAULT_MNEMONIC_DICTIONARY: u8 = 1;
 pub(crate) const DEFAULT_MNEMONIC_WORD_COUNT: u8 = 12;
@@ -51,7 +61,6 @@ pub(crate) const DEFAULT_HDKEY_DERIVATION_PATH: &str = "m/44'/396'/0'/0/0";
 pub(crate) const DEFAULT_HDKEY_COMPLIANT: bool = true;
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-
     // Math
 
     handlers.call("crypto.factorize", factorize);
@@ -66,7 +75,10 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         convert_public_key_to_ton_safe_format,
     );
 
-    handlers.call_no_args("crypto.generate_random_sign_keys", generate_random_sign_keys);
+    handlers.call_no_args(
+        "crypto.generate_random_sign_keys",
+        generate_random_sign_keys,
+    );
     handlers.call("crypto.sign", sign);
     handlers.call("crypto.verify_signature", verify_signature);
 
@@ -81,13 +93,19 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 
     // NaCl
 
-    handlers.call("crypto.nacl_sign_keypair_from_secret", nacl_sign_keypair_from_secret_key);
+    handlers.call(
+        "crypto.nacl_sign_keypair_from_secret",
+        nacl_sign_keypair_from_secret_key,
+    );
     handlers.call("crypto.nacl_sign", nacl_sign);
     handlers.call("crypto.nacl_sign_open", nacl_sign_open);
     handlers.call("crypto.nacl_sign_detached", nacl_sign_detached);
 
     handlers.call_no_args("crypto.nacl_box_keypair", nacl_box_keypair);
-    handlers.call("crypto.nacl_box_keypair_from_secret", nacl_box_keypair_from_secret_key);
+    handlers.call(
+        "crypto.nacl_box_keypair_from_secret",
+        nacl_box_keypair_from_secret_key,
+    );
     handlers.call("crypto.nacl_box", nacl_box);
     handlers.call("crypto.nacl_box_open", nacl_box_open);
     handlers.call("crypto.nacl_secret_box", nacl_secret_box);
@@ -99,13 +117,19 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
     handlers.call("crypto.mnemonic_from_random", mnemonic_from_random);
     handlers.call("crypto.mnemonic_from_entropy", mnemonic_from_entropy);
     handlers.call("crypto.mnemonic_verify", mnemonic_verify);
-    handlers.call("crypto.mnemonic_derive_sign_keys", mnemonic_derive_sign_keys);
+    handlers.call(
+        "crypto.mnemonic_derive_sign_keys",
+        mnemonic_derive_sign_keys,
+    );
 
     // HDKey
 
     handlers.call("crypto.hdkey_xprv_from_mnemonic", hdkey_xprv_from_mnemonic);
     handlers.call("crypto.hdkey_derive_from_xprv", hdkey_derive_from_xprv);
-    handlers.call("crypto.hdkey_derive_from_xprv_path", hdkey_derive_from_xprv_path);
+    handlers.call(
+        "crypto.hdkey_derive_from_xprv_path",
+        hdkey_derive_from_xprv_path,
+    );
     handlers.call("crypto.hdkey_secret_from_xprv", hdkey_secret_from_xprv);
     handlers.call("crypto.hdkey_public_from_xprv", hdkey_public_from_xprv);
 }
