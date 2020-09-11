@@ -121,6 +121,13 @@ impl ClientContext {
     pub fn get_client(&self) -> ApiResult<&NodeClient> {
         self.client.as_ref().ok_or(ApiError::sdk_not_init())
     }
+
+    pub fn get_callback(&self, callback_id: u32) -> ApiResult<std::sync::Arc<Callback>> {
+        Ok(self.callbacks.get(&callback_id)
+            .ok_or(ApiError::callback_not_registered(callback_id))?
+            .val()
+            .clone())
+    }
 }
 
 pub struct Client {
@@ -183,8 +190,7 @@ impl Client {
         let handle = self.next_context_handle;
         self.next_context_handle = handle.wrapping_add(1);
 
-        #[cfg(not(feature = "node_interaction"))]
-            self.contexts.insert(handle, Arc::new(ClientContext {
+        self.contexts.insert(handle, Arc::new(ClientContext {
             handle,
             config,
         }));
