@@ -13,7 +13,7 @@
 
 use crate::dispatch::DispatchTable;
 use crate::error::{ApiError, ApiResult};
-use crate::{InteropContext, JsonResponse, OnResult};
+use crate::{InteropContext, JsonResponse};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
 use ton_sdk::{AbiConfig, NetworkConfig};

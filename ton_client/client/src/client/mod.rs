@@ -3,5 +3,7 @@ mod errors;
 
 pub use client::{
     Client, ClientConfig, ClientContext, CryptoConfig, ResultOfCreateContext, ResultOfVersion,
+    Callback,
+    ParamsOfUnregisterCallback,
 };
 pub use errors::{Code, Error};

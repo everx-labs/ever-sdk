@@ -38,6 +38,7 @@ use std::sync::{
     mpsc::{channel, Sender},
     Mutex,
 };
+use crate::client::ParamsOfUnregisterCallback;
 
 mod common;
 
