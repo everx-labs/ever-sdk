@@ -13,8 +13,9 @@
 
 use crate::client::ClientContext;
 use crate::dispatch::DispatchTable;
-use crate::error::{ApiError, ApiResult};
+use crate::error::ApiResult;
 use crate::interop::JsonResponse;
+use errors::Error;
 use futures::{FutureExt, StreamExt};
 use rand::RngCore;
 use std::collections::HashMap;
@@ -22,6 +23,8 @@ use tokio::sync::{
     Mutex,
     mpsc::{channel, Sender}
 };
+
+mod errors;
 
 #[cfg(test)]
 mod tests;
@@ -117,11 +120,11 @@ pub async fn query_collection(
         )
         .await
         .map_err(|err| {
-            crate::error::apierror_from_sdkerror(&err, ApiError::queries_query_failed, Some(client))
+            crate::error::apierror_from_sdkerror(&err, Error::queries_query_failed, Some(client))
         })?;
 
     let result = serde_json::from_value(result)
-        .map_err(|err| ApiError::queries_query_failed(format!("Can not parse result: {}", err)))?;
+        .map_err(|err| Error::queries_query_failed(format!("Can not parse result: {}", err)))?;
 
     Ok(ResultOfQueryCollection { result })
 }
@@ -142,7 +145,7 @@ pub async fn wait_for_collection(
         .map_err(|err| {
             crate::error::apierror_from_sdkerror(
                 &err,
-                ApiError::queries_wait_for_failed,
+                Error::queries_wait_for_failed,
                 Some(client),
             )
         })?;
@@ -155,10 +158,7 @@ pub async fn subscribe_collection(
     params: ParamsOfSubscribeCollection,
 ) -> ApiResult<ResultOfSubscribeCollection> {
     let callback_id = params.callback_id;
-    let callback = context.callbacks.get(&params.callback_id)
-        .ok_or(ApiError::callback_not_registered(callback_id))?
-        .val()
-        .clone();
+    let callback = context.get_callback(callback_id)?;
 
     let handle = rand::thread_rng().next_u32();
 
@@ -170,7 +170,7 @@ pub async fn subscribe_collection(
             &params.result,
         )
         .await
-        .map_err(|err| ApiError::queries_subscribe_failed(err).add_network_url(client))?
+        .map_err(|err| Error::queries_subscribe_failed(err).add_network_url(client))?
         .fuse();
 
     let (sender, mut receiver) = channel(1);
@@ -197,7 +197,7 @@ pub async fn subscribe_collection(
                             JsonResponse::from_error(
                                 crate::error::apierror_from_sdkerror(
                                     &err,
-                                    ApiError::queries_get_next_failed,
+                                    Error::queries_get_subscription_result_failed,
                                     context.get_client().ok(),
                                 )
                             ).send(&*callback, callback_id, 0);
