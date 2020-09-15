@@ -12,8 +12,8 @@
 */
 
 use serde_json::Value;
-use crate::types::{ApiResult, ApiError};
-use crate::cell::parser::{CellQuery, CellFieldReader, CellValueReader};
+use crate::error::{ApiResult, ApiError};
+use super::parser::{CellQuery, CellFieldReader, CellValueReader};
 use ton_types::{Cell, SliceData, HashmapE, HashmapType};
 use ton_block::types::Grams;
 
