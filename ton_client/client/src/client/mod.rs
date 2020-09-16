@@ -6,4 +6,4 @@ pub use client::{
     Callback,
     ParamsOfUnregisterCallback,
 };
-pub use errors::{Code, Error};
+pub use errors::{ErrorCode, Error};

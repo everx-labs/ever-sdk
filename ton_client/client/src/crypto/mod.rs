@@ -23,7 +23,7 @@ mod nacl;
 mod scrypt;
 
 pub use boxes::SigningBoxHandle;
-pub use errors::Error;
+pub use errors::{Error, ErrorCode};
 pub use keys::KeyPair;
 pub use nacl::{
     ParamsOfNaclBox, ParamsOfNaclBoxKeyPairFromSecret, ParamsOfNaclBoxOpen, ParamsOfNaclSecretBox,

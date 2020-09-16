@@ -1,6 +1,5 @@
 use super::*;
 use crate::queries::{ParamsOfQueryCollection, ResultOfQueryCollection};
-use crate::error::ApiErrorCode;
 
 #[test]
 fn test_parallel_requests() {
@@ -74,5 +73,6 @@ fn test_deferred_init() {
     ).unwrap_err();
     //println!("{:#?}", result);
 
-    assert_eq!(result.code, crate::error::ApiSdkErrorCode::QueriesQueryFailed.as_number());
+
+    assert_eq!(result.code, crate::queries::ErrorCode::QueryFailed as isize);
 }

@@ -15,16 +15,16 @@ use crate::client::ClientContext;
 use crate::dispatch::DispatchTable;
 use crate::error::ApiResult;
 use crate::interop::JsonResponse;
-use errors::Error;
 use futures::{FutureExt, StreamExt};
 use rand::RngCore;
 use std::collections::HashMap;
 use tokio::sync::{
+    mpsc::{channel, Sender},
     Mutex,
-    mpsc::{channel, Sender}
 };
 
 mod errors;
+pub use errors::{Error, ErrorCode};
 
 #[cfg(test)]
 mod tests;
@@ -76,7 +76,7 @@ pub struct ParamsOfSubscribeCollection {
     /// projection (result) string
     pub result: String,
     /// registered callback ID to receive subscription data
-    pub callback_id: u32
+    pub callback_id: u32,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo, Clone)]
@@ -143,11 +143,7 @@ pub async fn wait_for_collection(
         )
         .await
         .map_err(|err| {
-            crate::error::apierror_from_sdkerror(
-                &err,
-                Error::queries_wait_for_failed,
-                Some(client),
-            )
+            crate::error::apierror_from_sdkerror(&err, Error::queries_wait_for_failed, Some(client))
         })?;
 
     Ok(ResultOfWaitForCollection { result })
@@ -204,12 +200,11 @@ pub async fn subscribe_collection(
                         }
                     }
                 },
-                // waiting for unsubcribe
+                // waiting for unsubscribe
                 _ = wait_abortion => break
             );
         }
     });
-
 
     Ok(ResultOfSubscribeCollection { handle })
 }
@@ -226,16 +221,8 @@ pub async fn unsubscribe(
 }
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.spawn(
-        "queries.query_collection",
-        query_collection);
-    handlers.spawn(
-        "queries.wait_for_collection",
-        wait_for_collection);
-    handlers.spawn(
-        "queries.subscribe_collection",
-        subscribe_collection);
-    handlers.spawn(
-        "queries.unsubscribe",
-        unsubscribe);
+    handlers.spawn("queries.query_collection", query_collection);
+    handlers.spawn("queries.wait_for_collection", wait_for_collection);
+    handlers.spawn("queries.subscribe_collection", subscribe_collection);
+    handlers.spawn("queries.unsubscribe", unsubscribe);
 }

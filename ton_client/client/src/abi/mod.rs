@@ -33,7 +33,7 @@ pub use encode::{
     ResultOfAttachSignature, ResultOfEncodeMessage,
 };
 pub use signing::MessageSigning;
-pub use errors::{Code, Error};
+pub use errors::{ErrorCode, Error};
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
     handlers.call("abi.encode_message", encode::encode_message);

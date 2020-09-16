@@ -13,27 +13,27 @@
 
 use crate::error::ApiError;
 use std::fmt::Display;
+const BOC: isize = ApiError::BOC; // 200
 
-pub enum Code {
-    InvalidBoc = 200,
-    SerializationError = 201,
+pub enum ErrorCode {
+    InvalidBoc = BOC + 1,
+    SerializationError = BOC + 2,
 }
 pub struct Error;
 
-fn error(code: Code, message: String) -> ApiError {
+fn error(code: ErrorCode, message: String) -> ApiError {
     ApiError::with_code_message(code as isize, message)
 }
 
 impl Error {
     pub fn invalid_boc<E: Display>(err: E) -> ApiError {
-        error(
-            Code::InvalidBoc,
-            format!("Invalid BOC: {}", err))
+        error(ErrorCode::InvalidBoc, format!("Invalid BOC: {}", err))
     }
 
     pub fn serialization_error<E: Display>(err: E, name: &str) -> ApiError {
         error(
-            Code::SerializationError,
-            format!("Cannot serialize {}: {}", name, err))
+            ErrorCode::SerializationError,
+            format!("Cannot serialize {}: {}", name, err),
+        )
     }
 }
