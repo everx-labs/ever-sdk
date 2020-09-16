@@ -31,14 +31,10 @@ pub mod crypto;
 pub mod tvm;
 pub mod abi;
 pub mod client;
-
-
-// TODO: uncomment when module will be ready
-// mod cell;
+pub mod boc;
 
 #[cfg(feature = "node_interaction")]
 pub mod queries;
-
 
 mod interop;
 pub use self::interop::*;
