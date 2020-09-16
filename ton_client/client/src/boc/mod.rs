@@ -149,8 +149,34 @@ pub fn parse_account(
     })
 }
 
+pub fn parse_block(
+    _context: std::sync::Arc<ClientContext>,
+    params: ParamsOfParse,
+) -> ApiResult<ResultOfParse> {
+    let object = 
+        deserialize_object_from_base64::<ton_block::Block>(&params.boc, "block")?;
+
+    let set = ton_block_json::BlockSerializationSet {
+        boc: object.boc,
+        id: object.cell_hash,
+        block: object.object,
+        status: ton_block::BlockProcessingStatus::Finalized,
+    };
+
+    let parsed = ton_block_json::db_serialize_block_ex(
+        "id",
+        &set,
+        ton_block_json::SerializationMode::QServer
+    ).map_err(|err| Error::boc_serialization_error(err, "block"))?;
+
+    Ok(ResultOfParse {
+        result: parsed.into()
+    })
+}
+
 pub(crate) fn register(handlers: &mut DispatchTable) {
     handlers.call("boc.parse_message", parse_message);
     handlers.call("boc.parse_transaction", parse_transaction);
     handlers.call("boc.parse_account", parse_account);
+    handlers.call("boc.parse_block", parse_block);
 }
