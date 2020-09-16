@@ -30,9 +30,7 @@ pub mod client;
 mod contracts;
 mod crypto;
 mod tvm;
-
-// TODO: uncomment when module will be ready
-// mod cell;
+mod boc;
 
 #[cfg(feature = "node_interaction")]
 pub mod queries;
