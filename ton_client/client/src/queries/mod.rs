@@ -13,11 +13,18 @@
 
 use crate::client::ClientContext;
 use crate::dispatch::DispatchTable;
-use crate::error::{ApiError, ApiResult};
-use futures::{Stream, StreamExt};
+use crate::error::ApiResult;
+use crate::interop::JsonResponse;
+use errors::Error;
+use futures::{FutureExt, StreamExt};
 use rand::RngCore;
 use std::collections::HashMap;
-use std::sync::Mutex;
+use tokio::sync::{
+    Mutex,
+    mpsc::{channel, Sender}
+};
+
+mod errors;
 
 #[cfg(test)]
 mod tests;
@@ -68,6 +75,8 @@ pub struct ParamsOfSubscribeCollection {
     pub filter: Option<serde_json::Value>,
     /// projection (result) string
     pub result: String,
+    /// registered callback ID to receive subscription data
+    pub callback_id: u32
 }
 
 #[derive(Serialize, Deserialize, TypeInfo, Clone)]
@@ -78,31 +87,21 @@ pub struct ResultOfSubscribeCollection {
 }
 
 #[derive(Serialize, Deserialize, TypeInfo, Clone)]
-pub struct ResultOfGetNextSubscriptionData {
+pub struct ResultOfSubscription {
     /// first appeared object that match provided criteria
     pub result: serde_json::Value,
 }
 
 lazy_static! {
-    static ref STREAMS: Mutex<
-        HashMap<
-            u32,
-            Box<dyn Stream<Item = Result<serde_json::Value, failure::Error>> + Send + Unpin>,
-        >,
-    > = Mutex::new(HashMap::new());
+    static ref SUBSCRIPTIONS: Mutex<HashMap<u32, Sender<bool>>> = Mutex::new(HashMap::new());
 }
 
-fn add_handle(
-    handle: u32,
-    stream: Box<dyn Stream<Item = Result<serde_json::Value, failure::Error>> + Send + Unpin>,
-) {
-    STREAMS.lock().unwrap().insert(handle, stream);
+async fn add_subscription_handle(handle: u32, aborter: Sender<bool>) {
+    SUBSCRIPTIONS.lock().await.insert(handle, aborter);
 }
 
-fn extract_handle(
-    handle: &u32,
-) -> Option<Box<dyn Stream<Item = Result<serde_json::Value, failure::Error>> + Send + Unpin>> {
-    STREAMS.lock().unwrap().remove(handle)
+async fn extract_subscription_handle(handle: &u32) -> Option<Sender<bool>> {
+    SUBSCRIPTIONS.lock().await.remove(handle)
 }
 
 pub async fn query_collection(
@@ -121,11 +120,11 @@ pub async fn query_collection(
         )
         .await
         .map_err(|err| {
-            crate::error::apierror_from_sdkerror(&err, ApiError::queries_query_failed, Some(client))
+            crate::error::apierror_from_sdkerror(&err, Error::queries_query_failed, Some(client))
         })?;
 
     let result = serde_json::from_value(result)
-        .map_err(|err| ApiError::queries_query_failed(format!("Can not parse result: {}", err)))?;
+        .map_err(|err| Error::queries_query_failed(format!("Can not parse result: {}", err)))?;
 
     Ok(ResultOfQueryCollection { result })
 }
@@ -146,7 +145,7 @@ pub async fn wait_for_collection(
         .map_err(|err| {
             crate::error::apierror_from_sdkerror(
                 &err,
-                ApiError::queries_wait_for_failed,
+                Error::queries_wait_for_failed,
                 Some(client),
             )
         })?;
@@ -158,54 +157,70 @@ pub async fn subscribe_collection(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfSubscribeCollection,
 ) -> ApiResult<ResultOfSubscribeCollection> {
+    let callback_id = params.callback_id;
+    let callback = context.get_callback(callback_id)?;
+
+    let handle = rand::thread_rng().next_u32();
+
     let client = context.get_client()?;
-    let stream = client
+    let mut stream = client
         .subscribe(
             &params.collection,
             &params.filter.unwrap_or(json!({})).to_string(),
             &params.result,
         )
         .await
-        .map_err(|err| ApiError::queries_subscribe_failed(err).add_network_url(client))?;
+        .map_err(|err| Error::queries_subscribe_failed(err).add_network_url(client))?
+        .fuse();
 
-    let handle = rand::thread_rng().next_u32();
+    let (sender, mut receiver) = channel(1);
 
-    add_handle(handle, Box::new(stream));
+    add_subscription_handle(handle, sender).await;
+
+    // spawn thread which reads subscription stream and calls callnack with data
+    tokio::spawn(async move {
+        let wait_abortion = receiver.recv().fuse();
+        futures::pin_mut!(wait_abortion);
+        loop {
+            futures::select!(
+                // waiting next subscription data
+                data = stream.select_next_some() => {
+                    match data {
+                        Ok(data) => {
+                            let result = ResultOfSubscription {
+                                result: data
+                            };
+                            JsonResponse::from_result(serde_json::to_string(&result).unwrap())
+                                .send(&*callback, callback_id, 0);
+                        }
+                        Err(err) => {
+                            JsonResponse::from_error(
+                                crate::error::apierror_from_sdkerror(
+                                    &err,
+                                    Error::queries_get_subscription_result_failed,
+                                    context.get_client().ok(),
+                                )
+                            ).send(&*callback, callback_id, 0);
+                        }
+                    }
+                },
+                // waiting for unsubcribe
+                _ = wait_abortion => break
+            );
+        }
+    });
+
 
     Ok(ResultOfSubscribeCollection { handle })
 }
 
-pub async fn get_next_subscription_data(
-    context: std::sync::Arc<ClientContext>,
-    params: ResultOfSubscribeCollection,
-) -> ApiResult<ResultOfGetNextSubscriptionData> {
-    let mut stream = extract_handle(&params.handle)
-        .ok_or(ApiError::queries_get_next_failed("Invalid handle"))?;
-
-    let result = stream
-        .by_ref()
-        .next()
-        .await
-        .ok_or(ApiError::queries_get_next_failed("None value"))?
-        .map_err(|err| {
-            crate::error::apierror_from_sdkerror(
-                &err,
-                ApiError::queries_get_next_failed,
-                context.get_client().ok(),
-            )
-        })?;
-
-    add_handle(params.handle, stream);
-
-    Ok(ResultOfGetNextSubscriptionData { result })
-}
-
-pub fn unsubscribe(
+pub async fn unsubscribe(
     _context: std::sync::Arc<ClientContext>,
     params: ResultOfSubscribeCollection,
 ) -> ApiResult<()> {
-    let _stream = extract_handle(&params.handle)
-        .ok_or(ApiError::queries_get_next_failed("Invalid handle"))?;
+    if let Some(mut sender) = extract_subscription_handle(&params.handle).await {
+        let _ = sender.send(true);
+    }
 
     Ok(())
 }
@@ -221,10 +236,6 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
         "queries.subscribe_collection",
         subscribe_collection);
     handlers.spawn(
-        "queries.get_next_subscription_data",
-        get_next_subscription_data);
-
-    handlers.call(
         "queries.unsubscribe",
         unsubscribe);
 }

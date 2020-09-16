@@ -47,7 +47,10 @@ pub fn json_async_request(
         method_name,
         params_json,
         request_id,
-        on_result)
+        Box::new(
+            move |request_id: u32, result_json: &str, error_json: &str, flags: u32| {
+                on_result(request_id, result_json.into(), error_json.into(), flags)
+        }))
 }
 
 pub fn get_api() -> api_doc::api::API {
@@ -146,8 +149,8 @@ pub struct JsonResponse {
 }
 
 impl JsonResponse {
-    pub fn send(&self, on_result: OnResult, request_id: u32, flags: u32) {
-        on_result(request_id, self.result_json.as_str().into(), self.error_json.as_str().into(), flags)
+    pub fn send(&self, on_result: &Callback, request_id: u32, flags: u32) {
+        on_result(request_id, self.result_json.as_str(), self.error_json.as_str(), flags)
     }
 }
 

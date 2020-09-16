@@ -62,11 +62,30 @@ macro_rules! as_number_impl {
 }
 
 impl ApiError {
+    pub const CLIENT: isize = 0;
+    pub const CRYPTO: isize = 100;
+    pub const BOC: isize = 200;
+    pub const ABI: isize = 300;
+    pub const TVM: isize = 400;
+    pub const NET: isize = 500;
+    pub const QUERIES: isize = 600;
+
     fn new(source: ApiErrorSource, code: &dyn ApiErrorCode, message: String) -> Self {
         Self {
             core_version: env!("CARGO_PKG_VERSION").to_owned(),
             source: source.to_string(),
             code: code.as_number(),
+            message,
+            message_processing_state: None,
+            data: serde_json::Value::Null,
+        }
+    }
+
+    pub fn with_code_message(code: isize, message: String) -> Self {
+        Self {
+            core_version: env!("CARGO_PKG_VERSION").to_owned(),
+            source: ApiErrorSource::Client.to_string(),
+            code,
             message,
             message_processing_state: None,
             data: serde_json::Value::Null,
@@ -266,6 +285,11 @@ impl ApiError {
             "tip": "Synchronize your device time with internet time"
         });
         error
+    }
+
+    pub fn callback_not_registered(callback_id: u32) -> Self {
+        sdk_err!(CallbackNotRegistered,
+            "Callback with ID {} is not registered", callback_id)
     }
 
     // SDK Cell
@@ -530,8 +554,8 @@ impl ApiError {
     }
 
     pub fn queries_get_next_failed<E: Display>(err: E) -> Self {
-        sdk_err!(QueriesGetNextFailed,
-            "Get next failed: {}", err)
+        sdk_err!(QueriesGetSubscriptionResultFailed,
+            "Receive subscription result failed: {}", err)
     }
 
     // Failed transaction phases
@@ -665,6 +689,7 @@ pub enum ApiSdkErrorCode {
     AccountFrozenOrDeleted = 1017,
     ActionPhaseFailed = 1018,
     ErrorNotResolved = 1019,
+    CallbackNotRegistered = 1020,
 
     CryptoInvalidPublicKey = 2001,
     CryptoInvalidSecretKey = 2002,
@@ -718,7 +743,7 @@ pub enum ApiSdkErrorCode {
     QueriesQueryFailed = 4001,
     QueriesSubscribeFailed = 4002,
     QueriesWaitForFailed = 4003,
-    QueriesGetNextFailed = 4004,
+    QueriesGetSubscriptionResultFailed = 4004,
 
     CellInvalidQuery = 5001,
 }

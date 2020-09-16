@@ -13,7 +13,7 @@
 
 use crate::dispatch::DispatchTable;
 use crate::error::{ApiResult, ApiError};
-use super::{JsonResponse, InteropContext, OnResult};
+use super::{JsonResponse, InteropContext};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
 use ton_sdk::{NetworkConfig, AbiConfig};
@@ -30,10 +30,19 @@ lazy_static! {
     static ref CLIENT: Mutex<Client> = Mutex::new(Client::new());
 }
 
+pub type Callback = dyn Fn(u32, &str, &str, u32) + Send + Sync;
+
+
 #[derive(Serialize, Deserialize, TypeInfo, Clone)]
 pub struct ResultOfVersion {
     /// core version
     pub version: String,
+}
+
+#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+pub struct ParamsOfUnregisterCallback {
+    /// Registered callback ID
+    pub callback_id: u32,
 }
 
 fn create_handlers() -> DispatchTable {
@@ -49,13 +58,38 @@ fn create_handlers() -> DispatchTable {
     crate::queries::register(&mut handlers);
 
     handlers.call_no_args(
-        "config.get_api_reference",
-        |_context| Ok(get_api()),
-    );
+        "client.get_api_reference",
+        |_context| Ok(get_api()));
     handlers.call_no_args(
-        "version", 
+        "client.version", 
         |_| Ok(ResultOfVersion { version: env!("CARGO_PKG_VERSION").to_owned() }));
+
+    handlers.call_raw_async(
+        "client.register_callback",
+        register_callback);
+
+    handlers.call(
+        "client.unregister_callback",
+        unregister_callback);
+
     handlers
+}
+
+pub fn register_callback(
+    context: std::sync::Arc<ClientContext>,
+    _params_json: String,
+    request_id: u32,
+    on_result: Box<Callback>
+) {
+    context.callbacks.insert(request_id, on_result.into());
+}
+
+pub fn unregister_callback(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfUnregisterCallback,
+) -> ApiResult<()> {
+    context.callbacks.remove(&params.callback_id);
+    Ok(())
 }
 
 fn sync_request(context: std::sync::Arc<ClientContext>, method: String, params_json: String) -> JsonResponse {
@@ -67,7 +101,7 @@ fn async_request(
     method: String,
     params_json: String,
     request_id: u32,
-    on_result: OnResult
+    on_result: Box<Callback>
 ) {
     HANDLERS.async_dispatch(context, method, params_json, request_id, on_result)
 }
@@ -78,13 +112,21 @@ pub struct ClientContext {
     #[cfg(feature = "node_interaction")]
     pub runtime: Runtime,
     pub handle: InteropContext,
-    pub config: InternalClientConfig
+    pub config: InternalClientConfig,
+    pub callbacks: lockfree::map::Map<u32, std::sync::Arc<Callback>>
 }
 
 #[cfg(feature = "node_interaction")]
 impl ClientContext {
     pub fn get_client(&self) -> ApiResult<&NodeClient> {
         self.client.as_ref().ok_or(ApiError::sdk_not_init())
+    }
+
+    pub fn get_callback(&self, callback_id: u32) -> ApiResult<std::sync::Arc<Callback>> {
+        Ok(self.callbacks.get(&callback_id)
+            .ok_or(ApiError::callback_not_registered(callback_id))?
+            .val()
+            .clone())
     }
 }
 
@@ -148,8 +190,7 @@ impl Client {
         let handle = self.next_context_handle;
         self.next_context_handle = handle.wrapping_add(1);
 
-        #[cfg(not(feature = "node_interaction"))]
-            self.contexts.insert(handle, Arc::new(ClientContext {
+        self.contexts.insert(handle, Arc::new(ClientContext {
             handle,
             config,
         }));
@@ -195,6 +236,7 @@ Note that default values are used if parameters are omitted in config"#,
             client,
             runtime,
             config,
+            callbacks: Default::default()
         }));
 
         Ok(ResultOfCreateContext {
@@ -233,7 +275,7 @@ Note that default values are used if parameters are omitted in config"#,
         method_name: String,
         params_json: String,
         request_id: u32,
-        on_result: OnResult
+        on_result: Box<Callback>
     ) {
         let context = Self::shared().required_context(handle);
         match context {
@@ -241,7 +283,7 @@ Note that default values are used if parameters are omitted in config"#,
                 async_request(context, method_name, params_json, request_id, on_result);
             }
             Err(err) => {
-                JsonResponse::from_error(err).send(on_result, request_id, 1);
+                JsonResponse::from_error(err).send(&*on_result, request_id, 1);
             }
         }
     }
