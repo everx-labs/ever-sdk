@@ -15,8 +15,8 @@ use crate::error::ApiError;
 use std::fmt::Display;
 
 pub enum Code {
-    BocInvalidBoc = 200,
-    BocSerializationError = 201,
+    InvalidBoc = 200,
+    SerializationError = 201,
 }
 pub struct Error;
 
@@ -25,15 +25,15 @@ fn error(code: Code, message: String) -> ApiError {
 }
 
 impl Error {
-    pub fn boc_invalid_boc<E: Display>(err: E) -> ApiError {
+    pub fn invalid_boc<E: Display>(err: E) -> ApiError {
         error(
-            Code::BocInvalidBoc,
+            Code::InvalidBoc,
             format!("Invalid BOC: {}", err))
     }
 
-    pub fn boc_serialization_error<E: Display>(err: E, name: &str) -> ApiError {
+    pub fn serialization_error<E: Display>(err: E, name: &str) -> ApiError {
         error(
-            Code::BocSerializationError,
+            Code::SerializationError,
             format!("Cannot serialize {}: {}", name, err))
     }
 }

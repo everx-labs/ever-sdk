@@ -34,16 +34,16 @@ pub struct ParamsOfParse {
 #[derive(Serialize, Deserialize, Clone, TypeInfo)]
 pub struct ResultOfParse {
     /// JSON containing parsed BOC
-    pub result: serde_json::Value,
+    pub parsed: serde_json::Value,
 }
 
 fn deserialize_cell_from_base64(b64: &str) -> ApiResult<(Vec<u8>, ton_types::Cell)>
 {
     let bytes = base64::decode(&b64)
-        .map_err(|err| Error::boc_invalid_boc(format!("error decode base64: {}", err)))?;
+        .map_err(|err| Error::invalid_boc(format!("error decode base64: {}", err)))?;
 
     let cell = ton_types::cells_serialization::deserialize_tree_of_cells(&mut bytes.as_slice())
-        .map_err(|err| Error::boc_invalid_boc(format!("BOC deserialization error: {}", err)))?;
+        .map_err(|err| Error::invalid_boc(format!("BOC deserialization error: {}", err)))?;
 
     Ok((bytes, cell))
 }
@@ -59,7 +59,7 @@ fn deserialize_object_from_base64<S: Deserializable>(b64: &str, name: &str) -> A
     let (bytes, cell) = deserialize_cell_from_base64(b64)?;
 
     let object = S::construct_from(&mut cell.clone().into())
-        .map_err(|err| Error::boc_invalid_boc(format!("cannot deserialize {} from BOC: {}", name, err)))?;
+        .map_err(|err| Error::invalid_boc(format!("cannot deserialize {} from BOC: {}", name, err)))?;
 
     Ok(DeserializedObject {
         boc: bytes,
@@ -90,10 +90,10 @@ pub fn parse_message(
         "id",
         &set,
         ton_block_json::SerializationMode::QServer
-    ).map_err(|err| Error::boc_serialization_error(err, "message"))?;
+    ).map_err(|err| Error::serialization_error(err, "message"))?;
 
     Ok(ResultOfParse {
-        result: parsed.into()
+        parsed: parsed.into()
     })
 }
 
@@ -118,10 +118,10 @@ pub fn parse_transaction(
         "id",
         set,
         ton_block_json::SerializationMode::QServer
-    ).map_err(|err| Error::boc_serialization_error(err, "transaction"))?;
+    ).map_err(|err| Error::serialization_error(err, "transaction"))?;
 
     Ok(ResultOfParse {
-        result: parsed.into()
+        parsed: parsed.into()
     })
 }
 
@@ -142,10 +142,10 @@ pub fn parse_account(
         "id",
         &set,
         ton_block_json::SerializationMode::QServer
-    ).map_err(|err| Error::boc_serialization_error(err, "account"))?;
+    ).map_err(|err| Error::serialization_error(err, "account"))?;
 
     Ok(ResultOfParse {
-        result: parsed.into()
+        parsed: parsed.into()
     })
 }
 
@@ -167,10 +167,10 @@ pub fn parse_block(
         "id",
         &set,
         ton_block_json::SerializationMode::QServer
-    ).map_err(|err| Error::boc_serialization_error(err, "block"))?;
+    ).map_err(|err| Error::serialization_error(err, "block"))?;
 
     Ok(ResultOfParse {
-        result: parsed.into()
+        parsed: parsed.into()
     })
 }
 
