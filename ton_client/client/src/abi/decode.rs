@@ -52,7 +52,7 @@ pub fn decode_message(
         if let Ok(output) = abi.decode_output(body.clone(), message.is_internal()) {
             let value = get_values(&output)?;
             if abi.events().get(&output.function_name).is_some() {
-                (Event,output.function_name, value)
+                (Event, output.function_name, value)
             } else {
                 (FunctionOutput, output.function_name, value)
             }
@@ -60,12 +60,20 @@ pub fn decode_message(
             let value = get_values(&input)?;
             (FunctionInput, input.function_name, value)
         } else {
-            return Err(Error::invalid_message_for_decode("The message body does not match the specified ABI"));
+            return Err(Error::invalid_message_for_decode(
+                "The message body does not match the specified ABI",
+            ));
         }
     } else {
-        return Err(Error::invalid_message_for_decode("The message body is empty"));
+        return Err(Error::invalid_message_for_decode(
+            "The message body is empty",
+        ));
     };
-    Ok(ResultOfDecodeMessage { content_type, name, value })
+    Ok(ResultOfDecodeMessage {
+        content_type,
+        name,
+        value,
+    })
 }
 
 fn prepare_decode(params: &ParamsOfDecodeMessage) -> ApiResult<(AbiContract, ton_block::Message)> {
