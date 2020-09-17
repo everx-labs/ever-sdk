@@ -30,6 +30,17 @@ pub struct ResultOfDecodeMessage {
     pub value: Value,
 }
 
+impl ResultOfDecodeMessage {
+    fn new(content_type: MessageContentType, decoded: DecodedMessage) -> ApiResult<Self> {
+        let value = Detokenizer::detokenize_to_json_value(&decoded.params, &decoded.tokens)
+            .map_err(|x| Error::invalid_message_for_decode(x))?;
+        Ok(Self {
+            content_type,
+            name: decoded.function_name,
+            value,
+        })
+    }
+}
 //---------------------------------------------------------------------------------- decode_message
 
 #[derive(Serialize, Deserialize, TypeInfo)]
@@ -41,39 +52,30 @@ pub struct ParamsOfDecodeMessage {
     pub message: String,
 }
 
-use MessageContentType::*;
-
 pub fn decode_message(
     _context: Arc<ClientContext>,
     params: ParamsOfDecodeMessage,
 ) -> ApiResult<ResultOfDecodeMessage> {
     let (abi, message) = prepare_decode(&params)?;
-    let (content_type, name, value) = if let Some(body) = message.body() {
+    if let Some(body) = message.body() {
         if let Ok(output) = abi.decode_output(body.clone(), message.is_internal()) {
-            let value = get_values(&output)?;
             if abi.events().get(&output.function_name).is_some() {
-                (Event, output.function_name, value)
+                ResultOfDecodeMessage::new(MessageContentType::Event, output)
             } else {
-                (FunctionOutput, output.function_name, value)
+                ResultOfDecodeMessage::new(MessageContentType::FunctionOutput, output)
             }
         } else if let Ok(input) = abi.decode_input(body.clone(), message.is_internal()) {
-            let value = get_values(&input)?;
-            (FunctionInput, input.function_name, value)
+            ResultOfDecodeMessage::new(MessageContentType::FunctionInput, input)
         } else {
-            return Err(Error::invalid_message_for_decode(
+            Err(Error::invalid_message_for_decode(
                 "The message body does not match the specified ABI",
-            ));
+            ))
         }
     } else {
-        return Err(Error::invalid_message_for_decode(
+        Err(Error::invalid_message_for_decode(
             "The message body is empty",
-        ));
-    };
-    Ok(ResultOfDecodeMessage {
-        content_type,
-        name,
-        value,
-    })
+        ))
+    }
 }
 
 fn prepare_decode(params: &ParamsOfDecodeMessage) -> ApiResult<(AbiContract, ton_block::Message)> {
@@ -82,11 +84,4 @@ fn prepare_decode(params: &ParamsOfDecodeMessage) -> ApiResult<(AbiContract, ton
     let message = ton_sdk::Contract::deserialize_message(&base64_decode(&params.message)?)
         .map_err(|x| Error::invalid_message_for_decode(x))?;
     Ok((abi, message))
-}
-
-fn get_values(decoded: &DecodedMessage) -> ApiResult<Value> {
-    Ok(
-        Detokenizer::detokenize_to_json_value(&decoded.params, &decoded.tokens)
-            .map_err(|x| Error::invalid_message_for_decode(x))?,
-    )
 }
