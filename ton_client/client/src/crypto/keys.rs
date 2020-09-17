@@ -26,7 +26,9 @@ use ed25519_dalek::Keypair;
 ///
 #[derive(Serialize, Deserialize, Clone, Debug, TypeInfo)]
 pub struct KeyPair {
+    /// public key
     pub public: String,
+    /// private key
     pub secret: String,
 }
 

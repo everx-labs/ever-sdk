@@ -26,10 +26,11 @@ use crate::crypto::internal;
 ///
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ParamsOfNaclSignKeyPairFromSecret {
-    /// Signer's secret key.
+    /// secret key
     pub secret: String,
 }
 
+/// Generates a key pair for signing from the secret key
 pub fn nacl_sign_keypair_from_secret_key(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfNaclSignKeyPairFromSecret,
@@ -61,7 +62,7 @@ pub struct ResultOfNaclSign {
     pub signed: String,
 }
 
-/// Signs a data using the signer's secret key.
+/// Signs data using the signer's secret key.
 pub fn nacl_sign(_context: std::sync::Arc<ClientContext>, params: ParamsOfNaclSign) -> ApiResult<ResultOfNaclSign> {
     let signed = sign(base64_decode(&params.unsigned)?, hex_decode(&params.secret)?)?;
     Ok(ResultOfNaclSign {

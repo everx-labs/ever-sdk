@@ -144,6 +144,7 @@ pub struct ResultOfHDKeyDeriveFromXPrvPath {
 }
 
 #[doc(summary = "Derives the exented private key from the specified key and path")]
+/// Derives the exented private key from the specified key and path
 pub fn hdkey_derive_from_xprv_path(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyDeriveFromXPrvPath,
