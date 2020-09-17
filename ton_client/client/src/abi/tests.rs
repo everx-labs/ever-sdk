@@ -1,5 +1,5 @@
 use crate::abi::abi::Abi;
-use crate::abi::decode::{DecodedMessageBody, ParamsOfDecodeMessage, ResultOfDecodeMessage};
+use crate::abi::decode::{MessageContentType, ParamsOfDecodeMessage, ResultOfDecodeMessage};
 use crate::abi::encode::{
     CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfEncodeMessage, ResultOfAttachSignature,
     ResultOfEncodeMessage,
@@ -12,7 +12,7 @@ use crate::tests::{TestClient, EVENTS};
 fn encode_v2() {
     TestClient::init_log();
     let client = TestClient::new();
-    let (events_abi, events_tvc) = TestClient::package(EVENTS, 2);
+    let (events_abi, events_tvc) = TestClient::package(EVENTS, Some(2));
     let keys = KeyPair {
         public: "4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499".into(),
         secret: "cc8929d635719612a9478b9cd17675a39cfad52d8959e8a177389b8c0b9122a7".into(),
@@ -118,10 +118,10 @@ fn encode_v2() {
 }
 
 #[test]
-fn decode() {
+fn decode_v2() {
     TestClient::init_log();
     let client = TestClient::new();
-    let (events_abi, _events_tvc) = TestClient::package(EVENTS, 2);
+    let (events_abi, _events_tvc) = TestClient::package(EVENTS, Some(2));
 
     let decode_events = |message: &str| {
         let result: ResultOfDecodeMessage = client.request(
@@ -131,30 +131,33 @@ fn decode() {
                 message: message.into(),
             },
         );
-        result.body
+        result
     };
 
-    let expected = DecodedMessageBody::FunctionInput(
-        "returnValue".into(),
-        json!({
+    let expected = ResultOfDecodeMessage {
+        content_type: MessageContentType::FunctionInput,
+        name: "returnValue".into(),
+        value: json!({
             "id": "0x0"
         }),
-    );
+    };
     assert_eq!(expected, decode_events("te6ccgEBAwEAvAABRYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIMAQHhrd/b+MJ5Za+AygBc5qS/dVIPnqxCsM9PvqfVxutK+lnQEKzQoRTLYO6+jfM8TF4841bdNjLQwIDWL4UVFdxIhdMfECP8d3ruNZAXul5xxahT91swIEkEHph08JVlwmUmQAAAXRnJcuDX1XMZBW+LBKACAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="));
 
-    let expected = DecodedMessageBody::Event(
-        "EventThrown".into(),
-        json!({
+    let expected = ResultOfDecodeMessage {
+        content_type: MessageContentType::Event,
+        name: "EventThrown".into(),
+        value: json!({
             "id": "0x0"
         }),
-    );
+    };
     assert_eq!(expected, decode_events("te6ccgEBAQEAVQAApeACvg5/pmQpY4m61HmJ0ne+zjHJu3MNG8rJxUDLbHKBu/AAAAAAAAAMJL6z6ro48sYvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA"));
 
-    let expected = DecodedMessageBody::FunctionOutput(
-        "returnValue".into(),
-        json!({
+    let expected = ResultOfDecodeMessage {
+        content_type: MessageContentType::FunctionOutput,
+        name: "returnValue".into(),
+        value: json!({
             "value0": "0x0"
         }),
-    );
+    };
     assert_eq!(expected, decode_events("te6ccgEBAQEAVQAApeACvg5/pmQpY4m61HmJ0ne+zjHJu3MNG8rJxUDLbHKBu/AAAAAAAAAMKr6z6rxK3xYJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA"));
 }

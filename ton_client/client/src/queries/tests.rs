@@ -92,11 +92,11 @@ fn subscribe_for_transactions_with_addresses() {
     let keys = client.generate_sign_keys();
     let deploy_params = ParamsOfDeploy{
         call_set: DeployFunctionCallSet {
-            abi: HELLO_ABI.clone(),
+            abi: TestClient::abi(HELLO, None),
             constructor_header: None,
             constructor_params: json!({}),
         },
-        image_base64: base64::encode(HELLO_IMAGE.as_slice()),
+        image_base64: TestClient::tvc(HELLO, None),
         init_params: None,
         key_pair: keys,
         workchain_id: None,
@@ -137,7 +137,7 @@ fn subscribe_for_transactions_with_addresses() {
         );
 
     client.deploy_with_giver(deploy_params, None);
-    
+
     // give some time for subscription to receive all data
     std::thread::sleep(std::time::Duration::from_millis(1000));
 

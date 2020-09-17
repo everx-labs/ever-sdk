@@ -14,6 +14,7 @@
 use super::InteropContext;
 use super::{tc_destroy_json_response, tc_read_json_response};
 use super::{tc_json_request, tc_json_request_async, InteropString};
+use crate::client::ParamsOfUnregisterCallback;
 use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
@@ -38,59 +39,11 @@ use std::sync::{
     mpsc::{channel, Sender},
     Mutex,
 };
-use crate::client::ParamsOfUnregisterCallback;
 
 mod common;
 
 const ROOT_CONTRACTS_PATH: &str = "src/tests/contracts/";
 const LOG_CGF_PATH: &str = "src/tests/log_cfg.yaml";
-
-lazy_static::lazy_static! {
-    static ref GIVER_ADDRESS: &'static str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
-    static ref WALLET_ADDRESS: &'static str = "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13";
-    static ref WALLET_KEYS: Option<KeyPair> = get_wallet_keys();
-
-    static ref ABI_VERSION: u8 = u8::from_str_radix(&std::env::var("ABI_VERSION").unwrap_or("2".to_owned()), 10).unwrap();
-    static ref CONTRACTS_PATH: String = format!("{}abi_v{}/", ROOT_CONTRACTS_PATH, *ABI_VERSION);
-    static ref NODE_ADDRESS: String = std::env::var("TON_NETWORK_ADDRESS")
-        //.unwrap_or("cinet.tonlabs.io".to_owned());
-        .unwrap_or("http://localhost".to_owned());
-        //.unwrap_or("net.ton.dev".to_owned());
-    static ref NODE_SE: bool = std::env::var("USE_NODE_SE").unwrap_or("true".to_owned()) == "true".to_owned();
-
-    pub static ref SUBSCRIBE_ABI: Value = read_abi(CONTRACTS_PATH.clone() + "Subscription.abi.json");
-    pub static ref PIGGY_BANK_ABI: Value = read_abi(CONTRACTS_PATH.clone() + "Piggy.abi.json");
-    pub static ref WALLET_ABI: Value = read_abi(CONTRACTS_PATH.clone() + "LimitWallet.abi.json");
-    pub static ref SIMPLE_WALLET_ABI: Value = read_abi(CONTRACTS_PATH.clone() + "Wallet.abi.json");
-    pub static ref GIVER_ABI: Value = read_abi(ROOT_CONTRACTS_PATH.to_owned() + "Giver.abi.json");
-    pub static ref GIVER_WALLET_ABI: Value = read_abi(ROOT_CONTRACTS_PATH.to_owned() + "GiverWallet.abi.json");
-    pub static ref HELLO_ABI: Value = read_abi(CONTRACTS_PATH.clone() + "Hello.abi.json");
-
-    pub static ref SUBSCRIBE_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.clone() + "Subscription.tvc").unwrap();
-    pub static ref PIGGY_BANK_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.clone() + "Piggy.tvc").unwrap();
-    pub static ref WALLET_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.clone() + "LimitWallet.tvc").unwrap();
-    pub static ref SIMPLE_WALLET_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.clone() + "Wallet.tvc").unwrap();
-    pub static ref HELLO_IMAGE: Vec<u8> = std::fs::read(CONTRACTS_PATH.clone() + "Hello.tvc").unwrap();
-
-    pub static ref REQUESTS: Mutex<HashMap<u32, Sender<JsonResponse>>> = Mutex::new(HashMap::new());
-    pub static ref CALLBACKS: Mutex<HashMap<u32, Box<dyn Fn(u32, String, String, u32) + Send>>> = Mutex::new(HashMap::new());
-}
-
-fn read_abi(path: String) -> Value {
-    serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap()
-}
-
-fn get_wallet_keys() -> Option<KeyPair> {
-    if *NODE_SE {
-        return None;
-    }
-
-    let mut keys_file = dirs::home_dir().unwrap();
-    keys_file.push("giverKeys.json");
-    let keys = std::fs::read_to_string(keys_file).unwrap();
-
-    Some(serde_json::from_str(&keys).unwrap())
-}
 
 struct SimpleLogger;
 
@@ -119,10 +72,15 @@ impl log::Log for SimpleLogger {
 // pub const PIGGY_BANK: &str = "Piggy";
 // pub const WALLET: &str = "LimitWallet";
 // pub const SIMPLE_WALLET: &str = "Wallet";
-// pub const GIVER: &str = "Giver";
+pub const GIVER: &str = "Giver";
 // pub const GIVER_WALLET: &str = "GiverWallet";
-// pub const HELLO: &str = "Hello";
+pub const HELLO: &str = "Hello";
 pub const EVENTS: &str = "Events";
+
+lazy_static::lazy_static! {
+    pub static ref REQUESTS: Mutex<HashMap<u32, Sender<JsonResponse>>> = Mutex::new(HashMap::new());
+    pub static ref CALLBACKS: Mutex<HashMap<u32, Box<dyn Fn(u32, String, String, u32) + Send>>> = Mutex::new(HashMap::new());
+}
 
 #[derive(Clone)]
 pub(crate) struct TestClient {
@@ -138,30 +96,79 @@ extern "C" fn on_result(
     TestClient::on_result(request_id, result_json, error_json, flags)
 }
 
-extern "C" fn on_callback(request_id: u32, result_json: InteropString, error_json: InteropString, flags: u32) {
+extern "C" fn on_callback(
+    request_id: u32,
+    result_json: InteropString,
+    error_json: InteropString,
+    flags: u32,
+) {
     TestClient::callback(request_id, result_json, error_json, flags)
 }
 
 impl TestClient {
-    pub fn contracts_path(abi_version: u8) -> String {
-        format!("{}abi_v{}/", ROOT_CONTRACTS_PATH, abi_version)
+    fn read_abi(path: String) -> Value {
+        serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap()
     }
 
-    pub fn abi(name: &str, version: u8) -> Value {
-        read_abi(format!(
+    pub fn giver_address() -> String {
+        "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94".into()
+    }
+
+    pub fn giver_abi() -> Value {
+        Self::abi(GIVER, Some(1))
+    }
+
+    pub fn wallet_address() -> String {
+        "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13".into()
+    }
+
+    pub fn wallet_keys() -> Option<KeyPair> {
+        if Self::node_se() {
+            return None;
+        }
+
+        let mut keys_file = dirs::home_dir().unwrap();
+        keys_file.push("giverKeys.json");
+        let keys = std::fs::read_to_string(keys_file).unwrap();
+
+        Some(serde_json::from_str(&keys).unwrap())
+    }
+
+    pub fn network_address() -> String {
+        std::env::var("TON_NETWORK_ADDRESS").unwrap_or("http://localhost".to_owned())
+    }
+
+    pub fn node_se() -> bool {
+        std::env::var("USE_NODE_SE").unwrap_or("true".to_owned()) == "true".to_owned()
+    }
+
+    pub fn abi_version() -> u8 {
+        u8::from_str_radix(&std::env::var("ABI_VERSION").unwrap_or("2".to_owned()), 10).unwrap()
+    }
+
+    pub fn contracts_path(abi_version: Option<u8>) -> String {
+        format!(
+            "{}abi_v{}/",
+            ROOT_CONTRACTS_PATH,
+            abi_version.unwrap_or(Self::abi_version())
+        )
+    }
+
+    pub fn abi(name: &str, version: Option<u8>) -> Value {
+        Self::read_abi(format!(
             "{}{}.abi.json",
             Self::contracts_path(version),
             name
         ))
     }
 
-    pub fn tvc(name: &str, abi_version: u8) -> String {
+    pub fn tvc(name: &str, abi_version: Option<u8>) -> String {
         base64::encode(
             &std::fs::read(format!("{}{}.tvc", Self::contracts_path(abi_version), name)).unwrap(),
         )
     }
 
-    pub fn package(name: &str, abi_version: u8) -> (Value, String) {
+    pub fn package(name: &str, abi_version: Option<u8>) -> (Value, String) {
         (Self::abi(name, abi_version), Self::tvc(name, abi_version))
     }
 
@@ -170,14 +177,10 @@ impl TestClient {
         let _ = log4rs::init_file(log_cfg_path, Default::default());
     }
 
-    pub(crate) fn get_network_address() -> String {
-        NODE_ADDRESS.clone()
-    }
-
     pub(crate) fn new() -> Self {
         Self::new_with_config(json!({
             "network": {
-                "server_address": Self::get_network_address()
+                "server_address": Self::network_address()
             }
         }))
     }
@@ -202,7 +205,9 @@ impl TestClient {
             panic!("tc_create_context returned error: {}", response.error_json);
         };
 
-        let client = Self { context };
+        let client = Self {
+            context,
+        };
         client
     }
 
@@ -314,34 +319,48 @@ impl TestClient {
             .unwrap()
     }
 
-    fn callback(request_id: u32, result_json: InteropString, error_json: InteropString, flags: u32) {
+    fn callback(
+        request_id: u32,
+        result_json: InteropString,
+        error_json: InteropString,
+        flags: u32,
+    ) {
         let callbacks_lock = CALLBACKS.lock().unwrap();
         let callback = callbacks_lock.get(&request_id).unwrap();
-        callback(request_id, result_json.to_string(), error_json.to_string(), flags);
+        callback(
+            request_id,
+            result_json.to_string(),
+            error_json.to_string(),
+            flags,
+        );
     }
 
     pub(crate) fn register_callback<R: DeserializeOwned>(
         &self,
         callback_id: Option<u32>,
-        callback: impl Fn(u32, ApiResult<R>, u32) + Send + Sync + 'static
+        callback: impl Fn(u32, ApiResult<R>, u32) + Send + Sync + 'static,
     ) -> u32 {
-        let callback = move |request_id: u32, result_json: String, error_json: String, flags: u32| {
-            let result = if !result_json.is_empty() {
-                Ok(serde_json::from_str(&result_json).unwrap())
-            } else {
-                Err(serde_json::from_str(&error_json).unwrap())
+        let callback =
+            move |request_id: u32, result_json: String, error_json: String, flags: u32| {
+                let result = if !result_json.is_empty() {
+                    Ok(serde_json::from_str(&result_json).unwrap())
+                } else {
+                    Err(serde_json::from_str(&error_json).unwrap())
+                };
+                callback(request_id, result, flags)
             };
-            callback(request_id, result, flags)
-        };
         let callback_id = callback_id.unwrap_or_else(|| rand::thread_rng().gen::<u32>());
-        CALLBACKS.lock().unwrap().insert(callback_id, Box::new(callback));
+        CALLBACKS
+            .lock()
+            .unwrap()
+            .insert(callback_id, Box::new(callback));
         unsafe {
             tc_json_request_async(
                 self.context,
                 InteropString::from("client.register_callback"),
                 InteropString::from(""),
                 callback_id,
-                on_callback
+                on_callback,
             );
         };
 
@@ -351,9 +370,7 @@ impl TestClient {
     pub(crate) fn unregister_callback(&self, callback_id: u32) {
         let _: () = self.request(
             "client.unregister_callback",
-            ParamsOfUnregisterCallback {
-                callback_id
-            }
+            ParamsOfUnregisterCallback { callback_id },
         );
 
         CALLBACKS.lock().unwrap().remove(&callback_id);
@@ -367,13 +384,13 @@ impl TestClient {
     }
 
     pub(crate) fn get_grams_from_giver(&self, account: &str, value: Option<u64>) {
-        let run_result: ResultOfRun = if *NODE_SE {
+        let run_result: ResultOfRun = if Self::node_se() {
             self.request(
                 "contracts.run",
                 ParamsOfRun {
-                    address: GIVER_ADDRESS.to_owned(),
+                    address: Self::giver_address().into(),
                     call_set: RunFunctionCallSet {
-                        abi: GIVER_ABI.clone(),
+                        abi: Self::giver_abi(),
                         function_name: "sendGrams".to_owned(),
                         header: None,
                         input: json!({
@@ -389,9 +406,9 @@ impl TestClient {
             self.request(
                 "contracts.run",
                 ParamsOfRun {
-                    address: WALLET_ADDRESS.to_owned(),
+                    address: Self::wallet_address().into(),
                     call_set: RunFunctionCallSet {
-                        abi: GIVER_WALLET_ABI.clone(),
+                        abi: Self::giver_abi(),
                         function_name: "sendTransaction".to_owned(),
                         header: None,
                         input: json!({
@@ -400,7 +417,7 @@ impl TestClient {
                             "bounce": false
                         }),
                     },
-                    key_pair: WALLET_KEYS.clone(),
+                    key_pair: Self::wallet_keys(),
                     try_index: None,
                 },
             )
@@ -457,11 +474,12 @@ impl TestClient {
     }
 
     pub(crate) fn get_giver_address() -> String {
-        if *NODE_SE {
-            GIVER_ADDRESS.to_owned()
+        if Self::node_se() {
+            Self::giver_address()
         } else {
-            WALLET_ADDRESS.to_owned()
+            Self::wallet_address()
         }
+        .into()
     }
 }
 

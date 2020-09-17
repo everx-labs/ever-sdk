@@ -26,7 +26,7 @@ mod errors;
 
 pub use abi::{Abi, AbiHandle};
 pub use decode::{
-    decode_message, DecodedMessageBody, ParamsOfDecodeMessage, ResultOfDecodeMessage,
+    decode_message, MessageContentType, ParamsOfDecodeMessage, ResultOfDecodeMessage,
 };
 pub use encode::{
     attach_signature, encode_message, ParamsOfAttachSignature, ParamsOfEncodeMessage,

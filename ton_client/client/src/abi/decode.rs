@@ -11,38 +11,23 @@ use ton_abi::token::Detokenizer;
 use ton_sdk::AbiContract;
 
 #[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug)]
-pub enum DecodedMessageBody {
-    /// Message has no body.
-    Empty,
-    /// Message body format is not ABI compliant.
-    Unknown,
-    /// Message is an inbound function.
-    FunctionInput(
-        /// Function name.
-        String,
-        /// Function input.
-        Value,
-    ),
-    /// Message is a return value of function.
-    FunctionOutput(
-        /// Function name.
-        String,
-        /// Function output.
-        Value,
-    ),
-    /// Message is an emitted event.
-    Event(
-        /// Event name.
-        String,
-        /// Event parameters.
-        Value,
-    ),
+pub enum MessageContentType {
+    /// Message contains a function parameters.
+    FunctionInput,
+    /// Message contains a return value of function.
+    FunctionOutput,
+    /// Message contains an event parameters.
+    Event,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug)]
 pub struct ResultOfDecodeMessage {
-    /// Decoded message body.
-    pub body: DecodedMessageBody,
+    /// Type of the message body content.
+    pub content_type: MessageContentType,
+    /// Function or event name.
+    pub name: String,
+    /// Parameters or result value.
+    pub value: Value,
 }
 
 //---------------------------------------------------------------------------------- decode_message
@@ -56,31 +41,31 @@ pub struct ParamsOfDecodeMessage {
     pub message: String,
 }
 
-use DecodedMessageBody::*;
+use MessageContentType::*;
 
 pub fn decode_message(
     _context: Arc<ClientContext>,
     params: ParamsOfDecodeMessage,
 ) -> ApiResult<ResultOfDecodeMessage> {
     let (abi, message) = prepare_decode(&params)?;
-    let body = if let Some(body) = message.body() {
+    let (content_type, name, value) = if let Some(body) = message.body() {
         if let Ok(output) = abi.decode_output(body.clone(), message.is_internal()) {
-            let values = get_values(&output)?;
+            let value = get_values(&output)?;
             if abi.events().get(&output.function_name).is_some() {
-                Event(output.function_name, values)
+                (Event,output.function_name, value)
             } else {
-                FunctionOutput(output.function_name, values)
+                (FunctionOutput, output.function_name, value)
             }
         } else if let Ok(input) = abi.decode_input(body.clone(), message.is_internal()) {
-            let values = get_values(&input)?;
-            FunctionInput(input.function_name, values)
+            let value = get_values(&input)?;
+            (FunctionInput, input.function_name, value)
         } else {
-            Unknown
+            return Err(Error::invalid_message_for_decode("The message body does not match the specified ABI"));
         }
     } else {
-        Empty
+        return Err(Error::invalid_message_for_decode("The message body is empty"));
     };
-    Ok(ResultOfDecodeMessage { body })
+    Ok(ResultOfDecodeMessage { content_type, name, value })
 }
 
 fn prepare_decode(params: &ParamsOfDecodeMessage) -> ApiResult<(AbiContract, ton_block::Message)> {
