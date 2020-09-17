@@ -21,71 +21,17 @@ def isUpstream() {
 }
 
 def buildImagesMap() {
-    if (params.image_ton_types == '') {
-        G_images.put('ton-types', "tonlabs/ton-types:ton-sdk-${GIT_COMMIT}")
-    } else {
-        G_images.put('ton-types', params.image_ton_types)
-    }
-
-    if (params.image_ton_labs_types == '') {
-        G_images.put('ton-labs-types', "tonlabs/ton-labs-types:ton-sdk-${GIT_COMMIT}")
-    } else {
-        G_images.put('ton-labs-types', params.image_ton_labs_types)
-    }
-
-    if (params.image_ton_block == '') {
-        G_images.put('ton-block', "tonlabs/ton-block:ton-sdk-${GIT_COMMIT}")
-    } else {
-        G_images.put('ton-block', params.image_ton_block)
-    }
-
-    if (params.image_ton_labs_block == '') {
-        G_images.put('ton-labs-block', "tonlabs/ton-labs-block:ton-sdk-${GIT_COMMIT}")
-    } else {
-        G_images.put('ton-labs-block', params.image_ton_labs_block)
-    }
-
-    if (params.image_ton_vm == '') {
-        G_images.put('ton-vm', "tonlabs/ton-vm:ton-sdk-${GIT_COMMIT}")
-    } else {
-        G_images.put('ton-vm', params.image_ton_vm)
-    }
-
-    if (params.image_ton_labs_vm == '') {
-        G_images.put('ton-labs-vm', "tonlabs/ton-labs-vm:ton-sdk-${GIT_COMMIT}")
-    } else {
-        G_images.put('ton-labs-vm', params.image_ton_labs_vm)
-    }
-
-    if (params.image_ton_labs_abi == '') {
-        G_images.put('ton-labs-abi', "tonlabs/ton-labs-abi:ton-sdk-${GIT_COMMIT}")
-    } else {
-        G_images.put('ton-labs-abi', params.image_ton_labs_abi)
-    }
-
-    if (params.image_ton_executor == '') {
-        G_images.put('ton-executor', "tonlabs/ton-executor:ton-sdk-${GIT_COMMIT}")
-    } else {
-        G_images.put('ton-executor', params.image_ton_executor)
-    }
-
-    if (params.image_ton_labs_executor == '') {
-        G_images.put('ton-labs-executor', "tonlabs/ton-labs-executor:ton-sdk-${GIT_COMMIT}")
-    } else {
-        G_images.put('ton-labs-executor', params.image_ton_labs_executor)
-    }
-
-    if (params.image_ton_sdk == '') {
-        G_images.put('ton-sdk', "tonlabs/ton-sdk:${GIT_COMMIT}")
-    } else {
-        G_images.put('ton-sdk', params.image_ton_sdk)
-    }
-
-    if (params.image_tvm_linker == '') {
-        G_images.put('tvm-linker', "tonlabs/tvm_linker:ton-sdk-${GIT_COMMIT}")
-    } else {
-        G_images.put('tvm-linker', params.image_tvm_linker)
-    }
+    G_images.put('ton-types', params.image_ton_types)
+    G_images.put('ton-labs-types', params.image_ton_labs_types)
+    G_images.put('ton-block', params.image_ton_block)
+    G_images.put('ton-labs-block', params.image_ton_labs_block)
+    G_images.put('ton-vm', params.image_ton_vm)
+    G_images.put('ton-labs-vm', params.image_ton_labs_vm)
+    G_images.put('ton-labs-abi', params.image_ton_labs_abi)
+    G_images.put('ton-executor', params.image_ton_executor)
+    G_images.put('ton-labs-executor', params.image_ton_labs_executor)
+    G_images.put('ton-sdk', params.image_ton_sdk)
+    G_images.put('tvm-linker', params.image_tvm_linker)
 }
 
 def buildBranchesMap() {
@@ -210,14 +156,16 @@ def changeParam(sKey, setValue) {
     def item = string("name": sKey, "value": setValue)
     echo "Adding to G_params: ${item}"
     G_params.push(item)
-
-    //change in images
-    G_images.eachWithIndex { key, val, index ->
-        if(key.replaceAll('-','_').toLowerCase() == sKey.replaceAll('image_','').replaceAll('-','_').toLowerCase()) {
-            G_images[key] = setValue
-            echo "New value for \"${key}\": \"${setValue}\""
-        }
+    //change in G_images
+    def imagesKey = sKey.replaceAll('image_','').replaceAll('-','_').toLowerCase()
+    if(G_images.containsKey(imagesKey)) {
+        G_images[imagesKey] = setValue
+    } else {
+        G_images.put(imagesKey, setValue)
     }
+    println """Changing param
+G_params[${findParam(paramName)}]: ${G_params[findParam(paramName)]}
+G_images[${imagesKey}]: ${G_images[imagesKey]}"""
 }
 
 def fetchJobData(job_data) {
@@ -1224,7 +1172,8 @@ ton_client/platforms/ton-client-web"""
                     def afterParams = G_params
                     afterParams.push(string("name": "project_name", "value": "ton-sdk"))
                     afterParams.push(string("name": "stage", "value": "after"))
-                    build job: 'Builder/build-flow', parameters: afterParams
+                    def job_data = build job: 'Builder/build-flow', parameters: afterParams
+                    fetchJobData(job_data)
                 }
             }
         }
