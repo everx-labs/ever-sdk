@@ -1,15 +1,16 @@
-use crate::abi::{Abi, MessageSigning};
-use crate::crypto::internal::{sign_using_secret, decode_public_key};
+use crate::abi::{Abi, Error, MessageSigning};
+use crate::client;
+use crate::crypto::internal::{decode_public_key, sign_using_secret};
 use crate::encoding::hex_decode;
-use crate::error::{ApiError, ApiResult};
+use crate::error::{ApiResult};
 use serde_json::Value;
-use ton_sdk::{ContractImage};
+use ton_sdk::ContractImage;
 
 pub(crate) fn resolve_abi(abi: &Abi) -> ApiResult<String> {
     if let Abi::Value(value) = abi {
         Ok(value.to_string())
     } else {
-        Err(ApiError::contracts_create_deploy_message_failed(
+        Err(client::Error::not_implemented(
             "Abi handle doesn't supported yet",
         ))
     }
@@ -29,7 +30,7 @@ pub(crate) fn add_sign_to_message(
         public_key,
         unsigned_message,
     )
-    .map_err(|err| ApiError::contracts_encode_message_with_sign_failed(err))?;
+    .map_err(|err| Error::attach_signature_failed(err))?;
     Ok(signed.serialized_message)
 }
 
@@ -60,20 +61,15 @@ pub(crate) fn create_tvc_image(
     tvc: &String,
     public_key: &String,
 ) -> ApiResult<ContractImage> {
-    let tvc = base64::decode(tvc).map_err(|err| ApiError::contracts_invalid_image(err))?;
+    let tvc = base64::decode(tvc).map_err(|err| Error::invalid_tvc_image(err))?;
     let public = decode_public_key(&public_key)?;
     let mut image = ContractImage::from_state_init_and_key(&mut tvc.as_slice(), &public)
-        .map_err(|err| ApiError::contracts_image_creation_failed(err))?;
+        .map_err(|err| Error::invalid_tvc_image(err))?;
 
     if let Some(params) = init_params {
-        image
-            .update_data(&params.to_string(), abi)
-            .map_err(|err| {
-                ApiError::contracts_image_creation_failed(format!(
-                    "Failed to set initial data: {}",
-                    err
-                ))
-            })?;
+        image.update_data(&params.to_string(), abi).map_err(|err| {
+            Error::invalid_tvc_image(format!("Failed to set initial data: {}", err))
+        })?;
     }
 
     Ok(image)

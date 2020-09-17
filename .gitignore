@@ -32,3 +32,4 @@ Cargo.lock
 /ton_client/client/build/
 /ton_client/platforms/ton-client-react-native/android/src/main/jniLibs/
 /ton_client/platforms/ton-client-react-native/ios/libtonclient.a
+/examples/c/libton_client.dylib

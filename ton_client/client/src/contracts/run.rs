@@ -19,7 +19,8 @@ use ton_block::{AccStatusChange, Message as TvmMessage, MsgAddressInt};
 
 use crate::contracts::{EncodedMessage, EncodedUnsignedMessage};
 use crate::client::ClientContext;
-use crate::crypto::keys::{KeyPair};
+use crate::client;
+use crate::crypto::{KeyPair};
 use crate::error::{ApiResult, ApiError};
 use crate::encoding::{account_decode, base64_decode, long_num_to_json_string};
 
@@ -483,7 +484,7 @@ pub(crate) fn local_run_msg(context: std::sync::Arc<ClientContext>, params: Para
         .transpose()?;
 
     let msg = Contract::deserialize_message(&base64::decode(&params.message_base64)
-        .map_err(|err| ApiError::crypto_invalid_base64(&params.message_base64, err))?)
+        .map_err(|err| client::Error::invalid_base64(&params.message_base64, err))?)
         .map_err(|err| ApiError::invalid_params(&params.message_base64, err))?;
 
     let result = do_local_run_msg(

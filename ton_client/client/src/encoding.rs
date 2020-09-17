@@ -14,6 +14,7 @@
 #![allow(dead_code)]
 
 use crate::error::{ApiResult, ApiError};
+use crate::client;
 use ton_block::MsgAddressInt;
 use std::str::FromStr;
 
@@ -70,7 +71,7 @@ pub(crate) fn account_decode(string: &str) -> ApiResult<MsgAddressInt> {
         Err(_) if string.len() == 48 => {
             decode_std_base64(string)
         }
-        Err(err) => Err(ApiError::crypto_invalid_address(err, string))
+        Err(err) => Err(client::Error::invalid_address(err, string))
     }
 }
 
@@ -79,18 +80,18 @@ fn decode_std_base64(data: &str) -> ApiResult<MsgAddressInt> {
     let data = data.replace('_', "/").replace('-', "+");
 
     let vec = base64::decode(&data)
-        .map_err(|err| ApiError::crypto_invalid_address(err, &data))?;
+        .map_err(|err| client::Error::invalid_address(err, &data))?;
 
     // check CRC and address tag
     let mut crc = crc_any::CRC::crc16xmodem();
     crc.digest(&vec[..34]);
 
     if crc.get_crc_vec_be() != &vec[34..36] || vec[0] & 0x3f != 0x11 {
-        return Err(ApiError::crypto_invalid_address("CRC mismatch", &data).into());
+        return Err(client::Error::invalid_address("CRC mismatch", &data).into());
     };
 
     MsgAddressInt::with_standart(None, vec[1] as i8, vec[2..34].into())
-        .map_err(|err| ApiError::crypto_invalid_address(err, &data).into())
+        .map_err(|err| client::Error::invalid_address(err, &data).into())
 }
 
 fn encode_base64(address: &MsgAddressInt, bounceable: bool, test: bool, as_url: bool) -> ApiResult<String> {
@@ -113,7 +114,7 @@ fn encode_base64(address: &MsgAddressInt, bounceable: bool, test: bool, as_url: 
             Ok(result)
         }
     } else {
-        Err(ApiError::crypto_invalid_address("Non-std address", &address.to_string()).into())
+        Err(client::Error::invalid_address("Non-std address", &address.to_string()).into())
     }
 }
 
@@ -123,12 +124,12 @@ pub(crate) fn hex_decode(hex: &String) -> ApiResult<Vec<u8>> {
     } else if hex.starts_with("0x") || hex.starts_with("0X") {
         hex_decode(&hex.chars().skip(2).collect())
     } else {
-        hex::decode(hex).map_err(|err| ApiError::crypto_invalid_hex(&hex, err))
+        hex::decode(hex).map_err(|err| client::Error::invalid_hex(&hex, err))
     }
 }
 
 pub(crate) fn base64_decode(base64: &String) -> ApiResult<Vec<u8>> {
-    base64::decode(base64).map_err(|err| ApiError::crypto_invalid_base64(&base64, err))
+    base64::decode(base64).map_err(|err| client::Error::invalid_base64(&base64, err))
 }
 
 pub(crate) fn long_num_to_json_string(num: u64) -> String {

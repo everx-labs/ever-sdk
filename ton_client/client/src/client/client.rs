@@ -12,28 +12,37 @@
 */
 
 use crate::dispatch::DispatchTable;
-use crate::error::{ApiResult, ApiError};
-use super::{JsonResponse, InteropContext, OnResult};
+use crate::error::{ApiError, ApiResult};
+use crate::{InteropContext, JsonResponse};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
-use ton_sdk::{NetworkConfig, AbiConfig};
+use ton_sdk::{AbiConfig, NetworkConfig};
 
 #[cfg(feature = "node_interaction")]
 use ton_sdk::NodeClient;
 
+use crate::get_api;
 #[cfg(feature = "node_interaction")]
 use tokio::runtime::Runtime;
-use crate::get_api;
 
 lazy_static! {
     static ref HANDLERS: DispatchTable = create_handlers();
     static ref CLIENT: Mutex<Client> = Mutex::new(Client::new());
 }
 
+pub type Callback = dyn Fn(u32, &str, &str, u32) + Send + Sync;
+
+
 #[derive(Serialize, Deserialize, TypeInfo, Clone)]
 pub struct ResultOfVersion {
     /// core version
     pub version: String,
+}
+
+#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+pub struct ParamsOfUnregisterCallback {
+    /// Registered callback ID
+    pub callback_id: u32,
 }
 
 fn create_handlers() -> DispatchTable {
@@ -42,6 +51,7 @@ fn create_handlers() -> DispatchTable {
     crate::contracts::register(&mut handlers);
     crate::abi::register(&mut handlers);
     crate::tvm::register(&mut handlers);
+    crate::boc::register(&mut handlers);
 
     //TODO: uncomment this when cell module will be ready
     // crate::cell::register(&mut handlers);
@@ -50,13 +60,38 @@ fn create_handlers() -> DispatchTable {
     crate::queries::register(&mut handlers);
 
     handlers.call_no_args(
-        "config.get_api_reference",
-        |_context| Ok(get_api()),
-    );
+        "client.get_api_reference",
+        |_context| Ok(get_api()));
     handlers.call_no_args(
-        "version", 
+        "client.version",
         |_| Ok(ResultOfVersion { version: env!("CARGO_PKG_VERSION").to_owned() }));
+
+    handlers.call_raw_async(
+        "client.register_callback",
+        register_callback);
+
+    handlers.call(
+        "client.unregister_callback",
+        unregister_callback);
+
     handlers
+}
+
+pub fn register_callback(
+    context: std::sync::Arc<ClientContext>,
+    _params_json: String,
+    request_id: u32,
+    on_result: Box<Callback>
+) {
+    context.callbacks.insert(request_id, on_result.into());
+}
+
+pub fn unregister_callback(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfUnregisterCallback,
+) -> ApiResult<()> {
+    context.callbacks.remove(&params.callback_id);
+    Ok(())
 }
 
 fn sync_request(context: std::sync::Arc<ClientContext>, method: String, params_json: String) -> JsonResponse {
@@ -68,7 +103,7 @@ fn async_request(
     method: String,
     params_json: String,
     request_id: u32,
-    on_result: OnResult
+    on_result: Box<Callback>
 ) {
     HANDLERS.async_dispatch(context, method, params_json, request_id, on_result)
 }
@@ -79,13 +114,21 @@ pub struct ClientContext {
     #[cfg(feature = "node_interaction")]
     pub runtime: Runtime,
     pub handle: InteropContext,
-    pub config: InternalClientConfig
+    pub config: InternalClientConfig,
+    pub callbacks: lockfree::map::Map<u32, std::sync::Arc<Callback>>
 }
 
 #[cfg(feature = "node_interaction")]
 impl ClientContext {
     pub fn get_client(&self) -> ApiResult<&NodeClient> {
         self.client.as_ref().ok_or(ApiError::sdk_not_init())
+    }
+
+    pub fn get_callback(&self, callback_id: u32) -> ApiResult<std::sync::Arc<Callback>> {
+        Ok(self.callbacks.get(&callback_id)
+            .ok_or(ApiError::callback_not_registered(callback_id))?
+            .val()
+            .clone())
     }
 }
 
@@ -103,14 +146,14 @@ pub struct CryptoConfig {
 pub struct ClientConfig {
     pub network: Option<NetworkConfig>,
     pub crypto: Option<CryptoConfig>,
-    pub abi: Option<AbiConfig>
+    pub abi: Option<AbiConfig>,
 }
 
 #[derive(Debug, Clone)]
 pub struct InternalClientConfig {
     pub network: Option<NetworkConfig>,
     pub crypto: CryptoConfig,
-    pub abi: AbiConfig
+    pub abi: AbiConfig,
 }
 
 impl From<ClientConfig> for InternalClientConfig {
@@ -118,7 +161,7 @@ impl From<ClientConfig> for InternalClientConfig {
         InternalClientConfig {
             network: config.network,
             crypto: config.crypto.unwrap_or_default(),
-            abi: config.abi.unwrap_or_default()
+            abi: config.abi.unwrap_or_default(),
         }
     }
 }
@@ -149,15 +192,12 @@ impl Client {
         let handle = self.next_context_handle;
         self.next_context_handle = handle.wrapping_add(1);
 
-        #[cfg(not(feature = "node_interaction"))]
-            self.contexts.insert(handle, Arc::new(ClientContext {
+        self.contexts.insert(handle, Arc::new(ClientContext {
             handle,
             config,
         }));
 
-        Ok(ResultOfCreateContext {
-            handle
-        })
+        Ok(ResultOfCreateContext { handle })
     }
 
     #[cfg(feature = "node_interaction")]
@@ -166,15 +206,19 @@ impl Client {
         let config: InternalClientConfig = config.into();
 
         let client = if let Some(net_config) = &config.network {
-            if net_config.out_of_sync_threshold() > config.abi.message_expiration_timeout() as i64 / 2 {
+            if net_config.out_of_sync_threshold()
+                > config.abi.message_expiration_timeout() as i64 / 2
+            {
                 return Err(ApiError::invalid_params(
                     &config_str,
                     format!(
-r#"`out_of_sync_threshold` can not be more then `message_expiration_timeout / 2`.
+                        r#"`out_of_sync_threshold` can not be more then `message_expiration_timeout / 2`.
 `out_of_sync_threshold` = {}, `message_expiration_timeout` = {}
 Note that default values are used if parameters are omitted in config"#,
-                        net_config.out_of_sync_threshold(), config.abi.message_expiration_timeout())
-                    ));
+                        net_config.out_of_sync_threshold(),
+                        config.abi.message_expiration_timeout()
+                    ),
+                ));
             }
             Some(NodeClient::new(net_config.clone()))
         } else {
@@ -191,22 +235,24 @@ Note that default values are used if parameters are omitted in config"#,
         let handle = self.next_context_handle;
         self.next_context_handle = handle.wrapping_add(1);
 
-        self.contexts.insert(handle, Arc::new(ClientContext {
+        self.contexts.insert(
             handle,
-            client,
-            runtime,
-            config,
-        }));
+            Arc::new(ClientContext {
+                handle,
+                client,
+                runtime,
+                config,
+            callbacks: Default::default()
+            }),
+        );
 
-        Ok(ResultOfCreateContext {
-            handle
-        })
+        Ok(ResultOfCreateContext { handle })
     }
 
     pub fn create_context(&mut self, config: String) -> JsonResponse {
         match self.create_context_internal(config) {
             Ok(result) => JsonResponse::from_result(serde_json::to_string(&result).unwrap()),
-            Err(err) => JsonResponse::from_error(err)
+            Err(err) => JsonResponse::from_error(err),
         }
     }
 
@@ -216,25 +262,30 @@ Note that default values are used if parameters are omitted in config"#,
 
     pub fn required_context(&self, context: InteropContext) -> ApiResult<Arc<ClientContext>> {
         Ok(Arc::clone(
-            self.contexts.get(&context)
-                .ok_or(ApiError::invalid_context_handle(context))?
+            self.contexts
+                .get(&context)
+                .ok_or(ApiError::invalid_context_handle(context))?,
         ))
     }
 
-    pub fn json_sync_request(handle: InteropContext, method_name: String, params_json: String) -> JsonResponse {
+    pub fn json_sync_request(
+        handle: InteropContext,
+        method_name: String,
+        params_json: String,
+    ) -> JsonResponse {
         let context = Self::shared().required_context(handle);
         match context {
             Ok(context) => sync_request(context, method_name, params_json),
-            Err(err) => JsonResponse::from_error(err)
+            Err(err) => JsonResponse::from_error(err),
         }
     }
-        
+
     pub fn json_async_request(
         handle: InteropContext,
         method_name: String,
         params_json: String,
         request_id: u32,
-        on_result: OnResult
+        on_result: Box<Callback>
     ) {
         let context = Self::shared().required_context(handle);
         match context {
@@ -242,7 +293,7 @@ Note that default values are used if parameters are omitted in config"#,
                 async_request(context, method_name, params_json, request_id, on_result);
             }
             Err(err) => {
-                JsonResponse::from_error(err).send(on_result, request_id, 1);
+                JsonResponse::from_error(err).send(&*on_result, request_id, 1);
             }
         }
     }
@@ -251,5 +302,3 @@ Note that default values are used if parameters are omitted in config"#,
         HANDLERS.get_api()
     }
 }
-
-

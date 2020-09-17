@@ -1,6 +1,6 @@
-use crate::crypto::keys::KeyPair;
-use crate::crypto::boxes::SigningBoxHandle;
-use crate::error::{ApiResult, ApiError};
+use crate::crypto::{KeyPair, SigningBoxHandle};
+use crate::error::{ApiResult};
+use crate::client;
 
 #[derive(Serialize, Deserialize, Clone, Debug, TypeInfo)]
 pub enum MessageSigning {
@@ -19,7 +19,7 @@ impl MessageSigning {
     pub fn resolve_keys(&self) -> ApiResult<Option<KeyPair>> {
         match self {
             MessageSigning::Keys(keys) => Ok(Some(keys.clone())),
-            MessageSigning::Box(_) => Err(ApiError::contracts_create_deploy_message_failed(
+            MessageSigning::Box(_) => Err(client::Error::not_implemented(
                 "Abi handle doesn't supported yet",
             )),
             MessageSigning::None => Ok(None),
@@ -30,7 +30,7 @@ impl MessageSigning {
     pub fn resolve_public_key(&self) -> ApiResult<Option<String>> {
         match self {
             MessageSigning::Keys(keys) => Ok(Some(keys.public.clone())),
-            MessageSigning::Box(_) => Err(ApiError::contracts_create_deploy_message_failed(
+            MessageSigning::Box(_) => Err(client::Error::not_implemented(
                 "Abi handle doesn't supported yet",
             )),
             MessageSigning::None => Ok(None),
@@ -38,4 +38,3 @@ impl MessageSigning {
         }
     }
 }
-

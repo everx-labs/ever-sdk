@@ -23,26 +23,22 @@ extern crate lazy_static;
 #[macro_use]
 extern crate log;
 
-mod encoding;
-mod error;
-mod dispatch;
+pub mod encoding;
+pub mod error;
+pub mod dispatch;
+pub mod contracts;
+pub mod crypto;
+pub mod tvm;
+pub mod abi;
 pub mod client;
-mod contracts;
-mod crypto;
-mod tvm;
-mod abi;
-
-// TODO: uncomment when module will be ready
-// mod cell;
+pub mod boc;
 
 #[cfg(feature = "node_interaction")]
 pub mod queries;
 
 mod interop;
+pub use self::interop::*;
 
 #[cfg(test)]
 mod tests;
-
-
-pub use self::interop::*;
 

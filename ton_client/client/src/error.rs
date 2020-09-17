@@ -66,11 +66,30 @@ macro_rules! as_number_impl {
 }
 
 impl ApiError {
+    pub const CLIENT: isize = 0;
+    pub const CRYPTO: isize = 100;
+    pub const BOC: isize = 200;
+    pub const ABI: isize = 300;
+    pub const TVM: isize = 400;
+    pub const NET: isize = 500;
+    pub const QUERIES: isize = 600;
+
     fn new(source: ApiErrorSource, code: &dyn ApiErrorCode, message: String) -> Self {
         Self {
             core_version: env!("CARGO_PKG_VERSION").to_owned(),
             source: source.to_string(),
             code: code.as_number(),
+            message,
+            message_processing_state: None,
+            data: serde_json::Value::Null,
+        }
+    }
+
+    pub fn with_code_message(code: isize, message: String) -> Self {
+        Self {
+            core_version: env!("CARGO_PKG_VERSION").to_owned(),
+            source: ApiErrorSource::Client.to_string(),
+            code,
             message,
             message_processing_state: None,
             data: serde_json::Value::Null,
@@ -288,161 +307,15 @@ impl ApiError {
         error
     }
 
+    pub fn callback_not_registered(callback_id: u32) -> Self {
+        sdk_err!(CallbackNotRegistered,
+            "Callback with ID {} is not registered", callback_id)
+    }
+
     // SDK Cell
 
     pub fn cell_invalid_query<E: Display>(s: E) -> Self {
         sdk_err!(CellInvalidQuery, "Invalid cell query: {}", s)
-    }
-
-    // SDK Crypto
-
-    pub fn crypto_invalid_hex<E: Display>(s: &String, err: E) -> Self {
-        sdk_err!(
-            CryptoInvalidHex,
-            "Invalid hex string: {}\r\nhex: [{}]",
-            err,
-            s
-        )
-    }
-
-    pub fn crypto_invalid_base64<E: Display>(s: &String, err: E) -> Self {
-        sdk_err!(
-            CryptoInvalidHex,
-            "Invalid base64 string: {}\r\nbase64: [{}]",
-            err,
-            s
-        )
-    }
-
-    pub fn crypto_invalid_factorize_challenge<E: Display>(hex: &String, err: E) -> Self {
-        sdk_err!(
-            CryptoInvalidFactorizeChallenge,
-            "Invalid factorize challenge: {}\r\nchallenge: [{}]",
-            err,
-            hex
-        )
-    }
-
-    pub fn crypto_invalid_big_int(hex: &String) -> Self {
-        sdk_err!(CryptoInvalidBigInt, "Invalid big int [{}]", hex)
-    }
-
-    pub fn crypto_convert_input_data_missing() -> Self {
-        Self::sdk(CryptoConvertInputDataMissing,
-            r#"Input data for conversion function is missing. Expected one of { text: "..." }, { hex: "..." } or { base64: "..." }"#.to_string())
-    }
-    pub fn crypto_convert_output_can_not_be_encoded_to_utf8<E: Display>(err: E) -> Self {
-        sdk_err!(
-            CryptoConvertOutputCanNotBeEncodedToUtf8,
-            r#"Output data for conversion function can not be encoded to utf8: {}"#,
-            err
-        )
-    }
-
-    pub fn crypto_scrypt_failed<E: Display>(err: E) -> Self {
-        sdk_err!(CryptoScryptFailed, r#"Scrypt failed: {}"#, err)
-    }
-
-    pub fn crypto_invalid_key_size(actual: usize, expected: usize) -> Self {
-        sdk_err!(
-            CryptoInvalidKeySize,
-            "Invalid key size {}. Expected {}.",
-            actual,
-            expected
-        )
-    }
-
-    pub fn crypto_nacl_secret_box_failed<E: Display>(err: E) -> Self {
-        sdk_err!(CryptoNaclSecretBoxFailed, "Secretbox failed: {}", err)
-    }
-
-    pub fn crypto_nacl_box_failed<E: Display>(err: E) -> Self {
-        sdk_err!(CryptoNaclBoxFailed, "Box failed: {}", err)
-    }
-
-    pub fn crypto_nacl_sign_failed<E: Display>(err: E) -> Self {
-        sdk_err!(CryptoNaclSignFailed, "Sign failed: {}", err)
-    }
-
-    pub fn crypto_bip39_invalid_entropy<E: Display>(err: E) -> Self {
-        sdk_err!(CryptoBip39InvalidEntropy, "Invalid bip39 entropy: {}", err)
-    }
-
-    pub fn crypto_bip39_invalid_phrase<E: Display>(err: E) -> Self {
-        sdk_err!(CryptoBip39InvalidPhrase, "Invalid bip39 phrase: {}", err)
-    }
-
-    pub fn crypto_bip32_invalid_key<E: Display>(key: E) -> Self {
-        sdk_err!(CryptoBip32InvalidKey, "Invalid bip32 key: {}", key)
-    }
-
-    pub fn crypto_bip32_invalid_derive_path<E: Display>(path: E) -> Self {
-        sdk_err!(
-            CryptoBip32InvalidDerivePath,
-            "Invalid bip32 derive path: {}",
-            path
-        )
-    }
-
-    pub fn crypto_bip39_invalid_dictionary(dictionary: u8) -> Self {
-        sdk_err!(
-            CryptoBip39InvalidDictionary,
-            "Invalid mnemonic dictionary: {}",
-            dictionary
-        )
-    }
-
-    pub fn crypto_bip39_invalid_word_count(word_count: u8) -> Self {
-        sdk_err!(
-            CryptoBip39InvalidWordCount,
-            "Invalid mnemonic word count: {}",
-            word_count
-        )
-    }
-
-    pub fn crypto_invalid_secret_key<E: Display>(err: E, key: &String) -> Self {
-        sdk_err!(
-            CryptoInvalidSecretKey,
-            "Invalid secret key [{}]: {}",
-            err,
-            key
-        )
-    }
-
-    pub fn crypto_invalid_public_key<E: Display>(err: E, key: &String) -> Self {
-        sdk_err!(
-            CryptoInvalidPublicKey,
-            "Invalid public key [{}]: {}",
-            err,
-            key
-        )
-    }
-
-    pub fn crypto_invalid_address<E: Display>(err: E, address: &str) -> Self {
-        sdk_err!(
-            CryptoInvalidAddress,
-            "Invalid address [{}]: {}",
-            err,
-            address
-        )
-    }
-
-    pub fn crypto_invalid_key<E: Display>(err: E, key: &String) -> Self {
-        sdk_err!(CryptoInvalidKey, "Invalid key [{}]: {}", err, key)
-    }
-
-    pub fn crypto_mnemonic_generation_failed() -> Self {
-        ApiError::sdk(
-            CryptoMnemonicGenerationFailed,
-            "Mnemonic generation failed".into(),
-        )
-    }
-
-    pub fn crypto_mnemonic_from_entropy_failed(reason: &str) -> Self {
-        ApiError::sdk(
-            CryptoMnemonicFromEntropyFailed,
-            format!("Mnemonic from entropy failed: {}", reason),
-        )
     }
 
     // SDK Contracts
@@ -622,23 +495,8 @@ impl ApiError {
     }
 
     pub fn queries_get_next_failed<E: Display>(err: E) -> Self {
-        sdk_err!(QueriesGetNextFailed, "Get next failed: {}", err)
-    }
-
-    // SDK Abi module
-
-    pub fn abi_required_address_missing_for_encode_message() -> Self {
-        Self::sdk(
-            AbiRequiredAddressMissingForEncodeMessage,
-            "Address must be provided to encode run message.".into(),
-        )
-    }
-
-    pub fn abi_missing_required_call_set_for_encode_message() -> Self {
-        Self::sdk(
-            AbiRequiredCallSetMissingForEncodeMessage,
-            "Call parameters must be provided to encode run message.".into(),
-        )
+        sdk_err!(QueriesGetSubscriptionResultFailed,
+            "Receive subscription result failed: {}", err)
     }
 
     // Failed transaction phases
@@ -779,30 +637,7 @@ pub enum ApiSdkErrorCode {
     AccountFrozenOrDeleted = 1017,
     ActionPhaseFailed = 1018,
     ErrorNotResolved = 1019,
-
-    CryptoInvalidPublicKey = 2001,
-    CryptoInvalidSecretKey = 2002,
-    CryptoInvalidKey = 2003,
-    CryptoInvalidAddress = 2004,
-    CryptoInvalidHex = 2005,
-    CryptoInvalidBase64 = 2006,
-    CryptoInvalidFactorizeChallenge = 2007,
-    CryptoInvalidBigInt = 2008,
-    CryptoConvertInputDataMissing = 2009,
-    CryptoConvertOutputCanNotBeEncodedToUtf8 = 2010,
-    CryptoScryptFailed = 2011,
-    CryptoInvalidKeySize = 2012,
-    CryptoNaclSecretBoxFailed = 2013,
-    CryptoNaclBoxFailed = 2014,
-    CryptoNaclSignFailed = 2015,
-    CryptoBip39InvalidEntropy = 2016,
-    CryptoBip39InvalidPhrase = 2017,
-    CryptoBip32InvalidKey = 2018,
-    CryptoBip32InvalidDerivePath = 2019,
-    CryptoBip39InvalidDictionary = 2022,
-    CryptoBip39InvalidWordCount = 2023,
-    CryptoMnemonicGenerationFailed = 2024,
-    CryptoMnemonicFromEntropyFailed = 2025,
+    CallbackNotRegistered = 1020,
 
     ContractsLoadFailed = 3001,
     ContractsInvalidImage = 3002,
@@ -832,12 +667,10 @@ pub enum ApiSdkErrorCode {
     QueriesQueryFailed = 4001,
     QueriesSubscribeFailed = 4002,
     QueriesWaitForFailed = 4003,
-    QueriesGetNextFailed = 4004,
+    QueriesGetSubscriptionResultFailed = 4004,
 
     CellInvalidQuery = 5001,
 
-    AbiRequiredAddressMissingForEncodeMessage = 6001,
-    AbiRequiredCallSetMissingForEncodeMessage = 6002,
 }
 
 impl ApiErrorCode for ApiSdkErrorCode {

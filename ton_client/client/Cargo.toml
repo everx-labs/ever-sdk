@@ -14,6 +14,7 @@ ton_sdk = { path = "../../ton_sdk", default-features = false }
 api_doc = { path = "../../api_doc/api_doc" }
 api_doc_derive = { path = "../../api_doc/api_doc_derive" }
 
+ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git"}
 ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }
 ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git" }
 ton_block_json = { git = "https://github.com/tonlabs/ton-labs-block-json.git" }
@@ -42,6 +43,7 @@ crc-any = "2.2.3"
 failure = "0.1"
 num-traits = "0.2"
 num-derive = "0.3"
+lockfree = { git = "https://github.com/tonlabs/lockfree.git", package = "lockfree" }
 
 [dev-dependencies]
 log4rs = "^0"

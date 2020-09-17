@@ -17,17 +17,26 @@ use crate::dispatch::DispatchTable;
 mod tests;
 
 mod internal;
-
-pub mod encode;
-pub mod abi;
-pub mod decode;
-pub mod signing;
-pub mod defaults;
+mod abi;
+mod decode;
+mod defaults;
+mod encode;
+mod signing;
+mod errors;
 
 pub use abi::{Abi, AbiHandle};
-pub use signing::{MessageSigning};
+pub use decode::{
+    decode_message, MessageContentType, ParamsOfDecodeMessage, ResultOfDecodeMessage,
+};
+pub use encode::{
+    attach_signature, encode_message, ParamsOfAttachSignature, ParamsOfEncodeMessage,
+    ResultOfAttachSignature, ResultOfEncodeMessage,
+};
+pub use signing::MessageSigning;
+pub use errors::{ErrorCode, Error};
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
     handlers.call("abi.encode_message", encode::encode_message);
     handlers.call("abi.attach_signature", encode::attach_signature);
+    handlers.call("abi.decode_message", decode::decode_message);
 }

@@ -12,6 +12,7 @@
 */
 
 use crate::error::{ApiResult, ApiError};
+use crate::crypto;
 use crate::crypto::internal::{sha256, key512, Key256, key256, Key264};
 use hmac::*;
 use sha2::{Sha512, Digest};
@@ -209,25 +210,25 @@ impl HDPrivateKey {
     fn map_secp_error(error: secp256k1::Error) -> ApiError {
         match error {
             secp256k1::Error::InvalidSignature => {
-                ApiError::crypto_bip32_invalid_key("InvalidSignature")
+                crypto::Error::bip32_invalid_key("InvalidSignature")
             }
             secp256k1::Error::InvalidPublicKey => {
-                ApiError::crypto_bip32_invalid_key("InvalidPublicKey")
+                crypto::Error::bip32_invalid_key("InvalidPublicKey")
             }
             secp256k1::Error::InvalidSecretKey => {
-                ApiError::crypto_bip32_invalid_key("InvalidSecretKey")
+                crypto::Error::bip32_invalid_key("InvalidSecretKey")
             }
             secp256k1::Error::InvalidRecoveryId => {
-                ApiError::crypto_bip32_invalid_key("InvalidRecoveryId")
+                crypto::Error::bip32_invalid_key("InvalidRecoveryId")
             }
             secp256k1::Error::InvalidMessage => {
-                ApiError::crypto_bip32_invalid_key("InvalidMessage")
+                crypto::Error::bip32_invalid_key("InvalidMessage")
             }
             secp256k1::Error::InvalidInputLength => {
-                ApiError::crypto_bip32_invalid_key("InvalidInputLength")
+                crypto::Error::bip32_invalid_key("InvalidInputLength")
             }
             secp256k1::Error::TweakOutOfRange => {
-                ApiError::crypto_bip32_invalid_key("TweakOutOfRange")
+                crypto::Error::bip32_invalid_key("TweakOutOfRange")
             }
         }
     }
@@ -257,7 +258,7 @@ impl HDPrivateKey {
         BigEndian::write_u32(&mut child.child_number, child_index);
 
         let mut hmac: Hmac<Sha512> = Hmac::new_varkey(&self.child_chain)
-            .map_err(|err| ApiError::crypto_bip32_invalid_key(err))?;
+            .map_err(|err| crypto::Error::bip32_invalid_key(err))?;
 
         let secret_key = SecretKey::parse(&self.key).unwrap();
         if hardened && !compliant {
@@ -300,7 +301,7 @@ impl HDPrivateKey {
                     step
                 })
                     .parse()
-                    .map_err(|_| ApiError::crypto_bip32_invalid_derive_path(path))?;
+                    .map_err(|_| crypto::Error::bip32_invalid_derive_path(path))?;
                 child = child.derive(index, hardened, compliant)?;
             }
         }
@@ -311,12 +312,12 @@ impl HDPrivateKey {
 
     fn from_serialized(bytes: &[u8]) -> ApiResult<HDPrivateKey> {
         if bytes.len() != 82 {
-            return Err(ApiError::crypto_bip32_invalid_key(bytes.to_base58()));
+            return Err(crypto::Error::bip32_invalid_key(bytes.to_base58()));
         }
         let mut version = [0u8; 4];
         version.clone_from_slice(&bytes[0..4]);
         if version != XPRV_VERSION {
-            return Err(ApiError::crypto_bip32_invalid_key(bytes.to_base58()));
+            return Err(crypto::Error::bip32_invalid_key(bytes.to_base58()));
         }
         let mut xprv: HDPrivateKey = Default::default();
         xprv.depth = bytes[4];
@@ -324,7 +325,7 @@ impl HDPrivateKey {
         xprv.child_number.copy_from_slice(&bytes[9..13]);
         xprv.child_chain.copy_from_slice(&bytes[13..45]);
         if bytes[45] != 0 {
-            return Err(ApiError::crypto_bip32_invalid_key(bytes.to_base58()));
+            return Err(crypto::Error::bip32_invalid_key(bytes.to_base58()));
         }
         xprv.key.copy_from_slice(&bytes[46..78]);
         Ok(xprv)
@@ -347,7 +348,7 @@ impl HDPrivateKey {
         Self::from_serialized(
             &string
                 .from_base58()
-                .map_err(|_| ApiError::crypto_bip32_invalid_key(string))?,
+                .map_err(|_| crypto::Error::bip32_invalid_key(string))?,
         )
     }
 

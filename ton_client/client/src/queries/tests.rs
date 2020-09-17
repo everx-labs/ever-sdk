@@ -92,11 +92,11 @@ fn subscribe_for_transactions_with_addresses() {
     let keys = client.generate_sign_keys();
     let deploy_params = ParamsOfDeploy{
         call_set: DeployFunctionCallSet {
-            abi: HELLO_ABI.clone(),
+            abi: TestClient::abi(HELLO, None),
             constructor_header: None,
             constructor_params: json!({}),
         },
-        image_base64: base64::encode(HELLO_IMAGE.as_slice()),
+        image_base64: TestClient::tvc(HELLO, None),
         init_params: None,
         key_pair: keys,
         workchain_id: None,
@@ -108,6 +108,21 @@ fn subscribe_for_transactions_with_addresses() {
         deploy_params.clone()
     );
 
+    let transactions = std::sync::Arc::new(std::sync::Mutex::new(vec![]));
+    let transactions_copy = transactions.clone();
+    let address = msg.address.clone().unwrap();
+    let callback_id = 123;
+
+    let callback = move |request_id: u32, result: ApiResult<ResultOfSubscription>, flags: u32| {
+        assert_eq!(flags, 0);
+        assert_eq!(request_id, callback_id);
+        let result = result.unwrap();
+        assert_eq!(result.result["account_addr"], address);
+        transactions_copy.lock().unwrap().push(result.result);
+    };
+
+    let callback_id = client.register_callback(Some(callback_id), callback);
+
     let handle: ResultOfSubscribeCollection = client.request_async(
             "queries.subscribe_collection",
             ParamsOfSubscribeCollection {
@@ -117,55 +132,53 @@ fn subscribe_for_transactions_with_addresses() {
                     "status": { "eq": ton_sdk::json_helper::transaction_status_to_u8(ton_block::TransactionProcessingStatus::Finalized) }
                 })),
                 result: "id account_addr".to_owned(),
+                callback_id
             }
         );
 
     client.deploy_with_giver(deploy_params, None);
 
-    let mut transactions = vec![];
+    // give some time for subscription to receive all data
+    std::thread::sleep(std::time::Duration::from_millis(1000));
 
-    for _ in 0..2 {
-        let result: ResultOfGetNextSubscriptionData = client.request_async(
-            "queries.get_next_subscription_data", handle.clone());
-        assert_eq!(result.result["account_addr"], msg.address.clone().unwrap());
-        transactions.push(result.result);
-    }
-
+    let transactions = transactions.lock().unwrap();
+    assert_eq!(transactions.len(), 2);
     assert_ne!(transactions[0]["id"], transactions[1]["id"]);
 
     let _: () = client.request_async("queries.unsubscribe", handle);
+    client.unregister_callback(callback_id);
 }
 
 #[test]
 fn subscribe_for_messages() {
-    let messages = std::sync::Arc::new(Mutex::new(Vec::new()));
+    let messages = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
     let messages_copy = messages.clone();
 
-    std::thread::spawn(move || {
-        let client = TestClient::new();
-
-        let handle: ResultOfSubscribeCollection = client.request_async(
-            "queries.subscribe_collection",
-            ParamsOfSubscribeCollection {
-                collection: "messages".to_owned(),
-                filter: Some(json!({
-                    "dst": { "eq": "1" }
-                })),
-                result: "id".to_owned(),
-            }
-        );
-
-        loop {
-            println!("Before get_next");
-            let result: ResultOfGetNextSubscriptionData = client.request_async(
-                "queries.get_next_subscription_data", handle.clone());
-            println!("After get_next");
-            messages_copy.lock().unwrap().push(result.result);
-        }
-    });
+    let callback = move |_request_id: u32, result: ApiResult<ResultOfSubscription>, flags: u32| {
+        assert_eq!(flags, 0);
+        let result = result.unwrap();
+        messages_copy.lock().unwrap().push(result.result);
+    };
 
     let client = TestClient::new();
+    let callback_id = client.register_callback(None, callback);
+
+    let handle: ResultOfSubscribeCollection = client.request_async(
+        "queries.subscribe_collection",
+        ParamsOfSubscribeCollection {
+            collection: "messages".to_owned(),
+            filter: Some(json!({
+                "dst": { "eq": "1" }
+            })),
+            result: "id".to_owned(),
+            callback_id
+        }
+    );
+
     client.get_grams_from_giver(&TestClient::get_giver_address(), None);
 
     assert_eq!(messages.lock().unwrap().len(), 0);
+
+    let _: () = client.request_async("queries.unsubscribe", handle);
+    client.unregister_callback(callback_id);
 }

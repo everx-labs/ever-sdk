@@ -12,8 +12,8 @@
 */
 
 extern crate scrypt;
-
-use crate::error::{ApiResult, ApiError};
+use crate::crypto;
+use crate::error::{ApiResult};
 use crate::client::ClientContext;
 use crate::encoding::base64_decode;
 
@@ -54,11 +54,11 @@ pub fn scrypt(
     let mut key = Vec::new();
     key.resize(params.dk_len, 0);
     let scrypt_params = scrypt::ScryptParams::new(params.log_n, params.r, params.p)
-        .map_err(|err| ApiError::crypto_scrypt_failed(err))?;
+        .map_err(|err| crypto::Error::scrypt_failed(err))?;
     let password = base64_decode(&params.password)?;
     let salt = base64_decode(&params.salt)?;
     scrypt::scrypt(&password, &salt, &scrypt_params, &mut key)
-        .map_err(|err| ApiError::crypto_scrypt_failed(err))?;
+        .map_err(|err| crypto::Error::scrypt_failed(err))?;
     Ok(ResultOfScrypt {
         key: hex::encode(&key)
     })

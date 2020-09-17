@@ -11,7 +11,7 @@
 * limitations under the License.
 */
 
-use crate::types::{ApiResult, ApiError};
+use crate::error::{ApiResult, ApiError};
 
 #[derive(Debug)]
 pub(crate) enum CellValueReader {
