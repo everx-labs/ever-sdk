@@ -18,6 +18,7 @@ const BOC: isize = ApiError::BOC; // 200
 pub enum ErrorCode {
     InvalidBoc = BOC + 1,
     SerializationError = BOC + 2,
+    InappropriateBlock = BOC + 3
 }
 pub struct Error;
 
@@ -35,5 +36,9 @@ impl Error {
             ErrorCode::SerializationError,
             format!("Cannot serialize {}: {}", name, err),
         )
+    }
+
+    pub fn inappropriate_block<E: Display>(err: E) -> ApiError {
+        error(ErrorCode::InappropriateBlock, format!("Inappropriate block: {}", err))
     }
 }
