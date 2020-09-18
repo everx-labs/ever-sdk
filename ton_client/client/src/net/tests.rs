@@ -28,7 +28,7 @@ async fn process_message() {
 
     let callback_id = client.register_callback(callback);
 
-    let result: ResultOfProcessMessage = client.request_future(
+    let result: ResultOfProcessMessage = client.request_async(
         "net.process_message",
         ParamsOfProcessMessage {
             message: MessageSource::EncodingParams(ParamsOfEncodeMessage {

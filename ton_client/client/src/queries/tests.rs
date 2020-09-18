@@ -5,8 +5,8 @@ use crate::contracts::{
 };
 use super::*;
 
-#[test]
-fn block_signatures() {
+#[tokio::test(core_threads = 2)]
+async fn block_signatures() {
     let client = TestClient::new();
 
     let _: ResultOfQueryCollection = client.request_async(
@@ -18,11 +18,11 @@ fn block_signatures() {
             limit: Some(1),
             order: None,
         }
-    );
+    ).await;
 }
 
-#[test]
-fn all_accounts() {
+#[tokio::test(core_threads = 2)]
+async fn all_accounts() {
     let client = TestClient::new();
 
     let accounts: ResultOfQueryCollection = client.request_async(
@@ -34,13 +34,13 @@ fn all_accounts() {
             limit: None,
             order: None,
         }
-    );
+    ).await;
 
     assert!(accounts.result.len() > 0);
 }
 
-#[test]
-fn ranges() {
+#[tokio::test(core_threads = 2)]
+async fn ranges() {
     let client = TestClient::new();
 
     let accounts: ResultOfQueryCollection = client.request_async(
@@ -54,17 +54,17 @@ fn ranges() {
             limit: None,
             order: None,
         }
-    );
+    ).await;
 
     assert!(accounts.result[0]["created_at"].as_u64().unwrap() > 1562342740);
 }
 
 #[test]
 fn wait_for() {
-    let handle = std::thread::spawn(|| {
+    let handle = std::thread::spawn(move|| {
         let client = TestClient::new();
         let now = ton_sdk::Contract::now();
-        let transactions: ResultOfWaitForCollection = client.request_async(
+        let transactions: ResultOfWaitForCollection = client.request(
             "queries.wait_for_collection",
             ParamsOfWaitForCollection {
                 collection: "transactions".to_owned(),
@@ -86,8 +86,8 @@ fn wait_for() {
     handle.join().unwrap();
 }
 
-#[test]
-fn subscribe_for_transactions_with_addresses() {
+#[tokio::test(core_threads = 2)]
+async fn subscribe_for_transactions_with_addresses() {
     let client = TestClient::new();
     let keys = client.generate_sign_keys();
     let deploy_params = ParamsOfDeploy{
@@ -106,7 +106,7 @@ fn subscribe_for_transactions_with_addresses() {
     let msg: EncodedMessage = client.request_async(
         "contracts.deploy.message",
         deploy_params.clone()
-    );
+    ).await;
 
     let transactions = std::sync::Arc::new(std::sync::Mutex::new(vec![]));
     let transactions_copy = transactions.clone();
@@ -130,9 +130,9 @@ fn subscribe_for_transactions_with_addresses() {
                 result: "id account_addr".to_owned(),
                 callback_id
             }
-        );
+        ).await;
 
-    client.deploy_with_giver(deploy_params, None);
+    client.deploy_with_giver_async(deploy_params, None).await;
 
     // give some time for subscription to receive all data
     std::thread::sleep(std::time::Duration::from_millis(1000));
@@ -141,12 +141,12 @@ fn subscribe_for_transactions_with_addresses() {
     assert_eq!(transactions.len(), 2);
     assert_ne!(transactions[0]["id"], transactions[1]["id"]);
 
-    let _: () = client.request_async("queries.unsubscribe", handle);
+    let _: () = client.request_async("queries.unsubscribe", handle).await;
     client.unregister_callback(callback_id);
 }
 
-#[test]
-fn subscribe_for_messages() {
+#[tokio::test(core_threads = 2)]
+async fn subscribe_for_messages() {
     let messages = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
     let messages_copy = messages.clone();
 
@@ -168,12 +168,12 @@ fn subscribe_for_messages() {
             result: "id".to_owned(),
             callback_id
         }
-    );
+    ).await;
 
-    client.get_grams_from_giver(&TestClient::get_giver_address(), None);
+    // client.get_grams_from_giver_async(&TestClient::get_giver_address(), None).await;
 
     assert_eq!(messages.lock().unwrap().len(), 0);
 
-    let _: () = client.request_async("queries.unsubscribe", handle);
+    let _: () = client.request_async("queries.unsubscribe", handle).await;
     client.unregister_callback(callback_id);
 }
