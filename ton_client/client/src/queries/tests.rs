@@ -111,17 +111,13 @@ fn subscribe_for_transactions_with_addresses() {
     let transactions = std::sync::Arc::new(std::sync::Mutex::new(vec![]));
     let transactions_copy = transactions.clone();
     let address = msg.address.clone().unwrap();
-    let callback_id = 123;
-
-    let callback = move |request_id: u32, result: ApiResult<ResultOfSubscription>, flags: u32| {
-        assert_eq!(flags, 0);
-        assert_eq!(request_id, callback_id);
+    let callback = move |result: ApiResult<ResultOfSubscription>| {
         let result = result.unwrap();
         assert_eq!(result.result["account_addr"], address);
         transactions_copy.lock().unwrap().push(result.result);
     };
 
-    let callback_id = client.register_callback(Some(callback_id), callback);
+    let callback_id = client.register_callback(callback);
 
     let handle: ResultOfSubscribeCollection = client.request_async(
             "queries.subscribe_collection",
@@ -154,14 +150,13 @@ fn subscribe_for_messages() {
     let messages = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
     let messages_copy = messages.clone();
 
-    let callback = move |_request_id: u32, result: ApiResult<ResultOfSubscription>, flags: u32| {
-        assert_eq!(flags, 0);
+    let callback = move |result: ApiResult<ResultOfSubscription>| {
         let result = result.unwrap();
         messages_copy.lock().unwrap().push(result.result);
     };
 
     let client = TestClient::new();
-    let callback_id = client.register_callback(None, callback);
+    let callback_id = client.register_callback(callback);
 
     let handle: ResultOfSubscribeCollection = client.request_async(
         "queries.subscribe_collection",

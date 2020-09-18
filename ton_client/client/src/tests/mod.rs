@@ -77,9 +77,29 @@ pub const GIVER: &str = "Giver";
 pub const HELLO: &str = "Hello";
 pub const EVENTS: &str = "Events";
 
+struct TestRuntime {
+    pub next_callback_id: u32,
+    pub requests: HashMap<u32, Sender<JsonResponse>>,
+    pub callbacks: HashMap<u32, Box<dyn Fn(String, String) + Send>>,
+}
+
+impl TestRuntime {
+    fn new() -> Self {
+        Self {
+            next_callback_id: 1,
+            requests: HashMap::new(),
+            callbacks: HashMap::new(),
+        }
+    }
+    fn gen_callback_id(&mut self) -> u32 {
+        let id = self.next_callback_id;
+        self.next_callback_id += 1;
+        id
+    }
+}
+
 lazy_static::lazy_static! {
-    pub static ref REQUESTS: Mutex<HashMap<u32, Sender<JsonResponse>>> = Mutex::new(HashMap::new());
-    pub static ref CALLBACKS: Mutex<HashMap<u32, Box<dyn Fn(u32, String, String, u32) + Send>>> = Mutex::new(HashMap::new());
+    static ref TEST_RUNTIME: Mutex<TestRuntime> = Mutex::new(TestRuntime::new());
 }
 
 #[derive(Clone)]
@@ -100,9 +120,9 @@ extern "C" fn on_callback(
     request_id: u32,
     result_json: InteropString,
     error_json: InteropString,
-    flags: u32,
+    _flags: u32,
 ) {
-    TestClient::callback(request_id, result_json, error_json, flags)
+    TestClient::callback(request_id, result_json, error_json)
 }
 
 impl TestClient {
@@ -205,9 +225,7 @@ impl TestClient {
             panic!("tc_create_context returned error: {}", response.error_json);
         };
 
-        let client = Self {
-            context,
-        };
+        let client = Self { context };
         client
     }
 
@@ -264,9 +282,10 @@ impl TestClient {
             error_json: error_json.to_string(),
         };
 
-        REQUESTS
+        TEST_RUNTIME
             .lock()
             .unwrap()
+            .requests
             .remove(&request_id)
             .unwrap()
             .send(response)
@@ -276,7 +295,11 @@ impl TestClient {
     pub(crate) fn request_json_async(&self, method: &str, params: Value) -> ApiResult<Value> {
         let request_id = rand::thread_rng().gen::<u32>();
         let (sender, receiver) = channel();
-        REQUESTS.lock().unwrap().insert(request_id, sender);
+        TEST_RUNTIME
+            .lock()
+            .unwrap()
+            .requests
+            .insert(request_id, sender);
 
         unsafe {
             let params_json = if params.is_null() {
@@ -319,40 +342,51 @@ impl TestClient {
             .unwrap()
     }
 
+    pub(crate) async fn request_future<P, R>(&self, method: &str, params: P) -> R
+    where
+        P: Serialize,
+        R: DeserializeOwned,
+    {
+        let params = serde_json::to_value(params)
+            .map_err(|err| ApiError::invalid_params("", err))
+            .unwrap();
+        let result = self.request_json_async(method, params).unwrap();
+        serde_json::from_value(result)
+            .map_err(|err| ApiError::invalid_params("", err))
+            .unwrap()
+    }
+
     fn callback(
         request_id: u32,
         result_json: InteropString,
         error_json: InteropString,
-        flags: u32,
     ) {
-        let callbacks_lock = CALLBACKS.lock().unwrap();
-        let callback = callbacks_lock.get(&request_id).unwrap();
+        let runtime = TEST_RUNTIME.lock().unwrap();
+        let callback = runtime.callbacks.get(&request_id).unwrap();
         callback(
-            request_id,
             result_json.to_string(),
             error_json.to_string(),
-            flags,
         );
     }
 
     pub(crate) fn register_callback<R: DeserializeOwned>(
         &self,
-        callback_id: Option<u32>,
-        callback: impl Fn(u32, ApiResult<R>, u32) + Send + Sync + 'static,
+        callback: impl Fn(ApiResult<R>) + Send + Sync + 'static,
     ) -> u32 {
         let callback =
-            move |request_id: u32, result_json: String, error_json: String, flags: u32| {
-                let result = if !result_json.is_empty() {
+            move |result_json: String, error_json: String| {
+                let params = if !result_json.is_empty() {
                     Ok(serde_json::from_str(&result_json).unwrap())
                 } else {
                     Err(serde_json::from_str(&error_json).unwrap())
                 };
-                callback(request_id, result, flags)
+                callback(params)
             };
-        let callback_id = callback_id.unwrap_or_else(|| rand::thread_rng().gen::<u32>());
-        CALLBACKS
+        let callback_id = TEST_RUNTIME.lock().unwrap().gen_callback_id();
+        TEST_RUNTIME
             .lock()
             .unwrap()
+            .callbacks
             .insert(callback_id, Box::new(callback));
         unsafe {
             tc_json_request_async(
@@ -373,7 +407,7 @@ impl TestClient {
             ParamsOfUnregisterCallback { callback_id },
         );
 
-        CALLBACKS.lock().unwrap().remove(&callback_id);
+        TEST_RUNTIME.lock().unwrap().callbacks.remove(&callback_id);
     }
 
     pub(crate) fn request_no_params<R: DeserializeOwned>(&self, method: &str) -> R {

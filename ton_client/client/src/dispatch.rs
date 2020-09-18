@@ -70,7 +70,7 @@ where
 }
 
 impl<F> RawAsyncHandler<F>
-where 
+where
     F: Fn(std::sync::Arc<ClientContext>, String, u32, Box<Callback>),
 {
     pub fn new(api: Method, handler: F) -> Self {
@@ -82,7 +82,7 @@ where
 }
 
 impl<F> AsyncHandler for RawAsyncHandler<F>
-where 
+where
     F: Fn(std::sync::Arc<ClientContext>, String, u32, Box<Callback>),
 {
     fn get_api(&self) -> &Method {
@@ -138,7 +138,7 @@ where
     fn handle(&self, context: std::sync::Arc<ClientContext>, params_json: String, request_id: u32, on_result: Box<Callback>) {
         let handler = self.handler.clone();
         let context_copy = context.clone();
-        context.runtime.enter(move || {
+        context.async_runtime_handle.enter(move || {
             tokio::spawn(async move {
                 let result = match parse_params(&params_json) {
                     Ok(params) => {
@@ -200,7 +200,7 @@ where
     fn handle(&self, context: std::sync::Arc<ClientContext>, _params_json: String, request_id: u32, on_result: Box<Callback>) {
         let handler = self.handler.clone();
         let context_copy = context.clone();
-        context.runtime.enter(move || {
+        context.async_runtime_handle.enter(move || {
             tokio::spawn(async move {
                 let result = handler(context_copy).await;
                 let result = match result {
@@ -414,7 +414,7 @@ impl DispatchTable {
             Box::new(CallHandler::new(
                 api,
                 move |context, params| {
-                    context.clone().runtime.handle().block_on(handler(context, params))
+                    context.clone().async_runtime_handle.block_on(handler(context, params))
                 }
             ))
         );
@@ -440,7 +440,7 @@ impl DispatchTable {
             Box::new(CallHandler::new(
                 method_api(method),
                 move |context: std::sync::Arc<ClientContext>, params: P| -> ApiResult<R> {
-                    context.clone().runtime.handle().block_on(handler(context, params))
+                    context.clone().async_runtime_handle.block_on(handler(context, params))
                 }
             ))
         );

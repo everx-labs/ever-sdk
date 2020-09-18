@@ -808,7 +808,7 @@ pub(crate) fn do_local_run_msg(
         None => {
             trace!("load contract");
             if let Some(context) = context {
-                context.clone().runtime.handle().block_on(
+                context.clone().async_runtime_handle.block_on(
                     load_contract(context, &address, !full_run))?
             } else {
                 return Err(ApiError::sdk_not_init());
