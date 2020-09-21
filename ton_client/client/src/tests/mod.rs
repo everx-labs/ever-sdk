@@ -30,15 +30,12 @@ use crate::{
     queries::{ParamsOfWaitForCollection, ResultOfWaitForCollection},
     tc_create_context, tc_destroy_context, JsonResponse,
 };
-use rand::Rng;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Value;
 use std::collections::HashMap;
-use std::sync::{
-    mpsc::{channel, Sender},
-    Mutex,
-};
+use std::sync::Mutex;
+use tokio::sync::mpsc::{channel, Sender};
 
 mod common;
 
@@ -77,9 +74,38 @@ pub const GIVER: &str = "Giver";
 pub const HELLO: &str = "Hello";
 pub const EVENTS: &str = "Events";
 
+struct TestRuntime {
+    pub next_request_id: u32,
+    pub next_callback_id: u32,
+    pub requests: HashMap<u32, Sender<JsonResponse>>,
+    pub callbacks: HashMap<u32, Box<dyn Fn(String, String) + Send>>,
+}
+
+impl TestRuntime {
+    fn new() -> Self {
+        Self {
+            next_callback_id: 1,
+            next_request_id: 1,
+            requests: HashMap::new(),
+            callbacks: HashMap::new(),
+        }
+    }
+
+    fn gen_callback_id(&mut self) -> u32 {
+        let id = self.next_callback_id;
+        self.next_callback_id += 1;
+        id
+    }
+
+    fn gen_request_id(&mut self) -> u32 {
+        let id = self.next_request_id;
+        self.next_request_id += 1;
+        id
+    }
+}
+
 lazy_static::lazy_static! {
-    pub static ref REQUESTS: Mutex<HashMap<u32, Sender<JsonResponse>>> = Mutex::new(HashMap::new());
-    pub static ref CALLBACKS: Mutex<HashMap<u32, Box<dyn Fn(u32, String, String, u32) + Send>>> = Mutex::new(HashMap::new());
+    static ref TEST_RUNTIME: Mutex<TestRuntime> = Mutex::new(TestRuntime::new());
 }
 
 #[derive(Clone)]
@@ -100,9 +126,9 @@ extern "C" fn on_callback(
     request_id: u32,
     result_json: InteropString,
     error_json: InteropString,
-    flags: u32,
+    _flags: u32,
 ) {
-    TestClient::callback(request_id, result_json, error_json, flags)
+    TestClient::callback(request_id, result_json, error_json)
 }
 
 impl TestClient {
@@ -205,14 +231,24 @@ impl TestClient {
             panic!("tc_create_context returned error: {}", response.error_json);
         };
 
-        let client = Self {
-            context,
-        };
+        let client = Self { context };
         client
     }
 
+    fn response_to_result(response: JsonResponse) -> ApiResult<Value> {
+        if response.error_json.is_empty() {
+            if response.result_json.is_empty() {
+                Ok(Value::Null)
+            } else {
+                Ok(serde_json::from_str(&response.result_json).unwrap())
+            }
+        } else {
+            Err(serde_json::from_str(&response.error_json).unwrap())
+        }
+    }
+
     pub(crate) fn request_json(&self, method: &str, params: Value) -> ApiResult<Value> {
-        let response = unsafe {
+        Self::response_to_result(unsafe {
             let params_json = if params.is_null() {
                 String::new()
             } else {
@@ -227,16 +263,7 @@ impl TestClient {
             let response = interop_response.to_response();
             tc_destroy_json_response(response_ptr);
             response
-        };
-        if response.error_json.is_empty() {
-            if response.result_json.is_empty() {
-                Ok(Value::Null)
-            } else {
-                Ok(serde_json::from_str(&response.result_json).unwrap())
-            }
-        } else {
-            Err(serde_json::from_str(&response.error_json).unwrap())
-        }
+        })
     }
 
     pub(crate) fn request<P, R>(&self, method: &str, params: P) -> R
@@ -264,20 +291,28 @@ impl TestClient {
             error_json: error_json.to_string(),
         };
 
-        REQUESTS
+        let mut request = TEST_RUNTIME
             .lock()
             .unwrap()
+            .requests
             .remove(&request_id)
-            .unwrap()
-            .send(response)
-            .unwrap()
+            .unwrap();
+
+        tokio::runtime::Handle::current().enter(move || {
+            tokio::spawn(async move {
+                let _ = request.send(response).await;
+            });
+        });
     }
 
-    pub(crate) fn request_json_async(&self, method: &str, params: Value) -> ApiResult<Value> {
-        let request_id = rand::thread_rng().gen::<u32>();
-        let (sender, receiver) = channel();
-        REQUESTS.lock().unwrap().insert(request_id, sender);
-
+    pub(crate) async fn request_json_async(&self, method: &str, params: Value) -> ApiResult<Value> {
+        let (request_id, mut receiver) = {
+            let mut runtime = TEST_RUNTIME.lock().unwrap();
+            let id = runtime.gen_request_id();
+            let (sender, receiver) = channel(10);
+            runtime.requests.insert(id, sender);
+            (id, receiver)
+        };
         unsafe {
             let params_json = if params.is_null() {
                 String::new()
@@ -292,20 +327,10 @@ impl TestClient {
                 on_result,
             );
         };
-
-        let response = receiver.recv().unwrap();
-        if response.error_json.is_empty() {
-            if response.result_json.is_empty() {
-                Ok(Value::Null)
-            } else {
-                Ok(serde_json::from_str(&response.result_json).unwrap())
-            }
-        } else {
-            Err(serde_json::from_str(&response.error_json).unwrap())
-        }
+        Self::response_to_result(receiver.recv().await.unwrap())
     }
 
-    pub(crate) fn request_async<P, R>(&self, method: &str, params: P) -> R
+    pub(crate) async fn request_async<P, R>(&self, method: &str, params: P) -> R
     where
         P: Serialize,
         R: DeserializeOwned,
@@ -313,46 +338,35 @@ impl TestClient {
         let params = serde_json::to_value(params)
             .map_err(|err| ApiError::invalid_params("", err))
             .unwrap();
-        let result = self.request_json_async(method, params).unwrap();
+        let result = self.request_json_async(method, params).await.unwrap();
         serde_json::from_value(result)
             .map_err(|err| ApiError::invalid_params("", err))
             .unwrap()
     }
 
-    fn callback(
-        request_id: u32,
-        result_json: InteropString,
-        error_json: InteropString,
-        flags: u32,
-    ) {
-        let callbacks_lock = CALLBACKS.lock().unwrap();
-        let callback = callbacks_lock.get(&request_id).unwrap();
-        callback(
-            request_id,
-            result_json.to_string(),
-            error_json.to_string(),
-            flags,
-        );
+    fn callback(request_id: u32, result_json: InteropString, error_json: InteropString) {
+        let runtime = TEST_RUNTIME.lock().unwrap();
+        let callback = runtime.callbacks.get(&request_id).unwrap();
+        callback(result_json.to_string(), error_json.to_string());
     }
 
     pub(crate) fn register_callback<R: DeserializeOwned>(
         &self,
-        callback_id: Option<u32>,
-        callback: impl Fn(u32, ApiResult<R>, u32) + Send + Sync + 'static,
+        callback: impl Fn(ApiResult<R>) + Send + Sync + 'static,
     ) -> u32 {
-        let callback =
-            move |request_id: u32, result_json: String, error_json: String, flags: u32| {
-                let result = if !result_json.is_empty() {
-                    Ok(serde_json::from_str(&result_json).unwrap())
-                } else {
-                    Err(serde_json::from_str(&error_json).unwrap())
-                };
-                callback(request_id, result, flags)
+        let callback = move |result_json: String, error_json: String| {
+            let params = if !result_json.is_empty() {
+                Ok(serde_json::from_str(&result_json).unwrap())
+            } else {
+                Err(serde_json::from_str(&error_json).unwrap())
             };
-        let callback_id = callback_id.unwrap_or_else(|| rand::thread_rng().gen::<u32>());
-        CALLBACKS
+            callback(params)
+        };
+        let callback_id = TEST_RUNTIME.lock().unwrap().gen_callback_id();
+        TEST_RUNTIME
             .lock()
             .unwrap()
+            .callbacks
             .insert(callback_id, Box::new(callback));
         unsafe {
             tc_json_request_async(
@@ -373,7 +387,7 @@ impl TestClient {
             ParamsOfUnregisterCallback { callback_id },
         );
 
-        CALLBACKS.lock().unwrap().remove(&callback_id);
+        TEST_RUNTIME.lock().unwrap().callbacks.remove(&callback_id);
     }
 
     pub(crate) fn request_no_params<R: DeserializeOwned>(&self, method: &str) -> R {
@@ -442,12 +456,92 @@ impl TestClient {
         }
     }
 
+    pub(crate) async fn get_grams_from_giver_async(&self, account: &str, value: Option<u64>) {
+        let run_result: ResultOfRun = if Self::node_se() {
+            self.request_async(
+                "contracts.run",
+                ParamsOfRun {
+                    address: Self::giver_address().into(),
+                    call_set: RunFunctionCallSet {
+                        abi: Self::giver_abi(),
+                        function_name: "sendGrams".to_owned(),
+                        header: None,
+                        input: json!({
+                            "dest": account,
+                            "amount": value.unwrap_or(500_000_000u64)
+                        }),
+                    },
+                    key_pair: None,
+                    try_index: None,
+                },
+            )
+            .await
+        } else {
+            self.request_async(
+                "contracts.run",
+                ParamsOfRun {
+                    address: Self::wallet_address().into(),
+                    call_set: RunFunctionCallSet {
+                        abi: Self::giver_abi(),
+                        function_name: "sendTransaction".to_owned(),
+                        header: None,
+                        input: json!({
+                            "dest": account.to_string(),
+                            "value": value.unwrap_or(500_000_000u64),
+                            "bounce": false
+                        }),
+                    },
+                    key_pair: Self::wallet_keys(),
+                    try_index: None,
+                },
+            )
+            .await
+        };
+
+        // wait for grams recieving
+        for message in run_result.transaction["out_messages"].as_array().unwrap() {
+            let message: ton_sdk::Message = serde_json::from_value(message.clone()).unwrap();
+            if ton_sdk::MessageType::Internal == message.msg_type() {
+                let _: ResultOfWaitForCollection = self
+                    .request_async(
+                        "queries.wait_for_collection",
+                        ParamsOfWaitForCollection {
+                            collection: "transactions".to_owned(),
+                            filter: Some(json!({
+                                "in_msg": { "eq": message.id()}
+                            })),
+                            result: "id".to_owned(),
+                            timeout: Some(ton_sdk::types::DEFAULT_WAIT_TIMEOUT),
+                        },
+                    )
+                    .await;
+            }
+        }
+    }
+
     pub(crate) fn deploy_with_giver(&self, params: ParamsOfDeploy, value: Option<u64>) -> String {
         let msg: EncodedMessage = self.request("contracts.deploy.message", params.clone());
 
         self.get_grams_from_giver(&msg.address.unwrap(), value);
 
         let result: ResultOfDeploy = self.request("contracts.deploy", params);
+
+        result.address
+    }
+
+    pub(crate) async fn deploy_with_giver_async(
+        &self,
+        params: ParamsOfDeploy,
+        value: Option<u64>,
+    ) -> String {
+        let msg: EncodedMessage = self
+            .request_async("contracts.deploy.message", params.clone())
+            .await;
+
+        self.get_grams_from_giver_async(&msg.address.unwrap(), value)
+            .await;
+
+        let result: ResultOfDeploy = self.request_async("contracts.deploy", params).await;
 
         result.address
     }

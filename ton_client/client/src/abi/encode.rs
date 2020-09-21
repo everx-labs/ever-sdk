@@ -15,10 +15,10 @@ use ton_sdk::{ContractImage, FunctionCallSet};
 
 #[derive(Serialize, Deserialize, Clone, Debug, TypeInfo)]
 pub struct DeploySet {
-    /// Target workchain for destination address. Default is `0`.
-    pub workchain_id: Option<i32>,
     /// Content of TVC file. Must be encoded with `base64`.
     pub tvc: String,
+    /// Target workchain for destination address. Default is `0`.
+    pub workchain_id: Option<i32>,
     /// List of initial values for contract public variables.
     pub initial_data: Option<Value>,
 }
