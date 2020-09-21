@@ -1,15 +1,16 @@
+use crate::abi::ParamsOfEncodeMessage;
 use crate::client::ClientContext;
-use crate::error::{ApiResult, ApiError};
+use crate::error::{ApiError, ApiResult};
 use serde_json::Value;
 use std::sync::Arc;
-use crate::abi::ParamsOfEncodeMessage;
+use ton_sdk::{Contract, SdkMessage};
 
 //-------------------------------------------------------------------------------- process_message
 
 #[derive(Serialize, Deserialize, TypeInfo, Debug)]
 pub enum MessageSource {
     Message(String),
-    EncodingParams(ParamsOfEncodeMessage)
+    EncodingParams(ParamsOfEncodeMessage),
 }
 
 #[derive(Serialize, Deserialize, TypeInfo, Debug)]
@@ -96,19 +97,42 @@ pub struct ResultOfProcessMessage {
     pub transaction: Option<Value>,
 }
 
+fn send_event(
+    context: &Arc<ClientContext>,
+    callback: &Option<CallbackParams>,
+    event: fn() -> MessageProcessingEvent,
+) {
+    if let Some(callback) = callback {
+        let _ = context.send_callback_result(callback.id.clone(), event());
+    }
+}
+
+fn create_message(
+    context: &Arc<ClientContext>,
+    source: &MessageSource,
+    callback: &Option<CallbackParams>,
+) -> ApiError<SdkMessage> {
+    let boc = match source {
+        MessageSource::Message(boc) => boc.clone(),
+        MessageSource::EncodingParams(encode_params) => {
+            send_event(context, callback, || MessageProcessingEvent::EncodeMessage);
+            crate::abi::encode_message(context.clone(), encode_params.clone())?
+        }
+    };
+}
+
 pub async fn process_message(
     context: Arc<ClientContext>,
     params: ParamsOfProcessMessage,
 ) -> ApiResult<ResultOfProcessMessage> {
-    let send_event = |event|{
-        if let Some(callback) = params.callback.as_ref() {
-            let _ = context.send_callback_result(callback.id.clone(), event);
+    let mut retry_count = 0;
+    loop {
+        let message = create_message(&context, &params.message, &params.callback)?;
+        let result = Contract::process_message(client, &msg, true).await;
+        match result {
+            Ok(_) => Ok(ResultOfProcessMessage { transaction: None }),
+            Err(err) => return Err(err?),
         }
-    };
-    send_event(MessageProcessingEvent::EncodeMessage);
-    send_event(MessageProcessingEvent::WaitTransaction);
-    Ok(ResultOfProcessMessage{
-        transaction: Some(json!({"id":"1"})),
-    })
+        retry_count += 1;
+    }
 }
-
