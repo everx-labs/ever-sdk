@@ -7,6 +7,7 @@ pub enum ErrorCode {
     InvalidHex = CLIENT + 2,
     InvalidBase64 = CLIENT + 3,
     InvalidAddress = CLIENT + 4,
+    CallbackParamsCantBeConvertedToJson = CLIENT + 5,
 }
 pub struct Error;
 
@@ -37,6 +38,13 @@ impl Error {
         error(
             ErrorCode::InvalidAddress,
             format!("Invalid address [{}]: {}", err, address),
+        )
+    }
+
+    pub fn callback_params_cant_be_converted_to_json<E: Display>(err: E) -> ApiError {
+        error(
+            ErrorCode::CallbackParamsCantBeConvertedToJson,
+            format!("Callback params can't be converted to json: {}", err),
         )
     }
 }
