@@ -10,16 +10,27 @@
 
 # What is Core Library
 
-Core Library is a library written in Rust that can be dynamicly linked. Provides all heavy-computation components and functions, such as TON Virtual Machine, TON Transaction Executor, ABI-related functions, boc-related functions, crypto functions. 
-The desicion to create the Core Rust Library was made after a period of time using pure JavaScript to implement these use cases. 
+Core Library is a library written in Rust that can be dynamically linked. It provides all heavy-computation components and functions, such as TON Virtual Machine, TON Transaction Executor, ABI-related functions, boc-related functions, crypto functions. 
+The decision to create the Core Rust Library was made after a period of time using pure JavaScript to implement these use cases. 
 We ended up with very slow work of pure JavaScript and decided to move all this to Rust library and link it to Javascript as a compiled binary including a wasm module for browser applications. 
 
-Also this approach provides an apportunity to easily create bindings for any programming language and platform, thus, to make it possible to develop distributed applications (DApps) for any possible use-cases such as: mobile DApps, web DApps, server-side DApps, enterprise DApp etc.
+Also this approach provides an apportunity to easily create bindings for any programming language and platform, thus, to make it possible to develop distributed applications (DApps) for any possible use-cases, such as: mobile DApps, web DApps, server-side DApps, enterprise DApp etc.
 Core Client Library exposes all the functionality through a few of exported functions. All interaction with core library is performed using OPEN-RPC like protocol.
+
+Core library works over GraphQL API of [TON OS Dapp Server](https://github.com/tonlabs/TON-OS-DApp-Server). 
+So, it can be used to interact directly with TON OS Clouds: 
+- [Freeton](https://main.ton.dev/graphql)
+- [Devnet](https://net.ton.dev/graphql)
+- [Testnet](https://testnet.ton.dev/graphql)
 
 # What is Binding
 
 Binding is a thin client library written on the specific language that acts like a bridge between a core library and an application code written on that language.
+
+- [Web binding](https://github.com/tonlabs/ton-client-web-js)  
+- [Node.js binding](https://github.com/tonlabs/ton-client-node-js)  
+- [React-native binding](https://github.com/tonlabs/ton-client-react-native-js)  
+- [Rust binding](https://github.com/tonlabs/ton-client-rs)  
 
 # Build Core Library
 
