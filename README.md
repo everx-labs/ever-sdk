@@ -9,7 +9,7 @@
 
 # What is Core Library
 
-Core Library is a library written in Rust that can be dynamicly linked. Provides all heady-computation components and functions, such as TON Virtual Machine, TON Transaction Executor, ABI-related functions, boc-related functions, crypto functions. 
+Core Library is a library written in Rust that can be dynamicly linked. Provides all heavy-computation components and functions, such as TON Virtual Machine, TON Transaction Executor, ABI-related functions, boc-related functions, crypto functions. 
 The desicion to create the Core Rust Library was made after a period of time using pure JavaScript to implement these use cases. 
 We ended up with very slow work of pure JavaScript and decided to move all this to Rust library and link it to Javascript as a compiled binary including a wasm module for browser applications. 
 
