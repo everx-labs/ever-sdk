@@ -128,8 +128,8 @@ pub(crate) fn hex_decode(hex: &String) -> ApiResult<Vec<u8>> {
     }
 }
 
-pub(crate) fn base64_decode(base64: &String) -> ApiResult<Vec<u8>> {
-    base64::decode(base64).map_err(|err| client::Error::invalid_base64(&base64, err))
+pub(crate) fn base64_decode(base64: &str) -> ApiResult<Vec<u8>> {
+    base64::decode(base64).map_err(|err| client::Error::invalid_base64(base64, err))
 }
 
 pub(crate) fn long_num_to_json_string(num: u64) -> String {

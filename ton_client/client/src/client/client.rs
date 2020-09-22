@@ -23,6 +23,7 @@ use ton_sdk::NodeClient;
 
 use crate::client::Error;
 use crate::get_api;
+use chrono::Utc;
 
 lazy_static! {
     static ref HANDLERS: DispatchTable = create_handlers();
@@ -118,6 +119,10 @@ pub struct ClientContext {
 
 #[cfg(feature = "node_interaction")]
 impl ClientContext {
+    pub fn now(&self) -> u32 {
+        Utc::now().timestamp() as u32
+    }
+
     pub fn get_client(&self) -> ApiResult<&NodeClient> {
         self.client.as_ref().ok_or(ApiError::sdk_not_init())
     }

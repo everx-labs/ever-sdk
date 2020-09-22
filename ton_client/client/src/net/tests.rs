@@ -31,7 +31,7 @@ async fn process_message() {
     let result: ResultOfProcessMessage = client.request_async(
         "net.process_message",
         ParamsOfProcessMessage {
-            message: MessageSource::EncodingParams(ParamsOfEncodeMessage {
+            message: MessageSource::AbiEncoding(ParamsOfEncodeMessage {
                 abi: abi.clone(),
                 address: None,
                 deploy_set: Some(DeploySet {
