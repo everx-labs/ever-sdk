@@ -4,14 +4,21 @@
 [![Chat on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/ton_sdk)  [![Gitter](https://badges.gitter.im/ton-sdk/community.svg)](https://gitter.im/ton-sdk/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 **Documentation**  
+
 [GraphQL API and SDK documentation](https://docs.ton.dev/86757ecb2/p/92b041-overview)
 
 # What is Core Library
 
-All TON SDK Client Libraries have following structure:
+Core Library is a library written in Rust that can be dynamicly linked. Provides all heady-computation components and functions, such as TON Virtual Machine, TON Transaction Executor, ABI-related functions, boc-related functions, crypto functions. 
+The desicion to create the Core Rust Library was made after a period of time using pure JavaScript to implement these use cases. 
+We ended up with very slow work of pure JavaScript and decided to move all this to Rust library and link it to Javascript as a compiled binary including a wasm module for browser applications. 
 
-- *Core* – is a library itself written on Rust. Provided as a dynamic link library and exposed all functionality through a couple of exported functions. All interaction with core library is performed using OPEN-RPC like protocol.
-- *Binding* – is a thin client library written on the specific language and acts like a bridge between a core library and an application code written on that language.
+Also this approach provides an apportunity to easily create bindings for any programming language and platform, thus, to make it possible to develop distributed applications (DApps) for any possible use-cases such as: mobile DApps, web DApps, server-side DApps, enterprise DApp etc.
+Core Client Library exposes all the functionality through a few of exported functions. All interaction with core library is performed using OPEN-RPC like protocol.
+
+# What is Binding
+
+Binding is a thin client library written on the specific language that acts like a bridge between a core library and an application code written on that language.
 
 # Build Core Library
 
