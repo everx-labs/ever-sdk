@@ -170,7 +170,7 @@ async fn subscribe_for_messages() {
         }
     ).await;
 
-    // client.get_grams_from_giver_async(&TestClient::get_giver_address(), None).await;
+    client.get_grams_from_giver_async(&TestClient::get_giver_address(), None).await;
 
     assert_eq!(messages.lock().unwrap().len(), 0);
 

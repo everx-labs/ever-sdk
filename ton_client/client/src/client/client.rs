@@ -156,7 +156,7 @@ pub struct CryptoConfig {
     pub fish_param: Option<String>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Default)]
 pub struct ClientConfig {
     pub network: Option<NetworkConfig>,
     pub crypto: Option<CryptoConfig>,
@@ -183,6 +183,54 @@ impl From<ClientConfig> for InternalClientConfig {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ResultOfCreateContext {
     pub handle: InteropContext,
+}
+
+#[cfg(feature = "node_interaction")]
+pub fn create_context(config: ClientConfig, handle: u32) -> ApiResult<ClientContext> {
+    let config: InternalClientConfig = config.into();
+
+    let client = if let Some(net_config) = &config.network {
+        if net_config.out_of_sync_threshold()
+            > config.abi.message_expiration_timeout() as i64 / 2
+        {
+            return Err(ApiError::invalid_params(
+                "",
+                format!(
+                    r#"`out_of_sync_threshold` can not be more then `message_expiration_timeout / 2`.
+`out_of_sync_threshold` = {}, `message_expiration_timeout` = {}
+Note that default values are used if parameters are omitted in config"#,
+                    net_config.out_of_sync_threshold(),
+                    config.abi.message_expiration_timeout()
+                ),
+            ));
+        }
+        Some(NodeClient::new(net_config.clone()))
+    } else {
+        None
+    };
+
+    let (async_runtime, async_runtime_handle) =
+        if let Ok(existing) = tokio::runtime::Handle::try_current() {
+            (None, existing)
+        } else {
+            let runtime = tokio::runtime::Builder::new()
+                .threaded_scheduler()
+                .enable_io()
+                .enable_time()
+                .build()
+                .map_err(|err| ApiError::cannot_create_runtime(err))?;
+            let runtime_handle = runtime.handle().clone();
+            (Some(runtime), runtime_handle)
+        };
+
+    Ok(ClientContext {
+        handle,
+        client,
+        async_runtime,
+        async_runtime_handle,
+        config,
+        callbacks: Default::default(),
+    })
 }
 
 impl Client {
@@ -215,55 +263,13 @@ impl Client {
     #[cfg(feature = "node_interaction")]
     fn create_context_internal(&mut self, config_str: String) -> ApiResult<ResultOfCreateContext> {
         let config: ClientConfig = crate::dispatch::parse_params(&config_str)?;
-        let config: InternalClientConfig = config.into();
-
-        let client = if let Some(net_config) = &config.network {
-            if net_config.out_of_sync_threshold()
-                > config.abi.message_expiration_timeout() as i64 / 2
-            {
-                return Err(ApiError::invalid_params(
-                    &config_str,
-                    format!(
-                        r#"`out_of_sync_threshold` can not be more then `message_expiration_timeout / 2`.
-`out_of_sync_threshold` = {}, `message_expiration_timeout` = {}
-Note that default values are used if parameters are omitted in config"#,
-                        net_config.out_of_sync_threshold(),
-                        config.abi.message_expiration_timeout()
-                    ),
-                ));
-            }
-            Some(NodeClient::new(net_config.clone()))
-        } else {
-            None
-        };
-
-        let (async_runtime, async_runtime_handle) =
-            if let Ok(existing) = tokio::runtime::Handle::try_current() {
-                (None, existing)
-            } else {
-                let runtime = tokio::runtime::Builder::new()
-                    .threaded_scheduler()
-                    .enable_io()
-                    .enable_time()
-                    .build()
-                    .map_err(|err| ApiError::cannot_create_runtime(err))?;
-                let runtime_handle = runtime.handle().clone();
-                (Some(runtime), runtime_handle)
-            };
 
         let handle = self.next_context_handle;
         self.next_context_handle = handle.wrapping_add(1);
 
         self.contexts.insert(
             handle,
-            Arc::new(ClientContext {
-                handle,
-                client,
-                async_runtime,
-                async_runtime_handle,
-                config,
-                callbacks: Default::default(),
-            }),
+            Arc::new(create_context(config, handle)?),
         );
 
         Ok(ResultOfCreateContext { handle })
