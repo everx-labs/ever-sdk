@@ -61,7 +61,7 @@ fn field_from_fn_arg(a: &FnArg) -> api::Field {
 fn type_from_return_type(return_type: &ReturnType) -> api::Type {
     match return_type {
         ReturnType::Type(_, ref ty) => type_from(ty),
-        _ => api::Type::None
+        _ => api::Type::None {}
     }
 }
 

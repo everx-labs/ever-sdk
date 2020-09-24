@@ -1,4 +1,7 @@
 use crate::error::ApiError;
+use crate::net::process_message::TransactionWaitingState;
+use serde_json::Value;
+
 const NET: isize = ApiError::NET; // 500
 
 pub enum ErrorCode {
@@ -10,6 +13,10 @@ pub struct Error;
 
 fn error(code: ErrorCode, message: String) -> ApiError {
     ApiError::with_code_message(code as isize, message)
+}
+
+fn error_with_data(code: ErrorCode, message: String, data: Value) -> ApiError {
+    ApiError::with_code_message_data(code as isize, message, data)
 }
 
 impl Error {
@@ -24,6 +31,27 @@ impl Error {
         error(
             ErrorCode::MessageHasNotDestinationAddress,
             "Message can't be sent because it hasn't destination address".into(),
+        )
+    }
+
+    pub fn fetch_block_failed(
+        message_id: &str,
+        waiting_state: &TransactionWaitingState,
+        timeout: u32,
+    ) -> ApiError {
+        let block_id = waiting_state
+            .expiration
+            .as_ref()
+            .map(|x| x.last_checked_block_id);
+        error_with_data(
+            ErrorCode::fetch_block_failed,
+            "".into(),
+            json!({
+                "message_id": message_id,
+                "message_sending_time": waiting_state.message_senging_time,
+                "last_checked_block_id": block_id,
+                "timeout": timeout,
+            }),
         )
     }
 }

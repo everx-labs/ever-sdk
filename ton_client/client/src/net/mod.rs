@@ -21,10 +21,13 @@ mod process_message;
 
 pub use errors::{Error, ErrorCode};
 pub use process_message::{
-    process_message, CallbackParams, MessageMonitoringOptions, MessageProcessingContext,
-    MessageProcessingEvent, MessageSource, ParamsOfProcessMessage, ResultOfProcessMessage,
+    process_message, CallbackParams, MessageMonitoringOptions, MessageProcessingEvent,
+    MessageSource, ParamsOfProcessMessage, ResultOfProcessMessage,
 };
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
+    handlers.register_api_types("net", vec![
+        CallbackParams::type_info,
+    ]);
     handlers.spawn("net.process_message", process_message);
 }

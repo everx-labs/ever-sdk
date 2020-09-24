@@ -1,7 +1,7 @@
 extern crate serde_derive;
 
-use serde_derive::{Serialize, Deserialize};
 use crate::reflect::TypeInfo;
+use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -23,7 +23,11 @@ pub struct Method {
 }
 
 impl Method {
-    pub fn from_types<P, R>(name: &str) -> Method where P: TypeInfo, R: TypeInfo {
+    pub fn from_types<P, R>(name: &str) -> Method
+    where
+        P: TypeInfo,
+        R: TypeInfo,
+    {
         let p = P::type_info();
         let r = R::type_info();
         Method {
@@ -57,7 +61,7 @@ pub struct Field {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ConstValue {
-    None,
+    None {},
     Bool(String),
     String(String),
     Number(String),
@@ -75,18 +79,19 @@ pub struct Const {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub enum Type {
-    None,
-    Any,
-    Boolean,
-    String,
-    Number,
-    BigInt,
+    None {},
+    Any {},
+    Boolean {},
+    String {},
+    Number {},
+    BigInt {},
     Ref(String),
     Optional(Box<Type>),
     Array(Box<Type>),
     Struct(Vec<Field>),
     EnumOfConsts(Vec<Const>),
     EnumOfTypes(Vec<Field>),
+    Generic { name: String, args: Vec<Type> },
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -96,5 +101,3 @@ pub struct Error {
     pub message: String,
     pub data: Type,
 }
-
-

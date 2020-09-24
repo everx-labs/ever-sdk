@@ -48,7 +48,6 @@ async fn process_message() {
                 }),
                 signing: MessageSigning::Keys(keys),
             }),
-            context: None,
             callback: Some(CallbackParams {
                 id: callback_id,
                 unregister: true,

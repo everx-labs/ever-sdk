@@ -10,7 +10,7 @@ impl TypeInfo for String {
             name: "string".into(),
             summary: None,
             description: None,
-            value: Type::String,
+            value: Type::String {},
         }
     }
 }
@@ -21,7 +21,7 @@ impl TypeInfo for &str {
             name: "string".into(),
             summary: None,
             description: None,
-            value: Type::String,
+            value: Type::String {},
         }
     }
 }
@@ -32,7 +32,7 @@ impl TypeInfo for u16 {
             name: "u16".into(),
             summary: None,
             description: None,
-            value: Type::Number,
+            value: Type::Number {},
         }
     }
 }
@@ -43,7 +43,7 @@ impl TypeInfo for u32 {
             name: "u32".into(),
             summary: None,
             description: None,
-            value: Type::Number,
+            value: Type::Number {},
         }
     }
 }
@@ -54,7 +54,7 @@ impl TypeInfo for bool {
             name: "boolean".into(),
             summary: None,
             description: None,
-            value: Type::Boolean,
+            value: Type::Boolean {},
         }
     }
 }
@@ -65,7 +65,7 @@ impl TypeInfo for () {
             name: "unit".into(),
             summary: None,
             description: None,
-            value: Type::None,
+            value: Type::None {},
         }
     }
 }
@@ -76,7 +76,7 @@ impl TypeInfo for API {
             name: "API".into(),
             summary: None,
             description: None,
-            value: Type::None,
+            value: Type::None {},
         }
     }
 }

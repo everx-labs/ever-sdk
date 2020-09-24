@@ -17,109 +17,83 @@ use ton_sdk::{
 pub struct CallbackParams {
     /// Callback ID.
     pub id: u32,
-    /// Automatically unregister callback after process have been finished.
-    pub unregister: bool,
+    /// Determine that callback must stay registered after operation has been finished.
+    /// By default the callback will automatically unregistered.
+    pub stay_registered: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo, Debug, Clone)]
-pub enum MessageProcessingEventType {
-    /// Reports that message BOC will be encoded.
-    /// Event occurs only for message source `AbiEncoding`.
-    /// Event can occurs more than one time for messages with `expiration` replay protection
-    /// in case of retries.
-    EncodeMessage,
-    /// Reports that account related block will be fetched from network.
-    /// Event occurs only for message with `expiration` replay protection.
+pub enum MessageProcessingEvent {
+    /// Notifies the app that the client will fetch the current
+    /// shard block from network.
     /// Fetched block will be used later in waiting phase.
-    FetchBlock,
-    /// Reports that the starting block can't be fetched due to error.
-    /// Messaged processing has finished.
-    FetchBlockFailed,
-    /// Reports that the message will be sent to the network.
-    SendMessage,
-    /// Reports that the message can't be sent due to network error.
-    /// Processing will be continued at waiting phase.
-    SendMessageFailed,
-    /// Reports that next account related block will be fetched from network.
-    /// Event occurs only for messages with `expiration` replay protection.
+    WillFetchFirstBlock {},
+    /// Notifies the app that the client has failed to fetch current shard block.
+    /// Message processing has finished.
+    FetchFirstBlockFailed { error: ApiError },
+    /// Notifies the app that client will send the message to the network.
+    WillSend {
+        message_id: String,
+        state: TransactionWaitingState,
+    },
+    /// Notifies the app that the sending operation was
+    /// failed with network error.
+    /// Processing will be continued at waiting phase because
+    /// the message possibly has been delivered to the node.
+    SendFailed {
+        state: TransactionWaitingState,
+        error: ApiError,
+    },
+    /// Notifies the app that the client will fetch the next
+    /// shard block from the network.
     /// Event can occurs more than one time due to block walking procedure.
-    WaitFetchBlock,
-    /// Reports that the next block can't be fetched due to error.
-    /// Event occurs only for messages with `expiration` replay protection.
-    /// Processing will be continued after network resuming timeout.
-    WaitFetchBlockFailed,
-    /// Reports that the message was expired.
+    WillFetchNextBlock {
+        state: TransactionWaitingState,
+    },
+    /// Notifies the app that the next block can't be fetched due to error.
+    /// Processing will be continued after `network_resume_timeout`.
+    FetchNextBlockFailed {
+        state: TransactionWaitingState,
+        error: ApiError,
+    },
+    /// Notifies the app that the message was expired.
     /// Event occurs for messages with `expiration` replay protection.
-    /// Processing will be continued after expiration retries timeout
-    /// at phase of encoding message.
-    MessageExpired,
-    /// Reports that the processing starts listening for a transaction.
-    /// Event occurs for message without `expiration` replay protection.
-    /// Processing will be continued after network resuming timeout.
-    WaitTransaction,
-    /// Reports that the transaction listening failed due to timeout or network error.
-    /// Event occurs for message without `expiration` replay protection.
-    /// Processing has finished with error.
-    WaitTransactionFailed,
-    /// Reports that the transaction received.
+    /// Processing will be continued at encoding message phase after
+    /// `expiration_retries_timeout`.
+    MessageHasExpired {
+        state: TransactionWaitingState,
+        error: ApiError,
+    },
+    /// Notifies the app that the client has received the transaction.
     /// Processing has finished.
-    TransactionReceived,
+    DidReceiveTransaction { transaction: ReceivedTransaction },
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Debug, Clone)]
-pub struct MessageProcessingEvent {
-    /// Event type.
-    event_type: MessageProcessingEventType,
-    /// Transaction waiting state.
-    transaction_waiting_state: TransactionWaitingState,
-    /// Error describing reason of the failure.
-    /// Presented in events that occurs when message processing
-    /// encounters an error which is not fatal.
-    /// Message processing will retry failed operation after this event.
-    error: Option<ApiError>,
-    /// Cancellation token. Application can use this token to cancel message processing using
-    /// `client.cancel_operation` method.
-    cancellation_token: u32,
-}
-
-impl MessageProcessingEvent {
-    fn new(
-        event_type: MessageProcessingEventType,
-        transaction_waiting_state: TransactionWaitingState,
-        error: Option<ApiError>,
-        cancellation_token: u32,
-    ) -> Self {
-        Self {
-            event_type,
-            transaction_waiting_state,
-            error,
-            cancellation_token,
-        }
-    }
-}
-
-pub struct MessageMonitoringOptions {
-    /// `true` if message processing must monitor network until the transaction appears.
-    /// `false` if message processing must just send message to network.
-    pub transaction_required: bool,
+pub struct TransactionWaitingOptions {
+    /// Limit the retries count for failed network requests.
+    /// Negative value means infinite.
+    /// Default is -1.
+    pub network_retries_limit: Option<isize>,
+    /// Timeout between retries of failed network operations.
+    /// Default is 40000.
+    pub network_retries_timeout: Option<u64>,
     /// Limit the retries count for expired messages.
-    pub expiration_retries_limit: Option<u32>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct ExpirationWaitingState {
-    /// The last shard block received before the message was sent
-    /// or the last shard block checked for the resulting transaction
-    /// after the message was sent.
-    last_checked_block_id: String,
+    /// Negative value means infinite.
+    /// Default is 8.
+    pub expiration_retries_limit: Option<isize>,
+    /// Limit the retries count for expired messages.
+    /// Default is 40000.
+    pub expiration_retries_timeout: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct TransactionWaitingState {
-    /// The waiting state for messages with `expiration` replay protection.
-    expiration: Option<ExpirationWaitingState>,
+    /// The last shard block received before the message was sent
+    /// or the last shard block checked for the resulting transaction
+    /// after the message was sent.
+    pub last_checked_block_id: String,
     /// The time when the message was sent.
-    message_sending_time: u32,
+    pub message_sending_time: u32,
 }
 
 //----------------------------------------------------------------------------------- send_message
@@ -137,13 +111,14 @@ pub struct ParamsOfSendMessage {
 
 #[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug)]
 pub struct ResultOfSendMessage {
-    pub transaction_waiting_state: TransactionWaitingState,
+    pub waiting_state: TransactionWaitingState,
 }
 
 pub async fn send_message(
     context: Arc<ClientContext>,
     params: ParamsOfSendMessage,
 ) -> ApiResult<ResultOfSendMessage> {
+    // Check for already expired
     let now = context.now();
     if let Some(message_expiration_time) = params.message_expiration_time {
         if message_expiration_time <= now {
@@ -151,6 +126,7 @@ pub async fn send_message(
         }
     }
 
+    // Encode message
     let boc = base64_decode(&params.message)?;
     let message = Contract::deserialize_message(&boc)?;
     let id = get_message_id(&message)?;
@@ -167,14 +143,25 @@ pub async fn send_message(
             last_checked_block_id: Block::find_last_shard_block(client, &address).await?.into(),
         });
     }
+
+    // Send
     let mut transaction_waiting_state = TransactionWaitingState {
         expiration,
         message_sending_time: context.now(),
     };
     emit_event(&context, &params.callback, || {
-        MessageProcessingEvent::SendMessage(transaction_waiting_state.clone())
+        MessageProcessingEvent::SendMessage {
+            transaction_waiting_state: transaction_waiting_state.clone(),
+        }
     });
-    client.send_message(&id, &boc).await?;
+    if let Err(error) = client.send_message(&id, &boc).await? {
+        emit_event(&context, &params.callback, || {
+            MessageProcessingEvent::SendMessageFailed {
+                transaction_waiting_state: transaction_waiting_state.clone(),
+                error,
+            }
+        })
+    }
     Ok(ResultOfSendMessage {
         transaction_waiting_state,
     })
@@ -207,9 +194,8 @@ pub struct ParamsOfWaitForTransaction {
 #[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug)]
 pub enum ResultOfWaitForTransaction {
     Complete(ReceivedTransaction),
-    Incomplete(TransactionWaitingState, ApiError),
+    Incomplete(TransactionWaitingState),
 }
-
 
 pub async fn wait_for_transaction(
     context: Arc<ClientContext>,
@@ -221,50 +207,53 @@ pub async fn wait_for_transaction(
         None => context.now() + client.config().message_processing_timeout() / 1000,
     };
 
+    let message = Contract::deserialize_message(&base64_decode(&params.message)?)?;
+    let id = get_message_id(&message)?;
+    let address = message
+        .dst()
+        .ok_or(Error::message_has_not_destination_address())?;
     let mut transaction = Value::Null;
     let add_timeout = client.config().message_processing_timeout();
+    let mut waiting_state = params.transaction_waiting_state;
     loop {
         let now = context.now();
         let timeout = std::cmp::max(stop_time, now) - now + add_timeout;
+        emit_event(&context, &params.callback, || {
+            MessageProcessingEvent::FetchBlock {}
+        });
         let result = Block::wait_next_block(
             client,
-            &processing_context.last_block_id,
+            &waiting_state.last_block_id,
             &address,
             Some(timeout),
         )
         .await;
         let block = match result {
             Err(err) => {
-                log::debug!("wait_next_block error {}", err);
+                emit_event(&context, &params.callback, || {
+                    MessageProcessingEvent::FetchBlockFailed { error }
+                });
                 if let Some(&SdkError::WaitForTimeout) = err.downcast_ref::<SdkError>() {
                     if infinite_wait {
-                        log::warn!(
-                            "Block awaiting timeout. Trying again. Current block {}",
-                            processing_context.last_block_id
-                        );
                         continue;
-                    } else {
-                        fail!(SdkError::NetworkSilent {
-                            msg_id: message_id.clone(),
-                            block_id: state.last_block_id.clone(),
-                            timeout,
-                            state
-                        });
                     }
+                    return Err(Error::fetch_block_failed(
+                        &message_id,
+                        &waiting_state,
+                        timeout,
+                    ));
                 } else if let Some(GraphiteError::NetworkError(_)) =
                     err.downcast_ref::<GraphiteError>()
                 {
                     if infinite_wait {
-                        log::warn!(
-                            "Network error while awaiting next block for {}. Trying again.\n{}",
-                            processing_context.last_block_id,
-                            err
-                        );
                         futures_timer::Delay::new(std::time::Duration::from_secs(1)).await;
                         continue;
-                    } else {
-                        fail!(SdkError::ResumableNetworkError { state, error: err });
                     }
+                    return Err(Error::fetch_block_failed(
+                        &message_id,
+                        &waiting_state,
+                        timeout,
+                    ));
                 } else {
                     fail!(err);
                 }
@@ -420,13 +409,15 @@ pub async fn process_message(
         .await?;
         match result {
             ResultOfWaitForTransaction::Complete(transaction) => {
-                emit_event(&context, &params.callback, ||MessageProcessingEvent::TransactionReceived(transaction))
-            return Ok(ResultOfProcessMessage { transaction }),
+                emit_event(&context, &params.callback, || {
+                    MessageProcessingEvent::TransactionReceived {
+                        transaction: transaction.clone(),
+                    }
+                });
+                return Ok(ResultOfProcessMessage { transaction });
             }
 
-            Result
-            Ok(_) => Ok(ResultOfProcessMessage { transaction: None }),
-            Err(err) => return Err(err?),
+            ResultOfWaitForTransaction::Incomplete(waiting_state) => {}
         }
         retry_count += 1;
     }

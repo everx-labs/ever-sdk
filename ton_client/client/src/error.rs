@@ -4,6 +4,7 @@ use std::fmt::Display;
 use ton_block::{AccStatusChange, ComputeSkipReason, MsgAddressInt};
 use ton_sdk::{MessageProcessingState};
 use ton_types::ExceptionCode;
+use serde_json::Value;
 
 fn format_time(time: u32) -> String {
     format!(
@@ -93,6 +94,17 @@ impl ApiError {
             message,
             message_processing_state: None,
             data: serde_json::Value::Null,
+        }
+    }
+
+    pub fn with_code_message_data(code: isize, message: String, data: Value) -> Self {
+        Self {
+            core_version: env!("CARGO_PKG_VERSION").to_owned(),
+            source: ApiErrorSource::Client.to_string(),
+            code,
+            message,
+            message_processing_state: None,
+            data,
         }
     }
 
