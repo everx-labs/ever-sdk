@@ -1,6 +1,7 @@
 use crate::error::ApiError;
 use crate::net::process_message::TransactionWaitingState;
 use serde_json::Value;
+use crate::net::types::TransactionWaitingState;
 
 const NET: isize = ApiError::NET; // 500
 
@@ -37,7 +38,6 @@ impl Error {
     pub fn fetch_block_failed(
         message_id: &str,
         waiting_state: &TransactionWaitingState,
-        timeout: u32,
     ) -> ApiError {
         let block_id = waiting_state
             .expiration
@@ -50,7 +50,6 @@ impl Error {
                 "message_id": message_id,
                 "message_sending_time": waiting_state.message_senging_time,
                 "last_checked_block_id": block_id,
-                "timeout": timeout,
             }),
         )
     }

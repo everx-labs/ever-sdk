@@ -123,6 +123,14 @@ impl ClientContext {
         Utc::now().timestamp() as u32
     }
 
+    pub fn now_ms(&self) -> u64 {
+        Utc::now().timestamp_millis() as u64
+    }
+
+    pub fn delay_ms(&self, ms: u64) -> i64 {
+        futures_timer::Delay::new(std::time::Duration::from_millis(ms))
+    }
+
     pub fn get_client(&self) -> ApiResult<&NodeClient> {
         self.client.as_ref().ok_or(ApiError::sdk_not_init())
     }

@@ -18,6 +18,11 @@ mod tests;
 
 mod errors;
 mod process_message;
+mod types;
+mod internal;
+mod wait_for_transaction;
+mod send_message;
+mod defaults;
 
 pub use errors::{Error, ErrorCode};
 pub use process_message::{
