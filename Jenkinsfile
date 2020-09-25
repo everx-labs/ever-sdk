@@ -161,14 +161,14 @@ def changeParam(sKey, setValue) {
     echo "Adding to G_params: ${item}"
     G_params.push(item)
     //change in G_images
-    def imagesKey = sKey.replaceAll('image_','').replaceAll('-','_').toLowerCase()
+    def imagesKey = sKey.replaceAll('image_','').replaceAll('_','-').toLowerCase()
     if(G_images.containsKey(imagesKey)) {
         G_images[imagesKey] = setValue
     } else {
         G_images.put(imagesKey, setValue)
     }
     println """Changing param
-G_params[${findParam(paramName)}]: ${G_params[findParam(paramName)]}
+G_params for ${sKey}: ${G_params}
 G_images[${imagesKey}]: ${G_images[imagesKey]}"""
 }
 
