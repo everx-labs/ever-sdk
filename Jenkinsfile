@@ -190,6 +190,12 @@ def fetchJobData(job_data) {
                 case "TON_LABS_BLOCK":
                     changeParam('image_ton_labs_block', "${val}")
                     break
+                case "TON_BLOCK_JSON":
+                    changeParam('image_ton_block_json', "${val}")
+                    break
+                case "TON_LABS_BLOCK_JSON":
+                    changeParam('image_ton_labs_block_json', "${val}")
+                    break
                 case "TON_VM":
                     changeParam('image_ton_vm', "${val}")
                     break
