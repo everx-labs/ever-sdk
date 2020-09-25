@@ -2,9 +2,9 @@ use crate::abi::ParamsOfEncodeMessage;
 use crate::client::ClientContext;
 use crate::encoding::base64_decode;
 use crate::error::{ApiError, ApiResult};
-use crate::net::internal::{emit_event, get_message_id};
-use crate::net::types::{CallbackParams, MessageProcessingEvent, TransactionWaitingState};
-use crate::net::Error;
+use crate::processing::internal::{get_message_id};
+use crate::processing::types::{CallbackParams, ProcessingEvent, ProcessingState};
+use crate::processing::Error;
 use serde_json::Value;
 use std::sync::Arc;
 use ton_block::MsgAddressInt;
@@ -28,9 +28,10 @@ pub struct ParamsOfSendMessage {
 
 #[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug)]
 pub struct ResultOfSendMessage {
-    pub waiting_state: TransactionWaitingState,
+    pub waiting_state: ProcessingState,
 }
 
+#[method_info(name = "processing.send_message")]
 pub async fn send_message(
     context: Arc<ClientContext>,
     params: ParamsOfSendMessage,
@@ -47,35 +48,41 @@ pub async fn send_message(
 
     // Encode message
     let message_boc = base64_decode(&params.message)?;
-    let message = Contract::deserialize_message(&message_boc)?;
+    let message = Contract::deserialize_message(&message_boc)
+        .map_err(|err| Error::invalid_message_boc(err))?;
     let message_id = get_message_id(&message)?;
     let address = message
         .dst()
         .ok_or(Error::message_has_not_destination_address())?;
 
     let client = context.get_client()?;
-    emit_event(&context, &params.callback, || {
-        MessageProcessingEvent::WillFetchFirstBlock {}
-    });
-    let mut waiting_state = TransactionWaitingState {
-        last_checked_block_id: Block::find_last_shard_block(client, &address).await?.into(),
-        message_sending_time: context.now_ms(),
+    if let Some(cb) = &params.callback {
+        ProcessingEvent::WillFetchFirstBlock {}.emit(&context, cb)
+    }
+    let waiting_state = ProcessingState {
+        last_checked_block_id: Block::find_last_shard_block(client, &address)
+            .await
+            .map_err(|err| Error::fetch_first_block_failed(err, &hex::encode(&message_id)))?
+            .to_string(),
+        message_sending_time: context.now_millis(),
     };
 
     // Send
-    emit_event(&context, &params.callback, || {
-        MessageProcessingEvent::WillSend {
+    if let Some(cb) = &params.callback {
+        ProcessingEvent::WillSend {
             waiting_state: waiting_state.clone(),
             message_id: hex::encode(&message_id),
         }
-    });
-    if let Err(error) = client.send_message(&message_id, &message_boc).await? {
-        emit_event(&context, &params.callback, || {
-            MessageProcessingEvent::SendFailed {
+        .emit(&context, cb)
+    }
+    if let Err(error) = client.send_message(&message_id, &message_boc).await {
+        if let Some(cb) = &params.callback {
+            ProcessingEvent::SendFailed {
                 waiting_state: waiting_state.clone(),
-                error,
+                error: Error::send_message_failed(error, &hex::encode(message_id), &waiting_state),
             }
-        })
+            .emit(&context, cb)
+        }
     }
 
     Ok(ResultOfSendMessage { waiting_state })

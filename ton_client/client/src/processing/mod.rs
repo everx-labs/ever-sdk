@@ -25,14 +25,17 @@ mod send_message;
 mod defaults;
 
 pub use errors::{Error, ErrorCode};
+pub use types::{CallbackParams, ProcessingEvent, ProcessingOptions, ProcessingState};
+pub use send_message::{send_message, send_message_method, ParamsOfSendMessage, ResultOfSendMessage};
 pub use process_message::{
-    process_message, CallbackParams, MessageMonitoringOptions, MessageProcessingEvent,
     MessageSource, ParamsOfProcessMessage, ResultOfProcessMessage,
 };
+use api_doc::reflect::TypeInfo;
+
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.register_api_types("net", vec![
+    handlers.register_api_types("processing", vec![
         CallbackParams::type_info,
     ]);
-    handlers.spawn("net.process_message", process_message);
+    handlers.spawn("processing.send_message", send_message);
 }

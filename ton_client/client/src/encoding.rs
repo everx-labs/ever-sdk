@@ -26,7 +26,7 @@ pub(crate) fn method_api(name: &str) -> api_doc::api::Method {
         summary: None,
         description: None,
         params: vec![],
-        result: api_doc::api::Type::None,
+        result: api_doc::api::Type::None {},
         errors: None,
     }
 }

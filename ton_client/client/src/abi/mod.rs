@@ -29,14 +29,14 @@ pub use decode::{
     decode_message, MessageContentType, ParamsOfDecodeMessage, ResultOfDecodeMessage,
 };
 pub use encode::{
-    attach_signature, encode_message, CallSet, DeploySet, ParamsOfAttachSignature,
+    attach_signature, encode_message, encode_message_method, CallSet, DeploySet, ParamsOfAttachSignature,
     ParamsOfEncodeMessage, ResultOfAttachSignature, ResultOfEncodeMessage,
 };
 pub use errors::{Error, ErrorCode};
-pub use signing::MessageSigning;
+pub use signing::Signer;
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.call("abi.encode_message", encode::encode_message);
+    handlers.spawn("abi.encode_message", encode::encode_message);
     handlers.call("abi.attach_signature", encode::attach_signature);
     handlers.call("abi.decode_message", decode::decode_message);
 }

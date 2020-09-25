@@ -14,7 +14,7 @@
 use super::InteropContext;
 use super::{tc_destroy_json_response, tc_read_json_response};
 use super::{tc_json_request, tc_json_request_async, InteropString};
-use crate::client::ParamsOfUnregisterCallback;
+use crate::client::{ClientContext, ParamsOfUnregisterCallback};
 use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
@@ -30,11 +30,12 @@ use crate::{
     queries::{ParamsOfWaitForCollection, ResultOfWaitForCollection},
     tc_create_context, tc_destroy_context, JsonResponse,
 };
+use futures::Future;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Value;
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc::{channel, Sender};
 
 mod common;
@@ -131,7 +132,36 @@ extern "C" fn on_callback(
     TestClient::callback(request_id, result_json, error_json)
 }
 
+pub struct ClientFunc<'a, P, R> {
+    client: &'a TestClient,
+    name: String,
+    p: std::marker::PhantomData<(P, R)>,
+}
+
+impl<'a, P: Serialize, R: DeserializeOwned> ClientFunc<'a, P, R> {
+    pub(crate) async fn request(&self, params: P) -> R {
+        self.client.request_async(&self.name, params).await
+    }
+}
+
 impl TestClient {
+    pub(crate) fn wrap_async<P, R, F>(
+        self: &TestClient,
+        _: fn(Arc<ClientContext>, P) -> F,
+        info: fn() -> api_doc::api::Method,
+    ) -> ClientFunc<P, R>
+    where
+        P: Serialize,
+        R: DeserializeOwned,
+        F: Future<Output = ApiResult<R>>,
+    {
+        ClientFunc {
+            client: self,
+            name: info().name,
+            p: std::marker::PhantomData::default(),
+        }
+    }
+
     fn read_abi(path: String) -> Value {
         serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap()
     }

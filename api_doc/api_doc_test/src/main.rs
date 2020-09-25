@@ -51,7 +51,7 @@ struct FooHandle(u32);
 
 #[method_info(name = "bar.baz")]
 /// This is baz method
-fn baz(_params: Foo) -> Result<Bar, Foo> {
+fn _baz(_params: Foo) -> Result<Bar, Foo> {
     Ok(Bar::default())
 }
 
@@ -66,5 +66,5 @@ fn main() {
     reflect::<EnumWithValues>();
     reflect::<EnumWithTypes>();
     reflect::<FooHandle>();
-    println!("{}", serde_json::to_string_pretty(&baz_method()).unwrap());
+    println!("{}", serde_json::to_string_pretty(&_baz_method()).unwrap());
 }

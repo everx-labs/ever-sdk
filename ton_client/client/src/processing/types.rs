@@ -1,11 +1,12 @@
 use crate::client::ClientContext;
 use crate::error::ApiError;
-use crate::net::defaults::{
+use crate::processing::defaults::{
     DEFAULT_EXPIRATION_RETRIES_LIMIT, DEFAULT_EXPIRATION_RETRIES_TIMEOUT,
     DEFAULT_NETWORK_RETRIES_LIMIT, DEFAULT_NETWORK_RETRIES_TIMEOUT,
 };
 use std::sync::Arc;
 use ton_sdk::{NetworkConfig, ReceivedTransaction};
+use serde_json::Value;
 
 #[derive(Serialize, Deserialize, TypeInfo, Debug, Clone)]
 pub struct CallbackParams {
@@ -16,8 +17,17 @@ pub struct CallbackParams {
     pub stay_registered: Option<bool>,
 }
 
+impl CallbackParams {
+    pub fn with_id(id: u32) -> Self {
+        Self {
+            id,
+            stay_registered: None,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, TypeInfo, Debug, Clone)]
-pub enum MessageProcessingEvent {
+pub enum ProcessingEvent {
     /// Notifies the app that the current shard block will be fetched from the network.
     /// Fetched block will be used later in waiting phase.
     WillFetchFirstBlock {},
@@ -29,27 +39,27 @@ pub enum MessageProcessingEvent {
     /// Notifies the app that the message will be sent to the network.
     WillSend {
         message_id: String,
-        waiting_state: TransactionWaitingState,
+        waiting_state: ProcessingState,
     },
 
     /// Notifies the app that the sending operation was failed with network error.
     /// Processing will be continued at waiting phase because
     /// the message possibly has been delivered to the node.
     SendFailed {
-        waiting_state: TransactionWaitingState,
+        waiting_state: ProcessingState,
         error: ApiError,
     },
 
     /// Notifies the app that the next shard block will be fetched from the network.
     /// Event can occurs more than one time due to block walking procedure.
     WillFetchNextBlock {
-        waiting_state: TransactionWaitingState,
+        waiting_state: ProcessingState,
     },
 
     /// Notifies the app that the next block can't be fetched due to error.
     /// Processing will be continued after `network_resume_timeout`.
     FetchNextBlockFailed {
-        state: TransactionWaitingState,
+        state: ProcessingState,
         error: ApiError,
     },
 
@@ -58,16 +68,23 @@ pub enum MessageProcessingEvent {
     /// Processing will be continued at encoding phase after
     /// `expiration_retries_timeout`.
     MessageExpired {
-        state: TransactionWaitingState,
+        state: ProcessingState,
         error: ApiError,
     },
 
     /// Notifies the app that the client has received the transaction.
     /// Processing has finished.
-    TransactionReceived { transaction: ReceivedTransaction },
+    TransactionReceived { transaction: Value },
 }
 
-pub struct TransactionWaitingOptions {
+impl ProcessingEvent {
+    pub fn emit(self, context: &Arc<ClientContext>, callback: &CallbackParams) {
+        let _ = context.send_callback_result(callback.id, self);
+    }
+}
+
+#[derive(Serialize, Deserialize, TypeInfo, Debug, Clone)]
+pub struct ProcessingOptions {
     /// Limit the retries count for failed network requests.
     /// Negative value means infinite.
     /// Default is -1.
@@ -84,37 +101,50 @@ pub struct TransactionWaitingOptions {
     pub expiration_retries_timeout: Option<isize>,
 }
 
-impl TransactionWaitingOptions {
+struct Configured<'a, O, C> {
+    options: Option<&'a O>,
+    config: Option<&'a C>,
+}
+
+impl<'a, O, C> Configured<'a, O, C> {
+    fn resolve<R>(
+        &self,
+        resolve_opt: fn(opt: &O) -> Option<R>,
+        resolve_cfg: fn(cfg: &C) -> Option<R>,
+        def: R,
+    ) -> R {
+        let opt = self.options.map_or(None, |x| resolve_opt(x));
+        let cfg = self.config.map_or(None, |x| resolve_cfg(x));
+        opt.or(cfg).unwrap_or(def)
+    }
+}
+
+impl ProcessingOptions {
     pub fn resolve(
-        options: &Option<TransactionWaitingOptions>,
+        options: &Option<ProcessingOptions>,
         context: &Arc<ClientContext>,
     ) -> (isize, isize, isize, isize) {
-        let resolve = |opt: fn(&TransactionWaitingOptions) -> Option<isize>,
-                       ctx: fn(&NetworkConfig) -> Option<isize>,
-                       def: isize| {
-            options
-                .as_ref()
-                .map_or(None, |x| opt(x))
-                .or(context.config.network.as_ref().map_or(None, |x| ctx(x)))
-                .unwrap_or(def)
+        let opts = Configured {
+            options: options.as_ref(),
+            config: context.config.network.as_ref(),
         };
         (
-            resolve(
+            opts.resolve(
                 |x| x.network_retries_limit,
                 |_| None,
                 DEFAULT_NETWORK_RETRIES_LIMIT,
             ),
-            resolve(
+            opts.resolve(
                 |x| x.network_retries_timeout,
                 |_| None,
                 DEFAULT_NETWORK_RETRIES_TIMEOUT,
             ),
-            resolve(
+            opts.resolve(
                 |x| x.expiration_retries_limit,
                 |x| Some(x.message_retries_count() as isize),
                 DEFAULT_EXPIRATION_RETRIES_LIMIT,
             ),
-            resolve(
+            opts.resolve(
                 |x| x.expiration_retries_timeout,
                 |x| Some(x.message_processing_timeout() as isize),
                 DEFAULT_EXPIRATION_RETRIES_TIMEOUT,
@@ -122,12 +152,13 @@ impl TransactionWaitingOptions {
         )
     }
 }
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct TransactionWaitingState {
+pub struct ProcessingState {
     /// The last shard block received before the message was sent
     /// or the last shard block checked for the resulting transaction
     /// after the message was sent.
     pub last_checked_block_id: String,
     /// The time when the message was sent.
-    pub message_sending_time: i64,
+    pub message_sending_time: u64,
 }

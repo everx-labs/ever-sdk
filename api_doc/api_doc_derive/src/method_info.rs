@@ -16,7 +16,7 @@ pub fn impl_method_info(attr: proc_macro::TokenStream, item: proc_macro::TokenSt
     let method_tokens = method_to_tokens(&method_from(&syn_meta, &syn_func));
 
     let method_fn = quote! {
-        fn #method_info_fn () -> Method {
+        pub fn #method_info_fn () -> api_doc::api::Method {
             #method_tokens
         }
     };

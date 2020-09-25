@@ -51,7 +51,7 @@ fn create_handlers() -> DispatchTable {
     crate::abi::register(&mut handlers);
     crate::tvm::register(&mut handlers);
     crate::boc::register(&mut handlers);
-    crate::net::register(&mut handlers);
+    crate::processing::register(&mut handlers);
 
     #[cfg(feature = "node_interaction")]
     crate::queries::register(&mut handlers);
@@ -123,12 +123,12 @@ impl ClientContext {
         Utc::now().timestamp() as u32
     }
 
-    pub fn now_ms(&self) -> u64 {
+    pub fn now_millis(&self) -> u64 {
         Utc::now().timestamp_millis() as u64
     }
 
-    pub fn delay_ms(&self, ms: u64) -> i64 {
-        futures_timer::Delay::new(std::time::Duration::from_millis(ms))
+    pub async fn delay_millis(&self, ms: u64) {
+        futures_timer::Delay::new(std::time::Duration::from_millis(ms)).await
     }
 
     pub fn get_client(&self) -> ApiResult<&NodeClient> {
