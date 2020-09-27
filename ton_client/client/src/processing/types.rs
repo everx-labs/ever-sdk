@@ -39,14 +39,14 @@ pub enum ProcessingEvent {
     /// Notifies the app that the message will be sent to the network.
     WillSend {
         message_id: String,
-        waiting_state: ProcessingState,
+        processing_state: ProcessingState,
     },
 
     /// Notifies the app that the sending operation was failed with network error.
     /// Processing will be continued at waiting phase because
     /// the message possibly has been delivered to the node.
     SendFailed {
-        waiting_state: ProcessingState,
+        processing_state: ProcessingState,
         error: ApiError,
     },
 

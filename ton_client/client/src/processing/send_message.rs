@@ -2,7 +2,7 @@ use crate::abi::ParamsOfEncodeMessage;
 use crate::client::ClientContext;
 use crate::encoding::base64_decode;
 use crate::error::{ApiError, ApiResult};
-use crate::processing::internal::{get_message_id};
+use crate::processing::internal::get_message_id;
 use crate::processing::types::{CallbackParams, ProcessingEvent, ProcessingState};
 use crate::processing::Error;
 use serde_json::Value;
@@ -21,14 +21,14 @@ pub struct ParamsOfSendMessage {
     pub message: String,
     /// Message expiration time.
     /// Used only for messages with `expiration` replay protection.
-    pub message_expiration_time: Option<u32>,
+    pub message_expiration_time: Option<u64>,
     /// Processing callback.
     pub callback: Option<CallbackParams>,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug)]
 pub struct ResultOfSendMessage {
-    pub waiting_state: ProcessingState,
+    pub processing_state: ProcessingState,
 }
 
 #[method_info(name = "processing.send_message")]
@@ -38,15 +38,14 @@ pub async fn send_message(
 ) -> ApiResult<ResultOfSendMessage> {
     // Check for already expired
     {
-        let now = context.now();
         if let Some(message_expiration_time) = params.message_expiration_time {
-            if message_expiration_time <= now {
+            if message_expiration_time <= context.now_millis() {
                 return Err(Error::message_already_expired());
             }
         }
     }
 
-    // Encode message
+    // Check message
     let message_boc = base64_decode(&params.message)?;
     let message = Contract::deserialize_message(&message_boc)
         .map_err(|err| Error::invalid_message_boc(err))?;
@@ -55,22 +54,35 @@ pub async fn send_message(
         .dst()
         .ok_or(Error::message_has_not_destination_address())?;
 
+    // Fetch current shard block
     let client = context.get_client()?;
     if let Some(cb) = &params.callback {
         ProcessingEvent::WillFetchFirstBlock {}.emit(&context, cb)
     }
-    let waiting_state = ProcessingState {
-        last_checked_block_id: Block::find_last_shard_block(client, &address)
-            .await
-            .map_err(|err| Error::fetch_first_block_failed(err, &hex::encode(&message_id)))?
-            .to_string(),
+    let last_checked_block_id = match Block::find_last_shard_block(client, &address).await {
+        Ok(block) => block.to_string(),
+        Err(err) => {
+            let error = Error::fetch_first_block_failed(err, &hex::encode(&message_id));
+            if let Some(cb) = &params.callback {
+                ProcessingEvent::FetchFirstBlockFailed {
+                    error: error.clone(),
+                }
+                .emit(&context, cb)
+            }
+            return Err(error);
+        }
+    };
+
+    // Initialize processing state
+    let processing_state = ProcessingState {
+        last_checked_block_id,
         message_sending_time: context.now_millis(),
     };
 
     // Send
     if let Some(cb) = &params.callback {
         ProcessingEvent::WillSend {
-            waiting_state: waiting_state.clone(),
+            processing_state: processing_state.clone(),
             message_id: hex::encode(&message_id),
         }
         .emit(&context, cb)
@@ -78,12 +90,12 @@ pub async fn send_message(
     if let Err(error) = client.send_message(&message_id, &message_boc).await {
         if let Some(cb) = &params.callback {
             ProcessingEvent::SendFailed {
-                waiting_state: waiting_state.clone(),
-                error: Error::send_message_failed(error, &hex::encode(message_id), &waiting_state),
+                processing_state: processing_state.clone(),
+                error: Error::send_message_failed(error, &hex::encode(message_id), &processing_state),
             }
             .emit(&context, cb)
         }
     }
 
-    Ok(ResultOfSendMessage { waiting_state })
+    Ok(ResultOfSendMessage { processing_state })
 }
