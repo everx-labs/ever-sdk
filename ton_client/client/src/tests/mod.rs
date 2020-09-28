@@ -132,14 +132,14 @@ extern "C" fn on_callback(
     TestClient::callback(request_id, result_json, error_json)
 }
 
-pub struct ClientFunc<'a, P, R> {
+pub struct AsyncFuncWrapper<'a, P, R> {
     client: &'a TestClient,
     name: String,
     p: std::marker::PhantomData<(P, R)>,
 }
 
-impl<'a, P: Serialize, R: DeserializeOwned> ClientFunc<'a, P, R> {
-    pub(crate) async fn request(&self, params: P) -> R {
+impl<'a, P: Serialize, R: DeserializeOwned> AsyncFuncWrapper<'a, P, R> {
+    pub(crate) async fn call(&self, params: P) -> R {
         self.client.request_async(&self.name, params).await
     }
 }
@@ -149,13 +149,13 @@ impl TestClient {
         self: &TestClient,
         _: fn(Arc<ClientContext>, P) -> F,
         info: fn() -> api_doc::api::Method,
-    ) -> ClientFunc<P, R>
+    ) -> AsyncFuncWrapper<P, R>
     where
         P: Serialize,
         R: DeserializeOwned,
         F: Future<Output = ApiResult<R>>,
     {
-        ClientFunc {
+        AsyncFuncWrapper {
             client: self,
             name: info().name,
             p: std::marker::PhantomData::default(),

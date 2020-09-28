@@ -50,6 +50,8 @@ pub async fn send_message(
     let message = Contract::deserialize_message(&message_boc)
         .map_err(|err| Error::invalid_message_boc(err))?;
     let message_id = get_message_id(&message)?;
+    let hex_message_id = hex::encode(&message_id);
+
     let address = message
         .dst()
         .ok_or(Error::message_has_not_destination_address())?;
@@ -62,7 +64,7 @@ pub async fn send_message(
     let last_checked_block_id = match Block::find_last_shard_block(client, &address).await {
         Ok(block) => block.to_string(),
         Err(err) => {
-            let error = Error::fetch_first_block_failed(err, &hex::encode(&message_id));
+            let error = Error::fetch_first_block_failed(err, &hex_message_id);
             if let Some(cb) = &params.callback {
                 ProcessingEvent::FetchFirstBlockFailed {
                     error: error.clone(),
@@ -83,18 +85,27 @@ pub async fn send_message(
     if let Some(cb) = &params.callback {
         ProcessingEvent::WillSend {
             processing_state: processing_state.clone(),
-            message_id: hex::encode(&message_id),
+            message_id: hex_message_id.clone(),
+            message: params.message.clone(),
         }
         .emit(&context, cb)
     }
-    if let Err(error) = client.send_message(&message_id, &message_boc).await {
-        if let Some(cb) = &params.callback {
-            ProcessingEvent::SendFailed {
+    let send_result = client.send_message(&message_id, &message_boc).await;
+    if let Some(cb) = &params.callback {
+        match send_result {
+            Ok(_) => ProcessingEvent::DidSend {
                 processing_state: processing_state.clone(),
-                error: Error::send_message_failed(error, &hex::encode(message_id), &processing_state),
-            }
-            .emit(&context, cb)
+                message_id: hex_message_id.clone(),
+                message: params.message.clone(),
+            },
+            Err(error) => ProcessingEvent::SendFailed {
+                processing_state: processing_state.clone(),
+                message_id: hex_message_id.clone(),
+                message: params.message.clone(),
+                error: Error::send_message_failed(error, &hex_message_id, &processing_state),
+            },
         }
+        .emit(&context, cb)
     }
 
     Ok(ResultOfSendMessage { processing_state })

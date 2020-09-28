@@ -10,7 +10,7 @@ use crate::processing::{
 use crate::tests::{TestClient, EVENTS};
 
 #[tokio::test(core_threads = 2)]
-async fn test_send_message() {
+async fn test_send_and_wait_message() {
     TestClient::init_log();
     let client = TestClient::new();
     let (events_abi, events_tvc) = TestClient::package(EVENTS, Some(2));
@@ -31,7 +31,7 @@ async fn test_send_message() {
     let send_message = client.wrap_async(send_message, send_message_method);
 
     let encoded = encode_message
-        .request(ParamsOfEncodeMessage {
+        .call(ParamsOfEncodeMessage {
             abi: abi.clone(),
             address: None,
             deploy_set: Some(DeploySet {
@@ -53,8 +53,9 @@ async fn test_send_message() {
     client
         .get_grams_from_giver_async(&encoded.address, None)
         .await;
+
     let result = send_message
-        .request(ParamsOfSendMessage {
+        .call(ParamsOfSendMessage {
             message: encoded.message,
             message_expiration_time: None,
             callback: Some(CallbackParams::with_id(callback_id)),
@@ -64,5 +65,18 @@ async fn test_send_message() {
     client.unregister_callback(callback_id);
     let events = events.lock().unwrap().clone();
     println!("{:?}", &events);
-    assert_eq!(events.len(), 2);
+    assert_eq!(events.len(), 3);
+    assert!(match events[0] {
+        ProcessingEvent::WillFetchFirstBlock {} => true,
+        _ => false,
+    });
+    assert!(match events[1] {
+        ProcessingEvent::WillSend { .. } => true,
+        _ => false,
+    });
+    assert!(match events[2] {
+        ProcessingEvent::DidSend {..} => true,
+        _ => false,
+    });
 }
+

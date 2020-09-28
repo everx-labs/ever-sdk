@@ -11,6 +11,8 @@ pub enum ErrorCode {
     FetchBlockFailed = PROCESSING + 4,
     SendMessageFailed = PROCESSING + 5,
     InvalidMessageBoc = PROCESSING + 6,
+    MessageExpired = PROCESSING + 7,
+    TransactionWaitTimeout = PROCESSING + 8,
 }
 
 pub struct Error;
@@ -42,12 +44,12 @@ impl Error {
         code: ErrorCode,
         message: String,
         message_id: &str,
-        waiting_state: Option<&ProcessingState>,
+        processing_state: Option<&ProcessingState>,
     ) -> ApiError {
         let mut data = json!({
             "message_id": message_id,
         });
-        if let Some(state) = waiting_state {
+        if let Some(state) = processing_state {
             data["message_sending_time"] = state.message_sending_time.clone().into();
             data["last_checked_block_id"] = state.last_checked_block_id.clone().into();
         }
@@ -66,26 +68,26 @@ impl Error {
     pub fn fetch_block_failed<E: std::fmt::Display>(
         err: E,
         message_id: &str,
-        waiting_state: &ProcessingState,
+        processing_state: &ProcessingState,
     ) -> ApiError {
         Self::processing_error(
             ErrorCode::FetchBlockFailed,
             format!("Fetch block failed: {}", err),
             message_id,
-            Some(waiting_state),
+            Some(processing_state),
         )
     }
 
     pub fn send_message_failed<E: std::fmt::Display>(
         err: E,
         message_id: &str,
-        waiting_state: &ProcessingState,
+        processing_state: &ProcessingState,
     ) -> ApiError {
         Self::processing_error(
             ErrorCode::SendMessageFailed,
             format!("Send message failed: {}", err),
             message_id,
-            Some(waiting_state),
+            Some(processing_state),
         )
     }
 
@@ -100,6 +102,27 @@ impl Error {
         error(
             ErrorCode::CanNotBuildMessageCell,
             format!("Can't build message cell: {}", err),
+        )
+    }
+
+    pub fn message_expired(message_id: &str, processing_state: &ProcessingState) -> ApiError {
+        Self::processing_error(
+            ErrorCode::MessageExpired,
+            "Message expired".into(),
+            message_id,
+            Some(processing_state),
+        )
+    }
+
+    pub fn transaction_wait_timeout(
+        message_id: &str,
+        processing_state: &ProcessingState,
+    ) -> ApiError {
+        Self::processing_error(
+            ErrorCode::TransactionWaitTimeout,
+            "Transaction wait timeout".into(),
+            message_id,
+            Some(processing_state),
         )
     }
 }

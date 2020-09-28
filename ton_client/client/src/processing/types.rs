@@ -4,9 +4,19 @@ use crate::processing::defaults::{
     DEFAULT_EXPIRATION_RETRIES_LIMIT, DEFAULT_EXPIRATION_RETRIES_TIMEOUT,
     DEFAULT_NETWORK_RETRIES_LIMIT, DEFAULT_NETWORK_RETRIES_TIMEOUT,
 };
+use serde_json::Value;
 use std::sync::Arc;
 use ton_sdk::{NetworkConfig, ReceivedTransaction};
-use serde_json::Value;
+
+#[derive(Serialize, Deserialize, TypeInfo, Debug, PartialEq, Clone)]
+pub struct TransactionResult {
+    /// Transaction BOC. Encoded with `base64`.
+    pub transaction: Value,
+    /// List of all output messages (BOCs). Encoded with `base64`.
+    pub out_messages: Vec<Value>,
+    /// Parsed body of the out message that contains the ABI function return value.
+    pub abi_return_value: Option<Value>,
+}
 
 #[derive(Serialize, Deserialize, TypeInfo, Debug, Clone)]
 pub struct CallbackParams {
@@ -38,8 +48,16 @@ pub enum ProcessingEvent {
 
     /// Notifies the app that the message will be sent to the network.
     WillSend {
-        message_id: String,
         processing_state: ProcessingState,
+        message_id: String,
+        message: String,
+    },
+
+    /// Notifies the app that the message was sent to the network.
+    DidSend {
+        processing_state: ProcessingState,
+        message_id: String,
+        message: String,
     },
 
     /// Notifies the app that the sending operation was failed with network error.
@@ -47,19 +65,25 @@ pub enum ProcessingEvent {
     /// the message possibly has been delivered to the node.
     SendFailed {
         processing_state: ProcessingState,
+        message_id: String,
+        message: String,
         error: ApiError,
     },
 
     /// Notifies the app that the next shard block will be fetched from the network.
     /// Event can occurs more than one time due to block walking procedure.
     WillFetchNextBlock {
-        waiting_state: ProcessingState,
+        processing_state: ProcessingState,
+        message_id: String,
+        message: String,
     },
 
     /// Notifies the app that the next block can't be fetched due to error.
     /// Processing will be continued after `network_resume_timeout`.
     FetchNextBlockFailed {
-        state: ProcessingState,
+        processing_state: ProcessingState,
+        message_id: String,
+        message: String,
         error: ApiError,
     },
 
@@ -68,13 +92,22 @@ pub enum ProcessingEvent {
     /// Processing will be continued at encoding phase after
     /// `expiration_retries_timeout`.
     MessageExpired {
-        state: ProcessingState,
+        processing_state: ProcessingState,
+        message_id: String,
+        message: String,
         error: ApiError,
     },
 
     /// Notifies the app that the client has received the transaction.
     /// Processing has finished.
-    TransactionReceived { transaction: Value },
+    TransactionReceived {
+        /// Input message id. Encoded with `hex`.
+        message_id: String,
+        /// Input message. BOC encoded with `base64`.
+        message: String,
+        /// Results of transaction.
+        result: TransactionResult,
+    },
 }
 
 impl ProcessingEvent {
