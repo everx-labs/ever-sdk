@@ -12,7 +12,7 @@ use serde_json::Value;
 use std::sync::Arc;
 use ton_block::MsgAddressInt;
 use ton_sdk::node_client::MAX_TIMEOUT;
-use ton_sdk::types::{TRANSACTIONS_TABLE_NAME, StringId};
+use ton_sdk::types::{StringId, TRANSACTIONS_TABLE_NAME};
 use ton_sdk::{
     Block, BlockId, Contract, MessageId, MessageProcessingState, NodeClient, ReceivedTransaction,
     SdkError, SdkMessage, Transaction,
@@ -29,10 +29,13 @@ pub struct ParamsOfWaitForTransaction {
     pub message: String,
     /// Message expiration time.
     /// Used only for messages with `expiration` replay protection.
+    /// Must be the same value as it specified in `expire` ABI header
+    /// of the message body.
     pub message_expiration_time: Option<u32>,
-    /// Waiting options.
+    /// Processing options.
     pub processing_options: Option<ProcessingOptions>,
-    /// Waiting state.
+    /// Processing state. As it received from `send_message`
+    /// or 'Incomplete` variant of result of the `wait_for_transaction`.
     pub processing_state: ProcessingState,
     /// Processing callback.
     pub callback: Option<CallbackParams>,
@@ -54,12 +57,11 @@ pub async fn wait_for_transaction(
     let message = Contract::deserialize_message(&base64_decode(&params.message)?)
         .map_err(|err| Error::invalid_message_boc(err))?;
     let message_id = get_message_id(&message)?;
-    let message_id_hex = hex::encode(&message_id);
     let address = message
         .dst()
         .ok_or(Error::message_has_not_destination_address())?;
 
-    let stop_time = match params.message_expiration_time {
+    let expiration_time = match params.message_expiration_time {
         Some(time) => time as u64,
         None => context.now_millis() + client.config().message_processing_timeout() as u64,
     };
@@ -67,111 +69,122 @@ pub async fn wait_for_transaction(
     let mut transaction = Value::Null;
     let mut processing_state = params.processing_state;
     let mut network_retries = 0;
-    let (
-        network_retries_limit,
-        network_retries_timeout,
-        expiration_retries_limit,
-        expiration_retries_timeout,
-    ) = ProcessingOptions::resolve(&params.processing_options, &context);
+    let now = context.now_millis();
+    let timeout = std::cmp::max(expiration_time, now) - now + add_timeout;
 
     // Wait loop
     loop {
-        // Fetch next shard block
-        let now = context.now_millis();
-        let timeout = std::cmp::max(stop_time, now) - now + add_timeout;
+        match fetch_next_shard_block(
+            &context,
+            &params,
+            &message_id,
+            &address,
+            timeout,
+            &processing_state,
+        )? {
+            Ok(block) => {
+                processing_state.last_checked_block_id = block_id;
+                if let Some(transaction) = find_transaction_in_block(block)? {
+                    return get_transaction_result();
+                }
+                if block.gen_utime > expiration_time {
+                    return Err(if params.message_expiration_time.is_some() {
+                        Error::message_expired(&message_id_hex, &processing_state)
+                    } else {
+                        Error::transaction_wait_timeout(&message_id_hex, &processing_state)
+                    });
+                }
+            },
+            Err(error) {
+                return Ok(ResultOfWaitForTransaction::Incomplete {
+                    processing_state: processing_state,
+                    error,
+                }))
+            }
+
+        }
+    }
+}
+
+async fn fetch_next_shard_block(
+    context: &Arc<ClientContext>,
+    params: &ParamsOfWaitForTransaction,
+    message_id: &str,
+    address: &MsgAddressInt,
+    timeout: u64,
+    processing_state: &ProcessingState,
+) -> ApiResult<Option<Block>> {
+    let mut retries: i8 = 0;
+    let current = StringId::from(&processing_state.last_checked_block_id);
+    loop {
         if let Some(cb) = &params.callback {
             ProcessingEvent::WillFetchNextBlock {
                 processing_state: processing_state.clone(),
-                message_id: message_id_hex.clone(),
+                message_id: message_id.to_string(),
                 message: params.message.clone(),
             }
             .emit(&context, cb)
         }
-        let result = Block::wait_next_block(
-            client,
-            &StringId::from(&processing_state.last_checked_block_id),
+        match Block::wait_next_block(
+            context.get_client()?,
+            &current,
             &address,
             Some((timeout / 1000) as u32),
         )
-        .await;
-        let block = match result {
+        .await
+        {
+            Ok(block) => return Ok(Some(block)),
             Err(err) => {
+                let error = Error::fetch_block_failed(err, &message_id, &processing_state);
                 if let Some(cb) = &params.callback {
                     ProcessingEvent::FetchNextBlockFailed {
                         processing_state: processing_state.clone(),
                         message_id: message_id_hex.clone(),
                         message: params.message.clone(),
-                        error,
+                        error: error.clone(),
                     }
                     .emit(&context, cb)
                 }
-                if let Some(&SdkError::WaitForTimeout) = err.downcast_ref::<SdkError>() {
-                    if infinite_wait {
-                        continue;
+                    if !params.processing_options.can_retry_network_error(context, &mut retries) {
+                        return Err(error);
                     }
-                    return Err(Error::fetch_block_failed(
-                        err,
-                        &message_id_hex,
-                        &processing_state,
-                    ));
-                } else {
-                    if infinite_wait {
-                        context.delay_ms(network_retries_timeout as u64).await;
-                        continue;
-                    }
-                    return Err(Error::fetch_block_failed(
-                        err,
-                        &message_id_hex,
-                        &processing_state,
-                    ));
-                }
-            }
-            Ok(block) => block,
-        };
-
-        processing_state.last_checked_block_id = block.id.to_string();
-
-        // Find transaction in block
-        for block_msg in &block.in_msg_descr {
-            if Some(message_id) == block_msg.msg_id.as_ref() {
-                let tr_id = block_msg
-                    .transaction_id
-                    .clone()
-                    .ok_or(Error::invalid_block_received(
-                        "No field `transaction_id` in block",
-                        &message_id_hex,
-                        &processing_state,
-                    ))?;
-
-                transaction = client
-                    .wait_for(
-                        TRANSACTIONS_TABLE_NAME,
-                        &json!({
-                            "id": { "eq": tr_id.to_string() }
-                        })
-                        .to_string(),
-                        TRANSACTION_FIELDS_ORDINARY,
-                        Some(MAX_TIMEOUT),
-                    )
-                    .await?;
-
-                break;
             }
         }
-        if !transaction.is_null() {
+        context.delay_ms(network_retries_timeout as u64).await;
+
+    }
+}
+
+fn find_transaction_in_block() {
+    for block_msg in &block.in_msg_descr {
+        if Some(message_id) == block_msg.msg_id.as_ref() {
+            let tr_id = block_msg
+                .transaction_id
+                .clone()
+                .ok_or(Error::invalid_block_received(
+                    "No field `transaction_id` in block",
+                    &message_id_hex,
+                    &processing_state,
+                ))?;
+
+            transaction = client
+                .wait_for(
+                    TRANSACTIONS_TABLE_NAME,
+                    &json!({
+                        "id": { "eq": tr_id.to_string() }
+                    })
+                    .to_string(),
+                    TRANSACTION_FIELDS_ORDINARY,
+                    Some(MAX_TIMEOUT),
+                )
+                .await?;
+
             break;
         }
-
-        // Check if time has been expired
-        if block.gen_utime > stop_time {
-            return Err(if expire.is_some() {
-                Error::message_expired(&message_id_hex, &processing_state)
-            } else {
-                Error::transaction_wait_timeout(&message_id_hex, &processing_state)
-            });
-        }
     }
+}
 
+fn get_transaction_result() {
     let parsed = serde_json::from_value::<Transaction>(transaction.clone())?;
     match parsed.compute.exit_code {
         Some(MESSAGE_EXPIRED_CODE) | Some(REPLAY_PROTECTION_CODE) => {

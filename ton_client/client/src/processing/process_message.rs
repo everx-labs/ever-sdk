@@ -6,7 +6,7 @@ use ton_sdk::{
     Block, BlockId, Contract, MessageId, MessageProcessingState, NodeClient, ReceivedTransaction,
     SdkError, SdkMessage, Transaction,
 };
-use crate::processing::types::{CallbackParams, ProcessingEvent, ProcessingOptions};
+use crate::processing::types::{CallbackParams, ProcessingEvent, ProcessingOptions, TransactionResult};
 use crate::processing::wait_for_transaction::{ParamsOfWaitForTransaction, ResultOfWaitForTransaction};
 use crate::processing::send_message::{send_message, ParamsOfSendMessage};
 
@@ -20,15 +20,15 @@ pub enum MessageSource {
 pub struct ParamsOfProcessMessage {
     /// Message source.
     pub message: MessageSource,
-    /// Waiting options.
-    pub waiting_options: Option<ProcessingOptions>,
+    /// Processing options.
+    pub processing_options: Option<ProcessingOptions>,
     /// Processing callback.
     pub callback: Option<CallbackParams>,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug)]
 pub struct ResultOfProcessMessage {
-    pub transaction: Option<Value>,
+    pub transaction: Option<TransactionResult>,
 }
 
 // fn ensure_message(

@@ -1,7 +1,7 @@
 use crate::client::ClientContext;
 use crate::error::ApiError;
 use crate::processing::defaults::{
-    DEFAULT_EXPIRATION_RETRIES_LIMIT, DEFAULT_EXPIRATION_RETRIES_TIMEOUT,
+    can_retry_more, DEFAULT_EXPIRATION_RETRIES_LIMIT, DEFAULT_EXPIRATION_RETRIES_TIMEOUT,
     DEFAULT_NETWORK_RETRIES_LIMIT, DEFAULT_NETWORK_RETRIES_TIMEOUT,
 };
 use serde_json::Value;
@@ -121,68 +121,72 @@ pub struct ProcessingOptions {
     /// Limit the retries count for failed network requests.
     /// Negative value means infinite.
     /// Default is -1.
-    pub network_retries_limit: Option<isize>,
+    pub network_retries_limit: Option<i8>,
     /// Timeout between retries of failed network operations.
     /// Default is 40000.
-    pub network_retries_timeout: Option<isize>,
+    pub network_retries_timeout: Option<u32>,
     /// Limit the retries count for expired messages.
     /// Negative value means infinite.
     /// Default is 8.
-    pub expiration_retries_limit: Option<isize>,
+    pub expiration_retries_limit: Option<i8>,
     /// Limit the retries count for expired messages.
     /// Default is 40000.
-    pub expiration_retries_timeout: Option<isize>,
+    pub expiration_retries_timeout: Option<u32>,
 }
 
-struct Configured<'a, O, C> {
-    options: Option<&'a O>,
-    config: Option<&'a C>,
-}
-
-impl<'a, O, C> Configured<'a, O, C> {
-    fn resolve<R>(
-        &self,
-        resolve_opt: fn(opt: &O) -> Option<R>,
-        resolve_cfg: fn(cfg: &C) -> Option<R>,
-        def: R,
-    ) -> R {
-        let opt = self.options.map_or(None, |x| resolve_opt(x));
-        let cfg = self.config.map_or(None, |x| resolve_cfg(x));
-        opt.or(cfg).unwrap_or(def)
-    }
-}
-
-impl ProcessingOptions {
-    pub fn resolve(
-        options: &Option<ProcessingOptions>,
-        context: &Arc<ClientContext>,
-    ) -> (isize, isize, isize, isize) {
-        let opts = Configured {
-            options: options.as_ref(),
-            config: context.config.network.as_ref(),
-        };
-        (
-            opts.resolve(
+impl Option<ProcessingOptions> {
+    pub fn can_retry_network_error(&self, context: &Arc<ClientContext>, retries: &mut i8) -> bool {
+        can_retry_more(
+            retries,
+            self.resolve(
+                context.config.network.as_ref(),
                 |x| x.network_retries_limit,
                 |_| None,
                 DEFAULT_NETWORK_RETRIES_LIMIT,
             ),
-            opts.resolve(
-                |x| x.network_retries_timeout,
-                |_| None,
-                DEFAULT_NETWORK_RETRIES_TIMEOUT,
-            ),
-            opts.resolve(
+        )
+    }
+
+    pub fn resolve_network_retries_timeout(&self, context: &Arc<ClientContext>) -> u32 {
+        self.resolve(
+            context.config.network.as_ref(),
+            |x| x.network_retries_timeout,
+            |_| None,
+            DEFAULT_NETWORK_RETRIES_TIMEOUT,
+        )
+    }
+
+    pub fn can_retry_expired_message(&self, context: &Arc<ClientContext>, retries: i8) -> bool {
+        can_retry_more(
+            retries,
+            self.resolve(
+                context.config.network.as_ref(),
                 |x| x.expiration_retries_limit,
-                |x| Some(x.message_retries_count() as isize),
+                |x| Some(x.message_retries_count() as i8),
                 DEFAULT_EXPIRATION_RETRIES_LIMIT,
             ),
-            opts.resolve(
-                |x| x.expiration_retries_timeout,
-                |x| Some(x.message_processing_timeout() as isize),
-                DEFAULT_EXPIRATION_RETRIES_TIMEOUT,
-            ),
         )
+    }
+
+    pub fn resolve_expiration_retries_timeout(&self, context: &Arc<ClientContext>) -> u32 {
+        self.resolve(
+            context.config.network.as_ref(),
+            |x| x.expiration_retries_timeout,
+            |x| Some(x.message_processing_timeout()),
+            DEFAULT_EXPIRATION_RETRIES_TIMEOUT,
+        )
+    }
+
+    fn resolve<C, R>(
+        &self,
+        config: Option<&C>,
+        resolve_opt: fn(opt: Self) -> Option<R>,
+        resolve_cfg: fn(cfg: &C) -> Option<R>,
+        def: R,
+    ) -> R {
+        let opt = self.map_or(None, |x| resolve_opt(x));
+        let cfg = config.map_or(None, |x| resolve_cfg(x));
+        opt.or(cfg).unwrap_or(def)
     }
 }
 
