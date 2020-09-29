@@ -32,7 +32,7 @@ pub mod tvm;
 pub mod abi;
 pub mod client;
 pub mod boc;
-pub mod net;
+pub mod processing;
 
 #[cfg(feature = "node_interaction")]
 pub mod queries;

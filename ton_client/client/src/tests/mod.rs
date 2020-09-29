@@ -14,7 +14,7 @@
 use super::InteropContext;
 use super::{tc_destroy_json_response, tc_read_json_response};
 use super::{tc_json_request, tc_json_request_async, InteropString};
-use crate::client::ParamsOfUnregisterCallback;
+use crate::client::{ClientContext, ParamsOfUnregisterCallback};
 use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
@@ -30,14 +30,13 @@ use crate::{
     queries::{ParamsOfWaitForCollection, ResultOfWaitForCollection},
     tc_create_context, tc_destroy_context, JsonResponse,
 };
-use rand::Rng;
+use futures::Future;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Value;
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc::{channel, Sender};
-use futures::executor::block_on;
 
 mod common;
 
@@ -77,6 +76,7 @@ pub const HELLO: &str = "Hello";
 pub const EVENTS: &str = "Events";
 
 struct TestRuntime {
+    pub next_request_id: u32,
     pub next_callback_id: u32,
     pub requests: HashMap<u32, Sender<JsonResponse>>,
     pub callbacks: HashMap<u32, Box<dyn Fn(String, String) + Send>>,
@@ -86,13 +86,21 @@ impl TestRuntime {
     fn new() -> Self {
         Self {
             next_callback_id: 1,
+            next_request_id: 1,
             requests: HashMap::new(),
             callbacks: HashMap::new(),
         }
     }
+
     fn gen_callback_id(&mut self) -> u32 {
         let id = self.next_callback_id;
         self.next_callback_id += 1;
+        id
+    }
+
+    fn gen_request_id(&mut self) -> u32 {
+        let id = self.next_request_id;
+        self.next_request_id += 1;
         id
     }
 }
@@ -124,7 +132,36 @@ extern "C" fn on_callback(
     TestClient::callback(request_id, result_json, error_json)
 }
 
+pub struct AsyncFuncWrapper<'a, P, R> {
+    client: &'a TestClient,
+    name: String,
+    p: std::marker::PhantomData<(P, R)>,
+}
+
+impl<'a, P: Serialize, R: DeserializeOwned> AsyncFuncWrapper<'a, P, R> {
+    pub(crate) async fn call(&self, params: P) -> R {
+        self.client.request_async(&self.name, params).await
+    }
+}
+
 impl TestClient {
+    pub(crate) fn wrap_async<P, R, F>(
+        self: &TestClient,
+        _: fn(Arc<ClientContext>, P) -> F,
+        info: fn() -> api_doc::api::Method,
+    ) -> AsyncFuncWrapper<P, R>
+    where
+        P: Serialize,
+        R: DeserializeOwned,
+        F: Future<Output = ApiResult<R>>,
+    {
+        AsyncFuncWrapper {
+            client: self,
+            name: info().name,
+            p: std::marker::PhantomData::default(),
+        }
+    }
+
     fn read_abi(path: String) -> Value {
         serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap()
     }
@@ -234,8 +271,20 @@ impl TestClient {
         client
     }
 
+    fn response_to_result(response: JsonResponse) -> ApiResult<Value> {
+        if response.error_json.is_empty() {
+            if response.result_json.is_empty() {
+                Ok(Value::Null)
+            } else {
+                Ok(serde_json::from_str(&response.result_json).unwrap())
+            }
+        } else {
+            Err(serde_json::from_str(&response.error_json).unwrap())
+        }
+    }
+
     pub(crate) fn request_json(&self, method: &str, params: Value) -> ApiResult<Value> {
-        let response = unsafe {
+        Self::response_to_result(unsafe {
             let params_json = if params.is_null() {
                 String::new()
             } else {
@@ -250,16 +299,7 @@ impl TestClient {
             let response = interop_response.to_response();
             tc_destroy_json_response(response_ptr);
             response
-        };
-        if response.error_json.is_empty() {
-            if response.result_json.is_empty() {
-                Ok(Value::Null)
-            } else {
-                Ok(serde_json::from_str(&response.result_json).unwrap())
-            }
-        } else {
-            Err(serde_json::from_str(&response.error_json).unwrap())
-        }
+        })
     }
 
     pub(crate) fn request<P, R>(&self, method: &str, params: P) -> R
@@ -287,21 +327,28 @@ impl TestClient {
             error_json: error_json.to_string(),
         };
 
-        let mut runtime = TEST_RUNTIME.lock().unwrap();
-        let mut request = runtime.requests.remove(&request_id).unwrap();
-
-        let _ = block_on(request.send(response));
-    }
-
-    pub(crate) async fn request_json_async(&self, method: &str, params: Value) -> ApiResult<Value> {
-        let request_id = rand::thread_rng().gen::<u32>();
-        let (sender, mut receiver) = channel(10);
-        TEST_RUNTIME
+        let mut request = TEST_RUNTIME
             .lock()
             .unwrap()
             .requests
-            .insert(request_id, sender);
+            .remove(&request_id)
+            .unwrap();
 
+        tokio::runtime::Handle::current().enter(move || {
+            tokio::spawn(async move {
+                let _ = request.send(response).await;
+            });
+        });
+    }
+
+    pub(crate) async fn request_json_async(&self, method: &str, params: Value) -> ApiResult<Value> {
+        let (request_id, mut receiver) = {
+            let mut runtime = TEST_RUNTIME.lock().unwrap();
+            let id = runtime.gen_request_id();
+            let (sender, receiver) = channel(10);
+            runtime.requests.insert(id, sender);
+            (id, receiver)
+        };
         unsafe {
             let params_json = if params.is_null() {
                 String::new()
@@ -316,18 +363,7 @@ impl TestClient {
                 on_result,
             );
         };
-
-
-        let response = receiver.recv().await.unwrap();
-        if response.error_json.is_empty() {
-            if response.result_json.is_empty() {
-                Ok(Value::Null)
-            } else {
-                Ok(serde_json::from_str(&response.result_json).unwrap())
-            }
-        } else {
-            Err(serde_json::from_str(&response.error_json).unwrap())
-        }
+        Self::response_to_result(receiver.recv().await.unwrap())
     }
 
     pub(crate) async fn request_async<P, R>(&self, method: &str, params: P) -> R
@@ -474,7 +510,8 @@ impl TestClient {
                     key_pair: None,
                     try_index: None,
                 },
-            ).await
+            )
+            .await
         } else {
             self.request_async(
                 "contracts.run",
@@ -493,24 +530,27 @@ impl TestClient {
                     key_pair: Self::wallet_keys(),
                     try_index: None,
                 },
-            ).await
+            )
+            .await
         };
 
         // wait for grams recieving
         for message in run_result.transaction["out_messages"].as_array().unwrap() {
             let message: ton_sdk::Message = serde_json::from_value(message.clone()).unwrap();
             if ton_sdk::MessageType::Internal == message.msg_type() {
-                let _: ResultOfWaitForCollection = self.request_async(
-                    "queries.wait_for_collection",
-                    ParamsOfWaitForCollection {
-                        collection: "transactions".to_owned(),
-                        filter: Some(json!({
-                            "in_msg": { "eq": message.id()}
-                        })),
-                        result: "id".to_owned(),
-                        timeout: Some(ton_sdk::types::DEFAULT_WAIT_TIMEOUT),
-                    },
-                ).await;
+                let _: ResultOfWaitForCollection = self
+                    .request_async(
+                        "queries.wait_for_collection",
+                        ParamsOfWaitForCollection {
+                            collection: "transactions".to_owned(),
+                            filter: Some(json!({
+                                "in_msg": { "eq": message.id()}
+                            })),
+                            result: "id".to_owned(),
+                            timeout: Some(ton_sdk::types::DEFAULT_WAIT_TIMEOUT),
+                        },
+                    )
+                    .await;
             }
         }
     }
@@ -525,10 +565,17 @@ impl TestClient {
         result.address
     }
 
-    pub(crate) async fn deploy_with_giver_async(&self, params: ParamsOfDeploy, value: Option<u64>) -> String {
-        let msg: EncodedMessage = self.request_async("contracts.deploy.message", params.clone()).await;
+    pub(crate) async fn deploy_with_giver_async(
+        &self,
+        params: ParamsOfDeploy,
+        value: Option<u64>,
+    ) -> String {
+        let msg: EncodedMessage = self
+            .request_async("contracts.deploy.message", params.clone())
+            .await;
 
-        self.get_grams_from_giver_async(&msg.address.unwrap(), value).await;
+        self.get_grams_from_giver_async(&msg.address.unwrap(), value)
+            .await;
 
         let result: ResultOfDeploy = self.request_async("contracts.deploy", params).await;
 

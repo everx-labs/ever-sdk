@@ -23,6 +23,7 @@ use crate::node_client::{NetworkConfig, NodeClient};
 use super::{ClientEnv, Error};
 use super::std_client_env::StdClientEnv;
 use crate::get_api;
+use chrono::Utc;
 
 lazy_static! {
     static ref HANDLERS: DispatchTable = create_handlers();
@@ -50,7 +51,7 @@ fn create_handlers() -> DispatchTable {
     crate::abi::register(&mut handlers);
     crate::tvm::register(&mut handlers);
     crate::boc::register(&mut handlers);
-    crate::net::register(&mut handlers);
+    crate::processing::register(&mut handlers);
 
     #[cfg(feature = "node_interaction")]
     crate::queries::register(&mut handlers);
@@ -121,8 +122,20 @@ pub struct ClientContext {
 
 #[cfg(feature = "node_interaction")]
 impl ClientContext {
-    pub(crate) fn get_client(&self) -> ApiResult<&NodeClient> {
-        self.client.as_ref().ok_or(ApiError::sdk_not_init())
+    pub fn now(&self) -> u32 {
+        Utc::now().timestamp() as u32
+    }
+
+    pub fn now_millis(&self) -> u64 {
+        Utc::now().timestamp_millis() as u64
+    }
+
+    pub async fn delay_millis(&self, ms: u64) {
+        futures_timer::Delay::new(std::time::Duration::from_millis(ms)).await
+    }
+
+    pub fn get_client(&self) -> ApiResult<&NodeClient> {
+self.client.as_ref().ok_or(ApiError::sdk_not_init())
     }
 
     pub(crate) fn get_sdk_client(&self) -> ApiResult<&ton_sdk::NodeClient> {

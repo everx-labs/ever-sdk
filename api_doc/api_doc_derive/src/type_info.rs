@@ -56,7 +56,7 @@ fn const_from(v: &Variant) -> api::Const {
             };
             value_from_lit(lit)
         }
-        None => api::ConstValue::None
+        None => api::ConstValue::None {}
     };
     api::Const {
         name,

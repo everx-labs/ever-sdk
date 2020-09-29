@@ -27,14 +27,14 @@ impl Error {
         error(ErrorCode::NotImplemented, message.into())
     }
 
-    pub fn invalid_hex<E: Display>(s: &String, err: E) -> ApiError {
+    pub fn invalid_hex<E: Display>(s: &str, err: E) -> ApiError {
         error(
             ErrorCode::InvalidHex,
             format!("Invalid hex string: {}\r\nhex: [{}]", err, s),
         )
     }
 
-    pub fn invalid_base64<E: Display>(s: &String, err: E) -> ApiError {
+    pub fn invalid_base64<E: Display>(s: &str, err: E) -> ApiError {
         error(
             ErrorCode::InvalidBase64,
             format!("Invalid base64 string: {}\r\nbase64: [{}]", err, s),

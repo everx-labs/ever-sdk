@@ -3,38 +3,38 @@ use crate::error::{ApiResult};
 use crate::client;
 
 #[derive(Serialize, Deserialize, Clone, Debug, TypeInfo)]
-pub enum MessageSigning {
+pub enum Signer {
     /// Message mustn't be signed.
     None,
     /// Message will be signed using external methods.
     /// Public key must be provided with `hex` encoding.
     External(String),
     /// Message will be signed using the provided keys.
-    Keys(KeyPair),
+    WithKeys(KeyPair),
     /// Message will be signed using the provided signing box.
     Box(SigningBoxHandle),
 }
 
-impl MessageSigning {
+impl Signer {
     pub fn resolve_keys(&self) -> ApiResult<Option<KeyPair>> {
         match self {
-            MessageSigning::Keys(keys) => Ok(Some(keys.clone())),
-            MessageSigning::Box(_) => Err(client::Error::not_implemented(
+            Signer::None => Ok(None),
+            Signer::WithKeys(keys) => Ok(Some(keys.clone())),
+            Signer::External(_) => Ok(None),
+            Signer::Box(_) => Err(client::Error::not_implemented(
                 "Abi handle doesn't supported yet",
             )),
-            MessageSigning::None => Ok(None),
-            MessageSigning::External(_) => Ok(None),
         }
     }
 
     pub fn resolve_public_key(&self) -> ApiResult<Option<String>> {
         match self {
-            MessageSigning::Keys(keys) => Ok(Some(keys.public.clone())),
-            MessageSigning::Box(_) => Err(client::Error::not_implemented(
+            Signer::None => Ok(None),
+            Signer::WithKeys(keys) => Ok(Some(keys.public.clone())),
+            Signer::External(public_key) => Ok(Some(public_key.clone())),
+            Signer::Box(_) => Err(client::Error::not_implemented(
                 "Abi handle doesn't supported yet",
             )),
-            MessageSigning::None => Ok(None),
-            MessageSigning::External(public_key) => Ok(Some(public_key.clone())),
         }
     }
 }

@@ -16,15 +16,27 @@ use crate::dispatch::DispatchTable;
 #[cfg(test)]
 mod tests;
 
+mod defaults;
 mod errors;
+mod internal;
 mod process_message;
+mod send_message;
+mod types;
+mod wait_for_transaction;
 
 pub use errors::{Error, ErrorCode};
-pub use process_message::{
-    process_message, CallbackParams, MessageMonitoringOptions, MessageProcessingContext,
-    MessageProcessingEvent, MessageSource, ParamsOfProcessMessage, ResultOfProcessMessage,
+pub use process_message::{MessageSource, ParamsOfProcessMessage, ResultOfProcessMessage};
+pub use send_message::{
+    send_message, send_message_method, ParamsOfSendMessage, ResultOfSendMessage,
+};
+pub use types::{CallbackParams, ProcessingEvent, ProcessingOptions, ProcessingState};
+pub use wait_for_transaction::{
+    wait_for_transaction, ParamsOfWaitForTransaction, ResultOfWaitForTransaction,
 };
 
+use api_doc::reflect::TypeInfo;
+
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.spawn("net.process_message", process_message);
+    handlers.register_api_types("processing", vec![CallbackParams::type_info]);
+    handlers.spawn("processing.send_message", send_message);
 }
