@@ -72,7 +72,7 @@ impl log::Log for SimpleLogger {
 // pub const WALLET: &str = "LimitWallet";
 // pub const SIMPLE_WALLET: &str = "Wallet";
 pub const GIVER: &str = "Giver";
-// pub const GIVER_WALLET: &str = "GiverWallet";
+pub const GIVER_WALLET: &str = "GiverWallet";
 pub const HELLO: &str = "Hello";
 pub const EVENTS: &str = "Events";
 
@@ -134,7 +134,11 @@ impl TestClient {
     }
 
     pub fn giver_abi() -> Value {
-        Self::abi(GIVER, Some(1))
+        if Self::node_se() {
+            Self::abi(GIVER, Some(1))
+        } else {
+            Self::abi(GIVER_WALLET, Some(2))
+        }
     }
 
     pub fn wallet_address() -> String {
@@ -154,7 +158,9 @@ impl TestClient {
     }
 
     pub fn network_address() -> String {
-        std::env::var("TON_NETWORK_ADDRESS").unwrap_or("http://localhost".to_owned())
+        std::env::var("TON_NETWORK_ADDRESS")
+            .unwrap_or("http://localhost".to_owned())
+            //.unwrap_or("cinet.tonlabs.io".to_owned())
     }
 
     pub fn node_se() -> bool {

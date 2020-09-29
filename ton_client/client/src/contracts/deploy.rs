@@ -19,9 +19,11 @@ use crate::contracts::run::RunFees;
 use ton_sdk::{Contract, ContractImage, FunctionCallSet};
 
 #[cfg(feature = "node_interaction")]
-use ton_sdk::{AbiConfig, NodeClient, ReceivedTransaction};
+use ton_sdk::{AbiConfig, ReceivedTransaction};
 #[cfg(feature = "node_interaction")]
 use crate::contracts::run::{resolve_msg_sdk_error, retry_call};
+#[cfg(feature = "node_interaction")]
+use crate::node_client::NodeClient;
 
 const DEFAULT_WORKCHAIN: i32 = 0;
 
@@ -203,8 +205,9 @@ pub(crate) async fn deploy(context: std::sync::Arc<ClientContext>, params: Param
     }
 
     let client = context.get_client()?;
+    let sdk_client = context.get_sdk_client()?;
     trace!("-> -> deploy");
-    let tr = deploy_contract(client, &context.config.abi, params, contract_image, &key_pair)
+    let tr = deploy_contract(client, sdk_client, &context.config.abi, params, contract_image, &key_pair)
         .await
         .map_err(|err| err
             .add_function(Some(&DeployFunctionCallSet::function_name()))
@@ -370,6 +373,7 @@ pub(crate) fn create_image(abi: &serde_json::Value, init_params: Option<&serde_j
 #[cfg(feature = "node_interaction")]
 async fn deploy_contract(
     client: &NodeClient,
+    sdk_client: &ton_sdk::NodeClient,
     abi_config: &AbiConfig,
     params: ParamsOfDeploy,
     image: ContractImage,
@@ -388,12 +392,12 @@ async fn deploy_contract(
                 Some(try_index))
                 .map_err(|err| ApiError::contracts_create_deploy_message_failed(err))?;
 
-            let result = Contract::process_message(client, &msg, true).await;
+            let result = Contract::process_message(sdk_client, &msg, true).await;
 
             match result {
                 Err(err) =>
                     Err(resolve_msg_sdk_error(
-                        client, err, &msg, None,
+                        client, sdk_client, err, &msg, None,
                         ApiError::contracts_deploy_failed).await?
                     ),
                 Ok(tr) => Ok(tr)

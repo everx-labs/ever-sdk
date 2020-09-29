@@ -101,7 +101,7 @@ impl ApiError {
     }
 
     #[cfg(feature = "node_interaction")]
-    pub fn add_network_url(mut self, client: &ton_sdk::NodeClient) -> ApiError {
+    pub(crate) fn add_network_url(mut self, client: &crate::node_client::NodeClient) -> ApiError {
         self.data["config_server"] = client.config_server().into();
 
         if let Some(url) = client.query_url() {
@@ -722,7 +722,7 @@ impl ApiErrorCode for i32 {
 }
 
 #[cfg(feature = "node_interaction")]
-pub fn apierror_from_sdkerror<F>(err: &failure::Error, default_err: F, client: Option<&ton_sdk::NodeClient>) -> ApiError
+pub(crate) fn apierror_from_sdkerror<F>(err: &failure::Error, default_err: F, client: Option<&crate::node_client::NodeClient>) -> ApiError
     where
         F: Fn(String) -> ApiError,
 {

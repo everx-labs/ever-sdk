@@ -74,5 +74,5 @@ fn test_deferred_init() {
     //println!("{:#?}", result);
 
 
-    assert_eq!(result.code, crate::queries::ErrorCode::QueryFailed as isize);
+    assert_eq!(result.code, crate::client::ErrorCode::HttpRequestSendError as isize);
 }

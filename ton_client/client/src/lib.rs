@@ -37,6 +37,8 @@ pub mod net;
 #[cfg(feature = "node_interaction")]
 pub mod queries;
 
+mod node_client;
+
 mod interop;
 pub use self::interop::*;
 

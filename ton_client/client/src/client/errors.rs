@@ -8,6 +8,13 @@ pub enum ErrorCode {
     InvalidBase64 = CLIENT + 3,
     InvalidAddress = CLIENT + 4,
     CallbackParamsCantBeConvertedToJson = CLIENT + 5,
+    WebsocketConnectError = CLIENT + 6,
+    WebsocketReceiveError = CLIENT + 7,
+    WebsocketSendError = CLIENT + 8,
+    HttpClientCreateError = CLIENT + 9,
+    HttpRequestCreateError = CLIENT + 10,
+    HttpRequestSendError = CLIENT + 11,
+    HttpRequestParseError = CLIENT + 12,
 }
 pub struct Error;
 
@@ -45,6 +52,55 @@ impl Error {
         error(
             ErrorCode::CallbackParamsCantBeConvertedToJson,
             format!("Callback params can't be converted to json: {}", err),
+        )
+    }
+
+    pub fn websocket_connect_error<E: Display>(address: &str, err: E) -> ApiError {
+        error(
+            ErrorCode::WebsocketConnectError,
+            format!("Can not connect to webscocket URL {}: {}", address, err),
+        )
+    }
+
+    pub fn websocket_receive_error<E: Display>(err: E) -> ApiError {
+        error(
+            ErrorCode::WebsocketReceiveError,
+            format!("Can not receive message from websocket : {}", err),
+        )
+    }
+
+    pub fn websocket_send_error<E: Display>(err: E) -> ApiError {
+        error(
+            ErrorCode::WebsocketSendError,
+            format!("Can not send message to websocket : {}", err),
+        )
+    }
+
+    pub fn http_client_create_error<E: Display>(err: E) -> ApiError {
+        error(
+            ErrorCode::HttpClientCreateError,
+            format!("Can not create http client : {}", err),
+        )
+    }
+
+    pub fn http_request_create_error<E: Display>(err: E) -> ApiError {
+        error(
+            ErrorCode::HttpRequestCreateError,
+            format!("Can not create http request : {}", err),
+        )
+    }
+
+    pub fn http_request_send_error<E: Display>(err: E) -> ApiError {
+        error(
+            ErrorCode::HttpRequestSendError,
+            format!("Can not send http request : {}", err),
+        )
+    }
+
+    pub fn http_request_parse_error<E: Display>(err: E) -> ApiError {
+        error(
+            ErrorCode::HttpRequestParseError,
+            format!("Can not parse http request : {}", err),
         )
     }
 }

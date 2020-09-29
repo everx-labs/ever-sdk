@@ -16,12 +16,12 @@ use crate::error::{ApiError, ApiResult};
 use crate::{InteropContext, JsonResponse};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
-use ton_sdk::{AbiConfig, NetworkConfig};
+use ton_sdk::AbiConfig;
 
-#[cfg(feature = "node_interaction")]
-use ton_sdk::NodeClient;
+use crate::node_client::{NetworkConfig, NodeClient};
 
-use crate::client::Error;
+use super::{ClientEnv, Error};
+use super::std_client_env::StdClientEnv;
 use crate::get_api;
 
 lazy_static! {
@@ -106,23 +106,30 @@ fn async_request(
 
 pub struct ClientContext {
     #[cfg(feature = "node_interaction")]
-    pub client: Option<NodeClient>,
+    pub(crate) client: Option<NodeClient>,
     #[cfg(feature = "node_interaction")]
-    async_runtime: Option<tokio::runtime::Runtime>,
+    pub(crate) sdk_client: Option<ton_sdk::NodeClient>,
     #[cfg(feature = "node_interaction")]
-    pub async_runtime_handle: tokio::runtime::Handle,
-    pub handle: InteropContext,
-    pub config: InternalClientConfig,
-    pub callbacks: lockfree::map::Map<u32, std::sync::Arc<Callback>>,
+    _async_runtime: Option<tokio::runtime::Runtime>,
+    #[cfg(feature = "node_interaction")]
+    pub(crate) async_runtime_handle: tokio::runtime::Handle,
+    pub(crate) handle: InteropContext,
+    pub(crate) config: InternalClientConfig,
+    pub(crate) callbacks: lockfree::map::Map<u32, std::sync::Arc<Callback>>,
+    pub(crate) env: Arc<dyn ClientEnv + Send + Sync>,
 }
 
 #[cfg(feature = "node_interaction")]
 impl ClientContext {
-    pub fn get_client(&self) -> ApiResult<&NodeClient> {
+    pub(crate) fn get_client(&self) -> ApiResult<&NodeClient> {
         self.client.as_ref().ok_or(ApiError::sdk_not_init())
     }
 
-    pub fn get_callback(&self, callback_id: u32) -> ApiResult<std::sync::Arc<Callback>> {
+    pub(crate) fn get_sdk_client(&self) -> ApiResult<&ton_sdk::NodeClient> {
+        self.sdk_client.as_ref().ok_or(ApiError::sdk_not_init())
+    }
+
+    pub(crate) fn get_callback(&self, callback_id: u32) -> ApiResult<std::sync::Arc<Callback>> {
         Ok(self
             .callbacks
             .get(&callback_id)
@@ -131,7 +138,7 @@ impl ClientContext {
             .clone())
     }
 
-    pub fn send_callback_result<S: serde::Serialize>(
+    pub(crate) fn send_callback_result<S: serde::Serialize>(
         &self,
         callback_id: u32,
         result: S,
@@ -189,7 +196,9 @@ pub struct ResultOfCreateContext {
 pub fn create_context(config: ClientConfig, handle: u32) -> ApiResult<ClientContext> {
     let config: InternalClientConfig = config.into();
 
-    let client = if let Some(net_config) = &config.network {
+    let std_env = Arc::new(StdClientEnv::new()?);
+
+    let (client, sdk_client) = if let Some(net_config) = &config.network {
         if net_config.out_of_sync_threshold()
             > config.abi.message_expiration_timeout() as i64 / 2
         {
@@ -204,9 +213,19 @@ Note that default values are used if parameters are omitted in config"#,
                 ),
             ));
         }
-        Some(NodeClient::new(net_config.clone()))
+        let client = NodeClient::new(net_config.clone(), std_env.clone());
+        let sdk_config = ton_sdk::NetworkConfig {
+            access_key: net_config.access_key.clone(),
+            message_processing_timeout: net_config.message_processing_timeout,
+            message_retries_count: net_config.message_retries_count,
+            out_of_sync_threshold: net_config.out_of_sync_threshold,
+            server_address: net_config.server_address.clone(),
+            wait_for_timeout: net_config.wait_for_timeout
+        };
+        let sdk_client = ton_sdk::NodeClient::new(sdk_config);
+        (Some(client), Some(sdk_client))
     } else {
-        None
+        (None, None)
     };
 
     let (async_runtime, async_runtime_handle) =
@@ -226,10 +245,12 @@ Note that default values are used if parameters are omitted in config"#,
     Ok(ClientContext {
         handle,
         client,
-        async_runtime,
+        sdk_client,
+        _async_runtime: async_runtime,
         async_runtime_handle,
         config,
         callbacks: Default::default(),
+        env: std_env
     })
 }
 
