@@ -10,34 +10,9 @@
 * See the License for the specific TON DEV software governing permissions and
 * limitations under the License.
 */
+use crate::dispatch::DispatchTable;
 
-#[macro_use]
-extern crate serde_json;
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate lazy_static;
-#[macro_use]
-extern crate log;
-
-mod types;
-mod dispatch;
-mod client;
-mod setup;
-mod contracts;
-mod crypto;
-mod tvm;
-mod build_info;
-
-// TODO: uncomment when module will be ready
-// mod cell;
-
-#[cfg(feature = "node_interaction")]
-mod queries;
-
-mod interop;
-
-#[cfg(test)]
-mod tests;
-
-pub use self::interop::*;
+pub(crate) fn register(handlers: &mut DispatchTable) {
+    handlers.call_no_args("build_info",
+        |_|Ok(serde_json::from_str(include_str!("build_info.json")).unwrap_or(json!({}))));
+}
