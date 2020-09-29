@@ -1,3 +1,4 @@
+use crate::abi::ResultOfDecodeMessage;
 use crate::client::ClientContext;
 use crate::error::ApiError;
 use crate::processing::defaults::{
@@ -7,21 +8,36 @@ use crate::processing::defaults::{
 use serde_json::Value;
 use std::sync::Arc;
 
+
 #[derive(Serialize, Deserialize, TypeInfo, Debug, PartialEq, Clone)]
-pub struct TransactionResult {
+pub struct AbiDecodedOutput {
+    /// Decoded bodies of the out messages.
+    /// If some message can't
+    pub out_messages: Vec<Option<ResultOfDecodeMessage>>,
+
+    /// Decoded body of the out message that
+    /// represents the function return value.
+    pub return_message: Option<Value>,
+}
+
+#[derive(Serialize, Deserialize, TypeInfo, Debug, PartialEq, Clone)]
+pub struct TransactionOutput {
     /// Parsed transaction.
-    /// In addition to the regular transaction fields there is
-    /// a `boc` field encoded with `base64` which contains
-    /// source transaction BOC.
+    /// In addition to the regular transaction fields
+    /// there is a `boc` field encoded with `base64`
+    /// which contains source transaction BOC.
     pub transaction: Value,
     /// List of parsed output messages.
-    /// Similar to the `transaction` field each message contains
-    /// the `boc` field and an optional `decoded_abi_body`
-    /// which is filled out if the `abi` parameter was specified.
+    /// Similar to the `transaction` field each message
+    /// contains the `boc` field.
+    /// If the `abi` parameter was specified then
+    /// each message contains an optional `decoded_abi_body`
+    /// field, or `null` if message body hasn't been
+    /// successfully decoded.
     pub out_messages: Vec<Value>,
-    /// Decoded body of the out message that contains
-    /// the ABI function return value.
-    pub abi_return_output: Option<Value>,
+
+    pub abi_decoded: Option<AbiDecodedOutput>,
+
 }
 
 #[derive(Serialize, Deserialize, TypeInfo, Debug, Clone)]
@@ -125,7 +141,7 @@ pub enum ProcessingEvent {
         /// Input message. BOC encoded with `base64`.
         message: String,
         /// Results of transaction.
-        result: TransactionResult,
+        result: TransactionOutput,
     },
 }
 

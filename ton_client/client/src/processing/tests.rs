@@ -3,9 +3,8 @@ use crate::abi::{
     Signer,
 };
 use crate::error::ApiResult;
-use crate::processing::{
-    send_message, send_message_method, CallbackParams, ParamsOfSendMessage, ProcessingEvent,
-};
+use crate::processing::{send_message, send_message_method, CallbackParams, ParamsOfSendMessage, ProcessingEvent, wait_for_transaction, wait_for_transaction_method, ParamsOfWaitForTransaction};
+
 use crate::tests::{TestClient, EVENTS};
 
 #[tokio::test(core_threads = 2)]
@@ -28,6 +27,7 @@ async fn test_send_and_wait_message() {
 
     let encode_message = client.wrap_async(encode_message, encode_message_method);
     let send_message = client.wrap_async(send_message, send_message_method);
+    let wait_for_transaction = client.wrap_async(wait_for_transaction, wait_for_transaction_method);
 
     let encoded = encode_message
         .call(ParamsOfEncodeMessage {
@@ -53,14 +53,24 @@ async fn test_send_and_wait_message() {
         .get_grams_from_giver_async(&encoded.address, None)
         .await;
 
-    let _result = send_message
+    let result = send_message
         .call(ParamsOfSendMessage {
-            message: encoded.message,
+            message: encoded.message.clone(),
             message_expiration_time: None,
             callback: Some(CallbackParams::with_id(callback_id)),
         })
         .await;
 
+    let result = wait_for_transaction.call(ParamsOfWaitForTransaction {
+        message: encoded.message.clone(),
+        message_expiration_time: None,
+        processing_state: result.processing_state,
+        processing_options: None,
+        callback: Some(CallbackParams::with_id(callback_id)),
+        abi: Some(abi.clone()),
+    }).await;
+
+    println!("{:?}", result);
     client.unregister_callback(callback_id);
     let events = events.lock().unwrap().clone();
     println!("{:?}", &events);

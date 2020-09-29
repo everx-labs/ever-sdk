@@ -1,5 +1,5 @@
 use crate::abi::ParamsOfEncodeMessage;
-use crate::processing::types::{CallbackParams,  ProcessingOptions, TransactionResult};
+use crate::processing::types::{CallbackParams,  ProcessingOptions, TransactionOutput};
 
 #[derive(Serialize, Deserialize, TypeInfo, Debug)]
 pub enum MessageSource {
@@ -19,7 +19,7 @@ pub struct ParamsOfProcessMessage {
 
 #[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug)]
 pub struct ResultOfProcessMessage {
-    pub transaction: Option<TransactionResult>,
+    pub transaction: Option<TransactionOutput>,
 }
 
 // fn ensure_message(

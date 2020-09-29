@@ -1,11 +1,12 @@
 use crate::abi::Abi;
+use crate::boc::ParamsOfParse;
 use crate::client::ClientContext;
 use crate::encoding::base64_decode;
 use crate::error::{ApiError, ApiResult};
 use crate::processing::internal::get_message_id;
 use crate::processing::types::{
     can_retry_network_error, resolve_network_retries_timeout, CallbackParams, ProcessingEvent,
-    ProcessingOptions, ProcessingState, TransactionResult,
+    ProcessingOptions, ProcessingState, TransactionOutput,
 };
 use crate::processing::Error;
 use serde_json::Value;
@@ -13,7 +14,7 @@ use std::sync::Arc;
 use ton_block::MsgAddressInt;
 use ton_sdk::node_client::MAX_TIMEOUT;
 use ton_sdk::types::TRANSACTIONS_TABLE_NAME;
-use ton_sdk::{Block, Contract, MessageId, Transaction};
+use ton_sdk::{Block, Contract, MessageId};
 
 //--------------------------------------------------------------------------- wait_for_transaction
 
@@ -45,13 +46,14 @@ pub struct ParamsOfWaitForTransaction {
 
 #[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug)]
 pub enum ResultOfWaitForTransaction {
-    Complete(TransactionResult),
+    Complete(TransactionOutput),
     Incomplete {
         processing_state: ProcessingState,
         reason: ApiError,
     },
 }
 
+#[method_info(name = "processing.wait_for_transaction")]
 pub async fn wait_for_transaction(
     context: Arc<ClientContext>,
     params: ParamsOfWaitForTransaction,
@@ -234,80 +236,89 @@ fn find_transaction(
     Ok(None)
 }
 
+#[derive(Deserialize)]
+struct MessageBoc {
+    boc: String,
+}
+
+#[derive(Deserialize)]
+struct TransactionBoc {
+    boc: String,
+    out_messages: Vec<MessageBoc>,
+}
+
+#[derive(Deserialize)]
+struct ComputePhase {
+    exit_code: i32,
+}
+
+#[derive(Deserialize)]
+struct Transaction {
+    compute: ComputePhase,
+}
+
 async fn fetch_transaction_result(
     context: &Arc<ClientContext>,
     processing_state: &ProcessingState,
     message_id: &str,
     transaction_id: &str,
-) -> ApiResult<TransactionResult> {
-    let transaction = context
-        .get_client()?
-        .wait_for(
-            TRANSACTIONS_TABLE_NAME,
-            &json!({
-                "id": { "eq": transaction_id.to_string() }
-            })
-            .to_string(),
-            TRANSACTION_FIELDS_ORDINARY,
-            Some(MAX_TIMEOUT),
-        )
-        .await
-        .map_err(|err| {
-            Error::fetch_transaction_result_failed(
-                format!("Transaction can't be fetched: {}", err),
-                message_id,
-                processing_state,
+    abi: &Abi,
+) -> ApiResult<TransactionOutput> {
+    let transaction = serde_json::from_value::<TransactionBoc>(
+        context
+            .get_client()?
+            .wait_for(
+                TRANSACTIONS_TABLE_NAME,
+                &json!({
+                    "id": { "eq": transaction_id.to_string() }
+                })
+                .to_string(),
+                "boc out_messages { boc }",
+                Some(MAX_TIMEOUT),
             )
-        })?;
-    let parsed = serde_json::from_value::<Transaction>(transaction.clone()).map_err(|err| {
+            .await
+            .map_err(|err| {
+                Error::fetch_transaction_result_failed(
+                    format!("Transaction can't be fetched: {}", err),
+                    message_id,
+                    processing_state,
+                )
+            })?,
+    )
+    .map_err(|err| {
         Error::fetch_transaction_result_failed(
             format!("Transaction can't be parsed: {}", err),
             message_id,
             processing_state,
         )
     })?;
-    match parsed.compute.exit_code {
-        Some(MESSAGE_EXPIRED_CODE) | Some(REPLAY_PROTECTION_CODE) => {
+    let parsed = crate::boc::parse_transaction(
+        context.clone(),
+        ParamsOfParse {
+            boc: transaction.boc,
+        },
+    )?
+    .parsed;
+
+    let transaction = serde_json::from_value::<Transaction>(parsed.clone()).map_err(|err| {
+        Error::fetch_transaction_result_failed(
+            format!("Transaction can't be parsed: {}", err),
+            message_id,
+            processing_state,
+        )
+    })?;
+    match transaction.compute.exit_code {
+        Value::Some(MESSAGE_EXPIRED_CODE) | Some(REPLAY_PROTECTION_CODE) => {
             Err(Error::message_expired(&message_id, &processing_state))
         }
-        _ => Ok(TransactionResult {
-            transaction: Value::Null,
-            out_messages: vec![],
-            abi_return_output: None,
-        }),
+        _ => {
+
+            Ok(TransactionOutput {
+                transaction,
+                out_messages: vec![],
+                abi_return_output: None,
+            })
+        },
     }
 }
 
-const TRANSACTION_FIELDS_ORDINARY: &str = r#"
-    id
-    aborted
-    compute {
-        skipped_reason
-        exit_code
-        success
-        gas_fees
-    }
-    storage {
-       status_change
-       storage_fees_collected
-    }
-    action {
-        success
-        valid
-        no_funds
-        result_code
-        total_fwd_fees
-        total_action_fees
-    }
-    in_msg
-    now
-    out_msgs
-    out_messages {
-        id
-        body
-        msg_type
-        value
-    }
-    status
-    total_fees
-"#;
