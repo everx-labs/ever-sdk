@@ -27,7 +27,7 @@ use crate::{
     },
     crypto::KeyPair,
     error::{ApiError, ApiResult},
-    queries::{ParamsOfWaitForCollection, ResultOfWaitForCollection},
+    net::{ParamsOfWaitForCollection, ResultOfWaitForCollection},
     tc_create_context, tc_destroy_context, JsonResponse,
 };
 use futures::Future;
@@ -196,12 +196,12 @@ impl TestClient {
 
     pub fn network_address() -> String {
         std::env::var("TON_NETWORK_ADDRESS")
-            .unwrap_or("http://localhost".to_owned())
-            //.unwrap_or("cinet.tonlabs.io".to_owned())
+            //.unwrap_or("http://localhost".to_owned())
+            .unwrap_or("cinet.tonlabs.io".to_owned())
     }
 
     pub fn node_se() -> bool {
-        std::env::var("USE_NODE_SE").unwrap_or("true".to_owned()) == "true".to_owned()
+        std::env::var("USE_NODE_SE").unwrap_or("true".to_owned()) == "tre".to_owned()
     }
 
     pub fn abi_version() -> u8 {
@@ -478,7 +478,7 @@ impl TestClient {
             let message: ton_sdk::Message = serde_json::from_value(message.clone()).unwrap();
             if ton_sdk::MessageType::Internal == message.msg_type() {
                 let _: ResultOfWaitForCollection = self.request(
-                    "queries.wait_for_collection",
+                    "net.wait_for_collection",
                     ParamsOfWaitForCollection {
                         collection: "transactions".to_owned(),
                         filter: Some(json!({
@@ -540,7 +540,7 @@ impl TestClient {
             if ton_sdk::MessageType::Internal == message.msg_type() {
                 let _: ResultOfWaitForCollection = self
                     .request_async(
-                        "queries.wait_for_collection",
+                        "net.wait_for_collection",
                         ParamsOfWaitForCollection {
                             collection: "transactions".to_owned(),
                             filter: Some(json!({

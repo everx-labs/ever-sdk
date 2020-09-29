@@ -16,6 +16,7 @@ use crate::dispatch::DispatchTable;
 #[cfg(test)]
 mod tests;
 
+mod blocks_walking;
 mod defaults;
 mod errors;
 mod internal;

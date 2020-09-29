@@ -15,6 +15,11 @@ pub enum ErrorCode {
     HttpRequestCreateError = CLIENT + 10,
     HttpRequestSendError = CLIENT + 11,
     HttpRequestParseError = CLIENT + 12,
+    CallbackNotRegistered = CLIENT + 13,
+    NetModuleNotInit = CLIENT + 14,
+    InvalidConfig = CLIENT + 15,
+    CannotCreateRuntime = CLIENT + 16,
+    InvalidContextHandle = CLIENT + 17,
 }
 pub struct Error;
 
@@ -101,6 +106,41 @@ impl Error {
         error(
             ErrorCode::HttpRequestParseError,
             format!("Can not parse http request : {}", err),
+        )
+    }
+
+    pub fn callback_not_registered(callback_id: u32) -> ApiError {
+        error(
+            ErrorCode::CallbackNotRegistered,
+            format!("Callback with ID {} is not registered", callback_id)
+        )
+    }
+
+    pub fn net_module_not_init() -> ApiError {
+        error(
+            ErrorCode::NetModuleNotInit,
+            "SDK is initialized without network config".to_owned(),
+        )
+    }
+
+    pub fn invalid_config(message: String) -> ApiError {
+        error(
+            ErrorCode::InvalidConfig,
+            message,
+        )
+    }
+
+    pub fn cannot_create_runtime<E: Display>(err: E) -> ApiError {
+        error(
+            ErrorCode::CannotCreateRuntime,
+            format!("Can not create runtime: {}", err)
+        )
+    }
+
+    pub fn invalid_context_handle(context: u32) -> ApiError {
+        error(
+            ErrorCode::InvalidContextHandle,
+            format!("Invalid context handle: {}", context)
         )
     }
 }

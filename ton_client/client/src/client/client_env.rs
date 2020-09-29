@@ -76,7 +76,7 @@ impl FetchMethod {
 #[async_trait::async_trait]
 pub(crate) trait ClientEnv {
     /// Returns current Unix time in ms
-    fn now_ms(&self) -> i64;
+    fn now_ms(&self) -> u64;
     /// Sets timer for provided time interval
     async fn set_timer(&self, ms: u64);
     /// Sends asynchronous task to scheduler

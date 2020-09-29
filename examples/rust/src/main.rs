@@ -5,20 +5,19 @@ async fn main() {
         ton_client::client::ClientConfig {
             abi: None,
             crypto: None,
-            network: Some(ton_client::client::NetworkConfig {
+            network: Some(ton_client::net::NetworkConfig {
                 //server_address: "http://localhost:80".to_owned(),
                 server_address: "cinet.tonlabs.io".to_owned(),
                 ..Default::default()
             })
         },
-        0
     ).unwrap();
 
     let context = std::sync::Arc::new(context);
 
-    let giver_balance = ton_client::queries::query_collection(
+    let giver_balance = ton_client::net::query_collection(
         context.clone(),
-        ton_client::queries::ParamsOfQueryCollection {
+        ton_client::net::ParamsOfQueryCollection {
             collection: "accounts".to_owned(),
             filter: Some(serde_json::json!({
                 "id": { 
@@ -66,9 +65,9 @@ async fn main() {
         Box::new(callback)
     );
 
-    let subscription = ton_client::queries::subscribe_collection(
+    let subscription = ton_client::net::subscribe_collection(
         context.clone(),
-        ton_client::queries::ParamsOfSubscribeCollection {
+        ton_client::net::ParamsOfSubscribeCollection {
             callback_id: 123,
             collection: "transactions".to_owned(),
             filter: None,
@@ -80,7 +79,7 @@ async fn main() {
 
     std::thread::sleep(std::time::Duration::from_secs(5));
 
-    ton_client::queries::unsubscribe(
+    ton_client::net::unsubscribe(
         context.clone(),
         subscription
     )

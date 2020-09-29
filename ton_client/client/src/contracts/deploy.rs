@@ -23,7 +23,7 @@ use ton_sdk::{AbiConfig, ReceivedTransaction};
 #[cfg(feature = "node_interaction")]
 use crate::contracts::run::{resolve_msg_sdk_error, retry_call};
 #[cfg(feature = "node_interaction")]
-use crate::node_client::NodeClient;
+use crate::net::NodeClient;
 
 const DEFAULT_WORKCHAIN: i32 = 0;
 
@@ -347,7 +347,7 @@ use crate::error::{ApiResult, ApiError};
 use crate::client::ClientContext;
 
 #[cfg(feature = "node_interaction")]
-use crate::queries::{query_collection, ParamsOfQueryCollection};
+use crate::net::{query_collection, ParamsOfQueryCollection};
 #[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]

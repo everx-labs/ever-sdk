@@ -66,8 +66,8 @@ impl StdClientEnv {
 #[async_trait::async_trait]
 impl ClientEnv for StdClientEnv {
     /// Returns current Unix time in ms
-    fn now_ms(&self) -> i64 {
-        chrono::prelude::Utc::now().timestamp_millis()
+    fn now_ms(&self) -> u64 {
+        chrono::prelude::Utc::now().timestamp_millis() as u64
     }
 
     /// Sets timer for provided time interval

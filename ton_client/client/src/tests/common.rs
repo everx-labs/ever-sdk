@@ -1,5 +1,5 @@
 use super::*;
-use crate::queries::{ParamsOfQueryCollection, ResultOfQueryCollection};
+use crate::net::{ParamsOfQueryCollection, ResultOfQueryCollection};
 
 #[test]
 fn test_parallel_requests() {
@@ -10,7 +10,7 @@ fn test_parallel_requests() {
     let start = std::time::Instant::now();
     let timeout: u32 = 5000;
     let long_wait = std::thread::spawn(move || {
-        client3.request_json("queries.wait_for_collection",
+        client3.request_json("net.wait_for_collection",
             json!({
                     "collection": "accounts".to_owned(),
                     "filter": json!({
@@ -27,7 +27,7 @@ fn test_parallel_requests() {
 
     let query = |client: &TestClient| {
         let _: ResultOfQueryCollection = client.request(
-            "queries.query_collection",
+            "net.query_collection",
             ParamsOfQueryCollection {
                 collection: "accounts".to_owned(),
                 filter: Some(json!({})),
@@ -65,7 +65,7 @@ fn test_deferred_init() {
 
     // deferred network init should fail due to wrong server address
     let result = client.request_json(
-        "queries.query_collection",
+        "net.query_collection",
         json!({
             "collection": "accounts",
             "result": "id".to_owned(),
@@ -74,5 +74,5 @@ fn test_deferred_init() {
     //println!("{:#?}", result);
 
 
-    assert_eq!(result.code, crate::client::ErrorCode::HttpRequestSendError as isize);
+    assert_eq!(result.code, crate::net::ErrorCode::QueryFailed as isize);
 }

@@ -14,6 +14,9 @@ pub enum ErrorCode {
     MessageExpired = PROCESSING + 7,
     TransactionWaitTimeout = PROCESSING + 8,
     InvalidBlockReceived = PROCESSING + 9,
+    CanNotCheckBlockShard = PROCESSING + 10,
+    BlockNotFound = PROCESSING + 11,
+    InvalidData = PROCESSING + 12,
 }
 
 pub struct Error;
@@ -150,6 +153,27 @@ impl Error {
             "Transaction wait timeout".into(),
             message_id,
             Some(processing_state),
+        )
+    }
+
+    pub fn can_not_check_block_shard<E: std::fmt::Display>(err: E) -> ApiError {
+        error(
+            ErrorCode::CanNotCheckBlockShard,
+            format!("Can't check block shard: {}", err),
+        )
+    }
+
+    pub fn block_not_found(message: String) -> ApiError {
+        error(
+            ErrorCode::BlockNotFound,
+            message,
+        )
+    }
+
+    pub fn invalid_data<E: std::fmt::Display>(err: E) -> ApiError {
+        error(
+            ErrorCode::InvalidData,
+            format!("Invalid data: {}", err),
         )
     }
 }

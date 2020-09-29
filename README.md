@@ -246,7 +246,7 @@ int main()
 
 				// Request and print 50 accounts
         cout << "accounts: " << 
-				client.request("queries.query", R"(
+				client.request("net.query", R"(
 					{ 
 						"table": "accounts", 
 						"filter": "{}", 
@@ -256,7 +256,7 @@ int main()
 
  				// Request and print 50 messages
         cout << "messages: " << 
-				client.request("queries.query", R"(
+				client.request("net.query", R"(
 					{
 						"table": "messages",
 						"filter": "{}",

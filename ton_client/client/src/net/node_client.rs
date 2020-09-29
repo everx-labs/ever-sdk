@@ -25,9 +25,7 @@ use std::iter::FromIterator;
 pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
 
 pub const DEFAULT_RETRIES_COUNT: u8 = 5;
-pub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 40000;
 pub const DEFAULT_PROCESSING_TIMEOUT: u32 = 40000;
-pub const DEFAULT_TIMEOUT_GROW_FACTOR: f32 = 1.5;
 pub const DEFAULT_WAIT_TIMEOUT: u32 = 40000;
 pub const DEFAULT_OUT_OF_SYNC_THRESHOLD: i64 = 15000;
 
@@ -82,7 +80,7 @@ pub struct OrderBy {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct MutationRequest {
+struct MutationRequest {
     pub id: String,
     pub body: String
 }
@@ -192,9 +190,9 @@ impl NodeClient {
     }
 
     async fn get_time_delta(&self, address: &str) -> ApiResult<i64>{
-        let start = self.client_env.now_ms();
+        let start = self.client_env.now_ms() as i64;
         let response = self.query_by_url(address, "%7Binfo%7Btime%7D%7D").await?;
-        let end = self.client_env.now_ms();
+        let end = self.client_env.now_ms()as i64;
         let server_time = response["data"]["info"]["time"]
             .as_i64()
             .ok_or(Error::invalid_server_response(format!("No time in response: {}", response)))?;
@@ -350,22 +348,6 @@ impl NodeClient {
             data_stream: Box::pin(data_stream),
             unsubscribe: Box::pin(unsubscribe)
         })
-    }
-
-    // Returns Stream with required database record fields
-    pub async fn load_record_fields(&self, table: &str, record_id: &str, fields: &str)
-        -> ApiResult<Value> {
-        let value = self.query(
-            table,
-            &serde_json::json!({ 
-                "id": { "eq": record_id } 
-            }),
-            fields,
-            None,
-            None,
-            None).await?;
-
-        Ok(value[0].clone())
     }
 
     pub fn try_extract_error(value: &Value) -> Option<ApiError> {

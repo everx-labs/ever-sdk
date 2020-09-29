@@ -1,15 +1,17 @@
 use crate::error::ApiError;
 use std::fmt::Display;
-const NET: isize = ApiError::NET; // 500
+const NET: isize = ApiError::NET; // 600
 
 pub enum ErrorCode {
-    Base = NET,
-    InvalidServerResponse = NET + 50,
-    ClockOutOfSync = NET + 51,
-    WaitForTimeout = NET + 52,
-    GraphqlError = NET + 53,
+    QueryFailed = NET + 1,
+    SubscribeFailed = NET + 2,
+    WaitForFailed = NET + 3,
+    GetSubscriptionResultFailed = NET + 4,
+    InvalidServerResponse = NET + 5,
+    ClockOutOfSync = NET + 6,
+    WaitForTimeout = NET + 7,
+    GraphqlError = NET + 8,
 }
-
 pub struct Error;
 
 fn error(code: ErrorCode, message: String) -> ApiError {
@@ -17,6 +19,25 @@ fn error(code: ErrorCode, message: String) -> ApiError {
 }
 
 impl Error {
+    pub fn queries_query_failed<E: Display>(err: E) -> ApiError {
+        error(ErrorCode::QueryFailed, format!("Query failed: {}", err))
+    }
+
+    pub fn queries_subscribe_failed<E: Display>(err: E) -> ApiError {
+        error(ErrorCode::SubscribeFailed, format!("Subscribe failed: {}", err))
+    }
+
+    pub fn queries_wait_for_failed<E: Display>(err: E) -> ApiError {
+        error(ErrorCode::WaitForFailed, format!("WaitFor failed: {}", err))
+    }
+
+    pub fn queries_get_subscription_result_failed<E: Display>(err: E) -> ApiError {
+        error(
+            ErrorCode::GetSubscriptionResultFailed,
+            format!("Receive subscription result failed: {}", err),
+        )
+    }
+
     pub fn invalid_server_response<E: Display>(err: E) -> ApiError {
         error(
             ErrorCode::InvalidServerResponse,

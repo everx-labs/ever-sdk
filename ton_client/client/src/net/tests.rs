@@ -10,7 +10,7 @@ async fn block_signatures() {
     let client = TestClient::new();
 
     let _: ResultOfQueryCollection = client.request_async(
-        "queries.query_collection",
+        "net.query_collection",
         ParamsOfQueryCollection {
             collection: "blocks_signatures".to_owned(),
             filter: Some(json!({})),
@@ -26,7 +26,7 @@ async fn all_accounts() {
     let client = TestClient::new();
 
     let accounts: ResultOfQueryCollection = client.request_async(
-        "queries.query_collection",
+        "net.query_collection",
         ParamsOfQueryCollection {
             collection: "accounts".to_owned(),
             filter: Some(json!({})),
@@ -44,7 +44,7 @@ async fn ranges() {
     let client = TestClient::new();
 
     let accounts: ResultOfQueryCollection = client.request_async(
-        "queries.query_collection",
+        "net.query_collection",
         ParamsOfQueryCollection {
             collection: "messages".to_owned(),
             filter: Some(json!({
@@ -65,7 +65,7 @@ fn wait_for() {
         let client = TestClient::new();
         let now = ton_sdk::Contract::now();
         let transactions: ResultOfWaitForCollection = client.request(
-            "queries.wait_for_collection",
+            "net.wait_for_collection",
             ParamsOfWaitForCollection {
                 collection: "transactions".to_owned(),
                 filter: Some(json!({
@@ -120,7 +120,7 @@ async fn subscribe_for_transactions_with_addresses() {
     let callback_id = client.register_callback(callback);
 
     let handle: ResultOfSubscribeCollection = client.request_async(
-            "queries.subscribe_collection",
+            "net.subscribe_collection",
             ParamsOfSubscribeCollection {
                 collection: "transactions".to_owned(),
                 filter: Some(json!({
@@ -141,7 +141,7 @@ async fn subscribe_for_transactions_with_addresses() {
     assert_eq!(transactions.len(), 2);
     assert_ne!(transactions[0]["id"], transactions[1]["id"]);
 
-    let _: () = client.request_async("queries.unsubscribe", handle).await;
+    let _: () = client.request_async("net.unsubscribe", handle).await;
     client.unregister_callback(callback_id);
 }
 
@@ -159,7 +159,7 @@ async fn subscribe_for_messages() {
     let callback_id = client.register_callback(callback);
 
     let handle: ResultOfSubscribeCollection = client.request_async(
-        "queries.subscribe_collection",
+        "net.subscribe_collection",
         ParamsOfSubscribeCollection {
             collection: "messages".to_owned(),
             filter: Some(json!({
@@ -174,6 +174,6 @@ async fn subscribe_for_messages() {
 
     assert_eq!(messages.lock().unwrap().len(), 0);
 
-    let _: () = client.request_async("queries.unsubscribe", handle).await;
+    let _: () = client.request_async("net.unsubscribe", handle).await;
     client.unregister_callback(callback_id);
 }

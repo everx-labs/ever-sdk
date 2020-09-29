@@ -31,7 +31,7 @@ use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
 use crate::error::{apierror_from_sdkerror, ApiErrorCode, ApiSdkErrorCode, StdContractError};
 #[cfg(feature = "node_interaction")]
-use crate::node_client::NodeClient;
+use crate::net::NodeClient;
 
 
 fn bool_false() -> bool { false }
