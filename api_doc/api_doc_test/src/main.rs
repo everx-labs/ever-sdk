@@ -1,22 +1,24 @@
-use api_doc::reflect::TypeInfo;
-use api_doc_derive::{TypeInfo, method_info};
 use api_doc;
-use serde_derive::{Serialize, Deserialize};
-use api_doc::api::{Method};
+use api_doc::api::Method;
+use api_doc::reflect::TypeInfo;
+use api_doc_derive::{method_info, TypeInfo};
+use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq)]
-pub struct StringId (String);
+pub struct StringId(String);
 pub type BlockId = StringId;
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub enum EnumWithValues {
-    Foo = 2, Bar
+    Foo = 2,
+    Bar,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub enum EnumWithTypes {
     Foo(String, String),
-    Bar(u32)
+    Bar(u32),
+    Baz { a: String, b: String },
 }
 
 #[doc(summary = "Foo")]
@@ -47,16 +49,15 @@ struct Bar {
 #[derive(Serialize, Deserialize, TypeInfo)]
 struct FooHandle(u32);
 
-#[method_info(name = "module.baz")]
+#[method_info(name = "bar.baz")]
 /// This is baz method
-fn baz(_params: Foo) -> Bar {
-    Bar::default()
+fn _baz(_params: Foo) -> Result<Bar, Foo> {
+    Ok(Bar::default())
 }
 
 fn reflect<T: TypeInfo>() {
     let info = serde_json::to_string_pretty(&T::type_info()).unwrap();
     println!("{}", info);
-
 }
 
 fn main() {
@@ -65,7 +66,5 @@ fn main() {
     reflect::<EnumWithValues>();
     reflect::<EnumWithTypes>();
     reflect::<FooHandle>();
-    println!("{:?}", baz_method());
-
-    let _ = baz(Foo::default());
+    println!("{}", serde_json::to_string_pretty(&_baz_method()).unwrap());
 }

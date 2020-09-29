@@ -1,4 +1,4 @@
-use crate::abi::{Abi, Error, MessageSigning};
+use crate::abi::{Abi, Error, Signer};
 use crate::client;
 use crate::crypto::internal::{decode_public_key, sign_using_secret};
 use crate::encoding::hex_decode;
@@ -7,7 +7,7 @@ use serde_json::Value;
 use ton_sdk::ContractImage;
 
 pub(crate) fn resolve_abi(abi: &Abi) -> ApiResult<String> {
-    if let Abi::Value(value) = abi {
+    if let Abi::Serialized(value) = abi {
         Ok(value.to_string())
     } else {
         Err(client::Error::not_implemented(
@@ -38,7 +38,7 @@ pub(crate) fn result_of_encode_message(
     abi: &str,
     message: &[u8],
     data_to_sign: &[u8],
-    signing: &MessageSigning,
+    signing: &Signer,
 ) -> ApiResult<(String, Option<String>)> {
     let (message, data_to_sign) = if let Some(keys) = signing.resolve_keys()? {
         let secret = hex_decode(&format!("{}{}", &keys.secret, &keys.public))?;

@@ -51,13 +51,17 @@ dirs = "2.0.2"
 
 [dependencies.tokio]
 version = "0.2.13"
-features = ["rt-threaded"]
+features = ["rt-threaded", "macros", "sync"]
 optional = true
 
 [dependencies.futures]
 version = "0.3.4"
 optional = true
 
+[dependencies.futures-timer]
+version = "3.0.1"
+optional = true
+
 [features]
 default = ["node_interaction"]
-node_interaction = ["ton_sdk/node_interaction", "tokio", "futures"]
+node_interaction = ["ton_sdk/node_interaction", "tokio", "futures", "futures-timer"]

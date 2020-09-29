@@ -4,6 +4,7 @@ use std::fmt::Display;
 use ton_block::{AccStatusChange, ComputeSkipReason, MsgAddressInt};
 use ton_sdk::{MessageProcessingState};
 use ton_types::ExceptionCode;
+use serde_json::Value;
 
 fn format_time(time: u32) -> String {
     format!(
@@ -28,7 +29,7 @@ impl ApiErrorSource {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
 #[serde(default)]
 pub struct ApiError {
     pub core_version: String,
@@ -71,7 +72,7 @@ impl ApiError {
     pub const BOC: isize = 200;
     pub const ABI: isize = 300;
     pub const TVM: isize = 400;
-    pub const NET: isize = 500;
+    pub const PROCESSING: isize = 500;
     pub const QUERIES: isize = 600;
 
     fn new(source: ApiErrorSource, code: &dyn ApiErrorCode, message: String) -> Self {
@@ -93,6 +94,17 @@ impl ApiError {
             message,
             message_processing_state: None,
             data: serde_json::Value::Null,
+        }
+    }
+
+    pub fn with_code_message_data(code: isize, message: String, data: Value) -> Self {
+        Self {
+            core_version: env!("CARGO_PKG_VERSION").to_owned(),
+            source: ApiErrorSource::Client.to_string(),
+            code,
+            message,
+            message_processing_state: None,
+            data,
         }
     }
 

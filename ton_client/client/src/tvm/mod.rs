@@ -71,7 +71,7 @@ pub(crate) fn get(
             trace!("load contract");
             let address = params.address.ok_or_else(|| ApiError::address_reqired_for_runget())?;
             let address = account_decode(&address)?;
-            context.runtime.handle().block_on(
+            context.async_runtime_handle.block_on(
                 crate::contracts::run::load_contract(context.clone(), &address, true))?
         }
         // can't load

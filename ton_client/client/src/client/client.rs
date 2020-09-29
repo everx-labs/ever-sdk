@@ -21,9 +21,9 @@ use ton_sdk::{AbiConfig, NetworkConfig};
 #[cfg(feature = "node_interaction")]
 use ton_sdk::NodeClient;
 
+use crate::client::Error;
 use crate::get_api;
-#[cfg(feature = "node_interaction")]
-use tokio::runtime::Runtime;
+use chrono::Utc;
 
 lazy_static! {
     static ref HANDLERS: DispatchTable = create_handlers();
@@ -31,7 +31,6 @@ lazy_static! {
 }
 
 pub type Callback = dyn Fn(u32, &str, &str, u32) + Send + Sync;
-
 
 #[derive(Serialize, Deserialize, TypeInfo, Clone)]
 pub struct ResultOfVersion {
@@ -52,27 +51,21 @@ fn create_handlers() -> DispatchTable {
     crate::abi::register(&mut handlers);
     crate::tvm::register(&mut handlers);
     crate::boc::register(&mut handlers);
-
-    //TODO: uncomment this when cell module will be ready
-    // crate::cell::register(&mut handlers);
+    crate::processing::register(&mut handlers);
 
     #[cfg(feature = "node_interaction")]
     crate::queries::register(&mut handlers);
 
-    handlers.call_no_args(
-        "client.get_api_reference",
-        |_context| Ok(get_api()));
-    handlers.call_no_args(
-        "client.version",
-        |_| Ok(ResultOfVersion { version: env!("CARGO_PKG_VERSION").to_owned() }));
+    handlers.call_no_args("client.get_api_reference", |_context| Ok(get_api()));
+    handlers.call_no_args("client.version", |_| {
+        Ok(ResultOfVersion {
+            version: env!("CARGO_PKG_VERSION").to_owned(),
+        })
+    });
 
-    handlers.call_raw_async(
-        "client.register_callback",
-        register_callback);
+    handlers.call_raw_async("client.register_callback", register_callback);
 
-    handlers.call(
-        "client.unregister_callback",
-        unregister_callback);
+    handlers.call("client.unregister_callback", unregister_callback);
 
     handlers
 }
@@ -81,7 +74,7 @@ pub fn register_callback(
     context: std::sync::Arc<ClientContext>,
     _params_json: String,
     request_id: u32,
-    on_result: Box<Callback>
+    on_result: Box<Callback>,
 ) {
     context.callbacks.insert(request_id, on_result.into());
 }
@@ -94,7 +87,11 @@ pub fn unregister_callback(
     Ok(())
 }
 
-fn sync_request(context: std::sync::Arc<ClientContext>, method: String, params_json: String) -> JsonResponse {
+fn sync_request(
+    context: std::sync::Arc<ClientContext>,
+    method: String,
+    params_json: String,
+) -> JsonResponse {
     HANDLERS.sync_dispatch(context, method, params_json)
 }
 
@@ -103,7 +100,7 @@ fn async_request(
     method: String,
     params_json: String,
     request_id: u32,
-    on_result: Box<Callback>
+    on_result: Box<Callback>,
 ) {
     HANDLERS.async_dispatch(context, method, params_json, request_id, on_result)
 }
@@ -112,23 +109,53 @@ pub struct ClientContext {
     #[cfg(feature = "node_interaction")]
     pub client: Option<NodeClient>,
     #[cfg(feature = "node_interaction")]
-    pub runtime: Runtime,
+    async_runtime: Option<tokio::runtime::Runtime>,
+    #[cfg(feature = "node_interaction")]
+    pub async_runtime_handle: tokio::runtime::Handle,
     pub handle: InteropContext,
     pub config: InternalClientConfig,
-    pub callbacks: lockfree::map::Map<u32, std::sync::Arc<Callback>>
+    pub callbacks: lockfree::map::Map<u32, std::sync::Arc<Callback>>,
 }
 
 #[cfg(feature = "node_interaction")]
 impl ClientContext {
+    pub fn now(&self) -> u32 {
+        Utc::now().timestamp() as u32
+    }
+
+    pub fn now_millis(&self) -> u64 {
+        Utc::now().timestamp_millis() as u64
+    }
+
+    pub async fn delay_millis(&self, ms: u64) {
+        futures_timer::Delay::new(std::time::Duration::from_millis(ms)).await
+    }
+
     pub fn get_client(&self) -> ApiResult<&NodeClient> {
         self.client.as_ref().ok_or(ApiError::sdk_not_init())
     }
 
     pub fn get_callback(&self, callback_id: u32) -> ApiResult<std::sync::Arc<Callback>> {
-        Ok(self.callbacks.get(&callback_id)
+        Ok(self
+            .callbacks
+            .get(&callback_id)
             .ok_or(ApiError::callback_not_registered(callback_id))?
             .val()
             .clone())
+    }
+
+    pub fn send_callback_result<S: serde::Serialize>(
+        &self,
+        callback_id: u32,
+        result: S,
+    ) -> ApiResult<()> {
+        let callback = self.get_callback(callback_id)?;
+        let response = JsonResponse::from_result(
+            serde_json::to_string(&result)
+                .map_err(|e| Error::callback_params_cant_be_converted_to_json(e))?,
+        );
+        response.send(&*callback, callback_id.clone(), 0);
+        Ok(())
     }
 }
 
@@ -192,10 +219,8 @@ impl Client {
         let handle = self.next_context_handle;
         self.next_context_handle = handle.wrapping_add(1);
 
-        self.contexts.insert(handle, Arc::new(ClientContext {
-            handle,
-            config,
-        }));
+        self.contexts
+            .insert(handle, Arc::new(ClientContext { handle, config }));
 
         Ok(ResultOfCreateContext { handle })
     }
@@ -225,12 +250,19 @@ Note that default values are used if parameters are omitted in config"#,
             None
         };
 
-        let runtime = tokio::runtime::Builder::new()
-            .threaded_scheduler()
-            .enable_io()
-            .enable_time()
-            .build()
-            .map_err(|err| ApiError::cannot_create_runtime(err))?;
+        let (async_runtime, async_runtime_handle) =
+            if let Ok(existing) = tokio::runtime::Handle::try_current() {
+                (None, existing)
+            } else {
+                let runtime = tokio::runtime::Builder::new()
+                    .threaded_scheduler()
+                    .enable_io()
+                    .enable_time()
+                    .build()
+                    .map_err(|err| ApiError::cannot_create_runtime(err))?;
+                let runtime_handle = runtime.handle().clone();
+                (Some(runtime), runtime_handle)
+            };
 
         let handle = self.next_context_handle;
         self.next_context_handle = handle.wrapping_add(1);
@@ -240,9 +272,10 @@ Note that default values are used if parameters are omitted in config"#,
             Arc::new(ClientContext {
                 handle,
                 client,
-                runtime,
+                async_runtime,
+                async_runtime_handle,
                 config,
-            callbacks: Default::default()
+                callbacks: Default::default(),
             }),
         );
 
@@ -285,7 +318,7 @@ Note that default values are used if parameters are omitted in config"#,
         method_name: String,
         params_json: String,
         request_id: u32,
-        on_result: Box<Callback>
+        on_result: Box<Callback>,
     ) {
         let context = Self::shared().required_context(handle);
         match context {
