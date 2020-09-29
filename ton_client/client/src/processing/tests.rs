@@ -1,11 +1,10 @@
 use crate::abi::{
     encode_message, encode_message_method, Abi, CallSet, DeploySet, ParamsOfEncodeMessage,
-    ResultOfEncodeMessage, Signer,
+    Signer,
 };
 use crate::error::ApiResult;
 use crate::processing::{
     send_message, send_message_method, CallbackParams, ParamsOfSendMessage, ProcessingEvent,
-    ResultOfSendMessage,
 };
 use crate::tests::{TestClient, EVENTS};
 
@@ -54,7 +53,7 @@ async fn test_send_and_wait_message() {
         .get_grams_from_giver_async(&encoded.address, None)
         .await;
 
-    let result = send_message
+    let _result = send_message
         .call(ParamsOfSendMessage {
             message: encoded.message,
             message_expiration_time: None,

@@ -1,18 +1,12 @@
-use crate::abi::ParamsOfEncodeMessage;
 use crate::client::ClientContext;
-use crate::encoding::base64_decode;
-use crate::error::{ApiError, ApiResult};
+use crate::encoding::{base64_decode, hex_decode};
+use crate::error::{ApiResult};
 use crate::processing::internal::get_message_id;
 use crate::processing::types::{CallbackParams, ProcessingEvent, ProcessingState};
 use crate::processing::Error;
-use serde_json::Value;
 use std::sync::Arc;
-use ton_block::MsgAddressInt;
-use ton_sdk::node_client::MAX_TIMEOUT;
-use ton_sdk::types::TRANSACTIONS_TABLE_NAME;
 use ton_sdk::{
-    Block, BlockId, Contract, MessageId, MessageProcessingState, NodeClient, ReceivedTransaction,
-    SdkError, SdkMessage, Transaction,
+    Block, Contract,
 };
 
 #[derive(Serialize, Deserialize, TypeInfo, Debug)]
@@ -90,7 +84,9 @@ pub async fn send_message(
         }
         .emit(&context, cb)
     }
-    let send_result = client.send_message(&message_id, &message_boc).await;
+    let send_result = client
+        .send_message(&hex_decode(&message_id)?, &message_boc)
+        .await;
     if let Some(cb) = &params.callback {
         match send_result {
             Ok(_) => ProcessingEvent::DidSend {

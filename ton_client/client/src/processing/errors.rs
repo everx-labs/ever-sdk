@@ -13,6 +13,7 @@ pub enum ErrorCode {
     InvalidMessageBoc = PROCESSING + 6,
     MessageExpired = PROCESSING + 7,
     TransactionWaitTimeout = PROCESSING + 8,
+    InvalidBlockReceived = PROCESSING + 9,
 }
 
 pub struct Error;
@@ -102,6 +103,32 @@ impl Error {
         error(
             ErrorCode::CanNotBuildMessageCell,
             format!("Can't build message cell: {}", err),
+        )
+    }
+
+    pub fn invalid_block_received<E: std::fmt::Display>(
+        err: E,
+        message_id: &str,
+        processing_state: &ProcessingState,
+    ) -> ApiError {
+        Self::processing_error(
+            ErrorCode::InvalidBlockReceived,
+            format!("Invalid block received: {}", err),
+            message_id,
+            Some(processing_state),
+        )
+    }
+
+    pub fn fetch_transaction_result_failed<E: std::fmt::Display>(
+        err: E,
+        message_id: &str,
+        processing_state: &ProcessingState,
+    ) -> ApiError {
+        Self::processing_error(
+            ErrorCode::InvalidBlockReceived,
+            err.to_string(),
+            message_id,
+            Some(processing_state),
         )
     }
 

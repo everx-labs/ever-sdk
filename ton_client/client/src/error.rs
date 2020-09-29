@@ -29,7 +29,7 @@ impl ApiErrorSource {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
 #[serde(default)]
 pub struct ApiError {
     pub core_version: String,
