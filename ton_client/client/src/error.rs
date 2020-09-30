@@ -66,6 +66,12 @@ macro_rules! as_number_impl {
     };
 }
 
+impl Display for ApiError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
 impl ApiError {
     pub const CLIENT: isize = 0;
     pub const CRYPTO: isize = 100;
@@ -73,7 +79,8 @@ impl ApiError {
     pub const ABI: isize = 300;
     pub const TVM: isize = 400;
     pub const PROCESSING: isize = 500;
-    pub const QUERIES: isize = 600;
+    pub const NET: isize = 600;
+    pub const UTILS: isize = 700;
 
     fn new(source: ApiErrorSource, code: &dyn ApiErrorCode, message: String) -> Self {
         Self {
@@ -113,7 +120,7 @@ impl ApiError {
     }
 
     #[cfg(feature = "node_interaction")]
-    pub fn add_network_url(mut self, client: &ton_sdk::NodeClient) -> ApiError {
+    pub(crate) fn add_network_url(mut self, client: &crate::net::NodeClient) -> ApiError {
         self.data["config_server"] = client.config_server().into();
 
         if let Some(url) = client.query_url() {
@@ -734,7 +741,7 @@ impl ApiErrorCode for i32 {
 }
 
 #[cfg(feature = "node_interaction")]
-pub fn apierror_from_sdkerror<F>(err: &failure::Error, default_err: F, client: Option<&ton_sdk::NodeClient>) -> ApiError
+pub(crate) fn apierror_from_sdkerror<F>(err: &failure::Error, default_err: F, client: Option<&crate::net::NodeClient>) -> ApiError
     where
         F: Fn(String) -> ApiError,
 {

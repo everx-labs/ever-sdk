@@ -49,7 +49,7 @@ pub use transaction::{Transaction, TransactionId, TransactionFees};
 #[cfg(feature = "node_interaction")]
 mod block;
 #[cfg(feature = "node_interaction")]
-pub use block::{Block, MsgDescr};
+pub use block::{Block, BLOCK_FIELDS, MsgDescr};
 
 pub mod types;
 pub use types::{NetworkConfig, AbiConfig, BlockId};

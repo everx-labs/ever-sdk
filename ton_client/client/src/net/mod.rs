@@ -26,6 +26,10 @@ use tokio::sync::{
 mod errors;
 pub use errors::{Error, ErrorCode};
 
+mod node_client;
+pub(crate) use node_client::{NodeClient, MAX_TIMEOUT};
+pub use node_client::{NetworkConfig, SortDirection, OrderBy};
+
 #[cfg(test)]
 mod tests;
 
@@ -38,7 +42,7 @@ pub struct ParamsOfQueryCollection {
     /// projection (result) string
     pub result: String,
     /// sorting order
-    pub order: Option<Vec<ton_sdk::OrderBy>>,
+    pub order: Option<Vec<OrderBy>>,
     /// number of documents to return
     pub limit: Option<u32>,
 }
@@ -112,7 +116,7 @@ pub async fn query_collection(
     let result = client
         .query(
             &params.collection,
-            &params.filter.unwrap_or(json!({})).to_string(),
+            &params.filter.unwrap_or(json!({})),
             &params.result,
             params.order,
             params.limit,
@@ -120,11 +124,14 @@ pub async fn query_collection(
         )
         .await
         .map_err(|err| {
-            crate::error::apierror_from_sdkerror(&err, Error::queries_query_failed, Some(client))
+            Error::queries_query_failed(err).add_network_url(client)
         })?;
 
     let result = serde_json::from_value(result)
-        .map_err(|err| Error::queries_query_failed(format!("Can not parse result: {}", err)))?;
+        .map_err(|err| {
+            Error::queries_query_failed(format!("Can not parse result: {}", err))
+                .add_network_url(client)
+        })?;
 
     Ok(ResultOfQueryCollection { result })
 }
@@ -137,13 +144,13 @@ pub async fn wait_for_collection(
     let result = client
         .wait_for(
             &params.collection,
-            &params.filter.unwrap_or(json!({})).to_string(),
+            &params.filter.unwrap_or(json!({})),
             &params.result,
             params.timeout,
         )
         .await
         .map_err(|err| {
-            crate::error::apierror_from_sdkerror(&err, Error::queries_wait_for_failed, Some(client))
+            Error::queries_wait_for_failed(err).add_network_url(client)
         })?;
 
     Ok(ResultOfWaitForCollection { result })
@@ -159,28 +166,32 @@ pub async fn subscribe_collection(
     let handle = rand::thread_rng().next_u32();
 
     let client = context.get_client()?;
-    let mut stream = client
+    let subscription = client
         .subscribe(
             &params.collection,
-            &params.filter.unwrap_or(json!({})).to_string(),
+            &params.filter.unwrap_or(json!({})),
             &params.result,
         )
         .await
-        .map_err(|err| Error::queries_subscribe_failed(err).add_network_url(client))?
-        .fuse();
+        .map_err(|err| {
+            Error::queries_wait_for_failed(err).add_network_url(client)
+        })?;
 
     let (sender, mut receiver) = channel(1);
 
     add_subscription_handle(handle, sender).await;
 
-    // spawn thread which reads subscription stream and calls callnack with data
-    tokio::spawn(async move {
+
+    // spawn thread which reads subscription stream and calls callback with data
+    let context_copy = context.clone();
+    context.env.spawn(Box::pin(async move {
         let wait_abortion = receiver.recv().fuse();
         futures::pin_mut!(wait_abortion);
+        let mut data_stream = subscription.data_stream.fuse();
         loop {
             futures::select!(
                 // waiting next subscription data
-                data = stream.select_next_some() => {
+                data = data_stream.select_next_some() => {
                     match data {
                         Ok(data) => {
                             let result = ResultOfSubscription {
@@ -190,13 +201,8 @@ pub async fn subscribe_collection(
                                 .send(&*callback, callback_id, 0);
                         }
                         Err(err) => {
-                            JsonResponse::from_error(
-                                crate::error::apierror_from_sdkerror(
-                                    &err,
-                                    Error::queries_get_subscription_result_failed,
-                                    context.get_client().ok(),
-                                )
-                            ).send(&*callback, callback_id, 0);
+                            JsonResponse::from_error(err.add_network_url(context_copy.get_client().unwrap()))
+                                .send(&*callback, callback_id, 0);
                         }
                     }
                 },
@@ -204,7 +210,8 @@ pub async fn subscribe_collection(
                 _ = wait_abortion => break
             );
         }
-    });
+        subscription.unsubscribe.await;
+    }));
 
     Ok(ResultOfSubscribeCollection { handle })
 }
@@ -221,8 +228,8 @@ pub async fn unsubscribe(
 }
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.spawn("queries.query_collection", query_collection);
-    handlers.spawn("queries.wait_for_collection", wait_for_collection);
-    handlers.spawn("queries.subscribe_collection", subscribe_collection);
-    handlers.spawn("queries.unsubscribe", unsubscribe);
+    handlers.spawn("net.query_collection", query_collection);
+    handlers.spawn("net.wait_for_collection", wait_for_collection);
+    handlers.spawn("net.subscribe_collection", subscribe_collection);
+    handlers.spawn("net.unsubscribe", unsubscribe);
 }

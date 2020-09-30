@@ -8,10 +8,11 @@ use crate::processing::types::{
     ProcessingOptions, ProcessingState, TransactionResult,
 };
 use crate::processing::Error;
+use crate::net::MAX_TIMEOUT;
+use super::blocks_walking::wait_next_block;
 use serde_json::Value;
 use std::sync::Arc;
 use ton_block::MsgAddressInt;
-use ton_sdk::node_client::MAX_TIMEOUT;
 use ton_sdk::types::TRANSACTIONS_TABLE_NAME;
 use ton_sdk::{Block, Contract, MessageId, Transaction};
 
@@ -67,7 +68,7 @@ pub async fn wait_for_transaction(
         .ok_or(Error::message_has_not_destination_address())?;
 
     let mut processing_state = params.processing_state.clone();
-    let now = context.now_millis();
+    let now = context.env.now_ms();
     let processing_timeout = net.config().message_processing_timeout() as u64;
     let max_block_time = match params.message_expiration_time {
         Some(time) => time as u64,
@@ -175,8 +176,8 @@ async fn fetch_next_shard_block(
         }
 
         // Fetch next block
-        match Block::wait_next_block(
-            context.get_client()?,
+        match wait_next_block(
+            context,
             &current_block_id,
             &address,
             Some((timeout / 1000) as u32),
@@ -206,7 +207,7 @@ async fn fetch_next_shard_block(
         }
 
         // Perform delay before retry
-        context.delay_millis(network_retries_timeout as u64).await;
+        context.env.set_timer(network_retries_timeout as u64).await;
     }
 }
 
@@ -246,8 +247,7 @@ async fn fetch_transaction_result(
             TRANSACTIONS_TABLE_NAME,
             &json!({
                 "id": { "eq": transaction_id.to_string() }
-            })
-            .to_string(),
+            }),
             TRANSACTION_FIELDS_ORDINARY,
             Some(MAX_TIMEOUT),
         )
