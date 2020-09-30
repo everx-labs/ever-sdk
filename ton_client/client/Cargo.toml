@@ -43,6 +43,7 @@ crc-any = "2.2.3"
 failure = "0.1"
 num-traits = "0.2"
 num-derive = "0.3"
+async-trait = "0.1.40"
 lockfree = { git = "https://github.com/tonlabs/lockfree.git", package = "lockfree" }
 
 [dev-dependencies]
@@ -50,15 +51,28 @@ log4rs = "^0"
 dirs = "2.0.2"
 pretty_assertions = "0.6.1"
 
+[dependencies.reqwest]
+version = "0.10.4"
+optional = true
+
 [dependencies.tokio]
 version = "0.2.13"
-features = ["rt-threaded"]
+features = ["rt-threaded", "macros", "sync"]
 optional = true
 
 [dependencies.futures]
 version = "0.3.4"
 optional = true
 
+[dependencies.tokio-tungstenite]
+version =  "0.11.0"
+features = ["tls"]
+optional = true
+
+[dependencies.futures-timer]
+version = "3.0.1"
+optional = true
+
 [features]
 default = ["node_interaction"]
-node_interaction = ["ton_sdk/node_interaction", "tokio", "futures"]
+node_interaction = ["ton_sdk/node_interaction", "tokio", "futures", "reqwest", "tokio-tungstenite", "futures-timer"]

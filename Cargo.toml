@@ -9,5 +9,6 @@ members = [
 exclude = [
     "ton_client/platforms/ton-client-node-js",
     "ton_client/platforms/ton-client-web",
-    "ton_client/platforms/ton-client-react-native"
+    "ton_client/platforms/ton-client-react-native",
+    "examples/rust"
 ]

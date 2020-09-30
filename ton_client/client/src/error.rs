@@ -4,6 +4,7 @@ use std::fmt::Display;
 use ton_block::{AccStatusChange, ComputeSkipReason, MsgAddressInt};
 use ton_sdk::{MessageProcessingState};
 use ton_types::ExceptionCode;
+use serde_json::Value;
 
 fn format_time(time: u32) -> String {
     format!(
@@ -28,7 +29,7 @@ impl ApiErrorSource {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
 #[serde(default)]
 pub struct ApiError {
     pub core_version: String,
@@ -65,14 +66,21 @@ macro_rules! as_number_impl {
     };
 }
 
+impl Display for ApiError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
 impl ApiError {
     pub const CLIENT: isize = 0;
     pub const CRYPTO: isize = 100;
     pub const BOC: isize = 200;
     pub const ABI: isize = 300;
     pub const TVM: isize = 400;
-    pub const NET: isize = 500;
-    pub const QUERIES: isize = 600;
+    pub const PROCESSING: isize = 500;
+    pub const NET: isize = 600;
+    pub const UTILS: isize = 700;
 
     fn new(source: ApiErrorSource, code: &dyn ApiErrorCode, message: String) -> Self {
         Self {
@@ -96,12 +104,23 @@ impl ApiError {
         }
     }
 
+    pub fn with_code_message_data(code: isize, message: String, data: Value) -> Self {
+        Self {
+            core_version: env!("CARGO_PKG_VERSION").to_owned(),
+            source: ApiErrorSource::Client.to_string(),
+            code,
+            message,
+            message_processing_state: None,
+            data,
+        }
+    }
+
     pub fn sdk(code: ApiSdkErrorCode, message: String) -> Self {
         Self::new(ApiErrorSource::Client, &code, message)
     }
 
     #[cfg(feature = "node_interaction")]
-    pub fn add_network_url(mut self, client: &ton_sdk::NodeClient) -> ApiError {
+    pub(crate) fn add_network_url(mut self, client: &crate::net::NodeClient) -> ApiError {
         self.data["config_server"] = client.config_server().into();
 
         if let Some(url) = client.query_url() {
@@ -722,7 +741,7 @@ impl ApiErrorCode for i32 {
 }
 
 #[cfg(feature = "node_interaction")]
-pub fn apierror_from_sdkerror<F>(err: &failure::Error, default_err: F, client: Option<&ton_sdk::NodeClient>) -> ApiError
+pub(crate) fn apierror_from_sdkerror<F>(err: &failure::Error, default_err: F, client: Option<&crate::net::NodeClient>) -> ApiError
     where
         F: Fn(String) -> ApiError,
 {

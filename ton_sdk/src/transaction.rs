@@ -23,13 +23,6 @@ use ton_block::{TransactionProcessingStatus, AccStatusChange, ComputeSkipReason,
 
 use std::convert::TryFrom;
 
-// #[cfg(feature = "node_interaction")]
-// use futures::{Stream, StreamExt};
-#[cfg(feature = "node_interaction")]
-use crate::node_client::NodeClient;
-#[cfg(feature = "node_interaction")]
-use crate::types::TRANSACTIONS_TABLE_NAME;
-
 #[derive(Deserialize, Default, Debug)]
 #[serde(default)]
 pub struct ComputePhase {
@@ -237,43 +230,6 @@ impl Transaction {
         fees.total_output = if total_output <= std::u64::MAX as u128 { total_output as u64 } else { 0 };
 
         fees
-    }
-}
-
-#[cfg(feature = "node_interaction")]
-impl Transaction {
-    // Asynchronously loads a Transaction instance or None if transaction with given id is not exists
-    pub async fn load<'a>(client: &'a NodeClient, id: &TransactionId) -> Result<Option<Transaction>> {
-        let value = client.load_record_fields(
-            TRANSACTIONS_TABLE_NAME,
-            &id.to_string(),
-            TRANSACTION_FIELDS_ORDINARY).await?;
-
-        if value == serde_json::Value::Null {
-            Ok(None)
-        } else {
-            Ok(Some(serde_json::from_value(value)
-                .map_err(|err| SdkError::InvalidData {
-                    msg: format!("error parsing transaction: {}", err)
-                })?))
-        }
-    }
-
-    // Asynchronously loads an instances of transaction's out messages
-    // pub fn load_out_messages<'a>(&self, client: &'a NodeClient) -> Result<impl Stream<Item = Result<Message>> + Send + 'a> {
-    //     Ok(futures::stream::iter(self.out_messages_id().clone()).then(move |id| async move { 
-    //         match Message::load(client, &id).await {
-    //             Err(err) => Err(err),
-    //             Ok(msg) => msg.ok_or(SdkError::NoData.into())
-    //         }}))
-    // }
-
-    // Asynchronously loads an instance of transaction's input message
-    pub async fn load_in_message(&self, client: &NodeClient) -> Result<Option<Message>> {
-        match self.in_message_id() {
-            Some(m) => Message::load(client, &m).await,
-            None => bail!(SdkError::InvalidOperation { msg: "transaction doesn't have inbound message".into() } )
-        }
     }
 }
 

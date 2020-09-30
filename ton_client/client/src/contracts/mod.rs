@@ -337,7 +337,7 @@ pub(crate) async fn send_message(context: std::sync::Arc<ClientContext>, params:
 
     let msg = base64_decode(&params.message_body_base64)?;
     let id = crate::encoding::hex_decode(&params.message_id)?;
-    let client = context.get_client()?;
+    let client = context.get_sdk_client()?;
     let address = params.address()?;
     let is_old_client = params.address.is_none();
     let state = Contract::send_message(&client, &address, &id, &msg, params.expire)
@@ -358,9 +358,10 @@ pub(crate) async fn process_message(context: std::sync::Arc<ClientContext>, para
         params.message.expire.unwrap_or_default());
 
     let client = context.get_client()?;
+    let sdk_client = context.get_sdk_client()?;
     let msg = params.message.into_sdk_msg()?;
     let result = Contract::process_message(
-        client,
+        sdk_client,
         &msg,
         params.infinite_wait)
         .await;
@@ -368,7 +369,7 @@ pub(crate) async fn process_message(context: std::sync::Arc<ClientContext>, para
     let transaction = match result {
         Err(err) =>
             return Err(run::resolve_msg_sdk_error(
-                client, err, &msg, params.function_name.as_ref().map(|string| string.as_str()), ApiError::contracts_process_message_failed,
+                client, sdk_client, err, &msg, params.function_name.as_ref().map(|string| string.as_str()), ApiError::contracts_process_message_failed,
             ).await?
             ),
         Ok(tr) => tr
@@ -428,9 +429,10 @@ pub(crate) async fn wait_transaction(context: std::sync::Arc<ClientContext>, par
         params.message.expire.unwrap_or_default());
 
     let client = context.get_client()?;
+    let sdk_client = context.get_sdk_client()?;
     let msg = params.message.into_sdk_msg()?;
     let result = Contract::wait_transaction_processing(
-        client,
+        sdk_client,
         &msg.address,
         &msg.id,
         params.message_processing_state,
@@ -441,7 +443,7 @@ pub(crate) async fn wait_transaction(context: std::sync::Arc<ClientContext>, par
     let transaction = match result {
         Err(err) =>
             return Err(run::resolve_msg_sdk_error(
-                client, err, &msg,
+                client, sdk_client, err, &msg,
                 params.function_name.as_ref().map(|string| string.as_str()),
                 ApiError::contracts_process_message_failed,
             ).await?),

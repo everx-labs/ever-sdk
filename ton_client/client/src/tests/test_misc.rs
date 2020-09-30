@@ -255,7 +255,7 @@ fn test_wallet_deploy() {
             }),
     ).unwrap();
 
-    let _ = client.request_json("queries.wait.for",
+    let _ = client.request_json("net.wait.for",
         json!({
                 "table": "accounts".to_owned(),
                 "filter": json!({
@@ -489,7 +489,7 @@ fn test_parallel_requests() {
     let start = std::time::Instant::now();
     let timeout: u32 = 5000;
     let long_wait = std::thread::spawn(move || {
-        client3.request_json("queries.wait.for",
+        client3.request_json("net.wait.for",
             json!({
                     "table": "accounts".to_owned(),
                     "filter": json!({

@@ -25,11 +25,13 @@ use crate::error::{ApiResult, ApiError};
 use crate::encoding::{account_decode, base64_decode, long_num_to_json_string};
 
 #[cfg(feature = "node_interaction")]
-use ton_sdk::{AbiConfig, NodeClient, ReceivedTransaction, SdkError};
+use ton_sdk::{AbiConfig, ReceivedTransaction, SdkError};
 #[cfg(feature = "node_interaction")]
 use ed25519_dalek::Keypair;
 #[cfg(feature = "node_interaction")]
 use crate::error::{apierror_from_sdkerror, ApiErrorCode, ApiSdkErrorCode, StdContractError};
+#[cfg(feature = "node_interaction")]
+use crate::net::NodeClient;
 
 
 fn bool_false() -> bool { false }
@@ -343,8 +345,9 @@ pub(crate) async fn run(context: std::sync::Arc<ClientContext>, params: ParamsOf
     let key_pair = if let Some(ref keys) = params.key_pair { Some(keys.decode()?) } else { None };
 
     let client = context.get_client()?;
+    let sdk_client = context.get_sdk_client()?;
     trace!("run contract");
-    let tr = call_contract(client, &context.config.abi, address.clone(), &params, key_pair.as_ref()).await
+    let tr = call_contract(client, sdk_client, &context.config.abi, address.clone(), &params, key_pair.as_ref()).await
         .map_err(|err| err
             .add_function(Some(&params.call_set.function_name))
             .add_network_url(client)
@@ -673,13 +676,14 @@ pub(crate) fn check_transaction_status(
 #[cfg(feature = "node_interaction")]
 pub(crate) async fn load_contract(context: std::sync::Arc<ClientContext>, address: &MsgAddressInt, deployed: bool) -> ApiResult<Contract> {
     let client = context.get_client()?;
-    let result = Contract::load_wait(client, address, deployed, None)
+    let sdk_client = context.get_sdk_client()?;
+    let result = Contract::load_wait(sdk_client, address, deployed, None)
         .await
         .map_err(|err| apierror_from_sdkerror(
             &err, ApiError::contracts_run_contract_load_failed, Some(client)));
     if let Err(err) = result {
         if err.code == crate::error::ApiSdkErrorCode::WaitForTimeout.as_number() {
-            let result = Contract::load(context.get_client()?, address).await
+            let result = Contract::load(context.get_sdk_client()?, address).await
                 .map_err(|err| apierror_from_sdkerror(
                     &err, ApiError::contracts_run_contract_load_failed, Some(client)))?;
             if let Some(contract) = result {
@@ -736,6 +740,7 @@ pub async fn retry_call<F, Fut>(retries_count: u8, func: F) -> ApiResult<Receive
 #[cfg(feature = "node_interaction")]
 async fn call_contract(
     client: &NodeClient,
+    sdk_client: &ton_sdk::NodeClient,
     abi_config: &AbiConfig,
     address: MsgAddressInt,
     params: &ParamsOfRun,
@@ -755,12 +760,12 @@ async fn call_contract(
                 .map_err(|err| ApiError::contracts_create_run_message_failed(
                     err, &params.call_set.function_name))?;
 
-            let result = Contract::process_message(client, &msg, true).await;
+            let result = Contract::process_message(sdk_client, &msg, true).await;
 
             match result {
                 Err(err) =>
                     Err(resolve_msg_sdk_error(
-                        client, err, &msg, Some(&params.call_set.function_name), ApiError::contracts_run_failed,
+                        client, sdk_client, err, &msg, Some(&params.call_set.function_name), ApiError::contracts_run_failed,
                     ).await?),
                 Ok(tr) => Ok(tr)
             }
@@ -808,7 +813,7 @@ pub(crate) fn do_local_run_msg(
         None => {
             trace!("load contract");
             if let Some(context) = context {
-                context.clone().runtime.handle().block_on(
+                context.clone().async_runtime_handle.block_on(
                     load_contract(context, &address, !full_run))?
             } else {
                 return Err(ApiError::sdk_not_init());
@@ -898,6 +903,7 @@ pub(crate) fn resolve_msg_error(
 #[cfg(feature = "node_interaction")]
 pub(crate) async fn resolve_msg_sdk_error<F: Fn(String) -> ApiError>(
     client: &NodeClient,
+    sdk_client: &ton_sdk::NodeClient,
     error: failure::Error,
     msg: &ton_sdk::SdkMessage,
     function: Option<&str>,
@@ -907,7 +913,7 @@ pub(crate) async fn resolve_msg_sdk_error<F: Fn(String) -> ApiError>(
         match error.downcast_ref::<SdkError>() {
             Some(SdkError::MessageExpired { msg_id: _, expire: _, sending_time, block_time: _, block_id: _ }) |
             Some(SdkError::TransactionWaitTimeout { msg_id: _, sending_time, timeout: _, state: _ }) => {
-                let account = Contract::load(client, &msg.address)
+                let account = Contract::load(sdk_client, &msg.address)
                     .await
                     .map_err(|err| apierror_from_sdkerror(
                         &err, ApiError::contracts_run_contract_load_failed, Some(client),
