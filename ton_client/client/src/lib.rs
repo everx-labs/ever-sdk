@@ -35,7 +35,7 @@ pub mod boc;
 pub mod processing;
 
 #[cfg(feature = "node_interaction")]
-pub mod queries;
+pub mod net;
 
 mod interop;
 pub use self::interop::*;

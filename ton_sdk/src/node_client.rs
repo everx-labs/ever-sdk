@@ -233,8 +233,8 @@ impl NodeClient {
         self.ensure_client().await?;
         let client_lock = self.data.read().await;
         let client = &client_lock.as_ref().unwrap().client;
-        // TODO: make client.subscribe function async
-        let stream = client.subscribe(request)?
+
+        let stream = client.subscribe(request).await?
             .map(move |result| {
                     match result {
                         Err(err) => Err(error!(err).into()),

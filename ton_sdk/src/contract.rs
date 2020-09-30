@@ -403,14 +403,6 @@ impl Contract {
             timeout).await?)
     }
 
-    // Asynchronously loads a Contract's json representation
-    // or null if message with given id is not exists
-    pub async fn load_json(client: &NodeClient, id: AccountId) -> Result<String> {
-        client.load_record_fields(CONTRACTS_TABLE_NAME, &id.to_hex_string(), ACCOUNT_FIELDS)
-            .await
-            .map(|val| val.to_string())
-    }
-
     pub async fn process_message(
         client: &NodeClient,
         msg: &SdkMessage,

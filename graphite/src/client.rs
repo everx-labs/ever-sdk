@@ -88,14 +88,14 @@ impl GqlClient {
         Self::process_response(response).await
     }
     
-    pub fn subscribe(&self, request: VariableRequest) -> Result<SubscribeStream, GraphiteError> {
+    pub async fn subscribe(&self, request: VariableRequest) -> Result<SubscribeStream, GraphiteError> {
         Ok(SubscribeStream::new(
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .map_err(|err| GraphiteError::Other(format!("Cannot get time: {}", err)))?
                 .subsec_nanos(),
             request,
-            &self.graphql_socket_host)?)
+            &self.graphql_socket_host).await?)
     }
 
     pub fn queries_server(&self) -> &str {

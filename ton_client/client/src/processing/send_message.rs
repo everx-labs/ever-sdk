@@ -18,10 +18,9 @@ use crate::error::{ApiResult};
 use crate::processing::internal::get_message_id;
 use crate::processing::types::{CallbackParams, ProcessingEvent, ProcessingState};
 use crate::processing::Error;
+use super::blocks_walking::find_last_shard_block;
 use std::sync::Arc;
-use ton_sdk::{
-    Block, Contract,
-};
+use ton_sdk::Contract;
 
 #[derive(Serialize, Deserialize, TypeInfo, Debug)]
 pub struct ParamsOfSendMessage {
@@ -47,7 +46,7 @@ pub async fn send_message(
     // Check for already expired
     {
         if let Some(message_expiration_time) = params.message_expiration_time {
-            if message_expiration_time <= context.now_millis() {
+            if message_expiration_time <= context.env.now_ms() {
                 return Err(Error::message_already_expired());
             }
         }
@@ -65,11 +64,10 @@ pub async fn send_message(
         .ok_or(Error::message_has_not_destination_address())?;
 
     // Fetch current shard block
-    let client = context.get_client()?;
     if let Some(cb) = &params.callback {
         ProcessingEvent::WillFetchFirstBlock {}.emit(&context, cb)
     }
-    let last_checked_block_id = match Block::find_last_shard_block(client, &address).await {
+    let last_checked_block_id = match find_last_shard_block(&context, &address).await {
         Ok(block) => block.to_string(),
         Err(err) => {
             let error = Error::fetch_first_block_failed(err, &hex_message_id);
@@ -86,7 +84,7 @@ pub async fn send_message(
     // Initialize processing state
     let processing_state = ProcessingState {
         last_checked_block_id,
-        message_sending_time: context.now_millis(),
+        message_sending_time: context.env.now_ms(),
     };
 
     // Send
@@ -98,7 +96,7 @@ pub async fn send_message(
         }
         .emit(&context, cb)
     }
-    let send_result = client
+    let send_result = context.get_client()?
         .send_message(&hex_decode(&message_id)?, &message_boc)
         .await;
     if let Some(cb) = &params.callback {

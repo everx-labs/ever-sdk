@@ -32,14 +32,14 @@ pub const DEFAULT_OUT_OF_SYNC_THRESHOLD: i64 = 15000;
 pub const MASTERCHAIN_ID: i32 = -1;
 
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct NetworkConfig {
-    server_address: String,
-    message_retries_count: Option<u8>,
-    message_processing_timeout: Option<u32>,
-    wait_for_timeout: Option<u32>,
-    out_of_sync_threshold: Option<i64>,
-    access_key: Option<String>,
+    pub server_address: String,
+    pub message_retries_count: Option<u8>,
+    pub message_processing_timeout: Option<u32>,
+    pub wait_for_timeout: Option<u32>,
+    pub out_of_sync_threshold: Option<i64>,
+    pub access_key: Option<String>,
 }
 
 impl NetworkConfig {

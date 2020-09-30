@@ -39,7 +39,7 @@ pub struct Block {
     pub in_msg_descr: Vec<MsgDescr>
 }
 
-const BLOCK_FIELDS: &str = r#"
+pub const BLOCK_FIELDS: &str = r#"
     id
     gen_utime
     after_split
