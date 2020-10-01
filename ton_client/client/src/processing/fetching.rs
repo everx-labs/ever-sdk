@@ -1,7 +1,7 @@
 use crate::abi::Abi;
 use crate::client::ClientContext;
 use crate::error::ApiResult;
-use crate::net::MAX_TIMEOUT;
+use crate::net::{wait_for_collection, ParamsOfWaitForCollection, MAX_TIMEOUT};
 use crate::processing::blocks_walking::wait_next_block;
 use crate::processing::internal::{
     can_retry_network_error, get_exit_code, resolve_network_retries_timeout,
@@ -11,6 +11,7 @@ use crate::processing::types::TvmExitCode;
 use crate::processing::{
     Error, ParamsOfWaitForTransaction, ProcessingEvent, ProcessingState, TransactionOutput,
 };
+use serde_json::Value;
 use std::sync::Arc;
 use ton_block::MsgAddressInt;
 use ton_sdk::types::TRANSACTIONS_TABLE_NAME;
@@ -80,6 +81,34 @@ pub(crate) struct TransactionBoc {
     pub out_messages: Vec<MessageBoc>,
 }
 
+impl TransactionBoc {
+    async fn fetch_value(context: &Arc<ClientContext>, transaction_id: &str) -> ApiResult<Value> {
+        Ok(wait_for_collection(
+            context.clone(),
+            ParamsOfWaitForCollection {
+                collection: TRANSACTIONS_TABLE_NAME.into(),
+                filter: Some(json!({
+                    "id": { "eq": transaction_id.to_string() }
+                })),
+                result: "boc out_messages { boc }".into(),
+                timeout: Some(MAX_TIMEOUT),
+            },
+        )
+        .await?
+        .result)
+    }
+
+    fn from(value: Value, message_id: &str, processing_state: &ProcessingState) -> ApiResult<Self> {
+        serde_json::from_value::<TransactionBoc>(value).map_err(|err| {
+            Error::fetch_transaction_result_failed(
+                format!("Transaction can't be parsed: {}", err),
+                message_id,
+                processing_state,
+            )
+        })
+    }
+}
+
 pub async fn fetch_transaction_result(
     context: &Arc<ClientContext>,
     params: &ParamsOfWaitForTransaction,
@@ -89,7 +118,7 @@ pub async fn fetch_transaction_result(
     abi: &Option<Abi>,
 ) -> ApiResult<TransactionOutput> {
     let transaction_boc =
-        fetch_transaction_boc(context, processing_state, message_id, &transaction_id).await?;
+        fetch_transaction_boc(context, transaction_id, message_id, processing_state).await?;
     let (transaction, out_messages) = parse_transaction_boc(context.clone(), &transaction_boc)?;
     let abi_decoded = if let Some(abi) = abi {
         Some(decode_abi_output(context, abi, &out_messages)?)
@@ -122,43 +151,18 @@ pub async fn fetch_transaction_result(
 
 async fn fetch_transaction_boc(
     context: &Arc<ClientContext>,
-    processing_state: &ProcessingState,
+    transaction_id: &str,
     message_id: &str,
-    transaction_id: &&str,
+    processing_state: &ProcessingState,
 ) -> ApiResult<TransactionBoc> {
     let mut retries: u8 = 0;
     let network_retries_timeout = resolve_network_retries_timeout(context);
 
     // Network retries loop
     loop {
-        match context
-            .get_client()?
-            .wait_for(
-                TRANSACTIONS_TABLE_NAME,
-                &json!({
-                    "id": { "eq": transaction_id.to_string() }
-                }),
-                "boc out_messages { boc }",
-                Some(MAX_TIMEOUT),
-            )
-            .await
-            .map_err(|err| {
-                Error::fetch_transaction_result_failed(
-                    format!("Transaction can't be fetched: {}", err),
-                    message_id,
-                    processing_state,
-                )
-            }) {
-            Ok(fetched) => {
-                let transaction_boc =
-                    serde_json::from_value::<TransactionBoc>(fetched).map_err(|err| {
-                        Error::fetch_transaction_result_failed(
-                            format!("Transaction can't be parsed: {}", err),
-                            message_id,
-                            processing_state,
-                        )
-                    })?;
-                return Ok(transaction_boc);
+        match TransactionBoc::fetch_value(context, transaction_id).await {
+            Ok(value) => {
+                return Ok(TransactionBoc::from(value, message_id, processing_state)?);
             }
             Err(error) => {
                 // If network retries limit has reached, return error

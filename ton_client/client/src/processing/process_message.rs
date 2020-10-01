@@ -4,8 +4,8 @@ use crate::error::ApiResult;
 use crate::processing::internal::can_retry_expired_message;
 use crate::processing::types::{CallbackParams, TransactionOutput};
 use crate::processing::{
-    send_message, wait_for_transaction, ErrorCode, ParamsOfSendMessage,
-    ParamsOfWaitForTransaction, ResultOfWaitForTransaction,
+    send_message, wait_for_transaction, ErrorCode, ParamsOfSendMessage, ParamsOfWaitForTransaction,
+    ResultOfWaitForTransaction,
 };
 use std::sync::Arc;
 
@@ -23,18 +23,13 @@ pub struct ParamsOfProcessMessage {
     pub callback: Option<CallbackParams>,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug)]
-pub struct ResultOfProcessMessage {
-    pub output: TransactionOutput,
-}
-
 /// Sends message to the network and monitors network for a result of
 /// message processing.
 #[method_info(name = "processing.process_message")]
 pub async fn process_message(
     context: Arc<ClientContext>,
     params: ParamsOfProcessMessage,
-) -> ApiResult<ResultOfProcessMessage> {
+) -> ApiResult<TransactionOutput> {
     let abi = match &params.message {
         MessageSource::Encoded { abi, .. } => abi.clone(),
         MessageSource::AbiEncodingParams(encode_params) => Some(encode_params.abi.clone()),
@@ -48,7 +43,9 @@ pub async fn process_message(
             MessageSource::AbiEncodingParams(encode_params) => {
                 let mut encode_params = encode_params.clone();
                 encode_params.processing_try_index = Some(try_index);
-                crate::abi::encode_message(context.clone(), encode_params).await?.message
+                crate::abi::encode_message(context.clone(), encode_params)
+                    .await?
+                    .message
             }
         };
 
@@ -79,9 +76,7 @@ pub async fn process_message(
             {
                 Ok(result) => match result {
                     ResultOfWaitForTransaction::Complete(output) => {
-                        return Ok(ResultOfProcessMessage {
-                            output,
-                        });
+                        return Ok(output);
                     }
                     ResultOfWaitForTransaction::Incomplete {
                         processing_state: incomplete_state,
@@ -92,7 +87,7 @@ pub async fn process_message(
                 },
                 Err(err) => {
                     if err.code == ErrorCode::MessageExpired as isize {
-                        if can_retry_expired_message(&context, &mut try_index){}
+                        if can_retry_expired_message(&context, &mut try_index) {}
                     } else if err.code == ErrorCode::TransactionWaitTimeout as isize {
                         return Err(err);
                     }

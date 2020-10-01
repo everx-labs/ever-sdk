@@ -30,7 +30,6 @@ mod wait_for_transaction;
 pub use errors::{Error, ErrorCode};
 pub use process_message::{
     process_message, process_message_method, MessageSource, ParamsOfProcessMessage,
-    ResultOfProcessMessage,
 };
 pub use send_message::{
     send_message, send_message_method, ParamsOfSendMessage, ResultOfSendMessage,

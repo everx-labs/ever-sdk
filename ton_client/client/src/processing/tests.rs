@@ -176,8 +176,7 @@ async fn test_process_message() {
             },
             callback: Some(CallbackParams::with_id(callback_id)),
         })
-        .await
-        .output;
+        .await;
 
     assert_eq!(output.out_messages.len(), 0);
     assert_eq!(
@@ -242,8 +241,7 @@ async fn test_process_message() {
             }),
             callback: Some(CallbackParams::with_id(callback_id)),
         })
-        .await
-        .output;
+        .await;
     assert_eq!(output.out_messages.len(), 2);
     assert_eq!(
         output.abi_decoded,
