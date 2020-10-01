@@ -63,7 +63,7 @@ fn resolve_header(
             Some(
                 header
                     .map_or(None, |x| x.time)
-                    .unwrap_or_else(|| now / 1000),
+                    .unwrap_or_else(|| now),
             )
         } else {
             None

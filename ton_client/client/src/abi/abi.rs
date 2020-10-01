@@ -24,7 +24,7 @@ pub struct FunctionHeader {
     /// Message expiration time in seconds.
     pub expire: Option<u32>,
 
-    /// Message creation time in seconds.
+    /// Message creation time in milliseconds.
     pub time: Option<u64>,
 
     /// Public key used to sign message. Encoded with `hex`.
