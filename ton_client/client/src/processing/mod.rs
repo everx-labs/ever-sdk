@@ -18,7 +18,6 @@ use crate::dispatch::DispatchTable;
 mod tests;
 
 mod blocks_walking;
-mod defaults;
 mod errors;
 mod internal;
 mod process_message;
@@ -31,13 +30,20 @@ pub use process_message::{MessageSource, ParamsOfProcessMessage, ResultOfProcess
 pub use send_message::{
     send_message, send_message_method, ParamsOfSendMessage, ResultOfSendMessage,
 };
-pub use types::{CallbackParams, ProcessingEvent, ProcessingOptions, ProcessingState};
+pub use types::{
+    CallbackParams, ProcessingEvent, ProcessingState, TransactionOutput,
+};
 pub use wait_for_transaction::{
     wait_for_transaction, wait_for_transaction_method, ParamsOfWaitForTransaction,
     ResultOfWaitForTransaction,
 };
 
 use api_doc::reflect::TypeInfo;
+
+pub const DEFAULT_NETWORK_RETRIES_LIMIT: i8 = -1;
+pub const DEFAULT_NETWORK_RETRIES_TIMEOUT: u32 = 1000;
+pub const DEFAULT_EXPIRATION_RETRIES_LIMIT: i8 = 20;
+pub const DEFAULT_EXPIRATION_RETRIES_TIMEOUT: u32 = 1000;
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
     handlers.register_api_types("processing", vec![CallbackParams::type_info]);

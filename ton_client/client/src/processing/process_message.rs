@@ -1,5 +1,5 @@
 use crate::abi::ParamsOfEncodeMessage;
-use crate::processing::types::{CallbackParams,  ProcessingOptions, TransactionOutput};
+use crate::processing::types::{CallbackParams,  TransactionOutput};
 
 #[derive(Serialize, Deserialize, TypeInfo, Debug)]
 pub enum MessageSource {
@@ -11,8 +11,6 @@ pub enum MessageSource {
 pub struct ParamsOfProcessMessage {
     /// Message source.
     pub message: MessageSource,
-    /// Processing options.
-    pub processing_options: Option<ProcessingOptions>,
     /// Processing callback.
     pub callback: Option<CallbackParams>,
 }
@@ -46,6 +44,12 @@ pub struct ResultOfProcessMessage {
 //     loop {
 //         let (message, expiration_time) =
 //             ensure_message(&context, &params.message, retry_count, &params.callback)?;
+//
+//         if let Some(message_expiration_time) = params.message_expiration_time {
+//             if message_expiration_time <= context.env.now_ms() {
+//                 return Err(Error::message_already_expired());
+//             }
+//         }
 //         let transaction_waiting_state = send_message(
 //             context.clone(),
 //             ParamsOfSendMessage {

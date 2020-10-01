@@ -201,7 +201,7 @@ impl TestClient {
     }
 
     pub fn node_se() -> bool {
-        std::env::var("USE_NODE_SE").unwrap_or("true".to_owned()) == "tre".to_owned()
+        std::env::var("USE_NODE_SE").unwrap_or("true".to_owned()) == "true".to_owned()
     }
 
     pub fn abi_version() -> u8 {

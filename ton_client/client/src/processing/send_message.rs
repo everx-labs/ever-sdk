@@ -26,9 +26,6 @@ use ton_sdk::Contract;
 pub struct ParamsOfSendMessage {
     /// Message BOC.
     pub message: String,
-    /// Message expiration time.
-    /// Used only for messages with `expiration` replay protection.
-    pub message_expiration_time: Option<u64>,
     /// Processing callback.
     pub callback: Option<CallbackParams>,
 }
@@ -43,15 +40,6 @@ pub async fn send_message(
     context: Arc<ClientContext>,
     params: ParamsOfSendMessage,
 ) -> ApiResult<ResultOfSendMessage> {
-    // Check for already expired
-    {
-        if let Some(message_expiration_time) = params.message_expiration_time {
-            if message_expiration_time <= context.env.now_ms() {
-                return Err(Error::message_already_expired());
-            }
-        }
-    }
-
     // Check message
     let message_boc = base64_decode(&params.message)?;
     let message = Contract::deserialize_message(&message_boc)

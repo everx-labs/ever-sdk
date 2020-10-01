@@ -1,17 +1,18 @@
-use crate::abi::Abi;
-use crate::boc::ParamsOfParse;
+use super::blocks_walking::wait_next_block;
+use crate::abi::{decode_message, Abi, DecodedMessageType, ParamsOfDecodeMessage};
+use crate::boc::{ParamsOfParse, ResultOfParse};
 use crate::client::ClientContext;
 use crate::encoding::base64_decode;
 use crate::error::{ApiError, ApiResult};
-use crate::processing::internal::get_message_id;
-use crate::processing::types::{
-    can_retry_network_error, resolve_network_retries_timeout, CallbackParams, ProcessingEvent,
-    ProcessingOptions, ProcessingState, TransactionOutput,
-};
-use crate::processing::Error;
 use crate::net::MAX_TIMEOUT;
-use super::blocks_walking::wait_next_block;
+use crate::processing::internal::{
+    can_retry_network_error, get_message_id, resolve_network_retries_timeout,
+};
+use crate::processing::types::{AbiDecodedOutput, TvmExitCode};
+use crate::processing::Error;
+use crate::processing::{CallbackParams, ProcessingEvent, ProcessingState, TransactionOutput};
 use serde_json::Value;
+use std::convert::TryInto;
 use std::sync::Arc;
 use ton_block::MsgAddressInt;
 use ton_sdk::types::TRANSACTIONS_TABLE_NAME;
@@ -19,41 +20,63 @@ use ton_sdk::{Block, Contract, MessageId};
 
 //--------------------------------------------------------------------------- wait_for_transaction
 
-const MESSAGE_EXPIRED_CODE: i32 = 57;
-const REPLAY_PROTECTION_CODE: i32 = 52;
-
 #[derive(Serialize, Deserialize, TypeInfo, Debug)]
 pub struct ParamsOfWaitForTransaction {
     /// Optional ABI for decoding transaction results.
-    /// If it is specified then the output messages bodies will be decoded
-    /// according to this ABI.
-    /// The `abi_return_output` result field will be filled out.
+    ///
+    /// If it is specified then the output messages bodies will be
+    /// decoded according to this ABI.
+    ///
+    /// The `abi_decoded` result field will be filled out.
     pub abi: Option<Abi>,
+
     /// Message BOC. Encoded with `base64`.
     pub message: String,
-    /// Message expiration time.
-    /// Used only for messages with `expiration` replay protection.
-    /// Must be the same value as it specified in `expire` ABI header
-    /// of the message body.
-    pub message_expiration_time: Option<u32>,
-    /// Processing options.
-    pub processing_options: Option<ProcessingOptions>,
-    /// Processing state. As it received from `send_message`
-    /// or 'Incomplete` result of the previous call to the `wait_for_transaction`.
+
+    /// Processing state. As it received from `send_message` or
+    /// 'Incomplete` result of the previous call to the
+    /// `wait_for_transaction`.
     pub processing_state: ProcessingState,
+
     /// Processing callback.
     pub callback: Option<CallbackParams>,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug)]
 pub enum ResultOfWaitForTransaction {
+    /// The transaction has been found.
+    ///
+    /// All transaction related output provided.
     Complete(TransactionOutput),
+
+    /// The transaction hasn't been found yet.
+    ///
+    /// Waiting was aborted due to some unexpected reason
+    /// (e.g. network error).
+    ///
+    /// Application can resume waiting calling `wait_for_transaction`
+    /// again with provided `processing_state`.
+    ///
+    /// The reason of the abortion is provided in `reason` field.
     Incomplete {
         processing_state: ProcessingState,
         reason: ApiError,
     },
 }
 
+/// When the ABI header `expire` is present, the processing uses
+/// `message expiration` strategy:
+/// - The maximum block gen time is set to
+///   `message_expiration_time + transaction_wait_timeout`.
+/// - When maximum block gen time is reached the processing will
+///   be finished with `MessageExpired` error.
+///
+/// When the ABI header `expire` isn't present, the processing uses
+/// `transaction waiting` strategy:
+/// - The maximum block gen time is set to
+///   `now() + transaction_wait_timeout`.
+/// - When maximum block gen time is reached the processing will
+///   be finished with `Incomplete` result.
 #[method_info(name = "processing.wait_for_transaction")]
 pub async fn wait_for_transaction(
     context: Arc<ClientContext>,
@@ -71,12 +94,28 @@ pub async fn wait_for_transaction(
 
     let mut processing_state = params.processing_state.clone();
     let now = context.env.now_ms();
-    let processing_timeout = net.config().message_processing_timeout() as u64;
-    let max_block_time = match params.message_expiration_time {
-        Some(time) => time as u64,
-        None => now + processing_timeout,
+    let processing_timeout = net.config().message_processing_timeout();
+    let abi_header = match params.abi.as_ref() {
+        Some(abi) => crate::abi::decode_message(
+            context.clone(),
+            ParamsOfDecodeMessage {
+                abi: abi.clone(),
+                message: params.message.clone(),
+            },
+        )
+        .map(|x| x.header)?,
+        None => None,
     };
-    let fetch_block_timeout = std::cmp::max(max_block_time, now) - now + processing_timeout;
+    let message_expiration_time = abi_header
+        .as_ref()
+        .map_or(None, |x| x.expire)
+        .map(|x| x as u64 * 1000);
+    let max_block_time = match message_expiration_time {
+        Some(time) => time,
+        None => now + processing_timeout as u64,
+    };
+    let fetch_block_timeout =
+        (std::cmp::max(max_block_time, now) - now) as u32 + processing_timeout;
 
     let incomplete = |processing_state: &ProcessingState, reason: ApiError| {
         Ok(ResultOfWaitForTransaction::Incomplete {
@@ -104,9 +143,11 @@ pub async fn wait_for_transaction(
                         // Let's fetch other stuff.
                         return match fetch_transaction_result(
                             &context,
+                            &params,
                             &processing_state,
                             &message_id,
                             &transaction_id,
+                            &params.abi,
                         )
                         .await
                         {
@@ -132,11 +173,16 @@ pub async fn wait_for_transaction(
                 // If we found a block with expired `gen_utime`,
                 // then stop walking and return error.
                 if block.gen_utime as u64 * 1000 > max_block_time {
-                    return Err(if params.message_expiration_time.is_some() {
-                        Error::message_expired(&message_id, &processing_state)
+                    // TODO: here we must execute contract and collect execution result
+                    // TODO: to get more diagnostic data for application
+                    return if message_expiration_time.is_some() {
+                        Err(Error::message_expired(&message_id, &processing_state))
                     } else {
-                        Error::transaction_wait_timeout(&message_id, &processing_state)
-                    });
+                        incomplete(
+                            &processing_state,
+                            Error::transaction_wait_timeout(&message_id, &processing_state),
+                        )
+                    };
                 }
 
                 // We have successfully walked through the block.
@@ -158,12 +204,11 @@ async fn fetch_next_shard_block(
     address: &MsgAddressInt,
     processing_state: &ProcessingState,
     message_id: &str,
-    timeout: u64,
+    timeout: u32,
 ) -> ApiResult<Block> {
     let mut retries: i8 = 0;
     let current_block_id = processing_state.last_checked_block_id.clone().into();
-    let network_retries_timeout =
-        resolve_network_retries_timeout(&params.processing_options, context);
+    let network_retries_timeout = resolve_network_retries_timeout(context);
 
     // Network retries loop
     loop {
@@ -178,14 +223,7 @@ async fn fetch_next_shard_block(
         }
 
         // Fetch next block
-        match wait_next_block(
-            context,
-            &current_block_id,
-            &address,
-            Some((timeout / 1000) as u32),
-        )
-        .await
-        {
+        match wait_next_block(context, &current_block_id, &address, Some(timeout)).await {
             Ok(block) => return Ok(block),
             Err(err) => {
                 let error = Error::fetch_block_failed(err, &message_id, &processing_state);
@@ -202,7 +240,7 @@ async fn fetch_next_shard_block(
                 }
 
                 // If network retries limit has reached, return error
-                if !can_retry_network_error(&params.processing_options, context, &mut retries) {
+                if !can_retry_network_error(context, &mut retries) {
                     return Err(error);
                 }
             }
@@ -248,32 +286,62 @@ struct TransactionBoc {
     out_messages: Vec<MessageBoc>,
 }
 
-#[derive(Deserialize)]
-struct ComputePhase {
-    exit_code: i32,
-}
-
-#[derive(Deserialize)]
-struct Transaction {
-    compute: ComputePhase,
-}
-
 async fn fetch_transaction_result(
     context: &Arc<ClientContext>,
+    params: &ParamsOfWaitForTransaction,
     processing_state: &ProcessingState,
     message_id: &str,
     transaction_id: &str,
-    abi: &Abi,
+    abi: &Option<Abi>,
 ) -> ApiResult<TransactionOutput> {
-    let transaction = serde_json::from_value::<TransactionBoc>(
+    let transaction_boc =
+        fetch_transaction_boc(context, processing_state, message_id, &transaction_id).await?;
+    let (transaction, out_messages) =
+        parse_transaction_boc(context, &transaction_boc)?;
+    let abi_decoded = if let Some(abi) = abi {
+        Some(decode_abi_output(context, abi, &out_messages)?)
+    } else {
+        None
+    };
+    let exit_code = get_exit_code(&transaction, processing_state, message_id)?;
+
+    match exit_code.try_into() {
+        Ok(TvmExitCode::MessageExpired) | Ok(TvmExitCode::ReplayProtection) => {
+            Err(Error::message_expired(&message_id, &processing_state))
+        }
+        _ => {
+            let result = TransactionOutput {
+                transaction,
+                out_messages,
+                abi_decoded,
+            };
+            if let Some(cb) = &params.callback {
+                ProcessingEvent::TransactionReceived {
+                    message_id: message_id.to_string(),
+                    message: params.message.clone(),
+                    result: result.clone(),
+                }
+                .emit(&context, cb);
+            }
+            Ok(result)
+        }
+    }
+}
+
+async fn fetch_transaction_boc(
+    context: &Arc<ClientContext>,
+    processing_state: &ProcessingState,
+    message_id: &str,
+    transaction_id: &&str,
+) -> ApiResult<TransactionBoc> {
+    let transaction_boc = serde_json::from_value::<TransactionBoc>(
         context
             .get_client()?
             .wait_for(
                 TRANSACTIONS_TABLE_NAME,
                 &json!({
                     "id": { "eq": transaction_id.to_string() }
-                })
-                .to_string(),
+                }),
                 "boc out_messages { boc }",
                 Some(MAX_TIMEOUT),
             )
@@ -293,33 +361,100 @@ async fn fetch_transaction_result(
             processing_state,
         )
     })?;
-    let parsed = crate::boc::parse_transaction(
+    Ok(transaction_boc)
+}
+
+fn parse_transaction_boc(
+    context: &Arc<ClientContext>,
+    transaction_boc: &TransactionBoc,
+) -> ApiResult<(Value, Vec<Value>)> {
+    let mut parsed_out_messages = Vec::<Value>::new();
+    for out_message in &transaction_boc.out_messages {
+        parsed_out_messages.push(parse_boc(
+            context,
+            &out_message.boc,
+            crate::boc::parse_message,
+        )?);
+    }
+    Ok((
+        parse_boc(context, &transaction_boc.boc, crate::boc::parse_transaction)?,
+        parsed_out_messages,
+    ))
+}
+
+#[derive(Deserialize)]
+struct ComputePhase {
+    exit_code: i32,
+}
+
+#[derive(Deserialize)]
+struct Transaction {
+    compute: ComputePhase,
+}
+
+fn get_exit_code(
+    parsed_transaction: &Value,
+    processing_state: &ProcessingState,
+    message_id: &str,
+) -> ApiResult<i32> {
+    Ok(
+        serde_json::from_value::<Transaction>(parsed_transaction.clone())
+            .map_err(|err| {
+                Error::fetch_transaction_result_failed(
+                    format!("Transaction can't be parsed: {}", err),
+                    message_id,
+                    processing_state,
+                )
+            })?
+            .compute
+            .exit_code,
+    )
+}
+
+fn parse_boc(
+    context: &Arc<ClientContext>,
+    boc: &str,
+    parser: fn(Arc<ClientContext>, ParamsOfParse) -> ApiResult<ResultOfParse>,
+) -> ApiResult<Value> {
+    let mut parsed = parser(
         context.clone(),
         ParamsOfParse {
-            boc: transaction.boc,
+            boc: boc.to_string(),
         },
     )?
     .parsed;
-
-    let transaction = serde_json::from_value::<Transaction>(parsed.clone()).map_err(|err| {
-        Error::fetch_transaction_result_failed(
-            format!("Transaction can't be parsed: {}", err),
-            message_id,
-            processing_state,
-        )
-    })?;
-    match transaction.compute.exit_code {
-        Value::Some(MESSAGE_EXPIRED_CODE) | Some(REPLAY_PROTECTION_CODE) => {
-            Err(Error::message_expired(&message_id, &processing_state))
-        }
-        _ => {
-
-            Ok(TransactionOutput {
-                transaction,
-                out_messages: vec![],
-                abi_return_output: None,
-            })
-        },
-    }
+    parsed["boc"] = Value::String(boc.to_string());
+    Ok(parsed)
 }
 
+fn decode_abi_output(
+    context: &Arc<ClientContext>,
+    abi: &Abi,
+    message_bocs: &Vec<Value>,
+) -> ApiResult<AbiDecodedOutput> {
+    let mut out_messages = Vec::new();
+    let mut output = None;
+    for message_boc in message_bocs {
+        out_messages.push(
+            match decode_message(
+                context.clone(),
+                ParamsOfDecodeMessage {
+                    message: message_boc.to_string(),
+                    abi: abi.clone(),
+                },
+            ) {
+                Ok(decoded) => {
+                    if decoded.message_type == DecodedMessageType::FunctionOutput {
+                        output = Some(decoded.value.clone());
+                    }
+                    Some(decoded)
+                }
+                _ => None,
+            },
+        );
+    }
+    Ok(AbiDecodedOutput {
+        out_messages,
+        output,
+    })
+}
