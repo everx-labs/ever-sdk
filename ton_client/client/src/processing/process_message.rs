@@ -1,10 +1,18 @@
-use crate::abi::ParamsOfEncodeMessage;
-use crate::processing::types::{CallbackParams,  TransactionOutput};
+use crate::abi::{Abi, ParamsOfEncodeMessage};
+use crate::client::ClientContext;
+use crate::error::ApiResult;
+use crate::processing::internal::can_retry_expired_message;
+use crate::processing::types::{CallbackParams, TransactionOutput};
+use crate::processing::{
+    send_message, wait_for_transaction, ErrorCode, ParamsOfSendMessage,
+    ParamsOfWaitForTransaction, ResultOfWaitForTransaction,
+};
+use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, TypeInfo, Debug)]
 pub enum MessageSource {
-    Message(String),
-    AbiEncoding(ParamsOfEncodeMessage),
+    Encoded { message: String, abi: Option<Abi> },
+    AbiEncodingParams(ParamsOfEncodeMessage),
 }
 
 #[derive(Serialize, Deserialize, TypeInfo, Debug)]
@@ -17,72 +25,79 @@ pub struct ParamsOfProcessMessage {
 
 #[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug)]
 pub struct ResultOfProcessMessage {
-    pub transaction: Option<TransactionOutput>,
+    pub output: TransactionOutput,
 }
 
-// fn ensure_message(
-//     context: &Arc<ClientContext>,
-//     source: &MessageSource,
-//     retry_count: u32,
-//     callback: &Option<CallbackParams>,
-// ) -> ApiResult<(String, Option<u32>)> {
-//     Ok(match source {
-//         MessageSource::Message(boc) => (boc.clone(), None),
-//         MessageSource::AbiEncoding(encode_params) => {
-//             emit_event(context, callback, || MessageProcessingEvent::EncodeMessage);
-//             let encoded = crate::abi::encode_message(context.clone(), encode_params.clone())?;
-//             (encoded.message, None)
-//         }
-//     })
-// }
-//
-// pub async fn process_message(
-//     context: Arc<ClientContext>,
-//     params: ParamsOfProcessMessage,
-// ) -> ApiResult<ResultOfProcessMessage> {
-//     let mut retry_count = 0;
-//     loop {
-//         let (message, expiration_time) =
-//             ensure_message(&context, &params.message, retry_count, &params.callback)?;
-//
-//         if let Some(message_expiration_time) = params.message_expiration_time {
-//             if message_expiration_time <= context.env.now_ms() {
-//                 return Err(Error::message_already_expired());
-//             }
-//         }
-//         let transaction_waiting_state = send_message(
-//             context.clone(),
-//             ParamsOfSendMessage {
-//                 message: message.clone(),
-//                 message_expiration_time: None,
-//                 callback: params.callback.clone(),
-//             },
-//         )
-//         .await?
-//         .transaction_waiting_state;
-//
-//         let result = wait_for_transaction(
-//             context.clone(),
-//             ParamsOfWaitForTransaction {
-//                 message: message.clone(),
-//                 message_expiration_time: expiration_time,
-//                 callback: params.callback.clone(),
-//                 waiting_state: transaction_waiting_state,
-//             },
-//         )
-//         .await?;
-//         match result {
-//             ResultOfWaitForTransaction::Complete(transaction) => {
-//                 emit_event(&context, &params.callback, || {
-//                     MessageProcessingEvent::TransactionReceived {
-//                         transaction: transaction.clone(),
-//                     }
-//                 });
-//                 return Ok(ResultOfProcessMessage { transaction });
-//             }
-//
-//             ResultOfWaitForTransaction::Incomplete(waiting_state) => {}
-//         }
-//         retry_count += 1;
-//     }
-// }
+/// Sends message to the network and monitors network for a result of
+/// message processing.
+#[method_info(name = "processing.process_message")]
+pub async fn process_message(
+    context: Arc<ClientContext>,
+    params: ParamsOfProcessMessage,
+) -> ApiResult<ResultOfProcessMessage> {
+    let abi = match &params.message {
+        MessageSource::Encoded { abi, .. } => abi.clone(),
+        MessageSource::AbiEncodingParams(encode_params) => Some(encode_params.abi.clone()),
+    };
+
+    let mut try_index = 0;
+    loop {
+        // Encode (or use encoded) message
+        let message = match &params.message {
+            MessageSource::Encoded { message, .. } => message.clone(),
+            MessageSource::AbiEncodingParams(encode_params) => {
+                let mut encode_params = encode_params.clone();
+                encode_params.processing_try_index = Some(try_index);
+                crate::abi::encode_message(context.clone(), encode_params).await?.message
+            }
+        };
+
+        // Send
+        let mut processing_state = send_message(
+            context.clone(),
+            ParamsOfSendMessage {
+                message: message.clone(),
+                abi: abi.clone(),
+                callback: params.callback.clone(),
+            },
+        )
+        .await?
+        .processing_state;
+
+        // Monitor network
+        loop {
+            match wait_for_transaction(
+                context.clone(),
+                ParamsOfWaitForTransaction {
+                    message: message.clone(),
+                    callback: params.callback.clone(),
+                    abi: abi.clone(),
+                    processing_state: processing_state.clone(),
+                },
+            )
+            .await
+            {
+                Ok(result) => match result {
+                    ResultOfWaitForTransaction::Complete(output) => {
+                        return Ok(ResultOfProcessMessage {
+                            output,
+                        });
+                    }
+                    ResultOfWaitForTransaction::Incomplete {
+                        processing_state: incomplete_state,
+                        ..
+                    } => {
+                        processing_state = incomplete_state;
+                    }
+                },
+                Err(err) => {
+                    if err.code == ErrorCode::MessageExpired as isize {
+                        if can_retry_expired_message(&context, &mut try_index){}
+                    } else if err.code == ErrorCode::TransactionWaitTimeout as isize {
+                        return Err(err);
+                    }
+                }
+            }
+        }
+    }
+}

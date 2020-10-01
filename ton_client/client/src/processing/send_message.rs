@@ -12,13 +12,14 @@
  *
  */
 
+use super::blocks_walking::find_last_shard_block;
+use crate::abi::Abi;
 use crate::client::ClientContext;
 use crate::encoding::{base64_decode, hex_decode};
-use crate::error::{ApiResult};
-use crate::processing::internal::get_message_id;
+use crate::error::ApiResult;
+use crate::processing::internal::{get_message_expiration_time, get_message_id};
 use crate::processing::types::{CallbackParams, ProcessingEvent, ProcessingState};
 use crate::processing::Error;
-use super::blocks_walking::find_last_shard_block;
 use std::sync::Arc;
 use ton_sdk::Contract;
 
@@ -26,6 +27,21 @@ use ton_sdk::Contract;
 pub struct ParamsOfSendMessage {
     /// Message BOC.
     pub message: String,
+
+    /// Optional message ABI.
+    ///
+    /// If this parameter is specified and the message has the
+    /// `expire` header then expiration time will be checked against
+    /// the current time to prevent an unnecessary sending.
+    ///
+    /// The `message already expired` error will be returned in this
+    /// case.
+    ///
+    /// Note that specifying `abi` for ABI compliant contracts is
+    /// strongly recommended due to choosing proper processing
+    /// strategy.
+    pub abi: Option<Abi>,
+
     /// Processing callback.
     pub callback: Option<CallbackParams>,
 }
@@ -50,6 +66,15 @@ pub async fn send_message(
     let address = message
         .dst()
         .ok_or(Error::message_has_not_destination_address())?;
+
+    let message_expiration_time =
+        get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message)?;
+
+    if let Some(message_expiration_time) = message_expiration_time {
+        if message_expiration_time <= context.env.now_ms() {
+            return Err(Error::message_already_expired());
+        }
+    }
 
     // Fetch current shard block
     if let Some(cb) = &params.callback {
@@ -84,7 +109,8 @@ pub async fn send_message(
         }
         .emit(&context, cb)
     }
-    let send_result = context.get_client()?
+    let send_result = context
+        .get_client()?
         .send_message(&hex_decode(&message_id)?, &message_boc)
         .await;
     if let Some(cb) = &params.callback {
