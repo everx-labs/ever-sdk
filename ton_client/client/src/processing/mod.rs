@@ -48,7 +48,13 @@ pub const DEFAULT_EXPIRATION_RETRIES_LIMIT: i8 = 20;
 pub const DEFAULT_EXPIRATION_RETRIES_TIMEOUT: u32 = 1000;
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.register_api_types("processing", vec![CallbackParams::type_info]);
+    handlers.register_api_types("processing", vec![
+        CallbackParams::type_info(),
+        MessageSource::type_info(),
+        ProcessingEvent::type_info(),
+        ProcessingState::type_info(),
+        TransactionOutput::type_info(),
+    ]);
     handlers.spawn_method(send_message_method, send_message);
     handlers.spawn_method(wait_for_transaction_method, wait_for_transaction);
     handlers.spawn_method(process_message_method, process_message);

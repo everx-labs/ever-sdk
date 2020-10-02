@@ -13,9 +13,7 @@
 
 use super::JsonResponse;
 use crate::client::{Callback, ClientContext};
-use crate::encoding::method_api;
 use crate::error::{ApiError, ApiResult};
-use api_doc::api::Method;
 use api_doc::reflect::TypeInfo;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -43,12 +41,10 @@ impl JsonResponse {
 }
 
 trait SyncHandler {
-    fn get_api(&self) -> &Method;
     fn handle(&self, context: std::sync::Arc<ClientContext>, params_json: &str) -> JsonResponse;
 }
 
 trait AsyncHandler {
-    fn get_api(&self) -> &Method;
     fn handle(
         &self,
         context: std::sync::Arc<ClientContext>,
@@ -58,13 +54,8 @@ trait AsyncHandler {
     );
 }
 
-pub(crate) struct ModuleTypeInfo {
-    pub module: String,
-    pub type_info: api_doc::api::Field,
-}
-
 pub(crate) struct DispatchTable {
-    api_types: HashMap<String, ModuleTypeInfo>,
+    pub(crate) api: api_doc::api::API,
     sync_runners: HashMap<String, Box<dyn SyncHandler + Sync>>,
     async_runners: HashMap<String, Box<dyn AsyncHandler + Sync>>,
 }
@@ -77,7 +68,6 @@ struct RawAsyncHandler<F>
 where
     F: Fn(std::sync::Arc<ClientContext>, String, u32, Box<Callback>),
 {
-    api: Method,
     handler: F,
 }
 
@@ -85,8 +75,8 @@ impl<F> RawAsyncHandler<F>
 where
     F: Fn(std::sync::Arc<ClientContext>, String, u32, Box<Callback>),
 {
-    pub fn new(api: Method, handler: F) -> Self {
-        Self { api, handler }
+    pub fn new(handler: F) -> Self {
+        Self { handler }
     }
 }
 
@@ -94,9 +84,6 @@ impl<F> AsyncHandler for RawAsyncHandler<F>
 where
     F: Fn(std::sync::Arc<ClientContext>, String, u32, Box<Callback>),
 {
-    fn get_api(&self) -> &Method {
-        &self.api
-    }
     fn handle(
         &self,
         context: std::sync::Arc<ClientContext>,
@@ -116,7 +103,6 @@ where
     Fut: Future<Output = ApiResult<R>> + 'static,
     F: Send + Fn(std::sync::Arc<ClientContext>, P) -> Fut + 'static,
 {
-    api: Method,
     handler: std::sync::Arc<F>,
     // Mutex is needed to have Sync trait implemented for struct
     phantom: PhantomData<std::sync::Mutex<(P, R, Fut)>>,
@@ -130,9 +116,8 @@ where
     Fut: Future<Output = ApiResult<R>> + 'static,
     F: Send + Fn(std::sync::Arc<ClientContext>, P) -> Fut + 'static,
 {
-    pub fn new(api: Method, handler: F) -> Self {
+    pub fn new(handler: F) -> Self {
         Self {
-            api,
             handler: std::sync::Arc::new(handler),
             phantom: PhantomData,
         }
@@ -147,9 +132,6 @@ where
     Fut: Send + Future<Output = ApiResult<R>> + 'static,
     F: Send + Sync + Fn(std::sync::Arc<ClientContext>, P) -> Fut + 'static,
 {
-    fn get_api(&self) -> &Method {
-        &self.api
-    }
     fn handle(
         &self,
         context: std::sync::Arc<ClientContext>,
@@ -186,7 +168,6 @@ where
     Fut: Future<Output = ApiResult<R>> + 'static,
     F: Send + Fn(std::sync::Arc<ClientContext>) -> Fut + 'static,
 {
-    api: Method,
     handler: std::sync::Arc<F>,
     // Mutex is needed to have Sync trait implemented for struct
     phantom: PhantomData<std::sync::Mutex<(R, Fut)>>,
@@ -199,9 +180,8 @@ where
     Fut: Future<Output = ApiResult<R>> + 'static,
     F: Send + Fn(std::sync::Arc<ClientContext>) -> Fut + 'static,
 {
-    pub fn new(api: Method, handler: F) -> Self {
+    pub fn new(handler: F) -> Self {
         Self {
-            api,
             handler: std::sync::Arc::new(handler),
             phantom: PhantomData,
         }
@@ -215,9 +195,6 @@ where
     Fut: Send + Future<Output = ApiResult<R>> + 'static,
     F: Send + Sync + Fn(std::sync::Arc<ClientContext>) -> Fut + 'static,
 {
-    fn get_api(&self) -> &Method {
-        &self.api
-    }
     fn handle(
         &self,
         context: std::sync::Arc<ClientContext>,
@@ -248,7 +225,6 @@ where
     R: Send + Serialize,
     F: Fn(std::sync::Arc<ClientContext>, P) -> ApiResult<R>,
 {
-    api: Method,
     handler: F,
     phantom: PhantomData<std::sync::Mutex<(P, R)>>,
 }
@@ -259,9 +235,8 @@ where
     R: Send + Serialize,
     F: Fn(std::sync::Arc<ClientContext>, P) -> ApiResult<R>,
 {
-    pub fn new(api: Method, handler: F) -> Self {
+    pub fn new(handler: F) -> Self {
         Self {
-            api,
             handler,
             phantom: PhantomData,
         }
@@ -274,9 +249,6 @@ where
     R: Send + Serialize,
     F: Fn(std::sync::Arc<ClientContext>, P) -> ApiResult<R>,
 {
-    fn get_api(&self) -> &Method {
-        &self.api
-    }
     fn handle(&self, context: std::sync::Arc<ClientContext>, params_json: &str) -> JsonResponse {
         match parse_params(params_json) {
             Ok(params) => {
@@ -298,7 +270,6 @@ where
     R: Send + Serialize,
     F: Fn(std::sync::Arc<ClientContext>) -> ApiResult<R>,
 {
-    api: Method,
     handler: F,
     phantom: PhantomData<std::sync::Mutex<R>>,
 }
@@ -308,9 +279,8 @@ where
     R: Send + Serialize,
     F: Fn(std::sync::Arc<ClientContext>) -> ApiResult<R>,
 {
-    pub fn new(api: Method, handler: F) -> Self {
+    pub fn new(handler: F) -> Self {
         Self {
-            api,
             handler,
             phantom: PhantomData,
         }
@@ -322,9 +292,6 @@ where
     R: Send + Serialize,
     F: Fn(std::sync::Arc<ClientContext>) -> ApiResult<R>,
 {
-    fn get_api(&self) -> &Method {
-        &self.api
-    }
     fn handle(&self, context: std::sync::Arc<ClientContext>, _params_json: &str) -> JsonResponse {
         let result = (self.handler)(context);
         match result {
@@ -337,41 +304,50 @@ where
 impl DispatchTable {
     pub fn new() -> DispatchTable {
         DispatchTable {
-            api_types: HashMap::new(),
+            api: api_doc::api::API {
+                version: "1.0.0".into(),
+                methods: Vec::new(),
+                types: Vec::new(),
+            },
             sync_runners: HashMap::new(),
             #[cfg(feature = "node_interaction")]
             async_runners: HashMap::new(),
         }
     }
 
-    pub fn register_api_types(
-        &mut self,
-        module: &str,
-        type_info_providers: Vec<fn() -> api_doc::api::Field>,
-    ) {
-        for type_info in type_info_providers.iter() {
-            let type_info = type_info();
-            let name = type_info.name.clone();
-            self.api_types.insert(
-                name,
-                ModuleTypeInfo {
-                    module: module.into(),
-                    type_info,
-                },
-            );
+    pub fn register_api_types(&mut self, module: &str, mut type_infos: Vec<api_doc::api::Field>) {
+        while type_infos.len() > 0 {
+            self.register_api_type(module, type_infos.remove(type_infos.len() - 1));
         }
     }
 
-    pub fn get_api(&self) -> api_doc::api::API {
-        api_doc::api::API {
-            version: "1.0.0".into(),
-            methods: self
-                .sync_runners
-                .values()
-                .map(|x| (*x.get_api()).clone())
-                .collect(),
-            types: Vec::new(),
-        }
+    pub fn register_api_type(&mut self, module: &str, type_info: api_doc::api::Field) {
+        self.api.types.push(if type_info.name.contains(".") {
+            type_info
+        } else {
+            let mut new_info = type_info.clone();
+            new_info.name = format!("{}.{}", module, type_info.name);
+            new_info
+        });
+    }
+
+    pub fn register_api_method<P, R>(&mut self, api: fn() -> api_doc::api::Method) -> String
+    where
+        P: TypeInfo + Send + DeserializeOwned + 'static,
+        R: TypeInfo + Send + Serialize + 'static,
+    {
+        let method = api();
+        let name = method.name.clone();
+        let name_parts: Vec<&str> = name.split(".").collect();
+        let module = if name_parts.len() > 1 {
+            name_parts[0]
+        } else {
+            ""
+        };
+        self.register_api_type(module, P::type_info());
+        self.register_api_type(module, R::type_info());
+        self.api.methods.push(method);
+        name
     }
 
     pub fn call<P, R>(
@@ -382,16 +358,13 @@ impl DispatchTable {
         P: TypeInfo + Send + DeserializeOwned + 'static,
         R: TypeInfo + Send + Serialize + 'static,
     {
-        let api = Method::from_types::<P, R>(method);
-        self.sync_runners.insert(
-            method.into(),
-            Box::new(CallHandler::new(api.clone(), handler)),
-        );
+        self.sync_runners
+            .insert(method.into(), Box::new(CallHandler::new(handler)));
 
         #[cfg(feature = "node_interaction")]
         self.async_runners.insert(
             method.into(),
-            Box::new(SpawnHandler::new(api, move |context, params| async move {
+            Box::new(SpawnHandler::new(move |context, params| async move {
                 handler(context, params)
             })),
         );
@@ -405,18 +378,15 @@ impl DispatchTable {
         P: Send + DeserializeOwned + 'static,
         R: Send + Serialize + 'static,
     {
-        self.sync_runners.insert(
-            method.into(),
-            Box::new(CallHandler::new(method_api(method), handler)),
-        );
+        self.sync_runners
+            .insert(method.into(), Box::new(CallHandler::new(handler)));
 
         #[cfg(feature = "node_interaction")]
         self.async_runners.insert(
             method.into(),
-            Box::new(SpawnHandler::new(
-                method_api(method),
-                move |context, params| async move { handler(context, params) },
-            )),
+            Box::new(SpawnHandler::new(move |context, params| async move {
+                handler(context, params)
+            })),
         );
     }
 
@@ -427,16 +397,13 @@ impl DispatchTable {
     ) where
         R: TypeInfo + Send + Serialize + 'static,
     {
-        let api = Method::from_types::<(), R>(method);
-        self.sync_runners.insert(
-            method.into(),
-            Box::new(CallNoArgsHandler::new(api.clone(), handler)),
-        );
+        self.sync_runners
+            .insert(method.into(), Box::new(CallNoArgsHandler::new(handler)));
 
         #[cfg(feature = "node_interaction")]
         self.async_runners.insert(
             method.into(),
-            Box::new(SpawnNoArgsHandler::new(api, move |context| async move {
+            Box::new(SpawnNoArgsHandler::new(move |context| async move {
                 handler(context)
             })),
         );
@@ -452,15 +419,12 @@ impl DispatchTable {
         R: TypeInfo + Send + Serialize + 'static,
         F: Send + Future<Output = ApiResult<R>> + 'static,
     {
-        let api = Method::from_types::<P, R>(method);
-        self.async_runners.insert(
-            method.into(),
-            Box::new(SpawnHandler::new(api.clone(), handler)),
-        );
+        self.async_runners
+            .insert(method.into(), Box::new(SpawnHandler::new(handler)));
 
         self.sync_runners.insert(
             method.into(),
-            Box::new(CallHandler::new(api, move |context, params| {
+            Box::new(CallHandler::new(move |context, params| {
                 context
                     .clone()
                     .async_runtime_handle
@@ -478,15 +442,13 @@ impl DispatchTable {
         R: TypeInfo + Send + Serialize + 'static,
         F: Send + Future<Output = ApiResult<R>> + 'static,
     {
-        let api = api();
-        self.async_runners.insert(
-            api.name.clone(),
-            Box::new(SpawnHandler::new(api.clone(), handler)),
-        );
+        let name = self.register_api_method::<P, R>(api);
+        self.async_runners
+            .insert(name.clone(), Box::new(SpawnHandler::new(handler)));
 
         self.sync_runners.insert(
-            api.name.clone(),
-            Box::new(CallHandler::new(api, move |context, params| {
+            name,
+            Box::new(CallHandler::new(move |context, params| {
                 context
                     .clone()
                     .async_runtime_handle
@@ -505,15 +467,12 @@ impl DispatchTable {
         R: Send + Serialize + 'static,
         F: Send + Future<Output = ApiResult<R>> + 'static,
     {
-        self.async_runners.insert(
-            method.into(),
-            Box::new(SpawnHandler::new(method_api(method), handler)),
-        );
+        self.async_runners
+            .insert(method.into(), Box::new(SpawnHandler::new(handler)));
 
         self.sync_runners.insert(
             method.into(),
             Box::new(CallHandler::new(
-                method_api(method),
                 move |context: std::sync::Arc<ClientContext>, params: P| -> ApiResult<R> {
                     context
                         .clone()
@@ -536,7 +495,7 @@ impl DispatchTable {
     ) {
         self.async_runners.insert(
             method.into(),
-            Box::new(RawAsyncHandler::new(method_api(method), handler)),
+            Box::new(RawAsyncHandler::new(handler)),
         );
     }
 

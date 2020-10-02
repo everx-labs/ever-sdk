@@ -175,7 +175,7 @@ impl ProcessingEvent {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, TypeInfo, Debug, PartialEq)]
 pub struct ProcessingState {
     /// The last shard block received before the message was sent or
     /// the last shard block checked for the resulting transaction

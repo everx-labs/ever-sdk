@@ -11,17 +11,18 @@
 * limitations under the License.
 */
 
+mod api;
 mod client;
+mod client_env;
 mod errors;
 mod std_client_env;
-mod client_env;
+mod tests;
 
 pub use client::{
-    Client, ClientConfig, ClientContext, CryptoConfig, ResultOfCreateContext,
-    ResultOfVersion, Callback, ParamsOfUnregisterCallback,
-    create_context,
+    create_context, Callback, Client, ClientConfig, ClientContext, CryptoConfig,
+    ParamsOfUnregisterCallback, ResultOfCreateContext, ResultOfVersion,
 };
-pub use errors::{ErrorCode, Error};
+pub use errors::{Error, ErrorCode};
 
 pub(crate) use client_env::{ClientEnv, FetchMethod, FetchResult, WebSocket};
 
@@ -46,7 +47,9 @@ pub fn unregister_callback(
 }
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.call_no_args("client.get_api_reference", |_context| Ok(crate::get_api()));
+    handlers.call_no_args("client.get_api_reference", |_context| {
+        Ok(crate::client::api::get_api())
+    });
     handlers.call_no_args("client.version", |_| {
         Ok(ResultOfVersion {
             version: env!("CARGO_PKG_VERSION").to_owned(),

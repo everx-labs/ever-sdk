@@ -53,10 +53,6 @@ pub fn json_async_request(
         }))
 }
 
-pub fn get_api() -> api_doc::api::API {
-    Client::shared().get_api()
-}
-
 // C-library exported functions
 
 pub type OnResult = extern fn(request_id: u32, result_json: InteropString, error_json: InteropString, flags: u32);

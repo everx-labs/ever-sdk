@@ -1,9 +1,8 @@
 extern crate serde_derive;
 
-use crate::reflect::TypeInfo;
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct API {
     pub version: String,
@@ -22,38 +21,11 @@ pub struct Method {
     pub errors: Option<Vec<Error>>,
 }
 
-impl Method {
-    pub fn from_types<P, R>(name: &str) -> Method
-    where
-        P: TypeInfo,
-        R: TypeInfo,
-    {
-        let p = P::type_info();
-        let r = R::type_info();
-        Method {
-            name: name.into(),
-            summary: p.summary.or(r.summary),
-            description: p.description.or(r.description),
-            params: if let Type::Struct(fields) = p.value {
-                fields
-            } else {
-                vec![Field {
-                    name: "param".into(),
-                    summary: None,
-                    description: None,
-                    value: p.value,
-                }]
-            },
-            result: r.value,
-            errors: None,
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Field {
     pub name: String,
+    #[serde(flatten)]
     pub value: Type,
     pub summary: Option<String>,
     pub description: Option<String>,

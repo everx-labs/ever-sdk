@@ -20,12 +20,16 @@ use ton_sdk::AbiConfig;
 
 use crate::net::{NetworkConfig, NodeClient};
 
-use super::{ClientEnv, Error};
 use super::std_client_env::StdClientEnv;
+use super::{ClientEnv, Error};
 
 lazy_static! {
     static ref HANDLERS: DispatchTable = create_handlers();
     static ref CLIENT: Mutex<Client> = Mutex::new(Client::new());
+}
+
+pub(crate) fn get_handlers() -> &'static DispatchTable {
+    return &HANDLERS;
 }
 
 pub type Callback = dyn Fn(u32, &str, &str, u32) + Send + Sync;
@@ -54,8 +58,6 @@ fn create_handlers() -> DispatchTable {
 
     #[cfg(feature = "node_interaction")]
     crate::net::register(&mut handlers);
-
-
 
     handlers
 }
@@ -173,15 +175,13 @@ pub fn create_context(config: ClientConfig) -> ApiResult<ClientContext> {
 
     let (client, sdk_client) = if let Some(net_config) = &config.network {
         if net_config.out_of_sync_threshold() > config.abi.message_expiration_timeout() as i64 / 2 {
-            return Err(Error::invalid_config(
-                format!(
-                    r#"`out_of_sync_threshold` can not be more then `message_expiration_timeout / 2`.
+            return Err(Error::invalid_config(format!(
+                r#"`out_of_sync_threshold` can not be more then `message_expiration_timeout / 2`.
 `out_of_sync_threshold` = {}, `message_expiration_timeout` = {}
 Note that default values are used if parameters are omitted in config"#,
-                    net_config.out_of_sync_threshold(),
-                    config.abi.message_expiration_timeout()
-                ),
-            ));
+                net_config.out_of_sync_threshold(),
+                config.abi.message_expiration_timeout()
+            )));
         }
         let client = NodeClient::new(net_config.clone(), std_env.clone());
         let sdk_config = ton_sdk::NetworkConfig {
@@ -190,7 +190,7 @@ Note that default values are used if parameters are omitted in config"#,
             message_retries_count: net_config.message_retries_count,
             out_of_sync_threshold: net_config.out_of_sync_threshold,
             server_address: net_config.server_address.clone(),
-            wait_for_timeout: net_config.wait_for_timeout
+            wait_for_timeout: net_config.wait_for_timeout,
         };
         let sdk_client = ton_sdk::NodeClient::new(sdk_config);
         (Some(client), Some(sdk_client))
@@ -219,7 +219,7 @@ Note that default values are used if parameters are omitted in config"#,
         async_runtime_handle,
         config,
         callbacks: Default::default(),
-        env: std_env
+        env: std_env,
     })
 }
 
@@ -257,10 +257,8 @@ impl Client {
         let handle = self.next_context_handle;
         self.next_context_handle = handle.wrapping_add(1);
 
-        self.contexts.insert(
-            handle,
-            Arc::new(create_context(config)?),
-        );
+        self.contexts
+            .insert(handle, Arc::new(create_context(config)?));
 
         Ok(ResultOfCreateContext { handle })
     }
@@ -312,9 +310,5 @@ impl Client {
                 JsonResponse::from_error(err).send(&*on_result, request_id, 1);
             }
         }
-    }
-
-    pub fn get_api(&self) -> api_doc::api::API {
-        HANDLERS.get_api()
     }
 }
