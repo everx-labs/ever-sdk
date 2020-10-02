@@ -37,7 +37,6 @@ pub use send_message::{
 pub use types::{CallbackParams, ProcessingEvent, ProcessingState, TransactionOutput};
 pub use wait_for_transaction::{
     wait_for_transaction, wait_for_transaction_method, ParamsOfWaitForTransaction,
-    ResultOfWaitForTransaction,
 };
 
 use api_doc::reflect::TypeInfo;

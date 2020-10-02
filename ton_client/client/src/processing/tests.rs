@@ -7,7 +7,6 @@ use crate::processing::{
     process_message, process_message_method, send_message, send_message_method,
     wait_for_transaction, wait_for_transaction_method, CallbackParams, MessageSource,
     ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction, ProcessingEvent,
-    ResultOfWaitForTransaction,
 };
 
 use crate::processing::types::AbiDecodedOutput;
@@ -70,7 +69,7 @@ async fn test_wait_message() {
         })
         .await;
 
-    let result = wait_for_transaction
+    let output = wait_for_transaction
         .call(ParamsOfWaitForTransaction {
             message: encoded.message.clone(),
             processing_state: result.processing_state,
@@ -78,11 +77,6 @@ async fn test_wait_message() {
             abi: Some(abi.clone()),
         })
         .await;
-    let output = match result {
-        ResultOfWaitForTransaction::Complete(output) => Some(output),
-        _ => None,
-    }
-    .unwrap();
 
     assert_eq!(output.out_messages.len(), 0);
     assert_eq!(

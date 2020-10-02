@@ -5,7 +5,6 @@ use crate::processing::internal::can_retry_expired_message;
 use crate::processing::types::{CallbackParams, TransactionOutput};
 use crate::processing::{
     send_message, wait_for_transaction, ErrorCode, ParamsOfSendMessage, ParamsOfWaitForTransaction,
-    ResultOfWaitForTransaction,
 };
 use std::sync::Arc;
 
@@ -33,6 +32,11 @@ pub async fn process_message(
     let abi = match &params.message {
         MessageSource::Encoded { abi, .. } => abi.clone(),
         MessageSource::AbiEncodingParams(encode_params) => Some(encode_params.abi.clone()),
+    };
+    let is_message_encodable = if let MessageSource::AbiEncodingParams(_) = params.message {
+        true
+    } else {
+        false
     };
 
     let mut try_index = 0;
@@ -63,7 +67,7 @@ pub async fn process_message(
 
         // Monitor network
         loop {
-            match wait_for_transaction(
+            let wait_for = wait_for_transaction(
                 context.clone(),
                 ParamsOfWaitForTransaction {
                     message: message.clone(),
@@ -72,25 +76,32 @@ pub async fn process_message(
                     processing_state: processing_state.clone(),
                 },
             )
-            .await
-            {
+            .await;
+
+            match wait_for {
                 Ok(result) => match result {
                     ResultOfWaitForTransaction::Complete(output) => {
+                        // Waiting is complete, return output
                         return Ok(output);
                     }
                     ResultOfWaitForTransaction::Incomplete {
                         processing_state: incomplete_state,
                         ..
                     } => {
+                        // Waiting is incomplete, resume waiting
                         processing_state = incomplete_state;
                     }
                 },
                 Err(err) => {
-                    if err.code == ErrorCode::MessageExpired as isize {
-                        if can_retry_expired_message(&context, &mut try_index) {}
-                    } else if err.code == ErrorCode::TransactionWaitTimeout as isize {
-                        return Err(err);
+                    if err.code == ErrorCode::MessageExpired as isize
+                        && is_message_encodable
+                        && can_retry_expired_message(&context, &mut try_index)
+                    {
+                        // Waiting is failed but we can retry
+                        break;
                     }
+                    // Waiting error is unrecoverable, return it
+                    return Err(err);
                 }
             }
         }

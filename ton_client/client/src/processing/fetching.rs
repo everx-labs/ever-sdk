@@ -21,20 +21,19 @@ pub async fn fetch_next_shard_block(
     context: &Arc<ClientContext>,
     params: &ParamsOfWaitForTransaction,
     address: &MsgAddressInt,
-    processing_state: &ProcessingState,
+    block_id: &str,
     message_id: &str,
     timeout: u32,
 ) -> ApiResult<Block> {
     let mut retries: u8 = 0;
-    let current_block_id = processing_state.last_checked_block_id.clone().into();
     let network_retries_timeout = resolve_network_retries_timeout(context);
-
+    let block_id = block_id.to_string().into();
     // Network retries loop
     loop {
         // Notify app about fetching next block
         if let Some(cb) = &params.callback {
             ProcessingEvent::WillFetchNextBlock {
-                processing_state: processing_state.clone(),
+                block_id: block_id.to_string(),
                 message_id: message_id.to_string(),
                 message: params.message.clone(),
             }
@@ -42,7 +41,7 @@ pub async fn fetch_next_shard_block(
         }
 
         // Fetch next block
-        match wait_next_block(context, &current_block_id, &address, Some(timeout)).await {
+        match wait_next_block(context, &block_id, &address, Some(timeout)).await {
             Ok(block) => return Ok(block),
             Err(err) => {
                 let error = Error::fetch_block_failed(err, &message_id, &processing_state);
@@ -50,7 +49,7 @@ pub async fn fetch_next_shard_block(
                 // Notify app about error
                 if let Some(cb) = &params.callback {
                     ProcessingEvent::FetchNextBlockFailed {
-                        processing_state: processing_state.clone(),
+                        block_id: block_id.to_string(),
                         message_id: message_id.to_string(),
                         message: params.message.clone(),
                         error: error.clone(),

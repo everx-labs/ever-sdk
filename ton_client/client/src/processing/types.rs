@@ -94,14 +94,12 @@ pub enum ProcessingEvent {
     /// Notifies the app that the message will be sent to the
     /// network.
     WillSend {
-        processing_state: ProcessingState,
         message_id: String,
         message: String,
     },
 
     /// Notifies the app that the message was sent to the network.
     DidSend {
-        processing_state: ProcessingState,
         message_id: String,
         message: String,
     },
@@ -113,7 +111,6 @@ pub enum ProcessingEvent {
     /// phase because the message possibly has been delivered to the
     /// node.
     SendFailed {
-        processing_state: ProcessingState,
         message_id: String,
         message: String,
         error: ApiError,
@@ -125,7 +122,7 @@ pub enum ProcessingEvent {
     /// Event can occurs more than one time due to block walking
     /// procedure.
     WillFetchNextBlock {
-        processing_state: ProcessingState,
+        block_id: String,
         message_id: String,
         message: String,
     },
@@ -135,7 +132,7 @@ pub enum ProcessingEvent {
     ///
     /// Processing will be continued after `network_resume_timeout`.
     FetchNextBlockFailed {
-        processing_state: ProcessingState,
+        block_id: String,
         message_id: String,
         message: String,
         error: ApiError,
@@ -149,7 +146,6 @@ pub enum ProcessingEvent {
     /// Processing will be continued at encoding phase after
     /// `expiration_retries_timeout`.
     MessageExpired {
-        processing_state: ProcessingState,
         message_id: String,
         message: String,
         error: ApiError,
