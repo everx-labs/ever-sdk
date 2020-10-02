@@ -41,21 +41,37 @@ pub use wait_for_transaction::{
 };
 
 use api_doc::reflect::TypeInfo;
+use crate::client::CoreModuleInfo;
 
 pub const DEFAULT_NETWORK_RETRIES_LIMIT: i8 = -1;
 pub const DEFAULT_NETWORK_RETRIES_TIMEOUT: u32 = 1000;
 pub const DEFAULT_EXPIRATION_RETRIES_LIMIT: i8 = 20;
 pub const DEFAULT_EXPIRATION_RETRIES_TIMEOUT: u32 = 1000;
 
+/// Message processing module.
+///
+/// This module incorporates functions related to complex message
+/// processing scenarios.
+#[derive(TypeInfo)]
+pub struct ProcessingModule;
+
+impl CoreModuleInfo for ProcessingModule {
+    fn name() -> &'static str {
+        "processing"
+    }
+}
+
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.register_api_types("processing", vec![
-        CallbackParams::type_info(),
-        MessageSource::type_info(),
-        ProcessingEvent::type_info(),
-        ProcessingState::type_info(),
-        TransactionOutput::type_info(),
-    ]);
-    handlers.spawn_method(send_message_method, send_message);
+    handlers.register_api_types::<ProcessingModule>(
+        vec![
+            CallbackParams::type_info,
+            MessageSource::type_info,
+            ProcessingEvent::type_info,
+            ProcessingState::type_info,
+            TransactionOutput::type_info,
+        ],
+    );
+    handlers.spawn_method::<ProcessingModule>(send_message_method, send_message);
     handlers.spawn_method(wait_for_transaction_method, wait_for_transaction);
     handlers.spawn_method(process_message_method, process_message);
 }

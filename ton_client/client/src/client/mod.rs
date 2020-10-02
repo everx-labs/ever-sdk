@@ -18,6 +18,7 @@ mod errors;
 mod std_client_env;
 mod tests;
 
+pub use api::{get_api, CoreModuleInfo};
 pub use client::{
     create_context, Callback, Client, ClientConfig, ClientContext, CryptoConfig,
     ParamsOfUnregisterCallback, ResultOfCreateContext, ResultOfVersion,

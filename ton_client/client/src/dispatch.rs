@@ -12,7 +12,7 @@
 */
 
 use super::JsonResponse;
-use crate::client::{Callback, ClientContext};
+use crate::client::{Callback, ClientContext, CoreModule};
 use crate::error::{ApiError, ApiResult};
 use api_doc::reflect::TypeInfo;
 use serde::de::DeserializeOwned;
@@ -315,13 +315,7 @@ impl DispatchTable {
         }
     }
 
-    pub fn register_api_types(&mut self, module: &str, mut type_infos: Vec<api_doc::api::Field>) {
-        while type_infos.len() > 0 {
-            self.register_api_type(module, type_infos.remove(type_infos.len() - 1));
-        }
-    }
-
-    pub fn register_api_type(&mut self, module: &str, type_info: api_doc::api::Field) {
+    pub fn register_api_type_info(&mut self, module: &str, type_info: api_doc::api::Field) {
         self.api.types.push(if type_info.name.contains(".") {
             type_info
         } else {
@@ -331,21 +325,30 @@ impl DispatchTable {
         });
     }
 
-    pub fn register_api_method<P, R>(&mut self, api: fn() -> api_doc::api::Method) -> String
+    pub fn register_api_type<M: CoreModule, T: TypeInfo>(&mut self) {
+        self.register_api_type_info(M::name(), T::type_info())
+    }
+
+    pub fn register_api_types<M: CoreModule>(
+        &mut self,
+        mut type_infos: Vec<fn() -> api_doc::api::Field>,
+    ) {
+        let module = M::name();
+        for f in type_infos {
+            self.register_api_type_info(module, f());
+        }
+    }
+
+    pub fn register_api_method<M, P, R>(&mut self, builder: fn() -> api_doc::api::Method) -> String
     where
+        M: CoreModule,
         P: TypeInfo + Send + DeserializeOwned + 'static,
         R: TypeInfo + Send + Serialize + 'static,
     {
-        let method = api();
+        self.register_api_type::<M, P>();
+        self.register_api_type::<M, R>();
+        let method = builder();
         let name = method.name.clone();
-        let name_parts: Vec<&str> = name.split(".").collect();
-        let module = if name_parts.len() > 1 {
-            name_parts[0]
-        } else {
-            ""
-        };
-        self.register_api_type(module, P::type_info());
-        self.register_api_type(module, R::type_info());
         self.api.methods.push(method);
         name
     }
@@ -433,16 +436,17 @@ impl DispatchTable {
         );
     }
 
-    pub fn spawn_method<P, R, F>(
+    pub fn spawn_method<M, P, R, F>(
         &mut self,
         api: fn() -> api_doc::api::Method,
         handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> F,
     ) where
+        M: CoreModule,
         P: TypeInfo + Send + DeserializeOwned + 'static,
         R: TypeInfo + Send + Serialize + 'static,
         F: Send + Future<Output = ApiResult<R>> + 'static,
     {
-        let name = self.register_api_method::<P, R>(api);
+        let name = self.register_api_method::<M, P, R>(api);
         self.async_runners
             .insert(name.clone(), Box::new(SpawnHandler::new(handler)));
 
@@ -493,10 +497,8 @@ impl DispatchTable {
             on_result: Box<Callback>,
         ),
     ) {
-        self.async_runners.insert(
-            method.into(),
-            Box::new(RawAsyncHandler::new(handler)),
-        );
+        self.async_runners
+            .insert(method.into(), Box::new(RawAsyncHandler::new(handler)));
     }
 
     pub fn sync_dispatch(

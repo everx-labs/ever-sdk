@@ -2,6 +2,10 @@ use crate::client::client::get_handlers;
 use api_doc::api::{Field, Method, Type, API};
 use std::collections::HashMap;
 
+pub trait CoreModuleInfo {
+    fn name() -> &str;
+}
+
 pub fn get_api() -> API {
     ApiBuilder::new().build()
 }
