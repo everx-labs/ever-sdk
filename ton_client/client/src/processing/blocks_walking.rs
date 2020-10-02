@@ -140,7 +140,7 @@ pub async fn find_last_shard_block(
 
 pub async fn wait_next_block(
     context: &Arc<ClientContext>,
-    current: &ton_sdk::BlockId,
+    current: &str,
     address: &MsgAddressInt,
     timeout: Option<u32>,
 ) -> ApiResult<ton_sdk::Block> {
