@@ -1,10 +1,10 @@
 use crate::abi::Abi;
 use crate::client::ClientContext;
 use crate::encoding::base64_decode;
-use crate::error::{ApiError, ApiResult};
+use crate::error::{ApiResult};
 use crate::processing::internal::{get_message_expiration_time, get_message_id};
 use crate::processing::{fetching, internal, Error};
-use crate::processing::{CallbackParams, ProcessingState, TransactionOutput};
+use crate::processing::{CallbackParams, TransactionOutput};
 use std::sync::Arc;
 use ton_sdk::Contract;
 
@@ -23,13 +23,14 @@ pub struct ParamsOfWaitForTransaction {
     /// Message BOC. Encoded with `base64`.
     pub message: String,
 
-    /// Processing state. As it received from `send_message` or
-    /// 'Incomplete` result of the previous call to the
-    /// `wait_for_transaction`.
-    pub processing_state: ProcessingState,
+    /// Dst account shard block id before the message had been sent.
+    ///
+    /// You must provide the same value as the `send_message` has
+    /// returned.
+    pub shard_block_id: String,
 
-    /// Processing callback.
-    pub callback: Option<CallbackParams>,
+    /// An optional processing events handler.
+    pub events_handler: Option<CallbackParams>,
 }
 
 /// Performs monitoring of the network for a results of the external
@@ -71,7 +72,7 @@ pub async fn wait_for_transaction(
     let message_expiration_time =
         get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message)?;
     let processing_timeout = net.config().message_processing_timeout();
-    let mut processing_state = params.processing_state.clone();
+    let mut shard_block_id = params.shard_block_id.clone();
 
     // Block walking loop
     loop {
@@ -84,20 +85,20 @@ pub async fn wait_for_transaction(
             &context,
             &params,
             &address,
-            &processing_state,
+            &shard_block_id,
             &message_id,
             fetch_block_timeout,
         )
         .await?;
         if let Some(transaction_id) =
-            internal::find_transaction(&block, &message_id, &processing_state)?
+            internal::find_transaction(&block, &message_id, &shard_block_id)?
         {
             // Transaction has been found.
             // Let's fetch other stuff.
             return Ok(fetching::fetch_transaction_result(
                 &context,
                 &params,
-                &processing_state,
+                &shard_block_id,
                 &message_id,
                 &transaction_id,
                 &params.abi,
@@ -110,17 +111,17 @@ pub async fn wait_for_transaction(
             // TODO: here we must execute contract and collect execution result
             // TODO: to get more diagnostic data for application
             return if message_expiration_time.is_some() {
-                Err(Error::message_expired(&message_id, &processing_state))
+                Err(Error::message_expired(&message_id, &shard_block_id))
             } else {
                 Err(Error::transaction_wait_timeout(
                     &message_id,
-                    &processing_state,
+                    &shard_block_id,
                 ))
             };
         }
 
         // We have successfully walked through the block.
         // So store it as the last checked.
-        processing_state.last_checked_block_id = block.id.to_string();
+        shard_block_id = block.id.to_string();
     }
 }

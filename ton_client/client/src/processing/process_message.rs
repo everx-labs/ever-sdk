@@ -19,7 +19,7 @@ pub struct ParamsOfProcessMessage {
     /// Message source.
     pub message: MessageSource,
     /// Processing callback.
-    pub callback: Option<CallbackParams>,
+    pub events_handler: Option<CallbackParams>,
 }
 
 /// Sends message to the network and monitors network for a result of
@@ -54,56 +54,43 @@ pub async fn process_message(
         };
 
         // Send
-        let mut processing_state = send_message(
+        let shard_block_id = send_message(
             context.clone(),
             ParamsOfSendMessage {
                 message: message.clone(),
                 abi: abi.clone(),
-                callback: params.callback.clone(),
+                events_handler: params.events_handler.clone(),
             },
         )
         .await?
-        .processing_state;
+        .shard_block_id;
 
-        // Monitor network
-        loop {
-            let wait_for = wait_for_transaction(
-                context.clone(),
-                ParamsOfWaitForTransaction {
-                    message: message.clone(),
-                    callback: params.callback.clone(),
-                    abi: abi.clone(),
-                    processing_state: processing_state.clone(),
-                },
-            )
-            .await;
+        let wait_for = wait_for_transaction(
+            context.clone(),
+            ParamsOfWaitForTransaction {
+                message: message.clone(),
+                events_handler: params.events_handler.clone(),
+                abi: abi.clone(),
+                shard_block_id: shard_block_id.clone(),
+            },
+        )
+        .await;
 
-            match wait_for {
-                Ok(result) => match result {
-                    ResultOfWaitForTransaction::Complete(output) => {
-                        // Waiting is complete, return output
-                        return Ok(output);
-                    }
-                    ResultOfWaitForTransaction::Incomplete {
-                        processing_state: incomplete_state,
-                        ..
-                    } => {
-                        // Waiting is incomplete, resume waiting
-                        processing_state = incomplete_state;
-                    }
-                },
-                Err(err) => {
-                    if err.code == ErrorCode::MessageExpired as isize
-                        && is_message_encodable
-                        && can_retry_expired_message(&context, &mut try_index)
-                    {
-                        // Waiting is failed but we can retry
-                        break;
-                    }
+        match wait_for {
+            Ok(output) => {
+                // Waiting is complete, return output
+                return Ok(output);
+            }
+            Err(err) => {
+                let can_retry = err.code == ErrorCode::MessageExpired as isize
+                    && is_message_encodable
+                    && can_retry_expired_message(&context, &mut try_index);
+                if !can_retry {
                     // Waiting error is unrecoverable, return it
                     return Err(err);
                 }
+                // Waiting is failed but we can retry
             }
-        }
+        };
     }
 }

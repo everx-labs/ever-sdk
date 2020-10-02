@@ -1,5 +1,4 @@
 use crate::error::ApiError;
-use crate::processing::types::ProcessingState;
 use serde_json::Value;
 
 const PROCESSING: isize = ApiError::PROCESSING; // 500
@@ -48,14 +47,13 @@ impl Error {
         code: ErrorCode,
         message: String,
         message_id: &str,
-        processing_state: Option<&ProcessingState>,
+        shard_block_id: Option<&String>,
     ) -> ApiError {
         let mut data = json!({
             "message_id": message_id,
         });
-        if let Some(state) = processing_state {
-            data["message_sending_time"] = state.message_sending_time.clone().into();
-            data["last_checked_block_id"] = state.last_checked_block_id.clone().into();
+        if let Some(shard_block_id) = shard_block_id {
+            data["shard_block_id"] = shard_block_id.clone().into();
         }
         error_with_data(code, message, data)
     }
@@ -72,26 +70,26 @@ impl Error {
     pub fn fetch_block_failed<E: std::fmt::Display>(
         err: E,
         message_id: &str,
-        processing_state: &ProcessingState,
+        shard_block_id: &String,
     ) -> ApiError {
         Self::processing_error(
             ErrorCode::FetchBlockFailed,
             format!("Fetch block failed: {}", err),
             message_id,
-            Some(processing_state),
+            Some(shard_block_id),
         )
     }
 
     pub fn send_message_failed<E: std::fmt::Display>(
         err: E,
         message_id: &str,
-        processing_state: &ProcessingState,
+        shard_block_id: &String,
     ) -> ApiError {
         Self::processing_error(
             ErrorCode::SendMessageFailed,
             format!("Send message failed: {}", err),
             message_id,
-            Some(processing_state),
+            Some(shard_block_id),
         )
     }
 
@@ -112,47 +110,44 @@ impl Error {
     pub fn invalid_block_received<E: std::fmt::Display>(
         err: E,
         message_id: &str,
-        processing_state: &ProcessingState,
+        shard_block_id: &String,
     ) -> ApiError {
         Self::processing_error(
             ErrorCode::InvalidBlockReceived,
             format!("Invalid block received: {}", err),
             message_id,
-            Some(processing_state),
+            Some(shard_block_id),
         )
     }
 
     pub fn fetch_transaction_result_failed<E: std::fmt::Display>(
         err: E,
         message_id: &str,
-        processing_state: &ProcessingState,
+        shard_block_id: &String,
     ) -> ApiError {
         Self::processing_error(
             ErrorCode::InvalidBlockReceived,
             err.to_string(),
             message_id,
-            Some(processing_state),
+            Some(shard_block_id),
         )
     }
 
-    pub fn message_expired(message_id: &str, processing_state: &ProcessingState) -> ApiError {
+    pub fn message_expired(message_id: &str, shard_block_id: &String) -> ApiError {
         Self::processing_error(
             ErrorCode::MessageExpired,
             "Message expired".into(),
             message_id,
-            Some(processing_state),
+            Some(shard_block_id),
         )
     }
 
-    pub fn transaction_wait_timeout(
-        message_id: &str,
-        processing_state: &ProcessingState,
-    ) -> ApiError {
+    pub fn transaction_wait_timeout(message_id: &str, shard_block_id: &String) -> ApiError {
         Self::processing_error(
             ErrorCode::TransactionWaitTimeout,
             "Transaction wait timeout".into(),
             message_id,
-            Some(processing_state),
+            Some(shard_block_id),
         )
     }
 
@@ -164,16 +159,10 @@ impl Error {
     }
 
     pub fn block_not_found(message: String) -> ApiError {
-        error(
-            ErrorCode::BlockNotFound,
-            message,
-        )
+        error(ErrorCode::BlockNotFound, message)
     }
 
     pub fn invalid_data<E: std::fmt::Display>(err: E) -> ApiError {
-        error(
-            ErrorCode::InvalidData,
-            format!("Invalid data: {}", err),
-        )
+        error(ErrorCode::InvalidData, format!("Invalid data: {}", err))
     }
 }

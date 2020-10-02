@@ -94,12 +94,14 @@ pub enum ProcessingEvent {
     /// Notifies the app that the message will be sent to the
     /// network.
     WillSend {
+        shard_block_id: String,
         message_id: String,
         message: String,
     },
 
     /// Notifies the app that the message was sent to the network.
     DidSend {
+        shard_block_id: String,
         message_id: String,
         message: String,
     },
@@ -111,6 +113,7 @@ pub enum ProcessingEvent {
     /// phase because the message possibly has been delivered to the
     /// node.
     SendFailed {
+        shard_block_id: String,
         message_id: String,
         message: String,
         error: ApiError,
@@ -122,7 +125,7 @@ pub enum ProcessingEvent {
     /// Event can occurs more than one time due to block walking
     /// procedure.
     WillFetchNextBlock {
-        block_id: String,
+        shard_block_id: String,
         message_id: String,
         message: String,
     },
@@ -132,7 +135,7 @@ pub enum ProcessingEvent {
     ///
     /// Processing will be continued after `network_resume_timeout`.
     FetchNextBlockFailed {
-        block_id: String,
+        shard_block_id: String,
         message_id: String,
         message: String,
         error: ApiError,
@@ -171,13 +174,3 @@ impl ProcessingEvent {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct ProcessingState {
-    /// The last shard block received before the message was sent or
-    /// the last shard block checked for the resulting transaction
-    /// after the message was sent.
-    pub last_checked_block_id: String,
-
-    /// The time when the message was sent.
-    pub message_sending_time: u64,
-}

@@ -34,7 +34,7 @@ pub use process_message::{
 pub use send_message::{
     send_message, send_message_method, ParamsOfSendMessage, ResultOfSendMessage,
 };
-pub use types::{CallbackParams, ProcessingEvent, ProcessingState, TransactionOutput};
+pub use types::{CallbackParams, ProcessingEvent, TransactionOutput};
 pub use wait_for_transaction::{
     wait_for_transaction, wait_for_transaction_method, ParamsOfWaitForTransaction,
 };

@@ -18,7 +18,7 @@ use crate::client::ClientContext;
 use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ApiResult;
 use crate::processing::internal::{get_message_expiration_time, get_message_id};
-use crate::processing::types::{CallbackParams, ProcessingEvent, ProcessingState};
+use crate::processing::types::{CallbackParams, ProcessingEvent};
 use crate::processing::Error;
 use std::sync::Arc;
 use ton_sdk::Contract;
@@ -43,12 +43,17 @@ pub struct ParamsOfSendMessage {
     pub abi: Option<Abi>,
 
     /// Processing callback.
-    pub callback: Option<CallbackParams>,
+    pub events_handler: Option<CallbackParams>,
 }
 
 #[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug)]
 pub struct ResultOfSendMessage {
-    pub processing_state: ProcessingState,
+    /// Shard block related to the message dst account before the
+    /// message had been sent.
+    ///
+    /// This block id must be used as a parameter of the
+    /// `wait_for_transaction`.
+    pub shard_block_id: String,
 }
 
 #[method_info(name = "processing.send_message")]
@@ -77,14 +82,14 @@ pub async fn send_message(
     }
 
     // Fetch current shard block
-    if let Some(cb) = &params.callback {
+    if let Some(cb) = &params.events_handler {
         ProcessingEvent::WillFetchFirstBlock {}.emit(&context, cb)
     }
-    let last_checked_block_id = match find_last_shard_block(&context, &address).await {
+    let shard_block_id = match find_last_shard_block(&context, &address).await {
         Ok(block) => block.to_string(),
         Err(err) => {
             let error = Error::fetch_first_block_failed(err, &hex_message_id);
-            if let Some(cb) = &params.callback {
+            if let Some(cb) = &params.events_handler {
                 ProcessingEvent::FetchFirstBlockFailed {
                     error: error.clone(),
                 }
@@ -94,16 +99,10 @@ pub async fn send_message(
         }
     };
 
-    // Initialize processing state
-    let processing_state = ProcessingState {
-        last_checked_block_id,
-        message_sending_time: context.env.now_ms(),
-    };
-
     // Send
-    if let Some(cb) = &params.callback {
+    if let Some(cb) = &params.events_handler {
         ProcessingEvent::WillSend {
-            processing_state: processing_state.clone(),
+            shard_block_id: shard_block_id.clone(),
             message_id: hex_message_id.clone(),
             message: params.message.clone(),
         }
@@ -113,22 +112,22 @@ pub async fn send_message(
         .get_client()?
         .send_message(&hex_decode(&message_id)?, &message_boc)
         .await;
-    if let Some(cb) = &params.callback {
+    if let Some(cb) = &params.events_handler {
         match send_result {
             Ok(_) => ProcessingEvent::DidSend {
-                processing_state: processing_state.clone(),
+                shard_block_id: shard_block_id.clone(),
                 message_id: hex_message_id.clone(),
                 message: params.message.clone(),
             },
             Err(error) => ProcessingEvent::SendFailed {
-                processing_state: processing_state.clone(),
+                shard_block_id: shard_block_id.clone(),
                 message_id: hex_message_id.clone(),
                 message: params.message.clone(),
-                error: Error::send_message_failed(error, &hex_message_id, &processing_state),
+                error: Error::send_message_failed(error, &hex_message_id, &shard_block_id),
             },
         }
         .emit(&context, cb)
     }
 
-    Ok(ResultOfSendMessage { processing_state })
+    Ok(ResultOfSendMessage { shard_block_id })
 }

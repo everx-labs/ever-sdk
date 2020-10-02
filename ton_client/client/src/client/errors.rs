@@ -29,10 +29,10 @@ fn error(code: ErrorCode, message: String) -> ApiError {
 
 impl Error {
     pub fn is_network_error(error: &ApiError) -> bool {
-        error.code == ErrorCode.WebsocketConnectError as isize
-            || error.code == ErrorCode.WebsocketReceiveError as isize
-            || error.code == ErrorCode.WebsocketSendError as isize
-            || error.code == ErrorCode.HttpRequestSendError as isize
+        error.code == ErrorCode::WebsocketConnectError as isize
+            || error.code == ErrorCode::WebsocketReceiveError as isize
+            || error.code == ErrorCode::WebsocketSendError as isize
+            || error.code == ErrorCode::HttpRequestSendError as isize
     }
 
     pub fn not_implemented(message: &str) -> ApiError {

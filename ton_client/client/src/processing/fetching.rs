@@ -9,13 +9,13 @@ use crate::processing::internal::{
 use crate::processing::parsing::{decode_abi_output, parse_transaction_boc};
 use crate::processing::types::TvmExitCode;
 use crate::processing::{
-    Error, ParamsOfWaitForTransaction, ProcessingEvent, ProcessingState, TransactionOutput,
+    Error, ParamsOfWaitForTransaction, ProcessingEvent, TransactionOutput,
 };
 use serde_json::Value;
 use std::sync::Arc;
 use ton_block::MsgAddressInt;
 use ton_sdk::types::TRANSACTIONS_TABLE_NAME;
-use ton_sdk::Block;
+use ton_sdk::{Block};
 
 pub async fn fetch_next_shard_block(
     context: &Arc<ClientContext>,
@@ -27,13 +27,12 @@ pub async fn fetch_next_shard_block(
 ) -> ApiResult<Block> {
     let mut retries: u8 = 0;
     let network_retries_timeout = resolve_network_retries_timeout(context);
-    let block_id = block_id.to_string().into();
     // Network retries loop
     loop {
         // Notify app about fetching next block
-        if let Some(cb) = &params.callback {
+        if let Some(cb) = &params.events_handler {
             ProcessingEvent::WillFetchNextBlock {
-                block_id: block_id.to_string(),
+                shard_block_id: block_id.to_string(),
                 message_id: message_id.to_string(),
                 message: params.message.clone(),
             }
@@ -41,15 +40,15 @@ pub async fn fetch_next_shard_block(
         }
 
         // Fetch next block
-        match wait_next_block(context, &block_id, &address, Some(timeout)).await {
+        match wait_next_block(context, block_id.into(), &address, Some(timeout)).await {
             Ok(block) => return Ok(block),
             Err(err) => {
-                let error = Error::fetch_block_failed(err, &message_id, &processing_state);
+                let error = Error::fetch_block_failed(err, &message_id, &block_id.to_string());
 
                 // Notify app about error
-                if let Some(cb) = &params.callback {
+                if let Some(cb) = &params.events_handler {
                     ProcessingEvent::FetchNextBlockFailed {
-                        block_id: block_id.to_string(),
+                        shard_block_id: block_id.to_string(),
                         message_id: message_id.to_string(),
                         message: params.message.clone(),
                         error: error.clone(),
@@ -97,12 +96,12 @@ impl TransactionBoc {
         .result)
     }
 
-    fn from(value: Value, message_id: &str, processing_state: &ProcessingState) -> ApiResult<Self> {
+    fn from(value: Value, message_id: &str, shard_block_id: &String,) -> ApiResult<Self> {
         serde_json::from_value::<TransactionBoc>(value).map_err(|err| {
             Error::fetch_transaction_result_failed(
                 format!("Transaction can't be parsed: {}", err),
                 message_id,
-                processing_state,
+                shard_block_id,
             )
         })
     }
@@ -111,32 +110,32 @@ impl TransactionBoc {
 pub async fn fetch_transaction_result(
     context: &Arc<ClientContext>,
     params: &ParamsOfWaitForTransaction,
-    processing_state: &ProcessingState,
+    shard_block_id: &String,
     message_id: &str,
     transaction_id: &str,
     abi: &Option<Abi>,
 ) -> ApiResult<TransactionOutput> {
     let transaction_boc =
-        fetch_transaction_boc(context, transaction_id, message_id, processing_state).await?;
+        fetch_transaction_boc(context, transaction_id, message_id, shard_block_id).await?;
     let (transaction, out_messages) = parse_transaction_boc(context.clone(), &transaction_boc)?;
     let abi_decoded = if let Some(abi) = abi {
         Some(decode_abi_output(context, abi, &out_messages)?)
     } else {
         None
     };
-    let exit_code = get_exit_code(&transaction, processing_state, message_id)?;
+    let exit_code = get_exit_code(&transaction, shard_block_id, message_id)?;
 
     if exit_code == TvmExitCode::MessageExpired as i32
         || exit_code == TvmExitCode::ReplayProtection as i32
     {
-        Err(Error::message_expired(&message_id, &processing_state))
+        Err(Error::message_expired(&message_id, shard_block_id))
     } else {
         let result = TransactionOutput {
             transaction,
             out_messages,
             abi_decoded,
         };
-        if let Some(cb) = &params.callback {
+        if let Some(cb) = &params.events_handler {
             ProcessingEvent::TransactionReceived {
                 message_id: message_id.to_string(),
                 message: params.message.clone(),
@@ -152,7 +151,7 @@ async fn fetch_transaction_boc(
     context: &Arc<ClientContext>,
     transaction_id: &str,
     message_id: &str,
-    processing_state: &ProcessingState,
+    shard_block_id: &String,
 ) -> ApiResult<TransactionBoc> {
     let mut retries: u8 = 0;
     let network_retries_timeout = resolve_network_retries_timeout(context);
@@ -161,7 +160,7 @@ async fn fetch_transaction_boc(
     loop {
         match TransactionBoc::fetch_value(context, transaction_id).await {
             Ok(value) => {
-                return Ok(TransactionBoc::from(value, message_id, processing_state)?);
+                return Ok(TransactionBoc::from(value, message_id, shard_block_id)?);
             }
             Err(error) => {
                 // If network retries limit has reached, return error
