@@ -835,7 +835,7 @@ impl Contract {
             context.block_lt,
             context.transaction_lt)?;
 
-        let transaction = Transaction::try_from(transaction)?;
+        let transaction = Transaction::try_from(&transaction)?;
         let updated_account = Self::from_cells(account_root.clone().into())?;
         Ok(LocalCallResult {
             transaction,

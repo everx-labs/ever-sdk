@@ -18,6 +18,7 @@ ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git"}
 ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }
 ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git" }
 ton_block_json = { git = "https://github.com/tonlabs/ton-labs-block-json.git" }
+ton_executor = { git = "https://github.com/tonlabs/ton-labs-executor.git", default-features = false }
 sodalite = { git = "https://github.com/tonlabs/sodalite.git", features = ["rand"] }
 bip39 = { git = "https://github.com/tonlabs/bip39-rs.git" }
 

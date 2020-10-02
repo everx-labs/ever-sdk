@@ -11,99 +11,116 @@
 * limitations under the License.
 */
 
-use serde_json::Value;
-
-use ton_sdk::Contract;
-
+use crate::error::{ApiError, ApiResult};
 use crate::client::ClientContext;
-use crate::error::{ApiResult, ApiError};
 use crate::dispatch::DispatchTable;
-use ton_block::MsgAddressInt;
-use crate::encoding::{account_decode};
+use crate::boc::{deserialize_cell_from_base64, deserialize_object_from_base64};
+use ton_executor::BlockchainConfig;
+use std::convert::{TryFrom, TryInto};
 
-#[derive(Serialize, Deserialize, Clone)]
-#[allow(non_snake_case)]
-pub(crate) struct ParamsOfLocalRunGet {
-    pub bocBase64: Option<String>,
-    pub codeBase64: Option<String>,
-    pub dataBase64: Option<String>,
-    pub functionName: String,
-    pub input: Option<Value>,
-    pub address: Option<String>,
-    pub balance: Option<String>,
-    pub last_paid: Option<u32>,
+use errors::Error;
+
+mod check_transaction;
+mod errors;
+mod executor;
+mod get;
+mod tvm;
+
+#[derive(Clone, Default)]
+pub(crate) struct ExecutionOptionsInternal {
+    pub blockchain_config: Option<BlockchainConfig>,
+    pub block_unixtime: Option<u32>,
+    pub block_lt: Option<u64>,
+    pub transaction_lt: Option<u64>,
 }
 
-#[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, Clone)]
-pub(crate) struct ResultOfLocalRunGet {
-    pub output: Value,
+pub(crate) fn blockchain_config_from_base64(b64: &str) -> ApiResult<BlockchainConfig> {
+    let config_params = deserialize_object_from_base64(b64, "blockchain config")?;
+    BlockchainConfig::with_config(config_params.object)
+        .map_err(|err| Error::can_not_read_blockchain_config(err))
 }
 
-const DEFAULT_ADDRESS: &str = "0:0000000000000000000000000000000000000000000000000000000000000000";
-const DEFAULT_BALANCE: &str = "0xffffffffffffffff";
+impl TryFrom<ExecutionOptions> for ExecutionOptionsInternal {
+    type Error = ApiError;
+    fn try_from(options: ExecutionOptions) -> ApiResult<Self> {
+        Ok(ExecutionOptionsInternal {
+            block_lt: options.block_lt,
+            block_unixtime: options.block_unixtime,
+            transaction_lt: options.transaction_lt,
+            blockchain_config: options.blockchain_config
+                .map(|string| blockchain_config_from_base64(&string))
+                .transpose()?,
+        })
+    }
+}
 
-pub(crate) fn get(
-    context: std::sync::Arc<ClientContext>,
-    params: ParamsOfLocalRunGet,
-) -> ApiResult<ResultOfLocalRunGet> {
-    trace!("-> contracts.run.get({})",
-        params.functionName,
-    );
+#[derive(Serialize, Deserialize, TypeInfo, Clone, Default)]
+pub struct ExecutionOptions {
+    /// boc with config
+    pub blockchain_config: Option<String>,
+    /// time that is used as transaction time
+    pub block_unixtime: Option<u32>,
+    /// block logical time
+    pub block_lt: Option<u64>,
+    /// transaction logical time
+    pub transaction_lt: Option<u64>,
+}
 
-    let (code_base64, data_base64) = Contract::resolve_code_and_data(
-        &params.bocBase64,
-        &params.codeBase64,
-        &params.dataBase64,
-    ).map_err(
-        |_| {
-            let address = params.address.as_ref().map(|a|
-                account_decode(a).unwrap_or(MsgAddressInt::default())
-            ).unwrap_or(MsgAddressInt::default());
-            ApiError::account_code_missing(&address)
-        }
+#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+pub enum ExecutionMode {
+    /// Executes all phases and performs all checks
+    Full,
+    /// Executes contract only on TVM (part of compute phase)
+    TvmOnly,
+}
+
+#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+pub struct ParamsOfExecute {
+    /// Account BOC. Must be encoded as base64
+    pub account: String,
+    /// Input message BOC for the contract. Must be encoded as base64
+    pub in_message: String,
+    /// Execution mode
+    pub mode: ExecutionMode,
+    /// Execution options
+    pub execution_options: Option<ExecutionOptions>,
+}
+
+#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+pub struct ResultOfExecute {
+    /// JSON with parsed updated account state. Attention! When used in `TvmOnly` mode only data in account state is updated
+    pub account: serde_json::Value,
+    /// Array of parsed output messages
+    pub out_messages: Vec<serde_json::Value>,
+    /// JSON with parsed transaction, returned only in case of `Full` mode execution
+    pub transaction: Option<serde_json::Value>,
+}
+
+pub async fn execute(
+    _context: std::sync::Arc<ClientContext>,
+    params: ParamsOfExecute,
+) -> ApiResult<ResultOfExecute> {
+    let (_, account_cell) = deserialize_cell_from_base64(&params.account, "account")?;
+    let message = deserialize_object_from_base64::<ton_block::Message>(
+        &params.in_message, "message"
     )?;
 
-    let contract = match &code_base64 {
-        // load contract data from node manually
-        #[cfg(feature = "node_interaction")]
-        None => {
-            trace!("load contract");
-            let address = params.address.ok_or_else(|| ApiError::address_reqired_for_runget())?;
-            let address = account_decode(&address)?;
-            context.async_runtime_handle.block_on(
-                crate::contracts::run::load_contract(context.clone(), &address, true))?
-        }
-        // can't load
-        #[cfg(not(feature = "node_interaction"))]
-        None => {
-            trace!("no account provided");
-            let _context = context;
-            return Err(ApiError::invalid_params("", "No account provided"));
-        }
+    let options: Option<ExecutionOptionsInternal> = params.execution_options
+        .map(|options| options.try_into())
+        .transpose()?;
 
-        Some(code) => {
-            let last_paid = params.last_paid.unwrap_or(Contract::now());
-            let contract_json = json!({
-                "id": params.address.unwrap_or(DEFAULT_ADDRESS.to_string()),
-                "acc_type": 1,
-                "balance": params.balance.unwrap_or(DEFAULT_BALANCE.to_string()),
-                "code": code,
-                "data": data_base64,
-                "last_paid": last_paid,
-            });
-            Contract::from_json(contract_json.to_string().as_str())
-                .map_err(|err| ApiError::contracts_local_run_failed(err))?
-        }
-    };
+    // match params.mode {
+    //     ExecutionMode::Full => executor::execute(),
+    //     ExecutionMode::TvmOnly => tvm::execute(),
+    // }
 
-    let output = contract.local_call_tvm_get_json(
-        &params.functionName,
-        params.input.as_ref(),
-    ).map_err(|err| ApiError::contracts_local_run_failed(err))?;
-    Ok(ResultOfLocalRunGet { output })
+    Ok(ResultOfExecute {
+        account: serde_json::json!({}),
+        out_messages: vec![],
+        transaction: None,
+    })
 }
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.call_no_api("tvm.get", get);
+    handlers.spawn("tvm.execute", execute);
 }
