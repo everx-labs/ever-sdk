@@ -19,23 +19,24 @@ mod tests;
 
 mod blocks_walking;
 mod errors;
+mod fetching;
 mod internal;
+mod parsing;
 mod process_message;
 mod send_message;
 mod types;
 mod wait_for_transaction;
 
 pub use errors::{Error, ErrorCode};
-pub use process_message::{MessageSource, ParamsOfProcessMessage, ResultOfProcessMessage};
+pub use process_message::{
+    process_message, process_message_method, MessageSource, ParamsOfProcessMessage,
+};
 pub use send_message::{
     send_message, send_message_method, ParamsOfSendMessage, ResultOfSendMessage,
 };
-pub use types::{
-    CallbackParams, ProcessingEvent, ProcessingState, TransactionOutput,
-};
+pub use types::{CallbackParams, ProcessingEvent, TransactionOutput};
 pub use wait_for_transaction::{
     wait_for_transaction, wait_for_transaction_method, ParamsOfWaitForTransaction,
-    ResultOfWaitForTransaction,
 };
 
 use api_doc::reflect::TypeInfo;
@@ -49,4 +50,5 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
     handlers.register_api_types("processing", vec![CallbackParams::type_info]);
     handlers.spawn_method(send_message_method, send_message);
     handlers.spawn_method(wait_for_transaction_method, wait_for_transaction);
+    handlers.spawn_method(process_message_method, process_message);
 }

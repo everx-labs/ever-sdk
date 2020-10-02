@@ -1,5 +1,4 @@
 use api_doc;
-use api_doc::api::Method;
 use api_doc::reflect::TypeInfo;
 use api_doc_derive::{method_info, TypeInfo};
 use serde_derive::{Deserialize, Serialize};
