@@ -1,6 +1,5 @@
 use crate::abi::Error;
-use crate::crypto::internal::key_encode;
-use crate::error::{ApiResult};
+use crate::error::ApiResult;
 use serde_json::Value;
 use ton_abi::{Token, TokenValue};
 
@@ -31,6 +30,33 @@ pub struct FunctionHeader {
     pub pubkey: Option<String>,
 }
 
+fn required_time(token: &Token) -> ApiResult<u64> {
+    match &token.value {
+        TokenValue::Time(v) => Ok(v.clone()),
+        _ => Err(Error::invalid_message_for_decode(
+            "`time` header has invalid format",
+        )),
+    }
+}
+
+fn required_expire(token: &Token) -> ApiResult<u32> {
+    match &token.value {
+        TokenValue::Expire(v) => Ok(v.clone()),
+        _ => Err(Error::invalid_message_for_decode(
+            "`expire` header has invalid format",
+        )),
+    }
+}
+
+fn required_pubkey(token: &Token) -> ApiResult<Option<String>> {
+    match token.value {
+        TokenValue::PublicKey(key) => Ok(key.as_ref().map(|x| hex::encode(x.as_bytes()))),
+        _ => Err(Error::invalid_message_for_decode(
+            "`pubkey` header has invalid format",
+        )),
+    }
+}
+
 impl FunctionHeader {
     pub fn from(tokens: &Vec<Token>) -> ApiResult<Option<Self>> {
         if tokens.len() == 0 {
@@ -39,32 +65,9 @@ impl FunctionHeader {
         let mut header = FunctionHeader::default();
         for token in tokens {
             match token.name.as_str() {
-                "time" => {
-                    header.time = Some(match token.value {
-                        TokenValue::Time(v) => Ok(v),
-                        _ => Err(Error::invalid_message_for_decode(
-                            "`time` header has invalid format",
-                        )),
-                    }?)
-                }
-                "expire" => {
-                    header.expire = Some(match token.value {
-                        TokenValue::Expire(v) => Ok(v),
-                        _ => Err(Error::invalid_message_for_decode(
-                            "`expire` header has invalid format",
-                        )),
-                    }?)
-                }
-                "pubkey" => {
-                    header.pubkey = match token.value {
-                        TokenValue::PublicKey(key) => {
-                            Ok(key.as_ref().map(|x| key_encode(x.as_bytes())))
-                        }
-                        _ => Err(Error::invalid_message_for_decode(
-                            "`pubkey` header has invalid format",
-                        )),
-                    }?
-                }
+                "time" => header.time = Some(required_time(&token)?),
+                "expire" => header.expire = Some(required_expire(&token)?),
+                "pubkey" => header.pubkey = required_pubkey(&token)?,
                 _ => (),
             }
         }

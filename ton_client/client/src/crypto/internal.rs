@@ -22,15 +22,6 @@ pub(crate) fn ton_crc16(data: &[u8]) -> u16 {
     crc.get_crc() as u16
 }
 
-pub(crate) fn key_encode(key: &[u8; 32]) -> String {
-    let encoded = hex::encode(key);
-    if encoded.len() < 64 {
-        format!("{:0>64}", encoded)
-    } else {
-        encoded
-    }
-}
-
 pub(crate) fn decode_public_key(string: &String) -> ApiResult<PublicKey> {
     PublicKey::from_bytes(parse_key(string)?.as_slice())
         .map_err(|err| crypto::Error::invalid_public_key(err, string))

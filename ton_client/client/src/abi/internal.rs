@@ -39,7 +39,7 @@ pub(crate) fn result_of_encode_message(
     message: &[u8],
     data_to_sign: &[u8],
     signing: &Signer,
-) -> ApiResult<(String, Option<String>)> {
+) -> ApiResult<(Vec<u8>, Option<String>)> {
     let (message, data_to_sign) = if let Some(keys) = signing.resolve_keys()? {
         let secret = hex_decode(&format!("{}{}", &keys.secret, &keys.public))?;
         let (_, signature) = sign_using_secret(&data_to_sign, &secret)?;
@@ -50,7 +50,7 @@ pub(crate) fn result_of_encode_message(
         (message.to_vec(), Some(data_to_sign))
     };
     Ok((
-        base64::encode(&message),
+        message,
         data_to_sign.map(|x| base64::encode(&x)),
     ))
 }
