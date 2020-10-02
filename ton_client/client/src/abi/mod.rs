@@ -18,15 +18,14 @@ mod tests;
 
 mod abi;
 mod decode;
-mod defaults;
 mod encode;
 mod errors;
 mod internal;
 mod signing;
 
-pub use abi::{Abi, AbiHandle};
+pub use abi::{Abi, AbiHandle, FunctionHeader};
 pub use decode::{
-    decode_message, MessageContentType, ParamsOfDecodeMessage, ResultOfDecodeMessage,
+    decode_message, DecodedMessageType, ParamsOfDecodeMessage, DecodedMessageBody,
 };
 pub use encode::{
     attach_signature, encode_message, encode_message_method, CallSet, DeploySet, ParamsOfAttachSignature,
@@ -34,6 +33,9 @@ pub use encode::{
 };
 pub use errors::{Error, ErrorCode};
 pub use signing::Signer;
+
+pub const DEFAULT_WORKCHAIN: i32 = 0;
+
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
     handlers.spawn("abi.encode_message", encode::encode_message);

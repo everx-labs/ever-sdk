@@ -1,3 +1,17 @@
+/*
+ * Copyright 2018-2020 TON DEV SOLUTIONS LTD.
+ *
+ * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+ * this file except in compliance with the License.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific TON DEV software governing permissions and
+ * limitations under the License.
+ *
+ */
+
 use crate::client::ClientContext;
 use crate::encoding::{base64_decode, hex_decode};
 use crate::error::{ApiResult};
@@ -12,9 +26,6 @@ use ton_sdk::Contract;
 pub struct ParamsOfSendMessage {
     /// Message BOC.
     pub message: String,
-    /// Message expiration time.
-    /// Used only for messages with `expiration` replay protection.
-    pub message_expiration_time: Option<u64>,
     /// Processing callback.
     pub callback: Option<CallbackParams>,
 }
@@ -29,15 +40,6 @@ pub async fn send_message(
     context: Arc<ClientContext>,
     params: ParamsOfSendMessage,
 ) -> ApiResult<ResultOfSendMessage> {
-    // Check for already expired
-    {
-        if let Some(message_expiration_time) = params.message_expiration_time {
-            if message_expiration_time <= context.env.now_ms() {
-                return Err(Error::message_already_expired());
-            }
-        }
-    }
-
     // Check message
     let message_boc = base64_decode(&params.message)?;
     let message = Contract::deserialize_message(&message_boc)

@@ -1,10 +1,10 @@
 use crate::abi::abi::Abi;
-use crate::abi::decode::{MessageContentType, ParamsOfDecodeMessage, ResultOfDecodeMessage};
+use crate::abi::decode::{DecodedMessageBody, DecodedMessageType, ParamsOfDecodeMessage};
 use crate::abi::encode::{
     CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfEncodeMessage, ResultOfAttachSignature,
     ResultOfEncodeMessage,
 };
-use crate::abi::Signer;
+use crate::abi::{FunctionHeader, Signer};
 use crate::crypto::KeyPair;
 use crate::tests::{TestClient, EVENTS};
 
@@ -31,14 +31,15 @@ fn encode_v2() {
         }),
         call_set: Some(CallSet {
             function_name: "constructor".into(),
-            header: Some(json!({
-                "pubkey": signing.resolve_public_key().unwrap(),
-                "time": time,
-                "expire": expire,
-            })),
+            header: Some(FunctionHeader {
+                pubkey: signing.resolve_public_key().unwrap(),
+                time: Some(time),
+                expire: Some(expire),
+            }),
             input: None,
         }),
         signer: signing,
+        processing_try_index: None,
     };
 
     let unsigned: ResultOfEncodeMessage = client.request(
@@ -76,16 +77,17 @@ fn encode_v2() {
         deploy_set: None,
         call_set: Some(CallSet {
             function_name: "returnValue".into(),
-            header: Some(json!({
-                "pubkey": signing.resolve_public_key().unwrap(),
-                "time": time,
-                "expire": expire
-            })),
+            header: Some(FunctionHeader{
+                pubkey: signing.resolve_public_key().unwrap(),
+                time: Some(time),
+                expire: Some(expire),
+            }),
             input: Some(json!({
                 "id": "0"
             })),
         }),
         signer: signing,
+        processing_try_index: None,
     };
 
     let unsigned: ResultOfEncodeMessage = client.request(
@@ -124,7 +126,7 @@ fn decode_v2() {
     let (events_abi, _events_tvc) = TestClient::package(EVENTS, Some(2));
 
     let decode_events = |message: &str| {
-        let result: ResultOfDecodeMessage = client.request(
+        let result: DecodedMessageBody = client.request(
             "abi.decode_message",
             ParamsOfDecodeMessage {
                 abi: Abi::Serialized(events_abi.clone()),
@@ -134,30 +136,37 @@ fn decode_v2() {
         result
     };
 
-    let expected = ResultOfDecodeMessage {
-        content_type: MessageContentType::FunctionInput,
+    let expected = DecodedMessageBody {
+        message_type: DecodedMessageType::FunctionInput,
         name: "returnValue".into(),
         value: json!({
             "id": "0x0"
+        }),
+        header: Some(FunctionHeader {
+            expire: Some(1599458404),
+            time: Some(1599458364291),
+            pubkey: Some("4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499".into()),
         }),
     };
     assert_eq!(expected, decode_events("te6ccgEBAwEAvAABRYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIMAQHhrd/b+MJ5Za+AygBc5qS/dVIPnqxCsM9PvqfVxutK+lnQEKzQoRTLYO6+jfM8TF4841bdNjLQwIDWL4UVFdxIhdMfECP8d3ruNZAXul5xxahT91swIEkEHph08JVlwmUmQAAAXRnJcuDX1XMZBW+LBKACAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="));
 
-    let expected = ResultOfDecodeMessage {
-        content_type: MessageContentType::Event,
+    let expected = DecodedMessageBody {
+        message_type: DecodedMessageType::Event,
         name: "EventThrown".into(),
         value: json!({
             "id": "0x0"
         }),
+        header: None,
     };
     assert_eq!(expected, decode_events("te6ccgEBAQEAVQAApeACvg5/pmQpY4m61HmJ0ne+zjHJu3MNG8rJxUDLbHKBu/AAAAAAAAAMJL6z6ro48sYvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA"));
 
-    let expected = ResultOfDecodeMessage {
-        content_type: MessageContentType::FunctionOutput,
+    let expected = DecodedMessageBody {
+        message_type: DecodedMessageType::FunctionOutput,
         name: "returnValue".into(),
         value: json!({
             "value0": "0x0"
         }),
+        header: None,
     };
     assert_eq!(expected, decode_events("te6ccgEBAQEAVQAApeACvg5/pmQpY4m61HmJ0ne+zjHJu3MNG8rJxUDLbHKBu/AAAAAAAAAMKr6z6rxK3xYJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA"));
 }

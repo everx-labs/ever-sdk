@@ -1,15 +1,19 @@
 use crate::abi::{
-    encode_message, encode_message_method, Abi, CallSet, DeploySet, ParamsOfEncodeMessage,
-    Signer,
+    encode_message, encode_message_method, Abi, CallSet, DeploySet, FunctionHeader,
+    ParamsOfEncodeMessage, Signer,
 };
 use crate::error::ApiResult;
 use crate::processing::{
-    send_message, send_message_method, CallbackParams, ParamsOfSendMessage, ProcessingEvent,
+    send_message, send_message_method, wait_for_transaction, wait_for_transaction_method,
+    CallbackParams, ParamsOfSendMessage, ParamsOfWaitForTransaction, ProcessingEvent,
+    ResultOfWaitForTransaction,
 };
+
+use crate::processing::types::AbiDecodedOutput;
 use crate::tests::{TestClient, EVENTS};
 
 #[tokio::test(core_threads = 2)]
-async fn test_send_and_wait_message() {
+async fn test_wait_message() {
     TestClient::init_log();
     let client = TestClient::new();
     let (events_abi, events_tvc) = TestClient::package(EVENTS, Some(2));
@@ -28,6 +32,7 @@ async fn test_send_and_wait_message() {
 
     let encode_message = client.wrap_async(encode_message, encode_message_method);
     let send_message = client.wrap_async(send_message, send_message_method);
+    let wait_for_transaction = client.wrap_async(wait_for_transaction, wait_for_transaction_method);
 
     let encoded = encode_message
         .call(ParamsOfEncodeMessage {
@@ -40,12 +45,15 @@ async fn test_send_and_wait_message() {
             }),
             call_set: Some(CallSet {
                 function_name: "constructor".into(),
-                header: Some(json!({
-                    "pubkey": keys.public.clone(),
-                })),
+                header: Some(FunctionHeader {
+                    expire: None,
+                    time: None,
+                    pubkey: Some(keys.public.clone()),
+                }),
                 input: None,
             }),
             signer: Signer::WithKeys(keys.clone()),
+            processing_try_index: None,
         })
         .await;
 
@@ -53,29 +61,58 @@ async fn test_send_and_wait_message() {
         .get_grams_from_giver_async(&encoded.address, None)
         .await;
 
-    let _result = send_message
+    let result = send_message
         .call(ParamsOfSendMessage {
-            message: encoded.message,
-            message_expiration_time: None,
+            message: encoded.message.clone(),
             callback: Some(CallbackParams::with_id(callback_id)),
         })
         .await;
 
+    let result = wait_for_transaction
+        .call(ParamsOfWaitForTransaction {
+            message: encoded.message.clone(),
+            processing_state: result.processing_state,
+            callback: Some(CallbackParams::with_id(callback_id)),
+            abi: Some(abi.clone()),
+        })
+        .await;
+    let output = match result {
+        ResultOfWaitForTransaction::Complete(output) => Some(output),
+        _ => None,
+    }.unwrap();
+
+    assert_eq!(output.out_messages.len(), 0);
+    assert_eq!(
+        output.abi_decoded,
+        Some(AbiDecodedOutput {
+            out_messages: vec![],
+            output: None,
+        })
+    );
     client.unregister_callback(callback_id);
     let events = events.lock().unwrap().clone();
-    println!("{:?}", &events);
-    assert_eq!(events.len(), 3);
-    assert!(match events[0] {
-        ProcessingEvent::WillFetchFirstBlock {} => true,
+    let mut events = events.iter();
+    assert!(match events.next() {
+        Some(ProcessingEvent::WillFetchFirstBlock {}) => true,
         _ => false,
     });
-    assert!(match events[1] {
-        ProcessingEvent::WillSend { .. } => true,
+    assert!(match events.next() {
+        Some(ProcessingEvent::WillSend { .. }) => true,
         _ => false,
     });
-    assert!(match events[2] {
-        ProcessingEvent::DidSend {..} => true,
+    assert!(match events.next() {
+        Some(ProcessingEvent::DidSend { .. }) => true,
+        _ => false,
+    });
+    let mut evt = events.next();
+    while match evt {
+        Some(ProcessingEvent::WillFetchNextBlock { .. }) => true,
+        _ => false,
+    } {
+        evt = events.next();
+    }
+    assert!(match evt {
+        Some(ProcessingEvent::TransactionReceived { .. }) => true,
         _ => false,
     });
 }
-
