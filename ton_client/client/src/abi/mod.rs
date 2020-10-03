@@ -28,7 +28,7 @@ pub use decode::{
     decode_message, DecodedMessageType, ParamsOfDecodeMessage, DecodedMessageBody,
 };
 pub use encode::{
-    attach_signature, encode_message, encode_message_method, CallSet, DeploySet, ParamsOfAttachSignature,
+    attach_signature, encode_message, encode_message_info, CallSet, DeploySet, ParamsOfAttachSignature,
     ParamsOfEncodeMessage, ResultOfAttachSignature, ResultOfEncodeMessage,
 };
 pub use errors::{Error, ErrorCode};

@@ -3,16 +3,21 @@ extern crate serde_derive;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct API {
     pub version: String,
-    pub methods: Vec<Method>,
-    pub types: Vec<Field>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct Method {
+pub struct Module {
+    pub name: String,
+    pub summary: Option<String>,
+    pub description: Option<String>,
+    pub types: Vec<Field>,
+    pub functions: Vec<Function>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Function {
     pub name: String,
     pub summary: Option<String>,
     pub description: Option<String>,
@@ -22,7 +27,6 @@ pub struct Method {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct Field {
     pub name: String,
     #[serde(flatten)]
@@ -40,7 +44,6 @@ pub enum ConstValue {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct Const {
     pub name: String,
     pub value: ConstValue,
@@ -49,7 +52,6 @@ pub struct Const {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
 pub enum Type {
     None {},
     Any {},
@@ -67,7 +69,6 @@ pub enum Type {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct Error {
     pub code: i32,
     pub message: String,

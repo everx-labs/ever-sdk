@@ -1,11 +1,11 @@
 use crate::abi::{
-    encode_message, encode_message_method, Abi, CallSet, DecodedMessageBody, DecodedMessageType,
+    encode_message, encode_message_info, Abi, CallSet, DecodedMessageBody, DecodedMessageType,
     DeploySet, FunctionHeader, ParamsOfEncodeMessage, Signer,
 };
 use crate::error::ApiResult;
 use crate::processing::{
-    process_message, process_message_method, send_message, send_message_method,
-    wait_for_transaction, wait_for_transaction_method, CallbackParams, MessageSource,
+    process_message, process_message_info, send_message, send_message_info,
+    wait_for_transaction, wait_for_transaction_info, CallbackParams, MessageSource,
     ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction, ProcessingEvent,
     ResultOfWaitForTransaction,
 };
@@ -31,9 +31,9 @@ async fn test_wait_message() {
 
     let callback_id = client.register_callback(callback);
 
-    let encode_message = client.wrap_async(encode_message, encode_message_method);
-    let send_message = client.wrap_async(send_message, send_message_method);
-    let wait_for_transaction = client.wrap_async(wait_for_transaction, wait_for_transaction_method);
+    let encode_message = client.wrap_async(encode_message, encode_message_info);
+    let send_message = client.wrap_async(send_message, send_message_info);
+    let wait_for_transaction = client.wrap_async(wait_for_transaction, wait_for_transaction_info);
 
     let encoded = encode_message
         .call(ParamsOfEncodeMessage {
@@ -138,8 +138,8 @@ async fn test_process_message() {
 
     let callback_id = client.register_callback(callback);
 
-    let encode_message = client.wrap_async(encode_message, encode_message_method);
-    let process_message = client.wrap_async(process_message, process_message_method);
+    let encode_message = client.wrap_async(encode_message, encode_message_info);
+    let process_message = client.wrap_async(process_message, process_message_info);
 
     let encoded = encode_message
         .call(ParamsOfEncodeMessage {

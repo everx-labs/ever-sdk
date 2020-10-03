@@ -251,7 +251,7 @@ fn encode_run(
     Ok((unsigned.message, unsigned.data_to_sign, address))
 }
 
-#[method_info(name = "abi.encode_message")]
+#[function_info]
 pub async fn encode_message(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfEncodeMessage,

@@ -1,4 +1,4 @@
-mod method_info;
+mod function_info;
 mod type_info;
 mod utils;
 
@@ -13,6 +13,6 @@ pub fn type_info(input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
-pub fn method_info(attr: TokenStream, input: TokenStream) -> TokenStream {
-    crate::method_info::impl_method_info(attr, input)
+pub fn function_info(attr: TokenStream, input: TokenStream) -> TokenStream {
+    crate::function_info::impl_function_info(attr, input)
 }

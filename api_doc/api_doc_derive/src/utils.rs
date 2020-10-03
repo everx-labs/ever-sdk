@@ -72,13 +72,13 @@ pub(crate) fn const_to_tokens(c: &api::Const) -> TokenStream {
     }
 }
 
-pub(crate) fn method_to_tokens(m: &api::Method) -> TokenStream {
+pub(crate) fn function_to_tokens(m: &api::Function) -> TokenStream {
     let name = &m.name;
     let params = m.params.iter().map(|x| field_to_tokens(x));
     let result = type_to_tokens(&m.result);
     let (summary, description) = doc_to_tokens(&m.summary, &m.description);
     quote! {
-        api_doc::api::Method {
+        api_doc::api::Function {
             name: #name.into(),
             summary: #summary,
             description: #description,

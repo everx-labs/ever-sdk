@@ -19,9 +19,6 @@ use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ApiResult;
 use crate::processing::internal::{get_message_expiration_time, get_message_id};
 use crate::processing::types::{CallbackParams, ProcessingEvent, ProcessingState};
-use crate::processing::Error;
-use std::sync::Arc;
-use ton_sdk::Contract;
 
 #[derive(Serialize, Deserialize, TypeInfo, Debug)]
 pub struct ParamsOfSendMessage {
@@ -51,7 +48,7 @@ pub struct ResultOfSendMessage {
     pub processing_state: ProcessingState,
 }
 
-#[method_info(name = "processing.send_message")]
+#[function_info]
 pub async fn send_message(
     context: Arc<ClientContext>,
     params: ParamsOfSendMessage,

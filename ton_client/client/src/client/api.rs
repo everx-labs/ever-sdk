@@ -1,9 +1,15 @@
 use crate::client::client::get_handlers;
-use api_doc::api::{Field, Method, Type, API};
+use api_doc::api::{Field, Function, Type, API};
 use std::collections::HashMap;
 
-pub trait CoreModuleInfo {
-    fn name() -> &str;
+pub struct CoreModule {
+    pub name: String,
+    pub types: Vec<Field>,
+    pub functions: Vec<Function>,
+}
+
+impl CoreModule {
+
 }
 
 pub fn get_api() -> API {
@@ -69,11 +75,11 @@ impl<'a> ApiBuilder<'a> {
     pub(crate) fn build(&self) -> API {
         let mut reduced = API::default();
         reduced.types = self.api.types.clone();
-        reduced.methods = self
+        reduced.functions = self
             .api
-            .methods
+            .functions
             .iter()
-            .map(|x| self.reduce_method(x))
+            .map(|x| self.reduce_function(x))
             .collect();
         reduced
     }
@@ -116,9 +122,9 @@ impl<'a> ApiBuilder<'a> {
         }
     }
 
-    fn reduce_method(&self, method: &Method) -> Method {
-        let (module, _) = split_name(&method.name);
-        let mut params = method
+    fn reduce_function(&self, function: &Function) -> Function {
+        let (module, _) = split_name(&function.name);
+        let mut params = function
             .params
             .iter()
             .find(|x| x.name == "params")
@@ -127,18 +133,18 @@ impl<'a> ApiBuilder<'a> {
         if params.len() > 0 {
             self.resolve_refs(&module, &mut params[0].value);
         }
-        let mut result = match &method.result {
+        let mut result = match &function.result {
             Type::Generic { name, args } if name == "ApiResult" => args[0].clone(),
-            _ => method.result.clone(),
+            _ => function.result.clone(),
         };
         self.resolve_refs(&module, &mut result);
-        let mut reduced = Method {
-            name: method.name.clone(),
+        let mut reduced = Function {
+            name: function.name.clone(),
             params,
             result,
-            summary: method.summary.clone(),
-            description: method.description.clone(),
-            errors: method.errors.clone(),
+            summary: function.summary.clone(),
+            description: function.description.clone(),
+            errors: function.errors.clone(),
         };
         if reduced.params.len() > 0 && reduced.params[0].name == "context" {
             reduced.params.remove(0);

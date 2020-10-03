@@ -29,19 +29,18 @@ mod wait_for_transaction;
 
 pub use errors::{Error, ErrorCode};
 pub use process_message::{
-    process_message, process_message_method, MessageSource, ParamsOfProcessMessage,
+    process_message, process_message_info, MessageSource, ParamsOfProcessMessage,
 };
 pub use send_message::{
-    send_message, send_message_method, ParamsOfSendMessage, ResultOfSendMessage,
+    send_message, send_message_info, ParamsOfSendMessage, ResultOfSendMessage,
 };
 pub use types::{CallbackParams, ProcessingEvent, ProcessingState, TransactionOutput};
 pub use wait_for_transaction::{
-    wait_for_transaction, wait_for_transaction_method, ParamsOfWaitForTransaction,
+    wait_for_transaction, wait_for_transaction_info, ParamsOfWaitForTransaction,
     ResultOfWaitForTransaction,
 };
 
 use api_doc::reflect::TypeInfo;
-use crate::client::CoreModuleInfo;
 
 pub const DEFAULT_NETWORK_RETRIES_LIMIT: i8 = -1;
 pub const DEFAULT_NETWORK_RETRIES_TIMEOUT: u32 = 1000;
@@ -62,7 +61,7 @@ impl CoreModuleInfo for ProcessingModule {
 }
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.register_api_types::<ProcessingModule>(
+    handlers.register_types::<ProcessingModule>(
         vec![
             CallbackParams::type_info,
             MessageSource::type_info,
@@ -71,7 +70,7 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
             TransactionOutput::type_info,
         ],
     );
-    handlers.spawn_method::<ProcessingModule>(send_message_method, send_message);
-    handlers.spawn_method(wait_for_transaction_method, wait_for_transaction);
-    handlers.spawn_method(process_message_method, process_message);
+    handlers.register_async::<ProcessingModule>(send_message_info, send_message);
+    handlers.register_async(wait_for_transaction_info, wait_for_transaction);
+    handlers.register_async(process_message_info, process_message);
 }

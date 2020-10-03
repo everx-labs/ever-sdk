@@ -1,6 +1,6 @@
 use api_doc;
 use api_doc::reflect::TypeInfo;
-use api_doc_derive::{method_info, TypeInfo};
+use api_doc_derive::{function_info, TypeInfo};
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq)]
@@ -48,8 +48,8 @@ struct Bar {
 #[derive(Serialize, Deserialize, TypeInfo)]
 struct FooHandle(u32);
 
-#[method_info(name = "bar.baz")]
-/// This is baz method
+#[function_info(name = "bar.baz")]
+/// This is baz function
 fn _baz(_params: Foo) -> Result<Bar, Foo> {
     Ok(Bar::default())
 }
@@ -65,5 +65,5 @@ fn main() {
     reflect::<EnumWithValues>();
     reflect::<EnumWithTypes>();
     reflect::<FooHandle>();
-    println!("{}", serde_json::to_string_pretty(&_baz_method()).unwrap());
+    println!("{}", serde_json::to_string_pretty(&_baz_info()).unwrap());
 }

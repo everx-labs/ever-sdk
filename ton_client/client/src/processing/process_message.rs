@@ -25,7 +25,7 @@ pub struct ParamsOfProcessMessage {
 
 /// Sends message to the network and monitors network for a result of
 /// message processing.
-#[method_info(name = "processing.process_message")]
+#[function_info]
 pub async fn process_message(
     context: Arc<ClientContext>,
     params: ParamsOfProcessMessage,
