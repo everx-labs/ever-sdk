@@ -40,6 +40,7 @@ pub struct ResultOfModularPower {
 #[doc(summary = "Modular exponentiation")]
 /// Performs modular exponentiation for big integers (`base`^`exponent` mod `modulus`).
 /// See [https://en.wikipedia.org/wiki/Modular_exponentiation]
+#[function_info]
 pub fn modular_power(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfModularPower,
@@ -77,6 +78,7 @@ pub struct ResultOfFactorize {
 /// Performs prime factorization – decomposition of a composite number
 /// into a product of smaller prime integers (factors).
 /// See [https://en.wikipedia.org/wiki/Integer_factorization]
+#[function_info]
 pub fn factorize(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfFactorize,
@@ -204,7 +206,8 @@ pub struct ResultOfTonCrc16 {
     pub crc: u16,
 }
 
-#[doc(summary = "Calculates CRC16 using TON algorithm.")]
+/// Calculates CRC16 using TON algorithm.
+#[function_info]
 pub fn ton_crc16(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfTonCrc16,
@@ -229,6 +232,7 @@ pub struct ResultOfGenerateRandomBytes {
 }
 
 #[doc(summary = "Generates random byte array of the specified length in the spesified encoding")]
+#[function_info]
 pub fn generate_random_bytes(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfGenerateRandomBytes,

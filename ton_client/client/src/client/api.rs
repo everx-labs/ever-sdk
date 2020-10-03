@@ -1,19 +1,9 @@
-use crate::client::client::get_handlers;
-use api_doc::api::{Field, Function, Type, API};
+use api_doc::api::{Function, Type, API};
 use std::collections::HashMap;
-
-pub struct CoreModule {
-    pub name: String,
-    pub types: Vec<Field>,
-    pub functions: Vec<Function>,
-}
-
-impl CoreModule {
-
-}
+use crate::client::client::get_handlers;
 
 pub fn get_api() -> API {
-    ApiBuilder::new().build()
+    ApiReducer::build(&get_handlers().api)
 }
 
 fn split_name(name: &str) -> (Option<String>, String) {
@@ -39,116 +29,101 @@ fn full_name(module: &Option<String>, name: &str) -> String {
     }
 }
 
-pub(crate) struct ApiBuilder<'a> {
-    api: &'a API,
-    names: HashMap<String, Vec<String>>,
+pub(crate) struct ApiReducer {
+    type_aliases: HashMap<String, Vec<String>>,
 }
 
-impl<'a> ApiBuilder<'a> {
-    pub(crate) fn new() -> Self {
-        let api = &get_handlers().api;
-        let mut builder = Self {
-            api,
-            names: HashMap::new(),
-        };
-        builder.init();
-        builder
-    }
-
-    fn init(&mut self) {
-        for ty in &self.api.types {
-            let (module, name) = split_name(&ty.name);
-            self.reg_type(&name, ty);
-            self.reg_type(&full_name(&module, &name), ty);
-        }
-    }
-
-    fn reg_type(&mut self, name: &str, ty: &Field) {
-        if let Some(existing) = self.names.get_mut(name) {
-            existing.push(ty.name.clone());
-        } else {
-            self.names.insert(name.to_string(), vec![ty.name.clone()]);
-        }
-    }
-
-
-    pub(crate) fn build(&self) -> API {
-        let mut reduced = API::default();
-        reduced.types = self.api.types.clone();
-        reduced.functions = self
-            .api
-            .functions
-            .iter()
-            .map(|x| self.reduce_function(x))
-            .collect();
+impl ApiReducer {
+    pub(crate) fn build(api: &API) -> API {
+        let reducer = Self::new(api);
+        let mut reduced = api.clone();
+        reducer.reduce(&mut reduced);
         reduced
     }
 
-    fn resolve_refs(&self, def_module: &Option<String>, ty: &mut Type) {
+    fn new(api: &API) -> Self {
+        let api = api.clone();
+        let mut type_aliases = HashMap::<String, Vec<String>>::new();
+        let mut add_type_alias = |name: &str, full_name: String| {
+            if let Some(existing) = type_aliases.get_mut(name) {
+                existing.push(full_name);
+            } else {
+                type_aliases.insert(name.to_string(), vec![full_name]);
+            }
+        };
+
+        for module in &api.modules {
+            for ty in &module.types {
+                let full_name = format!("{}.{}", module.name, ty.name);
+                add_type_alias(&full_name, full_name.clone());
+                add_type_alias(&ty.name, full_name);
+            }
+        }
+
+        Self {  type_aliases }
+    }
+
+    fn reduce(&self, api: &mut API) {
+        for module in &mut api.modules {
+            let module_name = module.name.clone();
+            for ty in &mut module.types {
+                self.resolve_refs(&module_name, &mut ty.value);
+            }
+            for f in &mut module.functions {
+                self.reduce_function(&module_name, f);
+            }
+        }
+    }
+
+    fn resolve_refs(&self, module_name: &str, ty: &mut Type) {
         match ty {
             Type::Ref(name) => {
                 if !is_full_name(name) {
-                    let full = full_name(def_module, name);
-                    if self.names.contains_key(&full) {
+                    let full = format!("{}{}", module_name, name);
+                    if self.type_aliases.contains_key(&full) {
                         *name = full;
-                    } else if let Some(names) = self.names.get(name) {
-                        *name = names
-                            .iter()
-                            .find(|x| is_full_name(x))
-                            .map(|x| x)
-                            .unwrap_or(&names[0])
-                            .clone();
+                    } else if let Some(names) = self.type_aliases.get(name) {
+                        *name = names[0].clone()
                     }
                 }
             }
             Type::Generic { args, .. } => {
                 for ty in args {
-                    self.resolve_refs(def_module, ty);
+                    self.resolve_refs(module_name, ty);
                 }
             }
-            Type::Array(item) => self.resolve_refs(def_module, item),
+            Type::Array(item) => self.resolve_refs(module_name, item),
             Type::EnumOfTypes(vars) => {
                 for ty in vars {
-                    self.resolve_refs(def_module, &mut ty.value);
+                    self.resolve_refs(module_name, &mut ty.value);
                 }
             }
-            Type::Optional(ty) => self.resolve_refs(def_module, ty),
+            Type::Optional(ty) => self.resolve_refs(module_name, ty),
             Type::Struct(fields) => {
                 for ty in fields {
-                    self.resolve_refs(def_module, &mut ty.value);
+                    self.resolve_refs(module_name, &mut ty.value);
                 }
             }
             _ => {}
         }
     }
 
-    fn reduce_function(&self, function: &Function) -> Function {
-        let (module, _) = split_name(&function.name);
-        let mut params = function
+    fn reduce_function(&self, module_name: &str, function: &mut Function) {
+        function.params = function
             .params
             .iter()
             .find(|x| x.name == "params")
             .map(|x| vec![x.clone()])
             .unwrap_or(vec![]);
-        if params.len() > 0 {
-            self.resolve_refs(&module, &mut params[0].value);
+        if function.params.len() > 0 {
+            self.resolve_refs(module_name, &mut function.params[0].value);
         }
-        let mut result = match &function.result {
-            Type::Generic { name, args } if name == "ApiResult" => args[0].clone(),
-            _ => function.result.clone(),
+        match &function.result {
+            Type::Generic { name, args } if name == "ApiResult" => {
+                function.result = args[0].clone()
+            }
+            _ => (),
         };
-        self.resolve_refs(&module, &mut result);
-        let mut reduced = Function {
-            name: function.name.clone(),
-            params,
-            result,
-            summary: function.summary.clone(),
-            description: function.description.clone(),
-            errors: function.errors.clone(),
-        };
-        if reduced.params.len() > 0 && reduced.params[0].name == "context" {
-            reduced.params.remove(0);
-        }
-        reduced
+        self.resolve_refs(module_name, &mut function.result);
     }
 }

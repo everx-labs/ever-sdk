@@ -142,7 +142,13 @@ pub(crate) fn type_from(ty: &Type) -> api::Type {
         Type::Reference(_r) => panic!("reference is unsupported"),
         Type::Slice(_s) => panic!("slice is unsupported"),
         Type::TraitObject(_t) => panic!("trait_object is unsupported"),
-        Type::Tuple(_t) => panic!("tuple is unsupported"),
+        Type::Tuple(t) => {
+            if t.elems.is_empty() {
+                api::Type::None {}
+            } else {
+                panic!("None empty tuples is unsupported")
+            }
+        }
         Type::Verbatim(_t) => panic!("verbatim is unsupported"),
         _ => panic!("Unsupported type"),
     }
@@ -268,6 +274,23 @@ impl DocAttr {
         };
         DocAttr::None
     }
+}
+
+pub(crate) fn find_attr_value(
+    attr_name: &'static str,
+    value_name: &'static str,
+    attrs: &Vec<Attribute>,
+) -> Option<String> {
+    for attr in attrs {
+        if let Ok(Meta::List(ref list)) = attr.parse_meta() {
+            if path_is(&list.path, attr_name) {
+                if let Some(NestedMeta::Meta(Meta::NameValue(meta))) = list.nested.first() {
+                    return get_value_of(value_name, &meta);
+                }
+            }
+        }
+    }
+    None
 }
 
 pub(crate) fn get_value_of(name: &'static str, meta: &MetaNameValue) -> Option<String> {

@@ -48,6 +48,16 @@ struct Bar {
 #[derive(Serialize, Deserialize, TypeInfo)]
 struct FooHandle(u32);
 
+#[derive(TypeInfo)]
+#[type_info(name="module")]
+struct Module;
+
+#[function_info]
+/// This is baz function
+fn _foo(_params: Foo) -> Result<Bar, Foo> {
+    Ok(Bar::default())
+}
+
 #[function_info(name = "bar.baz")]
 /// This is baz function
 fn _baz(_params: Foo) -> Result<Bar, Foo> {
@@ -60,10 +70,12 @@ fn reflect<T: TypeInfo>() {
 }
 
 fn main() {
-    reflect::<Foo>();
-    reflect::<Bar>();
-    reflect::<EnumWithValues>();
-    reflect::<EnumWithTypes>();
-    reflect::<FooHandle>();
-    println!("{}", serde_json::to_string_pretty(&_baz_info()).unwrap());
+    reflect::<Module>();
+    // reflect::<Foo>();
+    // reflect::<Bar>();
+    // reflect::<EnumWithValues>();
+    // reflect::<EnumWithTypes>();
+    // reflect::<FooHandle>();
+    // println!("{}", serde_json::to_string_pretty(&_baz_info()).unwrap());
+    // println!("{}", serde_json::to_string_pretty(&_foo_info()).unwrap());
 }

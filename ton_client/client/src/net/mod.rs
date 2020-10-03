@@ -27,8 +27,8 @@ mod errors;
 pub use errors::{Error, ErrorCode};
 
 mod node_client;
+pub use node_client::{NetworkConfig, OrderBy, SortDirection};
 pub(crate) use node_client::{NodeClient, MAX_TIMEOUT};
-pub use node_client::{NetworkConfig, SortDirection, OrderBy};
 
 #[cfg(test)]
 mod tests;
@@ -108,6 +108,7 @@ async fn extract_subscription_handle(handle: &u32) -> Option<Sender<bool>> {
     SUBSCRIPTIONS.lock().await.remove(handle)
 }
 
+#[function_info]
 pub async fn query_collection(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfQueryCollection,
@@ -123,19 +124,17 @@ pub async fn query_collection(
             None,
         )
         .await
-        .map_err(|err| {
-            Error::queries_query_failed(err).add_network_url(client)
-        })?;
+        .map_err(|err| Error::queries_query_failed(err).add_network_url(client))?;
 
-    let result = serde_json::from_value(result)
-        .map_err(|err| {
-            Error::queries_query_failed(format!("Can not parse result: {}", err))
-                .add_network_url(client)
-        })?;
+    let result = serde_json::from_value(result).map_err(|err| {
+        Error::queries_query_failed(format!("Can not parse result: {}", err))
+            .add_network_url(client)
+    })?;
 
     Ok(ResultOfQueryCollection { result })
 }
 
+#[function_info]
 pub async fn wait_for_collection(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfWaitForCollection,
@@ -149,13 +148,12 @@ pub async fn wait_for_collection(
             params.timeout,
         )
         .await
-        .map_err(|err| {
-            Error::queries_wait_for_failed(err).add_network_url(client)
-        })?;
+        .map_err(|err| Error::queries_wait_for_failed(err).add_network_url(client))?;
 
     Ok(ResultOfWaitForCollection { result })
 }
 
+#[function_info]
 pub async fn subscribe_collection(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfSubscribeCollection,
@@ -173,14 +171,11 @@ pub async fn subscribe_collection(
             &params.result,
         )
         .await
-        .map_err(|err| {
-            Error::queries_wait_for_failed(err).add_network_url(client)
-        })?;
+        .map_err(|err| Error::queries_wait_for_failed(err).add_network_url(client))?;
 
     let (sender, mut receiver) = channel(1);
 
     add_subscription_handle(handle, sender).await;
-
 
     // spawn thread which reads subscription stream and calls callback with data
     let context_copy = context.clone();
@@ -216,6 +211,7 @@ pub async fn subscribe_collection(
     Ok(ResultOfSubscribeCollection { handle })
 }
 
+#[function_info]
 pub async fn unsubscribe(
     _context: std::sync::Arc<ClientContext>,
     params: ResultOfSubscribeCollection,
@@ -227,9 +223,16 @@ pub async fn unsubscribe(
     Ok(())
 }
 
+/// Network access.
+#[derive(TypeInfo)]
+#[type_info(name = "net")]
+struct NetModule;
+
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.spawn("net.query_collection", query_collection);
-    handlers.spawn("net.wait_for_collection", wait_for_collection);
-    handlers.spawn("net.subscribe_collection", subscribe_collection);
-    handlers.spawn("net.unsubscribe", unsubscribe);
+    handlers.register_module::<NetModule>(&[], |reg| {
+        reg.async_func(query_collection, query_collection_info);
+        reg.async_func(wait_for_collection, wait_for_collection_info);
+        reg.async_func(subscribe_collection, subscribe_collection_info);
+        reg.async_func(unsubscribe, unsubscribe_info);
+    });
 }

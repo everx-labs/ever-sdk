@@ -1,10 +1,12 @@
 extern crate serde_derive;
 
+use crate::reflect::TypeInfo;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct API {
     pub version: String,
+    pub modules: Vec<Module>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -14,6 +16,19 @@ pub struct Module {
     pub description: Option<String>,
     pub types: Vec<Field>,
     pub functions: Vec<Function>,
+}
+
+impl Module {
+    pub fn new<I: TypeInfo>(types: &[fn() -> Field]) -> Self {
+        let info = I::type_info();
+        Module {
+            name: info.name,
+            summary: info.summary,
+            description: info.description,
+            functions: vec![],
+            types: types.iter().map(|f| f()).collect(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -36,6 +51,7 @@ pub struct Field {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all="snake_case")]
 pub enum ConstValue {
     None {},
     Bool(String),
@@ -52,6 +68,7 @@ pub struct Const {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all="snake_case")]
 pub enum Type {
     None {},
     Any {},

@@ -28,17 +28,10 @@ mod types;
 mod wait_for_transaction;
 
 pub use errors::{Error, ErrorCode};
-pub use process_message::{
-    process_message, process_message_info, MessageSource, ParamsOfProcessMessage,
-};
-pub use send_message::{
-    send_message, send_message_info, ParamsOfSendMessage, ResultOfSendMessage,
-};
-pub use types::{CallbackParams, ProcessingEvent, TransactionOutput};
-pub use wait_for_transaction::{
-    wait_for_transaction, wait_for_transaction_info, ParamsOfWaitForTransaction,
-    ResultOfWaitForTransaction,
-};
+pub use process_message::{process_message, MessageSource, ParamsOfProcessMessage};
+pub use send_message::{send_message, ParamsOfSendMessage, ResultOfSendMessage};
+pub use types::{AbiDecodedOutput, CallbackParams, ProcessingEvent, TransactionOutput};
+pub use wait_for_transaction::{wait_for_transaction, ParamsOfWaitForTransaction};
 
 use api_doc::reflect::TypeInfo;
 
@@ -52,25 +45,25 @@ pub const DEFAULT_EXPIRATION_RETRIES_TIMEOUT: u32 = 1000;
 /// This module incorporates functions related to complex message
 /// processing scenarios.
 #[derive(TypeInfo)]
+#[type_info(name = "processing")]
 pub struct ProcessingModule;
 
-impl CoreModuleInfo for ProcessingModule {
-    fn name() -> &'static str {
-        "processing"
-    }
-}
-
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.register_types::<ProcessingModule>(
-        vec![
+    handlers.register_module::<ProcessingModule>(
+        &[
             CallbackParams::type_info,
             MessageSource::type_info,
             ProcessingEvent::type_info,
-            ProcessingState::type_info,
             TransactionOutput::type_info,
+            AbiDecodedOutput::type_info,
         ],
+        |reg| {
+            reg.async_func(send_message, send_message::send_message_info);
+            reg.async_func(
+                wait_for_transaction,
+                wait_for_transaction::wait_for_transaction_info,
+            );
+            reg.async_func(process_message, process_message::process_message_info);
+        },
     );
-    handlers.register_async::<ProcessingModule>(send_message_info, send_message);
-    handlers.register_async(wait_for_transaction_info, wait_for_transaction);
-    handlers.register_async(process_message_info, process_message);
 }

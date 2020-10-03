@@ -30,7 +30,8 @@ pub struct ResultOfHash {
     pub hash: String,
 }
 
-#[doc(summary = "Calculates SHA256 hash of the specified data.")]
+/// Calculates SHA256 hash of the specified data.
+#[function_info]
 pub fn sha256(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHash,
@@ -43,7 +44,8 @@ pub fn sha256(
 }
 
 
-#[doc(summary = "Calculates SHA512 hash of the specified data.")]
+///Calculates SHA512 hash of the specified data.
+#[function_info]
 pub fn sha512(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHash,

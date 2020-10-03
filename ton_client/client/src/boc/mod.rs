@@ -11,9 +11,9 @@
 * limitations under the License.
 */
 
-use crate::dispatch::DispatchTable;
 use crate::client::ClientContext;
-use crate::error::{ApiResult};
+use crate::dispatch::DispatchTable;
+use crate::error::ApiResult;
 use ton_block::Deserializable;
 
 mod errors;
@@ -38,8 +38,7 @@ pub struct ResultOfParse {
     pub parsed: serde_json::Value,
 }
 
-fn deserialize_cell_from_base64(b64: &str) -> ApiResult<(Vec<u8>, ton_types::Cell)>
-{
+fn deserialize_cell_from_base64(b64: &str) -> ApiResult<(Vec<u8>, ton_types::Cell)> {
     let bytes = base64::decode(&b64)
         .map_err(|err| Error::invalid_boc(format!("error decode base64: {}", err)))?;
 
@@ -55,26 +54,29 @@ struct DeserializedObject<S: Deserializable> {
     object: S,
 }
 
-fn deserialize_object_from_base64<S: Deserializable>(b64: &str, name: &str) -> ApiResult<DeserializedObject<S>>
-{
+fn deserialize_object_from_base64<S: Deserializable>(
+    b64: &str,
+    name: &str,
+) -> ApiResult<DeserializedObject<S>> {
     let (bytes, cell) = deserialize_cell_from_base64(b64)?;
 
-    let object = S::construct_from(&mut cell.clone().into())
-        .map_err(|err| Error::invalid_boc(format!("cannot deserialize {} from BOC: {}", name, err)))?;
+    let object = S::construct_from(&mut cell.clone().into()).map_err(|err| {
+        Error::invalid_boc(format!("cannot deserialize {} from BOC: {}", name, err))
+    })?;
 
     Ok(DeserializedObject {
         boc: bytes,
         cell_hash: cell.repr_hash(),
-        object
+        object,
     })
 }
 
+#[function_info]
 pub fn parse_message(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
 ) -> ApiResult<ResultOfParse> {
-    let object =
-        deserialize_object_from_base64::<ton_block::Message>(&params.boc, "message")?;
+    let object = deserialize_object_from_base64::<ton_block::Message>(&params.boc, "message")?;
 
     let set = ton_block_json::MessageSerializationSet {
         block_id: None,
@@ -84,20 +86,22 @@ pub fn parse_message(
         proof: None,
         status: ton_block::MessageProcessingStatus::Finalized,
         transaction_id: None,
-        transaction_now: None
+        transaction_now: None,
     };
 
     let parsed = ton_block_json::db_serialize_message_ex(
         "id",
         &set,
-        ton_block_json::SerializationMode::QServer
-    ).map_err(|err| Error::serialization_error(err, "message"))?;
+        ton_block_json::SerializationMode::QServer,
+    )
+    .map_err(|err| Error::serialization_error(err, "message"))?;
 
     Ok(ResultOfParse {
-        parsed: parsed.into()
+        parsed: parsed.into(),
     })
 }
 
+#[function_info]
 pub fn parse_transaction(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
@@ -118,20 +122,21 @@ pub fn parse_transaction(
     let parsed = ton_block_json::db_serialize_transaction_ex(
         "id",
         set,
-        ton_block_json::SerializationMode::QServer
-    ).map_err(|err| Error::serialization_error(err, "transaction"))?;
+        ton_block_json::SerializationMode::QServer,
+    )
+    .map_err(|err| Error::serialization_error(err, "transaction"))?;
 
     Ok(ResultOfParse {
-        parsed: parsed.into()
+        parsed: parsed.into(),
     })
 }
 
+#[function_info]
 pub fn parse_account(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
 ) -> ApiResult<ResultOfParse> {
-    let object =
-        deserialize_object_from_base64::<ton_block::Account>(&params.boc, "account")?;
+    let object = deserialize_object_from_base64::<ton_block::Account>(&params.boc, "account")?;
 
     let set = ton_block_json::AccountSerializationSet {
         boc: object.boc,
@@ -142,20 +147,21 @@ pub fn parse_account(
     let parsed = ton_block_json::db_serialize_account_ex(
         "id",
         &set,
-        ton_block_json::SerializationMode::QServer
-    ).map_err(|err| Error::serialization_error(err, "account"))?;
+        ton_block_json::SerializationMode::QServer,
+    )
+    .map_err(|err| Error::serialization_error(err, "account"))?;
 
     Ok(ResultOfParse {
-        parsed: parsed.into()
+        parsed: parsed.into(),
     })
 }
 
+#[function_info]
 pub fn parse_block(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
 ) -> ApiResult<ResultOfParse> {
-    let object =
-        deserialize_object_from_base64::<ton_block::Block>(&params.boc, "block")?;
+    let object = deserialize_object_from_base64::<ton_block::Block>(&params.boc, "block")?;
 
     let set = ton_block_json::BlockSerializationSet {
         boc: object.boc,
@@ -167,17 +173,25 @@ pub fn parse_block(
     let parsed = ton_block_json::db_serialize_block_ex(
         "id",
         &set,
-        ton_block_json::SerializationMode::QServer
-    ).map_err(|err| Error::serialization_error(err, "block"))?;
+        ton_block_json::SerializationMode::QServer,
+    )
+    .map_err(|err| Error::serialization_error(err, "block"))?;
 
     Ok(ResultOfParse {
-        parsed: parsed.into()
+        parsed: parsed.into(),
     })
 }
 
+/// BOC manipulation module.
+#[derive(TypeInfo)]
+#[type_info(name = "boc")]
+struct BocModule;
+
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.call("boc.parse_message", parse_message);
-    handlers.call("boc.parse_transaction", parse_transaction);
-    handlers.call("boc.parse_account", parse_account);
-    handlers.call("boc.parse_block", parse_block);
+    handlers.register_module::<BocModule>(&[], |reg| {
+        reg.func(parse_message, parse_message_info);
+        reg.func(parse_transaction, parse_transaction_info);
+        reg.func(parse_account, parse_account_info);
+        reg.func(parse_block, parse_block_info);
+    });
 }

@@ -37,7 +37,8 @@ pub struct ResultOfHDKeyXPrvFromMnemonic {
     pub xprv: String,
 }
 
-#[doc(summary = "Generate the extended master private key that will be the root for all the derived keys")]
+/// Generate the extended master private key that will be the root for all the derived keys
+#[function_info]
 pub fn hdkey_xprv_from_mnemonic(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyXPrvFromMnemonic,
@@ -61,7 +62,8 @@ pub struct ResultOfHDKeySecretFromXPrv {
     pub secret: String,
 }
 
-#[doc(summary = "Extracts the private key from the serialized extended private key")]
+/// Extracts the private key from the serialized extended private key
+#[function_info]
 pub fn hdkey_secret_from_xprv(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeySecretFromXPrv,
@@ -85,7 +87,8 @@ pub struct ResultOfHDKeyPublicFromXPrv {
     pub public: String,
 }
 
-#[doc(summary = "Extracts the public key from the serialized extended private key")]
+/// Extracts the public key from the serialized extended private key
+#[function_info]
 pub fn hdkey_public_from_xprv(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyPublicFromXPrv,
@@ -116,6 +119,7 @@ pub struct ResultOfHDKeyDeriveFromXPrv {
 
 #[doc(summary = "Derives the next child extended private key")]
 /// Returns derived extended private key derived from the specified extended private key and child index
+#[function_info]
 pub fn hdkey_derive_from_xprv(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyDeriveFromXPrv,
@@ -145,6 +149,7 @@ pub struct ResultOfHDKeyDeriveFromXPrvPath {
 
 #[doc(summary = "Derives the exented private key from the specified key and path")]
 /// Derives the exented private key from the specified key and path
+#[function_info]
 pub fn hdkey_derive_from_xprv_path(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyDeriveFromXPrvPath,

@@ -327,6 +327,7 @@ pub struct ResultOfAttachSignature {
     pub message: String,
 }
 
+#[function_info]
 pub fn attach_signature(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfAttachSignature,
