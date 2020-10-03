@@ -2,8 +2,8 @@ use crate::abi::{Abi, ParamsOfDecodeMessage};
 use crate::client::ClientContext;
 use crate::error::ApiResult;
 use crate::processing::{
-    Error, ProcessingState, DEFAULT_EXPIRATION_RETRIES_LIMIT,
-    DEFAULT_NETWORK_RETRIES_LIMIT, DEFAULT_NETWORK_RETRIES_TIMEOUT,
+    Error, DEFAULT_EXPIRATION_RETRIES_LIMIT, DEFAULT_NETWORK_RETRIES_LIMIT,
+    DEFAULT_NETWORK_RETRIES_TIMEOUT,
 };
 use serde_json::Value;
 use std::sync::Arc;
@@ -63,7 +63,7 @@ fn resolve<C, R>(config: Option<&C>, resolve_cfg: fn(cfg: &C) -> Option<R>, def:
 pub fn find_transaction(
     block: &Block,
     message_id: &str,
-    processing_state: &ProcessingState,
+    shard_block_id: &String,
 ) -> ApiResult<Option<String>> {
     let msg_id: MessageId = message_id.into();
     for msg_descr in &block.in_msg_descr {
@@ -75,7 +75,7 @@ pub fn find_transaction(
                     .ok_or(Error::invalid_block_received(
                         "No field `transaction_id` in block's `in_msg_descr`.",
                         message_id,
-                        &processing_state,
+                        shard_block_id,
                     ))?
                     .to_string(),
             ));
@@ -96,7 +96,7 @@ struct Transaction {
 
 pub(crate) fn get_exit_code(
     parsed_transaction: &Value,
-    processing_state: &ProcessingState,
+    shard_block_id: &String,
     message_id: &str,
 ) -> ApiResult<i32> {
     Ok(
@@ -105,7 +105,7 @@ pub(crate) fn get_exit_code(
                 Error::fetch_transaction_result_failed(
                     format!("Transaction can't be parsed: {}", err),
                     message_id,
-                    processing_state,
+                    shard_block_id,
                 )
             })?
             .compute

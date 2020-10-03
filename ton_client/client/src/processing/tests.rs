@@ -7,7 +7,6 @@ use crate::processing::{
     process_message, process_message_info, send_message, send_message_info,
     wait_for_transaction, wait_for_transaction_info, CallbackParams, MessageSource,
     ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction, ProcessingEvent,
-    ResultOfWaitForTransaction,
 };
 
 use crate::processing::types::AbiDecodedOutput;
@@ -65,24 +64,19 @@ async fn test_wait_message() {
     let result = send_message
         .call(ParamsOfSendMessage {
             message: encoded.message.clone(),
-            callback: Some(CallbackParams::with_id(callback_id)),
+            events_handler: Some(CallbackParams::with_id(callback_id)),
             abi: Some(abi.clone()),
         })
         .await;
 
-    let result = wait_for_transaction
+    let output = wait_for_transaction
         .call(ParamsOfWaitForTransaction {
             message: encoded.message.clone(),
-            processing_state: result.processing_state,
-            callback: Some(CallbackParams::with_id(callback_id)),
+            shard_block_id: result.shard_block_id,
+            events_handler: Some(CallbackParams::with_id(callback_id)),
             abi: Some(abi.clone()),
         })
         .await;
-    let output = match result {
-        ResultOfWaitForTransaction::Complete(output) => Some(output),
-        _ => None,
-    }
-    .unwrap();
 
     assert_eq!(output.out_messages.len(), 0);
     assert_eq!(
@@ -174,7 +168,7 @@ async fn test_process_message() {
                 message: encoded.message.clone(),
                 abi: Some(abi.clone()),
             },
-            callback: Some(CallbackParams::with_id(callback_id)),
+            events_handler: Some(CallbackParams::with_id(callback_id)),
         })
         .await;
 
@@ -239,7 +233,7 @@ async fn test_process_message() {
                 signer: Signer::WithKeys(keys.clone()),
                 processing_try_index: None,
             }),
-            callback: Some(CallbackParams::with_id(callback_id)),
+            events_handler: Some(CallbackParams::with_id(callback_id)),
         })
         .await;
     assert_eq!(output.out_messages.len(), 2);
