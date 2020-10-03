@@ -66,80 +66,80 @@ pub(crate) const DEFAULT_HDKEY_COMPLIANT: bool = true;
 struct CryptoModule;
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.register_module::<CryptoModule>(&[], |reg| {
+    handlers.register_module::<CryptoModule>(|reg| {
         // Math
 
-        reg.func(factorize, math::factorize_info);
-        reg.func(modular_power, math::modular_power_info);
-        reg.func(ton_crc16, math::ton_crc16_info);
-        reg.func(generate_random_bytes, math::generate_random_bytes_info);
+        reg.f(factorize, math::factorize_info);
+        reg.f(modular_power, math::modular_power_info);
+        reg.f(ton_crc16, math::ton_crc16_info);
+        reg.f(generate_random_bytes, math::generate_random_bytes_info);
 
         // Keys
 
-        reg.func(
+        reg.f(
             convert_public_key_to_ton_safe_format,
             keys::convert_public_key_to_ton_safe_format_info,
         );
 
-        reg.func_no_args(
+        reg.f_no_args(
             generate_random_sign_keys,
             keys::generate_random_sign_keys_info,
         );
-        reg.func(sign, keys::sign_info);
-        reg.func(verify_signature, keys::verify_signature_info);
+        reg.f(sign, keys::sign_info);
+        reg.f(verify_signature, keys::verify_signature_info);
 
         // Sha
 
-        reg.func(sha256, hash::sha256_info);
-        reg.func(sha512, hash::sha512_info);
+        reg.f(sha256, hash::sha256_info);
+        reg.f(sha512, hash::sha512_info);
 
         // Scrypt
 
-        reg.func(scrypt::scrypt, scrypt::scrypt_info);
+        reg.f(scrypt::scrypt, scrypt::scrypt_info);
 
         // NaCl
 
-        reg.func(
+        reg.f(
             nacl_sign_keypair_from_secret_key,
             nacl::nacl_sign_keypair_from_secret_key_info,
         );
-        reg.func(nacl_sign, nacl::nacl_sign_info);
-        reg.func(nacl_sign_open, nacl::nacl_sign_open_info);
-        reg.func(nacl_sign_detached, nacl::nacl_sign_detached_info);
+        reg.f(nacl_sign, nacl::nacl_sign_info);
+        reg.f(nacl_sign_open, nacl::nacl_sign_open_info);
+        reg.f(nacl_sign_detached, nacl::nacl_sign_detached_info);
 
-        reg.func_no_args(nacl_box_keypair, nacl::nacl_box_keypair_info);
-        reg.func(
+        reg.f_no_args(nacl_box_keypair, nacl::nacl_box_keypair_info);
+        reg.f(
             nacl_box_keypair_from_secret_key,
             nacl::nacl_box_keypair_from_secret_key_info,
         );
-        reg.func(nacl_box, nacl::nacl_box_info);
-        reg.func(nacl_box_open, nacl::nacl_box_open_info);
-        reg.func(nacl_secret_box, nacl::nacl_secret_box_info);
-        reg.func(nacl_secret_box_open, nacl::nacl_secret_box_open_info);
+        reg.f(nacl_box, nacl::nacl_box_info);
+        reg.f(nacl_box_open, nacl::nacl_box_open_info);
+        reg.f(nacl_secret_box, nacl::nacl_secret_box_info);
+        reg.f(nacl_secret_box_open, nacl::nacl_secret_box_open_info);
 
         // Mnemonic
 
-        reg.func(mnemonic_words, mnemonic::mnemonic_words_info);
-        reg.func(mnemonic_from_random, mnemonic::mnemonic_from_random_info);
-        reg.func(mnemonic_from_entropy, mnemonic::mnemonic_from_entropy_info);
-        reg.func(mnemonic_verify, mnemonic::mnemonic_verify_info);
-        reg.func(
+        reg.f(mnemonic_words, mnemonic::mnemonic_words_info);
+        reg.f(mnemonic_from_random, mnemonic::mnemonic_from_random_info);
+        reg.f(mnemonic_from_entropy, mnemonic::mnemonic_from_entropy_info);
+        reg.f(mnemonic_verify, mnemonic::mnemonic_verify_info);
+        reg.f(
             mnemonic_derive_sign_keys,
             mnemonic::mnemonic_derive_sign_keys_info,
         );
 
         // HDKey
 
-        reg.func(
+        reg.f(
             hdkey_xprv_from_mnemonic,
             hdkey::hdkey_xprv_from_mnemonic_info,
         );
-        reg.func(hdkey_derive_from_xprv, hdkey::hdkey_derive_from_xprv_info);
-        reg.func(
+        reg.f(hdkey_derive_from_xprv, hdkey::hdkey_derive_from_xprv_info);
+        reg.f(
             hdkey_derive_from_xprv_path,
             hdkey::hdkey_derive_from_xprv_path_info,
         );
-        reg.func(hdkey_secret_from_xprv, hdkey::hdkey_secret_from_xprv_info);
-        reg.func(hdkey_public_from_xprv, hdkey::hdkey_public_from_xprv_info);
+        reg.f(hdkey_secret_from_xprv, hdkey::hdkey_secret_from_xprv_info);
+        reg.f(hdkey_public_from_xprv, hdkey::hdkey_public_from_xprv_info);
     });
 }

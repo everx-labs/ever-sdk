@@ -6,27 +6,8 @@ pub fn get_api() -> API {
     ApiReducer::build(&get_handlers().api)
 }
 
-fn split_name(name: &str) -> (Option<String>, String) {
-    let mut parts = name.split(".");
-    let a = parts.next();
-    let b = parts.next();
-    if let Some(b) = b {
-        (a.map(|x| x.to_string()), b.to_string())
-    } else {
-        (None, name.to_string())
-    }
-}
-
 fn is_full_name(name: &str) -> bool {
     name.contains(".")
-}
-
-fn full_name(module: &Option<String>, name: &str) -> String {
-    if let Some(module) = module {
-        format!("{}.{}", module, name)
-    } else {
-        name.to_string()
-    }
 }
 
 pub(crate) struct ApiReducer {

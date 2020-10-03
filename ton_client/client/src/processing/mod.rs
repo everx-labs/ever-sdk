@@ -33,8 +33,6 @@ pub use send_message::{send_message, ParamsOfSendMessage, ResultOfSendMessage};
 pub use types::{AbiDecodedOutput, CallbackParams, ProcessingEvent, TransactionOutput};
 pub use wait_for_transaction::{wait_for_transaction, ParamsOfWaitForTransaction};
 
-use api_doc::reflect::TypeInfo;
-
 pub const DEFAULT_NETWORK_RETRIES_LIMIT: i8 = -1;
 pub const DEFAULT_NETWORK_RETRIES_TIMEOUT: u32 = 1000;
 pub const DEFAULT_EXPIRATION_RETRIES_LIMIT: i8 = 20;
@@ -49,21 +47,18 @@ pub const DEFAULT_EXPIRATION_RETRIES_TIMEOUT: u32 = 1000;
 pub struct ProcessingModule;
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.register_module::<ProcessingModule>(
-        &[
-            CallbackParams::type_info,
-            MessageSource::type_info,
-            ProcessingEvent::type_info,
-            TransactionOutput::type_info,
-            AbiDecodedOutput::type_info,
-        ],
-        |reg| {
-            reg.async_func(send_message, send_message::send_message_info);
-            reg.async_func(
-                wait_for_transaction,
-                wait_for_transaction::wait_for_transaction_info,
-            );
-            reg.async_func(process_message, process_message::process_message_info);
-        },
-    );
+    handlers.register_module::<ProcessingModule>(|reg| {
+        reg.t::<CallbackParams>();
+        reg.t::<MessageSource>();
+        reg.t::<ProcessingEvent>();
+        reg.t::<TransactionOutput>();
+        reg.t::<AbiDecodedOutput>();
+
+        reg.async_f(send_message, send_message::send_message_info);
+        reg.async_f(
+            wait_for_transaction,
+            wait_for_transaction::wait_for_transaction_info,
+        );
+        reg.async_f(process_message, process_message::process_message_info);
+    });
 }

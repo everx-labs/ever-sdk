@@ -188,10 +188,10 @@ pub fn parse_block(
 struct BocModule;
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.register_module::<BocModule>(&[], |reg| {
-        reg.func(parse_message, parse_message_info);
-        reg.func(parse_transaction, parse_transaction_info);
-        reg.func(parse_account, parse_account_info);
-        reg.func(parse_block, parse_block_info);
+    handlers.register_module::<BocModule>(|reg| {
+        reg.f(parse_message, parse_message_info);
+        reg.f(parse_transaction, parse_transaction_info);
+        reg.f(parse_account, parse_account_info);
+        reg.f(parse_block, parse_block_info);
     });
 }

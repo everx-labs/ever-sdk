@@ -229,10 +229,10 @@ pub async fn unsubscribe(
 struct NetModule;
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.register_module::<NetModule>(&[], |reg| {
-        reg.async_func(query_collection, query_collection_info);
-        reg.async_func(wait_for_collection, wait_for_collection_info);
-        reg.async_func(subscribe_collection, subscribe_collection_info);
-        reg.async_func(unsubscribe, unsubscribe_info);
+    handlers.register_module::<NetModule>(|reg| {
+        reg.async_f(query_collection, query_collection_info);
+        reg.async_f(wait_for_collection, wait_for_collection_info);
+        reg.async_f(subscribe_collection, subscribe_collection_info);
+        reg.async_f(unsubscribe, unsubscribe_info);
     });
 }

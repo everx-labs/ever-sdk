@@ -19,14 +19,14 @@ pub struct Module {
 }
 
 impl Module {
-    pub fn new<I: TypeInfo>(types: &[fn() -> Field]) -> Self {
+    pub fn new<I: TypeInfo>() -> Self {
         let info = I::type_info();
         Module {
             name: info.name,
             summary: info.summary,
             description: info.description,
             functions: vec![],
-            types: types.iter().map(|f| f()).collect(),
+            types: vec![],
         }
     }
 }

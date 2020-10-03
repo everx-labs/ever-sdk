@@ -20,7 +20,7 @@ use serde::Serialize;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
-use api_doc::api::{Field, Module, API};
+use api_doc::api::{Module, API};
 #[cfg(feature = "node_interaction")]
 use std::future::Future;
 
@@ -348,26 +348,6 @@ impl DispatchTable {
         name
     }
 
-    pub fn call<P, R>(
-        &mut self,
-        name: &str,
-        handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> ApiResult<R>,
-    ) where
-        P: TypeInfo + Send + DeserializeOwned + 'static,
-        R: TypeInfo + Send + Serialize + 'static,
-    {
-        self.sync_runners
-            .insert(name.into(), Box::new(CallHandler::new(handler)));
-
-        #[cfg(feature = "node_interaction")]
-        self.async_runners.insert(
-            name.into(),
-            Box::new(SpawnHandler::new(move |context, params| async move {
-                handler(context, params)
-            })),
-        );
-    }
-
     pub fn call_no_api<P, R>(
         &mut self,
         name: &str,
@@ -384,49 +364,6 @@ impl DispatchTable {
             name.into(),
             Box::new(SpawnHandler::new(move |context, params| async move {
                 handler(context, params)
-            })),
-        );
-    }
-
-    pub fn call_no_args<R>(
-        &mut self,
-        name: &str,
-        handler: fn(context: std::sync::Arc<ClientContext>) -> ApiResult<R>,
-    ) where
-        R: TypeInfo + Send + Serialize + 'static,
-    {
-        self.sync_runners
-            .insert(name.into(), Box::new(CallNoArgsHandler::new(handler)));
-
-        #[cfg(feature = "node_interaction")]
-        self.async_runners.insert(
-            name.into(),
-            Box::new(SpawnNoArgsHandler::new(move |context| async move {
-                handler(context)
-            })),
-        );
-    }
-
-    #[cfg(feature = "node_interaction")]
-    pub fn spawn<P, R, F>(
-        &mut self,
-        name: &str,
-        handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> F,
-    ) where
-        P: TypeInfo + Send + DeserializeOwned + 'static,
-        R: TypeInfo + Send + Serialize + 'static,
-        F: Send + Future<Output = ApiResult<R>> + 'static,
-    {
-        self.async_runners
-            .insert(name.into(), Box::new(SpawnHandler::new(handler)));
-
-        self.sync_runners.insert(
-            name.into(),
-            Box::new(CallHandler::new(move |context, params| {
-                context
-                    .clone()
-                    .async_runtime_handle
-                    .block_on(handler(context, params))
             })),
         );
     }
@@ -585,14 +522,13 @@ impl DispatchTable {
 
     pub(crate) fn register_module<'h, M: TypeInfo>(
         &'h mut self,
-        types: &[fn() -> Field],
-        functions: fn(register: &mut Registrar<'h>) -> (),
+        reg: fn(register: &mut Registrar<'h>) -> (),
     ) {
         let mut registrar = Registrar::<'h> {
             dispatcher: self,
-            module: Module::new::<M>(types),
+            module: Module::new::<M>(),
         };
-        functions(&mut registrar);
+        reg(&mut registrar);
         registrar.dispatcher.api.modules.push(registrar.module);
     }
 }
@@ -603,7 +539,11 @@ pub(crate) struct Registrar<'a> {
 }
 
 impl Registrar<'_> {
-    pub fn async_func<P, R, F>(
+    pub fn t<T: TypeInfo>(&mut self) {
+        self.module.types.push(T::type_info());
+    }
+
+    pub fn async_f<P, R, F>(
         &mut self,
         handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> F,
         info: fn() -> api_doc::api::Function,
@@ -616,7 +556,7 @@ impl Registrar<'_> {
             .register_async(&mut self.module, handler, info);
     }
 
-    pub fn func<P, R>(
+    pub fn f<P, R>(
         &mut self,
         handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> ApiResult<R>,
         info: fn() -> api_doc::api::Function,
@@ -628,7 +568,7 @@ impl Registrar<'_> {
             .register_sync(&mut self.module, handler, info);
     }
 
-    pub fn func_no_args<R>(
+    pub fn f_no_args<R>(
         &mut self,
         handler: fn(context: std::sync::Arc<ClientContext>) -> ApiResult<R>,
         info: fn() -> api_doc::api::Function,
