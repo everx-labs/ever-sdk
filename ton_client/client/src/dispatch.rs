@@ -316,152 +316,6 @@ impl DispatchTable {
         }
     }
 
-    pub fn register_api_function<P, R>(
-        &mut self,
-        module: &mut Module,
-        api: fn() -> api_info::Function,
-    ) -> String
-    where
-        P: ApiType + Send + DeserializeOwned + 'static,
-        R: ApiType + Send + Serialize + 'static,
-    {
-        module.types.push(P::api());
-        module.types.push(R::api());
-        let function = api();
-        let name = format!("{}.{}", module.name, function.name);
-        module.functions.push(function);
-        name
-    }
-
-    pub fn register_api_function_no_args<R>(
-        &mut self,
-        module: &mut Module,
-        api: fn() -> api_info::Function,
-    ) -> String
-    where
-        R: ApiType + Send + Serialize + 'static,
-    {
-        module.types.push(R::api());
-        let function = api();
-        let name = format!("{}.{}", module.name, function.name);
-        module.functions.push(function);
-        name
-    }
-
-    pub fn call_no_api<P, R>(
-        &mut self,
-        name: &str,
-        handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> ApiResult<R>,
-    ) where
-        P: Send + DeserializeOwned + 'static,
-        R: Send + Serialize + 'static,
-    {
-        self.sync_runners
-            .insert(name.into(), Box::new(CallHandler::new(handler)));
-
-        #[cfg(feature = "node_interaction")]
-        self.async_runners.insert(
-            name.into(),
-            Box::new(SpawnHandler::new(move |context, params| async move {
-                handler(context, params)
-            })),
-        );
-    }
-
-    pub fn register_sync<P, R>(
-        &mut self,
-        module: &mut Module,
-        handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> ApiResult<R>,
-        api: fn() -> api_info::Function,
-    ) where
-        P: ApiType + Send + DeserializeOwned + 'static,
-        R: ApiType + Send + Serialize + 'static,
-    {
-        let name = self.register_api_function::<P, R>(module, api);
-        self.sync_runners
-            .insert(name.clone(), Box::new(CallHandler::new(handler)));
-
-        #[cfg(feature = "node_interaction")]
-        self.async_runners.insert(
-            name.clone(),
-            Box::new(SpawnHandler::new(move |context, params| async move {
-                handler(context, params)
-            })),
-        );
-    }
-
-    pub fn register_sync_no_args<R>(
-        &mut self,
-        module: &mut Module,
-        handler: fn(context: std::sync::Arc<ClientContext>) -> ApiResult<R>,
-        api: fn() -> api_info::Function,
-    ) where
-        R: ApiType + Send + Serialize + 'static,
-    {
-        let name = self.register_api_function_no_args::<R>(module, api);
-        self.sync_runners
-            .insert(name.clone(), Box::new(CallNoArgsHandler::new(handler)));
-
-        #[cfg(feature = "node_interaction")]
-        self.async_runners.insert(
-            name.clone(),
-            Box::new(SpawnNoArgsHandler::new(move |context| async move {
-                handler(context)
-            })),
-        );
-    }
-
-    pub fn register_async<P, R, F>(
-        &mut self,
-        module: &mut Module,
-        handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> F,
-        api: fn() -> api_info::Function,
-    ) where
-        P: ApiType + Send + DeserializeOwned + 'static,
-        R: ApiType + Send + Serialize + 'static,
-        F: Send + Future<Output = ApiResult<R>> + 'static,
-    {
-        let name = self.register_api_function::<P, R>(module, api);
-        self.async_runners
-            .insert(name.clone(), Box::new(SpawnHandler::new(handler)));
-
-        self.sync_runners.insert(
-            name,
-            Box::new(CallHandler::new(move |context, params| {
-                context
-                    .clone()
-                    .async_runtime_handle
-                    .block_on(handler(context, params))
-            })),
-        );
-    }
-
-    #[cfg(feature = "node_interaction")]
-    pub fn spawn_no_api<P, R, F>(
-        &mut self,
-        name: &str,
-        handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> F,
-    ) where
-        P: Send + DeserializeOwned + 'static,
-        R: Send + Serialize + 'static,
-        F: Send + Future<Output = ApiResult<R>> + 'static,
-    {
-        self.async_runners
-            .insert(name.into(), Box::new(SpawnHandler::new(handler)));
-
-        self.sync_runners.insert(
-            name.into(),
-            Box::new(CallHandler::new(
-                move |context: std::sync::Arc<ClientContext>, params: P| -> ApiResult<R> {
-                    context
-                        .clone()
-                        .async_runtime_handle
-                        .block_on(handler(context, params))
-                },
-            )),
-        );
-    }
-
     pub fn call_raw_async(
         &mut self,
         name: &str,
@@ -549,8 +403,24 @@ impl Registrar<'_> {
         R: ApiType + Send + Serialize + 'static,
         F: Send + Future<Output = ApiResult<R>> + 'static,
     {
+        self.module.types.push(P::api());
+        self.module.types.push(R::api());
+        let function = api();
+        let name = format!("{}.{}", self.module.name, function.name);
+        self.module.functions.push(function);
         self.dispatcher
-            .register_async(&mut self.module, handler, api);
+            .async_runners
+            .insert(name.clone(), Box::new(SpawnHandler::new(handler)));
+
+        self.dispatcher.sync_runners.insert(
+            name,
+            Box::new(CallHandler::new(move |context, params| {
+                context
+                    .clone()
+                    .async_runtime_handle
+                    .block_on(handler(context, params))
+            })),
+        );
     }
 
     pub fn f<P, R>(
@@ -561,8 +431,23 @@ impl Registrar<'_> {
         P: ApiType + Send + DeserializeOwned + 'static,
         R: ApiType + Send + Serialize + 'static,
     {
+        self.module.types.push(P::api());
+        self.module.types.push(R::api());
+        let function = api();
+        let name = format!("{}.{}", self.module.name, function.name);
+        self.module.functions.push(function);
+
         self.dispatcher
-            .register_sync(&mut self.module, handler, api);
+            .sync_runners
+            .insert(name.clone(), Box::new(CallHandler::new(handler)));
+
+        #[cfg(feature = "node_interaction")]
+        self.dispatcher.async_runners.insert(
+            name.clone(),
+            Box::new(SpawnHandler::new(move |context, params| async move {
+                handler(context, params)
+            })),
+        );
     }
 
     pub fn f_no_args<R>(
@@ -572,8 +457,21 @@ impl Registrar<'_> {
     ) where
         R: ApiType + Send + Serialize + 'static,
     {
+        self.module.types.push(R::api());
+        let function = api();
+        let name = format!("{}.{}", self.module.name, function.name);
+        self.module.functions.push(function);
         self.dispatcher
-            .register_sync_no_args(&mut self.module, handler, api);
+            .sync_runners
+            .insert(name.clone(), Box::new(CallNoArgsHandler::new(handler)));
+
+        #[cfg(feature = "node_interaction")]
+        self.dispatcher.async_runners.insert(
+            name.clone(),
+            Box::new(SpawnNoArgsHandler::new(move |context| async move {
+                handler(context)
+            })),
+        );
     }
 }
 

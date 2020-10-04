@@ -104,6 +104,5 @@ pub(crate) fn get(
     Ok(ResultOfLocalRunGet { output })
 }
 
-pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.call_no_api("tvm.get", get);
+pub(crate) fn register(_handlers: &mut DispatchTable) {
 }

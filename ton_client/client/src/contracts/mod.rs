@@ -259,7 +259,6 @@ pub(crate) struct ParamsOfWaitTransaction {
 }
 
 use ton_sdk;
-use crate::dispatch::DispatchTable;
 use crate::client::ClientContext;
 
 pub(crate) fn encode_message_with_sign(_context: std::sync::Arc<ClientContext>, params: ParamsOfEncodeMessageWithSign) -> ApiResult<EncodedMessage> {
@@ -460,94 +459,4 @@ pub(crate) async fn wait_transaction(context: std::sync::Arc<ClientContext>, par
         true)
 }
 
-pub(crate) fn register(handlers: &mut DispatchTable) {
-    // Deploy
-    #[cfg(feature = "node_interaction")]
-        handlers.spawn_no_api(
-            "contracts.deploy",
-            deploy::deploy);
-
-    handlers.call_no_api("contracts.deploy.message",
-        deploy::encode_message);
-    handlers.call_no_api("contracts.deploy.encode_unsigned_message",
-        deploy::encode_unsigned_message);
-    handlers.call_no_api("contracts.deploy.address",
-        deploy::get_address);
-    handlers.call_no_api("contracts.deploy.data",
-        deploy::get_deploy_data);
-
-    // Run
-    #[cfg(feature = "node_interaction")]
-        handlers.spawn_no_api(
-            "contracts.run",
-            run::run);
-
-    handlers.call_no_api("contracts.run.message",
-        run::encode_message);
-    handlers.call_no_api("contracts.run.encode_unsigned_message",
-        run::encode_unsigned_message);
-    handlers.call_no_api("contracts.run.output",
-        run::decode_output);
-    handlers.call_no_api("contracts.run.unknown.input",
-        run::decode_unknown_input);
-    handlers.call_no_api("contracts.run.unknown.output",
-        run::decode_unknown_output);
-    handlers.call_no_api("contracts.run.body",
-        run::get_run_body);
-    handlers.call_no_api("contracts.run.local",
-        run::local_run);
-    handlers.call_no_api("contracts.run.local.msg",
-        run::local_run_msg);
-    handlers.call_no_api("contracts.run.fee",
-        |context, mut params: run::ParamsOfLocalRun| {
-            params.full_run = true;
-            run::local_run(context, params)
-        });
-    handlers.call_no_api("contracts.run.fee.msg",
-        |context, mut params: run::ParamsOfLocalRunWithMsg| {
-            params.full_run = true;
-            run::local_run_msg(context, params)
-        });
-
-    // Contracts
-    handlers.call_no_api("contracts.encode_message_with_sign",
-        encode_message_with_sign);
-    handlers.call_no_api("contracts.function.id",
-        get_function_id);
-    handlers.call_no_api("contracts.image.code",
-        get_code_from_image);
-    handlers.call_no_api("contracts.find.shard",
-        find_matching_shard);
-
-    // Addresses
-    handlers.call_no_api("contracts.address.convert",
-        convert_address);
-
-    // Bag of cells
-    handlers.call_no_api("contracts.boc.hash",
-        get_boc_root_hash);
-    handlers.call_no_api("contracts.parse.message",
-        parse_message);
-
-    // messages processing
-    #[cfg(feature = "node_interaction")]
-    handlers.spawn_no_api(
-        "contracts.send.message",
-        send_message);
-    #[cfg(feature = "node_interaction")]
-    handlers.spawn_no_api(
-        "contracts.process.message",
-        process_message);
-    #[cfg(feature = "node_interaction")]
-    handlers.spawn_no_api(
-        "contracts.wait.transaction",
-        wait_transaction);
-
-    // errors
-    handlers.call_no_api("contracts.resolve.error",
-        run::resolve_error);
-
-    handlers.call_no_api("contracts.process.transaction",
-        process_transaction);
-}
 

@@ -54,7 +54,6 @@ pub struct ParamsOfUnregisterCallback {
 fn create_handlers() -> DispatchTable {
     let mut handlers = DispatchTable::new();
     handlers.call_raw_async("client.register_callback", register_callback);
-    crate::contracts::register(&mut handlers);
     crate::tvm::register(&mut handlers);
 
     handlers.register::<ClientModule>();
