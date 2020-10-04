@@ -403,8 +403,8 @@ impl Registrar<'_> {
         R: ApiType + Send + Serialize + 'static,
         F: Send + Future<Output = ApiResult<R>> + 'static,
     {
-        self.module.types.push(P::api());
-        self.module.types.push(R::api());
+        self.t::<P>();
+        self.t::<R>();
         let function = api();
         let name = format!("{}.{}", self.module.name, function.name);
         self.module.functions.push(function);
@@ -431,8 +431,8 @@ impl Registrar<'_> {
         P: ApiType + Send + DeserializeOwned + 'static,
         R: ApiType + Send + Serialize + 'static,
     {
-        self.module.types.push(P::api());
-        self.module.types.push(R::api());
+        self.t::<P>();
+        self.t::<R>();
         let function = api();
         let name = format!("{}.{}", self.module.name, function.name);
         self.module.functions.push(function);
@@ -457,7 +457,7 @@ impl Registrar<'_> {
     ) where
         R: ApiType + Send + Serialize + 'static,
     {
-        self.module.types.push(R::api());
+        self.t::<R>();
         let function = api();
         let name = format!("{}.{}", self.module.name, function.name);
         self.module.functions.push(function);
