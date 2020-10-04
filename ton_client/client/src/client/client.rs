@@ -27,6 +27,7 @@ use crate::boc::BocModule;
 use crate::client::{register_callback, ClientModule};
 use crate::crypto::CryptoModule;
 use crate::processing::ProcessingModule;
+use crate::tvm::TvmModule;
 
 lazy_static! {
     static ref HANDLERS: DispatchTable = create_handlers();
@@ -54,13 +55,13 @@ pub struct ParamsOfUnregisterCallback {
 fn create_handlers() -> DispatchTable {
     let mut handlers = DispatchTable::new();
     handlers.call_raw_async("client.register_callback", register_callback);
-    crate::tvm::register(&mut handlers);
 
     handlers.register::<ClientModule>();
     handlers.register::<CryptoModule>();
     handlers.register::<AbiModule>();
     handlers.register::<BocModule>();
     handlers.register::<ProcessingModule>();
+    handlers.register::<TvmModule>();
 
     #[cfg(feature = "node_interaction")]
     handlers.register::<NetModule>();

@@ -105,20 +105,20 @@ impl Parser {
     fn tokenize(source: String) -> ApiResult<Self> {
         let mut tokens = Vec::new();
         let mut chars = source.chars();
-        let mut last = chars.next();
-        while let Some(c) = last {
-            last = chars.next();
-            if let Some(token) = match c {
+        let mut next = chars.next();
+        while let Some(current) = next {
+            next = chars.next();
+            if let Some(token) = match current {
                 space if space <= ' ' => None,
                 ':' => Some(Token::Colon),
                 '(' => Some(Token::Open),
                 ')' => Some(Token::Close),
-                first if Self::is_first_ident_char(first) => {
+                first_ident if Self::is_first_ident_char(first_ident) => {
                     let mut identifier = String::new();
-                    identifier.push(first);
-                    while Self::is_ident_char(last.unwrap_or(' ')) {
-                        identifier.push(last.unwrap());
-                        last = chars.next();
+                    identifier.push(first_ident);
+                    while Self::is_ident_char(next.unwrap_or(' ')) {
+                        identifier.push(next.unwrap());
+                        next = chars.next();
                     }
                     Some(Token::Identifier(identifier))
                 }

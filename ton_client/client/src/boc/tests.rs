@@ -11,8 +11,9 @@
 * limitations under the License.
 */
 
-use crate::tests::*;
-use super::*;
+use crate::boc::{ParamsOfGetBlockchainConfig, ResultOfGetBlockchainConfig};
+use crate::boc::{ParamsOfParse, ResultOfParse};
+use crate::tests::TestClient;
 use pretty_assertions::assert_eq;
 
 #[test]
@@ -26,9 +27,18 @@ fn parse_message() {
         }
     );
 
-    assert_eq!(result.parsed["id"], "dfd47194f3058ee058bfbfad3ea40cbbd9ad17ca77cd0904d4d9f18a48c2fbca");
-    assert_eq!(result.parsed["src"], "-1:0000000000000000000000000000000000000000000000000000000000000000");
-    assert_eq!(result.parsed["dst"], "-1:3333333333333333333333333333333333333333333333333333333333333333");
+    assert_eq!(
+        result.parsed["id"],
+        "dfd47194f3058ee058bfbfad3ea40cbbd9ad17ca77cd0904d4d9f18a48c2fbca"
+    );
+    assert_eq!(
+        result.parsed["src"],
+        "-1:0000000000000000000000000000000000000000000000000000000000000000"
+    );
+    assert_eq!(
+        result.parsed["dst"],
+        "-1:3333333333333333333333333333333333333333333333333333333333333333"
+    );
 }
 
 #[test]
@@ -42,7 +52,10 @@ fn parse_account() {
         }
     );
 
-    assert_eq!(result.parsed["id"], "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13");
+    assert_eq!(
+        result.parsed["id"],
+        "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13"
+    );
     assert_eq!(result.parsed["last_trans_lt"], "0x20eadff7e03");
     assert_eq!(result.parsed["balance"], "0x958a26eb8e7a18d");
 }
@@ -58,7 +71,10 @@ fn parse_transaction() {
         }
     );
 
-    assert_eq!(result.parsed["id"], "d6315dbb2a741a2765da250bea4a186adf942469369c703c57c2050e2d6e9fe3");
+    assert_eq!(
+        result.parsed["id"],
+        "d6315dbb2a741a2765da250bea4a186adf942469369c703c57c2050e2d6e9fe3"
+    );
     assert_eq!(result.parsed["lt"], "0x20eb89b8e81");
     assert_eq!(result.parsed["now"], 1600186476);
 }
@@ -74,7 +90,10 @@ fn parse_block() {
         }
     );
 
-    assert_eq!(result.parsed["id"], "048f59d5d652459939ea5c5e7b291155205696b71e0c556f641df69e70e1e725");
+    assert_eq!(
+        result.parsed["id"],
+        "048f59d5d652459939ea5c5e7b291155205696b71e0c556f641df69e70e1e725"
+    );
     assert_eq!(result.parsed["seq_no"], 4296363);
     assert_eq!(result.parsed["gen_utime"], 1600234696);
 }

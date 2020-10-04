@@ -1,17 +1,18 @@
 /*
-* Copyright 2018-2020 TON DEV SOLUTIONS LTD.
-*
-* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
-* this file except in compliance with the License.
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific TON DEV software governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2018-2020 TON DEV SOLUTIONS LTD.
+ *
+ * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+ * this file except in compliance with the License.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific TON DEV software governing permissions and
+ * limitations under the License.
+ *
+ */
 
-use super::ExecutionOptionsInternal;
+use crate::tvm::execute::ExecutionOptionsInternal;
 use super::errors::Error;
 use super::check_transaction::check_transaction_status;
 use crate::error::ApiResult;
@@ -32,7 +33,7 @@ pub(crate) fn execute(
     let contract_info = move || {
         let account = ton_sdk::Contract::from_cells(account_copy.clone().into())
             .map_err(|err| crate::boc::Error::invalid_boc(format!("Can not read account data: {}", err)))?;
-        
+
         Ok((account.address(), account.balance))
     };
 
@@ -40,7 +41,7 @@ pub(crate) fn execute(
         account,
         msg,
         options.blockchain_config.unwrap_or_default(),
-        options.block_unixtime.unwrap_or_else(|| (context.env.now_ms() / 1000) as u32),
+        options.block_time.unwrap_or_else(|| (context.env.now_ms() / 1000) as u32),
         options.block_lt,
         options.transaction_lt,
         &contract_info

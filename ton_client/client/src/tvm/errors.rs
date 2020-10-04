@@ -28,6 +28,8 @@ pub enum ErrorCode {
     AccountFrozenOrDeleted = TVM + 8,
     AccountMissing = TVM + 9,
     UnknownExecutionError = TVM + 10,
+    InvalidInputStack = TVM + 11,
+    InvalidAccountBoc = TVM + 12,
 }
 pub struct Error;
 
@@ -36,24 +38,36 @@ fn error(code: ErrorCode, message: String) -> ApiError {
 }
 
 impl Error {
+    pub fn invalid_input_stack<E: Display>(err: E) -> ApiError {
+        error(
+            ErrorCode::InvalidInputStack,
+            format!("Invalid JSON value for stack item: {}", err),
+        )
+    }
+    pub fn invalid_account_boc<E: Display>(err: E) -> ApiError {
+        error(
+            ErrorCode::InvalidAccountBoc,
+            format!("Invalid account BOC: {}", err),
+        )
+    }
     pub fn can_not_read_transaction<E: Display>(err: E) -> ApiError {
         error(
             ErrorCode::CanNotReadTransaction,
-            format!("Can not read transaction: {}", err)
+            format!("Can not read transaction: {}", err),
         )
     }
 
     pub fn can_not_read_blockchain_config<E: Display>(err: E) -> ApiError {
         error(
             ErrorCode::CanNotReadBlockchainConfig,
-            format!("Can not read blockchain config: {}", err)
+            format!("Can not read blockchain config: {}", err),
         )
     }
 
     pub fn transaction_aborted() -> ApiError {
         let error = error(
             ErrorCode::TransactionAborted,
-            "Transaction was aborted by unknown reason".to_string()
+            "Transaction was aborted by unknown reason".to_string(),
         );
         error
     }
@@ -74,10 +88,7 @@ impl Error {
         error
     }
 
-    pub fn tvm_execution_failed(
-        exit_code: i32,
-        address: &MsgAddressInt,
-    ) -> ApiError {
+    pub fn tvm_execution_failed(exit_code: i32, address: &MsgAddressInt) -> ApiError {
         let mut error = error(
             ErrorCode::ContractExecutionError,
             format!("Contract execution was terminated with error"),
@@ -89,9 +100,8 @@ impl Error {
             "account_address": address.to_string()
         });
 
-        if let Some(error_code) = 
-            ExceptionCode::from_usize(exit_code as usize)
-                .or(ExceptionCode::from_usize(-exit_code as usize)) 
+        if let Some(error_code) = ExceptionCode::from_usize(exit_code as usize)
+            .or(ExceptionCode::from_usize(-exit_code as usize))
         {
             if error_code == ExceptionCode::OutOfGas {
                 data["tip"] = "Check account balance".into();
@@ -151,7 +161,6 @@ impl Error {
         error
     }
 
-    
     pub fn account_code_missing(address: &MsgAddressInt) -> ApiError {
         let mut error = error(
             ErrorCode::AccountCodeMissing,
@@ -207,7 +216,7 @@ impl Error {
     pub fn unknown_execution_error<E: Display>(err: E) -> ApiError {
         error(
             ErrorCode::UnknownExecutionError,
-            format!("Transaction execution failed with unknown error: {}", err)
+            format!("Transaction execution failed with unknown error: {}", err),
         )
     }
 }

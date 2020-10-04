@@ -1,15 +1,17 @@
 use crate::abi::{
-    encode_message, Abi, CallSet, DecodedMessageBody, DecodedMessageType, DeploySet,
-    FunctionHeader, ParamsOfEncodeMessage, Signer,
+    CallSet, DecodedMessageBody, DecodedMessageType, DeploySet, FunctionHeader,
+    ParamsOfEncodeMessage, Signer,
 };
 use crate::error::ApiResult;
 use crate::processing::{
-    process_message, send_message, wait_for_transaction, CallbackParams, MessageSource,
+    send_message, wait_for_transaction, CallbackParams, MessageSource,
     ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction, ProcessingEvent,
+    ProcessingModule,
 };
 
 use crate::processing::types::AbiDecodedOutput;
 use crate::tests::{TestClient, EVENTS};
+use api_info::ApiModule;
 
 #[tokio::test(core_threads = 2)]
 async fn test_wait_message() {
@@ -17,7 +19,7 @@ async fn test_wait_message() {
     let client = TestClient::new();
     let (events_abi, events_tvc) = TestClient::package(EVENTS, Some(2));
     let keys = client.generate_sign_keys();
-    let abi = Abi::Serialized(events_abi.clone());
+    let abi = events_abi.clone();
 
     let events = std::sync::Arc::new(std::sync::Mutex::new(vec![]));
     let events_copy = events.clone();
@@ -29,18 +31,19 @@ async fn test_wait_message() {
 
     let callback_id = client.register_callback(callback);
 
-    let encode_message = client.wrap_async(encode_message, crate::abi::encode::encode_message_api);
     let send_message = client.wrap_async(
         send_message,
-        crate::processing::send_message::send_message_api,
+        ProcessingModule::api(),
+        crate::processing::send_message::send_message_api(),
     );
     let wait_for_transaction = client.wrap_async(
         wait_for_transaction,
-        crate::processing::wait_for_transaction::wait_for_transaction_api,
+        ProcessingModule::api(),
+        crate::processing::wait_for_transaction::wait_for_transaction_api(),
     );
 
-    let encoded = encode_message
-        .call(ParamsOfEncodeMessage {
+    let encoded = client
+        .encode_message(ParamsOfEncodeMessage {
             abi: abi.clone(),
             address: None,
             deploy_set: Some(DeploySet {
@@ -125,7 +128,7 @@ async fn test_process_message() {
     let client = TestClient::new();
     let (events_abi, events_tvc) = TestClient::package(EVENTS, Some(2));
     let keys = client.generate_sign_keys();
-    let abi = Abi::Serialized(events_abi.clone());
+    let abi = events_abi.clone();
 
     let events = std::sync::Arc::new(std::sync::Mutex::new(vec![]));
     let events_copy = events.clone();
@@ -137,14 +140,8 @@ async fn test_process_message() {
 
     let callback_id = client.register_callback(callback);
 
-    let encode_message = client.wrap_async(encode_message, crate::abi::encode::encode_message_api);
-    let process_message = client.wrap_async(
-        process_message,
-        crate::processing::process_message::process_message_api,
-    );
-
-    let encoded = encode_message
-        .call(ParamsOfEncodeMessage {
+    let encoded = client
+        .encode_message(ParamsOfEncodeMessage {
             abi: abi.clone(),
             address: None,
             deploy_set: Some(DeploySet {
@@ -170,8 +167,8 @@ async fn test_process_message() {
         .get_grams_from_giver_async(&encoded.address, None)
         .await;
 
-    let output = process_message
-        .call(ParamsOfProcessMessage {
+    let output = client
+        .net_process_message(ParamsOfProcessMessage {
             message: MessageSource::Encoded {
                 message: encoded.message.clone(),
                 abi: Some(abi.clone()),
@@ -225,8 +222,7 @@ async fn test_process_message() {
 
     let callback_id = client.register_callback(callback);
 
-    let output = process_message
-        .call(ParamsOfProcessMessage {
+    let output = client.net_process_message(ParamsOfProcessMessage {
             message: MessageSource::AbiEncodingParams(ParamsOfEncodeMessage {
                 abi: abi.clone(),
                 address: Some(encoded.address.clone()),
