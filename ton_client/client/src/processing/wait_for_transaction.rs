@@ -55,7 +55,7 @@ pub struct ParamsOfWaitForTransaction {
 ///   `now() + transaction_wait_timeout`.
 /// - When maximum block gen time is reached the processing will
 ///   be finished with `Incomplete` result.
-#[method_info(name = "processing.wait_for_transaction")]
+#[function_info(name = "processing.wait_for_transaction")]
 pub async fn wait_for_transaction(
     context: Arc<ClientContext>,
     params: ParamsOfWaitForTransaction,

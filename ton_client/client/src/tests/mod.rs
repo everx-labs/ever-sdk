@@ -148,7 +148,7 @@ impl TestClient {
     pub(crate) fn wrap_async<P, R, F>(
         self: &TestClient,
         _: fn(Arc<ClientContext>, P) -> F,
-        info: fn() -> api_doc::api::Method,
+        info: fn() -> api_doc::api::Function,
     ) -> AsyncFuncWrapper<P, R>
     where
         P: Serialize,

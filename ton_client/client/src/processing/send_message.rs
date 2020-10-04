@@ -56,7 +56,7 @@ pub struct ResultOfSendMessage {
     pub shard_block_id: String,
 }
 
-#[method_info(name = "processing.send_message")]
+#[function_info]
 pub async fn send_message(
     context: Arc<ClientContext>,
     params: ParamsOfSendMessage,

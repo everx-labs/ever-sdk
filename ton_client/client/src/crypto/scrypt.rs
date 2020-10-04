@@ -47,6 +47,7 @@ pub struct ResultOfScrypt {
 #[doc(summary = "Perform `scrypt` encryption")]
 /// Derives key from `password` and `key` using `scrypt` algorithm.
 /// See [https://en.wikipedia.org/wiki/Scrypt].
+#[function_info]
 pub fn scrypt(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfScrypt,

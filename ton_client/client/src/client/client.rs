@@ -64,20 +64,20 @@ fn create_handlers() -> DispatchTable {
 
 fn sync_request(
     context: std::sync::Arc<ClientContext>,
-    method: String,
+    function: String,
     params_json: String,
 ) -> JsonResponse {
-    HANDLERS.sync_dispatch(context, method, params_json)
+    HANDLERS.sync_dispatch(context, function, params_json)
 }
 
 fn async_request(
     context: std::sync::Arc<ClientContext>,
-    method: String,
+    function: String,
     params_json: String,
     request_id: u32,
     on_result: Box<Callback>,
 ) {
-    HANDLERS.async_dispatch(context, method, params_json, request_id, on_result)
+    HANDLERS.async_dispatch(context, function, params_json, request_id, on_result)
 }
 
 pub struct ClientContext {
@@ -284,19 +284,19 @@ impl Client {
 
     pub fn json_sync_request(
         handle: InteropContext,
-        method_name: String,
+        function: String,
         params_json: String,
     ) -> JsonResponse {
         let context = Self::shared().required_context(handle);
         match context {
-            Ok(context) => sync_request(context, method_name, params_json),
+            Ok(context) => sync_request(context, function, params_json),
             Err(err) => JsonResponse::from_error(err),
         }
     }
 
     pub fn json_async_request(
         handle: InteropContext,
-        method_name: String,
+        function: String,
         params_json: String,
         request_id: u32,
         on_result: Box<Callback>,
@@ -304,7 +304,7 @@ impl Client {
         let context = Self::shared().required_context(handle);
         match context {
             Ok(context) => {
-                async_request(context, method_name, params_json, request_id, on_result);
+                async_request(context, function, params_json, request_id, on_result);
             }
             Err(err) => {
                 JsonResponse::from_error(err).send(&*on_result, request_id, 1);

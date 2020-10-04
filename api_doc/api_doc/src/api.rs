@@ -1,18 +1,38 @@
 extern crate serde_derive;
 
+use crate::reflect::TypeInfo;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct API {
     pub version: String,
-    pub methods: Vec<Method>,
-    pub types: Vec<Field>,
+    pub modules: Vec<Module>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct Method {
+pub struct Module {
+    pub name: String,
+    pub summary: Option<String>,
+    pub description: Option<String>,
+    pub types: Vec<Field>,
+    pub functions: Vec<Function>,
+}
+
+impl Module {
+    pub fn new<I: TypeInfo>() -> Self {
+        let info = I::type_info();
+        Module {
+            name: info.name,
+            summary: info.summary,
+            description: info.description,
+            functions: vec![],
+            types: vec![],
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Function {
     pub name: String,
     pub summary: Option<String>,
     pub description: Option<String>,
@@ -22,7 +42,6 @@ pub struct Method {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct Field {
     pub name: String,
     #[serde(flatten)]
@@ -32,6 +51,7 @@ pub struct Field {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all="snake_case")]
 pub enum ConstValue {
     None {},
     Bool(String),
@@ -40,7 +60,6 @@ pub enum ConstValue {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct Const {
     pub name: String,
     pub value: ConstValue,
@@ -49,7 +68,7 @@ pub struct Const {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all="snake_case")]
 pub enum Type {
     None {},
     Any {},
@@ -67,7 +86,6 @@ pub enum Type {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct Error {
     pub code: i32,
     pub message: String,

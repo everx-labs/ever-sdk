@@ -1,4 +1,4 @@
-mod method_info;
+mod function_info;
 mod type_info;
 mod utils;
 
@@ -7,12 +7,12 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 
-#[proc_macro_derive(TypeInfo)]
+#[proc_macro_derive(TypeInfo, attributes(type_info))]
 pub fn type_info(input: TokenStream) -> TokenStream {
     crate::type_info::impl_type_info(input)
 }
 
 #[proc_macro_attribute]
-pub fn method_info(attr: TokenStream, input: TokenStream) -> TokenStream {
-    crate::method_info::impl_method_info(attr, input)
+pub fn function_info(attr: TokenStream, input: TokenStream) -> TokenStream {
+    crate::function_info::impl_function_info(attr, input)
 }

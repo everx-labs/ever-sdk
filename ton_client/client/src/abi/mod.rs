@@ -18,17 +18,15 @@ mod tests;
 
 mod abi;
 mod decode;
-mod encode;
+pub(crate) mod encode;
 mod errors;
 mod internal;
 mod signing;
 
 pub use abi::{Abi, AbiHandle, FunctionHeader};
-pub use decode::{
-    decode_message, DecodedMessageType, ParamsOfDecodeMessage, DecodedMessageBody,
-};
+pub use decode::{decode_message, DecodedMessageBody, DecodedMessageType, ParamsOfDecodeMessage};
 pub use encode::{
-    attach_signature, encode_message, encode_message_method, CallSet, DeploySet, ParamsOfAttachSignature,
+    attach_signature, encode_message, CallSet, DeploySet, ParamsOfAttachSignature,
     ParamsOfEncodeMessage, ResultOfAttachSignature, ResultOfEncodeMessage,
 };
 pub use errors::{Error, ErrorCode};
@@ -36,9 +34,22 @@ pub use signing::Signer;
 
 pub const DEFAULT_WORKCHAIN: i32 = 0;
 
+/// Functions for encoding and decoding messages due to ABI
+/// specification.
+#[derive(TypeInfo)]
+#[type_info(name = "abi")]
+struct AbiModule;
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.spawn("abi.encode_message", encode::encode_message);
-    handlers.call("abi.attach_signature", encode::attach_signature);
-    handlers.call("abi.decode_message", decode::decode_message);
+    handlers.register_module::<AbiModule>(|reg| {
+        reg.t::<Abi>();
+        reg.t::<AbiHandle>();
+        reg.t::<FunctionHeader>();
+        reg.t::<CallSet>();
+        reg.t::<DeploySet>();
+
+        reg.async_f(encode_message, encode::encode_message_info);
+        reg.f(attach_signature, encode::attach_signature_info);
+        reg.f(decode_message, decode::decode_message_info);
+    });
 }

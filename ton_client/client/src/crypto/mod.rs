@@ -60,76 +60,86 @@ pub(crate) const DEFAULT_MNEMONIC_WORD_COUNT: u8 = 12;
 pub(crate) const DEFAULT_HDKEY_DERIVATION_PATH: &str = "m/44'/396'/0'/0/0";
 pub(crate) const DEFAULT_HDKEY_COMPLIANT: bool = true;
 
+/// Crypto functions.
+#[derive(TypeInfo)]
+#[type_info(name = "crypto")]
+struct CryptoModule;
+
 pub(crate) fn register(handlers: &mut DispatchTable) {
-    // Math
+    handlers.register_module::<CryptoModule>(|reg| {
+        // Math
 
-    handlers.call("crypto.factorize", factorize);
-    handlers.call("crypto.modular_power", modular_power);
-    handlers.call("crypto.ton_crc16", ton_crc16);
-    handlers.call("crypto.generate_random_bytes", generate_random_bytes);
+        reg.f(factorize, math::factorize_info);
+        reg.f(modular_power, math::modular_power_info);
+        reg.f(ton_crc16, math::ton_crc16_info);
+        reg.f(generate_random_bytes, math::generate_random_bytes_info);
 
-    // Keys
+        // Keys
 
-    handlers.call(
-        "crypto.convert_public_key_to_ton_safe_format",
-        convert_public_key_to_ton_safe_format,
-    );
+        reg.f(
+            convert_public_key_to_ton_safe_format,
+            keys::convert_public_key_to_ton_safe_format_info,
+        );
 
-    handlers.call_no_args(
-        "crypto.generate_random_sign_keys",
-        generate_random_sign_keys,
-    );
-    handlers.call("crypto.sign", sign);
-    handlers.call("crypto.verify_signature", verify_signature);
+        reg.f_no_args(
+            generate_random_sign_keys,
+            keys::generate_random_sign_keys_info,
+        );
+        reg.f(sign, keys::sign_info);
+        reg.f(verify_signature, keys::verify_signature_info);
 
-    // Sha
+        // Sha
 
-    handlers.call("crypto.sha256", sha256);
-    handlers.call("crypto.sha512", sha512);
+        reg.f(sha256, hash::sha256_info);
+        reg.f(sha512, hash::sha512_info);
 
-    // Scrypt
+        // Scrypt
 
-    handlers.call("crypto.scrypt", scrypt::scrypt);
+        reg.f(scrypt::scrypt, scrypt::scrypt_info);
 
-    // NaCl
+        // NaCl
 
-    handlers.call(
-        "crypto.nacl_sign_keypair_from_secret",
-        nacl_sign_keypair_from_secret_key,
-    );
-    handlers.call("crypto.nacl_sign", nacl_sign);
-    handlers.call("crypto.nacl_sign_open", nacl_sign_open);
-    handlers.call("crypto.nacl_sign_detached", nacl_sign_detached);
+        reg.f(
+            nacl_sign_keypair_from_secret_key,
+            nacl::nacl_sign_keypair_from_secret_key_info,
+        );
+        reg.f(nacl_sign, nacl::nacl_sign_info);
+        reg.f(nacl_sign_open, nacl::nacl_sign_open_info);
+        reg.f(nacl_sign_detached, nacl::nacl_sign_detached_info);
 
-    handlers.call_no_args("crypto.nacl_box_keypair", nacl_box_keypair);
-    handlers.call(
-        "crypto.nacl_box_keypair_from_secret",
-        nacl_box_keypair_from_secret_key,
-    );
-    handlers.call("crypto.nacl_box", nacl_box);
-    handlers.call("crypto.nacl_box_open", nacl_box_open);
-    handlers.call("crypto.nacl_secret_box", nacl_secret_box);
-    handlers.call("crypto.nacl_secret_box_open", nacl_secret_box_open);
+        reg.f_no_args(nacl_box_keypair, nacl::nacl_box_keypair_info);
+        reg.f(
+            nacl_box_keypair_from_secret_key,
+            nacl::nacl_box_keypair_from_secret_key_info,
+        );
+        reg.f(nacl_box, nacl::nacl_box_info);
+        reg.f(nacl_box_open, nacl::nacl_box_open_info);
+        reg.f(nacl_secret_box, nacl::nacl_secret_box_info);
+        reg.f(nacl_secret_box_open, nacl::nacl_secret_box_open_info);
 
-    // Mnemonic
+        // Mnemonic
 
-    handlers.call("crypto.mnemonic_words", mnemonic_words);
-    handlers.call("crypto.mnemonic_from_random", mnemonic_from_random);
-    handlers.call("crypto.mnemonic_from_entropy", mnemonic_from_entropy);
-    handlers.call("crypto.mnemonic_verify", mnemonic_verify);
-    handlers.call(
-        "crypto.mnemonic_derive_sign_keys",
-        mnemonic_derive_sign_keys,
-    );
+        reg.f(mnemonic_words, mnemonic::mnemonic_words_info);
+        reg.f(mnemonic_from_random, mnemonic::mnemonic_from_random_info);
+        reg.f(mnemonic_from_entropy, mnemonic::mnemonic_from_entropy_info);
+        reg.f(mnemonic_verify, mnemonic::mnemonic_verify_info);
+        reg.f(
+            mnemonic_derive_sign_keys,
+            mnemonic::mnemonic_derive_sign_keys_info,
+        );
 
-    // HDKey
+        // HDKey
 
-    handlers.call("crypto.hdkey_xprv_from_mnemonic", hdkey_xprv_from_mnemonic);
-    handlers.call("crypto.hdkey_derive_from_xprv", hdkey_derive_from_xprv);
-    handlers.call(
-        "crypto.hdkey_derive_from_xprv_path",
-        hdkey_derive_from_xprv_path,
-    );
-    handlers.call("crypto.hdkey_secret_from_xprv", hdkey_secret_from_xprv);
-    handlers.call("crypto.hdkey_public_from_xprv", hdkey_public_from_xprv);
+        reg.f(
+            hdkey_xprv_from_mnemonic,
+            hdkey::hdkey_xprv_from_mnemonic_info,
+        );
+        reg.f(hdkey_derive_from_xprv, hdkey::hdkey_derive_from_xprv_info);
+        reg.f(
+            hdkey_derive_from_xprv_path,
+            hdkey::hdkey_derive_from_xprv_path_info,
+        );
+        reg.f(hdkey_secret_from_xprv, hdkey::hdkey_secret_from_xprv_info);
+        reg.f(hdkey_public_from_xprv, hdkey::hdkey_public_from_xprv_info);
+    });
 }

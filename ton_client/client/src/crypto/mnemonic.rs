@@ -53,7 +53,8 @@ pub struct ResultOfMnemonicWords {
     pub words: String,
 }
 
-#[doc(summary = "Prints the list of words from the specified dictionary")]
+/// Prints the list of words from the specified dictionary
+#[function_info]
 pub fn mnemonic_words(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicWords,
@@ -81,6 +82,7 @@ pub struct ResultOfMnemonicFromRandom {
 
 #[doc(summary = "Generates a random mnemonic")]
 /// Generates a random mnemnonic from the specified dictionary and word count
+#[function_info]
 pub fn mnemonic_from_random(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicFromRandom,
@@ -107,6 +109,7 @@ pub struct ResultOfMnemonicFromEntropy {
 
 #[doc(summary = "Generates mnemonic from the specified entropy")]
 /// Generates mnemonic from pre-generated entropy
+#[function_info]
 pub fn mnemonic_from_entropy(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicFromEntropy,
@@ -138,6 +141,7 @@ pub struct ResultOfMnemonicVerify {
 #[doc(summary = "Validates a mnemonic phrase")]
 /// The phrase supplied will be checked for word length and validated according to the checksum
 /// specified in BIP0039.
+#[function_info]
 pub fn mnemonic_verify(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicVerify,
@@ -165,6 +169,7 @@ pub struct ParamsOfMnemonicDeriveSignKeys {
 #[doc(summary = "Derives a key pair for signing from the seed phrase")]
 /// Validates the seed phrase, generates master key and then derives
 /// the key pair from the master key and the specified path
+#[function_info]
 pub fn mnemonic_derive_sign_keys(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicDeriveSignKeys,

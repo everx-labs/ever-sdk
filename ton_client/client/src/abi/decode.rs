@@ -74,6 +74,7 @@ pub struct ParamsOfDecodeMessage {
     pub message: String,
 }
 
+#[function_info]
 pub fn decode_message(
     _context: Arc<ClientContext>,
     params: ParamsOfDecodeMessage,

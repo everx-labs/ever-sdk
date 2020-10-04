@@ -60,7 +60,8 @@ pub struct ResultOfConvertPublicKeyToTonSafeFormat {
     pub ton_public_key: String,
 }
 
-#[doc(summary = "Converts public key to ton safe_format")]
+/// Converts public key to ton safe_format
+#[function_info]
 pub fn convert_public_key_to_ton_safe_format(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfConvertPublicKeyToTonSafeFormat,
@@ -81,6 +82,7 @@ pub fn convert_public_key_to_ton_safe_format(
 //----------------------------------------------------------------------- generate_random_sign_keys
 
 /// Generates random ed25519 key pair.
+#[function_info]
 pub fn generate_random_sign_keys(_context: std::sync::Arc<ClientContext>) -> ApiResult<KeyPair> {
     let mut rng = rand::thread_rng();
     let keypair = ed25519_dalek::Keypair::generate(&mut rng);
@@ -112,6 +114,7 @@ pub struct ResultOfSign {
 }
 
 /// Signs a data using the provided keys.
+#[function_info]
 pub fn sign(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfSign,
@@ -147,6 +150,7 @@ pub struct ResultOfVerifySignature {
 
 /// Verifies signed data using the provided public key.
 /// Raises error in case when verification is failed.
+#[function_info]
 pub fn verify_signature(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfVerifySignature,
