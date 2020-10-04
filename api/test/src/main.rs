@@ -1,19 +1,22 @@
-use api_doc;
-use api_doc::reflect::TypeInfo;
-use api_doc_derive::{function_info, TypeInfo};
+#[macro_use]
+extern crate api_derive;
+
+use api_info;
+
 use serde_derive::{Deserialize, Serialize};
+use api_info::{ApiType, ApiModule};
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq)]
 pub struct StringId(String);
 pub type BlockId = StringId;
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub enum EnumWithValues {
     Foo = 2,
     Bar,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub enum EnumWithTypes {
     Foo(String, String),
     Bar(u32),
@@ -22,7 +25,7 @@ pub enum EnumWithTypes {
 
 #[doc(summary = "Foo")]
 /// Foo struct
-#[derive(Serialize, Deserialize, TypeInfo, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct Foo {
     pub address: Option<String>,
     pub message_id: String,
@@ -32,7 +35,7 @@ pub struct Foo {
     sending_time: u32,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 struct Bar {
     #[doc(summary = "summary")]
     #[doc = "description"]
@@ -45,32 +48,31 @@ struct Bar {
     pub arr: [u64; 2],
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 struct FooHandle(u32);
 
-#[derive(TypeInfo)]
-#[type_info(name="module")]
+#[derive(ApiModule)]
+#[api_module(name="module")]
 struct Module;
 
-#[function_info]
 /// This is baz function
+#[api_function]
 fn _foo(_params: Foo) -> Result<Bar, Foo> {
     Ok(Bar::default())
 }
 
-#[function_info(name = "bar.baz")]
-/// This is baz function
-fn _baz(_params: Foo) -> Result<Bar, Foo> {
-    Ok(Bar::default())
+fn reflect<T: ApiType>() {
+    let info = serde_json::to_string_pretty(&T::api()).unwrap();
+    println!("{}", info);
 }
 
-fn reflect<T: TypeInfo>() {
-    let info = serde_json::to_string_pretty(&T::type_info()).unwrap();
+fn reflect_module<T: ApiModule>() {
+    let info = serde_json::to_string_pretty(&T::api()).unwrap();
     println!("{}", info);
 }
 
 fn main() {
-    reflect::<Module>();
+    reflect_module::<Module>();
     // reflect::<Foo>();
     // reflect::<Bar>();
     // reflect::<EnumWithValues>();

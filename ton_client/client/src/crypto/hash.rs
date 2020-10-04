@@ -18,20 +18,20 @@ use crate::encoding::base64_decode;
 
 //--------------------------------------------------------------------------------------------- sha
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfHash {
     /// Input data for hash calculation. Encoded with `base64`.
     pub data: String,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfHash {
     /// Hex-encoded hash of input `data`.
     pub hash: String,
 }
 
 /// Calculates SHA256 hash of the specified data.
-#[function_info]
+#[api_function]
 pub fn sha256(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHash,
@@ -45,7 +45,7 @@ pub fn sha256(
 
 
 ///Calculates SHA512 hash of the specified data.
-#[function_info]
+#[api_function]
 pub fn sha512(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHash,

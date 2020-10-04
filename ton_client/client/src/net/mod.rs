@@ -11,8 +11,8 @@
 * limitations under the License.
 */
 
-use crate::client::ClientContext;
-use crate::dispatch::DispatchTable;
+use crate::client::{ClientContext};
+use crate::dispatch::{ModuleReg, Registrar};
 use crate::error::ApiResult;
 use crate::interop::JsonResponse;
 use futures::{FutureExt, StreamExt};
@@ -33,7 +33,7 @@ pub(crate) use node_client::{NodeClient, MAX_TIMEOUT};
 #[cfg(test)]
 mod tests;
 
-#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfQueryCollection {
     /// collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
@@ -47,13 +47,13 @@ pub struct ParamsOfQueryCollection {
     pub limit: Option<u32>,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfQueryCollection {
     /// objects that match provided criteria
     pub result: Vec<serde_json::Value>,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfWaitForCollection {
     /// collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
@@ -65,13 +65,13 @@ pub struct ParamsOfWaitForCollection {
     pub timeout: Option<u32>,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfWaitForCollection {
     /// first found object that match provided criteria
     pub result: serde_json::Value,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfSubscribeCollection {
     /// collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
@@ -83,14 +83,14 @@ pub struct ParamsOfSubscribeCollection {
     pub callback_id: u32,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfSubscribeCollection {
     /// handle to subscription. It then can be used in `get_next_subscription_data` function
     /// and must be closed with `unsubscribe`
     pub handle: u32,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfSubscription {
     /// first appeared object that match provided criteria
     pub result: serde_json::Value,
@@ -108,7 +108,7 @@ async fn extract_subscription_handle(handle: &u32) -> Option<Sender<bool>> {
     SUBSCRIPTIONS.lock().await.remove(handle)
 }
 
-#[function_info]
+#[api_function]
 pub async fn query_collection(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfQueryCollection,
@@ -134,7 +134,7 @@ pub async fn query_collection(
     Ok(ResultOfQueryCollection { result })
 }
 
-#[function_info]
+#[api_function]
 pub async fn wait_for_collection(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfWaitForCollection,
@@ -153,7 +153,7 @@ pub async fn wait_for_collection(
     Ok(ResultOfWaitForCollection { result })
 }
 
-#[function_info]
+#[api_function]
 pub async fn subscribe_collection(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfSubscribeCollection,
@@ -211,7 +211,7 @@ pub async fn subscribe_collection(
     Ok(ResultOfSubscribeCollection { handle })
 }
 
-#[function_info]
+#[api_function]
 pub async fn unsubscribe(
     _context: std::sync::Arc<ClientContext>,
     params: ResultOfSubscribeCollection,
@@ -224,15 +224,15 @@ pub async fn unsubscribe(
 }
 
 /// Network access.
-#[derive(TypeInfo)]
-#[type_info(name = "net")]
-struct NetModule;
+#[derive(ApiModule)]
+#[api_module(name = "net")]
+pub(crate) struct NetModule;
 
-pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.register_module::<NetModule>(|reg| {
-        reg.async_f(query_collection, query_collection_info);
-        reg.async_f(wait_for_collection, wait_for_collection_info);
-        reg.async_f(subscribe_collection, subscribe_collection_info);
-        reg.async_f(unsubscribe, unsubscribe_info);
-    });
+impl ModuleReg for NetModule {
+    fn reg(reg: &mut Registrar) {
+        reg.async_f(query_collection, query_collection_api);
+        reg.async_f(wait_for_collection, wait_for_collection_api);
+        reg.async_f(subscribe_collection, subscribe_collection_api);
+        reg.async_f(unsubscribe, unsubscribe_api);
+    }
 }

@@ -41,20 +41,20 @@ const SPANISH_DICTIONARY: u8 = 8;
 
 //---------------------------------------------------------------------------------- mnemonic_words
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfMnemonicWords {
     /// dictionary identifier
     pub dictionary: Option<u8>,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfMnemonicWords {
     /// the list of mnemonic words
     pub words: String,
 }
 
 /// Prints the list of words from the specified dictionary
-#[function_info]
+#[api_function]
 pub fn mnemonic_words(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicWords,
@@ -66,7 +66,7 @@ pub fn mnemonic_words(
 
 //---------------------------------------------------------------------------- mnemonic_from_random
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfMnemonicFromRandom {
     /// dictionary identifier
     pub dictionary: Option<u8>,
@@ -74,7 +74,7 @@ pub struct ParamsOfMnemonicFromRandom {
     pub word_count: Option<u8>,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfMnemonicFromRandom {
     /// string of mnemonic words
     pub phrase: String,
@@ -82,7 +82,7 @@ pub struct ResultOfMnemonicFromRandom {
 
 #[doc(summary = "Generates a random mnemonic")]
 /// Generates a random mnemnonic from the specified dictionary and word count
-#[function_info]
+#[api_function]
 pub fn mnemonic_from_random(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicFromRandom,
@@ -94,7 +94,7 @@ pub fn mnemonic_from_random(
 
 //--------------------------------------------------------------------------- mnemonic_from_entropy
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfMnemonicFromEntropy {
     // Entropy bytes. Hex encoded.
     pub entropy: String,
@@ -102,14 +102,14 @@ pub struct ParamsOfMnemonicFromEntropy {
     pub word_count: Option<u8>,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfMnemonicFromEntropy {
     pub phrase: String,
 }
 
 #[doc(summary = "Generates mnemonic from the specified entropy")]
 /// Generates mnemonic from pre-generated entropy
-#[function_info]
+#[api_function]
 pub fn mnemonic_from_entropy(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicFromEntropy,
@@ -122,7 +122,7 @@ pub fn mnemonic_from_entropy(
 
 //--------------------------------------------------------------------------------- mnemonic_verify
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfMnemonicVerify {
     /// phrase
     pub phrase: String,
@@ -132,7 +132,7 @@ pub struct ParamsOfMnemonicVerify {
     pub word_count: Option<u8>,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfMnemonicVerify {
     /// flag indicating the mnemonic is valid or not
     pub valid: bool,
@@ -141,7 +141,7 @@ pub struct ResultOfMnemonicVerify {
 #[doc(summary = "Validates a mnemonic phrase")]
 /// The phrase supplied will be checked for word length and validated according to the checksum
 /// specified in BIP0039.
-#[function_info]
+#[api_function]
 pub fn mnemonic_verify(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicVerify,
@@ -154,7 +154,7 @@ pub fn mnemonic_verify(
 
 //----------------------------------------------------------------------- mnemonic_derive_sign_keys
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfMnemonicDeriveSignKeys {
     /// phrase
     pub phrase: String,
@@ -169,7 +169,7 @@ pub struct ParamsOfMnemonicDeriveSignKeys {
 #[doc(summary = "Derives a key pair for signing from the seed phrase")]
 /// Validates the seed phrase, generates master key and then derives
 /// the key pair from the master key and the specified path
-#[function_info]
+#[api_function]
 pub fn mnemonic_derive_sign_keys(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicDeriveSignKeys,

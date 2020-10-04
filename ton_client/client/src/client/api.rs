@@ -1,4 +1,4 @@
-use api_doc::api::{Function, Type, API};
+use api_info::{Function, Type, API};
 use std::collections::HashMap;
 use crate::client::client::get_handlers;
 

@@ -148,7 +148,7 @@ impl TestClient {
     pub(crate) fn wrap_async<P, R, F>(
         self: &TestClient,
         _: fn(Arc<ClientContext>, P) -> F,
-        info: fn() -> api_doc::api::Function,
+        api: fn() -> api_info::Function,
     ) -> AsyncFuncWrapper<P, R>
     where
         P: Serialize,
@@ -157,7 +157,7 @@ impl TestClient {
     {
         AsyncFuncWrapper {
             client: self,
-            name: info().name,
+            name: api().name,
             p: std::marker::PhantomData::default(),
         }
     }

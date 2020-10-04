@@ -14,7 +14,7 @@ use ton_sdk::{ContractImage, FunctionCallSet};
 
 //--------------------------------------------------------------------------- encode_deploy_message
 
-#[derive(Serialize, Deserialize, Clone, Debug, TypeInfo)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 pub struct DeploySet {
     /// Content of TVC file. Must be encoded with `base64`.
     pub tvc: String,
@@ -26,7 +26,7 @@ pub struct DeploySet {
     pub initial_data: Option<Value>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, TypeInfo)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 pub struct CallSet {
     /// Function name.
     pub function_name: String,
@@ -125,7 +125,7 @@ impl CallSet {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, TypeInfo)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 pub struct ParamsOfEncodeMessage {
     /// Contract ABI.
     pub abi: Abi,
@@ -163,7 +163,7 @@ pub struct ParamsOfEncodeMessage {
     pub processing_try_index: Option<u8>,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfEncodeMessage {
     /// Message BOC encoded with `base64`.
     pub message: String,
@@ -251,7 +251,7 @@ fn encode_run(
     Ok((unsigned.message, unsigned.data_to_sign, address))
 }
 
-#[function_info]
+#[api_function]
 pub async fn encode_message(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfEncodeMessage,
@@ -307,7 +307,7 @@ pub async fn encode_message(
 
 //------------------------------------------------------------------------------- attach_signature
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfAttachSignature {
     /// Contract ABI
     pub abi: Abi,
@@ -322,12 +322,12 @@ pub struct ParamsOfAttachSignature {
     pub signature: String,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfAttachSignature {
     pub message: String,
 }
 
-#[function_info]
+#[api_function]
 pub fn attach_signature(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfAttachSignature,

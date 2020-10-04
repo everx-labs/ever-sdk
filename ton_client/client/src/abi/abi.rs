@@ -4,10 +4,10 @@ use crate::error::{ApiResult};
 use serde_json::Value;
 use ton_abi::{Token, TokenValue};
 
-#[derive(Serialize, Deserialize, Clone, Debug, TypeInfo)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 pub struct AbiHandle(u32);
 
-#[derive(Serialize, Deserialize, Clone, Debug, TypeInfo)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 pub enum Abi {
     Serialized(Value),
     Handle(AbiHandle),
@@ -19,7 +19,7 @@ pub enum Abi {
 /// uses for security and replay protection reasons.
 ///
 /// The actual set of header fields depends on the contract's ABI.
-#[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, ApiType, PartialEq, Debug, Clone, Default)]
 pub struct FunctionHeader {
     /// Message expiration time in seconds.
     pub expire: Option<u32>,

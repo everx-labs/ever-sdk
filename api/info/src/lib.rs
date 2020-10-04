@@ -1,7 +1,4 @@
-extern crate serde_derive;
-
-use crate::reflect::TypeInfo;
-use serde_derive::{Deserialize, Serialize};
+use serde_derive::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct API {
@@ -16,19 +13,6 @@ pub struct Module {
     pub description: Option<String>,
     pub types: Vec<Field>,
     pub functions: Vec<Function>,
-}
-
-impl Module {
-    pub fn new<I: TypeInfo>() -> Self {
-        let info = I::type_info();
-        Module {
-            name: info.name,
-            summary: info.summary,
-            description: info.description,
-            functions: vec![],
-            types: vec![],
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -90,4 +74,89 @@ pub struct Error {
     pub code: i32,
     pub message: String,
     pub data: Type,
+}
+
+pub trait ApiType {
+    fn api() -> Field;
+}
+
+pub trait ApiModule {
+    fn api() -> Module;
+}
+
+impl ApiType for String {
+    fn api() -> Field {
+        Field {
+            name: "string".into(),
+            summary: None,
+            description: None,
+            value: Type::String {},
+        }
+    }
+}
+
+impl ApiType for &str {
+    fn api() -> Field {
+        Field {
+            name: "string".into(),
+            summary: None,
+            description: None,
+            value: Type::String {},
+        }
+    }
+}
+
+impl ApiType for u16 {
+    fn api() -> Field {
+        Field {
+            name: "u16".into(),
+            summary: None,
+            description: None,
+            value: Type::Number {},
+        }
+    }
+}
+
+impl ApiType for u32 {
+    fn api() -> Field {
+        Field {
+            name: "u32".into(),
+            summary: None,
+            description: None,
+            value: Type::Number {},
+        }
+    }
+}
+
+impl ApiType for bool {
+    fn api() -> Field {
+        Field {
+            name: "boolean".into(),
+            summary: None,
+            description: None,
+            value: Type::Boolean {},
+        }
+    }
+}
+
+impl ApiType for () {
+    fn api() -> Field {
+        Field {
+            name: "unit".into(),
+            summary: None,
+            description: None,
+            value: Type::None {},
+        }
+    }
+}
+
+impl ApiType for API {
+    fn api() -> Field {
+        Field {
+            name: "API".into(),
+            summary: None,
+            description: None,
+            value: Type::None {},
+        }
+    }
 }

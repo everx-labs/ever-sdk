@@ -12,7 +12,7 @@
 */
 
 use crate::client::ClientContext;
-use crate::dispatch::DispatchTable;
+use crate::dispatch::{ModuleReg, Registrar};
 use crate::error::ApiResult;
 use ton_block::Deserializable;
 
@@ -26,13 +26,13 @@ pub use errors::{Error, ErrorCode};
 #[cfg(test)]
 mod tests;
 
-#[derive(Serialize, Deserialize, Clone, TypeInfo)]
+#[derive(Serialize, Deserialize, Clone, ApiType)]
 pub struct ParamsOfParse {
     /// BOC encoded as base64
     pub boc: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, TypeInfo)]
+#[derive(Serialize, Deserialize, Clone, ApiType)]
 pub struct ResultOfParse {
     /// JSON containing parsed BOC
     pub parsed: serde_json::Value,
@@ -71,7 +71,7 @@ fn deserialize_object_from_base64<S: Deserializable>(
     })
 }
 
-#[function_info]
+#[api_function]
 pub fn parse_message(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
@@ -101,7 +101,7 @@ pub fn parse_message(
     })
 }
 
-#[function_info]
+#[api_function]
 pub fn parse_transaction(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
@@ -131,7 +131,7 @@ pub fn parse_transaction(
     })
 }
 
-#[function_info]
+#[api_function]
 pub fn parse_account(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
@@ -156,7 +156,7 @@ pub fn parse_account(
     })
 }
 
-#[function_info]
+#[api_function]
 pub fn parse_block(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
@@ -183,15 +183,14 @@ pub fn parse_block(
 }
 
 /// BOC manipulation module.
-#[derive(TypeInfo)]
-#[type_info(name = "boc")]
-struct BocModule;
-
-pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.register_module::<BocModule>(|reg| {
-        reg.f(parse_message, parse_message_info);
-        reg.f(parse_transaction, parse_transaction_info);
-        reg.f(parse_account, parse_account_info);
-        reg.f(parse_block, parse_block_info);
-    });
+#[derive(ApiModule)]
+#[api_module(name = "boc")]
+pub(crate) struct BocModule;
+impl ModuleReg for BocModule {
+    fn reg(reg: &mut Registrar) {
+        reg.f(parse_message, parse_message_api);
+        reg.f(parse_transaction, parse_transaction_api);
+        reg.f(parse_account, parse_account_api);
+        reg.f(parse_block, parse_block_api);
+    }
 }

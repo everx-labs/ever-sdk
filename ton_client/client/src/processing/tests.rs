@@ -29,14 +29,14 @@ async fn test_wait_message() {
 
     let callback_id = client.register_callback(callback);
 
-    let encode_message = client.wrap_async(encode_message, crate::abi::encode::encode_message_info);
+    let encode_message = client.wrap_async(encode_message, crate::abi::encode::encode_message_api);
     let send_message = client.wrap_async(
         send_message,
-        crate::processing::send_message::send_message_info,
+        crate::processing::send_message::send_message_api,
     );
     let wait_for_transaction = client.wrap_async(
         wait_for_transaction,
-        crate::processing::wait_for_transaction::wait_for_transaction_info,
+        crate::processing::wait_for_transaction::wait_for_transaction_api,
     );
 
     let encoded = encode_message
@@ -137,10 +137,10 @@ async fn test_process_message() {
 
     let callback_id = client.register_callback(callback);
 
-    let encode_message = client.wrap_async(encode_message, crate::abi::encode::encode_message_info);
+    let encode_message = client.wrap_async(encode_message, crate::abi::encode::encode_message_api);
     let process_message = client.wrap_async(
         process_message,
-        crate::processing::process_message::process_message_info,
+        crate::processing::process_message::process_message_api,
     );
 
     let encoded = encode_message

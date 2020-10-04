@@ -24,7 +24,7 @@ use ed25519_dalek::Keypair;
 //----------------------------------------------------------------------------------------- KeyPair
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, Clone, Debug, TypeInfo)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 pub struct KeyPair {
     /// public key
     pub public: String,
@@ -48,20 +48,20 @@ impl KeyPair {
 //----------------------------------------------------------- convert_public_key_to_ton_safe_format
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfConvertPublicKeyToTonSafeFormat {
     /// Public key.
     pub public_key: String,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfConvertPublicKeyToTonSafeFormat {
     /// Public key represented in TON safe format.
     pub ton_public_key: String,
 }
 
 /// Converts public key to ton safe_format
-#[function_info]
+#[api_function]
 pub fn convert_public_key_to_ton_safe_format(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfConvertPublicKeyToTonSafeFormat,
@@ -82,7 +82,7 @@ pub fn convert_public_key_to_ton_safe_format(
 //----------------------------------------------------------------------- generate_random_sign_keys
 
 /// Generates random ed25519 key pair.
-#[function_info]
+#[api_function]
 pub fn generate_random_sign_keys(_context: std::sync::Arc<ClientContext>) -> ApiResult<KeyPair> {
     let mut rng = rand::thread_rng();
     let keypair = ed25519_dalek::Keypair::generate(&mut rng);
@@ -96,7 +96,7 @@ pub fn generate_random_sign_keys(_context: std::sync::Arc<ClientContext>) -> Api
 
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfSign {
     /// Data that must be signed.
     /// Must be encoded with `base64`.
@@ -105,7 +105,7 @@ pub struct ParamsOfSign {
     pub keys: KeyPair,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfSign {
     /// Signed data combined with signature. Encoded with `base64`.
     pub signed: String,
@@ -114,7 +114,7 @@ pub struct ResultOfSign {
 }
 
 /// Signs a data using the provided keys.
-#[function_info]
+#[api_function]
 pub fn sign(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfSign,
@@ -131,7 +131,7 @@ pub fn sign(
 
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfVerifySignature {
     /// Signed data that must be verified.
     /// Must be encoded with `base64`.
@@ -141,7 +141,7 @@ pub struct ParamsOfVerifySignature {
     pub public: String,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfVerifySignature {
     /// Unsigned data.
     /// Encoded with `base64`.
@@ -150,7 +150,7 @@ pub struct ResultOfVerifySignature {
 
 /// Verifies signed data using the provided public key.
 /// Raises error in case when verification is failed.
-#[function_info]
+#[api_function]
 pub fn verify_signature(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfVerifySignature,

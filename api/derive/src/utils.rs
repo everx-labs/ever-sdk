@@ -1,22 +1,38 @@
-use api_doc::api;
+use api_info;
 use quote::__private::TokenStream;
 use quote::quote;
 use syn::{
-    AngleBracketedGenericArguments, Attribute, GenericArgument, Lit, Meta, MetaNameValue,
+    AngleBracketedGenericArguments, Attribute, Fields, GenericArgument, Lit, Meta, MetaNameValue,
     NestedMeta, Path, PathArguments, Type, TypeArray,
 };
 
 pub(crate) fn field_from(
     name: Option<&syn::Ident>,
     attrs: &Vec<Attribute>,
-    value: api::Type,
-) -> api::Field {
+    value: api_info::Type,
+) -> api_info::Field {
     let (summary, description) = doc_from(attrs);
-    api::Field {
+    api_info::Field {
         name: name.map(|x| x.to_string()).unwrap_or("".into()),
         summary,
         description,
         value,
+    }
+}
+
+pub(crate) fn module_from(name: Option<&syn::Ident>, attrs: &Vec<Attribute>) -> api_info::Module {
+    let (summary, description) = doc_from(attrs);
+    let name = if let Some(name) = find_attr_value("api_module", "name", attrs) {
+        name
+    } else {
+        name.map(|x| x.to_string()).unwrap_or("".into())
+    };
+    api_info::Module {
+        name,
+        summary,
+        description,
+        types: vec![],
+        functions: vec![],
     }
 }
 
@@ -35,12 +51,12 @@ pub(crate) fn doc_to_tokens(
     (summary, description)
 }
 
-pub(crate) fn field_to_tokens(f: &api::Field) -> TokenStream {
+pub(crate) fn field_to_tokens(f: &api_info::Field) -> TokenStream {
     let name = &f.name;
     let value = type_to_tokens(&f.value);
     let (summary, description) = doc_to_tokens(&f.summary, &f.description);
     quote! {
-        api_doc::api::Field {
+        api_info::Field {
             name: #name.into(),
             summary: #summary,
             description: #description,
@@ -49,21 +65,39 @@ pub(crate) fn field_to_tokens(f: &api::Field) -> TokenStream {
     }
 }
 
-pub(crate) fn const_value_to_tokens(v: &api::ConstValue) -> TokenStream {
-    match v {
-        api::ConstValue::None {} => quote! { api_doc::api::ConstValue::None {} },
-        api::ConstValue::Bool(repr) => quote! { api_doc::api::ConstValue::Bool(#repr.into()) },
-        api::ConstValue::String(repr) => quote! { api_doc::api::ConstValue::String(#repr.into()) },
-        api::ConstValue::Number(repr) => quote! { api_doc::api::ConstValue::Number(#repr.into()) },
+pub(crate) fn module_to_tokens(m: &api_info::Module) -> TokenStream {
+    let name = &m.name;
+    let (summary, description) = doc_to_tokens(&m.summary, &m.description);
+    quote! {
+        api_info::Module {
+            name: #name.into(),
+            summary: #summary,
+            description: #description,
+            types: Vec::new(),
+            functions: Vec::new(),
+        }
     }
 }
 
-pub(crate) fn const_to_tokens(c: &api::Const) -> TokenStream {
+pub(crate) fn const_value_to_tokens(v: &api_info::ConstValue) -> TokenStream {
+    match v {
+        api_info::ConstValue::None {} => quote! { api_info::ConstValue::None {} },
+        api_info::ConstValue::Bool(repr) => quote! { api_info::ConstValue::Bool(#repr.into()) },
+        api_info::ConstValue::String(repr) => {
+            quote! { api_info::ConstValue::String(#repr.into()) }
+        }
+        api_info::ConstValue::Number(repr) => {
+            quote! { api_info::ConstValue::Number(#repr.into()) }
+        }
+    }
+}
+
+pub(crate) fn const_to_tokens(c: &api_info::Const) -> TokenStream {
     let name = &c.name;
     let value = const_value_to_tokens(&c.value);
     let (summary, description) = doc_to_tokens(&c.summary, &c.description);
     quote! {
-        api_doc::api::Const {
+        api_info::Const {
             name: #name.into(),
             summary: #summary,
             description: #description,
@@ -72,13 +106,13 @@ pub(crate) fn const_to_tokens(c: &api::Const) -> TokenStream {
     }
 }
 
-pub(crate) fn function_to_tokens(m: &api::Function) -> TokenStream {
+pub(crate) fn function_to_tokens(m: &api_info::Function) -> TokenStream {
     let name = &m.name;
     let params = m.params.iter().map(|x| field_to_tokens(x));
     let result = type_to_tokens(&m.result);
     let (summary, description) = doc_to_tokens(&m.summary, &m.description);
     quote! {
-        api_doc::api::Function {
+        api_info::Function {
             name: #name.into(),
             summary: #summary,
             description: #description,
@@ -89,45 +123,45 @@ pub(crate) fn function_to_tokens(m: &api::Function) -> TokenStream {
     }
 }
 
-fn type_to_tokens(t: &api::Type) -> TokenStream {
+fn type_to_tokens(t: &api_info::Type) -> TokenStream {
     match t {
-        api::Type::None {} => quote! { api_doc::api::Type::None {} },
-        api::Type::Any {} => quote! { api_doc::api::Type::Any {} },
-        api::Type::Boolean {} => quote! { api_doc::api::Type::Boolean {} },
-        api::Type::Number {} => quote! { api_doc::api::Type::Number {} },
-        api::Type::BigInt {} => quote! { api_doc::api::Type::BigInt {} },
-        api::Type::String {} => quote! { api_doc::api::Type::String {} },
-        api::Type::Ref(type_name) => {
-            quote! { api_doc::api::Type::Ref(#type_name.into()) }
+        api_info::Type::None {} => quote! { api_info::Type::None {} },
+        api_info::Type::Any {} => quote! { api_info::Type::Any {} },
+        api_info::Type::Boolean {} => quote! { api_info::Type::Boolean {} },
+        api_info::Type::Number {} => quote! { api_info::Type::Number {} },
+        api_info::Type::BigInt {} => quote! { api_info::Type::BigInt {} },
+        api_info::Type::String {} => quote! { api_info::Type::String {} },
+        api_info::Type::Ref(type_name) => {
+            quote! { api_info::Type::Ref(#type_name.into()) }
         }
-        api::Type::Optional(inner) => {
+        api_info::Type::Optional(inner) => {
             let inner_type = type_to_tokens(inner);
-            quote! { api_doc::api::Type::Optional(#inner_type.into()) }
+            quote! { api_info::Type::Optional(#inner_type.into()) }
         }
-        api::Type::Array(items) => {
+        api_info::Type::Array(items) => {
             let items_type = type_to_tokens(items);
-            quote! { api_doc::api::Type::Array(#items_type.into()) }
+            quote! { api_info::Type::Array(#items_type.into()) }
         }
-        api::Type::Struct(fields) => {
+        api_info::Type::Struct(fields) => {
             let field_types = fields.iter().map(|x| field_to_tokens(x));
-            quote! { api_doc::api::Type::Struct([#(#field_types),*].into()) }
+            quote! { api_info::Type::Struct([#(#field_types),*].into()) }
         }
-        api::Type::EnumOfConsts(consts) => {
+        api_info::Type::EnumOfConsts(consts) => {
             let consts = consts.iter().map(|x| const_to_tokens(x));
-            quote! { api_doc::api::Type::EnumOfConsts([#(#consts),*].into()) }
+            quote! { api_info::Type::EnumOfConsts([#(#consts),*].into()) }
         }
-        api::Type::EnumOfTypes(types) => {
+        api_info::Type::EnumOfTypes(types) => {
             let types = types.iter().map(|x| field_to_tokens(x));
-            quote! { api_doc::api::Type::EnumOfTypes([#(#types),*].into()) }
+            quote! { api_info::Type::EnumOfTypes([#(#types),*].into()) }
         }
-        api::Type::Generic { name, args } => {
+        api_info::Type::Generic { name, args } => {
             let types = args.iter().map(|x| type_to_tokens(x));
-            quote! { api_doc::api::Type::Generic { name: #name.into(), args: [#(#types),*].into() } }
+            quote! { api_info::Type::Generic { name: #name.into(), args: [#(#types),*].into() } }
         }
     }
 }
 
-pub(crate) fn type_from(ty: &Type) -> api::Type {
+pub(crate) fn type_from(ty: &Type) -> api_info::Type {
     match ty {
         Type::Array(a) => array_type_from(a),
         Type::BareFn(_f) => panic!("function is unsupported"),
@@ -144,7 +178,7 @@ pub(crate) fn type_from(ty: &Type) -> api::Type {
         Type::TraitObject(_t) => panic!("trait_object is unsupported"),
         Type::Tuple(t) => {
             if t.elems.is_empty() {
-                api::Type::None {}
+                api_info::Type::None {}
             } else {
                 panic!("None empty tuples is unsupported")
             }
@@ -154,11 +188,11 @@ pub(crate) fn type_from(ty: &Type) -> api::Type {
     }
 }
 
-fn array_type_from(ty: &TypeArray) -> api::Type {
-    api::Type::Array(Box::new(type_from(ty.elem.as_ref())))
+fn array_type_from(ty: &TypeArray) -> api_info::Type {
+    api_info::Type::Array(Box::new(type_from(ty.elem.as_ref())))
 }
 
-fn type_from_path(path: &Path) -> api::Type {
+fn type_from_path(path: &Path) -> api_info::Type {
     if let Some(segment) = path.segments.last() {
         let name = unqualified_type_name(segment.ident.to_string());
         if let Some(result) = match &segment.arguments {
@@ -178,24 +212,27 @@ fn type_from_path(path: &Path) -> api::Type {
     ))
 }
 
-fn resolve_type_name(name: String) -> api::Type {
+fn resolve_type_name(name: String) -> api_info::Type {
     match name.as_ref() {
-        "String" => api::Type::String {},
-        "bool" => api::Type::Boolean {},
-        "u8" | "u16" | "u32" | "i8" | "i16" | "i32" | "usize" => api::Type::Number {},
-        "u64" | "i64" | "u128" | "i128" => api::Type::BigInt {},
-        _ => api::Type::Ref(name),
+        "String" => api_info::Type::String {},
+        "bool" => api_info::Type::Boolean {},
+        "u8" | "u16" | "u32" | "i8" | "i16" | "i32" | "usize" => api_info::Type::Number {},
+        "u64" | "i64" | "u128" | "i128" => api_info::Type::BigInt {},
+        _ => api_info::Type::Ref(name),
     }
 }
 
-fn generic_type_from(name: String, args: &AngleBracketedGenericArguments) -> Option<api::Type> {
+fn generic_type_from(
+    name: String,
+    args: &AngleBracketedGenericArguments,
+) -> Option<api_info::Type> {
     let get_inner_type = || match (args.args.len(), args.args.first()) {
         (1, Some(GenericArgument::Type(t))) => Some(type_from(t)),
         _ => None,
     };
     match name.as_ref() {
-        "Option" => get_inner_type().map(|x| api::Type::Optional(x.into())),
-        "Vec" => get_inner_type().map(|x| api::Type::Array(x.into())),
+        "Option" => get_inner_type().map(|x| api_info::Type::Optional(x.into())),
+        "Vec" => get_inner_type().map(|x| api_info::Type::Array(x.into())),
         _ => {
             let args = args
                 .args
@@ -208,7 +245,7 @@ fn generic_type_from(name: String, args: &AngleBracketedGenericArguments) -> Opt
                     }
                 })
                 .collect();
-            Some(api::Type::Generic { name, args })
+            Some(api_info::Type::Generic { name, args })
         }
     }
 }
@@ -315,4 +352,11 @@ pub(crate) fn path_is(path: &Path, expected: &str) -> bool {
     } else {
         false
     }
+}
+
+pub fn fields_from(fields: &Fields) -> Vec<api_info::Field> {
+    fields
+        .iter()
+        .map(|f| field_from(f.ident.as_ref(), &f.attrs, type_from(&f.ty)))
+        .collect()
 }

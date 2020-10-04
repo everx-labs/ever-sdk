@@ -27,7 +27,7 @@ pub use errors::{Error, ErrorCode};
 
 pub(crate) use client_env::{ClientEnv, FetchMethod, FetchResult, WebSocket};
 
-use crate::dispatch::DispatchTable;
+use crate::dispatch::{ModuleReg, Registrar};
 use crate::error::ApiResult;
 use serde_json::Value;
 use std::sync::Arc;
@@ -41,7 +41,7 @@ pub fn register_callback(
     context.callbacks.insert(request_id, on_result.into());
 }
 
-#[function_info]
+#[api_function]
 pub fn unregister_callback(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfUnregisterCallback,
@@ -51,19 +51,19 @@ pub fn unregister_callback(
 }
 
 /// BOC manipulation module.
-#[derive(TypeInfo, Serialize)]
+#[derive(ApiType, Serialize)]
 struct ResultOfGetApiReference {
     api: Value,
 }
 
-#[function_info]
+#[api_function]
 fn get_api_reference(_context: Arc<ClientContext>) -> ApiResult<ResultOfGetApiReference> {
     Ok(ResultOfGetApiReference {
         api: serde_json::to_value(crate::client::api::get_api()).unwrap(),
     })
 }
 
-#[function_info]
+#[api_function]
 fn version(_context: Arc<ClientContext>) -> ApiResult<ResultOfVersion> {
     Ok(ResultOfVersion {
         version: env!("CARGO_PKG_VERSION").to_owned(),
@@ -71,15 +71,14 @@ fn version(_context: Arc<ClientContext>) -> ApiResult<ResultOfVersion> {
 }
 
 /// BOC manipulation module.
-#[derive(TypeInfo)]
-#[type_info(name = "client")]
-struct ClientModule;
+#[derive(ApiModule)]
+#[api_module(name = "client")]
+pub(crate) struct ClientModule;
 
-pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.register_module::<ClientModule>(|reg| {
-        reg.f_no_args(get_api_reference, get_api_reference_info);
-        reg.f_no_args(version, version_info);
-        reg.f(unregister_callback, unregister_callback_info);
-    });
-    handlers.call_raw_async("client.register_callback", register_callback);
+impl ModuleReg for ClientModule {
+    fn reg(reg: &mut Registrar) {
+        reg.f_no_args(get_api_reference, get_api_reference_api);
+        reg.f_no_args(version, version_api);
+        reg.f(unregister_callback, unregister_callback_api);
+    }
 }

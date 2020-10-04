@@ -11,7 +11,7 @@
 * limitations under the License.
 */
 
-use crate::dispatch::DispatchTable;
+use crate::dispatch::{ModuleReg, Registrar};
 
 #[cfg(test)]
 mod tests;
@@ -36,20 +36,20 @@ pub const DEFAULT_WORKCHAIN: i32 = 0;
 
 /// Functions for encoding and decoding messages due to ABI
 /// specification.
-#[derive(TypeInfo)]
-#[type_info(name = "abi")]
-struct AbiModule;
+#[derive(ApiModule)]
+#[api_module(name = "abi")]
+pub(crate) struct AbiModule;
 
-pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.register_module::<AbiModule>(|reg| {
+impl ModuleReg for AbiModule {
+    fn reg(reg: &mut Registrar) {
         reg.t::<Abi>();
         reg.t::<AbiHandle>();
         reg.t::<FunctionHeader>();
         reg.t::<CallSet>();
         reg.t::<DeploySet>();
 
-        reg.async_f(encode_message, encode::encode_message_info);
-        reg.f(attach_signature, encode::attach_signature_info);
-        reg.f(decode_message, decode::decode_message_info);
-    });
+        reg.async_f(encode_message, encode::encode_message_api);
+        reg.f(attach_signature, encode::attach_signature_api);
+        reg.f(decode_message, decode::decode_message_api);
+    }
 }

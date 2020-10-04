@@ -18,10 +18,15 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
 use ton_sdk::AbiConfig;
 
-use crate::net::{NetworkConfig, NodeClient};
+use crate::net::{NetModule, NetworkConfig, NodeClient};
 
 use super::std_client_env::StdClientEnv;
 use super::{ClientEnv, Error};
+use crate::abi::AbiModule;
+use crate::boc::BocModule;
+use crate::client::{register_callback, ClientModule};
+use crate::crypto::CryptoModule;
+use crate::processing::ProcessingModule;
 
 lazy_static! {
     static ref HANDLERS: DispatchTable = create_handlers();
@@ -34,13 +39,13 @@ pub(crate) fn get_handlers() -> &'static DispatchTable {
 
 pub type Callback = dyn Fn(u32, &str, &str, u32) + Send + Sync;
 
-#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfVersion {
     /// core version
     pub version: String,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfUnregisterCallback {
     /// Registered callback ID
     pub callback_id: u32,
@@ -48,16 +53,18 @@ pub struct ParamsOfUnregisterCallback {
 
 fn create_handlers() -> DispatchTable {
     let mut handlers = DispatchTable::new();
-    crate::crypto::register(&mut handlers);
+    handlers.call_raw_async("client.register_callback", register_callback);
     crate::contracts::register(&mut handlers);
-    crate::abi::register(&mut handlers);
     crate::tvm::register(&mut handlers);
-    crate::boc::register(&mut handlers);
-    crate::processing::register(&mut handlers);
-    super::register(&mut handlers);
+
+    handlers.register::<ClientModule>();
+    handlers.register::<CryptoModule>();
+    handlers.register::<AbiModule>();
+    handlers.register::<BocModule>();
+    handlers.register::<ProcessingModule>();
 
     #[cfg(feature = "node_interaction")]
-    crate::net::register(&mut handlers);
+    handlers.register::<NetModule>();
 
     handlers
 }

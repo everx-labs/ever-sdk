@@ -12,7 +12,7 @@
  *
  */
 
-use crate::dispatch::DispatchTable;
+use crate::dispatch::{ModuleReg, Registrar};
 
 #[cfg(test)]
 mod tests;
@@ -42,23 +42,23 @@ pub const DEFAULT_EXPIRATION_RETRIES_TIMEOUT: u32 = 1000;
 ///
 /// This module incorporates functions related to complex message
 /// processing scenarios.
-#[derive(TypeInfo)]
-#[type_info(name = "processing")]
+#[derive(ApiModule)]
+#[api_module(name = "processing")]
 pub struct ProcessingModule;
 
-pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.register_module::<ProcessingModule>(|reg| {
+impl ModuleReg for ProcessingModule {
+    fn reg(reg: &mut Registrar) {
         reg.t::<CallbackParams>();
         reg.t::<MessageSource>();
         reg.t::<ProcessingEvent>();
         reg.t::<TransactionOutput>();
         reg.t::<AbiDecodedOutput>();
 
-        reg.async_f(send_message, send_message::send_message_info);
+        reg.async_f(send_message, send_message::send_message_api);
         reg.async_f(
             wait_for_transaction,
-            wait_for_transaction::wait_for_transaction_info,
+            wait_for_transaction::wait_for_transaction_api,
         );
-        reg.async_f(process_message, process_message::process_message_info);
-    });
+        reg.async_f(process_message, process_message::process_message_api);
+    }
 }

@@ -10,7 +10,7 @@ use ton_abi::contract::DecodedMessage;
 use ton_abi::token::Detokenizer;
 use ton_sdk::AbiContract;
 
-#[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, ApiType, PartialEq, Debug, Clone)]
 pub enum DecodedMessageType {
     /// Message contains the input of the ABI function.
     FunctionInput,
@@ -28,7 +28,7 @@ pub enum DecodedMessageType {
     Event,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug, Clone)]
+#[derive(Serialize, Deserialize, ApiType, PartialEq, Debug, Clone)]
 pub struct DecodedMessageBody {
     /// Type of the message body content.
     pub message_type: DecodedMessageType,
@@ -65,7 +65,7 @@ impl DecodedMessageBody {
 }
 //---------------------------------------------------------------------------------- decode_message
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfDecodeMessage {
     /// contract ABI
     pub abi: Abi,
@@ -74,7 +74,7 @@ pub struct ParamsOfDecodeMessage {
     pub message: String,
 }
 
-#[function_info]
+#[api_function]
 pub fn decode_message(
     _context: Arc<ClientContext>,
     params: ParamsOfDecodeMessage,

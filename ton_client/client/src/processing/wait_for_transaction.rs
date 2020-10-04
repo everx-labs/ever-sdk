@@ -10,7 +10,7 @@ use ton_sdk::Contract;
 
 //--------------------------------------------------------------------------- wait_for_transaction
 
-#[derive(Serialize, Deserialize, TypeInfo, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Debug)]
 pub struct ParamsOfWaitForTransaction {
     /// Optional ABI for decoding transaction results.
     ///
@@ -55,7 +55,7 @@ pub struct ParamsOfWaitForTransaction {
 ///   `now() + transaction_wait_timeout`.
 /// - When maximum block gen time is reached the processing will
 ///   be finished with `Incomplete` result.
-#[function_info(name = "processing.wait_for_transaction")]
+#[api_function]
 pub async fn wait_for_transaction(
     context: Arc<ClientContext>,
     params: ParamsOfWaitForTransaction,

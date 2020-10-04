@@ -2,7 +2,7 @@ use crate::crypto::{KeyPair, SigningBoxHandle};
 use crate::error::{ApiResult};
 use crate::client;
 
-#[derive(Serialize, Deserialize, Clone, Debug, TypeInfo)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 pub enum Signer {
     /// Message mustn't be signed.
     None,
