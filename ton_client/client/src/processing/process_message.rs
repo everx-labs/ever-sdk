@@ -1,84 +1,96 @@
-use crate::abi::ParamsOfEncodeMessage;
-use crate::processing::types::{CallbackParams,  ProcessingOptions, TransactionResult};
+use crate::abi::{Abi, ParamsOfEncodeMessage};
+use crate::client::ClientContext;
+use crate::error::ApiResult;
+use crate::processing::internal::can_retry_expired_message;
+use crate::processing::types::{CallbackParams, TransactionOutput};
+use crate::processing::{
+    send_message, wait_for_transaction, ErrorCode, ParamsOfSendMessage, ParamsOfWaitForTransaction,
+};
+use std::sync::Arc;
 
-#[derive(Serialize, Deserialize, TypeInfo, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Debug)]
 pub enum MessageSource {
-    Message(String),
-    AbiEncoding(ParamsOfEncodeMessage),
+    Encoded { message: String, abi: Option<Abi> },
+    AbiEncodingParams(ParamsOfEncodeMessage),
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Debug)]
 pub struct ParamsOfProcessMessage {
     /// Message source.
     pub message: MessageSource,
-    /// Processing options.
-    pub processing_options: Option<ProcessingOptions>,
     /// Processing callback.
-    pub callback: Option<CallbackParams>,
+    pub events_handler: Option<CallbackParams>,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug)]
-pub struct ResultOfProcessMessage {
-    pub transaction: Option<TransactionResult>,
-}
+/// Sends message to the network and monitors network for a result of
+/// message processing.
+#[api_function]
+pub async fn process_message(
+    context: Arc<ClientContext>,
+    params: ParamsOfProcessMessage,
+) -> ApiResult<TransactionOutput> {
+    let abi = match &params.message {
+        MessageSource::Encoded { abi, .. } => abi.clone(),
+        MessageSource::AbiEncodingParams(encode_params) => Some(encode_params.abi.clone()),
+    };
+    let is_message_encodable = if let MessageSource::AbiEncodingParams(_) = params.message {
+        true
+    } else {
+        false
+    };
 
-// fn ensure_message(
-//     context: &Arc<ClientContext>,
-//     source: &MessageSource,
-//     retry_count: u32,
-//     callback: &Option<CallbackParams>,
-// ) -> ApiResult<(String, Option<u32>)> {
-//     Ok(match source {
-//         MessageSource::Message(boc) => (boc.clone(), None),
-//         MessageSource::AbiEncoding(encode_params) => {
-//             emit_event(context, callback, || MessageProcessingEvent::EncodeMessage);
-//             let encoded = crate::abi::encode_message(context.clone(), encode_params.clone())?;
-//             (encoded.message, None)
-//         }
-//     })
-// }
-//
-// pub async fn process_message(
-//     context: Arc<ClientContext>,
-//     params: ParamsOfProcessMessage,
-// ) -> ApiResult<ResultOfProcessMessage> {
-//     let mut retry_count = 0;
-//     loop {
-//         let (message, expiration_time) =
-//             ensure_message(&context, &params.message, retry_count, &params.callback)?;
-//         let transaction_waiting_state = send_message(
-//             context.clone(),
-//             ParamsOfSendMessage {
-//                 message: message.clone(),
-//                 message_expiration_time: None,
-//                 callback: params.callback.clone(),
-//             },
-//         )
-//         .await?
-//         .transaction_waiting_state;
-//
-//         let result = wait_for_transaction(
-//             context.clone(),
-//             ParamsOfWaitForTransaction {
-//                 message: message.clone(),
-//                 message_expiration_time: expiration_time,
-//                 callback: params.callback.clone(),
-//                 waiting_state: transaction_waiting_state,
-//             },
-//         )
-//         .await?;
-//         match result {
-//             ResultOfWaitForTransaction::Complete(transaction) => {
-//                 emit_event(&context, &params.callback, || {
-//                     MessageProcessingEvent::TransactionReceived {
-//                         transaction: transaction.clone(),
-//                     }
-//                 });
-//                 return Ok(ResultOfProcessMessage { transaction });
-//             }
-//
-//             ResultOfWaitForTransaction::Incomplete(waiting_state) => {}
-//         }
-//         retry_count += 1;
-//     }
-// }
+    let mut try_index = 0;
+    loop {
+        // Encode (or use encoded) message
+        let message = match &params.message {
+            MessageSource::Encoded { message, .. } => message.clone(),
+            MessageSource::AbiEncodingParams(encode_params) => {
+                let mut encode_params = encode_params.clone();
+                encode_params.processing_try_index = Some(try_index);
+                crate::abi::encode_message(context.clone(), encode_params)
+                    .await?
+                    .message
+            }
+        };
+
+        // Send
+        let shard_block_id = send_message(
+            context.clone(),
+            ParamsOfSendMessage {
+                message: message.clone(),
+                abi: abi.clone(),
+                events_handler: params.events_handler.clone(),
+            },
+        )
+        .await?
+        .shard_block_id;
+
+        let wait_for = wait_for_transaction(
+            context.clone(),
+            ParamsOfWaitForTransaction {
+                message: message.clone(),
+                events_handler: params.events_handler.clone(),
+                abi: abi.clone(),
+                shard_block_id: shard_block_id.clone(),
+            },
+        )
+        .await;
+
+        match wait_for {
+            Ok(output) => {
+                // Waiting is complete, return output
+                return Ok(output);
+            }
+            Err(err) => {
+                let can_retry = err.code == ErrorCode::MessageExpired as isize
+                    && is_message_encodable
+                    && can_retry_expired_message(&context, &mut try_index);
+                if !can_retry {
+                    // Waiting error is unrecoverable, return it
+                    return Err(err);
+                }
+                // Waiting is failed but we can retry
+            }
+        };
+    }
+}

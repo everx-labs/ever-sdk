@@ -123,13 +123,11 @@ impl SubscribeStream {
     pub async fn unsubscribe(&mut self) -> Result<(), GraphiteError> {
         let query = format!("{{\"id\":{}, \"type\": \"stop\", \"payload\":{{}}}}", &self.id);
         let msg = Message::Text(query.to_string());
-        println!("Before unsubscribe");
         self.write.send(msg)
             .await
             .map_err(|err| 
                 GraphiteError::NetworkError(
                     format!("Sending message across stdin channel failed. Error: {}", err)))?;
-        println!("After unsubscribe");
         Ok(())
     }
 

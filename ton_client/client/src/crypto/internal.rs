@@ -1,9 +1,9 @@
 use crate::crypto;
-use crate::error::{ApiResult};
-use ed25519_dalek::{PublicKey, SecretKey, Keypair};
+use crate::error::ApiResult;
+use ed25519_dalek::{Keypair, PublicKey, SecretKey};
 use hmac::*;
+use sha2::Digest;
 use sha2::Sha512;
-use sha2::{Digest};
 
 pub(crate) type Key192 = [u8; 24];
 pub(crate) type Key256 = [u8; 32];
@@ -20,6 +20,15 @@ pub(crate) fn ton_crc16(data: &[u8]) -> u16 {
     let mut crc = crc_any::CRC::crc16xmodem();
     crc.digest(data);
     crc.get_crc() as u16
+}
+
+pub(crate) fn key_encode(key: &[u8; 32]) -> String {
+    let encoded = hex::encode(key);
+    if encoded.len() < 64 {
+        format!("{:0>64}", encoded)
+    } else {
+        encoded
+    }
 }
 
 pub(crate) fn decode_public_key(string: &String) -> ApiResult<PublicKey> {
@@ -68,7 +77,6 @@ pub(crate) fn key192(slice: &[u8]) -> ApiResult<Key192> {
     }
     Ok(key)
 }
-
 
 pub(crate) fn hmac_sha512(key: &[u8], data: &[u8]) -> [u8; 64] {
     let mut hmac = Hmac::<Sha512>::new_varkey(key).unwrap();

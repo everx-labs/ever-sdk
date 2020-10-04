@@ -26,35 +26,31 @@ pub fn destroy_context(context: InteropContext) {
 
 pub fn json_sync_request(
     context: InteropContext,
-    method_name: String,
+    function: String,
     params_json: String,
 ) -> JsonResponse {
     Client::json_sync_request(
         context,
-        method_name,
+        function,
         params_json)
 }
 
 pub fn json_async_request(
     context: InteropContext,
-    method_name: String,
+    function: String,
     params_json: String,
     request_id: u32,
     on_result: OnResult,
 ) {
     Client::json_async_request(
         context,
-        method_name,
+        function,
         params_json,
         request_id,
         Box::new(
             move |request_id: u32, result_json: &str, error_json: &str, flags: u32| {
                 on_result(request_id, result_json.into(), error_json.into(), flags)
         }))
-}
-
-pub fn get_api() -> api_doc::api::API {
-    Client::shared().get_api()
 }
 
 // C-library exported functions
@@ -75,14 +71,14 @@ pub unsafe extern "C" fn tc_destroy_context(context: InteropContext) {
 #[no_mangle]
 pub unsafe extern "C" fn tc_json_request_async(
     context: InteropContext,
-    method_name: InteropString,
+    function: InteropString,
     params_json: InteropString,
     request_id: u32,
     on_result: OnResult,
 ) {
     json_async_request(
         context,
-        method_name.to_string(),
+        function.to_string(),
         params_json.to_string(),
         request_id,
         on_result
@@ -92,12 +88,12 @@ pub unsafe extern "C" fn tc_json_request_async(
 #[no_mangle]
 pub unsafe extern "C" fn tc_json_request(
     context: InteropContext,
-    method_name: InteropString,
+    function: InteropString,
     params_json: InteropString,
 ) -> *const JsonResponse {
     let response = json_sync_request(
         context,
-        method_name.to_string(),
+        function.to_string(),
         params_json.to_string());
     Box::into_raw(Box::new(response))
 }

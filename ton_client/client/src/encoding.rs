@@ -20,17 +20,6 @@ use std::str::FromStr;
 
 //------------------------------------------------------------------------------------------------------
 
-pub(crate) fn method_api(name: &str) -> api_doc::api::Method {
-    api_doc::api::Method {
-        name: name.into(),
-        summary: None,
-        description: None,
-        params: vec![],
-        result: api_doc::api::Type::None {},
-        errors: None,
-    }
-}
-
 pub(crate) fn account_encode(value: &MsgAddressInt) -> String {
     value.to_string()
 }

@@ -11,8 +11,8 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 ton_sdk = { path = "../../ton_sdk", default-features = false }
-api_doc = { path = "../../api_doc/api_doc" }
-api_doc_derive = { path = "../../api_doc/api_doc_derive" }
+api_info = { path = "../../api/info" }
+api_derive = { path = "../../api/derive" }
 
 ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git"}
 ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }

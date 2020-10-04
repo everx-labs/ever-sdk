@@ -11,10 +11,10 @@
 * limitations under the License.
 */
 
-use crate::dispatch::DispatchTable;
 use crate::client::ClientContext;
-use crate::error::{ApiResult};
-use ton_block::{Deserializable, Serializable};
+use crate::dispatch::{ModuleReg, Registrar};
+use crate::error::ApiResult;
+use ton_block::Deserializable;
 
 mod errors;
 
@@ -26,13 +26,13 @@ pub use errors::{Error, ErrorCode};
 #[cfg(test)]
 mod tests;
 
-#[derive(Serialize, Deserialize, Clone, TypeInfo)]
+#[derive(Serialize, Deserialize, Clone, ApiType)]
 pub struct ParamsOfParse {
     /// BOC encoded as base64
     pub boc: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, TypeInfo)]
+#[derive(Serialize, Deserialize, Clone, ApiType)]
 pub struct ResultOfParse {
     /// JSON containing parsed BOC
     pub parsed: serde_json::Value,
@@ -86,12 +86,12 @@ pub(crate) fn deserialize_object_from_base64<S: Deserializable>(b64: &str, name:
     })
 }
 
+#[api_function]
 pub fn parse_message(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
 ) -> ApiResult<ResultOfParse> {
-    let object =
-        deserialize_object_from_base64::<ton_block::Message>(&params.boc, "message")?;
+    let object = deserialize_object_from_base64::<ton_block::Message>(&params.boc, "message")?;
 
     let set = ton_block_json::MessageSerializationSet {
         block_id: None,
@@ -101,20 +101,22 @@ pub fn parse_message(
         proof: None,
         status: ton_block::MessageProcessingStatus::Finalized,
         transaction_id: None,
-        transaction_now: None
+        transaction_now: None,
     };
 
     let parsed = ton_block_json::db_serialize_message_ex(
         "id",
         &set,
-        ton_block_json::SerializationMode::QServer
-    ).map_err(|err| Error::serialization_error(err, "message"))?;
+        ton_block_json::SerializationMode::QServer,
+    )
+    .map_err(|err| Error::serialization_error(err, "message"))?;
 
     Ok(ResultOfParse {
-        parsed: parsed.into()
+        parsed: parsed.into(),
     })
 }
 
+#[api_function]
 pub fn parse_transaction(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
@@ -135,20 +137,21 @@ pub fn parse_transaction(
     let parsed = ton_block_json::db_serialize_transaction_ex(
         "id",
         set,
-        ton_block_json::SerializationMode::QServer
-    ).map_err(|err| Error::serialization_error(err, "transaction"))?;
+        ton_block_json::SerializationMode::QServer,
+    )
+    .map_err(|err| Error::serialization_error(err, "transaction"))?;
 
     Ok(ResultOfParse {
-        parsed: parsed.into()
+        parsed: parsed.into(),
     })
 }
 
+#[api_function]
 pub fn parse_account(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
 ) -> ApiResult<ResultOfParse> {
-    let object =
-        deserialize_object_from_base64::<ton_block::Account>(&params.boc, "account")?;
+    let object = deserialize_object_from_base64::<ton_block::Account>(&params.boc, "account")?;
 
     let set = ton_block_json::AccountSerializationSet {
         boc: object.boc,
@@ -159,20 +162,21 @@ pub fn parse_account(
     let parsed = ton_block_json::db_serialize_account_ex(
         "id",
         &set,
-        ton_block_json::SerializationMode::QServer
-    ).map_err(|err| Error::serialization_error(err, "account"))?;
+        ton_block_json::SerializationMode::QServer,
+    )
+    .map_err(|err| Error::serialization_error(err, "account"))?;
 
     Ok(ResultOfParse {
-        parsed: parsed.into()
+        parsed: parsed.into(),
     })
 }
 
+#[api_function]
 pub fn parse_block(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
 ) -> ApiResult<ResultOfParse> {
-    let object =
-        deserialize_object_from_base64::<ton_block::Block>(&params.boc, "block")?;
+    let object = deserialize_object_from_base64::<ton_block::Block>(&params.boc, "block")?;
 
     let set = ton_block_json::BlockSerializationSet {
         boc: object.boc,
@@ -184,11 +188,12 @@ pub fn parse_block(
     let parsed = ton_block_json::db_serialize_block_ex(
         "id",
         &set,
-        ton_block_json::SerializationMode::QServer
-    ).map_err(|err| Error::serialization_error(err, "block"))?;
+        ton_block_json::SerializationMode::QServer,
+    )
+    .map_err(|err| Error::serialization_error(err, "block"))?;
 
     Ok(ResultOfParse {
-        parsed: parsed.into()
+        parsed: parsed.into(),
     })
 }
 
@@ -226,4 +231,15 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
     handlers.call("boc.parse_account", parse_account);
     handlers.call("boc.parse_block", parse_block);
     handlers.call("boc.get_blockchain_config", get_blockchain_config);
+/// BOC manipulation module.
+#[derive(ApiModule)]
+#[api_module(name = "boc")]
+pub(crate) struct BocModule;
+impl ModuleReg for BocModule {
+    fn reg(reg: &mut Registrar) {
+        reg.f(parse_message, parse_message_api);
+        reg.f(parse_transaction, parse_transaction_api);
+        reg.f(parse_account, parse_account_api);
+        reg.f(parse_block, parse_block_api);
+    }
 }

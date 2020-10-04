@@ -1,62 +1,65 @@
 use crate::abi::Abi;
 use crate::client::ClientContext;
 use crate::encoding::base64_decode;
-use crate::error::{ApiError, ApiResult};
-use crate::processing::internal::get_message_id;
-use crate::processing::types::{
-    can_retry_network_error, resolve_network_retries_timeout, CallbackParams, ProcessingEvent,
-    ProcessingOptions, ProcessingState, TransactionResult,
-};
-use crate::processing::Error;
-use crate::net::MAX_TIMEOUT;
-use super::blocks_walking::wait_next_block;
-use serde_json::Value;
+use crate::error::{ApiResult};
+use crate::processing::internal::{get_message_expiration_time, get_message_id};
+use crate::processing::{fetching, internal, Error};
+use crate::processing::{CallbackParams, TransactionOutput};
 use std::sync::Arc;
-use ton_block::MsgAddressInt;
-use ton_sdk::types::TRANSACTIONS_TABLE_NAME;
-use ton_sdk::{Block, Contract, MessageId, Transaction};
+use ton_sdk::Contract;
 
 //--------------------------------------------------------------------------- wait_for_transaction
 
-const MESSAGE_EXPIRED_CODE: i32 = 57;
-const REPLAY_PROTECTION_CODE: i32 = 52;
-
-#[derive(Serialize, Deserialize, TypeInfo, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Debug)]
 pub struct ParamsOfWaitForTransaction {
     /// Optional ABI for decoding transaction results.
-    /// If it is specified then the output messages bodies will be decoded
-    /// according to this ABI.
-    /// The `abi_return_output` result field will be filled out.
+    ///
+    /// If it is specified then the output messages bodies will be
+    /// decoded according to this ABI.
+    ///
+    /// The `abi_decoded` result field will be filled out.
     pub abi: Option<Abi>,
+
     /// Message BOC. Encoded with `base64`.
     pub message: String,
-    /// Message expiration time.
-    /// Used only for messages with `expiration` replay protection.
-    /// Must be the same value as it specified in `expire` ABI header
-    /// of the message body.
-    pub message_expiration_time: Option<u32>,
-    /// Processing options.
-    pub processing_options: Option<ProcessingOptions>,
-    /// Processing state. As it received from `send_message`
-    /// or 'Incomplete` result of the previous call to the `wait_for_transaction`.
-    pub processing_state: ProcessingState,
-    /// Processing callback.
-    pub callback: Option<CallbackParams>,
+
+    /// Dst account shard block id before the message had been sent.
+    ///
+    /// You must provide the same value as the `send_message` has
+    /// returned.
+    pub shard_block_id: String,
+
+    /// An optional processing events handler.
+    pub events_handler: Option<CallbackParams>,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug)]
-pub enum ResultOfWaitForTransaction {
-    Complete(TransactionResult),
-    Incomplete {
-        processing_state: ProcessingState,
-        reason: ApiError,
-    },
-}
-
+/// Performs monitoring of the network for a results of the external
+/// inbound message processing.
+///
+/// Note that presence of the `abi` parameter is critical for ABI
+/// compliant contracts. Message processing uses drastically
+/// different strategy for processing message with an ABI expiration
+/// replay protection.
+///
+/// When the ABI header `expire` is present, the processing uses
+/// `message expiration` strategy:
+/// - The maximum block gen time is set to
+///   `message_expiration_time + transaction_wait_timeout`.
+/// - When maximum block gen time is reached the processing will
+///   be finished with `MessageExpired` error.
+///
+/// When the ABI header `expire` isn't present or `abi` parameter
+/// isn't specified, the processing uses `transaction waiting`
+/// strategy:
+/// - The maximum block gen time is set to
+///   `now() + transaction_wait_timeout`.
+/// - When maximum block gen time is reached the processing will
+///   be finished with `Incomplete` result.
+#[api_function]
 pub async fn wait_for_transaction(
     context: Arc<ClientContext>,
     params: ParamsOfWaitForTransaction,
-) -> ApiResult<ResultOfWaitForTransaction> {
+) -> ApiResult<TransactionOutput> {
     let net = context.get_client()?;
 
     // Prepare to wait
@@ -66,248 +69,59 @@ pub async fn wait_for_transaction(
     let address = message
         .dst()
         .ok_or(Error::message_has_not_destination_address())?;
-
-    let mut processing_state = params.processing_state.clone();
-    let now = context.env.now_ms();
-    let processing_timeout = net.config().message_processing_timeout() as u64;
-    let max_block_time = match params.message_expiration_time {
-        Some(time) => time as u64,
-        None => now + processing_timeout,
-    };
-    let fetch_block_timeout = std::cmp::max(max_block_time, now) - now + processing_timeout;
-
-    let incomplete = |processing_state: &ProcessingState, reason: ApiError| {
-        Ok(ResultOfWaitForTransaction::Incomplete {
-            processing_state: processing_state.clone(),
-            reason,
-        })
-    };
+    let message_expiration_time =
+        get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message)?;
+    let processing_timeout = net.config().message_processing_timeout();
+    let mut shard_block_id = params.shard_block_id.clone();
 
     // Block walking loop
     loop {
-        match fetch_next_shard_block(
+        let now = context.env.now_ms();
+        let max_block_time = message_expiration_time.unwrap_or(now + processing_timeout as u64);
+        let fetch_block_timeout =
+            (std::cmp::max(max_block_time, now) - now) as u32 + processing_timeout;
+
+        let block = fetching::fetch_next_shard_block(
             &context,
             &params,
             &address,
-            &processing_state,
+            &shard_block_id,
             &message_id,
             fetch_block_timeout,
         )
-        .await
+        .await?;
+        if let Some(transaction_id) =
+            internal::find_transaction(&block, &message_id, &shard_block_id)?
         {
-            Ok(block) => {
-                match find_transaction(&block, &message_id, &processing_state) {
-                    Ok(Some(transaction_id)) => {
-                        // Transaction has been found.
-                        // Let's fetch other stuff.
-                        return match fetch_transaction_result(
-                            &context,
-                            &processing_state,
-                            &message_id,
-                            &transaction_id,
-                        )
-                        .await
-                        {
-                            Ok(result) => {
-                                // We have all stuff collected, so returns with it.
-                                Ok(ResultOfWaitForTransaction::Complete(result))
-                            }
-                            Err(err) => {
-                                // There was a problem while fetching some
-                                // transaction related stuff from the network.
-                                // Returns an incomplete state.
-                                incomplete(&processing_state, err)
-                            }
-                        };
-                    }
-                    Err(err) => {
-                        // There is some block corruption occurs.
-                        // Returns an incomplete state.
-                        return incomplete(&processing_state, err);
-                    }
-                    _ => (),
-                }
-                // If we found a block with expired `gen_utime`,
-                // then stop walking and return error.
-                if block.gen_utime as u64 * 1000 > max_block_time {
-                    return Err(if params.message_expiration_time.is_some() {
-                        Error::message_expired(&message_id, &processing_state)
-                    } else {
-                        Error::transaction_wait_timeout(&message_id, &processing_state)
-                    });
-                }
-
-                // We have successfully walked through the block.
-                // So store it as the last checked.
-                processing_state.last_checked_block_id = block.id.to_string();
-            }
-            Err(error) => {
-                // There was network problems while fetching next block.
-                // Returns an incomplete state.
-                return incomplete(&processing_state, error);
-            }
-        }
-    }
-}
-
-async fn fetch_next_shard_block(
-    context: &Arc<ClientContext>,
-    params: &ParamsOfWaitForTransaction,
-    address: &MsgAddressInt,
-    processing_state: &ProcessingState,
-    message_id: &str,
-    timeout: u64,
-) -> ApiResult<Block> {
-    let mut retries: i8 = 0;
-    let current_block_id = processing_state.last_checked_block_id.clone().into();
-    let network_retries_timeout =
-        resolve_network_retries_timeout(&params.processing_options, context);
-
-    // Network retries loop
-    loop {
-        // Notify app about fetching next block
-        if let Some(cb) = &params.callback {
-            ProcessingEvent::WillFetchNextBlock {
-                processing_state: processing_state.clone(),
-                message_id: message_id.to_string(),
-                message: params.message.clone(),
-            }
-            .emit(&context, cb);
-        }
-
-        // Fetch next block
-        match wait_next_block(
-            context,
-            &current_block_id,
-            &address,
-            Some((timeout / 1000) as u32),
-        )
-        .await
-        {
-            Ok(block) => return Ok(block),
-            Err(err) => {
-                let error = Error::fetch_block_failed(err, &message_id, &processing_state);
-
-                // Notify app about error
-                if let Some(cb) = &params.callback {
-                    ProcessingEvent::FetchNextBlockFailed {
-                        processing_state: processing_state.clone(),
-                        message_id: message_id.to_string(),
-                        message: params.message.clone(),
-                        error: error.clone(),
-                    }
-                    .emit(&context, cb)
-                }
-
-                // If network retries limit has reached, return error
-                if !can_retry_network_error(&params.processing_options, context, &mut retries) {
-                    return Err(error);
-                }
-            }
-        }
-
-        // Perform delay before retry
-        context.env.set_timer(network_retries_timeout as u64).await;
-    }
-}
-
-fn find_transaction(
-    block: &Block,
-    message_id: &str,
-    processing_state: &ProcessingState,
-) -> ApiResult<Option<String>> {
-    let msg_id: MessageId = message_id.into();
-    for msg_descr in &block.in_msg_descr {
-        if Some(&msg_id) == msg_descr.msg_id.as_ref() {
-            return Ok(Some(
-                msg_descr
-                    .transaction_id
-                    .as_ref()
-                    .ok_or(Error::invalid_block_received(
-                        "No field `transaction_id` in block's `in_msg_descr`.",
-                        message_id,
-                        &processing_state,
-                    ))?
-                    .to_string(),
-            ));
-        }
-    }
-    Ok(None)
-}
-
-async fn fetch_transaction_result(
-    context: &Arc<ClientContext>,
-    processing_state: &ProcessingState,
-    message_id: &str,
-    transaction_id: &str,
-) -> ApiResult<TransactionResult> {
-    let transaction = context
-        .get_client()?
-        .wait_for(
-            TRANSACTIONS_TABLE_NAME,
-            &json!({
-                "id": { "eq": transaction_id.to_string() }
-            }),
-            TRANSACTION_FIELDS_ORDINARY,
-            Some(MAX_TIMEOUT),
-        )
-        .await
-        .map_err(|err| {
-            Error::fetch_transaction_result_failed(
-                format!("Transaction can't be fetched: {}", err),
-                message_id,
-                processing_state,
+            // Transaction has been found.
+            // Let's fetch other stuff.
+            return Ok(fetching::fetch_transaction_result(
+                &context,
+                &params,
+                &shard_block_id,
+                &message_id,
+                &transaction_id,
+                &params.abi,
             )
-        })?;
-    let parsed = serde_json::from_value::<Transaction>(transaction.clone()).map_err(|err| {
-        Error::fetch_transaction_result_failed(
-            format!("Transaction can't be parsed: {}", err),
-            message_id,
-            processing_state,
-        )
-    })?;
-    match parsed.compute.exit_code {
-        Some(MESSAGE_EXPIRED_CODE) | Some(REPLAY_PROTECTION_CODE) => {
-            Err(Error::message_expired(&message_id, &processing_state))
+            .await?);
         }
-        _ => Ok(TransactionResult {
-            transaction: Value::Null,
-            out_messages: vec![],
-            abi_return_output: None,
-        }),
+        // If we found a block with expired `gen_utime`,
+        // then stop walking and return error.
+        if block.gen_utime as u64 * 1000 > max_block_time {
+            // TODO: here we must execute contract and collect execution result
+            // TODO: to get more diagnostic data for application
+            return if message_expiration_time.is_some() {
+                Err(Error::message_expired(&message_id, &shard_block_id))
+            } else {
+                Err(Error::transaction_wait_timeout(
+                    &message_id,
+                    &shard_block_id,
+                ))
+            };
+        }
+
+        // We have successfully walked through the block.
+        // So store it as the last checked.
+        shard_block_id = block.id.to_string();
     }
 }
-
-const TRANSACTION_FIELDS_ORDINARY: &str = r#"
-    id
-    aborted
-    compute {
-        skipped_reason
-        exit_code
-        success
-        gas_fees
-    }
-    storage {
-       status_change
-       storage_fees_collected
-    }
-    action {
-        success
-        valid
-        no_funds
-        result_code
-        total_fwd_fees
-        total_action_fees
-    }
-    in_msg
-    now
-    out_msgs
-    out_messages {
-        id
-        body
-        msg_type
-        value
-    }
-    status
-    total_fees
-"#;

@@ -19,7 +19,7 @@ use crate::encoding::base64_decode;
 
 //------------------------------------------------------------------------------------------ scrypt
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfScrypt {
     /// The password bytes to be hashed.
     /// Must be encoded with `base64`.
@@ -38,7 +38,7 @@ pub struct ParamsOfScrypt {
     pub dk_len: usize,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfScrypt {
     /// Derived key. Encoded with `hex`.
     pub key: String,
@@ -47,6 +47,7 @@ pub struct ResultOfScrypt {
 #[doc(summary = "Perform `scrypt` encryption")]
 /// Derives key from `password` and `key` using `scrypt` algorithm.
 /// See [https://en.wikipedia.org/wiki/Scrypt].
+#[api_function]
 pub fn scrypt(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfScrypt,

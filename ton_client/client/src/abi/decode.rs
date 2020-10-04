@@ -1,6 +1,6 @@
 use crate::abi::abi::Abi;
 use crate::abi::internal::resolve_abi;
-use crate::abi::Error;
+use crate::abi::{Error, FunctionHeader};
 use crate::client::ClientContext;
 use crate::encoding::base64_decode;
 use crate::error::ApiResult;
@@ -10,40 +10,62 @@ use ton_abi::contract::DecodedMessage;
 use ton_abi::token::Detokenizer;
 use ton_sdk::AbiContract;
 
-#[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug)]
-pub enum MessageContentType {
-    /// Message contains a function parameters.
+#[derive(Serialize, Deserialize, ApiType, PartialEq, Debug, Clone)]
+pub enum DecodedMessageType {
+    /// Message contains the input of the ABI function.
     FunctionInput,
-    /// Message contains a return value of function.
+
+    /// Message contains the output of the ABI function.
     FunctionOutput,
-    /// Message contains an event parameters.
+
+    /// Message contains the input of the foreign ABI function.
+    ///
+    /// Occurs when contract sends internal message to other
+    /// contract.
+    ForeignFunctionInput,
+
+    /// Message contains the input of the ABI event.
     Event,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug)]
-pub struct ResultOfDecodeMessage {
+#[derive(Serialize, Deserialize, ApiType, PartialEq, Debug, Clone)]
+pub struct DecodedMessageBody {
     /// Type of the message body content.
-    pub content_type: MessageContentType,
+    pub message_type: DecodedMessageType,
+
     /// Function or event name.
+    ///
+    /// In case of foreign function input the name contains a comma
+    /// separated list of possible fully qualified names, for
+    /// example: "IFoo.foo,IBar.foo".
     pub name: String,
+
     /// Parameters or result value.
     pub value: Value,
+
+    /// Function header.
+    pub header: Option<FunctionHeader>,
 }
 
-impl ResultOfDecodeMessage {
-    fn new(content_type: MessageContentType, decoded: DecodedMessage) -> ApiResult<Self> {
+impl DecodedMessageBody {
+    fn new(
+        message_type: DecodedMessageType,
+        decoded: DecodedMessage,
+        header: Option<FunctionHeader>,
+    ) -> ApiResult<Self> {
         let value = Detokenizer::detokenize_to_json_value(&decoded.params, &decoded.tokens)
             .map_err(|x| Error::invalid_message_for_decode(x))?;
         Ok(Self {
-            content_type,
+            message_type,
             name: decoded.function_name,
             value,
+            header,
         })
     }
 }
 //---------------------------------------------------------------------------------- decode_message
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfDecodeMessage {
     /// contract ABI
     pub abi: Abi,
@@ -52,20 +74,41 @@ pub struct ParamsOfDecodeMessage {
     pub message: String,
 }
 
+#[api_function]
 pub fn decode_message(
     _context: Arc<ClientContext>,
     params: ParamsOfDecodeMessage,
-) -> ApiResult<ResultOfDecodeMessage> {
+) -> ApiResult<DecodedMessageBody> {
     let (abi, message) = prepare_decode(&params)?;
     if let Some(body) = message.body() {
         if let Ok(output) = abi.decode_output(body.clone(), message.is_internal()) {
             if abi.events().get(&output.function_name).is_some() {
-                ResultOfDecodeMessage::new(MessageContentType::Event, output)
+                DecodedMessageBody::new(DecodedMessageType::Event, output, None)
             } else {
-                ResultOfDecodeMessage::new(MessageContentType::FunctionOutput, output)
+                DecodedMessageBody::new(DecodedMessageType::FunctionOutput, output, None)
             }
         } else if let Ok(input) = abi.decode_input(body.clone(), message.is_internal()) {
-            ResultOfDecodeMessage::new(MessageContentType::FunctionInput, input)
+            // TODO: add pub access to `abi_version` field of `Contract` struct.
+            let abi_version = abi
+                .functions()
+                .values()
+                .next()
+                .map(|x| x.abi_version)
+                .unwrap_or(1);
+            let (header, _, _) = ton_abi::Function::decode_header(
+                abi_version,
+                body.clone(),
+                abi.header(),
+                message.is_internal(),
+            )
+            .map_err(|err| {
+                Error::invalid_message_for_decode(format!("Can't decode function header: {}", err))
+            })?;
+            DecodedMessageBody::new(
+                DecodedMessageType::FunctionInput,
+                input,
+                FunctionHeader::from(&header)?,
+            )
         } else {
             Err(Error::invalid_message_for_decode(
                 "The message body does not match the specified ABI",

@@ -1,12 +1,13 @@
 [package]
-name = "api_doc_test"
+name = "api_info"
 version = "0.1.0"
 authors = ["Michael Vlasov <melsomino@gmail.com>"]
 edition = "2018"
 
+[lib]
+name = "api_info"
+
 [dependencies]
-api_doc = { path = "../api_doc" }
-api_doc_derive = { path = "../api_doc_derive" }
 serde = "1.0.115"
 serde_json = "1.0.57"
-serde_derive = "1.0.115"
+serde_derive = "1.0.104"

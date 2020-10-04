@@ -148,7 +148,7 @@ impl TestClient {
     pub(crate) fn wrap_async<P, R, F>(
         self: &TestClient,
         _: fn(Arc<ClientContext>, P) -> F,
-        info: fn() -> api_doc::api::Method,
+        api: fn() -> api_info::Function,
     ) -> AsyncFuncWrapper<P, R>
     where
         P: Serialize,
@@ -157,7 +157,7 @@ impl TestClient {
     {
         AsyncFuncWrapper {
             client: self,
-            name: info().name,
+            name: api().name,
             p: std::marker::PhantomData::default(),
         }
     }
@@ -201,7 +201,7 @@ impl TestClient {
     }
 
     pub fn node_se() -> bool {
-        std::env::var("USE_NODE_SE").unwrap_or("true".to_owned()) == "tre".to_owned()
+        std::env::var("USE_NODE_SE").unwrap_or("true".to_owned()) == "true".to_owned()
     }
 
     pub fn abi_version() -> u8 {
