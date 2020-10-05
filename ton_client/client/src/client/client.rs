@@ -61,6 +61,7 @@ fn create_handlers() -> DispatchTable {
     handlers.register::<AbiModule>();
     handlers.register::<BocModule>();
     handlers.register::<ProcessingModule>();
+    crate::utils::register(&mut handlers);
 
     #[cfg(feature = "node_interaction")]
     handlers.register::<NetModule>();

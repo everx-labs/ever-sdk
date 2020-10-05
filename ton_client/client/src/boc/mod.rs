@@ -19,6 +19,7 @@ use ton_block::Deserializable;
 mod errors;
 
 pub use errors::{Error, ErrorCode};
+use ton_types::deserialize_tree_of_cells;
 
 // TODO: uncomment when module will be ready
 //mod cell;
@@ -69,6 +70,13 @@ fn deserialize_object_from_base64<S: Deserializable>(
         cell_hash: cell.repr_hash(),
         object,
     })
+}
+
+pub(crate) fn get_boc_hash(boc: &[u8]) -> ApiResult<String> {
+    let cells = deserialize_tree_of_cells(&mut boc.clone())
+        .map_err(|err| crate::boc::Error::invalid_boc(err))?;
+    let id: Vec<u8> = cells.repr_hash().as_slice()[..].into();
+    Ok(hex::encode(&id))
 }
 
 #[api_function]

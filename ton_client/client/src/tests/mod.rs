@@ -162,6 +162,22 @@ impl TestClient {
         }
     }
 
+    pub(crate) fn wrap<P, R>(
+        self: &TestClient,
+        _: fn(Arc<ClientContext>, P) -> ApiResult<R>,
+        info: fn() -> api_doc::api::Method,
+    ) -> AsyncFuncWrapper<P, R>
+    where
+        P: Serialize,
+        R: DeserializeOwned,
+    {
+        AsyncFuncWrapper {
+            client: self,
+            name: info().name,
+            p: std::marker::PhantomData::default(),
+        }
+    }
+
     fn read_abi(path: String) -> Value {
         serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap()
     }
