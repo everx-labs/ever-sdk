@@ -11,6 +11,7 @@ pub enum ErrorCode {
     EncodeRunMessageFailed = ABI + 6,
     AttachSignatureFailed = ABI + 7,
     InvalidTvcImage = ABI + 8,
+    RequiredPublicKeyMissingForFunctionHeader = ABI + 9,
 }
 
 pub struct Error;
@@ -31,6 +32,13 @@ impl Error {
         error(
             ErrorCode::RequiredCallSetMissingForEncodeMessage,
             "Call parameters must be provided to encode run message.".into(),
+        )
+    }
+
+    pub fn required_public_key_missing_for_function_header() -> ApiError {
+        error(
+            ErrorCode::RequiredPublicKeyMissingForFunctionHeader,
+            "Public key must be provided to encode function header.".into(),
         )
     }
 

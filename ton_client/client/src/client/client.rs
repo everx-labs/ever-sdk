@@ -57,6 +57,7 @@ fn create_handlers() -> DispatchTable {
     crate::tvm::register(&mut handlers);
     crate::boc::register(&mut handlers);
     crate::processing::register(&mut handlers);
+    crate::utils::register(&mut handlers);
     super::register(&mut handlers);
 
     #[cfg(feature = "node_interaction")]

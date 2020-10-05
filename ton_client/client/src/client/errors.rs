@@ -30,6 +30,13 @@ fn error(code: ErrorCode, message: String) -> ApiError {
 }
 
 impl Error {
+    pub fn is_network_error(error: &ApiError) -> bool {
+        error.code == ErrorCode::WebsocketConnectError as isize
+            || error.code == ErrorCode::WebsocketReceiveError as isize
+            || error.code == ErrorCode::WebsocketSendError as isize
+            || error.code == ErrorCode::HttpRequestSendError as isize
+    }
+
     pub fn not_implemented(message: &str) -> ApiError {
         error(ErrorCode::NotImplemented, message.into())
     }
@@ -114,7 +121,7 @@ impl Error {
     pub fn callback_not_registered(callback_id: u32) -> ApiError {
         error(
             ErrorCode::CallbackNotRegistered,
-            format!("Callback with ID {} is not registered", callback_id)
+            format!("Callback with ID {} is not registered", callback_id),
         )
     }
 
@@ -126,23 +133,20 @@ impl Error {
     }
 
     pub fn invalid_config(message: String) -> ApiError {
-        error(
-            ErrorCode::InvalidConfig,
-            message,
-        )
+        error(ErrorCode::InvalidConfig, message)
     }
 
     pub fn cannot_create_runtime<E: Display>(err: E) -> ApiError {
         error(
             ErrorCode::CannotCreateRuntime,
-            format!("Can not create runtime: {}", err)
+            format!("Can not create runtime: {}", err),
         )
     }
 
     pub fn invalid_context_handle(context: u32) -> ApiError {
         error(
             ErrorCode::InvalidContextHandle,
-            format!("Invalid context handle: {}", context)
+            format!("Invalid context handle: {}", context),
         )
     }
 
