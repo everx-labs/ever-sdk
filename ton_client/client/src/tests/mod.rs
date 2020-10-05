@@ -22,7 +22,7 @@ use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
 use crate::net::NetModule;
-use crate::processing::{MessageSource, ParamsOfProcessMessage, TransactionOutput};
+use crate::processing::{MessageSource, ParamsOfProcessMessage, ResultOfProcessMessage};
 use crate::{
     client::ResultOfCreateContext,
     crypto::KeyPair,
@@ -479,7 +479,7 @@ impl TestClient {
     pub(crate) async fn net_process_message(
         &self,
         params: ParamsOfProcessMessage,
-    ) -> TransactionOutput {
+    ) -> ResultOfProcessMessage {
         let process = self.wrap_async(
             crate::processing::process_message,
             NetModule::api(),
@@ -495,9 +495,9 @@ impl TestClient {
         function_name: &str,
         input: Value,
         signer: Signer,
-    ) -> TransactionOutput {
+    ) -> ResultOfProcessMessage {
         self.net_process_message(ParamsOfProcessMessage {
-            message: MessageSource::AbiEncodingParams(ParamsOfEncodeMessage {
+            message: MessageSource::EncodingParams(ParamsOfEncodeMessage {
                 address: Some(address),
                 abi,
                 deploy_set: None,
@@ -619,7 +619,7 @@ impl TestClient {
 
         let _ = self
             .net_process_message(ParamsOfProcessMessage {
-                message: MessageSource::AbiEncodingParams(params.clone()),
+                message: MessageSource::EncodingParams(params.clone()),
                 events_handler: None,
             })
             .await;
@@ -637,7 +637,7 @@ impl TestClient {
 
         let _ = self
             .net_process_message(ParamsOfProcessMessage {
-                message: MessageSource::AbiEncodingParams(params.clone()),
+                message: MessageSource::EncodingParams(params.clone()),
                 events_handler: None,
             })
             .await;

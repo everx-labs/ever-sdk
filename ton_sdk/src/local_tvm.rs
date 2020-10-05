@@ -113,7 +113,6 @@ pub(crate) fn call_tvm(
     let mut engine = Engine::new().setup(SliceData::from(code), Some(ctrls), Some(stack), Some(gas));
     let _result = engine.execute()?;
     let mut slice = SliceData::from(engine.get_actions().as_cell()?.clone());
-
     let mut msgs = vec![];
     while slice.remaining_references() != 0 {
         let next = slice.checked_drain_reference()?.into();

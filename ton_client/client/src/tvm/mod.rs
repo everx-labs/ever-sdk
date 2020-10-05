@@ -14,17 +14,20 @@
 
 mod check_transaction;
 mod errors;
-mod executor;
 mod execute_get;
-mod execute;
-mod stack;
+mod execute_message;
+mod execute_message_full;
+mod execute_message_tvm_only;
+mod types;
 
 #[cfg(test)]
 mod tests;
 
 pub use errors::{Error, ErrorCode};
-pub use execute::{execute, ParamsOfExecute, ResultOfExecute};
 pub use execute_get::{execute_get, ParamsOfExecuteGet, ResultOfExecuteGet};
+pub use execute_message::{execute_message, ParamsOfExecuteMessage, ResultOfExecuteMessage};
+pub use types::ExitCode;
+pub(crate) use types::StackJson;
 
 use crate::dispatch::{ModuleReg, Registrar};
 
@@ -34,7 +37,7 @@ pub struct TvmModule;
 
 impl ModuleReg for TvmModule {
     fn reg(reg: &mut Registrar) {
-        reg.f(execute, crate::tvm::execute::execute_api);
+        reg.f(execute_message, crate::tvm::execute_message::execute_api);
         reg.f(execute_get, crate::tvm::execute_get::execute_get_api);
     }
 }

@@ -7,9 +7,9 @@ use crate::processing::internal::{
     can_retry_network_error, get_exit_code, resolve_network_retries_timeout,
 };
 use crate::processing::parsing::{decode_abi_output, parse_transaction_boc};
-use crate::processing::types::TvmExitCode;
+use crate::tvm::{ExitCode};
 use crate::processing::{
-    Error, ParamsOfWaitForTransaction, ProcessingEvent, TransactionOutput,
+    Error, ParamsOfWaitForTransaction, ProcessingEvent, ResultOfProcessMessage,
 };
 use serde_json::Value;
 use std::sync::Arc;
@@ -114,7 +114,7 @@ pub async fn fetch_transaction_result(
     message_id: &str,
     transaction_id: &str,
     abi: &Option<Abi>,
-) -> ApiResult<TransactionOutput> {
+) -> ApiResult<ResultOfProcessMessage> {
     let transaction_boc =
         fetch_transaction_boc(context, transaction_id, message_id, shard_block_id).await?;
     let (transaction, out_messages) = parse_transaction_boc(context.clone(), &transaction_boc)?;
@@ -125,15 +125,15 @@ pub async fn fetch_transaction_result(
     };
     let exit_code = get_exit_code(&transaction, shard_block_id, message_id)?;
 
-    if exit_code == TvmExitCode::MessageExpired as i32
-        || exit_code == TvmExitCode::ReplayProtection as i32
+    if exit_code == ExitCode::MessageExpired as i32
+        || exit_code == ExitCode::ReplayProtection as i32
     {
         Err(Error::message_expired(&message_id, shard_block_id))
     } else {
-        let result = TransactionOutput {
+        let result = ResultOfProcessMessage {
             transaction,
             out_messages,
-            abi_decoded,
+            decoded: abi_decoded,
         };
         if let Some(cb) = &params.events_handler {
             ProcessingEvent::TransactionReceived {

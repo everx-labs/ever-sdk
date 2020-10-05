@@ -9,7 +9,7 @@ use crate::processing::{
     ProcessingModule,
 };
 
-use crate::processing::types::AbiDecodedOutput;
+use crate::processing::types::DecodedOutput;
 use crate::tests::{TestClient, EVENTS};
 use api_info::ApiModule;
 
@@ -88,8 +88,8 @@ async fn test_wait_message() {
 
     assert_eq!(output.out_messages.len(), 0);
     assert_eq!(
-        output.abi_decoded,
-        Some(AbiDecodedOutput {
+        output.decoded,
+        Some(DecodedOutput {
             out_messages: vec![],
             output: None,
         })
@@ -179,8 +179,8 @@ async fn test_process_message() {
 
     assert_eq!(output.out_messages.len(), 0);
     assert_eq!(
-        output.abi_decoded,
-        Some(AbiDecodedOutput {
+        output.decoded,
+        Some(DecodedOutput {
             out_messages: vec![],
             output: None,
         })
@@ -223,7 +223,7 @@ async fn test_process_message() {
     let callback_id = client.register_callback(callback);
 
     let output = client.net_process_message(ParamsOfProcessMessage {
-            message: MessageSource::AbiEncodingParams(ParamsOfEncodeMessage {
+            message: MessageSource::EncodingParams(ParamsOfEncodeMessage {
                 abi: abi.clone(),
                 address: Some(encoded.address.clone()),
                 deploy_set: None,
@@ -242,8 +242,8 @@ async fn test_process_message() {
         .await;
     assert_eq!(output.out_messages.len(), 2);
     assert_eq!(
-        output.abi_decoded,
-        Some(AbiDecodedOutput {
+        output.decoded,
+        Some(DecodedOutput {
             out_messages: vec![
                 Some(DecodedMessageBody {
                     message_type: DecodedMessageType::Event,

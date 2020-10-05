@@ -2,7 +2,7 @@ use crate::abi::{Abi, ParamsOfEncodeMessage};
 use crate::client::ClientContext;
 use crate::error::ApiResult;
 use crate::processing::internal::can_retry_expired_message;
-use crate::processing::types::{CallbackParams, TransactionOutput};
+use crate::processing::types::{CallbackParams, ResultOfProcessMessage};
 use crate::processing::{
     send_message, wait_for_transaction, ErrorCode, ParamsOfSendMessage, ParamsOfWaitForTransaction,
 };
@@ -11,7 +11,22 @@ use std::sync::Arc;
 #[derive(Serialize, Deserialize, ApiType, Debug)]
 pub enum MessageSource {
     Encoded { message: String, abi: Option<Abi> },
-    AbiEncodingParams(ParamsOfEncodeMessage),
+    EncodingParams(ParamsOfEncodeMessage),
+}
+
+impl MessageSource {
+    pub(crate) fn encode(&self, context: &Arc<ClientContext>) -> ApiResult<(String, Option<Abi>)> {
+        Ok(match self {
+            MessageSource::EncodingParams(params) => {
+                let abi = params.abi.clone();
+                (
+                    crate::abi::encode_message(context.clone(), params.clone())?,
+                    Some(abi),
+                )
+            }
+            MessageSource::Encoded { abi, message } => (message.clone(), abi.clone()),
+        })
+    }
 }
 
 #[derive(Serialize, Deserialize, ApiType, Debug)]
@@ -28,12 +43,12 @@ pub struct ParamsOfProcessMessage {
 pub async fn process_message(
     context: Arc<ClientContext>,
     params: ParamsOfProcessMessage,
-) -> ApiResult<TransactionOutput> {
+) -> ApiResult<ResultOfProcessMessage> {
     let abi = match &params.message {
         MessageSource::Encoded { abi, .. } => abi.clone(),
-        MessageSource::AbiEncodingParams(encode_params) => Some(encode_params.abi.clone()),
+        MessageSource::EncodingParams(encode_params) => Some(encode_params.abi.clone()),
     };
-    let is_message_encodable = if let MessageSource::AbiEncodingParams(_) = params.message {
+    let is_message_encodable = if let MessageSource::EncodingParams(_) = params.message {
         true
     } else {
         false
@@ -44,7 +59,7 @@ pub async fn process_message(
         // Encode (or use encoded) message
         let message = match &params.message {
             MessageSource::Encoded { message, .. } => message.clone(),
-            MessageSource::AbiEncodingParams(encode_params) => {
+            MessageSource::EncodingParams(encode_params) => {
                 let mut encode_params = encode_params.clone();
                 encode_params.processing_try_index = Some(try_index);
                 crate::abi::encode_message(context.clone(), encode_params)

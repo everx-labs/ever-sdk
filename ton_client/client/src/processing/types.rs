@@ -5,26 +5,8 @@ use serde_json::Value;
 use std::convert::TryFrom;
 use std::sync::Arc;
 
-// TODO: move this to the `tvm` module
-pub(crate) enum TvmExitCode {
-    MessageExpired = 57,
-    ReplayProtection = 52,
-}
-
-impl TryFrom<i32> for TvmExitCode {
-    type Error = i32;
-
-    fn try_from(value: i32) -> Result<Self, Self::Error> {
-        match value {
-            57 => Ok(Self::MessageExpired),
-            62 => Ok(Self::ReplayProtection),
-            _ => Err(value),
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, ApiType, Debug, PartialEq, Clone)]
-pub struct AbiDecodedOutput {
+pub struct DecodedOutput {
     /// Decoded bodies of the out messages.
     ///
     /// If the message can't be decoded then `None` will be stored in
@@ -36,7 +18,7 @@ pub struct AbiDecodedOutput {
 }
 
 #[derive(Serialize, Deserialize, ApiType, Debug, PartialEq, Clone)]
-pub struct TransactionOutput {
+pub struct ResultOfProcessMessage {
     /// Parsed transaction.
     ///
     /// In addition to the regular transaction fields there is a
@@ -52,7 +34,7 @@ pub struct TransactionOutput {
 
     /// Optional decoded message bodies according to the optional
     /// `abi` parameter.
-    pub abi_decoded: Option<AbiDecodedOutput>,
+    pub decoded: Option<DecodedOutput>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Debug, Clone)]
@@ -164,7 +146,7 @@ pub enum ProcessingEvent {
         /// Input message. BOC encoded with `base64`.
         message: String,
         /// Results of transaction.
-        result: TransactionOutput,
+        result: ResultOfProcessMessage,
     },
 }
 

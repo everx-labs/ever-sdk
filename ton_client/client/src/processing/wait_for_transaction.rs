@@ -4,7 +4,7 @@ use crate::encoding::base64_decode;
 use crate::error::{ApiResult};
 use crate::processing::internal::{get_message_expiration_time, get_message_id};
 use crate::processing::{fetching, internal, Error};
-use crate::processing::{CallbackParams, TransactionOutput};
+use crate::processing::{CallbackParams, ResultOfProcessMessage};
 use std::sync::Arc;
 use ton_sdk::Contract;
 
@@ -59,7 +59,7 @@ pub struct ParamsOfWaitForTransaction {
 pub async fn wait_for_transaction(
     context: Arc<ClientContext>,
     params: ParamsOfWaitForTransaction,
-) -> ApiResult<TransactionOutput> {
+) -> ApiResult<ResultOfProcessMessage> {
     let net = context.get_client()?;
 
     // Prepare to wait

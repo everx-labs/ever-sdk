@@ -18,7 +18,7 @@ use ton_sdk::Contract;
 use crate::client::ClientContext;
 use crate::encoding::{base64_decode};
 use crate::error::{ApiError, ApiResult};
-use crate::tvm::execute::ExecutionOptions;
+use crate::tvm::execute_message::ExecutionOptions;
 use crate::tvm::Error;
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]

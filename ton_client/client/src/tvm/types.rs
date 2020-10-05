@@ -14,19 +14,38 @@
 
 use crate::error::ApiResult;
 use crate::tvm::Error;
+use core::result::Result::{Err, Ok};
+use failure::_core::convert::TryFrom;
 use serde_json::Value;
 use std::slice::Iter;
 use std::sync::Arc;
 use ton_vm::stack::integer::IntegerData;
 use ton_vm::stack::StackItem;
 
-pub(crate) struct StackItemJSON;
+pub enum ExitCode {
+    MessageExpired = 57,
+    ReplayProtection = 52,
+}
 
-impl StackItemJSON {
+impl TryFrom<i32> for ExitCode {
+    type Error = i32;
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            57 => Ok(Self::MessageExpired),
+            62 => Ok(Self::ReplayProtection),
+            _ => Err(value),
+        }
+    }
+}
+
+pub(crate) struct StackJson;
+
+impl StackJson {
     pub(crate) fn json_array_from_items(items: Iter<StackItem>) -> ApiResult<Value> {
         let mut values = Vec::<Value>::new();
         for item in items {
-            values.push(StackItemJSON::json_value_from_item(item)?)
+            values.push(StackJson::json_value_from_item(item)?)
         }
         Ok(Value::Array(values))
     }

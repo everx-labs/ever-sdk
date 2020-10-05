@@ -30,7 +30,7 @@ mod wait_for_transaction;
 pub use errors::{Error, ErrorCode};
 pub use process_message::{process_message, MessageSource, ParamsOfProcessMessage};
 pub use send_message::{send_message, ParamsOfSendMessage, ResultOfSendMessage};
-pub use types::{AbiDecodedOutput, CallbackParams, ProcessingEvent, TransactionOutput};
+pub use types::{DecodedOutput, CallbackParams, ProcessingEvent, ResultOfProcessMessage};
 pub use wait_for_transaction::{wait_for_transaction, ParamsOfWaitForTransaction};
 
 pub const DEFAULT_NETWORK_RETRIES_LIMIT: i8 = -1;
@@ -51,8 +51,8 @@ impl ModuleReg for ProcessingModule {
         reg.t::<CallbackParams>();
         reg.t::<MessageSource>();
         reg.t::<ProcessingEvent>();
-        reg.t::<TransactionOutput>();
-        reg.t::<AbiDecodedOutput>();
+        reg.t::<ResultOfProcessMessage>();
+        reg.t::<DecodedOutput>();
 
         reg.async_f(send_message, send_message::send_message_api);
         reg.async_f(
