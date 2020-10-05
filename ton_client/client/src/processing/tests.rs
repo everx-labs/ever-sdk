@@ -1,15 +1,17 @@
 use crate::abi::{
-    encode_message, Abi, CallSet, DecodedMessageBody, DecodedMessageType, DeploySet,
+    encode_message, Abi, AbiModule, CallSet, DecodedMessageBody, DecodedMessageType, DeploySet,
     FunctionHeader, ParamsOfEncodeMessage, Signer,
 };
 use crate::error::ApiResult;
 use crate::processing::{
     process_message, send_message, wait_for_transaction, CallbackParams, MessageSource,
     ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction, ProcessingEvent,
+    ProcessingModule,
 };
 
 use crate::processing::types::AbiDecodedOutput;
 use crate::tests::{TestClient, EVENTS};
+use api_info::ApiModule;
 
 #[tokio::test(core_threads = 2)]
 async fn test_wait_message() {
@@ -29,14 +31,20 @@ async fn test_wait_message() {
 
     let callback_id = client.register_callback(callback);
 
-    let encode_message = client.wrap_async(encode_message, crate::abi::encode::encode_message_api);
+    let encode_message = client.wrap_async(
+        encode_message,
+        AbiModule::api(),
+        crate::abi::encode::encode_message_api(),
+    );
     let send_message = client.wrap_async(
         send_message,
-        crate::processing::send_message::send_message_api,
+        ProcessingModule::api(),
+        crate::processing::send_message::send_message_api(),
     );
     let wait_for_transaction = client.wrap_async(
         wait_for_transaction,
-        crate::processing::wait_for_transaction::wait_for_transaction_api,
+        ProcessingModule::api(),
+        crate::processing::wait_for_transaction::wait_for_transaction_api(),
     );
 
     let encoded = encode_message
@@ -137,10 +145,15 @@ async fn test_process_message() {
 
     let callback_id = client.register_callback(callback);
 
-    let encode_message = client.wrap_async(encode_message, crate::abi::encode::encode_message_api);
+    let encode_message = client.wrap_async(
+        encode_message,
+        AbiModule::api(),
+        crate::abi::encode::encode_message_api(),
+    );
     let process_message = client.wrap_async(
         process_message,
-        crate::processing::process_message::process_message_api,
+        ProcessingModule::api(),
+        crate::processing::process_message::process_message_api(),
     );
 
     let encoded = encode_message

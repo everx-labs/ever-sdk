@@ -200,7 +200,7 @@ fn nacl() {
     // Sign
 
     let result: KeyPair = client.request(
-        "crypto.nacl_sign_keypair_from_secret",
+        "crypto.nacl_sign_keypair_from_secret_key",
         ParamsOfNaclSignKeyPairFromSecret {
             secret: "8fb4f2d256e57138fb310b0a6dac5bbc4bee09eb4821223a720e5b8e1f3dd674".into(),
         },
@@ -236,7 +236,7 @@ fn nacl() {
     assert_ne!(result.public, result.secret);
 
     let result: KeyPair = client.request(
-        "crypto.nacl_box_keypair_from_secret",
+        "crypto.nacl_box_keypair_from_secret_key",
         ParamsOfNaclBoxKeyPairFromSecret {
             secret: "e207b5966fb2c5be1b71ed94ea813202706ab84253bdf4dc55232f82a1caf0d4".into(),
         },

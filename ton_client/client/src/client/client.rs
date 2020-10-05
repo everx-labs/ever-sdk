@@ -27,6 +27,7 @@ use crate::boc::BocModule;
 use crate::client::{register_callback, ClientModule};
 use crate::crypto::CryptoModule;
 use crate::processing::ProcessingModule;
+use crate::utils::UtilsModule;
 
 lazy_static! {
     static ref HANDLERS: DispatchTable = create_handlers();
@@ -61,7 +62,7 @@ fn create_handlers() -> DispatchTable {
     handlers.register::<AbiModule>();
     handlers.register::<BocModule>();
     handlers.register::<ProcessingModule>();
-    crate::utils::register(&mut handlers);
+    handlers.register::<UtilsModule>();
 
     #[cfg(feature = "node_interaction")]
     handlers.register::<NetModule>();

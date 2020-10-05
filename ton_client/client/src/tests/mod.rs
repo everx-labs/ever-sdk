@@ -148,7 +148,8 @@ impl TestClient {
     pub(crate) fn wrap_async<P, R, F>(
         self: &TestClient,
         _: fn(Arc<ClientContext>, P) -> F,
-        api: fn() -> api_info::Function,
+        module: api_info::Module,
+        function: api_info::Function,
     ) -> AsyncFuncWrapper<P, R>
     where
         P: Serialize,
@@ -157,7 +158,7 @@ impl TestClient {
     {
         AsyncFuncWrapper {
             client: self,
-            name: api().name,
+            name: format!("{}.{}", module.name, function.name),
             p: std::marker::PhantomData::default(),
         }
     }
@@ -165,7 +166,8 @@ impl TestClient {
     pub(crate) fn wrap<P, R>(
         self: &TestClient,
         _: fn(Arc<ClientContext>, P) -> ApiResult<R>,
-        info: fn() -> api_doc::api::Method,
+        module: api_info::Module,
+        function: api_info::Function,
     ) -> AsyncFuncWrapper<P, R>
     where
         P: Serialize,
@@ -173,7 +175,7 @@ impl TestClient {
     {
         AsyncFuncWrapper {
             client: self,
-            name: info().name,
+            name: format!("{}.{}", module.name, function.name),
             p: std::marker::PhantomData::default(),
         }
     }
@@ -604,7 +606,7 @@ impl TestClient {
 
     pub fn sign_detached(&self, data: &str, keys: &KeyPair) -> String {
         let sign_keys: KeyPair = self.request(
-            "crypto.nacl_sign_keypair_from_secret",
+            "crypto.nacl_sign_keypair_from_secret_key",
             ParamsOfNaclSignKeyPairFromSecret {
                 secret: keys.secret.clone(),
             },
