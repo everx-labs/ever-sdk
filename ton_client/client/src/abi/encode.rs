@@ -3,6 +3,7 @@ use crate::abi::internal::{
     add_sign_to_message, create_tvc_image, resolve_abi, result_of_encode_message,
 };
 use crate::abi::{Abi, Error, FunctionHeader, Signer, DEFAULT_WORKCHAIN};
+use crate::boc::get_boc_hash;
 use crate::client::ClientContext;
 use crate::encoding::{account_decode, account_encode, base64_decode, hex_decode};
 use crate::error::ApiResult;
@@ -60,11 +61,7 @@ fn resolve_header(
     let required = |name: &str| abi.header().iter().find(|x| x.name == name).is_some();
     Ok(Some(FunctionHeader {
         time: if required("time") {
-            Some(
-                header
-                    .map_or(None, |x| x.time)
-                    .unwrap_or_else(|| now),
-            )
+            Some(header.map_or(None, |x| x.time).unwrap_or_else(|| now))
         } else {
             None
         },
@@ -177,6 +174,9 @@ pub struct ResultOfEncodeMessage {
 
     /// Destination address.
     pub address: String,
+
+    /// Message id.
+    pub message_id: String,
 }
 
 fn required_public_key(public_key: Option<String>) -> ApiResult<String> {
@@ -257,7 +257,6 @@ pub async fn encode_message(
     params: ParamsOfEncodeMessage,
 ) -> ApiResult<ResultOfEncodeMessage> {
     let abi = resolve_abi(&params.abi)?;
-    trace!("-> abi.encode_deploy_message({:?})", params.clone());
 
     let public = params.signer.resolve_public_key()?;
     let (message, data_to_sign, address) = if let Some(deploy_set) = params.deploy_set {
@@ -295,13 +294,13 @@ pub async fn encode_message(
         return Err(abi::Error::missing_required_call_set_for_encode_message());
     };
 
-    trace!("<-");
     let (message, data_to_sign) =
         result_of_encode_message(&abi, &message, &data_to_sign, &params.signer)?;
     Ok(ResultOfEncodeMessage {
-        message,
+        message: base64::encode(&message),
         data_to_sign,
         address: account_encode(&address),
+        message_id: get_boc_hash(&message)?,
     })
 }
 
@@ -325,6 +324,7 @@ pub struct ParamsOfAttachSignature {
 #[derive(Serialize, Deserialize, TypeInfo)]
 pub struct ResultOfAttachSignature {
     pub message: String,
+    pub message_id: String,
 }
 
 pub fn attach_signature(
@@ -339,5 +339,6 @@ pub fn attach_signature(
     )?;
     Ok(ResultOfAttachSignature {
         message: base64::encode(&signed),
+        message_id: get_boc_hash(&signed)?,
     })
 }

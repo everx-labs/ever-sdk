@@ -469,6 +469,30 @@ impl DispatchTable {
         );
     }
 
+    pub fn call_method<P, R>(
+        &mut self,
+        api: fn() -> api_doc::api::Method,
+        handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> ApiResult<R>,
+    ) where
+        P: TypeInfo + Send + DeserializeOwned + 'static,
+        R: TypeInfo + Send + Serialize + 'static,
+    {
+        let api = api();
+        self.sync_runners.insert(
+            api.name.clone(),
+            Box::new(CallHandler::new(api.clone(), handler)),
+        );
+
+        #[cfg(feature = "node_interaction")]
+        self.async_runners.insert(
+            api.name.clone(),
+            Box::new(SpawnHandler::new(
+                api,
+                move |context, params| async move { handler(context, params) },
+            )),
+        );
+    }
+
     pub fn spawn_method<P, R, F>(
         &mut self,
         api: fn() -> api_doc::api::Method,
