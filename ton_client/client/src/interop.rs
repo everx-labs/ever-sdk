@@ -48,8 +48,8 @@ pub fn json_async_request(
         params_json,
         request_id,
         Box::new(
-            move |request_id: u32, result_json: &str, error_json: &str, flags: u32| {
-                on_result(request_id, result_json.into(), error_json.into(), flags)
+            move |request_id: u32, params_json: &str, response_type: u32, finished: bool| {
+                on_result(request_id, params_json.into(), response_type, finished)
         }))
 }
 
@@ -59,7 +59,7 @@ pub fn get_api() -> api_doc::api::API {
 
 // C-library exported functions
 
-pub type OnResult = extern fn(request_id: u32, result_json: InteropString, error_json: InteropString, flags: u32);
+pub type OnResult = extern fn(request_id: u32, params_json: InteropString, response_type: u32, finished: bool);
 
 #[no_mangle]
 pub unsafe extern "C" fn tc_create_context(config: InteropString) -> *const JsonResponse {
@@ -73,7 +73,7 @@ pub unsafe extern "C" fn tc_destroy_context(context: InteropContext) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn tc_json_request_async(
+pub unsafe extern "C" fn tc_json_request(
     context: InteropContext,
     method_name: InteropString,
     params_json: InteropString,
@@ -90,7 +90,7 @@ pub unsafe extern "C" fn tc_json_request_async(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn tc_json_request(
+pub unsafe extern "C" fn tc_json_request_sync(
     context: InteropContext,
     method_name: InteropString,
     params_json: InteropString,
@@ -142,15 +142,19 @@ pub struct InteropJsonResponse {
     pub error_json: InteropString,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone, Debug)]
 pub struct JsonResponse {
     pub result_json: String,
     pub error_json: String,
 }
 
 impl JsonResponse {
-    pub fn send(&self, on_result: &Callback, request_id: u32, flags: u32) {
-        on_result(request_id, self.result_json.as_str(), self.error_json.as_str(), flags)
+    pub fn send(&self, on_result: &ExternalCallback, request_id: u32) {
+        if !self.result_json.is_empty() {
+            on_result(request_id, self.result_json.as_str(), ResponseType::Success as u32, true)
+        } else {
+            on_result(request_id, self.result_json.as_str(), ResponseType::Error as u32, true)
+        }
     }
 }
 

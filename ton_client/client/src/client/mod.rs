@@ -18,7 +18,7 @@ mod client_env;
 
 pub use client::{
     Client, ClientConfig, ClientContext, CryptoConfig, ResultOfCreateContext,
-    ResultOfVersion, Callback, ParamsOfUnregisterCallback,
+    ResultOfVersion, ExternalCallback, ParamsOfUnregisterCallback, ResponseType,
     create_context,
 };
 pub use errors::{ErrorCode, Error};
@@ -26,24 +26,6 @@ pub use errors::{ErrorCode, Error};
 pub(crate) use client_env::{ClientEnv, FetchMethod, FetchResult, WebSocket};
 
 use crate::dispatch::DispatchTable;
-use crate::error::ApiResult;
-
-pub fn register_callback(
-    context: std::sync::Arc<ClientContext>,
-    _params_json: String,
-    request_id: u32,
-    on_result: Box<Callback>,
-) {
-    context.callbacks.insert(request_id, on_result.into());
-}
-
-pub fn unregister_callback(
-    context: std::sync::Arc<ClientContext>,
-    params: ParamsOfUnregisterCallback,
-) -> ApiResult<()> {
-    context.callbacks.remove(&params.callback_id);
-    Ok(())
-}
 
 pub(crate) fn register(handlers: &mut DispatchTable) {
     handlers.call_no_args("client.get_api_reference", |_context| Ok(crate::get_api()));
@@ -52,8 +34,4 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
             version: env!("CARGO_PKG_VERSION").to_owned(),
         })
     });
-
-    handlers.call_raw_async("client.register_callback", register_callback);
-
-    handlers.call("client.unregister_callback", unregister_callback);
 }

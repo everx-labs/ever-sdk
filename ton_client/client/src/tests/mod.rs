@@ -13,8 +13,8 @@
 
 use super::InteropContext;
 use super::{tc_destroy_json_response, tc_read_json_response};
-use super::{tc_json_request, tc_json_request_async, InteropString};
-use crate::client::{ClientContext, ParamsOfUnregisterCallback};
+use super::{tc_json_request, tc_json_request_sync, InteropString};
+use crate::client::{ClientContext, ParamsOfUnregisterCallback, ResponseType};
 use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
@@ -35,8 +35,13 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Value;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
-use tokio::sync::mpsc::{channel, Sender};
+use std::sync::Arc;
+use std::pin::Pin;
+use tokio::sync::{
+    Mutex,
+    mpsc::{channel, Sender}
+};
+use num_traits::FromPrimitive;
 
 mod common;
 
@@ -75,11 +80,15 @@ pub const GIVER_WALLET: &str = "GiverWallet";
 pub const HELLO: &str = "Hello";
 pub const EVENTS: &str = "Events";
 
+struct RequestData {
+    sender: Sender<JsonResponse>,
+    callback: Box<dyn Fn(String, u32) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>> + Send + Sync>
+}
+
 struct TestRuntime {
     pub next_request_id: u32,
     pub next_callback_id: u32,
-    pub requests: HashMap<u32, Sender<JsonResponse>>,
-    pub callbacks: HashMap<u32, Box<dyn Fn(String, String) + Send>>,
+    pub requests: HashMap<u32, RequestData>,
 }
 
 impl TestRuntime {
@@ -88,7 +97,6 @@ impl TestRuntime {
             next_callback_id: 1,
             next_request_id: 1,
             requests: HashMap::new(),
-            callbacks: HashMap::new(),
         }
     }
 
@@ -116,20 +124,11 @@ pub(crate) struct TestClient {
 
 extern "C" fn on_result(
     request_id: u32,
-    result_json: InteropString,
-    error_json: InteropString,
-    flags: u32,
+    params_json: InteropString,
+    response_type: u32,
+    finished: bool
 ) {
-    TestClient::on_result(request_id, result_json, error_json, flags)
-}
-
-extern "C" fn on_callback(
-    request_id: u32,
-    result_json: InteropString,
-    error_json: InteropString,
-    _flags: u32,
-) {
-    TestClient::callback(request_id, result_json, error_json)
+    TestClient::on_result(request_id, params_json, response_type, finished)
 }
 
 pub struct AsyncFuncWrapper<'a, P, R> {
@@ -197,7 +196,8 @@ impl TestClient {
     pub fn network_address() -> String {
         std::env::var("TON_NETWORK_ADDRESS")
             //.unwrap_or("http://localhost".to_owned())
-            .unwrap_or("cinet.tonlabs.io".to_owned())
+            //.unwrap_or("cinet.tonlabs.io".to_owned())
+            .unwrap_or("net.ton.dev".to_owned())
     }
 
     pub fn node_se() -> bool {
@@ -279,6 +279,7 @@ impl TestClient {
                 Ok(serde_json::from_str(&response.result_json).unwrap())
             }
         } else {
+            println!("Error {}", response.error_json);
             Err(serde_json::from_str(&response.error_json).unwrap())
         }
     }
@@ -290,7 +291,7 @@ impl TestClient {
             } else {
                 params.to_string()
             };
-            let response_ptr = tc_json_request(
+            let response_ptr = tc_json_request_sync(
                 self.context,
                 InteropString::from(&method.to_string()),
                 InteropString::from(&params_json),
@@ -318,35 +319,83 @@ impl TestClient {
 
     fn on_result(
         request_id: u32,
-        result_json: InteropString,
-        error_json: InteropString,
-        _flags: u32,
+        params_json: InteropString,
+        response_type: u32,
+        finished: bool,
     ) {
-        let response = JsonResponse {
-            result_json: result_json.to_string(),
-            error_json: error_json.to_string(),
-        };
-
-        let mut request = TEST_RUNTIME
-            .lock()
-            .unwrap()
-            .requests
-            .remove(&request_id)
-            .unwrap();
-
         tokio::runtime::Handle::current().enter(move || {
-            tokio::spawn(async move {
-                let _ = request.send(response).await;
-            });
+            tokio::spawn(Self::on_result_async(request_id, params_json.to_string(), response_type, finished));
         });
     }
 
-    pub(crate) async fn request_json_async(&self, method: &str, params: Value) -> ApiResult<Value> {
+    async fn on_result_async(
+        request_id: u32,
+        params_json: String,
+        response_type: u32,
+        finished: bool,
+    ) {
+        let requests =  &mut TEST_RUNTIME
+            .lock()
+            .await
+            .requests;
+        let request = requests
+            .get_mut(&request_id)
+            .unwrap();
+
+        match ResponseType::from_u32(response_type) {
+            Some(std_response_type) => {
+                match std_response_type {
+                    ResponseType::Success => {
+                        request.sender.send(JsonResponse {
+                            result_json: params_json.to_string(),
+                            error_json: String::new(),
+                        })
+                        .await
+                        .unwrap();
+                    },
+                    ResponseType::Error => {
+                        request.sender.send(JsonResponse {
+                            result_json: String::new(),
+                            error_json: params_json.to_string(),
+                        })
+                        .await
+                        .unwrap();
+                    },
+                    _ => {}
+                };
+            },
+            None => {
+                (request.callback)(params_json.to_string(), response_type).await
+            }
+        }
+
+        if finished {
+            requests.remove(&request_id);
+        }
+    }
+
+    pub(crate) async fn request_json_async_callback<CR, CT, CF>(
+        &self, method: &str, params: Value, callback: impl Fn(CR, CT) -> CF + Send + Sync + 'static
+    ) -> ApiResult<Value>
+    where 
+        CF: Future<Output = ()> + Send + Sync + 'static,
+        CT: FromPrimitive,
+        CR: DeserializeOwned
+     {
+        let callback = move |params_json: String, response_type: u32| {
+            let params: CR = serde_json::from_str(&params_json).unwrap();
+            let response_type = CT::from_u32(response_type).unwrap();
+            Box::pin(callback(params, response_type)) as Pin<Box<dyn Future<Output = ()> + Send + Sync>>
+        };
+        //let callback = Box::new(callback);
         let (request_id, mut receiver) = {
-            let mut runtime = TEST_RUNTIME.lock().unwrap();
+            let mut runtime = TEST_RUNTIME.lock().await;
             let id = runtime.gen_request_id();
             let (sender, receiver) = channel(10);
-            runtime.requests.insert(id, sender);
+            runtime.requests.insert(id, RequestData {
+                sender,
+                callback: Box::new(callback)// as Box<dyn Fn(String, u32) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>> + Send + Sync>
+            });
             (id, receiver)
         };
         unsafe {
@@ -355,7 +404,7 @@ impl TestClient {
             } else {
                 params.to_string()
             };
-            tc_json_request_async(
+            tc_json_request(
                 self.context,
                 InteropString::from(&method.to_string()),
                 InteropString::from(&params_json),
@@ -366,24 +415,37 @@ impl TestClient {
         Self::response_to_result(receiver.recv().await.unwrap())
     }
 
-    pub(crate) async fn request_async<P, R>(&self, method: &str, params: P) -> R
+    pub(crate) async fn request_async_callback<P, R, CR, CT, CF>(
+        &self, method: &str, params: P, callback: impl Fn(CR, CT) -> CF + Send + Sync + 'static
+    ) -> R
     where
         P: Serialize,
         R: DeserializeOwned,
+        CF: Future<Output = ()> + Send + Sync + 'static,
+        CT: FromPrimitive,
+        CR: DeserializeOwned
     {
         let params = serde_json::to_value(params)
             .map_err(|err| ApiError::invalid_params("", err))
             .unwrap();
-        let result = self.request_json_async(method, params).await.unwrap();
+        let result = self.request_json_async_callback(method, params, callback).await.unwrap();
         serde_json::from_value(result)
             .map_err(|err| ApiError::invalid_params("", err))
             .unwrap()
     }
 
-    fn callback(request_id: u32, result_json: InteropString, error_json: InteropString) {
-        let runtime = TEST_RUNTIME.lock().unwrap();
-        let callback = runtime.callbacks.get(&request_id).unwrap();
-        callback(result_json.to_string(), error_json.to_string());
+    pub(crate) async fn request_json_async(&self, method: &str, params: Value) -> ApiResult<Value> {
+        let callback = |_: Value, _: u32| async { panic!("wrong response type") };
+        self.request_json_async_callback(method, params, callback).await
+    }
+
+    pub(crate) async fn request_async<P, R>(&self, method: &str, params: P) -> R
+    where
+        P: Serialize,
+        R: DeserializeOwned,
+    {
+        let callback = |_: Value, _: u32| async { panic!("wrong response type") };
+        self.request_async_callback(method, params, callback).await
     }
 
     pub(crate) fn register_callback<R: DeserializeOwned>(
@@ -398,23 +460,24 @@ impl TestClient {
             };
             callback(params)
         };
-        let callback_id = TEST_RUNTIME.lock().unwrap().gen_callback_id();
-        TEST_RUNTIME
-            .lock()
-            .unwrap()
-            .callbacks
-            .insert(callback_id, Box::new(callback));
-        unsafe {
-            tc_json_request_async(
-                self.context,
-                InteropString::from("client.register_callback"),
-                InteropString::from(""),
-                callback_id,
-                on_callback,
-            );
-        };
+        //let callback_id = TEST_RUNTIME.lock().await.gen_callback_id();
+        // TEST_RUNTIME
+        //     .lock()
+        //     .unwrap()
+        //     .callbacks
+        //     .insert(callback_id, Box::new(callback));
+        // unsafe {
+        //     tc_json_request(
+        //         self.context,
+        //         InteropString::from("client.register_callback"),
+        //         InteropString::from(""),
+        //         callback_id,
+        //         on_callback,
+        //     );
+        // };
 
-        callback_id
+        //callback_id
+        123
     }
 
     pub(crate) fn unregister_callback(&self, callback_id: u32) {
@@ -423,7 +486,7 @@ impl TestClient {
             ParamsOfUnregisterCallback { callback_id },
         );
 
-        TEST_RUNTIME.lock().unwrap().callbacks.remove(&callback_id);
+        //TEST_RUNTIME.lock().unwrap().callbacks.remove(&callback_id);
     }
 
     pub(crate) fn request_no_params<R: DeserializeOwned>(&self, method: &str) -> R {

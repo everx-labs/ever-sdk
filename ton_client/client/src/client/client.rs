@@ -28,7 +28,14 @@ lazy_static! {
     static ref CLIENT: Mutex<Client> = Mutex::new(Client::new());
 }
 
-pub type Callback = dyn Fn(u32, &str, &str, u32) + Send + Sync;
+#[derive(Serialize, Deserialize, Clone, num_derive::FromPrimitive)]
+pub enum ResponseType {
+    Success = 0,
+    Error = 1,
+    Nop = 2,
+}
+
+pub type ExternalCallback = dyn Fn(u32, &str, u32, bool) + Send + Sync;
 
 #[derive(Serialize, Deserialize, TypeInfo, Clone)]
 pub struct ResultOfVersion {
@@ -55,8 +62,6 @@ fn create_handlers() -> DispatchTable {
     #[cfg(feature = "node_interaction")]
     crate::net::register(&mut handlers);
 
-
-
     handlers
 }
 
@@ -73,7 +78,7 @@ fn async_request(
     method: String,
     params_json: String,
     request_id: u32,
-    on_result: Box<Callback>,
+    on_result: Box<ExternalCallback>,
 ) {
     HANDLERS.async_dispatch(context, method, params_json, request_id, on_result)
 }
@@ -88,7 +93,7 @@ pub struct ClientContext {
     #[cfg(feature = "node_interaction")]
     pub(crate) async_runtime_handle: tokio::runtime::Handle,
     pub(crate) config: InternalClientConfig,
-    pub(crate) callbacks: lockfree::map::Map<u32, std::sync::Arc<Callback>>,
+    pub(crate) callbacks: lockfree::map::Map<u32, std::sync::Arc<ExternalCallback>>,
     pub(crate) env: Arc<dyn ClientEnv + Send + Sync>,
 }
 
@@ -102,7 +107,7 @@ impl ClientContext {
         self.sdk_client.as_ref().ok_or(Error::net_module_not_init())
     }
 
-    pub(crate) fn get_callback(&self, callback_id: u32) -> ApiResult<std::sync::Arc<Callback>> {
+    pub(crate) fn get_callback(&self, callback_id: u32) -> ApiResult<std::sync::Arc<ExternalCallback>> {
         Ok(self
             .callbacks
             .get(&callback_id)
@@ -121,7 +126,7 @@ impl ClientContext {
             serde_json::to_string(&result)
                 .map_err(|e| Error::callback_params_cant_be_converted_to_json(e))?,
         );
-        response.send(&*callback, callback_id.clone(), 0);
+        response.send(&*callback, callback_id.clone());
         Ok(())
     }
 }
@@ -301,7 +306,7 @@ impl Client {
         method_name: String,
         params_json: String,
         request_id: u32,
-        on_result: Box<Callback>,
+        on_result: Box<ExternalCallback>,
     ) {
         let context = Self::shared().required_context(handle);
         match context {
@@ -309,7 +314,7 @@ impl Client {
                 async_request(context, method_name, params_json, request_id, on_result);
             }
             Err(err) => {
-                JsonResponse::from_error(err).send(&*on_result, request_id, 1);
+                JsonResponse::from_error(err).send(&*on_result, request_id);
             }
         }
     }

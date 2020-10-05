@@ -20,6 +20,8 @@ pub enum ErrorCode {
     InvalidConfig = CLIENT + 15,
     CannotCreateRuntime = CLIENT + 16,
     InvalidContextHandle = CLIENT + 17,
+    CannotSerializeResult = CLIENT + 18,
+    CannotSerializeError = CLIENT + 19,
 }
 pub struct Error;
 
@@ -142,5 +144,13 @@ impl Error {
             ErrorCode::InvalidContextHandle,
             format!("Invalid context handle: {}", context)
         )
+    }
+
+    pub fn cannot_serialize_result() -> String {
+        r#"{"source": "client", "code": 18, "message": "Can not serialize result"}"#.to_owned()
+    }
+
+    pub fn cannot_serialize_error() -> String {
+        r#"{"source": "client", "code": 19, "message": "Can not serialize error"}"#.to_owned()
     }
 }
