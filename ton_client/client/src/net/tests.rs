@@ -1,5 +1,4 @@
-use crate::abi::{DeploySet, ParamsOfEncodeMessage, Signer};
-use crate::error::ApiResult;
+use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer};
 use crate::net::{
     ParamsOfQueryCollection, ParamsOfSubscribeCollection, ParamsOfWaitForCollection,
     ResultOfQueryCollection, ResultOfSubscribeCollection, ResultOfSubscription,
@@ -69,32 +68,32 @@ async fn ranges() {
     assert!(accounts.result[0]["created_at"].as_u64().unwrap() > 1562342740);
 }
 
-#[test]
-#[ignore]
-fn wait_for() {
-    let handle = std::thread::spawn(move || {
+#[tokio::test(core_threads = 2)]
+async fn wait_for() {
+    let now = ton_sdk::Contract::now();
+    let request = tokio::spawn(async move {
         let client = TestClient::new();
-        let now = ton_sdk::Contract::now();
-        let transactions: ResultOfWaitForCollection = client.request(
-            "net.wait_for_collection",
-            ParamsOfWaitForCollection {
-                collection: "transactions".to_owned(),
-                filter: Some(json!({
-                    "now": { "gt": now }
-                })),
-                result: "id now".to_owned(),
-                timeout: None,
-            },
-        );
-
-        assert!(transactions.result["now"].as_u64().unwrap() > now as u64);
-    });
+        let transactions: ResultOfWaitForCollection = client
+            .request_async(
+                "net.wait_for_collection",
+                ParamsOfWaitForCollection {
+                    collection: "transactions".to_owned(),
+                    filter: Some(json!({
+                        "now": { "gt": now }
+                    })),
+                    result: "id now".to_owned(),
+                    timeout: None,
+                },
+            ).await;
+            assert!(transactions.result["now"].as_u64().unwrap() > now as u64);
+        }
+    );
 
     let client = TestClient::new();
 
-    client.get_grams_from_giver(&TestClient::get_giver_address(), None);
+    client.get_grams_from_giver_async(&TestClient::get_giver_address(), None).await;
 
-    handle.join().unwrap();
+    request.await.unwrap();
 }
 
 #[tokio::test(core_threads = 2)]
@@ -111,14 +110,17 @@ async fn subscribe_for_transactions_with_addresses() {
         signer: Signer::WithKeys(keys),
         processing_try_index: None,
         address: None,
-        call_set: None,
+        call_set: Some(CallSet {
+            function_name: "constructor".to_owned(),
+            header: None,
+            input: None,
+        }),
     };
 
     let msg = client.encode_message(deploy_params.clone()).await;
-
     let transactions = std::sync::Arc::new(Mutex::new(vec![]));
     let transactions_copy = transactions.clone();
-    let address = msg.address.clone().unwrap();
+    let address = msg.address.clone();
     let callback = move |result: serde_json::Value, response_type: SubscriptionResponseType| {
         let result = match response_type {
             SubscriptionResponseType::Ok => Ok(serde_json::from_value::<ResultOfSubscription>(result).unwrap()),
@@ -143,7 +145,6 @@ async fn subscribe_for_transactions_with_addresses() {
             },
             callback
         ).await;
-
     client.deploy_with_giver_async(deploy_params, None).await;
 
     // give some time for subscription to receive all data
@@ -152,7 +153,7 @@ async fn subscribe_for_transactions_with_addresses() {
     let transactions = transactions.lock().await;
     assert_eq!(transactions.len(), 2);
     assert_ne!(transactions[0]["id"], transactions[1]["id"]);
-
+    
     let _: () = client.request_async("net.unsubscribe", handle).await;
 }
 

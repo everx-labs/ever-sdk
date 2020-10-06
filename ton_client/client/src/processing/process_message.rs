@@ -5,7 +5,7 @@ use crate::error::ApiResult;
 use crate::processing::internal::can_retry_expired_message;
 use crate::processing::types::{ProcessingEvent, ProcessingResponseType, TransactionOutput};
 use crate::processing::{
-    send_message, wait_for_transaction, ErrorCode, ParamsOfSendMessage, ParamsOfWaitForTransaction,
+    send_message_rust, wait_for_transaction_rust, ErrorCode, ParamsOfSendMessage, ParamsOfWaitForTransaction,
 };
 use std::sync::Arc;
 
@@ -37,7 +37,7 @@ pub(crate) async fn process_message(
         futures::future::ready(())
     };
 
-    process_message(context, params, callback).await
+    process_message_rust(context, params, callback).await
 }
 
 /// Sends message to the network and monitors network for a result of
@@ -72,7 +72,7 @@ pub async fn process_message_rust<F: futures::Future<Output = ()> + Send + Sync>
         };
 
         // Send
-        let shard_block_id = send_message(
+        let shard_block_id = send_message_rust(
             context.clone(),
             ParamsOfSendMessage {
                 message: message.clone(),
@@ -84,7 +84,7 @@ pub async fn process_message_rust<F: futures::Future<Output = ()> + Send + Sync>
         .await?
         .shard_block_id;
 
-        let wait_for = wait_for_transaction(
+        let wait_for = wait_for_transaction_rust(
             context.clone(),
             ParamsOfWaitForTransaction {
                 message: message.clone(),
@@ -110,6 +110,7 @@ pub async fn process_message_rust<F: futures::Future<Output = ()> + Send + Sync>
                     return Err(err);
                 }
                 // Waiting is failed but we can retry
+                try_index
             }
         };
     }

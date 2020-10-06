@@ -24,7 +24,7 @@ use super::std_client_env::StdClientEnv;
 use super::{ClientEnv, Error};
 use crate::abi::AbiModule;
 use crate::boc::BocModule;
-use crate::client::{register_callback, ClientModule};
+use crate::client::ClientModule;
 use crate::crypto::CryptoModule;
 use crate::processing::ProcessingModule;
 use crate::utils::UtilsModule;
@@ -61,7 +61,6 @@ pub struct ParamsOfUnregisterCallback {
 
 fn create_handlers() -> DispatchTable {
     let mut handlers = DispatchTable::new();
-    handlers.call_raw_async("client.register_callback", register_callback);
     crate::tvm::register(&mut handlers);
 
     handlers.register::<ClientModule>();
@@ -117,29 +116,6 @@ impl ClientContext {
 
     pub(crate) fn get_sdk_client(&self) -> ApiResult<&ton_sdk::NodeClient> {
         self.sdk_client.as_ref().ok_or(Error::net_module_not_init())
-    }
-
-    pub(crate) fn get_callback(&self, callback_id: u32) -> ApiResult<std::sync::Arc<ExternalCallback>> {
-        Ok(self
-            .callbacks
-            .get(&callback_id)
-            .ok_or(Error::callback_not_registered(callback_id))?
-            .val()
-            .clone())
-    }
-
-    pub(crate) fn send_callback_result<S: serde::Serialize>(
-        &self,
-        callback_id: u32,
-        result: S,
-    ) -> ApiResult<()> {
-        let callback = self.get_callback(callback_id)?;
-        let response = JsonResponse::from_result(
-            serde_json::to_string(&result)
-                .map_err(|e| Error::callback_params_cant_be_converted_to_json(e))?,
-        );
-        response.send(&*callback, callback_id.clone());
-        Ok(())
     }
 }
 

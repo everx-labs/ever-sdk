@@ -62,6 +62,5 @@ impl ModuleReg for ClientModule {
     fn reg(reg: &mut Registrar) {
         reg.f_no_args(get_api_reference, get_api_reference_api);
         reg.f_no_args(version, version_api);
-        reg.f(unregister_callback, unregister_callback_api);
     }
 }

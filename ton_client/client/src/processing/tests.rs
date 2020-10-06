@@ -2,11 +2,10 @@ use crate::abi::{
     CallSet, DecodedMessageBody, DecodedMessageType, DeploySet, FunctionHeader,
     ParamsOfEncodeMessage, Signer,
 };
-use crate::error::ApiResult;
 use crate::processing::{
     send_message, wait_for_transaction, 
     MessageSource, ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction,
-    ProcessingEvent, ProcessingModule
+    ProcessingEvent, ProcessingModule, ProcessingResponseType
 };
 
 use crate::processing::types::AbiDecodedOutput;
@@ -227,7 +226,7 @@ async fn test_process_message() {
     };
 
     let output = client.net_process_message(ParamsOfProcessMessage {
-            message: MessageSource::AbiEncodingParams(ParamsOfEncodeMessage {
+                message: MessageSource::AbiEncodingParams(ParamsOfEncodeMessage {
                     abi: abi.clone(),
                     address: Some(encoded.address.clone()),
                     deploy_set: None,
@@ -238,7 +237,9 @@ async fn test_process_message() {
                             "id": "0x1"
                         })),
                     }),
-                },
+                    signer: Signer::WithKeys(keys.clone()),
+                    processing_try_index: None,
+                }),
                 send_events: true,
             },
             callback

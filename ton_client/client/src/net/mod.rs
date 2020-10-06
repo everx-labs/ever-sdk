@@ -157,7 +157,7 @@ pub async fn wait_for_collection(
 }
 
 #[api_function]
-pub(crate) async fn subscribe_collection_api(
+pub(crate) async fn subscribe_collection(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfSubscribeCollection,
     callback: std::sync::Arc<Callback>,
@@ -170,10 +170,10 @@ pub(crate) async fn subscribe_collection_api(
         futures::future::ready(())
     };
 
-    subscribe_collection(context, params, callback).await
+    subscribe_collection_rust(context, params, callback).await
 }
 
-pub async fn subscribe_collection<F: Future<Output = ()> + Send + Sync>(
+pub async fn subscribe_collection_rust<F: Future<Output = ()> + Send + Sync>(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfSubscribeCollection,
     callback: impl Fn(ApiResult<ResultOfSubscription>) -> F + Send + Sync + 'static
@@ -236,7 +236,7 @@ impl ModuleReg for NetModule {
     fn reg(reg: &mut Registrar) {
         reg.async_f(query_collection, query_collection_api);
         reg.async_f(wait_for_collection, wait_for_collection_api);
-        reg.async_f(subscribe_collection, subscribe_collection_api);
         reg.async_f(unsubscribe, unsubscribe_api);
+        reg.async_f_callback(subscribe_collection, subscribe_collection_api);
     }
 }

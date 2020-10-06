@@ -57,7 +57,7 @@ pub struct ParamsOfWaitForTransaction {
 /// - When maximum block gen time is reached the processing will
 ///   be finished with `Incomplete` result.
 #[api_function]
-pub async fn wait_for_transaction(
+pub(crate) async fn wait_for_transaction(
     context: Arc<ClientContext>,
     params: ParamsOfWaitForTransaction,
     callback: std::sync::Arc<Callback>,
@@ -67,7 +67,7 @@ pub async fn wait_for_transaction(
         futures::future::ready(())
     };
 
-    wait_for_transaction(context, params, callback).await
+    wait_for_transaction_rust(context, params, callback).await
 }
 
 pub async fn wait_for_transaction_rust<F: futures::Future<Output = ()> + Send + Sync>(
@@ -87,12 +87,13 @@ pub async fn wait_for_transaction_rust<F: futures::Future<Output = ()> + Send + 
     let message_expiration_time =
         get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message)?;
     let processing_timeout = net.config().message_processing_timeout();
+    let now = context.env.now_ms();
+    let max_block_time = message_expiration_time.unwrap_or(now + processing_timeout as u64);
+    log::debug!("message_expiration_time {}", message_expiration_time.unwrap_or_default() / 1000);
     let mut shard_block_id = params.shard_block_id.clone();
 
     // Block walking loop
     loop {
-        let now = context.env.now_ms();
-        let max_block_time = message_expiration_time.unwrap_or(now + processing_timeout as u64);
         let fetch_block_timeout =
             (std::cmp::max(max_block_time, now) - now) as u32 + processing_timeout;
 

@@ -120,15 +120,17 @@ pub(crate) fn get_message_expiration_time(
     message: &str,
 ) -> ApiResult<Option<u64>> {
     let header = match abi {
-        Some(abi) => crate::abi::decode_message(
-            context.clone(),
-            ParamsOfDecodeMessage {
-                abi: abi.clone(),
-                message: message.to_string(),
-            },
-        )
-        .map(|x| x.header)
-        .unwrap_or_default(),
+        Some(abi) => {
+            crate::abi::decode_message(
+                context.clone(),
+                ParamsOfDecodeMessage {
+                    abi: abi.clone(),
+                    message: message.to_string(),
+                },
+            )
+            .map(|x| x.header)
+            .unwrap_or_default()
+        },
         None => None,
     };
     let time = header

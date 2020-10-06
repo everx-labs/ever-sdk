@@ -185,7 +185,8 @@ impl TestClient {
     pub(crate) fn wrap_async_callback<P, R, F>(
         self: &TestClient,
         _: fn(Arc<ClientContext>, P, std::sync::Arc<Callback>) -> F,
-        info: fn() -> api_doc::api::Method,
+        module: api_info::Module,
+        function: api_info::Function,
     ) -> AsyncFuncWrapper<P, R>
     where
         P: Serialize,
@@ -194,7 +195,7 @@ impl TestClient {
     {
         AsyncFuncWrapper {
             client: self,
-            name: info().name,
+            name: format!("{}.{}", module.name, function.name),
             p: std::marker::PhantomData::default(),
         }
     }
@@ -334,7 +335,6 @@ impl TestClient {
                 Ok(serde_json::from_str(&response.result_json).unwrap())
             }
         } else {
-            println!("Error {}", response.error_json);
             Err(serde_json::from_str(&response.error_json).unwrap())
         }
     }
@@ -399,7 +399,7 @@ impl TestClient {
         response_type: u32,
         finished: bool,
     ) {
-        log::debug!("on_result response-type: {} params_json: {}", response_type, params_json);
+        //log::debug!("on_result response-type: {} params_json: {}", response_type, params_json);
         let requests =  &mut TEST_RUNTIME
             .lock()
             .await
@@ -496,9 +496,12 @@ impl TestClient {
         serde_json::from_value(result).unwrap()
     }
 
+    async fn default_callback(_: Value, _: u32) {
+        panic!("wrong response type");
+    }
+
     pub(crate) async fn request_json_async(&self, method: &str, params: Value) -> ApiResult<Value> {
-        let callback = |_: Value, _: u32| async { panic!("wrong response type") };
-        self.request_json_async_callback(method, params, callback).await
+        self.request_json_async_callback(method, params, Self::default_callback).await
     }
 
     pub(crate) async fn request_async<P, R>(&self, method: &str, params: P) -> R
@@ -506,8 +509,7 @@ impl TestClient {
         P: Serialize,
         R: DeserializeOwned,
     {
-        let callback = |_: Value, _: u32| async { panic!("wrong response type") };
-        self.request_async_callback(method, params, callback).await
+        self.request_async_callback(method, params, Self::default_callback).await
     }
 
     pub(crate) fn request_no_params<R: DeserializeOwned>(&self, method: &str) -> R {
@@ -529,16 +531,22 @@ impl TestClient {
         encode.call(params).await
     }
 
-    pub(crate) async fn net_process_message(
+    pub(crate) async fn net_process_message<CF, CT, CR>(
         &self,
         params: ParamsOfProcessMessage,
-    ) -> TransactionOutput {
-        let process = self.wrap_async(
+        callback: impl Fn(CR, CT) -> CF + Send + Sync + 'static
+    ) -> TransactionOutput
+    where 
+        CF: Future<Output = ()> + Send + Sync + 'static,
+        CT: FromPrimitive,
+        CR: DeserializeOwned
+    {
+        let process = self.wrap_async_callback(
             crate::processing::process_message,
             ProcessingModule::api(),
             crate::processing::process_message::process_message_api(),
         );
-        process.call(params).await
+        process.call_with_callback(params, callback).await
     }
 
     pub(crate) async fn net_process_function(
@@ -550,68 +558,24 @@ impl TestClient {
         signer: Signer,
     ) -> TransactionOutput {
         self.net_process_message(ParamsOfProcessMessage {
-            message: MessageSource::AbiEncodingParams(ParamsOfEncodeMessage {
-                address: Some(address),
-                abi,
-                deploy_set: None,
-                call_set: Some(CallSet {
-                    header: None,
-                    function_name: function_name.into(),
-                    input: Some(input),
+                message: MessageSource::AbiEncodingParams(ParamsOfEncodeMessage {
+                    address: Some(address),
+                    abi,
+                    deploy_set: None,
+                    call_set: Some(CallSet {
+                        header: None,
+                        function_name: function_name.into(),
+                        input: Some(input),
+                    }),
+                    processing_try_index: None,
+                    signer,
                 }),
-                processing_try_index: None,
-                signer,
-            }),
-            events_handler: None,
-        })
+                send_events: false,
+            },
+            Self::default_callback
+        )
         .await
     }
-
-    pub(crate) async fn get_grams_from_giver(&self, account: &str, value: Option<u64>) {
-        let run_result = if Self::node_se() {
-            self.net_process_function(
-                Self::giver_address(),
-                Self::giver_abi(),
-                "sendGrams",
-                json!({
-                        "dest": account,
-                        "amount": value.unwrap_or(500_000_000u64)}),
-                Signer::None,
-            )
-        } else {
-            self.net_process_function(
-                Self::wallet_address(),
-                Self::giver_abi(),
-                "sendTransaction",
-                json!({
-                    "dest": account.to_string(),
-                    "value": value.unwrap_or(500_000_000u64),
-                    "bounce": false
-                }),
-                Signer::WithKeys(Self::wallet_keys().unwrap()),
-            )
-        }
-        .await;
-
-        // wait for grams receiving
-        for message in run_result.out_messages.iter() {
-            let message: ton_sdk::Message = serde_json::from_value(message.clone()).unwrap();
-            if ton_sdk::MessageType::Internal == message.msg_type() {
-                let _: ResultOfWaitForCollection = self.request(
-                    "net.wait_for_collection",
-                    ParamsOfWaitForCollection {
-                        collection: "transactions".to_owned(),
-                        filter: Some(json!({
-                            "in_msg": { "eq": message.id()}
-                        })),
-                        result: "id".to_owned(),
-                        timeout: Some(ton_sdk::types::DEFAULT_WAIT_TIMEOUT),
-                    },
-                );
-            }
-        }
-    }
-
     pub(crate) async fn get_grams_from_giver_async(&self, account: &str, value: Option<u64>) {
         let run_result = if Self::node_se() {
             self.net_process_function(
@@ -661,24 +625,6 @@ impl TestClient {
         }
     }
 
-    pub(crate) async fn deploy_with_giver(
-        &self,
-        params: ParamsOfEncodeMessage,
-        value: Option<u64>,
-    ) -> String {
-        let msg = self.encode_message(params.clone()).await;
-
-        self.get_grams_from_giver(&msg.address, value);
-
-        let _ = self
-            .net_process_message(ParamsOfProcessMessage {
-                message: MessageSource::AbiEncodingParams(params.clone()),
-                events_handler: None,
-            })
-            .await;
-        msg.address
-    }
-
     pub(crate) async fn deploy_with_giver_async(
         &self,
         params: ParamsOfEncodeMessage,
@@ -690,9 +636,11 @@ impl TestClient {
 
         let _ = self
             .net_process_message(ParamsOfProcessMessage {
-                message: MessageSource::AbiEncodingParams(params.clone()),
-                events_handler: None,
-            })
+                    message: MessageSource::AbiEncodingParams(params.clone()),
+                    send_events: false,
+                },
+                Self::default_callback
+            )
             .await;
 
         msg.address

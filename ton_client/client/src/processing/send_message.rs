@@ -58,7 +58,7 @@ pub struct ResultOfSendMessage {
 }
 
 #[api_function]
-pub async fn send_message(
+pub(crate) async fn send_message(
     context: Arc<ClientContext>,
     params: ParamsOfSendMessage,
     callback: std::sync::Arc<Callback>,
@@ -68,7 +68,7 @@ pub async fn send_message(
         futures::future::ready(())
     };
 
-    send_message(context, params, callback).await
+    send_message_rust(context, params, callback).await
 }
 
 pub async fn send_message_rust<F: futures::Future<Output = ()> + Send + Sync>(

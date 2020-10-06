@@ -1,9 +1,7 @@
 use crate::abi::DecodedMessageBody;
-use crate::client::ClientContext;
 use crate::error::ApiError;
 use serde_json::Value;
 use std::convert::TryFrom;
-use std::sync::Arc;
 
 // TODO: move this to the `tvm` module
 pub(crate) enum TvmExitCode {
