@@ -22,16 +22,14 @@ async fn test_utils() {
         .call(ParamsOfConvertAddress {
             address: account_id.into(),
             output_format: AddressStringFormat::Hex {},
-        })
-        .await;
+        });
     assert_eq!(converted.address, hex_workchain0);
 
     let converted = convert_address
         .call(ParamsOfConvertAddress {
             address: account_id.into(),
             output_format: AddressStringFormat::AccountId {},
-        })
-        .await;
+        });
     assert_eq!(converted.address, account_id);
 
     let converted = convert_address
@@ -42,8 +40,7 @@ async fn test_utils() {
                 test: false,
                 url: false,
             },
-        })
-        .await;
+        });
     assert_eq!(converted.address, base64);
 
     let converted = convert_address
@@ -54,15 +51,13 @@ async fn test_utils() {
                 test: true,
                 url: true,
             },
-        })
-        .await;
+        });
     assert_eq!(converted.address, base64url);
 
     let converted = convert_address
         .call(ParamsOfConvertAddress {
             address: base64url.into(),
             output_format: AddressStringFormat::Hex {},
-        })
-        .await;
+        });
     assert_eq!(converted.address, hex);
 }

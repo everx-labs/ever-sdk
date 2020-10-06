@@ -22,7 +22,7 @@ mod errors;
 mod fetching;
 mod internal;
 mod parsing;
-mod process_message;
+pub(crate) mod process_message;
 mod send_message;
 mod types;
 mod wait_for_transaction;
