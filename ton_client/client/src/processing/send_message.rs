@@ -24,7 +24,7 @@ use crate::processing::Error;
 use std::sync::Arc;
 use ton_sdk::Contract;
 
-#[derive(Serialize, Deserialize, TypeInfo, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Debug)]
 pub struct ParamsOfSendMessage {
     /// Message BOC.
     pub message: String,
@@ -47,7 +47,7 @@ pub struct ParamsOfSendMessage {
     pub send_events: bool
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, ApiType, PartialEq, Debug)]
 pub struct ResultOfSendMessage {
     /// Shard block related to the message dst account before the
     /// message had been sent.
@@ -57,8 +57,8 @@ pub struct ResultOfSendMessage {
     pub shard_block_id: String,
 }
 
-#[method_info(name = "processing.send_message")]
-pub(crate) async fn send_message_api(
+#[api_function]
+pub async fn send_message(
     context: Arc<ClientContext>,
     params: ParamsOfSendMessage,
     callback: std::sync::Arc<Callback>,
@@ -71,7 +71,7 @@ pub(crate) async fn send_message_api(
     send_message(context, params, callback).await
 }
 
-pub async fn send_message<F: futures::Future<Output = ()> + Send + Sync>(
+pub async fn send_message_rust<F: futures::Future<Output = ()> + Send + Sync>(
     context: Arc<ClientContext>,
     params: ParamsOfSendMessage,
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync

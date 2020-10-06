@@ -13,16 +13,15 @@
 
 use super::JsonResponse;
 use crate::client::{ExternalCallback, ClientContext, ResponseType};
-use crate::encoding::method_api;
 use crate::error::{ApiError, ApiResult};
-use api_doc::api::Method;
-use api_doc::reflect::TypeInfo;
+use api_info::{ApiModule, ApiType};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
+use api_info::{Module, API};
 #[cfg(feature = "node_interaction")]
 use std::future::Future;
 
@@ -59,12 +58,10 @@ impl JsonResponse {
 }
 
 trait SyncHandler {
-    fn get_api(&self) -> &Method;
     fn handle(&self, context: Arc<ClientContext>, params_json: &str) -> JsonResponse;
 }
 
 trait AsyncHandler {
-    fn get_api(&self) -> &Method;
     fn handle(
         &self,
         context: Arc<ClientContext>,
@@ -74,13 +71,9 @@ trait AsyncHandler {
     );
 }
 
-pub(crate) struct ModuleTypeInfo {
-    pub module: String,
-    pub type_info: api_doc::api::Field,
-}
-
 pub(crate) struct DispatchTable {
-    api_types: HashMap<String, ModuleTypeInfo>,
+    pub(crate) api: API,
+
     sync_runners: HashMap<String, Box<dyn SyncHandler + Sync>>,
     async_runners: HashMap<String, Box<dyn AsyncHandler + Sync>>,
 }
@@ -127,7 +120,6 @@ where
     Fut: Future<Output = ApiResult<R>> + 'static,
     F: Send + Fn(Arc<ClientContext>, P, Arc<Callback>) -> Fut + 'static,
 {
-    api: Method,
     handler: Arc<F>,
     // Mutex is needed to have Sync trait implemented for struct
     phantom: PhantomData<std::sync::Mutex<(P, R, Fut)>>,
@@ -143,7 +135,6 @@ where
 {
     pub fn new(api: Method, handler: F) -> Self {
         Self {
-            api,
             handler: Arc::new(handler),
             phantom: PhantomData,
         }
@@ -158,9 +149,6 @@ where
     Fut: Send + Future<Output = ApiResult<R>> + 'static,
     F: Send + Sync + Fn(Arc<ClientContext>, P, Arc<Callback>) -> Fut + 'static,
 {
-    fn get_api(&self) -> &Method {
-        &self.api
-    }
     fn handle(
         &self,
         context: Arc<ClientContext>,
@@ -198,7 +186,6 @@ where
     Fut: Future<Output = ApiResult<R>> + 'static,
     F: Send + Fn(Arc<ClientContext>, P) -> Fut + 'static,
 {
-    api: Method,
     handler: Arc<F>,
     // Mutex is needed to have Sync trait implemented for struct
     phantom: PhantomData<std::sync::Mutex<(P, R, Fut)>>,
@@ -212,9 +199,8 @@ where
     Fut: Future<Output = ApiResult<R>> + 'static,
     F: Send + Fn(Arc<ClientContext>, P) -> Fut + 'static,
 {
-    pub fn new(api: Method, handler: F) -> Self {
+    pub fn new(handler: F) -> Self {
         Self {
-            api,
             handler: Arc::new(handler),
             phantom: PhantomData,
         }
@@ -229,9 +215,6 @@ where
     Fut: Send + Future<Output = ApiResult<R>> + 'static,
     F: Send + Sync + Fn(Arc<ClientContext>, P) -> Fut + 'static,
 {
-    fn get_api(&self) -> &Method {
-        &self.api
-    }
     fn handle(
         &self,
         context: Arc<ClientContext>,
@@ -268,7 +251,6 @@ where
     Fut: Future<Output = ApiResult<R>> + 'static,
     F: Send + Fn(Arc<ClientContext>) -> Fut + 'static,
 {
-    api: Method,
     handler: Arc<F>,
     // Mutex is needed to have Sync trait implemented for struct
     phantom: PhantomData<std::sync::Mutex<(R, Fut)>>,
@@ -281,9 +263,8 @@ where
     Fut: Future<Output = ApiResult<R>> + 'static,
     F: Send + Fn(Arc<ClientContext>) -> Fut + 'static,
 {
-    pub fn new(api: Method, handler: F) -> Self {
+    pub fn new(handler: F) -> Self {
         Self {
-            api,
             handler: Arc::new(handler),
             phantom: PhantomData,
         }
@@ -297,9 +278,6 @@ where
     Fut: Send + Future<Output = ApiResult<R>> + 'static,
     F: Send + Sync + Fn(Arc<ClientContext>) -> Fut + 'static,
 {
-    fn get_api(&self) -> &Method {
-        &self.api
-    }
     fn handle(
         &self,
         context: Arc<ClientContext>,
@@ -330,7 +308,6 @@ where
     R: Send + Serialize,
     F: Fn(Arc<ClientContext>, P) -> ApiResult<R>,
 {
-    api: Method,
     handler: F,
     phantom: PhantomData<std::sync::Mutex<(P, R)>>,
 }
@@ -341,9 +318,8 @@ where
     R: Send + Serialize,
     F: Fn(Arc<ClientContext>, P) -> ApiResult<R>,
 {
-    pub fn new(api: Method, handler: F) -> Self {
+    pub fn new(handler: F) -> Self {
         Self {
-            api,
             handler,
             phantom: PhantomData,
         }
@@ -356,9 +332,6 @@ where
     R: Send + Serialize,
     F: Fn(Arc<ClientContext>, P) -> ApiResult<R>,
 {
-    fn get_api(&self) -> &Method {
-        &self.api
-    }
     fn handle(&self, context: Arc<ClientContext>, params_json: &str) -> JsonResponse {
         match parse_params(params_json) {
             Ok(params) => {
@@ -380,7 +353,6 @@ where
     R: Send + Serialize,
     F: Fn(Arc<ClientContext>) -> ApiResult<R>,
 {
-    api: Method,
     handler: F,
     phantom: PhantomData<std::sync::Mutex<R>>,
 }
@@ -390,9 +362,8 @@ where
     R: Send + Serialize,
     F: Fn(Arc<ClientContext>) -> ApiResult<R>,
 {
-    pub fn new(api: Method, handler: F) -> Self {
+    pub fn new(handler: F) -> Self {
         Self {
-            api,
             handler,
             phantom: PhantomData,
         }
@@ -404,9 +375,6 @@ where
     R: Send + Serialize,
     F: Fn(Arc<ClientContext>) -> ApiResult<R>,
 {
-    fn get_api(&self) -> &Method {
-        &self.api
-    }
     fn handle(&self, context: Arc<ClientContext>, _params_json: &str) -> JsonResponse {
         let result = (self.handler)(context);
         match result {
@@ -419,7 +387,10 @@ where
 impl DispatchTable {
     pub fn new() -> DispatchTable {
         DispatchTable {
-            api_types: HashMap::new(),
+            api: API {
+                version: "1.0.0".into(),
+                modules: vec![],
+            },
             sync_runners: HashMap::new(),
             #[cfg(feature = "node_interaction")]
             async_runners: HashMap::new(),
@@ -663,14 +634,11 @@ impl DispatchTable {
     }
 
     pub fn sync_dispatch(
-        &self,
-        context: Arc<ClientContext>,
-        method: String,
-        params_json: String,
+        &self, context: Arc<ClientContext>, name: String, params_json: String
     ) -> JsonResponse {
-        match self.sync_runners.get(&method) {
+        match self.sync_runners.get(&name) {
             Some(handler) => handler.handle(context, params_json.as_str()),
-            None => JsonResponse::from_error(ApiError::unknown_method(&method)),
+            None => JsonResponse::from_error(ApiError::unknown_function(&name)),
         }
     }
 
@@ -678,14 +646,14 @@ impl DispatchTable {
     pub fn async_dispatch(
         &self,
         context: Arc<ClientContext>,
-        method: String,
+        function: String,
         params_json: String,
         request_id: u32,
         on_result: Box<ExternalCallback>,
     ) {
-        match self.async_runners.get(&method) {
+        match self.async_runners.get(&function) {
             Some(handler) => handler.handle(context, params_json, request_id, on_result),
-            None => JsonResponse::from_error(ApiError::unknown_method(&method)).send(
+            None => JsonResponse::from_error(ApiError::unknown_function(&function)).send(
                 &*on_result,
                 request_id,
             ),
@@ -696,12 +664,116 @@ impl DispatchTable {
     pub fn async_dispatch(
         &self,
         context: Arc<ClientContext>,
-        method: String,
+        function: String,
         params_json: String,
         request_id: u32,
         on_result: Box<ExternalCallback>,
     ) {
-        self.sync_dispatch(context, method, params_json)
+        self.sync_dispatch(context, function, params_json)
             .send(&*on_result, request_id, 1);
     }
+
+    pub(crate) fn register<'h, M: ApiModule + ModuleReg>(&'h mut self) {
+        let mut registrar = Registrar::<'h> {
+            dispatcher: self,
+            module: M::api(),
+        };
+        M::reg(&mut registrar);
+        registrar.dispatcher.api.modules.push(registrar.module);
+    }
+}
+
+pub(crate) struct Registrar<'a> {
+    module: Module,
+    dispatcher: &'a mut DispatchTable,
+}
+
+impl Registrar<'_> {
+    pub fn t<T: ApiType>(&mut self) {
+        self.module.types.push(T::api());
+    }
+
+    pub fn async_f<P, R, F>(
+        &mut self,
+        handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> F,
+        api: fn() -> api_info::Function,
+    ) where
+        P: ApiType + Send + DeserializeOwned + 'static,
+        R: ApiType + Send + Serialize + 'static,
+        F: Send + Future<Output = ApiResult<R>> + 'static,
+    {
+        self.t::<P>();
+        self.t::<R>();
+        let function = api();
+        let name = format!("{}.{}", self.module.name, function.name);
+        self.module.functions.push(function);
+        self.dispatcher
+            .async_runners
+            .insert(name.clone(), Box::new(SpawnHandler::new(handler)));
+
+        self.dispatcher.sync_runners.insert(
+            name,
+            Box::new(CallHandler::new(move |context, params| {
+                context
+                    .clone()
+                    .async_runtime_handle
+                    .block_on(handler(context, params))
+            })),
+        );
+    }
+
+    pub fn f<P, R>(
+        &mut self,
+        handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> ApiResult<R>,
+        api: fn() -> api_info::Function,
+    ) where
+        P: ApiType + Send + DeserializeOwned + 'static,
+        R: ApiType + Send + Serialize + 'static,
+    {
+        self.t::<P>();
+        self.t::<R>();
+        let function = api();
+        let name = format!("{}.{}", self.module.name, function.name);
+        self.module.functions.push(function);
+
+        self.dispatcher
+            .sync_runners
+            .insert(name.clone(), Box::new(CallHandler::new(handler)));
+
+        #[cfg(feature = "node_interaction")]
+        self.dispatcher.async_runners.insert(
+            name.clone(),
+            Box::new(SpawnHandler::new(move |context, params| async move {
+                handler(context, params)
+            })),
+        );
+    }
+
+    pub fn f_no_args<R>(
+        &mut self,
+        handler: fn(context: std::sync::Arc<ClientContext>) -> ApiResult<R>,
+        api: fn() -> api_info::Function,
+    ) where
+        R: ApiType + Send + Serialize + 'static,
+    {
+        self.t::<R>();
+        let function = api();
+        let name = format!("{}.{}", self.module.name, function.name);
+        self.module.functions.push(function);
+        self.dispatcher
+            .sync_runners
+            .insert(name.clone(), Box::new(CallNoArgsHandler::new(handler)));
+
+        #[cfg(feature = "node_interaction")]
+        self.dispatcher.async_runners.insert(
+            name.clone(),
+            Box::new(SpawnNoArgsHandler::new(move |context| async move {
+                handler(context)
+            })),
+        );
+    }
+}
+
+pub(crate) trait ModuleReg {
+    fn reg(registrar: &mut Registrar);
 }

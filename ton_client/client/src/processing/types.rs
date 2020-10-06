@@ -23,7 +23,7 @@ impl TryFrom<i32> for TvmExitCode {
     }
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Debug, PartialEq, Clone)]
 pub struct AbiDecodedOutput {
     /// Decoded bodies of the out messages.
     ///
@@ -35,7 +35,7 @@ pub struct AbiDecodedOutput {
     pub output: Option<Value>,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Debug, PartialEq, Clone)]
 pub struct TransactionOutput {
     /// Parsed transaction.
     ///
@@ -60,7 +60,7 @@ pub enum ProcessingResponseType {
     ProcessingEvent = 100,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Debug, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Debug, Clone)]
 pub enum ProcessingEvent {
     /// Notifies the app that the current shard block will be fetched
     /// from the network.

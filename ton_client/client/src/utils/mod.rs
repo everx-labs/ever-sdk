@@ -12,7 +12,7 @@
  *
  */
 
-use crate::dispatch::DispatchTable;
+use crate::dispatch::{ModuleReg, Registrar};
 
 #[cfg(test)]
 mod tests;
@@ -21,19 +21,19 @@ mod conversion;
 mod errors;
 
 pub use conversion::{
-    convert_address, convert_address_method, ParamsOfConvertAddress, ResultOfConvertAddress,
-    AddressStringFormat,
+    convert_address, AddressStringFormat, ParamsOfConvertAddress,
+    ResultOfConvertAddress,
 };
 pub use errors::{Error, ErrorCode};
 
-use api_doc::reflect::TypeInfo;
+/// Misc utility Functions.
+#[derive(ApiModule)]
+#[api_module(name = "utils")]
+pub struct UtilsModule;
 
-pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.register_api_types(
-        "utils",
-        vec![
-            AddressStringFormat::type_info,
-        ],
-    );
-    handlers.call_method(convert_address_method, convert_address);
+impl ModuleReg for UtilsModule {
+    fn reg(reg: &mut Registrar) {
+        reg.t::<AddressStringFormat>();
+        reg.f(convert_address, conversion::convert_address_api);
+    }
 }

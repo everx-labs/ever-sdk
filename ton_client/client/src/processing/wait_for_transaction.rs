@@ -11,7 +11,7 @@ use ton_sdk::Contract;
 
 //--------------------------------------------------------------------------- wait_for_transaction
 
-#[derive(Serialize, Deserialize, TypeInfo, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Debug)]
 pub struct ParamsOfWaitForTransaction {
     /// Optional ABI for decoding transaction results.
     ///
@@ -56,8 +56,8 @@ pub struct ParamsOfWaitForTransaction {
 ///   `now() + transaction_wait_timeout`.
 /// - When maximum block gen time is reached the processing will
 ///   be finished with `Incomplete` result.
-#[method_info(name = "processing.wait_for_transaction")]
-pub(crate) async fn wait_for_transaction_api(
+#[api_function]
+pub async fn wait_for_transaction(
     context: Arc<ClientContext>,
     params: ParamsOfWaitForTransaction,
     callback: std::sync::Arc<Callback>,
@@ -70,7 +70,7 @@ pub(crate) async fn wait_for_transaction_api(
     wait_for_transaction(context, params, callback).await
 }
 
-pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send + Sync>(
+pub async fn wait_for_transaction_rust<F: futures::Future<Output = ()> + Send + Sync>(
     context: Arc<ClientContext>,
     params: ParamsOfWaitForTransaction,
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync,

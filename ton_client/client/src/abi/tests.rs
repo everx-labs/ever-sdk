@@ -1,4 +1,3 @@
-use crate::abi::abi::Abi;
 use crate::abi::decode::{DecodedMessageBody, DecodedMessageType, ParamsOfDecodeMessage};
 use crate::abi::encode::{
     CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfEncodeMessage, ResultOfAttachSignature,
@@ -17,7 +16,7 @@ fn encode_v2() {
         public: "4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499".into(),
         secret: "cc8929d635719612a9478b9cd17675a39cfad52d8959e8a177389b8c0b9122a7".into(),
     };
-    let abi = Abi::Serialized(events_abi.clone());
+    let abi = events_abi.clone();
     let time: u64 = 1599458364291;
     let expire: u32 = 1599458404;
 
@@ -129,7 +128,7 @@ fn decode_v2() {
         let result: DecodedMessageBody = client.request(
             "abi.decode_message",
             ParamsOfDecodeMessage {
-                abi: Abi::Serialized(events_abi.clone()),
+                abi: events_abi.clone(),
                 message: message.into(),
             },
         );

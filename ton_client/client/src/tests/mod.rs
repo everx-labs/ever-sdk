@@ -14,23 +14,23 @@
 use super::InteropContext;
 use super::{tc_destroy_json_response, tc_read_json_response};
 use super::{tc_json_request, tc_json_request_sync, InteropString};
-use crate::client::{ClientContext, ParamsOfUnregisterCallback, ResponseType};
+use crate::abi::{
+    encode_message, Abi, AbiModule, CallSet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
+};
+use crate::client::{ClientContext, ResponseType};
 use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
+use crate::processing::{MessageSource, ParamsOfProcessMessage, TransactionOutput, ProcessingModule};
 use crate::{
     client::ResultOfCreateContext,
-    contracts::{
-        deploy::{ParamsOfDeploy, ResultOfDeploy},
-        run::{ParamsOfRun, ResultOfRun, RunFunctionCallSet},
-        EncodedMessage,
-    },
     crypto::KeyPair,
     dispatch::Callback,
     error::{ApiError, ApiResult},
     net::{ParamsOfWaitForCollection, ResultOfWaitForCollection},
     tc_create_context, tc_destroy_context, JsonResponse,
 };
+use api_info::ApiModule;
 use futures::Future;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -151,11 +151,24 @@ impl<'a, P: Serialize, R: DeserializeOwned> AsyncFuncWrapper<'a, P, R> {
     }
 }
 
+pub struct FuncWrapper<'a, P, R> {
+    client: &'a TestClient,
+    name: String,
+    p: std::marker::PhantomData<(P, R)>,
+}
+
+impl<'a, P: Serialize, R: DeserializeOwned> FuncWrapper<'a, P, R> {
+    pub(crate) fn call(&self, params: P) -> R {
+        self.client.request(&self.name, params)
+    }
+}
+
 impl TestClient {
     pub(crate) fn wrap_async<P, R, F>(
         self: &TestClient,
         _: fn(Arc<ClientContext>, P) -> F,
-        info: fn() -> api_doc::api::Method,
+        module: api_info::Module,
+        function: api_info::Function,
     ) -> AsyncFuncWrapper<P, R>
     where
         P: Serialize,
@@ -164,7 +177,7 @@ impl TestClient {
     {
         AsyncFuncWrapper {
             client: self,
-            name: info().name,
+            name: format!("{}.{}", module.name, function.name),
             p: std::marker::PhantomData::default(),
         }
     }
@@ -189,28 +202,29 @@ impl TestClient {
     pub(crate) fn wrap<P, R>(
         self: &TestClient,
         _: fn(Arc<ClientContext>, P) -> ApiResult<R>,
-        info: fn() -> api_doc::api::Method,
-    ) -> AsyncFuncWrapper<P, R>
+        module: api_info::Module,
+        function: api_info::Function,
+    ) -> FuncWrapper<P, R>
     where
         P: Serialize,
         R: DeserializeOwned,
     {
-        AsyncFuncWrapper {
+        FuncWrapper {
             client: self,
-            name: info().name,
+            name: format!("{}.{}", module.name, function.name),
             p: std::marker::PhantomData::default(),
         }
     }
 
-    fn read_abi(path: String) -> Value {
-        serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap()
+    fn read_abi(path: String) -> Abi {
+        Abi::Serialized(serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap())
     }
 
     pub fn giver_address() -> String {
         "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94".into()
     }
 
-    pub fn giver_abi() -> Value {
+    pub fn giver_abi() -> Abi {
         if Self::node_se() {
             Self::abi(GIVER, Some(1))
         } else {
@@ -257,7 +271,7 @@ impl TestClient {
         )
     }
 
-    pub fn abi(name: &str, version: Option<u8>) -> Value {
+    pub fn abi(name: &str, version: Option<u8>) -> Abi {
         Self::read_abi(format!(
             "{}{}.abi.json",
             Self::contracts_path(version),
@@ -271,7 +285,7 @@ impl TestClient {
         )
     }
 
-    pub fn package(name: &str, abi_version: Option<u8>) -> (Value, String) {
+    pub fn package(name: &str, abi_version: Option<u8>) -> (Abi, String) {
         (Self::abi(name, abi_version), Self::tvc(name, abi_version))
     }
 
@@ -503,48 +517,84 @@ impl TestClient {
             .unwrap()
     }
 
-    pub(crate) fn get_grams_from_giver(&self, account: &str, value: Option<u64>) {
-        let run_result: ResultOfRun = if Self::node_se() {
-            self.request(
-                "contracts.run",
-                ParamsOfRun {
-                    address: Self::giver_address().into(),
-                    call_set: RunFunctionCallSet {
-                        abi: Self::giver_abi(),
-                        function_name: "sendGrams".to_owned(),
-                        header: None,
-                        input: json!({
-                            "dest": account,
-                            "amount": value.unwrap_or(500_000_000u64)
-                        }),
-                    },
-                    key_pair: None,
-                    try_index: None,
-                },
+    pub(crate) async fn encode_message(
+        &self,
+        params: ParamsOfEncodeMessage,
+    ) -> ResultOfEncodeMessage {
+        let encode = self.wrap_async(
+            encode_message,
+            AbiModule::api(),
+            crate::abi::encode::encode_message_api(),
+        );
+        encode.call(params).await
+    }
+
+    pub(crate) async fn net_process_message(
+        &self,
+        params: ParamsOfProcessMessage,
+    ) -> TransactionOutput {
+        let process = self.wrap_async(
+            crate::processing::process_message,
+            ProcessingModule::api(),
+            crate::processing::process_message::process_message_api(),
+        );
+        process.call(params).await
+    }
+
+    pub(crate) async fn net_process_function(
+        &self,
+        address: String,
+        abi: Abi,
+        function_name: &str,
+        input: Value,
+        signer: Signer,
+    ) -> TransactionOutput {
+        self.net_process_message(ParamsOfProcessMessage {
+            message: MessageSource::AbiEncodingParams(ParamsOfEncodeMessage {
+                address: Some(address),
+                abi,
+                deploy_set: None,
+                call_set: Some(CallSet {
+                    header: None,
+                    function_name: function_name.into(),
+                    input: Some(input),
+                }),
+                processing_try_index: None,
+                signer,
+            }),
+            events_handler: None,
+        })
+        .await
+    }
+
+    pub(crate) async fn get_grams_from_giver(&self, account: &str, value: Option<u64>) {
+        let run_result = if Self::node_se() {
+            self.net_process_function(
+                Self::giver_address(),
+                Self::giver_abi(),
+                "sendGrams",
+                json!({
+                        "dest": account,
+                        "amount": value.unwrap_or(500_000_000u64)}),
+                Signer::None,
             )
         } else {
-            self.request(
-                "contracts.run",
-                ParamsOfRun {
-                    address: Self::wallet_address().into(),
-                    call_set: RunFunctionCallSet {
-                        abi: Self::giver_abi(),
-                        function_name: "sendTransaction".to_owned(),
-                        header: None,
-                        input: json!({
-                            "dest": account.to_string(),
-                            "value": value.unwrap_or(500_000_000u64),
-                            "bounce": false
-                        }),
-                    },
-                    key_pair: Self::wallet_keys(),
-                    try_index: None,
-                },
+            self.net_process_function(
+                Self::wallet_address(),
+                Self::giver_abi(),
+                "sendTransaction",
+                json!({
+                    "dest": account.to_string(),
+                    "value": value.unwrap_or(500_000_000u64),
+                    "bounce": false
+                }),
+                Signer::WithKeys(Self::wallet_keys().unwrap()),
             )
-        };
+        }
+        .await;
 
-        // wait for grams recieving
-        for message in run_result.transaction["out_messages"].as_array().unwrap() {
+        // wait for grams receiving
+        for message in run_result.out_messages.iter() {
             let message: ton_sdk::Message = serde_json::from_value(message.clone()).unwrap();
             if ton_sdk::MessageType::Internal == message.msg_type() {
                 let _: ResultOfWaitForCollection = self.request(
@@ -563,49 +613,35 @@ impl TestClient {
     }
 
     pub(crate) async fn get_grams_from_giver_async(&self, account: &str, value: Option<u64>) {
-        let run_result: ResultOfRun = if Self::node_se() {
-            self.request_async(
-                "contracts.run",
-                ParamsOfRun {
-                    address: Self::giver_address().into(),
-                    call_set: RunFunctionCallSet {
-                        abi: Self::giver_abi(),
-                        function_name: "sendGrams".to_owned(),
-                        header: None,
-                        input: json!({
-                            "dest": account,
-                            "amount": value.unwrap_or(500_000_000u64)
-                        }),
-                    },
-                    key_pair: None,
-                    try_index: None,
-                },
+        let run_result = if Self::node_se() {
+            self.net_process_function(
+                Self::giver_address(),
+                Self::giver_abi(),
+                "sendGrams",
+                json!({
+                    "dest": account,
+                    "amount": value.unwrap_or(500_000_000u64)
+                }),
+                Signer::None,
             )
             .await
         } else {
-            self.request_async(
-                "contracts.run",
-                ParamsOfRun {
-                    address: Self::wallet_address().into(),
-                    call_set: RunFunctionCallSet {
-                        abi: Self::giver_abi(),
-                        function_name: "sendTransaction".to_owned(),
-                        header: None,
-                        input: json!({
-                            "dest": account.to_string(),
-                            "value": value.unwrap_or(500_000_000u64),
-                            "bounce": false
-                        }),
-                    },
-                    key_pair: Self::wallet_keys(),
-                    try_index: None,
-                },
+            self.net_process_function(
+                Self::wallet_address(),
+                Self::giver_abi(),
+                "sendTransaction",
+                json!({
+                    "dest": account.to_string(),
+                    "value": value.unwrap_or(500_000_000u64),
+                    "bounce": false
+                }),
+                Signer::WithKeys(Self::wallet_keys().unwrap()),
             )
             .await
         };
 
         // wait for grams recieving
-        for message in run_result.transaction["out_messages"].as_array().unwrap() {
+        for message in run_result.out_messages.iter() {
             let message: ton_sdk::Message = serde_json::from_value(message.clone()).unwrap();
             if ton_sdk::MessageType::Internal == message.msg_type() {
                 let _: ResultOfWaitForCollection = self
@@ -625,31 +661,41 @@ impl TestClient {
         }
     }
 
-    pub(crate) fn deploy_with_giver(&self, params: ParamsOfDeploy, value: Option<u64>) -> String {
-        let msg: EncodedMessage = self.request("contracts.deploy.message", params.clone());
+    pub(crate) async fn deploy_with_giver(
+        &self,
+        params: ParamsOfEncodeMessage,
+        value: Option<u64>,
+    ) -> String {
+        let msg = self.encode_message(params.clone()).await;
 
-        self.get_grams_from_giver(&msg.address.unwrap(), value);
+        self.get_grams_from_giver(&msg.address, value);
 
-        let result: ResultOfDeploy = self.request("contracts.deploy", params);
-
-        result.address
+        let _ = self
+            .net_process_message(ParamsOfProcessMessage {
+                message: MessageSource::AbiEncodingParams(params.clone()),
+                events_handler: None,
+            })
+            .await;
+        msg.address
     }
 
     pub(crate) async fn deploy_with_giver_async(
         &self,
-        params: ParamsOfDeploy,
+        params: ParamsOfEncodeMessage,
         value: Option<u64>,
     ) -> String {
-        let msg: EncodedMessage = self
-            .request_async("contracts.deploy.message", params.clone())
+        let msg = self.encode_message(params.clone()).await;
+
+        self.get_grams_from_giver_async(&msg.address, value).await;
+
+        let _ = self
+            .net_process_message(ParamsOfProcessMessage {
+                message: MessageSource::AbiEncodingParams(params.clone()),
+                events_handler: None,
+            })
             .await;
 
-        self.get_grams_from_giver_async(&msg.address.unwrap(), value)
-            .await;
-
-        let result: ResultOfDeploy = self.request_async("contracts.deploy", params).await;
-
-        result.address
+        msg.address
     }
 
     pub(crate) fn generate_sign_keys(&self) -> KeyPair {
@@ -658,7 +704,7 @@ impl TestClient {
 
     pub fn sign_detached(&self, data: &str, keys: &KeyPair) -> String {
         let sign_keys: KeyPair = self.request(
-            "crypto.nacl_sign_keypair_from_secret",
+            "crypto.nacl_sign_keypair_from_secret_key",
             ParamsOfNaclSignKeyPairFromSecret {
                 secret: keys.secret.clone(),
             },

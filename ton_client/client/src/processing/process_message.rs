@@ -9,13 +9,13 @@ use crate::processing::{
 };
 use std::sync::Arc;
 
-#[derive(Serialize, Deserialize, TypeInfo, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Debug)]
 pub enum MessageSource {
     Encoded { message: String, abi: Option<Abi> },
     AbiEncodingParams(ParamsOfEncodeMessage),
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Debug)]
 pub struct ParamsOfProcessMessage {
     /// Message source.
     pub message: MessageSource,
@@ -26,8 +26,8 @@ pub struct ParamsOfProcessMessage {
 
 /// Sends message to the network and monitors network for a result of
 /// message processing.
-#[method_info(name = "processing.process_message")]
-pub(crate) async fn process_message_api(
+#[api_function]
+pub(crate) async fn process_message(
     context: Arc<ClientContext>,
     params: ParamsOfProcessMessage,
     callback: std::sync::Arc<Callback>,
@@ -42,7 +42,7 @@ pub(crate) async fn process_message_api(
 
 /// Sends message to the network and monitors network for a result of
 /// message processing.
-pub async fn process_message<F: futures::Future<Output = ()> + Send + Sync>(
+pub async fn process_message_rust<F: futures::Future<Output = ()> + Send + Sync>(
     context: Arc<ClientContext>,
     params: ParamsOfProcessMessage,
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync + 'static,
