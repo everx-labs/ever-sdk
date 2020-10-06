@@ -25,19 +25,20 @@ use crate::crypto::DEFAULT_HDKEY_COMPLIANT;
 
 //----------------------------------------------------------------- crypto.hdkey_xprv_from_mnemonic
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfHDKeyXPrvFromMnemonic {
     ///string with seed phrase
     pub phrase: String,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfHDKeyXPrvFromMnemonic {
     /// serialized extended master private key
     pub xprv: String,
 }
 
-#[doc(summary = "Generate the extended master private key that will be the root for all the derived keys")]
+/// Generate the extended master private key that will be the root for all the derived keys
+#[api_function]
 pub fn hdkey_xprv_from_mnemonic(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyXPrvFromMnemonic,
@@ -49,19 +50,20 @@ pub fn hdkey_xprv_from_mnemonic(
 
 //------------------------------------------------------------------- crypto.hdkey_secret_from_xprv
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfHDKeySecretFromXPrv {
     /// serialized extended private key
     pub xprv: String,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfHDKeySecretFromXPrv {
     /// private key
     pub secret: String,
 }
 
-#[doc(summary = "Extracts the private key from the serialized extended private key")]
+/// Extracts the private key from the serialized extended private key
+#[api_function]
 pub fn hdkey_secret_from_xprv(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeySecretFromXPrv,
@@ -73,19 +75,20 @@ pub fn hdkey_secret_from_xprv(
 
 //------------------------------------------------------------------- crypto.hdkey_public_from_xprv
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfHDKeyPublicFromXPrv {
     /// serialized extended private key
     pub xprv: String,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfHDKeyPublicFromXPrv {
     /// public key
     pub public: String,
 }
 
-#[doc(summary = "Extracts the public key from the serialized extended private key")]
+/// Extracts the public key from the serialized extended private key
+#[api_function]
 pub fn hdkey_public_from_xprv(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyPublicFromXPrv,
@@ -98,7 +101,7 @@ pub fn hdkey_public_from_xprv(
 
 //------------------------------------------------------------ crypto.hdkey_derive_from_xprv
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfHDKeyDeriveFromXPrv {
     /// serialized extended private key
     pub xprv: String,
@@ -108,7 +111,7 @@ pub struct ParamsOfHDKeyDeriveFromXPrv {
     pub hardened: bool,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfHDKeyDeriveFromXPrv {
     /// serialized extended private key
     pub xprv: String,
@@ -116,6 +119,7 @@ pub struct ResultOfHDKeyDeriveFromXPrv {
 
 #[doc(summary = "Derives the next child extended private key")]
 /// Returns derived extended private key derived from the specified extended private key and child index
+#[api_function]
 pub fn hdkey_derive_from_xprv(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyDeriveFromXPrv,
@@ -129,7 +133,7 @@ pub fn hdkey_derive_from_xprv(
 
 //-------------------------------------------------------------- crypto.hdkey_derive_from_xprv_path
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfHDKeyDeriveFromXPrvPath {
     /// serialized extended private key
     pub xprv: String,
@@ -137,7 +141,7 @@ pub struct ParamsOfHDKeyDeriveFromXPrvPath {
     pub path: String,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfHDKeyDeriveFromXPrvPath {
     /// derived serialized extended private key
     pub xprv: String,
@@ -145,6 +149,7 @@ pub struct ResultOfHDKeyDeriveFromXPrvPath {
 
 #[doc(summary = "Derives the exented private key from the specified key and path")]
 /// Derives the exented private key from the specified key and path
+#[api_function]
 pub fn hdkey_derive_from_xprv_path(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyDeriveFromXPrvPath,

@@ -20,29 +20,18 @@ use std::str::FromStr;
 
 //------------------------------------------------------------------------------------------------------
 
-pub(crate) fn method_api(name: &str) -> api_doc::api::Method {
-    api_doc::api::Method {
-        name: name.into(),
-        summary: None,
-        description: None,
-        params: vec![],
-        result: api_doc::api::Type::None {},
-        errors: None,
-    }
-}
-
 pub(crate) fn account_encode(value: &MsgAddressInt) -> String {
     value.to_string()
 }
 
-#[derive(Serialize, Deserialize, Debug, TypeInfo, Clone)]
+#[derive(Serialize, Deserialize, Debug, ApiType, Clone)]
 pub enum AccountAddressType {
     AccountId,
     Hex,
     Base64,
 }
 
-#[derive(Serialize, Deserialize, Debug, TypeInfo, Clone)]
+#[derive(Serialize, Deserialize, Debug, ApiType, Clone)]
 pub struct Base64AddressParams {
     pub url: bool,
     pub test: bool,

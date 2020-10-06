@@ -43,7 +43,7 @@ pub(crate) fn decode_abi_output(
     let mut out_messages = Vec::new();
     let mut output = None;
     for parsed_message in parsed_messages {
-        out_messages.push(match &parsed_message["boc"] {
+        let decoded = match &parsed_message["boc"] {
             Value::String(boc) => match decode_message(
                 context.clone(),
                 ParamsOfDecodeMessage {
@@ -60,7 +60,8 @@ pub(crate) fn decode_abi_output(
                 _ => None,
             },
             _ => None,
-        });
+        };
+        out_messages.push(decoded);
     }
     Ok(AbiDecodedOutput {
         out_messages,

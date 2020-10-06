@@ -24,13 +24,14 @@ use crate::crypto::internal;
 //------------------------------------------------------------------------ sign_keypair_from_secret
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfNaclSignKeyPairFromSecret {
     /// secret key
     pub secret: String,
 }
 
 /// Generates a key pair for signing from the secret key
+#[api_function]
 pub fn nacl_sign_keypair_from_secret_key(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfNaclSignKeyPairFromSecret,
@@ -48,7 +49,7 @@ pub fn nacl_sign_keypair_from_secret_key(
 //--------------------------------------------------------------------------------------- nacl_sign
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfNaclSign {
     /// Data that must be signed. Encoded with `base64`.
     pub unsigned: String,
@@ -56,13 +57,14 @@ pub struct ParamsOfNaclSign {
     pub secret: String,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfNaclSign {
     /// Signed data, encoded with `base64`.
     pub signed: String,
 }
 
 /// Signs data using the signer's secret key.
+#[api_function]
 pub fn nacl_sign(_context: std::sync::Arc<ClientContext>, params: ParamsOfNaclSign) -> ApiResult<ResultOfNaclSign> {
     let signed = sign(base64_decode(&params.unsigned)?, hex_decode(&params.secret)?)?;
     Ok(ResultOfNaclSign {
@@ -73,7 +75,7 @@ pub fn nacl_sign(_context: std::sync::Arc<ClientContext>, params: ParamsOfNaclSi
 //------------------------------------------------------------------------------ nacl_sign_detached
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfNaclSignDetached {
     /// Data that must be signed. Encoded with `base64`.
     pub unsigned: String,
@@ -81,12 +83,13 @@ pub struct ParamsOfNaclSignDetached {
     pub secret: String,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfNaclSignDetached {
     /// Hex encoded sign.
     pub signature: String,
 }
 
+#[api_function]
 pub fn nacl_sign_detached(_context: std::sync::Arc<ClientContext>, params: ParamsOfNaclSign) -> ApiResult<ResultOfNaclSignDetached> {
     let (_, signature) = internal::sign_using_secret(
         &base64_decode(&params.unsigned)?,
@@ -100,7 +103,7 @@ pub fn nacl_sign_detached(_context: std::sync::Arc<ClientContext>, params: Param
 //---------------------------------------------------------------------------------- nacl_sign_open
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfNaclSignOpen {
     /// Signed data that must be unsigned. Encoded with `base64`.
     pub signed: String,
@@ -108,12 +111,13 @@ pub struct ParamsOfNaclSignOpen {
     pub public: String,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfNaclSignOpen {
     /// Unsigned data, encoded with `base64`.
     pub unsigned: String,
 }
 
+#[api_function]
 pub fn nacl_sign_open(_context: std::sync::Arc<ClientContext>, params: ParamsOfNaclSignOpen) -> ApiResult<ResultOfNaclSignOpen> {
     let mut unsigned: Vec<u8> = Vec::new();
     let signed = base64_decode(&params.signed)?;
@@ -143,6 +147,7 @@ fn prepare_to_convert(input: &Vec<u8>, nonce: &Vec<u8>, key: &Vec<u8>, pad_len: 
 
 //-------------------------------------------------------------------------------- nacl_box_keypair
 
+#[api_function]
 pub fn nacl_box_keypair(_context: std::sync::Arc<ClientContext>) -> ApiResult<KeyPair> {
     let mut sk = [0u8; 32];
     let mut pk = [0u8; 32];
@@ -153,12 +158,13 @@ pub fn nacl_box_keypair(_context: std::sync::Arc<ClientContext>) -> ApiResult<Ke
 //-------------------------------------------------------------------- nacl_box_keypair_from_secret
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfNaclBoxKeyPairFromSecret {
     /// Hex encoded secret key.
     pub secret: String,
 }
 
+#[api_function]
 pub fn nacl_box_keypair_from_secret_key(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfNaclBoxKeyPairFromSecret,
@@ -175,7 +181,7 @@ pub fn nacl_box_keypair_from_secret_key(
 //---------------------------------------------------------------------------------------- nacl_box
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfNaclBox {
     /// Data that must be encrypted. Encoded with `base64`.
     pub decrypted: String,
@@ -184,12 +190,13 @@ pub struct ParamsOfNaclBox {
     pub secret: String,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfNaclBox {
     /// Encrypted data. Encoded with `base64`.
     pub encrypted: String,
 }
 
+#[api_function]
 pub fn nacl_box(_context: std::sync::Arc<ClientContext>, params: ParamsOfNaclBox) -> ApiResult<ResultOfNaclBox> {
     let (mut padded_output, padded_input, nonce, secret) =
         prepare_to_convert(
@@ -213,7 +220,7 @@ pub fn nacl_box(_context: std::sync::Arc<ClientContext>, params: ParamsOfNaclBox
 //----------------------------------------------------------------------------------- nacl_box_open
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfNaclBoxOpen {
     /// Data that must be decrypted. Encoded with `base64`.
     pub encrypted: String,
@@ -222,12 +229,13 @@ pub struct ParamsOfNaclBoxOpen {
     pub secret: String,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfNaclBoxOpen {
     /// Decrypted data. Encoded with `base64`.
     pub decrypted: String,
 }
 
+#[api_function]
 pub fn nacl_box_open(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfNaclBoxOpen,
@@ -255,7 +263,7 @@ pub fn nacl_box_open(
 //--------------------------------------------------------------------------------- nacl_secret_box
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfNaclSecretBox {
     /// Data that must be encrypted. Encoded with `base64`.
     pub decrypted: String,
@@ -263,6 +271,7 @@ pub struct ParamsOfNaclSecretBox {
     pub key: String,
 }
 
+#[api_function]
 pub fn nacl_secret_box(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfNaclSecretBox,
@@ -284,7 +293,7 @@ pub fn nacl_secret_box(
 //---------------------------------------------------------------------------- nacl_secret_box_open
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, TypeInfo)]
+#[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfNaclSecretBoxOpen {
     /// Data that must be decrypted. Encoded with `base64`.
     pub encrypted: String,
@@ -292,6 +301,7 @@ pub struct ParamsOfNaclSecretBoxOpen {
     pub key: String,
 }
 
+#[api_function]
 pub fn nacl_secret_box_open(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfNaclSecretBoxOpen,

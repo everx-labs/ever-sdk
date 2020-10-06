@@ -16,7 +16,7 @@ use serde_json::Value;
 use regex::{Regex, Captures};
 
 enum ParseState {
-    OptionOrMethodName,
+    OptionOrFunctionName,
     OptionValue,
     Parameters,
 }
@@ -87,23 +87,23 @@ fn include_json(json_ref: &str) -> Result<String, CliError> {
 
 fn main_internal() -> Result<(), CliError> {
     let mut network = "net.ton.dev".to_string();
-    let mut state = ParseState::OptionOrMethodName;
+    let mut state = ParseState::OptionOrFunctionName;
     let mut option = String::new();
-    let mut method = String::new();
+    let mut function = String::new();
     let mut parameters = String::new();
     let api = ton_client::get_api();
     for arg in env::args().skip(1) {
         match state {
-            ParseState::OptionOrMethodName if arg.starts_with("-") => {
+            ParseState::OptionOrFunctionName if arg.starts_with("-") => {
                 option = arg[1..].to_string();
                 state = ParseState::OptionValue
             }
-            ParseState::OptionOrMethodName if arg.starts_with("--") => {
+            ParseState::OptionOrFunctionName if arg.starts_with("--") => {
                 option = arg[2..].to_string();
                 state = ParseState::OptionValue
             }
-            ParseState::OptionOrMethodName => {
-                method = arg;
+            ParseState::OptionOrFunctionName => {
+                function = arg;
                 state = ParseState::Parameters
             }
             ParseState::OptionValue => {
@@ -113,7 +113,7 @@ fn main_internal() -> Result<(), CliError> {
                     }
                     _ => {}
                 }
-                state = ParseState::OptionOrMethodName
+                state = ParseState::OptionOrFunctionName
             }
             ParseState::Parameters => {
                 if !parameters.is_empty() {
@@ -138,32 +138,32 @@ fn main_internal() -> Result<(), CliError> {
         parameters = json.to_string();
     }
 
-    let method_names: Vec<String> = api.methods.iter().map(|x|x.name.clone()).collect();
-    if method.is_empty() {
+    let function_names: Vec<String> = api.methods.iter().map(|x|x.name.clone()).collect();
+    if function.is_empty() {
         return Err(CliError {
             message: format!(
-                "Method doesn't specified. Available methods are:\n{}",
-                method_names.join("\n")
+                "Function doesn't specified. Available functions are:\n{}",
+                function_names.join("\n")
             )
         });
     }
 
     let mut names = Vec::<String>::new();
-    for name in method_names {
-        if name == method {
+    for name in function_names {
+        if name == function {
             names.clear();
             names.push(name);
             break;
         }
-        if name.contains(method.as_str()) {
+        if name.contains(function.as_str()) {
             names.push(name);
         }
     }
     if names.is_empty() {
         return Err(CliError {
             message: format!(
-                "Unknown method [{}]. Available methods are:\n{}",
-                method,
+                "Unknown function [{}]. Available functions are:\n{}",
+                function,
                 names.join("\n")
             )
         });
@@ -171,15 +171,15 @@ fn main_internal() -> Result<(), CliError> {
     if names.len() > 1 {
         return Err(CliError {
             message: format!(
-                "Unknown method [{}]. May be you mean one of following:\n{}",
-                method,
+                "Unknown function [{}]. May be you mean one of following:\n{}",
+                function,
                 names.join("\n")
             )
         });
     }
-    if names[0] != method {
-        eprintln!("Unknown method [{}]. [{}] used instead.", method, names[0]);
-        method = names[0].clone();
+    if names[0] != function {
+        eprintln!("Unknown function [{}]. [{}] used instead.", function, names[0]);
+        function = names[0].clone();
     }
 
     let config = serde_json::json!({
@@ -195,7 +195,7 @@ fn main_internal() -> Result<(), CliError> {
 
     let context: ResultOfCreateContext = serde_json::from_str(&response.result_json)?;
 
-    let response = json_sync_request(context.handle, method, parameters);
+    let response = json_sync_request(context.handle, function, parameters);
     let result = if response.error_json.trim().is_empty() {
         println!("{}", reformat_json(&response.result_json)?);
         Ok(())

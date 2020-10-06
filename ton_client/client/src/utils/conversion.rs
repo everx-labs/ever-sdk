@@ -3,14 +3,14 @@ use crate::encoding::{account_decode, account_encode_ex, AccountAddressType, Bas
 use crate::error::ApiResult;
 use std::sync::Arc;
 
-#[derive(Serialize, Deserialize, Debug, TypeInfo, Clone)]
+#[derive(Serialize, Deserialize, Debug, ApiType, Clone)]
 pub enum AddressStringFormat {
     AccountId {},
     Hex {},
     Base64 { url: bool, test: bool, bounce: bool },
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Debug)]
 pub struct ParamsOfConvertAddress {
     /// Account address in any format.
     pub address: String,
@@ -18,7 +18,7 @@ pub struct ParamsOfConvertAddress {
     pub output_format: AddressStringFormat,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Debug)]
 pub struct ResultOfConvertAddress {
     /// address in the specified format
     pub address: String,
@@ -26,7 +26,7 @@ pub struct ResultOfConvertAddress {
 
 /// Sends message to the network and monitors network for a result of
 /// message processing.
-#[method_info(name = "utils.convert_address")]
+#[api_function]
 pub fn convert_address(
     _context: Arc<ClientContext>,
     params: ParamsOfConvertAddress,

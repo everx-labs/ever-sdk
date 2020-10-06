@@ -11,9 +11,9 @@
 * limitations under the License.
 */
 
-extern crate api_doc;
+extern crate api_info;
 #[macro_use]
-extern crate api_doc_derive;
+extern crate api_derive;
 #[macro_use]
 extern crate serde_json;
 #[macro_use]

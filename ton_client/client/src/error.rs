@@ -145,8 +145,8 @@ impl ApiError {
 
     // SDK Common
 
-    pub fn unknown_method(method: &String) -> ApiError {
-        sdk_err!(UnknownMethod, "Unknown method [{}]", method)
+    pub fn unknown_function(name: &String) -> ApiError {
+        sdk_err!(UnknownFunction, "Unknown function [{}]", name)
     }
 
     pub fn invalid_params<E: Display>(params_json: &str, err: E) -> Self {
@@ -636,7 +636,7 @@ impl ApiError {
 
 #[derive(Clone)]
 pub enum ApiSdkErrorCode {
-    UnknownMethod = 1,
+    UnknownFunction = 1,
     InvalidParams = 2,
     InvalidContextHandle = 3,
     CannotCreateRuntime = 4,

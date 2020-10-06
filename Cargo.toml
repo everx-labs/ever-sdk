@@ -3,7 +3,7 @@ members = [
     "ton_sdk",
     "ton_client/client",
     "ton_sdk_cli",
-    "api_doc/api_doc_test",
+    "api/test",
 ]
 
 exclude = [

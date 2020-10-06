@@ -11,8 +11,8 @@
 * limitations under the License.
 */
 
-use crate::client::ClientContext;
-use crate::dispatch::DispatchTable;
+use crate::client::{ClientContext};
+use crate::dispatch::{ModuleReg, Registrar};
 use crate::error::ApiResult;
 use crate::interop::JsonResponse;
 use futures::{FutureExt, StreamExt};
@@ -27,13 +27,13 @@ mod errors;
 pub use errors::{Error, ErrorCode};
 
 mod node_client;
+pub use node_client::{NetworkConfig, OrderBy, SortDirection};
 pub(crate) use node_client::{NodeClient, MAX_TIMEOUT};
-pub use node_client::{NetworkConfig, SortDirection, OrderBy};
 
 #[cfg(test)]
 mod tests;
 
-#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfQueryCollection {
     /// collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
@@ -47,13 +47,13 @@ pub struct ParamsOfQueryCollection {
     pub limit: Option<u32>,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfQueryCollection {
     /// objects that match provided criteria
     pub result: Vec<serde_json::Value>,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfWaitForCollection {
     /// collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
@@ -65,13 +65,13 @@ pub struct ParamsOfWaitForCollection {
     pub timeout: Option<u32>,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfWaitForCollection {
     /// first found object that match provided criteria
     pub result: serde_json::Value,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfSubscribeCollection {
     /// collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
@@ -83,14 +83,14 @@ pub struct ParamsOfSubscribeCollection {
     pub callback_id: u32,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfSubscribeCollection {
     /// handle to subscription. It then can be used in `get_next_subscription_data` function
     /// and must be closed with `unsubscribe`
     pub handle: u32,
 }
 
-#[derive(Serialize, Deserialize, TypeInfo, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfSubscription {
     /// first appeared object that match provided criteria
     pub result: serde_json::Value,
@@ -108,6 +108,7 @@ async fn extract_subscription_handle(handle: &u32) -> Option<Sender<bool>> {
     SUBSCRIPTIONS.lock().await.remove(handle)
 }
 
+#[api_function]
 pub async fn query_collection(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfQueryCollection,
@@ -123,19 +124,17 @@ pub async fn query_collection(
             None,
         )
         .await
-        .map_err(|err| {
-            Error::queries_query_failed(err).add_network_url(client)
-        })?;
+        .map_err(|err| Error::queries_query_failed(err).add_network_url(client))?;
 
-    let result = serde_json::from_value(result)
-        .map_err(|err| {
-            Error::queries_query_failed(format!("Can not parse result: {}", err))
-                .add_network_url(client)
-        })?;
+    let result = serde_json::from_value(result).map_err(|err| {
+        Error::queries_query_failed(format!("Can not parse result: {}", err))
+            .add_network_url(client)
+    })?;
 
     Ok(ResultOfQueryCollection { result })
 }
 
+#[api_function]
 pub async fn wait_for_collection(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfWaitForCollection,
@@ -149,13 +148,12 @@ pub async fn wait_for_collection(
             params.timeout,
         )
         .await
-        .map_err(|err| {
-            Error::queries_wait_for_failed(err).add_network_url(client)
-        })?;
+        .map_err(|err| Error::queries_wait_for_failed(err).add_network_url(client))?;
 
     Ok(ResultOfWaitForCollection { result })
 }
 
+#[api_function]
 pub async fn subscribe_collection(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfSubscribeCollection,
@@ -173,14 +171,11 @@ pub async fn subscribe_collection(
             &params.result,
         )
         .await
-        .map_err(|err| {
-            Error::queries_wait_for_failed(err).add_network_url(client)
-        })?;
+        .map_err(|err| Error::queries_wait_for_failed(err).add_network_url(client))?;
 
     let (sender, mut receiver) = channel(1);
 
     add_subscription_handle(handle, sender).await;
-
 
     // spawn thread which reads subscription stream and calls callback with data
     let context_copy = context.clone();
@@ -216,6 +211,7 @@ pub async fn subscribe_collection(
     Ok(ResultOfSubscribeCollection { handle })
 }
 
+#[api_function]
 pub async fn unsubscribe(
     _context: std::sync::Arc<ClientContext>,
     params: ResultOfSubscribeCollection,
@@ -227,9 +223,16 @@ pub async fn unsubscribe(
     Ok(())
 }
 
-pub(crate) fn register(handlers: &mut DispatchTable) {
-    handlers.spawn("net.query_collection", query_collection);
-    handlers.spawn("net.wait_for_collection", wait_for_collection);
-    handlers.spawn("net.subscribe_collection", subscribe_collection);
-    handlers.spawn("net.unsubscribe", unsubscribe);
+/// Network access.
+#[derive(ApiModule)]
+#[api_module(name = "net")]
+pub(crate) struct NetModule;
+
+impl ModuleReg for NetModule {
+    fn reg(reg: &mut Registrar) {
+        reg.async_f(query_collection, query_collection_api);
+        reg.async_f(wait_for_collection, wait_for_collection_api);
+        reg.async_f(subscribe_collection, subscribe_collection_api);
+        reg.async_f(unsubscribe, unsubscribe_api);
+    }
 }
