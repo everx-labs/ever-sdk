@@ -479,10 +479,10 @@ impl TestClient {
     pub(crate) async fn net_process_message(
         &self,
         params: ParamsOfProcessMessage,
-    ) -> ResultOfProcessMessage {
+    ) -> TransactionOutput {
         let process = self.wrap_async(
             crate::processing::process_message,
-            NetModule::api(),
+            ProcessingModule::api(),
             crate::processing::process_message::process_message_api(),
         );
         process.call(params).await
@@ -495,9 +495,9 @@ impl TestClient {
         function_name: &str,
         input: Value,
         signer: Signer,
-    ) -> ResultOfProcessMessage {
+    ) -> TransactionOutput {
         self.net_process_message(ParamsOfProcessMessage {
-            message: MessageSource::EncodingParams(ParamsOfEncodeMessage {
+            message: MessageSource::AbiEncodingParams(ParamsOfEncodeMessage {
                 address: Some(address),
                 abi,
                 deploy_set: None,
@@ -619,7 +619,7 @@ impl TestClient {
 
         let _ = self
             .net_process_message(ParamsOfProcessMessage {
-                message: MessageSource::EncodingParams(params.clone()),
+                message: MessageSource::AbiEncodingParams(params.clone()),
                 events_handler: None,
             })
             .await;
@@ -637,7 +637,7 @@ impl TestClient {
 
         let _ = self
             .net_process_message(ParamsOfProcessMessage {
-                message: MessageSource::EncodingParams(params.clone()),
+                message: MessageSource::AbiEncodingParams(params.clone()),
                 events_handler: None,
             })
             .await;
@@ -651,7 +651,7 @@ impl TestClient {
 
     pub fn sign_detached(&self, data: &str, keys: &KeyPair) -> String {
         let sign_keys: KeyPair = self.request(
-            "crypto.nacl_sign_keypair_from_secret",
+            "crypto.nacl_sign_keypair_from_secret_key",
             ParamsOfNaclSignKeyPairFromSecret {
                 secret: keys.secret.clone(),
             },

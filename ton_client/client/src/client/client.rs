@@ -27,6 +27,7 @@ use crate::boc::BocModule;
 use crate::client::{register_callback, ClientModule};
 use crate::crypto::CryptoModule;
 use crate::processing::ProcessingModule;
+use crate::utils::UtilsModule;
 use crate::tvm::TvmModule;
 
 lazy_static! {
@@ -61,6 +62,7 @@ fn create_handlers() -> DispatchTable {
     handlers.register::<AbiModule>();
     handlers.register::<BocModule>();
     handlers.register::<ProcessingModule>();
+    handlers.register::<UtilsModule>();
     handlers.register::<TvmModule>();
 
     #[cfg(feature = "node_interaction")]

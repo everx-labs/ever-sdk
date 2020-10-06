@@ -3,6 +3,7 @@ use crate::abi::internal::{
     add_sign_to_message, create_tvc_image, resolve_abi, result_of_encode_message,
 };
 use crate::abi::{Abi, Error, FunctionHeader, Signer, DEFAULT_WORKCHAIN};
+use crate::boc::get_boc_hash;
 use crate::client::ClientContext;
 use crate::encoding::{account_decode, account_encode, base64_decode, hex_decode};
 use crate::error::ApiResult;
@@ -60,11 +61,7 @@ fn resolve_header(
     let required = |name: &str| abi.header().iter().find(|x| x.name == name).is_some();
     Ok(Some(FunctionHeader {
         time: if required("time") {
-            Some(
-                header
-                    .map_or(None, |x| x.time)
-                    .unwrap_or_else(|| now),
-            )
+            Some(header.map_or(None, |x| x.time).unwrap_or_else(|| now))
         } else {
             None
         },
@@ -94,6 +91,20 @@ fn resolve_header(
     }))
 }
 
+fn header_to_string(header: &FunctionHeader) -> String {
+    let mut values = Vec::<String>::new();
+    if let Some(time) = header.time {
+        values.push(format!("\"time\": {}", time));
+    }
+    if let Some(expire) = header.expire {
+        values.push(format!("\"expire\": {}", expire));
+    }
+    if let Some(pubkey) = &header.pubkey {
+        values.push(format!("\"pubkey\": \"{}\"", pubkey));
+    }
+    format!("{{{}}}", values.join(","))
+}
+
 impl CallSet {
     fn to_function_call_set(
         &self,
@@ -113,9 +124,7 @@ impl CallSet {
         Ok(FunctionCallSet {
             abi: abi.to_string(),
             func: self.function_name.clone(),
-            header: header
-                .as_ref()
-                .map(|x| serde_json::to_string(x).unwrap_or("".into())),
+            header: header.as_ref().map(|x| header_to_string(x)),
             input: self
                 .input
                 .as_ref()
@@ -177,6 +186,9 @@ pub struct ResultOfEncodeMessage {
 
     /// Destination address.
     pub address: String,
+
+    /// Message id.
+    pub message_id: String,
 }
 
 fn required_public_key(public_key: Option<String>) -> ApiResult<String> {
@@ -197,7 +209,7 @@ fn encode_deploy(
     call_set: &CallSet,
     pubkey: Option<&str>,
     processing_try_index: Option<u8>,
-) -> ApiResult<(Vec<u8>, Vec<u8>, MsgAddressInt)> {
+) -> ApiResult<(Vec<u8>, Option<Vec<u8>>, MsgAddressInt)> {
     let address = image.msg_address(workchain);
     let unsigned = ton_sdk::Contract::get_deploy_message_bytes_for_signing(
         call_set.to_function_call_set(pubkey, processing_try_index, &context, &abi)?,
@@ -207,23 +219,22 @@ fn encode_deploy(
         processing_try_index,
     )
     .map_err(|err| abi::Error::encode_deploy_message_failed(err))?;
-    Ok((unsigned.message, unsigned.data_to_sign, address))
+    Ok((unsigned.message, Some(unsigned.data_to_sign), address))
 }
 
 fn encode_empty_deploy(
     image: ContractImage,
     workchain: i32,
-) -> ApiResult<(Vec<u8>, Vec<u8>, MsgAddressInt)> {
+) -> ApiResult<(Vec<u8>, Option<Vec<u8>>, MsgAddressInt)> {
     let address = image.msg_address(workchain);
     let message = ton_sdk::Contract::construct_deploy_message_no_constructor(image, workchain)
         .map_err(|x| abi::Error::encode_deploy_message_failed(x))?;
+
     Ok((
-        message
-            .serialize()
+        ton_sdk::Contract::serialize_message(&message)
             .map_err(|x| abi::Error::encode_deploy_message_failed(x))?
-            .data()
-            .into(),
-        Vec::new(),
+            .0,
+        None,
         address,
     ))
 }
@@ -235,20 +246,37 @@ fn encode_run(
     call_set: &CallSet,
     pubkey: Option<&str>,
     processing_try_index: Option<u8>,
-) -> ApiResult<(Vec<u8>, Vec<u8>, MsgAddressInt)> {
+) -> ApiResult<(Vec<u8>, Option<Vec<u8>>, MsgAddressInt)> {
     let address = params
         .address
         .as_ref()
         .ok_or(abi::Error::required_address_missing_for_encode_message())?;
     let address = account_decode(address)?;
-    let unsigned = ton_sdk::Contract::get_call_message_bytes_for_signing(
-        address.clone(),
-        call_set.to_function_call_set(pubkey, processing_try_index, &context, abi)?,
-        &context.config.abi,
-        processing_try_index,
-    )
-    .map_err(|err| abi::Error::encode_run_message_failed(err, &call_set.function_name))?;
-    Ok((unsigned.message, unsigned.data_to_sign, address))
+    Ok(match params.signer {
+        Signer::None => {
+            let message = ton_sdk::Contract::construct_call_message_json(
+                address.clone(),
+                call_set.to_function_call_set(pubkey, processing_try_index, &context, abi)?,
+                false,
+                None,
+                &context.config.abi,
+                processing_try_index,
+            )
+            .map_err(|err| abi::Error::encode_run_message_failed(err, &call_set.function_name))?;
+            (message.serialized_message, None, address)
+        }
+        _ => {
+            let unsigned = ton_sdk::Contract::get_call_message_bytes_for_signing(
+                address.clone(),
+                call_set.to_function_call_set(pubkey, processing_try_index, &context, abi)?,
+                &context.config.abi,
+                processing_try_index,
+            )
+            .map_err(|err| abi::Error::encode_run_message_failed(err, &call_set.function_name))?;
+
+            (unsigned.message, Some(unsigned.data_to_sign), address)
+        }
+    })
 }
 
 #[api_function]
@@ -257,7 +285,6 @@ pub async fn encode_message(
     params: ParamsOfEncodeMessage,
 ) -> ApiResult<ResultOfEncodeMessage> {
     let abi = resolve_abi(&params.abi)?;
-    trace!("-> abi.encode_deploy_message({:?})", params.clone());
 
     let public = params.signer.resolve_public_key()?;
     let (message, data_to_sign, address) = if let Some(deploy_set) = params.deploy_set {
@@ -295,13 +322,13 @@ pub async fn encode_message(
         return Err(abi::Error::missing_required_call_set_for_encode_message());
     };
 
-    trace!("<-");
     let (message, data_to_sign) =
-        result_of_encode_message(&abi, &message, &data_to_sign, &params.signer)?;
+        result_of_encode_message(&abi, message, data_to_sign, &params.signer)?;
     Ok(ResultOfEncodeMessage {
-        message,
+        message: base64::encode(&message),
         data_to_sign,
         address: account_encode(&address),
+        message_id: get_boc_hash(&message)?,
     })
 }
 
@@ -325,6 +352,7 @@ pub struct ParamsOfAttachSignature {
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfAttachSignature {
     pub message: String,
+    pub message_id: String,
 }
 
 #[api_function]
@@ -340,5 +368,6 @@ pub fn attach_signature(
     )?;
     Ok(ResultOfAttachSignature {
         message: base64::encode(&signed),
+        message_id: get_boc_hash(&signed)?,
     })
 }

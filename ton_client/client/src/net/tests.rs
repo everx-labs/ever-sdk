@@ -68,6 +68,7 @@ async fn ranges() {
 }
 
 #[test]
+#[ignore]
 fn wait_for() {
     let handle = std::thread::spawn(move || {
         let client = TestClient::new();

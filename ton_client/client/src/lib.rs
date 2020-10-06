@@ -32,6 +32,7 @@ pub mod abi;
 pub mod client;
 pub mod boc;
 pub mod processing;
+pub mod utils;
 
 #[cfg(feature = "node_interaction")]
 pub mod net;

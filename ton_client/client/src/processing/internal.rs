@@ -21,7 +21,8 @@ pub(crate) fn get_message_id(message: &ton_block::Message) -> ApiResult<String> 
 
 /// Increments `retries` and returns `true` if `retries` isn't reach `limit`.
 pub(crate) fn can_retry_more(retries: &mut u8, limit: i8) -> bool {
-    *retries = retries.checked_add(1).unwrap_or(*retries);
+    let old = retries.clone();
+    *retries = retries.checked_add(1).unwrap_or(old);
     limit < 0 || *retries <= limit as u8
 }
 
@@ -118,7 +119,7 @@ pub(crate) fn get_message_expiration_time(
     abi: Option<&Abi>,
     message: &str,
 ) -> ApiResult<Option<u64>> {
-    Ok(match abi {
+    let header = match abi {
         Some(abi) => crate::abi::decode_message(
             context.clone(),
             ParamsOfDecodeMessage {
@@ -126,10 +127,13 @@ pub(crate) fn get_message_expiration_time(
                 message: message.to_string(),
             },
         )
-        .map(|x| x.header)?,
+        .map(|x| x.header)
+        .unwrap_or_default(),
         None => None,
-    }
-    .as_ref()
-    .map_or(None, |x| x.expire)
-    .map(|x| x as u64 * 1000))
+    };
+    let time = header
+        .as_ref()
+        .map_or(None, |x| x.expire)
+        .map(|x| x as u64 * 1000);
+    Ok(time)
 }

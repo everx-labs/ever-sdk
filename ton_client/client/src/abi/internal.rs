@@ -2,7 +2,7 @@ use crate::abi::{Abi, Error, Signer};
 use crate::client;
 use crate::crypto::internal::{decode_public_key, sign_using_secret};
 use crate::encoding::hex_decode;
-use crate::error::{ApiResult};
+use crate::error::ApiResult;
 use serde_json::Value;
 use ton_sdk::ContractImage;
 
@@ -36,23 +36,20 @@ pub(crate) fn add_sign_to_message(
 
 pub(crate) fn result_of_encode_message(
     abi: &str,
-    message: &[u8],
-    data_to_sign: &[u8],
-    signing: &Signer,
-) -> ApiResult<(String, Option<String>)> {
-    let (message, data_to_sign) = if let Some(keys) = signing.resolve_keys()? {
-        let secret = hex_decode(&format!("{}{}", &keys.secret, &keys.public))?;
-        let (_, signature) = sign_using_secret(&data_to_sign, &secret)?;
-        let message =
-            add_sign_to_message(abi, &signature, Some(&hex_decode(&keys.public)?), &message)?;
-        (message, None)
-    } else {
-        (message.to_vec(), Some(data_to_sign))
-    };
-    Ok((
-        base64::encode(&message),
-        data_to_sign.map(|x| base64::encode(&x)),
-    ))
+    message: Vec<u8>,
+    data_to_sign: Option<Vec<u8>>,
+    signer: &Signer,
+) -> ApiResult<(Vec<u8>, Option<String>)> {
+    if let Some(keys) = signer.resolve_keys()? {
+        if let Some(data_to_sign) = data_to_sign {
+            let secret = hex_decode(&format!("{}{}", &keys.secret, &keys.public))?;
+            let (_, signature) = sign_using_secret(&data_to_sign, &secret)?;
+            let message =
+                add_sign_to_message(abi, &signature, Some(&hex_decode(&keys.public)?), &message)?;
+            return Ok((message, None));
+        }
+    }
+    Ok((message, data_to_sign.map(|x| base64::encode(&x))))
 }
 
 pub(crate) fn create_tvc_image(
