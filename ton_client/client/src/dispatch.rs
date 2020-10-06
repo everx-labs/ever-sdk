@@ -601,6 +601,22 @@ impl DispatchTable {
         );
     }
 
+    pub fn spawn_method_with_callback<P, R, F>(
+        &mut self,
+        api: fn() -> api_doc::api::Method,
+        handler: fn(context: std::sync::Arc<ClientContext>, params: P, callback: Arc<Callback>) -> F,
+    ) where
+        P: TypeInfo + Send + DeserializeOwned + 'static,
+        R: TypeInfo + Send + Serialize + 'static,
+        F: Send + Future<Output = ApiResult<R>> + 'static,
+    {
+        let api = api();
+        self.async_runners.insert(
+            api.name.clone(),
+            Box::new(SpawnHandlerCallback::new(api.clone(), handler)),
+        );
+    }
+
     #[cfg(feature = "node_interaction")]
     pub fn spawn_no_api<P, R, F>(
         &mut self,
@@ -639,9 +655,10 @@ impl DispatchTable {
         R: TypeInfo + Send + Serialize + 'static,
         F: Send + Future<Output = ApiResult<R>> + 'static,
     {
+        let api = Method::from_types::<P, R>(method);
         self.async_runners.insert(
             method.into(),
-            Box::new(SpawnHandlerCallback::new(method_api(method), handler)),
+            Box::new(SpawnHandlerCallback::new(api, handler)),
         );
     }
 

@@ -153,7 +153,7 @@ impl JsonResponse {
         if !self.result_json.is_empty() {
             on_result(request_id, self.result_json.as_str(), ResponseType::Success as u32, true)
         } else {
-            on_result(request_id, self.result_json.as_str(), ResponseType::Error as u32, true)
+            on_result(request_id, self.error_json.as_str(), ResponseType::Error as u32, true)
         }
     }
 }

@@ -26,6 +26,7 @@ use crate::{
         EncodedMessage,
     },
     crypto::KeyPair,
+    dispatch::Callback,
     error::{ApiError, ApiResult},
     net::{ParamsOfWaitForCollection, ResultOfWaitForCollection},
     tc_create_context, tc_destroy_context, JsonResponse,
@@ -100,12 +101,6 @@ impl TestRuntime {
         }
     }
 
-    fn gen_callback_id(&mut self) -> u32 {
-        let id = self.next_callback_id;
-        self.next_callback_id += 1;
-        id
-    }
-
     fn gen_request_id(&mut self) -> u32 {
         let id = self.next_request_id;
         self.next_request_id += 1;
@@ -128,7 +123,7 @@ extern "C" fn on_result(
     response_type: u32,
     finished: bool
 ) {
-    TestClient::on_result(request_id, params_json, response_type, finished)
+    TestClient::on_result(request_id, params_json.to_string(), response_type, finished)
 }
 
 pub struct AsyncFuncWrapper<'a, P, R> {
@@ -141,12 +136,42 @@ impl<'a, P: Serialize, R: DeserializeOwned> AsyncFuncWrapper<'a, P, R> {
     pub(crate) async fn call(&self, params: P) -> R {
         self.client.request_async(&self.name, params).await
     }
+
+    pub(crate) async fn call_with_callback<CF, CT, CR>(
+        &self,
+        params: P,
+        callback: impl Fn(CR, CT) -> CF + Send + Sync + 'static
+    ) -> R 
+    where 
+        CF: Future<Output = ()> + Send + Sync + 'static,
+        CT: FromPrimitive,
+        CR: DeserializeOwned
+    {
+        self.client.request_async_callback(&self.name, params, callback).await
+    }
 }
 
 impl TestClient {
     pub(crate) fn wrap_async<P, R, F>(
         self: &TestClient,
         _: fn(Arc<ClientContext>, P) -> F,
+        info: fn() -> api_doc::api::Method,
+    ) -> AsyncFuncWrapper<P, R>
+    where
+        P: Serialize,
+        R: DeserializeOwned,
+        F: Future<Output = ApiResult<R>>,
+    {
+        AsyncFuncWrapper {
+            client: self,
+            name: info().name,
+            p: std::marker::PhantomData::default(),
+        }
+    }
+
+    pub(crate) fn wrap_async_callback<P, R, F>(
+        self: &TestClient,
+        _: fn(Arc<ClientContext>, P, std::sync::Arc<Callback>) -> F,
         info: fn() -> api_doc::api::Method,
     ) -> AsyncFuncWrapper<P, R>
     where
@@ -211,9 +236,9 @@ impl TestClient {
 
     pub fn network_address() -> String {
         std::env::var("TON_NETWORK_ADDRESS")
-            //.unwrap_or("http://localhost".to_owned())
+            .unwrap_or("http://localhost".to_owned())
             //.unwrap_or("cinet.tonlabs.io".to_owned())
-            .unwrap_or("net.ton.dev".to_owned())
+            //.unwrap_or("net.ton.dev".to_owned())
     }
 
     pub fn node_se() -> bool {
@@ -324,24 +349,34 @@ impl TestClient {
         P: Serialize,
         R: DeserializeOwned,
     {
-        let params = serde_json::to_value(params)
-            .map_err(|err| ApiError::invalid_params("", err))
-            .unwrap();
+        let params = serde_json::to_value(params).unwrap();
         let result = self.request_json(method, params).unwrap();
-        serde_json::from_value(result)
-            .map_err(|err| ApiError::invalid_params("", err))
-            .unwrap()
+        serde_json::from_value(result).unwrap()
     }
 
     fn on_result(
         request_id: u32,
-        params_json: InteropString,
+        params_json: String,
         response_type: u32,
         finished: bool,
     ) {
-        tokio::runtime::Handle::current().enter(move || {
-            tokio::spawn(Self::on_result_async(request_id, params_json.to_string(), response_type, finished));
-        });
+        // we have to process callback in another thread because:
+        // 1. processing must be async because sender which resolves funtion result is async
+        // 2. `rt_handle.enter` function processes task in backgroud without ability to wait for its completion.
+        //  But we need to preserve the order of `on_result` calls processing, otherwise call with 
+        //  `finished` = true can be processed before previous call and remove callback handler
+        //  while it's still needed
+        // 3. `rt_handle.block_on` function can't be used in current thread because thread is in async 
+        //  context so we have spawn antoher thread and use `rt_handle.block_on` function there
+        //  and then wait for thread completion
+        let rt_handle = tokio::runtime::Handle::current();
+        std::thread::spawn(move || {
+            rt_handle.block_on(
+                Self::on_result_async(request_id, params_json.to_string(), response_type, finished)
+            );
+        })
+        .join()
+        .unwrap();
     }
 
     async fn on_result_async(
@@ -350,6 +385,7 @@ impl TestClient {
         response_type: u32,
         finished: bool,
     ) {
+        log::debug!("on_result response-type: {} params_json: {}", response_type, params_json);
         let requests =  &mut TEST_RUNTIME
             .lock()
             .await
@@ -441,13 +477,9 @@ impl TestClient {
         CT: FromPrimitive,
         CR: DeserializeOwned
     {
-        let params = serde_json::to_value(params)
-            .map_err(|err| ApiError::invalid_params("", err))
-            .unwrap();
+        let params = serde_json::to_value(params).unwrap();
         let result = self.request_json_async_callback(method, params, callback).await.unwrap();
-        serde_json::from_value(result)
-            .map_err(|err| ApiError::invalid_params("", err))
-            .unwrap()
+        serde_json::from_value(result).unwrap()
     }
 
     pub(crate) async fn request_json_async(&self, method: &str, params: Value) -> ApiResult<Value> {
@@ -462,47 +494,6 @@ impl TestClient {
     {
         let callback = |_: Value, _: u32| async { panic!("wrong response type") };
         self.request_async_callback(method, params, callback).await
-    }
-
-    pub(crate) fn register_callback<R: DeserializeOwned>(
-        &self,
-        callback: impl Fn(ApiResult<R>) + Send + Sync + 'static,
-    ) -> u32 {
-        let callback = move |result_json: String, error_json: String| {
-            let params = if !result_json.is_empty() {
-                Ok(serde_json::from_str(&result_json).unwrap())
-            } else {
-                Err(serde_json::from_str(&error_json).unwrap())
-            };
-            callback(params)
-        };
-        //let callback_id = TEST_RUNTIME.lock().await.gen_callback_id();
-        // TEST_RUNTIME
-        //     .lock()
-        //     .unwrap()
-        //     .callbacks
-        //     .insert(callback_id, Box::new(callback));
-        // unsafe {
-        //     tc_json_request(
-        //         self.context,
-        //         InteropString::from("client.register_callback"),
-        //         InteropString::from(""),
-        //         callback_id,
-        //         on_callback,
-        //     );
-        // };
-
-        //callback_id
-        123
-    }
-
-    pub(crate) fn unregister_callback(&self, callback_id: u32) {
-        let _: () = self.request(
-            "client.unregister_callback",
-            ParamsOfUnregisterCallback { callback_id },
-        );
-
-        //TEST_RUNTIME.lock().unwrap().callbacks.remove(&callback_id);
     }
 
     pub(crate) fn request_no_params<R: DeserializeOwned>(&self, method: &str) -> R {

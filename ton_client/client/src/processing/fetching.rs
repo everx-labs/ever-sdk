@@ -17,26 +17,26 @@ use ton_block::MsgAddressInt;
 use ton_sdk::types::TRANSACTIONS_TABLE_NAME;
 use ton_sdk::{Block};
 
-pub async fn fetch_next_shard_block(
+pub async fn fetch_next_shard_block<F: futures::Future<Output = ()> + Send + Sync>(
     context: &Arc<ClientContext>,
     params: &ParamsOfWaitForTransaction,
     address: &MsgAddressInt,
     block_id: &str,
     message_id: &str,
     timeout: u32,
+    callback: impl Fn(ProcessingEvent) -> F + Send + Sync,
 ) -> ApiResult<Block> {
     let mut retries: u8 = 0;
     let network_retries_timeout = resolve_network_retries_timeout(context);
     // Network retries loop
     loop {
         // Notify app about fetching next block
-        if let Some(cb) = &params.events_handler {
-            ProcessingEvent::WillFetchNextBlock {
+        if params.send_events {
+            callback(ProcessingEvent::WillFetchNextBlock {
                 shard_block_id: block_id.to_string(),
                 message_id: message_id.to_string(),
                 message: params.message.clone(),
-            }
-            .emit(&context, cb);
+            }).await;
         }
 
         // Fetch next block
@@ -46,14 +46,13 @@ pub async fn fetch_next_shard_block(
                 let error = Error::fetch_block_failed(err, &message_id, &block_id.to_string());
 
                 // Notify app about error
-                if let Some(cb) = &params.events_handler {
-                    ProcessingEvent::FetchNextBlockFailed {
+                if params.send_events {
+                    callback(ProcessingEvent::FetchNextBlockFailed {
                         shard_block_id: block_id.to_string(),
                         message_id: message_id.to_string(),
                         message: params.message.clone(),
                         error: error.clone(),
-                    }
-                    .emit(&context, cb)
+                    }).await;
                 }
 
                 // If network retries limit has reached, return error
@@ -107,13 +106,14 @@ impl TransactionBoc {
     }
 }
 
-pub async fn fetch_transaction_result(
+pub async fn fetch_transaction_result<F: futures::Future<Output = ()> + Send + Sync>(
     context: &Arc<ClientContext>,
     params: &ParamsOfWaitForTransaction,
     shard_block_id: &String,
     message_id: &str,
     transaction_id: &str,
     abi: &Option<Abi>,
+    callback: impl Fn(ProcessingEvent) -> F + Send + Sync,
 ) -> ApiResult<TransactionOutput> {
     let transaction_boc =
         fetch_transaction_boc(context, transaction_id, message_id, shard_block_id).await?;
@@ -135,13 +135,12 @@ pub async fn fetch_transaction_result(
             out_messages,
             abi_decoded,
         };
-        if let Some(cb) = &params.events_handler {
-            ProcessingEvent::TransactionReceived {
+        if params.send_events {
+            callback(ProcessingEvent::TransactionReceived {
                 message_id: message_id.to_string(),
                 message: params.message.clone(),
                 result: result.clone(),
-            }
-            .emit(&context, cb);
+            }).await;
         }
         Ok(result)
     }
