@@ -51,7 +51,7 @@ pub unsafe extern "C" fn tc_destroy_context(context: ContextHandle) {
 #[no_mangle]
 pub unsafe extern "C" fn tc_request(
     context: ContextHandle,
-    function: StringData,
+    function_name: StringData,
     params_json: StringData,
     request_id: u32,
     response_handler: ResponseHandler,
@@ -61,7 +61,7 @@ pub unsafe extern "C" fn tc_request(
     match context {
         Ok(context) => get_dispatcher().async_dispatch(
             context,
-            function.to_string(),
+            function_name.to_string(),
             params_json.to_string(),
             request_id,
             response_handler,
@@ -74,7 +74,7 @@ pub unsafe extern "C" fn tc_request(
 #[no_mangle]
 pub unsafe extern "C" fn tc_request_sync(
     context: ContextHandle,
-    function: StringData,
+    function_name: StringData,
     params_json: StringData,
 ) -> *const String {
     let context_handle = context;
@@ -83,7 +83,7 @@ pub unsafe extern "C" fn tc_request_sync(
         Ok(context) => {
             match get_dispatcher().sync_dispatch(
                 context,
-                function.to_string(),
+                function_name.to_string(),
                 params_json.to_string(),
             ) {
                 Ok(result_json) => serde_json::from_str(&result_json)

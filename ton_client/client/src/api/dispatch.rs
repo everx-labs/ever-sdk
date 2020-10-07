@@ -21,11 +21,11 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
+use crate::api::interop::ResponseHandler;
+use crate::{ResponseType, StringData};
 use api_info::{Module, API};
 #[cfg(feature = "node_interaction")]
 use std::future::Future;
-use crate::api::interop::ResponseHandler;
-use crate::{StringData, ResponseType};
 
 trait SyncHandler {
     fn handle(&self, context: Arc<ClientContext>, params_json: &str) -> ApiResult<String>;
@@ -253,10 +253,9 @@ where
 {
     fn handle(&self, context: Arc<ClientContext>, params_json: &str) -> ApiResult<String> {
         match parse_params(params_json) {
-            Ok(params) => {
-                let result = (self.handler)(context, params);
-                result.map(|x| serde_json::to_string(&x).unwrap())
-            }
+            Ok(params) => (self.handler)(context, params).and_then(|x| {
+                serde_json::to_string(&x).map_err(|err| Error::cannot_serialize_result(err))
+            }),
             Err(err) => Err(err),
         }
     }
@@ -315,12 +314,12 @@ impl ApiDispatcher {
     pub fn sync_dispatch(
         &self,
         context: Arc<ClientContext>,
-        name: String,
+        function_name: String,
         params_json: String,
     ) -> ApiResult<String> {
-        match self.sync_runners.get(&name) {
+        match self.sync_runners.get(&function_name) {
             Some(handler) => handler.handle(context, params_json.as_str()),
-            None => Err(ApiError::unknown_function(&name)),
+            None => Err(ApiError::unknown_function(&function_name)),
         }
     }
 
@@ -328,15 +327,15 @@ impl ApiDispatcher {
     pub fn async_dispatch(
         &self,
         context: Arc<ClientContext>,
-        function: String,
+        function_name: String,
         params_json: String,
         request_id: u32,
         response_handler: ResponseHandler,
     ) {
-        match self.async_runners.get(&function) {
+        match self.async_runners.get(&function_name) {
             Some(handler) => handler.handle(context, params_json, request_id, response_handler),
             None => Request::new(response_handler, request_id)
-                .finish_with_error(ApiError::unknown_function(&function)),
+                .finish_with_error(ApiError::unknown_function(&function_name)),
         }
     }
 
@@ -344,14 +343,14 @@ impl ApiDispatcher {
     pub fn async_dispatch(
         &self,
         context: Arc<ClientContext>,
-        function: String,
+        function_name: String,
         params_json: String,
         request_id: u32,
         response_handler: ResponseHandler,
     ) {
         Request::new(response_handler, request_id).finish_with(self.sync_dispatch(
             context,
-            function,
+            function_name,
             params_json,
         ));
     }
@@ -372,11 +371,11 @@ pub(crate) struct Registrar<'a> {
 }
 
 impl Registrar<'_> {
-    pub fn t<T: ApiType>(&mut self) {
+    pub fn api_type<T: ApiType>(&mut self) {
         self.module.types.push(T::api());
     }
 
-    pub fn async_f<P, R, F>(
+    pub fn api_async_fn<P, R, F>(
         &mut self,
         handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> F,
         api: fn() -> api_info::Function,
@@ -385,8 +384,8 @@ impl Registrar<'_> {
         R: ApiType + Send + Serialize + 'static,
         F: Send + Future<Output = ApiResult<R>> + 'static,
     {
-        self.t::<P>();
-        self.t::<R>();
+        self.api_type::<P>();
+        self.api_type::<R>();
         let function = api();
         let name = format!("{}.{}", self.module.name, function.name);
         self.module.functions.push(function);
@@ -405,7 +404,7 @@ impl Registrar<'_> {
         );
     }
 
-    pub fn async_f_callback<P, R, F>(
+    pub fn api_async_fn_with_callback<P, R, F>(
         &mut self,
         handler: fn(context: std::sync::Arc<ClientContext>, params: P, callback: Arc<Request>) -> F,
         api: fn() -> api_info::Function,
@@ -414,8 +413,8 @@ impl Registrar<'_> {
         R: ApiType + Send + Serialize + 'static,
         F: Send + Future<Output = ApiResult<R>> + 'static,
     {
-        self.t::<P>();
-        self.t::<R>();
+        self.api_type::<P>();
+        self.api_type::<R>();
         let function = api();
         let name = format!("{}.{}", self.module.name, function.name);
         self.module.functions.push(function);
@@ -424,7 +423,7 @@ impl Registrar<'_> {
             .insert(name.clone(), Box::new(SpawnHandlerCallback::new(handler)));
     }
 
-    pub fn f<P, R>(
+    pub fn api_sync_fn<P, R>(
         &mut self,
         handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> ApiResult<R>,
         api: fn() -> api_info::Function,
@@ -432,8 +431,8 @@ impl Registrar<'_> {
         P: ApiType + Send + DeserializeOwned + 'static,
         R: ApiType + Send + Serialize + 'static,
     {
-        self.t::<P>();
-        self.t::<R>();
+        self.api_type::<P>();
+        self.api_type::<R>();
         let function = api();
         let name = format!("{}.{}", self.module.name, function.name);
         self.module.functions.push(function);
@@ -451,14 +450,14 @@ impl Registrar<'_> {
         );
     }
 
-    pub fn f_no_args<R>(
+    pub fn api_sync_fn_without_args<R>(
         &mut self,
         handler: fn(context: std::sync::Arc<ClientContext>) -> ApiResult<R>,
         api: fn() -> api_info::Function,
     ) where
         R: ApiType + Send + Serialize + 'static,
     {
-        self.t::<R>();
+        self.api_type::<R>();
         let function = api();
         let name = format!("{}.{}", self.module.name, function.name);
         self.module.functions.push(function);
@@ -542,4 +541,3 @@ impl Drop for Request {
         (self.response_handler)(self.request_id, "".into(), ResponseType::Nop as u32, true)
     }
 }
-

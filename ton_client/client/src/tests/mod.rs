@@ -15,6 +15,8 @@ use super::{tc_destroy_string, tc_read_string, tc_request, tc_request_sync};
 use crate::abi::{
     encode_message, Abi, CallSet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
+use crate::api::dispatch::Request;
+use crate::api::interop::{ResponseType, StringData};
 use crate::api::{AbiModule, NetModule, ProcessingModule};
 use crate::client::{ClientContext, ContextHandle, Error};
 use crate::crypto::{
@@ -40,10 +42,12 @@ use tokio::sync::{
     mpsc::{channel, Sender},
     Mutex,
 };
-use crate::api::interop::{StringData, ResponseType};
-use crate::api::dispatch::Request;
 
 mod common;
+
+const DEFAULT_NETWORK_ADDRESS: &str = "http://localhost";
+// const DEFAULT_NETWORK_ADDRESS: &str = "cinet.tonlabs.io";
+// const DEFAULT_NETWORK_ADDRESS: &str = "net.ton.dev";
 
 const ROOT_CONTRACTS_PATH: &str = "src/tests/contracts/";
 const LOG_CGF_PATH: &str = "src/tests/log_cfg.yaml";
@@ -270,9 +274,7 @@ impl TestClient {
     }
 
     pub fn network_address() -> String {
-        std::env::var("TON_NETWORK_ADDRESS").unwrap_or("http://localhost".to_owned())
-        //.unwrap_or("cinet.tonlabs.io".to_owned())
-        //.unwrap_or("net.ton.dev".to_owned())
+        std::env::var("TON_NETWORK_ADDRESS").unwrap_or(DEFAULT_NETWORK_ADDRESS.into())
     }
 
     pub fn node_se() -> bool {
@@ -398,9 +400,7 @@ impl TestClient {
         if response_type == ResponseType::Success as u32 {
             request
                 .sender
-                .send(Ok(
-                    serde_json::from_str::<Value>(&params_json.to_string()).unwrap()
-                ))
+                .send(Ok(serde_json::from_str::<Value>(&params_json).unwrap()))
                 .await
                 .unwrap();
         } else if response_type == ResponseType::Error as u32 {
@@ -409,9 +409,13 @@ impl TestClient {
                 Err(err) => Error::callback_params_cant_be_converted_to_json(err),
             };
             request.sender.send(Err(err)).await.unwrap();
+        } else if response_type == ResponseType::Nop as u32 {
         } else if response_type >= ResponseType::Custom as u32 {
             (request.callback)(params_json.to_string(), response_type).await
+        } else {
+            panic!(format!("Unsupported response type: {}", response_type));
         }
+
         if finished {
             requests.remove(&request_id);
         }

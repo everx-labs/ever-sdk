@@ -26,12 +26,6 @@ lazy_static! {
     static ref CLIENT: Mutex<Client> = Mutex::new(Client::new());
 }
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
-pub struct ResultOfVersion {
-    /// core version
-    pub version: String,
-}
-
 pub type ContextHandle = u32;
 
 pub struct ClientContext {
@@ -44,10 +38,6 @@ pub struct ClientContext {
     pub(crate) async_runtime_handle: tokio::runtime::Handle,
     pub(crate) config: InternalClientConfig,
     pub(crate) env: Arc<dyn ClientEnv + Send + Sync>,
-}
-
-pub(crate) fn parse_params<P: DeserializeOwned>(params_json: &str) -> ApiResult<P> {
-    serde_json::from_str(params_json).map_err(|err| ApiError::invalid_params(params_json, err))
 }
 
 #[cfg(feature = "node_interaction")]
@@ -89,6 +79,10 @@ impl From<ClientConfig> for InternalClientConfig {
             abi: config.abi.unwrap_or_default(),
         }
     }
+}
+
+pub(crate) fn parse_params<P: DeserializeOwned>(params_json: &str) -> ApiResult<P> {
+    serde_json::from_str(params_json).map_err(|err| ApiError::invalid_params(params_json, err))
 }
 
 #[cfg(feature = "node_interaction")]

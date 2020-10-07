@@ -19,7 +19,7 @@ mod std_client_env;
 mod tests;
 
 pub use client::{
-    Client, ClientConfig, ClientContext, ContextHandle, CryptoConfig, ResultOfVersion,
+    Client, ClientConfig, ClientContext, ContextHandle, CryptoConfig,
 };
 pub use errors::{Error, ErrorCode};
 
@@ -28,6 +28,12 @@ pub(crate) use client_env::{ClientEnv, FetchMethod, FetchResult, WebSocket};
 
 use crate::error::ApiResult;
 use std::sync::Arc;
+
+#[derive(Serialize, Deserialize, ApiType, Clone)]
+pub struct ResultOfVersion {
+    /// core version
+    pub version: String,
+}
 
 #[api_function]
 pub fn version(_context: Arc<ClientContext>) -> ApiResult<ResultOfVersion> {
