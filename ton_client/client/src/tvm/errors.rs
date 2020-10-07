@@ -103,7 +103,7 @@ impl Error {
         });
 
         if let Some(error_code) = ExceptionCode::from_usize(exit_code as usize)
-            .or(ExceptionCode::from_usize(-exit_code as usize))
+            .or(ExceptionCode::from_usize(!exit_code as usize))
         {
             if error_code == ExceptionCode::OutOfGas {
                 data["tip"] = "Check account balance".into();

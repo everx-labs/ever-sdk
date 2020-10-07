@@ -45,7 +45,7 @@ async fn test_wait_message() {
         .encode_message(ParamsOfEncodeMessage {
             abi: abi.clone(),
             address: None,
-            deploy_set: DeploySet::some(events_tvc.clone()),
+            deploy_set: DeploySet::some_with_tvc(events_tvc.clone()),
             call_set: Some(CallSet {
                 function_name: "constructor".into(),
                 header: Some(FunctionHeader {
@@ -142,7 +142,7 @@ async fn test_process_message() {
         .encode_message(ParamsOfEncodeMessage {
             abi: abi.clone(),
             address: None,
-            deploy_set: DeploySet::some(events_tvc.clone()),
+            deploy_set: DeploySet::some_with_tvc(events_tvc.clone()),
             call_set: Some(CallSet {
                 function_name: "constructor".into(),
                 header: Some(FunctionHeader {
@@ -223,7 +223,7 @@ async fn test_process_message() {
                 abi: abi.clone(),
                 address: Some(encoded.address.clone()),
                 deploy_set: None,
-                call_set: CallSet::some_with_input(
+                call_set: CallSet::some_with_function_and_input(
                     "returnValue",
                     json!({
                         "id": "0x1"

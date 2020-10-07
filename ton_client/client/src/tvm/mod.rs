@@ -20,6 +20,7 @@ mod types;
 
 #[cfg(test)]
 mod tests;
+mod stack;
 
 pub use errors::{Error, ErrorCode};
 pub use execute_get::{execute_get, ParamsOfExecuteGet, ResultOfExecuteGet};

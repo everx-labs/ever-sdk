@@ -15,7 +15,6 @@ use serde_json::Value;
 
 use ton_sdk::Contract;
 
-use super::types::stack_serialization;
 use crate::client::ClientContext;
 use crate::encoding::base64_decode;
 use crate::error::ApiResult;
@@ -24,6 +23,7 @@ use crate::tvm::Error;
 use std::sync::Arc;
 use ton_vm::stack::integer::IntegerData;
 use ton_vm::stack::{Stack, StackItem};
+use super::stack;
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfExecuteGet {
@@ -57,10 +57,10 @@ pub fn execute_get(
     if let Some(input) = params.input {
         if let Value::Array(array) = input {
             for value in array.iter() {
-                stack_in.push(stack_serialization::deserialize_item(value)?);
+                stack_in.push(stack::deserialize_item(value)?);
             }
         } else {
-            stack_in.push(stack_serialization::deserialize_item(&input)?);
+            stack_in.push(stack::deserialize_item(&input)?);
         }
     }
 
@@ -82,6 +82,6 @@ pub fn execute_get(
     ).map_err(|err|Error::unknown_execution_error(err))?;
 
     Ok(ResultOfExecuteGet {
-        output: stack_serialization::serialize_items(stack_out.iter())?,
+        output: stack::serialize_items(stack_out.iter())?,
     })
 }

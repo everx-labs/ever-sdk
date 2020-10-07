@@ -28,7 +28,7 @@ pub struct DeploySet {
 }
 
 impl DeploySet {
-    pub fn some(tvc: String) -> Option<Self> {
+    pub fn some_with_tvc(tvc: String) -> Option<Self> {
         Some(Self {
             tvc,
             workchain_id: None,
@@ -54,14 +54,14 @@ pub struct CallSet {
 }
 
 impl CallSet {
-    pub fn some(function: &str) -> Option<Self> {
+    pub fn some_with_function(function: &str) -> Option<Self> {
         Some(Self {
             function_name: function.into(),
             header: None,
             input: None,
         })
     }
-    pub fn some_with_input(function: &str, input: Value) -> Option<Self> {
+    pub fn some_with_function_and_input(function: &str, input: Value) -> Option<Self> {
         Some(Self {
             function_name: function.into(),
             input: Some(input),

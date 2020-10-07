@@ -143,31 +143,31 @@ impl ExecutionOutput {
         };
         Ok(ResultOfExecuteMessage {
             out_messages,
-            transaction: if let Some(transaction) = &self.transaction {
-                Some(parse_object(
-                    context,
-                    transaction,
-                    "transaction",
-                    parse_transaction,
-                )?)
-            } else {
-                None
-            },
-            account: if let Some(cell) = &self.account {
-                Some(
-                    parse_account(
-                        context.clone(),
-                        ParamsOfParse {
-                            boc: serialize_cell_to_base64(&cell, "account")?,
-                        },
-                    )?
-                    .parsed,
-                )
-            } else {
-                None
-            },
+            transaction: self.convert_transaction(context)?,
+            account: self.convert_account(context)?,
             decoded,
         })
+    }
+
+    fn convert_transaction(&self, context: &Arc<ClientContext>) -> ApiResult<Option<Value>> {
+        self.transaction
+            .as_ref()
+            .map(|x| parse_object(context, x, "transaction", parse_transaction))
+            .transpose()
+    }
+
+    fn convert_account(&self, context: &Arc<ClientContext>) -> ApiResult<Option<Value>> {
+        self.account
+            .as_ref()
+            .map(|x| { 
+                parse_account(
+                    context.clone(),
+                    ParamsOfParse {
+                        boc: serialize_cell_to_base64(x, "account")?,
+                    },
+                ).map(|parsed| parsed.parsed)
+            })
+            .transpose()
     }
 
     fn convert_out_messages(&self, context: &Arc<ClientContext>) -> ApiResult<Vec<Value>> {
