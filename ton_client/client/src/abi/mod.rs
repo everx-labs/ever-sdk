@@ -11,13 +11,11 @@
 * limitations under the License.
 */
 
-use crate::dispatch::{ModuleReg, Registrar};
-
 #[cfg(test)]
 mod tests;
 
 mod abi;
-mod decode;
+pub(crate) mod decode;
 pub(crate) mod encode;
 mod errors;
 mod internal;
@@ -33,23 +31,3 @@ pub use errors::{Error, ErrorCode};
 pub use signing::Signer;
 
 pub const DEFAULT_WORKCHAIN: i32 = 0;
-
-/// Functions for encoding and decoding messages due to ABI
-/// specification.
-#[derive(ApiModule)]
-#[api_module(name = "abi")]
-pub(crate) struct AbiModule;
-
-impl ModuleReg for AbiModule {
-    fn reg(reg: &mut Registrar) {
-        reg.t::<Abi>();
-        reg.t::<AbiHandle>();
-        reg.t::<FunctionHeader>();
-        reg.t::<CallSet>();
-        reg.t::<DeploySet>();
-
-        reg.async_f(encode_message, encode::encode_message_api);
-        reg.f(attach_signature, encode::attach_signature_api);
-        reg.f(decode_message, decode::decode_message_api);
-    }
-}

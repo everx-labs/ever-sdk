@@ -5,12 +5,13 @@ use crate::abi::{
 use crate::processing::{
     send_message, wait_for_transaction,
     MessageSource, ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction,
-    ProcessingEvent, ProcessingModule, ProcessingResponseType
+    ProcessingEvent, ProcessingResponseType
 };
 
 use crate::processing::types::DecodedOutput;
 use crate::tests::{TestClient, EVENTS};
 use api_info::ApiModule;
+use crate::api::ProcessingModule;
 
 #[tokio::test(core_threads = 2)]
 async fn test_wait_message() {

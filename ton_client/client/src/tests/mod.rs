@@ -15,20 +15,18 @@ use super::InteropContext;
 use super::{tc_destroy_json_response, tc_read_json_response};
 use super::{tc_json_request, tc_json_request_sync, InteropString};
 use crate::abi::{
-    encode_message, Abi, AbiModule, CallSet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
+    encode_message, Abi, CallSet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
 use crate::client::{ClientContext, ResponseType};
 use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
-use crate::net::NetModule;
 use crate::processing::{
-    MessageSource, ParamsOfProcessMessage, ProcessingModule, ResultOfProcessMessage,
+    MessageSource, ParamsOfProcessMessage, ResultOfProcessMessage,
 };
 use crate::{
     client::ResultOfCreateContext,
     crypto::KeyPair,
-    dispatch::Callback,
     error::{ApiError, ApiResult},
     net::{ParamsOfWaitForCollection, ResultOfWaitForCollection},
     tc_create_context, tc_destroy_context, JsonResponse,

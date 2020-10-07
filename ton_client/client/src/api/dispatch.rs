@@ -1,17 +1,17 @@
 /*
-* Copyright 2018-2020 TON DEV SOLUTIONS LTD.
-*
-* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
-* this file except in compliance with the License.
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific TON DEV software governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2018-2020 TON DEV SOLUTIONS LTD.
+ *
+ * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+ * this file except in compliance with the License.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific TON DEV software governing permissions and
+ * limitations under the License.
+ *
+ */
 
-use super::JsonResponse;
 use crate::client::{ExternalCallback, ClientContext, ResponseType};
 use crate::error::{ApiError, ApiResult};
 use api_info::{ApiModule, ApiType};
@@ -24,6 +24,7 @@ use std::sync::Arc;
 use api_info::{Module, API};
 #[cfg(feature = "node_interaction")]
 use std::future::Future;
+use crate::JsonResponse;
 
 impl JsonResponse {
     pub(crate) fn from_result(result_json: String) -> Self {
@@ -71,7 +72,7 @@ trait AsyncHandler {
     );
 }
 
-pub(crate) struct DispatchTable {
+pub(crate) struct ApiDispatcher {
     pub(crate) api: API,
 
     sync_runners: HashMap<String, Box<dyn SyncHandler + Sync>>,
@@ -384,9 +385,9 @@ where
     }
 }
 
-impl DispatchTable {
-    pub fn new() -> DispatchTable {
-        DispatchTable {
+impl ApiDispatcher {
+    pub fn new() -> ApiDispatcher {
+        ApiDispatcher {
             api: API {
                 version: "1.0.0".into(),
                 modules: vec![],
@@ -449,7 +450,7 @@ impl DispatchTable {
 
 pub(crate) struct Registrar<'a> {
     module: Module,
-    dispatcher: &'a mut DispatchTable,
+    dispatcher: &'a mut ApiDispatcher,
 }
 
 impl Registrar<'_> {

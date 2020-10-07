@@ -1,6 +1,5 @@
 use crate::abi::Abi;
 use crate::client::ClientContext;
-use crate::dispatch::Callback;
 use crate::encoding::base64_decode;
 use crate::error::{ApiResult};
 use crate::processing::internal::{get_message_expiration_time, get_message_id};

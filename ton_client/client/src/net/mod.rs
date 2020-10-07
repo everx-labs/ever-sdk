@@ -12,7 +12,6 @@
 */
 
 use crate::client::ClientContext;
-use crate::dispatch::{Callback, ModuleReg, Registrar};
 use crate::error::ApiResult;
 use futures::{Future, FutureExt, StreamExt};
 use rand::RngCore;
@@ -225,18 +224,4 @@ pub async fn unsubscribe(
     }
 
     Ok(())
-}
-
-/// Network access.
-#[derive(ApiModule)]
-#[api_module(name = "net")]
-pub(crate) struct NetModule;
-
-impl ModuleReg for NetModule {
-    fn reg(reg: &mut Registrar) {
-        reg.async_f(query_collection, query_collection_api);
-        reg.async_f(wait_for_collection, wait_for_collection_api);
-        reg.async_f(unsubscribe, unsubscribe_api);
-        reg.async_f_callback(subscribe_collection, subscribe_collection_api);
-    }
 }

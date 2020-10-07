@@ -1,5 +1,5 @@
 use crate::tests::TestClient;
-use crate::utils::{convert_address, AddressStringFormat, ParamsOfConvertAddress, UtilsModule};
+use crate::utils::{convert_address, AddressStringFormat, ParamsOfConvertAddress};
 use api_info::ApiModule;
 
 #[tokio::test(core_threads = 2)]

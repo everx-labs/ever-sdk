@@ -1,6 +1,5 @@
 use crate::abi::{Abi, ParamsOfEncodeMessage};
 use crate::client::ClientContext;
-use crate::dispatch::Callback;
 use crate::error::ApiResult;
 use crate::processing::internal::can_retry_expired_message;
 use crate::processing::{send_message_rust, wait_for_transaction_rust, Error, ErrorCode, ParamsOfSendMessage, ParamsOfWaitForTransaction, ProcessingEvent, ProcessingResponseType, ResultOfProcessMessage};

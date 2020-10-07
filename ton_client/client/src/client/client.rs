@@ -11,27 +11,19 @@
 * limitations under the License.
 */
 
-use crate::dispatch::DispatchTable;
 use crate::error::ApiResult;
 use crate::{InteropContext, JsonResponse};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
 use ton_sdk::AbiConfig;
 
-use crate::net::{NetModule, NetworkConfig, NodeClient};
+use crate::net::{NetworkConfig, NodeClient};
 
 use super::std_client_env::StdClientEnv;
 use super::{ClientEnv, Error};
-use crate::abi::AbiModule;
-use crate::boc::BocModule;
-use crate::client::ClientModule;
-use crate::crypto::CryptoModule;
-use crate::processing::ProcessingModule;
-use crate::utils::UtilsModule;
-use crate::tvm::TvmModule;
+use crate::api::dispatch::parse_params;
 
 lazy_static! {
-    static ref HANDLERS: DispatchTable = create_handlers();
     static ref CLIENT: Mutex<Client> = Mutex::new(Client::new());
 }
 
@@ -43,11 +35,6 @@ pub enum ResponseType {
 }
 
 pub type ExternalCallback = dyn Fn(u32, &str, u32, bool) + Send + Sync;
-
-pub(crate) fn get_handlers() -> &'static DispatchTable {
-    return &HANDLERS;
-}
-
 pub type Callback = dyn Fn(u32, &str, &str, u32) + Send + Sync;
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
@@ -60,42 +47,6 @@ pub struct ResultOfVersion {
 pub struct ParamsOfUnregisterCallback {
     /// Registered callback ID
     pub callback_id: u32,
-}
-
-fn create_handlers() -> DispatchTable {
-    let mut handlers = DispatchTable::new();
-
-
-    handlers.register::<ClientModule>();
-    handlers.register::<CryptoModule>();
-    handlers.register::<AbiModule>();
-    handlers.register::<BocModule>();
-    handlers.register::<ProcessingModule>();
-    handlers.register::<UtilsModule>();
-    handlers.register::<TvmModule>();
-
-    #[cfg(feature = "node_interaction")]
-    handlers.register::<NetModule>();
-
-    handlers
-}
-
-fn sync_request(
-    context: std::sync::Arc<ClientContext>,
-    function: String,
-    params_json: String,
-) -> JsonResponse {
-    HANDLERS.sync_dispatch(context, function, params_json)
-}
-
-fn async_request(
-    context: std::sync::Arc<ClientContext>,
-    function: String,
-    params_json: String,
-    request_id: u32,
-    on_result: Box<ExternalCallback>,
-) {
-    HANDLERS.async_dispatch(context, function, params_json, request_id, on_result)
 }
 
 pub struct ClientContext {
@@ -247,7 +198,7 @@ impl Client {
 
     #[cfg(feature = "node_interaction")]
     fn create_context_internal(&mut self, config_str: String) -> ApiResult<ResultOfCreateContext> {
-        let config: ClientConfig = crate::dispatch::parse_params(&config_str)?;
+        let config: ClientConfig = parse_params(&config_str)?;
 
         let handle = self.next_context_handle;
         self.next_context_handle = handle.wrapping_add(1);
