@@ -48,17 +48,16 @@ pub struct ProcessingModule;
 
 impl ModuleReg for ProcessingModule {
     fn reg(reg: &mut Registrar) {
-        reg.t::<CallbackParams>();
         reg.t::<MessageSource>();
         reg.t::<ProcessingEvent>();
         reg.t::<ResultOfProcessMessage>();
         reg.t::<DecodedOutput>();
 
-        reg.async_f(send_message, send_message::send_message_api);
-        reg.async_f(
+        reg.async_f_callback(send_message, send_message::send_message_api);
+        reg.async_f_callback(
             wait_for_transaction,
             wait_for_transaction::wait_for_transaction_api,
         );
-        reg.async_f(process_message, process_message::process_message_api);
+        reg.async_f_callback(process_message, process_message::process_message_api);
     }
 }

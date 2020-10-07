@@ -20,8 +20,9 @@ mod tests;
 
 pub use api::get_api;
 pub use client::{
-    create_context, Callback, Client, ClientConfig, ClientContext, CryptoConfig,
-    ParamsOfUnregisterCallback, ResultOfCreateContext, ResultOfVersion,
+    Client, ClientConfig, ClientContext, CryptoConfig, ExternalCallback, ResultOfCreateContext,
+    ResultOfVersion, ResponseType,
+    create_context,
 };
 pub use errors::{Error, ErrorCode};
 
@@ -31,24 +32,6 @@ use crate::dispatch::{ModuleReg, Registrar};
 use crate::error::ApiResult;
 use serde_json::Value;
 use std::sync::Arc;
-
-pub fn register_callback(
-    context: std::sync::Arc<ClientContext>,
-    _params_json: String,
-    request_id: u32,
-    on_result: Box<Callback>,
-) {
-    context.callbacks.insert(request_id, on_result.into());
-}
-
-#[api_function]
-pub fn unregister_callback(
-    context: std::sync::Arc<ClientContext>,
-    params: ParamsOfUnregisterCallback,
-) -> ApiResult<()> {
-    context.callbacks.remove(&params.callback_id);
-    Ok(())
-}
 
 /// BOC manipulation module.
 #[derive(ApiType, Serialize)]
@@ -79,6 +62,5 @@ impl ModuleReg for ClientModule {
     fn reg(reg: &mut Registrar) {
         reg.f_no_args(get_api_reference, get_api_reference_api);
         reg.f_no_args(version, version_api);
-        reg.f(unregister_callback, unregister_callback_api);
     }
 }

@@ -15,6 +15,18 @@ async fn main() {
 
     let context = std::sync::Arc::new(context);
 
+    let result = ton_client::net::test(
+        context.clone(),
+        ton_client::net::ResultOfSubscribeCollection {
+            handle: 123
+        },
+        |result, flags|  { async move {
+            println!("flags {}", flags);
+        }}
+    ).await;
+
+    return;
+
     let giver_balance = ton_client::net::query_collection(
         context.clone(),
         ton_client::net::ParamsOfQueryCollection {
@@ -58,12 +70,12 @@ async fn main() {
         }
     };
 
-    ton_client::client::register_callback(
-        context.clone(),
-        String::new(),
-        123,
-        Box::new(callback)
-    );
+    // ton_client::client::register_callback(
+    //     context.clone(),
+    //     String::new(),
+    //     123,
+    //     Box::new(callback)
+    // );
 
     let subscription = ton_client::net::subscribe_collection(
         context.clone(),
@@ -86,10 +98,10 @@ async fn main() {
         .await
         .unwrap();
 
-    ton_client::client::unregister_callback(
-        context.clone(),
-        ton_client::client::ParamsOfUnregisterCallback {
-            callback_id: 123
-        }
-    ).unwrap();
+    // ton_client::client::unregister_callback(
+    //     context.clone(),
+    //     ton_client::client::ParamsOfUnregisterCallback {
+    //         callback_id: 123
+    //     }
+    // ).unwrap();
 }

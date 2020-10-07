@@ -24,7 +24,7 @@ use super::std_client_env::StdClientEnv;
 use super::{ClientEnv, Error};
 use crate::abi::AbiModule;
 use crate::boc::BocModule;
-use crate::client::{register_callback, ClientModule};
+use crate::client::ClientModule;
 use crate::crypto::CryptoModule;
 use crate::processing::ProcessingModule;
 use crate::utils::UtilsModule;
@@ -34,6 +34,15 @@ lazy_static! {
     static ref HANDLERS: DispatchTable = create_handlers();
     static ref CLIENT: Mutex<Client> = Mutex::new(Client::new());
 }
+
+#[derive(Serialize, Deserialize, Clone, num_derive::FromPrimitive)]
+pub enum ResponseType {
+    Success = 0,
+    Error = 1,
+    Nop = 2,
+}
+
+pub type ExternalCallback = dyn Fn(u32, &str, u32, bool) + Send + Sync;
 
 pub(crate) fn get_handlers() -> &'static DispatchTable {
     return &HANDLERS;
@@ -55,7 +64,7 @@ pub struct ParamsOfUnregisterCallback {
 
 fn create_handlers() -> DispatchTable {
     let mut handlers = DispatchTable::new();
-    handlers.call_raw_async("client.register_callback", register_callback);
+
 
     handlers.register::<ClientModule>();
     handlers.register::<CryptoModule>();
@@ -84,7 +93,7 @@ fn async_request(
     function: String,
     params_json: String,
     request_id: u32,
-    on_result: Box<Callback>,
+    on_result: Box<ExternalCallback>,
 ) {
     HANDLERS.async_dispatch(context, function, params_json, request_id, on_result)
 }
@@ -99,7 +108,7 @@ pub struct ClientContext {
     #[cfg(feature = "node_interaction")]
     pub(crate) async_runtime_handle: tokio::runtime::Handle,
     pub(crate) config: InternalClientConfig,
-    pub(crate) callbacks: lockfree::map::Map<u32, std::sync::Arc<Callback>>,
+    pub(crate) callbacks: lockfree::map::Map<u32, std::sync::Arc<ExternalCallback>>,
     pub(crate) env: Arc<dyn ClientEnv + Send + Sync>,
 }
 
@@ -111,29 +120,6 @@ impl ClientContext {
 
     pub(crate) fn get_sdk_client(&self) -> ApiResult<&ton_sdk::NodeClient> {
         self.sdk_client.as_ref().ok_or(Error::net_module_not_init())
-    }
-
-    pub(crate) fn get_callback(&self, callback_id: u32) -> ApiResult<std::sync::Arc<Callback>> {
-        Ok(self
-            .callbacks
-            .get(&callback_id)
-            .ok_or(Error::callback_not_registered(callback_id))?
-            .val()
-            .clone())
-    }
-
-    pub(crate) fn send_callback_result<S: serde::Serialize>(
-        &self,
-        callback_id: u32,
-        result: S,
-    ) -> ApiResult<()> {
-        let callback = self.get_callback(callback_id)?;
-        let response = JsonResponse::from_result(
-            serde_json::to_string(&result)
-                .map_err(|e| Error::callback_params_cant_be_converted_to_json(e))?,
-        );
-        response.send(&*callback, callback_id.clone(), 0);
-        Ok(())
     }
 }
 
@@ -308,7 +294,7 @@ impl Client {
         function: String,
         params_json: String,
         request_id: u32,
-        on_result: Box<Callback>,
+        on_result: Box<ExternalCallback>,
     ) {
         let context = Self::shared().required_context(handle);
         match context {
@@ -316,7 +302,7 @@ impl Client {
                 async_request(context, function, params_json, request_id, on_result);
             }
             Err(err) => {
-                JsonResponse::from_error(err).send(&*on_result, request_id, 1);
+                JsonResponse::from_error(err).send(&*on_result, request_id);
             }
         }
     }
