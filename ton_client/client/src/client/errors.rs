@@ -29,6 +29,9 @@ fn error(code: ErrorCode, message: String) -> ApiError {
     ApiError::with_code_message(code as isize, message)
 }
 
+pub const CANNOT_SERIALIZE_RESULT: &str =
+    r#"{"source": "client", "code": 18, "message": "Can not serialize result"}"#;
+
 impl Error {
     pub fn is_network_error(error: &ApiError) -> bool {
         error.code == ErrorCode::WebsocketConnectError as isize
@@ -150,11 +153,10 @@ impl Error {
         )
     }
 
-    pub fn cannot_serialize_result() -> String {
-        r#"{"source": "client", "code": 18, "message": "Can not serialize result"}"#.to_owned()
-    }
-
-    pub fn cannot_serialize_error() -> String {
-        r#"{"source": "client", "code": 19, "message": "Can not serialize error"}"#.to_owned()
+    pub fn cannot_serialize_result(err: impl Display) -> ApiError {
+        error(
+            ErrorCode::CannotSerializeResult,
+            format!("Can't serialize result: {}", err),
+        )
     }
 }

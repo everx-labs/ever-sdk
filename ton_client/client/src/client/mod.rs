@@ -15,25 +15,24 @@ mod client;
 mod client_env;
 mod errors;
 mod std_client_env;
+#[cfg(test)]
 mod tests;
 
 pub use client::{
-    Client, ClientConfig, ClientContext, CryptoConfig, ExternalCallback, ResultOfCreateContext,
-    ResultOfVersion, ResponseType,
-    create_context,
+    Client, ClientConfig, ClientContext, ContextHandle, CryptoConfig, Request, ResponseHandler,
+    ResponseType, ResultOfVersion, StringData,
 };
 pub use errors::{Error, ErrorCode};
 
+pub(crate) use client::parse_params;
 pub(crate) use client_env::{ClientEnv, FetchMethod, FetchResult, WebSocket};
 
 use crate::error::ApiResult;
-use serde_json::Value;
 use std::sync::Arc;
 
 #[api_function]
-fn version(_context: Arc<ClientContext>) -> ApiResult<ResultOfVersion> {
+pub fn version(_context: Arc<ClientContext>) -> ApiResult<ResultOfVersion> {
     Ok(ResultOfVersion {
         version: env!("CARGO_PKG_VERSION").to_owned(),
     })
 }
-

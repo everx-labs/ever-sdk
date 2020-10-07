@@ -2,7 +2,10 @@ use crate::abi::{Abi, ParamsOfEncodeMessage};
 use crate::client::ClientContext;
 use crate::error::ApiResult;
 use crate::processing::internal::can_retry_expired_message;
-use crate::processing::{send_message_rust, wait_for_transaction_rust, Error, ErrorCode, ParamsOfSendMessage, ParamsOfWaitForTransaction, ProcessingEvent, ProcessingResponseType, ResultOfProcessMessage};
+use crate::processing::{
+    send_message, wait_for_transaction, Error, ErrorCode, ParamsOfSendMessage,
+    ParamsOfWaitForTransaction, ProcessingEvent, ResultOfProcessMessage,
+};
 use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, ApiType, Debug, Clone)]
@@ -45,23 +48,7 @@ pub struct ParamsOfProcessMessage {
 
 /// Sends message to the network and monitors network for a result of
 /// message processing.
-#[api_function]
-pub(crate) async fn process_message(
-    context: Arc<ClientContext>,
-    params: ParamsOfProcessMessage,
-    callback: std::sync::Arc<Callback>,
-) -> ApiResult<ResultOfProcessMessage> {
-    let callback = move |result: ProcessingEvent| {
-        callback.call(result, ProcessingResponseType::ProcessingEvent as u32);
-        futures::future::ready(())
-    };
-
-    process_message_rust(context, params, callback).await
-}
-
-/// Sends message to the network and monitors network for a result of
-/// message processing.
-pub async fn process_message_rust<F: futures::Future<Output = ()> + Send + Sync>(
+pub async fn process_message<F: futures::Future<Output = ()> + Send + Sync>(
     context: Arc<ClientContext>,
     params: ParamsOfProcessMessage,
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync + 'static,
@@ -91,7 +78,7 @@ pub async fn process_message_rust<F: futures::Future<Output = ()> + Send + Sync>
         };
 
         // Send
-        let shard_block_id = send_message_rust(
+        let shard_block_id = send_message(
             context.clone(),
             ParamsOfSendMessage {
                 message: message.clone(),
@@ -103,7 +90,7 @@ pub async fn process_message_rust<F: futures::Future<Output = ()> + Send + Sync>
         .await?
         .shard_block_id;
 
-        let wait_for = wait_for_transaction_rust(
+        let wait_for = wait_for_transaction(
             context.clone(),
             ParamsOfWaitForTransaction {
                 message: message.clone(),

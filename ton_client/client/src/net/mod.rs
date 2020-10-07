@@ -11,7 +11,7 @@
 * limitations under the License.
 */
 
-use crate::client::ClientContext;
+use crate::client::{ClientContext};
 use crate::error::ApiResult;
 use futures::{Future, FutureExt, StreamExt};
 use rand::RngCore;
@@ -155,24 +155,7 @@ pub async fn wait_for_collection(
     Ok(ResultOfWaitForCollection { result })
 }
 
-#[api_function]
-pub(crate) async fn subscribe_collection(
-    context: std::sync::Arc<ClientContext>,
-    params: ParamsOfSubscribeCollection,
-    callback: std::sync::Arc<Callback>,
-) -> ApiResult<ResultOfSubscribeCollection> {
-    let callback = move |result: ApiResult<ResultOfSubscription>| {
-        match result {
-            Ok(result) => callback.call(result, SubscriptionResponseType::Ok as u32),
-            Err(err) => callback.call(err, SubscriptionResponseType::Error as u32)
-        }
-        futures::future::ready(())
-    };
-
-    subscribe_collection_rust(context, params, callback).await
-}
-
-pub async fn subscribe_collection_rust<F: Future<Output = ()> + Send + Sync>(
+pub async fn subscribe_collection<F: Future<Output = ()> + Send + Sync>(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfSubscribeCollection,
     callback: impl Fn(ApiResult<ResultOfSubscription>) -> F + Send + Sync + 'static

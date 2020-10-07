@@ -12,14 +12,18 @@
  *
  */
 
+pub mod api_reference;
 pub(crate) mod dispatch;
 pub(crate) mod interop;
-pub mod api_reference;
+mod net;
+pub(crate) mod processing;
 
 use crate::abi::{
     attach_signature, decode_message, encode_message, Abi, AbiHandle, CallSet, DeploySet,
     FunctionHeader,
 };
+use crate::api::api_reference::get_api_reference;
+use crate::api::dispatch::{ApiDispatcher, ModuleReg, Registrar};
 use crate::boc::{
     get_blockchain_config, parse_account, parse_block, parse_message, parse_transaction,
 };
@@ -33,18 +37,17 @@ use crate::crypto::{
     nacl_sign_keypair_from_secret_key, nacl_sign_open, sha256, sha512, sign, ton_crc16,
     verify_signature,
 };
-use crate::net::{query_collection, subscribe_collection, unsubscribe, wait_for_collection};
+use crate::net::{query_collection, unsubscribe, wait_for_collection};
 use crate::processing::{DecodedOutput, MessageSource, ProcessingEvent, ResultOfProcessMessage};
-use crate::tvm::{execute_message, execute_get};
-use crate::utils::{AddressStringFormat, convert_address};
-use crate::api::dispatch::{ModuleReg, Registrar, ApiDispatcher};
+use crate::tvm::{execute_get, execute_message};
+use crate::utils::{convert_address, AddressStringFormat};
 
 lazy_static! {
     static ref DISPATCHER: ApiDispatcher = create_dispatcher();
 }
 
 pub(crate) fn get_dispatcher() -> &'static ApiDispatcher {
-    &DISPATHER
+    &DISPATCHER
 }
 
 /// BOC manipulation module.
@@ -54,8 +57,11 @@ pub(crate) struct ClientModule;
 
 impl ModuleReg for ClientModule {
     fn reg(reg: &mut Registrar) {
-        reg.f_no_args(get_api_reference, get_api_reference_api);
-        reg.f_no_args(version, version_api);
+        reg.f_no_args(
+            get_api_reference,
+            crate::api::api_reference::get_api_reference_api,
+        );
+        reg.f_no_args(crate::client::version, crate::client::version_api);
     }
 }
 
@@ -97,7 +103,10 @@ impl ModuleReg for CryptoModule {
 
         // Scrypt
 
-        reg.f(crate::crypto::scrypt::scrypt, scrypt::scrypt_api);
+        reg.f(
+            crate::crypto::scrypt::scrypt,
+            crate::crypto::scrypt::scrypt_api,
+        );
 
         // NaCl
 
@@ -217,7 +226,10 @@ impl ModuleReg for NetModule {
         reg.async_f(query_collection, crate::net::query_collection_api);
         reg.async_f(wait_for_collection, crate::net::wait_for_collection_api);
         reg.async_f(unsubscribe, crate::net::unsubscribe_api);
-        reg.async_f_callback(subscribe_collection, crate::net::subscribe_collection_api);
+        reg.async_f_callback(
+            crate::api::net::subscribe_collection,
+            crate::api::net::subscribe_collection_api,
+        );
     }
 }
 
@@ -237,20 +249,19 @@ impl ModuleReg for ProcessingModule {
         reg.t::<DecodedOutput>();
 
         reg.async_f_callback(
-            crate::processing::send_message::send_message,
-            crate::processing::send_message::send_message_api,
+            crate::api::processing::send_message,
+            crate::api::processing::send_message_api,
         );
         reg.async_f_callback(
-            crate::processing::send_message::wait_for_transaction,
-            crate::processing::send_message::wait_for_transaction::wait_for_transaction_api,
+            crate::api::processing::wait_for_transaction,
+            crate::api::processing::wait_for_transaction_api,
         );
         reg.async_f_callback(
-            crate::processing::send_message::process_message,
-            crate::processing::send_message::process_message::process_message_api,
+            crate::api::processing::process_message,
+            crate::api::processing::process_message_api,
         );
     }
 }
-
 
 #[derive(ApiModule)]
 #[api_module(name = "tvm")]
@@ -258,7 +269,10 @@ pub struct TvmModule;
 
 impl ModuleReg for TvmModule {
     fn reg(reg: &mut Registrar) {
-        reg.async_f(execute_message, crate::tvm::execute_message::execute_message_api);
+        reg.async_f(
+            execute_message,
+            crate::tvm::execute_message::execute_message_api,
+        );
         reg.f(execute_get, crate::tvm::execute_get::execute_get_api);
     }
 }
@@ -271,12 +285,14 @@ pub struct UtilsModule;
 impl ModuleReg for UtilsModule {
     fn reg(reg: &mut Registrar) {
         reg.t::<AddressStringFormat>();
-        reg.f(convert_address, crate::utils::conversion::convert_address_api);
+        reg.f(
+            convert_address,
+            crate::utils::conversion::convert_address_api,
+        );
     }
 }
 
-
-pub fn create_dispatcher() -> ApiDispatcher {
+pub(crate) fn create_dispatcher() -> ApiDispatcher {
     let mut handlers = ApiDispatcher::new();
     handlers.register::<ClientModule>();
     handlers.register::<CryptoModule>();
@@ -291,4 +307,3 @@ pub fn create_dispatcher() -> ApiDispatcher {
 
     handlers
 }
-
