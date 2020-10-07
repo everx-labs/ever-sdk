@@ -157,19 +157,17 @@ impl ExecutionOutput {
     }
 
     fn convert_account(&self, context: &Arc<ClientContext>) -> ApiResult<Option<Value>> {
-        Ok(if let Some(cell) = &self.account {
-            Some(
+        self.account
+            .as_ref()
+            .map(|x| { 
                 parse_account(
                     context.clone(),
                     ParamsOfParse {
-                        boc: serialize_cell_to_base64(&cell, "account")?,
+                        boc: serialize_cell_to_base64(x, "account")?,
                     },
-                )?
-                .parsed,
-            )
-        } else {
-            None
-        })
+                ).map(|parsed| parsed.parsed)
+            })
+            .transpose()
     }
 
     fn convert_out_messages(&self, context: &Arc<ClientContext>) -> ApiResult<Vec<Value>> {
