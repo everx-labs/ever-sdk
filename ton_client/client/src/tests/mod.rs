@@ -538,7 +538,7 @@ impl TestClient {
         &self,
         params: ParamsOfProcessMessage,
         callback: impl Fn(CR, CT) -> CF + Send + Sync + 'static
-    ) -> TransactionOutput
+    ) -> ResultOfProcessMessage
     where
         CF: Future<Output = ()> + Send + Sync + 'static,
         CT: FromPrimitive,
@@ -580,7 +580,7 @@ impl TestClient {
         signer: Signer,
     ) -> ResultOfProcessMessage {
         self.net_process_message(ParamsOfProcessMessage {
-                message: MessageSource::AbiEncodingParams(ParamsOfEncodeMessage {
+                message: MessageSource::EncodingParams(ParamsOfEncodeMessage {
                     address: Some(address),
                     abi,
                     deploy_set: None,
@@ -658,7 +658,7 @@ impl TestClient {
 
         let _ = self
             .net_process_message(ParamsOfProcessMessage {
-                    message: MessageSource::AbiEncodingParams(params.clone()),
+                    message: MessageSource::EncodingParams(params.clone()),
                     send_events: false,
                 },
                 Self::default_callback
