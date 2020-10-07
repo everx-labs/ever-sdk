@@ -3,24 +3,30 @@ use crate::client::ClientContext;
 use crate::error::ApiResult;
 use crate::processing::internal::can_retry_expired_message;
 use crate::processing::types::{CallbackParams, ResultOfProcessMessage};
-use crate::processing::{
-    send_message, wait_for_transaction, ErrorCode, ParamsOfSendMessage, ParamsOfWaitForTransaction,
-};
+use crate::processing::{send_message, wait_for_transaction, ErrorCode, ParamsOfSendMessage, ParamsOfWaitForTransaction, Error};
 use std::sync::Arc;
 
-#[derive(Serialize, Deserialize, ApiType, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Debug, Clone)]
 pub enum MessageSource {
     Encoded { message: String, abi: Option<Abi> },
     EncodingParams(ParamsOfEncodeMessage),
 }
 
 impl MessageSource {
-    pub(crate) fn encode(&self, context: &Arc<ClientContext>) -> ApiResult<(String, Option<Abi>)> {
+    pub(crate) async fn encode(
+        &self,
+        context: &Arc<ClientContext>,
+    ) -> ApiResult<(String, Option<Abi>)> {
         Ok(match self {
             MessageSource::EncodingParams(params) => {
+                if params.signer.is_external() {
+                    return Err(Error::external_signer_must_not_be_used())
+                }
                 let abi = params.abi.clone();
                 (
-                    crate::abi::encode_message(context.clone(), params.clone())?,
+                    crate::abi::encode_message(context.clone(), params.clone())
+                        .await?
+                        .message,
                     Some(abi),
                 )
             }
@@ -99,7 +105,7 @@ pub async fn process_message(
             Err(err) => {
                 let can_retry = err.code == ErrorCode::MessageExpired as isize
                     && is_message_encodable
-                    && can_retry_expired_message(&context, &mut try_index);
+                    && can_retry_expired_message(&context, try_index);
                 if !can_retry {
                     // Waiting error is unrecoverable, return it
                     return Err(err);
@@ -107,5 +113,6 @@ pub async fn process_message(
                 // Waiting is failed but we can retry
             }
         };
+        try_index = try_index.checked_add(1).unwrap_or(try_index);
     }
 }

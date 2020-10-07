@@ -60,6 +60,7 @@ fn extract_error(
     if transaction.compute.success.is_none() || !transaction.compute.success.unwrap() {
         let (address, _) = contract_info()?;
         return Err(Error::tvm_execution_failed(
+            "compute phase isn't succeeded",
             transaction.compute.exit_code.unwrap_or(-1), &address));
     }
 

@@ -20,13 +20,11 @@ pub(crate) fn get_message_id(message: &ton_block::Message) -> ApiResult<String> 
 }
 
 /// Increments `retries` and returns `true` if `retries` isn't reach `limit`.
-pub(crate) fn can_retry_more(retries: &mut u8, limit: i8) -> bool {
-    let old = retries.clone();
-    *retries = retries.checked_add(1).unwrap_or(old);
-    limit < 0 || *retries <= limit as u8
+pub(crate) fn can_retry_more(retries: u8, limit: i8) -> bool {
+    limit < 0 || retries <= limit as u8
 }
 
-pub fn can_retry_network_error(context: &Arc<ClientContext>, retries: &mut u8) -> bool {
+pub fn can_retry_network_error(context: &Arc<ClientContext>, retries: u8) -> bool {
     can_retry_more(
         retries,
         resolve(
@@ -45,7 +43,7 @@ pub fn resolve_network_retries_timeout(context: &Arc<ClientContext>) -> u32 {
     )
 }
 
-pub(crate) fn can_retry_expired_message(context: &Arc<ClientContext>, retries: &mut u8) -> bool {
+pub(crate) fn can_retry_expired_message(context: &Arc<ClientContext>, retries: u8) -> bool {
     can_retry_more(
         retries,
         resolve(

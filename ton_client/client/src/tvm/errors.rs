@@ -15,6 +15,8 @@ use crate::error::ApiError;
 use std::fmt::Display;
 use ton_block::{AccStatusChange, ComputeSkipReason, MsgAddressInt};
 use ton_types::ExceptionCode;
+use serde_json::Value;
+
 const TVM: isize = ApiError::TVM; // 400
 
 pub enum ErrorCode {
@@ -38,10 +40,10 @@ fn error(code: ErrorCode, message: String) -> ApiError {
 }
 
 impl Error {
-    pub fn invalid_input_stack<E: Display>(err: E) -> ApiError {
+    pub fn invalid_input_stack<E: Display>(err: E, stack: &Value) -> ApiError {
         error(
             ErrorCode::InvalidInputStack,
-            format!("Invalid JSON value for stack item: {}", err),
+            format!("Invalid JSON value for stack item ({}): {}", stack, err),
         )
     }
     pub fn invalid_account_boc<E: Display>(err: E) -> ApiError {
@@ -88,10 +90,10 @@ impl Error {
         error
     }
 
-    pub fn tvm_execution_failed(exit_code: i32, address: &MsgAddressInt) -> ApiError {
+    pub fn tvm_execution_failed<E: Display>(err: E, exit_code: i32, address: &MsgAddressInt) -> ApiError {
         let mut error = error(
             ErrorCode::ContractExecutionError,
-            format!("Contract execution was terminated with error"),
+            format!("Contract execution was terminated with error: {}", err),
         );
 
         let mut data = serde_json::json!({

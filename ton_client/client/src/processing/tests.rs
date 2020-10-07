@@ -4,9 +4,8 @@ use crate::abi::{
 };
 use crate::error::ApiResult;
 use crate::processing::{
-    send_message, wait_for_transaction, CallbackParams, MessageSource,
-    ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction, ProcessingEvent,
-    ProcessingModule,
+    send_message, wait_for_transaction, CallbackParams, MessageSource, ParamsOfProcessMessage,
+    ParamsOfSendMessage, ParamsOfWaitForTransaction, ProcessingEvent, ProcessingModule,
 };
 
 use crate::processing::types::DecodedOutput;
@@ -46,11 +45,7 @@ async fn test_wait_message() {
         .encode_message(ParamsOfEncodeMessage {
             abi: abi.clone(),
             address: None,
-            deploy_set: Some(DeploySet {
-                workchain_id: None,
-                tvc: events_tvc.clone(),
-                initial_data: None,
-            }),
+            deploy_set: DeploySet::some(events_tvc.clone()),
             call_set: Some(CallSet {
                 function_name: "constructor".into(),
                 header: Some(FunctionHeader {
@@ -144,11 +139,7 @@ async fn test_process_message() {
         .encode_message(ParamsOfEncodeMessage {
             abi: abi.clone(),
             address: None,
-            deploy_set: Some(DeploySet {
-                workchain_id: None,
-                tvc: events_tvc.clone(),
-                initial_data: None,
-            }),
+            deploy_set: DeploySet::some(events_tvc.clone()),
             call_set: Some(CallSet {
                 function_name: "constructor".into(),
                 header: Some(FunctionHeader {
@@ -222,18 +213,18 @@ async fn test_process_message() {
 
     let callback_id = client.register_callback(callback);
 
-    let output = client.net_process_message(ParamsOfProcessMessage {
+    let output = client
+        .net_process_message(ParamsOfProcessMessage {
             message: MessageSource::EncodingParams(ParamsOfEncodeMessage {
                 abi: abi.clone(),
                 address: Some(encoded.address.clone()),
                 deploy_set: None,
-                call_set: Some(CallSet {
-                    function_name: "returnValue".into(),
-                    header: None,
-                    input: Some(json!({
+                call_set: CallSet::some_with_input(
+                    "returnValue",
+                    json!({
                         "id": "0x1"
-                    })),
-                }),
+                    }),
+                ),
                 signer: Signer::WithKeys(keys.clone()),
                 processing_try_index: None,
             }),

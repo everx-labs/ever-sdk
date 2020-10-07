@@ -1,6 +1,14 @@
 use crate::boc::Error;
 use crate::error::ApiResult;
-use ton_block::Deserializable;
+use ton_block::{Deserializable, Serializable};
+use ton_types::deserialize_tree_of_cells;
+
+pub(crate) fn get_boc_hash(boc: &[u8]) -> ApiResult<String> {
+    let cells = deserialize_tree_of_cells(&mut boc.clone())
+        .map_err(|err| crate::boc::Error::invalid_boc(err))?;
+    let id: Vec<u8> = cells.repr_hash().as_slice()[..].into();
+    Ok(hex::encode(&id))
+}
 
 pub(crate) fn deserialize_cell_from_base64(
     b64: &str,
@@ -44,4 +52,28 @@ pub(crate) fn deserialize_object_from_base64<S: Deserializable>(
         cell_hash: cell.repr_hash(),
         object,
     })
+}
+
+pub(crate) fn serialize_object_to_cell<S: Serializable>(
+    object: &S,
+    name: &str,
+) -> ApiResult<ton_types::Cell> {
+    Ok(object
+        .serialize()
+        .map_err(|err| Error::serialization_error(err, name))?)
+}
+
+pub(crate) fn serialize_cell_to_base64(cell: &ton_types::Cell, name: &str) -> ApiResult<String> {
+    Ok(base64::encode(
+        &ton_types::cells_serialization::serialize_toc(&cell)
+            .map_err(|err| Error::serialization_error(err, name))?,
+    ))
+}
+
+pub(crate) fn serialize_object_to_base64<S: Serializable>(
+    object: &S,
+    name: &str,
+) -> ApiResult<String> {
+    let cell = serialize_object_to_cell(object, name)?;
+    Ok(serialize_cell_to_base64(&cell, name)?)
 }

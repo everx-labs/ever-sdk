@@ -21,7 +21,7 @@ mod blocks_walking;
 mod errors;
 mod fetching;
 mod internal;
-mod parsing;
+pub(crate) mod parsing;
 pub(crate) mod process_message;
 mod send_message;
 mod types;

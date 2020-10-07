@@ -88,9 +88,9 @@ fn wait_for() {
         assert!(transactions.result["now"].as_u64().unwrap() > now as u64);
     });
 
-    let client = TestClient::new();
-
-    client.get_grams_from_giver(&TestClient::get_giver_address(), None);
+    //TODO
+    // let client = TestClient::new();
+    //client.get_grams_from_giver(&TestClient::get_giver_address(), None).await;
 
     handle.join().unwrap();
 }

@@ -22,7 +22,9 @@ use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
 use crate::net::NetModule;
-use crate::processing::{MessageSource, ParamsOfProcessMessage, ResultOfProcessMessage};
+use crate::processing::{
+    MessageSource, ParamsOfProcessMessage, ProcessingModule, ResultOfProcessMessage,
+};
 use crate::{
     client::ResultOfCreateContext,
     crypto::KeyPair,
@@ -67,7 +69,7 @@ impl log::Log for SimpleLogger {
     fn flush(&self) {}
 }
 
-// pub const SUBSCRIBE: &str = "Subscription";
+pub const SUBSCRIBE: &str = "Subscription";
 // pub const PIGGY_BANK: &str = "Piggy";
 // pub const WALLET: &str = "LimitWallet";
 // pub const SIMPLE_WALLET: &str = "Wallet";
@@ -479,13 +481,32 @@ impl TestClient {
     pub(crate) async fn net_process_message(
         &self,
         params: ParamsOfProcessMessage,
-    ) -> TransactionOutput {
+    ) -> ResultOfProcessMessage {
         let process = self.wrap_async(
             crate::processing::process_message,
             ProcessingModule::api(),
             crate::processing::process_message::process_message_api(),
         );
         process.call(params).await
+    }
+
+    pub(crate) async fn fetch_account(&self, address: &str) -> Value {
+        let wait_for = self.wrap_async(
+            crate::net::wait_for_collection,
+            NetModule::api(),
+            crate::net::wait_for_collection_api(),
+        );
+        let result = wait_for
+            .call(ParamsOfWaitForCollection {
+                collection: "accounts".into(),
+                filter: Some(json!({
+                    "id": { "eq": address.to_string() }
+                })),
+                result: "id boc".into(),
+                ..Default::default()
+            })
+            .await;
+        result.result
     }
 
     pub(crate) async fn net_process_function(
@@ -495,19 +516,19 @@ impl TestClient {
         function_name: &str,
         input: Value,
         signer: Signer,
-    ) -> TransactionOutput {
+    ) -> ResultOfProcessMessage {
         self.net_process_message(ParamsOfProcessMessage {
-            message: MessageSource::AbiEncodingParams(ParamsOfEncodeMessage {
+            message: MessageSource::EncodingParams(ParamsOfEncodeMessage {
                 address: Some(address),
                 abi,
-                deploy_set: None,
                 call_set: Some(CallSet {
-                    header: None,
                     function_name: function_name.into(),
                     input: Some(input),
+                    ..Default::default()
                 }),
-                processing_try_index: None,
                 signer,
+                deploy_set: None,
+                processing_try_index: None,
             }),
             events_handler: None,
         })
@@ -587,7 +608,7 @@ impl TestClient {
             .await
         };
 
-        // wait for grams recieving
+        // wait for grams receiving
         for message in run_result.out_messages.iter() {
             let message: ton_sdk::Message = serde_json::from_value(message.clone()).unwrap();
             if ton_sdk::MessageType::Internal == message.msg_type() {
@@ -615,11 +636,11 @@ impl TestClient {
     ) -> String {
         let msg = self.encode_message(params.clone()).await;
 
-        self.get_grams_from_giver(&msg.address, value);
+        self.get_grams_from_giver(&msg.address, value).await;
 
         let _ = self
             .net_process_message(ParamsOfProcessMessage {
-                message: MessageSource::AbiEncodingParams(params.clone()),
+                message: MessageSource::EncodingParams(params.clone()),
                 events_handler: None,
             })
             .await;
@@ -637,7 +658,7 @@ impl TestClient {
 
         let _ = self
             .net_process_message(ParamsOfProcessMessage {
-                message: MessageSource::AbiEncodingParams(params.clone()),
+                message: MessageSource::EncodingParams(params.clone()),
                 events_handler: None,
             })
             .await;

@@ -35,7 +35,7 @@ pub(crate) fn parse_transaction_boc(
     ))
 }
 
-pub(crate) fn decode_abi_output(
+pub(crate) fn decode_output(
     context: &Arc<ClientContext>,
     abi: &Abi,
     parsed_messages: &Vec<Value>,

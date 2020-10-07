@@ -18,7 +18,8 @@ const BOC: isize = ApiError::BOC; // 200
 pub enum ErrorCode {
     InvalidBoc = BOC + 1,
     SerializationError = BOC + 2,
-    InappropriateBlock = BOC + 3
+    InappropriateBlock = BOC + 3,
+    MissingSourceBoc = BOC + 4,
 }
 pub struct Error;
 
@@ -27,6 +28,13 @@ fn error(code: ErrorCode, message: String) -> ApiError {
 }
 
 impl Error {
+    pub fn missing_source_boc() -> ApiError {
+        error(
+            ErrorCode::MissingSourceBoc,
+            "Parsed value hasn't source `boc` field".into(),
+        )
+    }
+
     pub fn invalid_boc<E: Display>(err: E) -> ApiError {
         error(ErrorCode::InvalidBoc, format!("Invalid BOC: {}", err))
     }
@@ -39,6 +47,9 @@ impl Error {
     }
 
     pub fn inappropriate_block<E: Display>(err: E) -> ApiError {
-        error(ErrorCode::InappropriateBlock, format!("Inappropriate block: {}", err))
+        error(
+            ErrorCode::InappropriateBlock,
+            format!("Inappropriate block: {}", err),
+        )
     }
 }

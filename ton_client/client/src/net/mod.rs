@@ -53,7 +53,7 @@ pub struct ResultOfQueryCollection {
     pub result: Vec<serde_json::Value>,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Clone, Default)]
 pub struct ParamsOfWaitForCollection {
     /// collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,

@@ -1,6 +1,6 @@
-use crate::crypto::{KeyPair, SigningBoxHandle};
-use crate::error::{ApiResult};
 use crate::client;
+use crate::crypto::{KeyPair, SigningBoxHandle};
+use crate::error::ApiResult;
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 pub enum Signer {
@@ -13,6 +13,16 @@ pub enum Signer {
     WithKeys(KeyPair),
     /// Message will be signed using the provided signing box.
     Box(SigningBoxHandle),
+}
+
+impl Signer {
+    pub(crate) fn is_external(&self) -> bool {
+        if let Signer::External(_) = self {
+            true
+        } else {
+            false
+        }
+    }
 }
 
 impl Signer {

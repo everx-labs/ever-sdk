@@ -1,7 +1,8 @@
-use crate::client::ClientContext;
-use crate::boc::Error;
-use crate::error::ApiResult;
 use crate::boc::internal::deserialize_object_from_base64;
+use crate::boc::Error;
+use crate::client::ClientContext;
+use crate::error::ApiResult;
+use serde_json::Value;
 
 #[derive(Serialize, Deserialize, Clone, ApiType)]
 pub struct ParamsOfParse {
@@ -126,3 +127,17 @@ pub fn parse_block(
     })
 }
 
+pub fn source_boc(parsed: &Value) -> ApiResult<String> {
+    Ok(parsed["boc"]
+        .as_str()
+        .ok_or(Error::missing_source_boc())?
+        .into())
+}
+
+pub fn required_boc(parsed: &Option<Value>) -> ApiResult<String> {
+    if let Some(parsed) = parsed {
+        Ok(source_boc(parsed)?)
+    } else {
+        Err(Error::missing_source_boc())
+    }
+}

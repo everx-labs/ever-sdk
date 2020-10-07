@@ -12,15 +12,7 @@
  *
  */
 
-use crate::error::ApiResult;
-use crate::tvm::Error;
-use core::result::Result::{Err, Ok};
 use failure::_core::convert::TryFrom;
-use serde_json::Value;
-use std::slice::Iter;
-use std::sync::Arc;
-use ton_vm::stack::integer::IntegerData;
-use ton_vm::stack::StackItem;
 
 pub enum ExitCode {
     MessageExpired = 57,
@@ -39,26 +31,33 @@ impl TryFrom<i32> for ExitCode {
     }
 }
 
-pub(crate) struct StackJson;
+pub(crate) mod stack_serialization {
+    use crate::error::ApiResult;
+    use crate::tvm::Error;
+    use core::result::Result::{Err, Ok};
+    use serde_json::Value;
+    use std::slice::Iter;
+    use std::sync::Arc;
+    use ton_vm::stack::integer::IntegerData;
+    use ton_vm::stack::StackItem;
 
-impl StackJson {
-    pub(crate) fn json_array_from_items(items: Iter<StackItem>) -> ApiResult<Value> {
+    pub fn serialize_items(items: Iter<StackItem>) -> ApiResult<Value> {
         let mut values = Vec::<Value>::new();
         for item in items {
-            values.push(StackJson::json_value_from_item(item)?)
+            values.push(serialize_item(item)?)
         }
         Ok(Value::Array(values))
     }
 
-    pub(crate) fn items_from_json_array(values: Iter<Value>) -> ApiResult<Vec<StackItem>> {
+    pub fn deserialize_items(values: Iter<Value>) -> ApiResult<Vec<StackItem>> {
         let mut items = Vec::<StackItem>::new();
         for value in values {
-            items.push(Self::item_from_json_value(value)?)
+            items.push(deserialize_item(value)?)
         }
         Ok(items)
     }
 
-    fn json_value_from_item(item: &StackItem) -> ApiResult<Value> {
+    pub fn serialize_item(item: &StackItem) -> ApiResult<Value> {
         Ok(match item {
             StackItem::None => Value::Null,
             StackItem::Integer(i) => {
@@ -68,11 +67,32 @@ impl StackJson {
                 }
                 Value::String(hex)
             }
-            StackItem::Tuple(items) => Self::json_array_from_items(items.iter())?,
+            StackItem::Tuple(items) => serialize_items(items.iter())?,
             StackItem::Builder(_) => json!({ "builder": Value::Null }),
             StackItem::Slice(_) => json!({ "slice": Value::Null }),
             StackItem::Cell(_) => json!({ "cell": Value::Null }),
             StackItem::Continuation(_) => json!({ "continuation": Value::Null }),
+        })
+    }
+
+    pub fn deserialize_item(value: &Value) -> ApiResult<StackItem> {
+        Ok(match value {
+            Value::Null => StackItem::None,
+            Value::Bool(v) => StackItem::Integer(Arc::new(if *v {
+                IntegerData::one()
+            } else {
+                IntegerData::zero()
+            })),
+            Value::Number(n) => {
+                if let Some(i) = n.as_i64() {
+                    StackItem::Integer(Arc::new(IntegerData::from_i64(i)))
+                } else {
+                    return Err(Error::invalid_input_stack("Invalid number value", &value));
+                }
+            }
+            Value::String(s) => StackItem::Integer(Arc::new(parse_integer_data(s)?)),
+            Value::Array(array) => StackItem::Tuple(deserialize_items(array.iter())?),
+            Value::Object(_) => return Err(Error::invalid_input_stack("Unexpected object", &value)),
         })
     }
 
@@ -89,28 +109,7 @@ impl StackJson {
                     16
                 },
             )
-            .map_err(|err| Error::invalid_input_stack(err))?
-        })
-    }
-
-    fn item_from_json_value(value: &Value) -> ApiResult<StackItem> {
-        Ok(match value {
-            Value::Null => StackItem::None,
-            Value::Bool(v) => StackItem::Integer(Arc::new(if *v {
-                IntegerData::one()
-            } else {
-                IntegerData::zero()
-            })),
-            Value::Number(n) => {
-                if let Some(i) = n.as_i64() {
-                    StackItem::Integer(Arc::new(IntegerData::from_i64(i)))
-                } else {
-                    return Err(Error::invalid_input_stack("Invalid number value"));
-                }
-            }
-            Value::String(s) => StackItem::Integer(Arc::new(Self::parse_integer_data(s)?)),
-            Value::Array(array) => StackItem::Tuple(Self::items_from_json_array(array.iter())?),
-            Value::Object(_) => return Err(Error::invalid_input_stack("Unexpected object")),
+            .map_err(|err| Error::invalid_input_stack(err, &Value::String(s.clone())))?
         })
     }
 }

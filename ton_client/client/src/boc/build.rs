@@ -12,10 +12,9 @@
  *
  */
 
-use crate::boc::internal::deserialize_cell_from_base64;
-use crate::boc::Error;
+use crate::boc::internal::{deserialize_cell_from_base64, serialize_object_to_base64};
 use crate::error::ApiResult;
-use ton_block::{Account, Serializable};
+use ton_block::{Account};
 use ton_block::{
     AccountState, AccountStorage, AccountStuff, CurrencyCollection, MsgAddressInt,
     StateInit, StateInitLib, StorageInfo, StorageUsed,
@@ -53,13 +52,7 @@ pub fn build_account(params: ParamsOfBuildAccount) -> ApiResult<ResultOfBuildAcc
             used: StorageUsed::default(),
         },
     });
-    let cell = account
-        .serialize()
-        .map_err(|err| Error::serialization_error(err, "account"))?;
     Ok(ResultOfBuildAccount {
-        account: base64::encode(
-            &ton_types::cells_serialization::serialize_toc(&cell)
-                .map_err(|err| Error::serialization_error(err, "account"))?,
-        ),
+        account: serialize_object_to_base64(&account, "account")?
     })
 }

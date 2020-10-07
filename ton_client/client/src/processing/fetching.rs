@@ -6,7 +6,7 @@ use crate::processing::blocks_walking::wait_next_block;
 use crate::processing::internal::{
     can_retry_network_error, get_exit_code, resolve_network_retries_timeout,
 };
-use crate::processing::parsing::{decode_abi_output, parse_transaction_boc};
+use crate::processing::parsing::{decode_output, parse_transaction_boc};
 use crate::tvm::{ExitCode};
 use crate::processing::{
     Error, ParamsOfWaitForTransaction, ProcessingEvent, ResultOfProcessMessage,
@@ -57,7 +57,7 @@ pub async fn fetch_next_shard_block(
                 }
 
                 // If network retries limit has reached, return error
-                if !can_retry_network_error(context, &mut retries) {
+                if !can_retry_network_error(context, retries) {
                     return Err(error);
                 }
             }
@@ -65,6 +65,7 @@ pub async fn fetch_next_shard_block(
 
         // Perform delay before retry
         context.env.set_timer(network_retries_timeout as u64).await;
+        retries = retries.checked_add(1).unwrap_or(retries);
     }
 }
 
@@ -119,7 +120,7 @@ pub async fn fetch_transaction_result(
         fetch_transaction_boc(context, transaction_id, message_id, shard_block_id).await?;
     let (transaction, out_messages) = parse_transaction_boc(context.clone(), &transaction_boc)?;
     let abi_decoded = if let Some(abi) = abi {
-        Some(decode_abi_output(context, abi, &out_messages)?)
+        Some(decode_output(context, abi, &out_messages)?)
     } else {
         None
     };
@@ -164,7 +165,7 @@ async fn fetch_transaction_boc(
             }
             Err(error) => {
                 // If network retries limit has reached, return error
-                if !can_retry_network_error(context, &mut retries) {
+                if !can_retry_network_error(context, retries) {
                     return Err(error);
                 }
             }
@@ -172,5 +173,6 @@ async fn fetch_transaction_boc(
 
         // Perform delay before retry
         context.env.set_timer(network_retries_timeout as u64).await;
+        retries = retries.checked_add(1).unwrap_or(retries);
     }
 }

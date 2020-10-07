@@ -27,7 +27,7 @@ use ton_vm::SmartContractInfo;
 use ton_vm::executor::gas::gas_state::Gas;
 use ton_executor::{BlockchainConfig, TransactionExecutor, OrdinaryTransactionExecutor};
 
-pub(crate) fn call_tvm_stack(
+pub fn call_tvm_stack(
     balance: u64,
     balance_other: HashmapE,
     address: &MsgAddressInt,
@@ -69,7 +69,7 @@ pub(crate) fn call_tvm_stack(
     Ok(engine.stack().clone())
 }
 
-pub(crate) fn call_tvm(
+pub fn call_tvm(
     balance: u64,
     balance_other: HashmapE,
     address: &MsgAddressInt,
