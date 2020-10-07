@@ -110,7 +110,7 @@ async fn subscribe_for_transactions_with_addresses() {
         signer: Signer::WithKeys(keys),
         processing_try_index: None,
         address: None,
-        call_set: CallSet::some("constructor"),
+        call_set: CallSet::some_with_function("constructor"),
     };
 
     let msg = client.encode_message(deploy_params.clone()).await;

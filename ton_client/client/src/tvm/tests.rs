@@ -39,6 +39,7 @@ async fn test_execute_get() {
     let elector = crate::boc::build::build_account(ParamsOfBuildAccount {
         code: ELECTOR_CODE.into(),
         data: ELECTOR_DATA.into(),
+        library: None,
         last_paid: None,
         last_trans_lt: None,
         balance: None,
@@ -107,8 +108,8 @@ async fn test_execute_message() {
             .deploy_with_giver_async(
                 ParamsOfEncodeMessage {
                     abi: abi.clone(),
-                    deploy_set: DeploySet::some(tvc.clone()),
-                    call_set: CallSet::some_with_input(
+                    deploy_set: DeploySet::some_with_tvc(tvc.clone()),
+                    call_set: CallSet::some_with_function_and_input(
                         "constructor",
                         json!({
                             "wallet": wallet_address.to_string(),
@@ -135,7 +136,7 @@ async fn test_execute_message() {
                     ParamsOfEncodeMessage {
                         address: Some(address.clone()),
                         abi: abi.clone(),
-                        call_set: CallSet::some("getWallet"),
+                        call_set: CallSet::some_with_function("getWallet"),
                         signer: Signer::WithKeys(keys.clone()),
                         deploy_set: None,
                         processing_try_index: None,
@@ -171,7 +172,7 @@ async fn test_execute_message() {
                 message: MessageSource::EncodingParams(ParamsOfEncodeMessage {
                     address: Some(address.clone()),
                     abi: abi.clone(),
-                    call_set: CallSet::some_with_input("subscribe", subscribe_params.clone()),
+                    call_set: CallSet::some_with_function_and_input("subscribe", subscribe_params.clone()),
                     signer: Signer::WithKeys(keys.clone()),
                     deploy_set: None,
                     processing_try_index: None,
@@ -187,7 +188,7 @@ async fn test_execute_message() {
                 account: required_boc(&result.account).unwrap(),
                 message: MessageSource::EncodingParams(ParamsOfEncodeMessage {
                     abi: abi.clone(),
-                    call_set: CallSet::some_with_input(
+                    call_set: CallSet::some_with_function_and_input(
                         "getSubscription",
                         json!({
                             "subscriptionId": subscribe_params["subscriptionId"].clone(),
