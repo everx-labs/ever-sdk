@@ -18,18 +18,18 @@ pub use self::ton_client::{
     tc_destroy_context,
     tc_json_request_async,
     InteropContext,
-    InteropString,
-    OnResult
+    StringData,
+    ResponseHandler
 };
 
 // Obsolete. Used for backward compatibility only.
 //
 #[no_mangle]
 pub unsafe extern fn ton_sdk_json_rpc_request(
-    method: &InteropString,
-    params_json: &InteropString,
+    method: &StringData,
+    params_json: &StringData,
     request_id: i32,
-    on_result: OnResult,
+    on_result: ResponseHandler,
 ) {
     let context = self::ton_client::create_context();
     self::ton_client::tc_json_request_async(

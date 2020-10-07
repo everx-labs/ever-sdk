@@ -3,14 +3,14 @@ use crate::abi::{
     ParamsOfEncodeMessage, Signer,
 };
 use crate::processing::{
-    send_message, wait_for_transaction,
     MessageSource, ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction,
-    ProcessingEvent, ProcessingModule, ProcessingResponseType
+    ProcessingEvent, ProcessingResponseType
 };
 
 use crate::processing::types::DecodedOutput;
 use crate::tests::{TestClient, EVENTS};
 use api_info::ApiModule;
+use crate::api::ProcessingModule;
 
 #[tokio::test(core_threads = 2)]
 async fn test_wait_message() {
@@ -31,14 +31,14 @@ async fn test_wait_message() {
     };
 
     let send_message = client.wrap_async_callback(
-        send_message,
+        crate::api::processing::send_message,
         ProcessingModule::api(),
-        crate::processing::send_message::send_message_api(),
+        crate::api::processing::send_message_api(),
     );
     let wait_for_transaction = client.wrap_async_callback(
-        wait_for_transaction,
+        crate::api::processing::wait_for_transaction,
         ProcessingModule::api(),
-        crate::processing::wait_for_transaction::wait_for_transaction_api(),
+        crate::api::processing::wait_for_transaction_api(),
     );
 
     let encoded = client

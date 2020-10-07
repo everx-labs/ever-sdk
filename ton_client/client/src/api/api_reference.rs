@@ -1,9 +1,21 @@
+use crate::api::get_dispatcher;
+use crate::client::ClientContext;
+use crate::error::ApiResult;
 use api_info::{Function, Type, API};
 use std::collections::HashMap;
-use crate::client::client::get_handlers;
+use std::sync::Arc;
 
-pub fn get_api() -> API {
-    ApiReducer::build(&get_handlers().api)
+#[derive(ApiType, Serialize, Deserialize)]
+pub struct ResultOfGetApiReference {
+    pub api: API,
+}
+
+#[api_function]
+pub(crate) fn get_api_reference(_context: Arc<ClientContext>) -> ApiResult<ResultOfGetApiReference> {
+    let api = ApiReducer::build(&get_dispatcher().api);
+    Ok(ResultOfGetApiReference {
+        api,
+    })
 }
 
 fn is_full_name(name: &str) -> bool {
@@ -41,7 +53,7 @@ impl ApiReducer {
             }
         }
 
-        Self {  type_aliases }
+        Self { type_aliases }
     }
 
     fn reduce(&self, api: &mut API) {

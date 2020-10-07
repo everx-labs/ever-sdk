@@ -12,12 +12,10 @@
  *
  */
 
-use crate::dispatch::{ModuleReg, Registrar};
-
 #[cfg(test)]
 mod tests;
 
-mod conversion;
+pub(crate) mod conversion;
 mod errors;
 
 pub use conversion::{
@@ -26,14 +24,3 @@ pub use conversion::{
 };
 pub use errors::{Error, ErrorCode};
 
-/// Misc utility Functions.
-#[derive(ApiModule)]
-#[api_module(name = "utils")]
-pub struct UtilsModule;
-
-impl ModuleReg for UtilsModule {
-    fn reg(reg: &mut Registrar) {
-        reg.t::<AddressStringFormat>();
-        reg.f(convert_address, conversion::convert_address_api);
-    }
-}

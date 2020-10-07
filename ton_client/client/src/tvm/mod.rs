@@ -14,8 +14,8 @@
 
 mod check_transaction;
 mod errors;
-mod execute_get;
-mod execute_message;
+pub(crate) mod execute_get;
+pub(crate) mod execute_message;
 mod types;
 
 #[cfg(test)]
@@ -27,15 +27,4 @@ pub use execute_get::{execute_get, ParamsOfExecuteGet, ResultOfExecuteGet};
 pub use execute_message::{execute_message, ParamsOfExecuteMessage, ResultOfExecuteMessage};
 pub use types::ExitCode;
 
-use crate::dispatch::{ModuleReg, Registrar};
 
-#[derive(ApiModule)]
-#[api_module(name = "tvm")]
-pub struct TvmModule;
-
-impl ModuleReg for TvmModule {
-    fn reg(reg: &mut Registrar) {
-        reg.async_f(execute_message, execute_message::execute_message_api);
-        reg.f(execute_get, execute_get::execute_get_api);
-    }
-}

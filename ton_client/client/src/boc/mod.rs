@@ -11,15 +11,13 @@
 * limitations under the License.
 */
 
-mod blockchain_config;
+pub(crate) mod blockchain_config;
 pub(crate) mod build;
 mod errors;
-mod parse;
+pub(crate) mod parse;
 #[cfg(test)]
 mod tests;
 pub(crate) mod internal;
-
-use crate::dispatch::{ModuleReg, Registrar};
 
 pub use crate::boc::parse::{
     source_boc, required_boc,
@@ -30,20 +28,3 @@ pub use blockchain_config::{
 };
 pub use build::{build_account, ParamsOfBuildAccount, ResultOfBuildAccount};
 pub use errors::{Error, ErrorCode};
-
-/// BOC manipulation module.
-#[derive(ApiModule)]
-#[api_module(name = "boc")]
-pub(crate) struct BocModule;
-impl ModuleReg for BocModule {
-    fn reg(reg: &mut Registrar) {
-        reg.f(parse_message, parse::parse_message_api);
-        reg.f(parse_transaction, parse::parse_transaction_api);
-        reg.f(parse_account, parse::parse_account_api);
-        reg.f(parse_block, parse::parse_block_api);
-        reg.f(
-            get_blockchain_config,
-            blockchain_config::get_blockchain_config_api,
-        );
-    }
-}

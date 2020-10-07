@@ -25,7 +25,6 @@ extern crate log;
 
 pub mod encoding;
 pub mod error;
-pub mod dispatch;
 pub mod crypto;
 pub mod tvm;
 pub mod abi;
@@ -33,13 +32,13 @@ pub mod client;
 pub mod boc;
 pub mod processing;
 pub mod utils;
-
+mod api;
 #[cfg(feature = "node_interaction")]
 pub mod net;
 
-mod interop;
-pub use self::interop::*;
+
 
 #[cfg(test)]
 mod tests;
 
+pub use self::api::interop::*;

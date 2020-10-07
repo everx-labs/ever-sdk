@@ -14,12 +14,11 @@
 
 use super::blocks_walking::find_last_shard_block;
 use crate::abi::Abi;
-use crate::client::ClientContext;
-use crate::dispatch::Callback;
+use crate::client::{ClientContext};
 use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ApiResult;
 use crate::processing::internal::{get_message_expiration_time, get_message_id};
-use crate::processing::types::{ProcessingEvent, ProcessingResponseType};
+use crate::processing::types::{ProcessingEvent};
 use crate::processing::Error;
 use std::sync::Arc;
 use ton_sdk::Contract;
@@ -57,21 +56,7 @@ pub struct ResultOfSendMessage {
     pub shard_block_id: String,
 }
 
-#[api_function]
-pub(crate) async fn send_message(
-    context: Arc<ClientContext>,
-    params: ParamsOfSendMessage,
-    callback: std::sync::Arc<Callback>,
-) -> ApiResult<ResultOfSendMessage> {
-    let callback = move |result: ProcessingEvent| {
-        callback.call(result, ProcessingResponseType::ProcessingEvent as u32);
-        futures::future::ready(())
-    };
-
-    send_message_rust(context, params, callback).await
-}
-
-pub async fn send_message_rust<F: futures::Future<Output = ()> + Send + Sync>(
+pub async fn send_message<F: futures::Future<Output = ()> + Send + Sync>(
     context: Arc<ClientContext>,
     params: ParamsOfSendMessage,
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync

@@ -1,18 +1,18 @@
 /*
-* Copyright 2018-2020 TON DEV SOLUTIONS LTD.
-*
-* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
-* this file except in compliance with the License.
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific TON DEV software governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2018-2020 TON DEV SOLUTIONS LTD.
+ *
+ * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+ * this file except in compliance with the License.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific TON DEV software governing permissions and
+ * limitations under the License.
+ *
+ */
 
-use super::JsonResponse;
-use crate::client::{ExternalCallback, ClientContext, ResponseType};
+use crate::client::{parse_params, ClientContext, Error};
 use crate::error::{ApiError, ApiResult};
 use api_info::{ApiModule, ApiType};
 use serde::de::DeserializeOwned;
@@ -21,44 +21,14 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
+use crate::api::interop::ResponseHandler;
+use crate::{ResponseType, StringData};
 use api_info::{Module, API};
 #[cfg(feature = "node_interaction")]
 use std::future::Future;
 
-impl JsonResponse {
-    pub(crate) fn from_result(result_json: String) -> Self {
-        Self {
-            result_json,
-            error_json: String::new(),
-        }
-    }
-
-    pub(crate) fn from_api_result<R: Serialize>(result: ApiResult<R>) -> Self {
-        match result {
-            Ok(result) => Self {
-                result_json: serde_json::to_string(&result)
-                    .unwrap_or_else(|_| crate::client::Error::cannot_serialize_result()),
-                error_json: String::new(),
-            },
-            Err(err) => Self {
-                result_json: String::new(),
-                error_json: serde_json::to_string(&err)
-                    .unwrap_or_else(|_| crate::client::Error::cannot_serialize_error()),
-            }
-        }
-    }
-
-    pub(crate) fn from_error(err: ApiError) -> Self {
-        JsonResponse {
-            result_json: String::new(),
-            error_json: serde_json::to_string(&err)
-                .unwrap_or_else(|_| crate::client::Error::cannot_serialize_error()),
-        }
-    }
-}
-
 trait SyncHandler {
-    fn handle(&self, context: Arc<ClientContext>, params_json: &str) -> JsonResponse;
+    fn handle(&self, context: Arc<ClientContext>, params_json: &str) -> ApiResult<String>;
 }
 
 trait AsyncHandler {
@@ -67,49 +37,15 @@ trait AsyncHandler {
         context: Arc<ClientContext>,
         params_json: String,
         request_id: u32,
-        on_result: Box<ExternalCallback>,
+        response_handler: ResponseHandler,
     );
 }
 
-pub(crate) struct DispatchTable {
+pub(crate) struct ApiDispatcher {
     pub(crate) api: API,
 
     sync_runners: HashMap<String, Box<dyn SyncHandler + Sync>>,
     async_runners: HashMap<String, Box<dyn AsyncHandler + Sync>>,
-}
-
-pub(crate) fn parse_params<P: DeserializeOwned>(params_json: &str) -> ApiResult<P> {
-    serde_json::from_str(params_json).map_err(|err| ApiError::invalid_params(params_json, err))
-}
-
-pub(crate) struct Callback {
-    callback: Box<ExternalCallback>,
-    request_id: u32,
-}
-
-impl Callback {
-    pub fn new(callback: Box<ExternalCallback>, request_id: u32) -> Self {
-        Self { callback, request_id }
-    }
-
-    pub fn call(&self, params_json: impl Serialize, response_type: u32) {
-        match serde_json::to_string(&params_json) {
-            Ok(result) => (self.callback)(self.request_id, &result, response_type, false),
-            Err(_) => {
-                (self.callback)(
-                    self.request_id,
-                    &crate::client::Error::cannot_serialize_result(),
-                    ResponseType::Error as u32,
-                    false)
-            }
-        };
-    }
-}
-
-impl Drop for Callback {
-    fn drop(&mut self) {
-        (self.callback)(self.request_id, "", ResponseType::Nop as u32, true)
-    }
 }
 
 #[cfg(feature = "node_interaction")]
@@ -118,7 +54,7 @@ where
     P: Send + DeserializeOwned + 'static,
     R: Send + Serialize + 'static,
     Fut: Future<Output = ApiResult<R>> + 'static,
-    F: Send + Fn(Arc<ClientContext>, P, Arc<Callback>) -> Fut + 'static,
+    F: Send + Fn(Arc<ClientContext>, P, Arc<Request>) -> Fut + 'static,
 {
     handler: Arc<F>,
     // Mutex is needed to have Sync trait implemented for struct
@@ -131,7 +67,7 @@ where
     P: Send + DeserializeOwned + 'static,
     R: Send + Serialize + 'static,
     Fut: Future<Output = ApiResult<R>> + 'static,
-    F: Send + Fn(Arc<ClientContext>, P, Arc<Callback>) -> Fut + 'static,
+    F: Send + Fn(Arc<ClientContext>, P, Arc<Request>) -> Fut + 'static,
 {
     pub fn new(handler: F) -> Self {
         Self {
@@ -147,36 +83,31 @@ where
     P: Send + DeserializeOwned + 'static,
     R: Send + Serialize + 'static,
     Fut: Send + Future<Output = ApiResult<R>> + 'static,
-    F: Send + Sync + Fn(Arc<ClientContext>, P, Arc<Callback>) -> Fut + 'static,
+    F: Send + Sync + Fn(Arc<ClientContext>, P, Arc<Request>) -> Fut + 'static,
 {
     fn handle(
         &self,
         context: Arc<ClientContext>,
         params_json: String,
         request_id: u32,
-        on_result: Box<ExternalCallback>,
+        response_handler: ResponseHandler,
     ) {
-        let callback = Callback::new(on_result, request_id);
         let handler = self.handler.clone();
         let context_copy = context.clone();
         context.async_runtime_handle.enter(move || {
             tokio::spawn(async move {
-                let callback = Arc::new(callback);
+                let request = Arc::new(Request::new(response_handler, request_id));
                 match parse_params(&params_json) {
                     Ok(params) => {
-                        let result = handler(context_copy, params, callback.clone()).await;
-                        match result {
-                            Ok(result) => callback.call(result, ResponseType::Success as u32),
-                            Err(err) => callback.call(err, ResponseType::Error as u32),
-                        }
+                        let result = handler(context_copy, params, request.clone()).await;
+                        request.send_result(result, false);
                     }
-                    Err(err) => callback.call(err, ResponseType::Error as u32),
+                    Err(err) => request.finish_with_error(err),
                 };
             });
         });
     }
 }
-
 
 #[cfg(feature = "node_interaction")]
 struct SpawnHandler<P, R, Fut, F>
@@ -220,25 +151,20 @@ where
         context: Arc<ClientContext>,
         params_json: String,
         request_id: u32,
-        on_result: Box<ExternalCallback>,
+        response_handler: ResponseHandler,
     ) {
         let handler = self.handler.clone();
         let context_copy = context.clone();
         context.async_runtime_handle.enter(move || {
             tokio::spawn(async move {
-                let result = match parse_params(&params_json) {
+                let request = Request::new(response_handler, request_id);
+                match parse_params(&params_json) {
                     Ok(params) => {
                         let result = handler(context_copy, params).await;
-                        match result {
-                            Ok(result) => {
-                                JsonResponse::from_result(serde_json::to_string(&result).unwrap())
-                            }
-                            Err(err) => JsonResponse::from_error(err),
-                        }
+                        request.finish_with(result);
                     }
-                    Err(err) => JsonResponse::from_error(err),
+                    Err(err) => request.finish_with_error(err),
                 };
-                result.send(&*on_result, request_id);
             });
         });
     }
@@ -283,20 +209,13 @@ where
         context: Arc<ClientContext>,
         _params_json: String,
         request_id: u32,
-        on_result: Box<ExternalCallback>,
+        response_handler: ResponseHandler,
     ) {
         let handler = self.handler.clone();
         let context_copy = context.clone();
         context.async_runtime_handle.enter(move || {
             tokio::spawn(async move {
-                let result = handler(context_copy).await;
-                let result = match result {
-                    Ok(result) => {
-                        JsonResponse::from_result(serde_json::to_string(&result).unwrap())
-                    }
-                    Err(err) => JsonResponse::from_error(err),
-                };
-                result.send(&*on_result, request_id);
+                Request::new(response_handler, request_id).finish_with(handler(context_copy).await);
             });
         });
     }
@@ -332,18 +251,12 @@ where
     R: Send + Serialize,
     F: Fn(Arc<ClientContext>, P) -> ApiResult<R>,
 {
-    fn handle(&self, context: Arc<ClientContext>, params_json: &str) -> JsonResponse {
+    fn handle(&self, context: Arc<ClientContext>, params_json: &str) -> ApiResult<String> {
         match parse_params(params_json) {
-            Ok(params) => {
-                let result = (self.handler)(context, params);
-                match result {
-                    Ok(result) => {
-                        JsonResponse::from_result(serde_json::to_string(&result).unwrap())
-                    }
-                    Err(err) => JsonResponse::from_error(err),
-                }
-            }
-            Err(err) => JsonResponse::from_error(err),
+            Ok(params) => (self.handler)(context, params).and_then(|x| {
+                serde_json::to_string(&x).map_err(|err| Error::cannot_serialize_result(err))
+            }),
+            Err(err) => Err(err),
         }
     }
 }
@@ -375,18 +288,19 @@ where
     R: Send + Serialize,
     F: Fn(Arc<ClientContext>) -> ApiResult<R>,
 {
-    fn handle(&self, context: Arc<ClientContext>, _params_json: &str) -> JsonResponse {
-        let result = (self.handler)(context);
-        match result {
-            Ok(result) => JsonResponse::from_result(serde_json::to_string(&result).unwrap()),
-            Err(err) => JsonResponse::from_error(err),
+    fn handle(&self, context: Arc<ClientContext>, _params_json: &str) -> ApiResult<String> {
+        match (self.handler)(context) {
+            Ok(result) => {
+                serde_json::to_string(&result).map_err(|err| Error::cannot_serialize_result(err))
+            }
+            Err(err) => Err(err),
         }
     }
 }
 
-impl DispatchTable {
-    pub fn new() -> DispatchTable {
-        DispatchTable {
+impl ApiDispatcher {
+    pub fn new() -> ApiDispatcher {
+        ApiDispatcher {
             api: API {
                 version: "1.0.0".into(),
                 modules: vec![],
@@ -398,11 +312,14 @@ impl DispatchTable {
     }
 
     pub fn sync_dispatch(
-        &self, context: Arc<ClientContext>, name: String, params_json: String
-    ) -> JsonResponse {
-        match self.sync_runners.get(&name) {
+        &self,
+        context: Arc<ClientContext>,
+        function_name: String,
+        params_json: String,
+    ) -> ApiResult<String> {
+        match self.sync_runners.get(&function_name) {
             Some(handler) => handler.handle(context, params_json.as_str()),
-            None => JsonResponse::from_error(ApiError::unknown_function(&name)),
+            None => Err(ApiError::unknown_function(&function_name)),
         }
     }
 
@@ -410,17 +327,15 @@ impl DispatchTable {
     pub fn async_dispatch(
         &self,
         context: Arc<ClientContext>,
-        function: String,
+        function_name: String,
         params_json: String,
         request_id: u32,
-        on_result: Box<ExternalCallback>,
+        response_handler: ResponseHandler,
     ) {
-        match self.async_runners.get(&function) {
-            Some(handler) => handler.handle(context, params_json, request_id, on_result),
-            None => JsonResponse::from_error(ApiError::unknown_function(&function)).send(
-                &*on_result,
-                request_id,
-            ),
+        match self.async_runners.get(&function_name) {
+            Some(handler) => handler.handle(context, params_json, request_id, response_handler),
+            None => Request::new(response_handler, request_id)
+                .finish_with_error(ApiError::unknown_function(&function_name)),
         }
     }
 
@@ -428,13 +343,16 @@ impl DispatchTable {
     pub fn async_dispatch(
         &self,
         context: Arc<ClientContext>,
-        function: String,
+        function_name: String,
         params_json: String,
         request_id: u32,
-        on_result: Box<ExternalCallback>,
+        response_handler: ResponseHandler,
     ) {
-        self.sync_dispatch(context, function, params_json)
-            .send(&*on_result, request_id, 1);
+        Request::new(response_handler, request_id).finish_with(self.sync_dispatch(
+            context,
+            function_name,
+            params_json,
+        ));
     }
 
     pub(crate) fn register<'h, M: ApiModule + ModuleReg>(&'h mut self) {
@@ -449,15 +367,15 @@ impl DispatchTable {
 
 pub(crate) struct Registrar<'a> {
     module: Module,
-    dispatcher: &'a mut DispatchTable,
+    dispatcher: &'a mut ApiDispatcher,
 }
 
 impl Registrar<'_> {
-    pub fn t<T: ApiType>(&mut self) {
+    pub fn api_type<T: ApiType>(&mut self) {
         self.module.types.push(T::api());
     }
 
-    pub fn async_f<P, R, F>(
+    pub fn api_async_fn<P, R, F>(
         &mut self,
         handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> F,
         api: fn() -> api_info::Function,
@@ -466,8 +384,8 @@ impl Registrar<'_> {
         R: ApiType + Send + Serialize + 'static,
         F: Send + Future<Output = ApiResult<R>> + 'static,
     {
-        self.t::<P>();
-        self.t::<R>();
+        self.api_type::<P>();
+        self.api_type::<R>();
         let function = api();
         let name = format!("{}.{}", self.module.name, function.name);
         self.module.functions.push(function);
@@ -486,17 +404,17 @@ impl Registrar<'_> {
         );
     }
 
-    pub fn async_f_callback<P, R, F>(
+    pub fn api_async_fn_with_callback<P, R, F>(
         &mut self,
-        handler: fn(context: std::sync::Arc<ClientContext>, params: P, callback: Arc<Callback>) -> F,
+        handler: fn(context: std::sync::Arc<ClientContext>, params: P, callback: Arc<Request>) -> F,
         api: fn() -> api_info::Function,
     ) where
         P: ApiType + Send + DeserializeOwned + 'static,
         R: ApiType + Send + Serialize + 'static,
         F: Send + Future<Output = ApiResult<R>> + 'static,
     {
-        self.t::<P>();
-        self.t::<R>();
+        self.api_type::<P>();
+        self.api_type::<R>();
         let function = api();
         let name = format!("{}.{}", self.module.name, function.name);
         self.module.functions.push(function);
@@ -505,7 +423,7 @@ impl Registrar<'_> {
             .insert(name.clone(), Box::new(SpawnHandlerCallback::new(handler)));
     }
 
-    pub fn f<P, R>(
+    pub fn api_sync_fn<P, R>(
         &mut self,
         handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> ApiResult<R>,
         api: fn() -> api_info::Function,
@@ -513,8 +431,8 @@ impl Registrar<'_> {
         P: ApiType + Send + DeserializeOwned + 'static,
         R: ApiType + Send + Serialize + 'static,
     {
-        self.t::<P>();
-        self.t::<R>();
+        self.api_type::<P>();
+        self.api_type::<R>();
         let function = api();
         let name = format!("{}.{}", self.module.name, function.name);
         self.module.functions.push(function);
@@ -532,14 +450,14 @@ impl Registrar<'_> {
         );
     }
 
-    pub fn f_no_args<R>(
+    pub fn api_sync_fn_without_args<R>(
         &mut self,
         handler: fn(context: std::sync::Arc<ClientContext>) -> ApiResult<R>,
         api: fn() -> api_info::Function,
     ) where
         R: ApiType + Send + Serialize + 'static,
     {
-        self.t::<R>();
+        self.api_type::<R>();
         let function = api();
         let name = format!("{}.{}", self.module.name, function.name);
         self.module.functions.push(function);
@@ -559,4 +477,67 @@ impl Registrar<'_> {
 
 pub(crate) trait ModuleReg {
     fn reg(registrar: &mut Registrar);
+}
+
+pub struct Request {
+    response_handler: ResponseHandler,
+    request_id: u32,
+}
+
+impl Request {
+    pub fn new(response_handler: ResponseHandler, request_id: u32) -> Self {
+        Self {
+            response_handler,
+            request_id,
+        }
+    }
+
+    fn call_response_handler(
+        &self,
+        params_json: impl Serialize,
+        response_type: u32,
+        finished: bool,
+    ) {
+        match serde_json::to_string(&params_json) {
+            Ok(result) => (self.response_handler)(
+                self.request_id,
+                StringData::from(&result),
+                response_type,
+                finished,
+            ),
+            Err(_) => (self.response_handler)(
+                self.request_id,
+                StringData::from(crate::client::errors::CANNOT_SERIALIZE_RESULT),
+                response_type,
+                false,
+            ),
+        };
+    }
+
+    pub fn send_result(&self, result: ApiResult<impl Serialize>, finished: bool) {
+        match result {
+            Ok(result) => {
+                self.call_response_handler(result, ResponseType::Success as u32, finished)
+            }
+            Err(err) => self.call_response_handler(err, ResponseType::Error as u32, finished),
+        }
+    }
+
+    pub fn finish_with(&self, result: ApiResult<impl Serialize>) {
+        self.send_result(result, true);
+    }
+
+    pub fn finish_with_error(&self, error: ApiError) {
+        self.call_response_handler(error, ResponseType::Error as u32, true);
+    }
+
+    pub fn send_response(&self, result: impl Serialize, response_type: u32) {
+        self.call_response_handler(result, response_type, false);
+    }
+}
+
+impl Drop for Request {
+    fn drop(&mut self) {
+        (self.response_handler)(self.request_id, "".into(), ResponseType::Nop as u32, true)
+    }
 }
