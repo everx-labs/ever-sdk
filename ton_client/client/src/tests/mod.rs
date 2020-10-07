@@ -16,7 +16,7 @@ use crate::abi::{
     encode_message, Abi, CallSet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
 use crate::api::{AbiModule, NetModule, ProcessingModule};
-use crate::client::{ClientContext, ContextHandle, Error, Request, ResponseType, StringData};
+use crate::client::{ClientContext, ContextHandle, Error};
 use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
@@ -40,6 +40,8 @@ use tokio::sync::{
     mpsc::{channel, Sender},
     Mutex,
 };
+use crate::api::interop::{StringData, ResponseType};
+use crate::api::dispatch::Request;
 
 mod common;
 

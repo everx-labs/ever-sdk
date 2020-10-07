@@ -13,9 +13,11 @@
  */
 
 use crate::api::get_dispatcher;
-use crate::client::{Client, ContextHandle, Error, Request, ResponseHandler, StringData};
+use crate::client::{Client, ContextHandle, Error};
 use crate::error::ApiResult;
 use serde_json::Value;
+use failure::_core::ptr::null;
+use crate::api::dispatch::Request;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ResultOfCreateContext {
@@ -111,3 +113,56 @@ pub unsafe extern "C" fn tc_read_string(string: *const String) -> StringData {
         StringData::from(&*string)
     }
 }
+
+#[derive(Serialize, Deserialize, Clone, num_derive::FromPrimitive)]
+pub enum ResponseType {
+    Success = 0,
+    Error = 1,
+    Nop = 2,
+    Custom = 100,
+}
+
+#[repr(C)]
+#[derive(Clone)]
+pub struct StringData {
+    pub content: *const u8,
+    pub len: u32,
+}
+
+impl StringData {
+    pub fn default() -> Self {
+        Self {
+            content: null(),
+            len: 0,
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        unsafe {
+            let utf8 = std::slice::from_raw_parts(self.content, self.len as usize);
+            String::from_utf8(utf8.to_vec()).unwrap()
+        }
+    }
+}
+
+impl From<&String> for StringData {
+    fn from(s: &String) -> Self {
+        Self {
+            content: s.as_ptr(),
+            len: s.len() as u32,
+        }
+    }
+}
+
+impl From<&str> for StringData {
+    fn from(s: &str) -> Self {
+        Self {
+            content: s.as_ptr(),
+            len: s.len() as u32,
+        }
+    }
+}
+
+pub type ResponseHandler =
+    extern "C" fn(request_id: u32, params_json: StringData, response_type: u32, finished: bool);
+

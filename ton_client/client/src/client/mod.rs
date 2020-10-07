@@ -13,14 +13,13 @@
 
 mod client;
 mod client_env;
-mod errors;
+pub(crate) mod errors;
 mod std_client_env;
 #[cfg(test)]
 mod tests;
 
 pub use client::{
-    Client, ClientConfig, ClientContext, ContextHandle, CryptoConfig, Request, ResponseHandler,
-    ResponseType, ResultOfVersion, StringData,
+    Client, ClientConfig, ClientContext, ContextHandle, CryptoConfig, ResultOfVersion,
 };
 pub use errors::{Error, ErrorCode};
 

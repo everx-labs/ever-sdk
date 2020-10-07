@@ -12,7 +12,7 @@
  *
  */
 
-use crate::client::{parse_params, ClientContext, Error, Request, ResponseHandler};
+use crate::client::{parse_params, ClientContext, Error};
 use crate::error::{ApiError, ApiResult};
 use api_info::{ApiModule, ApiType};
 use serde::de::DeserializeOwned;
@@ -24,6 +24,8 @@ use std::sync::Arc;
 use api_info::{Module, API};
 #[cfg(feature = "node_interaction")]
 use std::future::Future;
+use crate::api::interop::ResponseHandler;
+use crate::{StringData, ResponseType};
 
 trait SyncHandler {
     fn handle(&self, context: Arc<ClientContext>, params_json: &str) -> ApiResult<String>;
@@ -477,3 +479,67 @@ impl Registrar<'_> {
 pub(crate) trait ModuleReg {
     fn reg(registrar: &mut Registrar);
 }
+
+pub struct Request {
+    response_handler: ResponseHandler,
+    request_id: u32,
+}
+
+impl Request {
+    pub fn new(response_handler: ResponseHandler, request_id: u32) -> Self {
+        Self {
+            response_handler,
+            request_id,
+        }
+    }
+
+    fn call_response_handler(
+        &self,
+        params_json: impl Serialize,
+        response_type: u32,
+        finished: bool,
+    ) {
+        match serde_json::to_string(&params_json) {
+            Ok(result) => (self.response_handler)(
+                self.request_id,
+                StringData::from(&result),
+                response_type,
+                finished,
+            ),
+            Err(_) => (self.response_handler)(
+                self.request_id,
+                StringData::from(crate::client::errors::CANNOT_SERIALIZE_RESULT),
+                response_type,
+                false,
+            ),
+        };
+    }
+
+    pub fn send_result(&self, result: ApiResult<impl Serialize>, finished: bool) {
+        match result {
+            Ok(result) => {
+                self.call_response_handler(result, ResponseType::Success as u32, finished)
+            }
+            Err(err) => self.call_response_handler(err, ResponseType::Error as u32, finished),
+        }
+    }
+
+    pub fn finish_with(&self, result: ApiResult<impl Serialize>) {
+        self.send_result(result, true);
+    }
+
+    pub fn finish_with_error(&self, error: ApiError) {
+        self.call_response_handler(error, ResponseType::Error as u32, true);
+    }
+
+    pub fn send_response(&self, result: impl Serialize, response_type: u32) {
+        self.call_response_handler(result, response_type, false);
+    }
+}
+
+impl Drop for Request {
+    fn drop(&mut self) {
+        (self.response_handler)(self.request_id, "".into(), ResponseType::Nop as u32, true)
+    }
+}
+

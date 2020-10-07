@@ -20,140 +20,16 @@ use crate::net::{NetworkConfig, NodeClient};
 
 use super::std_client_env::StdClientEnv;
 use super::{ClientEnv, Error};
-use crate::client::errors::CANNOT_SERIALIZE_RESULT;
 use serde::de::DeserializeOwned;
-use serde::Serialize;
-use std::ptr::null;
 
 lazy_static! {
     static ref CLIENT: Mutex<Client> = Mutex::new(Client::new());
-}
-
-#[derive(Serialize, Deserialize, Clone, num_derive::FromPrimitive)]
-pub enum ResponseType {
-    Success = 0,
-    Error = 1,
-    Nop = 2,
-    Custom = 100,
-}
-
-#[repr(C)]
-#[derive(Clone)]
-pub struct StringData {
-    pub content: *const u8,
-    pub len: u32,
-}
-
-impl StringData {
-    pub fn default() -> Self {
-        Self {
-            content: null(),
-            len: 0,
-        }
-    }
-
-    pub fn to_string(&self) -> String {
-        unsafe {
-            let utf8 = std::slice::from_raw_parts(self.content, self.len as usize);
-            String::from_utf8(utf8.to_vec()).unwrap()
-        }
-    }
-}
-
-impl From<&String> for StringData {
-    fn from(s: &String) -> Self {
-        Self {
-            content: s.as_ptr(),
-            len: s.len() as u32,
-        }
-    }
-}
-
-impl From<&str> for StringData {
-    fn from(s: &str) -> Self {
-        Self {
-            content: s.as_ptr(),
-            len: s.len() as u32,
-        }
-    }
-}
-
-pub type ResponseHandler =
-    extern "C" fn(request_id: u32, params_json: StringData, response_type: u32, finished: bool);
-
-pub struct Request {
-    response_handler: ResponseHandler,
-    request_id: u32,
-}
-
-impl Request {
-    pub fn new(response_handler: ResponseHandler, request_id: u32) -> Self {
-        Self {
-            response_handler,
-            request_id,
-        }
-    }
-
-    fn call_response_handler(
-        &self,
-        params_json: impl Serialize,
-        response_type: u32,
-        finished: bool,
-    ) {
-        match serde_json::to_string(&params_json) {
-            Ok(result) => (self.response_handler)(
-                self.request_id,
-                StringData::from(&result),
-                response_type,
-                finished,
-            ),
-            Err(_) => (self.response_handler)(
-                self.request_id,
-                StringData::from(CANNOT_SERIALIZE_RESULT),
-                response_type,
-                false,
-            ),
-        };
-    }
-
-    pub fn send_result(&self, result: ApiResult<impl Serialize>, finished: bool) {
-        match result {
-            Ok(result) => {
-                self.call_response_handler(result, ResponseType::Success as u32, finished)
-            }
-            Err(err) => self.call_response_handler(err, ResponseType::Error as u32, finished),
-        }
-    }
-
-    pub fn finish_with(&self, result: ApiResult<impl Serialize>) {
-        self.send_result(result, true);
-    }
-
-    pub fn finish_with_error(&self, error: ApiError) {
-        self.call_response_handler(error, ResponseType::Error as u32, true);
-    }
-
-    pub fn send_response(&self, result: impl Serialize, response_type: u32) {
-        self.call_response_handler(result, response_type, false);
-    }
-}
-
-impl Drop for Request {
-    fn drop(&mut self) {
-        (self.response_handler)(self.request_id, "".into(), ResponseType::Nop as u32, true)
-    }
 }
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfVersion {
     /// core version
     pub version: String,
-}
-
-#[derive(Serialize, Deserialize, ApiType, Clone)]
-pub struct ParamsOfUnregisterCallback {
-    /// Registered callback ID
-    pub callback_id: u32,
 }
 
 pub type ContextHandle = u32;
