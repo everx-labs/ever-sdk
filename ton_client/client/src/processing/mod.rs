@@ -21,20 +21,22 @@ mod blocks_walking;
 mod errors;
 mod fetching;
 mod internal;
-mod parsing;
+pub(crate) mod parsing;
 pub(crate) mod process_message;
 mod send_message;
 mod types;
 mod wait_for_transaction;
 
 pub use errors::{Error, ErrorCode};
-pub use process_message::{process_message_rust, MessageSource, ParamsOfProcessMessage};
 pub(crate) use process_message::process_message;
-pub use send_message::{send_message_rust, ParamsOfSendMessage, ResultOfSendMessage};
+pub use process_message::{process_message_rust, MessageSource, ParamsOfProcessMessage};
 pub(crate) use send_message::send_message;
-pub use types::{AbiDecodedOutput, ProcessingEvent, ProcessingResponseType, TransactionOutput};
-pub use wait_for_transaction::{wait_for_transaction_rust, ParamsOfWaitForTransaction};
+pub use send_message::{send_message_rust, ParamsOfSendMessage, ResultOfSendMessage};
+pub use types::{
+    DecodedOutput, ProcessingEvent, ProcessingResponseType, ResultOfProcessMessage,
+};
 pub(crate) use wait_for_transaction::wait_for_transaction;
+pub use wait_for_transaction::{wait_for_transaction_rust, ParamsOfWaitForTransaction};
 
 pub const DEFAULT_NETWORK_RETRIES_LIMIT: i8 = -1;
 pub const DEFAULT_NETWORK_RETRIES_TIMEOUT: u32 = 1000;
@@ -53,8 +55,8 @@ impl ModuleReg for ProcessingModule {
     fn reg(reg: &mut Registrar) {
         reg.t::<MessageSource>();
         reg.t::<ProcessingEvent>();
-        reg.t::<TransactionOutput>();
-        reg.t::<AbiDecodedOutput>();
+        reg.t::<ResultOfProcessMessage>();
+        reg.t::<DecodedOutput>();
 
         reg.async_f_callback(send_message, send_message::send_message_api);
         reg.async_f_callback(

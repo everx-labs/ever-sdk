@@ -6,10 +6,10 @@ use crate::processing::blocks_walking::wait_next_block;
 use crate::processing::internal::{
     can_retry_network_error, get_exit_code, resolve_network_retries_timeout,
 };
-use crate::processing::parsing::{decode_abi_output, parse_transaction_boc};
-use crate::processing::types::TvmExitCode;
+use crate::processing::parsing::{decode_output, parse_transaction_boc};
+use crate::tvm::{ExitCode};
 use crate::processing::{
-    Error, ParamsOfWaitForTransaction, ProcessingEvent, TransactionOutput,
+    Error, ParamsOfWaitForTransaction, ProcessingEvent, ResultOfProcessMessage,
 };
 use serde_json::Value;
 use std::sync::Arc;
@@ -56,7 +56,7 @@ pub async fn fetch_next_shard_block<F: futures::Future<Output = ()> + Send + Syn
                 }
 
                 // If network retries limit has reached, return error
-                if !can_retry_network_error(context, &mut retries) {
+                if !can_retry_network_error(context, retries) {
                     return Err(error);
                 }
             }
@@ -64,6 +64,7 @@ pub async fn fetch_next_shard_block<F: futures::Future<Output = ()> + Send + Syn
 
         // Perform delay before retry
         context.env.set_timer(network_retries_timeout as u64).await;
+        retries = retries.checked_add(1).unwrap_or(retries);
     }
 }
 
@@ -114,26 +115,26 @@ pub async fn fetch_transaction_result<F: futures::Future<Output = ()> + Send + S
     transaction_id: &str,
     abi: &Option<Abi>,
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync,
-) -> ApiResult<TransactionOutput> {
+) -> ApiResult<ResultOfProcessMessage> {
     let transaction_boc =
         fetch_transaction_boc(context, transaction_id, message_id, shard_block_id).await?;
     let (transaction, out_messages) = parse_transaction_boc(context.clone(), &transaction_boc)?;
     let abi_decoded = if let Some(abi) = abi {
-        Some(decode_abi_output(context, abi, &out_messages)?)
+        Some(decode_output(context, abi, &out_messages)?)
     } else {
         None
     };
     let exit_code = get_exit_code(&transaction, shard_block_id, message_id)?;
 
-    if exit_code == TvmExitCode::MessageExpired as i32
-        || exit_code == TvmExitCode::ReplayProtection as i32
+    if exit_code == ExitCode::MessageExpired as i32
+        || exit_code == ExitCode::ReplayProtection as i32
     {
         Err(Error::message_expired(&message_id, shard_block_id))
     } else {
-        let result = TransactionOutput {
+        let result = ResultOfProcessMessage {
             transaction,
             out_messages,
-            abi_decoded,
+            decoded: abi_decoded,
         };
         if params.send_events {
             callback(ProcessingEvent::TransactionReceived {
@@ -163,7 +164,7 @@ async fn fetch_transaction_boc(
             }
             Err(error) => {
                 // If network retries limit has reached, return error
-                if !can_retry_network_error(context, &mut retries) {
+                if !can_retry_network_error(context, retries) {
                     return Err(error);
                 }
             }
@@ -171,5 +172,6 @@ async fn fetch_transaction_boc(
 
         // Perform delay before retry
         context.env.set_timer(network_retries_timeout as u64).await;
+        retries = retries.checked_add(1).unwrap_or(retries);
     }
 }

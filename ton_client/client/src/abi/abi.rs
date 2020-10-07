@@ -3,7 +3,7 @@ use crate::error::ApiResult;
 use serde_json::Value;
 use ton_abi::{Token, TokenValue};
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct AbiHandle(u32);
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]

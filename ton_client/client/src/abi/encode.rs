@@ -3,19 +3,19 @@ use crate::abi::internal::{
     add_sign_to_message, create_tvc_image, resolve_abi, result_of_encode_message,
 };
 use crate::abi::{Abi, Error, FunctionHeader, Signer, DEFAULT_WORKCHAIN};
-use crate::boc::get_boc_hash;
+use crate::boc::internal::get_boc_hash;
 use crate::client::ClientContext;
 use crate::encoding::{account_decode, account_encode, base64_decode, hex_decode};
 use crate::error::ApiResult;
 use serde_json::Value;
 use std::sync::Arc;
 use ton_abi::Contract;
-use ton_block::{MsgAddressInt, Serializable};
+use ton_block::MsgAddressInt;
 use ton_sdk::{ContractImage, FunctionCallSet};
 
 //--------------------------------------------------------------------------- encode_deploy_message
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct DeploySet {
     /// Content of TVC file. Must be encoded with `base64`.
     pub tvc: String,
@@ -27,7 +27,17 @@ pub struct DeploySet {
     pub initial_data: Option<Value>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+impl DeploySet {
+    pub fn some_with_tvc(tvc: String) -> Option<Self> {
+        Some(Self {
+            tvc,
+            workchain_id: None,
+            initial_data: None,
+        })
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct CallSet {
     /// Function name.
     pub function_name: String,
@@ -41,6 +51,23 @@ pub struct CallSet {
 
     /// Function input according to ABI.
     pub input: Option<Value>,
+}
+
+impl CallSet {
+    pub fn some_with_function(function: &str) -> Option<Self> {
+        Some(Self {
+            function_name: function.into(),
+            header: None,
+            input: None,
+        })
+    }
+    pub fn some_with_function_and_input(function: &str, input: Value) -> Option<Self> {
+        Some(Self {
+            function_name: function.into(),
+            input: Some(input),
+            header: None,
+        })
+    }
 }
 
 fn calc_timeout(timeout: u32, grow_rate: f32, processing_try_index: u8) -> u32 {

@@ -741,7 +741,7 @@ impl ApiErrorCode for i32 {
 }
 
 #[cfg(feature = "node_interaction")]
-pub(crate) fn apierror_from_sdkerror<F>(err: &failure::Error, default_err: F, client: Option<&crate::net::NodeClient>) -> ApiError
+pub(crate) fn _apierror_from_sdkerror<F>(err: &failure::Error, default_err: F, client: Option<&crate::net::NodeClient>) -> ApiError
     where
         F: Fn(String) -> ApiError,
 {
@@ -756,7 +756,7 @@ pub(crate) fn apierror_from_sdkerror<F>(err: &failure::Error, default_err: F, cl
         Some(ton_sdk::SdkError::ClockOutOfSync { delta_ms, threshold_ms }) =>
             ApiError::clock_out_of_sync(*delta_ms, *threshold_ms),
         Some(ton_sdk::SdkError::ResumableNetworkError { state, error }) => {
-            let mut api_error = apierror_from_sdkerror(error, default_err, client);
+            let mut api_error = _apierror_from_sdkerror(error, default_err, client);
             api_error.message_processing_state = Some(state.clone());
             api_error
         }

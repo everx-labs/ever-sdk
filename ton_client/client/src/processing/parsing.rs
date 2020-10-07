@@ -3,7 +3,7 @@ use crate::boc::{parse_message, parse_transaction, ParamsOfParse};
 use crate::client::ClientContext;
 use crate::error::ApiResult;
 use crate::processing::fetching::TransactionBoc;
-use crate::processing::types::AbiDecodedOutput;
+use crate::processing::types::DecodedOutput;
 use serde_json::Value;
 use std::sync::Arc;
 
@@ -35,11 +35,11 @@ pub(crate) fn parse_transaction_boc(
     ))
 }
 
-pub(crate) fn decode_abi_output(
+pub(crate) fn decode_output(
     context: &Arc<ClientContext>,
     abi: &Abi,
     parsed_messages: &Vec<Value>,
-) -> ApiResult<AbiDecodedOutput> {
+) -> ApiResult<DecodedOutput> {
     let mut out_messages = Vec::new();
     let mut output = None;
     for parsed_message in parsed_messages {
@@ -63,7 +63,7 @@ pub(crate) fn decode_abi_output(
         };
         out_messages.push(decoded);
     }
-    Ok(AbiDecodedOutput {
+    Ok(DecodedOutput {
         out_messages,
         output,
     })

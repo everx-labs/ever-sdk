@@ -30,34 +30,31 @@ pub use error::SdkError;
 
 mod contract;
 pub use contract::{
-    Contract,
-    ContractImage,
-    FunctionCallSet,
-    LocalRunContext,
-    MessageProcessingState,
-    ReceivedTransaction,
-    SdkMessage};
+    Contract, ContractImage, FunctionCallSet, LocalRunContext, MessageProcessingState,
+    ReceivedTransaction, SdkMessage,
+};
 
 mod message;
 pub use message::{Message, MessageId, MessageType};
 
 mod local_tvm;
+pub use local_tvm::{call_tvm, call_tvm_stack};
 
 mod transaction;
-pub use transaction::{Transaction, TransactionId, TransactionFees};
+pub use transaction::{Transaction, TransactionFees, TransactionId};
 
 #[cfg(feature = "node_interaction")]
 mod block;
 #[cfg(feature = "node_interaction")]
-pub use block::{Block, BLOCK_FIELDS, MsgDescr};
+pub use block::{Block, MsgDescr, BLOCK_FIELDS};
 
 pub mod types;
-pub use types::{NetworkConfig, AbiConfig, BlockId};
+pub use types::{AbiConfig, BlockId, NetworkConfig};
 
 #[cfg(feature = "node_interaction")]
 pub mod node_client;
 #[cfg(feature = "node_interaction")]
-pub use node_client::{OrderBy, SortDirection, NodeClient};
+pub use node_client::{NodeClient, OrderBy, SortDirection};
 
 pub mod json_helper;
 
@@ -70,8 +67,11 @@ pub fn init(config: NetworkConfig) -> ton_types::Result<NodeClient> {
 /// Init SDK
 #[cfg(feature = "node_interaction")]
 pub fn init_json(config: &str) -> ton_types::Result<NodeClient> {
-    init(serde_json::from_str(config)
-        .map_err(|err| SdkError::InvalidArg { msg: format!("{}", err) } )?)
+    init(
+        serde_json::from_str(config).map_err(|err| SdkError::InvalidArg {
+            msg: format!("{}", err),
+        })?,
+    )
 }
 
 #[cfg(test)]

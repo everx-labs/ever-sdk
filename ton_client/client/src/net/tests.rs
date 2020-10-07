@@ -110,11 +110,7 @@ async fn subscribe_for_transactions_with_addresses() {
         signer: Signer::WithKeys(keys),
         processing_try_index: None,
         address: None,
-        call_set: Some(CallSet {
-            function_name: "constructor".to_owned(),
-            header: None,
-            input: None,
-        }),
+        call_set: CallSet::some_with_function("constructor"),
     };
 
     let msg = client.encode_message(deploy_params.clone()).await;
@@ -153,7 +149,7 @@ async fn subscribe_for_transactions_with_addresses() {
     let transactions = transactions.lock().await;
     assert_eq!(transactions.len(), 2);
     assert_ne!(transactions[0]["id"], transactions[1]["id"]);
-    
+
     let _: () = client.request_async("net.unsubscribe", handle).await;
 }
 

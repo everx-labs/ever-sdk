@@ -28,6 +28,7 @@ use crate::client::ClientModule;
 use crate::crypto::CryptoModule;
 use crate::processing::ProcessingModule;
 use crate::utils::UtilsModule;
+use crate::tvm::TvmModule;
 
 lazy_static! {
     static ref HANDLERS: DispatchTable = create_handlers();
@@ -47,6 +48,8 @@ pub(crate) fn get_handlers() -> &'static DispatchTable {
     return &HANDLERS;
 }
 
+pub type Callback = dyn Fn(u32, &str, &str, u32) + Send + Sync;
+
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfVersion {
     /// core version
@@ -61,7 +64,7 @@ pub struct ParamsOfUnregisterCallback {
 
 fn create_handlers() -> DispatchTable {
     let mut handlers = DispatchTable::new();
-    crate::tvm::register(&mut handlers);
+
 
     handlers.register::<ClientModule>();
     handlers.register::<CryptoModule>();
@@ -69,6 +72,7 @@ fn create_handlers() -> DispatchTable {
     handlers.register::<BocModule>();
     handlers.register::<ProcessingModule>();
     handlers.register::<UtilsModule>();
+    handlers.register::<TvmModule>();
 
     #[cfg(feature = "node_interaction")]
     handlers.register::<NetModule>();

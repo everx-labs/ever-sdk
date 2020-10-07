@@ -3,12 +3,12 @@ use crate::abi::{
     ParamsOfEncodeMessage, Signer,
 };
 use crate::processing::{
-    send_message, wait_for_transaction, 
+    send_message, wait_for_transaction,
     MessageSource, ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction,
     ProcessingEvent, ProcessingModule, ProcessingResponseType
 };
 
-use crate::processing::types::AbiDecodedOutput;
+use crate::processing::types::DecodedOutput;
 use crate::tests::{TestClient, EVENTS};
 use api_info::ApiModule;
 
@@ -45,11 +45,7 @@ async fn test_wait_message() {
         .encode_message(ParamsOfEncodeMessage {
             abi: abi.clone(),
             address: None,
-            deploy_set: Some(DeploySet {
-                workchain_id: None,
-                tvc: events_tvc.clone(),
-                initial_data: None,
-            }),
+            deploy_set: DeploySet::some_with_tvc(events_tvc.clone()),
             call_set: Some(CallSet {
                 function_name: "constructor".into(),
                 header: Some(FunctionHeader {
@@ -91,8 +87,8 @@ async fn test_wait_message() {
 
     assert_eq!(output.out_messages.len(), 0);
     assert_eq!(
-        output.abi_decoded,
-        Some(AbiDecodedOutput {
+        output.decoded,
+        Some(DecodedOutput {
             out_messages: vec![],
             output: None,
         })
@@ -146,11 +142,7 @@ async fn test_process_message() {
         .encode_message(ParamsOfEncodeMessage {
             abi: abi.clone(),
             address: None,
-            deploy_set: Some(DeploySet {
-                workchain_id: None,
-                tvc: events_tvc.clone(),
-                initial_data: None,
-            }),
+            deploy_set: DeploySet::some_with_tvc(events_tvc.clone()),
             call_set: Some(CallSet {
                 function_name: "constructor".into(),
                 header: Some(FunctionHeader {
@@ -183,8 +175,8 @@ async fn test_process_message() {
 
     assert_eq!(output.out_messages.len(), 0);
     assert_eq!(
-        output.abi_decoded,
-        Some(AbiDecodedOutput {
+        output.decoded,
+        Some(DecodedOutput {
             out_messages: vec![],
             output: None,
         })
@@ -225,30 +217,30 @@ async fn test_process_message() {
         }
     };
 
-    let output = client.net_process_message(ParamsOfProcessMessage {
-                message: MessageSource::AbiEncodingParams(ParamsOfEncodeMessage {
-                    abi: abi.clone(),
-                    address: Some(encoded.address.clone()),
-                    deploy_set: None,
-                    call_set: Some(CallSet {
-                        function_name: "returnValue".into(),
-                        header: None,
-                        input: Some(json!({
-                            "id": "0x1"
-                        })),
+    let output = client
+        .net_process_message(ParamsOfProcessMessage {
+            message: MessageSource::EncodingParams(ParamsOfEncodeMessage {
+                abi: abi.clone(),
+                address: Some(encoded.address.clone()),
+                deploy_set: None,
+                call_set: CallSet::some_with_function_and_input(
+                    "returnValue",
+                    json!({
+                        "id": "0x1"
                     }),
-                    signer: Signer::WithKeys(keys.clone()),
-                    processing_try_index: None,
-                }),
+                ),
+                signer: Signer::WithKeys(keys.clone()),
+                processing_try_index: None,
+            }),
                 send_events: true,
             },
             callback
-        )
+)
         .await;
     assert_eq!(output.out_messages.len(), 2);
     assert_eq!(
-        output.abi_decoded,
-        Some(AbiDecodedOutput {
+        output.decoded,
+        Some(DecodedOutput {
             out_messages: vec![
                 Some(DecodedMessageBody {
                     message_type: DecodedMessageType::Event,

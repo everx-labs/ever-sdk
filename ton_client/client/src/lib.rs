@@ -26,7 +26,6 @@ extern crate log;
 pub mod encoding;
 pub mod error;
 pub mod dispatch;
-pub mod contracts;
 pub mod crypto;
 pub mod tvm;
 pub mod abi;

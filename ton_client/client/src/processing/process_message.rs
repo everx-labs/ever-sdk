@@ -3,16 +3,36 @@ use crate::client::ClientContext;
 use crate::dispatch::Callback;
 use crate::error::ApiResult;
 use crate::processing::internal::can_retry_expired_message;
-use crate::processing::types::{ProcessingEvent, ProcessingResponseType, TransactionOutput};
-use crate::processing::{
-    send_message_rust, wait_for_transaction_rust, ErrorCode, ParamsOfSendMessage, ParamsOfWaitForTransaction,
-};
+use crate::processing::{send_message_rust, wait_for_transaction_rust, Error, ErrorCode, ParamsOfSendMessage, ParamsOfWaitForTransaction, ProcessingEvent, ProcessingResponseType, ResultOfProcessMessage};
 use std::sync::Arc;
 
-#[derive(Serialize, Deserialize, ApiType, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Debug, Clone)]
 pub enum MessageSource {
     Encoded { message: String, abi: Option<Abi> },
-    AbiEncodingParams(ParamsOfEncodeMessage),
+    EncodingParams(ParamsOfEncodeMessage),
+}
+
+impl MessageSource {
+    pub(crate) async fn encode(
+        &self,
+        context: &Arc<ClientContext>,
+    ) -> ApiResult<(String, Option<Abi>)> {
+        Ok(match self {
+            MessageSource::EncodingParams(params) => {
+                if params.signer.is_external() {
+                    return Err(Error::external_signer_must_not_be_used());
+                }
+                let abi = params.abi.clone();
+                (
+                    crate::abi::encode_message(context.clone(), params.clone())
+                        .await?
+                        .message,
+                    Some(abi),
+                )
+            }
+            MessageSource::Encoded { abi, message } => (message.clone(), abi.clone()),
+        })
+    }
 }
 
 #[derive(Serialize, Deserialize, ApiType, Debug)]
@@ -21,7 +41,7 @@ pub struct ParamsOfProcessMessage {
     pub message: MessageSource,
 
     /// Flag for requesting events sending
-    pub send_events: bool
+    pub send_events: bool,
 }
 
 /// Sends message to the network and monitors network for a result of
@@ -31,7 +51,7 @@ pub(crate) async fn process_message(
     context: Arc<ClientContext>,
     params: ParamsOfProcessMessage,
     callback: std::sync::Arc<Callback>,
-) -> ApiResult<TransactionOutput> {
+) -> ApiResult<ResultOfProcessMessage> {
     let callback = move |result: ProcessingEvent| {
         callback.call(result, ProcessingResponseType::ProcessingEvent as u32);
         futures::future::ready(())
@@ -46,12 +66,12 @@ pub async fn process_message_rust<F: futures::Future<Output = ()> + Send + Sync>
     context: Arc<ClientContext>,
     params: ParamsOfProcessMessage,
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync + 'static,
-) -> ApiResult<TransactionOutput> {
+) -> ApiResult<ResultOfProcessMessage> {
     let abi = match &params.message {
         MessageSource::Encoded { abi, .. } => abi.clone(),
-        MessageSource::AbiEncodingParams(encode_params) => Some(encode_params.abi.clone()),
+        MessageSource::EncodingParams(encode_params) => Some(encode_params.abi.clone()),
     };
-    let is_message_encodable = if let MessageSource::AbiEncodingParams(_) = params.message {
+    let is_message_encodable = if let MessageSource::EncodingParams(_) = params.message {
         true
     } else {
         false
@@ -62,7 +82,7 @@ pub async fn process_message_rust<F: futures::Future<Output = ()> + Send + Sync>
         // Encode (or use encoded) message
         let message = match &params.message {
             MessageSource::Encoded { message, .. } => message.clone(),
-            MessageSource::AbiEncodingParams(encode_params) => {
+            MessageSource::EncodingParams(encode_params) => {
                 let mut encode_params = encode_params.clone();
                 encode_params.processing_try_index = Some(try_index);
                 crate::abi::encode_message(context.clone(), encode_params)
@@ -79,7 +99,7 @@ pub async fn process_message_rust<F: futures::Future<Output = ()> + Send + Sync>
                 abi: abi.clone(),
                 send_events: params.send_events,
             },
-            &callback
+            &callback,
         )
         .await?
         .shard_block_id;
@@ -92,7 +112,7 @@ pub async fn process_message_rust<F: futures::Future<Output = ()> + Send + Sync>
                 abi: abi.clone(),
                 shard_block_id: shard_block_id.clone(),
             },
-            &callback
+            &callback,
         )
         .await;
 
@@ -104,7 +124,7 @@ pub async fn process_message_rust<F: futures::Future<Output = ()> + Send + Sync>
             Err(err) => {
                 let can_retry = err.code == ErrorCode::MessageExpired as isize
                     && is_message_encodable
-                    && can_retry_expired_message(&context, &mut try_index);
+                    && can_retry_expired_message(&context, try_index);
                 if !can_retry {
                     // Waiting error is unrecoverable, return it
                     return Err(err);
@@ -113,5 +133,6 @@ pub async fn process_message_rust<F: futures::Future<Output = ()> + Send + Sync>
                 try_index
             }
         };
+        try_index = try_index.checked_add(1).unwrap_or(try_index);
     }
 }

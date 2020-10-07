@@ -76,9 +76,9 @@ pub struct Transaction {
     pub total_fees: u64,
 }
 
-impl TryFrom<ton_block::Transaction> for Transaction {
+impl TryFrom<&ton_block::Transaction> for Transaction {
     type Error = failure::Error;
-    fn try_from(transaction: ton_block::Transaction) -> Result<Self> {
+    fn try_from(transaction: &ton_block::Transaction) -> Result<Self> {
         let descr = if let TransactionDescr::Ordinary(descr) = transaction.read_description()? {
             descr
         } else {

@@ -1,3 +1,17 @@
+/*
+ * Copyright 2018-2020 TON DEV SOLUTIONS LTD.
+ *
+ * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+ * this file except in compliance with the License.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific TON DEV software governing permissions and
+ * limitations under the License.
+ *
+ */
+
 use crate::error::ApiError;
 use serde_json::Value;
 
@@ -16,6 +30,7 @@ pub enum ErrorCode {
     CanNotCheckBlockShard = PROCESSING + 10,
     BlockNotFound = PROCESSING + 11,
     InvalidData = PROCESSING + 12,
+    ExternalSignerMustNotBeUsed = PROCESSING + 13,
 }
 
 pub struct Error;
@@ -29,6 +44,13 @@ fn error_with_data(code: ErrorCode, message: String, data: Value) -> ApiError {
 }
 
 impl Error {
+    pub fn external_signer_must_not_be_used() -> ApiError {
+        error(
+            ErrorCode::ExternalSignerMustNotBeUsed,
+            "Function `process_message` must not be used with external message signing.".into(),
+        )
+    }
+
     pub fn message_already_expired() -> ApiError {
         error(
             ErrorCode::MessageAlreadyExpired,

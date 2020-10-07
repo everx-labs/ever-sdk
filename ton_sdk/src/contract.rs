@@ -835,7 +835,7 @@ impl Contract {
             context.block_lt,
             context.transaction_lt)?;
 
-        let transaction = Transaction::try_from(transaction)?;
+        let transaction = Transaction::try_from(&transaction)?;
         let updated_account = Self::from_cells(account_root.clone().into())?;
         Ok(LocalCallResult {
             transaction,
@@ -1208,7 +1208,7 @@ impl Contract {
         Ok(TvmMessage::construct_from(&mut root_cells.remove(0).into())?)
     }
 
-    fn balance_other_as_hashmape(&self) -> Result<HashmapE> {
+    pub fn balance_other_as_hashmape(&self) -> Result<HashmapE> {
         let mut map = HashmapE::with_bit_len(32);
 
         if let Some(balance_vec) = &self.balance_other {

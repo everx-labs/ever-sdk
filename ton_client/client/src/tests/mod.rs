@@ -21,7 +21,10 @@ use crate::client::{ClientContext, ResponseType};
 use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
-use crate::processing::{MessageSource, ParamsOfProcessMessage, TransactionOutput, ProcessingModule};
+use crate::net::NetModule;
+use crate::processing::{
+    MessageSource, ParamsOfProcessMessage, ProcessingModule, ResultOfProcessMessage,
+};
 use crate::{
     client::ResultOfCreateContext,
     crypto::KeyPair,
@@ -72,7 +75,7 @@ impl log::Log for SimpleLogger {
     fn flush(&self) {}
 }
 
-// pub const SUBSCRIBE: &str = "Subscription";
+pub const SUBSCRIBE: &str = "Subscription";
 // pub const PIGGY_BANK: &str = "Piggy";
 // pub const WALLET: &str = "LimitWallet";
 // pub const SIMPLE_WALLET: &str = "Wallet";
@@ -141,8 +144,8 @@ impl<'a, P: Serialize, R: DeserializeOwned> AsyncFuncWrapper<'a, P, R> {
         &self,
         params: P,
         callback: impl Fn(CR, CT) -> CF + Send + Sync + 'static
-    ) -> R 
-    where 
+    ) -> R
+    where
         CF: Future<Output = ()> + Send + Sync + 'static,
         CT: FromPrimitive,
         CR: DeserializeOwned
@@ -377,10 +380,10 @@ impl TestClient {
         // we have to process callback in another thread because:
         // 1. processing must be async because sender which resolves funtion result is async
         // 2. `rt_handle.enter` function processes task in backgroud without ability to wait for its completion.
-        //  But we need to preserve the order of `on_result` calls processing, otherwise call with 
+        //  But we need to preserve the order of `on_result` calls processing, otherwise call with
         //  `finished` = true can be processed before previous call and remove callback handler
         //  while it's still needed
-        // 3. `rt_handle.block_on` function can't be used in current thread because thread is in async 
+        // 3. `rt_handle.block_on` function can't be used in current thread because thread is in async
         //  context so we have spawn antoher thread and use `rt_handle.block_on` function there
         //  and then wait for thread completion
         let rt_handle = tokio::runtime::Handle::current();
@@ -443,7 +446,7 @@ impl TestClient {
     pub(crate) async fn request_json_async_callback<CR, CT, CF>(
         &self, method: &str, params: Value, callback: impl Fn(CR, CT) -> CF + Send + Sync + 'static
     ) -> ApiResult<Value>
-    where 
+    where
         CF: Future<Output = ()> + Send + Sync + 'static,
         CT: FromPrimitive,
         CR: DeserializeOwned
@@ -535,8 +538,8 @@ impl TestClient {
         &self,
         params: ParamsOfProcessMessage,
         callback: impl Fn(CR, CT) -> CF + Send + Sync + 'static
-    ) -> TransactionOutput
-    where 
+    ) -> ResultOfProcessMessage
+    where
         CF: Future<Output = ()> + Send + Sync + 'static,
         CT: FromPrimitive,
         CR: DeserializeOwned
@@ -549,6 +552,25 @@ impl TestClient {
         process.call_with_callback(params, callback).await
     }
 
+    pub(crate) async fn fetch_account(&self, address: &str) -> Value {
+        let wait_for = self.wrap_async(
+            crate::net::wait_for_collection,
+            NetModule::api(),
+            crate::net::wait_for_collection_api(),
+        );
+        let result = wait_for
+            .call(ParamsOfWaitForCollection {
+                collection: "accounts".into(),
+                filter: Some(json!({
+                    "id": { "eq": address.to_string() }
+                })),
+                result: "id boc".into(),
+                ..Default::default()
+            })
+            .await;
+        result.result
+    }
+
     pub(crate) async fn net_process_function(
         &self,
         address: String,
@@ -556,9 +578,9 @@ impl TestClient {
         function_name: &str,
         input: Value,
         signer: Signer,
-    ) -> TransactionOutput {
+    ) -> ResultOfProcessMessage {
         self.net_process_message(ParamsOfProcessMessage {
-                message: MessageSource::AbiEncodingParams(ParamsOfEncodeMessage {
+                message: MessageSource::EncodingParams(ParamsOfEncodeMessage {
                     address: Some(address),
                     abi,
                     deploy_set: None,
@@ -604,7 +626,7 @@ impl TestClient {
             .await
         };
 
-        // wait for grams recieving
+        // wait for grams receiving
         for message in run_result.out_messages.iter() {
             let message: ton_sdk::Message = serde_json::from_value(message.clone()).unwrap();
             if ton_sdk::MessageType::Internal == message.msg_type() {
@@ -636,7 +658,7 @@ impl TestClient {
 
         let _ = self
             .net_process_message(ParamsOfProcessMessage {
-                    message: MessageSource::AbiEncodingParams(params.clone()),
+                    message: MessageSource::EncodingParams(params.clone()),
                     send_events: false,
                 },
                 Self::default_callback
