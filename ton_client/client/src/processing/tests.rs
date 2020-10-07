@@ -2,8 +2,11 @@ use crate::abi::{
     CallSet, DecodedMessageBody, DecodedMessageType, DeploySet, FunctionHeader,
     ParamsOfEncodeMessage, Signer,
 };
-use crate::error::ApiResult;
-use crate::processing::{send_message, wait_for_transaction, CallbackParams, MessageSource, ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction, ProcessingEvent, ProcessingModule};
+use crate::processing::{
+    send_message, wait_for_transaction, 
+    MessageSource, ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction,
+    ProcessingEvent, ProcessingModule, ProcessingResponseType
+};
 
 use crate::processing::types::AbiDecodedOutput;
 use crate::tests::{TestClient, EVENTS};
@@ -17,22 +20,22 @@ async fn test_wait_message() {
     let keys = client.generate_sign_keys();
     let abi = events_abi.clone();
 
-    let events = std::sync::Arc::new(std::sync::Mutex::new(vec![]));
+    let events = std::sync::Arc::new(tokio::sync::Mutex::new(vec![]));
     let events_copy = events.clone();
-    let callback = move |event: ApiResult<ProcessingEvent>| {
-        if let Ok(event) = event {
-            events_copy.lock().unwrap().push(event);
+    let callback = move |result: ProcessingEvent, response_type: ProcessingResponseType| {
+        assert_eq!(response_type, ProcessingResponseType::ProcessingEvent);
+        let events_copy = events_copy.clone();
+        async move {
+            events_copy.lock().await.push(result);
         }
     };
 
-    let callback_id = client.register_callback(callback);
-
-    let send_message = client.wrap_async(
+    let send_message = client.wrap_async_callback(
         send_message,
         ProcessingModule::api(),
         crate::processing::send_message::send_message_api(),
     );
-    let wait_for_transaction = client.wrap_async(
+    let wait_for_transaction = client.wrap_async_callback(
         wait_for_transaction,
         ProcessingModule::api(),
         crate::processing::wait_for_transaction::wait_for_transaction_api(),
@@ -66,20 +69,24 @@ async fn test_wait_message() {
         .await;
 
     let result = send_message
-        .call(ParamsOfSendMessage {
-            message: encoded.message.clone(),
-            events_handler: Some(CallbackParams::with_id(callback_id)),
-            abi: Some(abi.clone()),
-        })
+        .call_with_callback(ParamsOfSendMessage {
+                message: encoded.message.clone(),
+                send_events: true,
+                abi: Some(abi.clone()),
+            },
+            callback.clone()
+        )
         .await;
 
     let output = wait_for_transaction
-        .call(ParamsOfWaitForTransaction {
-            message: encoded.message.clone(),
-            shard_block_id: result.shard_block_id,
-            events_handler: Some(CallbackParams::with_id(callback_id)),
-            abi: Some(abi.clone()),
-        })
+        .call_with_callback(ParamsOfWaitForTransaction {
+                message: encoded.message.clone(),
+                shard_block_id: result.shard_block_id,
+                send_events: true,
+                abi: Some(abi.clone()),
+            },
+            callback.clone()
+        )
         .await;
 
     assert_eq!(output.out_messages.len(), 0);
@@ -90,8 +97,7 @@ async fn test_wait_message() {
             output: None,
         })
     );
-    client.unregister_callback(callback_id);
-    let events = events.lock().unwrap().clone();
+    let events = events.lock().await.clone();
     let mut events = events.iter();
     assert!(match events.next() {
         Some(ProcessingEvent::WillFetchFirstBlock {}) => true,
@@ -126,15 +132,15 @@ async fn test_process_message() {
     let keys = client.generate_sign_keys();
     let abi = events_abi.clone();
 
-    let events = std::sync::Arc::new(std::sync::Mutex::new(vec![]));
+    let events = std::sync::Arc::new(tokio::sync::Mutex::new(vec![]));
     let events_copy = events.clone();
-    let callback = move |event: ApiResult<ProcessingEvent>| {
-        if let Ok(event) = event {
-            events_copy.lock().unwrap().push(event);
+    let callback = move |result: ProcessingEvent, response_type: ProcessingResponseType| {
+        assert_eq!(response_type, ProcessingResponseType::ProcessingEvent);
+        let events_copy = events_copy.clone();
+        async move {
+            events_copy.lock().await.push(result);
         }
     };
-
-    let callback_id = client.register_callback(callback);
 
     let encoded = client
         .encode_message(ParamsOfEncodeMessage {
@@ -165,12 +171,14 @@ async fn test_process_message() {
 
     let output = client
         .net_process_message(ParamsOfProcessMessage {
-            message: MessageSource::Encoded {
-                message: encoded.message.clone(),
-                abi: Some(abi.clone()),
+                message: MessageSource::Encoded {
+                    message: encoded.message.clone(),
+                    abi: Some(abi.clone()),
+                },
+                send_events: true
             },
-            events_handler: Some(CallbackParams::with_id(callback_id)),
-        })
+            callback
+        )
         .await;
 
     assert_eq!(output.out_messages.len(), 0);
@@ -181,8 +189,7 @@ async fn test_process_message() {
             output: None,
         })
     );
-    client.unregister_callback(callback_id);
-    let events = events.lock().unwrap().clone();
+    let events = events.lock().await.clone();
     let mut events = events.iter();
     assert!(match events.next() {
         Some(ProcessingEvent::WillFetchFirstBlock {}) => true,
@@ -208,33 +215,35 @@ async fn test_process_message() {
         _ => false,
     });
 
-    let events = std::sync::Arc::new(std::sync::Mutex::new(vec![]));
+    let events = std::sync::Arc::new(tokio::sync::Mutex::new(vec![]));
     let events_copy = events.clone();
-    let callback = move |event: ApiResult<ProcessingEvent>| {
-        if let Ok(event) = event {
-            events_copy.lock().unwrap().push(event);
+    let callback = move |result: ProcessingEvent, response_type: ProcessingResponseType| {
+        assert_eq!(response_type, ProcessingResponseType::ProcessingEvent);
+        let events_copy = events_copy.clone();
+        async move {
+            events_copy.lock().await.push(result);
         }
     };
 
-    let callback_id = client.register_callback(callback);
-
     let output = client.net_process_message(ParamsOfProcessMessage {
-            message: MessageSource::AbiEncodingParams(ParamsOfEncodeMessage {
-                abi: abi.clone(),
-                address: Some(encoded.address.clone()),
-                deploy_set: None,
-                call_set: Some(CallSet {
-                    function_name: "returnValue".into(),
-                    header: None,
-                    input: Some(json!({
-                        "id": "0x1"
-                    })),
+                message: MessageSource::AbiEncodingParams(ParamsOfEncodeMessage {
+                    abi: abi.clone(),
+                    address: Some(encoded.address.clone()),
+                    deploy_set: None,
+                    call_set: Some(CallSet {
+                        function_name: "returnValue".into(),
+                        header: None,
+                        input: Some(json!({
+                            "id": "0x1"
+                        })),
+                    }),
+                    signer: Signer::WithKeys(keys.clone()),
+                    processing_try_index: None,
                 }),
-                signer: Signer::WithKeys(keys.clone()),
-                processing_try_index: None,
-            }),
-            events_handler: Some(CallbackParams::with_id(callback_id)),
-        })
+                send_events: true,
+            },
+            callback
+        )
         .await;
     assert_eq!(output.out_messages.len(), 2);
     assert_eq!(
@@ -259,9 +268,8 @@ async fn test_process_message() {
             })),
         })
     );
-    client.unregister_callback(callback_id);
 
-    let events = events.lock().unwrap().clone();
+    let events = events.lock().await.clone();
     let mut events = events.iter();
     assert!(match events.next() {
         Some(ProcessingEvent::WillFetchFirstBlock {}) => true,

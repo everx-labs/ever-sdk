@@ -1,10 +1,11 @@
 use crate::abi::{Abi, ParamsOfEncodeMessage};
 use crate::client::ClientContext;
+use crate::dispatch::Callback;
 use crate::error::ApiResult;
 use crate::processing::internal::can_retry_expired_message;
-use crate::processing::types::{CallbackParams, TransactionOutput};
+use crate::processing::types::{ProcessingEvent, ProcessingResponseType, TransactionOutput};
 use crate::processing::{
-    send_message, wait_for_transaction, ErrorCode, ParamsOfSendMessage, ParamsOfWaitForTransaction,
+    send_message_rust, wait_for_transaction_rust, ErrorCode, ParamsOfSendMessage, ParamsOfWaitForTransaction,
 };
 use std::sync::Arc;
 
@@ -18,16 +19,33 @@ pub enum MessageSource {
 pub struct ParamsOfProcessMessage {
     /// Message source.
     pub message: MessageSource,
-    /// Processing callback.
-    pub events_handler: Option<CallbackParams>,
+
+    /// Flag for requesting events sending
+    pub send_events: bool
 }
 
 /// Sends message to the network and monitors network for a result of
 /// message processing.
 #[api_function]
-pub async fn process_message(
+pub(crate) async fn process_message(
     context: Arc<ClientContext>,
     params: ParamsOfProcessMessage,
+    callback: std::sync::Arc<Callback>,
+) -> ApiResult<TransactionOutput> {
+    let callback = move |result: ProcessingEvent| {
+        callback.call(result, ProcessingResponseType::ProcessingEvent as u32);
+        futures::future::ready(())
+    };
+
+    process_message_rust(context, params, callback).await
+}
+
+/// Sends message to the network and monitors network for a result of
+/// message processing.
+pub async fn process_message_rust<F: futures::Future<Output = ()> + Send + Sync>(
+    context: Arc<ClientContext>,
+    params: ParamsOfProcessMessage,
+    callback: impl Fn(ProcessingEvent) -> F + Send + Sync + 'static,
 ) -> ApiResult<TransactionOutput> {
     let abi = match &params.message {
         MessageSource::Encoded { abi, .. } => abi.clone(),
@@ -54,25 +72,27 @@ pub async fn process_message(
         };
 
         // Send
-        let shard_block_id = send_message(
+        let shard_block_id = send_message_rust(
             context.clone(),
             ParamsOfSendMessage {
                 message: message.clone(),
                 abi: abi.clone(),
-                events_handler: params.events_handler.clone(),
+                send_events: params.send_events,
             },
+            &callback
         )
         .await?
         .shard_block_id;
 
-        let wait_for = wait_for_transaction(
+        let wait_for = wait_for_transaction_rust(
             context.clone(),
             ParamsOfWaitForTransaction {
                 message: message.clone(),
-                events_handler: params.events_handler.clone(),
+                send_events: params.send_events,
                 abi: abi.clone(),
                 shard_block_id: shard_block_id.clone(),
             },
+            &callback
         )
         .await;
 
@@ -90,6 +110,7 @@ pub async fn process_message(
                     return Err(err);
                 }
                 // Waiting is failed but we can retry
+                try_index
             }
         };
     }

@@ -15,15 +15,17 @@ typedef struct  {
 typedef struct  {
 } tc_response_handle_t;
 
-enum tc_response_flags_t {
-    tc_response_finished = 1,
+enum tc_response_types_t {
+    tc_end = 0,
+    tc_response_success = 1,
+    tc_response_error = 2,
 };
 
 typedef void (*tc_on_response_t)(
     uint32_t request_id,
-    tc_string_t result_json,
-    tc_string_t error_json,
-    uint32_t flags);
+    tc_string_t params_json,
+    uint32_t response_type,
+    bool finished);
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,14 +33,14 @@ extern "C" {
 
 tc_response_handle_t* tc_create_context(tc_string_t config);
 void tc_destroy_context(uint32_t context);
-void tc_json_request_async(
+void tc_json_request(
     uint32_t context,
     tc_string_t method,
     tc_string_t params_json,
     uint32_t request_id,
     tc_on_response_t on_result);
 
-tc_response_handle_t* tc_json_request(
+tc_response_handle_t* tc_json_request_sync(
     uint32_t context,
     tc_string_t method,
     tc_string_t params_json);

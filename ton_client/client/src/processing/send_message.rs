@@ -15,10 +15,11 @@
 use super::blocks_walking::find_last_shard_block;
 use crate::abi::Abi;
 use crate::client::ClientContext;
+use crate::dispatch::Callback;
 use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ApiResult;
 use crate::processing::internal::{get_message_expiration_time, get_message_id};
-use crate::processing::types::{CallbackParams, ProcessingEvent};
+use crate::processing::types::{ProcessingEvent, ProcessingResponseType};
 use crate::processing::Error;
 use std::sync::Arc;
 use ton_sdk::Contract;
@@ -42,8 +43,8 @@ pub struct ParamsOfSendMessage {
     /// strategy.
     pub abi: Option<Abi>,
 
-    /// Processing callback.
-    pub events_handler: Option<CallbackParams>,
+    /// Flag for requesting events sending
+    pub send_events: bool
 }
 
 #[derive(Serialize, Deserialize, ApiType, PartialEq, Debug)]
@@ -57,9 +58,23 @@ pub struct ResultOfSendMessage {
 }
 
 #[api_function]
-pub async fn send_message(
+pub(crate) async fn send_message(
     context: Arc<ClientContext>,
     params: ParamsOfSendMessage,
+    callback: std::sync::Arc<Callback>,
+) -> ApiResult<ResultOfSendMessage> {
+    let callback = move |result: ProcessingEvent| {
+        callback.call(result, ProcessingResponseType::ProcessingEvent as u32);
+        futures::future::ready(())
+    };
+
+    send_message_rust(context, params, callback).await
+}
+
+pub async fn send_message_rust<F: futures::Future<Output = ()> + Send + Sync>(
+    context: Arc<ClientContext>,
+    params: ParamsOfSendMessage,
+    callback: impl Fn(ProcessingEvent) -> F + Send + Sync
 ) -> ApiResult<ResultOfSendMessage> {
     // Check message
     let message_boc = base64_decode(&params.message)?;
@@ -82,38 +97,36 @@ pub async fn send_message(
     }
 
     // Fetch current shard block
-    if let Some(cb) = &params.events_handler {
-        ProcessingEvent::WillFetchFirstBlock {}.emit(&context, cb)
+    if params.send_events {
+        callback(ProcessingEvent::WillFetchFirstBlock {}).await;
     }
     let shard_block_id = match find_last_shard_block(&context, &address).await {
         Ok(block) => block.to_string(),
         Err(err) => {
             let error = Error::fetch_first_block_failed(err, &hex_message_id);
-            if let Some(cb) = &params.events_handler {
-                ProcessingEvent::FetchFirstBlockFailed {
+            if params.send_events {
+                callback(ProcessingEvent::FetchFirstBlockFailed {
                     error: error.clone(),
-                }
-                .emit(&context, cb)
+                }).await;
             }
             return Err(error);
         }
     };
 
     // Send
-    if let Some(cb) = &params.events_handler {
-        ProcessingEvent::WillSend {
+    if params.send_events {
+        callback(ProcessingEvent::WillSend {
             shard_block_id: shard_block_id.clone(),
             message_id: hex_message_id.clone(),
             message: params.message.clone(),
-        }
-        .emit(&context, cb)
+        }).await;
     }
     let send_result = context
         .get_client()?
         .send_message(&hex_decode(&message_id)?, &message_boc)
         .await;
-    if let Some(cb) = &params.events_handler {
-        match send_result {
+    if params.send_events {
+        let event= match send_result {
             Ok(_) => ProcessingEvent::DidSend {
                 shard_block_id: shard_block_id.clone(),
                 message_id: hex_message_id.clone(),
@@ -125,8 +138,8 @@ pub async fn send_message(
                 message: params.message.clone(),
                 error: Error::send_message_failed(error, &hex_message_id, &shard_block_id),
             },
-        }
-        .emit(&context, cb)
+        };
+        callback(event).await;
     }
 
     Ok(ResultOfSendMessage { shard_block_id })

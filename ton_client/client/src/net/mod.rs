@@ -11,11 +11,10 @@
 * limitations under the License.
 */
 
-use crate::client::{ClientContext};
-use crate::dispatch::{ModuleReg, Registrar};
+use crate::client::ClientContext;
+use crate::dispatch::{Callback, ModuleReg, Registrar};
 use crate::error::ApiResult;
-use crate::interop::JsonResponse;
-use futures::{FutureExt, StreamExt};
+use futures::{Future, FutureExt, StreamExt};
 use rand::RngCore;
 use std::collections::HashMap;
 use tokio::sync::{
@@ -71,6 +70,12 @@ pub struct ResultOfWaitForCollection {
     pub result: serde_json::Value,
 }
 
+#[derive(Serialize, Deserialize, Clone, num_derive::FromPrimitive)]
+pub enum SubscriptionResponseType {
+    Ok = 100,
+    Error = 101
+}
+
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfSubscribeCollection {
     /// collection name (accounts, blocks, transactions, messages, block_signatures)
@@ -79,8 +84,6 @@ pub struct ParamsOfSubscribeCollection {
     pub filter: Option<serde_json::Value>,
     /// projection (result) string
     pub result: String,
-    /// registered callback ID to receive subscription data
-    pub callback_id: u32,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
@@ -154,13 +157,27 @@ pub async fn wait_for_collection(
 }
 
 #[api_function]
-pub async fn subscribe_collection(
+pub(crate) async fn subscribe_collection(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfSubscribeCollection,
+    callback: std::sync::Arc<Callback>,
 ) -> ApiResult<ResultOfSubscribeCollection> {
-    let callback_id = params.callback_id;
-    let callback = context.get_callback(callback_id)?;
+    let callback = move |result: ApiResult<ResultOfSubscription>| {
+        match result {
+            Ok(result) => callback.call(result, SubscriptionResponseType::Ok as u32),
+            Err(err) => callback.call(err, SubscriptionResponseType::Error as u32)
+        }
+        futures::future::ready(())
+    };
 
+    subscribe_collection_rust(context, params, callback).await
+}
+
+pub async fn subscribe_collection_rust<F: Future<Output = ()> + Send + Sync>(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfSubscribeCollection,
+    callback: impl Fn(ApiResult<ResultOfSubscription>) -> F + Send + Sync + 'static
+) -> ApiResult<ResultOfSubscribeCollection> {
     let handle = rand::thread_rng().next_u32();
 
     let client = context.get_client()?;
@@ -178,7 +195,6 @@ pub async fn subscribe_collection(
     add_subscription_handle(handle, sender).await;
 
     // spawn thread which reads subscription stream and calls callback with data
-    let context_copy = context.clone();
     context.env.spawn(Box::pin(async move {
         let wait_abortion = receiver.recv().fuse();
         futures::pin_mut!(wait_abortion);
@@ -187,19 +203,7 @@ pub async fn subscribe_collection(
             futures::select!(
                 // waiting next subscription data
                 data = data_stream.select_next_some() => {
-                    match data {
-                        Ok(data) => {
-                            let result = ResultOfSubscription {
-                                result: data
-                            };
-                            JsonResponse::from_result(serde_json::to_string(&result).unwrap())
-                                .send(&*callback, callback_id, 0);
-                        }
-                        Err(err) => {
-                            JsonResponse::from_error(err.add_network_url(context_copy.get_client().unwrap()))
-                                .send(&*callback, callback_id, 0);
-                        }
-                    }
+                    callback(data.map(|data| ResultOfSubscription { result: data })).await
                 },
                 // waiting for unsubscribe
                 _ = wait_abortion => break
@@ -232,7 +236,7 @@ impl ModuleReg for NetModule {
     fn reg(reg: &mut Registrar) {
         reg.async_f(query_collection, query_collection_api);
         reg.async_f(wait_for_collection, wait_for_collection_api);
-        reg.async_f(subscribe_collection, subscribe_collection_api);
         reg.async_f(unsubscribe, unsubscribe_api);
+        reg.async_f_callback(subscribe_collection, subscribe_collection_api);
     }
 }

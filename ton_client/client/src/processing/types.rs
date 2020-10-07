@@ -1,9 +1,7 @@
 use crate::abi::DecodedMessageBody;
-use crate::client::ClientContext;
 use crate::error::ApiError;
 use serde_json::Value;
 use std::convert::TryFrom;
-use std::sync::Arc;
 
 // TODO: move this to the `tvm` module
 pub(crate) enum TvmExitCode {
@@ -55,26 +53,9 @@ pub struct TransactionOutput {
     pub abi_decoded: Option<AbiDecodedOutput>,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Debug, Clone)]
-pub struct CallbackParams {
-    /// Callback ID.
-    pub id: u32,
-
-    /// Determine that callback must stay registered after operation
-    /// has been finished.
-    ///
-    /// By default the client will automatically unregister callback
-    /// after the operation that used callback has been finished.
-    pub stay_registered: Option<bool>,
-}
-
-impl CallbackParams {
-    pub fn with_id(id: u32) -> Self {
-        Self {
-            id,
-            stay_registered: None,
-        }
-    }
+#[derive(Clone, num_derive::FromPrimitive, PartialEq, Debug)]
+pub enum ProcessingResponseType {
+    ProcessingEvent = 100,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Debug, Clone)]
@@ -166,11 +147,5 @@ pub enum ProcessingEvent {
         /// Results of transaction.
         result: TransactionOutput,
     },
-}
-
-impl ProcessingEvent {
-    pub fn emit(self, context: &Arc<ClientContext>, callback: &CallbackParams) {
-        let _ = context.send_callback_result(callback.id, self);
-    }
 }
 
