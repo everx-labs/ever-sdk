@@ -2,20 +2,19 @@ use crate::api::get_dispatcher;
 use crate::client::ClientContext;
 use crate::error::ApiResult;
 use api_info::{Function, Type, API};
-use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
 
 #[derive(ApiType, Serialize, Deserialize)]
 pub struct ResultOfGetApiReference {
-    pub api: Value,
+    pub api: API,
 }
 
 #[api_function]
 pub(crate) fn get_api_reference(_context: Arc<ClientContext>) -> ApiResult<ResultOfGetApiReference> {
     let api = ApiReducer::build(&get_dispatcher().api);
     Ok(ResultOfGetApiReference {
-        api: serde_json::to_value(api).unwrap(),
+        api,
     })
 }
 
