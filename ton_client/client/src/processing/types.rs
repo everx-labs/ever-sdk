@@ -1,5 +1,5 @@
 use crate::abi::DecodedMessageBody;
-use crate::error::ApiError;
+use crate::error::ClientError;
 use serde_json::Value;
 
 #[derive(Serialize, Deserialize, ApiType, Debug, PartialEq, Clone)]
@@ -51,7 +51,7 @@ pub enum ProcessingEvent {
     /// shard block.
     ///
     /// Message processing has finished.
-    FetchFirstBlockFailed { error: ApiError },
+    FetchFirstBlockFailed { error: ClientError },
 
     /// Notifies the app that the message will be sent to the
     /// network.
@@ -78,7 +78,7 @@ pub enum ProcessingEvent {
         shard_block_id: String,
         message_id: String,
         message: String,
-        error: ApiError,
+        error: ClientError,
     },
 
     /// Notifies the app that the next shard block will be fetched
@@ -100,7 +100,7 @@ pub enum ProcessingEvent {
         shard_block_id: String,
         message_id: String,
         message: String,
-        error: ApiError,
+        error: ClientError,
     },
 
     /// Notifies the app that the message was expired.
@@ -113,7 +113,7 @@ pub enum ProcessingEvent {
     MessageExpired {
         message_id: String,
         message: String,
-        error: ApiError,
+        error: ClientError,
     },
 
     /// Notifies the app that the client has received the

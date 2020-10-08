@@ -13,7 +13,7 @@
  */
 
 use serde_json::Value;
-use ton_client::error::ApiError;
+use ton_client::error::ClientError;
 
 #[derive(Serialize)]
 pub struct CliError {
@@ -36,8 +36,8 @@ impl CliError {
     }
 }
 
-impl From<ApiError> for CliError {
-    fn from(e: ApiError) -> Self {
+impl From<ClientError> for CliError {
+    fn from(e: ClientError) -> Self {
         if let Ok(data) = serde_json::to_value(&e) {
             Self::with_message_and_data(e.message, data)
         } else {

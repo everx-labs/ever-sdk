@@ -1,6 +1,6 @@
 use crate::abi::{Abi, ParamsOfDecodeMessage};
 use crate::client::ClientContext;
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use crate::processing::{
     Error, DEFAULT_EXPIRATION_RETRIES_LIMIT, DEFAULT_NETWORK_RETRIES_LIMIT,
     DEFAULT_NETWORK_RETRIES_TIMEOUT,
@@ -10,7 +10,7 @@ use std::sync::Arc;
 use ton_block::Serializable;
 use ton_sdk::{Block, MessageId};
 
-pub(crate) fn get_message_id(message: &ton_block::Message) -> ApiResult<String> {
+pub(crate) fn get_message_id(message: &ton_block::Message) -> ClientResult<String> {
     let cells: ton_types::Cell = message
         .write_to_new_cell()
         .map_err(|err| Error::can_not_build_message_cell(err))?
@@ -63,7 +63,7 @@ pub fn find_transaction(
     block: &Block,
     message_id: &str,
     shard_block_id: &String,
-) -> ApiResult<Option<String>> {
+) -> ClientResult<Option<String>> {
     let msg_id: MessageId = message_id.into();
     for msg_descr in &block.in_msg_descr {
         if Some(&msg_id) == msg_descr.msg_id.as_ref() {
@@ -97,7 +97,7 @@ pub(crate) fn get_exit_code(
     parsed_transaction: &Value,
     shard_block_id: &String,
     message_id: &str,
-) -> ApiResult<i32> {
+) -> ClientResult<i32> {
     Ok(
         serde_json::from_value::<Transaction>(parsed_transaction.clone())
             .map_err(|err| {
@@ -116,7 +116,7 @@ pub(crate) fn get_message_expiration_time(
     context: Arc<ClientContext>,
     abi: Option<&Abi>,
     message: &str,
-) -> ApiResult<Option<u64>> {
+) -> ClientResult<Option<u64>> {
     let header = match abi {
         Some(abi) => {
             crate::abi::decode_message(

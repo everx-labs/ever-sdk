@@ -1,7 +1,7 @@
 use crate::boc::internal::deserialize_object_from_base64;
 use crate::boc::Error;
 use crate::client::ClientContext;
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use ton_block::Serializable;
 
 #[derive(Serialize, Deserialize, Clone, ApiType)]
@@ -20,7 +20,7 @@ pub struct ResultOfGetBlockchainConfig {
 pub fn get_blockchain_config(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfGetBlockchainConfig,
-) -> ApiResult<ResultOfGetBlockchainConfig> {
+) -> ClientResult<ResultOfGetBlockchainConfig> {
     let object = deserialize_object_from_base64::<ton_block::Block>(&params.block_boc, "block")?;
 
     let extra = object

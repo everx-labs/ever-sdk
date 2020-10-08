@@ -11,7 +11,7 @@
 * limitations under the License.
 */
 
-use crate::error::{ApiResult, ApiError};
+use crate::error::{ClientResult, ClientError};
 use crate::crypto;
 use crate::crypto::internal::{sha256, key512, Key256, key256, Key264};
 use hmac::*;
@@ -42,7 +42,7 @@ pub struct ResultOfHDKeyXPrvFromMnemonic {
 pub fn hdkey_xprv_from_mnemonic(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyXPrvFromMnemonic,
-) -> ApiResult<ResultOfHDKeyXPrvFromMnemonic> {
+) -> ClientResult<ResultOfHDKeyXPrvFromMnemonic> {
     Ok(ResultOfHDKeyXPrvFromMnemonic {
         xprv: HDPrivateKey::from_mnemonic(&params.phrase)?.serialize_to_string()
     })
@@ -67,7 +67,7 @@ pub struct ResultOfHDKeySecretFromXPrv {
 pub fn hdkey_secret_from_xprv(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeySecretFromXPrv,
-) -> ApiResult<ResultOfHDKeySecretFromXPrv> {
+) -> ClientResult<ResultOfHDKeySecretFromXPrv> {
     Ok(ResultOfHDKeySecretFromXPrv {
         secret: hex::encode(HDPrivateKey::from_serialized_string(&params.xprv)?.secret())
     })
@@ -92,7 +92,7 @@ pub struct ResultOfHDKeyPublicFromXPrv {
 pub fn hdkey_public_from_xprv(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyPublicFromXPrv,
-) -> ApiResult<ResultOfHDKeyPublicFromXPrv> {
+) -> ClientResult<ResultOfHDKeyPublicFromXPrv> {
     let key = HDPrivateKey::from_serialized_string(&params.xprv)?;
     Ok(ResultOfHDKeyPublicFromXPrv {
         public: hex::encode(key.public().as_ref())
@@ -123,7 +123,7 @@ pub struct ResultOfHDKeyDeriveFromXPrv {
 pub fn hdkey_derive_from_xprv(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyDeriveFromXPrv,
-) -> ApiResult<ResultOfHDKeyDeriveFromXPrv> {
+) -> ClientResult<ResultOfHDKeyDeriveFromXPrv> {
     let xprv = HDPrivateKey::from_serialized_string(&params.xprv)?;
     let derived = xprv.derive(params.child_index, params.hardened, DEFAULT_HDKEY_COMPLIANT)?;
     Ok(ResultOfHDKeyDeriveFromXPrv {
@@ -153,7 +153,7 @@ pub struct ResultOfHDKeyDeriveFromXPrvPath {
 pub fn hdkey_derive_from_xprv_path(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyDeriveFromXPrvPath,
-) -> ApiResult<ResultOfHDKeyDeriveFromXPrvPath> {
+) -> ClientResult<ResultOfHDKeyDeriveFromXPrvPath> {
     let xprv = HDPrivateKey::from_serialized_string(&params.xprv)?;
     Ok(ResultOfHDKeyDeriveFromXPrvPath {
         xprv: xprv.derive_path(&params.path, DEFAULT_HDKEY_COMPLIANT)?.serialize_to_string()
@@ -185,7 +185,7 @@ impl HDPrivateKey {
         }
     }
 
-    pub(crate) fn from_mnemonic(phrase: &String) -> ApiResult<HDPrivateKey> {
+    pub(crate) fn from_mnemonic(phrase: &String) -> ClientResult<HDPrivateKey> {
         let salt = "mnemonic";
         let mut seed = vec![0u8; 64];
         pbkdf2::<Hmac<Sha512>>(
@@ -213,7 +213,7 @@ impl HDPrivateKey {
         public_key.serialize_compressed()
     }
 
-    fn map_secp_error(error: secp256k1::Error) -> ApiError {
+    fn map_secp_error(error: secp256k1::Error) -> ClientError {
         match error {
             secp256k1::Error::InvalidSignature => {
                 crypto::Error::bip32_invalid_key("InvalidSignature")
@@ -244,7 +244,7 @@ impl HDPrivateKey {
         child_index: u32,
         hardened: bool,
         compliant: bool,
-    ) -> ApiResult<HDPrivateKey> {
+    ) -> ClientResult<HDPrivateKey> {
         let mut child: HDPrivateKey = Default::default();
         child.depth = self.depth + 1;
 
@@ -296,7 +296,7 @@ impl HDPrivateKey {
         Ok(child)
     }
 
-    pub(crate) fn derive_path(&self, path: &String, compliant: bool) -> ApiResult<HDPrivateKey> {
+    pub(crate) fn derive_path(&self, path: &String, compliant: bool) -> ClientResult<HDPrivateKey> {
         let mut child: HDPrivateKey = self.clone();
         for step in path.split("/") {
             if step == "m" {} else {
@@ -316,7 +316,7 @@ impl HDPrivateKey {
 
     // Serialization
 
-    fn from_serialized(bytes: &[u8]) -> ApiResult<HDPrivateKey> {
+    fn from_serialized(bytes: &[u8]) -> ClientResult<HDPrivateKey> {
         if bytes.len() != 82 {
             return Err(crypto::Error::bip32_invalid_key(bytes.to_base58()));
         }
@@ -350,7 +350,7 @@ impl HDPrivateKey {
         bytes
     }
 
-    fn from_serialized_string(string: &String) -> ApiResult<HDPrivateKey> {
+    fn from_serialized_string(string: &String) -> ClientResult<HDPrivateKey> {
         Self::from_serialized(
             &string
                 .from_base58()

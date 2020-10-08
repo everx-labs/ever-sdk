@@ -11,9 +11,9 @@
 * limitations under the License.
 */
 
-use crate::error::ApiError;
+use crate::error::ClientError;
 use std::fmt::Display;
-const BOC: isize = ApiError::BOC; // 200
+const BOC: isize = ClientError::BOC; // 200
 
 pub enum ErrorCode {
     InvalidBoc = BOC + 1,
@@ -23,30 +23,30 @@ pub enum ErrorCode {
 }
 pub struct Error;
 
-fn error(code: ErrorCode, message: String) -> ApiError {
-    ApiError::with_code_message(code as isize, message)
+fn error(code: ErrorCode, message: String) -> ClientError {
+    ClientError::with_code_message(code as isize, message)
 }
 
 impl Error {
-    pub fn missing_source_boc() -> ApiError {
+    pub fn missing_source_boc() -> ClientError {
         error(
             ErrorCode::MissingSourceBoc,
             "Parsed value hasn't source `boc` field".into(),
         )
     }
 
-    pub fn invalid_boc<E: Display>(err: E) -> ApiError {
+    pub fn invalid_boc<E: Display>(err: E) -> ClientError {
         error(ErrorCode::InvalidBoc, format!("Invalid BOC: {}", err))
     }
 
-    pub fn serialization_error<E: Display>(err: E, name: &str) -> ApiError {
+    pub fn serialization_error<E: Display>(err: E, name: &str) -> ClientError {
         error(
             ErrorCode::SerializationError,
             format!("Cannot serialize {}: {}", name, err),
         )
     }
 
-    pub fn inappropriate_block<E: Display>(err: E) -> ApiError {
+    pub fn inappropriate_block<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::InappropriateBlock,
             format!("Inappropriate block: {}", err),

@@ -12,16 +12,16 @@
  *
  */
 
-use crate::api::request::Request;
-use crate::api::runtime::{Runtime};
+use super::request::Request;
+use super::runtime::Runtime;
 use crate::client::Error;
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use failure::_core::ptr::null;
 use serde_json::Value;
 
 pub type ContextHandle = u32;
 
-unsafe fn sync_response(result: ApiResult<Value>) -> *const String {
+unsafe fn sync_response(result: ClientResult<Value>) -> *const String {
     let response = match result {
         Ok(result) => json!({ "result": result }).to_string(),
         Err(err) => json!({ "error": err }).to_string(),

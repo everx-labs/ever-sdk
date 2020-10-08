@@ -1,6 +1,6 @@
 use crate::client::ClientContext;
 use crate::encoding::{account_decode, account_encode_ex, AccountAddressType, Base64AddressParams};
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, Debug, ApiType, Clone)]
@@ -30,7 +30,7 @@ pub struct ResultOfConvertAddress {
 pub fn convert_address(
     _context: Arc<ClientContext>,
     params: ParamsOfConvertAddress,
-) -> ApiResult<ResultOfConvertAddress> {
+) -> ClientResult<ResultOfConvertAddress> {
     let address = account_decode(&params.address)?;
     let (addr_type, base64_params) = match params.output_format {
         AddressStringFormat::Hex {} => (AccountAddressType::Hex, None),

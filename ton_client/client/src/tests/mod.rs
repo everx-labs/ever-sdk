@@ -15,13 +15,13 @@ use super::{tc_destroy_string, tc_read_string, tc_request, tc_request_sync};
 use crate::abi::{
     encode_message, Abi, CallSet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
-use crate::api::interop::{ResponseType, StringData};
+use crate::c_interface::interop::{ResponseType, StringData};
 use crate::client::{ClientContext, Error};
 use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
 use crate::processing::{MessageSource, ParamsOfProcessMessage, ResultOfProcessMessage};
-use crate::{crypto::KeyPair, error::{ApiError, ApiResult}, net::{ParamsOfWaitForCollection, ResultOfWaitForCollection}, tc_create_context, tc_destroy_context, ContextHandle};
+use crate::{crypto::KeyPair, error::{ClientError, ClientResult}, net::{ParamsOfWaitForCollection, ResultOfWaitForCollection}, tc_create_context, tc_destroy_context, ContextHandle};
 use api_info::ApiModule;
 use futures::Future;
 use num_traits::FromPrimitive;
@@ -35,7 +35,7 @@ use tokio::sync::{
     mpsc::{channel, Sender},
     Mutex,
 };
-use crate::api::modules::{AbiModule, ProcessingModule, NetModule};
+use crate::c_interface::modules::{AbiModule, ProcessingModule, NetModule};
 
 mod common;
 
@@ -79,7 +79,7 @@ pub const HELLO: &str = "Hello";
 pub const EVENTS: &str = "Events";
 
 struct RequestData {
-    sender: Sender<ApiResult<Value>>,
+    sender: Sender<ClientResult<Value>>,
     callback:
         Box<dyn Fn(String, u32) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>> + Send + Sync>,
 }
@@ -163,7 +163,7 @@ impl<'a, P: Serialize, R: DeserializeOwned> FuncWrapper<'a, P, R> {
     }
 }
 
-fn parse_sync_response<R: DeserializeOwned>(response: *const String) -> ApiResult<R> {
+fn parse_sync_response<R: DeserializeOwned>(response: *const String) -> ClientResult<R> {
     let response = unsafe {
         let result = tc_read_string(response).to_string();
         tc_destroy_string(response);
@@ -172,7 +172,7 @@ fn parse_sync_response<R: DeserializeOwned>(response: *const String) -> ApiResul
     match serde_json::from_str::<Value>(&response) {
         Ok(value) => {
             if value["error"].is_object() {
-                Err(serde_json::from_value::<ApiError>(value["error"].clone()).unwrap())
+                Err(serde_json::from_value::<ClientError>(value["error"].clone()).unwrap())
             } else {
                 Ok(serde_json::from_value(value["result"].clone()).unwrap())
             }
@@ -191,7 +191,7 @@ impl TestClient {
     where
         P: Serialize,
         R: DeserializeOwned,
-        F: Future<Output = ApiResult<R>>,
+        F: Future<Output = ClientResult<R>>,
     {
         AsyncFuncWrapper {
             client: self,
@@ -202,14 +202,14 @@ impl TestClient {
 
     pub(crate) fn wrap_async_callback<P, R, F>(
         self: &TestClient,
-        _: fn(Arc<ClientContext>, P, std::sync::Arc<crate::api::request::Request>) -> F,
+        _: fn(Arc<ClientContext>, P, std::sync::Arc<crate::c_interface::request::Request>) -> F,
         module: api_info::Module,
         function: api_info::Function,
     ) -> AsyncFuncWrapper<P, R>
     where
         P: Serialize,
         R: DeserializeOwned,
-        F: Future<Output = ApiResult<R>>,
+        F: Future<Output = ClientResult<R>>,
     {
         AsyncFuncWrapper {
             client: self,
@@ -220,7 +220,7 @@ impl TestClient {
 
     pub(crate) fn wrap<P, R>(
         self: &TestClient,
-        _: fn(Arc<ClientContext>, P) -> ApiResult<R>,
+        _: fn(Arc<ClientContext>, P) -> ClientResult<R>,
         module: api_info::Module,
         function: api_info::Function,
     ) -> FuncWrapper<P, R>
@@ -330,7 +330,7 @@ impl TestClient {
         }
     }
 
-    pub(crate) fn request_json(&self, method: &str, params: Value) -> ApiResult<Value> {
+    pub(crate) fn request_json(&self, method: &str, params: Value) -> ClientResult<Value> {
         let params_json = if params.is_null() {
             String::new()
         } else {
@@ -398,7 +398,7 @@ impl TestClient {
                 .await
                 .unwrap();
         } else if response_type == ResponseType::Error as u32 {
-            let err = match serde_json::from_str::<ApiError>(&params_json) {
+            let err = match serde_json::from_str::<ClientError>(&params_json) {
                 Ok(err) => err,
                 Err(err) => Error::callback_params_cant_be_converted_to_json(err),
             };
@@ -420,7 +420,7 @@ impl TestClient {
         method: &str,
         params: Value,
         callback: impl Fn(CR, CT) -> CF + Send + Sync + 'static,
-    ) -> ApiResult<Value>
+    ) -> ClientResult<Value>
     where
         CF: Future<Output = ()> + Send + Sync + 'static,
         CT: FromPrimitive,
@@ -501,7 +501,7 @@ impl TestClient {
     pub(crate) fn request_no_params<R: DeserializeOwned>(&self, method: &str) -> R {
         let result = self.request_json(method, Value::Null).unwrap();
         serde_json::from_value(result)
-            .map_err(|err| ApiError::invalid_params("", err))
+            .map_err(|err| ClientError::invalid_params("", err))
             .unwrap()
     }
 
@@ -528,9 +528,9 @@ impl TestClient {
         CR: DeserializeOwned,
     {
         let process = self.wrap_async_callback(
-            crate::api::processing::process_message,
+            crate::c_interface::processing::process_message,
             ProcessingModule::api(),
-            crate::api::processing::process_message_api(),
+            crate::c_interface::processing::process_message_api(),
         );
         process.call_with_callback(params, callback).await
     }

@@ -15,8 +15,7 @@ use crate::encoding::{account_decode, account_encode_ex, AccountAddressType, Bas
 use serde_json::{Value};
 use ton_block::MsgAddressInt;
 use std::str::FromStr;
-use crate::error::{ApiError};
-use opendoc::api::API;
+use crate::error::{ClientError};
 use crate::tests::TestClient;
 
 
@@ -214,7 +213,7 @@ fn test_tg_mnemonic() {
             "phrase": invalid_phrase
         }),
     );
-    let expected_error = ApiError::crypto_bip39_invalid_phrase(invalid_phrase);
+    let expected_error = ClientError::crypto_bip39_invalid_phrase(invalid_phrase);
     assert_eq!(result.unwrap_err().code, expected_error.code);
 }
 

@@ -25,11 +25,11 @@ pub use errors::{Error, ErrorCode};
 
 pub(crate) use client_env::{ClientEnv, FetchMethod, FetchResult, WebSocket};
 
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use std::sync::Arc;
 use api_info::API;
-use crate::api::api_reference::ApiReducer;
-use crate::api::runtime::{Runtime};
+use crate::c_interface::api_reference::ApiReducer;
+use crate::c_interface::runtime::{Runtime};
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfVersion {
@@ -38,7 +38,7 @@ pub struct ResultOfVersion {
 }
 
 #[api_function]
-pub fn version(_context: Arc<ClientContext>) -> ApiResult<ResultOfVersion> {
+pub fn version(_context: Arc<ClientContext>) -> ClientResult<ResultOfVersion> {
     Ok(ResultOfVersion {
         version: env!("CARGO_PKG_VERSION").to_owned(),
     })
@@ -50,7 +50,7 @@ pub struct ResultOfGetApiReference {
 }
 
 #[api_function]
-pub fn get_api_reference(_context: Arc<ClientContext>) -> ApiResult<ResultOfGetApiReference> {
+pub fn get_api_reference(_context: Arc<ClientContext>) -> ClientResult<ResultOfGetApiReference> {
     let api = ApiReducer::build(Runtime::api());
     Ok(ResultOfGetApiReference {
         api,

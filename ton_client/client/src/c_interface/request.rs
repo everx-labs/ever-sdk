@@ -12,7 +12,7 @@
  *
  */
 
-use crate::error::{ApiError, ApiResult};
+use crate::error::{ClientError, ClientResult};
 use crate::{ResponseHandler, ResponseType, StringData};
 use serde::Serialize;
 
@@ -51,7 +51,7 @@ impl Request {
         };
     }
 
-    pub fn send_result(&self, result: ApiResult<impl Serialize>, finished: bool) {
+    pub fn send_result(&self, result: ClientResult<impl Serialize>, finished: bool) {
         match result {
             Ok(result) => {
                 self.call_response_handler(result, ResponseType::Success as u32, finished)
@@ -60,11 +60,11 @@ impl Request {
         }
     }
 
-    pub fn finish_with(&self, result: ApiResult<impl Serialize>) {
+    pub fn finish_with(&self, result: ClientResult<impl Serialize>) {
         self.send_result(result, true);
     }
 
-    pub fn finish_with_error(&self, error: ApiError) {
+    pub fn finish_with_error(&self, error: ClientError) {
         self.call_response_handler(error, ResponseType::Error as u32, true);
     }
 

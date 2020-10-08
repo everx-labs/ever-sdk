@@ -11,7 +11,7 @@
 * limitations under the License.
 */
 
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use std::sync::Arc;
 use ton_sdk::AbiConfig;
 
@@ -33,19 +33,19 @@ pub struct ClientContext {
 
 #[cfg(feature = "node_interaction")]
 impl ClientContext {
-    pub(crate) fn get_client(&self) -> ApiResult<&NodeClient> {
+    pub(crate) fn get_client(&self) -> ClientResult<&NodeClient> {
         self.client.as_ref().ok_or(Error::net_module_not_init())
     }
 
     #[cfg(not(feature = "node_interaction"))]
-    pub fn new(config: Option<ClientConfig>) -> ApiResult<Self> {
+    pub fn new(config: Option<ClientConfig>) -> ClientResult<Self> {
         Ok(Self {
             config: config.unwrap_or_default().into(),
         })
     }
 
     #[cfg(feature = "node_interaction")]
-    pub fn new(config: Option<ClientConfig>) -> ApiResult<ClientContext> {
+    pub fn new(config: Option<ClientConfig>) -> ClientResult<ClientContext> {
         let config: InternalClientConfig = config.unwrap_or_default().into();
         let std_env = Arc::new(StdClientEnv::new()?);
 

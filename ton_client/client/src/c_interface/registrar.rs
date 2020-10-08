@@ -12,13 +12,13 @@
  *
  */
 
-use crate::api::handlers::{
+use super::handlers::{
     CallHandler, CallNoArgsHandler, SpawnHandler, SpawnHandlerCallback, SpawnNoArgsHandler,
 };
-use crate::api::request::Request;
-use crate::api::runtime::{RuntimeHandlers};
+use super::request::Request;
+use super::runtime::{RuntimeHandlers};
 use crate::client::ClientContext;
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use api_info::{ApiModule, ApiType, Module};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -54,7 +54,7 @@ impl<'h> ModuleReg<'h> {
     ) where
         P: ApiType + Send + DeserializeOwned + 'static,
         R: ApiType + Send + Serialize + 'static,
-        F: Send + Future<Output = ApiResult<R>> + 'static,
+        F: Send + Future<Output = ClientResult<R>> + 'static,
     {
         self.register_type::<P>();
         self.register_type::<R>();
@@ -81,7 +81,7 @@ impl<'h> ModuleReg<'h> {
     ) where
         P: ApiType + Send + DeserializeOwned + 'static,
         R: ApiType + Send + Serialize + 'static,
-        F: Send + Future<Output = ApiResult<R>> + 'static,
+        F: Send + Future<Output = ClientResult<R>> + 'static,
     {
         self.register_type::<P>();
         self.register_type::<R>();
@@ -93,7 +93,7 @@ impl<'h> ModuleReg<'h> {
 
     pub fn register_sync_fn<P, R>(
         &mut self,
-        handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> ApiResult<R>,
+        handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> ClientResult<R>,
         api: fn() -> api_info::Function,
     ) where
         P: ApiType + Send + DeserializeOwned + 'static,
@@ -118,7 +118,7 @@ impl<'h> ModuleReg<'h> {
 
     pub fn register_sync_fn_without_args<R>(
         &mut self,
-        handler: fn(context: std::sync::Arc<ClientContext>) -> ApiResult<R>,
+        handler: fn(context: std::sync::Arc<ClientContext>) -> ClientResult<R>,
         api: fn() -> api_info::Function,
     ) where
         R: ApiType + Send + Serialize + 'static,

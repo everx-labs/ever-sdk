@@ -13,7 +13,7 @@
 
 use sha2::{Digest};
 use crate::client::ClientContext;
-use crate::error::{ApiResult};
+use crate::error::{ClientResult};
 use crate::encoding::base64_decode;
 
 //--------------------------------------------------------------------------------------------- sha
@@ -35,7 +35,7 @@ pub struct ResultOfHash {
 pub fn sha256(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHash,
-) -> ApiResult<ResultOfHash> {
+) -> ClientResult<ResultOfHash> {
     let mut hasher = sha2::Sha256::new();
     hasher.input(base64_decode(&params.data)?);
     Ok(ResultOfHash {
@@ -49,7 +49,7 @@ pub fn sha256(
 pub fn sha512(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfHash,
-) -> ApiResult<ResultOfHash> {
+) -> ClientResult<ResultOfHash> {
     let mut hasher = sha2::Sha512::new();
     hasher.input(base64_decode(&params.data)?);
     Ok(ResultOfHash {

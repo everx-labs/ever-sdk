@@ -12,17 +12,17 @@
  *
  */
 
-use crate::api::modules::register_modules;
-use crate::api::request::Request;
+use super::modules::register_modules;
+use super::request::Request;
 use crate::client::{ClientConfig, ClientContext};
-use crate::error::{ApiError, ApiResult};
+use crate::error::{ClientError, ClientResult};
 use crate::{ContextHandle, ResponseHandler};
 use api_info::{Module, API};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 pub(crate) trait SyncHandler {
-    fn handle(&self, context: Arc<ClientContext>, params_json: &str) -> ApiResult<String>;
+    fn handle(&self, context: Arc<ClientContext>, params_json: &str) -> ClientResult<String>;
 }
 
 pub(crate) trait AsyncHandler {
@@ -109,10 +109,10 @@ impl Runtime {
         context: Arc<ClientContext>,
         function_name: String,
         params_json: String,
-    ) -> ApiResult<String> {
+    ) -> ClientResult<String> {
         match Self::handlers().sync_handlers.get(&function_name) {
             Some(handler) => handler.handle(context, params_json.as_str()),
-            None => Err(ApiError::unknown_function(&function_name)),
+            None => Err(ClientError::unknown_function(&function_name)),
         }
     }
 
@@ -127,7 +127,7 @@ impl Runtime {
         match Self::handlers().async_handlers.get(&function_name) {
             Some(handler) => handler.handle(context, params_json, request_id, response_handler),
             None => Request::new(response_handler, request_id)
-                .finish_with_error(ApiError::unknown_function(&function_name)),
+                .finish_with_error(ClientError::unknown_function(&function_name)),
         }
     }
 
@@ -150,11 +150,11 @@ impl Runtime {
         &Self::handlers().api
     }
 
-    pub fn create_context(config_json: &str) -> ApiResult<ContextHandle> {
+    pub fn create_context(config_json: &str) -> ClientResult<ContextHandle> {
         let config = if !config_json.is_empty() {
             Some(
                 serde_json::from_str::<ClientConfig>(config_json)
-                    .map_err(|err| ApiError::invalid_params(config_json, err))?,
+                    .map_err(|err| ClientError::invalid_params(config_json, err))?,
             )
         } else {
             None
@@ -171,12 +171,12 @@ impl Runtime {
         Self::contexts().contexts.remove(&handle);
     }
 
-    pub fn required_context(context: ContextHandle) -> ApiResult<Arc<ClientContext>> {
+    pub fn required_context(context: ContextHandle) -> ClientResult<Arc<ClientContext>> {
         Ok(Arc::clone(
             Self::contexts()
                 .contexts
                 .get(&context)
-                .ok_or(ApiError::invalid_context_handle(context))?,
+                .ok_or(ClientError::invalid_context_handle(context))?,
         ))
     }
 }

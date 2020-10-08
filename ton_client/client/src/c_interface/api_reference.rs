@@ -95,7 +95,7 @@ impl ApiReducer {
             self.resolve_refs(module_name, &mut function.params[0].value);
         }
         match &function.result {
-            Type::Generic { name, args } if name == "ApiResult" => {
+            Type::Generic { name, args } if name == "ClientResult" => {
                 function.result = args[0].clone()
             }
             _ => (),

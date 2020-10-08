@@ -4,7 +4,7 @@ use crate::net::{
     ResultOfQueryCollection, ResultOfSubscribeCollection, ResultOfSubscription,
     ResultOfWaitForCollection,
 };
-use crate::error::ApiError;
+use crate::error::ClientError;
 use super::*;
 use crate::tests::{TestClient, HELLO};
 
@@ -120,7 +120,7 @@ async fn subscribe_for_transactions_with_addresses() {
     let callback = move |result: serde_json::Value, response_type: SubscriptionResponseType| {
         let result = match response_type {
             SubscriptionResponseType::Ok => Ok(serde_json::from_value::<ResultOfSubscription>(result).unwrap()),
-            SubscriptionResponseType::Error => Err(serde_json::from_value::<ApiError>(result).unwrap())
+            SubscriptionResponseType::Error => Err(serde_json::from_value::<ClientError>(result).unwrap())
         }.unwrap();
         assert_eq!(result.result["account_addr"], address);
         let transactions_copy = transactions_copy.clone();
@@ -161,7 +161,7 @@ async fn subscribe_for_messages() {
     let callback = move |result: serde_json::Value, response_type: SubscriptionResponseType| {
         let result = match response_type {
             SubscriptionResponseType::Ok => Ok(serde_json::from_value::<ResultOfSubscription>(result).unwrap()),
-            SubscriptionResponseType::Error => Err(serde_json::from_value::<ApiError>(result).unwrap())
+            SubscriptionResponseType::Error => Err(serde_json::from_value::<ClientError>(result).unwrap())
         }.unwrap();
         let messages_copy = messages_copy.clone();
         async move {

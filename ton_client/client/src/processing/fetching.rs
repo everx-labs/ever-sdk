@@ -1,6 +1,6 @@
 use crate::abi::Abi;
 use crate::client::ClientContext;
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use crate::net::{wait_for_collection, ParamsOfWaitForCollection, MAX_TIMEOUT};
 use crate::processing::blocks_walking::wait_next_block;
 use crate::processing::internal::{
@@ -25,7 +25,7 @@ pub async fn fetch_next_shard_block<F: futures::Future<Output = ()> + Send + Syn
     message_id: &str,
     timeout: u32,
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync,
-) -> ApiResult<Block> {
+) -> ClientResult<Block> {
     let mut retries: u8 = 0;
     let network_retries_timeout = resolve_network_retries_timeout(context);
     // Network retries loop
@@ -80,7 +80,7 @@ pub(crate) struct TransactionBoc {
 }
 
 impl TransactionBoc {
-    async fn fetch_value(context: &Arc<ClientContext>, transaction_id: &str) -> ApiResult<Value> {
+    async fn fetch_value(context: &Arc<ClientContext>, transaction_id: &str) -> ClientResult<Value> {
         Ok(wait_for_collection(
             context.clone(),
             ParamsOfWaitForCollection {
@@ -96,7 +96,7 @@ impl TransactionBoc {
         .result)
     }
 
-    fn from(value: Value, message_id: &str, shard_block_id: &String,) -> ApiResult<Self> {
+    fn from(value: Value, message_id: &str, shard_block_id: &String,) -> ClientResult<Self> {
         serde_json::from_value::<TransactionBoc>(value).map_err(|err| {
             Error::fetch_transaction_result_failed(
                 format!("Transaction can't be parsed: {}", err),
@@ -115,7 +115,7 @@ pub async fn fetch_transaction_result<F: futures::Future<Output = ()> + Send + S
     transaction_id: &str,
     abi: &Option<Abi>,
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync,
-) -> ApiResult<ResultOfProcessMessage> {
+) -> ClientResult<ResultOfProcessMessage> {
     let transaction_boc =
         fetch_transaction_boc(context, transaction_id, message_id, shard_block_id).await?;
     let (transaction, out_messages) = parse_transaction_boc(context.clone(), &transaction_boc)?;
@@ -152,7 +152,7 @@ async fn fetch_transaction_boc(
     transaction_id: &str,
     message_id: &str,
     shard_block_id: &String,
-) -> ApiResult<TransactionBoc> {
+) -> ClientResult<TransactionBoc> {
     let mut retries: u8 = 0;
     let network_retries_timeout = resolve_network_retries_timeout(context);
 

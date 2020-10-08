@@ -17,7 +17,7 @@ use crate::crypto::internal::{
     decode_public_key, decode_secret_key, key256, sign_using_keys, ton_crc16,
 };
 use crate::encoding::{base64_decode, hex_decode};
-use crate::error::{ApiResult};
+use crate::error::{ClientResult};
 use base64::URL_SAFE;
 use ed25519_dalek::Keypair;
 
@@ -37,7 +37,7 @@ impl KeyPair {
         KeyPair { public, secret }
     }
 
-    pub fn decode(&self) -> ApiResult<Keypair> {
+    pub fn decode(&self) -> ClientResult<Keypair> {
         Ok(Keypair {
             public: decode_public_key(&self.public)?,
             secret: decode_secret_key(&self.secret)?,
@@ -65,7 +65,7 @@ pub struct ResultOfConvertPublicKeyToTonSafeFormat {
 pub fn convert_public_key_to_ton_safe_format(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfConvertPublicKeyToTonSafeFormat,
-) -> ApiResult<ResultOfConvertPublicKeyToTonSafeFormat> {
+) -> ClientResult<ResultOfConvertPublicKeyToTonSafeFormat> {
     let public_key = hex_decode(&params.public_key)?;
     let mut ton_public_key: Vec<u8> = Vec::new();
     ton_public_key.push(0x3e);
@@ -83,7 +83,7 @@ pub fn convert_public_key_to_ton_safe_format(
 
 /// Generates random ed25519 key pair.
 #[api_function]
-pub fn generate_random_sign_keys(_context: std::sync::Arc<ClientContext>) -> ApiResult<KeyPair> {
+pub fn generate_random_sign_keys(_context: std::sync::Arc<ClientContext>) -> ClientResult<KeyPair> {
     let mut rng = rand::thread_rng();
     let keypair = ed25519_dalek::Keypair::generate(&mut rng);
     Ok(KeyPair::new(
@@ -118,7 +118,7 @@ pub struct ResultOfSign {
 pub fn sign(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfSign,
-) -> ApiResult<ResultOfSign> {
+) -> ClientResult<ResultOfSign> {
     let (signed, signature) =
         sign_using_keys(&base64_decode(&params.unsigned)?, &params.keys.decode()?)?;
     Ok(ResultOfSign {
@@ -154,7 +154,7 @@ pub struct ResultOfVerifySignature {
 pub fn verify_signature(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfVerifySignature,
-) -> ApiResult<ResultOfVerifySignature> {
+) -> ClientResult<ResultOfVerifySignature> {
     let mut unsigned: Vec<u8> = Vec::new();
     let signed = base64_decode(&params.signed)?;
     unsigned.resize(signed.len(), 0);

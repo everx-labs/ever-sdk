@@ -6,7 +6,7 @@ use crate::abi::{Abi, Error, FunctionHeader, Signer, DEFAULT_WORKCHAIN};
 use crate::boc::internal::get_boc_hash;
 use crate::client::ClientContext;
 use crate::encoding::{account_decode, account_encode, base64_decode, hex_decode};
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use serde_json::Value;
 use std::sync::Arc;
 use ton_abi::Contract;
@@ -80,7 +80,7 @@ fn resolve_header(
     processing_try_index: Option<u8>,
     context: &Arc<ClientContext>,
     abi: &Contract,
-) -> ApiResult<Option<FunctionHeader>> {
+) -> ClientResult<Option<FunctionHeader>> {
     if abi.header().len() == 0 {
         return Ok(None);
     }
@@ -139,7 +139,7 @@ impl CallSet {
         processing_try_index: Option<u8>,
         context: &Arc<ClientContext>,
         abi: &str,
-    ) -> ApiResult<FunctionCallSet> {
+    ) -> ClientResult<FunctionCallSet> {
         let contract = Contract::load(abi.as_bytes()).map_err(|x| Error::invalid_json(x))?;
         let header = resolve_header(
             self.header.as_ref(),
@@ -218,7 +218,7 @@ pub struct ResultOfEncodeMessage {
     pub message_id: String,
 }
 
-fn required_public_key(public_key: Option<String>) -> ApiResult<String> {
+fn required_public_key(public_key: Option<String>) -> ClientResult<String> {
     if let Some(public_key) = public_key {
         Ok(public_key)
     } else {
@@ -236,7 +236,7 @@ fn encode_deploy(
     call_set: &CallSet,
     pubkey: Option<&str>,
     processing_try_index: Option<u8>,
-) -> ApiResult<(Vec<u8>, Option<Vec<u8>>, MsgAddressInt)> {
+) -> ClientResult<(Vec<u8>, Option<Vec<u8>>, MsgAddressInt)> {
     let address = image.msg_address(workchain);
     let unsigned = ton_sdk::Contract::get_deploy_message_bytes_for_signing(
         call_set.to_function_call_set(pubkey, processing_try_index, &context, &abi)?,
@@ -252,7 +252,7 @@ fn encode_deploy(
 fn encode_empty_deploy(
     image: ContractImage,
     workchain: i32,
-) -> ApiResult<(Vec<u8>, Option<Vec<u8>>, MsgAddressInt)> {
+) -> ClientResult<(Vec<u8>, Option<Vec<u8>>, MsgAddressInt)> {
     let address = image.msg_address(workchain);
     let message = ton_sdk::Contract::construct_deploy_message_no_constructor(image, workchain)
         .map_err(|x| abi::Error::encode_deploy_message_failed(x))?;
@@ -273,7 +273,7 @@ fn encode_run(
     call_set: &CallSet,
     pubkey: Option<&str>,
     processing_try_index: Option<u8>,
-) -> ApiResult<(Vec<u8>, Option<Vec<u8>>, MsgAddressInt)> {
+) -> ClientResult<(Vec<u8>, Option<Vec<u8>>, MsgAddressInt)> {
     let address = params
         .address
         .as_ref()
@@ -310,7 +310,7 @@ fn encode_run(
 pub async fn encode_message(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfEncodeMessage,
-) -> ApiResult<ResultOfEncodeMessage> {
+) -> ClientResult<ResultOfEncodeMessage> {
     let abi = resolve_abi(&params.abi)?;
 
     let public = params.signer.resolve_public_key()?;
@@ -386,7 +386,7 @@ pub struct ResultOfAttachSignature {
 pub fn attach_signature(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfAttachSignature,
-) -> ApiResult<ResultOfAttachSignature> {
+) -> ClientResult<ResultOfAttachSignature> {
     let signed = add_sign_to_message(
         &resolve_abi(&params.abi)?,
         &hex_decode(&params.signature)?,

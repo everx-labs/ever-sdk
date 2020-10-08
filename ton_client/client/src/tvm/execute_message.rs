@@ -17,7 +17,7 @@ use crate::boc::internal::{
     serialize_object_to_base64,
 };
 use crate::client::ClientContext;
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use crate::tvm::Error;
 use ton_executor::{
     BlockchainConfig, ExecutorError, OrdinaryTransactionExecutor, TransactionExecutor,
@@ -102,8 +102,8 @@ fn parse_object<S: Serializable>(
     context: &Arc<ClientContext>,
     object: &S,
     name: &str,
-    parser: fn(Arc<ClientContext>, ParamsOfParse) -> ApiResult<ResultOfParse>,
-) -> ApiResult<Value> {
+    parser: fn(Arc<ClientContext>, ParamsOfParse) -> ClientResult<ResultOfParse>,
+) -> ClientResult<Value> {
     Ok(parser(
         context.clone(),
         ParamsOfParse {
@@ -134,7 +134,7 @@ impl ExecutionOutput {
         self,
         context: &Arc<ClientContext>,
         abi: Option<&Abi>,
-    ) -> ApiResult<ResultOfExecuteMessage> {
+    ) -> ClientResult<ResultOfExecuteMessage> {
         let out_messages = self.convert_out_messages(context)?;
         let decoded = if let Some(abi) = abi {
             Some(decode_output(context, abi, &out_messages)?)
@@ -149,17 +149,17 @@ impl ExecutionOutput {
         })
     }
 
-    fn convert_transaction(&self, context: &Arc<ClientContext>) -> ApiResult<Option<Value>> {
+    fn convert_transaction(&self, context: &Arc<ClientContext>) -> ClientResult<Option<Value>> {
         self.transaction
             .as_ref()
             .map(|x| parse_object(context, x, "transaction", parse_transaction))
             .transpose()
     }
 
-    fn convert_account(&self, context: &Arc<ClientContext>) -> ApiResult<Option<Value>> {
+    fn convert_account(&self, context: &Arc<ClientContext>) -> ClientResult<Option<Value>> {
         self.account
             .as_ref()
-            .map(|x| { 
+            .map(|x| {
                 parse_account(
                     context.clone(),
                     ParamsOfParse {
@@ -170,7 +170,7 @@ impl ExecutionOutput {
             .transpose()
     }
 
-    fn convert_out_messages(&self, context: &Arc<ClientContext>) -> ApiResult<Vec<Value>> {
+    fn convert_out_messages(&self, context: &Arc<ClientContext>) -> ClientResult<Vec<Value>> {
         let mut out_messages = Vec::new();
         if let Some(messages) = &self.messages {
             for message in messages {
@@ -189,7 +189,7 @@ impl ExecutionOutput {
     }
 }
 
-pub(crate) fn blockchain_config_from_base64(b64: &str) -> ApiResult<BlockchainConfig> {
+pub(crate) fn blockchain_config_from_base64(b64: &str) -> ClientResult<BlockchainConfig> {
     let config_params = deserialize_object_from_base64(b64, "blockchain config")?;
     BlockchainConfig::with_config(config_params.object)
         .map_err(|err| Error::can_not_read_blockchain_config(err))
@@ -199,7 +199,7 @@ pub(crate) fn blockchain_config_from_base64(b64: &str) -> ApiResult<BlockchainCo
 pub async fn execute_message(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfExecuteMessage,
-) -> ApiResult<ResultOfExecuteMessage> {
+) -> ClientResult<ResultOfExecuteMessage> {
     let (_, account) = deserialize_cell_from_base64(&params.account, "account")?;
     let (message, abi) = params.message.encode(&context).await?;
     let message = deserialize_object_from_base64::<ton_block::Message>(&message, "message")?.object;
@@ -221,7 +221,7 @@ fn execute_message_full(
     account: ton_types::Cell,
     msg: ton_block::Message,
     options: Option<ExecutionOptions>,
-) -> ApiResult<ExecutionOutput> {
+) -> ClientResult<ExecutionOutput> {
     let options = options.unwrap_or_default();
 
     let account_copy = account.clone();
@@ -265,8 +265,8 @@ fn call_executor(
     timestamp: u32,
     block_lt: Option<u64>,
     transaction_lt: Option<u64>,
-    contract_info: impl FnOnce() -> ApiResult<(ton_block::MsgAddressInt, u64)>,
-) -> ApiResult<ExecutionOutput> {
+    contract_info: impl FnOnce() -> ClientResult<(ton_block::MsgAddressInt, u64)>,
+) -> ClientResult<ExecutionOutput> {
     let block_lt = block_lt.unwrap_or(transaction_lt.unwrap_or(1_000_001) - 1);
     let lt = Arc::new(std::sync::atomic::AtomicU64::new(
         transaction_lt.unwrap_or(block_lt + 1),
@@ -306,7 +306,7 @@ fn execute_message_tvm_only(
     account: ton_types::Cell,
     message: ton_block::Message,
     _options: Option<ExecutionOptions>,
-) -> ApiResult<ExecutionOutput> {
+) -> ClientResult<ExecutionOutput> {
     let contract = ton_sdk::Contract::from_cells(SliceData::from(account))
         .map_err(|err| Error::invalid_account_boc(err))?;
     let code = contract

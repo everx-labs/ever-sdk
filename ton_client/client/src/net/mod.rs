@@ -12,7 +12,7 @@
 */
 
 use crate::client::{ClientContext};
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use futures::{Future, FutureExt, StreamExt};
 use rand::RngCore;
 use std::collections::HashMap;
@@ -114,7 +114,7 @@ async fn extract_subscription_handle(handle: &u32) -> Option<Sender<bool>> {
 pub async fn query_collection(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfQueryCollection,
-) -> ApiResult<ResultOfQueryCollection> {
+) -> ClientResult<ResultOfQueryCollection> {
     let client = context.get_client()?;
     let result = client
         .query(
@@ -140,7 +140,7 @@ pub async fn query_collection(
 pub async fn wait_for_collection(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfWaitForCollection,
-) -> ApiResult<ResultOfWaitForCollection> {
+) -> ClientResult<ResultOfWaitForCollection> {
     let client = context.get_client()?;
     let result = client
         .wait_for(
@@ -158,8 +158,8 @@ pub async fn wait_for_collection(
 pub async fn subscribe_collection<F: Future<Output = ()> + Send + Sync>(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfSubscribeCollection,
-    callback: impl Fn(ApiResult<ResultOfSubscription>) -> F + Send + Sync + 'static
-) -> ApiResult<ResultOfSubscribeCollection> {
+    callback: impl Fn(ClientResult<ResultOfSubscription>) -> F + Send + Sync + 'static
+) -> ClientResult<ResultOfSubscribeCollection> {
     let handle = rand::thread_rng().next_u32();
 
     let client = context.get_client()?;
@@ -201,7 +201,7 @@ pub async fn subscribe_collection<F: Future<Output = ()> + Send + Sync>(
 pub async fn unsubscribe(
     _context: std::sync::Arc<ClientContext>,
     params: ResultOfSubscribeCollection,
-) -> ApiResult<()> {
+) -> ClientResult<()> {
     if let Some(mut sender) = extract_subscription_handle(&params.handle).await {
         let _ = sender.send(true);
     }

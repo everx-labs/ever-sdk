@@ -12,15 +12,15 @@
 */
 
 use super::errors::Error;
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use ton_block::AccStatusChange;
 use std::convert::TryFrom;
 
 pub(crate) fn check_transaction_status(
     transaction: &ton_block::Transaction,
     real_tr: bool,
-    contract_info: impl FnOnce() -> ApiResult<(ton_block::MsgAddressInt, u64)>,
-) -> ApiResult<()> {
+    contract_info: impl FnOnce() -> ClientResult<(ton_block::MsgAddressInt, u64)>,
+) -> ClientResult<()> {
     let transaction = ton_sdk::Transaction::try_from(transaction)
         .map_err(|err| Error::can_not_read_transaction(err))?;
 
@@ -42,8 +42,8 @@ pub(crate) fn check_transaction_status(
 
 fn extract_error(
     transaction: &ton_sdk::Transaction,
-    contract_info: impl FnOnce() -> ApiResult<(ton_block::MsgAddressInt, u64)>,
-) -> ApiResult<()> {
+    contract_info: impl FnOnce() -> ClientResult<(ton_block::MsgAddressInt, u64)>,
+) -> ClientResult<()> {
 
     if let Some(storage) = &transaction.storage {
         if storage.status_change != AccStatusChange::Unchanged {

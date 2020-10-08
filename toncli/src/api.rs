@@ -21,7 +21,7 @@ use serde_json::Value;
 use std::env;
 use std::sync::Arc;
 use ton_client::client::ClientContext;
-use ton_client::error::ApiResult;
+use ton_client::error::ClientResult;
 use ton_client::{
     tc_create_context, tc_destroy_context, tc_destroy_string, tc_read_string, tc_request_sync,
     ContextHandle, StringData,
@@ -82,7 +82,7 @@ fn parse_sync_response<R: DeserializeOwned>(response: *const String) -> Result<R
     }
 }
 
-fn get_api() -> ApiResult<API> {
+fn get_api() -> ClientResult<API> {
     let context = Arc::new(ClientContext::new(None)?);
     Ok(ton_client::client::get_api_reference(context)?.api)
 }

@@ -1,7 +1,7 @@
 use api_info::ApiModule;
 use crate::tests::TestClient;
 use crate::client::ResultOfGetApiReference;
-use crate::api::modules::ClientModule;
+use crate::c_interface::modules::ClientModule;
 
 #[test]
 fn api_reference() {

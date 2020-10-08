@@ -12,8 +12,8 @@
  *
  */
 
-use crate::api::registrar::ModuleReg;
-use crate::api::runtime::RuntimeHandlers;
+use super::registrar::ModuleReg;
+use super::runtime::RuntimeHandlers;
 
 /// BOC manipulation module.
 #[derive(ApiModule)]
@@ -239,8 +239,8 @@ fn register_net(handlers: &mut RuntimeHandlers) {
     );
     module.register_async_fn(crate::net::unsubscribe, crate::net::unsubscribe_api);
     module.register_async_fn_with_callback(
-        crate::api::net::subscribe_collection,
-        crate::api::net::subscribe_collection_api,
+        super::net::subscribe_collection,
+        super::net::subscribe_collection_api,
     );
     module.register();
 }
@@ -261,16 +261,16 @@ fn register_processing(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::processing::DecodedOutput>();
 
     module.register_async_fn_with_callback(
-        crate::api::processing::send_message,
-        crate::api::processing::send_message_api,
+        super::processing::send_message,
+        super::processing::send_message_api,
     );
     module.register_async_fn_with_callback(
-        crate::api::processing::wait_for_transaction,
-        crate::api::processing::wait_for_transaction_api,
+        super::processing::wait_for_transaction,
+        super::processing::wait_for_transaction_api,
     );
     module.register_async_fn_with_callback(
-        crate::api::processing::process_message,
-        crate::api::processing::process_message_api,
+        super::processing::process_message,
+        super::processing::process_message_api,
     );
     module.register();
 }

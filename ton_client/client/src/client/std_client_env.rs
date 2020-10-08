@@ -20,7 +20,7 @@ use reqwest::{
     Client as HttpClient, ClientBuilder, Method,
     header::{HeaderMap, HeaderName, HeaderValue}
 };
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use super::{ClientEnv, Error, WebSocket, FetchMethod, FetchResult};
 
 pub(crate) struct StdClientEnv {
@@ -28,8 +28,8 @@ pub(crate) struct StdClientEnv {
 }
 
 impl StdClientEnv {
-    pub fn new() -> ApiResult<Self> {
-        let client = ClientBuilder::new()  
+    pub fn new() -> ClientResult<Self> {
+        let client = ClientBuilder::new()
             .build()
             .map_err(|err| Error::http_client_create_error(err))?;
 
@@ -38,7 +38,7 @@ impl StdClientEnv {
         })
     }
 
-    fn string_map_to_header_map(headers: HashMap<String, String>) -> ApiResult<HeaderMap> {
+    fn string_map_to_header_map(headers: HashMap<String, String>) -> ClientResult<HeaderMap> {
         let mut map = HeaderMap::new();
         for (key, value) in headers {
             let header_name = HeaderName::from_str(key.as_str())
@@ -85,7 +85,7 @@ impl ClientEnv for StdClientEnv {
         &self,
         url: &str,
         headers: Option<HashMap<&str, &str>>,
-    ) -> ApiResult<WebSocket> {
+    ) -> ClientResult<WebSocket> {
         let mut request = tokio_tungstenite::tungstenite::handshake::client::Request::builder()
             .method("GET")
             .uri(url);
@@ -96,13 +96,13 @@ impl ClientEnv for StdClientEnv {
             }
         }
 
-        let request = request        
+        let request = request
             .body(())
             .map_err(|err| Error::websocket_connect_error(url, err))?;
 
         let (client, _) = tokio_tungstenite::connect_async(request)
         .await
-        .map_err(|err| 
+        .map_err(|err|
             Error::websocket_connect_error(url, err))?;
 
         let (write, read) = client.split();
@@ -143,7 +143,7 @@ impl ClientEnv for StdClientEnv {
         headers: Option<HashMap<String, String>>,
         body: Option<Vec<u8>>,
         timeout_ms: Option<u32>,
-    ) -> ApiResult<FetchResult> {
+    ) -> ClientResult<FetchResult> {
         let method = Method::from_str(method.as_str())
             .map_err(|err| Error::http_request_create_error(err))?;
 
