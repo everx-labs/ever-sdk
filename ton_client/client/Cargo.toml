@@ -44,37 +44,22 @@ log = "0.4.11"
 crc-any = "2.2.3"
 failure = "0.1"
 num-traits = "0.2"
-num-derive = "0.3"
 async-trait = "0.1.40"
+futures = "0.3.4"
 lockfree = { git = "https://github.com/tonlabs/lockfree.git", package = "lockfree" }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+web-sys = { version =  "0.3.45", features = ["Request", "RequestInit", "RequestMode", "Response", "Window"] }
+wasm-bindgen = "0.2.68"
+wasm-bindgen-futures = "0.4.18"
+tokio = { version = "0.2.13", features = ["sync"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+reqwest = "0.10.4"
+tokio = { version = "0.2.13", features = ["rt-threaded", "macros", "sync"] }
+tokio-tungstenite = { version =  "0.11.0", features = ["tls"] }
 
 [dev-dependencies]
 log4rs = "^0"
 dirs = "2.0.2"
 pretty_assertions = "0.6.1"
-
-[dependencies.reqwest]
-version = "0.10.4"
-optional = true
-
-[dependencies.tokio]
-version = "0.2.13"
-features = ["rt-threaded", "macros", "sync"]
-optional = true
-
-[dependencies.futures]
-version = "0.3.4"
-optional = true
-
-[dependencies.tokio-tungstenite]
-version =  "0.11.0"
-features = ["tls"]
-optional = true
-
-[dependencies.futures-timer]
-version = "3.0.1"
-optional = true
-
-[features]
-default = ["node_interaction"]
-node_interaction = ["ton_sdk/node_interaction", "tokio", "futures", "reqwest", "tokio-tungstenite", "futures-timer"]
