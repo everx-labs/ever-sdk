@@ -57,13 +57,14 @@ The list defines all build targets (paths are relative and determined to the loc
 
 Instead of building core library yourself you can download precompiled binaries from TON Labs SDK Binaries Store.
 
-Download using url: [https://sdkbinaries.tonlabs.io/tonclient_V_P.gz](https://sdkbinaries.tonlabs.io/tonclient_VERSION_PLATFORM.gz) where:
-`P` is a your platform: `darwin`, `linux` or `win32`;
-`V` is a major part of core version (`0`, `1`, etc.).
-For example download url for `0.25.0` version for macOS will look like:
-[https://sdkbinaries.tonlabs.io/tonclient_0_darwin.gz](https://sdkbinaries.tonlabs.io/tonclient_VERSION_PLATFORM.gz)
-If you need the latest version you can omit the `V` part of url:
-[https://sdkbinaries.tonlabs.io/tonclient_darwin.gz](https://sdkbinaries.tonlabs.io/tonclient_VERSION_PLATFORM.gz)
+Download using url: [https://sdkbinaries.tonlabs.io/tonclient_V_P.gz](https://sdkbinaries.tonlabs.io/tonclient_VERSION_PLATFORM.gz) where:  
+`P` is a your platform: `darwin`, `linux` or `win32`;  
+`V` is a major part of core version (`0`, `1`, etc.)  
+For example download url for `0.25.0` version for macOS will look like:  
+https://sdkbinaries.tonlabs.io/tonclient_0_darwin.gz  
+
+If you need the latest version you can omit the `V` part of url:  
+https://sdkbinaries.tonlabs.io/tonclient_darwin.gz  
 Downloaded archive contains only file `tonclien.dll` (or `tonclien.dylib` or `[tonclient.so](http://tonclient.so)` depends on platform).
 
 # Use Core Library
