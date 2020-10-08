@@ -3,7 +3,7 @@ use crate::abi::internal::resolve_abi;
 use crate::abi::{Error, FunctionHeader};
 use crate::client::ClientContext;
 use crate::encoding::base64_decode;
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use serde_json::Value;
 use std::sync::Arc;
 use ton_abi::contract::DecodedMessage;
@@ -52,7 +52,7 @@ impl DecodedMessageBody {
         message_type: DecodedMessageType,
         decoded: DecodedMessage,
         header: Option<FunctionHeader>,
-    ) -> ApiResult<Self> {
+    ) -> ClientResult<Self> {
         let value = Detokenizer::detokenize_to_json_value(&decoded.params, &decoded.tokens)
             .map_err(|x| Error::invalid_message_for_decode(x))?;
         Ok(Self {
@@ -78,7 +78,7 @@ pub struct ParamsOfDecodeMessage {
 pub fn decode_message(
     _context: Arc<ClientContext>,
     params: ParamsOfDecodeMessage,
-) -> ApiResult<DecodedMessageBody> {
+) -> ClientResult<DecodedMessageBody> {
     let (abi, message) = prepare_decode(&params)?;
     if let Some(body) = message.body() {
         if let Ok(output) = abi.decode_output(body.clone(), message.is_internal()) {
@@ -121,7 +121,7 @@ pub fn decode_message(
     }
 }
 
-fn prepare_decode(params: &ParamsOfDecodeMessage) -> ApiResult<(AbiContract, ton_block::Message)> {
+fn prepare_decode(params: &ParamsOfDecodeMessage) -> ClientResult<(AbiContract, ton_block::Message)> {
     let abi = resolve_abi(&params.abi)?;
     let abi = AbiContract::load(abi.as_bytes()).map_err(|x| Error::invalid_json(x))?;
     let message = ton_sdk::Contract::deserialize_message(&base64_decode(&params.message)?)

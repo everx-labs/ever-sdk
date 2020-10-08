@@ -13,7 +13,7 @@
  */
 
 use crate::boc::internal::{deserialize_cell_from_base64, serialize_object_to_base64};
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use ton_block::Account;
 use ton_block::{
     AccountState, AccountStorage, AccountStuff, CurrencyCollection, MsgAddressInt, StateInit,
@@ -33,7 +33,7 @@ pub struct ResultOfBuildAccount {
     pub account: String,
 }
 
-pub fn build_account(params: ParamsOfBuildAccount) -> ApiResult<ResultOfBuildAccount> {
+pub fn build_account(params: ParamsOfBuildAccount) -> ClientResult<ResultOfBuildAccount> {
     let library = if let Some(library) = params.library.as_ref() {
         StateInitLib::with_hashmap(Some(deserialize_cell_from_base64(library, "library")?.1))
     } else {

@@ -1,6 +1,6 @@
 use crate::abi::{Abi, ParamsOfEncodeMessage};
 use crate::client::ClientContext;
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use crate::processing::internal::can_retry_expired_message;
 use crate::processing::{
     send_message, wait_for_transaction, Error, ErrorCode, ParamsOfSendMessage,
@@ -18,7 +18,7 @@ impl MessageSource {
     pub(crate) async fn encode(
         &self,
         context: &Arc<ClientContext>,
-    ) -> ApiResult<(String, Option<Abi>)> {
+    ) -> ClientResult<(String, Option<Abi>)> {
         Ok(match self {
             MessageSource::EncodingParams(params) => {
                 if params.signer.is_external() {
@@ -52,7 +52,7 @@ pub async fn process_message<F: futures::Future<Output = ()> + Send + Sync>(
     context: Arc<ClientContext>,
     params: ParamsOfProcessMessage,
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync + 'static,
-) -> ApiResult<ResultOfProcessMessage> {
+) -> ClientResult<ResultOfProcessMessage> {
     let abi = match &params.message {
         MessageSource::Encoded { abi, .. } => abi.clone(),
         MessageSource::EncodingParams(encode_params) => Some(encode_params.abi.clone()),

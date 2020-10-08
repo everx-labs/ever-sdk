@@ -11,13 +11,13 @@
 * limitations under the License.
 */
 
-use crate::error::ApiError;
+use crate::error::ClientError;
 use std::fmt::Display;
 use ton_block::{AccStatusChange, ComputeSkipReason, MsgAddressInt};
 use ton_types::ExceptionCode;
 use serde_json::Value;
 
-const TVM: isize = ApiError::TVM; // 400
+const TVM: isize = ClientError::TVM; // 400
 
 pub enum ErrorCode {
     CanNotReadTransaction = TVM + 1,
@@ -35,38 +35,38 @@ pub enum ErrorCode {
 }
 pub struct Error;
 
-fn error(code: ErrorCode, message: String) -> ApiError {
-    ApiError::with_code_message(code as isize, message)
+fn error(code: ErrorCode, message: String) -> ClientError {
+    ClientError::with_code_message(code as isize, message)
 }
 
 impl Error {
-    pub fn invalid_input_stack<E: Display>(err: E, stack: &Value) -> ApiError {
+    pub fn invalid_input_stack<E: Display>(err: E, stack: &Value) -> ClientError {
         error(
             ErrorCode::InvalidInputStack,
             format!("Invalid JSON value for stack item ({}): {}", stack, err),
         )
     }
-    pub fn invalid_account_boc<E: Display>(err: E) -> ApiError {
+    pub fn invalid_account_boc<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::InvalidAccountBoc,
             format!("Invalid account BOC: {}", err),
         )
     }
-    pub fn can_not_read_transaction<E: Display>(err: E) -> ApiError {
+    pub fn can_not_read_transaction<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::CanNotReadTransaction,
             format!("Can not read transaction: {}", err),
         )
     }
 
-    pub fn can_not_read_blockchain_config<E: Display>(err: E) -> ApiError {
+    pub fn can_not_read_blockchain_config<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::CanNotReadBlockchainConfig,
             format!("Can not read blockchain config: {}", err),
         )
     }
 
-    pub fn transaction_aborted() -> ApiError {
+    pub fn transaction_aborted() -> ClientError {
         let error = error(
             ErrorCode::TransactionAborted,
             "Transaction was aborted by unknown reason".to_string(),
@@ -78,7 +78,7 @@ impl Error {
         reason: &ComputeSkipReason,
         address: &MsgAddressInt,
         balance: u64,
-    ) -> ApiError {
+    ) -> ClientError {
         let mut error = match reason {
             ComputeSkipReason::NoState => Self::account_code_missing(address),
             ComputeSkipReason::BadState => Self::account_frozen_or_deleted(address),
@@ -90,7 +90,7 @@ impl Error {
         error
     }
 
-    pub fn tvm_execution_failed<E: Display>(err: E, exit_code: i32, address: &MsgAddressInt) -> ApiError {
+    pub fn tvm_execution_failed<E: Display>(err: E, exit_code: i32, address: &MsgAddressInt) -> ClientError {
         let mut error = error(
             ErrorCode::ContractExecutionError,
             format!("Contract execution was terminated with error: {}", err),
@@ -124,7 +124,7 @@ impl Error {
         reason: &AccStatusChange,
         address: &MsgAddressInt,
         balance: u64,
-    ) -> ApiError {
+    ) -> ClientError {
         let mut error = Self::low_balance(address, balance);
         error.data["phase"] = "storage".into();
         error.data["reason"] = match reason {
@@ -142,7 +142,7 @@ impl Error {
         no_funds: bool,
         address: &MsgAddressInt,
         balance: u64,
-    ) -> ApiError {
+    ) -> ClientError {
         let mut error = if no_funds {
             let mut error = Self::low_balance(address, balance);
             error.data["description"] =
@@ -163,7 +163,7 @@ impl Error {
         error
     }
 
-    pub fn account_code_missing(address: &MsgAddressInt) -> ApiError {
+    pub fn account_code_missing(address: &MsgAddressInt) -> ClientError {
         let mut error = error(
             ErrorCode::AccountCodeMissing,
             "Contract is not deployed".to_owned(),
@@ -176,7 +176,7 @@ impl Error {
         error
     }
 
-    pub fn low_balance(address: &MsgAddressInt, balance: u64) -> ApiError {
+    pub fn low_balance(address: &MsgAddressInt, balance: u64) -> ClientError {
         let mut error = error(
             ErrorCode::LowBalance,
             "Account has insufficient balance for the requested operation".to_owned(),
@@ -190,7 +190,7 @@ impl Error {
         error
     }
 
-    pub fn account_frozen_or_deleted(address: &MsgAddressInt) -> ApiError {
+    pub fn account_frozen_or_deleted(address: &MsgAddressInt) -> ClientError {
         let mut error = error(
             ErrorCode::AccountFrozenOrDeleted,
             "Account is in a bad state. It is frozen or deleted".to_owned(),
@@ -202,7 +202,7 @@ impl Error {
         error
     }
 
-    pub fn account_missing(address: &MsgAddressInt) -> ApiError {
+    pub fn account_missing(address: &MsgAddressInt) -> ClientError {
         let mut error = error(
             ErrorCode::AccountMissing,
             "Account does not exist".to_owned(),
@@ -215,7 +215,7 @@ impl Error {
         error
     }
 
-    pub fn unknown_execution_error<E: Display>(err: E) -> ApiError {
+    pub fn unknown_execution_error<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::UnknownExecutionError,
             format!("Transaction execution failed with unknown error: {}", err),

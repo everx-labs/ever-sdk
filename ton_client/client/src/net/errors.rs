@@ -1,6 +1,6 @@
-use crate::error::ApiError;
+use crate::error::ClientError;
 use std::fmt::Display;
-const NET: isize = ApiError::NET; // 600
+const NET: isize = ClientError::NET; // 600
 
 pub enum ErrorCode {
     QueryFailed = NET + 1,
@@ -14,38 +14,38 @@ pub enum ErrorCode {
 }
 pub struct Error;
 
-fn error(code: ErrorCode, message: String) -> ApiError {
-    ApiError::with_code_message(code as isize, message)
+fn error(code: ErrorCode, message: String) -> ClientError {
+    ClientError::with_code_message(code as isize, message)
 }
 
 impl Error {
-    pub fn queries_query_failed<E: Display>(err: E) -> ApiError {
+    pub fn queries_query_failed<E: Display>(err: E) -> ClientError {
         error(ErrorCode::QueryFailed, format!("Query failed: {}", err))
     }
 
-    pub fn queries_subscribe_failed<E: Display>(err: E) -> ApiError {
+    pub fn queries_subscribe_failed<E: Display>(err: E) -> ClientError {
         error(ErrorCode::SubscribeFailed, format!("Subscribe failed: {}", err))
     }
 
-    pub fn queries_wait_for_failed<E: Display>(err: E) -> ApiError {
+    pub fn queries_wait_for_failed<E: Display>(err: E) -> ClientError {
         error(ErrorCode::WaitForFailed, format!("WaitFor failed: {}", err))
     }
 
-    pub fn queries_get_subscription_result_failed<E: Display>(err: E) -> ApiError {
+    pub fn queries_get_subscription_result_failed<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::GetSubscriptionResultFailed,
             format!("Receive subscription result failed: {}", err),
         )
     }
 
-    pub fn invalid_server_response<E: Display>(err: E) -> ApiError {
+    pub fn invalid_server_response<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::InvalidServerResponse,
             format!("Invalid server response : {}", err),
         )
     }
 
-    pub fn clock_out_of_sync(delta_ms: i64, threshold: i64) -> ApiError {
+    pub fn clock_out_of_sync(delta_ms: i64, threshold: i64) -> ClientError {
         let mut error = error(
             ErrorCode::ClockOutOfSync,
             "The time on the device is out of sync with the time on the server".to_owned(),
@@ -59,14 +59,14 @@ impl Error {
         error
     }
 
-    pub fn wait_for_timeout() -> ApiError {
+    pub fn wait_for_timeout() -> ClientError {
         error(
             ErrorCode::WaitForTimeout,
             "wait_for operation did not return anything during the specified timeout".to_owned()
         )
     }
 
-    pub fn graphql_error<E: Display>(err: E) -> ApiError {
+    pub fn graphql_error<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::GraphqlError,
             format!("Graphql server returned error: {}", err)

@@ -14,7 +14,7 @@
 use crate::crypto;
 use crate::crypto::keys::{KeyPair};
 use crate::crypto::internal::{key256, key192, key512};
-use crate::error::{ApiResult};
+use crate::error::{ClientResult};
 use crate::encoding::{hex_decode, base64_decode};
 use crate::client::ClientContext;
 use crate::crypto::internal;
@@ -35,7 +35,7 @@ pub struct ParamsOfNaclSignKeyPairFromSecret {
 pub fn nacl_sign_keypair_from_secret_key(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfNaclSignKeyPairFromSecret,
-) -> ApiResult<KeyPair> {
+) -> ClientResult<KeyPair> {
     let secret = hex::decode(&params.secret).map_err(|err|
         crypto::Error::invalid_secret_key(err, &params.secret))?;
     let seed = key256(&secret)?;
@@ -65,7 +65,7 @@ pub struct ResultOfNaclSign {
 
 /// Signs data using the signer's secret key.
 #[api_function]
-pub fn nacl_sign(_context: std::sync::Arc<ClientContext>, params: ParamsOfNaclSign) -> ApiResult<ResultOfNaclSign> {
+pub fn nacl_sign(_context: std::sync::Arc<ClientContext>, params: ParamsOfNaclSign) -> ClientResult<ResultOfNaclSign> {
     let signed = sign(base64_decode(&params.unsigned)?, hex_decode(&params.secret)?)?;
     Ok(ResultOfNaclSign {
         signed: base64::encode(&signed),
@@ -90,7 +90,7 @@ pub struct ResultOfNaclSignDetached {
 }
 
 #[api_function]
-pub fn nacl_sign_detached(_context: std::sync::Arc<ClientContext>, params: ParamsOfNaclSign) -> ApiResult<ResultOfNaclSignDetached> {
+pub fn nacl_sign_detached(_context: std::sync::Arc<ClientContext>, params: ParamsOfNaclSign) -> ClientResult<ResultOfNaclSignDetached> {
     let (_, signature) = internal::sign_using_secret(
         &base64_decode(&params.unsigned)?,
         &hex_decode(&params.secret)?
@@ -118,7 +118,7 @@ pub struct ResultOfNaclSignOpen {
 }
 
 #[api_function]
-pub fn nacl_sign_open(_context: std::sync::Arc<ClientContext>, params: ParamsOfNaclSignOpen) -> ApiResult<ResultOfNaclSignOpen> {
+pub fn nacl_sign_open(_context: std::sync::Arc<ClientContext>, params: ParamsOfNaclSignOpen) -> ClientResult<ResultOfNaclSignOpen> {
     let mut unsigned: Vec<u8> = Vec::new();
     let signed = base64_decode(&params.signed)?;
     unsigned.resize(signed.len(), 0);
@@ -136,7 +136,7 @@ pub fn nacl_sign_open(_context: std::sync::Arc<ClientContext>, params: ParamsOfN
 // Box
 
 fn prepare_to_convert(input: &Vec<u8>, nonce: &Vec<u8>, key: &Vec<u8>, pad_len: usize)
-    -> ApiResult<(Vec<u8>, Vec<u8>, [u8; 24], [u8; 32])> {
+    -> ClientResult<(Vec<u8>, Vec<u8>, [u8; 24], [u8; 32])> {
     let mut padded_input = Vec::new();
     padded_input.resize(pad_len, 0);
     padded_input.extend(input);
@@ -148,7 +148,7 @@ fn prepare_to_convert(input: &Vec<u8>, nonce: &Vec<u8>, key: &Vec<u8>, pad_len: 
 //-------------------------------------------------------------------------------- nacl_box_keypair
 
 #[api_function]
-pub fn nacl_box_keypair(_context: std::sync::Arc<ClientContext>) -> ApiResult<KeyPair> {
+pub fn nacl_box_keypair(_context: std::sync::Arc<ClientContext>) -> ClientResult<KeyPair> {
     let mut sk = [0u8; 32];
     let mut pk = [0u8; 32];
     sodalite::box_keypair(&mut pk, &mut sk);
@@ -168,7 +168,7 @@ pub struct ParamsOfNaclBoxKeyPairFromSecret {
 pub fn nacl_box_keypair_from_secret_key(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfNaclBoxKeyPairFromSecret,
-) -> ApiResult<KeyPair> {
+) -> ClientResult<KeyPair> {
     let secret = hex::decode(&params.secret).map_err(|err|
         crypto::Error::invalid_secret_key(err, &params.secret))?;
     let seed = key256(&secret)?;
@@ -197,7 +197,7 @@ pub struct ResultOfNaclBox {
 }
 
 #[api_function]
-pub fn nacl_box(_context: std::sync::Arc<ClientContext>, params: ParamsOfNaclBox) -> ApiResult<ResultOfNaclBox> {
+pub fn nacl_box(_context: std::sync::Arc<ClientContext>, params: ParamsOfNaclBox) -> ClientResult<ResultOfNaclBox> {
     let (mut padded_output, padded_input, nonce, secret) =
         prepare_to_convert(
             &base64_decode(&params.decrypted)?,
@@ -239,7 +239,7 @@ pub struct ResultOfNaclBoxOpen {
 pub fn nacl_box_open(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfNaclBoxOpen,
-) -> ApiResult<ResultOfNaclBoxOpen> {
+) -> ClientResult<ResultOfNaclBoxOpen> {
     let (mut padded_output, padded_input, nonce, secret) =
         prepare_to_convert(
             &base64_decode(&params.encrypted)?,
@@ -275,7 +275,7 @@ pub struct ParamsOfNaclSecretBox {
 pub fn nacl_secret_box(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfNaclSecretBox,
-) -> ApiResult<ResultOfNaclBox> {
+) -> ClientResult<ResultOfNaclBox> {
     let (mut padded_output, padded_input, nonce, key) =
         prepare_to_convert(
             &base64_decode(&params.decrypted)?,
@@ -305,7 +305,7 @@ pub struct ParamsOfNaclSecretBoxOpen {
 pub fn nacl_secret_box_open(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfNaclSecretBoxOpen,
-) -> ApiResult<ResultOfNaclBoxOpen> {
+) -> ClientResult<ResultOfNaclBoxOpen> {
     let (mut padded_output, padded_input, nonce, key) =
         prepare_to_convert(
             &base64_decode(&params.encrypted)?,
@@ -322,7 +322,7 @@ pub fn nacl_secret_box_open(
 
 // Internals
 
-fn sign(unsigned: Vec<u8>, secret: Vec<u8>) -> ApiResult<Vec<u8>> {
+fn sign(unsigned: Vec<u8>, secret: Vec<u8>) -> ClientResult<Vec<u8>> {
     let mut signed: Vec<u8> = Vec::new();
     signed.resize(unsigned.len() + sodalite::SIGN_LEN, 0);
     sodalite::sign_attached(&mut signed, &unsigned, &key512(&secret)?);

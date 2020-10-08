@@ -1,7 +1,7 @@
 use crate::boc::internal::deserialize_object_from_base64;
 use crate::boc::Error;
 use crate::client::ClientContext;
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use serde_json::Value;
 
 #[derive(Serialize, Deserialize, Clone, ApiType)]
@@ -20,7 +20,7 @@ pub struct ResultOfParse {
 pub fn parse_message(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
-) -> ApiResult<ResultOfParse> {
+) -> ClientResult<ResultOfParse> {
     let object = deserialize_object_from_base64::<ton_block::Message>(&params.boc, "message")?;
 
     let set = ton_block_json::MessageSerializationSet {
@@ -50,7 +50,7 @@ pub fn parse_message(
 pub fn parse_transaction(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
-) -> ApiResult<ResultOfParse> {
+) -> ClientResult<ResultOfParse> {
     let object =
         deserialize_object_from_base64::<ton_block::Transaction>(&params.boc, "transaction")?;
 
@@ -80,7 +80,7 @@ pub fn parse_transaction(
 pub fn parse_account(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
-) -> ApiResult<ResultOfParse> {
+) -> ClientResult<ResultOfParse> {
     let object = deserialize_object_from_base64::<ton_block::Account>(&params.boc, "account")?;
 
     let set = ton_block_json::AccountSerializationSet {
@@ -105,7 +105,7 @@ pub fn parse_account(
 pub fn parse_block(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
-) -> ApiResult<ResultOfParse> {
+) -> ClientResult<ResultOfParse> {
     let object = deserialize_object_from_base64::<ton_block::Block>(&params.boc, "block")?;
 
     let set = ton_block_json::BlockSerializationSet {
@@ -127,14 +127,14 @@ pub fn parse_block(
     })
 }
 
-pub fn source_boc(parsed: &Value) -> ApiResult<String> {
+pub fn source_boc(parsed: &Value) -> ClientResult<String> {
     Ok(parsed["boc"]
         .as_str()
         .ok_or(Error::missing_source_boc())?
         .into())
 }
 
-pub fn required_boc(parsed: &Option<Value>) -> ApiResult<String> {
+pub fn required_boc(parsed: &Option<Value>) -> ClientResult<String> {
     if let Some(parsed) = parsed {
         Ok(source_boc(parsed)?)
     } else {

@@ -12,44 +12,44 @@
 */
 
 use serde_json::Value;
-use crate::error::{ApiResult, ApiError};
+use crate::error::{ClientResult, ClientError};
 use super::parser::{CellQuery, CellFieldReader, CellValueReader};
 use ton_types::{Cell, SliceData, HashmapE, HashmapType};
 use ton_block::types::Grams;
 
-fn read_value(slice: &mut SliceData, reader: &CellValueReader) -> ApiResult<Value> {
+fn read_value(slice: &mut SliceData, reader: &CellValueReader) -> ClientResult<Value> {
     Ok(match reader {
         CellValueReader::IntWithSize(size) => {
             let n = slice.get_next_int(*size)
-                .map_err(|err| ApiError::cell_invalid_query(err))?;
+                .map_err(|err| ClientError::cell_invalid_query(err))?;
             Value::String(format!("{}", n))
         }
         CellValueReader::UIntWithSize(size) => {
             let n = slice.get_next_int(*size)
-                .map_err(|err| ApiError::cell_invalid_query(err))?;
+                .map_err(|err| ClientError::cell_invalid_query(err))?;
             Value::String(format!("{}", n))
         }
         CellValueReader::Grams => {
             let n = Grams::read_from_cell(slice)
-                .map_err(|err| ApiError::cell_invalid_query(err))?;
+                .map_err(|err| ClientError::cell_invalid_query(err))?;
             Value::String(format!("{}", n))
         }
         CellValueReader::Dict(_fields) => {
             let mut dict = HashmapE::with_bit_len(256);
             dict.read_hashmap_data(slice)
-                .map_err(|err| ApiError::cell_invalid_query(err))?;
+                .map_err(|err| ClientError::cell_invalid_query(err))?;
             let mut count = 0;
             let result = dict.iterate(&mut |_key, _value| {
                 count += 1;
                 Ok(true)
             });
-            result.map_err(|err| ApiError::cell_invalid_query(err))?;
+            result.map_err(|err| ClientError::cell_invalid_query(err))?;
             Value::from(count)
         }
     })
 }
 
-fn read(slice: &mut SliceData, commands: &Vec<CellFieldReader>) -> ApiResult<Value> {
+fn read(slice: &mut SliceData, commands: &Vec<CellFieldReader>) -> ClientResult<Value> {
     let mut values = serde_json::Map::new();
     for (index, command) in commands.iter().enumerate() {
         let name = if command.name.is_empty() { format!("{}", index) } else { command.name.clone() };
@@ -58,7 +58,7 @@ fn read(slice: &mut SliceData, commands: &Vec<CellFieldReader>) -> ApiResult<Val
     Ok(Value::Object(values))
 }
 
-pub(crate) fn query_cell(query: &CellQuery, cell: &Cell) -> ApiResult<Value> {
+pub(crate) fn query_cell(query: &CellQuery, cell: &Cell) -> ClientResult<Value> {
     let mut slice = SliceData::from(cell);
     read(&mut slice, &query.commands)
 }

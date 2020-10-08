@@ -1,5 +1,5 @@
 use crate::crypto;
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey};
 use hmac::*;
 use sha2::Digest;
@@ -22,21 +22,21 @@ pub(crate) fn ton_crc16(data: &[u8]) -> u16 {
     crc.get_crc() as u16
 }
 
-pub(crate) fn decode_public_key(string: &String) -> ApiResult<PublicKey> {
+pub(crate) fn decode_public_key(string: &String) -> ClientResult<PublicKey> {
     PublicKey::from_bytes(parse_key(string)?.as_slice())
         .map_err(|err| crypto::Error::invalid_public_key(err, string))
 }
 
-pub(crate) fn decode_secret_key(string: &String) -> ApiResult<SecretKey> {
+pub(crate) fn decode_secret_key(string: &String) -> ClientResult<SecretKey> {
     SecretKey::from_bytes(parse_key(string)?.as_slice())
         .map_err(|err| crypto::Error::invalid_secret_key(err, string))
 }
 
-fn parse_key(s: &String) -> ApiResult<Vec<u8>> {
+fn parse_key(s: &String) -> ClientResult<Vec<u8>> {
     hex::decode(s).map_err(|err| crypto::Error::invalid_key(err, s))
 }
 
-pub(crate) fn key512(slice: &[u8]) -> ApiResult<Key512> {
+pub(crate) fn key512(slice: &[u8]) -> ClientResult<Key512> {
     if slice.len() != 64 {
         return Err(crypto::Error::invalid_key_size(slice.len(), 64));
     }
@@ -47,7 +47,7 @@ pub(crate) fn key512(slice: &[u8]) -> ApiResult<Key512> {
     Ok(key)
 }
 
-pub(crate) fn key256(slice: &[u8]) -> ApiResult<Key256> {
+pub(crate) fn key256(slice: &[u8]) -> ClientResult<Key256> {
     if slice.len() != 32 {
         return Err(crypto::Error::invalid_key_size(slice.len(), 32));
     }
@@ -58,7 +58,7 @@ pub(crate) fn key256(slice: &[u8]) -> ApiResult<Key256> {
     Ok(key)
 }
 
-pub(crate) fn key192(slice: &[u8]) -> ApiResult<Key192> {
+pub(crate) fn key192(slice: &[u8]) -> ClientResult<Key192> {
     if slice.len() != 24 {
         return Err(crypto::Error::invalid_key_size(slice.len(), 24));
     }
@@ -83,7 +83,7 @@ pub(crate) fn pbkdf2_hmac_sha512(password: &[u8], salt: &[u8], c: usize) -> [u8;
     result
 }
 
-pub(crate) fn sign_using_secret(unsigned: &[u8], secret: &[u8]) -> ApiResult<(Vec<u8>, Vec<u8>)> {
+pub(crate) fn sign_using_secret(unsigned: &[u8], secret: &[u8]) -> ClientResult<(Vec<u8>, Vec<u8>)> {
     let mut signed: Vec<u8> = Vec::new();
     signed.resize(unsigned.len() + sodalite::SIGN_LEN, 0);
     sodalite::sign_attached(&mut signed, unsigned, &key512(secret)?);
@@ -95,7 +95,7 @@ pub(crate) fn sign_using_secret(unsigned: &[u8], secret: &[u8]) -> ApiResult<(Ve
     Ok((signed, signature))
 }
 
-pub(crate) fn sign_using_keys(unsigned: &[u8], keys: &Keypair) -> ApiResult<(Vec<u8>, Vec<u8>)> {
+pub(crate) fn sign_using_keys(unsigned: &[u8], keys: &Keypair) -> ClientResult<(Vec<u8>, Vec<u8>)> {
     let mut secret = Vec::<u8>::new();
     secret.extend(keys.secret.as_bytes());
     secret.extend(keys.public.as_bytes());

@@ -12,7 +12,7 @@
  *
  */
 
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use crate::tvm::Error;
 use core::result::Result::{Err, Ok};
 use serde_json::Value;
@@ -21,7 +21,7 @@ use std::sync::Arc;
 use ton_vm::stack::integer::IntegerData;
 use ton_vm::stack::StackItem;
 
-pub fn serialize_items(items: Iter<StackItem>) -> ApiResult<Value> {
+pub fn serialize_items(items: Iter<StackItem>) -> ClientResult<Value> {
     let mut values = Vec::<Value>::new();
     for item in items {
         values.push(serialize_item(item)?)
@@ -29,7 +29,7 @@ pub fn serialize_items(items: Iter<StackItem>) -> ApiResult<Value> {
     Ok(Value::Array(values))
 }
 
-pub fn deserialize_items(values: Iter<Value>) -> ApiResult<Vec<StackItem>> {
+pub fn deserialize_items(values: Iter<Value>) -> ClientResult<Vec<StackItem>> {
     let mut items = Vec::<StackItem>::new();
     for value in values {
         items.push(deserialize_item(value)?)
@@ -37,7 +37,7 @@ pub fn deserialize_items(values: Iter<Value>) -> ApiResult<Vec<StackItem>> {
     Ok(items)
 }
 
-pub fn serialize_item(item: &StackItem) -> ApiResult<Value> {
+pub fn serialize_item(item: &StackItem) -> ClientResult<Value> {
     Ok(match item {
         StackItem::None => Value::Null,
         StackItem::Integer(i) => {
@@ -55,7 +55,7 @@ pub fn serialize_item(item: &StackItem) -> ApiResult<Value> {
     })
 }
 
-pub fn deserialize_item(value: &Value) -> ApiResult<StackItem> {
+pub fn deserialize_item(value: &Value) -> ClientResult<StackItem> {
     Ok(match value {
         Value::Null => StackItem::None,
         Value::Bool(v) => StackItem::Integer(Arc::new(if *v {
@@ -76,7 +76,7 @@ pub fn deserialize_item(value: &Value) -> ApiResult<StackItem> {
     })
 }
 
-fn parse_integer_data(s: &String) -> ApiResult<IntegerData> {
+fn parse_integer_data(s: &String) -> ClientResult<IntegerData> {
     Ok(if s.eq("NaN") {
         IntegerData::nan()
     } else {

@@ -16,7 +16,7 @@ use super::blocks_walking::find_last_shard_block;
 use crate::abi::Abi;
 use crate::client::{ClientContext};
 use crate::encoding::{base64_decode, hex_decode};
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use crate::processing::internal::{get_message_expiration_time, get_message_id};
 use crate::processing::types::{ProcessingEvent};
 use crate::processing::Error;
@@ -60,7 +60,7 @@ pub async fn send_message<F: futures::Future<Output = ()> + Send + Sync>(
     context: Arc<ClientContext>,
     params: ParamsOfSendMessage,
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync
-) -> ApiResult<ResultOfSendMessage> {
+) -> ClientResult<ResultOfSendMessage> {
     // Check message
     let message_boc = base64_decode(&params.message)?;
     let message = Contract::deserialize_message(&message_boc)

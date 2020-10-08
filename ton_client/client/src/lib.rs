@@ -32,7 +32,7 @@ pub mod client;
 pub mod boc;
 pub mod processing;
 pub mod utils;
-mod api;
+pub mod c_interface;
 #[cfg(feature = "node_interaction")]
 pub mod net;
 
@@ -41,4 +41,4 @@ pub mod net;
 #[cfg(test)]
 mod tests;
 
-pub use self::api::interop::*;
+pub use self::c_interface::interop::*;

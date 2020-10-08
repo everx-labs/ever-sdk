@@ -13,7 +13,7 @@
 
 use super::Error;
 use crate::client::ClientContext;
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use crate::net::{OrderBy, SortDirection};
 use std::sync::Arc;
 use ton_block::MsgAddressInt;
@@ -23,7 +23,7 @@ use ton_sdk::types::BLOCKS_TABLE_NAME;
 pub async fn find_last_shard_block(
     context: &Arc<ClientContext>,
     address: &MsgAddressInt,
-) -> ApiResult<ton_sdk::BlockId> {
+) -> ClientResult<ton_sdk::BlockId> {
     let workchain = address.get_workchain_id();
     let client = context.get_client()?;
 
@@ -143,7 +143,7 @@ pub async fn wait_next_block(
     current: &str,
     address: &MsgAddressInt,
     timeout: Option<u32>,
-) -> ApiResult<ton_sdk::Block> {
+) -> ClientResult<ton_sdk::Block> {
     let client = context.get_client()?;
 
     let block = client
@@ -193,7 +193,7 @@ pub async fn wait_next_block(
     }
 }
 
-fn check_shard_match(shard_descr: serde_json::Value, address: &MsgAddressInt) -> ApiResult<bool> {
+fn check_shard_match(shard_descr: serde_json::Value, address: &MsgAddressInt) -> ClientResult<bool> {
     ton_sdk::Contract::check_shard_match(shard_descr, address)
         .map_err(|err| Error::can_not_check_block_shard(err))
 }

@@ -1,4 +1,4 @@
-use crate::error::ApiSdkErrorCode::*;
+use crate::error::ClientSdkErrorCode::*;
 use chrono::TimeZone;
 use std::fmt::Display;
 use ton_block::{AccStatusChange, ComputeSkipReason, MsgAddressInt};
@@ -15,23 +15,23 @@ fn format_time(time: u32) -> String {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum ApiErrorSource {
+pub enum ClientErrorSource {
     Client,
     Node,
 }
 
-impl ApiErrorSource {
+impl ClientErrorSource {
     pub fn to_string(&self) -> String {
         match self {
-            ApiErrorSource::Client => "client".to_string(),
-            ApiErrorSource::Node => "node".to_string(),
+            ClientErrorSource::Client => "client".to_string(),
+            ClientErrorSource::Node => "node".to_string(),
         }
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
 #[serde(default)]
-pub struct ApiError {
+pub struct ClientError {
     pub core_version: String,
     pub source: String,
     pub code: isize,
@@ -40,9 +40,9 @@ pub struct ApiError {
     pub data: serde_json::Value,
 }
 
-pub type ApiResult<T> = Result<T, ApiError>;
+pub type ClientResult<T> = Result<T, ClientError>;
 
-pub trait ApiErrorCode {
+pub trait ClientErrorCode {
     fn as_number(&self) -> isize;
 }
 
@@ -52,13 +52,13 @@ trait AsString {
 
 macro_rules! sdk_err {
     ($code:expr, $($args:tt),*) => (
-        ApiError::new(ApiErrorSource::Client, &$code, format!($($args),*))
+        ClientError::new(ClientErrorSource::Client, &$code, format!($($args),*))
     );
 }
 
 macro_rules! as_number_impl {
     ($name:ident) => {
-        impl ApiErrorCode for $name {
+        impl ClientErrorCode for $name {
             fn as_number(&self) -> isize {
                 self.clone() as isize
             }
@@ -66,13 +66,13 @@ macro_rules! as_number_impl {
     };
 }
 
-impl Display for ApiError {
+impl Display for ClientError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.message)
     }
 }
 
-impl ApiError {
+impl ClientError {
     pub const CLIENT: isize = 0;
     pub const CRYPTO: isize = 100;
     pub const BOC: isize = 200;
@@ -82,7 +82,7 @@ impl ApiError {
     pub const NET: isize = 600;
     pub const UTILS: isize = 700;
 
-    fn new(source: ApiErrorSource, code: &dyn ApiErrorCode, message: String) -> Self {
+    fn new(source: ClientErrorSource, code: &dyn ClientErrorCode, message: String) -> Self {
         Self {
             core_version: env!("CARGO_PKG_VERSION").to_owned(),
             source: source.to_string(),
@@ -96,7 +96,7 @@ impl ApiError {
     pub fn with_code_message(code: isize, message: String) -> Self {
         Self {
             core_version: env!("CARGO_PKG_VERSION").to_owned(),
-            source: ApiErrorSource::Client.to_string(),
+            source: ClientErrorSource::Client.to_string(),
             code,
             message,
             message_processing_state: None,
@@ -107,7 +107,7 @@ impl ApiError {
     pub fn with_code_message_data(code: isize, message: String, data: Value) -> Self {
         Self {
             core_version: env!("CARGO_PKG_VERSION").to_owned(),
-            source: ApiErrorSource::Client.to_string(),
+            source: ClientErrorSource::Client.to_string(),
             code,
             message,
             message_processing_state: None,
@@ -115,12 +115,12 @@ impl ApiError {
         }
     }
 
-    pub fn sdk(code: ApiSdkErrorCode, message: String) -> Self {
-        Self::new(ApiErrorSource::Client, &code, message)
+    pub fn sdk(code: ClientSdkErrorCode, message: String) -> Self {
+        Self::new(ClientErrorSource::Client, &code, message)
     }
 
     #[cfg(feature = "node_interaction")]
-    pub(crate) fn add_network_url(mut self, client: &crate::net::NodeClient) -> ApiError {
+    pub(crate) fn add_network_url(mut self, client: &crate::net::NodeClient) -> ClientError {
         self.data["config_server"] = client.config_server().into();
 
         if let Some(url) = client.query_url() {
@@ -130,7 +130,7 @@ impl ApiError {
         self
     }
 
-    pub fn add_function(mut self, function: Option<&str>) -> ApiError {
+    pub fn add_function(mut self, function: Option<&str>) -> ClientError {
         if let Some(function) = function {
             self.data["function_name"] = function.into();
         }
@@ -138,14 +138,14 @@ impl ApiError {
         self
     }
 
-    pub fn add_address(mut self, address: &MsgAddressInt) -> ApiError {
+    pub fn add_address(mut self, address: &MsgAddressInt) -> ClientError {
         self.data["account_address"] = address.to_string().into();
         self
     }
 
     // SDK Common
 
-    pub fn unknown_function(name: &String) -> ApiError {
+    pub fn unknown_function(name: &String) -> ClientError {
         sdk_err!(UnknownFunction, "Unknown function [{}]", name)
     }
 
@@ -167,7 +167,7 @@ impl ApiError {
     }
 
     pub fn sdk_not_init() -> Self {
-        ApiError::sdk(SdkNotInit, "SDK is not initialized".into())
+        ClientError::sdk(SdkNotInit, "SDK is not initialized".into())
     }
 
     // SDK Config
@@ -190,9 +190,9 @@ impl ApiError {
         block_time: u32,
         block_id: String,
     ) -> Self {
-        let mut error = ApiError::new(
-            ApiErrorSource::Node,
-            &ApiSdkErrorCode::MessageExpired,
+        let mut error = ClientError::new(
+            ClientErrorSource::Node,
+            &ClientSdkErrorCode::MessageExpired,
             "Message was not delivered within the specified timeout".to_owned(),
         );
 
@@ -217,9 +217,9 @@ impl ApiError {
         block_id: String,
         state: MessageProcessingState,
     ) -> Self {
-        let mut error = ApiError::new(
-            ApiErrorSource::Node,
-            &ApiSdkErrorCode::NetworkSilent,
+        let mut error = ClientError::new(
+            ClientErrorSource::Node,
+            &ClientSdkErrorCode::NetworkSilent,
             "No blocks were produced during the specified timeout".to_owned(),
         );
         error.message_processing_state = Some(state);
@@ -238,9 +238,9 @@ impl ApiError {
         timeout: u32,
         state: MessageProcessingState,
     ) -> Self {
-        let mut error = ApiError::new(
-            ApiErrorSource::Node,
-            &ApiSdkErrorCode::TransactionWaitTimeout,
+        let mut error = ClientError::new(
+            ClientErrorSource::Node,
+            &ClientSdkErrorCode::TransactionWaitTimeout,
             "Transaction was not produced during the specified timeout".to_owned(),
         );
         error.message_processing_state = Some(state);
@@ -254,9 +254,9 @@ impl ApiError {
     }
 
     pub fn account_code_missing(address: &MsgAddressInt) -> Self {
-        let mut error = ApiError::new(
-            ApiErrorSource::Node,
-            &ApiSdkErrorCode::AccountCodeMissing,
+        let mut error = ClientError::new(
+            ClientErrorSource::Node,
+            &ClientSdkErrorCode::AccountCodeMissing,
             "Contract is not deployed".to_owned(),
         );
 
@@ -268,9 +268,9 @@ impl ApiError {
     }
 
     pub fn low_balance(address: &MsgAddressInt, balance: Option<u64>) -> Self {
-        let mut error = ApiError::new(
-            ApiErrorSource::Node,
-            &ApiSdkErrorCode::LowBalance,
+        let mut error = ClientError::new(
+            ClientErrorSource::Node,
+            &ClientSdkErrorCode::LowBalance,
             "Account has insufficient balance for the requested operation".to_owned(),
         );
 
@@ -285,9 +285,9 @@ impl ApiError {
     }
 
     pub fn account_frozen_or_deleted(address: &MsgAddressInt) -> Self {
-        let mut error = ApiError::new(
-            ApiErrorSource::Node,
-            &ApiSdkErrorCode::AccountFrozenOrDeleted,
+        let mut error = ClientError::new(
+            ClientErrorSource::Node,
+            &ClientSdkErrorCode::AccountFrozenOrDeleted,
             "Account is in a bad state. It is frozen or deleted".to_owned(),
         );
 
@@ -298,9 +298,9 @@ impl ApiError {
     }
 
     pub fn account_missing(address: &MsgAddressInt) -> Self {
-        let mut error = ApiError::new(
-            ApiErrorSource::Node,
-            &ApiSdkErrorCode::AccountMissing,
+        let mut error = ClientError::new(
+            ClientErrorSource::Node,
+            &ClientSdkErrorCode::AccountMissing,
             "Account does not exist".to_owned(),
         );
 
@@ -312,9 +312,9 @@ impl ApiError {
     }
 
     pub fn clock_out_of_sync(delta_ms: i64, threshold: i64) -> Self {
-        let mut error = ApiError::new(
-            ApiErrorSource::Node,
-            &ApiSdkErrorCode::ClockOutOfSync,
+        let mut error = ClientError::new(
+            ClientErrorSource::Node,
+            &ClientSdkErrorCode::ClockOutOfSync,
             "The time on the device is out of sync with the time on the server".to_owned(),
         );
 
@@ -395,11 +395,11 @@ impl ApiError {
         .add_function(function)
     }
 
-    pub fn contracts_run_failed<E: Display>(err: E) -> ApiError {
+    pub fn contracts_run_failed<E: Display>(err: E) -> ClientError {
         sdk_err!(ContractsRunFailed, "Contract run failed: {}", err)
     }
 
-    pub fn contracts_run_contract_load_failed<E: Display>(err: E) -> ApiError {
+    pub fn contracts_run_contract_load_failed<E: Display>(err: E) -> ClientError {
         sdk_err!(
             ContractsRunContractLoadFailed,
             "Contract load failed: {}",
@@ -424,7 +424,7 @@ impl ApiError {
     }
 
     pub fn contracts_deploy_transaction_aborted() -> Self {
-        ApiError::sdk(
+        ClientError::sdk(
             ContractsDeployTransactionAborted,
             "Deploy failed: transaction aborted".into(),
         )
@@ -520,9 +520,9 @@ impl ApiError {
 
     // Failed transaction phases
 
-    pub fn transaction_aborted(tr_id: Option<String>) -> ApiError {
-        let mut error = ApiError::new(
-            ApiErrorSource::Node,
+    pub fn transaction_aborted(tr_id: Option<String>) -> ClientError {
+        let mut error = ClientError::new(
+            ClientErrorSource::Node,
             &(-1i32),
             "Transaction was aborted".to_string(),
         );
@@ -538,7 +538,7 @@ impl ApiError {
         reason: &ComputeSkipReason,
         address: &MsgAddressInt,
         balance: Option<u64>,
-    ) -> ApiError {
+    ) -> ClientError {
         let mut error = match reason {
             ComputeSkipReason::NoState => Self::account_code_missing(address),
             ComputeSkipReason::BadState => Self::account_frozen_or_deleted(address),
@@ -555,9 +555,9 @@ impl ApiError {
         tr_id: Option<String>,
         exit_code: i32,
         address: &MsgAddressInt,
-    ) -> ApiError {
-        let mut error = ApiError::new(
-            ApiErrorSource::Node,
+    ) -> ClientError {
+        let mut error = ClientError::new(
+            ClientErrorSource::Node,
             &ContractsTvmError,
             format!("Contract execution was terminated with error"),
         );
@@ -590,7 +590,7 @@ impl ApiError {
         reason: &AccStatusChange,
         address: &MsgAddressInt,
         balance: Option<u64>,
-    ) -> ApiError {
+    ) -> ClientError {
         let mut error = Self::low_balance(address, balance);
         error.data["transaction_id"] = tr_id.map(|s| s.into()).unwrap_or(serde_json::Value::Null);
         error.data["phase"] = "storage".into();
@@ -610,15 +610,15 @@ impl ApiError {
         no_funds: bool,
         address: &MsgAddressInt,
         balance: Option<u64>,
-    ) -> ApiError {
+    ) -> ClientError {
         let mut error = if no_funds {
             let mut error = Self::low_balance(address, balance);
             error.data["description"] =
                 "Contract tried to send value exceeding account balance".into();
             error
         } else {
-            let mut error = ApiError::new(
-                ApiErrorSource::Node,
+            let mut error = ClientError::new(
+                ClientErrorSource::Node,
                 &ActionPhaseFailed,
                 "Transaction failed at action phase".to_owned(),
             );
@@ -635,7 +635,7 @@ impl ApiError {
 }
 
 #[derive(Clone)]
-pub enum ApiSdkErrorCode {
+pub enum ClientSdkErrorCode {
     UnknownFunction = 1,
     InvalidParams = 2,
     InvalidContextHandle = 3,
@@ -692,7 +692,7 @@ pub enum ApiSdkErrorCode {
 
 }
 
-impl ApiErrorCode for ApiSdkErrorCode {
+impl ClientErrorCode for ClientSdkErrorCode {
     fn as_number(&self) -> isize {
         (self.clone() as i32) as isize
     }
@@ -724,41 +724,41 @@ impl AsString for AccStatusChange {
     }
 }
 
-pub struct ApiContractErrorCode {
+pub struct ClientContractErrorCode {
     exit_code: i32,
 }
 
-impl ApiErrorCode for ApiContractErrorCode {
+impl ClientErrorCode for ClientContractErrorCode {
     fn as_number(&self) -> isize {
         self.exit_code as isize
     }
 }
 
-impl ApiErrorCode for i32 {
+impl ClientErrorCode for i32 {
     fn as_number(&self) -> isize {
         self.clone() as isize
     }
 }
 
 #[cfg(feature = "node_interaction")]
-pub(crate) fn _apierror_from_sdkerror<F>(err: &failure::Error, default_err: F, client: Option<&crate::net::NodeClient>) -> ApiError
+pub(crate) fn _clienterror_from_sdkerror<F>(err: &failure::Error, default_err: F, client: Option<&crate::net::NodeClient>) -> ClientError
     where
-        F: Fn(String) -> ApiError,
+        F: Fn(String) -> ClientError,
 {
     let err = match err.downcast_ref::<ton_sdk::SdkError>() {
-        Some(ton_sdk::SdkError::WaitForTimeout) => ApiError::wait_for_timeout(),
+        Some(ton_sdk::SdkError::WaitForTimeout) => ClientError::wait_for_timeout(),
         Some(ton_sdk::SdkError::MessageExpired { msg_id, expire, sending_time, block_time, block_id }) =>
-            ApiError::message_expired(msg_id.to_string(), *sending_time, *expire, *block_time, block_id.to_string()),
+            ClientError::message_expired(msg_id.to_string(), *sending_time, *expire, *block_time, block_id.to_string()),
         Some(ton_sdk::SdkError::NetworkSilent { msg_id, timeout, block_id, state }) =>
-            ApiError::network_silent(msg_id.to_string(), *timeout, block_id.to_string(), state.clone()),
+            ClientError::network_silent(msg_id.to_string(), *timeout, block_id.to_string(), state.clone()),
         Some(ton_sdk::SdkError::TransactionWaitTimeout { msg_id, sending_time, timeout, state }) =>
-            ApiError::transaction_wait_timeout(msg_id.to_string(), *sending_time, *timeout, state.clone()),
+            ClientError::transaction_wait_timeout(msg_id.to_string(), *sending_time, *timeout, state.clone()),
         Some(ton_sdk::SdkError::ClockOutOfSync { delta_ms, threshold_ms }) =>
-            ApiError::clock_out_of_sync(*delta_ms, *threshold_ms),
+            ClientError::clock_out_of_sync(*delta_ms, *threshold_ms),
         Some(ton_sdk::SdkError::ResumableNetworkError { state, error }) => {
-            let mut api_error = _apierror_from_sdkerror(error, default_err, client);
-            api_error.message_processing_state = Some(state.clone());
-            api_error
+            let mut client_error = _clienterror_from_sdkerror(error, default_err, client);
+            client_error.message_processing_state = Some(state.clone());
+            client_error
         }
         _ => default_err(err.to_string()),
     };

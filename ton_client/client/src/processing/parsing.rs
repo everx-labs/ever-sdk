@@ -1,7 +1,7 @@
 use crate::abi::{decode_message, Abi, DecodedMessageType, ParamsOfDecodeMessage};
 use crate::boc::{parse_message, parse_transaction, ParamsOfParse};
 use crate::client::ClientContext;
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use crate::processing::fetching::TransactionBoc;
 use crate::processing::types::DecodedOutput;
 use serde_json::Value;
@@ -10,7 +10,7 @@ use std::sync::Arc;
 pub(crate) fn parse_transaction_boc(
     context: Arc<ClientContext>,
     transaction: &TransactionBoc,
-) -> ApiResult<(Value, Vec<Value>)> {
+) -> ClientResult<(Value, Vec<Value>)> {
     let mut parsed_messages = Vec::<Value>::new();
     for message in &transaction.out_messages {
         parsed_messages.push(
@@ -39,7 +39,7 @@ pub(crate) fn decode_output(
     context: &Arc<ClientContext>,
     abi: &Abi,
     parsed_messages: &Vec<Value>,
-) -> ApiResult<DecodedOutput> {
+) -> ClientResult<DecodedOutput> {
     let mut out_messages = Vec::new();
     let mut output = None;
     for parsed_message in parsed_messages {
