@@ -12,7 +12,7 @@
 */
 
 use crate::crypto;
-use crate::error::{ApiResult, ApiError};
+use crate::error::{ClientResult, ClientError};
 use num_bigint::BigInt;
 use rand::RngCore;
 use crate::client::ClientContext;
@@ -44,7 +44,7 @@ pub struct ResultOfModularPower {
 pub fn modular_power(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfModularPower,
-) -> ApiResult<ResultOfModularPower> {
+) -> ClientResult<ResultOfModularPower> {
     let base = parse_big_int(&params.base)?;
     let exp = parse_big_int(&params.exponent)?;
     let modulus = parse_big_int(&params.modulus)?;
@@ -54,7 +54,7 @@ pub fn modular_power(
     })
 }
 
-fn parse_big_int(hex: &str) -> ApiResult<BigInt> {
+fn parse_big_int(hex: &str) -> ClientResult<BigInt> {
     BigInt::parse_bytes(hex.as_bytes(), 16)
         .ok_or(crypto::Error::invalid_big_int(&hex.to_string()))
 }
@@ -82,8 +82,8 @@ pub struct ResultOfFactorize {
 pub fn factorize(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfFactorize,
-) -> ApiResult<ResultOfFactorize> {
-    fn invalid_composite<E: Display>(composite: &String, err: E) -> ApiError {
+) -> ClientResult<ResultOfFactorize> {
+    fn invalid_composite<E: Display>(composite: &String, err: E) -> ClientError {
         crypto::Error::invalid_factorize_challenge(composite, err)
     }
     let composite = u64::from_str_radix(&params.composite, 16).
@@ -211,7 +211,7 @@ pub struct ResultOfTonCrc16 {
 pub fn ton_crc16(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfTonCrc16,
-) -> ApiResult<ResultOfTonCrc16> {
+) -> ClientResult<ResultOfTonCrc16> {
     Ok(ResultOfTonCrc16 {
         crc: crate::crypto::internal::ton_crc16(&(base64_decode(&params.data)?))
     })
@@ -236,7 +236,7 @@ pub struct ResultOfGenerateRandomBytes {
 pub fn generate_random_bytes(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfGenerateRandomBytes,
-) -> ApiResult<ResultOfGenerateRandomBytes> {
+) -> ClientResult<ResultOfGenerateRandomBytes> {
     let mut rng = rand::thread_rng();
     let mut bytes: Vec<u8> = Vec::new();
     bytes.resize(params.length, 0);

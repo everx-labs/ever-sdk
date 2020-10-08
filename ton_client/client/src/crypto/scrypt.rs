@@ -13,7 +13,7 @@
 
 extern crate scrypt;
 use crate::crypto;
-use crate::error::{ApiResult};
+use crate::error::{ClientResult};
 use crate::client::ClientContext;
 use crate::encoding::base64_decode;
 
@@ -51,7 +51,7 @@ pub struct ResultOfScrypt {
 pub fn scrypt(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfScrypt,
-) -> ApiResult<ResultOfScrypt> {
+) -> ClientResult<ResultOfScrypt> {
     let mut key = Vec::new();
     key.resize(params.dk_len, 0);
     let scrypt_params = scrypt::ScryptParams::new(params.log_n, params.r, params.p)

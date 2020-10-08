@@ -13,7 +13,7 @@
 
 #![allow(dead_code)]
 
-use crate::error::{ApiResult, ApiError};
+use crate::error::{ClientResult, ClientError};
 use crate::client;
 use ton_block::MsgAddressInt;
 use std::str::FromStr;
@@ -42,19 +42,19 @@ pub(crate) fn account_encode_ex(
     value: &MsgAddressInt,
     addr_type: AccountAddressType,
     base64_params: Option<Base64AddressParams>,
-) -> ApiResult<String> {
+) -> ClientResult<String> {
     match addr_type {
         AccountAddressType::AccountId => Ok(value.get_address().to_hex_string()),
         AccountAddressType::Hex => Ok(value.to_string()),
         AccountAddressType::Base64 => {
-            let params = base64_params.ok_or(ApiError::contracts_address_conversion_failed(
+            let params = base64_params.ok_or(ClientError::contracts_address_conversion_failed(
                 "No base64 address parameters provided".to_owned()))?;
             encode_base64(value, params.bounce, params.test, params.url)
         }
     }
 }
 
-pub(crate) fn account_decode(string: &str) -> ApiResult<MsgAddressInt> {
+pub(crate) fn account_decode(string: &str) -> ClientResult<MsgAddressInt> {
     match MsgAddressInt::from_str(string) {
         Ok(address) => Ok(address),
         Err(_) if string.len() == 48 => {
@@ -64,7 +64,7 @@ pub(crate) fn account_decode(string: &str) -> ApiResult<MsgAddressInt> {
     }
 }
 
-fn decode_std_base64(data: &str) -> ApiResult<MsgAddressInt> {
+fn decode_std_base64(data: &str) -> ClientResult<MsgAddressInt> {
     // conversion from base64url
     let data = data.replace('_', "/").replace('-', "+");
 
@@ -83,7 +83,7 @@ fn decode_std_base64(data: &str) -> ApiResult<MsgAddressInt> {
         .map_err(|err| client::Error::invalid_address(err, &data).into())
 }
 
-fn encode_base64(address: &MsgAddressInt, bounceable: bool, test: bool, as_url: bool) -> ApiResult<String> {
+fn encode_base64(address: &MsgAddressInt, bounceable: bool, test: bool, as_url: bool) -> ClientResult<String> {
     if let MsgAddressInt::AddrStd(address) = address {
         let mut tag = if bounceable { 0x11 } else { 0x51 };
         if test { tag |= 0x80 };
@@ -107,7 +107,7 @@ fn encode_base64(address: &MsgAddressInt, bounceable: bool, test: bool, as_url: 
     }
 }
 
-pub(crate) fn hex_decode(hex: &String) -> ApiResult<Vec<u8>> {
+pub(crate) fn hex_decode(hex: &String) -> ClientResult<Vec<u8>> {
     if hex.starts_with("x") || hex.starts_with("X") {
         hex_decode(&hex.chars().skip(1).collect())
     } else if hex.starts_with("0x") || hex.starts_with("0X") {
@@ -117,7 +117,7 @@ pub(crate) fn hex_decode(hex: &String) -> ApiResult<Vec<u8>> {
     }
 }
 
-pub(crate) fn base64_decode(base64: &str) -> ApiResult<Vec<u8>> {
+pub(crate) fn base64_decode(base64: &str) -> ClientResult<Vec<u8>> {
     base64::decode(base64).map_err(|err| client::Error::invalid_base64(base64, err))
 }
 

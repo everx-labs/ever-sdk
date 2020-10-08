@@ -1,5 +1,5 @@
 use crate::abi::Error;
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use serde_json::Value;
 use ton_abi::{Token, TokenValue};
 
@@ -30,7 +30,7 @@ pub struct FunctionHeader {
     pub pubkey: Option<String>,
 }
 
-fn required_time(token: &Token) -> ApiResult<u64> {
+fn required_time(token: &Token) -> ClientResult<u64> {
     match &token.value {
         TokenValue::Time(v) => Ok(v.clone()),
         _ => Err(Error::invalid_message_for_decode(
@@ -39,7 +39,7 @@ fn required_time(token: &Token) -> ApiResult<u64> {
     }
 }
 
-fn required_expire(token: &Token) -> ApiResult<u32> {
+fn required_expire(token: &Token) -> ClientResult<u32> {
     match &token.value {
         TokenValue::Expire(v) => Ok(v.clone()),
         _ => Err(Error::invalid_message_for_decode(
@@ -48,7 +48,7 @@ fn required_expire(token: &Token) -> ApiResult<u32> {
     }
 }
 
-fn required_pubkey(token: &Token) -> ApiResult<Option<String>> {
+fn required_pubkey(token: &Token) -> ClientResult<Option<String>> {
     match token.value {
         TokenValue::PublicKey(key) => Ok(key.as_ref().map(|x| hex::encode(x.as_bytes()))),
         _ => Err(Error::invalid_message_for_decode(
@@ -58,7 +58,7 @@ fn required_pubkey(token: &Token) -> ApiResult<Option<String>> {
 }
 
 impl FunctionHeader {
-    pub fn from(tokens: &Vec<Token>) -> ApiResult<Option<Self>> {
+    pub fn from(tokens: &Vec<Token>) -> ClientResult<Option<Self>> {
         if tokens.len() == 0 {
             return Ok(None);
         }

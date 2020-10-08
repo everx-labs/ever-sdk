@@ -17,7 +17,7 @@ use ton_sdk::Contract;
 
 use crate::client::ClientContext;
 use crate::encoding::base64_decode;
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use crate::tvm::execute_message::ExecutionOptions;
 use crate::tvm::Error;
 use std::sync::Arc;
@@ -43,7 +43,7 @@ pub struct ResultOfExecuteGet {
 pub fn execute_get(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfExecuteGet,
-) -> ApiResult<ResultOfExecuteGet> {
+) -> ClientResult<ResultOfExecuteGet> {
     let contract = Contract::from_bytes(&base64_decode(&params.account)?)
         .map_err(|err| Error::invalid_account_boc(err))?;
 

@@ -1,7 +1,7 @@
 use crate::abi::Abi;
 use crate::client::{ClientContext};
 use crate::encoding::base64_decode;
-use crate::error::{ApiResult};
+use crate::error::{ClientResult};
 use crate::processing::internal::{get_message_expiration_time, get_message_id};
 use crate::processing::{fetching, internal, Error};
 use crate::processing::{ProcessingEvent, ResultOfProcessMessage};
@@ -38,7 +38,7 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send + Sync>
     context: Arc<ClientContext>,
     params: ParamsOfWaitForTransaction,
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync,
-) -> ApiResult<ResultOfProcessMessage> {
+) -> ClientResult<ResultOfProcessMessage> {
     let net = context.get_client()?;
 
     // Prepare to wait

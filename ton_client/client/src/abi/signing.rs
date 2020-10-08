@@ -1,6 +1,6 @@
 use crate::client;
 use crate::crypto::{KeyPair, SigningBoxHandle};
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 pub enum Signer {
@@ -26,7 +26,7 @@ impl Signer {
 }
 
 impl Signer {
-    pub fn resolve_keys(&self) -> ApiResult<Option<KeyPair>> {
+    pub fn resolve_keys(&self) -> ClientResult<Option<KeyPair>> {
         match self {
             Signer::None => Ok(None),
             Signer::WithKeys(keys) => Ok(Some(keys.clone())),
@@ -37,7 +37,7 @@ impl Signer {
         }
     }
 
-    pub fn resolve_public_key(&self) -> ApiResult<Option<String>> {
+    pub fn resolve_public_key(&self) -> ClientResult<Option<String>> {
         match self {
             Signer::None => Ok(None),
             Signer::WithKeys(keys) => Ok(Some(keys.public.clone())),

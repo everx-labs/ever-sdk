@@ -12,21 +12,16 @@
  *
  */
 
-use crate::api::get_dispatcher;
-use crate::client::{Client, ContextHandle, Error};
-use crate::error::ApiResult;
-use serde_json::Value;
+use super::request::Request;
+use super::runtime::Runtime;
+use crate::client::Error;
+use crate::error::ClientResult;
 use failure::_core::ptr::null;
-use crate::api::dispatch::Request;
+use serde_json::Value;
 
-#[derive(Serialize, Deserialize, Clone)]
-pub struct ResultOfCreateContext {
-    pub handle: ContextHandle,
-}
+pub type ContextHandle = u32;
 
-// C-library exported functions
-
-unsafe fn sync_response(result: ApiResult<Value>) -> *const String {
+unsafe fn sync_response(result: ClientResult<Value>) -> *const String {
     let response = match result {
         Ok(result) => json!({ "result": result }).to_string(),
         Err(err) => json!({ "error": err }).to_string(),
@@ -34,18 +29,16 @@ unsafe fn sync_response(result: ApiResult<Value>) -> *const String {
     Box::into_raw(Box::new(response))
 }
 
+// C-library exported functions
+
 #[no_mangle]
 pub unsafe extern "C" fn tc_create_context(config: StringData) -> *const String {
-    sync_response(
-        Client::shared()
-            .create_context(config.to_string())
-            .map(|x| Value::from(x.handle)),
-    )
+    sync_response(Runtime::create_context(&config.to_string()).map(|x| Value::from(x)))
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn tc_destroy_context(context: ContextHandle) {
-    Client::shared().destroy_context(context)
+    Runtime::destroy_context(context)
 }
 
 #[no_mangle]
@@ -57,9 +50,9 @@ pub unsafe extern "C" fn tc_request(
     response_handler: ResponseHandler,
 ) {
     let context_handle = context;
-    let context = Client::shared().required_context(context);
+    let context = Runtime::required_context(context);
     match context {
-        Ok(context) => get_dispatcher().async_dispatch(
+        Ok(context) => Runtime::dispatch_async(
             context,
             function_name.to_string(),
             params_json.to_string(),
@@ -78,10 +71,10 @@ pub unsafe extern "C" fn tc_request_sync(
     params_json: StringData,
 ) -> *const String {
     let context_handle = context;
-    let context = Client::shared().required_context(context);
+    let context = Runtime::required_context(context);
     let result_value = match context {
         Ok(context) => {
-            match get_dispatcher().sync_dispatch(
+            match Runtime::dispatch_sync(
                 context,
                 function_name.to_string(),
                 params_json.to_string(),
@@ -165,4 +158,3 @@ impl From<&str> for StringData {
 
 pub type ResponseHandler =
     extern "C" fn(request_id: u32, params_json: StringData, response_type: u32, finished: bool);
-

@@ -13,17 +13,17 @@
  */
 
 use crate::client::{ClientContext};
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use crate::net::{ParamsOfSubscribeCollection, ResultOfSubscribeCollection, ResultOfSubscription};
-use crate::api::dispatch::Request;
+use super::request::Request;
 
 #[api_function]
 pub(crate) async fn subscribe_collection(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfSubscribeCollection,
     callback: std::sync::Arc<Request>,
-) -> ApiResult<ResultOfSubscribeCollection> {
-    let callback = move |result: ApiResult<ResultOfSubscription>| {
+) -> ClientResult<ResultOfSubscribeCollection> {
+    let callback = move |result: ClientResult<ResultOfSubscription>| {
         match result {
             Ok(result) => {
                 callback.send_response(result, crate::net::SubscriptionResponseType::Ok as u32)

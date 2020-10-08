@@ -11,7 +11,7 @@
 * limitations under the License.
 */
 
-use crate::error::{ApiError, ApiResult};
+use crate::error::{ClientError, ClientResult};
 use super::Error;
 use std::collections::HashMap;
 use std::pin::Pin;
@@ -19,8 +19,8 @@ use futures::{Future, Sink, Stream};
 
 pub(crate) struct WebSocket {
     pub handle: u32,
-    pub sender: Pin<Box<dyn Sink<String, Error=ApiError> + Send>>,
-    pub receiver: Pin<Box<dyn Stream<Item=ApiResult<String>> + Send>>
+    pub sender: Pin<Box<dyn Sink<String, Error=ClientError> + Send>>,
+    pub receiver: Pin<Box<dyn Stream<Item=ClientResult<String>> + Send>>
 }
 
 pub(crate) struct FetchResult {
@@ -31,12 +31,12 @@ pub(crate) struct FetchResult {
 }
 
 impl FetchResult {
-    pub fn body_as_text(&self) -> ApiResult<&str> {
+    pub fn body_as_text(&self) -> ClientResult<&str> {
         std::str::from_utf8(&self.body)
             .map_err(|_| Error::http_request_parse_error("Body is not a valid UTF8 string"))
     }
 
-    pub fn body_as_json(&self) -> ApiResult<serde_json::Value> {
+    pub fn body_as_json(&self) -> ClientResult<serde_json::Value> {
         let text = self.body_as_text()?;
         serde_json::from_str(text)
             .map_err(|err| Error::http_request_parse_error(
@@ -88,7 +88,7 @@ pub(crate) trait ClientEnv {
         &self,
         url: &str,
         headers: Option<HashMap<&str, &str>>,
-    ) -> ApiResult<WebSocket>;
+    ) -> ClientResult<WebSocket>;
     /// Closes websocket
     async fn websocket_close(&self, handle: u32);
     /// Executes http request
@@ -99,5 +99,5 @@ pub(crate) trait ClientEnv {
         headers: Option<HashMap<String, String>>,
         body: Option<Vec<u8>>,
         timeout_ms: Option<u32>,
-    ) -> ApiResult<FetchResult>;
+    ) -> ClientResult<FetchResult>;
 }

@@ -13,10 +13,10 @@
  */
 
 use crate::client::{ClientContext};
-use crate::error::ApiResult;
+use crate::error::ClientResult;
 use crate::processing::{ParamsOfProcessMessage, ProcessingEvent, ProcessingResponseType, ResultOfProcessMessage, ParamsOfSendMessage, ResultOfSendMessage, ParamsOfWaitForTransaction};
 use std::sync::Arc;
-use crate::api::dispatch::Request;
+use super::request::Request;
 
 /// Sends message to the network and monitors network for a result of
 /// message processing.
@@ -25,7 +25,7 @@ pub(crate) async fn process_message(
     context: Arc<ClientContext>,
     params: ParamsOfProcessMessage,
     request: std::sync::Arc<Request>,
-) -> ApiResult<ResultOfProcessMessage> {
+) -> ClientResult<ResultOfProcessMessage> {
     let callback = move |event: ProcessingEvent| {
         request.send_response(event, ProcessingResponseType::ProcessingEvent as u32);
         futures::future::ready(())
@@ -39,7 +39,7 @@ pub(crate) async fn send_message(
     context: Arc<ClientContext>,
     params: ParamsOfSendMessage,
     callback: std::sync::Arc<Request>,
-) -> ApiResult<ResultOfSendMessage> {
+) -> ClientResult<ResultOfSendMessage> {
     let callback = move |result: ProcessingEvent| {
         callback.send_response(result, ProcessingResponseType::ProcessingEvent as u32);
         futures::future::ready(())
@@ -75,7 +75,7 @@ pub(crate) async fn wait_for_transaction(
     context: Arc<ClientContext>,
     params: ParamsOfWaitForTransaction,
     callback: std::sync::Arc<Request>,
-) -> ApiResult<ResultOfProcessMessage> {
+) -> ClientResult<ResultOfProcessMessage> {
     let callback = move |result: ProcessingEvent| {
         callback.send_response(result, ProcessingResponseType::ProcessingEvent as u32);
         futures::future::ready(())

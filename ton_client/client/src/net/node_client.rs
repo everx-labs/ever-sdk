@@ -13,7 +13,7 @@
 
 use crate::client::{ClientEnv, FetchMethod};
 use crate::net::Error;
-use crate::error::{ApiResult, ApiError};
+use crate::error::{ClientResult, ClientError};
 use futures::{Future, SinkExt, Stream, StreamExt};
 use serde_json::Value;
 use rand::RngCore;
@@ -118,7 +118,7 @@ struct InitedClientData {
 
 pub(crate) struct Subscription{
     pub unsubscribe: Pin<Box<dyn Future<Output=()> + Send>>,
-    pub data_stream: Pin<Box<dyn Stream<Item=ApiResult<Value>> + Send>>
+    pub data_stream: Pin<Box<dyn Stream<Item=ClientResult<Value>> + Send>>
 }
 
 pub(crate) struct NodeClient {
@@ -140,7 +140,7 @@ impl NodeClient {
         }
     }
 
-    async fn check_redirect(&self, address: &str) -> ApiResult<String> {
+    async fn check_redirect(&self, address: &str) -> ClientResult<String> {
         let result = self.client_env.fetch(
             address,
             FetchMethod::Get,
@@ -148,7 +148,7 @@ impl NodeClient {
             None,
             None
         ).await?;
-        
+
         Ok(result.url)
     }
 
@@ -164,7 +164,7 @@ impl NodeClient {
         format!("{}/graphql", base_url)
     }
 
-    async fn query_by_url(&self, address: &str, query: &str) -> ApiResult<Value> {
+    async fn query_by_url(&self, address: &str, query: &str) -> ClientResult<Value> {
         let response = self.client_env.fetch(
             &format!("{}?query={}", address, query),
             FetchMethod::Get,
@@ -176,7 +176,7 @@ impl NodeClient {
         response.body_as_json()
     }
 
-    async fn query_server_info(&self, address: &str) -> ApiResult<ServerInfo> {
+    async fn query_server_info(&self, address: &str) -> ClientResult<ServerInfo> {
         let response = self.query_by_url(address, "%7Binfo%7Bversion%7D%7D").await?;
         let version = response["data"]["info"]["version"]
             .as_str()
@@ -184,12 +184,12 @@ impl NodeClient {
                 format!("No version in response: {}", response)))?;
 
         ServerInfo::from_version(version)
-            .map_err(|err| 
+            .map_err(|err|
                 Error::invalid_server_response(
                     format!("Can not parse version {}: {}", version, err)))
     }
 
-    async fn get_time_delta(&self, address: &str) -> ApiResult<i64>{
+    async fn get_time_delta(&self, address: &str) -> ClientResult<i64>{
         let start = self.client_env.now_ms() as i64;
         let response = self.query_by_url(address, "%7Binfo%7Btime%7D%7D").await?;
         let end = self.client_env.now_ms()as i64;
@@ -200,7 +200,7 @@ impl NodeClient {
         Ok(server_time - (start + (end - start) / 2))
     }
 
-    async fn check_time_delta(&self, address: &str, config: &NetworkConfig) -> ApiResult<()> {
+    async fn check_time_delta(&self, address: &str, config: &NetworkConfig) -> ClientResult<()> {
         let delta = self.get_time_delta(address).await?;
         if delta.abs() >= config.out_of_sync_threshold() {
             Err(Error::clock_out_of_sync(delta, config.out_of_sync_threshold()))
@@ -209,7 +209,7 @@ impl NodeClient {
         }
     }
 
-    async fn init(&self, config: &NetworkConfig) -> ApiResult<InitedClientData> {
+    async fn init(&self, config: &NetworkConfig) -> ClientResult<InitedClientData> {
         let queries_server = Self::expand_address(config.server_address());
         let redirected = self.check_redirect(&queries_server).await?;
         let queries_server = redirected.clone();
@@ -229,7 +229,7 @@ impl NodeClient {
         })
     }
 
-    async fn ensure_client(&self) -> ApiResult<()> {
+    async fn ensure_client(&self) -> ClientResult<()> {
         if self.data.read().await.is_some() {
             return Ok(());
         }
@@ -261,7 +261,7 @@ impl NodeClient {
     // Returns Stream with updates database fileds by provided filter
     pub async fn subscribe(
         &self, table: &str, filter: &Value, fields: &str
-    ) -> ApiResult<Subscription> {
+    ) -> ClientResult<Subscription> {
         let request = Self::generate_subscription(table, filter, fields);
 
         let mut websocket = {
@@ -274,7 +274,7 @@ impl NodeClient {
                 Some(HashMap::from_iter(vec![("Sec-WebSocket-Protocol", "graphql-ws")].into_iter()))
             ).await?
         };
-        
+
         // map stream of strings into GraphQL JSON answers
         let table = table.to_owned();
         let data_stream = websocket.receiver
@@ -294,7 +294,7 @@ impl NodeClient {
                             if value["type"] == "connection_ack" || value["type"] == "ka" {
                                 return None;
                             }
-                            
+
                             // try to extract the record value from the answer
                             let record_value = &value["payload"]["data"][&closure_table];
 
@@ -350,13 +350,13 @@ impl NodeClient {
         })
     }
 
-    pub fn try_extract_error(value: &Value) -> Option<ApiError> {
+    pub fn try_extract_error(value: &Value) -> Option<ClientError> {
         let errors = if let Some(payload) = value.get("payload") {
             payload.get("errors")
         } else {
             value.get("errors")
         };
-        
+
         if let Some(errors) = errors {
             if let Some(errors) = errors.as_array() {
                 if errors.len() > 0 {
@@ -370,13 +370,13 @@ impl NodeClient {
                 }
             }
         }
-    
+
         return None;
     }
 
     async fn query_vars(
         &self, address: &str, request: VariableRequest, timeout: Option<u32>
-    ) -> ApiResult<Value> {
+    ) -> ClientResult<Value> {
         let request = json!({
             "query": request.query,
             "variables": request.variables,
@@ -411,7 +411,7 @@ impl NodeClient {
         order_by: Option<Vec<OrderBy>>,
         limit: Option<u32>,
         timeout: Option<u32>
-    ) -> ApiResult<Value> {
+    ) -> ClientResult<Value> {
         let query = Self::generate_query_var(table, filter, fields, order_by, limit, timeout);
 
         self.ensure_client().await?;
@@ -432,7 +432,7 @@ impl NodeClient {
 
     // Executes GraphQL query, waits for result and returns recieved value
     pub async fn wait_for(&self, table: &str, filter: &Value, fields: &str, timeout: Option<u32>)
-        -> ApiResult<Value>
+        -> ClientResult<Value>
     {
         let value = self.query(
             table,
@@ -526,7 +526,7 @@ impl NodeClient {
     }
 
     // Sends message to node
-    pub async fn send_message(&self, key: &[u8], value: &[u8]) -> ApiResult<()> {
+    pub async fn send_message(&self, key: &[u8], value: &[u8]) -> ClientResult<()> {
         let request = MutationRequest {
             id: base64::encode(key),
             body: base64::encode(value)

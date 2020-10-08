@@ -11,7 +11,7 @@
 * limitations under the License.
 */
 
-use crate::error::{ApiResult, ApiError};
+use crate::error::{ClientResult, ClientError};
 
 #[derive(Debug)]
 pub(crate) enum CellValueReader {
@@ -93,16 +93,16 @@ impl Parser {
         Self::is_first_ident_char(c) || Self::is_digit(c)
     }
 
-    fn tokenize_error(rest: &str) -> ApiError {
-        ApiError::cell_invalid_query(format!("invalid character (-> {})", rest))
+    fn tokenize_error(rest: &str) -> ClientError {
+        ClientError::cell_invalid_query(format!("invalid character (-> {})", rest))
     }
 
-    fn parse_error(&self, msg: &str) -> ApiError {
+    fn parse_error(&self, msg: &str) -> ClientError {
         // TODO: error message must point to error position related to self.tokens[self.pos]
-        ApiError::cell_invalid_query(format!("{}", msg))
+        ClientError::cell_invalid_query(format!("{}", msg))
     }
 
-    fn tokenize(source: String) -> ApiResult<Self> {
+    fn tokenize(source: String) -> ClientResult<Self> {
         let mut tokens = Vec::new();
         let mut chars = source.chars();
         let mut next = chars.next();
@@ -152,7 +152,7 @@ impl Parser {
         value
     }
 
-    fn parse_commands(&mut self) -> ApiResult<Vec<CellFieldReader>> {
+    fn parse_commands(&mut self) -> ClientResult<Vec<CellFieldReader>> {
         let mut commands = Vec::new();
         while let Some(command) = self.parse_command()? {
             commands.push(command);
@@ -160,7 +160,7 @@ impl Parser {
         Ok(commands)
     }
 
-    fn parse_optional_parenthesis_enclosed_commands(&mut self) -> ApiResult<Vec<CellFieldReader>> {
+    fn parse_optional_parenthesis_enclosed_commands(&mut self) -> ClientResult<Vec<CellFieldReader>> {
         if self.pass(Token::is_open) != None {
             let commands = self.parse_commands()?;
             if self.pass(Token::is_close) != None {
@@ -173,7 +173,7 @@ impl Parser {
         }
     }
 
-    fn parse_command(&mut self) -> ApiResult<Option<CellFieldReader>> {
+    fn parse_command(&mut self) -> ClientResult<Option<CellFieldReader>> {
         let skip = self.pass(Token::is_minus) != None;
         if let Some(identifier) = self.pass(Token::identifier) {
             let name_type = if self.pass(Token::is_colon) != None {
@@ -197,7 +197,7 @@ impl Parser {
         }
     }
 
-    fn parse_value_reader(&mut self, type_name: &str) -> ApiResult<CellValueReader> {
+    fn parse_value_reader(&mut self, type_name: &str) -> ClientResult<CellValueReader> {
         Ok(match type_name {
             "u1" => CellValueReader::UIntWithSize(1),
             "u8" => CellValueReader::UIntWithSize(8),
@@ -221,7 +221,7 @@ impl Parser {
 }
 
 impl CellQuery {
-    pub(crate) fn parse(source: String) -> ApiResult<Self> {
+    pub(crate) fn parse(source: String) -> ClientResult<Self> {
         let mut parser = Parser::tokenize(source)?;
         let commands = parser.parse_commands()?;
         if parser.eof() {
