@@ -14,20 +14,26 @@
 #[cfg(test)]
 mod tests;
 
-mod abi;
-pub(crate) mod decode;
-pub(crate) mod encode;
+pub(crate) mod decode_message;
+pub(crate) mod encode_account;
+pub(crate) mod encode_message;
 mod errors;
 mod internal;
 mod signing;
+mod types;
 
-pub use abi::{Abi, AbiHandle, FunctionHeader};
-pub use decode::{decode_message, DecodedMessageBody, DecodedMessageType, ParamsOfDecodeMessage};
-pub use encode::{
+pub use decode_message::{
+    decode_message, DecodedMessageBody, DecodedMessageType, ParamsOfDecodeMessage,
+};
+pub use encode_account::{
+    encode_account, ParamsOfEncodeAccount, ResultOfEncodeAccount, StateInitParams, StateInitSource,
+};
+pub use encode_message::{
     attach_signature, encode_message, CallSet, DeploySet, ParamsOfAttachSignature,
     ParamsOfEncodeMessage, ResultOfAttachSignature, ResultOfEncodeMessage,
 };
 pub use errors::{Error, ErrorCode};
 pub use signing::Signer;
+pub use types::{Abi, AbiHandle, FunctionHeader};
 
 pub const DEFAULT_WORKCHAIN: i32 = 0;

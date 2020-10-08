@@ -512,7 +512,7 @@ impl TestClient {
         let encode = self.wrap_async(
             encode_message,
             AbiModule::api(),
-            crate::abi::encode::encode_message_api(),
+            crate::abi::encode_message::encode_message_api(),
         );
         encode.call(params).await
     }

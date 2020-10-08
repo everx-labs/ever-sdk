@@ -1,5 +1,5 @@
-use crate::abi::decode::{DecodedMessageBody, DecodedMessageType, ParamsOfDecodeMessage};
-use crate::abi::encode::{
+use crate::abi::decode_message::{DecodedMessageBody, DecodedMessageType, ParamsOfDecodeMessage};
+use crate::abi::encode_message::{
     CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfEncodeMessage, ResultOfAttachSignature,
     ResultOfEncodeMessage,
 };
