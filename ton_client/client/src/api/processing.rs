@@ -16,7 +16,7 @@ use crate::client::{ClientContext};
 use crate::error::ApiResult;
 use crate::processing::{ParamsOfProcessMessage, ProcessingEvent, ProcessingResponseType, ResultOfProcessMessage, ParamsOfSendMessage, ResultOfSendMessage, ParamsOfWaitForTransaction};
 use std::sync::Arc;
-use crate::api::dispatch::Request;
+use crate::api::request::Request;
 
 /// Sends message to the network and monitors network for a result of
 /// message processing.

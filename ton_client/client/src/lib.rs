@@ -32,7 +32,7 @@ pub mod client;
 pub mod boc;
 pub mod processing;
 pub mod utils;
-mod api;
+pub mod api;
 #[cfg(feature = "node_interaction")]
 pub mod net;
 

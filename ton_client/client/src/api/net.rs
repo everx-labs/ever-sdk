@@ -15,7 +15,7 @@
 use crate::client::{ClientContext};
 use crate::error::ApiResult;
 use crate::net::{ParamsOfSubscribeCollection, ResultOfSubscribeCollection, ResultOfSubscription};
-use crate::api::dispatch::Request;
+use crate::api::request::Request;
 
 #[api_function]
 pub(crate) async fn subscribe_collection(

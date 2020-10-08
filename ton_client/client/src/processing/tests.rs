@@ -10,7 +10,7 @@ use crate::processing::{
 use crate::processing::types::DecodedOutput;
 use crate::tests::{TestClient, EVENTS};
 use api_info::ApiModule;
-use crate::api::ProcessingModule;
+use crate::api::modules::ProcessingModule;
 
 #[tokio::test(core_threads = 2)]
 async fn test_wait_message() {

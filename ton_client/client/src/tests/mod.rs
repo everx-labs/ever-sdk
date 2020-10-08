@@ -15,20 +15,13 @@ use super::{tc_destroy_string, tc_read_string, tc_request, tc_request_sync};
 use crate::abi::{
     encode_message, Abi, CallSet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
-use crate::api::dispatch::Request;
 use crate::api::interop::{ResponseType, StringData};
-use crate::api::{AbiModule, NetModule, ProcessingModule};
-use crate::client::{ClientContext, ContextHandle, Error};
+use crate::client::{ClientContext, Error};
 use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
 use crate::processing::{MessageSource, ParamsOfProcessMessage, ResultOfProcessMessage};
-use crate::{
-    crypto::KeyPair,
-    error::{ApiError, ApiResult},
-    net::{ParamsOfWaitForCollection, ResultOfWaitForCollection},
-    tc_create_context, tc_destroy_context,
-};
+use crate::{crypto::KeyPair, error::{ApiError, ApiResult}, net::{ParamsOfWaitForCollection, ResultOfWaitForCollection}, tc_create_context, tc_destroy_context, ContextHandle};
 use api_info::ApiModule;
 use futures::Future;
 use num_traits::FromPrimitive;
@@ -42,6 +35,7 @@ use tokio::sync::{
     mpsc::{channel, Sender},
     Mutex,
 };
+use crate::api::modules::{AbiModule, ProcessingModule, NetModule};
 
 mod common;
 
@@ -208,7 +202,7 @@ impl TestClient {
 
     pub(crate) fn wrap_async_callback<P, R, F>(
         self: &TestClient,
-        _: fn(Arc<ClientContext>, P, std::sync::Arc<Request>) -> F,
+        _: fn(Arc<ClientContext>, P, std::sync::Arc<crate::api::request::Request>) -> F,
         module: api_info::Module,
         function: api_info::Function,
     ) -> AsyncFuncWrapper<P, R>
