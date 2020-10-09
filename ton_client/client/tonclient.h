@@ -41,7 +41,7 @@ tc_string_handle_t* tc_request_sync(
     tc_string_data_t function_name,
     tc_string_data_t function_params_json);
 
-tc_string_handle_t tc_read_string(const tc_string_handle_t* handle);
+tc_string_data_t tc_read_string(const tc_string_handle_t* handle);
 void tc_destroy_string(const tc_string_handle_t* handle);
 
 #ifdef __cplusplus
