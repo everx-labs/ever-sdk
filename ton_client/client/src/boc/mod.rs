@@ -12,7 +12,6 @@
 */
 
 pub(crate) mod blockchain_config;
-pub(crate) mod build;
 mod errors;
 pub(crate) mod parse;
 #[cfg(test)]
@@ -26,5 +25,4 @@ pub use crate::boc::parse::{
 pub use blockchain_config::{
     get_blockchain_config, ParamsOfGetBlockchainConfig, ResultOfGetBlockchainConfig,
 };
-pub use build::{build_account, ParamsOfBuildAccount, ResultOfBuildAccount};
 pub use errors::{Error, ErrorCode};

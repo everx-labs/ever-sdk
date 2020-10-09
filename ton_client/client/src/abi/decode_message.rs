@@ -1,4 +1,4 @@
-use crate::abi::abi::Abi;
+use crate::abi::types::Abi;
 use crate::abi::internal::resolve_abi;
 use crate::abi::{Error, FunctionHeader};
 use crate::client::ClientContext;
