@@ -19,7 +19,7 @@ pub use self::ton_client::{
     tc_json_request_async,
     InteropContext,
     StringData,
-    ResponseHandler
+    CResponseHandler
 };
 
 // Obsolete. Used for backward compatibility only.
@@ -29,7 +29,7 @@ pub unsafe extern fn ton_sdk_json_rpc_request(
     method: &StringData,
     params_json: &StringData,
     request_id: i32,
-    on_result: ResponseHandler,
+    on_result: CResponseHandler,
 ) {
     let context = self::ton_client::create_context();
     self::ton_client::tc_json_request_async(

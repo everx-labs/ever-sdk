@@ -27,7 +27,7 @@ pub(crate) async fn process_message(
     request: std::sync::Arc<Request>,
 ) -> ClientResult<ResultOfProcessMessage> {
     let callback = move |event: ProcessingEvent| {
-        request.send_response(event, ProcessingResponseType::ProcessingEvent as u32);
+        request.response(event, ProcessingResponseType::ProcessingEvent as u32);
         futures::future::ready(())
     };
     crate::processing::process_message(context, params, callback).await
@@ -41,7 +41,7 @@ pub(crate) async fn send_message(
     callback: std::sync::Arc<Request>,
 ) -> ClientResult<ResultOfSendMessage> {
     let callback = move |result: ProcessingEvent| {
-        callback.send_response(result, ProcessingResponseType::ProcessingEvent as u32);
+        callback.response(result, ProcessingResponseType::ProcessingEvent as u32);
         futures::future::ready(())
     };
 
@@ -77,7 +77,7 @@ pub(crate) async fn wait_for_transaction(
     callback: std::sync::Arc<Request>,
 ) -> ClientResult<ResultOfProcessMessage> {
     let callback = move |result: ProcessingEvent| {
-        callback.send_response(result, ProcessingResponseType::ProcessingEvent as u32);
+        callback.response(result, ProcessingResponseType::ProcessingEvent as u32);
         futures::future::ready(())
     };
     crate::processing::wait_for_transaction(context, params, callback).await

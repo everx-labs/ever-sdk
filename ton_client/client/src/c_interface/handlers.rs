@@ -19,11 +19,10 @@ use serde::Serialize;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use crate::c_interface::interop::ResponseHandler;
-#[cfg(feature = "node_interaction")]
-use std::future::Future;
 use super::request::Request;
 use super::runtime::{AsyncHandler, SyncHandler};
+#[cfg(feature = "node_interaction")]
+use std::future::Future;
 
 fn parse_params<P: DeserializeOwned>(params_json: &str) -> ClientResult<P> {
     serde_json::from_str(params_json).map_err(|err| ClientError::invalid_params(params_json, err))
@@ -66,22 +65,16 @@ where
     Fut: Send + Future<Output = ClientResult<R>> + 'static,
     F: Send + Sync + Fn(Arc<ClientContext>, P, Arc<Request>) -> Fut + 'static,
 {
-    fn handle(
-        &self,
-        context: Arc<ClientContext>,
-        params_json: String,
-        request_id: u32,
-        response_handler: ResponseHandler,
-    ) {
+    fn handle(&self, context: Arc<ClientContext>, params_json: String, request: Request) {
         let handler = self.handler.clone();
         let context_copy = context.clone();
         context.async_runtime_handle.enter(move || {
             tokio::spawn(async move {
-                let request = Arc::new(Request::new(response_handler, request_id));
+                let request = Arc::new(request);
                 match parse_params(&params_json) {
                     Ok(params) => {
                         let result = handler(context_copy, params, request.clone()).await;
-                        request.send_result(result, false);
+                        request.response_result(result);
                     }
                     Err(err) => request.finish_with_error(err),
                 };
@@ -127,22 +120,15 @@ where
     Fut: Send + Future<Output = ClientResult<R>> + 'static,
     F: Send + Sync + Fn(Arc<ClientContext>, P) -> Fut + 'static,
 {
-    fn handle(
-        &self,
-        context: Arc<ClientContext>,
-        params_json: String,
-        request_id: u32,
-        response_handler: ResponseHandler,
-    ) {
+    fn handle(&self, context: Arc<ClientContext>, params_json: String, request: Request) {
         let handler = self.handler.clone();
         let context_copy = context.clone();
         context.async_runtime_handle.enter(move || {
             tokio::spawn(async move {
-                let request = Request::new(response_handler, request_id);
                 match parse_params(&params_json) {
                     Ok(params) => {
                         let result = handler(context_copy, params).await;
-                        request.finish_with(result);
+                        request.finish_with_result(result);
                     }
                     Err(err) => request.finish_with_error(err),
                 };
@@ -185,18 +171,12 @@ where
     Fut: Send + Future<Output = ClientResult<R>> + 'static,
     F: Send + Sync + Fn(Arc<ClientContext>) -> Fut + 'static,
 {
-    fn handle(
-        &self,
-        context: Arc<ClientContext>,
-        _params_json: String,
-        request_id: u32,
-        response_handler: ResponseHandler,
-    ) {
+    fn handle(&self, context: Arc<ClientContext>, _params_json: String, request: Request) {
         let handler = self.handler.clone();
         let context_copy = context.clone();
         context.async_runtime_handle.enter(move || {
             tokio::spawn(async move {
-                Request::new(response_handler, request_id).finish_with(handler(context_copy).await);
+                request.finish_with_result(handler(context_copy).await);
             });
         });
     }
@@ -278,4 +258,3 @@ where
         }
     }
 }
-

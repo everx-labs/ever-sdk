@@ -323,7 +323,7 @@ impl TestClient {
             log::set_boxed_logger(Box::new(SimpleLogger)).map(|()| log::set_max_level(MAX_LEVEL));
 
         unsafe {
-            let response = tc_create_context(StringData::from(&config.to_string()));
+            let response = tc_create_context(StringData::new(&config.to_string()));
             Self {
                 context: parse_sync_response(response).unwrap(),
             }
@@ -339,8 +339,8 @@ impl TestClient {
         parse_sync_response(unsafe {
             tc_request_sync(
                 self.context,
-                StringData::from(&method.to_string()),
-                StringData::from(&params_json),
+                StringData::new(&method.to_string()),
+                StringData::new(&params_json),
             )
         })
     }
@@ -454,8 +454,8 @@ impl TestClient {
             };
             tc_request(
                 self.context,
-                StringData::from(&method.to_string()),
-                StringData::from(&params_json),
+                StringData::new(&method.to_string()),
+                StringData::new(&params_json),
                 request_id,
                 on_result,
             );
