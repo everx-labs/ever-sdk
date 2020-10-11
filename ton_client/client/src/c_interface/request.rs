@@ -15,7 +15,7 @@
 use crate::error::{ClientError, ClientResult};
 use crate::{CResponseHandler, ResponseHandler, ResponseType, StringData};
 use serde::Serialize;
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 enum ResponseHandlerImpl {
     Rust(ResponseHandler),
@@ -25,7 +25,7 @@ enum ResponseHandlerImpl {
 pub struct Request {
     request_id: u32,
     response_handler: ResponseHandlerImpl,
-    finished: Mutex<bool>,
+    finished: AtomicBool,
 }
 
 impl Request {
@@ -33,7 +33,7 @@ impl Request {
         Self {
             request_id,
             response_handler: ResponseHandlerImpl::Rust(response_handler),
-            finished: Mutex::new(false),
+            finished: AtomicBool::new(false),
         }
     }
 
@@ -41,7 +41,7 @@ impl Request {
         Self {
             request_id,
             response_handler: ResponseHandlerImpl::C(response_handler),
-            finished: Mutex::new(false),
+            finished: AtomicBool::new(false),
         }
     }
 
@@ -80,10 +80,14 @@ impl Request {
     }
 
     fn set_finished(&self, finished: bool) -> bool {
-        if *self.finished.lock().unwrap() {
+        // We must not change finished flag if it is already finished.
+        if self.finished.load(Ordering::Relaxed) {
             return true;
         }
-        *self.finished.lock().unwrap() = finished;
+        // We can change flag only `false` -> `true`
+        if finished {
+            self.finished.store(finished, Ordering::Relaxed);
+        }
         return false;
     }
 
