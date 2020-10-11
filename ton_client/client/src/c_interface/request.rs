@@ -13,8 +13,9 @@
  */
 
 use crate::error::{ClientError, ClientResult};
-use crate::{CResponseHandler, StringData, ResponseHandler, ResponseType};
+use crate::{CResponseHandler, ResponseHandler, ResponseType, StringData};
 use serde::Serialize;
+use std::sync::Mutex;
 
 enum ResponseHandlerImpl {
     Rust(ResponseHandler),
@@ -24,6 +25,7 @@ enum ResponseHandlerImpl {
 pub struct Request {
     request_id: u32,
     response_handler: ResponseHandlerImpl,
+    finished: Mutex<bool>,
 }
 
 impl Request {
@@ -31,6 +33,7 @@ impl Request {
         Self {
             request_id,
             response_handler: ResponseHandlerImpl::Rust(response_handler),
+            finished: Mutex::new(false),
         }
     }
 
@@ -38,6 +41,7 @@ impl Request {
         Self {
             request_id,
             response_handler: ResponseHandlerImpl::C(response_handler),
+            finished: Mutex::new(false),
         }
     }
 
@@ -75,7 +79,19 @@ impl Request {
         };
     }
 
+    fn set_finished(&self, finished: bool) -> bool {
+        if *self.finished.lock().unwrap() {
+            return true;
+        }
+        *self.finished.lock().unwrap() = finished;
+        return false;
+    }
+
     fn call_response_handler(&self, params_json: String, response_type: u32, finished: bool) {
+        let was_finished = self.set_finished(finished);
+        if was_finished {
+            return;
+        }
         match self.response_handler {
             ResponseHandlerImpl::Rust(handler) => {
                 handler(self.request_id, params_json, response_type, finished)

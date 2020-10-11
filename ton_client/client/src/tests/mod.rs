@@ -386,10 +386,7 @@ impl TestClient {
     ) {
         //log::debug!("on_result response-type: {} params_json: {}", response_type, params_json);
         let requests = &mut TEST_RUNTIME.lock().await.requests;
-        let request = match requests.get_mut(&request_id) {
-            Some(request) => request,
-            None => return,
-        };
+        let request = requests.get_mut(&request_id).unwrap();
 
         if response_type == ResponseType::Success as u32 {
             request
