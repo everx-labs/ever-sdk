@@ -73,7 +73,7 @@ fn reflect_module<T: ApiModule>() {
 
 fn main() {
     reflect_module::<Module>();
-    // reflect::<Foo>();
+    reflect::<Foo>();
     // reflect::<Bar>();
     // reflect::<EnumWithValues>();
     // reflect::<EnumWithTypes>();
