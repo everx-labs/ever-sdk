@@ -59,8 +59,11 @@ Instead of building core library yourself, you can download the __latest__ preco
 Platform | Major | Download links
 -------- | -------------------- | --------------
 Win32 | 0 | [`tonclient.lib`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_win32_lib.gz), [`tonclient.dll`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_win32_dll.gz)
+&nbsp;| 1-rc | [`tonclient.lib`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_0_0-rc_win32_lib.gz), [`tonclient.dll`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_0_0-rc_win32_dll.gz)
 macOS | 0 | [`tonclient.dylib`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_darwin.gz)
+&nbsp;| 1-rc | [`tonclient.dylib`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_0_0-rc_darwin.gz)
 Linux | 0 | [`tonclient.so`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_linux.gz)
+&nbsp;| 1-rc | [`tonclient.so`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_0_0-rc_linux.gz)
 
 If you want an older version of library (e.g. `0.25.0` for macOS), you need to choose a link to your platform from the list above and replace `0` with a version:
 [http://sdkbinaries.tonlabs.io/tonclient_<b>0_25_0</b>_darwin.gz](http://sdkbinaries.tonlabs.io/tonclient_0_25_0_darwin.gz)
