@@ -193,11 +193,11 @@ pub fn command(args: &[String]) -> Result<(), CliError> {
         }
     });
     let context = unsafe {
-        parse_sync_response::<ContextHandle>(tc_create_context(StringData::from(&config.to_string())))
+        parse_sync_response::<ContextHandle>(tc_create_context(StringData::new(&config.to_string())))
     }?;
 
     let response = unsafe {
-        parse_sync_response::<Value>(tc_request_sync(context, StringData::from(&function), StringData::from(&parameters)))
+        parse_sync_response::<Value>(tc_request_sync(context, StringData::new(&function), StringData::new(&parameters)))
     };
     unsafe { tc_destroy_context(context) };
     let result = match response {

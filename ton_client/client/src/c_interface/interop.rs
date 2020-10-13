@@ -142,7 +142,7 @@ pub struct StringData {
 }
 
 impl StringData {
-    pub(crate) fn new(s: &String) -> Self {
+    pub fn new(s: &String) -> Self {
         Self {
             content: s.as_ptr(),
             len: s.len() as u32,
