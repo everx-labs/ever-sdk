@@ -20,7 +20,6 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use crate::c_interface::interop::ResponseHandler;
-#[cfg(feature = "node_interaction")]
 use std::future::Future;
 use super::request::Request;
 use super::runtime::{AsyncHandler, SyncHandler};
@@ -29,7 +28,6 @@ fn parse_params<P: DeserializeOwned>(params_json: &str) -> ClientResult<P> {
     serde_json::from_str(params_json).map_err(|err| ClientError::invalid_params(params_json, err))
 }
 
-#[cfg(feature = "node_interaction")]
 pub struct SpawnHandlerCallback<P, R, Fut, F>
 where
     P: Send + DeserializeOwned + 'static,
@@ -42,7 +40,6 @@ where
     phantom: PhantomData<std::sync::Mutex<(P, R, Fut)>>,
 }
 
-#[cfg(feature = "node_interaction")]
 impl<P, R, Fut, F> SpawnHandlerCallback<P, R, Fut, F>
 where
     P: Send + DeserializeOwned + 'static,
@@ -58,7 +55,6 @@ where
     }
 }
 
-#[cfg(feature = "node_interaction")]
 impl<P, R, Fut, F> AsyncHandler for SpawnHandlerCallback<P, R, Fut, F>
 where
     P: Send + DeserializeOwned + 'static,
@@ -75,22 +71,19 @@ where
     ) {
         let handler = self.handler.clone();
         let context_copy = context.clone();
-        context.async_runtime_handle.enter(move || {
-            tokio::spawn(async move {
-                let request = Arc::new(Request::new(response_handler, request_id));
-                match parse_params(&params_json) {
-                    Ok(params) => {
-                        let result = handler(context_copy, params, request.clone()).await;
-                        request.send_result(result, false);
-                    }
-                    Err(err) => request.finish_with_error(err),
-                };
-            });
+        context.env.spawn(async move {
+            let request = Arc::new(Request::new(response_handler, request_id));
+            match parse_params(&params_json) {
+                Ok(params) => {
+                    let result = handler(context_copy, params, request.clone()).await;
+                    request.send_result(result, false);
+                }
+                Err(err) => request.finish_with_error(err),
+            };
         });
     }
 }
 
-#[cfg(feature = "node_interaction")]
 pub struct SpawnHandler<P, R, Fut, F>
 where
     P: Send + DeserializeOwned + 'static,
@@ -103,7 +96,6 @@ where
     phantom: PhantomData<std::sync::Mutex<(P, R, Fut)>>,
 }
 
-#[cfg(feature = "node_interaction")]
 impl<P, R, Fut, F> SpawnHandler<P, R, Fut, F>
 where
     P: Send + DeserializeOwned + 'static,
@@ -119,7 +111,6 @@ where
     }
 }
 
-#[cfg(feature = "node_interaction")]
 impl<P, R, Fut, F> AsyncHandler for SpawnHandler<P, R, Fut, F>
 where
     P: Send + DeserializeOwned + 'static,
@@ -136,22 +127,19 @@ where
     ) {
         let handler = self.handler.clone();
         let context_copy = context.clone();
-        context.async_runtime_handle.enter(move || {
-            tokio::spawn(async move {
-                let request = Request::new(response_handler, request_id);
-                match parse_params(&params_json) {
-                    Ok(params) => {
-                        let result = handler(context_copy, params).await;
-                        request.finish_with(result);
-                    }
-                    Err(err) => request.finish_with_error(err),
-                };
-            });
+        context.env.spawn(async move {
+            let request = Request::new(response_handler, request_id);
+            match parse_params(&params_json) {
+                Ok(params) => {
+                    let result = handler(context_copy, params).await;
+                    request.finish_with(result);
+                }
+                Err(err) => request.finish_with_error(err),
+            };
         });
     }
 }
 
-#[cfg(feature = "node_interaction")]
 pub struct SpawnNoArgsHandler<R, Fut, F>
 where
     R: Send + Serialize + 'static,
@@ -163,7 +151,6 @@ where
     phantom: PhantomData<std::sync::Mutex<(R, Fut)>>,
 }
 
-#[cfg(feature = "node_interaction")]
 impl<R, Fut, F> SpawnNoArgsHandler<R, Fut, F>
 where
     R: Send + Serialize + 'static,
@@ -178,7 +165,6 @@ where
     }
 }
 
-#[cfg(feature = "node_interaction")]
 impl<R, Fut, F> AsyncHandler for SpawnNoArgsHandler<R, Fut, F>
 where
     R: Send + Serialize + 'static,
@@ -194,10 +180,8 @@ where
     ) {
         let handler = self.handler.clone();
         let context_copy = context.clone();
-        context.async_runtime_handle.enter(move || {
-            tokio::spawn(async move {
-                Request::new(response_handler, request_id).finish_with(handler(context_copy).await);
-            });
+        context.env.spawn(async move {
+            Request::new(response_handler, request_id).finish_with(handler(context_copy).await);
         });
     }
 }

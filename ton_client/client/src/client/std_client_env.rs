@@ -23,18 +23,36 @@ use reqwest::{
 use crate::error::ClientResult;
 use super::{ClientEnv, Error, WebSocket, FetchMethod, FetchResult};
 
-pub(crate) struct StdClientEnv {
+pub(crate) struct ClientEnvImpl {
     http_client: HttpClient,
+    _async_runtime: Option<tokio::runtime::Runtime>,
+    async_runtime_handle: tokio::runtime::Handle,
 }
 
-impl StdClientEnv {
+impl ClientEnvImpl {
     pub fn new() -> ClientResult<Self> {
         let client = ClientBuilder::new()
             .build()
             .map_err(|err| Error::http_client_create_error(err))?;
 
-        Ok(StdClientEnv {
-            http_client: client
+        let (async_runtime, async_runtime_handle) =
+            if let Ok(existing) = tokio::runtime::Handle::try_current() {
+                (None, existing)
+            } else {
+                let runtime = tokio::runtime::Builder::new()
+                    .threaded_scheduler()
+                    .enable_io()
+                    .enable_time()
+                    .build()
+                    .map_err(|err| Error::cannot_create_runtime(err))?;
+                let runtime_handle = runtime.handle().clone();
+                (Some(runtime), runtime_handle)
+            };
+
+        Ok(Self {
+            http_client: client,
+            _async_runtime: async_runtime,
+            async_runtime_handle
         })
     }
 
@@ -63,25 +81,31 @@ impl StdClientEnv {
     }
 }
 
-#[async_trait::async_trait]
-impl ClientEnv for StdClientEnv {
+impl ClientEnvImpl {
     /// Returns current Unix time in ms
-    fn now_ms(&self) -> u64 {
+    pub fn now_ms(&self) -> u64 {
         chrono::prelude::Utc::now().timestamp_millis() as u64
     }
 
     /// Sets timer for provided time interval
-    async fn set_timer(&self, ms: u64) {
+    pub async fn set_timer(&self, ms: u64) {
         tokio::time::delay_for(tokio::time::Duration::from_millis(ms)).await
     }
 
     /// Sends asynchronous task to scheduler
-    fn spawn(&self, future: Pin<Box<dyn Future<Output = ()> + Send + 'static>>) {
-        tokio::spawn(future);
+    pub fn spawn(&self, future: impl Future<Output = ()> + Send + 'static) {
+        self.async_runtime_handle.enter(move || 
+            tokio::spawn(future)
+        );
+    }
+
+    /// Executes asynchronous task blocking current thread
+    pub fn block_on<F: Future>(&self, future: F) -> F::Output {
+        self.async_runtime_handle.block_on(future)
     }
 
     /// Connects to the websocket endpoint
-    async fn websocket_connect(
+    pub async fn websocket_connect(
         &self,
         url: &str,
         headers: Option<HashMap<&str, &str>>,
@@ -133,15 +157,15 @@ impl ClientEnv for StdClientEnv {
     }
 
     /// Closes websocket
-    async fn websocket_close(&self, _handle: u32) {}
+    pub async fn websocket_close(&self, _handle: u32) {}
 
     /// Executes http request
-    async fn fetch(
+    pub async fn fetch(
         &self,
         url: &str,
         method: FetchMethod,
         headers: Option<HashMap<String, String>>,
-        body: Option<Vec<u8>>,
+        body: Option<String>,
         timeout_ms: Option<u32>,
     ) -> ClientResult<FetchResult> {
         let method = Method::from_str(method.as_str())
@@ -167,10 +191,9 @@ impl ClientEnv for StdClientEnv {
             headers: Self::header_map_to_string_map(response.headers()),
             status: response.status().as_u16(),
             url: response.url().to_string(),
-            body: response.bytes()
+            body: response.text()
                 .await
                 .map_err(|err| Error::http_request_parse_error(err))?
-                .to_vec()
         })
     }
 }

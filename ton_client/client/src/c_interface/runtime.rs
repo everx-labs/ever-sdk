@@ -39,8 +39,7 @@ pub(crate) trait AsyncHandler {
 
 pub(crate) struct RuntimeHandlers {
     sync_handlers: HashMap<String, Box<dyn SyncHandler + Sync>>,
-    #[cfg(feature = "node_interaction")]
-    async_handlers: HashMap<String, Box<dyn AsyncHandler + Sync>>,
+        async_handlers: HashMap<String, Box<dyn AsyncHandler + Sync>>,
     api: API,
 }
 
@@ -48,8 +47,7 @@ impl RuntimeHandlers {
     fn new() -> RuntimeHandlers {
         let mut handlers = Self {
             sync_handlers: HashMap::new(),
-            #[cfg(feature = "node_interaction")]
-            async_handlers: HashMap::new(),
+                        async_handlers: HashMap::new(),
             api: API {
                 version: "1.0.0".into(),
                 modules: Vec::new(),
@@ -116,8 +114,7 @@ impl Runtime {
         }
     }
 
-    #[cfg(feature = "node_interaction")]
-    pub fn dispatch_async(
+        pub fn dispatch_async(
         context: Arc<ClientContext>,
         function_name: String,
         params_json: String,
@@ -129,21 +126,6 @@ impl Runtime {
             None => Request::new(response_handler, request_id)
                 .finish_with_error(ClientError::unknown_function(&function_name)),
         }
-    }
-
-    #[cfg(not(feature = "node_interaction"))]
-    pub fn dispatch_async(
-        context: Arc<ClientContext>,
-        function_name: String,
-        params_json: String,
-        request_id: u32,
-        response_handler: ResponseHandler,
-    ) {
-        Request::new(response_handler, request_id).finish_with(Self::dispatch_sync(
-            context,
-            function_name,
-            params_json,
-        ));
     }
 
     pub fn api() -> &'static API {

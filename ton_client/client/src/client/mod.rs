@@ -14,7 +14,15 @@
 mod client;
 mod client_env;
 pub(crate) mod errors;
+#[cfg(not(target_arch = "wasm32"))]
 mod std_client_env;
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) use std_client_env::ClientEnvImpl;
+#[cfg(target_arch = "wasm32")]
+mod wasm_client_env;
+#[cfg(target_arch = "wasm32")]
+pub(crate) use wasm_client_env::ClientEnvImpl;
+
 #[cfg(test)]
 mod tests;
 
@@ -29,7 +37,7 @@ use crate::error::ClientResult;
 use std::sync::Arc;
 use api_info::API;
 use crate::c_interface::api_reference::ApiReducer;
-use crate::c_interface::runtime::{Runtime};
+use crate::c_interface::runtime::Runtime;
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfVersion {

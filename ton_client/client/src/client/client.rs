@@ -17,39 +17,30 @@ use ton_sdk::AbiConfig;
 
 use crate::net::{NetworkConfig, NodeClient};
 
-use super::std_client_env::StdClientEnv;
-use super::{ClientEnv, Error};
+#[cfg(not(target_arch = "wasm32"))]
+use super::std_client_env::ClientEnvImpl;
+#[cfg(target_arch = "wasm32")]
+use super::wasm_client_env::ClientEnvImpl;
+
+use super::Error;
 
 pub struct ClientContext {
-    #[cfg(feature = "node_interaction")]
     pub(crate) client: Option<NodeClient>,
-    #[cfg(feature = "node_interaction")]
-    _async_runtime: Option<tokio::runtime::Runtime>,
-    #[cfg(feature = "node_interaction")]
-    pub(crate) async_runtime_handle: tokio::runtime::Handle,
     pub(crate) config: InternalClientConfig,
-    pub(crate) env: Arc<dyn ClientEnv + Send + Sync>,
+    pub(crate) env: Arc<ClientEnvImpl>,
 }
 
-#[cfg(feature = "node_interaction")]
 impl ClientContext {
     pub(crate) fn get_client(&self) -> ClientResult<&NodeClient> {
         self.client.as_ref().ok_or(Error::net_module_not_init())
     }
 
-    #[cfg(not(feature = "node_interaction"))]
-    pub fn new(config: Option<ClientConfig>) -> ClientResult<Self> {
-        Ok(Self {
-            config: config.unwrap_or_default().into(),
-        })
-    }
-
-    #[cfg(feature = "node_interaction")]
     pub fn new(config: Option<ClientConfig>) -> ClientResult<ClientContext> {
         let config: InternalClientConfig = config.unwrap_or_default().into();
-        let std_env = Arc::new(StdClientEnv::new()?);
 
-        let (client, _) = if let Some(net_config) = &config.network {
+        let env = Arc::new(super::ClientEnvImpl::new()?);
+
+        let client = if let Some(net_config) = &config.network {
             if net_config.out_of_sync_threshold()
                 > config.abi.message_expiration_timeout() as i64 / 2
             {
@@ -61,41 +52,25 @@ Note that default values are used if parameters are omitted in config"#,
                     config.abi.message_expiration_timeout()
                 )));
             }
-            let client = NodeClient::new(net_config.clone(), std_env.clone());
-            let sdk_config = ton_sdk::NetworkConfig {
-                access_key: net_config.access_key.clone(),
-                message_processing_timeout: net_config.message_processing_timeout,
-                message_retries_count: net_config.message_retries_count,
-                out_of_sync_threshold: net_config.out_of_sync_threshold,
-                server_address: net_config.server_address.clone(),
-                wait_for_timeout: net_config.wait_for_timeout,
-            };
-            let sdk_client = ton_sdk::NodeClient::new(sdk_config);
-            (Some(client), Some(sdk_client))
+            let client = NodeClient::new(net_config.clone(), env.clone());
+            // let sdk_config = ton_sdk::NetworkConfig {
+            //     access_key: net_config.access_key.clone(),
+            //     message_processing_timeout: net_config.message_processing_timeout,
+            //     message_retries_count: net_config.message_retries_count,
+            //     out_of_sync_threshold: net_config.out_of_sync_threshold,
+            //     server_address: net_config.server_address.clone(),
+            //     wait_for_timeout: net_config.wait_for_timeout,
+            // };
+            // let sdk_client = ton_sdk::NodeClient::new(sdk_config);
+            Some(client)
         } else {
-            (None, None)
+            None
         };
-
-        let (async_runtime, async_runtime_handle) =
-            if let Ok(existing) = tokio::runtime::Handle::try_current() {
-                (None, existing)
-            } else {
-                let runtime = tokio::runtime::Builder::new()
-                    .threaded_scheduler()
-                    .enable_io()
-                    .enable_time()
-                    .build()
-                    .map_err(|err| Error::cannot_create_runtime(err))?;
-                let runtime_handle = runtime.handle().clone();
-                (Some(runtime), runtime_handle)
-            };
 
         Ok(Self {
             client,
-            _async_runtime: async_runtime,
-            async_runtime_handle,
             config,
-            env: std_env,
+            env,
         })
     }
 }

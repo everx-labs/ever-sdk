@@ -315,6 +315,5 @@ pub(crate) fn register_modules(handlers: &mut RuntimeHandlers) {
     register_utils(handlers);
     register_tvm(handlers);
 
-    #[cfg(feature = "node_interaction")]
-    register_net(handlers);
+        register_net(handlers);
 }

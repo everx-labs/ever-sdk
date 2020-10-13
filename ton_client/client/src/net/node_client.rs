@@ -11,7 +11,7 @@
 * limitations under the License.
 */
 
-use crate::client::{ClientEnv, FetchMethod};
+use crate::client::{ClientEnv, ClientEnvImpl, FetchMethod};
 use crate::net::Error;
 use crate::error::{ClientResult, ClientError};
 use futures::{Future, SinkExt, Stream, StreamExt};
@@ -123,7 +123,7 @@ pub(crate) struct Subscription{
 
 pub(crate) struct NodeClient {
     config: NetworkConfig,
-    client_env: Arc<dyn ClientEnv + Send + Sync>,
+    client_env: Arc<ClientEnvImpl>,
     data: tokio::sync::RwLock<Option<InitedClientData>>,
     // TODO: use tokio::sync:RwLock when SDK core is fully async
     query_url: std::sync::RwLock<Option<String>>,
@@ -131,7 +131,7 @@ pub(crate) struct NodeClient {
 
 impl NodeClient {
 
-    pub fn new(config: NetworkConfig, client_env: Arc<dyn ClientEnv + Send + Sync>) -> Self {
+    pub fn new(config: NetworkConfig, client_env: Arc<ClientEnvImpl>) -> Self {
         NodeClient {
             config,
             client_env,
@@ -389,7 +389,7 @@ impl NodeClient {
             address,
             FetchMethod::Post,
             Some(headers),
-            Some(request.into_bytes()),
+            Some(request),
             timeout,
         ).await?;
 

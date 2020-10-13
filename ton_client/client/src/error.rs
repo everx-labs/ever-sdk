@@ -119,8 +119,7 @@ impl ClientError {
         Self::new(ClientErrorSource::Client, &code, message)
     }
 
-    #[cfg(feature = "node_interaction")]
-    pub(crate) fn add_network_url(mut self, client: &crate::net::NodeClient) -> ClientError {
+        pub(crate) fn add_network_url(mut self, client: &crate::net::NodeClient) -> ClientError {
         self.data["config_server"] = client.config_server().into();
 
         if let Some(url) = client.query_url() {
@@ -740,7 +739,6 @@ impl ClientErrorCode for i32 {
     }
 }
 
-#[cfg(feature = "node_interaction")]
 pub(crate) fn _clienterror_from_sdkerror<F>(err: &failure::Error, default_err: F, client: Option<&crate::net::NodeClient>) -> ClientError
     where
         F: Fn(String) -> ClientError,

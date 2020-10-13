@@ -23,17 +23,17 @@ pub(crate) struct WebSocket {
     pub receiver: Pin<Box<dyn Stream<Item=ClientResult<String>> + Send>>
 }
 
+#[derive(Debug)]
 pub(crate) struct FetchResult {
     pub status: u16,
     pub headers: HashMap<String, String>,
-    pub body: Vec<u8>,
+    pub body: String,
     pub url: String
 }
 
 impl FetchResult {
     pub fn body_as_text(&self) -> ClientResult<&str> {
-        std::str::from_utf8(&self.body)
-            .map_err(|_| Error::http_request_parse_error("Body is not a valid UTF8 string"))
+        Ok(&self.body)
     }
 
     pub fn body_as_json(&self) -> ClientResult<serde_json::Value> {
@@ -80,9 +80,10 @@ pub(crate) trait ClientEnv {
     /// Sets timer for provided time interval
     async fn set_timer(&self, ms: u64);
     /// Sends asynchronous task to scheduler
-    fn spawn(&self, future: std::pin::Pin<Box<dyn Future<Output = ()> + Send + 'static>>);
-    /// Creates lock object
-    //fn create_rwlock() -> EnvRwLock;
+    fn spawn(&self, future: impl Future<Output = ()> + 'static);
+    /// Executes asynchronous task blocking current thread
+    #[cfg(not(target_arch = "wasm32"))]
+    fn block_on<F: Future>(&self, future: F) -> F::Output;
     /// Connects to the websocket endpoint
     async fn websocket_connect(
         &self,
@@ -97,7 +98,7 @@ pub(crate) trait ClientEnv {
         url: &str,
         method: FetchMethod,
         headers: Option<HashMap<String, String>>,
-        body: Option<Vec<u8>>,
+        body: Option<String>,
         timeout_ms: Option<u32>,
     ) -> ClientResult<FetchResult>;
 }
