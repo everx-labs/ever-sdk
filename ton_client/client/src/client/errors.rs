@@ -30,7 +30,7 @@ fn error(code: ErrorCode, message: String) -> ClientError {
 }
 
 pub const CANNOT_SERIALIZE_RESULT: &str =
-    r#"{"source": "client", "code": 18, "message": "Can not serialize result"}"#;
+    r#"{ "code": 18, "message": "Can not serialize result"}"#;
 
 impl Error {
     pub fn is_network_error(error: &ClientError) -> bool {
