@@ -15,6 +15,8 @@
 use serde_json::Value;
 use ton_client::error::ClientError;
 
+pub type CliResult<R> = Result<R, CliError>;
+
 #[derive(Serialize)]
 pub struct CliError {
     pub message: String,
