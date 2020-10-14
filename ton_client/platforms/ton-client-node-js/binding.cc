@@ -158,23 +158,23 @@ void response_handler_func_call(napi_env env, napi_value func, void* context, vo
     args[1] = js_string_from_string_data(env, response->params_json);
     args[2] = js_number(env, response->response_type);
     CHECK(napi_coerce_to_bool(env, js_number(env, response->finished ? 1 : 0), &args[3]));
-    auto finished = response->finished;
     string_data_free(&response->params_json);
     delete response;
     napi_value call_result;
     CHECK(napi_call_function(env, js_global(env), func, 4, args, &call_result));
-    if (finished) {
-        CHECK(napi_unref_threadsafe_function(env, response_handler_func));
-    }
 }
 
 // function(responseHandler?: ResponseHandler): void
 napi_value setResponseHandler(napi_env env, napi_callback_info info)
 {
+    if (response_handler_func) {
+        CHECK(napi_release_threadsafe_function(response_handler_func, napi_tsfn_abort));
+        response_handler_func = nullptr;
+    }
+
     size_t argc = 1;
     napi_value args[1];
     CHECK(napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
     if (argc > 0) {
         CHECK(napi_create_threadsafe_function(
                 env,
@@ -188,11 +188,6 @@ napi_value setResponseHandler(napi_env env, napi_callback_info info)
                 nullptr, // void* context,
                 response_handler_func_call, // napi_threadsafe_function_call_js call_js_cb,
                 &response_handler_func)); // napi_threadsafe_function* result);
-    } else {
-        if (response_handler_func) {
-            CHECK(napi_release_threadsafe_function(response_handler_func, napi_tsfn_abort));
-            response_handler_func = nullptr;
-        }
     }
     return js_undefined(env);
 }
