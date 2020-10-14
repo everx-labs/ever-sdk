@@ -12,20 +12,6 @@ const {
 
 const platform = require('os').platform();
 
-function dylibext() {
-    return { win32: 'dll', darwin: 'dylib' }[platform] || 'so';
-}
-
-const dev = {
-    lib: 'libtonclient.a',
-    dylib: `libtonclient.${dylibext()}`,
-    addon: 'tonclient.node',
-};
-
-// const release = JSON.parse(JSON.stringify(dev));
-
-const config = dev;
-
 async function buildNodeJsAddon() {
     deleteFolderRecursive(root_path('bin'));
     // build sdk release
@@ -44,14 +30,7 @@ async function buildNodeJsAddon() {
     let dir = root_path('bin');
     fs.mkdirSync(dir);
 
-    await gz(['build', 'Release', config.addon], `tonclient_${version}_nodejs_addon_${platform}`);
-    if (platform === 'darwin') {
-        await gz(
-            ['target', 'release', config.dylib],
-            `tonclient_${version}_nodejs_dylib_${platform}`,
-            ['libtonclientnodejs.dylib'], // TODO: for backward compatibility. Remove this on 1.0.0
-        );
-    }
+    await gz(['build', 'Release', 'tonclient.node'], `tonclient_${version}_nodejs_addon_${platform}`);
 }
 
 
