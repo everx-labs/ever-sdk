@@ -26,10 +26,10 @@ pub(crate) async fn subscribe_collection(
     let callback = move |result: ClientResult<ResultOfSubscription>| {
         match result {
             Ok(result) => {
-                callback.send_response(result, crate::net::SubscriptionResponseType::Ok as u32)
+                callback.response(result, crate::net::SubscriptionResponseType::Ok as u32)
             }
             Err(err) => {
-                callback.send_response(err, crate::net::SubscriptionResponseType::Error as u32)
+                callback.response(err, crate::net::SubscriptionResponseType::Error as u32)
             }
         }
         futures::future::ready(())

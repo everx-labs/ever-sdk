@@ -182,15 +182,19 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
 
     module.register_async_fn(
         crate::abi::encode_message,
-        crate::abi::encode::encode_message_api,
+        crate::abi::encode_message::encode_message_api,
     );
     module.register_sync_fn(
         crate::abi::attach_signature,
-        crate::abi::encode::attach_signature_api,
+        crate::abi::encode_message::attach_signature_api,
     );
     module.register_sync_fn(
         crate::abi::decode_message,
-        crate::abi::decode::decode_message_api,
+        crate::abi::decode_message::decode_message_api,
+    );
+    module.register_async_fn(
+        crate::abi::encode_account,
+        crate::abi::encode_account::encode_account_api,
     );
     module.register();
 }

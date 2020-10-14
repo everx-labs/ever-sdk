@@ -18,7 +18,6 @@ use regex::{Captures, Regex};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Value;
-use std::env;
 use std::sync::Arc;
 use ton_client::client::ClientContext;
 use ton_client::error::ClientResult;
@@ -87,7 +86,7 @@ fn get_api() -> ClientResult<API> {
     Ok(ton_client::client::get_api_reference(context)?.api)
 }
 
-pub fn command(_args: env::Args) -> Result<(), CliError> {
+pub fn command(args: &[String]) -> Result<(), CliError> {
     let mut network = "net.ton.dev".to_string();
     let mut state = ParseState::OptionOrFunctionName;
     let mut option = String::new();
@@ -95,7 +94,8 @@ pub fn command(_args: env::Args) -> Result<(), CliError> {
     let mut parameters = String::new();
 
     let api = get_api()?;
-    for arg in env::args().skip(1) {
+    let args = args.iter();
+    for arg in args.skip(1) {
         match state {
             ParseState::OptionOrFunctionName if arg.starts_with("-") => {
                 option = arg[1..].to_string();
@@ -106,12 +106,12 @@ pub fn command(_args: env::Args) -> Result<(), CliError> {
                 state = ParseState::OptionValue
             }
             ParseState::OptionOrFunctionName => {
-                function = arg;
+                function = arg.clone();
                 state = ParseState::Parameters
             }
             ParseState::OptionValue => {
                 match option.as_str() {
-                    "n" | "network" => network = arg,
+                    "n" | "network" => network = arg.clone(),
                     _ => {}
                 }
                 state = ParseState::OptionOrFunctionName
@@ -193,11 +193,11 @@ pub fn command(_args: env::Args) -> Result<(), CliError> {
         }
     });
     let context = unsafe {
-        parse_sync_response::<ContextHandle>(tc_create_context(StringData::from(&config.to_string())))
+        parse_sync_response::<ContextHandle>(tc_create_context(StringData::new(&config.to_string())))
     }?;
 
     let response = unsafe {
-        parse_sync_response::<Value>(tc_request_sync(context, StringData::from(&function), StringData::from(&parameters)))
+        parse_sync_response::<Value>(tc_request_sync(context, StringData::new(&function), StringData::new(&parameters)))
     };
     unsafe { tc_destroy_context(context) };
     let result = match response {

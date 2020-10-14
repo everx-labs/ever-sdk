@@ -23,21 +23,20 @@ extern crate lazy_static;
 #[macro_use]
 extern crate log;
 
+pub mod abi;
+pub mod boc;
+pub mod c_interface;
+pub mod client;
+pub mod crypto;
 pub mod encoding;
 pub mod error;
-pub mod crypto;
-pub mod tvm;
-pub mod abi;
-pub mod client;
-pub mod boc;
-pub mod processing;
-pub mod utils;
-pub mod c_interface;
 pub mod net;
-
-
+pub mod processing;
+pub mod tvm;
+pub mod utils;
 
 #[cfg(test)]
 mod tests;
 
-pub use self::c_interface::interop::*;
+pub use c_interface::interop::*;
+pub use client::{ClientConfig, ClientContext};

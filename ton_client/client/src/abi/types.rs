@@ -12,6 +12,15 @@ pub enum Abi {
     Handle(AbiHandle),
 }
 
+impl Abi {
+    pub(crate) fn json_string(&self) -> String {
+        match self {
+            Self::Serialized(v) => v.to_string(),
+            _ => panic!("Abi handles doesn't supported")
+        }
+    }
+}
+
 /// The ABI function header.
 ///
 /// Includes several hidden function parameters that contract

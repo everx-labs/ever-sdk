@@ -1,38 +1,28 @@
+use std::sync::Arc;
+use ton_client::error::ClientResult;
+use ton_client::net::ResultOfSubscription;
 
 #[tokio::main]
 async fn main() {
-    let context = ton_client::client::create_context(
-        ton_client::client::ClientConfig {
+    let context = Arc::new(
+        ton_client::ClientContext::new(Some(ton_client::ClientConfig {
             abi: None,
             crypto: None,
             network: Some(ton_client::net::NetworkConfig {
                 //server_address: "http://localhost:80".to_owned(),
                 server_address: "cinet.tonlabs.io".to_owned(),
                 ..Default::default()
-            })
-        },
-    ).unwrap();
-
-    let context = std::sync::Arc::new(context);
-
-    let result = ton_client::net::test(
-        context.clone(),
-        ton_client::net::ResultOfSubscribeCollection {
-            handle: 123
-        },
-        |result, flags|  { async move {
-            println!("flags {}", flags);
-        }}
-    ).await;
-
-    return;
+            }),
+        }))
+        .unwrap(),
+    );
 
     let giver_balance = ton_client::net::query_collection(
         context.clone(),
         ton_client::net::ParamsOfQueryCollection {
             collection: "accounts".to_owned(),
             filter: Some(serde_json::json!({
-                "id": { 
+                "id": {
                     "in": [
                         "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94",
                         "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13",
@@ -42,11 +32,11 @@ async fn main() {
             })),
             result: "id balance".to_owned(),
             limit: None,
-            order: None
-        }
+            order: None,
+        },
     )
-        .await
-        .unwrap();
+    .await
+    .unwrap();
 
     if giver_balance.result.is_empty() {
         println!("No giver found");
@@ -60,48 +50,32 @@ async fn main() {
 
     // transaction subscription
 
-    let callback = |_: u32, result: &str, error: &str, _: u32| {
-        if !result.is_empty() {
-            println!("Received:");
-            println!("{}", result);
-        } else {
-            println!("Error:");
-            println!("{}", error);
-        }
-    };
-
-    // ton_client::client::register_callback(
-    //     context.clone(),
-    //     String::new(),
-    //     123,
-    //     Box::new(callback)
-    // );
-
     let subscription = ton_client::net::subscribe_collection(
         context.clone(),
         ton_client::net::ParamsOfSubscribeCollection {
-            callback_id: 123,
             collection: "transactions".to_owned(),
             filter: None,
-            result: "id account_addr".to_owned()
-        }
+            result: "id account_addr".to_owned(),
+        },
+        |result| async {
+            match result {
+                Ok(result) => {
+                    println!("Received:");
+                    println!("{}", result.result);
+                }
+                Err(err) => {
+                    println!("Error:");
+                    println!("{}", err);
+                }
+            }
+        },
     )
-        .await
-        .unwrap();
+    .await
+    .unwrap();
 
     std::thread::sleep(std::time::Duration::from_secs(5));
 
-    ton_client::net::unsubscribe(
-        context.clone(),
-        subscription
-    )
+    ton_client::net::unsubscribe(context.clone(), subscription)
         .await
         .unwrap();
-
-    // ton_client::client::unregister_callback(
-    //     context.clone(),
-    //     ton_client::client::ParamsOfUnregisterCallback {
-    //         callback_id: 123
-    //     }
-    // ).unwrap();
 }

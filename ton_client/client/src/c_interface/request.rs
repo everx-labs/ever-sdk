@@ -13,68 +13,105 @@
  */
 
 use crate::error::{ClientError, ClientResult};
-use crate::{ResponseHandler, ResponseType, StringData};
+use crate::{CResponseHandler, ResponseHandler, ResponseType, StringData};
 use serde::Serialize;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+enum ResponseHandlerImpl {
+    Rust(ResponseHandler),
+    C(CResponseHandler),
+}
 
 pub struct Request {
-    response_handler: ResponseHandler,
     request_id: u32,
+    response_handler: ResponseHandlerImpl,
+    finished: AtomicBool,
 }
 
 impl Request {
-    pub fn new(response_handler: ResponseHandler, request_id: u32) -> Self {
+    pub(crate) fn new(request_id: u32, response_handler: ResponseHandler) -> Self {
         Self {
-            response_handler,
             request_id,
+            response_handler: ResponseHandlerImpl::Rust(response_handler),
+            finished: AtomicBool::new(false),
         }
     }
 
-    fn call_response_handler(
-        &self,
-        params_json: impl Serialize,
-        response_type: u32,
-        finished: bool,
-    ) {
-        match serde_json::to_string(&params_json) {
-            Ok(result) => (self.response_handler)(
-                self.request_id,
-                StringData::from(&result),
-                response_type,
-                finished,
-            ),
-            Err(_) => (self.response_handler)(
-                self.request_id,
-                StringData::from(crate::client::errors::CANNOT_SERIALIZE_RESULT),
+    pub(crate) fn new_with_c_handler(request_id: u32, response_handler: CResponseHandler) -> Self {
+        Self {
+            request_id,
+            response_handler: ResponseHandlerImpl::C(response_handler),
+            finished: AtomicBool::new(false),
+        }
+    }
+
+    pub fn response(&self, params: impl Serialize, response_type: u32) {
+        self.response_serialize(params, response_type, false);
+    }
+
+    pub fn response_result(&self, result: ClientResult<impl Serialize>) {
+        self.response_result_with_finished(result, false)
+    }
+
+    pub fn finish_with_result(&self, result: ClientResult<impl Serialize>) {
+        self.response_result_with_finished(result, true);
+    }
+
+    pub fn finish_with_error(&self, error: ClientError) {
+        self.response_serialize(error, ResponseType::Error as u32, true);
+    }
+
+    fn response_result_with_finished(&self, result: ClientResult<impl Serialize>, finished: bool) {
+        match result {
+            Ok(success) => self.response_serialize(success, ResponseType::Success as u32, finished),
+            Err(error) => self.response_serialize(error, ResponseType::Error as u32, finished),
+        }
+    }
+
+    fn response_serialize(&self, params: impl Serialize, response_type: u32, finished: bool) {
+        match serde_json::to_string(&params) {
+            Ok(result) => self.call_response_handler(result, response_type, finished),
+            Err(_) => self.call_response_handler(
+                crate::client::errors::CANNOT_SERIALIZE_RESULT.into(),
                 response_type,
                 false,
             ),
         };
     }
 
-    pub fn send_result(&self, result: ClientResult<impl Serialize>, finished: bool) {
-        match result {
-            Ok(result) => {
-                self.call_response_handler(result, ResponseType::Success as u32, finished)
-            }
-            Err(err) => self.call_response_handler(err, ResponseType::Error as u32, finished),
+    fn set_finished(&self, finished: bool) -> bool {
+        // We must not change finished flag if it is already finished.
+        if self.finished.load(Ordering::Relaxed) {
+            return true;
         }
+        // We can change flag only `false` -> `true`
+        if finished {
+            self.finished.store(finished, Ordering::Relaxed);
+        }
+        return false;
     }
 
-    pub fn finish_with(&self, result: ClientResult<impl Serialize>) {
-        self.send_result(result, true);
-    }
-
-    pub fn finish_with_error(&self, error: ClientError) {
-        self.call_response_handler(error, ResponseType::Error as u32, true);
-    }
-
-    pub fn send_response(&self, result: impl Serialize, response_type: u32) {
-        self.call_response_handler(result, response_type, false);
+    fn call_response_handler(&self, params_json: String, response_type: u32, finished: bool) {
+        let was_finished = self.set_finished(finished);
+        if was_finished {
+            return;
+        }
+        match self.response_handler {
+            ResponseHandlerImpl::Rust(handler) => {
+                handler(self.request_id, params_json, response_type, finished)
+            }
+            ResponseHandlerImpl::C(handler) => handler(
+                self.request_id,
+                StringData::new(&params_json),
+                response_type,
+                finished,
+            ),
+        }
     }
 }
 
 impl Drop for Request {
     fn drop(&mut self) {
-        (self.response_handler)(self.request_id, "".into(), ResponseType::Nop as u32, true)
+        self.call_response_handler("".into(), ResponseType::Nop as u32, true)
     }
 }
