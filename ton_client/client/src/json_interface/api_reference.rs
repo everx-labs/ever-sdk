@@ -53,7 +53,7 @@ impl ApiReducer {
 
     fn resolve_refs(&self, module_name: &str, ty: &mut Type) {
         match ty {
-            Type::Ref(name) => {
+            Type::Ref { type_name: name } => {
                 if !is_full_name(name) {
                     let full = format!("{}{}", module_name, name);
                     if self.type_aliases.contains_key(&full) {
@@ -68,16 +68,16 @@ impl ApiReducer {
                     self.resolve_refs(module_name, ty);
                 }
             }
-            Type::Array(item) => self.resolve_refs(module_name, item),
-            Type::EnumOfTypes(vars) => {
-                for ty in vars {
+            Type::Array { items } => self.resolve_refs(module_name, items),
+            Type::EnumOfTypes { types } => {
+                for ty in types {
                     self.resolve_refs(module_name, &mut ty.value);
                 }
             }
-            Type::Optional(ty) => self.resolve_refs(module_name, ty),
-            Type::Struct(fields) => {
-                for ty in fields {
-                    self.resolve_refs(module_name, &mut ty.value);
+            Type::Optional { inner } => self.resolve_refs(module_name, inner),
+            Type::Struct { fields } => {
+                for field in fields {
+                    self.resolve_refs(module_name, &mut field.value);
                 }
             }
             _ => {}
@@ -95,7 +95,7 @@ impl ApiReducer {
             self.resolve_refs(module_name, &mut function.params[0].value);
         }
         match &function.result {
-            Type::Generic { name, args } if name == "ClientResult" => {
+            Type::Generic { type_name: name, args } if name == "ClientResult" => {
                 function.result = args[0].clone()
             }
             _ => (),

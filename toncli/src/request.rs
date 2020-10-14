@@ -94,8 +94,7 @@ pub fn command(args: &[String]) -> Result<(), CliError> {
     let mut parameters = String::new();
 
     let api = get_api()?;
-    let args = args.iter();
-    for arg in args.skip(1) {
+    for arg in args.iter() {
         match state {
             ParseState::OptionOrFunctionName if arg.starts_with("-") => {
                 option = arg[1..].to_string();
