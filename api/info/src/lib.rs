@@ -1,4 +1,4 @@
-use serde_derive::{Serialize, Deserialize};
+use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct API {
@@ -35,9 +35,10 @@ pub struct Field {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all="snake_case")]
+#[serde(rename_all = "camelCase")]
+#[serde(tag = "type")]
 pub enum ConstValue {
-    None {},
+    None,
     Bool(String),
     String(String),
     Number(String),
@@ -46,27 +47,29 @@ pub enum ConstValue {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Const {
     pub name: String,
+    #[serde(flatten)]
     pub value: ConstValue,
     pub summary: Option<String>,
     pub description: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all="snake_case")]
+#[serde(rename_all = "camelCase")]
+#[serde(tag = "type")]
 pub enum Type {
-    None {},
-    Any {},
-    Boolean {},
-    String {},
-    Number {},
-    BigInt {},
-    Ref(String),
-    Optional(Box<Type>),
-    Array(Box<Type>),
-    Struct(Vec<Field>),
-    EnumOfConsts(Vec<Const>),
-    EnumOfTypes(Vec<Field>),
-    Generic { name: String, args: Vec<Type> },
+    None,
+    Any,
+    Boolean,
+    String,
+    Number,
+    BigInt,
+    Ref { type_name: String },
+    Optional { inner: Box<Type> },
+    Array { items: Box<Type> },
+    Struct { fields: Vec<Field> },
+    EnumOfConsts { consts: Vec<Const> },
+    EnumOfTypes { types: Vec<Field> },
+    Generic { type_name: String, args: Vec<Type> },
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -29,7 +29,7 @@ pub const DEFAULT_PROCESSING_TIMEOUT: u32 = 40000;
 pub const DEFAULT_WAIT_TIMEOUT: u32 = 40000;
 pub const DEFAULT_OUT_OF_SYNC_THRESHOLD: i64 = 15000;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, ApiType)]
 pub struct NetworkConfig {
     pub server_address: String,
     pub message_retries_count: Option<u8>,
@@ -65,7 +65,7 @@ impl NetworkConfig {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, ApiType)]
 pub enum SortDirection {
     #[serde(rename = "ASC")]
     Ascending,
@@ -73,7 +73,7 @@ pub enum SortDirection {
     Descending
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, ApiType)]
 pub struct OrderBy {
     pub path: String,
     pub direction: SortDirection

@@ -15,7 +15,7 @@ use super::{tc_destroy_string, tc_read_string, tc_request, tc_request_sync};
 use crate::abi::{
     encode_message, Abi, CallSet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
-use crate::c_interface::interop::{ResponseType, StringData};
+use crate::json_interface::interop::{ResponseType, StringData};
 use crate::client::{ClientContext, Error};
 use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
@@ -35,7 +35,7 @@ use tokio::sync::{
     mpsc::{channel, Sender},
     Mutex,
 };
-use crate::c_interface::modules::{AbiModule, ProcessingModule, NetModule};
+use crate::json_interface::modules::{AbiModule, ProcessingModule, NetModule};
 
 mod common;
 
@@ -202,7 +202,7 @@ impl TestClient {
 
     pub(crate) fn wrap_async_callback<P, R, F>(
         self: &TestClient,
-        _: fn(Arc<ClientContext>, P, std::sync::Arc<crate::c_interface::request::Request>) -> F,
+        _: fn(Arc<ClientContext>, P, std::sync::Arc<crate::json_interface::request::Request>) -> F,
         module: api_info::Module,
         function: api_info::Function,
     ) -> AsyncFuncWrapper<P, R>
@@ -525,9 +525,9 @@ impl TestClient {
         CR: DeserializeOwned,
     {
         let process = self.wrap_async_callback(
-            crate::c_interface::processing::process_message,
+            crate::json_interface::processing::process_message,
             ProcessingModule::api(),
-            crate::c_interface::processing::process_message_api(),
+            crate::json_interface::processing::process_message_api(),
         );
         process.call_with_callback(params, callback).await
     }

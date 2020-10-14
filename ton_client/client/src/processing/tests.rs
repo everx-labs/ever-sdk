@@ -10,7 +10,7 @@ use crate::processing::{
 use crate::processing::types::DecodedOutput;
 use crate::tests::{TestClient, EVENTS};
 use api_info::ApiModule;
-use crate::c_interface::modules::ProcessingModule;
+use crate::json_interface::modules::ProcessingModule;
 
 #[tokio::test(core_threads = 2)]
 async fn test_wait_message() {
@@ -31,14 +31,14 @@ async fn test_wait_message() {
     };
 
     let send_message = client.wrap_async_callback(
-        crate::c_interface::processing::send_message,
+        crate::json_interface::processing::send_message,
         ProcessingModule::api(),
-        crate::c_interface::processing::send_message_api(),
+        crate::json_interface::processing::send_message_api(),
     );
     let wait_for_transaction = client.wrap_async_callback(
-        crate::c_interface::processing::wait_for_transaction,
+        crate::json_interface::processing::wait_for_transaction,
         ProcessingModule::api(),
-        crate::c_interface::processing::wait_for_transaction_api(),
+        crate::json_interface::processing::wait_for_transaction_api(),
     );
 
     let encoded = client
