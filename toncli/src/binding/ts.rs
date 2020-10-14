@@ -210,12 +210,18 @@ fn generate_function(
     }
     ts.push_str("\n        responseHandler?: ResponseHandler\n    ): Promise<");
     generate_type_decl(&function.result, "", ts)?;
-    ts.push_str(&format!("> {{\n        return this.client.request(\n            '{}.{}',",
+    ts.push_str(&format!(
+        "> {{\n        return this.client.request(\n            '{}.{}',",
         module.name, function.name
     ));
-    if !function.params.is_empty() {
-        ts.push_str(&format!("\n            {},", function.params[0].name));
-    }
+    ts.push_str(&format!(
+        "\n            {},",
+        if !function.params.is_empty() {
+            &function.params[0].name
+        } else {
+            "undefined"
+        }
+    ));
     ts.push_str("\n            responseHandler,\n        );\n    }\n");
     Ok(())
 }
