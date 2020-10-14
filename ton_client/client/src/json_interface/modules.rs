@@ -22,6 +22,12 @@ pub(crate) struct ClientModule;
 
 fn register_client(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<ClientModule>(handlers);
+    module.register_type::<crate::error::ClientError>();
+    module.register_type::<crate::client::ClientConfig>();
+    module.register_type::<crate::net::NetworkConfig>();
+    module.register_type::<crate::client::CryptoConfig>();
+    module.register_type::<ton_sdk::AbiConfig>();
+
     module.register_sync_fn_without_args(
         crate::client::get_api_reference,
         crate::client::get_api_reference_api,
@@ -37,6 +43,8 @@ pub(crate) struct CryptoModule;
 
 fn register_crypto(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<CryptoModule>(handlers);
+
+    module.register_type::<crate::crypto::SigningBoxHandle>();
 
     // Math
 
@@ -179,6 +187,10 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::abi::FunctionHeader>();
     module.register_type::<crate::abi::CallSet>();
     module.register_type::<crate::abi::DeploySet>();
+    module.register_type::<crate::abi::Signer>();
+    module.register_type::<crate::abi::DecodedMessageType>();
+    module.register_type::<crate::abi::StateInitSource>();
+    module.register_type::<crate::abi::StateInitParams>();
 
     module.register_async_fn(
         crate::abi::encode_message,
@@ -233,6 +245,9 @@ pub(crate) struct NetModule;
 
 fn register_net(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<NetModule>(handlers);
+    module.register_type::<crate::net::OrderBy>();
+    module.register_type::<crate::net::SortDirection>();
+
     module.register_async_fn(
         crate::net::query_collection,
         crate::net::query_collection_api,

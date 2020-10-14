@@ -28,8 +28,8 @@ pub(crate) use client_env::{ClientEnv, FetchMethod, FetchResult, WebSocket};
 use crate::error::ClientResult;
 use std::sync::Arc;
 use api_info::API;
-use crate::c_interface::api_reference::ApiReducer;
-use crate::c_interface::runtime::{Runtime};
+use crate::json_interface::api_reference::ApiReducer;
+use crate::json_interface::runtime::{Runtime};
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfVersion {

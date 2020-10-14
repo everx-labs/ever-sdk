@@ -216,7 +216,9 @@ fn resolve_type_name(name: String) -> api_info::Type {
     match name.as_ref() {
         "String" => api_info::Type::String {},
         "bool" => api_info::Type::Boolean {},
-        "u8" | "u16" | "u32" | "i8" | "i16" | "i32" | "usize" => api_info::Type::Number {},
+        "u8" | "u16" | "u32" | "i8" | "i16" | "i32" | "usize" | "isize" | "f32" => {
+            api_info::Type::Number {}
+        }
         "u64" | "i64" | "u128" | "i128" => api_info::Type::BigInt {},
         _ => api_info::Type::Ref(name),
     }

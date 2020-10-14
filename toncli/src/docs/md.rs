@@ -146,7 +146,7 @@ fn find_type<'a>(api: &'a API, name: &str) -> Option<&'a Field> {
     None
 }
 
-fn doc_type_field(api: &API, field: &Field, md: &mut String) -> CliResult<()> {
+fn doc_type_field(_api: &API, field: &Field, md: &mut String) -> CliResult<()> {
     md.push_str(&format!(
         "- `{}`: _{}_{}\n",
         field.name,
@@ -212,10 +212,10 @@ fn doc_function(api: &API, module: &Module, function: &Function, output: &Output
     md.push_str(&description(&function.description));
     if function.params.len() > 0 {
         md.push_str("## Parameters\n");
-        doc_type_fields(api, module, &function.params[0].value, &mut md);
+        doc_type_fields(api, module, &function.params[0].value, &mut md)?;
     }
     md.push_str("## Result\n");
-    doc_type_fields(api, module, &function.result, &mut md);
+    doc_type_fields(api, module, &function.result, &mut md)?;
     output.write(&format!("{}_{}.md", module.name, function.name), &md)
 }
 

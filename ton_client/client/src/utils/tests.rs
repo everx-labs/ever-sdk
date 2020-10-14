@@ -1,7 +1,7 @@
 use crate::tests::TestClient;
 use crate::utils::{convert_address, AddressStringFormat, ParamsOfConvertAddress};
 use api_info::ApiModule;
-use crate::c_interface::modules::UtilsModule;
+use crate::json_interface::modules::UtilsModule;
 
 #[tokio::test(core_threads = 2)]
 async fn test_utils() {

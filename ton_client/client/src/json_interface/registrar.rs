@@ -16,7 +16,7 @@ use super::handlers::{
     CallHandler, CallNoArgsHandler, SpawnHandler, SpawnHandlerCallback, SpawnNoArgsHandler,
 };
 use super::request::Request;
-use super::runtime::{RuntimeHandlers};
+use super::runtime::RuntimeHandlers;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
 use api_info::{ApiModule, ApiType, Module};
@@ -44,7 +44,16 @@ impl<'h> ModuleReg<'h> {
     }
 
     pub fn register_type<T: ApiType>(&mut self) {
-        self.module.types.push(T::api());
+        let ty = T::api();
+        if self
+            .module
+            .types
+            .iter()
+            .find(|x| x.name == ty.name)
+            .is_none()
+        {
+            self.module.types.push(ty);
+        }
     }
 
     pub fn register_async_fn<P, R, F>(
@@ -62,7 +71,8 @@ impl<'h> ModuleReg<'h> {
         let name = format!("{}.{}", self.module.name, function.name);
         self.module.functions.push(function);
 
-        self.handlers.register_async(name.clone(), Box::new(SpawnHandler::new(handler)));
+        self.handlers
+            .register_async(name.clone(), Box::new(SpawnHandler::new(handler)));
         self.handlers.register_sync(
             name,
             Box::new(CallHandler::new(move |context, params| {
@@ -88,7 +98,8 @@ impl<'h> ModuleReg<'h> {
         let function = api();
         let name = format!("{}.{}", self.module.name, function.name);
         self.module.functions.push(function);
-        self.handlers.register_async(name.clone(), Box::new(SpawnHandlerCallback::new(handler)));
+        self.handlers
+            .register_async(name.clone(), Box::new(SpawnHandlerCallback::new(handler)));
     }
 
     pub fn register_sync_fn<P, R>(
@@ -105,7 +116,8 @@ impl<'h> ModuleReg<'h> {
         let name = format!("{}.{}", self.module.name, function.name);
         self.module.functions.push(function);
 
-        self.handlers.register_sync(name.clone(), Box::new(CallHandler::new(handler)));
+        self.handlers
+            .register_sync(name.clone(), Box::new(CallHandler::new(handler)));
 
         #[cfg(feature = "node_interaction")]
         self.handlers.register_async(
@@ -128,7 +140,8 @@ impl<'h> ModuleReg<'h> {
         let name = format!("{}.{}", self.module.name, function.name);
         self.module.functions.push(function);
 
-        self.handlers.register_sync(name.clone(), Box::new(CallNoArgsHandler::new(handler)));
+        self.handlers
+            .register_sync(name.clone(), Box::new(CallNoArgsHandler::new(handler)));
 
         #[cfg(feature = "node_interaction")]
         self.handlers.register_async(

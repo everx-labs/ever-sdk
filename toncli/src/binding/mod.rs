@@ -12,40 +12,37 @@
  *
  */
 
-mod js;
+mod ts;
 
-use crate::api_item::ApiItem;
-use crate::binding::js::binding_js;
+use crate::binding::ts::binding_ts;
 use crate::command_line::CommandLine;
 use crate::errors::{CliError, CliResult};
+use crate::text_generator::Output;
 use std::sync::Arc;
 use ton_client::ClientContext;
 
 enum Lang {
-    JS,
+    TS,
 }
 
 impl Lang {
     fn parse(command_line: &CommandLine) -> CliResult<Self> {
         match command_line.get_opt("format") {
-            Some("js") => Ok(Lang::JS),
+            Some("ts") => Ok(Lang::TS),
             Some(unk) => Err(CliError::with_message(format!(
                 "Invalid binding language: {}",
                 unk
             ))),
-            _ => Ok(Lang::JS),
+            _ => Ok(Lang::TS),
         }
     }
 }
 
 pub fn command(args: &[String]) -> Result<(), CliError> {
     let command_line = CommandLine::parse(args)?;
-    let mut args = command_line.args.iter();
     let api = ton_client::client::get_api_reference(Arc::new(ClientContext::new(None)?))?.api;
-    let name = args.next().map(|x| x.as_str()).unwrap_or("");
-    let item = ApiItem::from_name(&api, name)?;
     match Lang::parse(&command_line)? {
-        Lang::JS => binding_js(&api, item)?,
+        Lang::TS => binding_ts(&api, Output::parse(&command_line)?)?,
     }
     Ok(())
 }
