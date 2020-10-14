@@ -16,7 +16,7 @@ use super::modules::register_modules;
 use super::request::Request;
 use crate::client::{ClientConfig, ClientContext};
 use crate::error::{ClientError, ClientResult};
-use crate::{ContextHandle};
+use crate::ContextHandle;
 use api_info::{Module, API};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -112,14 +112,12 @@ impl Runtime {
         context: Arc<ClientContext>,
         function_name: String,
         params_json: String,
-        request_id: u32,
-        response_handler: CResponseHandler,
+        request: Request,
     ) {
-        Request::new(response_handler, request_id).finish_with_result(Self::dispatch_sync(
-            context,
-            function_name,
-            params_json,
-        ));
+        match Self::handlers().async_handlers.get(&function_name) {
+            Some(handler) => handler.handle(context, params_json, request),
+            None => request.finish_with_error(ClientError::unknown_function(&function_name)),
+        }
     }
 
     pub fn api() -> &'static API {
