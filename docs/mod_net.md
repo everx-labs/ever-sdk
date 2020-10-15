@@ -35,11 +35,11 @@
 
 ```ts
 type ParamsOfQueryCollection = {
-    collection: String,
+    collection: string,
     filter?: any,
-    result: String,
+    result: string,
     order?: OrderBy[],
-    limit?: Number
+    limit?: number
 };
 
 type ResultOfQueryCollection = {
@@ -65,10 +65,10 @@ function query_collection(
 
 ```ts
 type ParamsOfWaitForCollection = {
-    collection: String,
+    collection: string,
     filter?: any,
-    result: String,
-    timeout?: Number
+    result: string,
+    timeout?: number
 };
 
 type ResultOfWaitForCollection = {
@@ -93,7 +93,7 @@ function wait_for_collection(
 
 ```ts
 type ResultOfSubscribeCollection = {
-    handle: Number
+    handle: number
 };
 
 function unsubscribe(
@@ -110,13 +110,13 @@ function unsubscribe(
 
 ```ts
 type ParamsOfSubscribeCollection = {
-    collection: String,
+    collection: string,
     filter?: any,
-    result: String
+    result: string
 };
 
 type ResultOfSubscribeCollection = {
-    handle: Number
+    handle: number
 };
 
 function subscribe_collection(
@@ -138,7 +138,7 @@ function subscribe_collection(
 
 ```ts
 type OrderBy = {
-    path: String,
+    path: string,
     direction: SortDirection
 };
 ```
@@ -161,11 +161,11 @@ One of the following value:
 
 ```ts
 type ParamsOfQueryCollection = {
-    collection: String,
+    collection: string,
     filter?: any,
-    result: String,
+    result: string,
     order?: OrderBy[],
-    limit?: Number
+    limit?: number
 };
 ```
 - `collection`: _string_ –  collection name (accounts, blocks, transactions, messages, block_signatures)
@@ -189,10 +189,10 @@ type ResultOfQueryCollection = {
 
 ```ts
 type ParamsOfWaitForCollection = {
-    collection: String,
+    collection: string,
     filter?: any,
-    result: String,
-    timeout?: Number
+    result: string,
+    timeout?: number
 };
 ```
 - `collection`: _string_ –  collection name (accounts, blocks, transactions, messages, block_signatures)
@@ -215,7 +215,7 @@ type ResultOfWaitForCollection = {
 
 ```ts
 type ResultOfSubscribeCollection = {
-    handle: Number
+    handle: number
 };
 ```
 - `handle`: _number_ –  handle to subscription. It then can be used in `get_next_subscription_data` function
@@ -232,9 +232,9 @@ type unit = void;
 
 ```ts
 type ParamsOfSubscribeCollection = {
-    collection: String,
+    collection: string,
     filter?: any,
-    result: String
+    result: string
 };
 ```
 - `collection`: _string_ –  collection name (accounts, blocks, transactions, messages, block_signatures)

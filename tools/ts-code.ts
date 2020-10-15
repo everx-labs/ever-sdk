@@ -169,6 +169,14 @@ export class ${Code.upperFirst(module.name)}Module {
             return type.enum_consts.map(c => this.constVariant(c)).join(' | ');
         case ApiTypeIs.BigInt:
             return 'bigint';
+        case ApiTypeIs.Any:
+            return 'any';
+        case ApiTypeIs.String:
+            return 'string';
+        case ApiTypeIs.Number:
+            return 'number';
+        case ApiTypeIs.Boolean:
+            return 'boolean';
         default:
             return type.type;
         }

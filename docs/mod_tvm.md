@@ -26,7 +26,7 @@ null
 ```ts
 type ParamsOfExecuteMessage = {
     message: MessageSource,
-    account: String,
+    account: string,
     mode: ExecutionMode,
     execution_options?: ExecutionOptions
 };
@@ -59,8 +59,8 @@ function execute_message(
 
 ```ts
 type ParamsOfExecuteGet = {
-    account: String,
-    function_name: String,
+    account: string,
+    function_name: string,
     input?: any,
     execution_options?: ExecutionOptions
 };
@@ -99,8 +99,8 @@ One of the following value:
 
 ```ts
 type ExecutionOptions = {
-    blockchain_config?: String,
-    block_time?: Number,
+    blockchain_config?: string,
+    block_time?: number,
     block_lt?: bigint,
     transaction_lt?: bigint
 };
@@ -116,7 +116,7 @@ type ExecutionOptions = {
 ```ts
 type ParamsOfExecuteMessage = {
     message: MessageSource,
-    account: String,
+    account: string,
     mode: ExecutionMode,
     execution_options?: ExecutionOptions
 };
@@ -147,8 +147,8 @@ type ResultOfExecuteMessage = {
 
 ```ts
 type ParamsOfExecuteGet = {
-    account: String,
-    function_name: String,
+    account: string,
+    function_name: string,
     input?: any,
     execution_options?: ExecutionOptions
 };

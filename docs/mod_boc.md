@@ -27,7 +27,7 @@
 
 ```ts
 type ParamsOfParse = {
-    boc: String
+    boc: string
 };
 
 type ResultOfParse = {
@@ -49,7 +49,7 @@ function parse_message(
 
 ```ts
 type ParamsOfParse = {
-    boc: String
+    boc: string
 };
 
 type ResultOfParse = {
@@ -71,7 +71,7 @@ function parse_transaction(
 
 ```ts
 type ParamsOfParse = {
-    boc: String
+    boc: string
 };
 
 type ResultOfParse = {
@@ -93,7 +93,7 @@ function parse_account(
 
 ```ts
 type ParamsOfParse = {
-    boc: String
+    boc: string
 };
 
 type ResultOfParse = {
@@ -115,11 +115,11 @@ function parse_block(
 
 ```ts
 type ParamsOfGetBlockchainConfig = {
-    block_boc: String
+    block_boc: string
 };
 
 type ResultOfGetBlockchainConfig = {
-    config_boc: String
+    config_boc: string
 };
 
 function get_blockchain_config(
@@ -138,7 +138,7 @@ function get_blockchain_config(
 
 ```ts
 type ParamsOfParse = {
-    boc: String
+    boc: string
 };
 ```
 - `boc`: _string_ –  BOC encoded as base64
@@ -158,7 +158,7 @@ type ResultOfParse = {
 
 ```ts
 type ParamsOfGetBlockchainConfig = {
-    block_boc: String
+    block_boc: string
 };
 ```
 - `block_boc`: _string_ –  Key block BOC encoded as base64
@@ -168,7 +168,7 @@ type ParamsOfGetBlockchainConfig = {
 
 ```ts
 type ResultOfGetBlockchainConfig = {
-    config_boc: String
+    config_boc: string
 };
 ```
 - `config_boc`: _string_ –  Blockchain config BOC encoded as base64

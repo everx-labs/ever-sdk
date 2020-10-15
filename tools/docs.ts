@@ -88,7 +88,7 @@ export class Docs extends Code {
         return md;
     }
     
-    typeVariantTupleFields(variant: ApiStruct, indent: string): ApiField[] {
+    tupleFields(variant: ApiStruct, indent: string): ApiField[] {
         let fields = variant.struct_fields;
         if (fields.length !== 1 && fields[0].name !== '') {
             throw new Error(`Expected tuple with single value`);
@@ -97,10 +97,10 @@ export class Docs extends Code {
         if (innerType.type === ApiTypeIs.Ref) {
             const refType = this.findType(innerType.ref_name);
             if (refType && refType.type === ApiTypeIs.Struct) {
-                return this.typeVariantStructFields(refType, indent);
+                return this.structFields(refType, indent);
             }
         } else if (innerType.type === ApiTypeIs.Struct) {
-            return this.typeVariantStructFields(innerType, indent);
+            return this.structFields(innerType, indent);
         }
         return [
             {
@@ -110,13 +110,13 @@ export class Docs extends Code {
         ];
     }
     
-    typeVariantStructFields(variant: ApiStruct, indent: string): ApiField[] {
+    structFields(variant: ApiStruct, indent: string): ApiField[] {
         const fields = variant.struct_fields;
         if (fields.length === 0) {
             return fields;
         }
         if (fields[0].name === '') {
-            return this.typeVariantTupleFields(variant, indent);
+            return this.tupleFields(variant, indent);
         }
         return fields;
     }
@@ -124,7 +124,7 @@ export class Docs extends Code {
     typeVariant(variant: ApiField, indent: string): string {
         let ts = `When _type_ is _'${variant.name}'_\n\n`;
         if (variant.type === ApiTypeIs.Struct) {
-            const fields = this.typeVariantStructFields(variant, indent);
+            const fields = this.structFields(variant, indent);
             let fieldsDecl: string;
             if (fields.length === 0) {
                 fieldsDecl = '';
@@ -203,7 +203,8 @@ export class Docs extends Code {
     field(field: ApiField): string {
         const opt = field.type === ApiTypeIs.Optional ? '?' : '';
         const type = field.type === ApiTypeIs.Optional ? field.optional_inner : field;
-        return `- \`${field.name}\`${opt}: _${this.fieldType(type)}_${summary(field.summary)}\n`;
+        const name = field.name !== '' ? `\`${field.name}\`${opt}: ` : '';
+        return `- ${name}_${this.fieldType(type)}_${summary(field.summary)}\n`;
     }
     
     resolveRef(type: ApiType): ApiField | null {

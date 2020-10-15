@@ -20,12 +20,12 @@
 
 ```ts
 type ParamsOfConvertAddress = {
-    address: String,
+    address: string,
     output_format: AddressStringFormat
 };
 
 type ResultOfConvertAddress = {
-    address: String
+    address: string
 };
 
 function convert_address(
@@ -50,9 +50,9 @@ type AddressStringFormat = {
     type: 'Hex'
 } | {
     type: 'Base64'
-    url: Boolean,
-    test: Boolean,
-    bounce: Boolean
+    url: boolean,
+    test: boolean,
+    bounce: boolean
 };
 ```
 Depends on value of the  `type` field.
@@ -75,7 +75,7 @@ When _type_ is _'Base64'_
 
 ```ts
 type ParamsOfConvertAddress = {
-    address: String,
+    address: string,
     output_format: AddressStringFormat
 };
 ```
@@ -87,7 +87,7 @@ type ParamsOfConvertAddress = {
 
 ```ts
 type ResultOfConvertAddress = {
-    address: String
+    address: string
 };
 ```
 - `address`: _string_ –  address in the specified format

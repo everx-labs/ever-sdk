@@ -41,7 +41,7 @@ function get_api_reference(): Promise<ResultOfGetApiReference>;
 
 ```ts
 type ResultOfVersion = {
-    version: String
+    version: string
 };
 
 function version(): Promise<ResultOfVersion>;
@@ -56,8 +56,8 @@ function version(): Promise<ResultOfVersion>;
 
 ```ts
 type ClientError = {
-    code: Number,
-    message: String,
+    code: number,
+    message: string,
     data: any
 };
 ```
@@ -84,12 +84,12 @@ type ClientConfig = {
 
 ```ts
 type NetworkConfig = {
-    server_address: String,
-    message_retries_count?: Number,
-    message_processing_timeout?: Number,
-    wait_for_timeout?: Number,
+    server_address: string,
+    message_retries_count?: number,
+    message_processing_timeout?: number,
+    wait_for_timeout?: number,
     out_of_sync_threshold?: bigint,
-    access_key?: String
+    access_key?: string
 };
 ```
 - `server_address`: _string_
@@ -104,7 +104,7 @@ type NetworkConfig = {
 
 ```ts
 type CryptoConfig = {
-    fish_param?: String
+    fish_param?: string
 };
 ```
 - `fish_param`?: _string_
@@ -114,8 +114,8 @@ type CryptoConfig = {
 
 ```ts
 type AbiConfig = {
-    message_expiration_timeout?: Number,
-    message_expiration_timeout_grow_factor?: Number
+    message_expiration_timeout?: number,
+    message_expiration_timeout_grow_factor?: number
 };
 ```
 - `message_expiration_timeout`?: _number_
@@ -136,7 +136,7 @@ type ResultOfGetApiReference = {
 
 ```ts
 type ResultOfVersion = {
-    version: String
+    version: string
 };
 ```
 - `version`: _string_ –  core version
