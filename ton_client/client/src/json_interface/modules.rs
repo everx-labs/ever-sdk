@@ -300,6 +300,8 @@ pub struct TvmModule;
 
 fn register_tvm(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<TvmModule>(handlers);
+    module.register_type::<crate::tvm::execute_message::ExecutionMode>();
+    module.register_type::<crate::tvm::execute_message::ExecutionOptions>();
     module.register_async_fn(
         crate::tvm::execute_message,
         crate::tvm::execute_message::execute_message_api,
@@ -308,6 +310,7 @@ fn register_tvm(handlers: &mut RuntimeHandlers) {
         crate::tvm::execute_get,
         crate::tvm::execute_get::execute_get_api,
     );
+    module.register();
 }
 
 /// Misc utility Functions.

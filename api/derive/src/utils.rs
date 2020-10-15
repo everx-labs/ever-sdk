@@ -131,16 +131,16 @@ fn type_to_tokens(t: &api_info::Type) -> TokenStream {
         api_info::Type::Number {} => quote! { api_info::Type::Number {} },
         api_info::Type::BigInt {} => quote! { api_info::Type::BigInt {} },
         api_info::Type::String {} => quote! { api_info::Type::String {} },
-        api_info::Type::Ref { type_name: name } => {
-            quote! { api_info::Type::Ref { type_name: #name.into() } }
+        api_info::Type::Ref { name } => {
+            quote! { api_info::Type::Ref { name: #name.into() } }
         }
         api_info::Type::Optional { inner } => {
             let inner_type = type_to_tokens(inner);
             quote! { api_info::Type::Optional { inner: #inner_type.into() } }
         }
-        api_info::Type::Array { items } => {
-            let items_type = type_to_tokens(items);
-            quote! { api_info::Type::Array { items: #items_type.into() } }
+        api_info::Type::Array { item } => {
+            let item_type = type_to_tokens(item);
+            quote! { api_info::Type::Array { item: #item_type.into() } }
         }
         api_info::Type::Struct { fields } => {
             let field_types = fields.iter().map(|x| field_to_tokens(x));
@@ -154,9 +154,9 @@ fn type_to_tokens(t: &api_info::Type) -> TokenStream {
             let types = types.iter().map(|x| field_to_tokens(x));
             quote! { api_info::Type::EnumOfTypes { types: [#(#types),*].into() } }
         }
-        api_info::Type::Generic { type_name: name, args } => {
+        api_info::Type::Generic { name, args } => {
             let types = args.iter().map(|x| type_to_tokens(x));
-            quote! { api_info::Type::Generic { type_name: #name.into(), args: [#(#types),*].into() } }
+            quote! { api_info::Type::Generic { name: #name.into(), args: [#(#types),*].into() } }
         }
     }
 }
@@ -190,7 +190,7 @@ pub(crate) fn type_from(ty: &Type) -> api_info::Type {
 
 fn array_type_from(ty: &TypeArray) -> api_info::Type {
     api_info::Type::Array {
-        items: Box::new(type_from(ty.elem.as_ref())),
+        item: Box::new(type_from(ty.elem.as_ref())),
     }
 }
 
@@ -222,7 +222,7 @@ fn resolve_type_name(name: String) -> api_info::Type {
             api_info::Type::Number {}
         }
         "u64" | "i64" | "u128" | "i128" => api_info::Type::BigInt {},
-        _ => api_info::Type::Ref { type_name: name },
+        _ => api_info::Type::Ref { name },
     }
 }
 
@@ -236,7 +236,7 @@ fn generic_type_from(
     };
     match name.as_ref() {
         "Option" => get_inner_type().map(|x| api_info::Type::Optional { inner: x.into() }),
-        "Vec" => get_inner_type().map(|x| api_info::Type::Array { items: x.into() }),
+        "Vec" => get_inner_type().map(|x| api_info::Type::Array { item: x.into() }),
         _ => {
             let args = args
                 .args
@@ -249,7 +249,7 @@ fn generic_type_from(
                     }
                 })
                 .collect();
-            Some(api_info::Type::Generic { type_name: name, args })
+            Some(api_info::Type::Generic { name, args })
         }
     }
 }

@@ -41,14 +41,22 @@ fn enum_type(data: &DataEnum) -> api_info::Type {
 fn enum_of_types(data: &DataEnum) -> api_info::Type {
     let types = data.variants.iter().map(|v| {
         let fields = fields_from(&v.fields);
-        field_from(Some(&v.ident), &v.attrs, api_info::Type::Struct { fields })
+        field_from(
+            Some(&v.ident),
+            &v.attrs,
+            api_info::Type::Struct { fields: fields },
+        )
     });
-    api_info::Type::EnumOfTypes { types: types.collect() }
+    api_info::Type::EnumOfTypes {
+        types: types.collect(),
+    }
 }
 
 fn enum_of_consts(data: &DataEnum) -> api_info::Type {
     let consts = data.variants.iter().map(|v| const_from(v));
-    api_info::Type::EnumOfConsts { consts: consts.collect() }
+    api_info::Type::EnumOfConsts {
+        consts: consts.collect(),
+    }
 }
 
 fn const_from(v: &Variant) -> api_info::Const {

@@ -7,6 +7,7 @@ use ton_abi::{Token, TokenValue};
 pub struct AbiHandle(u32);
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+#[serde(tag = "type", content = "value")]
 pub enum Abi {
     Serialized(Value),
     Handle(AbiHandle),
@@ -16,7 +17,7 @@ impl Abi {
     pub(crate) fn json_string(&self) -> String {
         match self {
             Self::Serialized(v) => v.to_string(),
-            _ => panic!("Abi handles doesn't supported")
+            _ => panic!("Abi handles doesn't supported"),
         }
     }
 }

@@ -222,7 +222,6 @@ pub struct ContractImage {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-#[serde(rename_all = "camelCase")]
 pub struct MessageProcessingState {
     /// the last shard block received before the message was sent
     /// or the last shard block checked for the result transaction after the message was sent.
@@ -585,7 +584,6 @@ pub struct ShardDescr {
 }
 
 #[derive(Deserialize, Serialize, Debug, Default, Clone)]
-#[serde(default, rename_all = "camelCase")]
 pub struct LocalRunContext {
     /// boc with config
     #[serde(with = "json_helper::opt_cell")]

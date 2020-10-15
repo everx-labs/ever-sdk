@@ -12,7 +12,6 @@
  *
  */
 
-pub(crate) mod api_reference;
 pub(crate) mod handlers;
 pub(crate) mod interop;
 pub(crate) mod net;

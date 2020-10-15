@@ -18,18 +18,15 @@ mod std_client_env;
 #[cfg(test)]
 mod tests;
 
-pub use client::{
-    ClientConfig, ClientContext, CryptoConfig,
-};
+pub use client::{ClientConfig, ClientContext, CryptoConfig};
 pub use errors::{Error, ErrorCode};
 
 pub(crate) use client_env::{ClientEnv, FetchMethod, FetchResult, WebSocket};
 
 use crate::error::ClientResult;
-use std::sync::Arc;
+use crate::json_interface::runtime::Runtime;
 use api_info::API;
-use crate::json_interface::api_reference::ApiReducer;
-use crate::json_interface::runtime::{Runtime};
+use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfVersion {
@@ -51,9 +48,7 @@ pub struct ResultOfGetApiReference {
 
 #[api_function]
 pub fn get_api_reference(_context: Arc<ClientContext>) -> ClientResult<ResultOfGetApiReference> {
-    let api = ApiReducer::build(Runtime::api());
     Ok(ResultOfGetApiReference {
-        api,
+        api: Runtime::api().clone(),
     })
 }
-

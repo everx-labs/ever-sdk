@@ -65,7 +65,7 @@ impl Block {
             "id master { shard_hashes { workchain_id shard descr { root_hash } } }",
             Some(vec![OrderBy {
                 path: "seq_no".to_owned(),
-                direction: SortDirection::Descending
+                direction: SortDirection::DESC
             }]),
             Some(1),
             None
@@ -91,7 +91,7 @@ impl Block {
                     "after_merge shard",
                     Some(vec![OrderBy {
                         path: "seq_no".to_owned(),
-                        direction: SortDirection::Descending
+                        direction: SortDirection::DESC
                     }]),
                     Some(1),
                     None)
@@ -122,7 +122,7 @@ impl Block {
                     "id",
                     Some(vec![OrderBy {
                         path: "seq_no".to_owned(),
-                        direction: SortDirection::Descending
+                        direction: SortDirection::DESC
                     }]),
                     Some(1),
                     None

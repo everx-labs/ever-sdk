@@ -28,10 +28,8 @@ pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub enum SortDirection {
-    #[serde(rename = "ASC")]
-    Ascending,
-    #[serde(rename = "DESC")]
-    Descending
+    ASC,
+    DESC
 }
 
 #[derive(Serialize, Deserialize, Clone)]

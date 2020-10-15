@@ -67,10 +67,8 @@ impl NetworkConfig {
 
 #[derive(Serialize, Deserialize, Clone, ApiType)]
 pub enum SortDirection {
-    #[serde(rename = "ASC")]
-    Ascending,
-    #[serde(rename = "DESC")]
-    Descending
+    ASC,
+    DESC
 }
 
 #[derive(Serialize, Deserialize, Clone, ApiType)]

@@ -12,16 +12,18 @@
  *
  */
 
-import apiJson from './api.json';
 import {
-    Api, ApiConst,
+    ApiConst,
+    ApiConstValueIs,
     ApiField,
     ApiFunction,
+    ApiFunctionParamsInfo,
     ApiModule,
-    ApiType, Code, parseApi,
+    ApiStruct,
+    ApiType,
+    ApiTypeIs,
+    Code,
 } from './api';
-
-const api: Api = (apiJson as any);
 
 const MODULES_HEADER = `
 import {ResponseHandler} from "./bin";
@@ -29,40 +31,15 @@ import {ResponseHandler} from "./bin";
 interface IClient {
     request(
         functionName: string,
-        functionParams: any,
+        functionParams?: any,
         responseHandler?: ResponseHandler
     ): Promise<any>;
 }
 `;
 
-class TSCode extends Code {
-    private responseHandlerParam: ApiField;
-    private undefinedParam: ApiField;
-    
-    constructor(api: Api) {
-        super(api);
-        const module = api.modules[0];
-        this.responseHandlerParam = {
-            api,
-            module,
-            name: 'responseHandler',
-            type: 'optional',
-            inner: {
-                api,
-                module,
-                type: 'ref',
-                type_name: 'ResponseHandler',
-            },
-        };
-        
-        this.undefinedParam = {
-            name: 'undefined',
-            type: 'none',
-            api,
-            module,
-        };
-        
-        
+export class TSCode extends Code {
+    language(): string {
+        return 'ts';
     }
     
     module(module: ApiModule): string {
@@ -91,8 +68,8 @@ export class ${Code.upperFirst(module.name)}Module {
     }
     
     field(field: ApiField, indent: string): string {
-        const name = `${field.name}${field.type === 'optional' ? '?' : ''}`;
-        const type = field.type === 'optional' ? field.inner : field;
+        const name = `${field.name}${field.type === ApiTypeIs.Optional ? '?' : ''}`;
+        const type = field.type === ApiTypeIs.Optional ? field.optional_inner : field;
         return `${indent}${name}: ${this.type(type, indent)}`;
     }
     
@@ -100,10 +77,51 @@ export class ${Code.upperFirst(module.name)}Module {
         return fields.map(f => this.field(f, indent)).join(',\n');
     }
     
+    typeVariantTupleFields(variant: ApiStruct, indent: string): ApiField[] {
+        let fields = variant.struct_fields;
+        if (fields.length !== 1 && fields[0].name !== '') {
+            throw new Error(`Expected tuple with single value`);
+        }
+        const innerType = fields[0];
+        if (innerType.type === ApiTypeIs.Ref) {
+            const refType = this.findType(innerType.ref_name);
+            if (refType && refType.type === ApiTypeIs.Struct) {
+                return this.typeVariantStructFields(refType, indent);
+            }
+        } else if (innerType.type === ApiTypeIs.Struct) {
+            return this.typeVariantStructFields(innerType, indent);
+        }
+        return [
+            {
+                ...innerType,
+                name: 'value',
+            },
+        ];
+    }
+    
+    typeVariantStructFields(variant: ApiStruct, indent: string): ApiField[] {
+        const fields = variant.struct_fields;
+        if (fields.length === 0) {
+            return fields;
+        }
+        if (fields[0].name === '') {
+            return this.typeVariantTupleFields(variant, indent);
+        }
+        return fields;
+    }
+    
     typeVariant(variant: ApiField, indent: string): string {
-        if (variant.type === 'struct') {
-            const fields = this.fields(variant.fields, `${indent}    `);
-            return `{\n${indent}    type: '${variant.name}',\n${fields}\n${indent}}`;
+        if (variant.type === ApiTypeIs.Struct) {
+            const fields = this.typeVariantStructFields(variant, indent);
+            let fieldsDecl: string;
+            if (fields.length === 0) {
+                fieldsDecl = '';
+            } else {
+                fieldsDecl = `\n${this.fields(fields, `${indent}    `)}`;
+            }
+            return `{\n${indent}    type: '${variant.name}'${fieldsDecl}\n${indent}}`;
+        } else if (variant.type === ApiTypeIs.None) {
+            return `'${variant.name}'`;
         } else {
             return this.type(variant, indent);
         }
@@ -111,41 +129,45 @@ export class ${Code.upperFirst(module.name)}Module {
     
     constVariant(variant: ApiConst): string {
         switch (variant.type) {
-        case 'string':
+        case ApiConstValueIs.String:
             return `'${variant.value}'`;
-        case 'none':
-            return variant.name;
-        default:
+        case ApiConstValueIs.None:
+            return `'${variant.name}'`;
+        case ApiConstValueIs.Bool:
             return variant.value;
+        case ApiConstValueIs.Number:
+            return variant.value;
+        default:
+            return '';
         }
     }
     
     type(type: ApiType, indent: string): string {
         switch (type.type) {
-        case 'none':
+        case ApiTypeIs.None:
             return 'void';
-        case 'ref':
-            if (type.type_name === 'Value' || type.type_name === 'API') {
+        case ApiTypeIs.Ref:
+            if (type.ref_name === 'Value' || type.ref_name === 'API') {
                 return 'any';
             }
-            const parts = type.type_name.split('.');
+            const parts = type.ref_name.split('.');
             return parts[parts.length - 1];
-        case 'optional':
-            return `${this.type(type.inner, indent)} | null`;
-        case 'struct':
-            const fields = type.fields;
+        case ApiTypeIs.Optional:
+            return `${this.type(type.optional_inner, indent)} | null`;
+        case ApiTypeIs.Struct:
+            const fields = type.struct_fields;
             if (fields.length === 1 && fields[0].name === '') {
                 return this.type(fields[0], indent);
             } else {
                 return `{\n${this.fields(fields, `${indent}    `)}\n${indent}}`;
             }
-        case 'enumOfTypes':
-            return type.types.map(x => this.typeVariant(x, indent)).join(' | ');
-        case 'array':
-            return `${this.type(type.items, indent)}[]`;
-        case 'enumOfConsts':
-            return type.consts.map(c => this.constVariant(c)).join(' | ');
-        case 'bigInt':
+        case ApiTypeIs.EnumOfTypes:
+            return type.enum_types.map(x => this.typeVariant(x, indent)).join(' | ');
+        case ApiTypeIs.Array:
+            return `${this.type(type.array_item, indent)}[]`;
+        case ApiTypeIs.EnumOfConsts:
+            return type.enum_consts.map(c => this.constVariant(c)).join(' | ');
+        case ApiTypeIs.BigInt:
             return 'bigint';
         default:
             return type.type;
@@ -156,48 +178,53 @@ export class ${Code.upperFirst(module.name)}Module {
         return `export type ${type.name} = ${this.type(type, '')};\n\n`;
     }
     
-    functionImpl(func: ApiFunction): string {
-        const name = Code.camel(func.name.split('_'));
-        const paramsDecl = [...func.params, this.responseHandlerParam]
-            .map(p => `        ${this.field(p, '')}`).join('\n');
-        const paramsCall = [
-            ...(func.params.length > 0 ? func.params : [this.undefinedParam]),
-            this.responseHandlerParam,
-        ].map(p => `            ${p.name},`).join('\n');
-        const resultDecl = this.type(func.result, '');
-        const callName = `${func.module.name}.${func.name}`;
-        
-        return `
-    ${name}(
-${paramsDecl}
-    ): Promise<${resultDecl}> {
-        return this.client.request(
-            '${callName}',
-${paramsCall}
-        );
-    }\n`;
+    paramsDecls(paramsInfo: ApiFunctionParamsInfo): string[] {
+        const decls: string[] = [];
+        if (paramsInfo.params) {
+            decls.push(`${paramsInfo.params.name}: ${this.type(paramsInfo.params, '')}`);
+        }
+        if (paramsInfo.hasResponseHandler) {
+            decls.push('responseHandler?: ResponseHandler');
+        }
+        return decls;
     }
     
-    
     functionInterface(func: ApiFunction): string {
-        const name = Code.camel(func.name.split('_'));
-        const paramsDecl = [...func.params, this.responseHandlerParam]
-            .map(p => `    ${p.name}: ${this.type(p, '')},`).join('\n');
+        const paramsInfo = this.getFunctionParamsInfo(func);
+        const paramsDecl = this.paramsDecls(paramsInfo).map(p => `    ${p},`).join('\n');
         const resultDecl = this.type(func.result, '');
         return `
-function ${name}(
+function ${func.name}(
 ${paramsDecl}
 ): Promise<${resultDecl}>;\n`;
     
     }
     
+    functionImpl(func: ApiFunction): string {
+        const paramsInfo = this.getFunctionParamsInfo(func);
+        const paramsDecl = this.paramsDecls(paramsInfo).map(p => `${p}`).join(', ');
+        const calls = [`'${func.module.name}.${func.name}'`];
+        if (paramsInfo.params) {
+            calls.push(`${paramsInfo.params.name}`);
+        }
+        if (paramsInfo.hasResponseHandler) {
+            if (!paramsInfo.params) {
+                calls.push('undefined');
+            }
+            calls.push('responseHandler');
+        }
+        return `
+    ${func.name}(${paramsDecl}): Promise<${this.type(func.result, '')}> {
+        return this.client.request(${calls.join(', ')});
+    }\n`;
+    }
+    
+    
     modules(): string {
-        const modules = api.modules.map(m => this.module(m)).join('');
         return `
 ${MODULES_HEADER}
-${modules}
+${this.api.modules.map(m => this.module(m)).join('')}
 `;
     }
+    
 }
-
-export const TS: Code = new TSCode(parseApi(apiJson));
