@@ -308,6 +308,7 @@ fn register_tvm(handlers: &mut RuntimeHandlers) {
         crate::tvm::execute_get,
         crate::tvm::execute_get::execute_get_api,
     );
+    module.register();
 }
 
 /// Misc utility Functions.
