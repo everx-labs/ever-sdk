@@ -11,9 +11,9 @@ typedef struct  {
 } tc_string_handle_t;
 
 enum tc_response_types_t {
-    tc_end = 0,
-    tc_response_success = 1,
-    tc_response_error = 2,
+    tc_response_success = 0,
+    tc_response_error = 1,
+    tc_response_nop = 2,
     tc_response_custom = 100,
 };
 
