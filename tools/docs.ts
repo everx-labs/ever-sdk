@@ -1,4 +1,16 @@
-import {ApiConst, ApiField, ApiFunction, ApiModule, ApiType, ApiTypeIs, Code} from './api';
+import {
+    ApiConst,
+    ApiConstValueIs,
+    ApiEnumOfConsts,
+    ApiEnumOfTypes,
+    ApiField,
+    ApiFunction,
+    ApiModule,
+    ApiStruct,
+    ApiType,
+    ApiTypeIs,
+    Code,
+} from './api';
 
 function summary(summary?: string): string {
     return summary ? ` – ${summary}` : '';
@@ -35,12 +47,121 @@ export class Docs extends Code {
     
     typeDef(type: ApiField) {
         let md = '';
-        md += `## ${type.name}\n\n${description(type.description)}`;
-        md += this.fields(type);
+        md += `## ${type.name}\n`;
+        md += `${description(type.description)}\n`;
+        md += `\`\`\`${this.code.language()}\n${this.code.typeDef(type)}\`\`\`\n`;
+        md += this.type(type, '');
         return md;
     }
     
     type(type: ApiType, indent: string): string {
+        switch (type.type) {
+        case ApiTypeIs.Ref:
+            const refType = this.findType(type.ref_name);
+            if (refType) {
+                return this.type(refType, indent);
+            }
+            return `_${type.ref_name}_`;
+        case ApiTypeIs.Optional:
+            return `Optional value of:\n\n${this.type(type.optional_inner, indent)}`;
+        case ApiTypeIs.Struct:
+            return this.typeFields(type.struct_fields);
+        case ApiTypeIs.EnumOfTypes:
+            return this.enumOfTypes(type, indent);
+        case ApiTypeIs.EnumOfConsts:
+            return this.enumOfConsts(type);
+        }
+        return '';
+    }
+    
+    private typeFields(fields: ApiField[]): string {
+        let md = '';
+        for (const field of fields) {
+            md += this.field(field);
+        }
+        return md;
+    }
+    
+    private enumOfTypes(type: ApiEnumOfTypes, indent: string) {
+        let md = `Depends on value of the  \`type\` field.\n\n`;
+        md += type.enum_types.map(v => this.typeVariant(v, indent)).join('\n');
+        return md;
+    }
+    
+    typeVariantTupleFields(variant: ApiStruct, indent: string): ApiField[] {
+        let fields = variant.struct_fields;
+        if (fields.length !== 1 && fields[0].name !== '') {
+            throw new Error(`Expected tuple with single value`);
+        }
+        const innerType = fields[0];
+        if (innerType.type === ApiTypeIs.Ref) {
+            const refType = this.findType(innerType.ref_name);
+            if (refType && refType.type === ApiTypeIs.Struct) {
+                return this.typeVariantStructFields(refType, indent);
+            }
+        } else if (innerType.type === ApiTypeIs.Struct) {
+            return this.typeVariantStructFields(innerType, indent);
+        }
+        return [
+            {
+                ...innerType,
+                name: 'value',
+            },
+        ];
+    }
+    
+    typeVariantStructFields(variant: ApiStruct, indent: string): ApiField[] {
+        const fields = variant.struct_fields;
+        if (fields.length === 0) {
+            return fields;
+        }
+        if (fields[0].name === '') {
+            return this.typeVariantTupleFields(variant, indent);
+        }
+        return fields;
+    }
+    
+    typeVariant(variant: ApiField, indent: string): string {
+        let ts = `When _type_ is _'${variant.name}'_\n\n`;
+        if (variant.type === ApiTypeIs.Struct) {
+            const fields = this.typeVariantStructFields(variant, indent);
+            let fieldsDecl: string;
+            if (fields.length === 0) {
+                fieldsDecl = '';
+            } else {
+                fieldsDecl = `\n${this.typeFields(fields)}`;
+            }
+            ts += fieldsDecl;
+        } else if (variant.type === ApiTypeIs.None) {
+            ts += `\`${variant.name}\``;
+        } else {
+            ts += this.type(variant, indent);
+        }
+        return ts;
+    }
+    
+    private enumOfConsts(type: ApiEnumOfConsts) {
+        let md = `One of the following value:\n\n`;
+        md += type.enum_consts.map(c => this.constVariant(c)).join('');
+        return md;
+    }
+    
+    
+    constVariant(variant: ApiConst): string {
+        let md = '- \`';
+        switch (variant.type) {
+        case ApiConstValueIs.None:
+            md += variant.name;
+            break;
+        default:
+            md += variant.value;
+            break;
+        }
+        md += `\`${summary(variant.summary)}\n`;
+        return md;
+    }
+    
+    fieldType(type: ApiType): string {
         switch (type.type) {
         case ApiTypeIs.Ref:
             if (type.ref_name === 'Value') {
@@ -51,15 +172,15 @@ export class Docs extends Code {
                 ? `[${parts[1]}](mod_${parts[0]}.md#${parts[1]})`
                 : type.ref_name;
         case ApiTypeIs.Optional:
-            return `${this.type(type.optional_inner, indent)}?`;
+            return `${this.fieldType(type.optional_inner)}?`;
         case ApiTypeIs.Struct:
-            return '{}';
+            return 'struct';
         case ApiTypeIs.EnumOfTypes:
-            return 'A | B';
+            return 'enum';
         case ApiTypeIs.EnumOfConsts:
-            return '0 | 1';
+            return 'const';
         case ApiTypeIs.Array:
-            return `${this.type(type.array_item, indent)}[]`;
+            return `${this.fieldType(type.array_item)}[]`;
         case ApiTypeIs.String:
             return 'string';
         case ApiTypeIs.Any:
@@ -69,7 +190,7 @@ export class Docs extends Code {
         case ApiTypeIs.Number:
             return 'number';
         case ApiTypeIs.Generic:
-            return `${type.generic_name}<>`;
+            return `${type.generic_name}<${this.fieldType(type.generic_args[0])}>`;
         case ApiTypeIs.BigInt:
             return 'bigint';
         case ApiTypeIs.None:
@@ -77,53 +198,48 @@ export class Docs extends Code {
         default:
             return '';
         }
-        
     }
     
     field(field: ApiField): string {
-        return field.type === ApiTypeIs.Optional
-            ? `- \`${field.name}\`?: _${this.type(
-                field.optional_inner,
-                '',
-            )}_${summary(field.summary)}\n`
-            : `- \`${field.name}\`: _${this.type(field, '')}_${summary(field.summary)}\n`;
+        const opt = field.type === ApiTypeIs.Optional ? '?' : '';
+        const type = field.type === ApiTypeIs.Optional ? field.optional_inner : field;
+        return `- \`${field.name}\`${opt}: _${this.fieldType(type)}_${summary(field.summary)}\n`;
     }
     
-    
-    fields(type: ApiType) {
-        let md = '';
-        
-        switch (type.type) {
-        case ApiTypeIs.Ref:
-            const refType = this.findType(type.ref_name);
-            if (refType) {
-                md += this.fields(refType);
-            }
-            break;
-        case ApiTypeIs.Optional:
-            md += this.fields(type.optional_inner);
-            break;
-        case ApiTypeIs.Struct:
-            for (const f of type.struct_fields) {
-                md += this.field(f);
-            }
-            break;
-        }
-        return md;
+    resolveRef(type: ApiType): ApiField | null {
+        return type.type === ApiTypeIs.Ref ? this.findType(type.ref_name) : null;
     }
     
     functionInterface(func: ApiFunction) {
         let md = '';
         md += `## ${func.name}\n\n${description(func.description)}`;
         
-        md += `\`\`\`${this.code.language()}\n${this.code.functionInterface(func)}\n\`\`\`\n`;
+        const funcInfo = this.getFunctionInfo(func);
+        let code = '';
+        if (funcInfo.params) {
+            const params = this.resolveRef(funcInfo.params);
+            if (params) {
+                code += `${this.code.typeDef(params)}\n`;
+            }
+        }
+        const result = this.resolveRef(func.result);
+        if (result) {
+            code += `${this.code.typeDef(result)}\n`;
+        }
+        code += this.code.functionInterface(func);
+        md += `\`\`\`${this.code.language()}\n${code}\n\`\`\`\n`;
         
-        if (func.params.length > 0) {
+        if (funcInfo.params || funcInfo.hasResponseHandler) {
             md += '### Parameters\n';
-            md += this.fields(func.params[0]);
+            if (funcInfo.params) {
+                md += this.type(funcInfo.params, '');
+            }
+            if (funcInfo.hasResponseHandler) {
+                md += `- \`responseHandler\`?: _ResponseHandler_ – additional responses handler.`;
+            }
         }
         md += '### Result\n\n';
-        md += this.fields(func.result);
+        md += this.type(func.result, '');
         return md;
     }
     
@@ -168,17 +284,8 @@ export class Docs extends Code {
         return md;
     }
     
-    constVariant(_variant: ApiConst): string {
-        return '';
-    }
-    
     functionImpl(func: ApiFunction): string {
         return this.functionInterface(func);
     }
-    
-    typeVariant(_variant: ApiField, _indent: string): string {
-        return '';
-    }
-    
 }
 

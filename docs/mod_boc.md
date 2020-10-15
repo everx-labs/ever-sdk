@@ -26,12 +26,17 @@
 ## parse_message
 
 ```ts
+type ParamsOfParse = {
+    boc: String
+};
 
-function parseMessage(
+type ResultOfParse = {
+    parsed: any
+};
+
+function parse_message(
     params: ParamsOfParse,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfParse>;
-
 ```
 ### Parameters
 - `boc`: _string_ –  BOC encoded as base64
@@ -43,12 +48,17 @@ function parseMessage(
 ## parse_transaction
 
 ```ts
+type ParamsOfParse = {
+    boc: String
+};
 
-function parseTransaction(
+type ResultOfParse = {
+    parsed: any
+};
+
+function parse_transaction(
     params: ParamsOfParse,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfParse>;
-
 ```
 ### Parameters
 - `boc`: _string_ –  BOC encoded as base64
@@ -60,12 +70,17 @@ function parseTransaction(
 ## parse_account
 
 ```ts
+type ParamsOfParse = {
+    boc: String
+};
 
-function parseAccount(
+type ResultOfParse = {
+    parsed: any
+};
+
+function parse_account(
     params: ParamsOfParse,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfParse>;
-
 ```
 ### Parameters
 - `boc`: _string_ –  BOC encoded as base64
@@ -77,12 +92,17 @@ function parseAccount(
 ## parse_block
 
 ```ts
+type ParamsOfParse = {
+    boc: String
+};
 
-function parseBlock(
+type ResultOfParse = {
+    parsed: any
+};
+
+function parse_block(
     params: ParamsOfParse,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfParse>;
-
 ```
 ### Parameters
 - `boc`: _string_ –  BOC encoded as base64
@@ -94,12 +114,17 @@ function parseBlock(
 ## get_blockchain_config
 
 ```ts
+type ParamsOfGetBlockchainConfig = {
+    block_boc: String
+};
 
-function getBlockchainConfig(
+type ResultOfGetBlockchainConfig = {
+    config_boc: String
+};
+
+function get_blockchain_config(
     params: ParamsOfGetBlockchainConfig,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfGetBlockchainConfig>;
-
 ```
 ### Parameters
 - `block_boc`: _string_ –  Key block BOC encoded as base64
@@ -111,21 +136,41 @@ function getBlockchainConfig(
 # Types
 ## ParamsOfParse
 
+```ts
+type ParamsOfParse = {
+    boc: String
+};
+```
 - `boc`: _string_ –  BOC encoded as base64
 
 
 ## ResultOfParse
 
+```ts
+type ResultOfParse = {
+    parsed: any
+};
+```
 - `parsed`: _any_ –  JSON containing parsed BOC
 
 
 ## ParamsOfGetBlockchainConfig
 
+```ts
+type ParamsOfGetBlockchainConfig = {
+    block_boc: String
+};
+```
 - `block_boc`: _string_ –  Key block BOC encoded as base64
 
 
 ## ResultOfGetBlockchainConfig
 
+```ts
+type ResultOfGetBlockchainConfig = {
+    config_boc: String
+};
+```
 - `config_boc`: _string_ –  Blockchain config BOC encoded as base64
 
 

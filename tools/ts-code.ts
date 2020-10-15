@@ -17,7 +17,7 @@ import {
     ApiConstValueIs,
     ApiField,
     ApiFunction,
-    ApiFunctionParamsInfo,
+    ApiFunctionInfo,
     ApiModule,
     ApiStruct,
     ApiType,
@@ -46,7 +46,7 @@ export class TSCode extends Code {
         let ts = `// ${module.name} module\n\n`;
         
         for (const type of module.types) {
-            ts += this.typeDef(type);
+            ts += `export ${this.typeDef(type)}`;
         }
         
         ts += `
@@ -175,10 +175,10 @@ export class ${Code.upperFirst(module.name)}Module {
     }
     
     typeDef(type: ApiField): string {
-        return `export type ${type.name} = ${this.type(type, '')};\n\n`;
+        return `type ${type.name} = ${this.type(type, '')};\n`;
     }
     
-    paramsDecls(paramsInfo: ApiFunctionParamsInfo): string[] {
+    paramsDecls(paramsInfo: ApiFunctionInfo): string[] {
         const decls: string[] = [];
         if (paramsInfo.params) {
             decls.push(`${paramsInfo.params.name}: ${this.type(paramsInfo.params, '')}`);
@@ -190,18 +190,17 @@ export class ${Code.upperFirst(module.name)}Module {
     }
     
     functionInterface(func: ApiFunction): string {
-        const paramsInfo = this.getFunctionParamsInfo(func);
-        const paramsDecl = this.paramsDecls(paramsInfo).map(p => `    ${p},`).join('\n');
+        const paramsInfo = this.getFunctionInfo(func);
+        const paramsDecls = this.paramsDecls(paramsInfo);
+        const paramsDecl = paramsDecls.length > 0
+            ? `\n${paramsDecls.map(p => `    ${p},`).join('\n')}\n`
+            : '';
         const resultDecl = this.type(func.result, '');
-        return `
-function ${func.name}(
-${paramsDecl}
-): Promise<${resultDecl}>;\n`;
-    
+        return `function ${func.name}(${paramsDecl}): Promise<${resultDecl}>;`;
     }
     
     functionImpl(func: ApiFunction): string {
-        const paramsInfo = this.getFunctionParamsInfo(func);
+        const paramsInfo = this.getFunctionInfo(func);
         const paramsDecl = this.paramsDecls(paramsInfo).map(p => `${p}`).join(', ');
         const calls = [`'${func.module.name}.${func.name}'`];
         if (paramsInfo.params) {

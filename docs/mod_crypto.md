@@ -178,12 +178,17 @@
  See [https://en.wikipedia.org/wiki/Integer_factorization]
 
 ```ts
+type ParamsOfFactorize = {
+    composite: String
+};
+
+type ResultOfFactorize = {
+    factors: String[]
+};
 
 function factorize(
     params: ParamsOfFactorize,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfFactorize>;
-
 ```
 ### Parameters
 - `composite`: _string_ –  Hexadecimal representation of u64 composite number.
@@ -198,12 +203,19 @@ function factorize(
  See [https://en.wikipedia.org/wiki/Modular_exponentiation]
 
 ```ts
+type ParamsOfModularPower = {
+    base: String,
+    exponent: String,
+    modulus: String
+};
 
-function modularPower(
+type ResultOfModularPower = {
+    modular_power: String
+};
+
+function modular_power(
     params: ParamsOfModularPower,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfModularPower>;
-
 ```
 ### Parameters
 - `base`: _string_ –  `base` argument of calculation.
@@ -219,12 +231,17 @@ function modularPower(
  Calculates CRC16 using TON algorithm.
 
 ```ts
+type ParamsOfTonCrc16 = {
+    data: String
+};
 
-function tonCrc16(
+type ResultOfTonCrc16 = {
+    crc: Number
+};
+
+function ton_crc16(
     params: ParamsOfTonCrc16,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfTonCrc16>;
-
 ```
 ### Parameters
 - `data`: _string_ –  Input data for CRC calculation. Encoded with `base64`.
@@ -236,12 +253,17 @@ function tonCrc16(
 ## generate_random_bytes
 
 ```ts
+type ParamsOfGenerateRandomBytes = {
+    length: Number
+};
 
-function generateRandomBytes(
+type ResultOfGenerateRandomBytes = {
+    bytes: String
+};
+
+function generate_random_bytes(
     params: ParamsOfGenerateRandomBytes,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfGenerateRandomBytes>;
-
 ```
 ### Parameters
 - `length`: _number_ –  Size of random byte array.
@@ -255,12 +277,17 @@ function generateRandomBytes(
  Converts public key to ton safe_format
 
 ```ts
+type ParamsOfConvertPublicKeyToTonSafeFormat = {
+    public_key: String
+};
 
-function convertPublicKeyToTonSafeFormat(
+type ResultOfConvertPublicKeyToTonSafeFormat = {
+    ton_public_key: String
+};
+
+function convert_public_key_to_ton_safe_format(
     params: ParamsOfConvertPublicKeyToTonSafeFormat,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfConvertPublicKeyToTonSafeFormat>;
-
 ```
 ### Parameters
 - `public_key`: _string_ –  Public key.
@@ -274,11 +301,12 @@ function convertPublicKeyToTonSafeFormat(
  Generates random ed25519 key pair.
 
 ```ts
+type KeyPair = {
+    public: String,
+    secret: String
+};
 
-function generateRandomSignKeys(
-    responseHandler: ResponseHandler | null,
-): Promise<KeyPair>;
-
+function generate_random_sign_keys(): Promise<KeyPair>;
 ```
 ### Result
 
@@ -291,12 +319,19 @@ function generateRandomSignKeys(
  Signs a data using the provided keys.
 
 ```ts
+type ParamsOfSign = {
+    unsigned: String,
+    keys: KeyPair
+};
+
+type ResultOfSign = {
+    signed: String,
+    signature: String
+};
 
 function sign(
     params: ParamsOfSign,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfSign>;
-
 ```
 ### Parameters
 - `unsigned`: _string_ –  Data that must be signed.
@@ -313,12 +348,18 @@ function sign(
  Raises error in case when verification is failed.
 
 ```ts
+type ParamsOfVerifySignature = {
+    signed: String,
+    public: String
+};
 
-function verifySignature(
+type ResultOfVerifySignature = {
+    unsigned: String
+};
+
+function verify_signature(
     params: ParamsOfVerifySignature,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfVerifySignature>;
-
 ```
 ### Parameters
 - `signed`: _string_ –  Signed data that must be verified.
@@ -333,12 +374,17 @@ function verifySignature(
  Calculates SHA256 hash of the specified data.
 
 ```ts
+type ParamsOfHash = {
+    data: String
+};
+
+type ResultOfHash = {
+    hash: String
+};
 
 function sha256(
     params: ParamsOfHash,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfHash>;
-
 ```
 ### Parameters
 - `data`: _string_ –  Input data for hash calculation. Encoded with `base64`.
@@ -352,12 +398,17 @@ function sha256(
 Calculates SHA512 hash of the specified data.
 
 ```ts
+type ParamsOfHash = {
+    data: String
+};
+
+type ResultOfHash = {
+    hash: String
+};
 
 function sha512(
     params: ParamsOfHash,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfHash>;
-
 ```
 ### Parameters
 - `data`: _string_ –  Input data for hash calculation. Encoded with `base64`.
@@ -372,12 +423,22 @@ function sha512(
  See [https://en.wikipedia.org/wiki/Scrypt].
 
 ```ts
+type ParamsOfScrypt = {
+    password: String,
+    salt: String,
+    log_n: Number,
+    r: Number,
+    p: Number,
+    dk_len: Number
+};
+
+type ResultOfScrypt = {
+    key: String
+};
 
 function scrypt(
     params: ParamsOfScrypt,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfScrypt>;
-
 ```
 ### Parameters
 - `password`: _string_ –  The password bytes to be hashed.
@@ -396,12 +457,18 @@ function scrypt(
  Generates a key pair for signing from the secret key
 
 ```ts
+type ParamsOfNaclSignKeyPairFromSecret = {
+    secret: String
+};
 
-function naclSignKeypairFromSecretKey(
+type KeyPair = {
+    public: String,
+    secret: String
+};
+
+function nacl_sign_keypair_from_secret_key(
     params: ParamsOfNaclSignKeyPairFromSecret,
-    responseHandler: ResponseHandler | null,
 ): Promise<KeyPair>;
-
 ```
 ### Parameters
 - `secret`: _string_ –  secret key
@@ -416,12 +483,18 @@ function naclSignKeypairFromSecretKey(
  Signs data using the signer's secret key.
 
 ```ts
+type ParamsOfNaclSign = {
+    unsigned: String,
+    secret: String
+};
 
-function naclSign(
+type ResultOfNaclSign = {
+    signed: String
+};
+
+function nacl_sign(
     params: ParamsOfNaclSign,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfNaclSign>;
-
 ```
 ### Parameters
 - `unsigned`: _string_ –  Data that must be signed. Encoded with `base64`.
@@ -434,12 +507,18 @@ function naclSign(
 ## nacl_sign_open
 
 ```ts
+type ParamsOfNaclSignOpen = {
+    signed: String,
+    public: String
+};
 
-function naclSignOpen(
+type ResultOfNaclSignOpen = {
+    unsigned: String
+};
+
+function nacl_sign_open(
     params: ParamsOfNaclSignOpen,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfNaclSignOpen>;
-
 ```
 ### Parameters
 - `signed`: _string_ –  Signed data that must be unsigned. Encoded with `base64`.
@@ -452,12 +531,18 @@ function naclSignOpen(
 ## nacl_sign_detached
 
 ```ts
+type ParamsOfNaclSign = {
+    unsigned: String,
+    secret: String
+};
 
-function naclSignDetached(
+type ResultOfNaclSignDetached = {
+    signature: String
+};
+
+function nacl_sign_detached(
     params: ParamsOfNaclSign,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfNaclSignDetached>;
-
 ```
 ### Parameters
 - `unsigned`: _string_ –  Data that must be signed. Encoded with `base64`.
@@ -470,11 +555,12 @@ function naclSignDetached(
 ## nacl_box_keypair
 
 ```ts
+type KeyPair = {
+    public: String,
+    secret: String
+};
 
-function naclBoxKeypair(
-    responseHandler: ResponseHandler | null,
-): Promise<KeyPair>;
-
+function nacl_box_keypair(): Promise<KeyPair>;
 ```
 ### Result
 
@@ -485,12 +571,18 @@ function naclBoxKeypair(
 ## nacl_box_keypair_from_secret_key
 
 ```ts
+type ParamsOfNaclBoxKeyPairFromSecret = {
+    secret: String
+};
 
-function naclBoxKeypairFromSecretKey(
+type KeyPair = {
+    public: String,
+    secret: String
+};
+
+function nacl_box_keypair_from_secret_key(
     params: ParamsOfNaclBoxKeyPairFromSecret,
-    responseHandler: ResponseHandler | null,
 ): Promise<KeyPair>;
-
 ```
 ### Parameters
 - `secret`: _string_ –  Hex encoded secret key.
@@ -503,12 +595,20 @@ function naclBoxKeypairFromSecretKey(
 ## nacl_box
 
 ```ts
+type ParamsOfNaclBox = {
+    decrypted: String,
+    nonce: String,
+    their_public: String,
+    secret: String
+};
 
-function naclBox(
+type ResultOfNaclBox = {
+    encrypted: String
+};
+
+function nacl_box(
     params: ParamsOfNaclBox,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfNaclBox>;
-
 ```
 ### Parameters
 - `decrypted`: _string_ –  Data that must be encrypted. Encoded with `base64`.
@@ -523,12 +623,20 @@ function naclBox(
 ## nacl_box_open
 
 ```ts
+type ParamsOfNaclBoxOpen = {
+    encrypted: String,
+    nonce: String,
+    their_public: String,
+    secret: String
+};
 
-function naclBoxOpen(
+type ResultOfNaclBoxOpen = {
+    decrypted: String
+};
+
+function nacl_box_open(
     params: ParamsOfNaclBoxOpen,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfNaclBoxOpen>;
-
 ```
 ### Parameters
 - `encrypted`: _string_ –  Data that must be decrypted. Encoded with `base64`.
@@ -543,12 +651,19 @@ function naclBoxOpen(
 ## nacl_secret_box
 
 ```ts
+type ParamsOfNaclSecretBox = {
+    decrypted: String,
+    nonce: String,
+    key: String
+};
 
-function naclSecretBox(
+type ResultOfNaclBox = {
+    encrypted: String
+};
+
+function nacl_secret_box(
     params: ParamsOfNaclSecretBox,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfNaclBox>;
-
 ```
 ### Parameters
 - `decrypted`: _string_ –  Data that must be encrypted. Encoded with `base64`.
@@ -562,12 +677,19 @@ function naclSecretBox(
 ## nacl_secret_box_open
 
 ```ts
+type ParamsOfNaclSecretBoxOpen = {
+    encrypted: String,
+    nonce: String,
+    key: String
+};
 
-function naclSecretBoxOpen(
+type ResultOfNaclBoxOpen = {
+    decrypted: String
+};
+
+function nacl_secret_box_open(
     params: ParamsOfNaclSecretBoxOpen,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfNaclBoxOpen>;
-
 ```
 ### Parameters
 - `encrypted`: _string_ –  Data that must be decrypted. Encoded with `base64`.
@@ -583,12 +705,17 @@ function naclSecretBoxOpen(
  Prints the list of words from the specified dictionary
 
 ```ts
+type ParamsOfMnemonicWords = {
+    dictionary?: Number
+};
 
-function mnemonicWords(
+type ResultOfMnemonicWords = {
+    words: String
+};
+
+function mnemonic_words(
     params: ParamsOfMnemonicWords,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfMnemonicWords>;
-
 ```
 ### Parameters
 - `dictionary`?: _number_ –  dictionary identifier
@@ -602,12 +729,18 @@ function mnemonicWords(
  Generates a random mnemnonic from the specified dictionary and word count
 
 ```ts
+type ParamsOfMnemonicFromRandom = {
+    dictionary?: Number,
+    word_count?: Number
+};
 
-function mnemonicFromRandom(
+type ResultOfMnemonicFromRandom = {
+    phrase: String
+};
+
+function mnemonic_from_random(
     params: ParamsOfMnemonicFromRandom,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfMnemonicFromRandom>;
-
 ```
 ### Parameters
 - `dictionary`?: _number_ –  dictionary identifier
@@ -622,12 +755,19 @@ function mnemonicFromRandom(
  Generates mnemonic from pre-generated entropy
 
 ```ts
+type ParamsOfMnemonicFromEntropy = {
+    entropy: String,
+    dictionary?: Number,
+    word_count?: Number
+};
 
-function mnemonicFromEntropy(
+type ResultOfMnemonicFromEntropy = {
+    phrase: String
+};
+
+function mnemonic_from_entropy(
     params: ParamsOfMnemonicFromEntropy,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfMnemonicFromEntropy>;
-
 ```
 ### Parameters
 - `entropy`: _string_
@@ -644,12 +784,19 @@ function mnemonicFromEntropy(
  specified in BIP0039.
 
 ```ts
+type ParamsOfMnemonicVerify = {
+    phrase: String,
+    dictionary?: Number,
+    word_count?: Number
+};
 
-function mnemonicVerify(
+type ResultOfMnemonicVerify = {
+    valid: Boolean
+};
+
+function mnemonic_verify(
     params: ParamsOfMnemonicVerify,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfMnemonicVerify>;
-
 ```
 ### Parameters
 - `phrase`: _string_ –  phrase
@@ -666,12 +813,21 @@ function mnemonicVerify(
  the key pair from the master key and the specified path
 
 ```ts
+type ParamsOfMnemonicDeriveSignKeys = {
+    phrase: String,
+    path?: String,
+    dictionary?: Number,
+    word_count?: Number
+};
 
-function mnemonicDeriveSignKeys(
+type KeyPair = {
+    public: String,
+    secret: String
+};
+
+function mnemonic_derive_sign_keys(
     params: ParamsOfMnemonicDeriveSignKeys,
-    responseHandler: ResponseHandler | null,
 ): Promise<KeyPair>;
-
 ```
 ### Parameters
 - `phrase`: _string_ –  phrase
@@ -689,12 +845,17 @@ function mnemonicDeriveSignKeys(
  Generate the extended master private key that will be the root for all the derived keys
 
 ```ts
+type ParamsOfHDKeyXPrvFromMnemonic = {
+    phrase: String
+};
 
-function hdkeyXprvFromMnemonic(
+type ResultOfHDKeyXPrvFromMnemonic = {
+    xprv: String
+};
+
+function hdkey_xprv_from_mnemonic(
     params: ParamsOfHDKeyXPrvFromMnemonic,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfHDKeyXPrvFromMnemonic>;
-
 ```
 ### Parameters
 - `phrase`: _string_ – string with seed phrase
@@ -708,12 +869,19 @@ function hdkeyXprvFromMnemonic(
  Returns derived extended private key derived from the specified extended private key and child index
 
 ```ts
+type ParamsOfHDKeyDeriveFromXPrv = {
+    xprv: String,
+    child_index: Number,
+    hardened: Boolean
+};
 
-function hdkeyDeriveFromXprv(
+type ResultOfHDKeyDeriveFromXPrv = {
+    xprv: String
+};
+
+function hdkey_derive_from_xprv(
     params: ParamsOfHDKeyDeriveFromXPrv,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfHDKeyDeriveFromXPrv>;
-
 ```
 ### Parameters
 - `xprv`: _string_ –  serialized extended private key
@@ -729,12 +897,18 @@ function hdkeyDeriveFromXprv(
  Derives the exented private key from the specified key and path
 
 ```ts
+type ParamsOfHDKeyDeriveFromXPrvPath = {
+    xprv: String,
+    path: String
+};
 
-function hdkeyDeriveFromXprvPath(
+type ResultOfHDKeyDeriveFromXPrvPath = {
+    xprv: String
+};
+
+function hdkey_derive_from_xprv_path(
     params: ParamsOfHDKeyDeriveFromXPrvPath,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfHDKeyDeriveFromXPrvPath>;
-
 ```
 ### Parameters
 - `xprv`: _string_ –  serialized extended private key
@@ -749,12 +923,17 @@ function hdkeyDeriveFromXprvPath(
  Extracts the private key from the serialized extended private key
 
 ```ts
+type ParamsOfHDKeySecretFromXPrv = {
+    xprv: String
+};
 
-function hdkeySecretFromXprv(
+type ResultOfHDKeySecretFromXPrv = {
+    secret: String
+};
+
+function hdkey_secret_from_xprv(
     params: ParamsOfHDKeySecretFromXPrv,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfHDKeySecretFromXPrv>;
-
 ```
 ### Parameters
 - `xprv`: _string_ –  serialized extended private key
@@ -768,12 +947,17 @@ function hdkeySecretFromXprv(
  Extracts the public key from the serialized extended private key
 
 ```ts
+type ParamsOfHDKeyPublicFromXPrv = {
+    xprv: String
+};
 
-function hdkeyPublicFromXprv(
+type ResultOfHDKeyPublicFromXPrv = {
+    public: String
+};
+
+function hdkey_public_from_xprv(
     params: ParamsOfHDKeyPublicFromXPrv,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfHDKeyPublicFromXPrv>;
-
 ```
 ### Parameters
 - `xprv`: _string_ –  serialized extended private key
@@ -785,21 +969,41 @@ function hdkeyPublicFromXprv(
 # Types
 ## SigningBoxHandle
 
+```ts
+type SigningBoxHandle = Number;
+```
 - ``: _number_
 
 
 ## ParamsOfFactorize
 
+```ts
+type ParamsOfFactorize = {
+    composite: String
+};
+```
 - `composite`: _string_ –  Hexadecimal representation of u64 composite number.
 
 
 ## ResultOfFactorize
 
+```ts
+type ResultOfFactorize = {
+    factors: String[]
+};
+```
 - `factors`: _string[]_ –  Two factors of composite or empty if composite can't be factorized.
 
 
 ## ParamsOfModularPower
 
+```ts
+type ParamsOfModularPower = {
+    base: String,
+    exponent: String,
+    modulus: String
+};
+```
 - `base`: _string_ –  `base` argument of calculation.
 - `exponent`: _string_ –  `exponent` argument of calculation.
 - `modulus`: _string_ –  `modulus` argument of calculation.
@@ -807,80 +1011,164 @@ function hdkeyPublicFromXprv(
 
 ## ResultOfModularPower
 
+```ts
+type ResultOfModularPower = {
+    modular_power: String
+};
+```
 - `modular_power`: _string_ –  result of modular exponentiation
 
 
 ## ParamsOfTonCrc16
 
+```ts
+type ParamsOfTonCrc16 = {
+    data: String
+};
+```
 - `data`: _string_ –  Input data for CRC calculation. Encoded with `base64`.
 
 
 ## ResultOfTonCrc16
 
+```ts
+type ResultOfTonCrc16 = {
+    crc: Number
+};
+```
 - `crc`: _number_ –  Calculated CRC for input data.
 
 
 ## ParamsOfGenerateRandomBytes
 
+```ts
+type ParamsOfGenerateRandomBytes = {
+    length: Number
+};
+```
 - `length`: _number_ –  Size of random byte array.
 
 
 ## ResultOfGenerateRandomBytes
 
+```ts
+type ResultOfGenerateRandomBytes = {
+    bytes: String
+};
+```
 - `bytes`: _string_ –  Generated bytes, encoded with `base64`.
 
 
 ## ParamsOfConvertPublicKeyToTonSafeFormat
 
+```ts
+type ParamsOfConvertPublicKeyToTonSafeFormat = {
+    public_key: String
+};
+```
 - `public_key`: _string_ –  Public key.
 
 
 ## ResultOfConvertPublicKeyToTonSafeFormat
 
+```ts
+type ResultOfConvertPublicKeyToTonSafeFormat = {
+    ton_public_key: String
+};
+```
 - `ton_public_key`: _string_ –  Public key represented in TON safe format.
 
 
 ## KeyPair
 
+```ts
+type KeyPair = {
+    public: String,
+    secret: String
+};
+```
 - `public`: _string_ –  Public key. Encoded with `hex`.
 - `secret`: _string_ –  Private key. Encoded with `hex`.
 
 
 ## ParamsOfSign
 
+```ts
+type ParamsOfSign = {
+    unsigned: String,
+    keys: KeyPair
+};
+```
 - `unsigned`: _string_ –  Data that must be signed.
 - `keys`: _[KeyPair](mod_crypto.md#KeyPair)_ –  Sign keys.
 
 
 ## ResultOfSign
 
+```ts
+type ResultOfSign = {
+    signed: String,
+    signature: String
+};
+```
 - `signed`: _string_ –  Signed data combined with signature. Encoded with `base64`.
 - `signature`: _string_ –  Signature. Encoded with `base64`.
 
 
 ## ParamsOfVerifySignature
 
+```ts
+type ParamsOfVerifySignature = {
+    signed: String,
+    public: String
+};
+```
 - `signed`: _string_ –  Signed data that must be verified.
 - `public`: _string_ –  Signer's public key.
 
 
 ## ResultOfVerifySignature
 
+```ts
+type ResultOfVerifySignature = {
+    unsigned: String
+};
+```
 - `unsigned`: _string_ –  Unsigned data.
 
 
 ## ParamsOfHash
 
+```ts
+type ParamsOfHash = {
+    data: String
+};
+```
 - `data`: _string_ –  Input data for hash calculation. Encoded with `base64`.
 
 
 ## ResultOfHash
 
+```ts
+type ResultOfHash = {
+    hash: String
+};
+```
 - `hash`: _string_ –  Hex-encoded hash of input `data`.
 
 
 ## ParamsOfScrypt
 
+```ts
+type ParamsOfScrypt = {
+    password: String,
+    salt: String,
+    log_n: Number,
+    r: Number,
+    p: Number,
+    dk_len: Number
+};
+```
 - `password`: _string_ –  The password bytes to be hashed.
 - `salt`: _string_ –  A salt bytes that modifies the hash to protect against Rainbow table attacks.
 - `log_n`: _number_ –  CPU/memory cost parameter
@@ -891,48 +1179,98 @@ function hdkeyPublicFromXprv(
 
 ## ResultOfScrypt
 
+```ts
+type ResultOfScrypt = {
+    key: String
+};
+```
 - `key`: _string_ –  Derived key. Encoded with `hex`.
 
 
 ## ParamsOfNaclSignKeyPairFromSecret
 
+```ts
+type ParamsOfNaclSignKeyPairFromSecret = {
+    secret: String
+};
+```
 - `secret`: _string_ –  secret key
 
 
 ## ParamsOfNaclSign
 
+```ts
+type ParamsOfNaclSign = {
+    unsigned: String,
+    secret: String
+};
+```
 - `unsigned`: _string_ –  Data that must be signed. Encoded with `base64`.
 - `secret`: _string_ –  Signer's secret key.
 
 
 ## ResultOfNaclSign
 
+```ts
+type ResultOfNaclSign = {
+    signed: String
+};
+```
 - `signed`: _string_ –  Signed data, encoded with `base64`.
 
 
 ## ParamsOfNaclSignOpen
 
+```ts
+type ParamsOfNaclSignOpen = {
+    signed: String,
+    public: String
+};
+```
 - `signed`: _string_ –  Signed data that must be unsigned. Encoded with `base64`.
 - `public`: _string_ –  Signer's public key.
 
 
 ## ResultOfNaclSignOpen
 
+```ts
+type ResultOfNaclSignOpen = {
+    unsigned: String
+};
+```
 - `unsigned`: _string_ –  Unsigned data, encoded with `base64`.
 
 
 ## ResultOfNaclSignDetached
 
+```ts
+type ResultOfNaclSignDetached = {
+    signature: String
+};
+```
 - `signature`: _string_ –  Hex encoded sign.
 
 
 ## ParamsOfNaclBoxKeyPairFromSecret
 
+```ts
+type ParamsOfNaclBoxKeyPairFromSecret = {
+    secret: String
+};
+```
 - `secret`: _string_ –  Hex encoded secret key.
 
 
 ## ParamsOfNaclBox
 
+```ts
+type ParamsOfNaclBox = {
+    decrypted: String,
+    nonce: String,
+    their_public: String,
+    secret: String
+};
+```
 - `decrypted`: _string_ –  Data that must be encrypted. Encoded with `base64`.
 - `nonce`: _string_
 - `their_public`: _string_
@@ -941,11 +1279,24 @@ function hdkeyPublicFromXprv(
 
 ## ResultOfNaclBox
 
+```ts
+type ResultOfNaclBox = {
+    encrypted: String
+};
+```
 - `encrypted`: _string_ –  Encrypted data. Encoded with `base64`.
 
 
 ## ParamsOfNaclBoxOpen
 
+```ts
+type ParamsOfNaclBoxOpen = {
+    encrypted: String,
+    nonce: String,
+    their_public: String,
+    secret: String
+};
+```
 - `encrypted`: _string_ –  Data that must be decrypted. Encoded with `base64`.
 - `nonce`: _string_
 - `their_public`: _string_
@@ -954,11 +1305,23 @@ function hdkeyPublicFromXprv(
 
 ## ResultOfNaclBoxOpen
 
+```ts
+type ResultOfNaclBoxOpen = {
+    decrypted: String
+};
+```
 - `decrypted`: _string_ –  Decrypted data. Encoded with `base64`.
 
 
 ## ParamsOfNaclSecretBox
 
+```ts
+type ParamsOfNaclSecretBox = {
+    decrypted: String,
+    nonce: String,
+    key: String
+};
+```
 - `decrypted`: _string_ –  Data that must be encrypted. Encoded with `base64`.
 - `nonce`: _string_
 - `key`: _string_
@@ -966,6 +1329,13 @@ function hdkeyPublicFromXprv(
 
 ## ParamsOfNaclSecretBoxOpen
 
+```ts
+type ParamsOfNaclSecretBoxOpen = {
+    encrypted: String,
+    nonce: String,
+    key: String
+};
+```
 - `encrypted`: _string_ –  Data that must be decrypted. Encoded with `base64`.
 - `nonce`: _string_
 - `key`: _string_
@@ -973,27 +1343,55 @@ function hdkeyPublicFromXprv(
 
 ## ParamsOfMnemonicWords
 
+```ts
+type ParamsOfMnemonicWords = {
+    dictionary?: Number
+};
+```
 - `dictionary`?: _number_ –  dictionary identifier
 
 
 ## ResultOfMnemonicWords
 
+```ts
+type ResultOfMnemonicWords = {
+    words: String
+};
+```
 - `words`: _string_ –  the list of mnemonic words
 
 
 ## ParamsOfMnemonicFromRandom
 
+```ts
+type ParamsOfMnemonicFromRandom = {
+    dictionary?: Number,
+    word_count?: Number
+};
+```
 - `dictionary`?: _number_ –  dictionary identifier
 - `word_count`?: _number_ –  mnemonic word count
 
 
 ## ResultOfMnemonicFromRandom
 
+```ts
+type ResultOfMnemonicFromRandom = {
+    phrase: String
+};
+```
 - `phrase`: _string_ –  string of mnemonic words
 
 
 ## ParamsOfMnemonicFromEntropy
 
+```ts
+type ParamsOfMnemonicFromEntropy = {
+    entropy: String,
+    dictionary?: Number,
+    word_count?: Number
+};
+```
 - `entropy`: _string_
 - `dictionary`?: _number_
 - `word_count`?: _number_
@@ -1001,11 +1399,23 @@ function hdkeyPublicFromXprv(
 
 ## ResultOfMnemonicFromEntropy
 
+```ts
+type ResultOfMnemonicFromEntropy = {
+    phrase: String
+};
+```
 - `phrase`: _string_
 
 
 ## ParamsOfMnemonicVerify
 
+```ts
+type ParamsOfMnemonicVerify = {
+    phrase: String,
+    dictionary?: Number,
+    word_count?: Number
+};
+```
 - `phrase`: _string_ –  phrase
 - `dictionary`?: _number_ –  dictionary identifier
 - `word_count`?: _number_ –  word count
@@ -1013,11 +1423,24 @@ function hdkeyPublicFromXprv(
 
 ## ResultOfMnemonicVerify
 
+```ts
+type ResultOfMnemonicVerify = {
+    valid: Boolean
+};
+```
 - `valid`: _boolean_ –  flag indicating the mnemonic is valid or not
 
 
 ## ParamsOfMnemonicDeriveSignKeys
 
+```ts
+type ParamsOfMnemonicDeriveSignKeys = {
+    phrase: String,
+    path?: String,
+    dictionary?: Number,
+    word_count?: Number
+};
+```
 - `phrase`: _string_ –  phrase
 - `path`?: _string_ –  derivation path, for instance "m/44'/396'/0'/0/0"
 - `dictionary`?: _number_ –  dictionary identifier
@@ -1026,16 +1449,33 @@ function hdkeyPublicFromXprv(
 
 ## ParamsOfHDKeyXPrvFromMnemonic
 
+```ts
+type ParamsOfHDKeyXPrvFromMnemonic = {
+    phrase: String
+};
+```
 - `phrase`: _string_ – string with seed phrase
 
 
 ## ResultOfHDKeyXPrvFromMnemonic
 
+```ts
+type ResultOfHDKeyXPrvFromMnemonic = {
+    xprv: String
+};
+```
 - `xprv`: _string_ –  serialized extended master private key
 
 
 ## ParamsOfHDKeyDeriveFromXPrv
 
+```ts
+type ParamsOfHDKeyDeriveFromXPrv = {
+    xprv: String,
+    child_index: Number,
+    hardened: Boolean
+};
+```
 - `xprv`: _string_ –  serialized extended private key
 - `child_index`: _number_ –  child index (see BIP-0032)
 - `hardened`: _boolean_ –  indicates the derivation of hardened/not-hardened key (see BIP-0032)
@@ -1043,37 +1483,73 @@ function hdkeyPublicFromXprv(
 
 ## ResultOfHDKeyDeriveFromXPrv
 
+```ts
+type ResultOfHDKeyDeriveFromXPrv = {
+    xprv: String
+};
+```
 - `xprv`: _string_ –  serialized extended private key
 
 
 ## ParamsOfHDKeyDeriveFromXPrvPath
 
+```ts
+type ParamsOfHDKeyDeriveFromXPrvPath = {
+    xprv: String,
+    path: String
+};
+```
 - `xprv`: _string_ –  serialized extended private key
 - `path`: _string_ –  derivation path, for instance "m/44'/396'/0'/0/0"
 
 
 ## ResultOfHDKeyDeriveFromXPrvPath
 
+```ts
+type ResultOfHDKeyDeriveFromXPrvPath = {
+    xprv: String
+};
+```
 - `xprv`: _string_ –  derived serialized extended private key
 
 
 ## ParamsOfHDKeySecretFromXPrv
 
+```ts
+type ParamsOfHDKeySecretFromXPrv = {
+    xprv: String
+};
+```
 - `xprv`: _string_ –  serialized extended private key
 
 
 ## ResultOfHDKeySecretFromXPrv
 
+```ts
+type ResultOfHDKeySecretFromXPrv = {
+    secret: String
+};
+```
 - `secret`: _string_ –  private key
 
 
 ## ParamsOfHDKeyPublicFromXPrv
 
+```ts
+type ParamsOfHDKeyPublicFromXPrv = {
+    xprv: String
+};
+```
 - `xprv`: _string_ –  serialized extended private key
 
 
 ## ResultOfHDKeyPublicFromXPrv
 
+```ts
+type ResultOfHDKeyPublicFromXPrv = {
+    public: String
+};
+```
 - `public`: _string_ –  public key
 
 

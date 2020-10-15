@@ -19,12 +19,18 @@
  message processing.
 
 ```ts
+type ParamsOfConvertAddress = {
+    address: String,
+    output_format: AddressStringFormat
+};
 
-function convertAddress(
+type ResultOfConvertAddress = {
+    address: String
+};
+
+function convert_address(
     params: ParamsOfConvertAddress,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfConvertAddress>;
-
 ```
 ### Parameters
 - `address`: _string_ –  Account address in any format.
@@ -37,16 +43,53 @@ function convertAddress(
 # Types
 ## AddressStringFormat
 
+```ts
+type AddressStringFormat = {
+    type: 'AccountId'
+} | {
+    type: 'Hex'
+} | {
+    type: 'Base64'
+    url: Boolean,
+    test: Boolean,
+    bounce: Boolean
+};
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'AccountId'_
+
+
+When _type_ is _'Hex'_
+
+
+When _type_ is _'Base64'_
+
+
+- `url`: _boolean_
+- `test`: _boolean_
+- `bounce`: _boolean_
 
 
 ## ParamsOfConvertAddress
 
+```ts
+type ParamsOfConvertAddress = {
+    address: String,
+    output_format: AddressStringFormat
+};
+```
 - `address`: _string_ –  Account address in any format.
 - `output_format`: _[AddressStringFormat](mod_utils.md#AddressStringFormat)_ –  Specify the format to convert to.
 
 
 ## ResultOfConvertAddress
 
+```ts
+type ResultOfConvertAddress = {
+    address: String
+};
+```
 - `address`: _string_ –  address in the specified format
 
 

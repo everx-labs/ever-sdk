@@ -206,7 +206,7 @@ export function parseApi(json: any): Api {
     return api;
 }
 
-export type ApiFunctionParamsInfo = {
+export type ApiFunctionInfo = {
     params?: ApiField,
     hasResponseHandler: boolean,
 }
@@ -229,8 +229,8 @@ export abstract class Code {
         return null;
     }
     
-    getFunctionParamsInfo(func: ApiFunction): ApiFunctionParamsInfo {
-        const params: ApiFunctionParamsInfo = {
+    getFunctionInfo(func: ApiFunction): ApiFunctionInfo {
+        const info: ApiFunctionInfo = {
             hasResponseHandler: false,
         };
         for (const param of func.params) {
@@ -238,13 +238,13 @@ export abstract class Code {
                 const arcArg = param.generic_args[0];
                 const isContext = arcArg.type === 'Ref' && arcArg.ref_name === 'ClientContext';
                 if (!isContext) {
-                    params.hasResponseHandler = true;
+                    info.hasResponseHandler = true;
                 }
             } else if (param.name === 'params') {
-                params.params = param;
+                info.params = param;
             }
         }
-        return params;
+        return info;
     }
     
     abstract language(): string;

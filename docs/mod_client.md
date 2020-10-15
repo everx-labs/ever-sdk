@@ -26,11 +26,11 @@
 ## get_api_reference
 
 ```ts
+type ResultOfGetApiReference = {
+    api: any
+};
 
-function getApiReference(
-    responseHandler: ResponseHandler | null,
-): Promise<ResultOfGetApiReference>;
-
+function get_api_reference(): Promise<ResultOfGetApiReference>;
 ```
 ### Result
 
@@ -40,11 +40,11 @@ function getApiReference(
 ## version
 
 ```ts
+type ResultOfVersion = {
+    version: String
+};
 
-function version(
-    responseHandler: ResponseHandler | null,
-): Promise<ResultOfVersion>;
-
+function version(): Promise<ResultOfVersion>;
 ```
 ### Result
 
@@ -54,6 +54,13 @@ function version(
 # Types
 ## ClientError
 
+```ts
+type ClientError = {
+    code: Number,
+    message: String,
+    data: any
+};
+```
 - `code`: _number_
 - `message`: _string_
 - `data`: _any_
@@ -61,6 +68,13 @@ function version(
 
 ## ClientConfig
 
+```ts
+type ClientConfig = {
+    network?: NetworkConfig,
+    crypto?: CryptoConfig,
+    abi?: AbiConfig
+};
+```
 - `network`?: _[NetworkConfig](mod_client.md#NetworkConfig)_
 - `crypto`?: _[CryptoConfig](mod_client.md#CryptoConfig)_
 - `abi`?: _[AbiConfig](mod_client.md#AbiConfig)_
@@ -68,6 +82,16 @@ function version(
 
 ## NetworkConfig
 
+```ts
+type NetworkConfig = {
+    server_address: String,
+    message_retries_count?: Number,
+    message_processing_timeout?: Number,
+    wait_for_timeout?: Number,
+    out_of_sync_threshold?: bigint,
+    access_key?: String
+};
+```
 - `server_address`: _string_
 - `message_retries_count`?: _number_
 - `message_processing_timeout`?: _number_
@@ -78,22 +102,43 @@ function version(
 
 ## CryptoConfig
 
+```ts
+type CryptoConfig = {
+    fish_param?: String
+};
+```
 - `fish_param`?: _string_
 
 
 ## AbiConfig
 
+```ts
+type AbiConfig = {
+    message_expiration_timeout?: Number,
+    message_expiration_timeout_grow_factor?: Number
+};
+```
 - `message_expiration_timeout`?: _number_
 - `message_expiration_timeout_grow_factor`?: _number_
 
 
 ## ResultOfGetApiReference
 
+```ts
+type ResultOfGetApiReference = {
+    api: any
+};
+```
 - `api`: _API_
 
 
 ## ResultOfVersion
 
+```ts
+type ResultOfVersion = {
+    version: String
+};
+```
 - `version`: _string_ –  core version
 
 
