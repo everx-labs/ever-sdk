@@ -38,7 +38,7 @@ pub async fn find_last_shard_block(
             "id master { shard_hashes { workchain_id shard descr { root_hash } } }",
             Some(vec![OrderBy {
                 path: "seq_no".to_owned(),
-                direction: SortDirection::Descending,
+                direction: SortDirection::DESC,
             }]),
             Some(1),
             None,
@@ -68,7 +68,7 @@ pub async fn find_last_shard_block(
                     "after_merge shard",
                     Some(vec![OrderBy {
                         path: "seq_no".to_owned(),
-                        direction: SortDirection::Descending,
+                        direction: SortDirection::DESC,
                     }]),
                     Some(1),
                     None,
@@ -99,7 +99,7 @@ pub async fn find_last_shard_block(
                     "id",
                     Some(vec![OrderBy {
                         path: "seq_no".to_owned(),
-                        direction: SortDirection::Descending,
+                        direction: SortDirection::DESC,
                     }]),
                     Some(1),
                     None,

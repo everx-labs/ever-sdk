@@ -34,12 +34,21 @@
 ## query_collection
 
 ```ts
+type ParamsOfQueryCollection = {
+    collection: string,
+    filter?: any,
+    result: string,
+    order?: OrderBy[],
+    limit?: number
+};
 
-function queryCollection(
+type ResultOfQueryCollection = {
+    result: any[]
+};
+
+function query_collection(
     params: ParamsOfQueryCollection,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfQueryCollection>;
-
 ```
 ### Parameters
 - `collection`: _string_ –  collection name (accounts, blocks, transactions, messages, block_signatures)
@@ -55,12 +64,20 @@ function queryCollection(
 ## wait_for_collection
 
 ```ts
+type ParamsOfWaitForCollection = {
+    collection: string,
+    filter?: any,
+    result: string,
+    timeout?: number
+};
 
-function waitForCollection(
+type ResultOfWaitForCollection = {
+    result: any
+};
+
+function wait_for_collection(
     params: ParamsOfWaitForCollection,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfWaitForCollection>;
-
 ```
 ### Parameters
 - `collection`: _string_ –  collection name (accounts, blocks, transactions, messages, block_signatures)
@@ -75,12 +92,13 @@ function waitForCollection(
 ## unsubscribe
 
 ```ts
+type ResultOfSubscribeCollection = {
+    handle: number
+};
 
 function unsubscribe(
     params: ResultOfSubscribeCollection,
-    responseHandler: ResponseHandler | null,
 ): Promise<void>;
-
 ```
 ### Parameters
 - `handle`: _number_ –  handle to subscription. It then can be used in `get_next_subscription_data` function
@@ -91,18 +109,26 @@ function unsubscribe(
 ## subscribe_collection
 
 ```ts
+type ParamsOfSubscribeCollection = {
+    collection: string,
+    filter?: any,
+    result: string
+};
 
-function subscribeCollection(
+type ResultOfSubscribeCollection = {
+    handle: number
+};
+
+function subscribe_collection(
     params: ParamsOfSubscribeCollection,
-    responseHandler: ResponseHandler | null,
+    responseHandler?: ResponseHandler,
 ): Promise<ResultOfSubscribeCollection>;
-
 ```
 ### Parameters
 - `collection`: _string_ –  collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ –  collection filter
 - `result`: _string_ –  projection (result) string
-### Result
+- `responseHandler`?: _ResponseHandler_ – additional responses handler.### Result
 
 - `handle`: _number_ –  handle to subscription. It then can be used in `get_next_subscription_data` function
 
@@ -110,16 +136,38 @@ function subscribeCollection(
 # Types
 ## OrderBy
 
+```ts
+type OrderBy = {
+    path: string,
+    direction: SortDirection
+};
+```
 - `path`: _string_
 - `direction`: _[SortDirection](mod_net.md#SortDirection)_
 
 
 ## SortDirection
 
+```ts
+type SortDirection = 'ASC' | 'DESC';
+```
+One of the following value:
+
+- `ASC`
+- `DESC`
 
 
 ## ParamsOfQueryCollection
 
+```ts
+type ParamsOfQueryCollection = {
+    collection: string,
+    filter?: any,
+    result: string,
+    order?: OrderBy[],
+    limit?: number
+};
+```
 - `collection`: _string_ –  collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ –  collection filter
 - `result`: _string_ –  projection (result) string
@@ -129,11 +177,24 @@ function subscribeCollection(
 
 ## ResultOfQueryCollection
 
+```ts
+type ResultOfQueryCollection = {
+    result: any[]
+};
+```
 - `result`: _any[]_ –  objects that match provided criteria
 
 
 ## ParamsOfWaitForCollection
 
+```ts
+type ParamsOfWaitForCollection = {
+    collection: string,
+    filter?: any,
+    result: string,
+    timeout?: number
+};
+```
 - `collection`: _string_ –  collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ –  collection filter
 - `result`: _string_ –  projection (result) string
@@ -142,20 +203,40 @@ function subscribeCollection(
 
 ## ResultOfWaitForCollection
 
+```ts
+type ResultOfWaitForCollection = {
+    result: any
+};
+```
 - `result`: _any_ –  first found object that match provided criteria
 
 
 ## ResultOfSubscribeCollection
 
+```ts
+type ResultOfSubscribeCollection = {
+    handle: number
+};
+```
 - `handle`: _number_ –  handle to subscription. It then can be used in `get_next_subscription_data` function
 
 
 ## unit
 
+```ts
+type unit = void;
+```
 
 
 ## ParamsOfSubscribeCollection
 
+```ts
+type ParamsOfSubscribeCollection = {
+    collection: string,
+    filter?: any,
+    result: string
+};
+```
 - `collection`: _string_ –  collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ –  collection filter
 - `result`: _string_ –  projection (result) string

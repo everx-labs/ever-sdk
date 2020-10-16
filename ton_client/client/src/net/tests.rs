@@ -1,11 +1,11 @@
+use super::*;
 use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer};
+use crate::error::ClientError;
 use crate::net::{
     ParamsOfQueryCollection, ParamsOfSubscribeCollection, ParamsOfWaitForCollection,
     ResultOfQueryCollection, ResultOfSubscribeCollection, ResultOfSubscription,
     ResultOfWaitForCollection,
 };
-use crate::error::ClientError;
-use super::*;
 use crate::tests::{TestClient, HELLO};
 
 #[tokio::test(core_threads = 2)]
@@ -84,14 +84,16 @@ async fn wait_for() {
                     result: "id now".to_owned(),
                     timeout: None,
                 },
-            ).await;
-            assert!(transactions.result["now"].as_u64().unwrap() > now as u64);
-        }
-    );
+            )
+            .await;
+        assert!(transactions.result["now"].as_u64().unwrap() > now as u64);
+    });
 
     let client = TestClient::new();
 
-    client.get_grams_from_giver_async(&TestClient::get_giver_address(), None).await;
+    client
+        .get_grams_from_giver_async(&TestClient::get_giver_address(), None)
+        .await;
 
     request.await.unwrap();
 }
@@ -107,7 +109,7 @@ async fn subscribe_for_transactions_with_addresses() {
             tvc: TestClient::tvc(HELLO, None),
             workchain_id: None,
         }),
-        signer: Signer::WithKeys(keys),
+        signer: Signer::Keys { keys },
         processing_try_index: None,
         address: None,
         call_set: CallSet::some_with_function("constructor"),
@@ -119,9 +121,14 @@ async fn subscribe_for_transactions_with_addresses() {
     let address = msg.address.clone();
     let callback = move |result: serde_json::Value, response_type: SubscriptionResponseType| {
         let result = match response_type {
-            SubscriptionResponseType::Ok => Ok(serde_json::from_value::<ResultOfSubscription>(result).unwrap()),
-            SubscriptionResponseType::Error => Err(serde_json::from_value::<ClientError>(result).unwrap())
-        }.unwrap();
+            SubscriptionResponseType::Ok => {
+                Ok(serde_json::from_value::<ResultOfSubscription>(result).unwrap())
+            }
+            SubscriptionResponseType::Error => {
+                Err(serde_json::from_value::<ClientError>(result).unwrap())
+            }
+        }
+        .unwrap();
         assert_eq!(result.result["account_addr"], address);
         let transactions_copy = transactions_copy.clone();
         async move {
@@ -160,9 +167,14 @@ async fn subscribe_for_messages() {
 
     let callback = move |result: serde_json::Value, response_type: SubscriptionResponseType| {
         let result = match response_type {
-            SubscriptionResponseType::Ok => Ok(serde_json::from_value::<ResultOfSubscription>(result).unwrap()),
-            SubscriptionResponseType::Error => Err(serde_json::from_value::<ClientError>(result).unwrap())
-        }.unwrap();
+            SubscriptionResponseType::Ok => {
+                Ok(serde_json::from_value::<ResultOfSubscription>(result).unwrap())
+            }
+            SubscriptionResponseType::Error => {
+                Err(serde_json::from_value::<ClientError>(result).unwrap())
+            }
+        }
+        .unwrap();
         let messages_copy = messages_copy.clone();
         async move {
             messages_copy.lock().await.push(result.result);
@@ -171,19 +183,23 @@ async fn subscribe_for_messages() {
 
     let client = TestClient::new();
 
-    let handle: ResultOfSubscribeCollection = client.request_async_callback(
-        "net.subscribe_collection",
-        ParamsOfSubscribeCollection {
-            collection: "messages".to_owned(),
-            filter: Some(json!({
-                "dst": { "eq": "1" }
-            })),
-            result: "id".to_owned(),
-        },
-        callback
-    ).await;
+    let handle: ResultOfSubscribeCollection = client
+        .request_async_callback(
+            "net.subscribe_collection",
+            ParamsOfSubscribeCollection {
+                collection: "messages".to_owned(),
+                filter: Some(json!({
+                    "dst": { "eq": "1" }
+                })),
+                result: "id".to_owned(),
+            },
+            callback,
+        )
+        .await;
 
-    client.get_grams_from_giver_async(&TestClient::get_giver_address(), None).await;
+    client
+        .get_grams_from_giver_async(&TestClient::get_giver_address(), None)
+        .await;
 
     assert_eq!(messages.lock().await.len(), 0);
 

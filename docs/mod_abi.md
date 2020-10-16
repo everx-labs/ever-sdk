@@ -51,12 +51,25 @@
 ## encode_message
 
 ```ts
+type ParamsOfEncodeMessage = {
+    abi: Abi,
+    address?: string,
+    deploy_set?: DeploySet,
+    call_set?: CallSet,
+    signer: Signer,
+    processing_try_index?: number
+};
 
-function encodeMessage(
+type ResultOfEncodeMessage = {
+    message: string,
+    data_to_sign?: string,
+    address: string,
+    message_id: string
+};
+
+function encode_message(
     params: ParamsOfEncodeMessage,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfEncodeMessage>;
-
 ```
 ### Parameters
 - `abi`: _[Abi](mod_abi.md#Abi)_ –  Contract ABI.
@@ -76,12 +89,21 @@ function encodeMessage(
 ## attach_signature
 
 ```ts
+type ParamsOfAttachSignature = {
+    abi: Abi,
+    public_key: string,
+    message: string,
+    signature: string
+};
 
-function attachSignature(
+type ResultOfAttachSignature = {
+    message: string,
+    message_id: string
+};
+
+function attach_signature(
     params: ParamsOfAttachSignature,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfAttachSignature>;
-
 ```
 ### Parameters
 - `abi`: _[Abi](mod_abi.md#Abi)_ –  Contract ABI
@@ -97,12 +119,21 @@ function attachSignature(
 ## decode_message
 
 ```ts
+type ParamsOfDecodeMessage = {
+    abi: Abi,
+    message: string
+};
 
-function decodeMessage(
+type DecodedMessageBody = {
+    message_type: DecodedMessageType,
+    name: string,
+    value: any,
+    header?: FunctionHeader
+};
+
+function decode_message(
     params: ParamsOfDecodeMessage,
-    responseHandler: ResponseHandler | null,
 ): Promise<DecodedMessageBody>;
-
 ```
 ### Parameters
 - `abi`: _[Abi](mod_abi.md#Abi)_ –  contract ABI
@@ -120,12 +151,21 @@ function decodeMessage(
  Encodes account state as it will be
 
 ```ts
+type ParamsOfEncodeAccount = {
+    state_init: StateInitSource,
+    balance?: bigint,
+    last_trans_lt?: bigint,
+    last_paid?: number
+};
 
-function encodeAccount(
+type ResultOfEncodeAccount = {
+    account: string,
+    id: string
+};
+
+function encode_account(
     params: ParamsOfEncodeAccount,
-    responseHandler: ResponseHandler | null,
 ): Promise<ResultOfEncodeAccount>;
-
 ```
 ### Parameters
 - `state_init`: _[StateInitSource](mod_abi.md#StateInitSource)_ –  Source of the account state init.
@@ -141,15 +181,37 @@ function encodeAccount(
 # Types
 ## Abi
 
+```ts
+type Abi = {
+    type: 'Serialized'
+    value: any
+} | {
+    type: 'Handle'
+    value: number
+};
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'Serialized'_
+
+
+- `value`: _any_
+
+When _type_ is _'Handle'_
+
+
+- `value`: _number_
 
 
 ## AbiHandle
 
-- ``: _number_
+```ts
+type AbiHandle = number;
+```
+- _number_
 
 
 ## FunctionHeader
-
  The ABI function header.
 
  Includes several hidden function parameters that contract
@@ -157,6 +219,14 @@ function encodeAccount(
 
  The actual set of header fields depends on the contract's ABI.
 
+
+```ts
+type FunctionHeader = {
+    expire?: number,
+    time?: bigint,
+    pubkey?: string
+};
+```
 - `expire`?: _number_ –  Message expiration time in seconds.
 - `time`?: _bigint_ –  Message creation time in milliseconds.
 - `pubkey`?: _string_ –  Public key used to sign message. Encoded with `hex`.
@@ -164,6 +234,13 @@ function encodeAccount(
 
 ## CallSet
 
+```ts
+type CallSet = {
+    function_name: string,
+    header?: FunctionHeader,
+    input?: any
+};
+```
 - `function_name`: _string_ –  Function name.
 - `header`?: _[FunctionHeader](mod_abi.md#FunctionHeader)_ –  Function header.
 - `input`?: _any_ –  Function input according to ABI.
@@ -171,6 +248,13 @@ function encodeAccount(
 
 ## DeploySet
 
+```ts
+type DeploySet = {
+    tvc: string,
+    workchain_id?: number,
+    initial_data?: any
+};
+```
 - `tvc`: _string_ –  Content of TVC file. Must be encoded with `base64`.
 - `workchain_id`?: _number_ –  Target workchain for destination address. Default is `0`.
 - `initial_data`?: _any_ –  List of initial values for contract's public variables.
@@ -178,24 +262,118 @@ function encodeAccount(
 
 ## Signer
 
+```ts
+type Signer = {
+    type: 'None'
+} | {
+    type: 'External'
+    public_key: string
+} | {
+    type: 'Keys'
+    keys: KeyPair
+} | {
+    type: 'SigningBox'
+    handle: SigningBoxHandle
+};
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'None'_
+
+
+When _type_ is _'External'_
+
+
+- `public_key`: _string_
+
+When _type_ is _'Keys'_
+
+
+- `keys`: _[KeyPair](mod_crypto.md#KeyPair)_
+
+When _type_ is _'SigningBox'_
+
+
+- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_
 
 
 ## DecodedMessageType
 
+```ts
+type DecodedMessageType = 'FunctionInput' | 'FunctionOutput' | 'ForeignFunctionInput' | 'Event';
+```
+One of the following value:
+
+- `FunctionInput` –  Message contains the input of the ABI function.
+- `FunctionOutput` –  Message contains the output of the ABI function.
+- `ForeignFunctionInput` –  Message contains the input of the foreign ABI function.
+- `Event` –  Message contains the input of the ABI event.
 
 
 ## StateInitSource
 
+```ts
+type StateInitSource = {
+    type: 'Message'
+    source: MessageSource
+} | {
+    type: 'StateInit'
+    code: string,
+    data: string,
+    library?: string
+} | {
+    type: 'Tvc'
+    tvc: string,
+    public_key?: string,
+    init_params?: StateInitParams
+};
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'Message'_
+
+
+- `source`: _[MessageSource](mod_processing.md#MessageSource)_
+
+When _type_ is _'StateInit'_
+
+
+- `code`: _string_ –  Code BOC. Encoded with `base64`.
+- `data`: _string_ –  Data BOC. Encoded with `base64`.
+- `library`?: _string_ –  Library BOC. Encoded with `base64`.
+
+When _type_ is _'Tvc'_
+
+
+- `tvc`: _string_
+- `public_key`?: _string_
+- `init_params`?: _[StateInitParams](mod_abi.md#StateInitParams)_
 
 
 ## StateInitParams
 
+```ts
+type StateInitParams = {
+    abi: Abi,
+    value: any
+};
+```
 - `abi`: _[Abi](mod_abi.md#Abi)_
 - `value`: _any_
 
 
 ## ParamsOfEncodeMessage
 
+```ts
+type ParamsOfEncodeMessage = {
+    abi: Abi,
+    address?: string,
+    deploy_set?: DeploySet,
+    call_set?: CallSet,
+    signer: Signer,
+    processing_try_index?: number
+};
+```
 - `abi`: _[Abi](mod_abi.md#Abi)_ –  Contract ABI.
 - `address`?: _string_ –  Contract address.
 - `deploy_set`?: _[DeploySet](mod_abi.md#DeploySet)_ –  Deploy parameters.
@@ -206,6 +384,14 @@ function encodeAccount(
 
 ## ResultOfEncodeMessage
 
+```ts
+type ResultOfEncodeMessage = {
+    message: string,
+    data_to_sign?: string,
+    address: string,
+    message_id: string
+};
+```
 - `message`: _string_ –  Message BOC encoded with `base64`.
 - `data_to_sign`?: _string_ –  Optional data to sign. Encoded with `base64`.
 - `address`: _string_ –  Destination address.
@@ -214,6 +400,14 @@ function encodeAccount(
 
 ## ParamsOfAttachSignature
 
+```ts
+type ParamsOfAttachSignature = {
+    abi: Abi,
+    public_key: string,
+    message: string,
+    signature: string
+};
+```
 - `abi`: _[Abi](mod_abi.md#Abi)_ –  Contract ABI
 - `public_key`: _string_ –  Public key. Must be encoded with `hex`.
 - `message`: _string_ –  Unsigned message BOC. Must be encoded with `base64`.
@@ -222,18 +416,38 @@ function encodeAccount(
 
 ## ResultOfAttachSignature
 
+```ts
+type ResultOfAttachSignature = {
+    message: string,
+    message_id: string
+};
+```
 - `message`: _string_
 - `message_id`: _string_
 
 
 ## ParamsOfDecodeMessage
 
+```ts
+type ParamsOfDecodeMessage = {
+    abi: Abi,
+    message: string
+};
+```
 - `abi`: _[Abi](mod_abi.md#Abi)_ –  contract ABI
 - `message`: _string_ –  Message BOC
 
 
 ## DecodedMessageBody
 
+```ts
+type DecodedMessageBody = {
+    message_type: DecodedMessageType,
+    name: string,
+    value: any,
+    header?: FunctionHeader
+};
+```
 - `message_type`: _[DecodedMessageType](mod_abi.md#DecodedMessageType)_ –  Type of the message body content.
 - `name`: _string_ –  Function or event name.
 - `value`: _any_ –  Parameters or result value.
@@ -242,6 +456,14 @@ function encodeAccount(
 
 ## ParamsOfEncodeAccount
 
+```ts
+type ParamsOfEncodeAccount = {
+    state_init: StateInitSource,
+    balance?: bigint,
+    last_trans_lt?: bigint,
+    last_paid?: number
+};
+```
 - `state_init`: _[StateInitSource](mod_abi.md#StateInitSource)_ –  Source of the account state init.
 - `balance`?: _bigint_ –  Initial balance.
 - `last_trans_lt`?: _bigint_ –  Initial value for the `last_trans_lt`.
@@ -250,6 +472,12 @@ function encodeAccount(
 
 ## ResultOfEncodeAccount
 
+```ts
+type ResultOfEncodeAccount = {
+    account: string,
+    id: string
+};
+```
 - `account`: _string_ –  Account BOC. Encoded with `base64`.
 - `id`: _string_ –  Account id. Encoded with `hex`.
 

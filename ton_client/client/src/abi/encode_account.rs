@@ -26,7 +26,7 @@ pub struct StateInitParams {
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 pub enum StateInitSource {
     /// Deploy message.
-    Message(MessageSource),
+    Message { source: MessageSource },
     /// State init data.
     StateInit {
         /// Code BOC. Encoded with `base64`.
@@ -116,7 +116,7 @@ fn state_init_from_tvc(
         image
             .update_data(
                 init_params.value.to_string().as_str(),
-                &init_params.abi.json_string(),
+                &init_params.abi.json_string()?,
             )
             .map_err(|err| {
                 Error::invalid_tvc_image(format!("Failed to set initial data: {}", err))
@@ -132,7 +132,7 @@ pub async fn encode_account(
     params: ParamsOfEncodeAccount,
 ) -> ClientResult<ResultOfEncodeAccount> {
     let state_init = match &params.state_init {
-        StateInitSource::Message(message) => state_init_from_message(&context, message).await,
+        StateInitSource::Message { source } => state_init_from_message(&context, source).await,
         StateInitSource::StateInit {
             code,
             data,

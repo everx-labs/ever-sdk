@@ -33,18 +33,26 @@
 ## send_message
 
 ```ts
+type ParamsOfSendMessage = {
+    message: string,
+    abi?: Abi,
+    send_events: boolean
+};
 
-function sendMessage(
+type ResultOfSendMessage = {
+    shard_block_id: string
+};
+
+function send_message(
     params: ParamsOfSendMessage,
-    responseHandler: ResponseHandler | null,
+    responseHandler?: ResponseHandler,
 ): Promise<ResultOfSendMessage>;
-
 ```
 ### Parameters
 - `message`: _string_ –  Message BOC.
 - `abi`?: _[Abi](mod_abi.md#Abi)_ –  Optional message ABI.
 - `send_events`: _boolean_ –  Flag for requesting events sending
-### Result
+- `responseHandler`?: _ResponseHandler_ – additional responses handler.### Result
 
 - `shard_block_id`: _string_ –  Shard block related to the message dst account before the
 
@@ -75,19 +83,30 @@ function sendMessage(
    be finished with `Incomplete` result.
 
 ```ts
+type ParamsOfWaitForTransaction = {
+    abi?: Abi,
+    message: string,
+    shard_block_id: string,
+    send_events: boolean
+};
 
-function waitForTransaction(
+type ResultOfProcessMessage = {
+    transaction: any,
+    out_messages: any[],
+    decoded?: DecodedOutput
+};
+
+function wait_for_transaction(
     params: ParamsOfWaitForTransaction,
-    responseHandler: ResponseHandler | null,
+    responseHandler?: ResponseHandler,
 ): Promise<ResultOfProcessMessage>;
-
 ```
 ### Parameters
 - `abi`?: _[Abi](mod_abi.md#Abi)_ –  Optional ABI for decoding transaction results.
 - `message`: _string_ –  Message BOC. Encoded with `base64`.
 - `shard_block_id`: _string_ –  Dst account shard block id before the message had been sent.
 - `send_events`: _boolean_ –  Flag for requesting events sending
-### Result
+- `responseHandler`?: _ResponseHandler_ – additional responses handler.### Result
 
 - `transaction`: _any_ –  Parsed transaction.
 - `out_messages`: _any[]_ –  List of parsed output messages.
@@ -100,17 +119,26 @@ function waitForTransaction(
  message processing.
 
 ```ts
+type ParamsOfProcessMessage = {
+    message: MessageSource,
+    send_events: boolean
+};
 
-function processMessage(
+type ResultOfProcessMessage = {
+    transaction: any,
+    out_messages: any[],
+    decoded?: DecodedOutput
+};
+
+function process_message(
     params: ParamsOfProcessMessage,
-    responseHandler: ResponseHandler | null,
+    responseHandler?: ResponseHandler,
 ): Promise<ResultOfProcessMessage>;
-
 ```
 ### Parameters
 - `message`: _[MessageSource](mod_processing.md#MessageSource)_ –  Message source.
 - `send_events`: _boolean_ –  Flag for requesting events sending
-### Result
+- `responseHandler`?: _ResponseHandler_ – additional responses handler.### Result
 
 - `transaction`: _any_ –  Parsed transaction.
 - `out_messages`: _any[]_ –  List of parsed output messages.
@@ -120,14 +148,158 @@ function processMessage(
 # Types
 ## MessageSource
 
+```ts
+type MessageSource = {
+    type: 'Encoded'
+    message: string,
+    abi?: Abi
+} | {
+    type: 'EncodingParams'
+    abi: Abi,
+    address?: string,
+    deploy_set?: DeploySet,
+    call_set?: CallSet,
+    signer: Signer,
+    processing_try_index?: number
+};
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'Encoded'_
+
+
+- `message`: _string_
+- `abi`?: _[Abi](mod_abi.md#Abi)_
+
+When _type_ is _'EncodingParams'_
+
+
+- `abi`: _[Abi](mod_abi.md#Abi)_ –  Contract ABI.
+- `address`?: _string_ –  Contract address.
+- `deploy_set`?: _[DeploySet](mod_abi.md#DeploySet)_ –  Deploy parameters.
+- `call_set`?: _[CallSet](mod_abi.md#CallSet)_ –  Function call parameters.
+- `signer`: _[Signer](mod_abi.md#Signer)_ –  Signing parameters.
+- `processing_try_index`?: _number_ –  Processing try index.
 
 
 ## ProcessingEvent
 
+```ts
+type ProcessingEvent = {
+    type: 'WillFetchFirstBlock'
+} | {
+    type: 'FetchFirstBlockFailed'
+    error: ClientError
+} | {
+    type: 'WillSend'
+    shard_block_id: string,
+    message_id: string,
+    message: string
+} | {
+    type: 'DidSend'
+    shard_block_id: string,
+    message_id: string,
+    message: string
+} | {
+    type: 'SendFailed'
+    shard_block_id: string,
+    message_id: string,
+    message: string,
+    error: ClientError
+} | {
+    type: 'WillFetchNextBlock'
+    shard_block_id: string,
+    message_id: string,
+    message: string
+} | {
+    type: 'FetchNextBlockFailed'
+    shard_block_id: string,
+    message_id: string,
+    message: string,
+    error: ClientError
+} | {
+    type: 'MessageExpired'
+    message_id: string,
+    message: string,
+    error: ClientError
+} | {
+    type: 'TransactionReceived'
+    message_id: string,
+    message: string,
+    result: ResultOfProcessMessage
+};
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'WillFetchFirstBlock'_
+
+
+When _type_ is _'FetchFirstBlockFailed'_
+
+
+- `error`: _[ClientError](mod_client.md#ClientError)_
+
+When _type_ is _'WillSend'_
+
+
+- `shard_block_id`: _string_
+- `message_id`: _string_
+- `message`: _string_
+
+When _type_ is _'DidSend'_
+
+
+- `shard_block_id`: _string_
+- `message_id`: _string_
+- `message`: _string_
+
+When _type_ is _'SendFailed'_
+
+
+- `shard_block_id`: _string_
+- `message_id`: _string_
+- `message`: _string_
+- `error`: _[ClientError](mod_client.md#ClientError)_
+
+When _type_ is _'WillFetchNextBlock'_
+
+
+- `shard_block_id`: _string_
+- `message_id`: _string_
+- `message`: _string_
+
+When _type_ is _'FetchNextBlockFailed'_
+
+
+- `shard_block_id`: _string_
+- `message_id`: _string_
+- `message`: _string_
+- `error`: _[ClientError](mod_client.md#ClientError)_
+
+When _type_ is _'MessageExpired'_
+
+
+- `message_id`: _string_
+- `message`: _string_
+- `error`: _[ClientError](mod_client.md#ClientError)_
+
+When _type_ is _'TransactionReceived'_
+
+
+- `message_id`: _string_ –  Input message id. Encoded with `hex`.
+- `message`: _string_ –  Input message. BOC encoded with `base64`.
+- `result`: _[ResultOfProcessMessage](mod_processing.md#ResultOfProcessMessage)_ –  Results of transaction.
 
 
 ## ResultOfProcessMessage
 
+```ts
+type ResultOfProcessMessage = {
+    transaction: any,
+    out_messages: any[],
+    decoded?: DecodedOutput
+};
+```
 - `transaction`: _any_ –  Parsed transaction.
 - `out_messages`: _any[]_ –  List of parsed output messages.
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ –  Optional decoded message bodies according to the optional
@@ -135,12 +307,25 @@ function processMessage(
 
 ## DecodedOutput
 
+```ts
+type DecodedOutput = {
+    out_messages: DecodedMessageBody | null[],
+    output?: any
+};
+```
 - `out_messages`: _[DecodedMessageBody](mod_abi.md#DecodedMessageBody)?[]_ –  Decoded bodies of the out messages.
 - `output`?: _any_ –  Decoded body of the function output message.
 
 
 ## ParamsOfSendMessage
 
+```ts
+type ParamsOfSendMessage = {
+    message: string,
+    abi?: Abi,
+    send_events: boolean
+};
+```
 - `message`: _string_ –  Message BOC.
 - `abi`?: _[Abi](mod_abi.md#Abi)_ –  Optional message ABI.
 - `send_events`: _boolean_ –  Flag for requesting events sending
@@ -148,11 +333,24 @@ function processMessage(
 
 ## ResultOfSendMessage
 
+```ts
+type ResultOfSendMessage = {
+    shard_block_id: string
+};
+```
 - `shard_block_id`: _string_ –  Shard block related to the message dst account before the
 
 
 ## ParamsOfWaitForTransaction
 
+```ts
+type ParamsOfWaitForTransaction = {
+    abi?: Abi,
+    message: string,
+    shard_block_id: string,
+    send_events: boolean
+};
+```
 - `abi`?: _[Abi](mod_abi.md#Abi)_ –  Optional ABI for decoding transaction results.
 - `message`: _string_ –  Message BOC. Encoded with `base64`.
 - `shard_block_id`: _string_ –  Dst account shard block id before the message had been sent.
@@ -161,6 +359,12 @@ function processMessage(
 
 ## ParamsOfProcessMessage
 
+```ts
+type ParamsOfProcessMessage = {
+    message: MessageSource,
+    send_events: boolean
+};
+```
 - `message`: _[MessageSource](mod_processing.md#MessageSource)_ –  Message source.
 - `send_events`: _boolean_ –  Flag for requesting events sending
 

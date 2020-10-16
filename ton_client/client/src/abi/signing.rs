@@ -1,3 +1,4 @@
+use crate::abi::Error;
 use crate::client;
 use crate::crypto::{KeyPair, SigningBoxHandle};
 use crate::error::ClientResult;
@@ -8,16 +9,16 @@ pub enum Signer {
     None,
     /// Message will be signed using external methods.
     /// Public key must be provided with `hex` encoding.
-    External(String),
+    External { public_key: String },
     /// Message will be signed using the provided keys.
-    WithKeys(KeyPair),
+    Keys { keys: KeyPair },
     /// Message will be signed using the provided signing box.
-    Box(SigningBoxHandle),
+    SigningBox { handle: SigningBoxHandle },
 }
 
 impl Signer {
     pub(crate) fn is_external(&self) -> bool {
-        if let Signer::External(_) = self {
+        if let Signer::External { .. } = self {
             true
         } else {
             false
@@ -29,10 +30,10 @@ impl Signer {
     pub fn resolve_keys(&self) -> ClientResult<Option<KeyPair>> {
         match self {
             Signer::None => Ok(None),
-            Signer::WithKeys(keys) => Ok(Some(keys.clone())),
-            Signer::External(_) => Ok(None),
-            Signer::Box(_) => Err(client::Error::not_implemented(
-                "Abi handle doesn't supported yet",
+            Signer::Keys { keys } => Ok(Some(keys.clone())),
+            Signer::External { .. } => Ok(None),
+            Signer::SigningBox { .. } => Err(Error::invalid_signer(
+                "Signing box can't provide secret key".into(),
             )),
         }
     }
@@ -40,10 +41,10 @@ impl Signer {
     pub fn resolve_public_key(&self) -> ClientResult<Option<String>> {
         match self {
             Signer::None => Ok(None),
-            Signer::WithKeys(keys) => Ok(Some(keys.public.clone())),
-            Signer::External(public_key) => Ok(Some(public_key.clone())),
-            Signer::Box(_) => Err(client::Error::not_implemented(
-                "Abi handle doesn't supported yet",
+            Signer::Keys { keys } => Ok(Some(keys.public.clone())),
+            Signer::External { public_key } => Ok(Some(public_key.clone())),
+            Signer::SigningBox { .. } => Err(client::Error::not_implemented(
+                "Signing boxes doesn't supported yet",
             )),
         }
     }

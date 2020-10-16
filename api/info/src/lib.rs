@@ -35,8 +35,7 @@ pub struct Field {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-#[serde(tag = "type")]
+#[serde(tag = "type", content="value")]
 pub enum ConstValue {
     None,
     Bool(String),
@@ -54,7 +53,6 @@ pub struct Const {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
 #[serde(tag = "type")]
 pub enum Type {
     None,
@@ -63,13 +61,36 @@ pub enum Type {
     String,
     Number,
     BigInt,
-    Ref { type_name: String },
-    Optional { inner: Box<Type> },
-    Array { items: Box<Type> },
-    Struct { fields: Vec<Field> },
-    EnumOfConsts { consts: Vec<Const> },
-    EnumOfTypes { types: Vec<Field> },
-    Generic { type_name: String, args: Vec<Type> },
+    Ref {
+        #[serde(rename="ref_name")]
+        name: String,
+    },
+    Optional {
+        #[serde(rename="optional_inner")]
+        inner: Box<Type>,
+    },
+    Array {
+        #[serde(rename="array_item")]
+        item: Box<Type>,
+    },
+    Struct {
+        #[serde(rename="struct_fields")]
+        fields: Vec<Field>,
+    },
+    EnumOfConsts {
+        #[serde(rename="enum_consts")]
+        consts: Vec<Const>,
+    },
+    EnumOfTypes {
+        #[serde(rename="enum_types")]
+        types: Vec<Field>,
+    },
+    Generic {
+        #[serde(rename="generic_name")]
+        name: String,
+        #[serde(rename="generic_args")]
+        args: Vec<Type>,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

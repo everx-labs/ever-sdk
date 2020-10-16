@@ -103,6 +103,12 @@
 
 [convert_address](mod_utils.md#convert_address) –  Sends message to the network and monitors network for a result of
 
+## [tvm](mod_tvm.md)
+
+[execute_message](mod_tvm.md#execute_message)
+
+[execute_get](mod_tvm.md#execute_get)
+
 ## [net](mod_net.md) –  Network access.
 
 [query_collection](mod_net.md#query_collection)

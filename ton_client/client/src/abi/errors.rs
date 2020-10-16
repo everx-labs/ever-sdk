@@ -12,6 +12,7 @@ pub enum ErrorCode {
     AttachSignatureFailed = ABI + 7,
     InvalidTvcImage = ABI + 8,
     RequiredPublicKeyMissingForFunctionHeader = ABI + 9,
+    InvalidSigner = ABI + 10,
 }
 
 pub struct Error;
@@ -21,6 +22,10 @@ fn error(code: ErrorCode, message: String) -> ClientError {
 }
 
 impl Error {
+    pub fn invalid_signer(message: String) -> ClientError {
+        error(ErrorCode::InvalidSigner, message.into())
+    }
+
     pub fn required_address_missing_for_encode_message() -> ClientError {
         error(
             ErrorCode::RequiredAddressMissingForEncodeMessage,
