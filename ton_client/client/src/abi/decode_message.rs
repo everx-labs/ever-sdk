@@ -104,7 +104,7 @@ pub struct ParamsOfDecodeMessageBody {
     pub body: String,
 
     /// True if the body belongs to the internal message.
-    is_internal: bool,
+    pub is_internal: bool,
 }
 
 /// Decodes message body using provided body BOC and ABI.
