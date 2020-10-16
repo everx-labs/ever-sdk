@@ -15,7 +15,7 @@
 use super::registrar::ModuleReg;
 use super::runtime::RuntimeHandlers;
 
-/// BOC manipulation module.
+/// Provides information about library.
 #[derive(ApiModule)]
 #[api_module(name = "client")]
 pub(crate) struct ClientModule;
@@ -174,7 +174,7 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
     module.register();
 }
 
-/// Functions for encoding and decoding messages due to ABI
+/// Provides message encoding and decoding according to the ABI
 /// specification.
 #[derive(ApiModule)]
 #[api_module(name = "abi")]
@@ -203,6 +203,10 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
     module.register_sync_fn(
         crate::abi::decode_message,
         crate::abi::decode_message::decode_message_api,
+    );
+    module.register_sync_fn(
+        crate::abi::decode_message_body,
+        crate::abi::decode_message::decode_message_body_api,
     );
     module.register_async_fn(
         crate::abi::encode_account,

@@ -20,6 +20,20 @@ fn encode_v2() {
     let time: u64 = 1599458364291;
     let expire: u32 = 1599458404;
 
+    let msg: ParamsOfEncodeMessage = serde_json::from_str(r#"{
+        "abi": { "type": "Handle", "value": 0 },
+        "signer": {
+            "type": "Keys",
+            "keys": {
+                "public": "4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499",
+                "secret": "cc8929d635719612a9478b9cd17675a39cfad52d8959e8a177389b8c0b9122a7"
+            }
+        }
+    }
+    "#).unwrap();
+
+    assert_eq!(msg.signer, Signer::Keys { keys: keys.clone()});
+
     let deploy_params = |signing: Signer| ParamsOfEncodeMessage {
         abi: abi.clone(),
         address: None,
