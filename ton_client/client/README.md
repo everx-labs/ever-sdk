@@ -36,7 +36,6 @@
 - `boc` – BOC serialization / manipulation / block structures parsing
 - `tvm` – local TVM runtime utilization (get methods, local run, etc.)
 - `net` – blockchain interaction functions
-- `queries` – parsed blockchain data queries 
 
 
 # BOC Module
