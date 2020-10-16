@@ -1,5 +1,5 @@
 # Modules
-## [client](mod_client.md) –  BOC manipulation module.
+## [client](mod_client.md) –  Provides information about library.
 
 [get_api_reference](mod_client.md#get_api_reference)
 
@@ -69,13 +69,19 @@
 
 [hdkey_public_from_xprv](mod_crypto.md#hdkey_public_from_xprv) –  Extracts the public key from the serialized extended private key
 
-## [abi](mod_abi.md) –  Functions for encoding and decoding messages due to ABI
+## [abi](mod_abi.md) –  Provides message encoding and decoding according to the ABI
+
+[encode_message_body](mod_abi.md#encode_message_body) –  Encodes message body according to ABI function call.
+
+[attach_signature_to_message_body](mod_abi.md#attach_signature_to_message_body)
 
 [encode_message](mod_abi.md#encode_message)
 
 [attach_signature](mod_abi.md#attach_signature)
 
-[decode_message](mod_abi.md#decode_message)
+[decode_message](mod_abi.md#decode_message) –  Decodes message body using provided message BOC and ABI.
+
+[decode_message_body](mod_abi.md#decode_message_body) –  Decodes message body using provided body BOC and ABI.
 
 [encode_account](mod_abi.md#encode_account) –  Encodes account state as it will be
 

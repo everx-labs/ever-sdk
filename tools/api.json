@@ -3,8 +3,8 @@
   "modules": [
     {
       "name": "client",
-      "summary": " BOC manipulation module.",
-      "description": " BOC manipulation module.",
+      "summary": " Provides information about library.",
+      "description": " Provides information about library.",
       "types": [
         {
           "name": "ClientError",
@@ -2409,8 +2409,8 @@
     },
     {
       "name": "abi",
-      "summary": " Functions for encoding and decoding messages due to ABI",
-      "description": " Functions for encoding and decoding messages due to ABI\n specification.",
+      "summary": " Provides message encoding and decoding according to the ABI",
+      "description": " Provides message encoding and decoding according to the ABI\n specification.",
       "types": [
         {
           "name": "Abi",
@@ -2626,26 +2626,26 @@
           "description": null
         },
         {
-          "name": "DecodedMessageType",
+          "name": "BodyType",
           "type": "EnumOfConsts",
           "enum_consts": [
             {
-              "name": "FunctionInput",
+              "name": "Input",
               "type": "None",
               "summary": " Message contains the input of the ABI function.",
               "description": " Message contains the input of the ABI function."
             },
             {
-              "name": "FunctionOutput",
+              "name": "Output",
               "type": "None",
               "summary": " Message contains the output of the ABI function.",
               "description": " Message contains the output of the ABI function."
             },
             {
-              "name": "ForeignFunctionInput",
+              "name": "InternalOutput",
               "type": "None",
-              "summary": " Message contains the input of the foreign ABI function.",
-              "description": " Message contains the input of the foreign ABI function.\n\n Occurs when contract sends internal message to other\n contract."
+              "summary": " Message contains the input of the imported ABI function.",
+              "description": " Message contains the input of the imported ABI function.\n\n Occurs when contract sends an internal message to other\n contract."
             },
             {
               "name": "Event",
@@ -2757,6 +2757,120 @@
               "name": "value",
               "type": "Ref",
               "ref_name": "Value",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfEncodeMessageBody",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "abi",
+              "type": "Ref",
+              "ref_name": "Abi",
+              "summary": " Contract ABI.",
+              "description": " Contract ABI."
+            },
+            {
+              "name": "call_set",
+              "type": "Ref",
+              "ref_name": "CallSet",
+              "summary": " Function call parameters.",
+              "description": " Function call parameters.\n\n Must be specified in non deploy message.\n\n In case of deploy message contains parameters of constructor."
+            },
+            {
+              "name": "is_internal",
+              "type": "Boolean",
+              "summary": " True if internal message body must be encoded.",
+              "description": " True if internal message body must be encoded."
+            },
+            {
+              "name": "signer",
+              "type": "Ref",
+              "ref_name": "Signer",
+              "summary": " Signing parameters.",
+              "description": " Signing parameters."
+            },
+            {
+              "name": "processing_try_index",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": " Processing try index.",
+              "description": " Processing try index.\n\n Used in message processing with retries.\n\n Encoder uses the provided try index to calculate message\n expiration time.\n\n Expiration timeouts will grow with every retry.\n\n Default value is 0."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfEncodeMessageBody",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "body",
+              "type": "String",
+              "summary": " Message body BOC encoded with `base64`.",
+              "description": " Message body BOC encoded with `base64`."
+            },
+            {
+              "name": "data_to_sign",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": " Optional data to sign. Encoded with `base64`.",
+              "description": " Optional data to sign. Encoded with `base64`.\n\n Presents when `message` is unsigned. Can be used for external\n message signing. Is this case you need to sing this data and\n produce signed message using `abi.attach_signature`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfAttachSignatureToMessageBody",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "abi",
+              "type": "Ref",
+              "ref_name": "Abi",
+              "summary": " Contract ABI",
+              "description": " Contract ABI"
+            },
+            {
+              "name": "public_key",
+              "type": "String",
+              "summary": " Public key. Must be encoded with `hex`.",
+              "description": " Public key. Must be encoded with `hex`."
+            },
+            {
+              "name": "message",
+              "type": "String",
+              "summary": " Unsigned message BOC. Must be encoded with `base64`.",
+              "description": " Unsigned message BOC. Must be encoded with `base64`."
+            },
+            {
+              "name": "signature",
+              "type": "String",
+              "summary": " Signature. Must be encoded with `hex`.",
+              "description": " Signature. Must be encoded with `hex`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfAttachSignatureToMessageBody",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "body",
+              "type": "String",
               "summary": null,
               "description": null
             }
@@ -2934,13 +3048,13 @@
           "description": null
         },
         {
-          "name": "DecodedMessageBody",
+          "name": "DecodedBody",
           "type": "Struct",
           "struct_fields": [
             {
-              "name": "message_type",
+              "name": "body_type",
               "type": "Ref",
-              "ref_name": "DecodedMessageType",
+              "ref_name": "BodyType",
               "summary": " Type of the message body content.",
               "description": " Type of the message body content."
             },
@@ -2948,7 +3062,7 @@
               "name": "name",
               "type": "String",
               "summary": " Function or event name.",
-              "description": " Function or event name.\n\n In case of foreign function input the name contains a comma\n separated list of possible fully qualified names, for\n example: \"IFoo.foo,IBar.foo\"."
+              "description": " Function or event name."
             },
             {
               "name": "value",
@@ -2966,6 +3080,33 @@
               },
               "summary": " Function header.",
               "description": " Function header."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfDecodeMessageBody",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "abi",
+              "type": "Ref",
+              "ref_name": "Abi",
+              "summary": " Contract ABI used to decode.",
+              "description": " Contract ABI used to decode."
+            },
+            {
+              "name": "body",
+              "type": "String",
+              "summary": " Message body BOC. Must be encoded with `base64`.",
+              "description": " Message body BOC. Must be encoded with `base64`."
+            },
+            {
+              "name": "is_internal",
+              "type": "Boolean",
+              "summary": " True if the body belongs to the internal message.",
+              "description": " True if the body belongs to the internal message."
             }
           ],
           "summary": null,
@@ -3035,6 +3176,82 @@
         }
       ],
       "functions": [
+        {
+          "name": "encode_message_body",
+          "summary": " Encodes message body according to ABI function call.",
+          "description": " Encodes message body according to ABI function call.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfEncodeMessageBody",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfEncodeMessageBody"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "attach_signature_to_message_body",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfAttachSignatureToMessageBody",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfAttachSignatureToMessageBody"
+              }
+            ]
+          },
+          "errors": null
+        },
         {
           "name": "encode_message",
           "summary": null,
@@ -3113,8 +3330,8 @@
         },
         {
           "name": "decode_message",
-          "summary": null,
-          "description": null,
+          "summary": " Decodes message body using provided message BOC and ABI.",
+          "description": " Decodes message body using provided message BOC and ABI.",
           "params": [
             {
               "name": "_context",
@@ -3143,7 +3360,45 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "DecodedMessageBody"
+                "ref_name": "DecodedBody"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "decode_message_body",
+          "summary": " Decodes message body using provided body BOC and ABI.",
+          "description": " Decodes message body using provided body BOC and ABI.",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfDecodeMessageBody",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "DecodedBody"
               }
             ]
           },
@@ -3771,7 +4026,7 @@
                 "type": "Optional",
                 "optional_inner": {
                   "type": "Ref",
-                  "ref_name": "DecodedMessageBody"
+                  "ref_name": "DecodedBody"
                 }
               },
               "summary": " Decoded bodies of the out messages.",

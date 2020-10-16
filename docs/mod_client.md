@@ -1,6 +1,6 @@
 # Module client
 
- BOC manipulation module.
+ Provides information about library.
 ## Functions
 [get_api_reference](#get_api_reference)
 

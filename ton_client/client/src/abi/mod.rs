@@ -23,15 +23,17 @@ mod signing;
 mod types;
 
 pub use decode_message::{
-    decode_message, decode_message_body, DecodedMessageBody, DecodedMessageType,
+    decode_message, decode_message_body, DecodedBody, BodyType,
     ParamsOfDecodeMessage, ParamsOfDecodeMessageBody,
 };
 pub use encode_account::{
     encode_account, ParamsOfEncodeAccount, ResultOfEncodeAccount, StateInitParams, StateInitSource,
 };
 pub use encode_message::{
-    attach_signature, encode_message, CallSet, DeploySet, ParamsOfAttachSignature,
-    ParamsOfEncodeMessage, ResultOfAttachSignature, ResultOfEncodeMessage,
+    attach_signature, attach_signature_to_message_body, encode_message, encode_message_body,
+    CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfAttachSignatureToMessageBody,
+    ParamsOfEncodeMessage, ParamsOfEncodeMessageBody, ResultOfAttachSignature,
+    ResultOfAttachSignatureToMessageBody, ResultOfEncodeMessage, ResultOfEncodeMessageBody,
 };
 pub use errors::{Error, ErrorCode};
 pub use signing::Signer;
