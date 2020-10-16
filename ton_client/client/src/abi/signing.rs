@@ -1,3 +1,4 @@
+use crate::abi::Error;
 use crate::client;
 use crate::crypto::{KeyPair, SigningBoxHandle};
 use crate::error::ClientResult;
@@ -31,8 +32,8 @@ impl Signer {
             Signer::None => Ok(None),
             Signer::Keys { keys } => Ok(Some(keys.clone())),
             Signer::External { .. } => Ok(None),
-            Signer::SigningBox { .. } => Err(client::Error::not_implemented(
-                "Abi handle doesn't supported yet",
+            Signer::SigningBox { .. } => Err(Error::invalid_signer(
+                "Signing box can't provide secret key".into(),
             )),
         }
     }
@@ -43,7 +44,7 @@ impl Signer {
             Signer::Keys { keys } => Ok(Some(keys.public.clone())),
             Signer::External { public_key } => Ok(Some(public_key.clone())),
             Signer::SigningBox { .. } => Err(client::Error::not_implemented(
-                "Abi handle doesn't supported yet",
+                "Signing boxes doesn't supported yet",
             )),
         }
     }

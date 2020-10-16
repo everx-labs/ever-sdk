@@ -14,10 +14,12 @@ pub enum Abi {
 }
 
 impl Abi {
-    pub(crate) fn json_string(&self) -> String {
+    pub(crate) fn json_string(&self) -> ClientResult<String> {
         match self {
-            Self::Serialized(v) => v.to_string(),
-            _ => panic!("Abi handles doesn't supported"),
+            Self::Serialized(v) => Ok(v.to_string()),
+            _ => Err(crate::client::Error::not_implemented(
+                "Abi handles doesn't supported",
+            )),
         }
     }
 }

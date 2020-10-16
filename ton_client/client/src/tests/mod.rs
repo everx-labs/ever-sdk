@@ -602,7 +602,7 @@ impl TestClient {
                     "value": value.unwrap_or(500_000_000u64),
                     "bounce": false
                 }),
-                Signer::WithKeys(Self::wallet_keys().unwrap()),
+                Signer::Keys { keys: Self::wallet_keys().unwrap() },
             )
             .await
         };

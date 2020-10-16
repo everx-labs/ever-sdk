@@ -44,7 +44,7 @@ fn enum_of_types(data: &DataEnum) -> api_info::Type {
         field_from(
             Some(&v.ident),
             &v.attrs,
-            api_info::Type::Struct { fields: fields },
+            api_info::Type::Struct { fields },
         )
     });
     api_info::Type::EnumOfTypes {
