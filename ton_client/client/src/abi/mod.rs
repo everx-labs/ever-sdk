@@ -23,7 +23,8 @@ mod signing;
 mod types;
 
 pub use decode_message::{
-    decode_message, DecodedMessageBody, DecodedMessageType, ParamsOfDecodeMessage,
+    decode_message, decode_message_body, DecodedMessageBody, DecodedMessageType,
+    ParamsOfDecodeMessage, ParamsOfDecodeMessageBody,
 };
 pub use encode_account::{
     encode_account, ParamsOfEncodeAccount, ResultOfEncodeAccount, StateInitParams, StateInitSource,
