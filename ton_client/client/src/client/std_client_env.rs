@@ -13,7 +13,6 @@
 
 use std::str::FromStr;
 use std::collections::HashMap;
-use std::pin::Pin;
 use futures::{Future, SinkExt, StreamExt};
 use tokio_tungstenite::tungstenite::Message as WsMessage;
 use reqwest::{
@@ -21,15 +20,15 @@ use reqwest::{
     header::{HeaderMap, HeaderName, HeaderValue}
 };
 use crate::error::ClientResult;
-use super::{ClientEnv, Error, WebSocket, FetchMethod, FetchResult};
+use super::{Error, WebSocket, FetchMethod, FetchResult};
 
-pub(crate) struct ClientEnvImpl {
+pub(crate) struct ClientEnv {
     http_client: HttpClient,
     _async_runtime: Option<tokio::runtime::Runtime>,
     async_runtime_handle: tokio::runtime::Handle,
 }
 
-impl ClientEnvImpl {
+impl ClientEnv {
     pub fn new() -> ClientResult<Self> {
         let client = ClientBuilder::new()
             .build()
@@ -81,15 +80,16 @@ impl ClientEnvImpl {
     }
 }
 
-impl ClientEnvImpl {
+impl ClientEnv {
     /// Returns current Unix time in ms
     pub fn now_ms(&self) -> u64 {
         chrono::prelude::Utc::now().timestamp_millis() as u64
     }
 
     /// Sets timer for provided time interval
-    pub async fn set_timer(&self, ms: u64) {
-        tokio::time::delay_for(tokio::time::Duration::from_millis(ms)).await
+    pub async fn set_timer(&self, ms: u64) -> ClientResult<()> {
+        tokio::time::delay_for(tokio::time::Duration::from_millis(ms)).await;
+        Ok(())
     }
 
     /// Sends asynchronous task to scheduler
@@ -108,7 +108,7 @@ impl ClientEnvImpl {
     pub async fn websocket_connect(
         &self,
         url: &str,
-        headers: Option<HashMap<&str, &str>>,
+        headers: Option<HashMap<String, String>>,
     ) -> ClientResult<WebSocket> {
         let mut request = tokio_tungstenite::tungstenite::handshake::client::Request::builder()
             .method("GET")
@@ -116,7 +116,7 @@ impl ClientEnvImpl {
 
         if let Some(headers) = headers {
             for (key, value) in headers {
-                request = request.header(key, value);
+                request = request.header(&key, &value);
             }
         }
 
@@ -141,7 +141,9 @@ impl ClientEnvImpl {
             match result {
                 Ok(message) => {
                     match message {
-                        WsMessage::Text(text) => Some(Ok(text)),
+                        WsMessage::Text(text) => {
+                            Some(Ok(text))
+                        },
                         _ => None
                     }
                 },

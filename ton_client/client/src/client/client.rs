@@ -18,16 +18,16 @@ use ton_sdk::AbiConfig;
 use crate::net::{NetworkConfig, NodeClient};
 
 #[cfg(not(target_arch = "wasm32"))]
-use super::std_client_env::ClientEnvImpl;
+use super::std_client_env::ClientEnv;
 #[cfg(target_arch = "wasm32")]
-use super::wasm_client_env::ClientEnvImpl;
+use super::wasm_client_env::ClientEnv;
 
 use super::Error;
 
 pub struct ClientContext {
     pub(crate) client: Option<NodeClient>,
     pub(crate) config: InternalClientConfig,
-    pub(crate) env: Arc<ClientEnvImpl>,
+    pub(crate) env: Arc<ClientEnv>,
 }
 
 impl ClientContext {
@@ -35,10 +35,14 @@ impl ClientContext {
         self.client.as_ref().ok_or(Error::net_module_not_init())
     }
 
+    pub async fn set_timer(&self, ms: u64) -> ClientResult<()> {
+        self.env.set_timer(ms).await
+    }
+
     pub fn new(config: Option<ClientConfig>) -> ClientResult<ClientContext> {
         let config: InternalClientConfig = config.unwrap_or_default().into();
 
-        let env = Arc::new(super::ClientEnvImpl::new()?);
+        let env = Arc::new(super::ClientEnv::new()?);
 
         let client = if let Some(net_config) = &config.network {
             if net_config.out_of_sync_threshold()

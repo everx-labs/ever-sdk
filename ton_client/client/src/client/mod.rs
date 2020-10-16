@@ -17,11 +17,11 @@ pub(crate) mod errors;
 #[cfg(not(target_arch = "wasm32"))]
 mod std_client_env;
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) use std_client_env::ClientEnvImpl;
+pub(crate) use std_client_env::ClientEnv;
 #[cfg(target_arch = "wasm32")]
 mod wasm_client_env;
 #[cfg(target_arch = "wasm32")]
-pub(crate) use wasm_client_env::ClientEnvImpl;
+pub(crate) use wasm_client_env::ClientEnv;
 
 #[cfg(test)]
 mod tests;
@@ -31,7 +31,7 @@ pub use client::{
 };
 pub use errors::{Error, ErrorCode};
 
-pub(crate) use client_env::{ClientEnv, FetchMethod, FetchResult, WebSocket};
+pub(crate) use client_env::{FetchMethod, FetchResult, WebSocket};
 
 use crate::error::ClientResult;
 use std::sync::Arc;

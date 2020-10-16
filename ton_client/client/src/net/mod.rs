@@ -170,7 +170,7 @@ pub async fn subscribe_collection<F: Future<Output = ()> + Send + Sync>(
             &params.result,
         )
         .await
-        .map_err(|err| Error::queries_wait_for_failed(err).add_network_url(client))?;
+        .map_err(|err| Error::queries_subscribe_failed(err).add_network_url(client))?;
 
     let (sender, mut receiver) = channel(1);
 

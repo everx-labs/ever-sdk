@@ -22,6 +22,9 @@ pub enum ErrorCode {
     InvalidContextHandle = CLIENT + 17,
     CannotSerializeResult = CLIENT + 18,
     CannotSerializeError = CLIENT + 19,
+    CannotConvertJsValueToJson = CLIENT + 20,
+    CannotReceiveSpawnedResult = CLIENT + 21,
+    SetTimerError = CLIENT + 22,
 }
 pub struct Error;
 
@@ -157,6 +160,29 @@ impl Error {
         error(
             ErrorCode::CannotSerializeResult,
             format!("Can't serialize result: {}", err),
+        )
+    }
+}
+
+impl Error {
+    pub fn cannot_convert_jsvalue_to_json(value: impl std::fmt::Debug) -> ClientError {
+        error(
+            ErrorCode::CannotConvertJsValueToJson,
+            format!("Can not convert JS value to JSON: {:#?}", value),
+        )
+    }
+
+    pub fn can_not_receive_spawned_result(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::CannotReceiveSpawnedResult,
+            format!("Can not receive result from spawned task: {}", err),
+        )
+    }
+
+    pub fn set_timer_error(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::SetTimerError,
+            format!("Set timer error: {}", err),
         )
     }
 }

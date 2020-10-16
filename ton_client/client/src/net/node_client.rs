@@ -11,7 +11,7 @@
 * limitations under the License.
 */
 
-use crate::client::{ClientEnv, ClientEnvImpl, FetchMethod};
+use crate::client::{ClientEnv, FetchMethod};
 use crate::net::Error;
 use crate::error::{ClientResult, ClientError};
 use futures::{Future, SinkExt, Stream, StreamExt};
@@ -123,7 +123,7 @@ pub(crate) struct Subscription{
 
 pub(crate) struct NodeClient {
     config: NetworkConfig,
-    client_env: Arc<ClientEnvImpl>,
+    client_env: Arc<ClientEnv>,
     data: tokio::sync::RwLock<Option<InitedClientData>>,
     // TODO: use tokio::sync:RwLock when SDK core is fully async
     query_url: std::sync::RwLock<Option<String>>,
@@ -131,25 +131,13 @@ pub(crate) struct NodeClient {
 
 impl NodeClient {
 
-    pub fn new(config: NetworkConfig, client_env: Arc<ClientEnvImpl>) -> Self {
+    pub fn new(config: NetworkConfig, client_env: Arc<ClientEnv>) -> Self {
         NodeClient {
             config,
             client_env,
             query_url: std::sync::RwLock::new(None),
             data: tokio::sync::RwLock::new(None)
         }
-    }
-
-    async fn check_redirect(&self, address: &str) -> ClientResult<String> {
-        let result = self.client_env.fetch(
-            address,
-            FetchMethod::Get,
-            None,
-            None,
-            None
-        ).await?;
-
-        Ok(result.url)
     }
 
     fn expand_address(base_url: &str) -> String {
@@ -176,17 +164,29 @@ impl NodeClient {
         response.body_as_json()
     }
 
-    async fn query_server_info(&self, address: &str) -> ClientResult<ServerInfo> {
-        let response = self.query_by_url(address, "%7Binfo%7Bversion%7D%7D").await?;
-        let version = response["data"]["info"]["version"]
+    async fn query_server_info_and_check_redirect(&self, address: &str) -> ClientResult<(ServerInfo, String)> {
+        let response = self.client_env.fetch(
+            &format!("{}?query=%7Binfo%7Bversion%7D%7D", address),
+            FetchMethod::Get,
+            None,
+            None,
+            None
+        ).await?;
+        let response_body = response.body_as_json()?;
+
+        let version = response_body["data"]["info"]["version"]
             .as_str()
             .ok_or(Error::invalid_server_response(
-                format!("No version in response: {}", response)))?;
+                format!("No version in response: {}", response_body)))?;
 
-        ServerInfo::from_version(version)
+        let info = ServerInfo::from_version(version)
             .map_err(|err|
                 Error::invalid_server_response(
-                    format!("Can not parse version {}: {}", version, err)))
+                    format!("Can not parse version {}: {}", version, err)))?;
+
+        let url = response.url.trim_end_matches("?query=%7Binfo%7Bversion%7D%7D").to_owned();
+
+        Ok((info, url))
     }
 
     async fn get_time_delta(&self, address: &str) -> ClientResult<i64>{
@@ -211,13 +211,13 @@ impl NodeClient {
 
     async fn init(&self, config: &NetworkConfig) -> ClientResult<InitedClientData> {
         let queries_server = Self::expand_address(config.server_address());
-        let redirected = self.check_redirect(&queries_server).await?;
+        let (server_info, redirected) = 
+            self.query_server_info_and_check_redirect(&queries_server).await?;
         let queries_server = redirected.clone();
         let subscriptions_server = redirected
             .replace("https://", "wss://")
             .replace("http://", "ws://");
 
-        let server_info = self.query_server_info(&queries_server).await?;
         if server_info.supports_time {
             self.check_time_delta(&queries_server, config).await?;
         }
@@ -271,7 +271,7 @@ impl NodeClient {
 
             self.client_env.websocket_connect(
                 &address,
-                Some(HashMap::from_iter(vec![("Sec-WebSocket-Protocol", "graphql-ws")].into_iter()))
+                Some(HashMap::from_iter(vec![("Sec-WebSocket-Protocol".to_owned(), "graphql-ws".to_owned())].into_iter()))
             ).await?
         };
 

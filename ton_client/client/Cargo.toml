@@ -50,10 +50,23 @@ futures = "0.3.4"
 lockfree = { git = "https://github.com/tonlabs/lockfree.git", package = "lockfree" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-web-sys = { version =  "0.3.45", features = ["Headers", "Request", "RequestInit", "RequestMode", "Response", "Window"] }
 wasm-bindgen = { version = "0.2.68", features = ["serde-serialize"] }
 wasm-bindgen-futures = "0.4.18"
-tokio = { version = "0.2.13", features = ["sync", "time"], default-features = false }
+tokio = { version = "0.2.13", features = ["sync"], default-features = false }
+js-sys = "0.3"
+web-sys = { version =  "0.3.45", features = [
+    "Blob",
+    "ErrorEvent",
+    "FileReader",
+    "Headers",
+    "MessageEvent",
+    "ProgressEvent",
+    "Request",
+    "RequestInit",
+    "Response",
+    "Window",
+    "WebSocket",
+    ] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 reqwest = "0.10.4"

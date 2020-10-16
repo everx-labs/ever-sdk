@@ -39,8 +39,8 @@ use crate::c_interface::modules::{AbiModule, ProcessingModule, NetModule};
 
 mod common;
 
-const DEFAULT_NETWORK_ADDRESS: &str = "http://localhost";
-// const DEFAULT_NETWORK_ADDRESS: &str = "cinet.tonlabs.io";
+//const DEFAULT_NETWORK_ADDRESS: &str = "http://localhost";
+const DEFAULT_NETWORK_ADDRESS: &str = "cinet.tonlabs.io";
 // const DEFAULT_NETWORK_ADDRESS: &str = "net.ton.dev";
 
 const ROOT_CONTRACTS_PATH: &str = "src/tests/contracts/";
@@ -272,7 +272,7 @@ impl TestClient {
     }
 
     pub fn node_se() -> bool {
-        std::env::var("USE_NODE_SE").unwrap_or("true".to_owned()) == "true".to_owned()
+        std::env::var("USE_NODE_SE").unwrap_or("true".to_owned()) == "tru".to_owned()
     }
 
     pub fn abi_version() -> u8 {
