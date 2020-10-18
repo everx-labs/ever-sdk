@@ -36,6 +36,8 @@
 
 [StateInitParams](#StateInitParams)
 
+[MessageSource](#MessageSource)
+
 [ParamsOfEncodeMessageBody](#ParamsOfEncodeMessageBody)
 
 [ResultOfEncodeMessageBody](#ResultOfEncodeMessageBody)
@@ -447,7 +449,7 @@ Depends on value of the  `type` field.
 When _type_ is _'Message'_
 
 
-- `source`: _[MessageSource](mod_processing.md#MessageSource)_
+- `source`: _[MessageSource](mod_abi.md#MessageSource)_
 
 When _type_ is _'StateInit'_
 
@@ -474,6 +476,42 @@ type StateInitParams = {
 ```
 - `abi`: _[Abi](mod_abi.md#Abi)_
 - `value`: _any_
+
+
+## MessageSource
+
+```ts
+type MessageSource = {
+    type: 'Encoded'
+    message: string,
+    abi?: Abi
+} | {
+    type: 'EncodingParams'
+    abi: Abi,
+    address?: string,
+    deploy_set?: DeploySet,
+    call_set?: CallSet,
+    signer: Signer,
+    processing_try_index?: number
+};
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'Encoded'_
+
+
+- `message`: _string_
+- `abi`?: _[Abi](mod_abi.md#Abi)_
+
+When _type_ is _'EncodingParams'_
+
+
+- `abi`: _[Abi](mod_abi.md#Abi)_ –  Contract ABI.
+- `address`?: _string_ –  Contract address.
+- `deploy_set`?: _[DeploySet](mod_abi.md#DeploySet)_ –  Deploy parameters.
+- `call_set`?: _[CallSet](mod_abi.md#CallSet)_ –  Function call parameters.
+- `signer`: _[Signer](mod_abi.md#Signer)_ –  Signing parameters.
+- `processing_try_index`?: _number_ –  Processing try index.
 
 
 ## ParamsOfEncodeMessageBody

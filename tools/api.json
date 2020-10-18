@@ -2765,6 +2765,53 @@
           "description": null
         },
         {
+          "name": "MessageSource",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "Encoded",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "message",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "abi",
+                  "type": "Optional",
+                  "optional_inner": {
+                    "type": "Ref",
+                    "ref_name": "Abi"
+                  },
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "EncodingParams",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "",
+                  "type": "Ref",
+                  "ref_name": "ParamsOfEncodeMessage",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfEncodeMessageBody",
           "type": "Struct",
           "struct_fields": [
@@ -3705,53 +3752,6 @@
       "summary": " Message processing module.",
       "description": " Message processing module.\n\n This module incorporates functions related to complex message\n processing scenarios.",
       "types": [
-        {
-          "name": "MessageSource",
-          "type": "EnumOfTypes",
-          "enum_types": [
-            {
-              "name": "Encoded",
-              "type": "Struct",
-              "struct_fields": [
-                {
-                  "name": "message",
-                  "type": "String",
-                  "summary": null,
-                  "description": null
-                },
-                {
-                  "name": "abi",
-                  "type": "Optional",
-                  "optional_inner": {
-                    "type": "Ref",
-                    "ref_name": "Abi"
-                  },
-                  "summary": null,
-                  "description": null
-                }
-              ],
-              "summary": null,
-              "description": null
-            },
-            {
-              "name": "EncodingParams",
-              "type": "Struct",
-              "struct_fields": [
-                {
-                  "name": "",
-                  "type": "Ref",
-                  "ref_name": "ParamsOfEncodeMessage",
-                  "summary": null,
-                  "description": null
-                }
-              ],
-              "summary": null,
-              "description": null
-            }
-          ],
-          "summary": null,
-          "description": null
-        },
         {
           "name": "ProcessingEvent",
           "type": "EnumOfTypes",

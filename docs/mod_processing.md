@@ -12,8 +12,6 @@
 [process_message](#process_message) –  Sends message to the network and monitors network for a result of
 
 ## Types
-[MessageSource](#MessageSource)
-
 [ProcessingEvent](#ProcessingEvent)
 
 [ResultOfProcessMessage](#ResultOfProcessMessage)
@@ -136,7 +134,7 @@ function process_message(
 ): Promise<ResultOfProcessMessage>;
 ```
 ### Parameters
-- `message`: _[MessageSource](mod_processing.md#MessageSource)_ –  Message source.
+- `message`: _[MessageSource](mod_abi.md#MessageSource)_ –  Message source.
 - `send_events`: _boolean_ –  Flag for requesting events sending
 - `responseHandler`?: _ResponseHandler_ – additional responses handler.### Result
 
@@ -146,42 +144,6 @@ function process_message(
 
 
 # Types
-## MessageSource
-
-```ts
-type MessageSource = {
-    type: 'Encoded'
-    message: string,
-    abi?: Abi
-} | {
-    type: 'EncodingParams'
-    abi: Abi,
-    address?: string,
-    deploy_set?: DeploySet,
-    call_set?: CallSet,
-    signer: Signer,
-    processing_try_index?: number
-};
-```
-Depends on value of the  `type` field.
-
-When _type_ is _'Encoded'_
-
-
-- `message`: _string_
-- `abi`?: _[Abi](mod_abi.md#Abi)_
-
-When _type_ is _'EncodingParams'_
-
-
-- `abi`: _[Abi](mod_abi.md#Abi)_ –  Contract ABI.
-- `address`?: _string_ –  Contract address.
-- `deploy_set`?: _[DeploySet](mod_abi.md#DeploySet)_ –  Deploy parameters.
-- `call_set`?: _[CallSet](mod_abi.md#CallSet)_ –  Function call parameters.
-- `signer`: _[Signer](mod_abi.md#Signer)_ –  Signing parameters.
-- `processing_try_index`?: _number_ –  Processing try index.
-
-
 ## ProcessingEvent
 
 ```ts
@@ -365,7 +327,7 @@ type ParamsOfProcessMessage = {
     send_events: boolean
 };
 ```
-- `message`: _[MessageSource](mod_processing.md#MessageSource)_ –  Message source.
+- `message`: _[MessageSource](mod_abi.md#MessageSource)_ –  Message source.
 - `send_events`: _boolean_ –  Flag for requesting events sending
 
 
