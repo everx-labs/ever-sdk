@@ -3,7 +3,7 @@ use crate::abi::{
     ParamsOfEncodeMessage, Signer,
 };
 use crate::processing::{
-    MessageSource, ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction,
+    ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction,
     ProcessingEvent, ProcessingResponseType,
 };
 
@@ -11,6 +11,7 @@ use crate::json_interface::modules::ProcessingModule;
 use crate::processing::types::DecodedOutput;
 use crate::tests::{TestClient, EVENTS};
 use api_info::ApiModule;
+use crate::abi::MessageSource;
 
 #[tokio::test(core_threads = 2)]
 async fn test_wait_message() {

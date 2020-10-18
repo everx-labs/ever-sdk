@@ -151,11 +151,15 @@ can receive an unlimited count of responses related to single request. Parameter
   request_id.
 
 **Important**:
-- application MUST NOT store pointers passed in `params_json` and use it after `response_handler` 
+- Application MUST NOT store pointers passed in `params_json` and use it after `response_handler` 
   has been returned, if an application requires this data after returning then it must creates 
-  an own copy;
-- application MUST NOT free memory of pointers passed in `params_json`.
-
+  an own copy.
+- Application MUST NOT free memory of pointers passed in `params_json`.
+- Response handler can be called before the `tc_request` returns. In this case the response handler 
+  will be called on the calling thread.
+- Responses can be called on background thread created by library to serve asynchronous tasks. 
+  All responses, related to the same request will be called from the same thread in right sequence.
+  
 # Bindings
 
 Here we are look to the typical binding structure. In this example we will 

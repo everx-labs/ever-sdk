@@ -6,7 +6,6 @@ use crate::abi::encode_message::{
 use crate::abi::{FunctionHeader, Signer, ParamsOfDecodeMessageBody};
 use crate::crypto::KeyPair;
 use crate::tests::{TestClient, EVENTS};
-use crate::boc::{ResultOfParse, ParamsOfParse};
 
 #[test]
 fn encode_v2() {

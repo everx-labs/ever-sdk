@@ -20,7 +20,7 @@ use crate::client::{ClientContext, Error};
 use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
-use crate::processing::{MessageSource, ParamsOfProcessMessage, ResultOfProcessMessage};
+use crate::processing::{ParamsOfProcessMessage, ResultOfProcessMessage};
 use crate::{crypto::KeyPair, error::{ClientError, ClientResult}, net::{ParamsOfWaitForCollection, ResultOfWaitForCollection}, tc_create_context, tc_destroy_context, ContextHandle};
 use api_info::ApiModule;
 use futures::Future;
@@ -36,6 +36,7 @@ use tokio::sync::{
     Mutex,
 };
 use crate::json_interface::modules::{AbiModule, ProcessingModule, NetModule};
+use crate::abi::MessageSource;
 
 mod common;
 

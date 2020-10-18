@@ -18,13 +18,14 @@ pub(crate) mod execute_get;
 pub(crate) mod execute_message;
 mod types;
 
+mod stack;
 #[cfg(test)]
 mod tests;
-mod stack;
 
 pub use errors::{Error, ErrorCode};
 pub use execute_get::{execute_get, ParamsOfExecuteGet, ResultOfExecuteGet};
-pub use execute_message::{execute_message, ParamsOfExecuteMessage, ResultOfExecuteMessage};
+pub use execute_message::{
+    execute_message, ExecutionMode, ExecutionOptions, ParamsOfExecuteMessage,
+    ResultOfExecuteMessage,
+};
 pub use types::ExitCode;
-
-

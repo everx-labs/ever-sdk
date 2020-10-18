@@ -13,10 +13,9 @@
  */
 
 use crate::abi::encode_account::{ParamsOfEncodeAccount, StateInitSource};
-use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer};
+use crate::abi::{MessageSource, CallSet, DeploySet, ParamsOfEncodeMessage, Signer};
 use crate::boc::required_boc;
 use crate::json_interface::modules::{AbiModule, TvmModule};
-use crate::processing::MessageSource;
 use crate::tests::{TestClient, SUBSCRIBE};
 use crate::tvm::execute_message::ExecutionMode;
 use crate::tvm::{execute_get, execute_message, ParamsOfExecuteGet, ParamsOfExecuteMessage};

@@ -37,6 +37,6 @@ pub use encode_message::{
 };
 pub use errors::{Error, ErrorCode};
 pub use signing::Signer;
-pub use types::{Abi, AbiHandle, FunctionHeader};
+pub use types::{Abi, AbiHandle, FunctionHeader, MessageSource};
 
 pub const DEFAULT_WORKCHAIN: i32 = 0;

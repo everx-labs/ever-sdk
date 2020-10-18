@@ -191,6 +191,7 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::abi::BodyType>();
     module.register_type::<crate::abi::StateInitSource>();
     module.register_type::<crate::abi::StateInitParams>();
+    module.register_type::<crate::abi::MessageSource>();
 
     module.register_async_fn(
         crate::abi::encode_message_body,
@@ -286,7 +287,6 @@ pub struct ProcessingModule;
 
 fn register_processing(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<ProcessingModule>(handlers);
-    module.register_type::<crate::processing::MessageSource>();
     module.register_type::<crate::processing::ProcessingEvent>();
     module.register_type::<crate::processing::ResultOfProcessMessage>();
     module.register_type::<crate::processing::DecodedOutput>();
