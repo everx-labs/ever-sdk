@@ -1177,7 +1177,7 @@ impl Contract {
     }
 
     /// Deserializes tree of cells from byte array into `SliceData`
-    fn deserialize_tree_to_slice(data: &[u8]) -> Result<SliceData> {
+    pub fn deserialize_tree_to_slice(data: &[u8]) -> Result<SliceData> {
         let mut response_cells = deserialize_cells_tree(&mut Cursor::new(data))?;
 
         if response_cells.len() != 1 {

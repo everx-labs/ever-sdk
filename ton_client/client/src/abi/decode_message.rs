@@ -13,18 +13,18 @@ use ton_types::SliceData;
 use crate::boc::internal::deserialize_cell_from_base64;
 
 #[derive(Serialize, Deserialize, ApiType, PartialEq, Debug, Clone)]
-pub enum DecodedMessageType {
+pub enum MessageBodyType {
     /// Message contains the input of the ABI function.
-    FunctionInput,
+    Input,
 
     /// Message contains the output of the ABI function.
-    FunctionOutput,
+    Output,
 
-    /// Message contains the input of the foreign ABI function.
+    /// Message contains the input of the imported ABI function.
     ///
-    /// Occurs when contract sends internal message to other
+    /// Occurs when contract sends an internal message to other
     /// contract.
-    ForeignFunctionInput,
+    InternalOutput,
 
     /// Message contains the input of the ABI event.
     Event,
@@ -33,17 +33,13 @@ pub enum DecodedMessageType {
 #[derive(Serialize, Deserialize, ApiType, PartialEq, Debug, Clone)]
 pub struct DecodedMessageBody {
     /// Type of the message body content.
-    pub message_type: DecodedMessageType,
+    pub body_type: MessageBodyType,
 
     /// Function or event name.
-    ///
-    /// In case of foreign function input the name contains a comma
-    /// separated list of possible fully qualified names, for
-    /// example: "IFoo.foo,IBar.foo".
     pub name: String,
 
     /// Parameters or result value.
-    pub value: Value,
+    pub value: Option<Value>,
 
     /// Function header.
     pub header: Option<FunctionHeader>,
@@ -51,16 +47,16 @@ pub struct DecodedMessageBody {
 
 impl DecodedMessageBody {
     fn new(
-        message_type: DecodedMessageType,
+        body_type: MessageBodyType,
         decoded: DecodedMessage,
         header: Option<FunctionHeader>,
     ) -> ClientResult<Self> {
         let value = Detokenizer::detokenize_to_json_value(&decoded.params, &decoded.tokens)
             .map_err(|x| Error::invalid_message_for_decode(x))?;
         Ok(Self {
-            message_type,
+            body_type,
             name: decoded.function_name,
-            value,
+            value: Some(value),
             header,
         })
     }
@@ -136,9 +132,9 @@ fn decode_body(
 ) -> ClientResult<DecodedMessageBody> {
     if let Ok(output) = abi.decode_output(body.clone(), is_internal) {
         if abi.events().get(&output.function_name).is_some() {
-            DecodedMessageBody::new(DecodedMessageType::Event, output, None)
+            DecodedMessageBody::new(MessageBodyType::Event, output, None)
         } else {
-            DecodedMessageBody::new(DecodedMessageType::FunctionOutput, output, None)
+            DecodedMessageBody::new(MessageBodyType::Output, output, None)
         }
     } else if let Ok(input) = abi.decode_input(body.clone(), is_internal) {
         // TODO: add pub access to `abi_version` field of `Contract` struct.
@@ -158,7 +154,7 @@ fn decode_body(
             Error::invalid_message_for_decode(format!("Can't decode function header: {}", err))
         })?;
         DecodedMessageBody::new(
-            DecodedMessageType::FunctionInput,
+            MessageBodyType::Input,
             input,
             FunctionHeader::from(&header)?,
         )

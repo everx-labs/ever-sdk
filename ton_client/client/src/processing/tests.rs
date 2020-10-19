@@ -1,9 +1,9 @@
 use crate::abi::{
-    CallSet, DecodedMessageBody, DecodedMessageType, DeploySet, FunctionHeader,
+    CallSet, DecodedMessageBody, MessageBodyType, DeploySet, FunctionHeader,
     ParamsOfEncodeMessage, Signer,
 };
 use crate::processing::{
-    MessageSource, ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction,
+    ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction,
     ProcessingEvent, ProcessingResponseType,
 };
 
@@ -11,6 +11,7 @@ use crate::json_interface::modules::ProcessingModule;
 use crate::processing::types::DecodedOutput;
 use crate::tests::{TestClient, EVENTS};
 use api_info::ApiModule;
+use crate::abi::MessageSource;
 
 #[tokio::test(core_threads = 2)]
 async fn test_wait_message() {
@@ -247,15 +248,15 @@ async fn test_process_message() {
         Some(DecodedOutput {
             out_messages: vec![
                 Some(DecodedMessageBody {
-                    message_type: DecodedMessageType::Event,
+                    body_type: MessageBodyType::Event,
                     name: "EventThrown".into(),
-                    value: json!({"id": "0x1"}),
+                    value: Some(json!({"id": "0x1"})),
                     header: None,
                 }),
                 Some(DecodedMessageBody {
-                    message_type: DecodedMessageType::FunctionOutput,
+                    body_type: MessageBodyType::Output,
                     name: "returnValue".into(),
-                    value: json!({"value0": "0x1"}),
+                    value: Some(json!({"value0": "0x1"})),
                     header: None,
                 })
             ],

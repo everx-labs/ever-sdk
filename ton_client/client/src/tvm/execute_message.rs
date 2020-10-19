@@ -24,7 +24,7 @@ use ton_executor::{
 };
 
 use crate::abi::Abi;
-use crate::processing::{DecodedOutput, MessageSource};
+use crate::processing::DecodedOutput;
 use serde_json::Value;
 
 #[derive(Serialize, Deserialize, ApiType, Clone, Default)]
@@ -83,6 +83,7 @@ pub struct ResultOfExecuteMessage {
     pub account: Option<Value>,
 }
 
+use crate::abi::MessageSource;
 use crate::boc::{parse_account, parse_message, parse_transaction, ParamsOfParse, ResultOfParse};
 use crate::processing::parsing::decode_output;
 use crate::tvm::check_transaction::check_transaction_status;
@@ -165,7 +166,8 @@ impl ExecutionOutput {
                     ParamsOfParse {
                         boc: serialize_cell_to_base64(x, "account")?,
                     },
-                ).map(|parsed| parsed.parsed)
+                )
+                .map(|parsed| parsed.parsed)
             })
             .transpose()
     }

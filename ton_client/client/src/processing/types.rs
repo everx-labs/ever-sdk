@@ -40,6 +40,7 @@ pub enum ProcessingResponseType {
 }
 
 #[derive(Serialize, Deserialize, ApiType, Debug, Clone)]
+#[serde(tag = "type")]
 pub enum ProcessingEvent {
     /// Notifies the app that the current shard block will be fetched
     /// from the network.
@@ -129,4 +130,3 @@ pub enum ProcessingEvent {
         result: ResultOfProcessMessage,
     },
 }
-

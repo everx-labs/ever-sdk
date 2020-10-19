@@ -189,10 +189,19 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::abi::CallSet>();
     module.register_type::<crate::abi::DeploySet>();
     module.register_type::<crate::abi::Signer>();
-    module.register_type::<crate::abi::DecodedMessageType>();
+    module.register_type::<crate::abi::MessageBodyType>();
     module.register_type::<crate::abi::StateInitSource>();
     module.register_type::<crate::abi::StateInitParams>();
+    module.register_type::<crate::abi::MessageSource>();
 
+    module.register_async_fn(
+        crate::abi::encode_message_body,
+        crate::abi::encode_message::encode_message_body_api,
+    );
+    module.register_sync_fn(
+        crate::abi::attach_signature_to_message_body,
+        crate::abi::encode_message::attach_signature_to_message_body_api,
+    );
     module.register_async_fn(
         crate::abi::encode_message,
         crate::abi::encode_message::encode_message_api,
@@ -279,7 +288,6 @@ pub struct ProcessingModule;
 
 fn register_processing(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<ProcessingModule>(handlers);
-    module.register_type::<crate::processing::MessageSource>();
     module.register_type::<crate::processing::ProcessingEvent>();
     module.register_type::<crate::processing::ResultOfProcessMessage>();
     module.register_type::<crate::processing::DecodedOutput>();

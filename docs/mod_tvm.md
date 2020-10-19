@@ -43,7 +43,7 @@ function execute_message(
 ): Promise<ResultOfExecuteMessage>;
 ```
 ### Parameters
-- `message`: _[MessageSource](mod_processing.md#MessageSource)_ –  Input message.
+- `message`: _[MessageSource](mod_abi.md#MessageSource)_ –  Input message.
 - `account`: _string_ –  Account BOC. Must be encoded as base64.
 - `mode`: _[ExecutionMode](mod_tvm.md#ExecutionMode)_ –  Execution mode.
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ –  Execution options.
@@ -121,7 +121,7 @@ type ParamsOfExecuteMessage = {
     execution_options?: ExecutionOptions
 };
 ```
-- `message`: _[MessageSource](mod_processing.md#MessageSource)_ –  Input message.
+- `message`: _[MessageSource](mod_abi.md#MessageSource)_ –  Input message.
 - `account`: _string_ –  Account BOC. Must be encoded as base64.
 - `mode`: _[ExecutionMode](mod_tvm.md#ExecutionMode)_ –  Execution mode.
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ –  Execution options.
