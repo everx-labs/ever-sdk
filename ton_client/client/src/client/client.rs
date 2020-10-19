@@ -17,9 +17,9 @@ use ton_sdk::AbiConfig;
 
 use crate::net::{NetworkConfig, NodeClient};
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(feature = "wasm"))]
 use super::std_client_env::ClientEnv;
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature = "wasm")]
 use super::wasm_client_env::ClientEnv;
 
 use super::Error;

@@ -15,7 +15,7 @@ use crate::error::{ClientError, ClientResult};
 use super::Error;
 use std::collections::HashMap;
 use std::pin::Pin;
-use futures::{Future, Sink, Stream};
+use futures::{Sink, Stream};
 
 pub(crate) struct WebSocket {
     pub handle: u32,
@@ -73,32 +73,3 @@ impl FetchMethod {
     }
 }
 
-#[async_trait::async_trait]
-pub(crate) trait ClientEnv {
-    /// Returns current Unix time in ms
-    fn now_ms(&self) -> u64;
-    /// Sets timer for provided time interval
-    async fn set_timer(&self, ms: u64);
-    /// Sends asynchronous task to scheduler
-    fn spawn(&self, future: impl Future<Output = ()> + 'static);
-    /// Executes asynchronous task blocking current thread
-    #[cfg(not(target_arch = "wasm32"))]
-    fn block_on<F: Future>(&self, future: F) -> F::Output;
-    /// Connects to the websocket endpoint
-    async fn websocket_connect(
-        &self,
-        url: &str,
-        headers: Option<HashMap<&str, &str>>,
-    ) -> ClientResult<WebSocket>;
-    /// Closes websocket
-    async fn websocket_close(&self, handle: u32);
-    /// Executes http request
-    async fn fetch(
-        &self,
-        url: &str,
-        method: FetchMethod,
-        headers: Option<HashMap<String, String>>,
-        body: Option<String>,
-        timeout_ms: Option<u32>,
-    ) -> ClientResult<FetchResult>;
-}

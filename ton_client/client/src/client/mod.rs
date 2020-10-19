@@ -14,13 +14,13 @@
 mod client;
 mod client_env;
 pub(crate) mod errors;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(feature = "wasm"))]
 mod std_client_env;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(feature = "wasm"))]
 pub(crate) use std_client_env::ClientEnv;
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature = "wasm")]
 mod wasm_client_env;
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature = "wasm")]
 pub(crate) use wasm_client_env::ClientEnv;
 
 #[cfg(test)]

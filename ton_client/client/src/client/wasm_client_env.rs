@@ -26,9 +26,13 @@ fn js_value_to_value(js_value: JsValue) -> ClientResult<serde_json::Value> {
 }
 
 fn js_value_to_string(js_value: JsValue) -> String {
-    js_value_to_value(js_value)
-        .map(|val| format!("{:#}", val))
-        .unwrap_or("Unserializable value".to_owned())
+    if let Ok(txt) = js_value.clone().dyn_into::<js_sys::Error>() {
+        String::from(txt.message())
+    } else {
+        js_value_to_value(js_value)
+            .map(|val| format!("{:#}", val))
+            .unwrap_or("Unserializable value".to_owned())
+    }
 }
 
 // web-sys and wasm-bindgen types are not `Send` so we cannot use them directly in async

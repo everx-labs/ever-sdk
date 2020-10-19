@@ -62,7 +62,7 @@ impl<'h> ModuleReg<'h> {
         self.module.functions.push(function);
 
         self.handlers.register_async(name.clone(), Box::new(SpawnHandler::new(handler)));
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(not(feature = "wasm"))]
         self.handlers.register_sync(
             name,
             Box::new(CallHandler::new(move |context, params| {

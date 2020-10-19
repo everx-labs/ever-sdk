@@ -85,42 +85,42 @@ impl Error {
     pub fn websocket_receive_error<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::WebsocketReceiveError,
-            format!("Can not receive message from websocket : {}", err),
+            format!("Can not receive message from websocket: {}", err),
         )
     }
 
     pub fn websocket_send_error<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::WebsocketSendError,
-            format!("Can not send message to websocket : {}", err),
+            format!("Can not send message to websocket: {}", err),
         )
     }
 
     pub fn http_client_create_error<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::HttpClientCreateError,
-            format!("Can not create http client : {}", err),
+            format!("Can not create http client: {}", err),
         )
     }
 
     pub fn http_request_create_error<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::HttpRequestCreateError,
-            format!("Can not create http request : {}", err),
+            format!("Can not create http request: {}", err),
         )
     }
 
     pub fn http_request_send_error<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::HttpRequestSendError,
-            format!("Can not send http request : {}", err),
+            format!("Can not send http request: {}", err),
         )
     }
 
     pub fn http_request_parse_error<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::HttpRequestParseError,
-            format!("Can not parse http request : {}", err),
+            format!("Can not parse http request: {}", err),
         )
     }
 
