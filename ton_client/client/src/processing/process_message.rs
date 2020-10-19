@@ -1,41 +1,12 @@
-use crate::abi::{Abi, ParamsOfEncodeMessage};
 use crate::client::ClientContext;
 use crate::error::ClientResult;
 use crate::processing::internal::can_retry_expired_message;
 use crate::processing::{
-    send_message, wait_for_transaction, Error, ErrorCode, ParamsOfSendMessage,
+    send_message, wait_for_transaction, ErrorCode, ParamsOfSendMessage,
     ParamsOfWaitForTransaction, ProcessingEvent, ResultOfProcessMessage,
 };
 use std::sync::Arc;
-
-#[derive(Serialize, Deserialize, ApiType, Debug, Clone)]
-pub enum MessageSource {
-    Encoded { message: String, abi: Option<Abi> },
-    EncodingParams(ParamsOfEncodeMessage),
-}
-
-impl MessageSource {
-    pub(crate) async fn encode(
-        &self,
-        context: &Arc<ClientContext>,
-    ) -> ClientResult<(String, Option<Abi>)> {
-        Ok(match self {
-            MessageSource::EncodingParams(params) => {
-                if params.signer.is_external() {
-                    return Err(Error::external_signer_must_not_be_used());
-                }
-                let abi = params.abi.clone();
-                (
-                    crate::abi::encode_message(context.clone(), params.clone())
-                        .await?
-                        .message,
-                    Some(abi),
-                )
-            }
-            MessageSource::Encoded { abi, message } => (message.clone(), abi.clone()),
-        })
-    }
-}
+use crate::abi::MessageSource;
 
 #[derive(Serialize, Deserialize, ApiType, Debug)]
 pub struct ParamsOfProcessMessage {

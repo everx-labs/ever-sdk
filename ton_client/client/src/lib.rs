@@ -25,11 +25,11 @@ extern crate log;
 
 pub mod abi;
 pub mod boc;
-pub mod c_interface;
 pub mod client;
 pub mod crypto;
 pub mod encoding;
 pub mod error;
+pub mod json_interface;
 pub mod net;
 pub mod processing;
 pub mod tvm;
@@ -38,5 +38,5 @@ pub mod utils;
 #[cfg(test)]
 mod tests;
 
-pub use c_interface::interop::*;
+pub use self::json_interface::interop::*;
 pub use client::{ClientConfig, ClientContext};

@@ -1,16 +1,17 @@
 use crate::abi::{
-    CallSet, DecodedMessageBody, DecodedMessageType, DeploySet, FunctionHeader,
+    CallSet, DecodedMessageBody, MessageBodyType, DeploySet, FunctionHeader,
     ParamsOfEncodeMessage, Signer,
 };
 use crate::processing::{
-    MessageSource, ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction,
-    ProcessingEvent, ProcessingResponseType
+    ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction,
+    ProcessingEvent, ProcessingResponseType,
 };
 
+use crate::json_interface::modules::ProcessingModule;
 use crate::processing::types::DecodedOutput;
 use crate::tests::{TestClient, EVENTS};
 use api_info::ApiModule;
-use crate::c_interface::modules::ProcessingModule;
+use crate::abi::MessageSource;
 
 #[tokio::test(core_threads = 2)]
 async fn test_wait_message() {
@@ -31,14 +32,14 @@ async fn test_wait_message() {
     };
 
     let send_message = client.wrap_async_callback(
-        crate::c_interface::processing::send_message,
+        crate::json_interface::processing::send_message,
         ProcessingModule::api(),
-        crate::c_interface::processing::send_message_api(),
+        crate::json_interface::processing::send_message_api(),
     );
     let wait_for_transaction = client.wrap_async_callback(
-        crate::c_interface::processing::wait_for_transaction,
+        crate::json_interface::processing::wait_for_transaction,
         ProcessingModule::api(),
-        crate::c_interface::processing::wait_for_transaction_api(),
+        crate::json_interface::processing::wait_for_transaction_api(),
     );
 
     let encoded = client
@@ -55,7 +56,7 @@ async fn test_wait_message() {
                 }),
                 input: None,
             }),
-            signer: Signer::WithKeys(keys.clone()),
+            signer: Signer::Keys { keys: keys.clone() },
             processing_try_index: None,
         })
         .await;
@@ -65,23 +66,25 @@ async fn test_wait_message() {
         .await;
 
     let result = send_message
-        .call_with_callback(ParamsOfSendMessage {
+        .call_with_callback(
+            ParamsOfSendMessage {
                 message: encoded.message.clone(),
                 send_events: true,
                 abi: Some(abi.clone()),
             },
-            callback.clone()
+            callback.clone(),
         )
         .await;
 
     let output = wait_for_transaction
-        .call_with_callback(ParamsOfWaitForTransaction {
+        .call_with_callback(
+            ParamsOfWaitForTransaction {
                 message: encoded.message.clone(),
                 shard_block_id: result.shard_block_id,
                 send_events: true,
                 abi: Some(abi.clone()),
             },
-            callback.clone()
+            callback.clone(),
         )
         .await;
 
@@ -152,7 +155,7 @@ async fn test_process_message() {
                 }),
                 input: None,
             }),
-            signer: Signer::WithKeys(keys.clone()),
+            signer: Signer::Keys { keys: keys.clone() },
             processing_try_index: None,
         })
         .await;
@@ -162,14 +165,15 @@ async fn test_process_message() {
         .await;
 
     let output = client
-        .net_process_message(ParamsOfProcessMessage {
+        .net_process_message(
+            ParamsOfProcessMessage {
                 message: MessageSource::Encoded {
                     message: encoded.message.clone(),
                     abi: Some(abi.clone()),
                 },
-                send_events: true
+                send_events: true,
             },
-            callback
+            callback,
         )
         .await;
 
@@ -218,24 +222,25 @@ async fn test_process_message() {
     };
 
     let output = client
-        .net_process_message(ParamsOfProcessMessage {
-            message: MessageSource::EncodingParams(ParamsOfEncodeMessage {
-                abi: abi.clone(),
-                address: Some(encoded.address.clone()),
-                deploy_set: None,
-                call_set: CallSet::some_with_function_and_input(
-                    "returnValue",
-                    json!({
-                        "id": "0x1"
-                    }),
-                ),
-                signer: Signer::WithKeys(keys.clone()),
-                processing_try_index: None,
-            }),
+        .net_process_message(
+            ParamsOfProcessMessage {
+                message: MessageSource::EncodingParams(ParamsOfEncodeMessage {
+                    abi: abi.clone(),
+                    address: Some(encoded.address.clone()),
+                    deploy_set: None,
+                    call_set: CallSet::some_with_function_and_input(
+                        "returnValue",
+                        json!({
+                            "id": "0x1"
+                        }),
+                    ),
+                    signer: Signer::Keys { keys: keys.clone() },
+                    processing_try_index: None,
+                }),
                 send_events: true,
             },
-            callback
-)
+            callback,
+        )
         .await;
     assert_eq!(output.out_messages.len(), 2);
     assert_eq!(
@@ -243,15 +248,15 @@ async fn test_process_message() {
         Some(DecodedOutput {
             out_messages: vec![
                 Some(DecodedMessageBody {
-                    message_type: DecodedMessageType::Event,
+                    body_type: MessageBodyType::Event,
                     name: "EventThrown".into(),
-                    value: json!({"id": "0x1"}),
+                    value: Some(json!({"id": "0x1"})),
                     header: None,
                 }),
                 Some(DecodedMessageBody {
-                    message_type: DecodedMessageType::FunctionOutput,
+                    body_type: MessageBodyType::Output,
                     name: "returnValue".into(),
-                    value: json!({"value0": "0x1"}),
+                    value: Some(json!({"value0": "0x1"})),
                     header: None,
                 })
             ],

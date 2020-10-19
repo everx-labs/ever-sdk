@@ -69,6 +69,16 @@ void tc_destroy_context(uint32_t context);
   Returned string is a JSON with the result or the error. Result is returned in 
   form of `{ "result": context }` where `context` is a number with context handle.
   Error is returned in form `{ "error": { error fields } }`.
+  **Note**: `tc_create_context` doesn't store pointer passed in `config` parameter. So
+  it is safe to free this memory after the function returns.  
+  **Important**: application is responsible for freeing of the receiving string. Example:
+  ```c
+  tc_string_data config = {"{}", 2};
+  tc_string_handle_t* json_ptr = tc_create_context(config);
+  tc_string_data json = tc_read_string(json_ptr);
+  uint32_t context = parse_create_context_json(json.content, json.len);
+  tc_free_string(json_ptr);
+  ```
 - `tc_destroy_context` – closes and releases all recourses that was allocated and opened 
   by library during serving functions related to provided context.
    
@@ -97,7 +107,11 @@ the future to properly route responses to the application.
 This function returns nothing. The function execution result will be sent to 
 the `response_handler`.
 
-Note that `response_handler` can be called before the function returns.
+**Note**: `response_handler` can be called before the function returns.
+
+**Note**: `tc_request` doesn't store pointers passed in `function_name` and 
+`function_params_json` parameters. So it is safe to free this memory after the 
+function returns.  
 
 ## Responses
 
@@ -109,9 +123,9 @@ data responses.
 
 ```c
 enum tc_response_types_t {
-    tc_end = 0,
-    tc_response_success = 1,
-    tc_response_error = 2,
+    tc_response_success = 0,
+    tc_response_error = 1,
+    tc_response_nop = 2,
     tc_response_custom = 100,
 };
 
@@ -136,6 +150,16 @@ can receive an unlimited count of responses related to single request. Parameter
 - `finished` – is a signal to release all additional data associated with the request. It is last response for specified 
   request_id.
 
+**Important**:
+- Application MUST NOT store pointers passed in `params_json` and use it after `response_handler` 
+  has been returned, if an application requires this data after returning then it must creates 
+  an own copy.
+- Application MUST NOT free memory of pointers passed in `params_json`.
+- Response handler can be called before the `tc_request` returns. In this case the response handler 
+  will be called on the calling thread.
+- Responses can be called on background thread created by library to serve asynchronous tasks. 
+  All responses, related to the same request will be called from the same thread in right sequence.
+  
 # Bindings
 
 Here we are look to the typical binding structure. In this example we will 

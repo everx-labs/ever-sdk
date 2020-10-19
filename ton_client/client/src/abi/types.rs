@@ -1,22 +1,27 @@
-use crate::abi::Error;
+use crate::abi::{Error, ParamsOfEncodeMessage};
 use crate::error::ClientResult;
 use serde_json::Value;
 use ton_abi::{Token, TokenValue};
+use crate::{ClientContext, processing};
+use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct AbiHandle(u32);
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+#[serde(tag = "type", content = "value")]
 pub enum Abi {
     Serialized(Value),
     Handle(AbiHandle),
 }
 
 impl Abi {
-    pub(crate) fn json_string(&self) -> String {
+    pub(crate) fn json_string(&self) -> ClientResult<String> {
         match self {
-            Self::Serialized(v) => v.to_string(),
-            _ => panic!("Abi handles doesn't supported")
+            Self::Serialized(v) => Ok(v.to_string()),
+            _ => Err(crate::client::Error::not_implemented(
+                "Abi handles doesn't supported",
+            )),
         }
     }
 }
@@ -83,3 +88,34 @@ impl FunctionHeader {
         Ok(Some(header))
     }
 }
+
+#[derive(Serialize, Deserialize, ApiType, Debug, Clone)]
+#[serde(tag="type")]
+pub enum MessageSource {
+    Encoded { message: String, abi: Option<Abi> },
+    EncodingParams(ParamsOfEncodeMessage),
+}
+
+impl MessageSource {
+    pub(crate) async fn encode(
+        &self,
+        context: &Arc<ClientContext>,
+    ) -> ClientResult<(String, Option<Abi>)> {
+        Ok(match self {
+            MessageSource::EncodingParams(params) => {
+                if params.signer.is_external() {
+                    return Err(processing::Error::external_signer_must_not_be_used());
+                }
+                let abi = params.abi.clone();
+                (
+                    crate::abi::encode_message(context.clone(), params.clone())
+                        .await?
+                        .message,
+                    Some(abi),
+                )
+            }
+            MessageSource::Encoded { abi, message } => (message.clone(), abi.clone()),
+        })
+    }
+}
+

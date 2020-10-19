@@ -131,28 +131,28 @@ fn type_to_tokens(t: &api_info::Type) -> TokenStream {
         api_info::Type::Number {} => quote! { api_info::Type::Number {} },
         api_info::Type::BigInt {} => quote! { api_info::Type::BigInt {} },
         api_info::Type::String {} => quote! { api_info::Type::String {} },
-        api_info::Type::Ref(type_name) => {
-            quote! { api_info::Type::Ref(#type_name.into()) }
+        api_info::Type::Ref { name } => {
+            quote! { api_info::Type::Ref { name: #name.into() } }
         }
-        api_info::Type::Optional(inner) => {
+        api_info::Type::Optional { inner } => {
             let inner_type = type_to_tokens(inner);
-            quote! { api_info::Type::Optional(#inner_type.into()) }
+            quote! { api_info::Type::Optional { inner: #inner_type.into() } }
         }
-        api_info::Type::Array(items) => {
-            let items_type = type_to_tokens(items);
-            quote! { api_info::Type::Array(#items_type.into()) }
+        api_info::Type::Array { item } => {
+            let item_type = type_to_tokens(item);
+            quote! { api_info::Type::Array { item: #item_type.into() } }
         }
-        api_info::Type::Struct(fields) => {
+        api_info::Type::Struct { fields } => {
             let field_types = fields.iter().map(|x| field_to_tokens(x));
-            quote! { api_info::Type::Struct([#(#field_types),*].into()) }
+            quote! { api_info::Type::Struct { fields: [#(#field_types),*].into() } }
         }
-        api_info::Type::EnumOfConsts(consts) => {
+        api_info::Type::EnumOfConsts { consts } => {
             let consts = consts.iter().map(|x| const_to_tokens(x));
-            quote! { api_info::Type::EnumOfConsts([#(#consts),*].into()) }
+            quote! { api_info::Type::EnumOfConsts { consts: [#(#consts),*].into() } }
         }
-        api_info::Type::EnumOfTypes(types) => {
+        api_info::Type::EnumOfTypes { types } => {
             let types = types.iter().map(|x| field_to_tokens(x));
-            quote! { api_info::Type::EnumOfTypes([#(#types),*].into()) }
+            quote! { api_info::Type::EnumOfTypes { types: [#(#types),*].into() } }
         }
         api_info::Type::Generic { name, args } => {
             let types = args.iter().map(|x| type_to_tokens(x));
@@ -189,7 +189,9 @@ pub(crate) fn type_from(ty: &Type) -> api_info::Type {
 }
 
 fn array_type_from(ty: &TypeArray) -> api_info::Type {
-    api_info::Type::Array(Box::new(type_from(ty.elem.as_ref())))
+    api_info::Type::Array {
+        item: Box::new(type_from(ty.elem.as_ref())),
+    }
 }
 
 fn type_from_path(path: &Path) -> api_info::Type {
@@ -216,9 +218,11 @@ fn resolve_type_name(name: String) -> api_info::Type {
     match name.as_ref() {
         "String" => api_info::Type::String {},
         "bool" => api_info::Type::Boolean {},
-        "u8" | "u16" | "u32" | "i8" | "i16" | "i32" | "usize" => api_info::Type::Number {},
+        "u8" | "u16" | "u32" | "i8" | "i16" | "i32" | "usize" | "isize" | "f32" => {
+            api_info::Type::Number {}
+        }
         "u64" | "i64" | "u128" | "i128" => api_info::Type::BigInt {},
-        _ => api_info::Type::Ref(name),
+        _ => api_info::Type::Ref { name },
     }
 }
 
@@ -231,8 +235,8 @@ fn generic_type_from(
         _ => None,
     };
     match name.as_ref() {
-        "Option" => get_inner_type().map(|x| api_info::Type::Optional(x.into())),
-        "Vec" => get_inner_type().map(|x| api_info::Type::Array(x.into())),
+        "Option" => get_inner_type().map(|x| api_info::Type::Optional { inner: x.into() }),
+        "Vec" => get_inner_type().map(|x| api_info::Type::Array { item: x.into() }),
         _ => {
             let args = args
                 .args

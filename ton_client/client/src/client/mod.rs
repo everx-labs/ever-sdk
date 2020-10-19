@@ -26,18 +26,15 @@ pub(crate) use wasm_client_env::ClientEnv;
 #[cfg(test)]
 mod tests;
 
-pub use client::{
-    ClientConfig, ClientContext, CryptoConfig,
-};
+pub use client::{ClientConfig, ClientContext, CryptoConfig};
 pub use errors::{Error, ErrorCode};
 
 pub(crate) use client_env::{FetchMethod, FetchResult, WebSocket};
 
 use crate::error::ClientResult;
-use std::sync::Arc;
+use crate::json_interface::runtime::Runtime;
 use api_info::API;
-use crate::c_interface::api_reference::ApiReducer;
-use crate::c_interface::runtime::Runtime;
+use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfVersion {
@@ -59,9 +56,20 @@ pub struct ResultOfGetApiReference {
 
 #[api_function]
 pub fn get_api_reference(_context: Arc<ClientContext>) -> ClientResult<ResultOfGetApiReference> {
-    let api = ApiReducer::build(Runtime::api());
     Ok(ResultOfGetApiReference {
-        api,
+        api: Runtime::api().clone(),
+    })
+}
+
+#[derive(ApiType, Serialize, Deserialize, Clone)]
+pub struct ResultOfBuildInfo {
+    pub build_info: serde_json::Value,
+}
+
+#[api_function]
+pub fn build_info(_context: Arc<ClientContext>) -> ClientResult<ResultOfBuildInfo> {
+    Ok(ResultOfBuildInfo {
+        build_info: serde_json::from_str(include_str!("../build_info.json")).unwrap_or(json!({}))
     })
 }
 

@@ -1,0 +1,5119 @@
+{
+  "version": "1.0.0",
+  "modules": [
+    {
+      "name": "client",
+      "summary": " Provides information about library.",
+      "description": " Provides information about library.",
+      "types": [
+        {
+          "name": "ClientError",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "code",
+              "type": "Number",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "message",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "data",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ClientConfig",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "network",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "NetworkConfig"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "crypto",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "CryptoConfig"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "abi",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "AbiConfig"
+              },
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "NetworkConfig",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "server_address",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "message_retries_count",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "message_processing_timeout",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "wait_for_timeout",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "out_of_sync_threshold",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "BigInt"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "access_key",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "CryptoConfig",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "fish_param",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "AbiConfig",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "message_expiration_timeout",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "message_expiration_timeout_grow_factor",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfGetApiReference",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "api",
+              "type": "Ref",
+              "ref_name": "API",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfVersion",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "version",
+              "type": "String",
+              "summary": " core version",
+              "description": " core version"
+            }
+          ],
+          "summary": null,
+          "description": null
+        }
+      ],
+      "functions": [
+        {
+          "name": "get_api_reference",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfGetApiReference"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "version",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfVersion"
+              }
+            ]
+          },
+          "errors": null
+        }
+      ]
+    },
+    {
+      "name": "crypto",
+      "summary": " Crypto functions.",
+      "description": " Crypto functions.",
+      "types": [
+        {
+          "name": "SigningBoxHandle",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "",
+              "type": "Number",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfFactorize",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "composite",
+              "type": "String",
+              "summary": " Hexadecimal representation of u64 composite number.",
+              "description": " Hexadecimal representation of u64 composite number."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfFactorize",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "factors",
+              "type": "Array",
+              "array_item": {
+                "type": "String"
+              },
+              "summary": " Two factors of composite or empty if composite can't be factorized.",
+              "description": " Two factors of composite or empty if composite can't be factorized."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfModularPower",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "base",
+              "type": "String",
+              "summary": " `base` argument of calculation.",
+              "description": " `base` argument of calculation."
+            },
+            {
+              "name": "exponent",
+              "type": "String",
+              "summary": " `exponent` argument of calculation.",
+              "description": " `exponent` argument of calculation."
+            },
+            {
+              "name": "modulus",
+              "type": "String",
+              "summary": " `modulus` argument of calculation.",
+              "description": " `modulus` argument of calculation."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfModularPower",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "modular_power",
+              "type": "String",
+              "summary": " result of modular exponentiation",
+              "description": " result of modular exponentiation"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfTonCrc16",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "data",
+              "type": "String",
+              "summary": " Input data for CRC calculation. Encoded with `base64`.",
+              "description": " Input data for CRC calculation. Encoded with `base64`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfTonCrc16",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "crc",
+              "type": "Number",
+              "summary": " Calculated CRC for input data.",
+              "description": " Calculated CRC for input data."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfGenerateRandomBytes",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "length",
+              "type": "Number",
+              "summary": " Size of random byte array.",
+              "description": " Size of random byte array."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfGenerateRandomBytes",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "bytes",
+              "type": "String",
+              "summary": " Generated bytes, encoded with `base64`.",
+              "description": " Generated bytes, encoded with `base64`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfConvertPublicKeyToTonSafeFormat",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "public_key",
+              "type": "String",
+              "summary": " Public key.",
+              "description": " Public key."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfConvertPublicKeyToTonSafeFormat",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "ton_public_key",
+              "type": "String",
+              "summary": " Public key represented in TON safe format.",
+              "description": " Public key represented in TON safe format."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "KeyPair",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "public",
+              "type": "String",
+              "summary": " Public key. Encoded with `hex`.",
+              "description": " Public key. Encoded with `hex`."
+            },
+            {
+              "name": "secret",
+              "type": "String",
+              "summary": " Private key. Encoded with `hex`.",
+              "description": " Private key. Encoded with `hex`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfSign",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "unsigned",
+              "type": "String",
+              "summary": " Data that must be signed.",
+              "description": " Data that must be signed.\n Must be encoded with `base64`."
+            },
+            {
+              "name": "keys",
+              "type": "Ref",
+              "ref_name": "KeyPair",
+              "summary": " Sign keys.",
+              "description": " Sign keys."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfSign",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "signed",
+              "type": "String",
+              "summary": " Signed data combined with signature. Encoded with `base64`.",
+              "description": " Signed data combined with signature. Encoded with `base64`."
+            },
+            {
+              "name": "signature",
+              "type": "String",
+              "summary": " Signature. Encoded with `base64`.",
+              "description": " Signature. Encoded with `base64`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfVerifySignature",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "signed",
+              "type": "String",
+              "summary": " Signed data that must be verified.",
+              "description": " Signed data that must be verified.\n Must be encoded with `base64`."
+            },
+            {
+              "name": "public",
+              "type": "String",
+              "summary": " Signer's public key.",
+              "description": " Signer's public key.\n Must be encoded with `hex`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfVerifySignature",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "unsigned",
+              "type": "String",
+              "summary": " Unsigned data.",
+              "description": " Unsigned data.\n Encoded with `base64`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfHash",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "data",
+              "type": "String",
+              "summary": " Input data for hash calculation. Encoded with `base64`.",
+              "description": " Input data for hash calculation. Encoded with `base64`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfHash",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "hash",
+              "type": "String",
+              "summary": " Hex-encoded hash of input `data`.",
+              "description": " Hex-encoded hash of input `data`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfScrypt",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "password",
+              "type": "String",
+              "summary": " The password bytes to be hashed.",
+              "description": " The password bytes to be hashed.\n Must be encoded with `base64`."
+            },
+            {
+              "name": "salt",
+              "type": "String",
+              "summary": " A salt bytes that modifies the hash to protect against Rainbow table attacks.",
+              "description": " A salt bytes that modifies the hash to protect against Rainbow table attacks.\n Must be encoded with `base64`."
+            },
+            {
+              "name": "log_n",
+              "type": "Number",
+              "summary": " CPU/memory cost parameter",
+              "description": " CPU/memory cost parameter"
+            },
+            {
+              "name": "r",
+              "type": "Number",
+              "summary": " The block size parameter, which fine-tunes sequential memory read size and performance.",
+              "description": " The block size parameter, which fine-tunes sequential memory read size and performance.\n 8 is commonly used"
+            },
+            {
+              "name": "p",
+              "type": "Number",
+              "summary": " Parallelization parameter.",
+              "description": " Parallelization parameter."
+            },
+            {
+              "name": "dk_len",
+              "type": "Number",
+              "summary": " Intended output length in octets of the derived key.",
+              "description": " Intended output length in octets of the derived key."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfScrypt",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "key",
+              "type": "String",
+              "summary": " Derived key. Encoded with `hex`.",
+              "description": " Derived key. Encoded with `hex`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfNaclSignKeyPairFromSecret",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "secret",
+              "type": "String",
+              "summary": " secret key",
+              "description": " secret key"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfNaclSign",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "unsigned",
+              "type": "String",
+              "summary": " Data that must be signed. Encoded with `base64`.",
+              "description": " Data that must be signed. Encoded with `base64`."
+            },
+            {
+              "name": "secret",
+              "type": "String",
+              "summary": " Signer's secret key.",
+              "description": " Signer's secret key."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfNaclSign",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "signed",
+              "type": "String",
+              "summary": " Signed data, encoded with `base64`.",
+              "description": " Signed data, encoded with `base64`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfNaclSignOpen",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "signed",
+              "type": "String",
+              "summary": " Signed data that must be unsigned. Encoded with `base64`.",
+              "description": " Signed data that must be unsigned. Encoded with `base64`."
+            },
+            {
+              "name": "public",
+              "type": "String",
+              "summary": " Signer's public key.",
+              "description": " Signer's public key."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfNaclSignOpen",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "unsigned",
+              "type": "String",
+              "summary": " Unsigned data, encoded with `base64`.",
+              "description": " Unsigned data, encoded with `base64`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfNaclSignDetached",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "signature",
+              "type": "String",
+              "summary": " Hex encoded sign.",
+              "description": " Hex encoded sign."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfNaclBoxKeyPairFromSecret",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "secret",
+              "type": "String",
+              "summary": " Hex encoded secret key.",
+              "description": " Hex encoded secret key."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfNaclBox",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "decrypted",
+              "type": "String",
+              "summary": " Data that must be encrypted. Encoded with `base64`.",
+              "description": " Data that must be encrypted. Encoded with `base64`."
+            },
+            {
+              "name": "nonce",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "their_public",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "secret",
+              "type": "String",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfNaclBox",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "encrypted",
+              "type": "String",
+              "summary": " Encrypted data. Encoded with `base64`.",
+              "description": " Encrypted data. Encoded with `base64`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfNaclBoxOpen",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "encrypted",
+              "type": "String",
+              "summary": " Data that must be decrypted. Encoded with `base64`.",
+              "description": " Data that must be decrypted. Encoded with `base64`."
+            },
+            {
+              "name": "nonce",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "their_public",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "secret",
+              "type": "String",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfNaclBoxOpen",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "decrypted",
+              "type": "String",
+              "summary": " Decrypted data. Encoded with `base64`.",
+              "description": " Decrypted data. Encoded with `base64`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfNaclSecretBox",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "decrypted",
+              "type": "String",
+              "summary": " Data that must be encrypted. Encoded with `base64`.",
+              "description": " Data that must be encrypted. Encoded with `base64`."
+            },
+            {
+              "name": "nonce",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "key",
+              "type": "String",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfNaclSecretBoxOpen",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "encrypted",
+              "type": "String",
+              "summary": " Data that must be decrypted. Encoded with `base64`.",
+              "description": " Data that must be decrypted. Encoded with `base64`."
+            },
+            {
+              "name": "nonce",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "key",
+              "type": "String",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfMnemonicWords",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "dictionary",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": " dictionary identifier",
+              "description": " dictionary identifier"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfMnemonicWords",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "words",
+              "type": "String",
+              "summary": " the list of mnemonic words",
+              "description": " the list of mnemonic words"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfMnemonicFromRandom",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "dictionary",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": " dictionary identifier",
+              "description": " dictionary identifier"
+            },
+            {
+              "name": "word_count",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": " mnemonic word count",
+              "description": " mnemonic word count"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfMnemonicFromRandom",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "phrase",
+              "type": "String",
+              "summary": " string of mnemonic words",
+              "description": " string of mnemonic words"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfMnemonicFromEntropy",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "entropy",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "dictionary",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "word_count",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfMnemonicFromEntropy",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "phrase",
+              "type": "String",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfMnemonicVerify",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "phrase",
+              "type": "String",
+              "summary": " phrase",
+              "description": " phrase"
+            },
+            {
+              "name": "dictionary",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": " dictionary identifier",
+              "description": " dictionary identifier"
+            },
+            {
+              "name": "word_count",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": " word count",
+              "description": " word count"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfMnemonicVerify",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "valid",
+              "type": "Boolean",
+              "summary": " flag indicating the mnemonic is valid or not",
+              "description": " flag indicating the mnemonic is valid or not"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfMnemonicDeriveSignKeys",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "phrase",
+              "type": "String",
+              "summary": " phrase",
+              "description": " phrase"
+            },
+            {
+              "name": "path",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": " derivation path, for instance \"m/44'/396'/0'/0/0\"",
+              "description": " derivation path, for instance \"m/44'/396'/0'/0/0\""
+            },
+            {
+              "name": "dictionary",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": " dictionary identifier",
+              "description": " dictionary identifier"
+            },
+            {
+              "name": "word_count",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": " word count",
+              "description": " word count"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfHDKeyXPrvFromMnemonic",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "phrase",
+              "type": "String",
+              "summary": "string with seed phrase",
+              "description": "string with seed phrase"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfHDKeyXPrvFromMnemonic",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "xprv",
+              "type": "String",
+              "summary": " serialized extended master private key",
+              "description": " serialized extended master private key"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfHDKeyDeriveFromXPrv",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "xprv",
+              "type": "String",
+              "summary": " serialized extended private key",
+              "description": " serialized extended private key"
+            },
+            {
+              "name": "child_index",
+              "type": "Number",
+              "summary": " child index (see BIP-0032)",
+              "description": " child index (see BIP-0032)"
+            },
+            {
+              "name": "hardened",
+              "type": "Boolean",
+              "summary": " indicates the derivation of hardened/not-hardened key (see BIP-0032)",
+              "description": " indicates the derivation of hardened/not-hardened key (see BIP-0032)"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfHDKeyDeriveFromXPrv",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "xprv",
+              "type": "String",
+              "summary": " serialized extended private key",
+              "description": " serialized extended private key"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfHDKeyDeriveFromXPrvPath",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "xprv",
+              "type": "String",
+              "summary": " serialized extended private key",
+              "description": " serialized extended private key"
+            },
+            {
+              "name": "path",
+              "type": "String",
+              "summary": " derivation path, for instance \"m/44'/396'/0'/0/0\"",
+              "description": " derivation path, for instance \"m/44'/396'/0'/0/0\""
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfHDKeyDeriveFromXPrvPath",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "xprv",
+              "type": "String",
+              "summary": " derived serialized extended private key",
+              "description": " derived serialized extended private key"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfHDKeySecretFromXPrv",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "xprv",
+              "type": "String",
+              "summary": " serialized extended private key",
+              "description": " serialized extended private key"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfHDKeySecretFromXPrv",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "secret",
+              "type": "String",
+              "summary": " private key",
+              "description": " private key"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfHDKeyPublicFromXPrv",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "xprv",
+              "type": "String",
+              "summary": " serialized extended private key",
+              "description": " serialized extended private key"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfHDKeyPublicFromXPrv",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "public",
+              "type": "String",
+              "summary": " public key",
+              "description": " public key"
+            }
+          ],
+          "summary": null,
+          "description": null
+        }
+      ],
+      "functions": [
+        {
+          "name": "factorize",
+          "summary": "Integer factorization",
+          "description": " Performs prime factorization – decomposition of a composite number\n into a product of smaller prime integers (factors).\n See [https://en.wikipedia.org/wiki/Integer_factorization]",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfFactorize",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfFactorize"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "modular_power",
+          "summary": "Modular exponentiation",
+          "description": " Performs modular exponentiation for big integers (`base`^`exponent` mod `modulus`).\n See [https://en.wikipedia.org/wiki/Modular_exponentiation]",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfModularPower",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfModularPower"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "ton_crc16",
+          "summary": " Calculates CRC16 using TON algorithm.",
+          "description": " Calculates CRC16 using TON algorithm.",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfTonCrc16",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfTonCrc16"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "generate_random_bytes",
+          "summary": "Generates random byte array of the specified length in the spesified encoding",
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfGenerateRandomBytes",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfGenerateRandomBytes"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "convert_public_key_to_ton_safe_format",
+          "summary": " Converts public key to ton safe_format",
+          "description": " Converts public key to ton safe_format",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfConvertPublicKeyToTonSafeFormat",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfConvertPublicKeyToTonSafeFormat"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "generate_random_sign_keys",
+          "summary": " Generates random ed25519 key pair.",
+          "description": " Generates random ed25519 key pair.",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "KeyPair"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "sign",
+          "summary": " Signs a data using the provided keys.",
+          "description": " Signs a data using the provided keys.",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfSign",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfSign"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "verify_signature",
+          "summary": " Verifies signed data using the provided public key.",
+          "description": " Verifies signed data using the provided public key.\n Raises error in case when verification is failed.",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfVerifySignature",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfVerifySignature"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "sha256",
+          "summary": " Calculates SHA256 hash of the specified data.",
+          "description": " Calculates SHA256 hash of the specified data.",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfHash",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfHash"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "sha512",
+          "summary": "Calculates SHA512 hash of the specified data.",
+          "description": "Calculates SHA512 hash of the specified data.",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfHash",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfHash"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "scrypt",
+          "summary": "Perform `scrypt` encryption",
+          "description": " Derives key from `password` and `key` using `scrypt` algorithm.\n See [https://en.wikipedia.org/wiki/Scrypt].",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfScrypt",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfScrypt"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "nacl_sign_keypair_from_secret_key",
+          "summary": " Generates a key pair for signing from the secret key",
+          "description": " Generates a key pair for signing from the secret key",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfNaclSignKeyPairFromSecret",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "KeyPair"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "nacl_sign",
+          "summary": " Signs data using the signer's secret key.",
+          "description": " Signs data using the signer's secret key.",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfNaclSign",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfNaclSign"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "nacl_sign_open",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfNaclSignOpen",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfNaclSignOpen"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "nacl_sign_detached",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfNaclSign",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfNaclSignDetached"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "nacl_box_keypair",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "KeyPair"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "nacl_box_keypair_from_secret_key",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfNaclBoxKeyPairFromSecret",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "KeyPair"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "nacl_box",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfNaclBox",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfNaclBox"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "nacl_box_open",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfNaclBoxOpen",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfNaclBoxOpen"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "nacl_secret_box",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfNaclSecretBox",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfNaclBox"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "nacl_secret_box_open",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfNaclSecretBoxOpen",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfNaclBoxOpen"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "mnemonic_words",
+          "summary": " Prints the list of words from the specified dictionary",
+          "description": " Prints the list of words from the specified dictionary",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfMnemonicWords",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfMnemonicWords"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "mnemonic_from_random",
+          "summary": "Generates a random mnemonic",
+          "description": " Generates a random mnemonic from the specified dictionary and word count",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfMnemonicFromRandom",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfMnemonicFromRandom"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "mnemonic_from_entropy",
+          "summary": "Generates mnemonic from the specified entropy",
+          "description": " Generates mnemonic from pre-generated entropy",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfMnemonicFromEntropy",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfMnemonicFromEntropy"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "mnemonic_verify",
+          "summary": "Validates a mnemonic phrase",
+          "description": " The phrase supplied will be checked for word length and validated according to the checksum\n specified in BIP0039.",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfMnemonicVerify",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfMnemonicVerify"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "mnemonic_derive_sign_keys",
+          "summary": "Derives a key pair for signing from the seed phrase",
+          "description": " Validates the seed phrase, generates master key and then derives\n the key pair from the master key and the specified path",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfMnemonicDeriveSignKeys",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "KeyPair"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "hdkey_xprv_from_mnemonic",
+          "summary": " Generate the extended master private key that will be the root for all the derived keys",
+          "description": " Generate the extended master private key that will be the root for all the derived keys",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfHDKeyXPrvFromMnemonic",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfHDKeyXPrvFromMnemonic"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "hdkey_derive_from_xprv",
+          "summary": "Derives the next child extended private key",
+          "description": " Returns derived extended private key derived from the specified extended private key and child index",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfHDKeyDeriveFromXPrv",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfHDKeyDeriveFromXPrv"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "hdkey_derive_from_xprv_path",
+          "summary": "Derives the extended private key from the specified key and path",
+          "description": " Derives the extended private key from the specified key and path",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfHDKeyDeriveFromXPrvPath",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfHDKeyDeriveFromXPrvPath"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "hdkey_secret_from_xprv",
+          "summary": " Extracts the private key from the serialized extended private key",
+          "description": " Extracts the private key from the serialized extended private key",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfHDKeySecretFromXPrv",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfHDKeySecretFromXPrv"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "hdkey_public_from_xprv",
+          "summary": " Extracts the public key from the serialized extended private key",
+          "description": " Extracts the public key from the serialized extended private key",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfHDKeyPublicFromXPrv",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfHDKeyPublicFromXPrv"
+              }
+            ]
+          },
+          "errors": null
+        }
+      ]
+    },
+    {
+      "name": "abi",
+      "summary": " Provides message encoding and decoding according to the ABI",
+      "description": " Provides message encoding and decoding according to the ABI\n specification.",
+      "types": [
+        {
+          "name": "Abi",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "Serialized",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "",
+                  "type": "Ref",
+                  "ref_name": "Value",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Handle",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "",
+                  "type": "Ref",
+                  "ref_name": "AbiHandle",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "AbiHandle",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "",
+              "type": "Number",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "FunctionHeader",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "expire",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": " Message expiration time in seconds.",
+              "description": " Message expiration time in seconds."
+            },
+            {
+              "name": "time",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "BigInt"
+              },
+              "summary": " Message creation time in milliseconds.",
+              "description": " Message creation time in milliseconds."
+            },
+            {
+              "name": "pubkey",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": " Public key used to sign message. Encoded with `hex`.",
+              "description": " Public key used to sign message. Encoded with `hex`."
+            }
+          ],
+          "summary": " The ABI function header.",
+          "description": " The ABI function header.\n\n Includes several hidden function parameters that contract\n uses for security and replay protection reasons.\n\n The actual set of header fields depends on the contract's ABI."
+        },
+        {
+          "name": "CallSet",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "function_name",
+              "type": "String",
+              "summary": " Function name.",
+              "description": " Function name."
+            },
+            {
+              "name": "header",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "FunctionHeader"
+              },
+              "summary": " Function header.",
+              "description": " Function header.\n\n If an application omit some parameters required by the\n contract's ABI, the library will set the default values for\n it."
+            },
+            {
+              "name": "input",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": " Function input according to ABI.",
+              "description": " Function input according to ABI."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "DeploySet",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "tvc",
+              "type": "String",
+              "summary": " Content of TVC file. Must be encoded with `base64`.",
+              "description": " Content of TVC file. Must be encoded with `base64`."
+            },
+            {
+              "name": "workchain_id",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": " Target workchain for destination address. Default is `0`.",
+              "description": " Target workchain for destination address. Default is `0`."
+            },
+            {
+              "name": "initial_data",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": " List of initial values for contract's public variables.",
+              "description": " List of initial values for contract's public variables."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "Signer",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "None",
+              "type": "Struct",
+              "struct_fields": [],
+              "summary": " Message mustn't be signed.",
+              "description": " Message mustn't be signed."
+            },
+            {
+              "name": "External",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "public_key",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": " Message will be signed using external methods.",
+              "description": " Message will be signed using external methods.\n Public key must be provided with `hex` encoding."
+            },
+            {
+              "name": "Keys",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "keys",
+                  "type": "Ref",
+                  "ref_name": "KeyPair",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": " Message will be signed using the provided keys.",
+              "description": " Message will be signed using the provided keys."
+            },
+            {
+              "name": "SigningBox",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "handle",
+                  "type": "Ref",
+                  "ref_name": "SigningBoxHandle",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": " Message will be signed using the provided signing box.",
+              "description": " Message will be signed using the provided signing box."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "MessageBodyType",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "Input",
+              "type": "None",
+              "summary": " Message contains the input of the ABI function.",
+              "description": " Message contains the input of the ABI function."
+            },
+            {
+              "name": "Output",
+              "type": "None",
+              "summary": " Message contains the output of the ABI function.",
+              "description": " Message contains the output of the ABI function."
+            },
+            {
+              "name": "InternalOutput",
+              "type": "None",
+              "summary": " Message contains the input of the imported ABI function.",
+              "description": " Message contains the input of the imported ABI function.\n\n Occurs when contract sends an internal message to other\n contract."
+            },
+            {
+              "name": "Event",
+              "type": "None",
+              "summary": " Message contains the input of the ABI event.",
+              "description": " Message contains the input of the ABI event."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "StateInitSource",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "Message",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "source",
+                  "type": "Ref",
+                  "ref_name": "MessageSource",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": " Deploy message.",
+              "description": " Deploy message."
+            },
+            {
+              "name": "StateInit",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "code",
+                  "type": "String",
+                  "summary": " Code BOC. Encoded with `base64`.",
+                  "description": " Code BOC. Encoded with `base64`."
+                },
+                {
+                  "name": "data",
+                  "type": "String",
+                  "summary": " Data BOC. Encoded with `base64`.",
+                  "description": " Data BOC. Encoded with `base64`."
+                },
+                {
+                  "name": "library",
+                  "type": "Optional",
+                  "optional_inner": {
+                    "type": "String"
+                  },
+                  "summary": " Library BOC. Encoded with `base64`.",
+                  "description": " Library BOC. Encoded with `base64`."
+                }
+              ],
+              "summary": " State init data.",
+              "description": " State init data."
+            },
+            {
+              "name": "Tvc",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "tvc",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "public_key",
+                  "type": "Optional",
+                  "optional_inner": {
+                    "type": "String"
+                  },
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "init_params",
+                  "type": "Optional",
+                  "optional_inner": {
+                    "type": "Ref",
+                    "ref_name": "StateInitParams"
+                  },
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": " Content of the TVC file. Encoded with `base64`.",
+              "description": " Content of the TVC file. Encoded with `base64`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "StateInitParams",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "abi",
+              "type": "Ref",
+              "ref_name": "Abi",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "value",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "MessageSource",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "Encoded",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "message",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "abi",
+                  "type": "Optional",
+                  "optional_inner": {
+                    "type": "Ref",
+                    "ref_name": "Abi"
+                  },
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "EncodingParams",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "",
+                  "type": "Ref",
+                  "ref_name": "ParamsOfEncodeMessage",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfEncodeMessageBody",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "abi",
+              "type": "Ref",
+              "ref_name": "Abi",
+              "summary": " Contract ABI.",
+              "description": " Contract ABI."
+            },
+            {
+              "name": "call_set",
+              "type": "Ref",
+              "ref_name": "CallSet",
+              "summary": " Function call parameters.",
+              "description": " Function call parameters.\n\n Must be specified in non deploy message.\n\n In case of deploy message contains parameters of constructor."
+            },
+            {
+              "name": "is_internal",
+              "type": "Boolean",
+              "summary": " True if internal message body must be encoded.",
+              "description": " True if internal message body must be encoded."
+            },
+            {
+              "name": "signer",
+              "type": "Ref",
+              "ref_name": "Signer",
+              "summary": " Signing parameters.",
+              "description": " Signing parameters."
+            },
+            {
+              "name": "processing_try_index",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": " Processing try index.",
+              "description": " Processing try index.\n\n Used in message processing with retries.\n\n Encoder uses the provided try index to calculate message\n expiration time.\n\n Expiration timeouts will grow with every retry.\n\n Default value is 0."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfEncodeMessageBody",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "body",
+              "type": "String",
+              "summary": " Message body BOC encoded with `base64`.",
+              "description": " Message body BOC encoded with `base64`."
+            },
+            {
+              "name": "data_to_sign",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": " Optional data to sign. Encoded with `base64`.",
+              "description": " Optional data to sign. Encoded with `base64`.\n\n Presents when `message` is unsigned. Can be used for external\n message signing. Is this case you need to sing this data and\n produce signed message using `abi.attach_signature`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfAttachSignatureToMessageBody",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "abi",
+              "type": "Ref",
+              "ref_name": "Abi",
+              "summary": " Contract ABI",
+              "description": " Contract ABI"
+            },
+            {
+              "name": "public_key",
+              "type": "String",
+              "summary": " Public key. Must be encoded with `hex`.",
+              "description": " Public key. Must be encoded with `hex`."
+            },
+            {
+              "name": "message",
+              "type": "String",
+              "summary": " Unsigned message BOC. Must be encoded with `base64`.",
+              "description": " Unsigned message BOC. Must be encoded with `base64`."
+            },
+            {
+              "name": "signature",
+              "type": "String",
+              "summary": " Signature. Must be encoded with `hex`.",
+              "description": " Signature. Must be encoded with `hex`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfAttachSignatureToMessageBody",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "body",
+              "type": "String",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfEncodeMessage",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "abi",
+              "type": "Ref",
+              "ref_name": "Abi",
+              "summary": " Contract ABI.",
+              "description": " Contract ABI."
+            },
+            {
+              "name": "address",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": " Contract address.",
+              "description": " Contract address.\n\n Must be specified in case of non deploy message."
+            },
+            {
+              "name": "deploy_set",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "DeploySet"
+              },
+              "summary": " Deploy parameters.",
+              "description": " Deploy parameters.\n\n Must be specified in case of deploy message."
+            },
+            {
+              "name": "call_set",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "CallSet"
+              },
+              "summary": " Function call parameters.",
+              "description": " Function call parameters.\n\n Must be specified in non deploy message.\n\n In case of deploy message contains parameters of constructor."
+            },
+            {
+              "name": "signer",
+              "type": "Ref",
+              "ref_name": "Signer",
+              "summary": " Signing parameters.",
+              "description": " Signing parameters."
+            },
+            {
+              "name": "processing_try_index",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": " Processing try index.",
+              "description": " Processing try index.\n\n Used in message processing with retries.\n\n Encoder uses the provided try index to calculate message\n expiration time.\n\n Expiration timeouts will grow with every retry.\n\n Default value is 0."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfEncodeMessage",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "message",
+              "type": "String",
+              "summary": " Message BOC encoded with `base64`.",
+              "description": " Message BOC encoded with `base64`."
+            },
+            {
+              "name": "data_to_sign",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": " Optional data to sign. Encoded with `base64`.",
+              "description": " Optional data to sign. Encoded with `base64`.\n\n Presents when `message` is unsigned. Can be used for external\n message signing. Is this case you need to sing this data and\n produce signed message using `abi.attach_signature`."
+            },
+            {
+              "name": "address",
+              "type": "String",
+              "summary": " Destination address.",
+              "description": " Destination address."
+            },
+            {
+              "name": "message_id",
+              "type": "String",
+              "summary": " Message id.",
+              "description": " Message id."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfAttachSignature",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "abi",
+              "type": "Ref",
+              "ref_name": "Abi",
+              "summary": " Contract ABI",
+              "description": " Contract ABI"
+            },
+            {
+              "name": "public_key",
+              "type": "String",
+              "summary": " Public key. Must be encoded with `hex`.",
+              "description": " Public key. Must be encoded with `hex`."
+            },
+            {
+              "name": "message",
+              "type": "String",
+              "summary": " Unsigned message BOC. Must be encoded with `base64`.",
+              "description": " Unsigned message BOC. Must be encoded with `base64`."
+            },
+            {
+              "name": "signature",
+              "type": "String",
+              "summary": " Signature. Must be encoded with `hex`.",
+              "description": " Signature. Must be encoded with `hex`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfAttachSignature",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "message",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "message_id",
+              "type": "String",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfDecodeMessage",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "abi",
+              "type": "Ref",
+              "ref_name": "Abi",
+              "summary": " contract ABI",
+              "description": " contract ABI"
+            },
+            {
+              "name": "message",
+              "type": "String",
+              "summary": " Message BOC",
+              "description": " Message BOC"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "DecodedMessageBody",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "body_type",
+              "type": "Ref",
+              "ref_name": "MessageBodyType",
+              "summary": " Type of the message body content.",
+              "description": " Type of the message body content."
+            },
+            {
+              "name": "name",
+              "type": "String",
+              "summary": " Function or event name.",
+              "description": " Function or event name."
+            },
+            {
+              "name": "value",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": " Parameters or result value.",
+              "description": " Parameters or result value."
+            },
+            {
+              "name": "header",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "FunctionHeader"
+              },
+              "summary": " Function header.",
+              "description": " Function header."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfDecodeMessageBody",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "abi",
+              "type": "Ref",
+              "ref_name": "Abi",
+              "summary": " Contract ABI used to decode.",
+              "description": " Contract ABI used to decode."
+            },
+            {
+              "name": "body",
+              "type": "String",
+              "summary": " Message body BOC. Must be encoded with `base64`.",
+              "description": " Message body BOC. Must be encoded with `base64`."
+            },
+            {
+              "name": "is_internal",
+              "type": "Boolean",
+              "summary": " True if the body belongs to the internal message.",
+              "description": " True if the body belongs to the internal message."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfEncodeAccount",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "state_init",
+              "type": "Ref",
+              "ref_name": "StateInitSource",
+              "summary": " Source of the account state init.",
+              "description": " Source of the account state init."
+            },
+            {
+              "name": "balance",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "BigInt"
+              },
+              "summary": " Initial balance.",
+              "description": " Initial balance."
+            },
+            {
+              "name": "last_trans_lt",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "BigInt"
+              },
+              "summary": " Initial value for the `last_trans_lt`.",
+              "description": " Initial value for the `last_trans_lt`."
+            },
+            {
+              "name": "last_paid",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": " Initial value for the `last_paid`.",
+              "description": " Initial value for the `last_paid`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfEncodeAccount",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "account",
+              "type": "String",
+              "summary": " Account BOC. Encoded with `base64`.",
+              "description": " Account BOC. Encoded with `base64`."
+            },
+            {
+              "name": "id",
+              "type": "String",
+              "summary": " Account id. Encoded with `hex`.",
+              "description": " Account id. Encoded with `hex`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        }
+      ],
+      "functions": [
+        {
+          "name": "encode_message_body",
+          "summary": " Encodes message body according to ABI function call.",
+          "description": " Encodes message body according to ABI function call.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfEncodeMessageBody",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfEncodeMessageBody"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "attach_signature_to_message_body",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfAttachSignatureToMessageBody",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfAttachSignatureToMessageBody"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "encode_message",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfEncodeMessage",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfEncodeMessage"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "attach_signature",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfAttachSignature",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfAttachSignature"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "decode_message",
+          "summary": " Decodes message body using provided message BOC and ABI.",
+          "description": " Decodes message body using provided message BOC and ABI.",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfDecodeMessage",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "DecodedMessageBody"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "decode_message_body",
+          "summary": " Decodes message body using provided body BOC and ABI.",
+          "description": " Decodes message body using provided body BOC and ABI.",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfDecodeMessageBody",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "DecodedMessageBody"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "encode_account",
+          "summary": " Encodes account state as it will be",
+          "description": " Encodes account state as it will be",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfEncodeAccount",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfEncodeAccount"
+              }
+            ]
+          },
+          "errors": null
+        }
+      ]
+    },
+    {
+      "name": "boc",
+      "summary": " BOC manipulation module.",
+      "description": " BOC manipulation module.",
+      "types": [
+        {
+          "name": "ParamsOfParse",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "boc",
+              "type": "String",
+              "summary": " BOC encoded as base64",
+              "description": " BOC encoded as base64"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfParse",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "parsed",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": " JSON containing parsed BOC",
+              "description": " JSON containing parsed BOC"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfGetBlockchainConfig",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "block_boc",
+              "type": "String",
+              "summary": " Key block BOC encoded as base64",
+              "description": " Key block BOC encoded as base64"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfGetBlockchainConfig",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "config_boc",
+              "type": "String",
+              "summary": " Blockchain config BOC encoded as base64",
+              "description": " Blockchain config BOC encoded as base64"
+            }
+          ],
+          "summary": null,
+          "description": null
+        }
+      ],
+      "functions": [
+        {
+          "name": "parse_message",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfParse",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfParse"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "parse_transaction",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfParse",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfParse"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "parse_account",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfParse",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfParse"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "parse_block",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfParse",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfParse"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "get_blockchain_config",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfGetBlockchainConfig",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfGetBlockchainConfig"
+              }
+            ]
+          },
+          "errors": null
+        }
+      ]
+    },
+    {
+      "name": "processing",
+      "summary": " Message processing module.",
+      "description": " Message processing module.\n\n This module incorporates functions related to complex message\n processing scenarios.",
+      "types": [
+        {
+          "name": "ProcessingEvent",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "WillFetchFirstBlock",
+              "type": "Struct",
+              "struct_fields": [],
+              "summary": " Notifies the app that the current shard block will be fetched",
+              "description": " Notifies the app that the current shard block will be fetched\n from the network.\n\n Fetched block will be used later in waiting phase."
+            },
+            {
+              "name": "FetchFirstBlockFailed",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "error",
+                  "type": "Ref",
+                  "ref_name": "ClientError",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": " Notifies the app that the client has failed to fetch current",
+              "description": " Notifies the app that the client has failed to fetch current\n shard block.\n\n Message processing has finished."
+            },
+            {
+              "name": "WillSend",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "shard_block_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "message_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": " Notifies the app that the message will be sent to the",
+              "description": " Notifies the app that the message will be sent to the\n network."
+            },
+            {
+              "name": "DidSend",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "shard_block_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "message_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": " Notifies the app that the message was sent to the network.",
+              "description": " Notifies the app that the message was sent to the network."
+            },
+            {
+              "name": "SendFailed",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "shard_block_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "message_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "error",
+                  "type": "Ref",
+                  "ref_name": "ClientError",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": " Notifies the app that the sending operation was failed with",
+              "description": " Notifies the app that the sending operation was failed with\n network error.\n\n Nevertheless the processing will be continued at the waiting\n phase because the message possibly has been delivered to the\n node."
+            },
+            {
+              "name": "WillFetchNextBlock",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "shard_block_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "message_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": " Notifies the app that the next shard block will be fetched",
+              "description": " Notifies the app that the next shard block will be fetched\n from the network.\n\n Event can occurs more than one time due to block walking\n procedure."
+            },
+            {
+              "name": "FetchNextBlockFailed",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "shard_block_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "message_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "error",
+                  "type": "Ref",
+                  "ref_name": "ClientError",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": " Notifies the app that the next block can't be fetched due to",
+              "description": " Notifies the app that the next block can't be fetched due to\n error.\n\n Processing will be continued after `network_resume_timeout`."
+            },
+            {
+              "name": "MessageExpired",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "message_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "error",
+                  "type": "Ref",
+                  "ref_name": "ClientError",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": " Notifies the app that the message was expired.",
+              "description": " Notifies the app that the message was expired.\n\n Event occurs for messages with the `expiration` replay\n protection.\n\n Processing will be continued at encoding phase after\n `expiration_retries_timeout`."
+            },
+            {
+              "name": "TransactionReceived",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "message_id",
+                  "type": "String",
+                  "summary": " Input message id. Encoded with `hex`.",
+                  "description": " Input message id. Encoded with `hex`."
+                },
+                {
+                  "name": "message",
+                  "type": "String",
+                  "summary": " Input message. BOC encoded with `base64`.",
+                  "description": " Input message. BOC encoded with `base64`."
+                },
+                {
+                  "name": "result",
+                  "type": "Ref",
+                  "ref_name": "ResultOfProcessMessage",
+                  "summary": " Results of transaction.",
+                  "description": " Results of transaction."
+                }
+              ],
+              "summary": " Notifies the app that the client has received the",
+              "description": " Notifies the app that the client has received the\n transaction.\n\n Processing has finished."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfProcessMessage",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "transaction",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": " Parsed transaction.",
+              "description": " Parsed transaction.\n\n In addition to the regular transaction fields there is a\n `boc` field encoded with `base64` which contains source\n transaction BOC."
+            },
+            {
+              "name": "out_messages",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": " List of parsed output messages.",
+              "description": " List of parsed output messages.\n\n Similar to the `transaction` each message contains the `boc`\n field."
+            },
+            {
+              "name": "decoded",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "DecodedOutput"
+              },
+              "summary": " Optional decoded message bodies according to the optional",
+              "description": " Optional decoded message bodies according to the optional\n `abi` parameter."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "DecodedOutput",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "out_messages",
+              "type": "Array",
+              "array_item": {
+                "type": "Optional",
+                "optional_inner": {
+                  "type": "Ref",
+                  "ref_name": "DecodedMessageBody"
+                }
+              },
+              "summary": " Decoded bodies of the out messages.",
+              "description": " Decoded bodies of the out messages.\n\n If the message can't be decoded then `None` will be stored in\n the appropriate position."
+            },
+            {
+              "name": "output",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": " Decoded body of the function output message.",
+              "description": " Decoded body of the function output message."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfSendMessage",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "message",
+              "type": "String",
+              "summary": " Message BOC.",
+              "description": " Message BOC."
+            },
+            {
+              "name": "abi",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Abi"
+              },
+              "summary": " Optional message ABI.",
+              "description": " Optional message ABI.\n\n If this parameter is specified and the message has the\n `expire` header then expiration time will be checked against\n the current time to prevent an unnecessary sending.\n\n The `message already expired` error will be returned in this\n case.\n\n Note that specifying `abi` for ABI compliant contracts is\n strongly recommended due to choosing proper processing\n strategy."
+            },
+            {
+              "name": "send_events",
+              "type": "Boolean",
+              "summary": " Flag for requesting events sending",
+              "description": " Flag for requesting events sending"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfSendMessage",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "shard_block_id",
+              "type": "String",
+              "summary": " Shard block related to the message dst account before the",
+              "description": " Shard block related to the message dst account before the\n message had been sent.\n\n This block id must be used as a parameter of the\n `wait_for_transaction`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfWaitForTransaction",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "abi",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Abi"
+              },
+              "summary": " Optional ABI for decoding transaction results.",
+              "description": " Optional ABI for decoding transaction results.\n\n If it is specified then the output messages bodies will be\n decoded according to this ABI.\n\n The `abi_decoded` result field will be filled out."
+            },
+            {
+              "name": "message",
+              "type": "String",
+              "summary": " Message BOC. Encoded with `base64`.",
+              "description": " Message BOC. Encoded with `base64`."
+            },
+            {
+              "name": "shard_block_id",
+              "type": "String",
+              "summary": " Dst account shard block id before the message had been sent.",
+              "description": " Dst account shard block id before the message had been sent.\n\n You must provide the same value as the `send_message` has\n returned."
+            },
+            {
+              "name": "send_events",
+              "type": "Boolean",
+              "summary": " Flag for requesting events sending",
+              "description": " Flag for requesting events sending"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfProcessMessage",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "message",
+              "type": "Ref",
+              "ref_name": "MessageSource",
+              "summary": " Message source.",
+              "description": " Message source."
+            },
+            {
+              "name": "send_events",
+              "type": "Boolean",
+              "summary": " Flag for requesting events sending",
+              "description": " Flag for requesting events sending"
+            }
+          ],
+          "summary": null,
+          "description": null
+        }
+      ],
+      "functions": [
+        {
+          "name": "send_message",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfSendMessage",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "callback",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "Request"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfSendMessage"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "wait_for_transaction",
+          "summary": " Performs monitoring of the network for a results of the external",
+          "description": " Performs monitoring of the network for a results of the external\n inbound message processing.\n\n Note that presence of the `abi` parameter is critical for ABI\n compliant contracts. Message processing uses drastically\n different strategy for processing message with an ABI expiration\n replay protection.\n\n When the ABI header `expire` is present, the processing uses\n `message expiration` strategy:\n - The maximum block gen time is set to\n   `message_expiration_time + transaction_wait_timeout`.\n - When maximum block gen time is reached the processing will\n   be finished with `MessageExpired` error.\n\n When the ABI header `expire` isn't present or `abi` parameter\n isn't specified, the processing uses `transaction waiting`\n strategy:\n - The maximum block gen time is set to\n   `now() + transaction_wait_timeout`.\n - When maximum block gen time is reached the processing will\n   be finished with `Incomplete` result.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfWaitForTransaction",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "callback",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "Request"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfProcessMessage"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "process_message",
+          "summary": " Sends message to the network and monitors network for a result of",
+          "description": " Sends message to the network and monitors network for a result of\n message processing.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfProcessMessage",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "request",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "Request"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfProcessMessage"
+              }
+            ]
+          },
+          "errors": null
+        }
+      ]
+    },
+    {
+      "name": "utils",
+      "summary": " Misc utility Functions.",
+      "description": " Misc utility Functions.",
+      "types": [
+        {
+          "name": "AddressStringFormat",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "AccountId",
+              "type": "Struct",
+              "struct_fields": [],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Hex",
+              "type": "Struct",
+              "struct_fields": [],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Base64",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "url",
+                  "type": "Boolean",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "test",
+                  "type": "Boolean",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "bounce",
+                  "type": "Boolean",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfConvertAddress",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "address",
+              "type": "String",
+              "summary": " Account address in any format.",
+              "description": " Account address in any format."
+            },
+            {
+              "name": "output_format",
+              "type": "Ref",
+              "ref_name": "AddressStringFormat",
+              "summary": " Specify the format to convert to.",
+              "description": " Specify the format to convert to."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfConvertAddress",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "address",
+              "type": "String",
+              "summary": " address in the specified format",
+              "description": " address in the specified format"
+            }
+          ],
+          "summary": null,
+          "description": null
+        }
+      ],
+      "functions": [
+        {
+          "name": "convert_address",
+          "summary": " Sends message to the network and monitors network for a result of",
+          "description": " Sends message to the network and monitors network for a result of\n message processing.",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfConvertAddress",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfConvertAddress"
+              }
+            ]
+          },
+          "errors": null
+        }
+      ]
+    },
+    {
+      "name": "tvm",
+      "summary": null,
+      "description": null,
+      "types": [
+        {
+          "name": "ExecutionMode",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "Full",
+              "type": "None",
+              "summary": " Executes all phases and performs all checks",
+              "description": " Executes all phases and performs all checks"
+            },
+            {
+              "name": "TvmOnly",
+              "type": "None",
+              "summary": " Executes contract only on TVM (part of compute phase)",
+              "description": " Executes contract only on TVM (part of compute phase)"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ExecutionOptions",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "blockchain_config",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": " boc with config",
+              "description": " boc with config"
+            },
+            {
+              "name": "block_time",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": " time that is used as transaction time",
+              "description": " time that is used as transaction time"
+            },
+            {
+              "name": "block_lt",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "BigInt"
+              },
+              "summary": " block logical time",
+              "description": " block logical time"
+            },
+            {
+              "name": "transaction_lt",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "BigInt"
+              },
+              "summary": " transaction logical time",
+              "description": " transaction logical time"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfExecuteMessage",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "message",
+              "type": "Ref",
+              "ref_name": "MessageSource",
+              "summary": " Input message.",
+              "description": " Input message."
+            },
+            {
+              "name": "account",
+              "type": "String",
+              "summary": " Account BOC. Must be encoded as base64.",
+              "description": " Account BOC. Must be encoded as base64."
+            },
+            {
+              "name": "mode",
+              "type": "Ref",
+              "ref_name": "ExecutionMode",
+              "summary": " Execution mode.",
+              "description": " Execution mode."
+            },
+            {
+              "name": "execution_options",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "ExecutionOptions"
+              },
+              "summary": " Execution options.",
+              "description": " Execution options."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfExecuteMessage",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "transaction",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": " Parsed transaction.",
+              "description": " Parsed transaction.\n\n In addition to the regular transaction fields there is a\n `boc` field encoded with `base64` which contains source\n transaction BOC."
+            },
+            {
+              "name": "out_messages",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": " List of parsed output messages.",
+              "description": " List of parsed output messages.\n\n Similar to the `transaction` each message contains the `boc`\n field."
+            },
+            {
+              "name": "decoded",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "DecodedOutput"
+              },
+              "summary": " Optional decoded message bodies according to the optional",
+              "description": " Optional decoded message bodies according to the optional\n `abi` parameter."
+            },
+            {
+              "name": "account",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": " JSON with parsed updated account state. Attention! When used in",
+              "description": " JSON with parsed updated account state. Attention! When used in\n `TvmOnly` mode only data in account state is updated."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfExecuteGet",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "account",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "function_name",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "input",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "execution_options",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "ExecutionOptions"
+              },
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfExecuteGet",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "output",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        }
+      ],
+      "functions": [
+        {
+          "name": "execute_message",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfExecuteMessage",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfExecuteMessage"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "execute_get",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfExecuteGet",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfExecuteGet"
+              }
+            ]
+          },
+          "errors": null
+        }
+      ]
+    },
+    {
+      "name": "net",
+      "summary": " Network access.",
+      "description": " Network access.",
+      "types": [
+        {
+          "name": "OrderBy",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "path",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "direction",
+              "type": "Ref",
+              "ref_name": "SortDirection",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "SortDirection",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "ASC",
+              "type": "None",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "DESC",
+              "type": "None",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfQueryCollection",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "collection",
+              "type": "String",
+              "summary": " collection name (accounts, blocks, transactions, messages, block_signatures)",
+              "description": " collection name (accounts, blocks, transactions, messages, block_signatures)"
+            },
+            {
+              "name": "filter",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": " collection filter",
+              "description": " collection filter"
+            },
+            {
+              "name": "result",
+              "type": "String",
+              "summary": " projection (result) string",
+              "description": " projection (result) string"
+            },
+            {
+              "name": "order",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "Ref",
+                  "ref_name": "OrderBy"
+                }
+              },
+              "summary": " sorting order",
+              "description": " sorting order"
+            },
+            {
+              "name": "limit",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": " number of documents to return",
+              "description": " number of documents to return"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfQueryCollection",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "result",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": " objects that match provided criteria",
+              "description": " objects that match provided criteria"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfWaitForCollection",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "collection",
+              "type": "String",
+              "summary": " collection name (accounts, blocks, transactions, messages, block_signatures)",
+              "description": " collection name (accounts, blocks, transactions, messages, block_signatures)"
+            },
+            {
+              "name": "filter",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": " collection filter",
+              "description": " collection filter"
+            },
+            {
+              "name": "result",
+              "type": "String",
+              "summary": " projection (result) string",
+              "description": " projection (result) string"
+            },
+            {
+              "name": "timeout",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": " query timeout",
+              "description": " query timeout"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfWaitForCollection",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "result",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": " first found object that match provided criteria",
+              "description": " first found object that match provided criteria"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfSubscribeCollection",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "handle",
+              "type": "Number",
+              "summary": " handle to subscription. It then can be used in `get_next_subscription_data` function",
+              "description": " handle to subscription. It then can be used in `get_next_subscription_data` function\n and must be closed with `unsubscribe`"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "unit",
+          "type": "None",
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfSubscribeCollection",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "collection",
+              "type": "String",
+              "summary": " collection name (accounts, blocks, transactions, messages, block_signatures)",
+              "description": " collection name (accounts, blocks, transactions, messages, block_signatures)"
+            },
+            {
+              "name": "filter",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": " collection filter",
+              "description": " collection filter"
+            },
+            {
+              "name": "result",
+              "type": "String",
+              "summary": " projection (result) string",
+              "description": " projection (result) string"
+            }
+          ],
+          "summary": null,
+          "description": null
+        }
+      ],
+      "functions": [
+        {
+          "name": "query_collection",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfQueryCollection",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfQueryCollection"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "wait_for_collection",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfWaitForCollection",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfWaitForCollection"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "unsubscribe",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ResultOfSubscribeCollection",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "subscribe_collection",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfSubscribeCollection",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "callback",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "Request"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfSubscribeCollection"
+              }
+            ]
+          },
+          "errors": null
+        }
+      ]
+    }
+  ]
+}

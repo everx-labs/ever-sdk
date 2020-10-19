@@ -1,4 +1,4 @@
-use crate::abi::{decode_message, Abi, DecodedMessageType, ParamsOfDecodeMessage};
+use crate::abi::{decode_message, Abi, MessageBodyType, ParamsOfDecodeMessage};
 use crate::boc::{parse_message, parse_transaction, ParamsOfParse};
 use crate::client::ClientContext;
 use crate::error::ClientResult;
@@ -52,8 +52,8 @@ pub(crate) fn decode_output(
                 },
             ) {
                 Ok(decoded) => {
-                    if decoded.message_type == DecodedMessageType::FunctionOutput {
-                        output = Some(decoded.value.clone());
+                    if decoded.body_type == MessageBodyType::Output {
+                        output = decoded.value.clone();
                     }
                     Some(decoded)
                 }

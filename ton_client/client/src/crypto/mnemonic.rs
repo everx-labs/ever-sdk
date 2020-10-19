@@ -11,23 +11,23 @@
 * limitations under the License.
 */
 
+use crate::client::ClientContext;
 use crate::crypto;
-use crate::crypto::hdkey::{HDPrivateKey};
-use crate::crypto::keys::{KeyPair};
-use crate::crypto::internal::{hmac_sha512, pbkdf2_hmac_sha512, key256};
-use crate::error::{ClientResult};
+use crate::crypto::hdkey::HDPrivateKey;
+use crate::crypto::internal::{hmac_sha512, key256, pbkdf2_hmac_sha512};
+use crate::crypto::keys::KeyPair;
+use crate::crypto::{
+    DEFAULT_HDKEY_COMPLIANT, DEFAULT_HDKEY_DERIVATION_PATH, DEFAULT_MNEMONIC_DICTIONARY,
+    DEFAULT_MNEMONIC_WORD_COUNT,
+};
+use crate::encoding::hex_decode;
+use crate::error::ClientResult;
 use bip39::{Language, Mnemonic, MnemonicType};
 use ed25519_dalek::{PublicKey, SecretKey};
 use hmac::Hmac;
 use pbkdf2::pbkdf2;
-use sha2::Sha512;
 use rand::RngCore;
-use crate::client::ClientContext;
-use crate::crypto::{
-    DEFAULT_MNEMONIC_WORD_COUNT, DEFAULT_HDKEY_DERIVATION_PATH, DEFAULT_HDKEY_COMPLIANT,
-    DEFAULT_MNEMONIC_DICTIONARY,
-};
-use crate::encoding::hex_decode;
+use sha2::Sha512;
 
 const TON_DICTIONARY: u8 = 0;
 const ENGLISH_DICTIONARY: u8 = 1;
@@ -60,7 +60,7 @@ pub fn mnemonic_words(
     params: ParamsOfMnemonicWords,
 ) -> ClientResult<ResultOfMnemonicWords> {
     Ok(ResultOfMnemonicWords {
-        words: mnemonics(params.dictionary, Some(DEFAULT_MNEMONIC_WORD_COUNT))?.get_words()?
+        words: mnemonics(params.dictionary, Some(DEFAULT_MNEMONIC_WORD_COUNT))?.get_words()?,
     })
 }
 
@@ -81,14 +81,14 @@ pub struct ResultOfMnemonicFromRandom {
 }
 
 #[doc(summary = "Generates a random mnemonic")]
-/// Generates a random mnemnonic from the specified dictionary and word count
+/// Generates a random mnemonic from the specified dictionary and word count
 #[api_function]
 pub fn mnemonic_from_random(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicFromRandom,
 ) -> ClientResult<ResultOfMnemonicFromRandom> {
     Ok(ResultOfMnemonicFromRandom {
-        phrase: mnemonics(params.dictionary, params.word_count)?.generate_random_phrase()?
+        phrase: mnemonics(params.dictionary, params.word_count)?.generate_random_phrase()?,
     })
 }
 
@@ -116,7 +116,7 @@ pub fn mnemonic_from_entropy(
 ) -> ClientResult<ResultOfMnemonicFromEntropy> {
     let mnemonic = mnemonics(params.dictionary, params.word_count)?;
     Ok(ResultOfMnemonicFromEntropy {
-        phrase: mnemonic.phrase_from_entropy(&hex_decode(&params.entropy)?)?
+        phrase: mnemonic.phrase_from_entropy(&hex_decode(&params.entropy)?)?,
     })
 }
 
@@ -181,7 +181,10 @@ pub fn mnemonic_derive_sign_keys(
 
 // Internals
 
-fn mnemonics(dictionary: Option<u8>, word_count: Option<u8>) -> ClientResult<Box<dyn CryptoMnemonic>> {
+fn mnemonics(
+    dictionary: Option<u8>,
+    word_count: Option<u8>,
+) -> ClientResult<Box<dyn CryptoMnemonic>> {
     let dictionary = dictionary.unwrap_or(DEFAULT_MNEMONIC_DICTIONARY);
     let word_count = word_count.unwrap_or(DEFAULT_MNEMONIC_WORD_COUNT);
     if dictionary == TON_DICTIONARY {
@@ -204,11 +207,10 @@ fn mnemonics(dictionary: Option<u8>, word_count: Option<u8>) -> ClientResult<Box
         JAPANESE_DICTIONARY => Language::Japanese,
         KOREAN_DICTIONARY => Language::Korean,
         SPANISH_DICTIONARY => Language::Spanish,
-        _ => return Err(crypto::Error::bip39_invalid_dictionary(dictionary))
+        _ => return Err(crypto::Error::bip39_invalid_dictionary(dictionary)),
     };
     Ok(Box::new(Bip39Mnemonic::new(mnemonic_type, language)))
 }
-
 
 pub trait CryptoMnemonic {
     fn get_words(&self) -> ClientResult<String>;
@@ -280,7 +282,8 @@ impl CryptoMnemonic for Bip39Mnemonic {
         path: &String,
     ) -> ClientResult<KeyPair> {
         check_phrase(self, phrase)?;
-        let derived = HDPrivateKey::from_mnemonic(phrase)?.derive_path(path, DEFAULT_HDKEY_COMPLIANT)?;
+        let derived =
+            HDPrivateKey::from_mnemonic(phrase)?.derive_path(path, DEFAULT_HDKEY_COMPLIANT)?;
         ed25519_keys_from_secret_bytes(&derived.secret())
     }
 
@@ -364,11 +367,10 @@ impl TonMnemonic {
                 return false;
             }
             count += 1;
-        };
+        }
         count == self.word_count && Self::is_basic_seed(phrase)
     }
 }
-
 
 impl CryptoMnemonic for TonMnemonic {
     fn get_words(&self) -> ClientResult<String> {
@@ -400,23 +402,24 @@ impl CryptoMnemonic for TonMnemonic {
         check_phrase(self, phrase)?;
 
         let seed = Self::seed_from_string(&phrase, "TON default seed", 100_000);
-        let master = HDPrivateKey::master(
-            &key256(&seed[32..])?,
-            &key256(&seed[..32])?,
-        );
+        let master = HDPrivateKey::master(&key256(&seed[32..])?, &key256(&seed[..32])?);
         let derived = master.derive_path(path, DEFAULT_HDKEY_COMPLIANT)?;
         ed25519_keys_from_secret_bytes(&derived.secret())
     }
 
     fn phrase_from_entropy(&self, entropy: &[u8]) -> ClientResult<String> {
         if entropy.len() != 24 * 11 / 8 {
-            return Err(crypto::Error::mnemonic_from_entropy_failed("Invalid entropy size"));
+            return Err(crypto::Error::mnemonic_from_entropy_failed(
+                "Invalid entropy size",
+            ));
         }
         let phrase = self.words_from_bytes(entropy).join(" ");
         if Self::is_basic_seed(&phrase) {
             Ok(phrase)
         } else {
-            Err(crypto::Error::mnemonic_from_entropy_failed("Invalid entropy"))
+            Err(crypto::Error::mnemonic_from_entropy_failed(
+                "Invalid entropy",
+            ))
         }
     }
 
@@ -426,7 +429,9 @@ impl CryptoMnemonic for TonMnemonic {
 
     fn seed_from_phrase_and_salt(&self, phrase: &String, salt: &String) -> ClientResult<String> {
         check_phrase(self, phrase)?;
-        Ok(hex::encode(Self::seed_from_string(phrase, salt, 100_000).as_ref()))
+        Ok(hex::encode(
+            Self::seed_from_string(phrase, salt, 100_000).as_ref(),
+        ))
     }
 
     fn entropy_from_phrase(&self, phrase: &String) -> ClientResult<String> {

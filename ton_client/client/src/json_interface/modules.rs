@@ -15,18 +15,25 @@
 use super::registrar::ModuleReg;
 use super::runtime::RuntimeHandlers;
 
-/// BOC manipulation module.
+/// Provides information about library.
 #[derive(ApiModule)]
 #[api_module(name = "client")]
 pub(crate) struct ClientModule;
 
 fn register_client(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<ClientModule>(handlers);
+    module.register_type::<crate::error::ClientError>();
+    module.register_type::<crate::client::ClientConfig>();
+    module.register_type::<crate::net::NetworkConfig>();
+    module.register_type::<crate::client::CryptoConfig>();
+    module.register_type::<ton_sdk::AbiConfig>();
+
     module.register_sync_fn_without_args(
         crate::client::get_api_reference,
         crate::client::get_api_reference_api,
     );
     module.register_sync_fn_without_args(crate::client::version, crate::client::version_api);
+    module.register_sync_fn_without_args(crate::client::build_info, crate::client::build_info_api);
     module.register();
 }
 
@@ -37,6 +44,8 @@ pub(crate) struct CryptoModule;
 
 fn register_crypto(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<CryptoModule>(handlers);
+
+    module.register_type::<crate::crypto::SigningBoxHandle>();
 
     // Math
 
@@ -166,7 +175,7 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
     module.register();
 }
 
-/// Functions for encoding and decoding messages due to ABI
+/// Provides message encoding and decoding according to the ABI
 /// specification.
 #[derive(ApiModule)]
 #[api_module(name = "abi")]
@@ -179,7 +188,20 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::abi::FunctionHeader>();
     module.register_type::<crate::abi::CallSet>();
     module.register_type::<crate::abi::DeploySet>();
+    module.register_type::<crate::abi::Signer>();
+    module.register_type::<crate::abi::MessageBodyType>();
+    module.register_type::<crate::abi::StateInitSource>();
+    module.register_type::<crate::abi::StateInitParams>();
+    module.register_type::<crate::abi::MessageSource>();
 
+    module.register_async_fn(
+        crate::abi::encode_message_body,
+        crate::abi::encode_message::encode_message_body_api,
+    );
+    module.register_sync_fn(
+        crate::abi::attach_signature_to_message_body,
+        crate::abi::encode_message::attach_signature_to_message_body_api,
+    );
     module.register_async_fn(
         crate::abi::encode_message,
         crate::abi::encode_message::encode_message_api,
@@ -191,6 +213,10 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
     module.register_sync_fn(
         crate::abi::decode_message,
         crate::abi::decode_message::decode_message_api,
+    );
+    module.register_sync_fn(
+        crate::abi::decode_message_body,
+        crate::abi::decode_message::decode_message_body_api,
     );
     module.register_async_fn(
         crate::abi::encode_account,
@@ -233,6 +259,9 @@ pub(crate) struct NetModule;
 
 fn register_net(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<NetModule>(handlers);
+    module.register_type::<crate::net::OrderBy>();
+    module.register_type::<crate::net::SortDirection>();
+
     module.register_async_fn(
         crate::net::query_collection,
         crate::net::query_collection_api,
@@ -259,7 +288,6 @@ pub struct ProcessingModule;
 
 fn register_processing(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<ProcessingModule>(handlers);
-    module.register_type::<crate::processing::MessageSource>();
     module.register_type::<crate::processing::ProcessingEvent>();
     module.register_type::<crate::processing::ResultOfProcessMessage>();
     module.register_type::<crate::processing::DecodedOutput>();
@@ -285,6 +313,8 @@ pub struct TvmModule;
 
 fn register_tvm(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<TvmModule>(handlers);
+    module.register_type::<crate::tvm::execute_message::ExecutionMode>();
+    module.register_type::<crate::tvm::execute_message::ExecutionOptions>();
     module.register_async_fn(
         crate::tvm::execute_message,
         crate::tvm::execute_message::execute_message_api,
@@ -293,6 +323,7 @@ fn register_tvm(handlers: &mut RuntimeHandlers) {
         crate::tvm::execute_get,
         crate::tvm::execute_get::execute_get_api,
     );
+    module.register();
 }
 
 /// Misc utility Functions.

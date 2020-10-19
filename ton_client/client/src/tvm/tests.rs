@@ -13,10 +13,9 @@
  */
 
 use crate::abi::encode_account::{ParamsOfEncodeAccount, StateInitSource};
-use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer};
+use crate::abi::{MessageSource, CallSet, DeploySet, ParamsOfEncodeMessage, Signer};
 use crate::boc::required_boc;
-use crate::c_interface::modules::{TvmModule, AbiModule};
-use crate::processing::MessageSource;
+use crate::json_interface::modules::{AbiModule, TvmModule};
 use crate::tests::{TestClient, SUBSCRIBE};
 use crate::tvm::execute_message::ExecutionMode;
 use crate::tvm::{execute_get, execute_message, ParamsOfExecuteGet, ParamsOfExecuteMessage};
@@ -124,7 +123,7 @@ async fn test_execute_message() {
                             "wallet": wallet_address.to_string(),
                         }),
                     ),
-                    signer: Signer::WithKeys(keys.clone()),
+                    signer: Signer::Keys { keys: keys.clone() },
                     processing_try_index: None,
                     address: None,
                 },
@@ -146,7 +145,7 @@ async fn test_execute_message() {
                         address: Some(address.clone()),
                         abi: abi.clone(),
                         call_set: CallSet::some_with_function("getWallet"),
-                        signer: Signer::WithKeys(keys.clone()),
+                        signer: Signer::Keys { keys: keys.clone() },
                         deploy_set: None,
                         processing_try_index: None,
                     }
@@ -185,7 +184,7 @@ async fn test_execute_message() {
                         "subscribe",
                         subscribe_params.clone(),
                     ),
-                    signer: Signer::WithKeys(keys.clone()),
+                    signer: Signer::Keys { keys: keys.clone() },
                     deploy_set: None,
                     processing_try_index: None,
                 }),
@@ -206,7 +205,7 @@ async fn test_execute_message() {
                             "subscriptionId": subscribe_params["subscriptionId"].clone(),
                         }),
                     ),
-                    signer: Signer::WithKeys(keys.clone()),
+                    signer: Signer::Keys { keys: keys.clone() },
                     address: Some(address.clone()),
                     deploy_set: None,
                     processing_try_index: None,

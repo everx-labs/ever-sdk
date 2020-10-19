@@ -6,7 +6,9 @@ use syn::{Data, DataEnum, DeriveInput, Expr, Lit, Variant};
 pub fn impl_api_type(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = syn::parse::<DeriveInput>(input).expect("Derive input");
     let ty = match input.data {
-        Data::Struct(ref data) => api_info::Type::Struct(fields_from(&data.fields)),
+        Data::Struct(ref data) => api_info::Type::Struct {
+            fields: fields_from(&data.fields),
+        },
         Data::Enum(ref data) => enum_type(data),
         _ => panic!("ApiType can only be derived for structures"),
     };
@@ -39,14 +41,22 @@ fn enum_type(data: &DataEnum) -> api_info::Type {
 fn enum_of_types(data: &DataEnum) -> api_info::Type {
     let types = data.variants.iter().map(|v| {
         let fields = fields_from(&v.fields);
-        field_from(Some(&v.ident), &v.attrs, api_info::Type::Struct(fields))
+        field_from(
+            Some(&v.ident),
+            &v.attrs,
+            api_info::Type::Struct { fields },
+        )
     });
-    api_info::Type::EnumOfTypes(types.collect())
+    api_info::Type::EnumOfTypes {
+        types: types.collect(),
+    }
 }
 
 fn enum_of_consts(data: &DataEnum) -> api_info::Type {
     let consts = data.variants.iter().map(|v| const_from(v));
-    api_info::Type::EnumOfConsts(consts.collect())
+    api_info::Type::EnumOfConsts {
+        consts: consts.collect(),
+    }
 }
 
 fn const_from(v: &Variant) -> api_info::Const {
@@ -80,4 +90,3 @@ fn value_from_lit(lit: &Lit) -> api_info::ConstValue {
         _ => panic!("Invalid enum const."),
     }
 }
-

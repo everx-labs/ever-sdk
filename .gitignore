@@ -25,7 +25,6 @@ Cargo.lock
 /ton_client/platforms/ton-client-node-js/build/
 /ton_client/platforms/ton-client-react-native/build/
 /ton_client/platforms/ton-client-web/build/
-/ton_client/platforms/ton-client-react-native/build/
 /ton_client/platforms/ton-client-web/build/tonclient.wasm
 /ton_client/platforms/ton-client-web/build/index.js
 /ton_client/client/bin/
@@ -33,3 +32,9 @@ Cargo.lock
 /ton_client/platforms/ton-client-react-native/android/src/main/jniLibs/
 /ton_client/platforms/ton-client-react-native/ios/libtonclient.a
 /examples/c/libton_client.dylib
+/tools/node_modules/
+/tools/**/*.map
+/tools/**/*.js
+/tools/**/*.d.ts
+/tools/**/*.tsbuildinfo
+/tools/package-lock.json

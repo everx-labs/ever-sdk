@@ -1,3 +1,4 @@
+use crate::abi::types::MessageSource;
 use crate::abi::{Abi, Error};
 use crate::boc::internal::{
     deserialize_cell_from_base64, deserialize_object_from_base64, serialize_object_to_base64,
@@ -5,7 +6,6 @@ use crate::boc::internal::{
 use crate::client::ClientContext;
 use crate::crypto::internal::decode_public_key;
 use crate::error::ClientResult;
-use crate::processing::MessageSource;
 use serde_json::Value;
 use std::sync::Arc;
 use ton_block::GetRepresentationHash;
@@ -24,9 +24,10 @@ pub struct StateInitParams {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+#[serde(tag = "type")]
 pub enum StateInitSource {
     /// Deploy message.
-    Message(MessageSource),
+    Message { source: MessageSource },
     /// State init data.
     StateInit {
         /// Code BOC. Encoded with `base64`.
@@ -116,7 +117,7 @@ fn state_init_from_tvc(
         image
             .update_data(
                 init_params.value.to_string().as_str(),
-                &init_params.abi.json_string(),
+                &init_params.abi.json_string()?,
             )
             .map_err(|err| {
                 Error::invalid_tvc_image(format!("Failed to set initial data: {}", err))
@@ -132,7 +133,7 @@ pub async fn encode_account(
     params: ParamsOfEncodeAccount,
 ) -> ClientResult<ResultOfEncodeAccount> {
     let state_init = match &params.state_init {
-        StateInitSource::Message(message) => state_init_from_message(&context, message).await,
+        StateInitSource::Message { source } => state_init_from_message(&context, source).await,
         StateInitSource::StateInit {
             code,
             data,

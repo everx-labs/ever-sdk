@@ -12,10 +12,13 @@
  *
  */
 
+use crate::api_item::ApiItem;
 use crate::command_line::CommandLine;
 use crate::errors::{CliError, CliResult};
+use api_info::API;
+use std::sync::Arc;
+use ton_client::ClientContext;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
 
 pub trait OutputWriter {
     fn write(&self, file: &str, text: &str) -> CliResult<()>;
@@ -30,15 +33,6 @@ pub struct Output {
 }
 
 impl Output {
-    pub fn clone_with_writer(&self, writer: Arc<dyn OutputWriter>) -> Self {
-        Self {
-            embed_types: self.embed_types,
-            embed_functions: self.embed_functions,
-            embed_modules: self.embed_modules,
-            writer,
-        }
-    }
-
     pub fn parse(command_line: &CommandLine) -> CliResult<Self> {
         let writer: Arc<dyn OutputWriter> =
             if let Some(dir) = command_line.get_opt("o|out-dir").map(|x| x.to_string()) {
@@ -97,26 +91,25 @@ impl OutputWriter for DirWriter {
     }
 }
 
-pub struct StringWriter {
-    pub string: Mutex<String>,
+pub fn doc_json(api: &API, item: ApiItem, output: Output) -> CliResult<()> {
+    let (file, json) = match item {
+        ApiItem::Api => ("api".to_string(), serde_json::to_value(api)?),
+        ApiItem::Module(m) => (format!("{}", m.name), serde_json::to_value(m)?),
+        ApiItem::Function(m, f) => (format!("{}_{}", m.name, f.name), serde_json::to_value(f)?),
+        ApiItem::Type(m, t) => (format!("{}_{}", m.name, t.name), serde_json::to_value(t)?),
+    };
+    let text = serde_json::to_string_pretty(&json).unwrap_or("".into());
+    output.write(&format!("{}.json", file), &text)
 }
 
-impl StringWriter {
-    pub fn new() -> Self {
-        StringWriter {
-            string: Mutex::new(String::new()),
-        }
-    }
-
-    pub fn text(&self) -> String {
-        self.string.lock().unwrap().clone()
-    }
-}
-
-impl OutputWriter for StringWriter {
-    fn write(&self, _file: &str, text: &str) -> CliResult<()> {
-        let mut string = self.string.lock().unwrap();
-        string.push_str(text);
-        Ok(())
-    }
+pub fn command(args: &[String]) -> Result<(), CliError> {
+    let command_line = CommandLine::parse(args)?;
+    let mut args = command_line.args.iter();
+    let api = ton_client::client::get_api_reference(Arc::new(ClientContext::new(None)?))?.api;
+    let name = args.next().map(|x| x.as_str()).unwrap_or("");
+    doc_json(
+        &api,
+        ApiItem::from_name(&api, name)?,
+        Output::parse(&command_line)?,
+    )
 }

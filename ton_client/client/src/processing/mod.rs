@@ -26,7 +26,7 @@ mod types;
 pub(crate) mod wait_for_transaction;
 
 pub use errors::{Error, ErrorCode};
-pub use process_message::{process_message, MessageSource, ParamsOfProcessMessage};
+pub use process_message::{process_message, ParamsOfProcessMessage};
 pub use send_message::{send_message, ParamsOfSendMessage, ResultOfSendMessage};
 pub use types::{DecodedOutput, ProcessingEvent, ProcessingResponseType, ResultOfProcessMessage};
 pub use wait_for_transaction::{wait_for_transaction, ParamsOfWaitForTransaction};

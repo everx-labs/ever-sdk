@@ -79,12 +79,12 @@ Note that default values are used if parameters are omitted in config"#,
     }
 }
 
-#[derive(Deserialize, Debug, Default, Clone)]
+#[derive(Deserialize, Debug, Default, Clone, ApiType)]
 pub struct CryptoConfig {
     pub fish_param: Option<String>,
 }
 
-#[derive(Deserialize, Debug, Clone, Default)]
+#[derive(Deserialize, Debug, Clone, Default, ApiType)]
 pub struct ClientConfig {
     pub network: Option<NetworkConfig>,
     pub crypto: Option<CryptoConfig>,

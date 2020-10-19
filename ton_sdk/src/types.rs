@@ -68,7 +68,7 @@ impl NetworkConfig {
     }
 }
 
-#[derive(Deserialize, Debug, Default, Clone)]
+#[derive(Deserialize, Debug, Default, Clone, ApiType)]
 pub struct AbiConfig {
     message_expiration_timeout: Option<u32>,
     message_expiration_timeout_grow_factor: Option<f32>,

@@ -40,7 +40,7 @@ fn error(code: ErrorCode, message: String) -> ClientError {
 }
 
 fn error_with_data(code: ErrorCode, message: String, data: Value) -> ClientError {
-    ClientError::with_code_message_data(code as isize, message, data)
+    ClientError::new(code as isize, message, data)
 }
 
 impl Error {

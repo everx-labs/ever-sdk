@@ -1,10 +1,10 @@
 use crate::error::ClientSdkErrorCode::*;
 use chrono::TimeZone;
+use serde_json::Value;
 use std::fmt::Display;
 use ton_block::{AccStatusChange, ComputeSkipReason, MsgAddressInt};
-use ton_sdk::{MessageProcessingState};
+use ton_sdk::MessageProcessingState;
 use ton_types::ExceptionCode;
-use serde_json::Value;
 
 fn format_time(time: u32) -> String {
     format!(
@@ -29,14 +29,11 @@ impl ClientErrorSource {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default, ApiType)]
 #[serde(default)]
 pub struct ClientError {
-    pub core_version: String,
-    pub source: String,
     pub code: isize,
     pub message: String,
-    pub message_processing_state: Option<MessageProcessingState>,
     pub data: serde_json::Value,
 }
 
@@ -52,7 +49,7 @@ trait AsString {
 
 macro_rules! sdk_err {
     ($code:expr, $($args:tt),*) => (
-        ClientError::new(ClientErrorSource::Client, &$code, format!($($args),*))
+        ClientError::with_code_message($code.as_number(), format!($($args),*))
     );
 }
 
@@ -82,41 +79,28 @@ impl ClientError {
     pub const NET: isize = 600;
     pub const UTILS: isize = 700;
 
-    fn new(source: ClientErrorSource, code: &dyn ClientErrorCode, message: String) -> Self {
+    pub fn new(code: isize, message: String, data: Value) -> Self {
+        let mut data = data;
+        data["core_version"] = Value::String(env!("CARGO_PKG_VERSION").to_owned());
         Self {
-            core_version: env!("CARGO_PKG_VERSION").to_owned(),
-            source: source.to_string(),
-            code: code.as_number(),
+            code,
             message,
-            message_processing_state: None,
-            data: serde_json::Value::Null,
+            data,
         }
     }
 
     pub fn with_code_message(code: isize, message: String) -> Self {
         Self {
-            core_version: env!("CARGO_PKG_VERSION").to_owned(),
-            source: ClientErrorSource::Client.to_string(),
             code,
             message,
-            message_processing_state: None,
-            data: serde_json::Value::Null,
-        }
-    }
-
-    pub fn with_code_message_data(code: isize, message: String, data: Value) -> Self {
-        Self {
-            core_version: env!("CARGO_PKG_VERSION").to_owned(),
-            source: ClientErrorSource::Client.to_string(),
-            code,
-            message,
-            message_processing_state: None,
-            data,
+            data: json!({
+                "core_version": env!("CARGO_PKG_VERSION").to_owned(),
+            }),
         }
     }
 
     pub fn sdk(code: ClientSdkErrorCode, message: String) -> Self {
-        Self::new(ClientErrorSource::Client, &code, message)
+        Self::with_code_message(code.as_number(), message)
     }
 
         pub(crate) fn add_network_url(mut self, client: &crate::net::NodeClient) -> ClientError {
@@ -189,20 +173,17 @@ impl ClientError {
         block_time: u32,
         block_id: String,
     ) -> Self {
-        let mut error = ClientError::new(
-            ClientErrorSource::Node,
-            &ClientSdkErrorCode::MessageExpired,
+        ClientError::new(
+            ClientSdkErrorCode::MessageExpired.as_number(),
             "Message was not delivered within the specified timeout".to_owned(),
-        );
-
-        error.data = serde_json::json!({
-            "message_id": msg_id,
-            "sending_time": format_time(sending_time),
-            "expiration_time": format_time(expire),
-            "block_time": format_time(block_time),
-            "block_id": block_id,
-        });
-        error
+            serde_json::json!({
+                "message_id": msg_id,
+                "sending_time": format_time(sending_time),
+                "expiration_time": format_time(expire),
+                "block_time": format_time(block_time),
+                "block_id": block_id,
+            }),
+        )
     }
 
     pub fn address_reqired_for_runget() -> Self {
@@ -214,120 +195,101 @@ impl ClientError {
         msg_id: String,
         timeout: u32,
         block_id: String,
-        state: MessageProcessingState,
+        _state: MessageProcessingState,
     ) -> Self {
-        let mut error = ClientError::new(
-            ClientErrorSource::Node,
-            &ClientSdkErrorCode::NetworkSilent,
+        ClientError::new(
+            ClientSdkErrorCode::NetworkSilent.as_number(),
             "No blocks were produced during the specified timeout".to_owned(),
-        );
-        error.message_processing_state = Some(state);
-
-        error.data = serde_json::json!({
-            "message_id": msg_id,
-            "timeout": timeout,
-            "last_block_id": block_id,
-        });
-        error
+            serde_json::json!({
+                "message_id": msg_id,
+                "timeout": timeout,
+                "last_block_id": block_id,
+            }),
+        )
     }
 
     pub fn transaction_wait_timeout(
         msg_id: String,
         sending_time: u32,
         timeout: u32,
-        state: MessageProcessingState,
+        _state: MessageProcessingState,
     ) -> Self {
-        let mut error = ClientError::new(
-            ClientErrorSource::Node,
-            &ClientSdkErrorCode::TransactionWaitTimeout,
+        ClientError::new(
+            ClientSdkErrorCode::TransactionWaitTimeout.as_number(),
             "Transaction was not produced during the specified timeout".to_owned(),
-        );
-        error.message_processing_state = Some(state);
-
-        error.data = serde_json::json!({
-            "message_id": msg_id,
-            "sending_time": format_time(sending_time),
-            "timeout": timeout,
-        });
-        error
+            serde_json::json!({
+                "message_id": msg_id,
+                "sending_time": format_time(sending_time),
+                "timeout": timeout,
+            }),
+        )
     }
 
     pub fn account_code_missing(address: &MsgAddressInt) -> Self {
-        let mut error = ClientError::new(
-            ClientErrorSource::Node,
-            &ClientSdkErrorCode::AccountCodeMissing,
+        ClientError::new(
+            ClientSdkErrorCode::AccountCodeMissing.as_number(),
             "Contract is not deployed".to_owned(),
-        );
-
-        error.data = serde_json::json!({
-            "tip": "Contract code should be deployed before calling contract functions",
-            "account_address": address.to_string(),
-        });
-        error
+            serde_json::json!({
+                "tip": "Contract code should be deployed before calling contract functions",
+                "account_address": address.to_string(),
+            }),
+        )
     }
 
     pub fn low_balance(address: &MsgAddressInt, balance: Option<u64>) -> Self {
-        let mut error = ClientError::new(
-            ClientErrorSource::Node,
-            &ClientSdkErrorCode::LowBalance,
-            "Account has insufficient balance for the requested operation".to_owned(),
-        );
-
-        error.data = serde_json::json!({
+        let mut data = serde_json::json!({
             "account_address": address.to_string(),
             "tip": "Send some value to account balance",
         });
         if let Some(balance) = balance {
-            error.data["account_balance"] = balance.into();
+            data["account_balance"] = balance.into();
         }
-        error
+        ClientError::new(
+            ClientSdkErrorCode::LowBalance.as_number(),
+            "Account has insufficient balance for the requested operation".to_owned(),
+            data,
+        )
     }
 
     pub fn account_frozen_or_deleted(address: &MsgAddressInt) -> Self {
-        let mut error = ClientError::new(
-            ClientErrorSource::Node,
-            &ClientSdkErrorCode::AccountFrozenOrDeleted,
+        ClientError::new(
+            ClientSdkErrorCode::AccountFrozenOrDeleted.as_number(),
             "Account is in a bad state. It is frozen or deleted".to_owned(),
-        );
-
-        error.data = serde_json::json!({
-            "account_address": address.to_string(),
-        });
-        error
+            serde_json::json!({
+                "account_address": address.to_string(),
+            }),
+        )
     }
 
     pub fn account_missing(address: &MsgAddressInt) -> Self {
-        let mut error = ClientError::new(
-            ClientErrorSource::Node,
-            &ClientSdkErrorCode::AccountMissing,
+        ClientError::new(
+            ClientSdkErrorCode::AccountMissing.as_number(),
             "Account does not exist".to_owned(),
-        );
-
-        error.data = serde_json::json!({
-            "account_address": address.to_string(),
-            "tip": "You need to transfer funds to this account first to have a positive balance and then deploy its code."
-        });
-        error
+            serde_json::json!({
+                "account_address": address.to_string(),
+                "tip": "You need to transfer funds to this account first to have a positive balance and then deploy its code."
+            }),
+        )
     }
 
     pub fn clock_out_of_sync(delta_ms: i64, threshold: i64) -> Self {
-        let mut error = ClientError::new(
-            ClientErrorSource::Node,
-            &ClientSdkErrorCode::ClockOutOfSync,
+        ClientError::new(
+            ClientSdkErrorCode::ClockOutOfSync.as_number(),
             "The time on the device is out of sync with the time on the server".to_owned(),
-        );
-
-        error.data = serde_json::json!({
-            "delta_ms": delta_ms,
-            "threshold_ms": threshold,
-            "tip": "Synchronize your device time with internet time"
-        });
-        error
+            serde_json::json!({
+                "delta_ms": delta_ms,
+                "threshold_ms": threshold,
+                "tip": "Synchronize your device time with internet time"
+            }),
+        )
     }
 
     pub fn callback_not_registered(callback_id: u32) -> Self {
-        sdk_err!(CallbackNotRegistered,
-            "Callback with ID {} is not registered", callback_id)
+        sdk_err!(
+            CallbackNotRegistered,
+            "Callback with ID {} is not registered",
+            callback_id
+        )
     }
 
     // SDK Cell
@@ -513,23 +475,24 @@ impl ClientError {
     }
 
     pub fn queries_get_next_failed<E: Display>(err: E) -> Self {
-        sdk_err!(QueriesGetSubscriptionResultFailed,
-            "Receive subscription result failed: {}", err)
+        sdk_err!(
+            QueriesGetSubscriptionResultFailed,
+            "Receive subscription result failed: {}",
+            err
+        )
     }
 
     // Failed transaction phases
 
     pub fn transaction_aborted(tr_id: Option<String>) -> ClientError {
-        let mut error = ClientError::new(
-            ClientErrorSource::Node,
-            &(-1i32),
+        ClientError::new(
+            -1,
             "Transaction was aborted".to_string(),
-        );
-        error.data = serde_json::json!({
-            "transaction_id": tr_id,
-            "phase": "unknown",
-        });
-        error
+            serde_json::json!({
+                "transaction_id": tr_id,
+                "phase": "unknown",
+            }),
+        )
     }
 
     pub fn tvm_execution_skipped(
@@ -555,12 +518,6 @@ impl ClientError {
         exit_code: i32,
         address: &MsgAddressInt,
     ) -> ClientError {
-        let mut error = ClientError::new(
-            ClientErrorSource::Node,
-            &ContractsTvmError,
-            format!("Contract execution was terminated with error"),
-        );
-
         let mut data = serde_json::json!({
             "transaction_id": tr_id,
             "phase": "computeVm",
@@ -579,9 +536,11 @@ impl ClientError {
             }
             data["description"] = code.to_string().into();
         }
-
-        error.data = data;
-        error
+        ClientError::new(
+            ContractsTvmError.as_number(),
+            format!("Contract execution was terminated with error"),
+            data,
+        )
     }
 
     pub fn storage_phase_failed(
@@ -617,9 +576,9 @@ impl ClientError {
             error
         } else {
             let mut error = ClientError::new(
-                ClientErrorSource::Node,
-                &ActionPhaseFailed,
+                ActionPhaseFailed.as_number(),
                 "Transaction failed at action phase".to_owned(),
+                json!({}),
             );
             if !valid {
                 error.data["description"] = "Contract tried to send invalid oubound message".into();
@@ -688,7 +647,6 @@ pub enum ClientSdkErrorCode {
     QueriesGetSubscriptionResultFailed = 4004,
 
     CellInvalidQuery = 5001,
-
 }
 
 impl ClientErrorCode for ClientSdkErrorCode {
@@ -739,24 +697,58 @@ impl ClientErrorCode for i32 {
     }
 }
 
-pub(crate) fn _clienterror_from_sdkerror<F>(err: &failure::Error, default_err: F, client: Option<&crate::net::NodeClient>) -> ClientError
-    where
-        F: Fn(String) -> ClientError,
+#[cfg(feature = "node_interaction")]
+pub(crate) fn _clienterror_from_sdkerror<F>(
+    err: &failure::Error,
+    default_err: F,
+    client: Option<&crate::net::NodeClient>,
+) -> ClientError
+where
+    F: Fn(String) -> ClientError,
 {
     let err = match err.downcast_ref::<ton_sdk::SdkError>() {
         Some(ton_sdk::SdkError::WaitForTimeout) => ClientError::wait_for_timeout(),
-        Some(ton_sdk::SdkError::MessageExpired { msg_id, expire, sending_time, block_time, block_id }) =>
-            ClientError::message_expired(msg_id.to_string(), *sending_time, *expire, *block_time, block_id.to_string()),
-        Some(ton_sdk::SdkError::NetworkSilent { msg_id, timeout, block_id, state }) =>
-            ClientError::network_silent(msg_id.to_string(), *timeout, block_id.to_string(), state.clone()),
-        Some(ton_sdk::SdkError::TransactionWaitTimeout { msg_id, sending_time, timeout, state }) =>
-            ClientError::transaction_wait_timeout(msg_id.to_string(), *sending_time, *timeout, state.clone()),
-        Some(ton_sdk::SdkError::ClockOutOfSync { delta_ms, threshold_ms }) =>
-            ClientError::clock_out_of_sync(*delta_ms, *threshold_ms),
-        Some(ton_sdk::SdkError::ResumableNetworkError { state, error }) => {
-            let mut client_error = _clienterror_from_sdkerror(error, default_err, client);
-            client_error.message_processing_state = Some(state.clone());
-            client_error
+        Some(ton_sdk::SdkError::MessageExpired {
+            msg_id,
+            expire,
+            sending_time,
+            block_time,
+            block_id,
+        }) => ClientError::message_expired(
+            msg_id.to_string(),
+            *sending_time,
+            *expire,
+            *block_time,
+            block_id.to_string(),
+        ),
+        Some(ton_sdk::SdkError::NetworkSilent {
+            msg_id,
+            timeout,
+            block_id,
+            state,
+        }) => ClientError::network_silent(
+            msg_id.to_string(),
+            *timeout,
+            block_id.to_string(),
+            state.clone(),
+        ),
+        Some(ton_sdk::SdkError::TransactionWaitTimeout {
+            msg_id,
+            sending_time,
+            timeout,
+            state,
+        }) => ClientError::transaction_wait_timeout(
+            msg_id.to_string(),
+            *sending_time,
+            *timeout,
+            state.clone(),
+        ),
+        Some(ton_sdk::SdkError::ClockOutOfSync {
+            delta_ms,
+            threshold_ms,
+        }) => ClientError::clock_out_of_sync(*delta_ms, *threshold_ms),
+        Some(ton_sdk::SdkError::ResumableNetworkError { error, .. }) => {
+            _clienterror_from_sdkerror(error, default_err, client)
         }
         _ => default_err(err.to_string()),
     };

@@ -17,23 +17,18 @@ extern crate serde_derive;
 mod docs;
 mod errors;
 mod command_line;
-mod execute;
+mod request;
 mod api_item;
-mod binding;
-mod text_generator;
 
 const USAGE: &str = r#"
 toncli <command> args...
 where command is:
 
-api <function> args...
-    executes ton client api function
+api – export ton client api JSON
 
-docs
-    generates ton client api documentation
-
-binding
-    generates ton client binding code
+request <function> <params> – executes ton client api function
+    <function> – any possible api function name in form of module.function
+    <params> – all args next to <function> collected as a JSON5 function parameters
 "#;
 
 fn print_usage_and_exit() {
@@ -45,9 +40,8 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let cmd = args.iter().skip(1).next().map(|x| x.as_str());
     let result = match cmd.unwrap_or("") {
-        "api" => execute::command(&args[2..]),
-        "docs" => docs::command(&args[2..]),
-        "binding" => binding::command(&args[2..]),
+        "api" => docs::command(&args[2..]),
+        "request" => request::command(&args[2..]),
         _ => {
             print_usage_and_exit();
             Ok(())

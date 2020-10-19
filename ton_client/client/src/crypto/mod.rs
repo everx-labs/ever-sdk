@@ -24,7 +24,10 @@ pub(crate) mod scrypt;
 
 pub use boxes::SigningBoxHandle;
 pub use errors::{Error, ErrorCode};
-pub use keys::KeyPair;
+pub use keys::{
+    KeyPair, ParamsOfConvertPublicKeyToTonSafeFormat, ParamsOfSign, ParamsOfVerifySignature,
+    ResultOfConvertPublicKeyToTonSafeFormat, ResultOfSign, ResultOfVerifySignature,
+};
 pub use nacl::{
     ParamsOfNaclBox, ParamsOfNaclBoxKeyPairFromSecret, ParamsOfNaclBoxOpen, ParamsOfNaclSecretBox,
     ParamsOfNaclSecretBoxOpen, ParamsOfNaclSign, ParamsOfNaclSignDetached,
