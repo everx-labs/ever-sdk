@@ -1,4 +1,4 @@
-use crate::abi::decode_message::{DecodedBody, BodyType, ParamsOfDecodeMessage};
+use crate::abi::decode_message::{DecodedMessageBody, MessageBodyType, ParamsOfDecodeMessage};
 use crate::abi::encode_message::{
     CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfEncodeMessage, ResultOfAttachSignature,
     ResultOfEncodeMessage,
@@ -143,7 +143,7 @@ fn decode_v2() {
     let (events_abi, _events_tvc) = TestClient::package(EVENTS, Some(2));
 
     let decode_events = |message: &str| {
-        let result: DecodedBody = client.request(
+        let result: DecodedMessageBody = client.request(
             "abi.decode_message",
             ParamsOfDecodeMessage {
                 abi: events_abi.clone(),
@@ -153,12 +153,12 @@ fn decode_v2() {
         result
     };
 
-    let expected = DecodedBody {
-        body_type: BodyType::Input,
+    let expected = DecodedMessageBody {
+        body_type: MessageBodyType::Input,
         name: "returnValue".into(),
-        value: json!({
+        value: Some(json!({
             "id": "0x0"
-        }),
+        })),
         header: Some(FunctionHeader {
             expire: Some(1599458404),
             time: Some(1599458364291),
@@ -167,27 +167,27 @@ fn decode_v2() {
     };
     assert_eq!(expected, decode_events("te6ccgEBAwEAvAABRYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIMAQHhrd/b+MJ5Za+AygBc5qS/dVIPnqxCsM9PvqfVxutK+lnQEKzQoRTLYO6+jfM8TF4841bdNjLQwIDWL4UVFdxIhdMfECP8d3ruNZAXul5xxahT91swIEkEHph08JVlwmUmQAAAXRnJcuDX1XMZBW+LBKACAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="));
 
-    let expected = DecodedBody {
-        body_type: BodyType::Event,
+    let expected = DecodedMessageBody {
+        body_type: MessageBodyType::Event,
         name: "EventThrown".into(),
-        value: json!({
+        value: Some(json!({
             "id": "0x0"
-        }),
+        })),
         header: None,
     };
     assert_eq!(expected, decode_events("te6ccgEBAQEAVQAApeACvg5/pmQpY4m61HmJ0ne+zjHJu3MNG8rJxUDLbHKBu/AAAAAAAAAMJL6z6ro48sYvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA"));
 
-    let result: DecodedBody = client.request("abi.decode_message_body", ParamsOfDecodeMessageBody {
+    let result: DecodedMessageBody = client.request("abi.decode_message_body", ParamsOfDecodeMessageBody {
         abi: events_abi.clone(),
         body: "te6ccgEBAgEAlgAB4a3f2/jCeWWvgMoAXOakv3VSD56sQrDPT76n1cbrSvpZ0BCs0KEUy2Duvo3zPExePONW3TYy0MCA1i+FFRXcSIXTHxAj/Hd67jWQF7peccWoU/dbMCBJBB6YdPCVZcJlJkAAAF0ZyXLg19VzGQVviwSgAQBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=".into(),
         is_internal: false,
     });
-    let expected = DecodedBody {
-        body_type: BodyType::Input,
+    let expected = DecodedMessageBody {
+        body_type: MessageBodyType::Input,
         name: "returnValue".into(),
-        value: json!({
+        value: Some(json!({
             "id": "0x0"
-        }),
+        })),
         header: Some(FunctionHeader {
             expire: Some(1599458404),
             time: Some(1599458364291),
@@ -196,12 +196,12 @@ fn decode_v2() {
     };
     assert_eq!(expected, result);
 
-    let expected = DecodedBody {
-        body_type: BodyType::Output,
+    let expected = DecodedMessageBody {
+        body_type: MessageBodyType::Output,
         name: "returnValue".into(),
-        value: json!({
+        value: Some(json!({
             "value0": "0x0"
-        }),
+        })),
         header: None,
     };
     assert_eq!(expected, decode_events("te6ccgEBAQEAVQAApeACvg5/pmQpY4m61HmJ0ne+zjHJu3MNG8rJxUDLbHKBu/AAAAAAAAAMKr6z6rxK3xYJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA"));

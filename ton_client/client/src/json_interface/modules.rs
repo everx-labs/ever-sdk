@@ -188,7 +188,7 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::abi::CallSet>();
     module.register_type::<crate::abi::DeploySet>();
     module.register_type::<crate::abi::Signer>();
-    module.register_type::<crate::abi::BodyType>();
+    module.register_type::<crate::abi::MessageBodyType>();
     module.register_type::<crate::abi::StateInitSource>();
     module.register_type::<crate::abi::StateInitParams>();
     module.register_type::<crate::abi::MessageSource>();

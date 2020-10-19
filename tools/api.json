@@ -2626,7 +2626,7 @@
           "description": null
         },
         {
-          "name": "BodyType",
+          "name": "MessageBodyType",
           "type": "EnumOfConsts",
           "enum_consts": [
             {
@@ -3095,13 +3095,13 @@
           "description": null
         },
         {
-          "name": "DecodedBody",
+          "name": "DecodedMessageBody",
           "type": "Struct",
           "struct_fields": [
             {
               "name": "body_type",
               "type": "Ref",
-              "ref_name": "BodyType",
+              "ref_name": "MessageBodyType",
               "summary": " Type of the message body content.",
               "description": " Type of the message body content."
             },
@@ -3113,8 +3113,11 @@
             },
             {
               "name": "value",
-              "type": "Ref",
-              "ref_name": "Value",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
               "summary": " Parameters or result value.",
               "description": " Parameters or result value."
             },
@@ -3407,7 +3410,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "DecodedBody"
+                "ref_name": "DecodedMessageBody"
               }
             ]
           },
@@ -3445,7 +3448,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "DecodedBody"
+                "ref_name": "DecodedMessageBody"
               }
             ]
           },
@@ -4026,7 +4029,7 @@
                 "type": "Optional",
                 "optional_inner": {
                   "type": "Ref",
-                  "ref_name": "DecodedBody"
+                  "ref_name": "DecodedMessageBody"
                 }
               },
               "summary": " Decoded bodies of the out messages.",

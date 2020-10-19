@@ -271,11 +271,11 @@ type ResultOfProcessMessage = {
 
 ```ts
 type DecodedOutput = {
-    out_messages: DecodedBody | null[],
+    out_messages: DecodedMessageBody | null[],
     output?: any
 };
 ```
-- `out_messages`: _[DecodedBody](mod_abi.md#DecodedBody)?[]_ –  Decoded bodies of the out messages.
+- `out_messages`: _[DecodedMessageBody](mod_abi.md#DecodedMessageBody)?[]_ –  Decoded bodies of the out messages.
 - `output`?: _any_ –  Decoded body of the function output message.
 
 

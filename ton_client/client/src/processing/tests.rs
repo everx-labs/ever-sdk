@@ -1,5 +1,5 @@
 use crate::abi::{
-    CallSet, DecodedBody, BodyType, DeploySet, FunctionHeader,
+    CallSet, DecodedMessageBody, MessageBodyType, DeploySet, FunctionHeader,
     ParamsOfEncodeMessage, Signer,
 };
 use crate::processing::{
@@ -247,16 +247,16 @@ async fn test_process_message() {
         output.decoded,
         Some(DecodedOutput {
             out_messages: vec![
-                Some(DecodedBody {
-                    body_type: BodyType::Event,
+                Some(DecodedMessageBody {
+                    body_type: MessageBodyType::Event,
                     name: "EventThrown".into(),
-                    value: json!({"id": "0x1"}),
+                    value: Some(json!({"id": "0x1"})),
                     header: None,
                 }),
-                Some(DecodedBody {
-                    body_type: BodyType::Output,
+                Some(DecodedMessageBody {
+                    body_type: MessageBodyType::Output,
                     name: "returnValue".into(),
-                    value: json!({"value0": "0x1"}),
+                    value: Some(json!({"value0": "0x1"})),
                     header: None,
                 })
             ],

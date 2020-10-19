@@ -13,7 +13,7 @@ use ton_types::SliceData;
 use crate::boc::internal::deserialize_cell_from_base64;
 
 #[derive(Serialize, Deserialize, ApiType, PartialEq, Debug, Clone)]
-pub enum BodyType {
+pub enum MessageBodyType {
     /// Message contains the input of the ABI function.
     Input,
 
@@ -31,23 +31,23 @@ pub enum BodyType {
 }
 
 #[derive(Serialize, Deserialize, ApiType, PartialEq, Debug, Clone)]
-pub struct DecodedBody {
+pub struct DecodedMessageBody {
     /// Type of the message body content.
-    pub body_type: BodyType,
+    pub body_type: MessageBodyType,
 
     /// Function or event name.
     pub name: String,
 
     /// Parameters or result value.
-    pub value: Value,
+    pub value: Option<Value>,
 
     /// Function header.
     pub header: Option<FunctionHeader>,
 }
 
-impl DecodedBody {
+impl DecodedMessageBody {
     fn new(
-        body_type: BodyType,
+        body_type: MessageBodyType,
         decoded: DecodedMessage,
         header: Option<FunctionHeader>,
     ) -> ClientResult<Self> {
@@ -56,7 +56,7 @@ impl DecodedBody {
         Ok(Self {
             body_type,
             name: decoded.function_name,
-            value,
+            value: Some(value),
             header,
         })
     }
@@ -78,7 +78,7 @@ pub struct ParamsOfDecodeMessage {
 pub fn decode_message(
     _context: Arc<ClientContext>,
     params: ParamsOfDecodeMessage,
-) -> ClientResult<DecodedBody> {
+) -> ClientResult<DecodedMessageBody> {
     let (abi, message) = prepare_decode(&params)?;
     if let Some(body) = message.body() {
         decode_body(abi, body, message.is_internal())
@@ -108,7 +108,7 @@ pub struct ParamsOfDecodeMessageBody {
 pub fn decode_message_body(
     _context: Arc<ClientContext>,
     params: ParamsOfDecodeMessageBody,
-) -> ClientResult<DecodedBody> {
+) -> ClientResult<DecodedMessageBody> {
     let abi = resolve_abi(&params.abi)?;
     let abi = AbiContract::load(abi.as_bytes()).map_err(|x| Error::invalid_json(x))?;
     let (_, body) = deserialize_cell_from_base64(&params.body, "message body")?;
@@ -129,12 +129,12 @@ fn decode_body(
     abi: AbiContract,
     body: SliceData,
     is_internal: bool,
-) -> ClientResult<DecodedBody> {
+) -> ClientResult<DecodedMessageBody> {
     if let Ok(output) = abi.decode_output(body.clone(), is_internal) {
         if abi.events().get(&output.function_name).is_some() {
-            DecodedBody::new(BodyType::Event, output, None)
+            DecodedMessageBody::new(MessageBodyType::Event, output, None)
         } else {
-            DecodedBody::new(BodyType::Output, output, None)
+            DecodedMessageBody::new(MessageBodyType::Output, output, None)
         }
     } else if let Ok(input) = abi.decode_input(body.clone(), is_internal) {
         // TODO: add pub access to `abi_version` field of `Contract` struct.
@@ -153,8 +153,8 @@ fn decode_body(
         .map_err(|err| {
             Error::invalid_message_for_decode(format!("Can't decode function header: {}", err))
         })?;
-        DecodedBody::new(
-            BodyType::Input,
+        DecodedMessageBody::new(
+            MessageBodyType::Input,
             input,
             FunctionHeader::from(&header)?,
         )

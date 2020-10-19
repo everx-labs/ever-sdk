@@ -30,7 +30,7 @@
 
 [Signer](#Signer)
 
-[BodyType](#BodyType)
+[MessageBodyType](#MessageBodyType)
 
 [StateInitSource](#StateInitSource)
 
@@ -56,7 +56,7 @@
 
 [ParamsOfDecodeMessage](#ParamsOfDecodeMessage)
 
-[DecodedBody](#DecodedBody)
+[DecodedMessageBody](#DecodedMessageBody)
 
 [ParamsOfDecodeMessageBody](#ParamsOfDecodeMessageBody)
 
@@ -206,25 +206,25 @@ type ParamsOfDecodeMessage = {
     message: string
 };
 
-type DecodedBody = {
-    body_type: BodyType,
+type DecodedMessageBody = {
+    body_type: MessageBodyType,
     name: string,
-    value: any,
+    value?: any,
     header?: FunctionHeader
 };
 
 function decode_message(
     params: ParamsOfDecodeMessage,
-): Promise<DecodedBody>;
+): Promise<DecodedMessageBody>;
 ```
 ### Parameters
 - `abi`: _[Abi](mod_abi.md#Abi)_ –  contract ABI
 - `message`: _string_ –  Message BOC
 ### Result
 
-- `body_type`: _[BodyType](mod_abi.md#BodyType)_ –  Type of the message body content.
+- `body_type`: _[MessageBodyType](mod_abi.md#MessageBodyType)_ –  Type of the message body content.
 - `name`: _string_ –  Function or event name.
-- `value`: _any_ –  Parameters or result value.
+- `value`?: _any_ –  Parameters or result value.
 - `header`?: _[FunctionHeader](mod_abi.md#FunctionHeader)_ –  Function header.
 
 
@@ -239,16 +239,16 @@ type ParamsOfDecodeMessageBody = {
     is_internal: boolean
 };
 
-type DecodedBody = {
-    body_type: BodyType,
+type DecodedMessageBody = {
+    body_type: MessageBodyType,
     name: string,
-    value: any,
+    value?: any,
     header?: FunctionHeader
 };
 
 function decode_message_body(
     params: ParamsOfDecodeMessageBody,
-): Promise<DecodedBody>;
+): Promise<DecodedMessageBody>;
 ```
 ### Parameters
 - `abi`: _[Abi](mod_abi.md#Abi)_ –  Contract ABI used to decode.
@@ -256,9 +256,9 @@ function decode_message_body(
 - `is_internal`: _boolean_ –  True if the body belongs to the internal message.
 ### Result
 
-- `body_type`: _[BodyType](mod_abi.md#BodyType)_ –  Type of the message body content.
+- `body_type`: _[MessageBodyType](mod_abi.md#MessageBodyType)_ –  Type of the message body content.
 - `name`: _string_ –  Function or event name.
-- `value`: _any_ –  Parameters or result value.
+- `value`?: _any_ –  Parameters or result value.
 - `header`?: _[FunctionHeader](mod_abi.md#FunctionHeader)_ –  Function header.
 
 
@@ -413,10 +413,10 @@ When _type_ is _'SigningBox'_
 - `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_
 
 
-## BodyType
+## MessageBodyType
 
 ```ts
-type BodyType = 'Input' | 'Output' | 'InternalOutput' | 'Event';
+type MessageBodyType = 'Input' | 'Output' | 'InternalOutput' | 'Event';
 ```
 One of the following value:
 
@@ -646,19 +646,19 @@ type ParamsOfDecodeMessage = {
 - `message`: _string_ –  Message BOC
 
 
-## DecodedBody
+## DecodedMessageBody
 
 ```ts
-type DecodedBody = {
-    body_type: BodyType,
+type DecodedMessageBody = {
+    body_type: MessageBodyType,
     name: string,
-    value: any,
+    value?: any,
     header?: FunctionHeader
 };
 ```
-- `body_type`: _[BodyType](mod_abi.md#BodyType)_ –  Type of the message body content.
+- `body_type`: _[MessageBodyType](mod_abi.md#MessageBodyType)_ –  Type of the message body content.
 - `name`: _string_ –  Function or event name.
-- `value`: _any_ –  Parameters or result value.
+- `value`?: _any_ –  Parameters or result value.
 - `header`?: _[FunctionHeader](mod_abi.md#FunctionHeader)_ –  Function header.
 
 

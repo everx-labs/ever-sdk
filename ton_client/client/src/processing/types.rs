@@ -1,4 +1,4 @@
-use crate::abi::DecodedBody;
+use crate::abi::DecodedMessageBody;
 use crate::error::ClientError;
 use serde_json::Value;
 
@@ -8,7 +8,7 @@ pub struct DecodedOutput {
     ///
     /// If the message can't be decoded then `None` will be stored in
     /// the appropriate position.
-    pub out_messages: Vec<Option<DecodedBody>>,
+    pub out_messages: Vec<Option<DecodedMessageBody>>,
 
     /// Decoded body of the function output message.
     pub output: Option<Value>,
