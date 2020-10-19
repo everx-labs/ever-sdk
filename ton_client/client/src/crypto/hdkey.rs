@@ -11,17 +11,17 @@
 * limitations under the License.
 */
 
-use crate::error::{ClientResult, ClientError};
+use crate::client::ClientContext;
 use crate::crypto;
-use crate::crypto::internal::{sha256, key512, Key256, key256, Key264};
-use hmac::*;
-use sha2::{Sha512, Digest};
+use crate::crypto::internal::{key256, key512, sha256, Key256, Key264};
+use crate::crypto::DEFAULT_HDKEY_COMPLIANT;
+use crate::error::{ClientError, ClientResult};
 use base58::*;
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
+use hmac::*;
 use pbkdf2::pbkdf2;
 use secp256k1::{PublicKey, SecretKey};
-use crate::client::ClientContext;
-use crate::crypto::DEFAULT_HDKEY_COMPLIANT;
+use sha2::{Digest, Sha512};
 
 //----------------------------------------------------------------- crypto.hdkey_xprv_from_mnemonic
 
@@ -44,7 +44,7 @@ pub fn hdkey_xprv_from_mnemonic(
     params: ParamsOfHDKeyXPrvFromMnemonic,
 ) -> ClientResult<ResultOfHDKeyXPrvFromMnemonic> {
     Ok(ResultOfHDKeyXPrvFromMnemonic {
-        xprv: HDPrivateKey::from_mnemonic(&params.phrase)?.serialize_to_string()
+        xprv: HDPrivateKey::from_mnemonic(&params.phrase)?.serialize_to_string(),
     })
 }
 
@@ -69,7 +69,7 @@ pub fn hdkey_secret_from_xprv(
     params: ParamsOfHDKeySecretFromXPrv,
 ) -> ClientResult<ResultOfHDKeySecretFromXPrv> {
     Ok(ResultOfHDKeySecretFromXPrv {
-        secret: hex::encode(HDPrivateKey::from_serialized_string(&params.xprv)?.secret())
+        secret: hex::encode(HDPrivateKey::from_serialized_string(&params.xprv)?.secret()),
     })
 }
 
@@ -95,7 +95,7 @@ pub fn hdkey_public_from_xprv(
 ) -> ClientResult<ResultOfHDKeyPublicFromXPrv> {
     let key = HDPrivateKey::from_serialized_string(&params.xprv)?;
     Ok(ResultOfHDKeyPublicFromXPrv {
-        public: hex::encode(key.public().as_ref())
+        public: hex::encode(key.public().as_ref()),
     })
 }
 
@@ -127,7 +127,7 @@ pub fn hdkey_derive_from_xprv(
     let xprv = HDPrivateKey::from_serialized_string(&params.xprv)?;
     let derived = xprv.derive(params.child_index, params.hardened, DEFAULT_HDKEY_COMPLIANT)?;
     Ok(ResultOfHDKeyDeriveFromXPrv {
-        xprv: derived.serialize_to_string()
+        xprv: derived.serialize_to_string(),
     })
 }
 
@@ -147,8 +147,8 @@ pub struct ResultOfHDKeyDeriveFromXPrvPath {
     pub xprv: String,
 }
 
-#[doc(summary = "Derives the exented private key from the specified key and path")]
-/// Derives the exented private key from the specified key and path
+#[doc(summary = "Derives the extended private key from the specified key and path")]
+/// Derives the extended private key from the specified key and path
 #[api_function]
 pub fn hdkey_derive_from_xprv_path(
     _context: std::sync::Arc<ClientContext>,
@@ -156,10 +156,11 @@ pub fn hdkey_derive_from_xprv_path(
 ) -> ClientResult<ResultOfHDKeyDeriveFromXPrvPath> {
     let xprv = HDPrivateKey::from_serialized_string(&params.xprv)?;
     Ok(ResultOfHDKeyDeriveFromXPrvPath {
-        xprv: xprv.derive_path(&params.path, DEFAULT_HDKEY_COMPLIANT)?.serialize_to_string()
+        xprv: xprv
+            .derive_path(&params.path, DEFAULT_HDKEY_COMPLIANT)?
+            .serialize_to_string(),
     })
 }
-
 
 // Internals
 
@@ -188,12 +189,7 @@ impl HDPrivateKey {
     pub(crate) fn from_mnemonic(phrase: &String) -> ClientResult<HDPrivateKey> {
         let salt = "mnemonic";
         let mut seed = vec![0u8; 64];
-        pbkdf2::<Hmac<Sha512>>(
-            phrase.as_bytes(),
-            salt.as_bytes(),
-            2048,
-            &mut seed,
-        );
+        pbkdf2::<Hmac<Sha512>>(phrase.as_bytes(), salt.as_bytes(), 2048, &mut seed);
         let mut hmac: Hmac<Sha512> = Hmac::new_varkey(b"Bitcoin seed").unwrap();
         hmac.input(&seed);
         let child_chain_with_key = key512(&hmac.result().code())?;
@@ -227,9 +223,7 @@ impl HDPrivateKey {
             secp256k1::Error::InvalidRecoveryId => {
                 crypto::Error::bip32_invalid_key("InvalidRecoveryId")
             }
-            secp256k1::Error::InvalidMessage => {
-                crypto::Error::bip32_invalid_key("InvalidMessage")
-            }
+            secp256k1::Error::InvalidMessage => crypto::Error::bip32_invalid_key("InvalidMessage"),
             secp256k1::Error::InvalidInputLength => {
                 crypto::Error::bip32_invalid_key("InvalidInputLength")
             }
@@ -299,15 +293,16 @@ impl HDPrivateKey {
     pub(crate) fn derive_path(&self, path: &String, compliant: bool) -> ClientResult<HDPrivateKey> {
         let mut child: HDPrivateKey = self.clone();
         for step in path.split("/") {
-            if step == "m" {} else {
+            if step == "m" {
+            } else {
                 let hardened = step.ends_with('\'');
                 let index: u32 = (if hardened {
                     &step[0..(step.len() - 1)]
                 } else {
                     step
                 })
-                    .parse()
-                    .map_err(|_| crypto::Error::bip32_invalid_derive_path(path))?;
+                .parse()
+                .map_err(|_| crypto::Error::bip32_invalid_derive_path(path))?;
                 child = child.derive(index, hardened, compliant)?;
             }
         }

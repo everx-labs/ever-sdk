@@ -63,7 +63,7 @@
 
 [hdkey_derive_from_xprv](mod_crypto.md#hdkey_derive_from_xprv) – Derives the next child extended private key
 
-[hdkey_derive_from_xprv_path](mod_crypto.md#hdkey_derive_from_xprv_path) – Derives the exented private key from the specified key and path
+[hdkey_derive_from_xprv_path](mod_crypto.md#hdkey_derive_from_xprv_path) – Derives the extended private key from the specified key and path
 
 [hdkey_secret_from_xprv](mod_crypto.md#hdkey_secret_from_xprv) –  Extracts the private key from the serialized extended private key
 
