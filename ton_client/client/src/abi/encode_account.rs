@@ -125,7 +125,11 @@ fn state_init_from_tvc(
     Ok(image.state_init())
 }
 
-/// Encodes account state as it will be
+/// creates account state boc
+/// 
+/// creates account state provided with one of these sets of data :
+/// 1. boc of code, boc of data, boc of library
+/// 2. tvc file, keys, init params
 #[api_function]
 pub async fn encode_account(
     context: std::sync::Arc<ClientContext>,

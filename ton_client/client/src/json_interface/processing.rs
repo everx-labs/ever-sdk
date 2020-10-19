@@ -18,8 +18,20 @@ use crate::processing::{ParamsOfProcessMessage, ProcessingEvent, ProcessingRespo
 use std::sync::Arc;
 use super::request::Request;
 
-/// Sends message to the network and monitors network for a result of
-/// message processing.
+
+/// Creates message, sends it to the network and monitors its processing.
+/// 
+/// Creates ABI-compatible message or takes an already prepared message boc.
+/// Sends it to the network and monitors for the result transaction.
+/// If ABI is supplied, decodes the output messages's bodies.
+/// 
+/// If no transacrion is found within the timeout, exits with error.
+/// The timeout is calculated depending on the processing strategy.
+/// See wait_for_transaction documentation for strategies description.
+/// 
+/// `send_events` enables/disables intermediate events, such as "will send",
+/// "did send", "will fetch next block", etc.
+/// 
 #[api_function]
 pub(crate) async fn process_message(
     context: Arc<ClientContext>,
@@ -34,6 +46,10 @@ pub(crate) async fn process_message(
 }
 
 
+/// Sends message to the network
+/// 
+/// Sends message to the network and returns the last generated shard block of the destination account
+/// before the messafe was sent.
 #[api_function]
 pub(crate) async fn send_message(
     context: Arc<ClientContext>,
@@ -48,8 +64,11 @@ pub(crate) async fn send_message(
     crate::processing::send_message::send_message(context, params, callback).await
 }
 
-/// Performs monitoring of the network for a results of the external
-/// inbound message processing.
+/// Performs monitoring of the network for for the result transaction
+/// of the external inbound message processing.
+/// 
+/// `send_events` enables intermediate events, such as new shard block received event will be triggered 
+/// each time.
 ///
 /// Note that presence of the `abi` parameter is critical for ABI
 /// compliant contracts. Message processing uses drastically
@@ -68,8 +87,9 @@ pub(crate) async fn send_message(
 /// strategy:
 /// - The maximum block gen time is set to
 ///   `now() + transaction_wait_timeout`.
-/// - When maximum block gen time is reached the processing will
-///   be finished with `Incomplete` result.
+/// 
+/// - If maximum block gen time is reached and no result transaction is found 
+/// the processing will exit with an error.
 #[api_function]
 pub(crate) async fn wait_for_transaction(
     context: Arc<ClientContext>,

@@ -26,7 +26,7 @@ pub struct ParamsOfHash {
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfHash {
-    /// Hex-encoded hash of input `data`.
+    /// Hash of input `data`. Encoded with 'hex'.
     pub hash: String,
 }
 

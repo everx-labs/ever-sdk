@@ -25,10 +25,14 @@ use ton_vm::stack::integer::IntegerData;
 use ton_vm::stack::{Stack, StackItem};
 use super::stack;
 
+
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfExecuteGet {
+    /// account boc in base64
     pub account: String,
+    /// function name
     pub function_name: String,
+    /// input parameters
     pub input: Option<Value>,
     pub execution_options: Option<ExecutionOptions>,
 }
@@ -36,8 +40,12 @@ pub struct ParamsOfExecuteGet {
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfExecuteGet {
+    /// values returned by getmethod on stack
     pub output: Value,
 }
+
+
+/// Executes getmethod and returns data from TVM stack
 
 #[api_function]
 pub fn execute_get(

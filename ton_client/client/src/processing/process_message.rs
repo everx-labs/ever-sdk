@@ -10,7 +10,11 @@ use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, ApiType, Debug, Clone)]
 pub enum MessageSource {
-    Encoded { message: String, abi: Option<Abi> },
+    /// already prepared message boc and optional abi
+    Encoded { 
+        message: String, 
+        abi: Option<Abi> 
+    },
     EncodingParams(ParamsOfEncodeMessage),
 }
 
@@ -41,13 +45,10 @@ impl MessageSource {
 pub struct ParamsOfProcessMessage {
     /// Message source.
     pub message: MessageSource,
-
-    /// Flag for requesting events sending
+    /// Flag that enables/disables intermediate events
     pub send_events: bool,
 }
 
-/// Sends message to the network and monitors network for a result of
-/// message processing.
 pub async fn process_message<F: futures::Future<Output = ()> + Send + Sync>(
     context: Arc<ClientContext>,
     params: ParamsOfProcessMessage,

@@ -231,7 +231,7 @@ pub struct ResultOfGenerateRandomBytes {
     pub bytes: String,
 }
 
-#[doc(summary = "Generates random byte array of the specified length in the spesified encoding")]
+#[doc(summary = "Generates random byte array of the specified length and returns it in base64 format")]
 #[api_function]
 pub fn generate_random_bytes(
     _context: std::sync::Arc<ClientContext>,

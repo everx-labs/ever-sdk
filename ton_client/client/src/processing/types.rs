@@ -108,7 +108,7 @@ pub enum ProcessingEvent {
     /// Event occurs for messages with the `expiration` replay
     /// protection.
     ///
-    /// Processing will be continued at encoding phase after
+    /// Processing will be continued from encoding phase after
     /// `expiration_retries_timeout`.
     MessageExpired {
         message_id: String,

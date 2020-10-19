@@ -82,7 +82,7 @@ pub(crate) trait ClientEnv {
     /// Sends asynchronous task to scheduler
     fn spawn(&self, future: std::pin::Pin<Box<dyn Future<Output = ()> + Send + 'static>>);
     /// Creates lock object
-    //fn create_rwlock() -> EnvRwLock;
+    /// fn create_rwlock() -> EnvRwLock;
     /// Connects to the websocket endpoint
     async fn websocket_connect(
         &self,

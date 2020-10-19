@@ -96,14 +96,17 @@ pub fn mnemonic_from_random(
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfMnemonicFromEntropy {
-    // Entropy bytes. Hex encoded.
+    /// Entropy bytes. Hex encoded.
     pub entropy: String,
+    /// dictionary identifier
     pub dictionary: Option<u8>,
+    /// mnemonic word count
     pub word_count: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfMnemonicFromEntropy {
+    /// phrase
     pub phrase: String,
 }
 

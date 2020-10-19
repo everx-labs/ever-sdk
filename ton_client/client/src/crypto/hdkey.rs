@@ -37,7 +37,7 @@ pub struct ResultOfHDKeyXPrvFromMnemonic {
     pub xprv: String,
 }
 
-/// Generate the extended master private key that will be the root for all the derived keys
+/// Generates an extended master private key that will be the root for all the derived keys
 #[api_function]
 pub fn hdkey_xprv_from_mnemonic(
     _context: std::sync::Arc<ClientContext>,
@@ -118,7 +118,7 @@ pub struct ResultOfHDKeyDeriveFromXPrv {
 }
 
 #[doc(summary = "Derives the next child extended private key")]
-/// Returns derived extended private key derived from the specified extended private key and child index
+/// Returns extended private key derived from the specified extended private key and child index
 #[api_function]
 pub fn hdkey_derive_from_xprv(
     _context: std::sync::Arc<ClientContext>,

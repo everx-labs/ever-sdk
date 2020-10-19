@@ -39,17 +39,17 @@ impl DeploySet {
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct CallSet {
-    /// Function name.
+    /// Function name that is being called.
     pub function_name: String,
 
     /// Function header.
     ///
-    /// If an application omit some parameters required by the
+    /// If an application omits some header parameters required by the
     /// contract's ABI, the library will set the default values for
-    /// it.
+    /// them.
     pub header: Option<FunctionHeader>,
 
-    /// Function input according to ABI.
+    /// Function input parameters according to ABI.
     pub input: Option<Value>,
 }
 
@@ -166,9 +166,9 @@ pub struct ParamsOfEncodeMessage {
     /// Contract ABI.
     pub abi: Abi,
 
-    /// Contract address.
+    /// Target address the message will be sent to.
     ///
-    /// Must be specified in case of non deploy message.
+    /// Must be specified in case of non-deploy message. 
     pub address: Option<String>,
 
     /// Deploy parameters.
@@ -178,22 +178,25 @@ pub struct ParamsOfEncodeMessage {
 
     /// Function call parameters.
     ///
-    /// Must be specified in non deploy message.
+    /// Must be specified in case of non-deploy message.
     ///
-    /// In case of deploy message contains parameters of constructor.
+    /// In case of deploy message it is optional and contains parameters  
+    /// of the functions that will to be called upon deploy transaction.
     pub call_set: Option<CallSet>,
 
-    /// Signing parameters.
+    /// Signing parameters. 
     pub signer: Signer,
 
     /// Processing try index.
     ///
-    /// Used in message processing with retries.
+    /// Used in message processing with retries (in contract that support Pragma Expire).
     ///
     /// Encoder uses the provided try index to calculate message
-    /// expiration time.
+    /// expiration time. The 1st message expiration time is specified in
+    /// Client config.
     ///
-    /// Expiration timeouts will grow with every retry.
+    /// Expiration timeouts will grow with every retry. 
+    /// Retry grow factor is set in Client config.
     ///
     /// Default value is 0.
     pub processing_try_index: Option<u8>,
@@ -306,6 +309,14 @@ fn encode_run(
     })
 }
 
+
+/// Encodes an ABI-compatible message 
+/// 
+/// Allows to encode deploy and function call messages,
+/// both signed and unsigned.
+/// 
+/// [SOON] Allows using external signer mechanism if you don't want to 
+/// disclose your private key
 #[api_function]
 pub async fn encode_message(
     context: std::sync::Arc<ClientContext>,
@@ -378,10 +389,14 @@ pub struct ParamsOfAttachSignature {
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfAttachSignature {
+    /// signed message boc
     pub message: String,
+    /// message id
     pub message_id: String,
 }
 
+/// Combines `hex` encoded `signature` with `base64` encoded `unsigned_message`.
+/// Returns signed message encoded with `base64`.
 #[api_function]
 pub fn attach_signature(
     _context: std::sync::Arc<ClientContext>,

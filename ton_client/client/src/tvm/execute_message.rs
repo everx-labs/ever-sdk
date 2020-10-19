@@ -195,6 +195,17 @@ pub(crate) fn blockchain_config_from_base64(b64: &str) -> ClientResult<Blockchai
         .map_err(|err| Error::can_not_read_blockchain_config(err))
 }
 
+
+/// executes a specified message on TVM or Transaction Executor
+/// 
+/// execution mode is specified with `mode`.
+/// In case of `TvmOnly` mode only part of compute phase is performed 
+/// (this mode is reqired to run solidity functions without ACCEPT).
+/// 
+/// In case of `Full` mode the execution is performed on Transaction Executor
+/// which can fully emulate the transaction (specify the correct execution options).
+/// If no execution options are supplied the default values are used.
+/// 
 #[api_function]
 pub async fn execute_message(
     context: std::sync::Arc<ClientContext>,

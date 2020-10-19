@@ -165,6 +165,7 @@ pub struct ParamsOfNaclBoxKeyPairFromSecret {
 }
 
 #[api_function]
+/// Generates key pair from a secret key
 pub fn nacl_box_keypair_from_secret_key(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfNaclBoxKeyPairFromSecret,
@@ -185,8 +186,11 @@ pub fn nacl_box_keypair_from_secret_key(
 pub struct ParamsOfNaclBox {
     /// Data that must be encrypted. Encoded with `base64`.
     pub decrypted: String,
+    /// nonce, encoded with `hex`
     pub nonce: String,
+    /// receiver's public key
     pub their_public: String,
+    /// sender's private key
     pub secret: String,
 }
 
@@ -196,6 +200,10 @@ pub struct ResultOfNaclBox {
     pub encrypted: String,
 }
 
+/// Public key authenticated encryption
+///
+/// Encrypt and authenticate a message using the senders secret key, the recievers public
+/// key, and a nonce. 
 #[api_function]
 pub fn nacl_box(_context: std::sync::Arc<ClientContext>, params: ParamsOfNaclBox) -> ClientResult<ResultOfNaclBox> {
     let (mut padded_output, padded_input, nonce, secret) =
@@ -235,6 +243,8 @@ pub struct ResultOfNaclBoxOpen {
     pub decrypted: String,
 }
 
+/// Decrypt and verify the cipher text using the recievers secret key, the senders public
+/// key, and the nonce.
 #[api_function]
 pub fn nacl_box_open(
     _context: std::sync::Arc<ClientContext>,
@@ -267,11 +277,14 @@ pub fn nacl_box_open(
 pub struct ParamsOfNaclSecretBox {
     /// Data that must be encrypted. Encoded with `base64`.
     pub decrypted: String,
+    /// nonce in `hex`
     pub nonce: String,
+    /// secret key in `hex`
     pub key: String,
 }
 
 #[api_function]
+/// Encrypt and authenticate message using nonce and secret key.
 pub fn nacl_secret_box(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfNaclSecretBox,
@@ -297,11 +310,14 @@ pub fn nacl_secret_box(
 pub struct ParamsOfNaclSecretBoxOpen {
     /// Data that must be decrypted. Encoded with `base64`.
     pub encrypted: String,
+    /// nonce in `hex`
     pub nonce: String,
+    /// public key in `hex`
     pub key: String,
 }
 
 #[api_function]
+/// Decrypt and verify cipher text using nonce and secret key.
 pub fn nacl_secret_box_open(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfNaclSecretBoxOpen,

@@ -17,6 +17,12 @@ use crate::error::ClientResult;
 use crate::net::{ParamsOfSubscribeCollection, ResultOfSubscribeCollection, ResultOfSubscription};
 use super::request::Request;
 
+
+/// Creates a subscription
+/// 
+/// Triggers for each insert/update of data
+/// that satisfies the `filter` conditions.
+/// The projection fields are limited to  `result` fields.
 #[api_function]
 pub(crate) async fn subscribe_collection(
     context: std::sync::Arc<ClientContext>,

@@ -32,7 +32,7 @@ pub struct ParamsOfSendMessage {
     ///
     /// If this parameter is specified and the message has the
     /// `expire` header then expiration time will be checked against
-    /// the current time to prevent an unnecessary sending.
+    /// the current time to prevent an unnecessary sending of already expired message.
     ///
     /// The `message already expired` error will be returned in this
     /// case.
@@ -48,8 +48,8 @@ pub struct ParamsOfSendMessage {
 
 #[derive(Serialize, Deserialize, ApiType, PartialEq, Debug)]
 pub struct ResultOfSendMessage {
-    /// Shard block related to the message dst account before the
-    /// message had been sent.
+    /// The last generated shard block of the message destination account before the
+    /// message was sent.
     ///
     /// This block id must be used as a parameter of the
     /// `wait_for_transaction`.

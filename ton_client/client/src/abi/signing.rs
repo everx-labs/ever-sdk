@@ -9,7 +9,7 @@ pub enum Signer {
     /// Message mustn't be signed.
     None,
     /// Message will be signed using external methods.
-    /// Public key must be provided with `hex` encoding.
+    /// Public key must be provided in `hex` encoding.
     External { public_key: String },
     /// Message will be signed using the provided keys.
     Keys { keys: KeyPair },

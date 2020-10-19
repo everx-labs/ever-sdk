@@ -109,7 +109,7 @@ pub struct ParamsOfSign {
 pub struct ResultOfSign {
     /// Signed data combined with signature. Encoded with `base64`.
     pub signed: String,
-    /// Signature. Encoded with `base64`.
+    /// Signature. Encoded with `hex`.
     pub signature: String,
 }
 
@@ -149,7 +149,7 @@ pub struct ResultOfVerifySignature {
 }
 
 /// Verifies signed data using the provided public key.
-/// Raises error in case when verification is failed.
+/// Raises error if verification is failed.
 #[api_function]
 pub fn verify_signature(
     _context: std::sync::Arc<ClientContext>,
