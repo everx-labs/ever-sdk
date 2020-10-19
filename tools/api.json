@@ -2066,7 +2066,7 @@
         {
           "name": "mnemonic_from_random",
           "summary": "Generates a random mnemonic",
-          "description": " Generates a random mnemnonic from the specified dictionary and word count",
+          "description": " Generates a random mnemonic from the specified dictionary and word count",
           "params": [
             {
               "name": "_context",
@@ -2293,8 +2293,8 @@
         },
         {
           "name": "hdkey_derive_from_xprv_path",
-          "summary": "Derives the exented private key from the specified key and path",
-          "description": " Derives the exented private key from the specified key and path",
+          "summary": "Derives the extended private key from the specified key and path",
+          "description": " Derives the extended private key from the specified key and path",
           "params": [
             {
               "name": "_context",
