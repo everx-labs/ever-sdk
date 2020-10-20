@@ -197,6 +197,7 @@ fn test_encryption() {
             "nonce": nonce.clone(),
         }
     })));
+    assert_eq!(encrypted["data"], "w5QOGsJodQ==");
     let decrypted = parse_object(client.request("crypto.decrypt", json!({
         "data": encrypted["data"].clone(),
         "decipher": {
@@ -206,7 +207,6 @@ fn test_encryption() {
         }
     })));
     assert_eq!(decrypted["data"], "TWVzc2FnZQ==");
-    // assert_eq!(result["data"], "+ZBuXa6KUQ==");
 }
 
 #[test]
