@@ -185,6 +185,31 @@ fn test_query_cell() {
 }
 
 #[test]
+fn test_encryption() {
+    let client = TestClient::new();
+    let key = "01".repeat(32);
+    let nonce = "ff".repeat(12);
+    let encrypted = parse_object(client.request("crypto.encrypt", json!({
+        "data": base64::encode("Message"),
+        "cipher": {
+            "type": "ChaCha20",
+            "key": key.clone(),
+            "nonce": nonce.clone(),
+        }
+    })));
+    let decrypted = parse_object(client.request("crypto.decrypt", json!({
+        "data": encrypted["data"].clone(),
+        "decipher": {
+            "type": "ChaCha20",
+            "key": key.clone(),
+            "nonce": nonce.clone(),
+        }
+    })));
+    assert_eq!(decrypted["data"], "TWVzc2FnZQ==");
+    // assert_eq!(result["data"], "+ZBuXa6KUQ==");
+}
+
+#[test]
 fn test_tg_mnemonic() {
     let client = TestClient::new();
     let crc16 = client.request("crypto.ton_crc16", json!({

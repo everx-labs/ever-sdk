@@ -149,7 +149,7 @@ pub(crate) fn account_encode_ex(
 }
 
 pub fn account_decode(string: &str) -> ApiResult<MsgAddressInt> {
-    match MsgAddressInt::from_str(string) { 
+    match MsgAddressInt::from_str(string) {
         Ok(address) => Ok(address),
         Err(_) if string.len() == 48 => {
             decode_std_base64(string)
@@ -196,7 +196,7 @@ fn encode_base64(address: &MsgAddressInt, bounceable: bool, test: bool, as_url: 
         } else {
             Ok(result)
         }
-    } else { 
+    } else {
         Err(ApiError::crypto_invalid_address("Non-std address", &address.to_string()).into())
     }
 }
@@ -241,7 +241,6 @@ pub(crate) fn key192(slice: &[u8]) -> ApiResult<Key192> {
     }
     Ok(key)
 }
-
 
 pub(crate) fn key_to_ton_string(key: &[u8]) -> String {
     let mut public_key: Vec<u8> = Vec::new();
