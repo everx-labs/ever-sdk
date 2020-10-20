@@ -11,16 +11,21 @@
 * limitations under the License.
 */
 
+use crate::{MessageId, TransactionId};
+use crate::contract::ShardDescr;
+use crate::types::BlockId;
+
+#[cfg(feature = "node_interaction")]
 use crate::{
-    Contract, MessageId, NodeClient, OrderBy, SortDirection, TransactionId,
-    contract::ShardDescr,
+    Contract, NodeClient, OrderBy, SortDirection,
     error::SdkError,
-    types::{BLOCKS_TABLE_NAME, MASTERCHAIN_ID, BlockId},
+    types::{BLOCKS_TABLE_NAME, MASTERCHAIN_ID},
 };
-
+#[cfg(feature = "node_interaction")]
 use ton_types::{fail, error, Result};
+#[cfg(feature = "node_interaction")]
 use ton_block::MsgAddressInt;
-
+#[cfg(feature = "node_interaction")]
 use log::debug;
 
 #[derive(Deserialize, Debug, Clone)]
@@ -51,6 +56,7 @@ pub const BLOCK_FIELDS: &str = r#"
     }
 "#;
 
+#[cfg(feature = "node_interaction")]
 impl Block {
     pub async fn find_last_shard_block(client: &NodeClient, address: &MsgAddressInt) -> Result<BlockId> {
         let workchain = address.get_workchain_id();
