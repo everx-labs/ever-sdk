@@ -30,7 +30,7 @@ const ELECTOR_DATA: &str = "te6cckICAdwAAQAAXWYAAANP5zNFdL1WHOmhM8muxAeRTL3uvNJv
 async fn test_execute_get() {
     TestClient::init_log();
     let client = TestClient::new();
-    let execute_get = client.wrap(
+    let execute_get = client.wrap_async(
         execute_get,
         TvmModule::api(),
         crate::tvm::execute_get::execute_get_api(),
@@ -62,6 +62,7 @@ async fn test_execute_get() {
             input: None,
             execution_options: None,
         })
+        .await
         .output;
     assert_eq!(
         result.to_string(),
@@ -81,6 +82,7 @@ async fn test_execute_get() {
             ))),
             execution_options: None,
         })
+        .await
         .output;
     assert_eq!(result[0], "0x0");
 
@@ -91,6 +93,7 @@ async fn test_execute_get() {
             input: None,
             execution_options: None,
         })
+        .await
         .output;
 
     assert_eq!(result[0][0][0], "0x5eab0e74");

@@ -40,7 +40,7 @@ pub struct ResultOfExecuteGet {
 }
 
 #[api_function]
-pub fn execute_get(
+pub async fn execute_get(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfExecuteGet,
 ) -> ClientResult<ResultOfExecuteGet> {
