@@ -99,14 +99,14 @@ impl ClientEnv {
         }
         .map_err(|_| Error::websocket_connect_error(url, "cannot create websocket"))?;
 
-        let (receive_sink, receive_stream) = futures::channel::mpsc::channel(100);
-        let send_result_msg = move |result: ClientResult<String>| {
-            let mut receive_sink = receive_sink.clone();
+        let (on_message_sink, on_message_stream) = futures::channel::mpsc::channel(100);
+        let on_message = move |result: ClientResult<String>| {
+            let mut on_message_sink = on_message_sink.clone();
             wasm_bindgen_futures::spawn_local(async move {
-                let _ = receive_sink.send(result).await;
+                let _ = on_message_sink.send(result).await;
             });
         };
-        let send_result_err = send_result_msg.clone();
+        let on_error = on_message.clone();
 
         // create callback
         let onmessage_callback = Closure::wrap(Box::new(move |e: MessageEvent| {
@@ -114,7 +114,7 @@ impl ClientEnv {
             if let Ok(txt) = e.data().dyn_into::<js_sys::JsString>() {
                 let string = String::from(txt);
                 log::trace!("Websocket received {}", string);
-                send_result_msg(Ok(string));
+                on_message(Ok(string));
             }
         }) as Box<dyn FnMut(MessageEvent)>);
         // set message event handler on WebSocket
@@ -160,7 +160,7 @@ impl ClientEnv {
         // change error handler to send errors to output stream
         let onerror_callback = Closure::wrap(Box::new(move |e: Event| {
             log::debug!("Websocket error {:#?}", e);
-            send_result_err(Err(Error::websocket_receive_error("")));
+            on_error(Err(Error::websocket_receive_error("")));
         }) as Box<dyn FnMut(Event)>);
         ws.set_onerror(Some(onerror_callback.as_ref().unchecked_ref()));
         onerror_callback.forget();
@@ -200,9 +200,8 @@ impl ClientEnv {
             }});
 
         Ok(WebSocket {
-            receiver: Box::pin(receive_stream),
+            receiver: Box::pin(on_message_stream),
             sender: Box::pin(send_sink),
-            handle: 0
         })
     }
 
@@ -297,9 +296,6 @@ impl ClientEnv {
             Self::websocket_connect_internal(&url, headers).await
         }).await?
     }
-
-    /// Closes websocket
-    pub async fn websocket_close(&self, _handle: u32) {}
 
     /// Executes http request
     pub async fn fetch(

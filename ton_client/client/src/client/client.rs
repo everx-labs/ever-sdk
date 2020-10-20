@@ -57,15 +57,6 @@ Note that default values are used if parameters are omitted in config"#,
                 )));
             }
             let client = NodeClient::new(net_config.clone(), env.clone());
-            // let sdk_config = ton_sdk::NetworkConfig {
-            //     access_key: net_config.access_key.clone(),
-            //     message_processing_timeout: net_config.message_processing_timeout,
-            //     message_retries_count: net_config.message_retries_count,
-            //     out_of_sync_threshold: net_config.out_of_sync_threshold,
-            //     server_address: net_config.server_address.clone(),
-            //     wait_for_timeout: net_config.wait_for_timeout,
-            // };
-            // let sdk_client = ton_sdk::NodeClient::new(sdk_config);
             Some(client)
         } else {
             None

@@ -83,12 +83,12 @@ struct MutationRequest {
     pub body: String
 }
 
-struct ServerInfo {
+struct ServerVersion {
     pub version: u64,
     pub supports_time: bool
 }
 
-impl ServerInfo {
+impl ServerVersion {
     pub fn from_version(version: &str) -> ton_types::Result<Self> {
         let mut vec: Vec<&str> = version.split(".").collect();
         vec.resize(3, "0");
@@ -96,7 +96,7 @@ impl ServerInfo {
             + u64::from_str_radix(vec[1], 10)? * 1000
             + u64::from_str_radix(vec[2], 10)?;
 
-        Ok(ServerInfo {
+        Ok(ServerVersion {
             version,
             supports_time: version >= 26003,
         })
@@ -108,10 +108,10 @@ struct VariableRequest {
     pub variables: Value
 }
 
-struct InitedClientData {
+struct ServerInfo {
     pub query_url: String,
     pub subscription_url: String,
-    pub server_info: ServerInfo
+    pub server_version: ServerVersion
 }
 
 pub(crate) struct Subscription{
@@ -122,7 +122,7 @@ pub(crate) struct Subscription{
 pub(crate) struct NodeClient {
     config: NetworkConfig,
     client_env: Arc<ClientEnv>,
-    data: tokio::sync::RwLock<Option<InitedClientData>>,
+    server_info: tokio::sync::RwLock<Option<ServerInfo>>,
     // TODO: use tokio::sync:RwLock when SDK core is fully async
     query_url: std::sync::RwLock<Option<String>>,
 }
@@ -134,7 +134,7 @@ impl NodeClient {
             config,
             client_env,
             query_url: std::sync::RwLock::new(None),
-            data: tokio::sync::RwLock::new(None)
+            server_info: tokio::sync::RwLock::new(None)
         }
     }
 
@@ -162,7 +162,7 @@ impl NodeClient {
         response.body_as_json()
     }
 
-    async fn query_server_info_and_check_redirect(&self, address: &str) -> ClientResult<(ServerInfo, String)> {
+    async fn get_server_info(&self, address: &str) -> ClientResult<ServerInfo> {
         let response = self.client_env.fetch(
             &format!("{}?query=%7Binfo%7Bversion%7D%7D", address),
             FetchMethod::Get,
@@ -177,14 +177,21 @@ impl NodeClient {
             .ok_or(Error::invalid_server_response(
                 format!("No version in response: {}", response_body)))?;
 
-        let info = ServerInfo::from_version(version)
+        let server_version = ServerVersion::from_version(version)
             .map_err(|err|
                 Error::invalid_server_response(
                     format!("Can not parse version {}: {}", version, err)))?;
 
-        let url = response.url.trim_end_matches("?query=%7Binfo%7Bversion%7D%7D").to_owned();
+        let query_url = response.url.trim_end_matches("?query=%7Binfo%7Bversion%7D%7D").to_owned();
+        let subscription_url = query_url
+            .replace("https://", "wss://")
+            .replace("http://", "ws://");
 
-        Ok((info, url))
+        Ok(ServerInfo {
+            query_url,
+            subscription_url,
+            server_version
+        })
     }
 
     async fn get_time_delta(&self, address: &str) -> ClientResult<i64>{
@@ -207,32 +214,23 @@ impl NodeClient {
         }
     }
 
-    async fn init(&self, config: &NetworkConfig) -> ClientResult<InitedClientData> {
+    async fn init(&self, config: &NetworkConfig) -> ClientResult<ServerInfo> {
         let queries_server = Self::expand_address(config.server_address());
-        let (server_info, redirected) = 
-            self.query_server_info_and_check_redirect(&queries_server).await?;
-        let queries_server = redirected.clone();
-        let subscriptions_server = redirected
-            .replace("https://", "wss://")
-            .replace("http://", "ws://");
+        let server_info = self.get_server_info(&queries_server).await?;
 
-        if server_info.supports_time {
+        if server_info.server_version.supports_time {
             self.check_time_delta(&queries_server, config).await?;
         }
 
-        Ok(InitedClientData {
-            query_url: queries_server,
-            subscription_url: subscriptions_server,
-            server_info,
-        })
+        Ok(server_info)
     }
 
     async fn ensure_client(&self) -> ClientResult<()> {
-        if self.data.read().await.is_some() {
+        if self.server_info.read().await.is_some() {
             return Ok(());
         }
 
-        let mut data = self.data.write().await;
+        let mut data = self.server_info.write().await;
         if data.is_some() {
             return Ok(());
         }
@@ -264,7 +262,7 @@ impl NodeClient {
 
         let mut websocket = {
             self.ensure_client().await?;
-            let client_lock = self.data.read().await;
+            let client_lock = self.server_info.read().await;
             let address = &client_lock.as_ref().unwrap().subscription_url;
 
             self.client_env.websocket_connect(
@@ -328,8 +326,6 @@ impl NodeClient {
         }).to_string();
         websocket.sender.send(request).await?;
 
-        let client_env = self.client_env.clone();
-        let handle = websocket.handle;
         let mut sender = websocket.sender;
         let unsubscribe = async move {
             let _ = sender.send(
@@ -339,7 +335,6 @@ impl NodeClient {
                     "payload": {}
                 }).to_string()
             ).await;
-            client_env.websocket_close(handle).await;
         };
 
         Ok(Subscription {
@@ -413,7 +408,7 @@ impl NodeClient {
         let query = Self::generate_query_var(table, filter, fields, order_by, limit, timeout);
 
         self.ensure_client().await?;
-        let client_lock = self.data.read().await;
+        let client_lock = self.server_info.read().await;
         let address = &client_lock.as_ref().unwrap().query_url;
 
         let result = self.query_vars(
@@ -531,7 +526,7 @@ impl NodeClient {
         };
 
         self.ensure_client().await?;
-        let client_lock = self.data.read().await;
+        let client_lock = self.server_info.read().await;
         let address = &client_lock.as_ref().unwrap().query_url;
 
         let result = self.query_vars(

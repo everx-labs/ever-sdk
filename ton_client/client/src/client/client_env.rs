@@ -18,7 +18,6 @@ use std::pin::Pin;
 use futures::{Sink, Stream};
 
 pub(crate) struct WebSocket {
-    pub handle: u32,
     pub sender: Pin<Box<dyn Sink<String, Error=ClientError> + Send>>,
     pub receiver: Pin<Box<dyn Stream<Item=ClientResult<String>> + Send>>
 }
