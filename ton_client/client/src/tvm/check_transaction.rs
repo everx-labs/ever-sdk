@@ -61,7 +61,9 @@ fn extract_error(
         let (address, _) = contract_info()?;
         return Err(Error::tvm_execution_failed(
             "compute phase isn't succeeded",
-            transaction.compute.exit_code.unwrap_or(-1), &address));
+            transaction.compute.exit_code.unwrap_or(-1),
+            transaction.compute.exit_arg.map(i32::into),
+            &address));
     }
 
     if let Some(action) = &transaction.action {

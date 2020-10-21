@@ -139,37 +139,7 @@ async fn test_execute_message() {
             .unwrap()
             .into();
 
-        let result = execute_message
-            .call(ParamsOfExecuteMessage {
-                mode: ExecutionMode::TvmOnly,
-                account: account.clone(),
-                message: MessageSource::EncodingParams({
-                    ParamsOfEncodeMessage {
-                        address: Some(address.clone()),
-                        abi: abi.clone(),
-                        call_set: CallSet::some_with_function("getWallet"),
-                        signer: Signer::Keys { keys: keys.clone() },
-                        deploy_set: None,
-                        processing_try_index: None,
-                    }
-                }),
-                execution_options: None,
-            })
-            .await;
-        assert_eq!(
-            result.decoded.unwrap().output.unwrap(),
-            if abi_version == 1 {
-                json!({
-                    "wallet": "0:2222222222222222222222222222222222222222222222222222222222222222",
-                })
-            } else {
-                json!({
-                    "value0": "0:2222222222222222222222222222222222222222222222222222222222222222",
-                })
-            }
-        );
-
-        // Full
+        // TvmOnly
 
         let subscribe_params = json!({
             "subscriptionId": "0x1111111111111111111111111111111111111111111111111111111111111111",
@@ -178,6 +148,57 @@ async fn test_execute_message() {
             "value": "0x123",
             "period": "0x456",
         });
+
+        let result = execute_message
+            .call(ParamsOfExecuteMessage {
+                message: MessageSource::EncodingParams(ParamsOfEncodeMessage {
+                    address: Some(address.clone()),
+                    abi: abi.clone(),
+                    call_set: CallSet::some_with_function_and_input(
+                        "subscribe",
+                        subscribe_params.clone(),
+                    ),
+                    signer: Signer::Keys { keys: keys.clone() },
+                    deploy_set: None,
+                    processing_try_index: None,
+                }),
+                mode: ExecutionMode::TvmOnly,
+                account: Some(account.clone()),
+                execution_options: None,
+            })
+            .await;
+
+        let result = execute_message
+            .call(ParamsOfExecuteMessage {
+                account: Some(required_boc(&Some(result.account)).unwrap()),
+                message: MessageSource::EncodingParams(ParamsOfEncodeMessage {
+                    abi: abi.clone(),
+                    call_set: CallSet::some_with_function_and_input(
+                        "getSubscription",
+                        json!({
+                            "subscriptionId": subscribe_params["subscriptionId"].clone(),
+                        }),
+                    ),
+                    signer: Signer::Keys { keys: keys.clone() },
+                    address: Some(address.clone()),
+                    deploy_set: None,
+                    processing_try_index: None,
+                }),
+                mode: ExecutionMode::TvmOnly,
+                execution_options: None,
+            })
+            .await;
+        assert_eq!(
+            result.decoded.unwrap().output.unwrap()[if abi_version == 1 {
+                "subscription"
+            } else {
+                "value0"
+            }]["pubkey"],
+            subscribe_params["pubkey"]
+        );
+
+        // Full
+
         let result = execute_message
             .call(ParamsOfExecuteMessage {
                 message: MessageSource::EncodingParams(ParamsOfEncodeMessage {
@@ -192,14 +213,14 @@ async fn test_execute_message() {
                     processing_try_index: None,
                 }),
                 mode: ExecutionMode::Full,
-                account: account.clone(),
+                account: Some(account.clone()),
                 execution_options: None,
             })
             .await;
 
         let result = execute_message
             .call(ParamsOfExecuteMessage {
-                account: required_boc(&result.account).unwrap(),
+                account: Some(required_boc(&Some(result.account)).unwrap()),
                 message: MessageSource::EncodingParams(ParamsOfEncodeMessage {
                     abi: abi.clone(),
                     call_set: CallSet::some_with_function_and_input(

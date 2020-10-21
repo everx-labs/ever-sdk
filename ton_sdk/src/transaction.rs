@@ -29,6 +29,7 @@ pub struct ComputePhase {
     #[serde(deserialize_with = "json_helper::deserialize_skipped_reason")]
     pub skipped_reason: Option<ComputeSkipReason>,
     pub exit_code: Option<i32>,
+    pub exit_arg: Option<i32>,
     pub success: Option<bool>,
     #[serde(with = "json_helper::uint")]
     pub gas_fees: u64,
@@ -99,6 +100,7 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
                 ComputePhase {
                     skipped_reason: Some(ph.reason),
                     exit_code: None,
+                    exit_arg: None,
                     success: None,
                     gas_fees: 0
                 }
@@ -107,6 +109,7 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
                 ComputePhase {
                     skipped_reason: None,
                     exit_code: Some(ph.exit_code),
+                    exit_arg: ph.exit_arg,
                     success: Some(ph.success),
                     gas_fees: grams_to_u64(&ph.gas_fees)?
                 }
@@ -240,6 +243,7 @@ pub const TRANSACTION_FIELDS_ORDINARY: &str = r#"
     compute {
         skipped_reason
         exit_code
+        exit_arg
         success
         gas_fees
     }
