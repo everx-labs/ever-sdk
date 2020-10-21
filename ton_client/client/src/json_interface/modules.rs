@@ -85,8 +85,8 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
     // Scrypt
 
     module.register_sync_fn(
-        crate::crypto::scrypt::scrypt,
-        crate::crypto::scrypt::scrypt_api,
+        crate::crypto::encscrypt::scrypt,
+        crate::crypto::encscrypt::scrypt_api,
     );
 
     // NaCl
