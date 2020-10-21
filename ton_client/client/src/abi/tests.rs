@@ -93,7 +93,7 @@ fn encode_v2() {
         call_set: Some(CallSet {
             function_name: "returnValue".into(),
             header: Some(FunctionHeader {
-                pubkey: signing.resolve_public_key().unwrap(),
+                pubkey: None,
                 time: Some(time),
                 expire: Some(expire),
             }),
@@ -134,6 +134,12 @@ fn encode_v2() {
         run_params(Signer::Keys { keys: keys.clone() }),
     );
     assert_eq!(signed.message, "te6ccgEBAwEAvAABRYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIMAQHhrd/b+MJ5Za+AygBc5qS/dVIPnqxCsM9PvqfVxutK+lnQEKzQoRTLYO6+jfM8TF4841bdNjLQwIDWL4UVFdxIhdMfECP8d3ruNZAXul5xxahT91swIEkEHph08JVlwmUmQAAAXRnJcuDX1XMZBW+LBKACAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==");
+
+    let no_pubkey: ResultOfEncodeMessage = client.request(
+        "abi.encode_message",
+        run_params(Signer::None),
+    );
+    assert_eq!(no_pubkey.message, "te6ccgEBAQEAVQAApYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIAAAAC6M5Llwa+q5jIK3xYJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB");
 }
 
 #[test]
