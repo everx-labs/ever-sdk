@@ -26,7 +26,7 @@ use crate::crypto::internal;
 ///
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfNaclSignKeyPairFromSecret {
-    /// Secret key
+    /// Secret key - unprefixed 0-padded to 64 symbols hex string 
     pub secret: String,
 }
 
@@ -53,7 +53,7 @@ pub fn nacl_sign_keypair_from_secret_key(
 pub struct ParamsOfNaclSign {
     /// Data that must be signed encoded in `base64`.
     pub unsigned: String,
-    /// Signer's secret key.
+    /// Signer's secret key - unprefixed 0-padded to 64 symbols hex string 
     pub secret: String,
 }
 
@@ -79,7 +79,7 @@ pub fn nacl_sign(_context: std::sync::Arc<ClientContext>, params: ParamsOfNaclSi
 pub struct ParamsOfNaclSignDetached {
     /// Data that must be signed encoded in `base64`.
     pub unsigned: String,
-    /// Signer's secret key.
+    /// Signer's secret key - unprefixed 0-padded to 64 symbols hex string 
     pub secret: String,
 }
 
@@ -107,7 +107,7 @@ pub fn nacl_sign_detached(_context: std::sync::Arc<ClientContext>, params: Param
 pub struct ParamsOfNaclSignOpen {
     /// Signed data that must be unsigned. Encoded with `base64`.
     pub signed: String,
-    /// Signer's public key.
+    /// Signer's public key - unprefixed 0-padded to 64 symbols hex string 
     pub public: String,
 }
 
@@ -160,7 +160,7 @@ pub fn nacl_box_keypair(_context: std::sync::Arc<ClientContext>) -> ClientResult
 ///
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfNaclBoxKeyPairFromSecret {
-    /// Secret key encoded in `hex`
+    /// Secret key - unprefixed 0-padded to 64 symbols hex string 
     pub secret: String,
 }
 
@@ -188,9 +188,9 @@ pub struct ParamsOfNaclBox {
     pub decrypted: String,
     /// Nonce, encoded in `hex`
     pub nonce: String,
-    /// Receiver's public key
+    /// Receiver's public key - unprefixed 0-padded to 64 symbols hex string 
     pub their_public: String,
-    /// Sender's private key
+    /// Sender's private key - unprefixed 0-padded to 64 symbols hex string 
     pub secret: String,
 }
 
@@ -232,8 +232,11 @@ pub fn nacl_box(_context: std::sync::Arc<ClientContext>, params: ParamsOfNaclBox
 pub struct ParamsOfNaclBoxOpen {
     /// Data that must be decrypted. Encoded with `base64`.
     pub encrypted: String,
+    // Nonce
     pub nonce: String,
+    /// Sender's public key - unprefixed 0-padded to 64 symbols hex string 
     pub their_public: String,
+    /// Receiver's private key - unprefixed 0-padded to 64 symbols hex string 
     pub secret: String,
 }
 
@@ -279,7 +282,7 @@ pub struct ParamsOfNaclSecretBox {
     pub decrypted: String,
     /// Nonce in `hex`
     pub nonce: String,
-    /// Secret key in `hex`
+    /// Secret key - unprefixed 0-padded to 64 symbols hex string 
     pub key: String,
 }
 
@@ -312,7 +315,7 @@ pub struct ParamsOfNaclSecretBoxOpen {
     pub encrypted: String,
     /// Nonce in `hex`
     pub nonce: String,
-    /// Public key in `hex`
+    /// Public key - unprefixed 0-padded to 64 symbols hex string 
     pub key: String,
 }
 
