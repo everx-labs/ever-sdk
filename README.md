@@ -58,9 +58,14 @@ The list defines all build targets (paths are relative and determined to the loc
 Instead of building core library yourself, you can download the __latest__ precompiled binaries from TON Labs SDK Binaries Store.
 Platform | Major | Download links
 -------- | -------------------- | --------------
-Win32 | 0 | [`tonclient.lib`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_win32_lib.gz), [`tonclient.dll`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_win32_dll.gz)
-macOS | 0 | [`tonclient.dylib`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_darwin.gz)
-Linux | 0 | [`tonclient.so`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_linux.gz)
+Win32 | 0 | [`tonclient.lib`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_win32_lib.gz), [`tonclient.dll`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_win32_dll.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_nodejs_addon_win32.gz)
+macOS | 0 | [`libtonclient.dylib`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_darwin.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_nodejs_addon_darwin.gz), [`libtonclientnodejs.dylib`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_nodejs_dylib_darwin.gz)
+Linux | 0 | [`libtonclient.so`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_linux.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_nodejs_addon_linux.gz)
+WASM  | 0 | [`tonclient.wasm`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_wasm.gz), [`index.js`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_wasm_js.gz)
+iOS   | 0 | [`libtonclient.a`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_react_native_ios.gz)
+Android(armeabi-v7a) | 0 | [`libtonclient.so`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_react_native_armv7-linux-androideabi.gz)
+Android(arm64-v8a)   | 0 | [`libtonclient.so`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_react_native_aarch64-linux-android.gz)
+Android(x86)         | 0 | [`libtonclient.so`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_react_native_i686-linux-android.gz)
 
 If you want an older version of library (e.g. `0.25.0` for macOS), you need to choose a link to your platform from the list above and replace `0` with a version:
 [http://sdkbinaries.tonlabs.io/tonclient_<b>0_25_0</b>_darwin.gz](http://sdkbinaries.tonlabs.io/tonclient_0_25_0_darwin.gz)
