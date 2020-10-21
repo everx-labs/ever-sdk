@@ -108,12 +108,9 @@ fn resolve_header(
             None
         },
         pubkey: if required("pubkey") {
-            Some(
-                header
-                    .map_or(None, |x| x.pubkey.clone())
-                    .or(pubkey.map(|x| x.to_string()))
-                    .ok_or(Error::required_public_key_missing_for_function_header())?,
-            )
+            header
+                .map_or(None, |x| x.pubkey.clone())
+                .or(pubkey.map(|x| x.to_string()))
         } else {
             None
         },
