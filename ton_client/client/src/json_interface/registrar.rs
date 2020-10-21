@@ -22,7 +22,6 @@ use crate::error::ClientResult;
 use api_info::{ApiModule, ApiType, Module};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-#[cfg(feature = "node_interaction")]
 use std::future::Future;
 use std::sync::Arc;
 
@@ -73,12 +72,13 @@ impl<'h> ModuleReg<'h> {
 
         self.handlers
             .register_async(name.clone(), Box::new(SpawnHandler::new(handler)));
+        #[cfg(not(feature = "wasm"))]
         self.handlers.register_sync(
             name,
             Box::new(CallHandler::new(move |context, params| {
                 context
                     .clone()
-                    .async_runtime_handle
+                    .env
                     .block_on(handler(context, params))
             })),
         );
@@ -119,7 +119,6 @@ impl<'h> ModuleReg<'h> {
         self.handlers
             .register_sync(name.clone(), Box::new(CallHandler::new(handler)));
 
-        #[cfg(feature = "node_interaction")]
         self.handlers.register_async(
             name.clone(),
             Box::new(SpawnHandler::new(move |context, params| async move {
@@ -143,7 +142,6 @@ impl<'h> ModuleReg<'h> {
         self.handlers
             .register_sync(name.clone(), Box::new(CallNoArgsHandler::new(handler)));
 
-        #[cfg(feature = "node_interaction")]
         self.handlers.register_async(
             name.clone(),
             Box::new(SpawnNoArgsHandler::new(move |context| async move {

@@ -47,9 +47,7 @@ pub use local_tvm::{call_tvm, call_tvm_stack};
 mod transaction;
 pub use transaction::{Transaction, TransactionFees, TransactionId};
 
-#[cfg(feature = "node_interaction")]
 mod block;
-#[cfg(feature = "node_interaction")]
 pub use block::{Block, MsgDescr, BLOCK_FIELDS};
 
 pub mod types;

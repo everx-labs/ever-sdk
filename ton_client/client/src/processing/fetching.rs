@@ -63,7 +63,7 @@ pub async fn fetch_next_shard_block<F: futures::Future<Output = ()> + Send + Syn
         }
 
         // Perform delay before retry
-        context.env.set_timer(network_retries_timeout as u64).await;
+        context.env.set_timer(network_retries_timeout as u64).await?;
         retries = retries.checked_add(1).unwrap_or(retries);
     }
 }
@@ -171,7 +171,7 @@ async fn fetch_transaction_boc(
         }
 
         // Perform delay before retry
-        context.env.set_timer(network_retries_timeout as u64).await;
+        context.env.set_timer(network_retries_timeout as u64).await?;
         retries = retries.checked_add(1).unwrap_or(retries);
     }
 }

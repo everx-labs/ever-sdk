@@ -41,8 +41,8 @@ use crate::abi::MessageSource;
 mod common;
 
 const DEFAULT_NETWORK_ADDRESS: &str = "http://localhost";
-// const DEFAULT_NETWORK_ADDRESS: &str = "cinet.tonlabs.io";
-// const DEFAULT_NETWORK_ADDRESS: &str = "net.ton.dev";
+//const DEFAULT_NETWORK_ADDRESS: &str = "cinet.tonlabs.io";
+//const DEFAULT_NETWORK_ADDRESS: &str = "net.ton.dev";
 
 const ROOT_CONTRACTS_PATH: &str = "src/tests/contracts/";
 const LOG_CGF_PATH: &str = "src/tests/log_cfg.yaml";

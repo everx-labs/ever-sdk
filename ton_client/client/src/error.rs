@@ -103,8 +103,7 @@ impl ClientError {
         Self::with_code_message(code.as_number(), message)
     }
 
-    #[cfg(feature = "node_interaction")]
-    pub(crate) fn add_network_url(mut self, client: &crate::net::NodeClient) -> ClientError {
+        pub(crate) fn add_network_url(mut self, client: &crate::net::NodeClient) -> ClientError {
         self.data["config_server"] = client.config_server().into();
 
         if let Some(url) = client.query_url() {

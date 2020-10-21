@@ -22,6 +22,9 @@ pub enum ErrorCode {
     InvalidContextHandle = CLIENT + 17,
     CannotSerializeResult = CLIENT + 18,
     CannotSerializeError = CLIENT + 19,
+    CannotConvertJsValueToJson = CLIENT + 20,
+    CannotReceiveSpawnedResult = CLIENT + 21,
+    SetTimerError = CLIENT + 22,
 }
 pub struct Error;
 
@@ -82,42 +85,42 @@ impl Error {
     pub fn websocket_receive_error<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::WebsocketReceiveError,
-            format!("Can not receive message from websocket : {}", err),
+            format!("Can not receive message from websocket: {}", err),
         )
     }
 
     pub fn websocket_send_error<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::WebsocketSendError,
-            format!("Can not send message to websocket : {}", err),
+            format!("Can not send message to websocket: {}", err),
         )
     }
 
     pub fn http_client_create_error<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::HttpClientCreateError,
-            format!("Can not create http client : {}", err),
+            format!("Can not create http client: {}", err),
         )
     }
 
     pub fn http_request_create_error<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::HttpRequestCreateError,
-            format!("Can not create http request : {}", err),
+            format!("Can not create http request: {}", err),
         )
     }
 
     pub fn http_request_send_error<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::HttpRequestSendError,
-            format!("Can not send http request : {}", err),
+            format!("Can not send http request: {}", err),
         )
     }
 
     pub fn http_request_parse_error<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::HttpRequestParseError,
-            format!("Can not parse http request : {}", err),
+            format!("Can not parse http request: {}", err),
         )
     }
 
@@ -157,6 +160,29 @@ impl Error {
         error(
             ErrorCode::CannotSerializeResult,
             format!("Can't serialize result: {}", err),
+        )
+    }
+}
+
+impl Error {
+    pub fn cannot_convert_jsvalue_to_json(value: impl std::fmt::Debug) -> ClientError {
+        error(
+            ErrorCode::CannotConvertJsValueToJson,
+            format!("Can not convert JS value to JSON: {:#?}", value),
+        )
+    }
+
+    pub fn can_not_receive_spawned_result(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::CannotReceiveSpawnedResult,
+            format!("Can not receive result from spawned task: {}", err),
+        )
+    }
+
+    pub fn set_timer_error(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::SetTimerError,
+            format!("Set timer error: {}", err),
         )
     }
 }
