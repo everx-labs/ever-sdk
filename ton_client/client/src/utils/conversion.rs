@@ -20,7 +20,7 @@ pub struct ParamsOfConvertAddress {
 
 #[derive(Serialize, Deserialize, ApiType, Debug)]
 pub struct ResultOfConvertAddress {
-    /// address in the specified format
+    /// Address in the specified format
     pub address: String,
 }
 

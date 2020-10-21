@@ -43,13 +43,13 @@ const SPANISH_DICTIONARY: u8 = 8;
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfMnemonicWords {
-    /// dictionary identifier
+    /// Dictionary identifier
     pub dictionary: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfMnemonicWords {
-    /// the list of mnemonic words
+    /// The list of mnemonic words
     pub words: String,
 }
 
@@ -68,15 +68,15 @@ pub fn mnemonic_words(
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfMnemonicFromRandom {
-    /// dictionary identifier
+    /// Dictionary identifier
     pub dictionary: Option<u8>,
-    /// mnemonic word count
+    /// Mnemonic word count
     pub word_count: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfMnemonicFromRandom {
-    /// string of mnemonic words
+    /// String of mnemonic words
     pub phrase: String,
 }
 
@@ -98,15 +98,15 @@ pub fn mnemonic_from_random(
 pub struct ParamsOfMnemonicFromEntropy {
     /// Entropy bytes. Hex encoded.
     pub entropy: String,
-    /// dictionary identifier
+    /// Dictionary identifier
     pub dictionary: Option<u8>,
-    /// mnemonic word count
+    /// Mnemonic word count
     pub word_count: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfMnemonicFromEntropy {
-    /// phrase
+    /// Phrase
     pub phrase: String,
 }
 
@@ -127,17 +127,17 @@ pub fn mnemonic_from_entropy(
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfMnemonicVerify {
-    /// phrase
+    /// Phrase
     pub phrase: String,
-    /// dictionary identifier
+    /// Dictionary identifier
     pub dictionary: Option<u8>,
-    /// word count
+    /// Word count
     pub word_count: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfMnemonicVerify {
-    /// flag indicating the mnemonic is valid or not
+    /// Flag indicating the mnemonic is valid or not
     pub valid: bool,
 }
 
@@ -159,13 +159,13 @@ pub fn mnemonic_verify(
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfMnemonicDeriveSignKeys {
-    /// phrase
+    /// Phrase
     pub phrase: String,
-    /// derivation path, for instance "m/44'/396'/0'/0/0"
+    /// Derivation path, for instance "m/44'/396'/0'/0/0"
     pub path: Option<String>,
-    /// dictionary identifier
+    /// Dictionary identifier
     pub dictionary: Option<u8>,
-    /// word count
+    /// Word count
     pub word_count: Option<u8>,
 }
 

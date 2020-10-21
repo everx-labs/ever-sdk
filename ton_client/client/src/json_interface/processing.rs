@@ -21,17 +21,26 @@ use super::request::Request;
 
 /// Creates message, sends it to the network and monitors its processing.
 /// 
-/// Creates ABI-compatible message or takes an already prepared message boc.
-/// Sends it to the network and monitors for the result transaction.
-/// If ABI is supplied, decodes the output messages's bodies.
+/// Creates ABI-compatible message,
+/// sends it to the network and monitors for the result transaction.
+/// Decodes the output messages's bodies.
 /// 
-/// If no transacrion is found within the timeout, exits with error.
-/// The timeout is calculated depending on the processing strategy.
-/// See wait_for_transaction documentation for strategies description.
+/// If ABI supports `pragma expire` then
+/// SDK implements retries in case of unsuccessful message delivery within the expiration
+/// timeout. SDK recreates the message, sends it and processes it again. 
+/// The appropriate events are controlled by `send_events` flag 
+/// and logged into the supplied callback function.
+/// The retry configuration parameters are defined in config:
+/// <add correct config params here>
+/// pub const DEFAULT_EXPIRATION_RETRIES_LIMIT: i8 = 3; - max number of retries
+/// pub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 40000;  - message expiration timeout in ms.
+/// pub const DEFAULT_....expiration_timeout_grow_factor... = 1.5 - factor that increases the expiration timeout for each retry
 /// 
-/// `send_events` enables/disables intermediate events, such as "will send",
+/// If ABI DOES NOT support `pragma expire`
+/// then if no transacrion is found within the network timeout (see config parameter ), exits with error.
+/// 
+/// `send_events` enables/disables intermediate events, useful for logging, such as "will send",
 /// "did send", "will fetch next block", etc.
-/// 
 #[api_function]
 pub(crate) async fn process_message(
     context: Arc<ClientContext>,
@@ -49,7 +58,7 @@ pub(crate) async fn process_message(
 /// Sends message to the network
 /// 
 /// Sends message to the network and returns the last generated shard block of the destination account
-/// before the messafe was sent.
+/// before the messafe was sent. It will be required later for message processing.
 #[api_function]
 pub(crate) async fn send_message(
     context: Arc<ClientContext>,
@@ -67,13 +76,13 @@ pub(crate) async fn send_message(
 /// Performs monitoring of the network for for the result transaction
 /// of the external inbound message processing.
 /// 
-/// `send_events` enables intermediate events, such as new shard block received event will be triggered 
+/// `send_events` enables intermediate events, such as `new shard block received` event will be triggered 
 /// each time.
 ///
 /// Note that presence of the `abi` parameter is critical for ABI
 /// compliant contracts. Message processing uses drastically
-/// different strategy for processing message with an ABI expiration
-/// replay protection.
+/// different strategy for processing message with an ABI expire
+/// pragma.
 ///
 /// When the ABI header `expire` is present, the processing uses
 /// `message expiration` strategy:

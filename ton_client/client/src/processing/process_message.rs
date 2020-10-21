@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, ApiType, Debug, Clone)]
 pub enum MessageSource {
-    /// already prepared message boc and optional abi
+    /// Already prepared message BOC and optional ABI
     Encoded { 
         message: String, 
         abi: Option<Abi> 

@@ -29,14 +29,14 @@ pub enum StateInitSource {
     Message { source: MessageSource },
     /// State init data.
     StateInit {
-        /// Code BOC. Encoded with `base64`.
+        /// Code BOC. Encoded in `base64`.
         code: String,
-        /// Data BOC. Encoded with `base64`.
+        /// Data BOC. Encoded in `base64`.
         data: String,
-        /// Library BOC. Encoded with `base64`.
+        /// Library BOC. Encoded in `base64`.
         library: Option<String>,
     },
-    /// Content of the TVC file. Encoded with `base64`.
+    /// Content of the TVC file. Encoded in `base64`.
     Tvc {
         tvc: String,
         public_key: Option<String>,
@@ -58,9 +58,9 @@ pub struct ParamsOfEncodeAccount {
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfEncodeAccount {
-    /// Account BOC. Encoded with `base64`.
+    /// Account BOC. Encoded in `base64`.
     pub account: String,
-    /// Account id. Encoded with `hex`.
+    /// Account id. Encoded in `hex`.
     pub id: String,
 }
 
@@ -125,10 +125,10 @@ fn state_init_from_tvc(
     Ok(image.state_init())
 }
 
-/// creates account state boc
+/// Creates account state BOC
 /// 
-/// creates account state provided with one of these sets of data :
-/// 1. boc of code, boc of data, boc of library
+/// Creates account state provided with one of these sets of data :
+/// 1. BOC of code, BOC of data, BOC of library
 /// 2. tvc file, keys, init params
 #[api_function]
 pub async fn encode_account(

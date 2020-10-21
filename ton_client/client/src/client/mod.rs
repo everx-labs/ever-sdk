@@ -49,7 +49,7 @@ pub struct ResultOfGetApiReference {
 }
 
 
-/// returns Core Library API reference
+/// Returns Core Library API reference
 #[api_function]
 pub fn get_api_reference(_context: Arc<ClientContext>) -> ClientResult<ResultOfGetApiReference> {
     Ok(ResultOfGetApiReference {

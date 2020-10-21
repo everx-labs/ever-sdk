@@ -44,7 +44,7 @@ pub fn sha256(
 }
 
 
-///Calculates SHA512 hash of the specified data.
+/// Calculates SHA512 hash of the specified data.
 #[api_function]
 pub fn sha512(
     _context: std::sync::Arc<ClientContext>,

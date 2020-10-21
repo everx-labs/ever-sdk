@@ -8,12 +8,12 @@ use crate::error::ClientResult;
 pub enum Signer {
     /// Message mustn't be signed.
     None,
-    /// Message will be signed using external methods.
-    /// Public key must be provided in `hex` encoding.
+    /// Message will be signed outside DApp.
+    /// Public key is provided in `hex` encoding.
     External { public_key: String },
     /// Message will be signed using the provided keys.
     Keys { keys: KeyPair },
-    /// Message will be signed using the provided signing box.
+    /// Message will be signed using the provided Signing Box interface.
     SigningBox { handle: SigningBoxHandle },
 }
 

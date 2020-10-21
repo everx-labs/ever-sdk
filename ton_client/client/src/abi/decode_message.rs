@@ -100,7 +100,7 @@ pub struct ParamsOfDecodeMessageBody {
     /// Contract ABI used to decode.
     pub abi: Abi,
 
-    /// Message body BOC. Must be encoded with `base64`.
+    /// Message body BOC encoded in `base64`.
     pub body: String,
 
     /// True if the body belongs to the internal message.

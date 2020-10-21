@@ -26,9 +26,9 @@ use ed25519_dalek::Keypair;
 ///
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 pub struct KeyPair {
-    /// Public key. Encoded with `hex`.
+    /// Public key encoded in `hex`.
     pub public: String,
-    /// Private key. Encoded with `hex`.
+    /// Private key encoded in `hex`.
     pub secret: String,
 }
 
@@ -50,7 +50,7 @@ impl KeyPair {
 ///
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfConvertPublicKeyToTonSafeFormat {
-    /// Public key.
+    /// Public key encoded in `hex`
     pub public_key: String,
 }
 
@@ -98,8 +98,7 @@ pub fn generate_random_sign_keys(_context: std::sync::Arc<ClientContext>) -> Cli
 ///
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfSign {
-    /// Data that must be signed.
-    /// Must be encoded with `base64`.
+    /// Data that must be signed encoded in `base64`.
     pub unsigned: String,
     /// Sign keys.
     pub keys: KeyPair,
@@ -107,9 +106,9 @@ pub struct ParamsOfSign {
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfSign {
-    /// Signed data combined with signature. Encoded with `base64`.
+    /// Signed data combined with signature encoded in `base64`.
     pub signed: String,
-    /// Signature. Encoded with `hex`.
+    /// Signature encoded in `hex`.
     pub signature: String,
 }
 
@@ -133,18 +132,15 @@ pub fn sign(
 ///
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfVerifySignature {
-    /// Signed data that must be verified.
-    /// Must be encoded with `base64`.
+    /// Signed data that must be verified encoded in `base64`.
     pub signed: String,
-    /// Signer's public key.
-    /// Must be encoded with `hex`.
+    /// Signer's public key encoded in `hex`.
     pub public: String,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfVerifySignature {
-    /// Unsigned data.
-    /// Encoded with `base64`.
+    /// Unsigned data encoded in `base64`.
     pub unsigned: String,
 }
 

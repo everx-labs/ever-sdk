@@ -29,13 +29,13 @@ use serde_json::Value;
 
 #[derive(Serialize, Deserialize, ApiType, Clone, Default)]
 pub struct ExecutionOptions {
-    /// boc with config
+    /// BOC with config
     pub blockchain_config: Option<String>,
-    /// time that is used as transaction time
+    /// Time that is used as transaction time
     pub block_time: Option<u32>,
-    /// block logical time
+    /// Block logical time
     pub block_lt: Option<u64>,
-    /// transaction logical time
+    /// Transaction logical time
     pub transaction_lt: Option<u64>,
 }
 
@@ -51,7 +51,7 @@ pub enum ExecutionMode {
 pub struct ParamsOfExecuteMessage {
     /// Input message.
     pub message: MessageSource,
-    /// Account BOC. Must be encoded as base64.
+    /// Account BOC encoded in `base64`.
     pub account: String,
     /// Execution mode.
     pub mode: ExecutionMode,
@@ -63,19 +63,14 @@ pub struct ParamsOfExecuteMessage {
 pub struct ResultOfExecuteMessage {
     /// Parsed transaction.
     ///
-    /// In addition to the regular transaction fields there is a
-    /// `boc` field encoded with `base64` which contains source
-    /// transaction BOC.
+    /// JSON with parsed transaction
     pub transaction: Option<Value>,
 
-    /// List of parsed output messages.
-    ///
-    /// Similar to the `transaction` each message contains the `boc`
-    /// field.
+    /// List of output messages BOCs.
     pub out_messages: Vec<Value>,
 
     /// Optional decoded message bodies according to the optional
-    /// `abi` parameter.
+    /// `ABI` parameter.
     pub decoded: Option<DecodedOutput>,
 
     /// JSON with parsed updated account state. Attention! When used in
@@ -196,9 +191,9 @@ pub(crate) fn blockchain_config_from_base64(b64: &str) -> ClientResult<Blockchai
 }
 
 
-/// executes a specified message on TVM or Transaction Executor
+/// Executes a specified message on TVM or Transaction Executor
 /// 
-/// execution mode is specified with `mode`.
+/// Execution mode is specified with `mode`.
 /// In case of `TvmOnly` mode only part of compute phase is performed 
 /// (this mode is reqired to run solidity functions without ACCEPT).
 /// 

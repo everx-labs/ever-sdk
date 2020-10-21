@@ -17,7 +17,7 @@ use ton_sdk::{ContractImage, FunctionCallSet};
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct DeploySet {
-    /// Content of TVC file. Must be encoded with `base64`.
+    /// Content of TVC file encoded in `base64`.
     pub tvc: String,
 
     /// Target workchain for destination address. Default is `0`.
@@ -184,7 +184,7 @@ pub struct ParamsOfEncodeMessage {
     /// of the functions that will to be called upon deploy transaction.
     pub call_set: Option<CallSet>,
 
-    /// Signing parameters. 
+    /// Signing parameters.
     pub signer: Signer,
 
     /// Processing try index.
@@ -196,7 +196,8 @@ pub struct ParamsOfEncodeMessage {
     /// Client config.
     ///
     /// Expiration timeouts will grow with every retry. 
-    /// Retry grow factor is set in Client config.
+    /// Retry grow factor is set in Client config:
+    /// <.....add config parameter with default value here>
     ///
     /// Default value is 0.
     pub processing_try_index: Option<u8>,
@@ -207,11 +208,11 @@ pub struct ResultOfEncodeMessage {
     /// Message BOC encoded with `base64`.
     pub message: String,
 
-    /// Optional data to sign. Encoded with `base64`.
+    /// Optional data to sign encoded in `base64`.
     ///
-    /// Presents when `message` is unsigned. Can be used for external
-    /// message signing. Is this case you need to sing this data and
-    /// produce signed message using `abi.attach_signature`.
+    /// Presents in case of `Signer::External`. Can be used for external
+    /// message signing. Is this case you need to use this data to create signature and
+    /// then produce signed message using `abi.attach_signature`.
     pub data_to_sign: Option<String>,
 
     /// Destination address.
@@ -309,14 +310,33 @@ fn encode_run(
     })
 }
 
-
 /// Encodes an ABI-compatible message 
 /// 
 /// Allows to encode deploy and function call messages,
 /// both signed and unsigned.
 /// 
-/// [SOON] Allows using external signer mechanism if you don't want to 
-/// disclose your private key
+/// Use cases include messages of any possible type:
+/// - deploy with initial function call (i.e. `constructor` or any other function that is used for some kind
+/// of initialization);
+/// - deploy without initial function call;
+/// - signed/unsigned + data for signing. 
+/// 
+/// `Signer` defines how the message should or shouldn't be signed:
+/// 
+/// `Signer::None` creates an unsigned message. This may be needed in case of some public methods, 
+/// that do not require authentication. 
+/// 
+/// `Signer::External` takes public key and returns data for external signing. 
+/// The use case implies signature generation outside the DApp, for instance, when the unsigned message
+/// is transfered by email, or flash drive, and then signed on another device.  
+/// 
+/// `Signer::Keys` creates a signed message. 
+///  
+/// [SOON] `Signer::SigningBox` Allows using a special interface to imlpement signing 
+/// outside SDK but inside the Dapp, for instance, in case of using cold wallet, when application has a 
+/// wrapper function that calls a cold wallet API to generate signature for specified data. 
+/// Application implements SigningBox interface, where it calls such API. 
+
 #[api_function]
 pub async fn encode_message(
     context: std::sync::Arc<ClientContext>,
@@ -389,9 +409,9 @@ pub struct ParamsOfAttachSignature {
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfAttachSignature {
-    /// signed message boc
+    /// Signed message boc
     pub message: String,
-    /// message id
+    /// Message id
     pub message_id: String,
 }
 

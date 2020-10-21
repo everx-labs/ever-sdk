@@ -28,11 +28,11 @@ use super::stack;
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfExecuteGet {
-    /// account boc in base64
+    /// Account BOC in `base64`
     pub account: String,
-    /// function name
+    /// Function name
     pub function_name: String,
-    /// input parameters
+    /// Input parameters
     pub input: Option<Value>,
     pub execution_options: Option<ExecutionOptions>,
 }
@@ -40,7 +40,7 @@ pub struct ParamsOfExecuteGet {
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfExecuteGet {
-    /// values returned by getmethod on stack
+    /// Values returned by getmethod on stack
     pub output: Value,
 }
 
