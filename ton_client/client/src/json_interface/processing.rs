@@ -25,7 +25,7 @@ use super::request::Request;
 /// sends it to the network and monitors for the result transaction.
 /// Decodes the output messages's bodies.
 /// 
-/// If ABI supports `pragma expire` then
+/// If contract's ABI includes "expire" header then
 /// SDK implements retries in case of unsuccessful message delivery within the expiration
 /// timeout. SDK recreates the message, sends it and processes it again. 
 /// The appropriate events are controlled by `send_events` flag 
@@ -36,7 +36,7 @@ use super::request::Request;
 /// pub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 40000;  - message expiration timeout in ms.
 /// pub const DEFAULT_....expiration_timeout_grow_factor... = 1.5 - factor that increases the expiration timeout for each retry
 /// 
-/// If ABI DOES NOT support `pragma expire`
+/// If contract's ABI does not include "expire" header
 /// then if no transacrion is found within the network timeout (see config parameter ), exits with error.
 /// 
 /// `send_events` enables/disables intermediate events, useful for logging, such as "will send",
@@ -81,8 +81,8 @@ pub(crate) async fn send_message(
 ///
 /// Note that presence of the `abi` parameter is critical for ABI
 /// compliant contracts. Message processing uses drastically
-/// different strategy for processing message with an ABI expire
-/// pragma.
+/// different strategy for processing message for contracts which
+/// ABI includes "expire" header.
 ///
 /// When the ABI header `expire` is present, the processing uses
 /// `message expiration` strategy:

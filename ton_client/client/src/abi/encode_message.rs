@@ -189,7 +189,7 @@ pub struct ParamsOfEncodeMessage {
 
     /// Processing try index.
     ///
-    /// Used in message processing with retries (in contract that support Pragma Expire).
+    /// Used in message processing with retries (if contract's ABI includes "expire" header).
     ///
     /// Encoder uses the provided try index to calculate message
     /// expiration time. The 1st message expiration time is specified in
