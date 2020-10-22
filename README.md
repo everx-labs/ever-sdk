@@ -1,4 +1,4 @@
-# Core Client Library for TON DApp development
+# Core TONOS Client Library for TON DApp development
 
 **Community links:**
 
