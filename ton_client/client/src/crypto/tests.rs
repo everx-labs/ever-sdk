@@ -24,7 +24,7 @@ use crate::crypto::nacl::{
     ParamsOfNaclSignOpen, ResultOfNaclBox, ResultOfNaclBoxOpen, ResultOfNaclSign,
     ResultOfNaclSignDetached, ResultOfNaclSignOpen,
 };
-use crate::crypto::scrypt::{ParamsOfScrypt, ResultOfScrypt};
+use crate::crypto::encscrypt::{ParamsOfScrypt, ResultOfScrypt};
 use crate::tests::TestClient;
 
 fn base64_from_hex(hex: &str) -> String {
