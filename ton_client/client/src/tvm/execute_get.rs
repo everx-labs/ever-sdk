@@ -13,10 +13,8 @@
 
 use serde_json::Value;
 
-use ton_sdk::Contract;
-
 use crate::client::ClientContext;
-use crate::encoding::base64_decode;
+use crate::boc::internal::{deserialize_object_from_base64};
 use crate::error::ClientResult;
 use crate::tvm::execute_message::ExecutionOptions;
 use crate::tvm::Error;
@@ -24,6 +22,7 @@ use std::sync::Arc;
 use ton_vm::stack::integer::IntegerData;
 use ton_vm::stack::{Stack, StackItem};
 use super::stack;
+use super::execute_message::ResolvedExecutionOptions;
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfExecuteGet {
@@ -40,16 +39,18 @@ pub struct ResultOfExecuteGet {
 }
 
 #[api_function]
-pub fn execute_get(
+pub async fn execute_get(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfExecuteGet,
 ) -> ClientResult<ResultOfExecuteGet> {
-    let contract = Contract::from_bytes(&base64_decode(&params.account)?)
-        .map_err(|err| Error::invalid_account_boc(err))?;
+    let account: ton_block::Account = deserialize_object_from_base64(&params.account, "account")?.object;
+    let options = ResolvedExecutionOptions::from_options(&context, params.execution_options)?;
 
-    let code = contract
-        .get_code()
-        .ok_or(Error::invalid_account_boc("missing required code"))?;
+    let stuff = match account {
+        ton_block::Account::AccountNone => Err(Error::invalid_account_boc("Acount is None")),
+        ton_block::Account::Account(stuff) => Ok(stuff)
+    }?;
+
     let mut crc = crc_any::CRC::crc16xmodem();
     crc.digest(params.function_name.as_bytes());
     let function_id = ((crc.get_crc() as u32) & 0xffff) | 0x10000;
@@ -68,20 +69,12 @@ pub fn execute_get(
         function_id,
     ))));
 
-    let stack_out = ton_sdk::call_tvm_stack(
-        contract.balance,
-        contract
-            .balance_other_as_hashmape()
-            .map_err(|err| Error::invalid_account_boc(err))?,
-        &contract.id,
-        None,
-        (context.env.now_ms() / 1000) as u32,
-        code,
-        contract.get_data(),
+    let (engine, _) = super::execute_message::call_tvm(
+        stuff,
+        options,
         stack_in,
-    ).map_err(|err|Error::unknown_execution_error(err))?;
-
+    )?;
     Ok(ResultOfExecuteGet {
-        output: stack::serialize_items(stack_out.iter())?,
+        output: stack::serialize_items(engine.stack().iter())?
     })
 }
