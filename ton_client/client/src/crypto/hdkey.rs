@@ -58,7 +58,7 @@ pub struct ParamsOfHDKeySecretFromXPrv {
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfHDKeySecretFromXPrv {
-    /// Private key - unprefixed 0-padded to 64 symbols hex string
+    /// Private key - 64 symbols hex string
     pub secret: String,
 }
 
@@ -83,7 +83,7 @@ pub struct ParamsOfHDKeyPublicFromXPrv {
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfHDKeyPublicFromXPrv {
-    /// Public key - unprefixed 0-padded to 64 symbols hex string
+    /// Public key - 64 symbols hex string
     pub public: String,
 }
 

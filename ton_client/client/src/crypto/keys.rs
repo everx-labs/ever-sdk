@@ -26,9 +26,9 @@ use ed25519_dalek::Keypair;
 ///
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 pub struct KeyPair {
-    /// Public key - unprefixed 0-padded to 64 symbols hex string 
+    /// Public key - 64 symbols hex string
     pub public: String,
-    /// Private key - unprefixed 0-padded to 64 symbols hex string .
+    /// Private key - u64 symbols hex string
     pub secret: String,
 }
 
@@ -50,13 +50,13 @@ impl KeyPair {
 ///
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfConvertPublicKeyToTonSafeFormat {
-    /// Public key encoded in `hex`
+    /// Public key - 64 symbols hex string
     pub public_key: String,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfConvertPublicKeyToTonSafeFormat {
-    /// Public key represented in TON safe format.
+    /// Public key represented in TON safe format. 
     pub ton_public_key: String,
 }
 
@@ -134,7 +134,7 @@ pub fn sign(
 pub struct ParamsOfVerifySignature {
     /// Signed data that must be verified encoded in `base64`.
     pub signed: String,
-    /// Signer's public key encoded in `hex`.
+    /// Signer's public key - 64 symbols hex string
     pub public: String,
 }
 
