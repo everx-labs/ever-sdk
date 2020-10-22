@@ -159,7 +159,7 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Debug, PartialEq, Clone, Default)]
 pub struct TransactionFees {
     pub in_msg_fwd_fee: u64,
     pub storage_fee: u64,
