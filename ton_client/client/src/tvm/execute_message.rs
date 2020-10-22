@@ -428,36 +428,43 @@ fn call_tvm_msg(
 ) -> ClientResult<(Vec<Message>, ton_block::AccountStuff)> {
     let msg_cell = msg.write_to_new_cell()
         .map_err(|err| Error::internal_error(format!("can not serialize message: {}", err)))?;
+
     let mut stack = Stack::new();
     let balance = account.storage.balance.grams.value();
+    let function_selector = match msg.header() {
+        ton_block::CommonMsgInfo::IntMsgInfo(_) => ton_vm::int!(0),
+        ton_block::CommonMsgInfo::ExtInMsgInfo(_) => ton_vm::int!(-1),
+        ton_block::CommonMsgInfo::ExtOutMsgInfo(_) => 
+            return Err(Error::invalid_message_type())
+    };
     stack
         .push(ton_vm::int!(balance))                            // gram balance of contract
         .push(ton_vm::int!(0))                                  // gram balance of msg
-        .push(StackItem::Cell(msg_cell.into()))                        // message
+        .push(StackItem::Cell(msg_cell.into()))                 // message
         .push(StackItem::Slice(msg.body().unwrap_or_default())) // message body
-        .push(ton_vm::int!(-1));                                            // external inbound message flag
+        .push(function_selector);                                           // function selector
 
     let (engine, account) = call_tvm(account, options, stack)?;
-    let mut slice = SliceData::from(
-        engine.get_actions().as_cell()
-            .map_err(|err| Error::internal_error(format!("can not get actions: {}", err)))?
-    );
-    let mut msgs = vec![];
-    while slice.remaining_references() != 0 {
-        let next = slice.checked_drain_reference().unwrap().into();
-        let magic = slice.get_next_u32();
-        if magic.is_ok() && magic.unwrap() == 0x0ec3c86d && slice.remaining_references() == 1 {
-            let message = Message::construct_from(
-                &mut slice.checked_drain_reference().unwrap().into()
-            )
-            .map_err(|err| 
-                Error::internal_error(format!("contract produced invalid message: {}", err))
-            )?;
 
-            msgs.push(message);
+    // process out actions to get out messages
+    let actions_cell = engine
+        .get_actions()
+        .as_cell()
+        .map_err(|err| Error::internal_error(format!("can not get actions: {}", err)))?
+        .clone();
+    let mut actions = ton_block::OutActions::construct_from_cell(actions_cell)
+        .map_err(|err| Error::internal_error(format!("can not parse actions: {}", err)))?;
+
+    let mut msgs = vec![];
+    for (_, action) in actions.iter_mut().enumerate() {
+        match std::mem::replace(action, ton_block::OutAction::None) {
+            ton_block::OutAction::SendMsg{ out_msg, .. } => {
+                msgs.push(out_msg);
+            },
+            _ => {}
         }
-        slice = next;
     }
+
     msgs.reverse();
     Ok((msgs, account))
 }
