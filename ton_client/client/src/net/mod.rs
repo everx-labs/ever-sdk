@@ -169,8 +169,6 @@ pub async fn wait_for_collection(
     Ok(ResultOfWaitForCollection { result })
 }
 
-
-
 pub async fn subscribe_collection<F: Future<Output = ()> + Send + Sync>(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfSubscribeCollection,

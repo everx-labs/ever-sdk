@@ -60,7 +60,7 @@ pub struct ParamsOfEncodeAccount {
 pub struct ResultOfEncodeAccount {
     /// Account BOC. Encoded in `base64`.
     pub account: String,
-    /// Account id. Encoded in `hex`.
+    /// Account ID. Encoded in `hex`.
     pub id: String,
 }
 

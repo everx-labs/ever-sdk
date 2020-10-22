@@ -27,8 +27,10 @@ use super::request::Request;
 /// 
 /// If contract's ABI includes "expire" header then
 /// SDK implements retries in case of unsuccessful message delivery within the expiration
-/// timeout. SDK recreates the message, sends it and processes it again. 
-/// The appropriate events are controlled by `send_events` flag 
+/// timeout: SDK recreates the message, sends it and processes it again. 
+/// 
+/// The intermediate events, such as `WillFetchFirstBlock`, `WillSend`, `DidSend`,
+/// `WillFetchNextBlock`, etc - are switched on/off by `send_events` flag 
 /// and logged into the supplied callback function.
 /// The retry configuration parameters are defined in config:
 /// <add correct config params here>
@@ -37,10 +39,7 @@ use super::request::Request;
 /// pub const DEFAULT_....expiration_timeout_grow_factor... = 1.5 - factor that increases the expiration timeout for each retry
 /// 
 /// If contract's ABI does not include "expire" header
-/// then if no transacrion is found within the network timeout (see config parameter ), exits with error.
-/// 
-/// `send_events` enables/disables intermediate events, useful for logging, such as "will send",
-/// "did send", "will fetch next block", etc.
+/// then if no transaction is found within the network timeout (see config parameter ), exits with error.
 #[api_function]
 pub(crate) async fn process_message(
     context: Arc<ClientContext>,
@@ -58,7 +57,7 @@ pub(crate) async fn process_message(
 /// Sends message to the network
 /// 
 /// Sends message to the network and returns the last generated shard block of the destination account
-/// before the messafe was sent. It will be required later for message processing.
+/// before the message was sent. It will be required later for message processing.
 #[api_function]
 pub(crate) async fn send_message(
     context: Arc<ClientContext>,
@@ -73,11 +72,12 @@ pub(crate) async fn send_message(
     crate::processing::send_message::send_message(context, params, callback).await
 }
 
-/// Performs monitoring of the network for for the result transaction
+/// Performs monitoring of the network for the result transaction
 /// of the external inbound message processing.
 /// 
-/// `send_events` enables intermediate events, such as `new shard block received` event will be triggered 
-/// each time.
+/// `send_events` enables intermediate events, such as `WillFetchNextBlock`,
+/// `FetchNextBlockFailed` that may be useful for logging of new shard blocks creation 
+/// during message processing.
 ///
 /// Note that presence of the `abi` parameter is critical for ABI
 /// compliant contracts. Message processing uses drastically

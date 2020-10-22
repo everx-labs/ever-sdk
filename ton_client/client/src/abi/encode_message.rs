@@ -324,18 +324,16 @@ fn encode_run(
 /// `Signer` defines how the message should or shouldn't be signed:
 /// 
 /// `Signer::None` creates an unsigned message. This may be needed in case of some public methods, 
-/// that do not require authentication. 
+/// that do not require authorization by pubkey. 
 /// 
-/// `Signer::External` takes public key and returns data for external signing. 
-/// The use case implies signature generation outside the DApp, for instance, when the unsigned message
-/// is transfered by email, or flash drive, and then signed on another device.  
+/// `Signer::External` takes public key and returns `data_to_sign` for later signing. 
+/// Use `attach_signature` method with the result signature to get the signed message.
 /// 
-/// `Signer::Keys` creates a signed message. 
+/// `Signer::Keys` creates a signed message with provided key pair. 
 ///  
 /// [SOON] `Signer::SigningBox` Allows using a special interface to imlpement signing 
-/// outside SDK but inside the Dapp, for instance, in case of using cold wallet, when application has a 
-/// wrapper function that calls a cold wallet API to generate signature for specified data. 
-/// Application implements SigningBox interface, where it calls such API. 
+/// without private key disclosure to SDK. For instance, in case of using a cold wallet or HSM, 
+/// when application calls some API to sign data. 
 
 #[api_function]
 pub async fn encode_message(
@@ -397,26 +395,26 @@ pub struct ParamsOfAttachSignature {
     /// Contract ABI
     pub abi: Abi,
 
-    /// Public key. Must be encoded with `hex`.
+    /// Public key encoded in `hex`.
     pub public_key: String,
 
-    /// Unsigned message BOC. Must be encoded with `base64`.
+    /// Unsigned message BOC encoded in `base64`.
     pub message: String,
 
-    /// Signature. Must be encoded with `hex`.
+    /// Signature encoded in `hex`.
     pub signature: String,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfAttachSignature {
-    /// Signed message boc
+    /// Signed message BOC
     pub message: String,
-    /// Message id
+    /// Message ID
     pub message_id: String,
 }
 
-/// Combines `hex` encoded `signature` with `base64` encoded `unsigned_message`.
-/// Returns signed message encoded with `base64`.
+/// Combines `hex`-encoded `signature` with `base64`-encoded `unsigned_message`.
+/// Returns signed message encoded in `base64`.
 #[api_function]
 pub fn attach_signature(
     _context: std::sync::Arc<ClientContext>,
