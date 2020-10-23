@@ -92,35 +92,35 @@ type ClientError = {
 
 ```ts
 type ClientConfig = {
-    network: NetworkConfig,
-    crypto: CryptoConfig,
-    abi: AbiConfig
+    network?: NetworkConfig,
+    crypto?: CryptoConfig,
+    abi?: AbiConfig
 };
 ```
-- `network`: _[NetworkConfig](mod_client.md#NetworkConfig)_
-- `crypto`: _[CryptoConfig](mod_client.md#CryptoConfig)_
-- `abi`: _[AbiConfig](mod_client.md#AbiConfig)_
+- `network`?: _[NetworkConfig](mod_client.md#NetworkConfig)_
+- `crypto`?: _[CryptoConfig](mod_client.md#CryptoConfig)_
+- `abi`?: _[AbiConfig](mod_client.md#AbiConfig)_
 
 
 ## NetworkConfig
 
 ```ts
 type NetworkConfig = {
-    server_address: string,
-    network_retries_count: number,
-    message_retries_count: number,
-    message_processing_timeout: number,
-    wait_for_timeout: number,
-    out_of_sync_threshold: bigint,
+    server_address?: string,
+    network_retries_count?: number,
+    message_retries_count?: number,
+    message_processing_timeout?: number,
+    wait_for_timeout?: number,
+    out_of_sync_threshold?: bigint,
     access_key?: string
 };
 ```
-- `server_address`: _string_
-- `network_retries_count`: _number_
-- `message_retries_count`: _number_
-- `message_processing_timeout`: _number_
-- `wait_for_timeout`: _number_
-- `out_of_sync_threshold`: _bigint_
+- `server_address`?: _string_
+- `network_retries_count`?: _number_
+- `message_retries_count`?: _number_
+- `message_processing_timeout`?: _number_
+- `wait_for_timeout`?: _number_
+- `out_of_sync_threshold`?: _bigint_
 - `access_key`?: _string_
 
 
@@ -128,30 +128,30 @@ type NetworkConfig = {
 
 ```ts
 type CryptoConfig = {
-    mnemonic_dictionary: number,
-    mnemonic_word_count: number,
-    hdkey_derivation_path: string,
-    hdkey_compliant: boolean
+    mnemonic_dictionary?: number,
+    mnemonic_word_count?: number,
+    hdkey_derivation_path?: string,
+    hdkey_compliant?: boolean
 };
 ```
-- `mnemonic_dictionary`: _number_
-- `mnemonic_word_count`: _number_
-- `hdkey_derivation_path`: _string_
-- `hdkey_compliant`: _boolean_
+- `mnemonic_dictionary`?: _number_
+- `mnemonic_word_count`?: _number_
+- `hdkey_derivation_path`?: _string_
+- `hdkey_compliant`?: _boolean_
 
 
 ## AbiConfig
 
 ```ts
 type AbiConfig = {
-    workchain: number,
-    message_expiration_timeout: number,
-    message_expiration_timeout_grow_factor: number
+    workchain?: number,
+    message_expiration_timeout?: number,
+    message_expiration_timeout_grow_factor?: number
 };
 ```
-- `workchain`: _number_
-- `message_expiration_timeout`: _number_
-- `message_expiration_timeout_grow_factor`: _number_
+- `workchain`?: _number_
+- `message_expiration_timeout`?: _number_
+- `message_expiration_timeout_grow_factor`?: _number_
 
 
 ## ResultOfGetApiReference

@@ -28,6 +28,7 @@ pub enum EnumWithTypes {
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct Foo {
     pub address: Option<String>,
+    #[serde(default)]
     pub message_id: String,
     pub message_body_base64: String,
     pub expire: Option<u32>,
@@ -72,7 +73,7 @@ fn reflect_module<T: ApiModule>() {
 }
 
 fn main() {
-    reflect_module::<Module>();
+    // reflect_module::<Module>();
     reflect::<Foo>();
     // reflect::<Bar>();
     // reflect::<EnumWithValues>();

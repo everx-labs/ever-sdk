@@ -39,22 +39,31 @@
           "struct_fields": [
             {
               "name": "network",
-              "type": "Ref",
-              "ref_name": "NetworkConfig",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "NetworkConfig"
+              },
               "summary": null,
               "description": null
             },
             {
               "name": "crypto",
-              "type": "Ref",
-              "ref_name": "CryptoConfig",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "CryptoConfig"
+              },
               "summary": null,
               "description": null
             },
             {
               "name": "abi",
-              "type": "Ref",
-              "ref_name": "AbiConfig",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "AbiConfig"
+              },
               "summary": null,
               "description": null
             }
@@ -68,37 +77,55 @@
           "struct_fields": [
             {
               "name": "server_address",
-              "type": "String",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
               "summary": null,
               "description": null
             },
             {
               "name": "network_retries_count",
-              "type": "Number",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
               "summary": null,
               "description": null
             },
             {
               "name": "message_retries_count",
-              "type": "Number",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
               "summary": null,
               "description": null
             },
             {
               "name": "message_processing_timeout",
-              "type": "Number",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
               "summary": null,
               "description": null
             },
             {
               "name": "wait_for_timeout",
-              "type": "Number",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
               "summary": null,
               "description": null
             },
             {
               "name": "out_of_sync_threshold",
-              "type": "BigInt",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "BigInt"
+              },
               "summary": null,
               "description": null
             },
@@ -121,25 +148,37 @@
           "struct_fields": [
             {
               "name": "mnemonic_dictionary",
-              "type": "Number",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
               "summary": null,
               "description": null
             },
             {
               "name": "mnemonic_word_count",
-              "type": "Number",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
               "summary": null,
               "description": null
             },
             {
               "name": "hdkey_derivation_path",
-              "type": "String",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
               "summary": null,
               "description": null
             },
             {
               "name": "hdkey_compliant",
-              "type": "Boolean",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
               "summary": null,
               "description": null
             }
@@ -153,19 +192,28 @@
           "struct_fields": [
             {
               "name": "workchain",
-              "type": "Number",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
               "summary": null,
               "description": null
             },
             {
               "name": "message_expiration_timeout",
-              "type": "Number",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
               "summary": null,
               "description": null
             },
             {
               "name": "message_expiration_timeout_grow_factor",
-              "type": "Number",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
               "summary": null,
               "description": null
             }
