@@ -24,26 +24,6 @@ pub const TRANSACTIONS_TABLE_NAME: &str = "transactions";
 
 pub const MASTERCHAIN_ID: i32 = -1;
 
-fn default_network_retries_count() -> i8 {
-    5
-}
-
-fn default_message_retries_count() -> i8 {
-    5
-}
-
-fn default_message_processing_timeout() -> u32 {
-    40000
-}
-
-fn default_wait_for_timeout() -> u32 {
-    40000
-}
-
-fn default_out_of_sync_threshold() -> i64 {
-    15000
-}
-
 fn default_workchain() -> i32 {
     0
 }
@@ -56,38 +36,8 @@ fn default_message_expiration_timeout_grow_factor() -> f32 {
     1.5
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, ApiType)]
-pub struct NetworkConfig {
-    #[serde(default)]
-    pub server_address: String,
-    #[serde(default = "default_network_retries_count")]
-    pub network_retries_count: i8,
-    #[serde(default = "default_message_retries_count")]
-    pub message_retries_count: i8,
-    #[serde(default = "default_message_processing_timeout")]
-    pub message_processing_timeout: u32,
-    #[serde(default = "default_wait_for_timeout")]
-    pub wait_for_timeout: u32,
-    #[serde(default = "default_out_of_sync_threshold")]
-    pub out_of_sync_threshold: i64,
-    pub access_key: Option<String>,
-}
-
-impl Default for NetworkConfig {
-    fn default() -> Self {
-        Self {
-            server_address: String::new(),
-            network_retries_count: default_network_retries_count(),
-            message_retries_count: default_message_retries_count(),
-            message_processing_timeout: default_message_processing_timeout(),
-            wait_for_timeout: default_wait_for_timeout(),
-            out_of_sync_threshold: default_out_of_sync_threshold(),
-            access_key: None,
-        }
-    }
-}
 #[derive(Deserialize, Debug, Clone, ApiType)]
-pub struct AbiConfig {
+pub struct SdkAbiConfig {
     #[serde(default = "default_workchain")]
     pub workchain: i32,
     #[serde(default = "default_message_expiration_timeout")]
@@ -96,7 +46,7 @@ pub struct AbiConfig {
     pub message_expiration_timeout_grow_factor: f32,
 }
 
-impl Default for AbiConfig {
+impl Default for SdkAbiConfig {
     fn default() -> Self {
         Self {
             workchain: default_workchain(),

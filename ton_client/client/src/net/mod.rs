@@ -26,11 +26,61 @@ pub use errors::{Error, ErrorCode};
 
 mod node_client;
 pub use node_client::{OrderBy, SortDirection};
-pub use ton_sdk::{NetworkConfig};
 pub(crate) use node_client::{NodeClient, MAX_TIMEOUT};
 
 #[cfg(test)]
 mod tests;
+
+fn default_network_retries_count() -> i8 {
+    5
+}
+
+fn default_message_retries_count() -> i8 {
+    5
+}
+
+fn default_message_processing_timeout() -> u32 {
+    40000
+}
+
+fn default_wait_for_timeout() -> u32 {
+    40000
+}
+
+fn default_out_of_sync_threshold() -> i64 {
+    15000
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ApiType)]
+pub struct NetworkConfig {
+    #[serde(default)]
+    pub server_address: String,
+    #[serde(default = "default_network_retries_count")]
+    pub network_retries_count: i8,
+    #[serde(default = "default_message_retries_count")]
+    pub message_retries_count: i8,
+    #[serde(default = "default_message_processing_timeout")]
+    pub message_processing_timeout: u32,
+    #[serde(default = "default_wait_for_timeout")]
+    pub wait_for_timeout: u32,
+    #[serde(default = "default_out_of_sync_threshold")]
+    pub out_of_sync_threshold: i64,
+    pub access_key: Option<String>,
+}
+
+impl Default for NetworkConfig {
+    fn default() -> Self {
+        Self {
+            server_address: String::new(),
+            network_retries_count: default_network_retries_count(),
+            message_retries_count: default_message_retries_count(),
+            message_processing_timeout: default_message_processing_timeout(),
+            wait_for_timeout: default_wait_for_timeout(),
+            out_of_sync_threshold: default_out_of_sync_threshold(),
+            access_key: None,
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfQueryCollection {

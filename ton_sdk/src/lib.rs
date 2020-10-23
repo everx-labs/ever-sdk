@@ -51,7 +51,7 @@ mod block;
 pub use block::{Block, MsgDescr, BLOCK_FIELDS};
 
 pub mod types;
-pub use types::{AbiConfig, BlockId, NetworkConfig};
+pub use types::{SdkAbiConfig, BlockId};
 
 #[cfg(feature = "node_interaction")]
 pub mod node_client;

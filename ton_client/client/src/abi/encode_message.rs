@@ -241,7 +241,7 @@ fn encode_deploy(
         call_set.to_function_call_set(pubkey, processing_try_index, &context, &abi)?,
         image,
         workchain,
-        &context.config.abi,
+        &context.config.abi.to_sdk(),
         processing_try_index,
     )
     .map_err(|err| abi::Error::encode_deploy_message_failed(err))?;
@@ -285,7 +285,7 @@ fn encode_run(
                 call_set.to_function_call_set(pubkey, processing_try_index, &context, abi)?,
                 false,
                 None,
-                &context.config.abi,
+                &context.config.abi.to_sdk(),
                 processing_try_index,
             )
             .map_err(|err| abi::Error::encode_run_message_failed(err, &call_set.function_name))?;
@@ -295,7 +295,7 @@ fn encode_run(
             let unsigned = ton_sdk::Contract::get_call_message_bytes_for_signing(
                 address.clone(),
                 call_set.to_function_call_set(pubkey, processing_try_index, &context, abi)?,
-                &context.config.abi,
+                &context.config.abi.to_sdk(),
                 processing_try_index,
             )
             .map_err(|err| abi::Error::encode_run_message_failed(err, &call_set.function_name))?;

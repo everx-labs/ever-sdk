@@ -13,7 +13,6 @@
 
 use crate::error::ClientResult;
 use std::sync::Arc;
-use ton_sdk::AbiConfig;
 
 use crate::net::{NetworkConfig, NodeClient};
 
@@ -23,6 +22,8 @@ use super::std_client_env::ClientEnv;
 use super::wasm_client_env::ClientEnv;
 
 use super::Error;
+use crate::crypto::CryptoConfig;
+use crate::abi::AbiConfig;
 
 pub struct ClientContext {
     pub(crate) client: Option<NodeClient>,
@@ -66,45 +67,6 @@ Note that default values are used if parameters are omitted in config"#,
     }
 }
 
-fn default_mnemonic_dictionary() -> u8 {
-    1
-}
-
-fn default_mnemonic_word_count() -> u8 {
-    12
-}
-
-fn default_hdkey_derivation_path() -> String {
-    "m/44'/396'/0'/0/0".into()
-}
-
-fn default_hdkey_compliant() -> bool {
-    true
-}
-
-#[derive(Deserialize, Debug, Clone, ApiType)]
-pub struct CryptoConfig {
-    #[serde(default = "default_mnemonic_dictionary")]
-    pub mnemonic_dictionary: u8,
-    #[serde(default = "default_mnemonic_word_count")]
-    pub mnemonic_word_count: u8,
-    #[serde(default = "default_hdkey_derivation_path")]
-    pub hdkey_derivation_path: String,
-    #[serde(default = "default_hdkey_compliant")]
-    pub hdkey_compliant: bool,
-}
-
-impl Default for CryptoConfig {
-    fn default() -> Self {
-        Self {
-            mnemonic_dictionary: default_mnemonic_dictionary(),
-            mnemonic_word_count: default_mnemonic_word_count(),
-            hdkey_derivation_path: default_hdkey_derivation_path(),
-            hdkey_compliant: default_hdkey_compliant(),
-        }
-    }
-}
-
 #[derive(Deserialize, Debug, Clone, ApiType)]
 pub struct ClientConfig {
     #[serde(default)]
@@ -124,3 +86,4 @@ impl Default for ClientConfig {
         }
     }
 }
+

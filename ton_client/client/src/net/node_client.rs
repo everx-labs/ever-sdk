@@ -13,7 +13,7 @@
 
 use crate::client::{ClientEnv, FetchMethod};
 use crate::error::{ClientError, ClientResult};
-use crate::net::Error;
+use crate::net::{Error, NetworkConfig};
 use futures::{Future, SinkExt, Stream, StreamExt};
 use rand::RngCore;
 use serde_json::Value;
@@ -21,7 +21,6 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::pin::Pin;
 use std::sync::Arc;
-use ton_sdk::NetworkConfig;
 
 pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
 

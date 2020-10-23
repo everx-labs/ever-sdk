@@ -11,7 +11,7 @@
 * limitations under the License.
 */
 
-use crate::client::{ClientContext, CryptoConfig};
+use crate::client::{ClientContext};
 use crate::crypto;
 use crate::crypto::hdkey::HDPrivateKey;
 use crate::crypto::internal::{hmac_sha512, key256, pbkdf2_hmac_sha512};
@@ -24,6 +24,7 @@ use hmac::Hmac;
 use pbkdf2::pbkdf2;
 use rand::RngCore;
 use sha2::Sha512;
+use crate::crypto::CryptoConfig;
 
 const TON_DICTIONARY: u8 = 0;
 const ENGLISH_DICTIONARY: u8 = 1;

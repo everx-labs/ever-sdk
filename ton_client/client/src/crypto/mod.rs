@@ -61,3 +61,43 @@ pub use crate::crypto::nacl::{
     ParamsOfNaclSignKeyPairFromSecret, ParamsOfNaclSignOpen, ResultOfNaclBox, ResultOfNaclBoxOpen,
     ResultOfNaclSign, ResultOfNaclSignDetached, ResultOfNaclSignOpen,
 };
+
+fn default_mnemonic_dictionary() -> u8 {
+    1
+}
+
+fn default_mnemonic_word_count() -> u8 {
+    12
+}
+
+fn default_hdkey_derivation_path() -> String {
+    "m/44'/396'/0'/0/0".into()
+}
+
+fn default_hdkey_compliant() -> bool {
+    true
+}
+
+#[derive(Deserialize, Debug, Clone, ApiType)]
+pub struct CryptoConfig {
+    #[serde(default = "default_mnemonic_dictionary")]
+    pub mnemonic_dictionary: u8,
+    #[serde(default = "default_mnemonic_word_count")]
+    pub mnemonic_word_count: u8,
+    #[serde(default = "default_hdkey_derivation_path")]
+    pub hdkey_derivation_path: String,
+    #[serde(default = "default_hdkey_compliant")]
+    pub hdkey_compliant: bool,
+}
+
+impl Default for CryptoConfig {
+    fn default() -> Self {
+        Self {
+            mnemonic_dictionary: default_mnemonic_dictionary(),
+            mnemonic_word_count: default_mnemonic_word_count(),
+            hdkey_derivation_path: default_hdkey_derivation_path(),
+            hdkey_compliant: default_hdkey_compliant(),
+        }
+    }
+}
+
