@@ -1,6 +1,7 @@
 use crate::abi::DecodedMessageBody;
 use crate::error::ClientError;
 use serde_json::Value;
+use ton_sdk::TransactionFees;
 
 #[derive(Serialize, Deserialize, ApiType, Debug, PartialEq, Clone)]
 pub struct DecodedOutput {
@@ -29,6 +30,9 @@ pub struct ResultOfProcessMessage {
     /// Optional decoded message bodies according to the optional
     /// `abi` parameter.
     pub decoded: Option<DecodedOutput>,
+
+    /// Transaction fees
+    pub fees: TransactionFees,
 }
 
 #[derive(Clone, num_derive::FromPrimitive, PartialEq, Debug)]
@@ -111,18 +115,5 @@ pub enum ProcessingEvent {
         message_id: String,
         message: String,
         error: ClientError,
-    },
-
-    /// Notifies the app that the client has received the
-    /// transaction.
-    ///
-    /// Processing has finished.
-    TransactionReceived {
-        /// Input message id encoded in `hex`.
-        message_id: String,
-        /// Input message BOC encoded in `base64`.
-        message: String,
-        /// Results of transaction.
-        result: ResultOfProcessMessage,
     },
 }

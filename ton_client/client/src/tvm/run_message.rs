@@ -130,7 +130,7 @@ pub async fn run_executor(
 
     let account_copy = account.clone();
     let msg_address = message.dst().ok_or(Error::invalid_message_type())?;
-    let contract_info = move || {
+    let contract_info = move || async move {
         let account: ton_block::Account =
             deserialize_object_from_cell(account_copy.clone(), "account")?;
         match account.stuff() {
@@ -148,9 +148,9 @@ pub async fn run_executor(
         }
     };
 
-    let (transaction, account) = call_executor(account, message, options, &contract_info)?;
+    let (transaction, account) = call_executor(account, message, options, contract_info.clone()).await?;
 
-    let fees = check_transaction(&transaction, false, &contract_info)?;
+    let fees = check_transaction(&transaction, false, contract_info).await?;
 
     let mut out_messages = vec![];
     for i in 0..transaction.outmsg_cnt {
@@ -212,14 +212,17 @@ pub async fn run_tvm(
     })
 }
 
-fn call_executor(
+async fn call_executor<F>(
     mut account: Cell,
     msg: ton_block::Message,
     options: ResolvedExecutionOptions,
-    contract_info: impl FnOnce() -> ClientResult<(ton_block::MsgAddressInt, u64)>,
-) -> ClientResult<(ton_block::Transaction, Cell)> {
+    contract_info: impl FnOnce() -> F,
+) -> ClientResult<(ton_block::Transaction, Cell)> 
+where 
+    F: futures::Future<Output=ClientResult<(ton_block::MsgAddressInt, u64)>>
+{
     let executor = OrdinaryTransactionExecutor::new(options.blockchain_config);
-    let transaction = executor
+    let result = executor
         .execute(
             Some(&msg),
             &mut account,
@@ -227,10 +230,13 @@ fn call_executor(
             options.block_lt,
             Arc::new(AtomicU64::new(options.transaction_lt)),
             false,
-        )
-        .map_err(|err| {
+        );
+
+    let transaction = match result {
+        Ok(transaction) => transaction,
+        Err(err) => {
             let err_message = err.to_string();
-            match contract_info() {
+            let err = match contract_info().await {
                 Ok((address, balance)) => match &err.downcast_ref::<ExecutorError>() {
                     Some(ExecutorError::NoAcceptError(code)) => {
                         Error::tvm_execution_failed(err_message, *code, None, &address)
@@ -241,7 +247,10 @@ fn call_executor(
                     _ => Error::unknown_execution_error(err),
                 },
                 Err(err) => err,
-            }
-        })?;
+            };
+            return Err(err);
+        }
+    };
+
     Ok((transaction, account))
 }

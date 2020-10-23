@@ -77,12 +77,11 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send + Sync>
             // Let's fetch other stuff.
             return Ok(fetching::fetch_transaction_result(
                 &context,
-                &params,
                 &shard_block_id,
                 &message_id,
                 &transaction_id,
                 &params.abi,
-                &callback
+                address
             )
             .await?);
         }

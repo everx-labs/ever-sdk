@@ -11,7 +11,6 @@ use crate::json_interface::modules::ProcessingModule;
 use crate::processing::types::DecodedOutput;
 use crate::tests::{TestClient, EVENTS};
 use api_info::ApiModule;
-use crate::abi::MessageSource;
 
 #[tokio::test(core_threads = 2)]
 async fn test_wait_message() {
@@ -117,10 +116,6 @@ async fn test_wait_message() {
     } {
         evt = events.next();
     }
-    assert!(match evt {
-        Some(ProcessingEvent::TransactionReceived { .. }) => true,
-        _ => false,
-    });
 }
 
 #[tokio::test(core_threads = 2)]
@@ -141,23 +136,25 @@ async fn test_process_message() {
         }
     };
 
-    let encoded = client
-        .encode_message(ParamsOfEncodeMessage {
-            abi: abi.clone(),
-            address: None,
-            deploy_set: DeploySet::some_with_tvc(events_tvc.clone()),
-            call_set: Some(CallSet {
-                function_name: "constructor".into(),
-                header: Some(FunctionHeader {
-                    expire: None,
-                    time: None,
-                    pubkey: Some(keys.public.clone()),
-                }),
-                input: None,
+    let encode_params = ParamsOfEncodeMessage {
+        abi: abi.clone(),
+        address: None,
+        deploy_set: DeploySet::some_with_tvc(events_tvc.clone()),
+        call_set: Some(CallSet {
+            function_name: "constructor".into(),
+            header: Some(FunctionHeader {
+                expire: None,
+                time: None,
+                pubkey: Some(keys.public.clone()),
             }),
-            signer: Signer::Keys { keys: keys.clone() },
-            processing_try_index: None,
-        })
+            input: None,
+        }),
+        signer: Signer::Keys { keys: keys.clone() },
+        processing_try_index: None,
+    };
+
+    let encoded = client
+        .encode_message(encode_params.clone())
         .await;
 
     client
@@ -167,16 +164,14 @@ async fn test_process_message() {
     let output = client
         .net_process_message(
             ParamsOfProcessMessage {
-                message: MessageSource::Encoded {
-                    message: encoded.message.clone(),
-                    abi: Some(abi.clone()),
-                },
+                message_encode_params: encode_params,
                 send_events: true,
             },
             callback,
         )
         .await;
 
+    assert!(output.fees.total_account_fees > 0);
     assert_eq!(output.out_messages.len(), 0);
     assert_eq!(
         output.decoded,
@@ -206,10 +201,6 @@ async fn test_process_message() {
     } {
         evt = events.next();
     }
-    assert!(match evt {
-        Some(ProcessingEvent::TransactionReceived { .. }) => true,
-        _ => false,
-    });
 
     let events = std::sync::Arc::new(tokio::sync::Mutex::new(vec![]));
     let events_copy = events.clone();
@@ -224,7 +215,7 @@ async fn test_process_message() {
     let output = client
         .net_process_message(
             ParamsOfProcessMessage {
-                message: MessageSource::EncodingParams(ParamsOfEncodeMessage {
+                message_encode_params: ParamsOfEncodeMessage {
                     abi: abi.clone(),
                     address: Some(encoded.address.clone()),
                     deploy_set: None,
@@ -236,7 +227,7 @@ async fn test_process_message() {
                     ),
                     signer: Signer::Keys { keys: keys.clone() },
                     processing_try_index: None,
-                }),
+                },
                 send_events: true,
             },
             callback,
@@ -287,8 +278,4 @@ async fn test_process_message() {
     } {
         evt = events.next();
     }
-    assert!(match evt {
-        Some(ProcessingEvent::TransactionReceived { .. }) => true,
-        _ => false,
-    });
 }

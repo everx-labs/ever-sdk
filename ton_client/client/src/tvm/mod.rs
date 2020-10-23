@@ -13,7 +13,7 @@
  */
 
 pub(crate) mod call_tvm;
-mod check_transaction;
+pub(crate) mod check_transaction;
 mod errors;
 pub(crate) mod run_get;
 pub(crate) mod run_message;
