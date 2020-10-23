@@ -58,9 +58,9 @@ pub struct ParamsOfEncodeAccount {
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfEncodeAccount {
-    /// Account BOC. Encoded in `base64`.
+    /// Account BOC encoded in `base64`.
     pub account: String,
-    /// Account ID. Encoded in `hex`.
+    /// Account ID  encoded in `hex`.
     pub id: String,
 }
 
@@ -129,7 +129,7 @@ fn state_init_from_tvc(
 /// 
 /// Creates account state provided with one of these sets of data :
 /// 1. BOC of code, BOC of data, BOC of library
-/// 2. tvc file, keys, init params
+/// 2. TVC (string in `base64`), keys, init params
 #[api_function]
 pub async fn encode_account(
     context: std::sync::Arc<ClientContext>,
