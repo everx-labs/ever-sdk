@@ -12,8 +12,12 @@ const {
     mkdir,
 } = require('../build-lib');
 
+function replaceAll(s, replaces) {
+    return replaces.reduce((s, r) => s.split(r[0]).join(r[1]), s);
+}
+
 function scriptToStringLiteral(s) {
-    return `\`${s.split('`').join('\\``')}\``;
+    return `\`${replaceAll(s, [['\\', '\\\\'], ['`', '\\`'], ['$', '\\$']])}\``;
 }
 
 function getTemplate(name) {
@@ -26,27 +30,10 @@ function getTemplate(name) {
 
 function getWasmWrapperScript() {
     let script = fs.readFileSync(path.resolve(__dirname, 'pkg', 'tonclient.js'), 'utf-8');
-    script = script.replace(
-        /^let wasm;$/gm,
-        `
-const wasmWrapper = (function() {
-let wasm = null;
-const result = {
-    setup: (newWasm) => {
-        wasm = newWasm;
-    },
-};
-`,
-    );
-    script = script.replace(/^export const /gm, 'result.');
-    script = script.replace(/^export function (\w+)/gm, 'result.$1 = function');
-    script = script.replace(/^async function load\([^]*?^}$/gm, '');
-    script = script.replace(/^async function init\([^]*?^\s*const imports = {};$/gm, '');
-    script = script.replace(/^\s*if \(typeof input === [^]*/gm, '');
-    script = script.replace(/^\s*imports\.wbg/gm, '    result.wbg');
-    script +=
-        `   return result;
-})()`;
+    script = script.replace(/^export function /gm, 'function ');
+    script = script.replace(/^export default init;$/gm, '');
+    script = script.replace(/^\s*input = import\.meta.*$/gm, '');
+    script = script.replace(/getObject\(arg0\) instanceof Window/gm, 'true');
     return script;
 }
 
@@ -60,7 +47,6 @@ function getWorkerScript() {
 function getIndexScript() {
     const workerScript = getWorkerScript();
     const script = [
-        `import { TONClient } from 'ton-client-js';`,
         `const workerScript = ${scriptToStringLiteral(workerScript)};`,
         getTemplate('build-index.js').replace('__VERSION__', toml_version),
     ];

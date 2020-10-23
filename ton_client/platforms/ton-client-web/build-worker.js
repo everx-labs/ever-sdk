@@ -1,51 +1,47 @@
-const wasmWrapper = {
-    setup(instance) {
-    }
-};
 //---
+
+function core_response_handler(request_id, params_json, response_type, finished) {
+    postMessage({
+        type: 'response',
+        requestId: request_id,
+        paramsJson: params_json,
+        responseType: response_type,
+        finished,
+    });
+}
 
 self.onmessage = (e) => {
     const message = e.data;
-    const setup = message.setup;
-    if (setup) {
+    switch (message.type) {
+    case 'init':
         (async () => {
-            const instance = (await WebAssembly.instantiate(setup.wasmModule, {
-                wbg: wasmWrapper.wbg
-            })).exports;
-            wasmWrapper.setup(instance);
-            postMessage({
-                setup: {}
-            })
+            await init(message.wasmModule);
+            postMessage({ type: 'init' });
         })();
-        return;
-    }
-    const request = message.request;
-    if (request) {
-        let result;
-        try {
-            if (request.method === 'context.create') {
-                const context = wasmWrapper.core_create_context();
-                result = JSON.stringify({result_json: JSON.stringify(context), error_json: ''});
-            } else if (request.method === 'context.destroy') {
-                wasmWrapper.core_destroy_context(request.context);
-                result = JSON.stringify({result_json: '', error_json: ''});
-            } else {
-                result = wasmWrapper.core_json_request(request.context, request.method, request.params);
-            }
-        } catch (error) {
-            result = JSON.stringify({
-                result_json: '',
-                error_json: JSON.stringify({
-                    code: 6,
-                    message: error.toString()
-                })
-            });
-        }
+        break;
+
+    case 'createContext':
         postMessage({
-            response: {
-                id: request.id,
-                result,
-            }
+            type: 'createContext',
+            result: core_create_context(message.configJson),
+            requestId: message.requestId,
         });
+        break;
+
+    case 'destroyContext':
+        core_destroy_context(message.context);
+        postMessage({
+            type: 'destroyContext'
+        });
+        break;
+
+    case 'request':
+        core_request(
+            message.context,
+            message.functionName,
+            message.functionParamsJson,
+            message.requestId,
+        );
+        break;
     }
 };

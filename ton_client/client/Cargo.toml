@@ -55,10 +55,10 @@ reqwest = { version = "0.10.4", optional = true }
 tokio-tungstenite = { version =  "0.11.0", features = ["tls"], optional = true }
 
 # optional for wasm
-wasm-bindgen = { version = "0.2.68", features = ["serde-serialize"], optional = true }
-wasm-bindgen-futures = { version = "0.4.18", optional = true }
+wasm-bindgen = { version = "=0.2.65", features = ["serde-serialize"], optional = true }
+wasm-bindgen-futures = { version = "0.4.15", optional = true }
 js-sys = { version = "0.3", optional = true }
-web-sys = { version =  "0.3.45", optional = true, features = [
+web-sys = { version =  "0.3.42", optional = true, features = [
     "ErrorEvent",
     "FileReader",
     "Headers",
