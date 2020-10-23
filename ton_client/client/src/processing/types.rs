@@ -103,10 +103,9 @@ pub enum ProcessingEvent {
 
     /// Notifies the app that the message was expired.
     ///
-    /// Event occurs for messages with the `expiration` replay
-    /// protection.
+    /// Event occurs for contracts which ABI includes header "expire"
     ///
-    /// Processing will be continued at encoding phase after
+    /// Processing will be continued from encoding phase after
     /// `expiration_retries_timeout`.
     MessageExpired {
         message_id: String,
@@ -119,9 +118,9 @@ pub enum ProcessingEvent {
     ///
     /// Processing has finished.
     TransactionReceived {
-        /// Input message id. Encoded with `hex`.
+        /// Input message id encoded in `hex`.
         message_id: String,
-        /// Input message. BOC encoded with `base64`.
+        /// Input message BOC encoded in `base64`.
         message: String,
         /// Results of transaction.
         result: ResultOfProcessMessage,

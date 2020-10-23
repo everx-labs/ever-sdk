@@ -38,10 +38,12 @@ use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfVersion {
-    /// core version
+    /// Core Library version
     pub version: String,
 }
 
+
+/// Returns Core Library version
 #[api_function]
 pub fn version(_context: Arc<ClientContext>) -> ClientResult<ResultOfVersion> {
     Ok(ResultOfVersion {
@@ -54,6 +56,8 @@ pub struct ResultOfGetApiReference {
     pub api: API,
 }
 
+
+/// Returns Core Library API reference
 #[api_function]
 pub fn get_api_reference(_context: Arc<ClientContext>) -> ClientResult<ResultOfGetApiReference> {
     Ok(ResultOfGetApiReference {

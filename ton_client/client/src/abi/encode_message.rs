@@ -19,7 +19,7 @@ use ton_sdk::{ContractImage, FunctionCallSet};
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct DeploySet {
-    /// Content of TVC file. Must be encoded with `base64`.
+    /// Content of TVC file encoded in `base64`.
     pub tvc: String,
 
     /// Target workchain for destination address. Default is `0`.
@@ -41,17 +41,17 @@ impl DeploySet {
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct CallSet {
-    /// Function name.
+    /// Function name that is being called.
     pub function_name: String,
 
     /// Function header.
     ///
-    /// If an application omit some parameters required by the
+    /// If an application omits some header parameters required by the
     /// contract's ABI, the library will set the default values for
-    /// it.
+    /// them.
     pub header: Option<FunctionHeader>,
 
-    /// Function input according to ABI.
+    /// Function input parameters according to ABI.
     pub input: Option<Value>,
 }
 
@@ -165,9 +165,9 @@ pub struct ParamsOfEncodeMessage {
     /// Contract ABI.
     pub abi: Abi,
 
-    /// Contract address.
+    /// Target address the message will be sent to.
     ///
-    /// Must be specified in case of non deploy message.
+    /// Must be specified in case of non-deploy message. 
     pub address: Option<String>,
 
     /// Deploy parameters.
@@ -177,9 +177,10 @@ pub struct ParamsOfEncodeMessage {
 
     /// Function call parameters.
     ///
-    /// Must be specified in non deploy message.
+    /// Must be specified in case of non-deploy message.
     ///
-    /// In case of deploy message contains parameters of constructor.
+    /// In case of deploy message it is optional and contains parameters  
+    /// of the functions that will to be called upon deploy transaction.
     pub call_set: Option<CallSet>,
 
     /// Signing parameters.
@@ -187,12 +188,15 @@ pub struct ParamsOfEncodeMessage {
 
     /// Processing try index.
     ///
-    /// Used in message processing with retries.
+    /// Used in message processing with retries (if contract's ABI includes "expire" header).
     ///
     /// Encoder uses the provided try index to calculate message
-    /// expiration time.
+    /// expiration time. The 1st message expiration time is specified in
+    /// Client config.
     ///
-    /// Expiration timeouts will grow with every retry.
+    /// Expiration timeouts will grow with every retry. 
+    /// Retry grow factor is set in Client config:
+    /// <.....add config parameter with default value here>
     ///
     /// Default value is 0.
     pub processing_try_index: Option<u8>,
@@ -203,11 +207,11 @@ pub struct ResultOfEncodeMessage {
     /// Message BOC encoded with `base64`.
     pub message: String,
 
-    /// Optional data to sign. Encoded with `base64`.
+    /// Optional data to be signed encoded in `base64`.
     ///
-    /// Presents when `message` is unsigned. Can be used for external
-    /// message signing. Is this case you need to sing this data and
-    /// produce signed message using `abi.attach_signature`.
+    /// Returned in case of `Signer::External`. Can be used for external
+    /// message signing. Is this case you need to use this data to create signature and
+    /// then produce signed message using `abi.attach_signature`.
     pub data_to_sign: Option<String>,
 
     /// Destination address.
@@ -304,6 +308,31 @@ fn encode_run(
         }
     })
 }
+
+/// Encodes an ABI-compatible message 
+/// 
+/// Allows to encode deploy and function call messages,
+/// both signed and unsigned.
+/// 
+/// Use cases include messages of any possible type:
+/// - deploy with initial function call (i.e. `constructor` or any other function that is used for some kind
+/// of initialization);
+/// - deploy without initial function call;
+/// - signed/unsigned + data for signing. 
+/// 
+/// `Signer` defines how the message should or shouldn't be signed:
+/// 
+/// `Signer::None` creates an unsigned message. This may be needed in case of some public methods, 
+/// that do not require authorization by pubkey. 
+/// 
+/// `Signer::External` takes public key and returns `data_to_sign` for later signing. 
+/// Use `attach_signature` method with the result signature to get the signed message.
+/// 
+/// `Signer::Keys` creates a signed message with provided key pair. 
+///  
+/// [SOON] `Signer::SigningBox` Allows using a special interface to imlepement signing 
+/// without private key disclosure to SDK. For instance, in case of using a cold wallet or HSM, 
+/// when application calls some API to sign data. 
 
 #[api_function]
 pub async fn encode_message(
@@ -480,22 +509,26 @@ pub struct ParamsOfAttachSignature {
     /// Contract ABI
     pub abi: Abi,
 
-    /// Public key. Must be encoded with `hex`.
+    /// Public key encoded in `hex`.
     pub public_key: String,
 
-    /// Unsigned message BOC. Must be encoded with `base64`.
+    /// Unsigned message BOC encoded in `base64`.
     pub message: String,
 
-    /// Signature. Must be encoded with `hex`.
+    /// Signature encoded in `hex`.
     pub signature: String,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfAttachSignature {
+    /// Signed message BOC
     pub message: String,
+    /// Message ID
     pub message_id: String,
 }
 
+/// Combines `hex`-encoded `signature` with `base64`-encoded `unsigned_message`.
+/// Returns signed message encoded in `base64`.
 #[api_function]
 pub fn attach_signature(
     _context: std::sync::Arc<ClientContext>,

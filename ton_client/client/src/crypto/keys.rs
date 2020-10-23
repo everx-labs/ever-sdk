@@ -26,9 +26,9 @@ use ed25519_dalek::Keypair;
 ///
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 pub struct KeyPair {
-    /// Public key. Encoded with `hex`.
+    /// Public key - 64 symbols hex string
     pub public: String,
-    /// Private key. Encoded with `hex`.
+    /// Private key - u64 symbols hex string
     pub secret: String,
 }
 
@@ -50,13 +50,13 @@ impl KeyPair {
 ///
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfConvertPublicKeyToTonSafeFormat {
-    /// Public key.
+    /// Public key - 64 symbols hex string
     pub public_key: String,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfConvertPublicKeyToTonSafeFormat {
-    /// Public key represented in TON safe format.
+    /// Public key represented in TON safe format. 
     pub ton_public_key: String,
 }
 
@@ -98,8 +98,7 @@ pub fn generate_random_sign_keys(_context: std::sync::Arc<ClientContext>) -> Cli
 ///
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfSign {
-    /// Data that must be signed.
-    /// Must be encoded with `base64`.
+    /// Data that must be signed encoded in `base64`.
     pub unsigned: String,
     /// Sign keys.
     pub keys: KeyPair,
@@ -107,9 +106,9 @@ pub struct ParamsOfSign {
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfSign {
-    /// Signed data combined with signature. Encoded with `base64`.
+    /// Signed data combined with signature encoded in `base64`.
     pub signed: String,
-    /// Signature. Encoded with `base64`.
+    /// Signature encoded in `hex`.
     pub signature: String,
 }
 
@@ -133,23 +132,20 @@ pub fn sign(
 ///
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfVerifySignature {
-    /// Signed data that must be verified.
-    /// Must be encoded with `base64`.
+    /// Signed data that must be verified encoded in `base64`.
     pub signed: String,
-    /// Signer's public key.
-    /// Must be encoded with `hex`.
+    /// Signer's public key - 64 symbols hex string
     pub public: String,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfVerifySignature {
-    /// Unsigned data.
-    /// Encoded with `base64`.
+    /// Unsigned data encoded in `base64`.
     pub unsigned: String,
 }
 
 /// Verifies signed data using the provided public key.
-/// Raises error in case when verification is failed.
+/// Raises error if verification is failed.
 #[api_function]
 pub fn verify_signature(
     _context: std::sync::Arc<ClientContext>,

@@ -84,39 +84,39 @@ impl Default for NetworkConfig {
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfQueryCollection {
-    /// collection name (accounts, blocks, transactions, messages, block_signatures)
+    /// Collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
-    /// collection filter
+    /// Collection filter
     pub filter: Option<serde_json::Value>,
-    /// projection (result) string
+    /// Projection (result) string
     pub result: String,
-    /// sorting order
+    /// Sorting order
     pub order: Option<Vec<OrderBy>>,
-    /// number of documents to return
+    /// Number of documents to return
     pub limit: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfQueryCollection {
-    /// objects that match provided criteria
+    /// Objects that match the provided criteria
     pub result: Vec<serde_json::Value>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Clone, Default)]
 pub struct ParamsOfWaitForCollection {
-    /// collection name (accounts, blocks, transactions, messages, block_signatures)
+    /// Collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
-    /// collection filter
+    /// Collection filter
     pub filter: Option<serde_json::Value>,
-    /// projection (result) string
+    /// Projection (result) string
     pub result: String,
-    /// query timeout
+    /// Query timeout
     pub timeout: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfWaitForCollection {
-    /// first found object that match provided criteria
+    /// First found object that matches the provided criteria
     pub result: serde_json::Value,
 }
 
@@ -128,24 +128,23 @@ pub enum SubscriptionResponseType {
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfSubscribeCollection {
-    /// collection name (accounts, blocks, transactions, messages, block_signatures)
+    /// Collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
-    /// collection filter
+    /// Collection filter
     pub filter: Option<serde_json::Value>,
-    /// projection (result) string
+    /// Projection (result) string
     pub result: String,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfSubscribeCollection {
-    /// handle to subscription. It then can be used in `get_next_subscription_data` function
-    /// and must be closed with `unsubscribe`
+    /// Subscription handle. Must be closed with `unsubscribe`
     pub handle: u32,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfSubscription {
-    /// first appeared object that match provided criteria
+    /// First appeared object that matches the provided criteria
     pub result: serde_json::Value,
 }
 
@@ -161,6 +160,12 @@ async fn extract_subscription_handle(handle: &u32) -> Option<Sender<bool>> {
     SUBSCRIPTIONS.lock().await.remove(handle)
 }
 
+
+/// Queries collection data
+/// 
+/// Queries data that satisfies the `filter` conditions, 
+/// limits the number of returned records and orders them.
+/// The projection fields are limited to  `result` fields
 #[api_function]
 pub async fn query_collection(
     context: std::sync::Arc<ClientContext>,
@@ -187,6 +192,15 @@ pub async fn query_collection(
     Ok(ResultOfQueryCollection { result })
 }
 
+
+/// Returns an object that fulfills the conditions or waits for its appearance
+/// 
+/// Triggers only once. 
+/// If object that satisfies the `filter` conditions 
+/// already exists - returns it immediately. 
+/// If not - waits for insert/update of data withing the specified `timeout`,
+/// and returns it. 
+/// The projection fields are limited to  `result` fields
 #[api_function]
 pub async fn wait_for_collection(
     context: std::sync::Arc<ClientContext>,
@@ -248,6 +262,10 @@ pub async fn subscribe_collection<F: Future<Output = ()> + Send + Sync>(
     Ok(ResultOfSubscribeCollection { handle })
 }
 
+
+/// Cancels a subscription
+/// 
+/// Cancels a subscription specified by its handle.
 #[api_function]
 pub async fn unsubscribe(
     _context: std::sync::Arc<ClientContext>,
