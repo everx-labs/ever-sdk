@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 # TON Client Library for TON DApp development
-=======
-# Core TONOS Client Library for TON DApp development
->>>>>>> master
 
 **Community links:**
 
