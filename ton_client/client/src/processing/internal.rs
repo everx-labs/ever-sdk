@@ -1,10 +1,7 @@
 use crate::abi::{Abi, ParamsOfDecodeMessage};
 use crate::client::ClientContext;
 use crate::error::ClientResult;
-use crate::processing::{
-    Error, DEFAULT_EXPIRATION_RETRIES_LIMIT, DEFAULT_NETWORK_RETRIES_LIMIT,
-    DEFAULT_NETWORK_RETRIES_TIMEOUT,
-};
+use crate::processing::Error;
 use serde_json::Value;
 use std::sync::Arc;
 use ton_block::Serializable;
@@ -25,38 +22,11 @@ pub(crate) fn can_retry_more(retries: u8, limit: i8) -> bool {
 }
 
 pub fn can_retry_network_error(context: &Arc<ClientContext>, retries: u8) -> bool {
-    can_retry_more(
-        retries,
-        resolve(
-            context.config.network.as_ref(),
-            |_| None,
-            DEFAULT_NETWORK_RETRIES_LIMIT,
-        ),
-    )
-}
-
-pub fn resolve_network_retries_timeout(context: &Arc<ClientContext>) -> u32 {
-    resolve(
-        context.config.network.as_ref(),
-        |_| None,
-        DEFAULT_NETWORK_RETRIES_TIMEOUT,
-    )
+    can_retry_more(retries, context.config.network.network_retries_count)
 }
 
 pub(crate) fn can_retry_expired_message(context: &Arc<ClientContext>, retries: u8) -> bool {
-    can_retry_more(
-        retries,
-        resolve(
-            context.config.network.as_ref(),
-            |x| Some(x.message_retries_count() as i8),
-            DEFAULT_EXPIRATION_RETRIES_LIMIT,
-        ),
-    )
-}
-
-fn resolve<C, R>(config: Option<&C>, resolve_cfg: fn(cfg: &C) -> Option<R>, def: R) -> R {
-    let cfg = config.map_or(None, |x| resolve_cfg(x));
-    cfg.unwrap_or(def)
+    can_retry_more(retries, context.config.network.message_retries_count)
 }
 
 pub fn find_transaction(
@@ -118,17 +88,15 @@ pub(crate) fn get_message_expiration_time(
     message: &str,
 ) -> ClientResult<Option<u64>> {
     let header = match abi {
-        Some(abi) => {
-            crate::abi::decode_message(
-                context.clone(),
-                ParamsOfDecodeMessage {
-                    abi: abi.clone(),
-                    message: message.to_string(),
-                },
-            )
-            .map(|x| x.header)
-            .unwrap_or_default()
-        },
+        Some(abi) => crate::abi::decode_message(
+            context.clone(),
+            ParamsOfDecodeMessage {
+                abi: abi.clone(),
+                message: message.to_string(),
+            },
+        )
+        .map(|x| x.header)
+        .unwrap_or_default(),
         None => None,
     };
     let time = header

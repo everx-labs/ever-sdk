@@ -3,7 +3,7 @@ use crate::abi::internal::{
     add_sign_to_message, add_sign_to_message_body, create_tvc_image, resolve_abi,
     result_of_encode_message,
 };
-use crate::abi::{Abi, Error, FunctionHeader, Signer, DEFAULT_WORKCHAIN};
+use crate::abi::{Abi, Error, FunctionHeader, Signer};
 use crate::boc::internal::get_boc_hash;
 use crate::client::ClientContext;
 use crate::crypto::internal::sign_using_secret;
@@ -98,8 +98,8 @@ fn resolve_header(
             Some(header.map_or(None, |x| x.expire).unwrap_or_else(|| {
                 let config = &context.config.abi;
                 let timeout = calc_timeout(
-                    config.message_expiration_timeout(),
-                    config.message_expiration_timeout_grow_factor(),
+                    config.message_expiration_timeout,
+                    config.message_expiration_timeout_grow_factor,
                     processing_try_index.unwrap_or(0),
                 );
                 ((now + timeout as u64) / 1000) as u32
@@ -314,7 +314,7 @@ pub async fn encode_message(
 
     let public = params.signer.resolve_public_key()?;
     let (message, data_to_sign, address) = if let Some(deploy_set) = params.deploy_set {
-        let workchain = deploy_set.workchain_id.unwrap_or(DEFAULT_WORKCHAIN);
+        let workchain = deploy_set.workchain_id.unwrap_or(context.config.abi.workchain);
         let public = required_public_key(public)?;
         let image = create_tvc_image(
             &abi,

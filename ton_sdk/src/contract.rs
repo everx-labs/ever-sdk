@@ -926,8 +926,8 @@ impl Contract {
             let try_index = try_index.unwrap_or(0);
             // expire is `now + timeout`
             let timeout = Self::calc_timeout(
-                abi_config.message_expiration_timeout(),
-                abi_config.message_expiration_timeout_grow_factor(),
+                abi_config.message_expiration_timeout,
+                abi_config.message_expiration_timeout_grow_factor,
                 try_index);
             let expire = Self::now() + timeout / 1000;
 

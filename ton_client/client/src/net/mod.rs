@@ -25,7 +25,8 @@ mod errors;
 pub use errors::{Error, ErrorCode};
 
 mod node_client;
-pub use node_client::{NetworkConfig, OrderBy, SortDirection};
+pub use node_client::{OrderBy, SortDirection};
+pub use ton_sdk::{NetworkConfig};
 pub(crate) use node_client::{NodeClient, MAX_TIMEOUT};
 
 #[cfg(test)]

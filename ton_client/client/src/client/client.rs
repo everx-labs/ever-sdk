@@ -26,7 +26,7 @@ use super::Error;
 
 pub struct ClientContext {
     pub(crate) client: Option<NodeClient>,
-    pub(crate) config: InternalClientConfig,
+    pub(crate) config: ClientConfig,
     pub(crate) env: Arc<ClientEnv>,
 }
 
@@ -39,25 +39,21 @@ impl ClientContext {
         self.env.set_timer(ms).await
     }
 
-    pub fn new(config: Option<ClientConfig>) -> ClientResult<ClientContext> {
-        let config: InternalClientConfig = config.unwrap_or_default().into();
-
+    pub fn new(config: ClientConfig) -> ClientResult<ClientContext> {
         let env = Arc::new(super::ClientEnv::new()?);
 
-        let client = if let Some(net_config) = &config.network {
-            if net_config.out_of_sync_threshold()
-                > config.abi.message_expiration_timeout() as i64 / 2
+        let client = if !config.network.server_address.is_empty() {
+            if config.network.out_of_sync_threshold
+                > config.abi.message_expiration_timeout as i64 / 2
             {
                 return Err(Error::invalid_config(format!(
                     r#"`out_of_sync_threshold` can not be more then `message_expiration_timeout / 2`.
 `out_of_sync_threshold` = {}, `message_expiration_timeout` = {}
 Note that default values are used if parameters are omitted in config"#,
-                    net_config.out_of_sync_threshold(),
-                    config.abi.message_expiration_timeout()
+                    config.network.out_of_sync_threshold, config.abi.message_expiration_timeout
                 )));
             }
-            let client = NodeClient::new(net_config.clone(), env.clone());
-            Some(client)
+            Some(NodeClient::new(config.network.clone(), env.clone()))
         } else {
             None
         };
@@ -70,31 +66,61 @@ Note that default values are used if parameters are omitted in config"#,
     }
 }
 
-#[derive(Deserialize, Debug, Default, Clone, ApiType)]
+fn default_mnemonic_dictionary() -> u8 {
+    1
+}
+
+fn default_mnemonic_word_count() -> u8 {
+    12
+}
+
+fn default_hdkey_derivation_path() -> String {
+    "m/44'/396'/0'/0/0".into()
+}
+
+fn default_hdkey_compliant() -> bool {
+    true
+}
+
+#[derive(Deserialize, Debug, Clone, ApiType)]
 pub struct CryptoConfig {
-    pub fish_param: Option<String>,
+    #[serde(default = "default_mnemonic_dictionary")]
+    pub mnemonic_dictionary: u8,
+    #[serde(default = "default_mnemonic_word_count")]
+    pub mnemonic_word_count: u8,
+    #[serde(default = "default_hdkey_derivation_path")]
+    pub hdkey_derivation_path: String,
+    #[serde(default = "default_hdkey_compliant")]
+    pub hdkey_compliant: bool,
 }
 
-#[derive(Deserialize, Debug, Clone, Default, ApiType)]
+impl Default for CryptoConfig {
+    fn default() -> Self {
+        Self {
+            mnemonic_dictionary: default_mnemonic_dictionary(),
+            mnemonic_word_count: default_mnemonic_word_count(),
+            hdkey_derivation_path: default_hdkey_derivation_path(),
+            hdkey_compliant: default_hdkey_compliant(),
+        }
+    }
+}
+
+#[derive(Deserialize, Debug, Clone, ApiType)]
 pub struct ClientConfig {
-    pub network: Option<NetworkConfig>,
-    pub crypto: Option<CryptoConfig>,
-    pub abi: Option<AbiConfig>,
-}
-
-#[derive(Debug, Clone)]
-pub struct InternalClientConfig {
-    pub network: Option<NetworkConfig>,
+    #[serde(default)]
+    pub network: NetworkConfig,
+    #[serde(default)]
     pub crypto: CryptoConfig,
+    #[serde(default)]
     pub abi: AbiConfig,
 }
 
-impl From<ClientConfig> for InternalClientConfig {
-    fn from(config: ClientConfig) -> Self {
-        InternalClientConfig {
-            network: config.network,
-            crypto: config.crypto.unwrap_or_default(),
-            abi: config.abi.unwrap_or_default(),
+impl Default for ClientConfig {
+    fn default() -> Self {
+        Self {
+            network: Default::default(),
+            crypto: Default::default(),
+            abi: Default::default(),
         }
     }
 }

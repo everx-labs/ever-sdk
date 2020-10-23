@@ -61,7 +61,3 @@ pub use crate::crypto::nacl::{
     ParamsOfNaclSignKeyPairFromSecret, ParamsOfNaclSignOpen, ResultOfNaclBox, ResultOfNaclBoxOpen,
     ResultOfNaclSign, ResultOfNaclSignDetached, ResultOfNaclSignOpen,
 };
-pub(crate) const DEFAULT_MNEMONIC_DICTIONARY: u8 = 1;
-pub(crate) const DEFAULT_MNEMONIC_WORD_COUNT: u8 = 12;
-pub(crate) const DEFAULT_HDKEY_DERIVATION_PATH: &str = "m/44'/396'/0'/0/0";
-pub(crate) const DEFAULT_HDKEY_COMPLIANT: bool = true;
