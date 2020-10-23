@@ -101,7 +101,8 @@ type ParamsOfWaitForTransaction = {
 type ResultOfProcessMessage = {
     transaction: any,
     out_messages: string[],
-    decoded?: DecodedOutput
+    decoded?: DecodedOutput,
+    fees: TransactionFees
 };
 
 function wait_for_transaction(
@@ -119,6 +120,7 @@ function wait_for_transaction(
 - `transaction`: _any_ –  Parsed transaction.
 - `out_messages`: _string[]_ –  List of output messages' BOCs. Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ –  Optional decoded message bodies according to the optional
+- `fees`: _TransactionFees_ –  Transaction fees
 
 
 ## process_message
@@ -147,14 +149,15 @@ function wait_for_transaction(
 
 ```ts
 type ParamsOfProcessMessage = {
-    message: MessageSource,
+    message_encode_params: ParamsOfEncodeMessage,
     send_events: boolean
 };
 
 type ResultOfProcessMessage = {
     transaction: any,
     out_messages: string[],
-    decoded?: DecodedOutput
+    decoded?: DecodedOutput,
+    fees: TransactionFees
 };
 
 function process_message(
@@ -163,13 +166,14 @@ function process_message(
 ): Promise<ResultOfProcessMessage>;
 ```
 ### Parameters
-- `message`: _[MessageSource](mod_abi.md#MessageSource)_ –  Message source.
-- `send_events`: _boolean_ –  Flag that enables/disables intermediate events
+- `message_encode_params`: _[ParamsOfEncodeMessage](mod_abi.md#ParamsOfEncodeMessage)_ –  Message encode parameters.
+- `send_events`: _boolean_ –  Flag for requesting events sending
 - `responseHandler`?: _ResponseHandler_ – additional responses handler.### Result
 
 - `transaction`: _any_ –  Parsed transaction.
 - `out_messages`: _string[]_ –  List of output messages' BOCs. Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ –  Optional decoded message bodies according to the optional
+- `fees`: _TransactionFees_ –  Transaction fees
 
 
 # Types
@@ -213,11 +217,6 @@ type ProcessingEvent = {
     message_id: string,
     message: string,
     error: ClientError
-} | {
-    type: 'TransactionReceived'
-    message_id: string,
-    message: string,
-    result: ResultOfProcessMessage
 };
 ```
 Depends on value of the  `type` field.
@@ -274,13 +273,6 @@ When _type_ is _'MessageExpired'_
 - `message`: _string_
 - `error`: _[ClientError](mod_client.md#ClientError)_
 
-When _type_ is _'TransactionReceived'_
-
-
-- `message_id`: _string_ –  Input message id encoded in `hex`.
-- `message`: _string_ –  Input message BOC encoded in `base64`.
-- `result`: _[ResultOfProcessMessage](mod_processing.md#ResultOfProcessMessage)_ –  Results of transaction.
-
 
 ## ResultOfProcessMessage
 
@@ -288,12 +280,14 @@ When _type_ is _'TransactionReceived'_
 type ResultOfProcessMessage = {
     transaction: any,
     out_messages: string[],
-    decoded?: DecodedOutput
+    decoded?: DecodedOutput,
+    fees: TransactionFees
 };
 ```
 - `transaction`: _any_ –  Parsed transaction.
 - `out_messages`: _string[]_ –  List of output messages' BOCs. Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ –  Optional decoded message bodies according to the optional
+- `fees`: _TransactionFees_ –  Transaction fees
 
 
 ## DecodedOutput
@@ -352,11 +346,11 @@ type ParamsOfWaitForTransaction = {
 
 ```ts
 type ParamsOfProcessMessage = {
-    message: MessageSource,
+    message_encode_params: ParamsOfEncodeMessage,
     send_events: boolean
 };
 ```
-- `message`: _[MessageSource](mod_abi.md#MessageSource)_ –  Message source.
-- `send_events`: _boolean_ –  Flag that enables/disables intermediate events
+- `message_encode_params`: _[ParamsOfEncodeMessage](mod_abi.md#ParamsOfEncodeMessage)_ –  Message encode parameters.
+- `send_events`: _boolean_ –  Flag for requesting events sending
 
 

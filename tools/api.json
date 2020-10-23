@@ -4045,33 +4045,6 @@
               ],
               "summary": " Notifies the app that the message was expired.",
               "description": " Notifies the app that the message was expired.\n\n Event occurs for contracts which ABI includes header \"expire\"\n\n Processing will be continued from encoding phase after\n `expiration_retries_timeout`."
-            },
-            {
-              "name": "TransactionReceived",
-              "type": "Struct",
-              "struct_fields": [
-                {
-                  "name": "message_id",
-                  "type": "String",
-                  "summary": " Input message id encoded in `hex`.",
-                  "description": " Input message id encoded in `hex`."
-                },
-                {
-                  "name": "message",
-                  "type": "String",
-                  "summary": " Input message BOC encoded in `base64`.",
-                  "description": " Input message BOC encoded in `base64`."
-                },
-                {
-                  "name": "result",
-                  "type": "Ref",
-                  "ref_name": "ResultOfProcessMessage",
-                  "summary": " Results of transaction.",
-                  "description": " Results of transaction."
-                }
-              ],
-              "summary": " Notifies the app that the client has received the",
-              "description": " Notifies the app that the client has received the\n transaction.\n\n Processing has finished."
             }
           ],
           "summary": null,
@@ -4106,6 +4079,13 @@
               },
               "summary": " Optional decoded message bodies according to the optional",
               "description": " Optional decoded message bodies according to the optional\n `abi` parameter."
+            },
+            {
+              "name": "fees",
+              "type": "Ref",
+              "ref_name": "TransactionFees",
+              "summary": " Transaction fees",
+              "description": " Transaction fees"
             }
           ],
           "summary": null,
@@ -4227,17 +4207,17 @@
           "type": "Struct",
           "struct_fields": [
             {
-              "name": "message",
+              "name": "message_encode_params",
               "type": "Ref",
-              "ref_name": "MessageSource",
-              "summary": " Message source.",
-              "description": " Message source."
+              "ref_name": "ParamsOfEncodeMessage",
+              "summary": " Message encode parameters.",
+              "description": " Message encode parameters."
             },
             {
               "name": "send_events",
               "type": "Boolean",
-              "summary": " Flag that enables/disables intermediate events",
-              "description": " Flag that enables/disables intermediate events"
+              "summary": " Flag for requesting events sending",
+              "description": " Flag for requesting events sending"
             }
           ],
           "summary": null,
