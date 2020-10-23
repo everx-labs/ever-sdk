@@ -37,7 +37,6 @@ use tokio::sync::{
     Mutex,
 };
 use crate::json_interface::modules::{AbiModule, ProcessingModule, NetModule};
-use crate::abi::MessageSource;
 
 mod common;
 
@@ -562,7 +561,7 @@ impl TestClient {
     ) -> ResultOfProcessMessage {
         self.net_process_message(
             ParamsOfProcessMessage {
-                message: MessageSource::EncodingParams(ParamsOfEncodeMessage {
+                message_encode_params: ParamsOfEncodeMessage {
                     address: Some(address),
                     abi,
                     deploy_set: None,
@@ -573,7 +572,7 @@ impl TestClient {
                     }),
                     processing_try_index: None,
                     signer,
-                }),
+                },
                 send_events: false,
             },
             Self::default_callback,
@@ -647,7 +646,7 @@ impl TestClient {
         let _ = self
             .net_process_message(
                 ParamsOfProcessMessage {
-                    message: MessageSource::EncodingParams(params.clone()),
+                    message_encode_params: params,
                     send_events: false,
                 },
                 Self::default_callback,

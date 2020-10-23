@@ -16,11 +16,14 @@ use crate::error::ClientResult;
 use ton_block::AccStatusChange;
 use std::convert::TryFrom;
 
-pub(crate) fn check_transaction(
+pub(crate) async fn check_transaction<F>(
     transaction: &ton_block::Transaction,
     real_tr: bool,
-    contract_info: impl FnOnce() -> ClientResult<(ton_block::MsgAddressInt, u64)>,
-) -> ClientResult<ton_sdk::TransactionFees> {
+    contract_info: impl FnOnce() -> F,
+) -> ClientResult<ton_sdk::TransactionFees>
+where 
+    F: futures::Future<Output=ClientResult<(ton_block::MsgAddressInt, u64)>>
+{
     let transaction = ton_sdk::Transaction::try_from(transaction)
         .map_err(|err| Error::can_not_read_transaction(err))?;
 
@@ -28,7 +31,7 @@ pub(crate) fn check_transaction(
         return Ok(transaction.calc_fees());
     }
 
-    let mut error = match extract_error(&transaction, contract_info) {
+    let mut error = match extract_error(&transaction, contract_info).await {
         Err(err) => err,
         Ok(_) => Error::transaction_aborted()
     };
@@ -40,25 +43,27 @@ pub(crate) fn check_transaction(
     Err(error)
 }
 
-fn extract_error(
+async fn extract_error<F>(
     transaction: &ton_sdk::Transaction,
-    contract_info: impl FnOnce() -> ClientResult<(ton_block::MsgAddressInt, u64)>,
-) -> ClientResult<()> {
-
+    contract_info: impl FnOnce() -> F,
+) -> ClientResult<()> 
+where 
+    F: futures::Future<Output=ClientResult<(ton_block::MsgAddressInt, u64)>>
+{
     if let Some(storage) = &transaction.storage {
         if storage.status_change != AccStatusChange::Unchanged {
-            let (address, balance) = contract_info()?;
+            let (address, balance) = contract_info().await?;
             return Err(Error::storage_phase_failed(&storage.status_change, &address, balance));
         }
     }
 
     if let Some(reason) = &transaction.compute.skipped_reason {
-        let (address, balance) = contract_info()?;
+        let (address, balance) = contract_info().await?;
         return Err(Error::tvm_execution_skipped(&reason, &address, balance));
     }
 
     if transaction.compute.success.is_none() || !transaction.compute.success.unwrap() {
-        let (address, _) = contract_info()?;
+        let (address, _) = contract_info().await?;
         return Err(Error::tvm_execution_failed(
             "compute phase isn't succeeded",
             transaction.compute.exit_code.unwrap_or(-1),
@@ -68,7 +73,7 @@ fn extract_error(
 
     if let Some(action) = &transaction.action {
         if !action.success {
-            let (address, balance) = contract_info()?;
+            let (address, balance) = contract_info().await?;
             return Err(Error::action_phase_failed(
                 action.result_code,
                 action.valid,

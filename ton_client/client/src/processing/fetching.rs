@@ -1,4 +1,5 @@
 use crate::abi::Abi;
+use crate::boc::internal::deserialize_object_from_base64;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
 use crate::net::{wait_for_collection, ParamsOfWaitForCollection, MAX_TIMEOUT};
@@ -8,6 +9,7 @@ use crate::processing::internal::{
 };
 use crate::processing::parsing::{decode_output, parse_transaction_boc};
 use crate::tvm::{ExitCode};
+use crate::tvm::check_transaction::check_transaction;
 use crate::processing::{
     Error, ParamsOfWaitForTransaction, ProcessingEvent, ResultOfProcessMessage,
 };
@@ -107,17 +109,55 @@ impl TransactionBoc {
     }
 }
 
-pub async fn fetch_transaction_result<F: futures::Future<Output = ()> + Send + Sync>(
+#[derive(Deserialize)]
+struct AccountBalance {
+    #[serde(with="ton_sdk::json_helper::uint")]
+    balance: u64,
+}
+
+async fn fetch_contract_balance(
+    context: Arc<ClientContext>,
+    address: &MsgAddressInt
+) -> ClientResult<u64> {
+    let mut result = crate::net::query_collection(
+        context,
+        crate::net::ParamsOfQueryCollection {
+            collection: "accounts".to_owned(),
+            filter: Some(serde_json::json!({
+                "id": { "eq": address.to_string() }
+            })),
+            limit: None,
+            order: None,
+            result: "balance".to_owned(),
+        })
+        .await?;
+
+    let account = result.result.pop()
+        .ok_or(crate::tvm::Error::account_missing(address))?;
+
+    let balance: AccountBalance = serde_json::from_value(account)
+        .map_err(|err| Error::invalid_data(format!("can not parse account balance: {}", err)))?;
+
+    Ok(balance.balance)
+}
+
+pub async fn fetch_transaction_result(
     context: &Arc<ClientContext>,
-    params: &ParamsOfWaitForTransaction,
     shard_block_id: &String,
     message_id: &str,
     transaction_id: &str,
     abi: &Option<Abi>,
-    callback: impl Fn(ProcessingEvent) -> F + Send + Sync,
+    address: MsgAddressInt,
 ) -> ClientResult<ResultOfProcessMessage> {
     let transaction_boc =
         fetch_transaction_boc(context, transaction_id, message_id, shard_block_id).await?;
+    let context_copy = context.clone();
+    let get_contract_info = || async move {
+        let balance = fetch_contract_balance(context_copy, &address).await?;
+        Ok((address, balance))
+    };
+    let transaction_object = deserialize_object_from_base64(&transaction_boc.boc, "transaction")?;
+    let fees = check_transaction(&transaction_object.object, true, get_contract_info).await?;
     let (transaction, out_messages) = parse_transaction_boc(context.clone(), transaction_boc)?;
     let abi_decoded = if let Some(abi) = abi {
         Some(decode_output(context, abi, out_messages.clone())?)
@@ -131,19 +171,12 @@ pub async fn fetch_transaction_result<F: futures::Future<Output = ()> + Send + S
     {
         Err(Error::message_expired(&message_id, shard_block_id))
     } else {
-        let result = ResultOfProcessMessage {
+        Ok(ResultOfProcessMessage {
             transaction,
             out_messages,
             decoded: abi_decoded,
-        };
-        if params.send_events {
-            callback(ProcessingEvent::TransactionReceived {
-                message_id: message_id.to_string(),
-                message: params.message.clone(),
-                result: result.clone(),
-            }).await;
-        }
-        Ok(result)
+            fees,
+        })
     }
 }
 

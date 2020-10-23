@@ -6,12 +6,12 @@ use crate::processing::{
     ParamsOfWaitForTransaction, ProcessingEvent, ResultOfProcessMessage,
 };
 use std::sync::Arc;
-use crate::abi::MessageSource;
+use crate::abi::ParamsOfEncodeMessage;
 
 #[derive(Serialize, Deserialize, ApiType, Debug)]
 pub struct ParamsOfProcessMessage {
-    /// Message source.
-    pub message: MessageSource,
+    /// Message encode parameters.
+    pub message_encode_params: ParamsOfEncodeMessage,
 
     /// Flag for requesting events sending
     pub send_events: bool,
@@ -24,36 +24,23 @@ pub async fn process_message<F: futures::Future<Output = ()> + Send + Sync>(
     params: ParamsOfProcessMessage,
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync + 'static,
 ) -> ClientResult<ResultOfProcessMessage> {
-    let abi = match &params.message {
-        MessageSource::Encoded { abi, .. } => abi.clone(),
-        MessageSource::EncodingParams(encode_params) => Some(encode_params.abi.clone()),
-    };
-    let is_message_encodable = if let MessageSource::EncodingParams(_) = params.message {
-        true
-    } else {
-        false
-    };
+    let abi = params.message_encode_params.abi.clone();
 
     let mut try_index = 0;
     loop {
-        // Encode (or use encoded) message
-        let message = match &params.message {
-            MessageSource::Encoded { message, .. } => message.clone(),
-            MessageSource::EncodingParams(encode_params) => {
-                let mut encode_params = encode_params.clone();
-                encode_params.processing_try_index = Some(try_index);
-                crate::abi::encode_message(context.clone(), encode_params)
-                    .await?
-                    .message
-            }
-        };
+        // Encode message
+        let mut encode_params = params.message_encode_params.clone();
+        encode_params.processing_try_index = Some(try_index);
+        let message = crate::abi::encode_message(context.clone(), encode_params)
+            .await?
+            .message;
 
         // Send
         let shard_block_id = send_message(
             context.clone(),
             ParamsOfSendMessage {
                 message: message.clone(),
-                abi: abi.clone(),
+                abi: Some(abi.clone()),
                 send_events: params.send_events,
             },
             &callback,
@@ -66,7 +53,7 @@ pub async fn process_message<F: futures::Future<Output = ()> + Send + Sync>(
             ParamsOfWaitForTransaction {
                 message: message.clone(),
                 send_events: params.send_events,
-                abi: abi.clone(),
+                abi: Some(abi.clone()),
                 shard_block_id: shard_block_id.clone(),
             },
             &callback,
@@ -80,7 +67,6 @@ pub async fn process_message<F: futures::Future<Output = ()> + Send + Sync>(
             }
             Err(err) => {
                 let can_retry = err.code == ErrorCode::MessageExpired as isize
-                    && is_message_encodable
                     && can_retry_expired_message(&context, try_index);
                 if !can_retry {
                     // Waiting error is unrecoverable, return it
