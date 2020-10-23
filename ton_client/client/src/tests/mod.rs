@@ -21,7 +21,7 @@ use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
 use crate::processing::{ParamsOfProcessMessage, ResultOfProcessMessage};
-use crate::{crypto::KeyPair, error::{ClientError, ClientResult}, net::{ParamsOfWaitForCollection, ResultOfWaitForCollection}, tc_create_context, tc_destroy_context, ContextHandle};
+use crate::{crypto::KeyPair, error::{ClientError, ClientResult}, net::{ParamsOfWaitForCollection, ResultOfWaitForCollection}, tc_create_context, tc_destroy_context, ContextHandle, ClientConfig};
 use crate::boc::{ParamsOfParse, ResultOfParse};
 use api_info::ApiModule;
 use futures::Future;
@@ -112,6 +112,7 @@ lazy_static::lazy_static! {
 }
 
 pub(crate) struct TestClient {
+    config: ClientConfig,
     context: ContextHandle,
 }
 
@@ -325,6 +326,7 @@ impl TestClient {
         unsafe {
             let response = tc_create_context(StringData::new(&config.to_string()));
             Self {
+                config: serde_json::from_value(config).unwrap(),
                 context: parse_sync_response(response).unwrap(),
             }
         }
@@ -626,7 +628,7 @@ impl TestClient {
                                 "in_msg": { "eq": message.id()}
                             })),
                             result: "id".to_owned(),
-                            timeout: Some(ton_sdk::types::DEFAULT_WAIT_TIMEOUT),
+                            timeout: Some(self.config.network.wait_for_timeout),
                         },
                     )
                     .await;

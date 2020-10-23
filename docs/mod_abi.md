@@ -7,15 +7,15 @@
 
 [attach_signature_to_message_body](#attach_signature_to_message_body)
 
-[encode_message](#encode_message)
+[encode_message](#encode_message) –  Encodes an ABI-compatible message 
 
-[attach_signature](#attach_signature)
+[attach_signature](#attach_signature) –  Combines `hex`-encoded `signature` with `base64`-encoded `unsigned_message`.
 
 [decode_message](#decode_message) –  Decodes message body using provided message BOC and ABI.
 
 [decode_message_body](#decode_message_body) –  Decodes message body using provided body BOC and ABI.
 
-[encode_account](#encode_account) –  Encodes account state as it will be
+[encode_account](#encode_account) –  Creates account state BOC
 
 ## Types
 [Abi](#Abi)
@@ -130,6 +130,31 @@ function attach_signature_to_message_body(
 
 ## encode_message
 
+ Encodes an ABI-compatible message 
+ 
+ Allows to encode deploy and function call messages,
+ both signed and unsigned.
+ 
+ Use cases include messages of any possible type:
+ - deploy with initial function call (i.e. `constructor` or any other function that is used for some kind
+ of initialization);
+ - deploy without initial function call;
+ - signed/unsigned + data for signing. 
+ 
+ `Signer` defines how the message should or shouldn't be signed:
+ 
+ `Signer::None` creates an unsigned message. This may be needed in case of some public methods, 
+ that do not require authorization by pubkey. 
+ 
+ `Signer::External` takes public key and returns `data_to_sign` for later signing. 
+ Use `attach_signature` method with the result signature to get the signed message.
+ 
+ `Signer::Keys` creates a signed message with provided key pair. 
+  
+ [SOON] `Signer::SigningBox` Allows using a special interface to imlepement signing 
+ without private key disclosure to SDK. For instance, in case of using a cold wallet or HSM, 
+ when application calls some API to sign data. 
+
 ```ts
 type ParamsOfEncodeMessage = {
     abi: Abi,
@@ -153,7 +178,7 @@ function encode_message(
 ```
 ### Parameters
 - `abi`: _[Abi](mod_abi.md#Abi)_ –  Contract ABI.
-- `address`?: _string_ –  Contract address.
+- `address`?: _string_ –  Target address the message will be sent to.
 - `deploy_set`?: _[DeploySet](mod_abi.md#DeploySet)_ –  Deploy parameters.
 - `call_set`?: _[CallSet](mod_abi.md#CallSet)_ –  Function call parameters.
 - `signer`: _[Signer](mod_abi.md#Signer)_ –  Signing parameters.
@@ -161,12 +186,15 @@ function encode_message(
 ### Result
 
 - `message`: _string_ –  Message BOC encoded with `base64`.
-- `data_to_sign`?: _string_ –  Optional data to sign. Encoded with `base64`.
+- `data_to_sign`?: _string_ –  Optional data to be signed encoded in `base64`.
 - `address`: _string_ –  Destination address.
 - `message_id`: _string_ –  Message id.
 
 
 ## attach_signature
+
+ Combines `hex`-encoded `signature` with `base64`-encoded `unsigned_message`.
+ Returns signed message encoded in `base64`.
 
 ```ts
 type ParamsOfAttachSignature = {
@@ -187,13 +215,13 @@ function attach_signature(
 ```
 ### Parameters
 - `abi`: _[Abi](mod_abi.md#Abi)_ –  Contract ABI
-- `public_key`: _string_ –  Public key. Must be encoded with `hex`.
-- `message`: _string_ –  Unsigned message BOC. Must be encoded with `base64`.
-- `signature`: _string_ –  Signature. Must be encoded with `hex`.
+- `public_key`: _string_ –  Public key encoded in `hex`.
+- `message`: _string_ –  Unsigned message BOC encoded in `base64`.
+- `signature`: _string_ –  Signature encoded in `hex`.
 ### Result
 
-- `message`: _string_
-- `message_id`: _string_
+- `message`: _string_ –  Signed message BOC
+- `message_id`: _string_ –  Message ID
 
 
 ## decode_message
@@ -252,7 +280,7 @@ function decode_message_body(
 ```
 ### Parameters
 - `abi`: _[Abi](mod_abi.md#Abi)_ –  Contract ABI used to decode.
-- `body`: _string_ –  Message body BOC. Must be encoded with `base64`.
+- `body`: _string_ –  Message body BOC encoded in `base64`.
 - `is_internal`: _boolean_ –  True if the body belongs to the internal message.
 ### Result
 
@@ -264,7 +292,11 @@ function decode_message_body(
 
 ## encode_account
 
- Encodes account state as it will be
+ Creates account state BOC
+ 
+ Creates account state provided with one of these sets of data :
+ 1. BOC of code, BOC of data, BOC of library
+ 2. TVC (string in `base64`), keys, init params
 
 ```ts
 type ParamsOfEncodeAccount = {
@@ -290,8 +322,8 @@ function encode_account(
 - `last_paid`?: _number_ –  Initial value for the `last_paid`.
 ### Result
 
-- `account`: _string_ –  Account BOC. Encoded with `base64`.
-- `id`: _string_ –  Account id. Encoded with `hex`.
+- `account`: _string_ –  Account BOC encoded in `base64`.
+- `id`: _string_ –  Account ID  encoded in `hex`.
 
 
 # Types
@@ -357,9 +389,9 @@ type CallSet = {
     input?: any
 };
 ```
-- `function_name`: _string_ –  Function name.
+- `function_name`: _string_ –  Function name that is being called.
 - `header`?: _[FunctionHeader](mod_abi.md#FunctionHeader)_ –  Function header.
-- `input`?: _any_ –  Function input according to ABI.
+- `input`?: _any_ –  Function input parameters according to ABI.
 
 
 ## DeploySet
@@ -371,7 +403,7 @@ type DeploySet = {
     initial_data?: any
 };
 ```
-- `tvc`: _string_ –  Content of TVC file. Must be encoded with `base64`.
+- `tvc`: _string_ –  Content of TVC file encoded in `base64`.
 - `workchain_id`?: _number_ –  Target workchain for destination address. Default is `0`.
 - `initial_data`?: _any_ –  List of initial values for contract's public variables.
 
@@ -454,9 +486,9 @@ When _type_ is _'Message'_
 When _type_ is _'StateInit'_
 
 
-- `code`: _string_ –  Code BOC. Encoded with `base64`.
-- `data`: _string_ –  Data BOC. Encoded with `base64`.
-- `library`?: _string_ –  Library BOC. Encoded with `base64`.
+- `code`: _string_ –  Code BOC. Encoded in `base64`.
+- `data`: _string_ –  Data BOC. Encoded in `base64`.
+- `library`?: _string_ –  Library BOC. Encoded in `base64`.
 
 When _type_ is _'Tvc'_
 
@@ -507,7 +539,7 @@ When _type_ is _'EncodingParams'_
 
 
 - `abi`: _[Abi](mod_abi.md#Abi)_ –  Contract ABI.
-- `address`?: _string_ –  Contract address.
+- `address`?: _string_ –  Target address the message will be sent to.
 - `deploy_set`?: _[DeploySet](mod_abi.md#DeploySet)_ –  Deploy parameters.
 - `call_set`?: _[CallSet](mod_abi.md#CallSet)_ –  Function call parameters.
 - `signer`: _[Signer](mod_abi.md#Signer)_ –  Signing parameters.
@@ -583,7 +615,7 @@ type ParamsOfEncodeMessage = {
 };
 ```
 - `abi`: _[Abi](mod_abi.md#Abi)_ –  Contract ABI.
-- `address`?: _string_ –  Contract address.
+- `address`?: _string_ –  Target address the message will be sent to.
 - `deploy_set`?: _[DeploySet](mod_abi.md#DeploySet)_ –  Deploy parameters.
 - `call_set`?: _[CallSet](mod_abi.md#CallSet)_ –  Function call parameters.
 - `signer`: _[Signer](mod_abi.md#Signer)_ –  Signing parameters.
@@ -601,7 +633,7 @@ type ResultOfEncodeMessage = {
 };
 ```
 - `message`: _string_ –  Message BOC encoded with `base64`.
-- `data_to_sign`?: _string_ –  Optional data to sign. Encoded with `base64`.
+- `data_to_sign`?: _string_ –  Optional data to be signed encoded in `base64`.
 - `address`: _string_ –  Destination address.
 - `message_id`: _string_ –  Message id.
 
@@ -617,9 +649,9 @@ type ParamsOfAttachSignature = {
 };
 ```
 - `abi`: _[Abi](mod_abi.md#Abi)_ –  Contract ABI
-- `public_key`: _string_ –  Public key. Must be encoded with `hex`.
-- `message`: _string_ –  Unsigned message BOC. Must be encoded with `base64`.
-- `signature`: _string_ –  Signature. Must be encoded with `hex`.
+- `public_key`: _string_ –  Public key encoded in `hex`.
+- `message`: _string_ –  Unsigned message BOC encoded in `base64`.
+- `signature`: _string_ –  Signature encoded in `hex`.
 
 
 ## ResultOfAttachSignature
@@ -630,8 +662,8 @@ type ResultOfAttachSignature = {
     message_id: string
 };
 ```
-- `message`: _string_
-- `message_id`: _string_
+- `message`: _string_ –  Signed message BOC
+- `message_id`: _string_ –  Message ID
 
 
 ## ParamsOfDecodeMessage
@@ -672,7 +704,7 @@ type ParamsOfDecodeMessageBody = {
 };
 ```
 - `abi`: _[Abi](mod_abi.md#Abi)_ –  Contract ABI used to decode.
-- `body`: _string_ –  Message body BOC. Must be encoded with `base64`.
+- `body`: _string_ –  Message body BOC encoded in `base64`.
 - `is_internal`: _boolean_ –  True if the body belongs to the internal message.
 
 
@@ -700,7 +732,7 @@ type ResultOfEncodeAccount = {
     id: string
 };
 ```
-- `account`: _string_ –  Account BOC. Encoded with `base64`.
-- `id`: _string_ –  Account id. Encoded with `hex`.
+- `account`: _string_ –  Account BOC encoded in `base64`.
+- `id`: _string_ –  Account ID  encoded in `hex`.
 
 

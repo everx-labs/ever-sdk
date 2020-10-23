@@ -5,7 +5,7 @@ use crate::error::ClientResult;
 use crate::net::{wait_for_collection, ParamsOfWaitForCollection, MAX_TIMEOUT};
 use crate::processing::blocks_walking::wait_next_block;
 use crate::processing::internal::{
-    can_retry_network_error, get_exit_code, resolve_network_retries_timeout,
+    can_retry_network_error, get_exit_code,
 };
 use crate::processing::parsing::{decode_output, parse_transaction_boc};
 use crate::tvm::{ExitCode};
@@ -29,7 +29,7 @@ pub async fn fetch_next_shard_block<F: futures::Future<Output = ()> + Send + Syn
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync,
 ) -> ClientResult<Block> {
     let mut retries: u8 = 0;
-    let network_retries_timeout = resolve_network_retries_timeout(context);
+    let network_retries_timeout = context.config.network.network_retries_count;
     // Network retries loop
     loop {
         // Notify app about fetching next block
@@ -187,7 +187,7 @@ async fn fetch_transaction_boc(
     shard_block_id: &String,
 ) -> ClientResult<TransactionBoc> {
     let mut retries: u8 = 0;
-    let network_retries_timeout = resolve_network_retries_timeout(context);
+    let network_retries_timeout = context.config.network.network_retries_count;
 
     // Network retries loop
     loop {

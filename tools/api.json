@@ -77,7 +77,19 @@
           "struct_fields": [
             {
               "name": "server_address",
-              "type": "String",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "network_retries_count",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
               "summary": null,
               "description": null
             },
@@ -135,10 +147,37 @@
           "type": "Struct",
           "struct_fields": [
             {
-              "name": "fish_param",
+              "name": "mnemonic_dictionary",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "mnemonic_word_count",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "hdkey_derivation_path",
               "type": "Optional",
               "optional_inner": {
                 "type": "String"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "hdkey_compliant",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
               },
               "summary": null,
               "description": null
@@ -151,6 +190,15 @@
           "name": "AbiConfig",
           "type": "Struct",
           "struct_fields": [
+            {
+              "name": "workchain",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": null,
+              "description": null
+            },
             {
               "name": "message_expiration_timeout",
               "type": "Optional",
@@ -195,8 +243,23 @@
             {
               "name": "version",
               "type": "String",
-              "summary": " core version",
-              "description": " core version"
+              "summary": " Core Library version",
+              "description": " Core Library version"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfBuildInfo",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "build_info",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -206,8 +269,8 @@
       "functions": [
         {
           "name": "get_api_reference",
-          "summary": null,
-          "description": null,
+          "summary": " Returns Core Library API reference",
+          "description": " Returns Core Library API reference",
           "params": [
             {
               "name": "_context",
@@ -237,6 +300,37 @@
         },
         {
           "name": "version",
+          "summary": " Returns Core Library version",
+          "description": " Returns Core Library version",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfVersion"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "build_info",
           "summary": null,
           "description": null,
           "params": [
@@ -260,7 +354,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfVersion"
+                "ref_name": "ResultOfBuildInfo"
               }
             ]
           },
@@ -351,8 +445,8 @@
             {
               "name": "modular_power",
               "type": "String",
-              "summary": " result of modular exponentiation",
-              "description": " result of modular exponentiation"
+              "summary": " Result of modular exponentiation",
+              "description": " Result of modular exponentiation"
             }
           ],
           "summary": null,
@@ -407,8 +501,8 @@
             {
               "name": "bytes",
               "type": "String",
-              "summary": " Generated bytes, encoded with `base64`.",
-              "description": " Generated bytes, encoded with `base64`."
+              "summary": " Generated bytes encoded in `base64`.",
+              "description": " Generated bytes encoded in `base64`."
             }
           ],
           "summary": null,
@@ -421,8 +515,8 @@
             {
               "name": "public_key",
               "type": "String",
-              "summary": " Public key.",
-              "description": " Public key."
+              "summary": " Public key - 64 symbols hex string",
+              "description": " Public key - 64 symbols hex string"
             }
           ],
           "summary": null,
@@ -435,8 +529,8 @@
             {
               "name": "ton_public_key",
               "type": "String",
-              "summary": " Public key represented in TON safe format.",
-              "description": " Public key represented in TON safe format."
+              "summary": " Public key represented in TON safe format. ",
+              "description": " Public key represented in TON safe format. "
             }
           ],
           "summary": null,
@@ -449,14 +543,14 @@
             {
               "name": "public",
               "type": "String",
-              "summary": " Public key. Encoded with `hex`.",
-              "description": " Public key. Encoded with `hex`."
+              "summary": " Public key - 64 symbols hex string",
+              "description": " Public key - 64 symbols hex string"
             },
             {
               "name": "secret",
               "type": "String",
-              "summary": " Private key. Encoded with `hex`.",
-              "description": " Private key. Encoded with `hex`."
+              "summary": " Private key - u64 symbols hex string",
+              "description": " Private key - u64 symbols hex string"
             }
           ],
           "summary": null,
@@ -469,8 +563,8 @@
             {
               "name": "unsigned",
               "type": "String",
-              "summary": " Data that must be signed.",
-              "description": " Data that must be signed.\n Must be encoded with `base64`."
+              "summary": " Data that must be signed encoded in `base64`.",
+              "description": " Data that must be signed encoded in `base64`."
             },
             {
               "name": "keys",
@@ -490,14 +584,14 @@
             {
               "name": "signed",
               "type": "String",
-              "summary": " Signed data combined with signature. Encoded with `base64`.",
-              "description": " Signed data combined with signature. Encoded with `base64`."
+              "summary": " Signed data combined with signature encoded in `base64`.",
+              "description": " Signed data combined with signature encoded in `base64`."
             },
             {
               "name": "signature",
               "type": "String",
-              "summary": " Signature. Encoded with `base64`.",
-              "description": " Signature. Encoded with `base64`."
+              "summary": " Signature encoded in `hex`.",
+              "description": " Signature encoded in `hex`."
             }
           ],
           "summary": null,
@@ -510,14 +604,14 @@
             {
               "name": "signed",
               "type": "String",
-              "summary": " Signed data that must be verified.",
-              "description": " Signed data that must be verified.\n Must be encoded with `base64`."
+              "summary": " Signed data that must be verified encoded in `base64`.",
+              "description": " Signed data that must be verified encoded in `base64`."
             },
             {
               "name": "public",
               "type": "String",
-              "summary": " Signer's public key.",
-              "description": " Signer's public key.\n Must be encoded with `hex`."
+              "summary": " Signer's public key - 64 symbols hex string",
+              "description": " Signer's public key - 64 symbols hex string"
             }
           ],
           "summary": null,
@@ -530,8 +624,8 @@
             {
               "name": "unsigned",
               "type": "String",
-              "summary": " Unsigned data.",
-              "description": " Unsigned data.\n Encoded with `base64`."
+              "summary": " Unsigned data encoded in `base64`.",
+              "description": " Unsigned data encoded in `base64`."
             }
           ],
           "summary": null,
@@ -558,8 +652,8 @@
             {
               "name": "hash",
               "type": "String",
-              "summary": " Hex-encoded hash of input `data`.",
-              "description": " Hex-encoded hash of input `data`."
+              "summary": " Hash of input `data`. Encoded with 'hex'.",
+              "description": " Hash of input `data`. Encoded with 'hex'."
             }
           ],
           "summary": null,
@@ -591,7 +685,7 @@
               "name": "r",
               "type": "Number",
               "summary": " The block size parameter, which fine-tunes sequential memory read size and performance.",
-              "description": " The block size parameter, which fine-tunes sequential memory read size and performance.\n 8 is commonly used"
+              "description": " The block size parameter, which fine-tunes sequential memory read size and performance."
             },
             {
               "name": "p",
@@ -630,8 +724,8 @@
             {
               "name": "secret",
               "type": "String",
-              "summary": " secret key",
-              "description": " secret key"
+              "summary": " Secret key - unprefixed 0-padded to 64 symbols hex string ",
+              "description": " Secret key - unprefixed 0-padded to 64 symbols hex string "
             }
           ],
           "summary": null,
@@ -644,14 +738,14 @@
             {
               "name": "unsigned",
               "type": "String",
-              "summary": " Data that must be signed. Encoded with `base64`.",
-              "description": " Data that must be signed. Encoded with `base64`."
+              "summary": " Data that must be signed encoded in `base64`.",
+              "description": " Data that must be signed encoded in `base64`."
             },
             {
               "name": "secret",
               "type": "String",
-              "summary": " Signer's secret key.",
-              "description": " Signer's secret key."
+              "summary": " Signer's secret key - unprefixed 0-padded to 64 symbols hex string ",
+              "description": " Signer's secret key - unprefixed 0-padded to 64 symbols hex string "
             }
           ],
           "summary": null,
@@ -664,8 +758,8 @@
             {
               "name": "signed",
               "type": "String",
-              "summary": " Signed data, encoded with `base64`.",
-              "description": " Signed data, encoded with `base64`."
+              "summary": " Signed data, encoded in `base64`.",
+              "description": " Signed data, encoded in `base64`."
             }
           ],
           "summary": null,
@@ -684,8 +778,8 @@
             {
               "name": "public",
               "type": "String",
-              "summary": " Signer's public key.",
-              "description": " Signer's public key."
+              "summary": " Signer's public key - unprefixed 0-padded to 64 symbols hex string ",
+              "description": " Signer's public key - unprefixed 0-padded to 64 symbols hex string "
             }
           ],
           "summary": null,
@@ -698,8 +792,8 @@
             {
               "name": "unsigned",
               "type": "String",
-              "summary": " Unsigned data, encoded with `base64`.",
-              "description": " Unsigned data, encoded with `base64`."
+              "summary": " Unsigned data, encoded in `base64`.",
+              "description": " Unsigned data, encoded in `base64`."
             }
           ],
           "summary": null,
@@ -712,8 +806,8 @@
             {
               "name": "signature",
               "type": "String",
-              "summary": " Hex encoded sign.",
-              "description": " Hex encoded sign."
+              "summary": " Signature encoded in `hex`.",
+              "description": " Signature encoded in `hex`."
             }
           ],
           "summary": null,
@@ -726,8 +820,8 @@
             {
               "name": "secret",
               "type": "String",
-              "summary": " Hex encoded secret key.",
-              "description": " Hex encoded secret key."
+              "summary": " Secret key - unprefixed 0-padded to 64 symbols hex string ",
+              "description": " Secret key - unprefixed 0-padded to 64 symbols hex string "
             }
           ],
           "summary": null,
@@ -740,26 +834,26 @@
             {
               "name": "decrypted",
               "type": "String",
-              "summary": " Data that must be encrypted. Encoded with `base64`.",
-              "description": " Data that must be encrypted. Encoded with `base64`."
+              "summary": " Data that must be encrypted encoded in `base64`.",
+              "description": " Data that must be encrypted encoded in `base64`."
             },
             {
               "name": "nonce",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Nonce, encoded in `hex`",
+              "description": " Nonce, encoded in `hex`"
             },
             {
               "name": "their_public",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Receiver's public key - unprefixed 0-padded to 64 symbols hex string ",
+              "description": " Receiver's public key - unprefixed 0-padded to 64 symbols hex string "
             },
             {
               "name": "secret",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Sender's private key - unprefixed 0-padded to 64 symbols hex string ",
+              "description": " Sender's private key - unprefixed 0-padded to 64 symbols hex string "
             }
           ],
           "summary": null,
@@ -772,8 +866,8 @@
             {
               "name": "encrypted",
               "type": "String",
-              "summary": " Encrypted data. Encoded with `base64`.",
-              "description": " Encrypted data. Encoded with `base64`."
+              "summary": " Encrypted data encoded in `base64`.",
+              "description": " Encrypted data encoded in `base64`."
             }
           ],
           "summary": null,
@@ -798,14 +892,14 @@
             {
               "name": "their_public",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Sender's public key - unprefixed 0-padded to 64 symbols hex string ",
+              "description": " Sender's public key - unprefixed 0-padded to 64 symbols hex string "
             },
             {
               "name": "secret",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Receiver's private key - unprefixed 0-padded to 64 symbols hex string ",
+              "description": " Receiver's private key - unprefixed 0-padded to 64 symbols hex string "
             }
           ],
           "summary": null,
@@ -818,8 +912,8 @@
             {
               "name": "decrypted",
               "type": "String",
-              "summary": " Decrypted data. Encoded with `base64`.",
-              "description": " Decrypted data. Encoded with `base64`."
+              "summary": " Decrypted data encoded in `base64`.",
+              "description": " Decrypted data encoded in `base64`."
             }
           ],
           "summary": null,
@@ -838,14 +932,14 @@
             {
               "name": "nonce",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Nonce in `hex`",
+              "description": " Nonce in `hex`"
             },
             {
               "name": "key",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Secret key - unprefixed 0-padded to 64 symbols hex string ",
+              "description": " Secret key - unprefixed 0-padded to 64 symbols hex string "
             }
           ],
           "summary": null,
@@ -864,14 +958,14 @@
             {
               "name": "nonce",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Nonce in `hex`",
+              "description": " Nonce in `hex`"
             },
             {
               "name": "key",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Public key - unprefixed 0-padded to 64 symbols hex string ",
+              "description": " Public key - unprefixed 0-padded to 64 symbols hex string "
             }
           ],
           "summary": null,
@@ -887,8 +981,8 @@
               "optional_inner": {
                 "type": "Number"
               },
-              "summary": " dictionary identifier",
-              "description": " dictionary identifier"
+              "summary": " Dictionary identifier",
+              "description": " Dictionary identifier"
             }
           ],
           "summary": null,
@@ -901,8 +995,8 @@
             {
               "name": "words",
               "type": "String",
-              "summary": " the list of mnemonic words",
-              "description": " the list of mnemonic words"
+              "summary": " The list of mnemonic words",
+              "description": " The list of mnemonic words"
             }
           ],
           "summary": null,
@@ -918,8 +1012,8 @@
               "optional_inner": {
                 "type": "Number"
               },
-              "summary": " dictionary identifier",
-              "description": " dictionary identifier"
+              "summary": " Dictionary identifier",
+              "description": " Dictionary identifier"
             },
             {
               "name": "word_count",
@@ -927,8 +1021,8 @@
               "optional_inner": {
                 "type": "Number"
               },
-              "summary": " mnemonic word count",
-              "description": " mnemonic word count"
+              "summary": " Mnemonic word count",
+              "description": " Mnemonic word count"
             }
           ],
           "summary": null,
@@ -941,8 +1035,8 @@
             {
               "name": "phrase",
               "type": "String",
-              "summary": " string of mnemonic words",
-              "description": " string of mnemonic words"
+              "summary": " String of mnemonic words",
+              "description": " String of mnemonic words"
             }
           ],
           "summary": null,
@@ -955,8 +1049,8 @@
             {
               "name": "entropy",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Entropy bytes. Hex encoded.",
+              "description": " Entropy bytes. Hex encoded."
             },
             {
               "name": "dictionary",
@@ -964,8 +1058,8 @@
               "optional_inner": {
                 "type": "Number"
               },
-              "summary": null,
-              "description": null
+              "summary": " Dictionary identifier",
+              "description": " Dictionary identifier"
             },
             {
               "name": "word_count",
@@ -973,8 +1067,8 @@
               "optional_inner": {
                 "type": "Number"
               },
-              "summary": null,
-              "description": null
+              "summary": " Mnemonic word count",
+              "description": " Mnemonic word count"
             }
           ],
           "summary": null,
@@ -987,8 +1081,8 @@
             {
               "name": "phrase",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Phrase",
+              "description": " Phrase"
             }
           ],
           "summary": null,
@@ -1001,8 +1095,8 @@
             {
               "name": "phrase",
               "type": "String",
-              "summary": " phrase",
-              "description": " phrase"
+              "summary": " Phrase",
+              "description": " Phrase"
             },
             {
               "name": "dictionary",
@@ -1010,8 +1104,8 @@
               "optional_inner": {
                 "type": "Number"
               },
-              "summary": " dictionary identifier",
-              "description": " dictionary identifier"
+              "summary": " Dictionary identifier",
+              "description": " Dictionary identifier"
             },
             {
               "name": "word_count",
@@ -1019,8 +1113,8 @@
               "optional_inner": {
                 "type": "Number"
               },
-              "summary": " word count",
-              "description": " word count"
+              "summary": " Word count",
+              "description": " Word count"
             }
           ],
           "summary": null,
@@ -1033,8 +1127,8 @@
             {
               "name": "valid",
               "type": "Boolean",
-              "summary": " flag indicating the mnemonic is valid or not",
-              "description": " flag indicating the mnemonic is valid or not"
+              "summary": " Flag indicating the mnemonic is valid or not",
+              "description": " Flag indicating the mnemonic is valid or not"
             }
           ],
           "summary": null,
@@ -1047,8 +1141,8 @@
             {
               "name": "phrase",
               "type": "String",
-              "summary": " phrase",
-              "description": " phrase"
+              "summary": " Phrase",
+              "description": " Phrase"
             },
             {
               "name": "path",
@@ -1056,8 +1150,8 @@
               "optional_inner": {
                 "type": "String"
               },
-              "summary": " derivation path, for instance \"m/44'/396'/0'/0/0\"",
-              "description": " derivation path, for instance \"m/44'/396'/0'/0/0\""
+              "summary": " Derivation path, for instance \"m/44'/396'/0'/0/0\"",
+              "description": " Derivation path, for instance \"m/44'/396'/0'/0/0\""
             },
             {
               "name": "dictionary",
@@ -1065,8 +1159,8 @@
               "optional_inner": {
                 "type": "Number"
               },
-              "summary": " dictionary identifier",
-              "description": " dictionary identifier"
+              "summary": " Dictionary identifier",
+              "description": " Dictionary identifier"
             },
             {
               "name": "word_count",
@@ -1074,8 +1168,8 @@
               "optional_inner": {
                 "type": "Number"
               },
-              "summary": " word count",
-              "description": " word count"
+              "summary": " Word count",
+              "description": " Word count"
             }
           ],
           "summary": null,
@@ -1088,8 +1182,8 @@
             {
               "name": "phrase",
               "type": "String",
-              "summary": "string with seed phrase",
-              "description": "string with seed phrase"
+              "summary": " String with seed phrase",
+              "description": " String with seed phrase"
             }
           ],
           "summary": null,
@@ -1102,8 +1196,8 @@
             {
               "name": "xprv",
               "type": "String",
-              "summary": " serialized extended master private key",
-              "description": " serialized extended master private key"
+              "summary": " Serialized extended master private key",
+              "description": " Serialized extended master private key"
             }
           ],
           "summary": null,
@@ -1116,20 +1210,20 @@
             {
               "name": "xprv",
               "type": "String",
-              "summary": " serialized extended private key",
-              "description": " serialized extended private key"
+              "summary": " Serialized extended private key",
+              "description": " Serialized extended private key"
             },
             {
               "name": "child_index",
               "type": "Number",
-              "summary": " child index (see BIP-0032)",
-              "description": " child index (see BIP-0032)"
+              "summary": " Child index (see BIP-0032)",
+              "description": " Child index (see BIP-0032)"
             },
             {
               "name": "hardened",
               "type": "Boolean",
-              "summary": " indicates the derivation of hardened/not-hardened key (see BIP-0032)",
-              "description": " indicates the derivation of hardened/not-hardened key (see BIP-0032)"
+              "summary": " Indicates the derivation of hardened/not-hardened key (see BIP-0032)",
+              "description": " Indicates the derivation of hardened/not-hardened key (see BIP-0032)"
             }
           ],
           "summary": null,
@@ -1142,8 +1236,8 @@
             {
               "name": "xprv",
               "type": "String",
-              "summary": " serialized extended private key",
-              "description": " serialized extended private key"
+              "summary": " Serialized extended private key",
+              "description": " Serialized extended private key"
             }
           ],
           "summary": null,
@@ -1156,14 +1250,14 @@
             {
               "name": "xprv",
               "type": "String",
-              "summary": " serialized extended private key",
-              "description": " serialized extended private key"
+              "summary": " Serialized extended private key",
+              "description": " Serialized extended private key"
             },
             {
               "name": "path",
               "type": "String",
-              "summary": " derivation path, for instance \"m/44'/396'/0'/0/0\"",
-              "description": " derivation path, for instance \"m/44'/396'/0'/0/0\""
+              "summary": " Derivation path, for instance \"m/44'/396'/0'/0/0\"",
+              "description": " Derivation path, for instance \"m/44'/396'/0'/0/0\""
             }
           ],
           "summary": null,
@@ -1176,8 +1270,8 @@
             {
               "name": "xprv",
               "type": "String",
-              "summary": " derived serialized extended private key",
-              "description": " derived serialized extended private key"
+              "summary": " Derived serialized extended private key",
+              "description": " Derived serialized extended private key"
             }
           ],
           "summary": null,
@@ -1190,8 +1284,8 @@
             {
               "name": "xprv",
               "type": "String",
-              "summary": " serialized extended private key",
-              "description": " serialized extended private key"
+              "summary": " Serialized extended private key",
+              "description": " Serialized extended private key"
             }
           ],
           "summary": null,
@@ -1204,8 +1298,8 @@
             {
               "name": "secret",
               "type": "String",
-              "summary": " private key",
-              "description": " private key"
+              "summary": " Private key - 64 symbols hex string",
+              "description": " Private key - 64 symbols hex string"
             }
           ],
           "summary": null,
@@ -1218,8 +1312,8 @@
             {
               "name": "xprv",
               "type": "String",
-              "summary": " serialized extended private key",
-              "description": " serialized extended private key"
+              "summary": " Serialized extended private key",
+              "description": " Serialized extended private key"
             }
           ],
           "summary": null,
@@ -1232,8 +1326,8 @@
             {
               "name": "public",
               "type": "String",
-              "summary": " public key",
-              "description": " public key"
+              "summary": " Public key - 64 symbols hex string",
+              "description": " Public key - 64 symbols hex string"
             }
           ],
           "summary": null,
@@ -1357,8 +1451,8 @@
         },
         {
           "name": "generate_random_bytes",
-          "summary": "Generates random byte array of the specified length in the spesified encoding",
-          "description": null,
+          "summary": " Generates random byte array of the specified length and returns it in `base64` format",
+          "description": " Generates random byte array of the specified length and returns it in `base64` format",
           "params": [
             {
               "name": "_context",
@@ -1503,7 +1597,7 @@
         {
           "name": "verify_signature",
           "summary": " Verifies signed data using the provided public key.",
-          "description": " Verifies signed data using the provided public key.\n Raises error in case when verification is failed.",
+          "description": " Verifies signed data using the provided public key.\n Raises error if verification is failed.",
           "params": [
             {
               "name": "_context",
@@ -1578,8 +1672,8 @@
         },
         {
           "name": "sha512",
-          "summary": "Calculates SHA512 hash of the specified data.",
-          "description": "Calculates SHA512 hash of the specified data.",
+          "summary": " Calculates SHA512 hash of the specified data.",
+          "description": " Calculates SHA512 hash of the specified data.",
           "params": [
             {
               "name": "_context",
@@ -1617,7 +1711,7 @@
         {
           "name": "scrypt",
           "summary": "Perform `scrypt` encryption",
-          "description": " Derives key from `password` and `key` using `scrypt` algorithm.\n See [https://en.wikipedia.org/wiki/Scrypt].",
+          "description": " Derives key from `password` and `key` using `scrypt` algorithm.\n See [https://en.wikipedia.org/wiki/Scrypt].\n\n # Arguments\n - `log_n` - The log2 of the Scrypt parameter `N`\n - `r` - The Scrypt parameter `r`\n - `p` - The Scrypt parameter `p`\n # Conditions\n - `log_n` must be less than `64`\n - `r` must be greater than `0` and less than or equal to `4294967295`\n - `p` must be greater than `0` and less than `4294967295`\n # Recommended values sufficient for most use-cases\n - `log_n = 15` (`n = 32768`)\n - `r = 8`\n - `p = 1`",
           "params": [
             {
               "name": "_context",
@@ -1837,8 +1931,8 @@
         },
         {
           "name": "nacl_box_keypair_from_secret_key",
-          "summary": null,
-          "description": null,
+          "summary": " Generates key pair from a secret key",
+          "description": " Generates key pair from a secret key",
           "params": [
             {
               "name": "_context",
@@ -1875,8 +1969,8 @@
         },
         {
           "name": "nacl_box",
-          "summary": null,
-          "description": null,
+          "summary": " Public key authenticated encryption",
+          "description": " Public key authenticated encryption\n\n Encrypt and authenticate a message using the senders secret key, the recievers public\n key, and a nonce. ",
           "params": [
             {
               "name": "_context",
@@ -1913,8 +2007,8 @@
         },
         {
           "name": "nacl_box_open",
-          "summary": null,
-          "description": null,
+          "summary": " Decrypt and verify the cipher text using the recievers secret key, the senders public",
+          "description": " Decrypt and verify the cipher text using the recievers secret key, the senders public\n key, and the nonce.",
           "params": [
             {
               "name": "_context",
@@ -1951,8 +2045,8 @@
         },
         {
           "name": "nacl_secret_box",
-          "summary": null,
-          "description": null,
+          "summary": " Encrypt and authenticate message using nonce and secret key.",
+          "description": " Encrypt and authenticate message using nonce and secret key.",
           "params": [
             {
               "name": "_context",
@@ -1989,8 +2083,8 @@
         },
         {
           "name": "nacl_secret_box_open",
-          "summary": null,
-          "description": null,
+          "summary": " Decrypts and verifies cipher text using `nonce` and secret `key`.",
+          "description": " Decrypts and verifies cipher text using `nonce` and secret `key`.",
           "params": [
             {
               "name": "_context",
@@ -2031,7 +2125,7 @@
           "description": " Prints the list of words from the specified dictionary",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -2069,7 +2163,7 @@
           "description": " Generates a random mnemonic from the specified dictionary and word count",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -2107,7 +2201,7 @@
           "description": " Generates mnemonic from pre-generated entropy",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -2145,7 +2239,7 @@
           "description": " The phrase supplied will be checked for word length and validated according to the checksum\n specified in BIP0039.",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -2183,7 +2277,7 @@
           "description": " Validates the seed phrase, generates master key and then derives\n the key pair from the master key and the specified path",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -2217,8 +2311,8 @@
         },
         {
           "name": "hdkey_xprv_from_mnemonic",
-          "summary": " Generate the extended master private key that will be the root for all the derived keys",
-          "description": " Generate the extended master private key that will be the root for all the derived keys",
+          "summary": " Generates an extended master private key that will be the root for all the derived keys",
+          "description": " Generates an extended master private key that will be the root for all the derived keys",
           "params": [
             {
               "name": "_context",
@@ -2255,11 +2349,11 @@
         },
         {
           "name": "hdkey_derive_from_xprv",
-          "summary": "Derives the next child extended private key",
-          "description": " Returns derived extended private key derived from the specified extended private key and child index",
+          "summary": " Returns extended private key derived from the specified extended private key and child index",
+          "description": " Returns extended private key derived from the specified extended private key and child index",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -2293,11 +2387,11 @@
         },
         {
           "name": "hdkey_derive_from_xprv_path",
-          "summary": "Derives the extended private key from the specified key and path",
-          "description": " Derives the extended private key from the specified key and path",
+          "summary": " Derives the exented private key from the specified key and path",
+          "description": " Derives the exented private key from the specified key and path",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -2506,8 +2600,8 @@
             {
               "name": "function_name",
               "type": "String",
-              "summary": " Function name.",
-              "description": " Function name."
+              "summary": " Function name that is being called.",
+              "description": " Function name that is being called."
             },
             {
               "name": "header",
@@ -2517,7 +2611,7 @@
                 "ref_name": "FunctionHeader"
               },
               "summary": " Function header.",
-              "description": " Function header.\n\n If an application omit some parameters required by the\n contract's ABI, the library will set the default values for\n it."
+              "description": " Function header.\n\n If an application omits some header parameters required by the\n contract's ABI, the library will set the default values for\n them."
             },
             {
               "name": "input",
@@ -2526,8 +2620,8 @@
                 "type": "Ref",
                 "ref_name": "Value"
               },
-              "summary": " Function input according to ABI.",
-              "description": " Function input according to ABI."
+              "summary": " Function input parameters according to ABI.",
+              "description": " Function input parameters according to ABI."
             }
           ],
           "summary": null,
@@ -2540,8 +2634,8 @@
             {
               "name": "tvc",
               "type": "String",
-              "summary": " Content of TVC file. Must be encoded with `base64`.",
-              "description": " Content of TVC file. Must be encoded with `base64`."
+              "summary": " Content of TVC file encoded in `base64`.",
+              "description": " Content of TVC file encoded in `base64`."
             },
             {
               "name": "workchain_id",
@@ -2574,8 +2668,8 @@
               "name": "None",
               "type": "Struct",
               "struct_fields": [],
-              "summary": " Message mustn't be signed.",
-              "description": " Message mustn't be signed."
+              "summary": " No keys are provided. Creates an unsigned message. ",
+              "description": " No keys are provided. Creates an unsigned message. "
             },
             {
               "name": "External",
@@ -2588,8 +2682,8 @@
                   "description": null
                 }
               ],
-              "summary": " Message will be signed using external methods.",
-              "description": " Message will be signed using external methods.\n Public key must be provided with `hex` encoding."
+              "summary": " Only public key is provided to generate unsigned message and `data_to_sign`",
+              "description": " Only public key is provided to generate unsigned message and `data_to_sign`\n which can be signed later.  "
             },
             {
               "name": "Keys",
@@ -2603,8 +2697,8 @@
                   "description": null
                 }
               ],
-              "summary": " Message will be signed using the provided keys.",
-              "description": " Message will be signed using the provided keys."
+              "summary": " Key pair is provided for signing",
+              "description": " Key pair is provided for signing"
             },
             {
               "name": "SigningBox",
@@ -2618,8 +2712,8 @@
                   "description": null
                 }
               ],
-              "summary": " Message will be signed using the provided signing box.",
-              "description": " Message will be signed using the provided signing box."
+              "summary": " Signing Box interface is provided for signing, allows Dapps to sign messages using external APIs,",
+              "description": " Signing Box interface is provided for signing, allows Dapps to sign messages using external APIs,\n such as HSM, cold wallet, etc."
             }
           ],
           "summary": null,
@@ -2683,14 +2777,14 @@
                 {
                   "name": "code",
                   "type": "String",
-                  "summary": " Code BOC. Encoded with `base64`.",
-                  "description": " Code BOC. Encoded with `base64`."
+                  "summary": " Code BOC. Encoded in `base64`.",
+                  "description": " Code BOC. Encoded in `base64`."
                 },
                 {
                   "name": "data",
                   "type": "String",
-                  "summary": " Data BOC. Encoded with `base64`.",
-                  "description": " Data BOC. Encoded with `base64`."
+                  "summary": " Data BOC. Encoded in `base64`.",
+                  "description": " Data BOC. Encoded in `base64`."
                 },
                 {
                   "name": "library",
@@ -2698,8 +2792,8 @@
                   "optional_inner": {
                     "type": "String"
                   },
-                  "summary": " Library BOC. Encoded with `base64`.",
-                  "description": " Library BOC. Encoded with `base64`."
+                  "summary": " Library BOC. Encoded in `base64`.",
+                  "description": " Library BOC. Encoded in `base64`."
                 }
               ],
               "summary": " State init data.",
@@ -2735,8 +2829,8 @@
                   "description": null
                 }
               ],
-              "summary": " Content of the TVC file. Encoded with `base64`.",
-              "description": " Content of the TVC file. Encoded with `base64`."
+              "summary": " Content of the TVC file. Encoded in `base64`.",
+              "description": " Content of the TVC file. Encoded in `base64`."
             }
           ],
           "summary": null,
@@ -2942,8 +3036,8 @@
               "optional_inner": {
                 "type": "String"
               },
-              "summary": " Contract address.",
-              "description": " Contract address.\n\n Must be specified in case of non deploy message."
+              "summary": " Target address the message will be sent to.",
+              "description": " Target address the message will be sent to.\n\n Must be specified in case of non-deploy message. "
             },
             {
               "name": "deploy_set",
@@ -2963,7 +3057,7 @@
                 "ref_name": "CallSet"
               },
               "summary": " Function call parameters.",
-              "description": " Function call parameters.\n\n Must be specified in non deploy message.\n\n In case of deploy message contains parameters of constructor."
+              "description": " Function call parameters.\n\n Must be specified in case of non-deploy message.\n\n In case of deploy message it is optional and contains parameters  \n of the functions that will to be called upon deploy transaction."
             },
             {
               "name": "signer",
@@ -2979,7 +3073,7 @@
                 "type": "Number"
               },
               "summary": " Processing try index.",
-              "description": " Processing try index.\n\n Used in message processing with retries.\n\n Encoder uses the provided try index to calculate message\n expiration time.\n\n Expiration timeouts will grow with every retry.\n\n Default value is 0."
+              "description": " Processing try index.\n\n Used in message processing with retries (if contract's ABI includes \"expire\" header).\n\n Encoder uses the provided try index to calculate message\n expiration time. The 1st message expiration time is specified in\n Client config.\n\n Expiration timeouts will grow with every retry. \n Retry grow factor is set in Client config:\n <.....add config parameter with default value here>\n\n Default value is 0."
             }
           ],
           "summary": null,
@@ -3001,8 +3095,8 @@
               "optional_inner": {
                 "type": "String"
               },
-              "summary": " Optional data to sign. Encoded with `base64`.",
-              "description": " Optional data to sign. Encoded with `base64`.\n\n Presents when `message` is unsigned. Can be used for external\n message signing. Is this case you need to sing this data and\n produce signed message using `abi.attach_signature`."
+              "summary": " Optional data to be signed encoded in `base64`.",
+              "description": " Optional data to be signed encoded in `base64`.\n\n Returned in case of `Signer::External`. Can be used for external\n message signing. Is this case you need to use this data to create signature and\n then produce signed message using `abi.attach_signature`."
             },
             {
               "name": "address",
@@ -3034,20 +3128,20 @@
             {
               "name": "public_key",
               "type": "String",
-              "summary": " Public key. Must be encoded with `hex`.",
-              "description": " Public key. Must be encoded with `hex`."
+              "summary": " Public key encoded in `hex`.",
+              "description": " Public key encoded in `hex`."
             },
             {
               "name": "message",
               "type": "String",
-              "summary": " Unsigned message BOC. Must be encoded with `base64`.",
-              "description": " Unsigned message BOC. Must be encoded with `base64`."
+              "summary": " Unsigned message BOC encoded in `base64`.",
+              "description": " Unsigned message BOC encoded in `base64`."
             },
             {
               "name": "signature",
               "type": "String",
-              "summary": " Signature. Must be encoded with `hex`.",
-              "description": " Signature. Must be encoded with `hex`."
+              "summary": " Signature encoded in `hex`.",
+              "description": " Signature encoded in `hex`."
             }
           ],
           "summary": null,
@@ -3060,14 +3154,14 @@
             {
               "name": "message",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Signed message BOC",
+              "description": " Signed message BOC"
             },
             {
               "name": "message_id",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Message ID",
+              "description": " Message ID"
             }
           ],
           "summary": null,
@@ -3149,8 +3243,8 @@
             {
               "name": "body",
               "type": "String",
-              "summary": " Message body BOC. Must be encoded with `base64`.",
-              "description": " Message body BOC. Must be encoded with `base64`."
+              "summary": " Message body BOC encoded in `base64`.",
+              "description": " Message body BOC encoded in `base64`."
             },
             {
               "name": "is_internal",
@@ -3211,14 +3305,14 @@
             {
               "name": "account",
               "type": "String",
-              "summary": " Account BOC. Encoded with `base64`.",
-              "description": " Account BOC. Encoded with `base64`."
+              "summary": " Account BOC encoded in `base64`.",
+              "description": " Account BOC encoded in `base64`."
             },
             {
               "name": "id",
               "type": "String",
-              "summary": " Account id. Encoded with `hex`.",
-              "description": " Account id. Encoded with `hex`."
+              "summary": " Account ID  encoded in `hex`.",
+              "description": " Account ID  encoded in `hex`."
             }
           ],
           "summary": null,
@@ -3304,8 +3398,8 @@
         },
         {
           "name": "encode_message",
-          "summary": null,
-          "description": null,
+          "summary": " Encodes an ABI-compatible message ",
+          "description": " Encodes an ABI-compatible message \n \n Allows to encode deploy and function call messages,\n both signed and unsigned.\n \n Use cases include messages of any possible type:\n - deploy with initial function call (i.e. `constructor` or any other function that is used for some kind\n of initialization);\n - deploy without initial function call;\n - signed/unsigned + data for signing. \n \n `Signer` defines how the message should or shouldn't be signed:\n \n `Signer::None` creates an unsigned message. This may be needed in case of some public methods, \n that do not require authorization by pubkey. \n \n `Signer::External` takes public key and returns `data_to_sign` for later signing. \n Use `attach_signature` method with the result signature to get the signed message.\n \n `Signer::Keys` creates a signed message with provided key pair. \n  \n [SOON] `Signer::SigningBox` Allows using a special interface to imlepement signing \n without private key disclosure to SDK. For instance, in case of using a cold wallet or HSM, \n when application calls some API to sign data. ",
           "params": [
             {
               "name": "context",
@@ -3342,8 +3436,8 @@
         },
         {
           "name": "attach_signature",
-          "summary": null,
-          "description": null,
+          "summary": " Combines `hex`-encoded `signature` with `base64`-encoded `unsigned_message`.",
+          "description": " Combines `hex`-encoded `signature` with `base64`-encoded `unsigned_message`.\n Returns signed message encoded in `base64`.",
           "params": [
             {
               "name": "_context",
@@ -3456,8 +3550,8 @@
         },
         {
           "name": "encode_account",
-          "summary": " Encodes account state as it will be",
-          "description": " Encodes account state as it will be",
+          "summary": " Creates account state BOC",
+          "description": " Creates account state BOC\n \n Creates account state provided with one of these sets of data :\n 1. BOC of code, BOC of data, BOC of library\n 2. TVC (string in `base64`), keys, init params",
           "params": [
             {
               "name": "context",
@@ -3560,8 +3654,8 @@
       "functions": [
         {
           "name": "parse_message",
-          "summary": null,
-          "description": null,
+          "summary": " Parses message boc into a JSON ",
+          "description": " Parses message boc into a JSON \n \n JSON structure is compatible with GraphQL API message object",
           "params": [
             {
               "name": "_context",
@@ -3598,8 +3692,8 @@
         },
         {
           "name": "parse_transaction",
-          "summary": null,
-          "description": null,
+          "summary": " Parses transaction boc into a JSON ",
+          "description": " Parses transaction boc into a JSON \n \n JSON structure is compatible with GraphQL API transaction object",
           "params": [
             {
               "name": "_context",
@@ -3636,8 +3730,8 @@
         },
         {
           "name": "parse_account",
-          "summary": null,
-          "description": null,
+          "summary": " Parses account boc into a JSON ",
+          "description": " Parses account boc into a JSON \n \n JSON structure is compatible with GraphQL API account object",
           "params": [
             {
               "name": "_context",
@@ -3674,8 +3768,8 @@
         },
         {
           "name": "parse_block",
-          "summary": null,
-          "description": null,
+          "summary": " Parses block boc into a JSON ",
+          "description": " Parses block boc into a JSON \n \n JSON structure is compatible with GraphQL API block object",
           "params": [
             {
               "name": "_context",
@@ -3950,7 +4044,7 @@
                 }
               ],
               "summary": " Notifies the app that the message was expired.",
-              "description": " Notifies the app that the message was expired.\n\n Event occurs for messages with the `expiration` replay\n protection.\n\n Processing will be continued at encoding phase after\n `expiration_retries_timeout`."
+              "description": " Notifies the app that the message was expired.\n\n Event occurs for contracts which ABI includes header \"expire\"\n\n Processing will be continued from encoding phase after\n `expiration_retries_timeout`."
             },
             {
               "name": "TransactionReceived",
@@ -3959,14 +4053,14 @@
                 {
                   "name": "message_id",
                   "type": "String",
-                  "summary": " Input message id. Encoded with `hex`.",
-                  "description": " Input message id. Encoded with `hex`."
+                  "summary": " Input message id encoded in `hex`.",
+                  "description": " Input message id encoded in `hex`."
                 },
                 {
                   "name": "message",
                   "type": "String",
-                  "summary": " Input message. BOC encoded with `base64`.",
-                  "description": " Input message. BOC encoded with `base64`."
+                  "summary": " Input message BOC encoded in `base64`.",
+                  "description": " Input message BOC encoded in `base64`."
                 },
                 {
                   "name": "result",
@@ -3998,11 +4092,10 @@
               "name": "out_messages",
               "type": "Array",
               "array_item": {
-                "type": "Ref",
-                "ref_name": "Value"
+                "type": "String"
               },
-              "summary": " List of parsed output messages.",
-              "description": " List of parsed output messages.\n\n Similar to the `transaction` each message contains the `boc`\n field."
+              "summary": " List of output messages' BOCs. Encoded as `base64`",
+              "description": " List of output messages' BOCs. Encoded as `base64`"
             },
             {
               "name": "decoded",
@@ -4067,7 +4160,7 @@
                 "ref_name": "Abi"
               },
               "summary": " Optional message ABI.",
-              "description": " Optional message ABI.\n\n If this parameter is specified and the message has the\n `expire` header then expiration time will be checked against\n the current time to prevent an unnecessary sending.\n\n The `message already expired` error will be returned in this\n case.\n\n Note that specifying `abi` for ABI compliant contracts is\n strongly recommended due to choosing proper processing\n strategy."
+              "description": " Optional message ABI.\n\n If this parameter is specified and the message has the\n `expire` header then expiration time will be checked against\n the current time to prevent an unnecessary sending of already expired message.\n\n The `message already expired` error will be returned in this\n case.\n\n Note that specifying `abi` for ABI compliant contracts is\n strongly recommended due to choosing proper processing\n strategy."
             },
             {
               "name": "send_events",
@@ -4086,8 +4179,8 @@
             {
               "name": "shard_block_id",
               "type": "String",
-              "summary": " Shard block related to the message dst account before the",
-              "description": " Shard block related to the message dst account before the\n message had been sent.\n\n This block id must be used as a parameter of the\n `wait_for_transaction`."
+              "summary": " The last generated shard block of the message destination account before the",
+              "description": " The last generated shard block of the message destination account before the\n message was sent.\n\n This block id must be used as a parameter of the\n `wait_for_transaction`."
             }
           ],
           "summary": null,
@@ -4104,8 +4197,8 @@
                 "type": "Ref",
                 "ref_name": "Abi"
               },
-              "summary": " Optional ABI for decoding transaction results.",
-              "description": " Optional ABI for decoding transaction results.\n\n If it is specified then the output messages bodies will be\n decoded according to this ABI.\n\n The `abi_decoded` result field will be filled out."
+              "summary": " Optional ABI for decoding the transaction result.",
+              "description": " Optional ABI for decoding the transaction result.\n\n If it is specified then the output messages' bodies will be\n decoded according to this ABI.\n\n The `abi_decoded` result field will be filled out."
             },
             {
               "name": "message",
@@ -4116,14 +4209,14 @@
             {
               "name": "shard_block_id",
               "type": "String",
-              "summary": " Dst account shard block id before the message had been sent.",
-              "description": " Dst account shard block id before the message had been sent.\n\n You must provide the same value as the `send_message` has\n returned."
+              "summary": " The last generated block id of the destination account shard before the message was sent.",
+              "description": " The last generated block id of the destination account shard before the message was sent.\n\n You must provide the same value as the `send_message` has returned."
             },
             {
               "name": "send_events",
               "type": "Boolean",
-              "summary": " Flag for requesting events sending",
-              "description": " Flag for requesting events sending"
+              "summary": " Flag that enables/disables intermediate events",
+              "description": " Flag that enables/disables intermediate events"
             }
           ],
           "summary": null,
@@ -4143,8 +4236,8 @@
             {
               "name": "send_events",
               "type": "Boolean",
-              "summary": " Flag for requesting events sending",
-              "description": " Flag for requesting events sending"
+              "summary": " Flag that enables/disables intermediate events",
+              "description": " Flag that enables/disables intermediate events"
             }
           ],
           "summary": null,
@@ -4154,8 +4247,8 @@
       "functions": [
         {
           "name": "send_message",
-          "summary": null,
-          "description": null,
+          "summary": " Sends message to the network",
+          "description": " Sends message to the network\n \n Sends message to the network and returns the last generated shard block of the destination account\n before the message was sent. It will be required later for message processing.",
           "params": [
             {
               "name": "context",
@@ -4205,8 +4298,8 @@
         },
         {
           "name": "wait_for_transaction",
-          "summary": " Performs monitoring of the network for a results of the external",
-          "description": " Performs monitoring of the network for a results of the external\n inbound message processing.\n\n Note that presence of the `abi` parameter is critical for ABI\n compliant contracts. Message processing uses drastically\n different strategy for processing message with an ABI expiration\n replay protection.\n\n When the ABI header `expire` is present, the processing uses\n `message expiration` strategy:\n - The maximum block gen time is set to\n   `message_expiration_time + transaction_wait_timeout`.\n - When maximum block gen time is reached the processing will\n   be finished with `MessageExpired` error.\n\n When the ABI header `expire` isn't present or `abi` parameter\n isn't specified, the processing uses `transaction waiting`\n strategy:\n - The maximum block gen time is set to\n   `now() + transaction_wait_timeout`.\n - When maximum block gen time is reached the processing will\n   be finished with `Incomplete` result.",
+          "summary": " Performs monitoring of the network for the result transaction",
+          "description": " Performs monitoring of the network for the result transaction\n of the external inbound message processing.\n \n `send_events` enables intermediate events, such as `WillFetchNextBlock`,\n `FetchNextBlockFailed` that may be useful for logging of new shard blocks creation \n during message processing.\n\n Note that presence of the `abi` parameter is critical for ABI\n compliant contracts. Message processing uses drastically\n different strategy for processing message for contracts which\n ABI includes \"expire\" header.\n\n When the ABI header `expire` is present, the processing uses\n `message expiration` strategy:\n - The maximum block gen time is set to\n   `message_expiration_time + transaction_wait_timeout`.\n - When maximum block gen time is reached the processing will\n   be finished with `MessageExpired` error.\n\n When the ABI header `expire` isn't present or `abi` parameter\n isn't specified, the processing uses `transaction waiting`\n strategy:\n - The maximum block gen time is set to\n   `now() + transaction_wait_timeout`.\n \n - If maximum block gen time is reached and no result transaction is found \n the processing will exit with an error.",
           "params": [
             {
               "name": "context",
@@ -4256,8 +4349,8 @@
         },
         {
           "name": "process_message",
-          "summary": " Sends message to the network and monitors network for a result of",
-          "description": " Sends message to the network and monitors network for a result of\n message processing.",
+          "summary": " Creates message, sends it to the network and monitors its processing.",
+          "description": " Creates message, sends it to the network and monitors its processing.\n \n Creates ABI-compatible message,\n sends it to the network and monitors for the result transaction.\n Decodes the output messages's bodies.\n \n If contract's ABI includes \"expire\" header then\n SDK implements retries in case of unsuccessful message delivery within the expiration\n timeout: SDK recreates the message, sends it and processes it again. \n \n The intermediate events, such as `WillFetchFirstBlock`, `WillSend`, `DidSend`,\n `WillFetchNextBlock`, etc - are switched on/off by `send_events` flag \n and logged into the supplied callback function.\n The retry configuration parameters are defined in config:\n <add correct config params here>\n pub const DEFAULT_EXPIRATION_RETRIES_LIMIT: i8 = 3; - max number of retries\n pub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 40000;  - message expiration timeout in ms.\n pub const DEFAULT_....expiration_timeout_grow_factor... = 1.5 - factor that increases the expiration timeout for each retry\n \n If contract's ABI does not include \"expire\" header\n then if no transaction is found within the network timeout (see config parameter ), exits with error.",
           "params": [
             {
               "name": "context",
@@ -4367,8 +4460,8 @@
             {
               "name": "address",
               "type": "String",
-              "summary": " Account address in any format.",
-              "description": " Account address in any format."
+              "summary": " Account address in any TON format.",
+              "description": " Account address in any TON format."
             },
             {
               "name": "output_format",
@@ -4388,8 +4481,8 @@
             {
               "name": "address",
               "type": "String",
-              "summary": " address in the specified format",
-              "description": " address in the specified format"
+              "summary": " Address in the specified format",
+              "description": " Address in the specified format"
             }
           ],
           "summary": null,
@@ -4399,8 +4492,8 @@
       "functions": [
         {
           "name": "convert_address",
-          "summary": " Sends message to the network and monitors network for a result of",
-          "description": " Sends message to the network and monitors network for a result of\n message processing.",
+          "summary": " Converts address from any TON format to any TON format",
+          "description": " Converts address from any TON format to any TON format",
           "params": [
             {
               "name": "_context",
@@ -4442,26 +4535,6 @@
       "summary": null,
       "description": null,
       "types": [
-        {
-          "name": "ExecutionMode",
-          "type": "EnumOfConsts",
-          "enum_consts": [
-            {
-              "name": "Full",
-              "type": "None",
-              "summary": " Executes all phases and performs all checks",
-              "description": " Executes all phases and performs all checks"
-            },
-            {
-              "name": "TvmOnly",
-              "type": "None",
-              "summary": " Executes contract only on TVM (part of compute phase)",
-              "description": " Executes contract only on TVM (part of compute phase)"
-            }
-          ],
-          "summary": null,
-          "description": null
-        },
         {
           "name": "ExecutionOptions",
           "type": "Struct",
@@ -4507,28 +4580,23 @@
           "description": null
         },
         {
-          "name": "ParamsOfExecuteMessage",
+          "name": "ParamsOfRunExecutor",
           "type": "Struct",
           "struct_fields": [
             {
               "name": "message",
-              "type": "Ref",
-              "ref_name": "MessageSource",
-              "summary": " Input message.",
-              "description": " Input message."
+              "type": "String",
+              "summary": " Input message BOC. Must be encoded as base64.",
+              "description": " Input message BOC. Must be encoded as base64."
             },
             {
               "name": "account",
-              "type": "String",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
               "summary": " Account BOC. Must be encoded as base64.",
               "description": " Account BOC. Must be encoded as base64."
-            },
-            {
-              "name": "mode",
-              "type": "Ref",
-              "ref_name": "ExecutionMode",
-              "summary": " Execution mode.",
-              "description": " Execution mode."
             },
             {
               "name": "execution_options",
@@ -4539,22 +4607,29 @@
               },
               "summary": " Execution options.",
               "description": " Execution options."
+            },
+            {
+              "name": "abi",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Abi"
+              },
+              "summary": " Contract ABI for dedcoding output messages",
+              "description": " Contract ABI for dedcoding output messages"
             }
           ],
           "summary": null,
           "description": null
         },
         {
-          "name": "ResultOfExecuteMessage",
+          "name": "ResultOfRunExecutor",
           "type": "Struct",
           "struct_fields": [
             {
               "name": "transaction",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Ref",
-                "ref_name": "Value"
-              },
+              "type": "Ref",
+              "ref_name": "Value",
               "summary": " Parsed transaction.",
               "description": " Parsed transaction.\n\n In addition to the regular transaction fields there is a\n `boc` field encoded with `base64` which contains source\n transaction BOC."
             },
@@ -4562,11 +4637,10 @@
               "name": "out_messages",
               "type": "Array",
               "array_item": {
-                "type": "Ref",
-                "ref_name": "Value"
+                "type": "String"
               },
-              "summary": " List of parsed output messages.",
-              "description": " List of parsed output messages.\n\n Similar to the `transaction` each message contains the `boc`\n field."
+              "summary": " List of output messages' BOCs. Encoded as `base64`",
+              "description": " List of output messages' BOCs. Encoded as `base64`"
             },
             {
               "name": "decoded",
@@ -4580,33 +4654,109 @@
             },
             {
               "name": "account",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Ref",
-                "ref_name": "Value"
-              },
-              "summary": " JSON with parsed updated account state. Attention! When used in",
-              "description": " JSON with parsed updated account state. Attention! When used in\n `TvmOnly` mode only data in account state is updated."
+              "type": "String",
+              "summary": " Updated account state BOC. Encoded as `base64`",
+              "description": " Updated account state BOC. Encoded as `base64`"
+            },
+            {
+              "name": "fees",
+              "type": "Ref",
+              "ref_name": "TransactionFees",
+              "summary": " Transaction fees",
+              "description": " Transaction fees"
             }
           ],
           "summary": null,
           "description": null
         },
         {
-          "name": "ParamsOfExecuteGet",
+          "name": "ParamsOfRunTvm",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "message",
+              "type": "String",
+              "summary": " Input message BOC. Must be encoded as base64.",
+              "description": " Input message BOC. Must be encoded as base64."
+            },
+            {
+              "name": "account",
+              "type": "String",
+              "summary": " Account BOC. Must be encoded as base64.",
+              "description": " Account BOC. Must be encoded as base64."
+            },
+            {
+              "name": "execution_options",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "ExecutionOptions"
+              },
+              "summary": " Execution options.",
+              "description": " Execution options."
+            },
+            {
+              "name": "abi",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Abi"
+              },
+              "summary": " Contract ABI for dedcoding output messages",
+              "description": " Contract ABI for dedcoding output messages"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfRunTvm",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "out_messages",
+              "type": "Array",
+              "array_item": {
+                "type": "String"
+              },
+              "summary": " List of output messages' BOCs. Encoded as `base64`",
+              "description": " List of output messages' BOCs. Encoded as `base64`"
+            },
+            {
+              "name": "decoded",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "DecodedOutput"
+              },
+              "summary": " Optional decoded message bodies according to the optional",
+              "description": " Optional decoded message bodies according to the optional\n `abi` parameter."
+            },
+            {
+              "name": "account",
+              "type": "String",
+              "summary": " Updated account state BOC. Encoded as `base64`.",
+              "description": " Updated account state BOC. Encoded as `base64`.\n Attention! Only data in account state is updated."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfRunGet",
           "type": "Struct",
           "struct_fields": [
             {
               "name": "account",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Account BOC in `base64`",
+              "description": " Account BOC in `base64`"
             },
             {
               "name": "function_name",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Function name",
+              "description": " Function name"
             },
             {
               "name": "input",
@@ -4615,8 +4765,8 @@
                 "type": "Ref",
                 "ref_name": "Value"
               },
-              "summary": null,
-              "description": null
+              "summary": " Input parameters",
+              "description": " Input parameters"
             },
             {
               "name": "execution_options",
@@ -4633,15 +4783,15 @@
           "description": null
         },
         {
-          "name": "ResultOfExecuteGet",
+          "name": "ResultOfRunGet",
           "type": "Struct",
           "struct_fields": [
             {
               "name": "output",
               "type": "Ref",
               "ref_name": "Value",
-              "summary": null,
-              "description": null
+              "summary": " Values returned by getmethod on stack",
+              "description": " Values returned by getmethod on stack"
             }
           ],
           "summary": null,
@@ -4650,7 +4800,7 @@
       ],
       "functions": [
         {
-          "name": "execute_message",
+          "name": "run_executor",
           "summary": null,
           "description": null,
           "params": [
@@ -4670,7 +4820,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfExecuteMessage",
+              "ref_name": "ParamsOfRunExecutor",
               "summary": null,
               "description": null
             }
@@ -4681,14 +4831,14 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfExecuteMessage"
+                "ref_name": "ResultOfRunExecutor"
               }
             ]
           },
           "errors": null
         },
         {
-          "name": "execute_get",
+          "name": "run_tvm",
           "summary": null,
           "description": null,
           "params": [
@@ -4708,7 +4858,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfExecuteGet",
+              "ref_name": "ParamsOfRunTvm",
               "summary": null,
               "description": null
             }
@@ -4719,7 +4869,45 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfExecuteGet"
+                "ref_name": "ResultOfRunTvm"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "run_get",
+          "summary": " Executes getmethod and returns data from TVM stack",
+          "description": " Executes getmethod and returns data from TVM stack",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfRunGet",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfRunGet"
               }
             ]
           },
@@ -4780,8 +4968,8 @@
             {
               "name": "collection",
               "type": "String",
-              "summary": " collection name (accounts, blocks, transactions, messages, block_signatures)",
-              "description": " collection name (accounts, blocks, transactions, messages, block_signatures)"
+              "summary": " Collection name (accounts, blocks, transactions, messages, block_signatures)",
+              "description": " Collection name (accounts, blocks, transactions, messages, block_signatures)"
             },
             {
               "name": "filter",
@@ -4790,14 +4978,14 @@
                 "type": "Ref",
                 "ref_name": "Value"
               },
-              "summary": " collection filter",
-              "description": " collection filter"
+              "summary": " Collection filter",
+              "description": " Collection filter"
             },
             {
               "name": "result",
               "type": "String",
-              "summary": " projection (result) string",
-              "description": " projection (result) string"
+              "summary": " Projection (result) string",
+              "description": " Projection (result) string"
             },
             {
               "name": "order",
@@ -4809,8 +4997,8 @@
                   "ref_name": "OrderBy"
                 }
               },
-              "summary": " sorting order",
-              "description": " sorting order"
+              "summary": " Sorting order",
+              "description": " Sorting order"
             },
             {
               "name": "limit",
@@ -4818,8 +5006,8 @@
               "optional_inner": {
                 "type": "Number"
               },
-              "summary": " number of documents to return",
-              "description": " number of documents to return"
+              "summary": " Number of documents to return",
+              "description": " Number of documents to return"
             }
           ],
           "summary": null,
@@ -4836,8 +5024,8 @@
                 "type": "Ref",
                 "ref_name": "Value"
               },
-              "summary": " objects that match provided criteria",
-              "description": " objects that match provided criteria"
+              "summary": " Objects that match the provided criteria",
+              "description": " Objects that match the provided criteria"
             }
           ],
           "summary": null,
@@ -4850,8 +5038,8 @@
             {
               "name": "collection",
               "type": "String",
-              "summary": " collection name (accounts, blocks, transactions, messages, block_signatures)",
-              "description": " collection name (accounts, blocks, transactions, messages, block_signatures)"
+              "summary": " Collection name (accounts, blocks, transactions, messages, block_signatures)",
+              "description": " Collection name (accounts, blocks, transactions, messages, block_signatures)"
             },
             {
               "name": "filter",
@@ -4860,14 +5048,14 @@
                 "type": "Ref",
                 "ref_name": "Value"
               },
-              "summary": " collection filter",
-              "description": " collection filter"
+              "summary": " Collection filter",
+              "description": " Collection filter"
             },
             {
               "name": "result",
               "type": "String",
-              "summary": " projection (result) string",
-              "description": " projection (result) string"
+              "summary": " Projection (result) string",
+              "description": " Projection (result) string"
             },
             {
               "name": "timeout",
@@ -4875,8 +5063,8 @@
               "optional_inner": {
                 "type": "Number"
               },
-              "summary": " query timeout",
-              "description": " query timeout"
+              "summary": " Query timeout",
+              "description": " Query timeout"
             }
           ],
           "summary": null,
@@ -4890,8 +5078,8 @@
               "name": "result",
               "type": "Ref",
               "ref_name": "Value",
-              "summary": " first found object that match provided criteria",
-              "description": " first found object that match provided criteria"
+              "summary": " First found object that matches the provided criteria",
+              "description": " First found object that matches the provided criteria"
             }
           ],
           "summary": null,
@@ -4904,8 +5092,8 @@
             {
               "name": "handle",
               "type": "Number",
-              "summary": " handle to subscription. It then can be used in `get_next_subscription_data` function",
-              "description": " handle to subscription. It then can be used in `get_next_subscription_data` function\n and must be closed with `unsubscribe`"
+              "summary": " Subscription handle. Must be closed with `unsubscribe`",
+              "description": " Subscription handle. Must be closed with `unsubscribe`"
             }
           ],
           "summary": null,
@@ -4924,8 +5112,8 @@
             {
               "name": "collection",
               "type": "String",
-              "summary": " collection name (accounts, blocks, transactions, messages, block_signatures)",
-              "description": " collection name (accounts, blocks, transactions, messages, block_signatures)"
+              "summary": " Collection name (accounts, blocks, transactions, messages, block_signatures)",
+              "description": " Collection name (accounts, blocks, transactions, messages, block_signatures)"
             },
             {
               "name": "filter",
@@ -4934,14 +5122,14 @@
                 "type": "Ref",
                 "ref_name": "Value"
               },
-              "summary": " collection filter",
-              "description": " collection filter"
+              "summary": " Collection filter",
+              "description": " Collection filter"
             },
             {
               "name": "result",
               "type": "String",
-              "summary": " projection (result) string",
-              "description": " projection (result) string"
+              "summary": " Projection (result) string",
+              "description": " Projection (result) string"
             }
           ],
           "summary": null,
@@ -4951,8 +5139,8 @@
       "functions": [
         {
           "name": "query_collection",
-          "summary": null,
-          "description": null,
+          "summary": " Queries collection data",
+          "description": " Queries collection data\n \n Queries data that satisfies the `filter` conditions, \n limits the number of returned records and orders them.\n The projection fields are limited to  `result` fields",
           "params": [
             {
               "name": "context",
@@ -4989,8 +5177,8 @@
         },
         {
           "name": "wait_for_collection",
-          "summary": null,
-          "description": null,
+          "summary": " Returns an object that fulfills the conditions or waits for its appearance",
+          "description": " Returns an object that fulfills the conditions or waits for its appearance\n \n Triggers only once. \n If object that satisfies the `filter` conditions \n already exists - returns it immediately. \n If not - waits for insert/update of data withing the specified `timeout`,\n and returns it. \n The projection fields are limited to  `result` fields",
           "params": [
             {
               "name": "context",
@@ -5027,8 +5215,8 @@
         },
         {
           "name": "unsubscribe",
-          "summary": null,
-          "description": null,
+          "summary": " Cancels a subscription",
+          "description": " Cancels a subscription\n \n Cancels a subscription specified by its handle.",
           "params": [
             {
               "name": "_context",
@@ -5064,8 +5252,8 @@
         },
         {
           "name": "subscribe_collection",
-          "summary": null,
-          "description": null,
+          "summary": " Creates a subscription",
+          "description": " Creates a subscription\n \n Triggers for each insert/update of data\n that satisfies the `filter` conditions.\n The projection fields are limited to  `result` fields.",
           "params": [
             {
               "name": "context",

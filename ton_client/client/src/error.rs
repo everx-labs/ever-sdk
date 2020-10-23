@@ -15,7 +15,6 @@ fn format_time(time: u32) -> String {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default, ApiType)]
-#[serde(default)]
 pub struct ClientError {
     pub code: isize,
     pub message: String,

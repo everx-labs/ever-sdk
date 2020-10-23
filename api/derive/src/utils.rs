@@ -12,6 +12,13 @@ pub(crate) fn field_from(
     value: api_info::Type,
 ) -> api_info::Field {
     let (summary, description) = doc_from(attrs);
+    let value = if has_attr_value("serde", "default", attrs) {
+        api_info::Type::Optional {
+            inner: Box::new(value),
+        }
+    } else {
+        value
+    };
     api_info::Field {
         name: name.map(|x| x.to_string()).unwrap_or("".into()),
         summary,
@@ -332,6 +339,29 @@ pub(crate) fn find_attr_value(
         }
     }
     None
+}
+
+pub(crate) fn has_attr_value(
+    attr_name: &'static str,
+    value_name: &'static str,
+    attrs: &Vec<Attribute>,
+) -> bool {
+    for attr in attrs {
+        if let Ok(Meta::List(ref list)) = attr.parse_meta() {
+            if path_is(&list.path, attr_name) {
+                match list.nested.first() {
+                    Some(NestedMeta::Meta(Meta::NameValue(meta))) => {
+                        return path_is(&meta.path, value_name);
+                    }
+                    Some(NestedMeta::Meta(Meta::Path(path))) => {
+                        return path_is(&path, value_name);
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+    false
 }
 
 pub(crate) fn get_value_of(name: &'static str, meta: &MetaNameValue) -> Option<String> {

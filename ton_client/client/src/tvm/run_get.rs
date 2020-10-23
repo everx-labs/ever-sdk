@@ -25,8 +25,11 @@ use super::types::{ExecutionOptions, ResolvedExecutionOptions};
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfRunGet {
+    /// Account BOC in `base64`
     pub account: String,
+    /// Function name
     pub function_name: String,
+    /// Input parameters
     pub input: Option<Value>,
     pub execution_options: Option<ExecutionOptions>,
 }
@@ -34,8 +37,12 @@ pub struct ParamsOfRunGet {
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfRunGet {
+    /// Values returned by getmethod on stack
     pub output: Value,
 }
+
+
+/// Executes getmethod and returns data from TVM stack
 
 #[api_function]
 pub async fn run_get(

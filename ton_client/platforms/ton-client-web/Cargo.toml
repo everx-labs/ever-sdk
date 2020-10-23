@@ -6,7 +6,7 @@ description = "TON Client WASM binding"
 license = "Apache-2.0"
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ['-Os']
+wasm-opt =  ['-Os']
 
 [profile.release]
 lto = true
@@ -24,6 +24,7 @@ serde_json = "1.0.41"
 [dependencies.ton_client]
 path = "../../client"
 default-features = false
+features = ["wasm"]
 
 # The recrypt Ed25519 library that we use (https://github.com/dalek-cryptography/ed25519-dalek) depends on this clear_on_drop
 # crate (https://github.com/cesarb/clear_on_drop). That crate, by default, implements code via C to clear memory. That doesn't

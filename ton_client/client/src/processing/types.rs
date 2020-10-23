@@ -107,10 +107,9 @@ pub enum ProcessingEvent {
 
     /// Notifies the app that the message was expired.
     ///
-    /// Event occurs for messages with the `expiration` replay
-    /// protection.
+    /// Event occurs for contracts which ABI includes header "expire"
     ///
-    /// Processing will be continued at encoding phase after
+    /// Processing will be continued from encoding phase after
     /// `expiration_retries_timeout`.
     MessageExpired {
         message_id: String,

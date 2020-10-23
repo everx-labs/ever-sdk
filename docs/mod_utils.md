@@ -2,7 +2,7 @@
 
  Misc utility Functions.
 ## Functions
-[convert_address](#convert_address) –  Sends message to the network and monitors network for a result of
+[convert_address](#convert_address) –  Converts address from any TON format to any TON format
 
 ## Types
 [AddressStringFormat](#AddressStringFormat)
@@ -15,8 +15,7 @@
 # Functions
 ## convert_address
 
- Sends message to the network and monitors network for a result of
- message processing.
+ Converts address from any TON format to any TON format
 
 ```ts
 type ParamsOfConvertAddress = {
@@ -33,11 +32,11 @@ function convert_address(
 ): Promise<ResultOfConvertAddress>;
 ```
 ### Parameters
-- `address`: _string_ –  Account address in any format.
+- `address`: _string_ –  Account address in any TON format.
 - `output_format`: _[AddressStringFormat](mod_utils.md#AddressStringFormat)_ –  Specify the format to convert to.
 ### Result
 
-- `address`: _string_ –  address in the specified format
+- `address`: _string_ –  Address in the specified format
 
 
 # Types
@@ -79,7 +78,7 @@ type ParamsOfConvertAddress = {
     output_format: AddressStringFormat
 };
 ```
-- `address`: _string_ –  Account address in any format.
+- `address`: _string_ –  Account address in any TON format.
 - `output_format`: _[AddressStringFormat](mod_utils.md#AddressStringFormat)_ –  Specify the format to convert to.
 
 
@@ -90,6 +89,6 @@ type ResultOfConvertAddress = {
     address: string
 };
 ```
-- `address`: _string_ –  address in the specified format
+- `address`: _string_ –  Address in the specified format
 
 

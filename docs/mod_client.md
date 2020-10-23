@@ -2,9 +2,11 @@
 
  Provides information about library.
 ## Functions
-[get_api_reference](#get_api_reference)
+[get_api_reference](#get_api_reference) –  Returns Core Library API reference
 
-[version](#version)
+[version](#version) –  Returns Core Library version
+
+[build_info](#build_info)
 
 ## Types
 [ClientError](#ClientError)
@@ -21,9 +23,13 @@
 
 [ResultOfVersion](#ResultOfVersion)
 
+[ResultOfBuildInfo](#ResultOfBuildInfo)
+
 
 # Functions
 ## get_api_reference
+
+ Returns Core Library API reference
 
 ```ts
 type ResultOfGetApiReference = {
@@ -39,6 +45,8 @@ function get_api_reference(): Promise<ResultOfGetApiReference>;
 
 ## version
 
+ Returns Core Library version
+
 ```ts
 type ResultOfVersion = {
     version: string
@@ -48,7 +56,21 @@ function version(): Promise<ResultOfVersion>;
 ```
 ### Result
 
-- `version`: _string_ –  core version
+- `version`: _string_ –  Core Library version
+
+
+## build_info
+
+```ts
+type ResultOfBuildInfo = {
+    build_info: any
+};
+
+function build_info(): Promise<ResultOfBuildInfo>;
+```
+### Result
+
+- `build_info`: _any_
 
 
 # Types
@@ -84,7 +106,8 @@ type ClientConfig = {
 
 ```ts
 type NetworkConfig = {
-    server_address: string,
+    server_address?: string,
+    network_retries_count?: number,
     message_retries_count?: number,
     message_processing_timeout?: number,
     wait_for_timeout?: number,
@@ -92,7 +115,8 @@ type NetworkConfig = {
     access_key?: string
 };
 ```
-- `server_address`: _string_
+- `server_address`?: _string_
+- `network_retries_count`?: _number_
 - `message_retries_count`?: _number_
 - `message_processing_timeout`?: _number_
 - `wait_for_timeout`?: _number_
@@ -104,20 +128,28 @@ type NetworkConfig = {
 
 ```ts
 type CryptoConfig = {
-    fish_param?: string
+    mnemonic_dictionary?: number,
+    mnemonic_word_count?: number,
+    hdkey_derivation_path?: string,
+    hdkey_compliant?: boolean
 };
 ```
-- `fish_param`?: _string_
+- `mnemonic_dictionary`?: _number_
+- `mnemonic_word_count`?: _number_
+- `hdkey_derivation_path`?: _string_
+- `hdkey_compliant`?: _boolean_
 
 
 ## AbiConfig
 
 ```ts
 type AbiConfig = {
+    workchain?: number,
     message_expiration_timeout?: number,
     message_expiration_timeout_grow_factor?: number
 };
 ```
+- `workchain`?: _number_
 - `message_expiration_timeout`?: _number_
 - `message_expiration_timeout_grow_factor`?: _number_
 
@@ -139,6 +171,16 @@ type ResultOfVersion = {
     version: string
 };
 ```
-- `version`: _string_ –  core version
+- `version`: _string_ –  Core Library version
+
+
+## ResultOfBuildInfo
+
+```ts
+type ResultOfBuildInfo = {
+    build_info: any
+};
+```
+- `build_info`: _any_
 
 

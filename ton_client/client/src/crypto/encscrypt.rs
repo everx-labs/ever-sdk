@@ -30,7 +30,6 @@ pub struct ParamsOfScrypt {
     /// CPU/memory cost parameter
     pub log_n: u8,
     /// The block size parameter, which fine-tunes sequential memory read size and performance.
-    /// 8 is commonly used
     pub r: u32,
     /// Parallelization parameter.
     pub p: u32,
@@ -47,6 +46,19 @@ pub struct ResultOfScrypt {
 #[doc(summary = "Perform `scrypt` encryption")]
 /// Derives key from `password` and `key` using `scrypt` algorithm.
 /// See [https://en.wikipedia.org/wiki/Scrypt].
+///
+/// # Arguments
+/// - `log_n` - The log2 of the Scrypt parameter `N`
+/// - `r` - The Scrypt parameter `r`
+/// - `p` - The Scrypt parameter `p`
+/// # Conditions
+/// - `log_n` must be less than `64`
+/// - `r` must be greater than `0` and less than or equal to `4294967295`
+/// - `p` must be greater than `0` and less than `4294967295`
+/// # Recommended values sufficient for most use-cases
+/// - `log_n = 15` (`n = 32768`)
+/// - `r = 8`
+/// - `p = 1`
 #[api_function]
 pub fn scrypt(
     _context: std::sync::Arc<ClientContext>,

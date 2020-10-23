@@ -25,8 +25,8 @@ fn register_client(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::error::ClientError>();
     module.register_type::<crate::client::ClientConfig>();
     module.register_type::<crate::net::NetworkConfig>();
-    module.register_type::<crate::client::CryptoConfig>();
-    module.register_type::<ton_sdk::AbiConfig>();
+    module.register_type::<crate::crypto::CryptoConfig>();
+    module.register_type::<crate::abi::AbiConfig>();
 
     module.register_sync_fn_without_args(
         crate::client::get_api_reference,
@@ -85,8 +85,8 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
     // Scrypt
 
     module.register_sync_fn(
-        crate::crypto::scrypt::scrypt,
-        crate::crypto::scrypt::scrypt_api,
+        crate::crypto::encscrypt::scrypt,
+        crate::crypto::encscrypt::scrypt_api,
     );
 
     // NaCl

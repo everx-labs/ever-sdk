@@ -17,8 +17,6 @@ pub struct ParamsOfProcessMessage {
     pub send_events: bool,
 }
 
-/// Sends message to the network and monitors network for a result of
-/// message processing.
 pub async fn process_message<F: futures::Future<Output = ()> + Send + Sync>(
     context: Arc<ClientContext>,
     params: ParamsOfProcessMessage,

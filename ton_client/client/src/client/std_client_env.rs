@@ -154,12 +154,8 @@ impl ClientEnv {
         Ok(WebSocket {
             receiver: Box::pin(read),
             sender: Box::pin(write),
-            handle: 0
         })
     }
-
-    /// Closes websocket
-    pub async fn websocket_close(&self, _handle: u32) {}
 
     /// Executes http request
     pub async fn fetch(

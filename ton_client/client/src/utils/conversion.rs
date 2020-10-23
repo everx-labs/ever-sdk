@@ -13,7 +13,7 @@ pub enum AddressStringFormat {
 
 #[derive(Serialize, Deserialize, ApiType, Debug)]
 pub struct ParamsOfConvertAddress {
-    /// Account address in any format.
+    /// Account address in any TON format.
     pub address: String,
     /// Specify the format to convert to.
     pub output_format: AddressStringFormat,
@@ -21,12 +21,11 @@ pub struct ParamsOfConvertAddress {
 
 #[derive(Serialize, Deserialize, ApiType, Debug)]
 pub struct ResultOfConvertAddress {
-    /// address in the specified format
+    /// Address in the specified format
     pub address: String,
 }
 
-/// Sends message to the network and monitors network for a result of
-/// message processing.
+/// Converts address from any TON format to any TON format
 #[api_function]
 pub fn convert_address(
     _context: Arc<ClientContext>,

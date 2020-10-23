@@ -16,6 +16,10 @@ pub struct ResultOfParse {
     pub parsed: serde_json::Value,
 }
 
+
+/// Parses message boc into a JSON 
+/// 
+/// JSON structure is compatible with GraphQL API message object
 #[api_function]
 pub fn parse_message(
     _context: std::sync::Arc<ClientContext>,
@@ -46,6 +50,9 @@ pub fn parse_message(
     })
 }
 
+/// Parses transaction boc into a JSON 
+/// 
+/// JSON structure is compatible with GraphQL API transaction object
 #[api_function]
 pub fn parse_transaction(
     _context: std::sync::Arc<ClientContext>,
@@ -76,6 +83,10 @@ pub fn parse_transaction(
     })
 }
 
+
+/// Parses account boc into a JSON 
+/// 
+/// JSON structure is compatible with GraphQL API account object
 #[api_function]
 pub fn parse_account(
     _context: std::sync::Arc<ClientContext>,
@@ -101,6 +112,9 @@ pub fn parse_account(
     })
 }
 
+/// Parses block boc into a JSON 
+/// 
+/// JSON structure is compatible with GraphQL API block object
 #[api_function]
 pub fn parse_block(
     _context: std::sync::Arc<ClientContext>,

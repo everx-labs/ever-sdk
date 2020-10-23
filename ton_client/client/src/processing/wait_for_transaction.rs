@@ -12,9 +12,9 @@ use ton_sdk::Contract;
 
 #[derive(Serialize, Deserialize, ApiType, Debug)]
 pub struct ParamsOfWaitForTransaction {
-    /// Optional ABI for decoding transaction results.
+    /// Optional ABI for decoding the transaction result.
     ///
-    /// If it is specified then the output messages bodies will be
+    /// If it is specified then the output messages' bodies will be
     /// decoded according to this ABI.
     ///
     /// The `abi_decoded` result field will be filled out.
@@ -23,13 +23,12 @@ pub struct ParamsOfWaitForTransaction {
     /// Message BOC. Encoded with `base64`.
     pub message: String,
 
-    /// Dst account shard block id before the message had been sent.
+    /// The last generated block id of the destination account shard before the message was sent.
     ///
-    /// You must provide the same value as the `send_message` has
-    /// returned.
+    /// You must provide the same value as the `send_message` has returned.
     pub shard_block_id: String,
 
-    /// Flag for requesting events sending
+    /// Flag that enables/disables intermediate events
     pub send_events: bool
 }
 
@@ -50,7 +49,7 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send + Sync>
         .ok_or(Error::message_has_not_destination_address())?;
     let message_expiration_time =
         get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message)?;
-    let processing_timeout = net.config().message_processing_timeout();
+    let processing_timeout = net.config().message_processing_timeout;
     let now = context.env.now_ms();
     let max_block_time = message_expiration_time.unwrap_or(now + processing_timeout as u64);
     log::debug!("message_expiration_time {}", message_expiration_time.unwrap_or_default() / 1000);

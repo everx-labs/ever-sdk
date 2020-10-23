@@ -11,15 +11,11 @@
 * limitations under the License.
 */
 
-use crate::client::ClientContext;
+use crate::client::{ClientContext};
 use crate::crypto;
 use crate::crypto::hdkey::HDPrivateKey;
 use crate::crypto::internal::{hmac_sha512, key256, pbkdf2_hmac_sha512};
 use crate::crypto::keys::KeyPair;
-use crate::crypto::{
-    DEFAULT_HDKEY_COMPLIANT, DEFAULT_HDKEY_DERIVATION_PATH, DEFAULT_MNEMONIC_DICTIONARY,
-    DEFAULT_MNEMONIC_WORD_COUNT,
-};
 use crate::encoding::hex_decode;
 use crate::error::ClientResult;
 use bip39::{Language, Mnemonic, MnemonicType};
@@ -28,6 +24,7 @@ use hmac::Hmac;
 use pbkdf2::pbkdf2;
 use rand::RngCore;
 use sha2::Sha512;
+use crate::crypto::CryptoConfig;
 
 const TON_DICTIONARY: u8 = 0;
 const ENGLISH_DICTIONARY: u8 = 1;
@@ -43,24 +40,29 @@ const SPANISH_DICTIONARY: u8 = 8;
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfMnemonicWords {
-    /// dictionary identifier
+    /// Dictionary identifier
     pub dictionary: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfMnemonicWords {
-    /// the list of mnemonic words
+    /// The list of mnemonic words
     pub words: String,
 }
 
 /// Prints the list of words from the specified dictionary
 #[api_function]
 pub fn mnemonic_words(
-    _context: std::sync::Arc<ClientContext>,
+    context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicWords,
 ) -> ClientResult<ResultOfMnemonicWords> {
     Ok(ResultOfMnemonicWords {
-        words: mnemonics(params.dictionary, Some(DEFAULT_MNEMONIC_WORD_COUNT))?.get_words()?,
+        words: mnemonics(
+            &context.config.crypto,
+            params.dictionary,
+            Some(context.config.crypto.mnemonic_word_count),
+        )?
+        .get_words()?,
     })
 }
 
@@ -68,15 +70,15 @@ pub fn mnemonic_words(
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfMnemonicFromRandom {
-    /// dictionary identifier
+    /// Dictionary identifier
     pub dictionary: Option<u8>,
-    /// mnemonic word count
+    /// Mnemonic word count
     pub word_count: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfMnemonicFromRandom {
-    /// string of mnemonic words
+    /// String of mnemonic words
     pub phrase: String,
 }
 
@@ -84,11 +86,12 @@ pub struct ResultOfMnemonicFromRandom {
 /// Generates a random mnemonic from the specified dictionary and word count
 #[api_function]
 pub fn mnemonic_from_random(
-    _context: std::sync::Arc<ClientContext>,
+    context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicFromRandom,
 ) -> ClientResult<ResultOfMnemonicFromRandom> {
     Ok(ResultOfMnemonicFromRandom {
-        phrase: mnemonics(params.dictionary, params.word_count)?.generate_random_phrase()?,
+        phrase: mnemonics(&context.config.crypto, params.dictionary, params.word_count)?
+            .generate_random_phrase()?,
     })
 }
 
@@ -96,14 +99,17 @@ pub fn mnemonic_from_random(
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfMnemonicFromEntropy {
-    // Entropy bytes. Hex encoded.
+    /// Entropy bytes. Hex encoded.
     pub entropy: String,
+    /// Dictionary identifier
     pub dictionary: Option<u8>,
+    /// Mnemonic word count
     pub word_count: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfMnemonicFromEntropy {
+    /// Phrase
     pub phrase: String,
 }
 
@@ -111,10 +117,10 @@ pub struct ResultOfMnemonicFromEntropy {
 /// Generates mnemonic from pre-generated entropy
 #[api_function]
 pub fn mnemonic_from_entropy(
-    _context: std::sync::Arc<ClientContext>,
+    context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicFromEntropy,
 ) -> ClientResult<ResultOfMnemonicFromEntropy> {
-    let mnemonic = mnemonics(params.dictionary, params.word_count)?;
+    let mnemonic = mnemonics(&context.config.crypto, params.dictionary, params.word_count)?;
     Ok(ResultOfMnemonicFromEntropy {
         phrase: mnemonic.phrase_from_entropy(&hex_decode(&params.entropy)?)?,
     })
@@ -124,17 +130,17 @@ pub fn mnemonic_from_entropy(
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfMnemonicVerify {
-    /// phrase
+    /// Phrase
     pub phrase: String,
-    /// dictionary identifier
+    /// Dictionary identifier
     pub dictionary: Option<u8>,
-    /// word count
+    /// Word count
     pub word_count: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfMnemonicVerify {
-    /// flag indicating the mnemonic is valid or not
+    /// Flag indicating the mnemonic is valid or not
     pub valid: bool,
 }
 
@@ -143,10 +149,10 @@ pub struct ResultOfMnemonicVerify {
 /// specified in BIP0039.
 #[api_function]
 pub fn mnemonic_verify(
-    _context: std::sync::Arc<ClientContext>,
+    context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicVerify,
 ) -> ClientResult<ResultOfMnemonicVerify> {
-    let mnemonic = mnemonics(params.dictionary, params.word_count)?;
+    let mnemonic = mnemonics(&context.config.crypto, params.dictionary, params.word_count)?;
     Ok(ResultOfMnemonicVerify {
         valid: mnemonic.is_phrase_valid(&params.phrase)?,
     })
@@ -156,13 +162,13 @@ pub fn mnemonic_verify(
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfMnemonicDeriveSignKeys {
-    /// phrase
+    /// Phrase
     pub phrase: String,
-    /// derivation path, for instance "m/44'/396'/0'/0/0"
+    /// Derivation path, for instance "m/44'/396'/0'/0/0"
     pub path: Option<String>,
-    /// dictionary identifier
+    /// Dictionary identifier
     pub dictionary: Option<u8>,
-    /// word count
+    /// Word count
     pub word_count: Option<u8>,
 }
 
@@ -171,22 +177,25 @@ pub struct ParamsOfMnemonicDeriveSignKeys {
 /// the key pair from the master key and the specified path
 #[api_function]
 pub fn mnemonic_derive_sign_keys(
-    _context: std::sync::Arc<ClientContext>,
+    context: std::sync::Arc<ClientContext>,
     params: ParamsOfMnemonicDeriveSignKeys,
 ) -> ClientResult<KeyPair> {
-    let mnemonic = mnemonics(params.dictionary, params.word_count)?;
-    let path = params.path.unwrap_or(DEFAULT_HDKEY_DERIVATION_PATH.into());
-    Ok(mnemonic.derive_ed25519_keys_from_phrase(&params.phrase, &path)?)
+    let mnemonic = mnemonics(&context.config.crypto, params.dictionary, params.word_count)?;
+    let path = params
+        .path
+        .unwrap_or(context.config.crypto.hdkey_derivation_path.clone());
+    Ok(mnemonic.derive_ed25519_keys_from_phrase(&context.config.crypto, &params.phrase, &path)?)
 }
 
 // Internals
 
 fn mnemonics(
+    config: &CryptoConfig,
     dictionary: Option<u8>,
     word_count: Option<u8>,
 ) -> ClientResult<Box<dyn CryptoMnemonic>> {
-    let dictionary = dictionary.unwrap_or(DEFAULT_MNEMONIC_DICTIONARY);
-    let word_count = word_count.unwrap_or(DEFAULT_MNEMONIC_WORD_COUNT);
+    let dictionary = dictionary.unwrap_or(config.mnemonic_dictionary);
+    let word_count = word_count.unwrap_or(config.mnemonic_word_count);
     if dictionary == TON_DICTIONARY {
         return Ok(Box::new(TonMnemonic::new(word_count)));
     }
@@ -217,6 +226,7 @@ pub trait CryptoMnemonic {
     fn generate_random_phrase(&self) -> ClientResult<String>;
     fn derive_ed25519_keys_from_phrase(
         &self,
+        config: &CryptoConfig,
         phrase: &String,
         path: &String,
     ) -> ClientResult<KeyPair>;
@@ -278,12 +288,13 @@ impl CryptoMnemonic for Bip39Mnemonic {
 
     fn derive_ed25519_keys_from_phrase(
         &self,
+        config: &CryptoConfig,
         phrase: &String,
         path: &String,
     ) -> ClientResult<KeyPair> {
         check_phrase(self, phrase)?;
         let derived =
-            HDPrivateKey::from_mnemonic(phrase)?.derive_path(path, DEFAULT_HDKEY_COMPLIANT)?;
+            HDPrivateKey::from_mnemonic(phrase)?.derive_path(path, config.hdkey_compliant)?;
         ed25519_keys_from_secret_bytes(&derived.secret())
     }
 
@@ -396,6 +407,7 @@ impl CryptoMnemonic for TonMnemonic {
 
     fn derive_ed25519_keys_from_phrase(
         &self,
+        config: &CryptoConfig,
         phrase: &String,
         path: &String,
     ) -> ClientResult<KeyPair> {
@@ -403,7 +415,7 @@ impl CryptoMnemonic for TonMnemonic {
 
         let seed = Self::seed_from_string(&phrase, "TON default seed", 100_000);
         let master = HDPrivateKey::master(&key256(&seed[32..])?, &key256(&seed[..32])?);
-        let derived = master.derive_path(path, DEFAULT_HDKEY_COMPLIANT)?;
+        let derived = master.derive_path(path, config.hdkey_compliant)?;
         ed25519_keys_from_secret_bytes(&derived.secret())
     }
 

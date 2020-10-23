@@ -38,5 +38,47 @@ pub use encode_message::{
 pub use errors::{Error, ErrorCode};
 pub use signing::Signer;
 pub use types::{Abi, AbiHandle, FunctionHeader, MessageSource};
+use ton_sdk::SdkAbiConfig;
 
-pub const DEFAULT_WORKCHAIN: i32 = 0;
+fn default_workchain() -> i32 {
+    0
+}
+
+fn default_message_expiration_timeout() -> u32 {
+    40000
+}
+
+fn default_message_expiration_timeout_grow_factor() -> f32 {
+    1.5
+}
+
+#[derive(Deserialize, Debug, Clone, ApiType)]
+pub struct AbiConfig {
+    #[serde(default = "default_workchain")]
+    pub workchain: i32,
+    #[serde(default = "default_message_expiration_timeout")]
+    pub message_expiration_timeout: u32,
+    #[serde(default = "default_message_expiration_timeout_grow_factor")]
+    pub message_expiration_timeout_grow_factor: f32,
+}
+
+impl AbiConfig {
+    pub fn to_sdk(&self) -> SdkAbiConfig {
+        SdkAbiConfig {
+            workchain: self.workchain,
+            message_expiration_timeout_grow_factor: self.message_expiration_timeout_grow_factor,
+            message_expiration_timeout: self.message_expiration_timeout,
+        }
+    }
+}
+
+impl Default for AbiConfig {
+    fn default() -> Self {
+        Self {
+            workchain: default_workchain(),
+            message_expiration_timeout: default_message_expiration_timeout(),
+            message_expiration_timeout_grow_factor: default_message_expiration_timeout_grow_factor(
+            ),
+        }
+    }
+}
