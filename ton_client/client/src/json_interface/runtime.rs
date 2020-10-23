@@ -33,7 +33,7 @@ pub(crate) trait AsyncHandler {
 
 pub(crate) struct RuntimeHandlers {
     sync_handlers: HashMap<String, Box<dyn SyncHandler + Sync>>,
-        async_handlers: HashMap<String, Box<dyn AsyncHandler + Sync>>,
+    async_handlers: HashMap<String, Box<dyn AsyncHandler + Sync>>,
     api: API,
 }
 
@@ -41,7 +41,7 @@ impl RuntimeHandlers {
     fn new() -> RuntimeHandlers {
         let mut handlers = Self {
             sync_handlers: HashMap::new(),
-                        async_handlers: HashMap::new(),
+            async_handlers: HashMap::new(),
             api: API {
                 version: "1.0.0".into(),
                 modules: Vec::new(),
@@ -125,14 +125,14 @@ impl Runtime {
     }
 
     pub fn create_context(config_json: &str) -> ClientResult<ContextHandle> {
-        let config = if !config_json.is_empty() {
-            Some(
-                serde_json::from_str::<ClientConfig>(config_json)
-                    .map_err(|err| ClientError::invalid_params(config_json, err))?,
-            )
+        let config_json = if !config_json.is_empty() {
+            config_json
         } else {
-            None
+            "{}"
         };
+        let config = serde_json::from_str::<ClientConfig>(config_json)
+            .map_err(|err| ClientError::invalid_params(config_json, err))?;
+
         let mut contexts = Self::contexts();
         let handle = contexts.next_context_handle;
         contexts.next_context_handle = handle.wrapping_add(1);

@@ -26,7 +26,7 @@ pub(crate) use wasm_client_env::ClientEnv;
 #[cfg(test)]
 mod tests;
 
-pub use client::{ClientConfig, ClientContext, CryptoConfig};
+pub use client::{ClientConfig, ClientContext};
 pub use errors::{Error, ErrorCode};
 
 pub(crate) use client_env::{FetchMethod, FetchResult, WebSocket};

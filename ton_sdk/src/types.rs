@@ -11,9 +11,9 @@
 * limitations under the License.
 */
 
+use num_traits::cast::ToPrimitive;
 use std::fmt;
 use ton_types::Result;
-use num_traits::cast::ToPrimitive;
 
 use crate::error::SdkError;
 
@@ -22,100 +22,73 @@ pub const CONTRACTS_TABLE_NAME: &str = "accounts";
 pub const BLOCKS_TABLE_NAME: &str = "blocks";
 pub const TRANSACTIONS_TABLE_NAME: &str = "transactions";
 
-pub const DEFAULT_RETRIES_COUNT: u8 = 5;
-pub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 40000;
-pub const DEFAULT_PROCESSING_TIMEOUT: u32 = 40000;
-pub const DEFAULT_TIMEOUT_GROW_FACTOR: f32 = 1.5;
-pub const DEFAULT_WAIT_TIMEOUT: u32 = 40000;
-pub const DEFAULT_OUT_OF_SYNC_THRESHOLD: i64 = 15000;
-
 pub const MASTERCHAIN_ID: i32 = -1;
 
-
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct NetworkConfig {
-    pub server_address: String,
-    pub message_retries_count: Option<u8>,
-    pub message_processing_timeout: Option<u32>,
-    pub wait_for_timeout: Option<u32>,
-    pub out_of_sync_threshold: Option<i64>,
-    pub access_key: Option<String>,
+fn default_workchain() -> i32 {
+    0
 }
 
-impl NetworkConfig {
-    pub fn server_address(&self) -> &str {
-        &self.server_address
-    }
-
-    pub fn message_retries_count(&self) -> u8 {
-        self.message_retries_count.unwrap_or(DEFAULT_RETRIES_COUNT)
-    }
-
-    pub fn message_processing_timeout(&self) -> u32 {
-        self.message_processing_timeout.unwrap_or(DEFAULT_PROCESSING_TIMEOUT)
-    }
-
-    pub fn wait_for_timeout(&self) -> u32 {
-        self.wait_for_timeout.unwrap_or(DEFAULT_WAIT_TIMEOUT)
-    }
-
-    pub fn out_of_sync_threshold(&self) -> i64 {
-        self.out_of_sync_threshold.unwrap_or(DEFAULT_OUT_OF_SYNC_THRESHOLD)
-    }
-
-    pub fn access_key(&self) -> Option<&str> {
-        self.access_key.as_ref().map(|string| string.as_str())
-    }
+fn default_message_expiration_timeout() -> u32 {
+    40000
 }
 
-#[derive(Deserialize, Debug, Default, Clone, ApiType)]
-pub struct AbiConfig {
-    message_expiration_timeout: Option<u32>,
-    message_expiration_timeout_grow_factor: Option<f32>,
+fn default_message_expiration_timeout_grow_factor() -> f32 {
+    1.5
 }
 
-impl AbiConfig {
-    pub fn message_expiration_timeout(&self) -> u32 {
-        self.message_expiration_timeout.unwrap_or(DEFAULT_EXPIRATION_TIMEOUT)
-    }
+#[derive(Deserialize, Debug, Clone, ApiType)]
+pub struct SdkAbiConfig {
+    #[serde(default = "default_workchain")]
+    pub workchain: i32,
+    #[serde(default = "default_message_expiration_timeout")]
+    pub message_expiration_timeout: u32,
+    #[serde(default = "default_message_expiration_timeout_grow_factor")]
+    pub message_expiration_timeout_grow_factor: f32,
+}
 
-    pub fn message_expiration_timeout_grow_factor(&self) -> f32 {
-        self.message_expiration_timeout_grow_factor.unwrap_or(DEFAULT_TIMEOUT_GROW_FACTOR)
+impl Default for SdkAbiConfig {
+    fn default() -> Self {
+        Self {
+            workchain: default_workchain(),
+            message_expiration_timeout: default_message_expiration_timeout(),
+            message_expiration_timeout_grow_factor: default_message_expiration_timeout_grow_factor(
+            ),
+        }
     }
 }
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq)]
-pub struct StringId (String);
+pub struct StringId(String);
 
 pub type BlockId = StringId;
 
 impl From<String> for StringId {
     fn from(id: String) -> Self {
-        StringId{0: id}
+        StringId { 0: id }
     }
 }
 
 impl From<&str> for StringId {
     fn from(id: &str) -> Self {
-        StringId{0: id.to_owned()}
+        StringId { 0: id.to_owned() }
     }
 }
 
 impl From<Vec<u8>> for StringId {
     fn from(id: Vec<u8>) -> Self {
-        StringId{0: hex::encode(id)}
+        StringId { 0: hex::encode(id) }
     }
 }
 
 impl From<&[u8]> for StringId {
     fn from(id: &[u8]) -> Self {
-        StringId{0: hex::encode(id)}
+        StringId { 0: hex::encode(id) }
     }
 }
 
 impl fmt::Display for StringId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"{}", self.0)
+        write!(f, "{}", self.0)
     }
 }
 
@@ -131,6 +104,10 @@ impl StringId {
 }
 
 pub fn grams_to_u64(grams: &ton_block::types::Grams) -> Result<u64> {
-    grams.0.to_u64()
-        .ok_or(SdkError::InvalidData { msg: "Cannot convert grams value".to_owned() }.into())
+    grams.0.to_u64().ok_or(
+        SdkError::InvalidData {
+            msg: "Cannot convert grams value".to_owned(),
+        }
+        .into(),
+    )
 }

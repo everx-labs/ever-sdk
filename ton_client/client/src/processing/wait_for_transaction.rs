@@ -50,7 +50,7 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send + Sync>
         .ok_or(Error::message_has_not_destination_address())?;
     let message_expiration_time =
         get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message)?;
-    let processing_timeout = net.config().message_processing_timeout();
+    let processing_timeout = net.config().message_processing_timeout;
     let now = context.env.now_ms();
     let max_block_time = message_expiration_time.unwrap_or(now + processing_timeout as u64);
     log::debug!("message_expiration_time {}", message_expiration_time.unwrap_or_default() / 1000);
