@@ -6,7 +6,7 @@ description = "TON Client WASM binding"
 license = "Apache-2.0"
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ['-Os']
+wasm-opt = false
 
 [profile.release]
 lto = true
