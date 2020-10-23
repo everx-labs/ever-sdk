@@ -77,8 +77,8 @@ pub fn call_tvm(
     timestamp: u32,
     code: Cell,
     data: Option<Cell>,
-    msg: &Message)
-    -> Result<(Vec<Message>, i64)> {
+    msg: &Message
+) -> Result<(Vec<Message>, i64)> {
     let msg_cell = msg.write_to_new_cell()?.into();
     let mut stack = Stack::new();
     stack

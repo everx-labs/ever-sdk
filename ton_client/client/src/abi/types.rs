@@ -20,7 +20,7 @@ impl Abi {
         match self {
             Self::Serialized(v) => Ok(v.to_string()),
             _ => Err(crate::client::Error::not_implemented(
-                "Abi handles doesn't supported",
+                "ABI handles are not supported yet",
             )),
         }
     }

@@ -22,6 +22,7 @@ use crate::crypto::{
 };
 use crate::processing::{ParamsOfProcessMessage, ResultOfProcessMessage};
 use crate::{crypto::KeyPair, error::{ClientError, ClientResult}, net::{ParamsOfWaitForCollection, ResultOfWaitForCollection}, tc_create_context, tc_destroy_context, ContextHandle};
+use crate::boc::{ParamsOfParse, ResultOfParse};
 use api_info::ApiModule;
 use futures::Future;
 use num_traits::FromPrimitive;
@@ -111,7 +112,6 @@ lazy_static::lazy_static! {
     static ref TEST_RUNTIME: Mutex<TestRuntime> = Mutex::new(TestRuntime::new());
 }
 
-#[derive(Clone)]
 pub(crate) struct TestClient {
     context: ContextHandle,
 }
@@ -610,7 +610,13 @@ impl TestClient {
 
         // wait for grams receiving
         for message in run_result.out_messages.iter() {
-            let message: ton_sdk::Message = serde_json::from_value(message.clone()).unwrap();
+            let parsed: ResultOfParse = self.request(
+                "boc.parse_message",
+                ParamsOfParse {
+                    boc: message.clone()
+                }
+            );
+            let message: ton_sdk::Message = serde_json::from_value(parsed.parsed).unwrap();
             if ton_sdk::MessageType::Internal == message.msg_type() {
                 let _: ResultOfWaitForCollection = self
                     .request_async(

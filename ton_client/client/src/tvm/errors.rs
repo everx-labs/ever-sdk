@@ -32,6 +32,8 @@ pub enum ErrorCode {
     UnknownExecutionError = TVM + 10,
     InvalidInputStack = TVM + 11,
     InvalidAccountBoc = TVM + 12,
+    InvalidMessageType = TVM + 13,
+    InternalError = TVM + 14,
 }
 pub struct Error;
 
@@ -90,7 +92,7 @@ impl Error {
         error
     }
 
-    pub fn tvm_execution_failed<E: Display>(err: E, exit_code: i32, address: &MsgAddressInt) -> ClientError {
+    pub fn tvm_execution_failed<E: Display>(err: E, exit_code: i32, exit_arg: Option<Value>, address: &MsgAddressInt) -> ClientError {
         let mut error = error(
             ErrorCode::ContractExecutionError,
             format!("Contract execution was terminated with error: {}", err),
@@ -99,6 +101,7 @@ impl Error {
         let mut data = serde_json::json!({
             "phase": "computeVm",
             "exit_code": exit_code,
+            "exit_arg": exit_arg,
             "account_address": address.to_string()
         });
 
@@ -219,6 +222,20 @@ impl Error {
         error(
             ErrorCode::UnknownExecutionError,
             format!("Transaction execution failed with unknown error: {}", err),
+        )
+    }
+
+    pub fn invalid_message_type() -> ClientError {
+        error(
+            ErrorCode::InvalidMessageType,
+            "Invalid message type: external outbound messages can not be processed by the contract".to_owned(),
+        )
+    }
+
+    pub fn internal_error<E: Display>(err: E) -> ClientError {
+        error(
+            ErrorCode::InternalError,
+            format!("TVM internal error: {}", err),
         )
     }
 }
