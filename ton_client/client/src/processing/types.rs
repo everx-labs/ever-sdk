@@ -23,11 +23,8 @@ pub struct ResultOfProcessMessage {
     /// transaction BOC.
     pub transaction: Value,
 
-    /// List of parsed output messages.
-    ///
-    /// Similar to the `transaction` each message contains the `boc`
-    /// field.
-    pub out_messages: Vec<Value>,
+    /// List of output messages' BOCs. Encoded as `base64`
+    pub out_messages: Vec<String>,
 
     /// Optional decoded message bodies according to the optional
     /// `abi` parameter.

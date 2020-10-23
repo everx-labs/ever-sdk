@@ -118,9 +118,9 @@ pub async fn fetch_transaction_result<F: futures::Future<Output = ()> + Send + S
 ) -> ClientResult<ResultOfProcessMessage> {
     let transaction_boc =
         fetch_transaction_boc(context, transaction_id, message_id, shard_block_id).await?;
-    let (transaction, out_messages) = parse_transaction_boc(context.clone(), &transaction_boc)?;
+    let (transaction, out_messages) = parse_transaction_boc(context.clone(), transaction_boc)?;
     let abi_decoded = if let Some(abi) = abi {
-        Some(decode_output(context, abi, &out_messages)?)
+        Some(decode_output(context, abi, out_messages.clone())?)
     } else {
         None
     };

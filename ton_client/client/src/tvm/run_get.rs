@@ -14,18 +14,17 @@
 use serde_json::Value;
 
 use crate::client::ClientContext;
-use crate::boc::internal::{deserialize_object_from_base64};
+use crate::boc::internal::deserialize_object_from_base64;
 use crate::error::ClientResult;
-use crate::tvm::execute_message::ExecutionOptions;
 use crate::tvm::Error;
 use std::sync::Arc;
 use ton_vm::stack::integer::IntegerData;
 use ton_vm::stack::{Stack, StackItem};
 use super::stack;
-use super::execute_message::ResolvedExecutionOptions;
+use super::types::{ExecutionOptions, ResolvedExecutionOptions};
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
-pub struct ParamsOfExecuteGet {
+pub struct ParamsOfRunGet {
     pub account: String,
     pub function_name: String,
     pub input: Option<Value>,
@@ -34,15 +33,15 @@ pub struct ParamsOfExecuteGet {
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, ApiType, Clone)]
-pub struct ResultOfExecuteGet {
+pub struct ResultOfRunGet {
     pub output: Value,
 }
 
 #[api_function]
-pub async fn execute_get(
+pub async fn run_get(
     context: std::sync::Arc<ClientContext>,
-    params: ParamsOfExecuteGet,
-) -> ClientResult<ResultOfExecuteGet> {
+    params: ParamsOfRunGet,
+) -> ClientResult<ResultOfRunGet> {
     let account: ton_block::Account = deserialize_object_from_base64(&params.account, "account")?.object;
     let options = ResolvedExecutionOptions::from_options(&context, params.execution_options)?;
 
@@ -69,12 +68,12 @@ pub async fn execute_get(
         function_id,
     ))));
 
-    let (engine, _) = super::execute_message::call_tvm(
+    let (engine, _) = super::call_tvm::call_tvm(
         stuff,
         options,
         stack_in,
     )?;
-    Ok(ResultOfExecuteGet {
+    Ok(ResultOfRunGet {
         output: stack::serialize_items(engine.stack().iter())?
     })
 }
