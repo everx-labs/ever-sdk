@@ -1,10 +1,12 @@
 use crate::abi;
 use crate::abi::internal::{
-    add_sign_to_message, create_tvc_image, resolve_abi, result_of_encode_message,
+    add_sign_to_message, add_sign_to_message_body, create_tvc_image, resolve_abi,
+    result_of_encode_message,
 };
-use crate::abi::{Abi, Error, FunctionHeader, Signer, DEFAULT_WORKCHAIN};
+use crate::abi::{Abi, Error, FunctionHeader, Signer};
 use crate::boc::internal::get_boc_hash;
 use crate::client::ClientContext;
+use crate::crypto::internal::sign_using_secret;
 use crate::encoding::{account_decode, account_encode, base64_decode, hex_decode};
 use crate::error::ClientResult;
 use serde_json::Value;
@@ -96,8 +98,8 @@ fn resolve_header(
             Some(header.map_or(None, |x| x.expire).unwrap_or_else(|| {
                 let config = &context.config.abi;
                 let timeout = calc_timeout(
-                    config.message_expiration_timeout(),
-                    config.message_expiration_timeout_grow_factor(),
+                    config.message_expiration_timeout,
+                    config.message_expiration_timeout_grow_factor,
                     processing_try_index.unwrap_or(0),
                 );
                 ((now + timeout as u64) / 1000) as u32
@@ -106,12 +108,9 @@ fn resolve_header(
             None
         },
         pubkey: if required("pubkey") {
-            Some(
-                header
-                    .map_or(None, |x| x.pubkey.clone())
-                    .or(pubkey.map(|x| x.to_string()))
-                    .ok_or(Error::required_public_key_missing_for_function_header())?,
-            )
+            header
+                .map_or(None, |x| x.pubkey.clone())
+                .or(pubkey.map(|x| x.to_string()))
         } else {
             None
         },
@@ -246,7 +245,7 @@ fn encode_deploy(
         call_set.to_function_call_set(pubkey, processing_try_index, &context, &abi)?,
         image,
         workchain,
-        &context.config.abi,
+        &context.config.abi.to_sdk(),
         processing_try_index,
     )
     .map_err(|err| abi::Error::encode_deploy_message_failed(err))?;
@@ -290,7 +289,7 @@ fn encode_run(
                 call_set.to_function_call_set(pubkey, processing_try_index, &context, abi)?,
                 false,
                 None,
-                &context.config.abi,
+                &context.config.abi.to_sdk(),
                 processing_try_index,
             )
             .map_err(|err| abi::Error::encode_run_message_failed(err, &call_set.function_name))?;
@@ -300,7 +299,7 @@ fn encode_run(
             let unsigned = ton_sdk::Contract::get_call_message_bytes_for_signing(
                 address.clone(),
                 call_set.to_function_call_set(pubkey, processing_try_index, &context, abi)?,
-                &context.config.abi,
+                &context.config.abi.to_sdk(),
                 processing_try_index,
             )
             .map_err(|err| abi::Error::encode_run_message_failed(err, &call_set.function_name))?;
@@ -344,7 +343,7 @@ pub async fn encode_message(
 
     let public = params.signer.resolve_public_key()?;
     let (message, data_to_sign, address) = if let Some(deploy_set) = params.deploy_set {
-        let workchain = deploy_set.workchain_id.unwrap_or(DEFAULT_WORKCHAIN);
+        let workchain = deploy_set.workchain_id.unwrap_or(context.config.abi.workchain);
         let public = required_public_key(public)?;
         let image = create_tvc_image(
             &abi,
@@ -385,6 +384,121 @@ pub async fn encode_message(
         data_to_sign,
         address: account_encode(&address),
         message_id: get_boc_hash(&message)?,
+    })
+}
+
+//---------------------------------------------------------------------------- encode_message_body
+
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+pub struct ParamsOfEncodeMessageBody {
+    /// Contract ABI.
+    pub abi: Abi,
+
+    /// Function call parameters.
+    ///
+    /// Must be specified in non deploy message.
+    ///
+    /// In case of deploy message contains parameters of constructor.
+    pub call_set: CallSet,
+
+    /// True if internal message body must be encoded.
+    pub is_internal: bool,
+
+    /// Signing parameters.
+    pub signer: Signer,
+
+    /// Processing try index.
+    ///
+    /// Used in message processing with retries.
+    ///
+    /// Encoder uses the provided try index to calculate message
+    /// expiration time.
+    ///
+    /// Expiration timeouts will grow with every retry.
+    ///
+    /// Default value is 0.
+    pub processing_try_index: Option<u8>,
+}
+
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct ResultOfEncodeMessageBody {
+    /// Message body BOC encoded with `base64`.
+    pub body: String,
+
+    /// Optional data to sign. Encoded with `base64`.
+    ///
+    /// Presents when `message` is unsigned. Can be used for external
+    /// message signing. Is this case you need to sing this data and
+    /// produce signed message using `abi.attach_signature`.
+    pub data_to_sign: Option<String>,
+}
+
+/// Encodes message body according to ABI function call.
+#[api_function]
+pub async fn encode_message_body(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfEncodeMessageBody,
+) -> ClientResult<ResultOfEncodeMessageBody> {
+    let abi = resolve_abi(&params.abi)?;
+
+    let public = params.signer.resolve_public_key()?;
+    let call = params.call_set.to_function_call_set(
+        public.as_ref().map(|x| x.as_str()),
+        params.processing_try_index,
+        &context,
+        &abi,
+    )?;
+    let func = call.func.clone();
+    let (body, data_to_sign) = match params.signer {
+        Signer::None => {
+            let body = ton_abi::encode_function_call(
+                abi.clone(),
+                func.clone(),
+                call.header,
+                call.input.clone(),
+                params.is_internal,
+                None,
+            )
+            .map_err(|err| Error::encode_run_message_failed(err, &func))?;
+            (body, None)
+        }
+        _ => {
+            let (body, data_to_sign) = ton_abi::prepare_function_call_for_sign(
+                abi.clone(),
+                func.clone(),
+                call.header,
+                call.input,
+            )
+            .map_err(|err| Error::encode_run_message_failed(err, &func))?;
+            (body, Some(data_to_sign))
+        }
+    };
+    let body: Vec<u8> = ton_types::serialize_toc(
+        &body
+            .clone()
+            .into_cell()
+            .map_err(|err| Error::encode_run_message_failed(err, &func))?,
+    )
+    .map_err(|err| Error::encode_run_message_failed(err, &func))?;
+    if let Some(keys) = params.signer.resolve_keys()? {
+        if let Some(data_to_sign) = data_to_sign {
+            let secret = hex_decode(&format!("{}{}", &keys.secret, &keys.public))?;
+            let (_, signature) = sign_using_secret(&data_to_sign, &secret)?;
+            let body = add_sign_to_message_body(
+                &abi,
+                &signature,
+                Some(&hex_decode(&keys.public)?),
+                &body,
+            )?;
+            return Ok(ResultOfEncodeMessageBody {
+                body: base64::encode(&body),
+                data_to_sign: None,
+            })
+        }
+    }
+    Ok(ResultOfEncodeMessageBody {
+        body: base64::encode(&body),
+        data_to_sign: data_to_sign.map(|x| base64::encode(&x)),
     })
 }
 
@@ -429,5 +543,44 @@ pub fn attach_signature(
     Ok(ResultOfAttachSignature {
         message: base64::encode(&signed),
         message_id: get_boc_hash(&signed)?,
+    })
+}
+
+//---------------------------------------------------------------- attach_signature_to_message_body
+
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct ParamsOfAttachSignatureToMessageBody {
+    /// Contract ABI
+    pub abi: Abi,
+
+    /// Public key. Must be encoded with `hex`.
+    pub public_key: String,
+
+    /// Unsigned message BOC. Must be encoded with `base64`.
+    pub message: String,
+
+    /// Signature. Must be encoded with `hex`.
+    pub signature: String,
+}
+
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct ResultOfAttachSignatureToMessageBody {
+    pub body: String,
+}
+
+///
+#[api_function]
+pub fn attach_signature_to_message_body(
+    _context: std::sync::Arc<ClientContext>,
+    params: ParamsOfAttachSignatureToMessageBody,
+) -> ClientResult<ResultOfAttachSignatureToMessageBody> {
+    let signed = add_sign_to_message_body(
+        &resolve_abi(&params.abi)?,
+        &hex_decode(&params.signature)?,
+        Some(&hex_decode(&params.public_key)?),
+        &base64_decode(&params.message)?,
+    )?;
+    Ok(ResultOfAttachSignatureToMessageBody {
+        body: base64::encode(&signed),
     })
 }

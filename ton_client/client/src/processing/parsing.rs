@@ -1,5 +1,5 @@
-use crate::abi::{decode_message, Abi, DecodedMessageType, ParamsOfDecodeMessage};
-use crate::boc::{parse_message, parse_transaction, ParamsOfParse};
+use crate::abi::{decode_message, Abi, MessageBodyType, ParamsOfDecodeMessage};
+use crate::boc::{parse_transaction, ParamsOfParse};
 use crate::client::ClientContext;
 use crate::error::ClientResult;
 use crate::processing::fetching::TransactionBoc;
@@ -9,56 +9,46 @@ use std::sync::Arc;
 
 pub(crate) fn parse_transaction_boc(
     context: Arc<ClientContext>,
-    transaction: &TransactionBoc,
-) -> ClientResult<(Value, Vec<Value>)> {
-    let mut parsed_messages = Vec::<Value>::new();
-    for message in &transaction.out_messages {
-        parsed_messages.push(
-            parse_message(
-                context.clone(),
-                ParamsOfParse {
-                    boc: message.boc.clone(),
-                },
-            )?
-            .parsed,
-        );
+    transaction: TransactionBoc,
+) -> ClientResult<(Value, Vec<String>)> {
+    let mut messages = Vec::new();
+    for message in transaction.out_messages {
+        messages.push(message.boc);
     }
     Ok((
         parse_transaction(
             context,
             ParamsOfParse {
-                boc: transaction.boc.clone(),
+                boc: transaction.boc,
             },
         )?
         .parsed,
-        parsed_messages,
+        messages,
     ))
 }
 
 pub(crate) fn decode_output(
     context: &Arc<ClientContext>,
     abi: &Abi,
-    parsed_messages: &Vec<Value>,
+    messages: Vec<String>,
 ) -> ClientResult<DecodedOutput> {
     let mut out_messages = Vec::new();
     let mut output = None;
-    for parsed_message in parsed_messages {
-        let decoded = match &parsed_message["boc"] {
-            Value::String(boc) => match decode_message(
-                context.clone(),
-                ParamsOfDecodeMessage {
-                    message: boc.clone(),
-                    abi: abi.clone(),
-                },
-            ) {
-                Ok(decoded) => {
-                    if decoded.message_type == DecodedMessageType::FunctionOutput {
-                        output = Some(decoded.value.clone());
-                    }
-                    Some(decoded)
-                }
-                _ => None,
+    for message in messages {
+        let decode_result = decode_message(
+            context.clone(),
+            ParamsOfDecodeMessage {
+                message,
+                abi: abi.clone(),
             },
+        );
+        let decoded = match decode_result {
+            Ok(decoded) => {
+                if decoded.body_type == MessageBodyType::Output {
+                    output = decoded.value.clone();
+                }
+                Some(decoded)
+            }
             _ => None,
         };
         out_messages.push(decoded);

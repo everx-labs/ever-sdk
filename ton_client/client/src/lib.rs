@@ -30,7 +30,6 @@ pub mod crypto;
 pub mod encoding;
 pub mod error;
 pub mod json_interface;
-#[cfg(feature = "node_interaction")]
 pub mod net;
 pub mod processing;
 pub mod tvm;

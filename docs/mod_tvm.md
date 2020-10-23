@@ -2,76 +2,114 @@
 
 null
 ## Functions
-[execute_message](#execute_message)
+[run_executor](#run_executor)
 
-[execute_get](#execute_get)
+[run_tvm](#run_tvm)
+
+[run_get](#run_get)
 
 ## Types
-[ExecutionMode](#ExecutionMode)
-
 [ExecutionOptions](#ExecutionOptions)
 
-[ParamsOfExecuteMessage](#ParamsOfExecuteMessage)
+[ParamsOfRunExecutor](#ParamsOfRunExecutor)
 
-[ResultOfExecuteMessage](#ResultOfExecuteMessage)
+[ResultOfRunExecutor](#ResultOfRunExecutor)
 
-[ParamsOfExecuteGet](#ParamsOfExecuteGet)
+[ParamsOfRunTvm](#ParamsOfRunTvm)
 
-[ResultOfExecuteGet](#ResultOfExecuteGet)
+[ResultOfRunTvm](#ResultOfRunTvm)
+
+[ParamsOfRunGet](#ParamsOfRunGet)
+
+[ResultOfRunGet](#ResultOfRunGet)
 
 
 # Functions
-## execute_message
+## run_executor
 
 ```ts
-type ParamsOfExecuteMessage = {
-    message: MessageSource,
-    account: string,
-    mode: ExecutionMode,
-    execution_options?: ExecutionOptions
+type ParamsOfRunExecutor = {
+    message: string,
+    account?: string,
+    execution_options?: ExecutionOptions,
+    abi?: Abi
 };
 
-type ResultOfExecuteMessage = {
-    transaction?: any,
-    out_messages: any[],
+type ResultOfRunExecutor = {
+    transaction: any,
+    out_messages: string[],
     decoded?: DecodedOutput,
-    account?: any
+    account: string,
+    fees: TransactionFees
 };
 
-function execute_message(
-    params: ParamsOfExecuteMessage,
-): Promise<ResultOfExecuteMessage>;
+function run_executor(
+    params: ParamsOfRunExecutor,
+): Promise<ResultOfRunExecutor>;
 ```
 ### Parameters
-- `message`: _[MessageSource](mod_processing.md#MessageSource)_ –  Input message.
-- `account`: _string_ –  Account BOC. Must be encoded as base64.
-- `mode`: _[ExecutionMode](mod_tvm.md#ExecutionMode)_ –  Execution mode.
+- `message`: _string_ –  Input message BOC. Must be encoded as base64.
+- `account`?: _string_ –  Account BOC. Must be encoded as base64.
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ –  Execution options.
+- `abi`?: _[Abi](mod_abi.md#Abi)_ –  Contract ABI for dedcoding output messages
 ### Result
 
-- `transaction`?: _any_ –  Parsed transaction.
-- `out_messages`: _any[]_ –  List of parsed output messages.
+- `transaction`: _any_ –  Parsed transaction.
+- `out_messages`: _string[]_ –  List of output messages' BOCs. Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ –  Optional decoded message bodies according to the optional
-- `account`?: _any_ –  JSON with parsed updated account state. Attention! When used in
+- `account`: _string_ –  Updated account state BOC. Encoded as `base64`
+- `fees`: _TransactionFees_ –  Transaction fees
 
 
-## execute_get
+## run_tvm
 
 ```ts
-type ParamsOfExecuteGet = {
+type ParamsOfRunTvm = {
+    message: string,
+    account: string,
+    execution_options?: ExecutionOptions,
+    abi?: Abi
+};
+
+type ResultOfRunTvm = {
+    out_messages: string[],
+    decoded?: DecodedOutput,
+    account: string
+};
+
+function run_tvm(
+    params: ParamsOfRunTvm,
+): Promise<ResultOfRunTvm>;
+```
+### Parameters
+- `message`: _string_ –  Input message BOC. Must be encoded as base64.
+- `account`: _string_ –  Account BOC. Must be encoded as base64.
+- `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ –  Execution options.
+- `abi`?: _[Abi](mod_abi.md#Abi)_ –  Contract ABI for dedcoding output messages
+### Result
+
+- `out_messages`: _string[]_ –  List of output messages' BOCs. Encoded as `base64`
+- `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ –  Optional decoded message bodies according to the optional
+- `account`: _string_ –  Updated account state BOC. Encoded as `base64`.
+
+
+## run_get
+
+```ts
+type ParamsOfRunGet = {
     account: string,
     function_name: string,
     input?: any,
     execution_options?: ExecutionOptions
 };
 
-type ResultOfExecuteGet = {
+type ResultOfRunGet = {
     output: any
 };
 
-function execute_get(
-    params: ParamsOfExecuteGet,
-): Promise<ResultOfExecuteGet>;
+function run_get(
+    params: ParamsOfRunGet,
+): Promise<ResultOfRunGet>;
 ```
 ### Parameters
 - `account`: _string_
@@ -84,17 +122,6 @@ function execute_get(
 
 
 # Types
-## ExecutionMode
-
-```ts
-type ExecutionMode = 'Full' | 'TvmOnly';
-```
-One of the following value:
-
-- `Full` –  Executes all phases and performs all checks
-- `TvmOnly` –  Executes contract only on TVM (part of compute phase)
-
-
 ## ExecutionOptions
 
 ```ts
@@ -111,42 +138,74 @@ type ExecutionOptions = {
 - `transaction_lt`?: _bigint_ –  transaction logical time
 
 
-## ParamsOfExecuteMessage
+## ParamsOfRunExecutor
 
 ```ts
-type ParamsOfExecuteMessage = {
-    message: MessageSource,
-    account: string,
-    mode: ExecutionMode,
-    execution_options?: ExecutionOptions
+type ParamsOfRunExecutor = {
+    message: string,
+    account?: string,
+    execution_options?: ExecutionOptions,
+    abi?: Abi
 };
 ```
-- `message`: _[MessageSource](mod_processing.md#MessageSource)_ –  Input message.
-- `account`: _string_ –  Account BOC. Must be encoded as base64.
-- `mode`: _[ExecutionMode](mod_tvm.md#ExecutionMode)_ –  Execution mode.
+- `message`: _string_ –  Input message BOC. Must be encoded as base64.
+- `account`?: _string_ –  Account BOC. Must be encoded as base64.
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ –  Execution options.
+- `abi`?: _[Abi](mod_abi.md#Abi)_ –  Contract ABI for dedcoding output messages
 
 
-## ResultOfExecuteMessage
+## ResultOfRunExecutor
 
 ```ts
-type ResultOfExecuteMessage = {
-    transaction?: any,
-    out_messages: any[],
+type ResultOfRunExecutor = {
+    transaction: any,
+    out_messages: string[],
     decoded?: DecodedOutput,
-    account?: any
+    account: string,
+    fees: TransactionFees
 };
 ```
-- `transaction`?: _any_ –  Parsed transaction.
-- `out_messages`: _any[]_ –  List of parsed output messages.
+- `transaction`: _any_ –  Parsed transaction.
+- `out_messages`: _string[]_ –  List of output messages' BOCs. Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ –  Optional decoded message bodies according to the optional
-- `account`?: _any_ –  JSON with parsed updated account state. Attention! When used in
+- `account`: _string_ –  Updated account state BOC. Encoded as `base64`
+- `fees`: _TransactionFees_ –  Transaction fees
 
 
-## ParamsOfExecuteGet
+## ParamsOfRunTvm
 
 ```ts
-type ParamsOfExecuteGet = {
+type ParamsOfRunTvm = {
+    message: string,
+    account: string,
+    execution_options?: ExecutionOptions,
+    abi?: Abi
+};
+```
+- `message`: _string_ –  Input message BOC. Must be encoded as base64.
+- `account`: _string_ –  Account BOC. Must be encoded as base64.
+- `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ –  Execution options.
+- `abi`?: _[Abi](mod_abi.md#Abi)_ –  Contract ABI for dedcoding output messages
+
+
+## ResultOfRunTvm
+
+```ts
+type ResultOfRunTvm = {
+    out_messages: string[],
+    decoded?: DecodedOutput,
+    account: string
+};
+```
+- `out_messages`: _string[]_ –  List of output messages' BOCs. Encoded as `base64`
+- `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ –  Optional decoded message bodies according to the optional
+- `account`: _string_ –  Updated account state BOC. Encoded as `base64`.
+
+
+## ParamsOfRunGet
+
+```ts
+type ParamsOfRunGet = {
     account: string,
     function_name: string,
     input?: any,
@@ -159,10 +218,10 @@ type ParamsOfExecuteGet = {
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_
 
 
-## ResultOfExecuteGet
+## ResultOfRunGet
 
 ```ts
-type ResultOfExecuteGet = {
+type ResultOfRunGet = {
     output: any
 };
 ```

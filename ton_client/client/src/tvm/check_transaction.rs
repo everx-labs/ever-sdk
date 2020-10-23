@@ -16,16 +16,16 @@ use crate::error::ClientResult;
 use ton_block::AccStatusChange;
 use std::convert::TryFrom;
 
-pub(crate) fn check_transaction_status(
+pub(crate) fn check_transaction(
     transaction: &ton_block::Transaction,
     real_tr: bool,
     contract_info: impl FnOnce() -> ClientResult<(ton_block::MsgAddressInt, u64)>,
-) -> ClientResult<()> {
+) -> ClientResult<ton_sdk::TransactionFees> {
     let transaction = ton_sdk::Transaction::try_from(transaction)
         .map_err(|err| Error::can_not_read_transaction(err))?;
 
     if !transaction.is_aborted() {
-        return Ok(());
+        return Ok(transaction.calc_fees());
     }
 
     let mut error = match extract_error(&transaction, contract_info) {
@@ -61,7 +61,9 @@ fn extract_error(
         let (address, _) = contract_info()?;
         return Err(Error::tvm_execution_failed(
             "compute phase isn't succeeded",
-            transaction.compute.exit_code.unwrap_or(-1), &address));
+            transaction.compute.exit_code.unwrap_or(-1),
+            transaction.compute.exit_arg.map(i32::into),
+            &address));
     }
 
     if let Some(action) = &transaction.action {

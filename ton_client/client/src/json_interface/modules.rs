@@ -25,14 +25,15 @@ fn register_client(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::error::ClientError>();
     module.register_type::<crate::client::ClientConfig>();
     module.register_type::<crate::net::NetworkConfig>();
-    module.register_type::<crate::client::CryptoConfig>();
-    module.register_type::<ton_sdk::AbiConfig>();
+    module.register_type::<crate::crypto::CryptoConfig>();
+    module.register_type::<crate::abi::AbiConfig>();
 
     module.register_sync_fn_without_args(
         crate::client::get_api_reference,
         crate::client::get_api_reference_api,
     );
     module.register_sync_fn_without_args(crate::client::version, crate::client::version_api);
+    module.register_sync_fn_without_args(crate::client::build_info, crate::client::build_info_api);
     module.register();
 }
 
@@ -84,8 +85,8 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
     // Scrypt
 
     module.register_sync_fn(
-        crate::crypto::scrypt::scrypt,
-        crate::crypto::scrypt::scrypt_api,
+        crate::crypto::encscrypt::scrypt,
+        crate::crypto::encscrypt::scrypt_api,
     );
 
     // NaCl
@@ -188,10 +189,19 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::abi::CallSet>();
     module.register_type::<crate::abi::DeploySet>();
     module.register_type::<crate::abi::Signer>();
-    module.register_type::<crate::abi::DecodedMessageType>();
+    module.register_type::<crate::abi::MessageBodyType>();
     module.register_type::<crate::abi::StateInitSource>();
     module.register_type::<crate::abi::StateInitParams>();
+    module.register_type::<crate::abi::MessageSource>();
 
+    module.register_async_fn(
+        crate::abi::encode_message_body,
+        crate::abi::encode_message::encode_message_body_api,
+    );
+    module.register_sync_fn(
+        crate::abi::attach_signature_to_message_body,
+        crate::abi::encode_message::attach_signature_to_message_body_api,
+    );
     module.register_async_fn(
         crate::abi::encode_message,
         crate::abi::encode_message::encode_message_api,
@@ -278,7 +288,6 @@ pub struct ProcessingModule;
 
 fn register_processing(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<ProcessingModule>(handlers);
-    module.register_type::<crate::processing::MessageSource>();
     module.register_type::<crate::processing::ProcessingEvent>();
     module.register_type::<crate::processing::ResultOfProcessMessage>();
     module.register_type::<crate::processing::DecodedOutput>();
@@ -304,15 +313,18 @@ pub struct TvmModule;
 
 fn register_tvm(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<TvmModule>(handlers);
-    module.register_type::<crate::tvm::execute_message::ExecutionMode>();
-    module.register_type::<crate::tvm::execute_message::ExecutionOptions>();
+    module.register_type::<crate::tvm::types::ExecutionOptions>();
     module.register_async_fn(
-        crate::tvm::execute_message,
-        crate::tvm::execute_message::execute_message_api,
+        crate::tvm::run_executor,
+        crate::tvm::run_message::run_executor_api,
     );
-    module.register_sync_fn(
-        crate::tvm::execute_get,
-        crate::tvm::execute_get::execute_get_api,
+    module.register_async_fn(
+        crate::tvm::run_tvm,
+        crate::tvm::run_message::run_tvm_api,
+    );
+    module.register_async_fn(
+        crate::tvm::run_get,
+        crate::tvm::run_get::run_get_api,
     );
     module.register();
 }
@@ -341,6 +353,5 @@ pub(crate) fn register_modules(handlers: &mut RuntimeHandlers) {
     register_utils(handlers);
     register_tvm(handlers);
 
-    #[cfg(feature = "node_interaction")]
-    register_net(handlers);
+        register_net(handlers);
 }

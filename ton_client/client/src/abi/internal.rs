@@ -34,6 +34,26 @@ pub(crate) fn add_sign_to_message(
     Ok(signed.serialized_message)
 }
 
+/// Combines `hex` encoded `signature` with `base64` encoded `unsigned_message`.
+/// Returns signed message encoded with `base64`.
+pub(crate) fn add_sign_to_message_body(
+    abi: &str,
+    signature: &[u8],
+    public_key: Option<&[u8]>,
+    unsigned_body: &[u8],
+) -> ClientResult<Vec<u8>> {
+    let unsigned = ton_sdk::Contract::deserialize_tree_to_slice(unsigned_body)
+        .map_err(|err| Error::attach_signature_failed(err))?;
+    let body = ton_abi::add_sign_to_function_call(abi.to_string(), signature, public_key, unsigned)
+        .map_err(|err| Error::attach_signature_failed(err))?;
+    Ok(ton_types::serialize_toc(
+        &body
+            .into_cell()
+            .map_err(|err| Error::attach_signature_failed(err))?,
+    )
+    .map_err(|err| Error::attach_signature_failed(err))?)
+}
+
 pub(crate) fn result_of_encode_message(
     abi: &str,
     message: Vec<u8>,

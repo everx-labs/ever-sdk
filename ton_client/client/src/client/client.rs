@@ -13,118 +13,77 @@
 
 use crate::error::ClientResult;
 use std::sync::Arc;
-use ton_sdk::AbiConfig;
 
 use crate::net::{NetworkConfig, NodeClient};
 
-use super::std_client_env::StdClientEnv;
-use super::{ClientEnv, Error};
+#[cfg(not(feature = "wasm"))]
+use super::std_client_env::ClientEnv;
+#[cfg(feature = "wasm")]
+use super::wasm_client_env::ClientEnv;
+
+use super::Error;
+use crate::crypto::CryptoConfig;
+use crate::abi::AbiConfig;
 
 pub struct ClientContext {
-    #[cfg(feature = "node_interaction")]
     pub(crate) client: Option<NodeClient>,
-    #[cfg(feature = "node_interaction")]
-    _async_runtime: Option<tokio::runtime::Runtime>,
-    #[cfg(feature = "node_interaction")]
-    pub(crate) async_runtime_handle: tokio::runtime::Handle,
-    pub(crate) config: InternalClientConfig,
-    pub(crate) env: Arc<dyn ClientEnv + Send + Sync>,
+    pub(crate) config: ClientConfig,
+    pub(crate) env: Arc<ClientEnv>,
 }
 
-#[cfg(feature = "node_interaction")]
 impl ClientContext {
     pub(crate) fn get_client(&self) -> ClientResult<&NodeClient> {
         self.client.as_ref().ok_or(Error::net_module_not_init())
     }
 
-    #[cfg(not(feature = "node_interaction"))]
-    pub fn new(config: Option<ClientConfig>) -> ClientResult<Self> {
-        Ok(Self {
-            config: config.unwrap_or_default().into(),
-        })
+    pub async fn set_timer(&self, ms: u64) -> ClientResult<()> {
+        self.env.set_timer(ms).await
     }
 
-    #[cfg(feature = "node_interaction")]
-    pub fn new(config: Option<ClientConfig>) -> ClientResult<ClientContext> {
-        let config: InternalClientConfig = config.unwrap_or_default().into();
-        let std_env = Arc::new(StdClientEnv::new()?);
+    pub fn new(config: ClientConfig) -> ClientResult<ClientContext> {
+        let env = Arc::new(super::ClientEnv::new()?);
 
-        let (client, _) = if let Some(net_config) = &config.network {
-            if net_config.out_of_sync_threshold()
-                > config.abi.message_expiration_timeout() as i64 / 2
+        let client = if !config.network.server_address.is_empty() {
+            if config.network.out_of_sync_threshold
+                > config.abi.message_expiration_timeout as i64 / 2
             {
                 return Err(Error::invalid_config(format!(
                     r#"`out_of_sync_threshold` can not be more then `message_expiration_timeout / 2`.
 `out_of_sync_threshold` = {}, `message_expiration_timeout` = {}
 Note that default values are used if parameters are omitted in config"#,
-                    net_config.out_of_sync_threshold(),
-                    config.abi.message_expiration_timeout()
+                    config.network.out_of_sync_threshold, config.abi.message_expiration_timeout
                 )));
             }
-            let client = NodeClient::new(net_config.clone(), std_env.clone());
-            let sdk_config = ton_sdk::NetworkConfig {
-                access_key: net_config.access_key.clone(),
-                message_processing_timeout: net_config.message_processing_timeout,
-                message_retries_count: net_config.message_retries_count,
-                out_of_sync_threshold: net_config.out_of_sync_threshold,
-                server_address: net_config.server_address.clone(),
-                wait_for_timeout: net_config.wait_for_timeout,
-            };
-            let sdk_client = ton_sdk::NodeClient::new(sdk_config);
-            (Some(client), Some(sdk_client))
+            Some(NodeClient::new(config.network.clone(), env.clone()))
         } else {
-            (None, None)
+            None
         };
-
-        let (async_runtime, async_runtime_handle) =
-            if let Ok(existing) = tokio::runtime::Handle::try_current() {
-                (None, existing)
-            } else {
-                let runtime = tokio::runtime::Builder::new()
-                    .threaded_scheduler()
-                    .enable_io()
-                    .enable_time()
-                    .build()
-                    .map_err(|err| Error::cannot_create_runtime(err))?;
-                let runtime_handle = runtime.handle().clone();
-                (Some(runtime), runtime_handle)
-            };
 
         Ok(Self {
             client,
-            _async_runtime: async_runtime,
-            async_runtime_handle,
             config,
-            env: std_env,
+            env,
         })
     }
 }
 
-#[derive(Deserialize, Debug, Default, Clone, ApiType)]
-pub struct CryptoConfig {
-    pub fish_param: Option<String>,
-}
-
-#[derive(Deserialize, Debug, Clone, Default, ApiType)]
+#[derive(Deserialize, Debug, Clone, ApiType)]
 pub struct ClientConfig {
-    pub network: Option<NetworkConfig>,
-    pub crypto: Option<CryptoConfig>,
-    pub abi: Option<AbiConfig>,
-}
-
-#[derive(Debug, Clone)]
-pub struct InternalClientConfig {
-    pub network: Option<NetworkConfig>,
+    #[serde(default)]
+    pub network: NetworkConfig,
+    #[serde(default)]
     pub crypto: CryptoConfig,
+    #[serde(default)]
     pub abi: AbiConfig,
 }
 
-impl From<ClientConfig> for InternalClientConfig {
-    fn from(config: ClientConfig) -> Self {
-        InternalClientConfig {
-            network: config.network,
-            crypto: config.crypto.unwrap_or_default(),
-            abi: config.abi.unwrap_or_default(),
+impl Default for ClientConfig {
+    fn default() -> Self {
+        Self {
+            network: Default::default(),
+            crypto: Default::default(),
+            abi: Default::default(),
         }
     }
 }
+

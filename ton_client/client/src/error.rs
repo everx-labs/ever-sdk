@@ -14,21 +14,6 @@ fn format_time(time: u32) -> String {
     )
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum ClientErrorSource {
-    Client,
-    Node,
-}
-
-impl ClientErrorSource {
-    pub fn to_string(&self) -> String {
-        match self {
-            ClientErrorSource::Client => "client".to_string(),
-            ClientErrorSource::Node => "node".to_string(),
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default, ApiType)]
 #[serde(default)]
 pub struct ClientError {
@@ -69,6 +54,8 @@ impl Display for ClientError {
     }
 }
 
+impl std::error::Error for ClientError {}
+
 impl ClientError {
     pub const CLIENT: isize = 0;
     pub const CRYPTO: isize = 100;
@@ -103,8 +90,7 @@ impl ClientError {
         Self::with_code_message(code.as_number(), message)
     }
 
-    #[cfg(feature = "node_interaction")]
-    pub(crate) fn add_network_url(mut self, client: &crate::net::NodeClient) -> ClientError {
+        pub(crate) fn add_network_url(mut self, client: &crate::net::NodeClient) -> ClientError {
         self.data["config_server"] = client.config_server().into();
 
         if let Some(url) = client.query_url() {

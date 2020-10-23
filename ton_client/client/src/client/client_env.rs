@@ -15,25 +15,24 @@ use crate::error::{ClientError, ClientResult};
 use super::Error;
 use std::collections::HashMap;
 use std::pin::Pin;
-use futures::{Future, Sink, Stream};
+use futures::{Sink, Stream};
 
 pub(crate) struct WebSocket {
-    pub handle: u32,
     pub sender: Pin<Box<dyn Sink<String, Error=ClientError> + Send>>,
     pub receiver: Pin<Box<dyn Stream<Item=ClientResult<String>> + Send>>
 }
 
+#[derive(Debug)]
 pub(crate) struct FetchResult {
     pub status: u16,
     pub headers: HashMap<String, String>,
-    pub body: Vec<u8>,
+    pub body: String,
     pub url: String
 }
 
 impl FetchResult {
     pub fn body_as_text(&self) -> ClientResult<&str> {
-        std::str::from_utf8(&self.body)
-            .map_err(|_| Error::http_request_parse_error("Body is not a valid UTF8 string"))
+        Ok(&self.body)
     }
 
     pub fn body_as_json(&self) -> ClientResult<serde_json::Value> {
@@ -73,31 +72,3 @@ impl FetchMethod {
     }
 }
 
-#[async_trait::async_trait]
-pub(crate) trait ClientEnv {
-    /// Returns current Unix time in ms
-    fn now_ms(&self) -> u64;
-    /// Sets timer for provided time interval
-    async fn set_timer(&self, ms: u64);
-    /// Sends asynchronous task to scheduler
-    fn spawn(&self, future: std::pin::Pin<Box<dyn Future<Output = ()> + Send + 'static>>);
-    /// Creates lock object
-    // fn create_rwlock() -> EnvRwLock;
-    /// Connects to the websocket endpoint
-    async fn websocket_connect(
-        &self,
-        url: &str,
-        headers: Option<HashMap<&str, &str>>,
-    ) -> ClientResult<WebSocket>;
-    /// Closes websocket
-    async fn websocket_close(&self, handle: u32);
-    /// Executes http request
-    async fn fetch(
-        &self,
-        url: &str,
-        method: FetchMethod,
-        headers: Option<HashMap<String, String>>,
-        body: Option<Vec<u8>>,
-        timeout_ms: Option<u32>,
-    ) -> ClientResult<FetchResult>;
-}

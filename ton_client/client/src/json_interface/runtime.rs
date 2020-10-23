@@ -16,7 +16,7 @@ use super::modules::register_modules;
 use super::request::Request;
 use crate::client::{ClientConfig, ClientContext};
 use crate::error::{ClientError, ClientResult};
-use crate::{ContextHandle};
+use crate::ContextHandle;
 use api_info::{Module, API};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -33,7 +33,6 @@ pub(crate) trait AsyncHandler {
 
 pub(crate) struct RuntimeHandlers {
     sync_handlers: HashMap<String, Box<dyn SyncHandler + Sync>>,
-    #[cfg(feature = "node_interaction")]
     async_handlers: HashMap<String, Box<dyn AsyncHandler + Sync>>,
     api: API,
 }
@@ -42,7 +41,6 @@ impl RuntimeHandlers {
     fn new() -> RuntimeHandlers {
         let mut handlers = Self {
             sync_handlers: HashMap::new(),
-            #[cfg(feature = "node_interaction")]
             async_handlers: HashMap::new(),
             api: API {
                 version: "1.0.0".into(),
@@ -110,7 +108,6 @@ impl Runtime {
         }
     }
 
-    #[cfg(feature = "node_interaction")]
     pub fn dispatch_async(
         context: Arc<ClientContext>,
         function_name: String,
@@ -123,34 +120,19 @@ impl Runtime {
         }
     }
 
-    #[cfg(not(feature = "node_interaction"))]
-    pub fn dispatch_async(
-        context: Arc<ClientContext>,
-        function_name: String,
-        params_json: String,
-        request_id: u32,
-        response_handler: CResponseHandler,
-    ) {
-        Request::new(response_handler, request_id).finish_with_result(Self::dispatch_sync(
-            context,
-            function_name,
-            params_json,
-        ));
-    }
-
     pub fn api() -> &'static API {
         &Self::handlers().api
     }
 
     pub fn create_context(config_json: &str) -> ClientResult<ContextHandle> {
-        let config = if !config_json.is_empty() {
-            Some(
-                serde_json::from_str::<ClientConfig>(config_json)
-                    .map_err(|err| ClientError::invalid_params(config_json, err))?,
-            )
+        let config_json = if !config_json.is_empty() {
+            config_json
         } else {
-            None
+            "{}"
         };
+        let config = serde_json::from_str::<ClientConfig>(config_json)
+            .map_err(|err| ClientError::invalid_params(config_json, err))?;
+
         let mut contexts = Self::contexts();
         let handle = contexts.next_context_handle;
         contexts.next_context_handle = handle.wrapping_add(1);

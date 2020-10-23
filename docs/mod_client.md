@@ -1,10 +1,12 @@
 # Module client
 
- BOC manipulation module.
+ Provides information about library.
 ## Functions
 [get_api_reference](#get_api_reference)
 
 [version](#version)
+
+[build_info](#build_info)
 
 ## Types
 [ClientError](#ClientError)
@@ -20,6 +22,8 @@
 [ResultOfGetApiReference](#ResultOfGetApiReference)
 
 [ResultOfVersion](#ResultOfVersion)
+
+[ResultOfBuildInfo](#ResultOfBuildInfo)
 
 
 # Functions
@@ -51,6 +55,20 @@ function version(): Promise<ResultOfVersion>;
 - `version`: _string_ –  core version
 
 
+## build_info
+
+```ts
+type ResultOfBuildInfo = {
+    build_info: any
+};
+
+function build_info(): Promise<ResultOfBuildInfo>;
+```
+### Result
+
+- `build_info`: _any_
+
+
 # Types
 ## ClientError
 
@@ -70,14 +88,14 @@ type ClientError = {
 
 ```ts
 type ClientConfig = {
-    network?: NetworkConfig,
-    crypto?: CryptoConfig,
-    abi?: AbiConfig
+    network: NetworkConfig,
+    crypto: CryptoConfig,
+    abi: AbiConfig
 };
 ```
-- `network`?: _[NetworkConfig](mod_client.md#NetworkConfig)_
-- `crypto`?: _[CryptoConfig](mod_client.md#CryptoConfig)_
-- `abi`?: _[AbiConfig](mod_client.md#AbiConfig)_
+- `network`: _[NetworkConfig](mod_client.md#NetworkConfig)_
+- `crypto`: _[CryptoConfig](mod_client.md#CryptoConfig)_
+- `abi`: _[AbiConfig](mod_client.md#AbiConfig)_
 
 
 ## NetworkConfig
@@ -85,18 +103,20 @@ type ClientConfig = {
 ```ts
 type NetworkConfig = {
     server_address: string,
-    message_retries_count?: number,
-    message_processing_timeout?: number,
-    wait_for_timeout?: number,
-    out_of_sync_threshold?: bigint,
+    network_retries_count: number,
+    message_retries_count: number,
+    message_processing_timeout: number,
+    wait_for_timeout: number,
+    out_of_sync_threshold: bigint,
     access_key?: string
 };
 ```
 - `server_address`: _string_
-- `message_retries_count`?: _number_
-- `message_processing_timeout`?: _number_
-- `wait_for_timeout`?: _number_
-- `out_of_sync_threshold`?: _bigint_
+- `network_retries_count`: _number_
+- `message_retries_count`: _number_
+- `message_processing_timeout`: _number_
+- `wait_for_timeout`: _number_
+- `out_of_sync_threshold`: _bigint_
 - `access_key`?: _string_
 
 
@@ -104,22 +124,30 @@ type NetworkConfig = {
 
 ```ts
 type CryptoConfig = {
-    fish_param?: string
+    mnemonic_dictionary: number,
+    mnemonic_word_count: number,
+    hdkey_derivation_path: string,
+    hdkey_compliant: boolean
 };
 ```
-- `fish_param`?: _string_
+- `mnemonic_dictionary`: _number_
+- `mnemonic_word_count`: _number_
+- `hdkey_derivation_path`: _string_
+- `hdkey_compliant`: _boolean_
 
 
 ## AbiConfig
 
 ```ts
 type AbiConfig = {
-    message_expiration_timeout?: number,
-    message_expiration_timeout_grow_factor?: number
+    workchain: number,
+    message_expiration_timeout: number,
+    message_expiration_timeout_grow_factor: number
 };
 ```
-- `message_expiration_timeout`?: _number_
-- `message_expiration_timeout_grow_factor`?: _number_
+- `workchain`: _number_
+- `message_expiration_timeout`: _number_
+- `message_expiration_timeout_grow_factor`: _number_
 
 
 ## ResultOfGetApiReference
@@ -140,5 +168,15 @@ type ResultOfVersion = {
 };
 ```
 - `version`: _string_ –  core version
+
+
+## ResultOfBuildInfo
+
+```ts
+type ResultOfBuildInfo = {
+    build_info: any
+};
+```
+- `build_info`: _any_
 
 

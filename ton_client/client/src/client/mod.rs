@@ -14,14 +14,22 @@
 mod client;
 mod client_env;
 pub(crate) mod errors;
+#[cfg(not(feature = "wasm"))]
 mod std_client_env;
+#[cfg(not(feature = "wasm"))]
+pub(crate) use std_client_env::ClientEnv;
+#[cfg(feature = "wasm")]
+mod wasm_client_env;
+#[cfg(feature = "wasm")]
+pub(crate) use wasm_client_env::ClientEnv;
+
 #[cfg(test)]
 mod tests;
 
-pub use client::{ClientConfig, ClientContext, CryptoConfig};
+pub use client::{ClientConfig, ClientContext};
 pub use errors::{Error, ErrorCode};
 
-pub(crate) use client_env::{ClientEnv, FetchMethod, FetchResult, WebSocket};
+pub(crate) use client_env::{FetchMethod, FetchResult, WebSocket};
 
 use crate::error::ClientResult;
 use crate::json_interface::runtime::Runtime;
@@ -56,3 +64,16 @@ pub fn get_api_reference(_context: Arc<ClientContext>) -> ClientResult<ResultOfG
         api: Runtime::api().clone(),
     })
 }
+
+#[derive(ApiType, Serialize, Deserialize, Clone)]
+pub struct ResultOfBuildInfo {
+    pub build_info: serde_json::Value,
+}
+
+#[api_function]
+pub fn build_info(_context: Arc<ClientContext>) -> ClientResult<ResultOfBuildInfo> {
+    Ok(ResultOfBuildInfo {
+        build_info: serde_json::from_str(include_str!("../build_info.json")).unwrap_or(json!({}))
+    })
+}
+

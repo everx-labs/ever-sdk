@@ -28,7 +28,7 @@ hex = "0.3.2"
 serde_json = "1.0.41"
 serde_derive = "1.0.91"
 serde = "1.0.91"
-ed25519-dalek = "1.0.0-pre.3"
+ed25519-dalek = "1.0.0"
 sha2 = "0.8"
 base64 = "0.10.0"
 lazy_static = "1.1.0"
@@ -37,7 +37,7 @@ chrono = "0.4.6"
 scrypt = { version = "0.2.0", default-features = false }
 hmac = "0.7.1"
 base58 = "0.1.0"
-pbkdf2 = { version = "0.3.0", default-features = false, features = [] }
+pbkdf2 = { version = "0.3.0", default-features = false }
 byteorder = "1.3.2"
 libsecp256k1 = "0.2.2"
 log = "0.4.11"
@@ -46,35 +46,38 @@ failure = "0.1"
 num-traits = "0.2"
 num-derive = "0.3"
 async-trait = "0.1.40"
+futures = "0.3.4"
+tokio = { version = "0.2.13", features = ["sync"], default-features = false }
 lockfree = { git = "https://github.com/tonlabs/lockfree.git", package = "lockfree" }
+
+# optional for std
+reqwest = { version = "0.10.4", optional = true }
+tokio-tungstenite = { version =  "0.11.0", features = ["tls"], optional = true }
+
+# optional for wasm
+wasm-bindgen = { version = "=0.2.65", features = ["serde-serialize"], optional = true }
+wasm-bindgen-futures = { version = "0.4.15", optional = true }
+js-sys = { version = "0.3", optional = true }
+web-sys = { version =  "0.3.42", optional = true, features = [
+    "ErrorEvent",
+    "FileReader",
+    "Headers",
+    "MessageEvent",
+    "ProgressEvent",
+    "Request",
+    "RequestInit",
+    "Response",
+    "Window",
+    "WebSocket",
+    ] }
 
 [dev-dependencies]
 log4rs = "^0"
 dirs = "2.0.2"
 pretty_assertions = "0.6.1"
 
-[dependencies.reqwest]
-version = "0.10.4"
-optional = true
-
-[dependencies.tokio]
-version = "0.2.13"
-features = ["rt-threaded", "macros", "sync"]
-optional = true
-
-[dependencies.futures]
-version = "0.3.4"
-optional = true
-
-[dependencies.tokio-tungstenite]
-version =  "0.11.0"
-features = ["tls"]
-optional = true
-
-[dependencies.futures-timer]
-version = "3.0.1"
-optional = true
 
 [features]
-default = ["node_interaction"]
-node_interaction = ["ton_sdk/node_interaction", "tokio", "futures", "reqwest", "tokio-tungstenite", "futures-timer"]
+default = ["std"]
+std = ["tokio/rt-threaded", "tokio/macros", "tokio/sync", "reqwest", "tokio-tungstenite"]
+wasm = ["wasm-bindgen", "wasm-bindgen-futures", "js-sys", "web-sys"]

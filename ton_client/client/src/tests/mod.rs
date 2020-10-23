@@ -20,8 +20,9 @@ use crate::client::{ClientContext, Error};
 use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
-use crate::processing::{MessageSource, ParamsOfProcessMessage, ResultOfProcessMessage};
-use crate::{crypto::KeyPair, error::{ClientError, ClientResult}, net::{ParamsOfWaitForCollection, ResultOfWaitForCollection}, tc_create_context, tc_destroy_context, ContextHandle};
+use crate::processing::{ParamsOfProcessMessage, ResultOfProcessMessage};
+use crate::{crypto::KeyPair, error::{ClientError, ClientResult}, net::{ParamsOfWaitForCollection, ResultOfWaitForCollection}, tc_create_context, tc_destroy_context, ContextHandle, ClientConfig};
+use crate::boc::{ParamsOfParse, ResultOfParse};
 use api_info::ApiModule;
 use futures::Future;
 use num_traits::FromPrimitive;
@@ -36,12 +37,13 @@ use tokio::sync::{
     Mutex,
 };
 use crate::json_interface::modules::{AbiModule, ProcessingModule, NetModule};
+use crate::abi::MessageSource;
 
 mod common;
 
 const DEFAULT_NETWORK_ADDRESS: &str = "http://localhost";
-// const DEFAULT_NETWORK_ADDRESS: &str = "cinet.tonlabs.io";
-// const DEFAULT_NETWORK_ADDRESS: &str = "net.ton.dev";
+//const DEFAULT_NETWORK_ADDRESS: &str = "cinet.tonlabs.io";
+//const DEFAULT_NETWORK_ADDRESS: &str = "net.ton.dev";
 
 const ROOT_CONTRACTS_PATH: &str = "src/tests/contracts/";
 const LOG_CGF_PATH: &str = "src/tests/log_cfg.yaml";
@@ -110,8 +112,8 @@ lazy_static::lazy_static! {
     static ref TEST_RUNTIME: Mutex<TestRuntime> = Mutex::new(TestRuntime::new());
 }
 
-#[derive(Clone)]
 pub(crate) struct TestClient {
+    config: ClientConfig,
     context: ContextHandle,
 }
 
@@ -325,6 +327,7 @@ impl TestClient {
         unsafe {
             let response = tc_create_context(StringData::new(&config.to_string()));
             Self {
+                config: serde_json::from_value(config).unwrap(),
                 context: parse_sync_response(response).unwrap(),
             }
         }
@@ -609,7 +612,13 @@ impl TestClient {
 
         // wait for grams receiving
         for message in run_result.out_messages.iter() {
-            let message: ton_sdk::Message = serde_json::from_value(message.clone()).unwrap();
+            let parsed: ResultOfParse = self.request(
+                "boc.parse_message",
+                ParamsOfParse {
+                    boc: message.clone()
+                }
+            );
+            let message: ton_sdk::Message = serde_json::from_value(parsed.parsed).unwrap();
             if ton_sdk::MessageType::Internal == message.msg_type() {
                 let _: ResultOfWaitForCollection = self
                     .request_async(
@@ -620,7 +629,7 @@ impl TestClient {
                                 "in_msg": { "eq": message.id()}
                             })),
                             result: "id".to_owned(),
-                            timeout: Some(ton_sdk::types::DEFAULT_WAIT_TIMEOUT),
+                            timeout: Some(self.config.network.wait_for_timeout),
                         },
                     )
                     .await;

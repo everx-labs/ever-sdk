@@ -1,3 +1,4 @@
+use crate::abi::types::MessageSource;
 use crate::abi::{Abi, Error};
 use crate::boc::internal::{
     deserialize_cell_from_base64, deserialize_object_from_base64, serialize_object_to_base64,
@@ -5,7 +6,6 @@ use crate::boc::internal::{
 use crate::client::ClientContext;
 use crate::crypto::internal::decode_public_key;
 use crate::error::ClientResult;
-use crate::processing::MessageSource;
 use serde_json::Value;
 use std::sync::Arc;
 use ton_block::GetRepresentationHash;
@@ -24,6 +24,7 @@ pub struct StateInitParams {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+#[serde(tag = "type")]
 pub enum StateInitSource {
     /// Deploy message.
     Message { source: MessageSource },

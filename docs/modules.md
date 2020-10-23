@@ -1,9 +1,11 @@
 # Modules
-## [client](mod_client.md) –  BOC manipulation module.
+## [client](mod_client.md) –  Provides information about library.
 
 [get_api_reference](mod_client.md#get_api_reference)
 
 [version](mod_client.md#version)
+
+[build_info](mod_client.md#build_info)
 
 ## [crypto](mod_crypto.md) –  Crypto functions.
 
@@ -63,19 +65,25 @@
 
 [hdkey_derive_from_xprv](mod_crypto.md#hdkey_derive_from_xprv) – Derives the next child extended private key
 
-[hdkey_derive_from_xprv_path](mod_crypto.md#hdkey_derive_from_xprv_path) – Derives the exented private key from the specified key and path
+[hdkey_derive_from_xprv_path](mod_crypto.md#hdkey_derive_from_xprv_path) – Derives the extended private key from the specified key and path
 
 [hdkey_secret_from_xprv](mod_crypto.md#hdkey_secret_from_xprv) –  Extracts the private key from the serialized extended private key
 
 [hdkey_public_from_xprv](mod_crypto.md#hdkey_public_from_xprv) –  Extracts the public key from the serialized extended private key
 
-## [abi](mod_abi.md) –  Functions for encoding and decoding messages due to ABI
+## [abi](mod_abi.md) –  Provides message encoding and decoding according to the ABI
+
+[encode_message_body](mod_abi.md#encode_message_body) –  Encodes message body according to ABI function call.
+
+[attach_signature_to_message_body](mod_abi.md#attach_signature_to_message_body)
 
 [encode_message](mod_abi.md#encode_message)
 
 [attach_signature](mod_abi.md#attach_signature)
 
-[decode_message](mod_abi.md#decode_message)
+[decode_message](mod_abi.md#decode_message) –  Decodes message body using provided message BOC and ABI.
+
+[decode_message_body](mod_abi.md#decode_message_body) –  Decodes message body using provided body BOC and ABI.
 
 [encode_account](mod_abi.md#encode_account) –  Encodes account state as it will be
 
@@ -105,9 +113,11 @@
 
 ## [tvm](mod_tvm.md)
 
-[execute_message](mod_tvm.md#execute_message)
+[run_executor](mod_tvm.md#run_executor)
 
-[execute_get](mod_tvm.md#execute_get)
+[run_tvm](mod_tvm.md#run_tvm)
+
+[run_get](mod_tvm.md#run_get)
 
 ## [net](mod_net.md) –  Network access.
 

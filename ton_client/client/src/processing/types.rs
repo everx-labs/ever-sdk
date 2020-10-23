@@ -23,11 +23,8 @@ pub struct ResultOfProcessMessage {
     /// transaction BOC.
     pub transaction: Value,
 
-    /// List of parsed output messages.
-    ///
-    /// Similar to the `transaction` each message contains the `boc`
-    /// field.
-    pub out_messages: Vec<Value>,
+    /// List of output messages' BOCs. Encoded as `base64`
+    pub out_messages: Vec<String>,
 
     /// Optional decoded message bodies according to the optional
     /// `abi` parameter.
@@ -40,6 +37,7 @@ pub enum ProcessingResponseType {
 }
 
 #[derive(Serialize, Deserialize, ApiType, Debug, Clone)]
+#[serde(tag = "type")]
 pub enum ProcessingEvent {
     /// Notifies the app that the current shard block will be fetched
     /// from the network.
@@ -128,4 +126,3 @@ pub enum ProcessingEvent {
         result: ResultOfProcessMessage,
     },
 }
-

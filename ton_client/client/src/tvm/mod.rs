@@ -12,19 +12,21 @@
  *
  */
 
+pub(crate) mod call_tvm;
 mod check_transaction;
 mod errors;
-pub(crate) mod execute_get;
-pub(crate) mod execute_message;
-mod types;
+pub(crate) mod run_get;
+pub(crate) mod run_message;
+pub(crate) mod types;
 
+mod stack;
 #[cfg(test)]
 mod tests;
-mod stack;
 
 pub use errors::{Error, ErrorCode};
-pub use execute_get::{execute_get, ParamsOfExecuteGet, ResultOfExecuteGet};
-pub use execute_message::{execute_message, ParamsOfExecuteMessage, ResultOfExecuteMessage};
-pub use types::ExitCode;
-
-
+pub use run_get::{run_get, ParamsOfRunGet, ResultOfRunGet};
+pub use run_message::{
+    run_executor, run_tvm, ParamsOfRunExecutor, ParamsOfRunTvm,
+    ResultOfRunExecutor, ResultOfRunTvm
+};
+pub use types::{ExitCode, ExecutionOptions};

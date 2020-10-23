@@ -12,83 +12,42 @@
 */
 
 use crate::client::{ClientEnv, FetchMethod};
-use crate::net::Error;
-use crate::error::{ClientResult, ClientError};
+use crate::error::{ClientError, ClientResult};
+use crate::net::{Error, NetworkConfig};
 use futures::{Future, SinkExt, Stream, StreamExt};
-use serde_json::Value;
 use rand::RngCore;
+use serde_json::Value;
 use std::collections::HashMap;
-use std::sync::Arc;
-use std::pin::Pin;
 use std::iter::FromIterator;
+use std::pin::Pin;
+use std::sync::Arc;
 
 pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
-
-pub const DEFAULT_RETRIES_COUNT: u8 = 5;
-pub const DEFAULT_PROCESSING_TIMEOUT: u32 = 40000;
-pub const DEFAULT_WAIT_TIMEOUT: u32 = 40000;
-pub const DEFAULT_OUT_OF_SYNC_THRESHOLD: i64 = 15000;
-
-#[derive(Serialize, Deserialize, Debug, Clone, Default, ApiType)]
-pub struct NetworkConfig {
-    pub server_address: String,
-    pub message_retries_count: Option<u8>,
-    pub message_processing_timeout: Option<u32>,
-    pub wait_for_timeout: Option<u32>,
-    pub out_of_sync_threshold: Option<i64>,
-    pub access_key: Option<String>,
-}
-
-impl NetworkConfig {
-    pub fn server_address(&self) -> &str {
-        &self.server_address
-    }
-
-    pub fn message_retries_count(&self) -> u8 {
-        self.message_retries_count.unwrap_or(DEFAULT_RETRIES_COUNT)
-    }
-
-    pub fn message_processing_timeout(&self) -> u32 {
-        self.message_processing_timeout.unwrap_or(DEFAULT_PROCESSING_TIMEOUT)
-    }
-
-    pub fn wait_for_timeout(&self) -> u32 {
-        self.wait_for_timeout.unwrap_or(DEFAULT_WAIT_TIMEOUT)
-    }
-
-    pub fn out_of_sync_threshold(&self) -> i64 {
-        self.out_of_sync_threshold.unwrap_or(DEFAULT_OUT_OF_SYNC_THRESHOLD)
-    }
-
-    pub fn access_key(&self) -> Option<&str> {
-        self.access_key.as_ref().map(|string| string.as_str())
-    }
-}
 
 #[derive(Serialize, Deserialize, Clone, ApiType)]
 pub enum SortDirection {
     ASC,
-    DESC
+    DESC,
 }
 
 #[derive(Serialize, Deserialize, Clone, ApiType)]
 pub struct OrderBy {
     pub path: String,
-    pub direction: SortDirection
+    pub direction: SortDirection,
 }
 
 #[derive(Debug, Clone, Serialize)]
 struct MutationRequest {
     pub id: String,
-    pub body: String
+    pub body: String,
 }
 
-struct ServerInfo {
+struct ServerVersion {
     pub version: u64,
-    pub supports_time: bool
+    pub supports_time: bool,
 }
 
-impl ServerInfo {
+impl ServerVersion {
     pub fn from_version(version: &str) -> ton_types::Result<Self> {
         let mut vec: Vec<&str> = version.split(".").collect();
         vec.resize(3, "0");
@@ -96,7 +55,7 @@ impl ServerInfo {
             + u64::from_str_radix(vec[1], 10)? * 1000
             + u64::from_str_radix(vec[2], 10)?;
 
-        Ok(ServerInfo {
+        Ok(ServerVersion {
             version,
             supports_time: version >= 26003,
         })
@@ -105,55 +64,40 @@ impl ServerInfo {
 
 struct VariableRequest {
     pub query: String,
-    pub variables: Value
+    pub variables: Value,
 }
 
-struct InitedClientData {
+struct ServerInfo {
     pub query_url: String,
     pub subscription_url: String,
-    pub server_info: ServerInfo
+    pub server_version: ServerVersion,
 }
 
-pub(crate) struct Subscription{
-    pub unsubscribe: Pin<Box<dyn Future<Output=()> + Send>>,
-    pub data_stream: Pin<Box<dyn Stream<Item=ClientResult<Value>> + Send>>
+pub(crate) struct Subscription {
+    pub unsubscribe: Pin<Box<dyn Future<Output = ()> + Send>>,
+    pub data_stream: Pin<Box<dyn Stream<Item = ClientResult<Value>> + Send>>,
 }
 
 pub(crate) struct NodeClient {
     config: NetworkConfig,
-    client_env: Arc<dyn ClientEnv + Send + Sync>,
-    data: tokio::sync::RwLock<Option<InitedClientData>>,
+    client_env: Arc<ClientEnv>,
+    server_info: tokio::sync::RwLock<Option<ServerInfo>>,
     // TODO: use tokio::sync:RwLock when SDK core is fully async
     query_url: std::sync::RwLock<Option<String>>,
 }
 
 impl NodeClient {
-
-    pub fn new(config: NetworkConfig, client_env: Arc<dyn ClientEnv + Send + Sync>) -> Self {
+    pub fn new(config: NetworkConfig, client_env: Arc<ClientEnv>) -> Self {
         NodeClient {
             config,
             client_env,
             query_url: std::sync::RwLock::new(None),
-            data: tokio::sync::RwLock::new(None)
+            server_info: tokio::sync::RwLock::new(None),
         }
     }
 
-    async fn check_redirect(&self, address: &str) -> ClientResult<String> {
-        let result = self.client_env.fetch(
-            address,
-            FetchMethod::Get,
-            None,
-            None,
-            None
-        ).await?;
-
-        Ok(result.url)
-    }
-
     fn expand_address(base_url: &str) -> String {
-        let base_url =  if  base_url.starts_with("http://") ||
-                            base_url.starts_with("https://")
-        {
+        let base_url = if base_url.starts_with("http://") || base_url.starts_with("https://") {
             base_url.to_owned()
         } else {
             format!("https://{}", base_url)
@@ -163,76 +107,100 @@ impl NodeClient {
     }
 
     async fn query_by_url(&self, address: &str, query: &str) -> ClientResult<Value> {
-        let response = self.client_env.fetch(
-            &format!("{}?query={}", address, query),
-            FetchMethod::Get,
-            None,
-            None,
-            None
-        ).await?;
+        let response = self
+            .client_env
+            .fetch(
+                &format!("{}?query={}", address, query),
+                FetchMethod::Get,
+                None,
+                None,
+                None,
+            )
+            .await?;
 
         response.body_as_json()
     }
 
-    async fn query_server_info(&self, address: &str) -> ClientResult<ServerInfo> {
-        let response = self.query_by_url(address, "%7Binfo%7Bversion%7D%7D").await?;
-        let version = response["data"]["info"]["version"]
-            .as_str()
-            .ok_or(Error::invalid_server_response(
-                format!("No version in response: {}", response)))?;
+    async fn get_server_info(&self, address: &str) -> ClientResult<ServerInfo> {
+        let response = self
+            .client_env
+            .fetch(
+                &format!("{}?query=%7Binfo%7Bversion%7D%7D", address),
+                FetchMethod::Get,
+                None,
+                None,
+                None,
+            )
+            .await?;
+        let response_body = response.body_as_json()?;
 
-        ServerInfo::from_version(version)
-            .map_err(|err|
-                Error::invalid_server_response(
-                    format!("Can not parse version {}: {}", version, err)))
+        let version = response_body["data"]["info"]["version"].as_str().ok_or(
+            Error::invalid_server_response(format!("No version in response: {}", response_body)),
+        )?;
+
+        let server_version = ServerVersion::from_version(version).map_err(|err| {
+            Error::invalid_server_response(format!("Can not parse version {}: {}", version, err))
+        })?;
+
+        let query_url = response
+            .url
+            .trim_end_matches("?query=%7Binfo%7Bversion%7D%7D")
+            .to_owned();
+        let subscription_url = query_url
+            .replace("https://", "wss://")
+            .replace("http://", "ws://");
+
+        Ok(ServerInfo {
+            query_url,
+            subscription_url,
+            server_version,
+        })
     }
 
-    async fn get_time_delta(&self, address: &str) -> ClientResult<i64>{
+    async fn get_time_delta(&self, address: &str) -> ClientResult<i64> {
         let start = self.client_env.now_ms() as i64;
         let response = self.query_by_url(address, "%7Binfo%7Btime%7D%7D").await?;
-        let end = self.client_env.now_ms()as i64;
-        let server_time = response["data"]["info"]["time"]
-            .as_i64()
-            .ok_or(Error::invalid_server_response(format!("No time in response: {}", response)))?;
+        let end = self.client_env.now_ms() as i64;
+        let server_time =
+            response["data"]["info"]["time"]
+                .as_i64()
+                .ok_or(Error::invalid_server_response(format!(
+                    "No time in response: {}",
+                    response
+                )))?;
 
         Ok(server_time - (start + (end - start) / 2))
     }
 
     async fn check_time_delta(&self, address: &str, config: &NetworkConfig) -> ClientResult<()> {
         let delta = self.get_time_delta(address).await?;
-        if delta.abs() >= config.out_of_sync_threshold() {
-            Err(Error::clock_out_of_sync(delta, config.out_of_sync_threshold()))
+        if delta.abs() >= config.out_of_sync_threshold {
+            Err(Error::clock_out_of_sync(
+                delta,
+                config.out_of_sync_threshold,
+            ))
         } else {
             Ok(())
         }
     }
 
-    async fn init(&self, config: &NetworkConfig) -> ClientResult<InitedClientData> {
-        let queries_server = Self::expand_address(config.server_address());
-        let redirected = self.check_redirect(&queries_server).await?;
-        let queries_server = redirected.clone();
-        let subscriptions_server = redirected
-            .replace("https://", "wss://")
-            .replace("http://", "ws://");
+    async fn init(&self, config: &NetworkConfig) -> ClientResult<ServerInfo> {
+        let queries_server = Self::expand_address(&config.server_address);
+        let server_info = self.get_server_info(&queries_server).await?;
 
-        let server_info = self.query_server_info(&queries_server).await?;
-        if server_info.supports_time {
+        if server_info.server_version.supports_time {
             self.check_time_delta(&queries_server, config).await?;
         }
 
-        Ok(InitedClientData {
-            query_url: queries_server,
-            subscription_url: subscriptions_server,
-            server_info,
-        })
+        Ok(server_info)
     }
 
     async fn ensure_client(&self) -> ClientResult<()> {
-        if self.data.read().await.is_some() {
+        if self.server_info.read().await.is_some() {
             return Ok(());
         }
 
-        let mut data = self.data.write().await;
+        let mut data = self.server_info.write().await;
         if data.is_some() {
             return Ok(());
         }
@@ -249,63 +217,76 @@ impl NodeClient {
     }
 
     pub fn config_server(&self) -> &str {
-        self.config.server_address()
+        &self.config.server_address
     }
 
     pub fn query_url(&self) -> Option<String> {
         self.query_url.read().unwrap().clone()
     }
 
-    // Returns Stream with updates database fileds by provided filter
+    // Returns Stream with updates database fields by provided filter
     pub async fn subscribe(
-        &self, table: &str, filter: &Value, fields: &str
+        &self,
+        table: &str,
+        filter: &Value,
+        fields: &str,
     ) -> ClientResult<Subscription> {
         let request = Self::generate_subscription(table, filter, fields);
 
         let mut websocket = {
             self.ensure_client().await?;
-            let client_lock = self.data.read().await;
+            let client_lock = self.server_info.read().await;
             let address = &client_lock.as_ref().unwrap().subscription_url;
 
-            self.client_env.websocket_connect(
-                &address,
-                Some(HashMap::from_iter(vec![("Sec-WebSocket-Protocol", "graphql-ws")].into_iter()))
-            ).await?
+            self.client_env
+                .websocket_connect(
+                    &address,
+                    Some(HashMap::from_iter(
+                        vec![("Sec-WebSocket-Protocol".to_owned(), "graphql-ws".to_owned())]
+                            .into_iter(),
+                    )),
+                )
+                .await?
         };
 
         // map stream of strings into GraphQL JSON answers
         let table = table.to_owned();
-        let data_stream = websocket.receiver
-            .filter_map(move |result| {
-                let closure_table = table.clone();
-                async move {
-                    match result {
-                        Err(err) => Some(Err(err)),
-                        Ok(value) => {
-                            let value: Value = match serde_json::from_str(&value) {
-                                Err(err) => return Some(Err(Error::invalid_server_response(
-                                    format!("Subscription answer is not a valid JSON: {}\n{}", err, value)))),
-                                Ok(value) => value
-                            };
-
-                            // skip ack and keep alive messages
-                            if value["type"] == "connection_ack" || value["type"] == "ka" {
-                                return None;
+        let data_stream = websocket.receiver.filter_map(move |result| {
+            let closure_table = table.clone();
+            async move {
+                match result {
+                    Err(err) => Some(Err(err)),
+                    Ok(value) => {
+                        let value: Value = match serde_json::from_str(&value) {
+                            Err(err) => {
+                                return Some(Err(Error::invalid_server_response(format!(
+                                    "Subscription answer is not a valid JSON: {}\n{}",
+                                    err, value
+                                ))))
                             }
+                            Ok(value) => value,
+                        };
 
-                            // try to extract the record value from the answer
-                            let record_value = &value["payload"]["data"][&closure_table];
+                        // skip ack and keep alive messages
+                        if value["type"] == "connection_ack" || value["type"] == "ka" {
+                            return None;
+                        }
 
-                            if record_value.is_null() {
-                                Some(Err(Error::invalid_server_response(
-                                    format!("Invalid subscription answer: {}", value))))
-                            } else {
-                                Some(Ok(record_value.clone()))
-                            }
+                        // try to extract the record value from the answer
+                        let record_value = &value["payload"]["data"][&closure_table];
+
+                        if record_value.is_null() {
+                            Some(Err(Error::invalid_server_response(format!(
+                                "Invalid subscription answer: {}",
+                                value
+                            ))))
+                        } else {
+                            Some(Ok(record_value.clone()))
                         }
                     }
                 }
-            });
+            }
+        });
 
         let id = rand::thread_rng().next_u32();
 
@@ -325,26 +306,27 @@ impl NodeClient {
                 "query": request.query,
                 "variables": request.variables,
             }
-        }).to_string();
+        })
+        .to_string();
         websocket.sender.send(request).await?;
 
-        let client_env = self.client_env.clone();
-        let handle = websocket.handle;
         let mut sender = websocket.sender;
         let unsubscribe = async move {
-            let _ = sender.send(
-                serde_json::json!({
-                    "id": id,
-                    "type": "stop",
-                    "payload": {}
-                }).to_string()
-            ).await;
-            client_env.websocket_close(handle).await;
+            let _ = sender
+                .send(
+                    serde_json::json!({
+                        "id": id,
+                        "type": "stop",
+                        "payload": {}
+                    })
+                    .to_string(),
+                )
+                .await;
         };
 
         Ok(Subscription {
             data_stream: Box::pin(data_stream),
-            unsubscribe: Box::pin(unsubscribe)
+            unsubscribe: Box::pin(unsubscribe),
         })
     }
 
@@ -361,7 +343,7 @@ impl NodeClient {
                     if let Some(error) = errors.get(0) {
                         if let Some(message) = error.get("message") {
                             if let Some(string) = message.as_str() {
-                                return Some(Error::graphql_error(string))
+                                return Some(Error::graphql_error(string));
                             }
                         }
                     }
@@ -373,23 +355,30 @@ impl NodeClient {
     }
 
     async fn query_vars(
-        &self, address: &str, request: VariableRequest, timeout: Option<u32>
+        &self,
+        address: &str,
+        request: VariableRequest,
+        timeout: Option<u32>,
     ) -> ClientResult<Value> {
         let request = json!({
             "query": request.query,
             "variables": request.variables,
-        }).to_string();
+        })
+        .to_string();
 
         let mut headers = HashMap::new();
         headers.insert("content-type".to_owned(), "application/json".to_owned());
 
-        let response = self.client_env.fetch(
-            address,
-            FetchMethod::Post,
-            Some(headers),
-            Some(request.into_bytes()),
-            timeout,
-        ).await?;
+        let response = self
+            .client_env
+            .fetch(
+                address,
+                FetchMethod::Post,
+                Some(headers),
+                Some(request),
+                timeout,
+            )
+            .await?;
 
         let response = response.body_as_json()?;
 
@@ -408,37 +397,46 @@ impl NodeClient {
         fields: &str,
         order_by: Option<Vec<OrderBy>>,
         limit: Option<u32>,
-        timeout: Option<u32>
+        timeout: Option<u32>,
     ) -> ClientResult<Value> {
         let query = Self::generate_query_var(table, filter, fields, order_by, limit, timeout);
 
         self.ensure_client().await?;
-        let client_lock = self.data.read().await;
+        let client_lock = self.server_info.read().await;
         let address = &client_lock.as_ref().unwrap().query_url;
 
-        let result = self.query_vars(
-            address, query, timeout).await?;
+        let result = self.query_vars(address, query, timeout).await?;
 
         // try to extract the record value from the answer
         let records_array = &result["data"][&table];
         if records_array.is_null() {
-            Err(Error::invalid_server_response(format!("Invalid query answer: {}", result)))
+            Err(Error::invalid_server_response(format!(
+                "Invalid query answer: {}",
+                result
+            )))
         } else {
             Ok(records_array.clone())
         }
     }
 
     // Executes GraphQL query, waits for result and returns recieved value
-    pub async fn wait_for(&self, table: &str, filter: &Value, fields: &str, timeout: Option<u32>)
-        -> ClientResult<Value>
-    {
-        let value = self.query(
-            table,
-            filter,
-            fields,
-            None,
-            None,
-            timeout.or(Some(self.config.wait_for_timeout()))).await?;
+    pub async fn wait_for(
+        &self,
+        table: &str,
+        filter: &Value,
+        fields: &str,
+        timeout: Option<u32>,
+    ) -> ClientResult<Value> {
+        let value = self
+            .query(
+                table,
+                filter,
+                fields,
+                None,
+                None,
+                timeout.or(Some(self.config.wait_for_timeout)),
+            )
+            .await?;
 
         if !value[0].is_null() {
             Ok(value[0].clone())
@@ -453,9 +451,10 @@ impl NodeClient {
         fields: &str,
         order_by: Option<Vec<OrderBy>>,
         limit: Option<u32>,
-        timeout: Option<u32>
+        timeout: Option<u32>,
     ) -> VariableRequest {
-        let mut scheme_type: Vec<String> = table.split_terminator("_")
+        let mut scheme_type: Vec<String> = table
+            .split_terminator("_")
             .map(|word| {
                 let mut word = word.to_owned();
                 word[..1].make_ascii_uppercase();
@@ -472,9 +471,9 @@ impl NodeClient {
                 {table}(filter: $filter, orderBy: $orderBy, limit: $limit, timeout: $timeout)
                 {{ {fields} }}
             }}"#,
-            table=table,
-            scheme_type=scheme_type,
-            fields=fields
+            table = table,
+            scheme_type = scheme_type,
+            fields = fields
         );
         query = query.split_whitespace().collect::<Vec<&str>>().join(" ");
 
@@ -485,14 +484,11 @@ impl NodeClient {
             "timeout": timeout
         });
 
-        VariableRequest {
-            query,
-            variables
-        }
+        VariableRequest { query, variables }
     }
 
     fn generate_subscription(table: &str, filter: &Value, fields: &str) -> VariableRequest {
-        let mut scheme_type = (&table[0 .. table.len() - 1]).to_owned() + "Filter";
+        let mut scheme_type = (&table[0..table.len() - 1]).to_owned() + "Filter";
         scheme_type[..1].make_ascii_uppercase();
 
         let query = format!("subscription {table}($filter: {type}) {{ {table}(filter: $filter) {{ {fields} }} }}",
@@ -505,40 +501,31 @@ impl NodeClient {
             "filter" : filter,
         });
 
-        VariableRequest {
-            query,
-            variables
-        }
+        VariableRequest { query, variables }
     }
 
     fn generate_post_mutation(requests: &[MutationRequest]) -> VariableRequest {
-        let query = "mutation postRequests($requests:[Request]){postRequests(requests:$requests)}".to_owned();
-        let variables = json!({
-            "requests": serde_json::json!(requests)
-        });
+        let query = "mutation postRequests($requests:[Request]){postRequests(requests:$requests)}"
+            .to_owned();
+        let variables = json!({ "requests": serde_json::json!(requests) });
 
-        VariableRequest {
-            query,
-            variables
-        }
+        VariableRequest { query, variables }
     }
 
     // Sends message to node
     pub async fn send_message(&self, key: &[u8], value: &[u8]) -> ClientResult<()> {
         let request = MutationRequest {
             id: base64::encode(key),
-            body: base64::encode(value)
+            body: base64::encode(value),
         };
 
         self.ensure_client().await?;
-        let client_lock = self.data.read().await;
+        let client_lock = self.server_info.read().await;
         let address = &client_lock.as_ref().unwrap().query_url;
 
-        let result = self.query_vars(
-            address,
-            Self::generate_post_mutation(&[request]),
-            None
-        ).await;
+        let result = self
+            .query_vars(address, Self::generate_post_mutation(&[request]), None)
+            .await;
 
         // send message is always successful in order to process case when server received message
         // but client didn't receive responce

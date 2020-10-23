@@ -58,7 +58,7 @@
 
 [hdkey_derive_from_xprv](#hdkey_derive_from_xprv) – Derives the next child extended private key
 
-[hdkey_derive_from_xprv_path](#hdkey_derive_from_xprv_path) – Derives the exented private key from the specified key and path
+[hdkey_derive_from_xprv_path](#hdkey_derive_from_xprv_path) – Derives the extended private key from the specified key and path
 
 [hdkey_secret_from_xprv](#hdkey_secret_from_xprv) –  Extracts the private key from the serialized extended private key
 
@@ -726,7 +726,7 @@ function mnemonic_words(
 
 ## mnemonic_from_random
 
- Generates a random mnemnonic from the specified dictionary and word count
+ Generates a random mnemonic from the specified dictionary and word count
 
 ```ts
 type ParamsOfMnemonicFromRandom = {
@@ -894,7 +894,7 @@ function hdkey_derive_from_xprv(
 
 ## hdkey_derive_from_xprv_path
 
- Derives the exented private key from the specified key and path
+ Derives the extended private key from the specified key and path
 
 ```ts
 type ParamsOfHDKeyDeriveFromXPrvPath = {

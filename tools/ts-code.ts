@@ -15,6 +15,7 @@
 import {
     ApiConst,
     ApiConstValueIs,
+    ApiEnumOfTypes,
     ApiField,
     ApiFunction,
     ApiFunctionInfo,
@@ -46,7 +47,10 @@ export class TSCode extends Code {
         let ts = `// ${module.name} module\n\n`;
         
         for (const type of module.types) {
-            ts += `export ${this.typeDef(type)}`;
+            ts += `\nexport ${this.typeDef(type)}`;
+            if (type.type === ApiTypeIs.EnumOfTypes) {
+                ts += this.typeVariantConstructors(type.name, type);
+            }
         }
         
         ts += `
@@ -64,6 +68,61 @@ export class ${Code.upperFirst(module.name)}Module {
         
         ts += '}\n\n';
         
+        return ts;
+    }
+    
+    private isStruct(type: ApiType): boolean {
+        return type.type === ApiTypeIs.Struct
+            && type.struct_fields.length > 0
+            && type.struct_fields[0].name !== '';
+    }
+    
+    private isRefToStruct(type: ApiType): boolean {
+        if (type.type === ApiTypeIs.Ref) {
+            const refType = this.findType(type.ref_name);
+            if (refType && this.isStruct(refType)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    private typeVariantConstructors(enumName: string, type: ApiEnumOfTypes): string {
+        let ts = '';
+        for (const variant of type.enum_types) {
+            let params = '';
+            let properties = '';
+            switch (variant.type) {
+            case ApiTypeIs.Struct:
+                const fields = variant.struct_fields;
+                if (fields.length === 1 && fields[0].name === '') {
+                    if (params !== '') {
+                        params += ', ';
+                    }
+                    params += `value: ${this.type(variant, '')}`;
+                    if (this.isRefToStruct(fields[0])) {
+                        properties += `        ...value,\n`;
+                    } else {
+                        properties += `        value,\n`;
+                    }
+                } else {
+                    for (const field of fields) {
+                        if (params !== '') {
+                            params += ', ';
+                        }
+                        params += `${this.field(field, '')}`;
+                        properties += `        ${field.name},\n`;
+                        
+                    }
+                }
+            }
+            ts += `\nexport function ${TSCode.lowerFirst(enumName)}${variant.name}(${params}): ${enumName} {\n`;
+            ts += `    return {\n`;
+            ts += `        type: '${variant.name}',\n`;
+            ts += properties;
+            ts += `    };\n`;
+            ts += `}\n`;
+        }
         return ts;
     }
     

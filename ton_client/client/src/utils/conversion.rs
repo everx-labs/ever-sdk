@@ -4,9 +4,10 @@ use crate::error::ClientResult;
 use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, Debug, ApiType, Clone)]
+#[serde(tag = "type")]
 pub enum AddressStringFormat {
-    AccountId {},
-    Hex {},
+    AccountId,
+    Hex,
     Base64 { url: bool, test: bool, bounce: bool },
 }
 
@@ -32,8 +33,8 @@ pub fn convert_address(
 ) -> ClientResult<ResultOfConvertAddress> {
     let address = account_decode(&params.address)?;
     let (addr_type, base64_params) = match params.output_format {
-        AddressStringFormat::Hex {} => (AccountAddressType::Hex, None),
-        AddressStringFormat::AccountId {} => (AccountAddressType::AccountId, None),
+        AddressStringFormat::Hex => (AccountAddressType::Hex, None),
+        AddressStringFormat::AccountId => (AccountAddressType::AccountId, None),
         AddressStringFormat::Base64 { url, test, bounce } => (
             AccountAddressType::Base64,
             Some(Base64AddressParams { url, test, bounce }),

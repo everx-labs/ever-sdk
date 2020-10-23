@@ -11,18 +11,12 @@
 * limitations under the License.
 */
 
+use ton_client::{create_context, destroy_context, request};
 use wasm_bindgen::prelude::*;
-use ton_client::{json_sync_request, create_context, destroy_context};
-
-const INVALID_RESPONSE: &str = r#"{
-    "result_json": "",
-    "error_json": { "message": "Can not convert response into JSON" }
-}"#;
-
 
 #[wasm_bindgen]
-pub fn core_create_context() -> u32 {
-    create_context()
+pub fn core_create_context(config_json: String) -> String {
+    create_context(config_json)
 }
 
 #[wasm_bindgen]
@@ -30,8 +24,27 @@ pub fn core_destroy_context(context: u32) {
     destroy_context(context)
 }
 
+#[wasm_bindgen(js_namespace = tonclient)]
+extern "C" {
+    fn core_response_handler(
+        request_id: u32,
+        params_json: String,
+        response_type: u32,
+        finished: bool,
+    );
+}
+
+fn response_handler(request_id: u32, params_json: String, response_type: u32, finished: bool) {
+    core_response_handler(request_id, params_json, response_type, finished);
+}
+
 #[wasm_bindgen]
-pub fn core_json_request(context: u32, method: String, params_json: String) -> String {
-    let response = json_sync_request(context, method, params_json);
-    serde_json::to_string(&response).unwrap_or(INVALID_RESPONSE.to_string())
+pub fn core_request(context: u32, function_name: String, params_json: String, request_id: u32) {
+    request(
+        context,
+        function_name,
+        params_json,
+        request_id,
+        response_handler,
+    );
 }

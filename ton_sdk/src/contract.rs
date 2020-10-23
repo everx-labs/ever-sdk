@@ -11,10 +11,10 @@
 * limitations under the License.
 */
 
-use crate::json_helper;
+use crate::{json_helper, SdkAbiConfig};
 use crate::local_tvm;
 use crate::error::SdkError;
-use crate::{AbiContract, BlockId, Message, MessageId, AbiConfig, Transaction};
+use crate::{AbiContract, BlockId, Message, MessageId, Transaction};
 
 use ed25519_dalek::{Keypair, PublicKey};
 use chrono::prelude::Utc;
@@ -915,7 +915,7 @@ impl Contract {
 
     // Add `expire` parameter to contract functions header
     fn make_expire_header(
-        abi_config: &AbiConfig,
+        abi_config: &SdkAbiConfig,
         abi: String,
         header: Option<String>,
         try_index: Option<u8>,
@@ -926,8 +926,8 @@ impl Contract {
             let try_index = try_index.unwrap_or(0);
             // expire is `now + timeout`
             let timeout = Self::calc_timeout(
-                abi_config.message_expiration_timeout(),
-                abi_config.message_expiration_timeout_grow_factor(),
+                abi_config.message_expiration_timeout,
+                abi_config.message_expiration_timeout_grow_factor,
                 try_index);
             let expire = Self::now() + timeout / 1000;
 
@@ -960,7 +960,7 @@ impl Contract {
         params: FunctionCallSet,
         internal: bool,
         key_pair: Option<&Keypair>,
-        timeouts: &AbiConfig,
+        timeouts: &SdkAbiConfig,
         try_index: Option<u8>,
     ) -> Result<SdkMessage> {
         let (header, expire) = Self::make_expire_header(timeouts, params.abi.clone(), params.header, try_index)?;
@@ -987,7 +987,7 @@ impl Contract {
     pub fn get_call_message_bytes_for_signing(
         address: MsgAddressInt,
         params: FunctionCallSet,
-        timeouts: &AbiConfig,
+        timeouts: &SdkAbiConfig,
         try_index: Option<u8>,
     ) -> Result<MessageToSign> {
         let (header, expire) = Self::make_expire_header(timeouts, params.abi.clone(), params.header, try_index)?;
@@ -1014,7 +1014,7 @@ impl Contract {
         image: ContractImage,
         key_pair: Option<&Keypair>,
         workchain_id: i32,
-        timeouts: &AbiConfig,
+        timeouts: &SdkAbiConfig,
         try_index: Option<u8>,
     ) -> Result<SdkMessage> {
         let (header, expire) = Self::make_expire_header(timeouts, params.abi.clone(), params.header, try_index)?;
@@ -1065,7 +1065,7 @@ impl Contract {
         params: FunctionCallSet,
         image: ContractImage,
         workchain_id: i32,
-        timeouts: &AbiConfig,
+        timeouts: &SdkAbiConfig,
         try_index: Option<u8>,
     ) -> Result<MessageToSign> {
         let (header, expire) = Self::make_expire_header(timeouts, params.abi.clone(), params.header, try_index)?;
@@ -1177,7 +1177,7 @@ impl Contract {
     }
 
     /// Deserializes tree of cells from byte array into `SliceData`
-    fn deserialize_tree_to_slice(data: &[u8]) -> Result<SliceData> {
+    pub fn deserialize_tree_to_slice(data: &[u8]) -> Result<SliceData> {
         let mut response_cells = deserialize_cells_tree(&mut Cursor::new(data))?;
 
         if response_cells.len() != 1 {
