@@ -2,9 +2,9 @@
 
  Provides information about library.
 ## Functions
-[get_api_reference](#get_api_reference)
+[get_api_reference](#get_api_reference) –  Returns Core Library API reference
 
-[version](#version)
+[version](#version) –  Returns Core Library version
 
 [build_info](#build_info)
 
@@ -29,6 +29,8 @@
 # Functions
 ## get_api_reference
 
+ Returns Core Library API reference
+
 ```ts
 type ResultOfGetApiReference = {
     api: any
@@ -43,6 +45,8 @@ function get_api_reference(): Promise<ResultOfGetApiReference>;
 
 ## version
 
+ Returns Core Library version
+
 ```ts
 type ResultOfVersion = {
     version: string
@@ -52,7 +56,7 @@ function version(): Promise<ResultOfVersion>;
 ```
 ### Result
 
-- `version`: _string_ –  core version
+- `version`: _string_ –  Core Library version
 
 
 ## build_info
@@ -167,7 +171,7 @@ type ResultOfVersion = {
     version: string
 };
 ```
-- `version`: _string_ –  core version
+- `version`: _string_ –  Core Library version
 
 
 ## ResultOfBuildInfo

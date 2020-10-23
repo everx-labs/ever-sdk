@@ -2,13 +2,13 @@
 
  BOC manipulation module.
 ## Functions
-[parse_message](#parse_message)
+[parse_message](#parse_message) –  Parses message boc into a JSON 
 
-[parse_transaction](#parse_transaction)
+[parse_transaction](#parse_transaction) –  Parses transaction boc into a JSON 
 
-[parse_account](#parse_account)
+[parse_account](#parse_account) –  Parses account boc into a JSON 
 
-[parse_block](#parse_block)
+[parse_block](#parse_block) –  Parses block boc into a JSON 
 
 [get_blockchain_config](#get_blockchain_config)
 
@@ -24,6 +24,10 @@
 
 # Functions
 ## parse_message
+
+ Parses message boc into a JSON 
+ 
+ JSON structure is compatible with GraphQL API message object
 
 ```ts
 type ParamsOfParse = {
@@ -47,6 +51,10 @@ function parse_message(
 
 ## parse_transaction
 
+ Parses transaction boc into a JSON 
+ 
+ JSON structure is compatible with GraphQL API transaction object
+
 ```ts
 type ParamsOfParse = {
     boc: string
@@ -69,6 +77,10 @@ function parse_transaction(
 
 ## parse_account
 
+ Parses account boc into a JSON 
+ 
+ JSON structure is compatible with GraphQL API account object
+
 ```ts
 type ParamsOfParse = {
     boc: string
@@ -90,6 +102,10 @@ function parse_account(
 
 
 ## parse_block
+
+ Parses block boc into a JSON 
+ 
+ JSON structure is compatible with GraphQL API block object
 
 ```ts
 type ParamsOfParse = {

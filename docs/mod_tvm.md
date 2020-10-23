@@ -6,7 +6,7 @@ null
 
 [run_tvm](#run_tvm)
 
-[run_get](#run_get)
+[run_get](#run_get) –  Executes getmethod and returns data from TVM stack
 
 ## Types
 [ExecutionOptions](#ExecutionOptions)
@@ -95,6 +95,8 @@ function run_tvm(
 
 ## run_get
 
+ Executes getmethod and returns data from TVM stack
+
 ```ts
 type ParamsOfRunGet = {
     account: string,
@@ -112,13 +114,13 @@ function run_get(
 ): Promise<ResultOfRunGet>;
 ```
 ### Parameters
-- `account`: _string_
-- `function_name`: _string_
-- `input`?: _any_
+- `account`: _string_ –  Account BOC in `base64`
+- `function_name`: _string_ –  Function name
+- `input`?: _any_ –  Input parameters
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_
 ### Result
 
-- `output`: _any_
+- `output`: _any_ –  Values returned by getmethod on stack
 
 
 # Types
@@ -212,9 +214,9 @@ type ParamsOfRunGet = {
     execution_options?: ExecutionOptions
 };
 ```
-- `account`: _string_
-- `function_name`: _string_
-- `input`?: _any_
+- `account`: _string_ –  Account BOC in `base64`
+- `function_name`: _string_ –  Function name
+- `input`?: _any_ –  Input parameters
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_
 
 
@@ -225,6 +227,6 @@ type ResultOfRunGet = {
     output: any
 };
 ```
-- `output`: _any_
+- `output`: _any_ –  Values returned by getmethod on stack
 
 
