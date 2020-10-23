@@ -5,6 +5,8 @@
 
 [version](mod_client.md#version)
 
+[build_info](mod_client.md#build_info)
+
 ## [crypto](mod_crypto.md) –  Crypto functions.
 
 [factorize](mod_crypto.md#factorize) – Integer factorization
@@ -111,9 +113,11 @@
 
 ## [tvm](mod_tvm.md)
 
-[execute_message](mod_tvm.md#execute_message)
+[run_executor](mod_tvm.md#run_executor)
 
-[execute_get](mod_tvm.md#execute_get)
+[run_tvm](mod_tvm.md#run_tvm)
+
+[run_get](mod_tvm.md#run_get)
 
 ## [net](mod_net.md) –  Network access.
 

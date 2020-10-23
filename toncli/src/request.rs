@@ -82,7 +82,7 @@ fn parse_sync_response<R: DeserializeOwned>(response: *const String) -> Result<R
 }
 
 fn get_api() -> ClientResult<API> {
-    let context = Arc::new(ClientContext::new(None)?);
+    let context = Arc::new(ClientContext::new(Default::default())?);
     Ok(ton_client::client::get_api_reference(context)?.api)
 }
 

@@ -16,9 +16,9 @@ use crate::api_item::ApiItem;
 use crate::command_line::CommandLine;
 use crate::errors::{CliError, CliResult};
 use api_info::API;
+use std::path::PathBuf;
 use std::sync::Arc;
 use ton_client::ClientContext;
-use std::path::PathBuf;
 
 pub trait OutputWriter {
     fn write(&self, file: &str, text: &str) -> CliResult<()>;
@@ -105,7 +105,9 @@ pub fn doc_json(api: &API, item: ApiItem, output: Output) -> CliResult<()> {
 pub fn command(args: &[String]) -> Result<(), CliError> {
     let command_line = CommandLine::parse(args)?;
     let mut args = command_line.args.iter();
-    let api = ton_client::client::get_api_reference(Arc::new(ClientContext::new(None)?))?.api;
+    let api =
+        ton_client::client::get_api_reference(Arc::new(ClientContext::new(Default::default())?))?
+            .api;
     let name = args.next().map(|x| x.as_str()).unwrap_or("");
     doc_json(
         &api,

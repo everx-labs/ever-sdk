@@ -39,31 +39,22 @@
           "struct_fields": [
             {
               "name": "network",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Ref",
-                "ref_name": "NetworkConfig"
-              },
+              "type": "Ref",
+              "ref_name": "NetworkConfig",
               "summary": null,
               "description": null
             },
             {
               "name": "crypto",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Ref",
-                "ref_name": "CryptoConfig"
-              },
+              "type": "Ref",
+              "ref_name": "CryptoConfig",
               "summary": null,
               "description": null
             },
             {
               "name": "abi",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Ref",
-                "ref_name": "AbiConfig"
-              },
+              "type": "Ref",
+              "ref_name": "AbiConfig",
               "summary": null,
               "description": null
             }
@@ -82,38 +73,32 @@
               "description": null
             },
             {
+              "name": "network_retries_count",
+              "type": "Number",
+              "summary": null,
+              "description": null
+            },
+            {
               "name": "message_retries_count",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Number"
-              },
+              "type": "Number",
               "summary": null,
               "description": null
             },
             {
               "name": "message_processing_timeout",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Number"
-              },
+              "type": "Number",
               "summary": null,
               "description": null
             },
             {
               "name": "wait_for_timeout",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Number"
-              },
+              "type": "Number",
               "summary": null,
               "description": null
             },
             {
               "name": "out_of_sync_threshold",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "BigInt"
-              },
+              "type": "BigInt",
               "summary": null,
               "description": null
             },
@@ -135,11 +120,26 @@
           "type": "Struct",
           "struct_fields": [
             {
-              "name": "fish_param",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "String"
-              },
+              "name": "mnemonic_dictionary",
+              "type": "Number",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "mnemonic_word_count",
+              "type": "Number",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "hdkey_derivation_path",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "hdkey_compliant",
+              "type": "Boolean",
               "summary": null,
               "description": null
             }
@@ -152,20 +152,20 @@
           "type": "Struct",
           "struct_fields": [
             {
+              "name": "workchain",
+              "type": "Number",
+              "summary": null,
+              "description": null
+            },
+            {
               "name": "message_expiration_timeout",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Number"
-              },
+              "type": "Number",
               "summary": null,
               "description": null
             },
             {
               "name": "message_expiration_timeout_grow_factor",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Number"
-              },
+              "type": "Number",
               "summary": null,
               "description": null
             }
@@ -197,6 +197,21 @@
               "type": "String",
               "summary": " core version",
               "description": " core version"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfBuildInfo",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "build_info",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -261,6 +276,37 @@
               {
                 "type": "Ref",
                 "ref_name": "ResultOfVersion"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "build_info",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfBuildInfo"
               }
             ]
           },
@@ -2031,7 +2077,7 @@
           "description": " Prints the list of words from the specified dictionary",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -2069,7 +2115,7 @@
           "description": " Generates a random mnemonic from the specified dictionary and word count",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -2107,7 +2153,7 @@
           "description": " Generates mnemonic from pre-generated entropy",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -2145,7 +2191,7 @@
           "description": " The phrase supplied will be checked for word length and validated according to the checksum\n specified in BIP0039.",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -2183,7 +2229,7 @@
           "description": " Validates the seed phrase, generates master key and then derives\n the key pair from the master key and the specified path",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -2259,7 +2305,7 @@
           "description": " Returns derived extended private key derived from the specified extended private key and child index",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -2297,7 +2343,7 @@
           "description": " Derives the extended private key from the specified key and path",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -3998,11 +4044,10 @@
               "name": "out_messages",
               "type": "Array",
               "array_item": {
-                "type": "Ref",
-                "ref_name": "Value"
+                "type": "String"
               },
-              "summary": " List of parsed output messages.",
-              "description": " List of parsed output messages.\n\n Similar to the `transaction` each message contains the `boc`\n field."
+              "summary": " List of output messages' BOCs. Encoded as `base64`",
+              "description": " List of output messages' BOCs. Encoded as `base64`"
             },
             {
               "name": "decoded",
@@ -4443,26 +4488,6 @@
       "description": null,
       "types": [
         {
-          "name": "ExecutionMode",
-          "type": "EnumOfConsts",
-          "enum_consts": [
-            {
-              "name": "Full",
-              "type": "None",
-              "summary": " Executes all phases and performs all checks",
-              "description": " Executes all phases and performs all checks"
-            },
-            {
-              "name": "TvmOnly",
-              "type": "None",
-              "summary": " Executes contract only on TVM (part of compute phase)",
-              "description": " Executes contract only on TVM (part of compute phase)"
-            }
-          ],
-          "summary": null,
-          "description": null
-        },
-        {
           "name": "ExecutionOptions",
           "type": "Struct",
           "struct_fields": [
@@ -4507,28 +4532,23 @@
           "description": null
         },
         {
-          "name": "ParamsOfExecuteMessage",
+          "name": "ParamsOfRunExecutor",
           "type": "Struct",
           "struct_fields": [
             {
               "name": "message",
-              "type": "Ref",
-              "ref_name": "MessageSource",
-              "summary": " Input message.",
-              "description": " Input message."
+              "type": "String",
+              "summary": " Input message BOC. Must be encoded as base64.",
+              "description": " Input message BOC. Must be encoded as base64."
             },
             {
               "name": "account",
-              "type": "String",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
               "summary": " Account BOC. Must be encoded as base64.",
               "description": " Account BOC. Must be encoded as base64."
-            },
-            {
-              "name": "mode",
-              "type": "Ref",
-              "ref_name": "ExecutionMode",
-              "summary": " Execution mode.",
-              "description": " Execution mode."
             },
             {
               "name": "execution_options",
@@ -4539,22 +4559,29 @@
               },
               "summary": " Execution options.",
               "description": " Execution options."
+            },
+            {
+              "name": "abi",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Abi"
+              },
+              "summary": " Contract ABI for dedcoding output messages",
+              "description": " Contract ABI for dedcoding output messages"
             }
           ],
           "summary": null,
           "description": null
         },
         {
-          "name": "ResultOfExecuteMessage",
+          "name": "ResultOfRunExecutor",
           "type": "Struct",
           "struct_fields": [
             {
               "name": "transaction",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Ref",
-                "ref_name": "Value"
-              },
+              "type": "Ref",
+              "ref_name": "Value",
               "summary": " Parsed transaction.",
               "description": " Parsed transaction.\n\n In addition to the regular transaction fields there is a\n `boc` field encoded with `base64` which contains source\n transaction BOC."
             },
@@ -4562,11 +4589,10 @@
               "name": "out_messages",
               "type": "Array",
               "array_item": {
-                "type": "Ref",
-                "ref_name": "Value"
+                "type": "String"
               },
-              "summary": " List of parsed output messages.",
-              "description": " List of parsed output messages.\n\n Similar to the `transaction` each message contains the `boc`\n field."
+              "summary": " List of output messages' BOCs. Encoded as `base64`",
+              "description": " List of output messages' BOCs. Encoded as `base64`"
             },
             {
               "name": "decoded",
@@ -4580,20 +4606,96 @@
             },
             {
               "name": "account",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Ref",
-                "ref_name": "Value"
-              },
-              "summary": " JSON with parsed updated account state. Attention! When used in",
-              "description": " JSON with parsed updated account state. Attention! When used in\n `TvmOnly` mode only data in account state is updated."
+              "type": "String",
+              "summary": " Updated account state BOC. Encoded as `base64`",
+              "description": " Updated account state BOC. Encoded as `base64`"
+            },
+            {
+              "name": "fees",
+              "type": "Ref",
+              "ref_name": "TransactionFees",
+              "summary": " Transaction fees",
+              "description": " Transaction fees"
             }
           ],
           "summary": null,
           "description": null
         },
         {
-          "name": "ParamsOfExecuteGet",
+          "name": "ParamsOfRunTvm",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "message",
+              "type": "String",
+              "summary": " Input message BOC. Must be encoded as base64.",
+              "description": " Input message BOC. Must be encoded as base64."
+            },
+            {
+              "name": "account",
+              "type": "String",
+              "summary": " Account BOC. Must be encoded as base64.",
+              "description": " Account BOC. Must be encoded as base64."
+            },
+            {
+              "name": "execution_options",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "ExecutionOptions"
+              },
+              "summary": " Execution options.",
+              "description": " Execution options."
+            },
+            {
+              "name": "abi",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Abi"
+              },
+              "summary": " Contract ABI for dedcoding output messages",
+              "description": " Contract ABI for dedcoding output messages"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfRunTvm",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "out_messages",
+              "type": "Array",
+              "array_item": {
+                "type": "String"
+              },
+              "summary": " List of output messages' BOCs. Encoded as `base64`",
+              "description": " List of output messages' BOCs. Encoded as `base64`"
+            },
+            {
+              "name": "decoded",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "DecodedOutput"
+              },
+              "summary": " Optional decoded message bodies according to the optional",
+              "description": " Optional decoded message bodies according to the optional\n `abi` parameter."
+            },
+            {
+              "name": "account",
+              "type": "String",
+              "summary": " Updated account state BOC. Encoded as `base64`.",
+              "description": " Updated account state BOC. Encoded as `base64`.\n Attention! Only data in account state is updated."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfRunGet",
           "type": "Struct",
           "struct_fields": [
             {
@@ -4633,7 +4735,7 @@
           "description": null
         },
         {
-          "name": "ResultOfExecuteGet",
+          "name": "ResultOfRunGet",
           "type": "Struct",
           "struct_fields": [
             {
@@ -4650,7 +4752,7 @@
       ],
       "functions": [
         {
-          "name": "execute_message",
+          "name": "run_executor",
           "summary": null,
           "description": null,
           "params": [
@@ -4670,7 +4772,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfExecuteMessage",
+              "ref_name": "ParamsOfRunExecutor",
               "summary": null,
               "description": null
             }
@@ -4681,14 +4783,14 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfExecuteMessage"
+                "ref_name": "ResultOfRunExecutor"
               }
             ]
           },
           "errors": null
         },
         {
-          "name": "execute_get",
+          "name": "run_tvm",
           "summary": null,
           "description": null,
           "params": [
@@ -4708,7 +4810,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfExecuteGet",
+              "ref_name": "ParamsOfRunTvm",
               "summary": null,
               "description": null
             }
@@ -4719,7 +4821,45 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfExecuteGet"
+                "ref_name": "ResultOfRunTvm"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "run_get",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfRunGet",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfRunGet"
               }
             ]
           },

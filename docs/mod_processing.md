@@ -90,7 +90,7 @@ type ParamsOfWaitForTransaction = {
 
 type ResultOfProcessMessage = {
     transaction: any,
-    out_messages: any[],
+    out_messages: string[],
     decoded?: DecodedOutput
 };
 
@@ -107,7 +107,7 @@ function wait_for_transaction(
 - `responseHandler`?: _ResponseHandler_ – additional responses handler.### Result
 
 - `transaction`: _any_ –  Parsed transaction.
-- `out_messages`: _any[]_ –  List of parsed output messages.
+- `out_messages`: _string[]_ –  List of output messages' BOCs. Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ –  Optional decoded message bodies according to the optional
 
 
@@ -124,7 +124,7 @@ type ParamsOfProcessMessage = {
 
 type ResultOfProcessMessage = {
     transaction: any,
-    out_messages: any[],
+    out_messages: string[],
     decoded?: DecodedOutput
 };
 
@@ -139,7 +139,7 @@ function process_message(
 - `responseHandler`?: _ResponseHandler_ – additional responses handler.### Result
 
 - `transaction`: _any_ –  Parsed transaction.
-- `out_messages`: _any[]_ –  List of parsed output messages.
+- `out_messages`: _string[]_ –  List of output messages' BOCs. Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ –  Optional decoded message bodies according to the optional
 
 
@@ -258,12 +258,12 @@ When _type_ is _'TransactionReceived'_
 ```ts
 type ResultOfProcessMessage = {
     transaction: any,
-    out_messages: any[],
+    out_messages: string[],
     decoded?: DecodedOutput
 };
 ```
 - `transaction`: _any_ –  Parsed transaction.
-- `out_messages`: _any[]_ –  List of parsed output messages.
+- `out_messages`: _string[]_ –  List of output messages' BOCs. Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ –  Optional decoded message bodies according to the optional
 
 
