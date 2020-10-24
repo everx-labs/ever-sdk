@@ -683,68 +683,6 @@ impl ClientErrorCode for i32 {
     }
 }
 
-#[cfg(feature = "node_interaction")]
-pub(crate) fn _clienterror_from_sdkerror<F>(
-    err: &failure::Error,
-    default_err: F,
-    client: Option<&crate::net::NodeClient>,
-) -> ClientError
-where
-    F: Fn(String) -> ClientError,
-{
-    let err = match err.downcast_ref::<ton_sdk::SdkError>() {
-        Some(ton_sdk::SdkError::WaitForTimeout) => ClientError::wait_for_timeout(),
-        Some(ton_sdk::SdkError::MessageExpired {
-            msg_id,
-            expire,
-            sending_time,
-            block_time,
-            block_id,
-        }) => ClientError::message_expired(
-            msg_id.to_string(),
-            *sending_time,
-            *expire,
-            *block_time,
-            block_id.to_string(),
-        ),
-        Some(ton_sdk::SdkError::NetworkSilent {
-            msg_id,
-            timeout,
-            block_id,
-            state,
-        }) => ClientError::network_silent(
-            msg_id.to_string(),
-            *timeout,
-            block_id.to_string(),
-            state.clone(),
-        ),
-        Some(ton_sdk::SdkError::TransactionWaitTimeout {
-            msg_id,
-            sending_time,
-            timeout,
-            state,
-        }) => ClientError::transaction_wait_timeout(
-            msg_id.to_string(),
-            *sending_time,
-            *timeout,
-            state.clone(),
-        ),
-        Some(ton_sdk::SdkError::ClockOutOfSync {
-            delta_ms,
-            threshold_ms,
-        }) => ClientError::clock_out_of_sync(*delta_ms, *threshold_ms),
-        Some(ton_sdk::SdkError::ResumableNetworkError { error, .. }) => {
-            _clienterror_from_sdkerror(error, default_err, client)
-        }
-        _ => default_err(err.to_string()),
-    };
-
-    if let Some(client) = client {
-        err.add_network_url(client)
-    } else {
-        err
-    }
-}
 
 #[derive(Clone, Copy, Debug, num_derive::FromPrimitive, PartialEq, failure::Fail)]
 pub enum StdContractError {

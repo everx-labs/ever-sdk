@@ -2,7 +2,7 @@ use crate::abi::Abi;
 use crate::boc::internal::deserialize_object_from_base64;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
-use crate::net::{wait_for_collection, ParamsOfWaitForCollection, MAX_TIMEOUT};
+use crate::net::{wait_for_collection, ParamsOfWaitForCollection, MAX_TIMEOUT, TRANSACTIONS_TABLE_NAME};
 use crate::processing::blocks_walking::wait_next_block;
 use crate::processing::internal::{
     can_retry_network_error, get_exit_code,
@@ -16,7 +16,6 @@ use crate::processing::{
 use serde_json::Value;
 use std::sync::Arc;
 use ton_block::MsgAddressInt;
-use ton_sdk::types::TRANSACTIONS_TABLE_NAME;
 use ton_sdk::{Block};
 
 pub async fn fetch_next_shard_block<F: futures::Future<Output = ()> + Send + Sync>(

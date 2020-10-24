@@ -31,6 +31,11 @@ pub(crate) use node_client::{NodeClient, MAX_TIMEOUT};
 #[cfg(test)]
 mod tests;
 
+pub const MESSAGES_TABLE_NAME: &str = "messages";
+pub const CONTRACTS_TABLE_NAME: &str = "accounts";
+pub const BLOCKS_TABLE_NAME: &str = "blocks";
+pub const TRANSACTIONS_TABLE_NAME: &str = "transactions";
+
 fn default_network_retries_count() -> i8 {
     5
 }
@@ -162,8 +167,8 @@ async fn extract_subscription_handle(handle: &u32) -> Option<Sender<bool>> {
 
 
 /// Queries collection data
-/// 
-/// Queries data that satisfies the `filter` conditions, 
+///
+/// Queries data that satisfies the `filter` conditions,
 /// limits the number of returned records and orders them.
 /// The projection fields are limited to  `result` fields
 #[api_function]
@@ -194,12 +199,12 @@ pub async fn query_collection(
 
 
 /// Returns an object that fulfills the conditions or waits for its appearance
-/// 
-/// Triggers only once. 
-/// If object that satisfies the `filter` conditions 
-/// already exists - returns it immediately. 
+///
+/// Triggers only once.
+/// If object that satisfies the `filter` conditions
+/// already exists - returns it immediately.
 /// If not - waits for insert/update of data withing the specified `timeout`,
-/// and returns it. 
+/// and returns it.
 /// The projection fields are limited to  `result` fields
 #[api_function]
 pub async fn wait_for_collection(
@@ -264,7 +269,7 @@ pub async fn subscribe_collection<F: Future<Output = ()> + Send + Sync>(
 
 
 /// Cancels a subscription
-/// 
+///
 /// Cancels a subscription specified by its handle.
 #[api_function]
 pub async fn unsubscribe(

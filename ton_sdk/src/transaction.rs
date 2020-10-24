@@ -235,39 +235,3 @@ impl Transaction {
         fees
     }
 }
-
-#[cfg(feature = "node_interaction")]
-pub const TRANSACTION_FIELDS_ORDINARY: &str = r#"
-    id
-    aborted
-    compute {
-        skipped_reason
-        exit_code
-        exit_arg
-        success
-        gas_fees
-    }
-    storage {
-       status_change
-       storage_fees_collected
-    }
-    action {
-        success
-        valid
-        no_funds
-        result_code
-        total_fwd_fees
-        total_action_fees
-    }
-    in_msg
-    now
-    out_msgs
-    out_messages {
-        id
-        body
-        msg_type
-        value
-    }
-    status
-    total_fees
-"#;

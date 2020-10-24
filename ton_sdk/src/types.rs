@@ -17,11 +17,6 @@ use ton_types::Result;
 
 use crate::error::SdkError;
 
-pub const MESSAGES_TABLE_NAME: &str = "messages";
-pub const CONTRACTS_TABLE_NAME: &str = "accounts";
-pub const BLOCKS_TABLE_NAME: &str = "blocks";
-pub const TRANSACTIONS_TABLE_NAME: &str = "transactions";
-
 pub const MASTERCHAIN_ID: i32 = -1;
 
 fn default_workchain() -> i32 {

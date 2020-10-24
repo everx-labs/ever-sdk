@@ -73,12 +73,12 @@ fn reflect_module<T: ApiModule>() {
 }
 
 fn main() {
-    // reflect_module::<Module>();
+    let _ = Module {};
+    reflect_module::<Module>();
     reflect::<Foo>();
-    // reflect::<Bar>();
-    // reflect::<EnumWithValues>();
-    // reflect::<EnumWithTypes>();
-    // reflect::<FooHandle>();
-    // println!("{}", serde_json::to_string_pretty(&_baz_info()).unwrap());
-    // println!("{}", serde_json::to_string_pretty(&_foo_info()).unwrap());
+    reflect::<Bar>();
+    reflect::<EnumWithValues>();
+    reflect::<EnumWithTypes>();
+    reflect::<FooHandle>();
+    println!("{}", serde_json::to_string_pretty(&_foo_api()).unwrap());
 }

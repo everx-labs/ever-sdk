@@ -48,33 +48,12 @@ mod transaction;
 pub use transaction::{Transaction, TransactionFees, TransactionId};
 
 mod block;
-pub use block::{Block, MsgDescr, BLOCK_FIELDS};
+pub use block::{Block, MsgDescr};
 
 pub mod types;
 pub use types::{SdkAbiConfig, BlockId};
 
-#[cfg(feature = "node_interaction")]
-pub mod node_client;
-#[cfg(feature = "node_interaction")]
-pub use node_client::{NodeClient, OrderBy, SortDirection};
-
 pub mod json_helper;
-
-/// Init SDK
-#[cfg(feature = "node_interaction")]
-pub fn init(config: NetworkConfig) -> ton_types::Result<NodeClient> {
-    Ok(NodeClient::new(config))
-}
-
-/// Init SDK
-#[cfg(feature = "node_interaction")]
-pub fn init_json(config: &str) -> ton_types::Result<NodeClient> {
-    init(
-        serde_json::from_str(config).map_err(|err| SdkError::InvalidArg {
-            msg: format!("{}", err),
-        })?,
-    )
-}
 
 #[cfg(test)]
 #[path = "tests/test_lib.rs"]

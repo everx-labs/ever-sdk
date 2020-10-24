@@ -14,11 +14,22 @@
 use super::Error;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
-use crate::net::{OrderBy, SortDirection};
+use crate::net::{OrderBy, SortDirection, BLOCKS_TABLE_NAME};
 use std::sync::Arc;
 use ton_block::MsgAddressInt;
 use ton_block::MASTERCHAIN_ID;
-use ton_sdk::types::BLOCKS_TABLE_NAME;
+
+pub const BLOCK_FIELDS: &str = r#"
+    id
+    gen_utime
+    after_split
+    workchain_id
+    shard
+    in_msg_descr {
+        msg_id
+        transaction_id
+    }
+"#;
 
 pub async fn find_last_shard_block(
     context: &Arc<ClientContext>,
@@ -159,7 +170,7 @@ pub async fn wait_next_block(
                     }
                 }
             }),
-            ton_sdk::BLOCK_FIELDS,
+            BLOCK_FIELDS,
             timeout,
         )
         .await?;
@@ -179,7 +190,7 @@ pub async fn wait_next_block(
                         "root_hash": { "eq": current.to_string() }
                     }
                 }),
-                ton_sdk::BLOCK_FIELDS,
+                BLOCK_FIELDS,
                 timeout,
             )
             .await
