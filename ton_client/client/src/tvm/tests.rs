@@ -15,7 +15,7 @@
 use crate::abi::encode_account::{ParamsOfEncodeAccount, StateInitSource};
 use crate::abi::{Abi, CallSet, DeploySet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer};
 use crate::json_interface::modules::{AbiModule, TvmModule};
-use crate::tests::{TestClient, SUBSCRIBE};
+use crate::tests::{TestClient, SUBSCRIBE, HELLO};
 use super::*;
 use api_info::ApiModule;
 use serde_json::Value;
@@ -106,12 +106,48 @@ async fn test_run_executor() {
             TvmModule::api(),
             run_message::run_executor_api(),
         );
+
+        // check that run with unlimited balance doesn't affect the contract balance
+        let parsed: crate::boc::ResultOfParse = client.request(
+            "boc.parse_account",
+            crate::boc::ParamsOfParse {
+                boc: account.clone()
+            }
+        );
+        let original_balance = parsed.parsed["balance"].as_str().unwrap();
+
+        let result = run_executor
+            .call(ParamsOfRunExecutor {
+                message: message.message.clone(),
+                abi: Some(abi.clone()),
+                account: AccountForExecutor::State {
+                    boc: account.clone(),
+                    unlimited_balance: Some(true)
+                },
+                execution_options: None,
+                skip_transaction_check: None,
+            })
+            .await;
+
+        let parsed: crate::boc::ResultOfParse = client.request(
+            "boc.parse_account",
+            crate::boc::ParamsOfParse {
+                boc: result.account
+            }
+        );
+        assert_eq!(parsed.parsed["balance"], original_balance);
+
+        // check standard run
         let result = run_executor
             .call(ParamsOfRunExecutor {
                 message: message.message,
                 abi: Some(abi.clone()),
-                account: Some(account.clone()),
+                account: AccountForExecutor::State {
+                    boc: account,
+                    unlimited_balance: None
+                },
                 execution_options: None,
+                skip_transaction_check: None,
             })
             .await;
         
@@ -243,4 +279,87 @@ where
         }]["pubkey"],
         subscribe_params["pubkey"]
     );
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_run_account_none() {
+    TestClient::init_log();
+    let client = Arc::new(TestClient::new());
+
+    let run_executor = client.wrap_async(
+        run_executor,
+        TvmModule::api(),
+        run_message::run_executor_api(),
+    );
+
+    let message = "te6ccgEBAQEAXAAAs0gAV2lB0HI8/VEO/pBKDJJJeoOcIh+dL9JzpmRzM8PfdicAPGNEGwRWGaJsR6UYmnsFVC2llSo1ZZN5mgUnCiHf7ZaUBKgXyAAGFFhgAAAB69+UmQS/LjmiQA==";
+
+    let result = run_executor
+        .call(ParamsOfRunExecutor {
+            message: message.to_owned(),
+            abi: None,
+            account: AccountForExecutor::None,
+            execution_options: None,
+            skip_transaction_check: Some(true),
+        })
+        .await;
+
+    let parsed: crate::boc::ResultOfParse = client.request(
+        "boc.parse_account",
+        crate::boc::ParamsOfParse {
+            boc: result.account
+        }
+    );
+    assert_eq!(parsed.parsed["id"], "0:f18d106c11586689b11e946269ec1550b69654a8d5964de668149c28877fb65a");
+    assert_eq!(parsed.parsed["acc_type_name"], "Uninit");
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_run_account_uninit() {
+    TestClient::init_log();
+    let client = Arc::new(TestClient::new());
+
+    let run_executor = client.wrap_async(
+        run_executor,
+        TvmModule::api(),
+        run_message::run_executor_api(),
+    );
+
+    let keys = client.generate_sign_keys();
+    let (abi, tvc) = TestClient::package(HELLO, None);
+    let message = client.encode_message(ParamsOfEncodeMessage {
+        abi: abi.clone(),
+        address: None,
+        call_set: Some(CallSet {
+            function_name: "constructor".to_owned(),
+            header: None,
+            input: None
+        }),
+        deploy_set: Some(DeploySet {
+            initial_data: None,
+            tvc,
+            workchain_id: None
+        }),
+        processing_try_index: None,
+        signer: Signer::Keys { keys: keys.clone() }
+    }).await;
+
+    let result = run_executor
+        .call(ParamsOfRunExecutor {
+            message: message.message.to_owned(),
+            abi: None,
+            account: AccountForExecutor::Uninit,
+            execution_options: None,
+            skip_transaction_check: None,
+        })
+        .await;
+
+    let parsed: crate::boc::ResultOfParse = client.request(
+        "boc.parse_account",
+        crate::boc::ParamsOfParse {
+            boc: result.account
+        }
+    );
+    assert_eq!(parsed.parsed["id"], message.address);
+    assert_eq!(parsed.parsed["acc_type_name"], "Active");
 }

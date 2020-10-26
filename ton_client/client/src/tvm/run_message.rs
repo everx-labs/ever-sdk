@@ -16,7 +16,7 @@ use crate::{
     abi::Abi,
     boc::internal::{
         deserialize_cell_from_base64, deserialize_object_from_base64, deserialize_object_from_cell,
-        serialize_cell_to_base64, serialize_object_to_base64,
+        serialize_cell_to_base64, serialize_object_to_base64, serialize_object_to_cell
     },
     client::ClientContext,
     error::ClientResult,
@@ -27,21 +27,98 @@ use super::types::{ExecutionOptions, ResolvedExecutionOptions};
 use num_traits::ToPrimitive;
 use serde_json::Value;
 use std::sync::{Arc, atomic::AtomicU64};
-use ton_block::{Message, Serializable};
+use ton_block::{Account, Message, Serializable};
 use ton_executor::{ExecutorError, OrdinaryTransactionExecutor, TransactionExecutor};
 use ton_sdk::TransactionFees;
 use ton_types::Cell;
+
+#[derive(Serialize, Deserialize, ApiType, Debug, Clone)]
+#[serde(tag="type")]
+pub enum AccountForExecutor {
+    /// Non-existing account to run a creation internal message.
+    /// Should be used with `skip_transaction_check = true` if the message has no deploy data
+    /// since transaction on the unitialized account are always aborted
+    None,
+    /// Emulate unitialized account to run deploy message
+    Uninit,
+    /// Account state to run message
+    State {
+        /// Account BOC. Encoded as base64.
+        boc: String,
+        /// Flag for running account with the unlimited balance. Can be used to calculate
+        /// transaction fees without balance check
+        unlimited_balance: Option<bool>,
+    },
+}
+
+const UNLIMITED_BALANCE: u64 = std::u64::MAX;
+
+impl AccountForExecutor {
+    pub fn get_account(
+        &self,
+        context: &Arc<ClientContext>,
+        address: ton_block::MsgAddressInt
+    ) -> ClientResult<(Cell, Option<ton_block::CurrencyCollection>)> {
+        match self {
+            AccountForExecutor::None => {
+                let account = Account::AccountNone
+                    .write_to_new_cell()
+                    .unwrap()
+                    .into();
+                Ok((account, None))
+            },
+            AccountForExecutor::Uninit => {
+                let last_paid = (context.env.now_ms() / 1000) as u32;
+                let account = Account::uninit(address, 0, last_paid, UNLIMITED_BALANCE.into());
+                let account = serialize_object_to_cell(&account, "account")?;
+                Ok((account, None))
+            },
+            AccountForExecutor::State { boc, unlimited_balance } => {
+                if unlimited_balance.unwrap_or_default() {
+                    let mut account: Account = deserialize_object_from_base64(&boc, "account")?
+                        .object;
+                    let original_balance = account.get_balance()
+                        .ok_or(Error::invalid_account_boc("can not set unlimited balance for non existed account"))?
+                        .clone();
+                    let mut balance = original_balance.clone();
+                    balance.grams = UNLIMITED_BALANCE.into();
+                    account.set_balance(balance);
+                    let account = serialize_object_to_cell(&account, "account")?;
+                    Ok((account, Some(original_balance)))
+                } else {
+                    let (_, account) = deserialize_cell_from_base64(&boc, "account")?;
+                    Ok((account, None))
+                }
+            }
+        }
+    }
+
+    pub fn restore_balance(
+        account: Cell,
+        balance: Option<ton_block::CurrencyCollection>
+    ) -> ClientResult<Cell> {
+        if let Some(balance) = balance {
+            let mut account: Account = deserialize_object_from_cell(account, "account")?;
+            account.set_balance(balance);
+            serialize_object_to_cell(&account, "account")
+        } else {
+            Ok(account)
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfRunExecutor {
     /// Input message BOC. Must be encoded as base64.
     pub message: String,
-    /// Account BOC. Must be encoded as base64.
-    pub account: Option<String>,
+    /// Account to run on executor
+    pub account: AccountForExecutor,
     /// Execution options.
     pub execution_options: Option<ExecutionOptions>,
-    /// Contract ABI for dedcoding output messages
+    /// Contract ABI for decoding output messages
     pub abi: Option<Abi>,
+    /// Skip transaction check flag
+    pub skip_transaction_check: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
@@ -111,25 +188,14 @@ pub async fn run_executor(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfRunExecutor,
 ) -> ClientResult<ResultOfRunExecutor> {
-    let account = params
-        .account
-        .map(|string| deserialize_cell_from_base64(&string, "account"))
-        .transpose()?
-        .map(|tuple| tuple.1);
     let message = deserialize_object_from_base64::<Message>(&params.message, "message")?.object;
+    let msg_address = message.dst().ok_or(Error::invalid_message_type())?;
+    let (account, original_balance) = params
+        .account
+        .get_account(&context, msg_address.clone())?;
     let options = ResolvedExecutionOptions::from_options(&context, params.execution_options)?;
 
-    // if no account provided use AccountNone
-    let account = match account {
-        Some(account) => account,
-        None => ton_block::Account::AccountNone
-            .write_to_new_cell()
-            .unwrap()
-            .into(),
-    };
-
     let account_copy = account.clone();
-    let msg_address = message.dst().ok_or(Error::invalid_message_type())?;
     let contract_info = move || async move {
         let account: ton_block::Account =
             deserialize_object_from_cell(account_copy.clone(), "account")?;
@@ -150,7 +216,12 @@ pub async fn run_executor(
 
     let (transaction, account) = call_executor(account, message, options, contract_info.clone()).await?;
 
-    let fees = check_transaction(&transaction, false, contract_info).await?;
+    let fees = check_transaction(
+        &transaction,
+        false,
+        params.skip_transaction_check.unwrap_or_default(),
+        contract_info
+    ).await?;
 
     let mut out_messages = vec![];
     for i in 0..transaction.outmsg_cnt {
@@ -167,6 +238,8 @@ pub async fn run_executor(
     } else {
         None
     };
+
+    let account = AccountForExecutor::restore_balance(account, original_balance)?;
 
     Ok(ResultOfRunExecutor {
         out_messages,

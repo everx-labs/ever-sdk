@@ -23,7 +23,7 @@ pub enum ErrorCode {
     CanNotReadTransaction = TVM + 1,
     CanNotReadBlockchainConfig = TVM + 2,
     TransactionAborted = TVM + 3,
-    ContractExecutionError = TVM + 4,
+    InternalError = TVM + 4,
     ActionPhaseFailed = TVM + 5,
     AccountCodeMissing = TVM + 6,
     LowBalance = TVM + 7,
@@ -33,7 +33,7 @@ pub enum ErrorCode {
     InvalidInputStack = TVM + 11,
     InvalidAccountBoc = TVM + 12,
     InvalidMessageType = TVM + 13,
-    InternalError = TVM + 14,
+    ContractExecutionError = TVM + 14,
 }
 pub struct Error;
 
