@@ -24,6 +24,7 @@ use super::wasm_client_env::ClientEnv;
 use super::Error;
 use crate::crypto::CryptoConfig;
 use crate::abi::AbiConfig;
+use serde::{Deserializer, Deserialize};
 
 pub struct ClientContext {
     pub(crate) client: Option<NodeClient>,
@@ -69,12 +70,24 @@ Note that default values are used if parameters are omitted in config"#,
 
 #[derive(Deserialize, Debug, Clone, ApiType)]
 pub struct ClientConfig {
-    #[serde(default)]
+    #[serde(default, deserialize_with="deserialize_network_config")]
     pub network: NetworkConfig,
-    #[serde(default)]
+    #[serde(default, deserialize_with="deserialize_crypto_config")]
     pub crypto: CryptoConfig,
-    #[serde(default)]
+    #[serde(default, deserialize_with="deserialize_abi_config")]
     pub abi: AbiConfig,
+}
+
+fn deserialize_network_config<'de, D: Deserializer<'de>>(deserializer: D) -> Result<NetworkConfig, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(Default::default()))
+}
+
+fn deserialize_crypto_config<'de, D: Deserializer<'de>>(deserializer: D) -> Result<CryptoConfig, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(Default::default()))
+}
+
+fn deserialize_abi_config<'de, D: Deserializer<'de>>(deserializer: D) -> Result<AbiConfig, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(Default::default()))
 }
 
 impl Default for ClientConfig {

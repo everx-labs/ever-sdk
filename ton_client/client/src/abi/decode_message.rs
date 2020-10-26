@@ -1,4 +1,3 @@
-use crate::abi::internal::resolve_abi;
 use crate::abi::types::Abi;
 use crate::abi::{Error, FunctionHeader};
 use crate::client::ClientContext;
@@ -109,7 +108,7 @@ pub fn decode_message_body(
     _context: Arc<ClientContext>,
     params: ParamsOfDecodeMessageBody,
 ) -> ClientResult<DecodedMessageBody> {
-    let abi = resolve_abi(&params.abi)?;
+    let abi = params.abi.json_string()?;
     let abi = AbiContract::load(abi.as_bytes()).map_err(|x| Error::invalid_json(x))?;
     let (_, body) = deserialize_cell_from_base64(&params.body, "message body")?;
     decode_body(abi, body.into(), params.is_internal)
@@ -118,7 +117,7 @@ pub fn decode_message_body(
 fn prepare_decode(
     params: &ParamsOfDecodeMessage,
 ) -> ClientResult<(AbiContract, ton_block::Message)> {
-    let abi = resolve_abi(&params.abi)?;
+    let abi = params.abi.json_string()?;
     let abi = AbiContract::load(abi.as_bytes()).map_err(|x| Error::invalid_json(x))?;
     let message = ton_sdk::Contract::deserialize_message(&base64_decode(&params.message)?)
         .map_err(|x| Error::invalid_message_for_decode(x))?;

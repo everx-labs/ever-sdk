@@ -11,6 +11,7 @@ use crate::json_interface::modules::ProcessingModule;
 use crate::processing::types::DecodedOutput;
 use crate::tests::{TestClient, EVENTS};
 use api_info::ApiModule;
+use crate::utils::conversion::{abi_uint};
 
 #[tokio::test(core_threads = 2)]
 async fn test_wait_message() {
@@ -241,18 +242,18 @@ async fn test_process_message() {
                 Some(DecodedMessageBody {
                     body_type: MessageBodyType::Event,
                     name: "EventThrown".into(),
-                    value: Some(json!({"id": "0x1"})),
+                    value: Some(json!({"id": abi_uint(1, 256)})),
                     header: None,
                 }),
                 Some(DecodedMessageBody {
                     body_type: MessageBodyType::Output,
                     name: "returnValue".into(),
-                    value: Some(json!({"value0": "0x1"})),
+                    value: Some(json!({"value0": abi_uint(1, 256)})),
                     header: None,
                 })
             ],
             output: Some(json!({
-                "value0": "0x1"
+                "value0": abi_uint(1, 256)
             })),
         })
     );

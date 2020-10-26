@@ -1,20 +1,9 @@
-use crate::abi::{Abi, Error, Signer};
-use crate::client;
+use crate::abi::{Error, Signer};
 use crate::crypto::internal::{decode_public_key, sign_using_secret};
 use crate::encoding::hex_decode;
 use crate::error::ClientResult;
 use serde_json::Value;
 use ton_sdk::ContractImage;
-
-pub(crate) fn resolve_abi(abi: &Abi) -> ClientResult<String> {
-    if let Abi::Serialized(value) = abi {
-        Ok(value.to_string())
-    } else {
-        Err(client::Error::not_implemented(
-            "Abi handle doesn't supported yet",
-        ))
-    }
-}
 
 /// Combines `hex` encoded `signature` with `base64` encoded `unsigned_message`.
 /// Returns signed message encoded with `base64`.

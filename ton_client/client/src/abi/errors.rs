@@ -13,6 +13,7 @@ pub enum ErrorCode {
     InvalidTvcImage = ABI + 8,
     RequiredPublicKeyMissingForFunctionHeader = ABI + 9,
     InvalidSigner = ABI + 10,
+    InvalidAbi = ABI + 11,
 }
 
 pub struct Error;
@@ -22,6 +23,13 @@ fn error(code: ErrorCode, message: String) -> ClientError {
 }
 
 impl Error {
+    pub fn invalid_abi<E: Display>(err: E) -> ClientError {
+        error(
+            ErrorCode::InvalidAbi,
+            format!("Invalid ABI specified: {}", err),
+        )
+    }
+
     pub fn invalid_signer(message: String) -> ClientError {
         error(ErrorCode::InvalidSigner, message.into())
     }

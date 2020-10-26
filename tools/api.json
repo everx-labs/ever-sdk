@@ -1184,6 +1184,24 @@
               "type": "String",
               "summary": " String with seed phrase",
               "description": " String with seed phrase"
+            },
+            {
+              "name": "dictionary",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": " Dictionary identifier",
+              "description": " Dictionary identifier"
+            },
+            {
+              "name": "word_count",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number"
+              },
+              "summary": " Mnemonic word count",
+              "description": " Mnemonic word count"
             }
           ],
           "summary": null,
@@ -2315,7 +2333,7 @@
           "description": " Generates an extended master private key that will be the root for all the derived keys",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -2517,7 +2535,7 @@
                 {
                   "name": "",
                   "type": "Ref",
-                  "ref_name": "Value",
+                  "ref_name": "AbiContract",
                   "summary": null,
                   "description": null
                 }
@@ -3037,7 +3055,7 @@
                 "type": "String"
               },
               "summary": " Target address the message will be sent to.",
-              "description": " Target address the message will be sent to.\n\n Must be specified in case of non-deploy message. "
+              "description": " Target address the message will be sent to.\n\n Must be specified in case of non-deploy message."
             },
             {
               "name": "deploy_set",
@@ -3057,7 +3075,7 @@
                 "ref_name": "CallSet"
               },
               "summary": " Function call parameters.",
-              "description": " Function call parameters.\n\n Must be specified in case of non-deploy message.\n\n In case of deploy message it is optional and contains parameters  \n of the functions that will to be called upon deploy transaction."
+              "description": " Function call parameters.\n\n Must be specified in case of non-deploy message.\n\n In case of deploy message it is optional and contains parameters\n of the functions that will to be called upon deploy transaction."
             },
             {
               "name": "signer",
@@ -3073,7 +3091,7 @@
                 "type": "Number"
               },
               "summary": " Processing try index.",
-              "description": " Processing try index.\n\n Used in message processing with retries (if contract's ABI includes \"expire\" header).\n\n Encoder uses the provided try index to calculate message\n expiration time. The 1st message expiration time is specified in\n Client config.\n\n Expiration timeouts will grow with every retry. \n Retry grow factor is set in Client config:\n <.....add config parameter with default value here>\n\n Default value is 0."
+              "description": " Processing try index.\n\n Used in message processing with retries (if contract's ABI includes \"expire\" header).\n\n Encoder uses the provided try index to calculate message\n expiration time. The 1st message expiration time is specified in\n Client config.\n\n Expiration timeouts will grow with every retry.\n Retry grow factor is set in Client config:\n <.....add config parameter with default value here>\n\n Default value is 0."
             }
           ],
           "summary": null,
@@ -3398,8 +3416,8 @@
         },
         {
           "name": "encode_message",
-          "summary": " Encodes an ABI-compatible message ",
-          "description": " Encodes an ABI-compatible message \n \n Allows to encode deploy and function call messages,\n both signed and unsigned.\n \n Use cases include messages of any possible type:\n - deploy with initial function call (i.e. `constructor` or any other function that is used for some kind\n of initialization);\n - deploy without initial function call;\n - signed/unsigned + data for signing. \n \n `Signer` defines how the message should or shouldn't be signed:\n \n `Signer::None` creates an unsigned message. This may be needed in case of some public methods, \n that do not require authorization by pubkey. \n \n `Signer::External` takes public key and returns `data_to_sign` for later signing. \n Use `attach_signature` method with the result signature to get the signed message.\n \n `Signer::Keys` creates a signed message with provided key pair. \n  \n [SOON] `Signer::SigningBox` Allows using a special interface to imlepement signing \n without private key disclosure to SDK. For instance, in case of using a cold wallet or HSM, \n when application calls some API to sign data. ",
+          "summary": " Encodes an ABI-compatible message",
+          "description": " Encodes an ABI-compatible message\n\n Allows to encode deploy and function call messages,\n both signed and unsigned.\n\n Use cases include messages of any possible type:\n - deploy with initial function call (i.e. `constructor` or any other function that is used for some kind\n of initialization);\n - deploy without initial function call;\n - signed/unsigned + data for signing.\n\n `Signer` defines how the message should or shouldn't be signed:\n\n `Signer::None` creates an unsigned message. This may be needed in case of some public methods,\n that do not require authorization by pubkey.\n\n `Signer::External` takes public key and returns `data_to_sign` for later signing.\n Use `attach_signature` method with the result signature to get the signed message.\n\n `Signer::Keys` creates a signed message with provided key pair.\n\n [SOON] `Signer::SigningBox` Allows using a special interface to imlepement signing\n without private key disclosure to SDK. For instance, in case of using a cold wallet or HSM,\n when application calls some API to sign data.",
           "params": [
             {
               "name": "context",
@@ -5120,7 +5138,7 @@
         {
           "name": "query_collection",
           "summary": " Queries collection data",
-          "description": " Queries collection data\n \n Queries data that satisfies the `filter` conditions, \n limits the number of returned records and orders them.\n The projection fields are limited to  `result` fields",
+          "description": " Queries collection data\n\n Queries data that satisfies the `filter` conditions,\n limits the number of returned records and orders them.\n The projection fields are limited to  `result` fields",
           "params": [
             {
               "name": "context",
@@ -5158,7 +5176,7 @@
         {
           "name": "wait_for_collection",
           "summary": " Returns an object that fulfills the conditions or waits for its appearance",
-          "description": " Returns an object that fulfills the conditions or waits for its appearance\n \n Triggers only once. \n If object that satisfies the `filter` conditions \n already exists - returns it immediately. \n If not - waits for insert/update of data withing the specified `timeout`,\n and returns it. \n The projection fields are limited to  `result` fields",
+          "description": " Returns an object that fulfills the conditions or waits for its appearance\n\n Triggers only once.\n If object that satisfies the `filter` conditions\n already exists - returns it immediately.\n If not - waits for insert/update of data withing the specified `timeout`,\n and returns it.\n The projection fields are limited to  `result` fields",
           "params": [
             {
               "name": "context",
@@ -5196,7 +5214,7 @@
         {
           "name": "unsubscribe",
           "summary": " Cancels a subscription",
-          "description": " Cancels a subscription\n \n Cancels a subscription specified by its handle.",
+          "description": " Cancels a subscription\n\n Cancels a subscription specified by its handle.",
           "params": [
             {
               "name": "_context",
