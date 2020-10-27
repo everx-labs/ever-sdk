@@ -20,6 +20,7 @@ pub(crate) mod keys;
 pub(crate) mod ed25519;
 pub(crate) mod mnemonic;
 pub(crate) mod hdkey;
+pub(crate) mod encryption;
 
 use crate::crypto as api;
 use crate::types::{base64_decode, ApiError, ApiResult, hex_decode};
@@ -367,6 +368,10 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
             params.dk_len,
         )?)
     });
+
+    // Encrypt
+
+    handlers.spawn("crypto.chacha20", crate::crypto::encryption::cha_cha_20);
 
     // NaCl
 
