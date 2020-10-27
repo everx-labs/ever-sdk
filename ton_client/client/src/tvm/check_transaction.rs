@@ -16,9 +16,10 @@ use crate::error::ClientResult;
 use ton_block::AccStatusChange;
 use std::convert::TryFrom;
 
-pub(crate) async fn check_transaction<F>(
+pub(crate) async fn calc_transaction_fees<F>(
     transaction: &ton_block::Transaction,
     real_tr: bool,
+    skip_check: bool,
     contract_info: impl FnOnce() -> F,
 ) -> ClientResult<ton_sdk::TransactionFees>
 where 
@@ -27,7 +28,7 @@ where
     let transaction = ton_sdk::Transaction::try_from(transaction)
         .map_err(|err| Error::can_not_read_transaction(err))?;
 
-    if !transaction.is_aborted() {
+    if !transaction.is_aborted() || skip_check {
         return Ok(transaction.calc_fees());
     }
 

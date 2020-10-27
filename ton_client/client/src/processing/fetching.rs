@@ -9,7 +9,7 @@ use crate::processing::internal::{
 };
 use crate::processing::parsing::{decode_output, parse_transaction_boc};
 use crate::tvm::{ExitCode};
-use crate::tvm::check_transaction::check_transaction;
+use crate::tvm::check_transaction::calc_transaction_fees;
 use crate::processing::{
     Error, ParamsOfWaitForTransaction, ProcessingEvent, ResultOfProcessMessage,
 };
@@ -156,7 +156,7 @@ pub async fn fetch_transaction_result(
         Ok((address, balance))
     };
     let transaction_object = deserialize_object_from_base64(&transaction_boc.boc, "transaction")?;
-    let fees = check_transaction(&transaction_object.object, true, get_contract_info).await?;
+    let fees = calc_transaction_fees(&transaction_object.object, true, false, get_contract_info).await?;
     let (transaction, out_messages) = parse_transaction_boc(context.clone(), transaction_boc)?;
     let abi_decoded = if let Some(abi) = abi {
         Some(decode_output(context, abi, out_messages.clone())?)

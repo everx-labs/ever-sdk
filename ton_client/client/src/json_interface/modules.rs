@@ -314,6 +314,7 @@ pub struct TvmModule;
 fn register_tvm(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<TvmModule>(handlers);
     module.register_type::<crate::tvm::types::ExecutionOptions>();
+    module.register_type::<crate::tvm::AccountForExecutor>();
     module.register_async_fn(
         crate::tvm::run_executor,
         crate::tvm::run_message::run_executor_api,
