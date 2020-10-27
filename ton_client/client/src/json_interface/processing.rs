@@ -87,7 +87,7 @@ pub(crate) async fn send_message(
 /// When the ABI header `expire` is present, the processing uses
 /// `message expiration` strategy:
 /// - The maximum block gen time is set to
-///   `message_expiration_time + transaction_wait_timeout`.
+///   `message_expiration_timeout + transaction_wait_timeout`.
 /// - When maximum block gen time is reached the processing will
 ///   be finished with `MessageExpired` error.
 ///
