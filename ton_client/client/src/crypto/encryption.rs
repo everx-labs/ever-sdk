@@ -34,6 +34,7 @@ pub(crate) struct ResultOfChaCha20 {
     pub data: String,
 }
 
+/// Performs symmetric `chacha20` encryption.
 pub(crate) fn cha_cha_20(
     _context: &mut ClientContext,
     params: ParamsOfChaCha20,
