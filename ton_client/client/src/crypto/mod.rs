@@ -62,31 +62,69 @@ pub use crate::crypto::nacl::{
     ResultOfNaclSign, ResultOfNaclSignDetached, ResultOfNaclSignOpen,
 };
 
-fn default_mnemonic_dictionary() -> u8 {
+use serde::{Deserialize, Deserializer};
+
+pub fn default_mnemonic_dictionary() -> u8 {
     1
 }
 
-fn default_mnemonic_word_count() -> u8 {
+pub fn default_mnemonic_word_count() -> u8 {
     12
 }
 
-fn default_hdkey_derivation_path() -> String {
+pub fn default_hdkey_derivation_path() -> String {
     "m/44'/396'/0'/0/0".into()
 }
 
-fn default_hdkey_compliant() -> bool {
+pub fn default_hdkey_compliant() -> bool {
     true
+}
+
+fn deserialize_mnemonic_dictionary<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<u8, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_mnemonic_dictionary()))
+}
+
+fn deserialize_mnemonic_word_count<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<u8, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_mnemonic_word_count()))
+}
+
+fn deserialize_hdkey_derivation_path<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<String, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_hdkey_derivation_path()))
+}
+
+fn deserialize_hdkey_compliant<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<bool, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_hdkey_compliant()))
 }
 
 #[derive(Deserialize, Debug, Clone, ApiType)]
 pub struct CryptoConfig {
-    #[serde(default = "default_mnemonic_dictionary")]
+    #[serde(
+        default = "default_mnemonic_dictionary",
+        deserialize_with = "deserialize_mnemonic_dictionary"
+    )]
     pub mnemonic_dictionary: u8,
-    #[serde(default = "default_mnemonic_word_count")]
+    #[serde(
+        default = "default_mnemonic_word_count",
+        deserialize_with = "deserialize_mnemonic_word_count"
+    )]
     pub mnemonic_word_count: u8,
-    #[serde(default = "default_hdkey_derivation_path")]
+    #[serde(
+        default = "default_hdkey_derivation_path",
+        deserialize_with = "deserialize_hdkey_derivation_path"
+    )]
     pub hdkey_derivation_path: String,
-    #[serde(default = "default_hdkey_compliant")]
+    #[serde(
+        default = "default_hdkey_compliant",
+        deserialize_with = "deserialize_hdkey_compliant"
+    )]
     pub hdkey_compliant: bool,
 }
 
@@ -100,4 +138,3 @@ impl Default for CryptoConfig {
         }
     }
 }
-

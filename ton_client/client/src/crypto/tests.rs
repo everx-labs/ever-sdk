@@ -1,3 +1,4 @@
+use crate::crypto::encscrypt::{ParamsOfScrypt, ResultOfScrypt};
 use crate::crypto::hash::{ParamsOfHash, ResultOfHash};
 use crate::crypto::hdkey::{
     ParamsOfHDKeyDeriveFromXPrv, ParamsOfHDKeyDeriveFromXPrvPath, ParamsOfHDKeyPublicFromXPrv,
@@ -24,7 +25,6 @@ use crate::crypto::nacl::{
     ParamsOfNaclSignOpen, ResultOfNaclBox, ResultOfNaclBoxOpen, ResultOfNaclSign,
     ResultOfNaclSignDetached, ResultOfNaclSignOpen,
 };
-use crate::crypto::encscrypt::{ParamsOfScrypt, ResultOfScrypt};
 use crate::tests::TestClient;
 
 fn base64_from_hex(hex: &str) -> String {
@@ -501,6 +501,8 @@ fn hdkey() {
     let master: ResultOfHDKeyXPrvFromMnemonic = client.request(
         "crypto.hdkey_xprv_from_mnemonic",
         ParamsOfHDKeyXPrvFromMnemonic {
+            dictionary: None,
+            word_count: None,
             phrase: "abuse boss fly battle rubber wasp afraid hamster guide essence vibrant tattoo"
                 .into(),
         },

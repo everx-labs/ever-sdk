@@ -21,6 +21,7 @@ mod errors;
 mod internal;
 mod signing;
 mod types;
+use serde::{Deserialize, Deserializer};
 
 pub use decode_message::{
     decode_message, decode_message_body, DecodedMessageBody, MessageBodyType,
@@ -37,28 +38,57 @@ pub use encode_message::{
 };
 pub use errors::{Error, ErrorCode};
 pub use signing::Signer;
-pub use types::{Abi, AbiHandle, FunctionHeader, MessageSource};
 use ton_sdk::SdkAbiConfig;
+pub use types::{
+    Abi, AbiContract, AbiData, AbiEvent, AbiFunction, AbiHandle, AbiParam, FunctionHeader,
+    MessageSource,
+};
 
-fn default_workchain() -> i32 {
+pub fn default_workchain() -> i32 {
     0
 }
 
-fn default_message_expiration_timeout() -> u32 {
+pub fn default_message_expiration_timeout() -> u32 {
     40000
 }
 
-fn default_message_expiration_timeout_grow_factor() -> f32 {
+pub fn default_message_expiration_timeout_grow_factor() -> f32 {
     1.5
+}
+
+fn deserialize_workchain<'de, D: Deserializer<'de>>(deserializer: D) -> Result<i32, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_workchain()))
+}
+
+fn deserialize_message_expiration_timeout<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<u32, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_message_expiration_timeout()))
+}
+
+fn deserialize_message_expiration_timeout_grow_factor<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<f32, D::Error> {
+    Ok(Option::deserialize(deserializer)?
+        .unwrap_or(default_message_expiration_timeout_grow_factor()))
 }
 
 #[derive(Deserialize, Debug, Clone, ApiType)]
 pub struct AbiConfig {
-    #[serde(default = "default_workchain")]
+    #[serde(
+        default = "default_workchain",
+        deserialize_with = "deserialize_workchain"
+    )]
     pub workchain: i32,
-    #[serde(default = "default_message_expiration_timeout")]
+    #[serde(
+        default = "default_message_expiration_timeout",
+        deserialize_with = "deserialize_message_expiration_timeout"
+    )]
     pub message_expiration_timeout: u32,
-    #[serde(default = "default_message_expiration_timeout_grow_factor")]
+    #[serde(
+        default = "default_message_expiration_timeout_grow_factor",
+        deserialize_with = "deserialize_message_expiration_timeout_grow_factor"
+    )]
     pub message_expiration_timeout_grow_factor: f32,
 }
 

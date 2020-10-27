@@ -14,6 +14,7 @@
 use crate::client::ClientContext;
 use crate::crypto;
 use crate::crypto::internal::{key256, key512, sha256, Key256, Key264};
+use crate::crypto::mnemonic::{check_phrase, mnemonics};
 use crate::error::{ClientError, ClientResult};
 use base58::*;
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
@@ -28,6 +29,10 @@ use sha2::{Digest, Sha512};
 pub struct ParamsOfHDKeyXPrvFromMnemonic {
     /// String with seed phrase
     pub phrase: String,
+    /// Dictionary identifier
+    pub dictionary: Option<u8>,
+    /// Mnemonic word count
+    pub word_count: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
@@ -39,9 +44,13 @@ pub struct ResultOfHDKeyXPrvFromMnemonic {
 /// Generates an extended master private key that will be the root for all the derived keys
 #[api_function]
 pub fn hdkey_xprv_from_mnemonic(
-    _context: std::sync::Arc<ClientContext>,
+    context: std::sync::Arc<ClientContext>,
     params: ParamsOfHDKeyXPrvFromMnemonic,
 ) -> ClientResult<ResultOfHDKeyXPrvFromMnemonic> {
+    check_phrase(
+        &*mnemonics(&context.config.crypto, params.dictionary, params.word_count)?,
+        &params.phrase,
+    )?;
     Ok(ResultOfHDKeyXPrvFromMnemonic {
         xprv: HDPrivateKey::from_mnemonic(&params.phrase)?.serialize_to_string(),
     })
@@ -116,7 +125,6 @@ pub struct ResultOfHDKeyDeriveFromXPrv {
     pub xprv: String,
 }
 
-
 /// Returns extended private key derived from the specified extended private key and child index
 #[api_function]
 pub fn hdkey_derive_from_xprv(
@@ -149,7 +157,6 @@ pub struct ResultOfHDKeyDeriveFromXPrvPath {
     /// Derived serialized extended private key
     pub xprv: String,
 }
-
 
 /// Derives the exented private key from the specified key and path
 #[api_function]

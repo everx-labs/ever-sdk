@@ -2,9 +2,9 @@
 
  Provides information about library.
 ## Functions
-[get_api_reference](#get_api_reference) –  Returns Core Library API reference
+[get_api_reference](#get_api_reference) – Returns Core Library API reference
 
-[version](#version) –  Returns Core Library version
+[version](#version) – Returns Core Library version
 
 [build_info](#build_info)
 
@@ -29,7 +29,7 @@
 # Functions
 ## get_api_reference
 
- Returns Core Library API reference
+Returns Core Library API reference
 
 ```ts
 type ResultOfGetApiReference = {
@@ -45,7 +45,7 @@ function get_api_reference(): Promise<ResultOfGetApiReference>;
 
 ## version
 
- Returns Core Library version
+Returns Core Library version
 
 ```ts
 type ResultOfVersion = {
@@ -56,7 +56,7 @@ function version(): Promise<ResultOfVersion>;
 ```
 ### Result
 
-- `version`: _string_ –  Core Library version
+- `version`: _string_ – Core Library version
 
 
 ## build_info
@@ -75,7 +75,6 @@ function build_info(): Promise<ResultOfBuildInfo>;
 
 # Types
 ## ClientError
-
 ```ts
 type ClientError = {
     code: number,
@@ -89,7 +88,6 @@ type ClientError = {
 
 
 ## ClientConfig
-
 ```ts
 type ClientConfig = {
     network?: NetworkConfig,
@@ -103,7 +101,6 @@ type ClientConfig = {
 
 
 ## NetworkConfig
-
 ```ts
 type NetworkConfig = {
     server_address?: string,
@@ -125,7 +122,6 @@ type NetworkConfig = {
 
 
 ## CryptoConfig
-
 ```ts
 type CryptoConfig = {
     mnemonic_dictionary?: number,
@@ -141,7 +137,6 @@ type CryptoConfig = {
 
 
 ## AbiConfig
-
 ```ts
 type AbiConfig = {
     workchain?: number,
@@ -155,7 +150,6 @@ type AbiConfig = {
 
 
 ## ResultOfGetApiReference
-
 ```ts
 type ResultOfGetApiReference = {
     api: any
@@ -165,17 +159,15 @@ type ResultOfGetApiReference = {
 
 
 ## ResultOfVersion
-
 ```ts
 type ResultOfVersion = {
     version: string
 };
 ```
-- `version`: _string_ –  Core Library version
+- `version`: _string_ – Core Library version
 
 
 ## ResultOfBuildInfo
-
 ```ts
 type ResultOfBuildInfo = {
     build_info: any

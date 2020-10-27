@@ -11,7 +11,7 @@
 * limitations under the License.
 */
 
-use crate::client::{ClientContext};
+use crate::client::ClientContext;
 use crate::error::ClientResult;
 use futures::{Future, FutureExt, StreamExt};
 use rand::RngCore;
@@ -25,8 +25,9 @@ mod errors;
 pub use errors::{Error, ErrorCode};
 
 mod node_client;
-pub use node_client::{OrderBy, SortDirection};
 pub(crate) use node_client::{NodeClient, MAX_TIMEOUT};
+pub use node_client::{OrderBy, SortDirection};
+use serde::{Deserialize, Deserializer};
 
 #[cfg(test)]
 mod tests;
@@ -36,39 +37,84 @@ pub const CONTRACTS_TABLE_NAME: &str = "accounts";
 pub const BLOCKS_TABLE_NAME: &str = "blocks";
 pub const TRANSACTIONS_TABLE_NAME: &str = "transactions";
 
-fn default_network_retries_count() -> i8 {
+pub fn default_network_retries_count() -> i8 {
     5
 }
 
-fn default_message_retries_count() -> i8 {
+pub fn default_message_retries_count() -> i8 {
     5
 }
 
-fn default_message_processing_timeout() -> u32 {
+pub fn default_message_processing_timeout() -> u32 {
     40000
 }
 
-fn default_wait_for_timeout() -> u32 {
+pub fn default_wait_for_timeout() -> u32 {
     40000
 }
 
-fn default_out_of_sync_threshold() -> i64 {
+pub fn default_out_of_sync_threshold() -> i64 {
     15000
+}
+
+fn deserialize_network_retries_count<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<i8, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_network_retries_count()))
+}
+
+fn deserialize_message_retries_count<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<i8, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_message_retries_count()))
+}
+
+fn deserialize_message_processing_timeout<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<u32, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_message_processing_timeout()))
+}
+
+fn deserialize_wait_for_timeout<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<u32, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_wait_for_timeout()))
+}
+
+fn deserialize_out_of_sync_threshold<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<i64, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_out_of_sync_threshold()))
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ApiType)]
 pub struct NetworkConfig {
     #[serde(default)]
     pub server_address: String,
-    #[serde(default = "default_network_retries_count")]
+    #[serde(
+        default = "default_network_retries_count",
+        deserialize_with = "deserialize_network_retries_count"
+    )]
     pub network_retries_count: i8,
-    #[serde(default = "default_message_retries_count")]
+    #[serde(
+        default = "default_message_retries_count",
+        deserialize_with = "deserialize_message_retries_count"
+    )]
     pub message_retries_count: i8,
-    #[serde(default = "default_message_processing_timeout")]
+    #[serde(
+        default = "default_message_processing_timeout",
+        deserialize_with = "deserialize_message_processing_timeout"
+    )]
     pub message_processing_timeout: u32,
-    #[serde(default = "default_wait_for_timeout")]
+    #[serde(
+        default = "default_wait_for_timeout",
+        deserialize_with = "deserialize_wait_for_timeout"
+    )]
     pub wait_for_timeout: u32,
-    #[serde(default = "default_out_of_sync_threshold")]
+    #[serde(
+        default = "default_out_of_sync_threshold",
+        deserialize_with = "deserialize_out_of_sync_threshold"
+    )]
     pub out_of_sync_threshold: i64,
     pub access_key: Option<String>,
 }
@@ -128,7 +174,7 @@ pub struct ResultOfWaitForCollection {
 #[derive(Serialize, Deserialize, Clone, num_derive::FromPrimitive)]
 pub enum SubscriptionResponseType {
     Ok = 100,
-    Error = 101
+    Error = 101,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
@@ -165,7 +211,6 @@ async fn extract_subscription_handle(handle: &u32) -> Option<Sender<bool>> {
     SUBSCRIPTIONS.lock().await.remove(handle)
 }
 
-
 /// Queries collection data
 ///
 /// Queries data that satisfies the `filter` conditions,
@@ -197,7 +242,6 @@ pub async fn query_collection(
     Ok(ResultOfQueryCollection { result })
 }
 
-
 /// Returns an object that fulfills the conditions or waits for its appearance
 ///
 /// Triggers only once.
@@ -228,7 +272,7 @@ pub async fn wait_for_collection(
 pub async fn subscribe_collection<F: Future<Output = ()> + Send + Sync>(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfSubscribeCollection,
-    callback: impl Fn(ClientResult<ResultOfSubscription>) -> F + Send + Sync + 'static
+    callback: impl Fn(ClientResult<ResultOfSubscription>) -> F + Send + Sync + 'static,
 ) -> ClientResult<ResultOfSubscribeCollection> {
     let handle = rand::thread_rng().next_u32();
 
@@ -266,7 +310,6 @@ pub async fn subscribe_collection<F: Future<Output = ()> + Send + Sync>(
 
     Ok(ResultOfSubscribeCollection { handle })
 }
-
 
 /// Cancels a subscription
 ///

@@ -6,6 +6,7 @@ use crate::abi::encode_message::{
 use crate::abi::{FunctionHeader, Signer, ParamsOfDecodeMessageBody};
 use crate::crypto::KeyPair;
 use crate::tests::{TestClient, EVENTS};
+use crate::utils::conversion::abi_uint;
 
 #[test]
 fn encode_v2() {
@@ -158,12 +159,11 @@ fn decode_v2() {
         );
         result
     };
-
     let expected = DecodedMessageBody {
         body_type: MessageBodyType::Input,
         name: "returnValue".into(),
         value: Some(json!({
-            "id": "0x0"
+            "id": abi_uint(0, 256),
         })),
         header: Some(FunctionHeader {
             expire: Some(1599458404),
@@ -177,7 +177,7 @@ fn decode_v2() {
         body_type: MessageBodyType::Event,
         name: "EventThrown".into(),
         value: Some(json!({
-            "id": "0x0"
+            "id": abi_uint(0, 256)
         })),
         header: None,
     };
@@ -192,7 +192,7 @@ fn decode_v2() {
         body_type: MessageBodyType::Input,
         name: "returnValue".into(),
         value: Some(json!({
-            "id": "0x0"
+            "id": abi_uint(0, 256)
         })),
         header: Some(FunctionHeader {
             expire: Some(1599458404),
@@ -206,7 +206,7 @@ fn decode_v2() {
         body_type: MessageBodyType::Output,
         name: "returnValue".into(),
         value: Some(json!({
-            "value0": "0x0"
+            "value0": abi_uint(0, 256)
         })),
         header: None,
     };

@@ -2,7 +2,7 @@
 
  Misc utility Functions.
 ## Functions
-[convert_address](#convert_address) –  Converts address from any TON format to any TON format
+[convert_address](#convert_address) – Converts address from any TON format to any TON format
 
 ## Types
 [AddressStringFormat](#AddressStringFormat)
@@ -15,7 +15,7 @@
 # Functions
 ## convert_address
 
- Converts address from any TON format to any TON format
+Converts address from any TON format to any TON format
 
 ```ts
 type ParamsOfConvertAddress = {
@@ -32,16 +32,15 @@ function convert_address(
 ): Promise<ResultOfConvertAddress>;
 ```
 ### Parameters
-- `address`: _string_ –  Account address in any TON format.
-- `output_format`: _[AddressStringFormat](mod_utils.md#AddressStringFormat)_ –  Specify the format to convert to.
+- `address`: _string_ – Account address in any TON format.
+- `output_format`: _[AddressStringFormat](mod_utils.md#AddressStringFormat)_ – Specify the format to convert to.
 ### Result
 
-- `address`: _string_ –  Address in the specified format
+- `address`: _string_ – Address in the specified format
 
 
 # Types
 ## AddressStringFormat
-
 ```ts
 type AddressStringFormat = {
     type: 'AccountId'
@@ -71,24 +70,22 @@ When _type_ is _'Base64'_
 
 
 ## ParamsOfConvertAddress
-
 ```ts
 type ParamsOfConvertAddress = {
     address: string,
     output_format: AddressStringFormat
 };
 ```
-- `address`: _string_ –  Account address in any TON format.
-- `output_format`: _[AddressStringFormat](mod_utils.md#AddressStringFormat)_ –  Specify the format to convert to.
+- `address`: _string_ – Account address in any TON format.
+- `output_format`: _[AddressStringFormat](mod_utils.md#AddressStringFormat)_ – Specify the format to convert to.
 
 
 ## ResultOfConvertAddress
-
 ```ts
 type ResultOfConvertAddress = {
     address: string
 };
 ```
-- `address`: _string_ –  Address in the specified format
+- `address`: _string_ – Address in the specified format
 
 

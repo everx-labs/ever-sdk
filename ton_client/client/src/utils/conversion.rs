@@ -44,3 +44,10 @@ pub fn convert_address(
         address: account_encode_ex(&address, addr_type, base64_params)?,
     })
 }
+
+#[cfg(test)]
+pub fn abi_uint(n: u128, size: usize) -> serde_json::Value {
+    serde_json::to_value(ton_abi::TokenValue::Uint(ton_abi::Uint::new(n, size)))
+        .unwrap_or(Default::default())
+}
+

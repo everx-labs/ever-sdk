@@ -189,7 +189,7 @@ pub fn mnemonic_derive_sign_keys(
 
 // Internals
 
-fn mnemonics(
+pub(super) fn mnemonics(
     config: &CryptoConfig,
     dictionary: Option<u8>,
     word_count: Option<u8>,
@@ -236,7 +236,7 @@ pub trait CryptoMnemonic {
     fn entropy_from_phrase(&self, phrase: &String) -> ClientResult<String>;
 }
 
-fn check_phrase(mnemonic: &dyn CryptoMnemonic, phrase: &String) -> ClientResult<()> {
+pub(super) fn check_phrase(mnemonic: &dyn CryptoMnemonic, phrase: &String) -> ClientResult<()> {
     if mnemonic.is_phrase_valid(phrase)? {
         Ok(())
     } else {

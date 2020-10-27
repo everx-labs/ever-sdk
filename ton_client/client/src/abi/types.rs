@@ -1,9 +1,8 @@
 use crate::abi::{Error, ParamsOfEncodeMessage};
 use crate::error::ClientResult;
-use serde_json::Value;
-use ton_abi::{Token, TokenValue};
-use crate::{ClientContext, processing};
+use crate::{processing, ClientContext};
 use std::sync::Arc;
+use ton_abi::{Token, TokenValue};
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct AbiHandle(u32);
@@ -11,19 +10,71 @@ pub struct AbiHandle(u32);
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 #[serde(tag = "type", content = "value")]
 pub enum Abi {
-    Serialized(Value),
+    Serialized(AbiContract),
     Handle(AbiHandle),
 }
 
 impl Abi {
     pub(crate) fn json_string(&self) -> ClientResult<String> {
         match self {
-            Self::Serialized(v) => Ok(v.to_string()),
+            Self::Serialized(serialized) => {
+                Ok(serde_json::to_string(serialized).map_err(|err| Error::invalid_abi(err))?)
+            }
             _ => Err(crate::client::Error::not_implemented(
                 "ABI handles are not supported yet",
             )),
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+pub struct AbiContract {
+    #[serde(rename = "ABI version")]
+    pub abi_version: u32,
+    #[serde(default)]
+    pub header: Vec<String>,
+    #[serde(default)]
+    pub functions: Vec<AbiFunction>,
+    #[serde(default)]
+    pub events: Vec<AbiEvent>,
+    #[serde(default)]
+    pub data: Vec<AbiData>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+pub struct AbiFunction {
+    pub name: String,
+    pub inputs: Vec<AbiParam>,
+    pub outputs: Vec<AbiParam>,
+    #[serde(default)]
+    pub id: Option<u32>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+pub struct AbiEvent {
+    pub name: String,
+    pub inputs: Vec<AbiParam>,
+    #[serde(default)]
+    pub id: Option<u32>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+pub struct AbiData {
+    pub key: u64,
+    pub name: String,
+    #[serde(rename = "type")]
+    pub param_type: String,
+    #[serde(default)]
+    pub components: Vec<AbiParam>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+pub struct AbiParam {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub param_type: String,
+    #[serde(default)]
+    pub components: Vec<AbiParam>,
 }
 
 /// The ABI function header.
@@ -90,7 +141,7 @@ impl FunctionHeader {
 }
 
 #[derive(Serialize, Deserialize, ApiType, Debug, Clone)]
-#[serde(tag="type")]
+#[serde(tag = "type")]
 pub enum MessageSource {
     Encoded { message: String, abi: Option<Abi> },
     EncodingParams(ParamsOfEncodeMessage),
@@ -118,4 +169,3 @@ impl MessageSource {
         })
     }
 }
-

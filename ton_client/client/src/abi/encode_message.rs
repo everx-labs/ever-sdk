@@ -1,6 +1,6 @@
 use crate::abi;
 use crate::abi::internal::{
-    add_sign_to_message, add_sign_to_message_body, create_tvc_image, resolve_abi,
+    add_sign_to_message, add_sign_to_message_body, create_tvc_image,
     result_of_encode_message,
 };
 use crate::abi::{Abi, Error, FunctionHeader, Signer};
@@ -167,7 +167,7 @@ pub struct ParamsOfEncodeMessage {
 
     /// Target address the message will be sent to.
     ///
-    /// Must be specified in case of non-deploy message. 
+    /// Must be specified in case of non-deploy message.
     pub address: Option<String>,
 
     /// Deploy parameters.
@@ -179,7 +179,7 @@ pub struct ParamsOfEncodeMessage {
     ///
     /// Must be specified in case of non-deploy message.
     ///
-    /// In case of deploy message it is optional and contains parameters  
+    /// In case of deploy message it is optional and contains parameters
     /// of the functions that will to be called upon deploy transaction.
     pub call_set: Option<CallSet>,
 
@@ -194,7 +194,7 @@ pub struct ParamsOfEncodeMessage {
     /// expiration time. The 1st message expiration time is specified in
     /// Client config.
     ///
-    /// Expiration timeouts will grow with every retry. 
+    /// Expiration timeouts will grow with every retry.
     /// Retry grow factor is set in Client config:
     /// <.....add config parameter with default value here>
     ///
@@ -309,37 +309,37 @@ fn encode_run(
     })
 }
 
-/// Encodes an ABI-compatible message 
-/// 
+/// Encodes an ABI-compatible message
+///
 /// Allows to encode deploy and function call messages,
 /// both signed and unsigned.
-/// 
+///
 /// Use cases include messages of any possible type:
 /// - deploy with initial function call (i.e. `constructor` or any other function that is used for some kind
 /// of initialization);
 /// - deploy without initial function call;
-/// - signed/unsigned + data for signing. 
-/// 
+/// - signed/unsigned + data for signing.
+///
 /// `Signer` defines how the message should or shouldn't be signed:
-/// 
-/// `Signer::None` creates an unsigned message. This may be needed in case of some public methods, 
-/// that do not require authorization by pubkey. 
-/// 
-/// `Signer::External` takes public key and returns `data_to_sign` for later signing. 
+///
+/// `Signer::None` creates an unsigned message. This may be needed in case of some public methods,
+/// that do not require authorization by pubkey.
+///
+/// `Signer::External` takes public key and returns `data_to_sign` for later signing.
 /// Use `attach_signature` method with the result signature to get the signed message.
-/// 
-/// `Signer::Keys` creates a signed message with provided key pair. 
-///  
-/// [SOON] `Signer::SigningBox` Allows using a special interface to imlepement signing 
-/// without private key disclosure to SDK. For instance, in case of using a cold wallet or HSM, 
-/// when application calls some API to sign data. 
+///
+/// `Signer::Keys` creates a signed message with provided key pair.
+///
+/// [SOON] `Signer::SigningBox` Allows using a special interface to imlepement signing
+/// without private key disclosure to SDK. For instance, in case of using a cold wallet or HSM,
+/// when application calls some API to sign data.
 
 #[api_function]
 pub async fn encode_message(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfEncodeMessage,
 ) -> ClientResult<ResultOfEncodeMessage> {
-    let abi = resolve_abi(&params.abi)?;
+    let abi = params.abi.json_string()?;
 
     let public = params.signer.resolve_public_key()?;
     let (message, data_to_sign, address) = if let Some(deploy_set) = params.deploy_set {
@@ -439,7 +439,7 @@ pub async fn encode_message_body(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfEncodeMessageBody,
 ) -> ClientResult<ResultOfEncodeMessageBody> {
-    let abi = resolve_abi(&params.abi)?;
+    let abi = params.abi.json_string()?;
 
     let public = params.signer.resolve_public_key()?;
     let call = params.call_set.to_function_call_set(
@@ -535,7 +535,7 @@ pub fn attach_signature(
     params: ParamsOfAttachSignature,
 ) -> ClientResult<ResultOfAttachSignature> {
     let signed = add_sign_to_message(
-        &resolve_abi(&params.abi)?,
+        &params.abi.json_string()?,
         &hex_decode(&params.signature)?,
         Some(&hex_decode(&params.public_key)?),
         &base64_decode(&params.message)?,
@@ -575,7 +575,7 @@ pub fn attach_signature_to_message_body(
     params: ParamsOfAttachSignatureToMessageBody,
 ) -> ClientResult<ResultOfAttachSignatureToMessageBody> {
     let signed = add_sign_to_message_body(
-        &resolve_abi(&params.abi)?,
+        &params.abi.json_string()?,
         &hex_decode(&params.signature)?,
         Some(&hex_decode(&params.public_key)?),
         &base64_decode(&params.message)?,
