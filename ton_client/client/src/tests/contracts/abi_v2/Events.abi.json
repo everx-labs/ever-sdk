@@ -1,0 +1,50 @@
+{
+	"ABI version": 2,
+	"header": ["pubkey", "time", "expire"],
+	"functions": [
+		{
+			"name": "emitValue",
+			"inputs": [
+				{"name":"id","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "returnValue",
+			"inputs": [
+				{"name":"id","type":"uint256"}
+			],
+			"outputs": [
+				{"name":"value0","type":"uint256"}
+			]
+		},
+		{
+			"name": "sendAllMoney",
+			"inputs": [
+				{"name":"dest_addr","type":"address"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "constructor",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		}
+	],
+	"data": [
+	],
+	"events": [
+		{
+			"name": "EventThrown",
+			"inputs": [
+				{"name":"id","type":"uint256"}
+			],
+			"outputs": [
+			]
+		}
+	]
+}

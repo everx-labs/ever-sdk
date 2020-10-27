@@ -11,6 +11,9 @@
 * limitations under the License.
 */
 
+extern crate api_info;
+#[macro_use]
+extern crate api_derive;
 #[macro_use]
 extern crate serde_json;
 #[macro_use]
@@ -20,24 +23,20 @@ extern crate lazy_static;
 #[macro_use]
 extern crate log;
 
-mod types;
-mod dispatch;
-mod client;
-mod setup;
-mod contracts;
-mod crypto;
-mod tvm;
-mod build_info;
-
-// TODO: uncomment when module will be ready
-// mod cell;
-
-#[cfg(feature = "node_interaction")]
-mod queries;
-
-mod interop;
+pub mod abi;
+pub mod boc;
+pub mod client;
+pub mod crypto;
+pub mod encoding;
+pub mod error;
+pub mod json_interface;
+pub mod net;
+pub mod processing;
+pub mod tvm;
+pub mod utils;
 
 #[cfg(test)]
 mod tests;
 
-pub use self::interop::*;
+pub use self::json_interface::interop::*;
+pub use client::{ClientConfig, ClientContext};

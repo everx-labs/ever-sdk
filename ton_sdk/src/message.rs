@@ -15,13 +15,6 @@ use crate::json_helper;
 use crate::types::StringId;
 use ton_types::Result;
 
-#[cfg(feature = "node_interaction")]
-use crate::node_client::NodeClient;
-#[cfg(feature = "node_interaction")]
-use crate::types::MESSAGES_TABLE_NAME;
-#[cfg(feature = "node_interaction")]
-use crate::error::SdkError;
-
 use ton_types::{SliceData, Cell};
 use ton_block::{
     CommonMsgInfo, Message as TvmMessage
@@ -48,7 +41,7 @@ pub type MessageId = StringId;
 #[derive(Debug, Deserialize, Default)]
 pub struct Message {
     pub id: MessageId,
-    #[serde(with = "json_helper::opt_cell")]
+    #[serde(default, with = "json_helper::opt_cell")]
     pub body: Option<Cell>,
     #[serde(deserialize_with = "json_helper::deserialize_message_type")]
     pub msg_type: MessageType,
@@ -56,47 +49,9 @@ pub struct Message {
     pub value: u64
 }
 
-#[cfg(feature = "node_interaction")]
-const MESSAGE_FIELDS: &str = r#"
-    id
-    body
-    msg_type
-    value
-"#;
-
 // The struct represents sent message and allows to access their properties.
 #[allow(dead_code)]
 impl Message {
-
-    // Asynchronously loads a Message instance or None if message with given id is not exists
-    #[cfg(feature = "node_interaction")]
-    pub async fn load(client: &NodeClient, id: &MessageId) -> Result<Option<Message>> {
-        let value = client.load_record_fields(
-            MESSAGES_TABLE_NAME,
-            &id.to_string(),
-            MESSAGE_FIELDS).await?;
-
-        if value == serde_json::Value::Null {
-            Ok(None)
-        } else {
-            Ok(Some(serde_json::from_value(value)
-                .map_err(|err| SdkError::InvalidData {
-                    msg: format!("error parsing message: {}", err)
-                })?))
-        }
-    }
-
-    // Asynchronously loads a Message's json representation 
-    // or null if message with given id is not exists
-    #[cfg(feature = "node_interaction")]
-    pub async fn load_json(client: &NodeClient, id: MessageId) -> Result<String> {
-        client.load_record_fields(
-            MESSAGES_TABLE_NAME,
-            &id.to_string(),
-            MESSAGE_FIELDS)
-                .await
-                .map(|val| val.to_string())
-    }
 
     pub fn with_msg(tvm_msg: &TvmMessage) -> Result<Self> {
         let mut msg = Self::default();

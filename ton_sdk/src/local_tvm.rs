@@ -27,7 +27,7 @@ use ton_vm::SmartContractInfo;
 use ton_vm::executor::gas::gas_state::Gas;
 use ton_executor::{BlockchainConfig, TransactionExecutor, OrdinaryTransactionExecutor};
 
-pub(crate) fn call_tvm_stack(
+pub fn call_tvm_stack(
     balance: u64,
     balance_other: HashmapE,
     address: &MsgAddressInt,
@@ -69,7 +69,7 @@ pub(crate) fn call_tvm_stack(
     Ok(engine.stack().clone())
 }
 
-pub(crate) fn call_tvm(
+pub fn call_tvm(
     balance: u64,
     balance_other: HashmapE,
     address: &MsgAddressInt,
@@ -77,8 +77,8 @@ pub(crate) fn call_tvm(
     timestamp: u32,
     code: Cell,
     data: Option<Cell>,
-    msg: &Message)
-    -> Result<(Vec<Message>, i64)> {
+    msg: &Message
+) -> Result<(Vec<Message>, i64)> {
     let msg_cell = msg.write_to_new_cell()?.into();
     let mut stack = Stack::new();
     stack
@@ -113,7 +113,6 @@ pub(crate) fn call_tvm(
     let mut engine = Engine::new().setup(SliceData::from(code), Some(ctrls), Some(stack), Some(gas));
     let _result = engine.execute()?;
     let mut slice = SliceData::from(engine.get_actions().as_cell()?.clone());
-
     let mut msgs = vec![];
     while slice.remaining_references() != 0 {
         let next = slice.checked_drain_reference()?.into();

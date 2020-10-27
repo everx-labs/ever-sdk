@@ -11,46 +11,246 @@
 * limitations under the License.
 */
 
+use crate::client::{ClientContext};
+use crate::crypto;
 use crate::crypto::hdkey::HDPrivateKey;
-use crate::crypto::keys::{hmac_sha512, pbkdf2_hmac_sha512, KeyPair};
-use crate::types::{ApiResult, ApiError};
-use crate::crypto::random::generate_bytes;
+use crate::crypto::internal::{hmac_sha512, key256, pbkdf2_hmac_sha512};
+use crate::crypto::keys::KeyPair;
+use crate::encoding::hex_decode;
+use crate::error::ClientResult;
 use bip39::{Language, Mnemonic, MnemonicType};
 use ed25519_dalek::{PublicKey, SecretKey};
 use hmac::Hmac;
 use pbkdf2::pbkdf2;
+use rand::RngCore;
 use sha2::Sha512;
+use crate::crypto::CryptoConfig;
 
-pub trait CryptoMnemonic {
-    fn get_words(&self) -> ApiResult<String>;
-    fn generate_random_phrase(&self) -> ApiResult<String>;
-    fn derive_ed25519_keys_from_phrase(
-        &self,
-        phrase: &String,
-        path: &String,
-        compliant: bool,
-    ) -> ApiResult<KeyPair>;
-    fn phrase_from_entropy(&self, entropy: &[u8]) -> ApiResult<String>;
-    fn is_phrase_valid(&self, phrase: &String) -> ApiResult<bool>;
-    fn seed_from_phrase_and_salt(&self, phrase: &String, salt: &String) -> ApiResult<String>;
-    fn entropy_from_phrase(&self, phrase: &String) -> ApiResult<String>;
+const TON_DICTIONARY: u8 = 0;
+const ENGLISH_DICTIONARY: u8 = 1;
+const CHINESE_SIMPLIFIED_DICTIONARY: u8 = 2;
+const CHINESE_TRADITIONAL_DICTIONARY: u8 = 3;
+const FRENCH_DICTIONARY: u8 = 4;
+const ITALIAN_DICTIONARY: u8 = 5;
+const JAPANESE_DICTIONARY: u8 = 6;
+const KOREAN_DICTIONARY: u8 = 7;
+const SPANISH_DICTIONARY: u8 = 8;
+
+//---------------------------------------------------------------------------------- mnemonic_words
+
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct ParamsOfMnemonicWords {
+    /// Dictionary identifier
+    pub dictionary: Option<u8>,
 }
 
-fn check_phrase(mnemonic: &dyn CryptoMnemonic, phrase: &String) -> ApiResult<()> {
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct ResultOfMnemonicWords {
+    /// The list of mnemonic words
+    pub words: String,
+}
+
+/// Prints the list of words from the specified dictionary
+#[api_function]
+pub fn mnemonic_words(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfMnemonicWords,
+) -> ClientResult<ResultOfMnemonicWords> {
+    Ok(ResultOfMnemonicWords {
+        words: mnemonics(
+            &context.config.crypto,
+            params.dictionary,
+            Some(context.config.crypto.mnemonic_word_count),
+        )?
+        .get_words()?,
+    })
+}
+
+//---------------------------------------------------------------------------- mnemonic_from_random
+
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct ParamsOfMnemonicFromRandom {
+    /// Dictionary identifier
+    pub dictionary: Option<u8>,
+    /// Mnemonic word count
+    pub word_count: Option<u8>,
+}
+
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct ResultOfMnemonicFromRandom {
+    /// String of mnemonic words
+    pub phrase: String,
+}
+
+#[doc(summary = "Generates a random mnemonic")]
+/// Generates a random mnemonic from the specified dictionary and word count
+#[api_function]
+pub fn mnemonic_from_random(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfMnemonicFromRandom,
+) -> ClientResult<ResultOfMnemonicFromRandom> {
+    Ok(ResultOfMnemonicFromRandom {
+        phrase: mnemonics(&context.config.crypto, params.dictionary, params.word_count)?
+            .generate_random_phrase()?,
+    })
+}
+
+//--------------------------------------------------------------------------- mnemonic_from_entropy
+
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct ParamsOfMnemonicFromEntropy {
+    /// Entropy bytes. Hex encoded.
+    pub entropy: String,
+    /// Dictionary identifier
+    pub dictionary: Option<u8>,
+    /// Mnemonic word count
+    pub word_count: Option<u8>,
+}
+
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct ResultOfMnemonicFromEntropy {
+    /// Phrase
+    pub phrase: String,
+}
+
+#[doc(summary = "Generates mnemonic from the specified entropy")]
+/// Generates mnemonic from pre-generated entropy
+#[api_function]
+pub fn mnemonic_from_entropy(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfMnemonicFromEntropy,
+) -> ClientResult<ResultOfMnemonicFromEntropy> {
+    let mnemonic = mnemonics(&context.config.crypto, params.dictionary, params.word_count)?;
+    Ok(ResultOfMnemonicFromEntropy {
+        phrase: mnemonic.phrase_from_entropy(&hex_decode(&params.entropy)?)?,
+    })
+}
+
+//--------------------------------------------------------------------------------- mnemonic_verify
+
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct ParamsOfMnemonicVerify {
+    /// Phrase
+    pub phrase: String,
+    /// Dictionary identifier
+    pub dictionary: Option<u8>,
+    /// Word count
+    pub word_count: Option<u8>,
+}
+
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct ResultOfMnemonicVerify {
+    /// Flag indicating the mnemonic is valid or not
+    pub valid: bool,
+}
+
+#[doc(summary = "Validates a mnemonic phrase")]
+/// The phrase supplied will be checked for word length and validated according to the checksum
+/// specified in BIP0039.
+#[api_function]
+pub fn mnemonic_verify(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfMnemonicVerify,
+) -> ClientResult<ResultOfMnemonicVerify> {
+    let mnemonic = mnemonics(&context.config.crypto, params.dictionary, params.word_count)?;
+    Ok(ResultOfMnemonicVerify {
+        valid: mnemonic.is_phrase_valid(&params.phrase)?,
+    })
+}
+
+//----------------------------------------------------------------------- mnemonic_derive_sign_keys
+
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct ParamsOfMnemonicDeriveSignKeys {
+    /// Phrase
+    pub phrase: String,
+    /// Derivation path, for instance "m/44'/396'/0'/0/0"
+    pub path: Option<String>,
+    /// Dictionary identifier
+    pub dictionary: Option<u8>,
+    /// Word count
+    pub word_count: Option<u8>,
+}
+
+#[doc(summary = "Derives a key pair for signing from the seed phrase")]
+/// Validates the seed phrase, generates master key and then derives
+/// the key pair from the master key and the specified path
+#[api_function]
+pub fn mnemonic_derive_sign_keys(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfMnemonicDeriveSignKeys,
+) -> ClientResult<KeyPair> {
+    let mnemonic = mnemonics(&context.config.crypto, params.dictionary, params.word_count)?;
+    let path = params
+        .path
+        .unwrap_or(context.config.crypto.hdkey_derivation_path.clone());
+    Ok(mnemonic.derive_ed25519_keys_from_phrase(&context.config.crypto, &params.phrase, &path)?)
+}
+
+// Internals
+
+pub(super) fn mnemonics(
+    config: &CryptoConfig,
+    dictionary: Option<u8>,
+    word_count: Option<u8>,
+) -> ClientResult<Box<dyn CryptoMnemonic>> {
+    let dictionary = dictionary.unwrap_or(config.mnemonic_dictionary);
+    let word_count = word_count.unwrap_or(config.mnemonic_word_count);
+    if dictionary == TON_DICTIONARY {
+        return Ok(Box::new(TonMnemonic::new(word_count)));
+    }
+    let mnemonic_type = match word_count {
+        12 => MnemonicType::Words12,
+        15 => MnemonicType::Words15,
+        18 => MnemonicType::Words18,
+        21 => MnemonicType::Words21,
+        24 => MnemonicType::Words24,
+        _ => return Err(crypto::Error::bip39_invalid_word_count(word_count)),
+    };
+    let language = match dictionary {
+        ENGLISH_DICTIONARY => Language::English,
+        CHINESE_SIMPLIFIED_DICTIONARY => Language::ChineseSimplified,
+        CHINESE_TRADITIONAL_DICTIONARY => Language::ChineseTraditional,
+        FRENCH_DICTIONARY => Language::French,
+        ITALIAN_DICTIONARY => Language::Italian,
+        JAPANESE_DICTIONARY => Language::Japanese,
+        KOREAN_DICTIONARY => Language::Korean,
+        SPANISH_DICTIONARY => Language::Spanish,
+        _ => return Err(crypto::Error::bip39_invalid_dictionary(dictionary)),
+    };
+    Ok(Box::new(Bip39Mnemonic::new(mnemonic_type, language)))
+}
+
+pub trait CryptoMnemonic {
+    fn get_words(&self) -> ClientResult<String>;
+    fn generate_random_phrase(&self) -> ClientResult<String>;
+    fn derive_ed25519_keys_from_phrase(
+        &self,
+        config: &CryptoConfig,
+        phrase: &String,
+        path: &String,
+    ) -> ClientResult<KeyPair>;
+    fn phrase_from_entropy(&self, entropy: &[u8]) -> ClientResult<String>;
+    fn is_phrase_valid(&self, phrase: &String) -> ClientResult<bool>;
+    fn seed_from_phrase_and_salt(&self, phrase: &String, salt: &String) -> ClientResult<String>;
+    fn entropy_from_phrase(&self, phrase: &String) -> ClientResult<String>;
+}
+
+pub(super) fn check_phrase(mnemonic: &dyn CryptoMnemonic, phrase: &String) -> ClientResult<()> {
     if mnemonic.is_phrase_valid(phrase)? {
         Ok(())
     } else {
-        Err(ApiError::crypto_bip39_invalid_phrase(phrase))
+        Err(crypto::Error::bip39_invalid_phrase(phrase))
     }
 }
 
-pub struct Bip39Mnemonic {
+pub(crate) struct Bip39Mnemonic {
     mnemonic_type: MnemonicType,
     language: Language,
 }
 
 impl Bip39Mnemonic {
-    pub fn new(mnemonic_type: MnemonicType, language: Language) -> Self {
+    pub(crate) fn new(mnemonic_type: MnemonicType, language: Language) -> Self {
         Bip39Mnemonic {
             mnemonic_type,
             language,
@@ -58,9 +258,9 @@ impl Bip39Mnemonic {
     }
 }
 
-fn ed25519_keys_from_secret_bytes(bytes: &[u8]) -> ApiResult<KeyPair> {
+fn ed25519_keys_from_secret_bytes(bytes: &[u8]) -> ClientResult<KeyPair> {
     let secret = SecretKey::from_bytes(bytes)
-        .map_err(|_| ApiError::crypto_bip32_invalid_key(&hex::encode(bytes)))?;
+        .map_err(|_| crypto::Error::bip32_invalid_key(&hex::encode(bytes)))?;
     let public = PublicKey::from(&secret);
     Ok(KeyPair::new(
         hex::encode(public.to_bytes()),
@@ -69,7 +269,7 @@ fn ed25519_keys_from_secret_bytes(bytes: &[u8]) -> ApiResult<KeyPair> {
 }
 
 impl CryptoMnemonic for Bip39Mnemonic {
-    fn get_words(&self) -> ApiResult<String> {
+    fn get_words(&self) -> ClientResult<String> {
         let words = self.language.wordlist();
         let mut joined = String::new();
         for i in 0..2048 {
@@ -81,36 +281,37 @@ impl CryptoMnemonic for Bip39Mnemonic {
         Ok(joined)
     }
 
-    fn generate_random_phrase(&self) -> ApiResult<String> {
+    fn generate_random_phrase(&self) -> ClientResult<String> {
         let mnemonic = Mnemonic::new(self.mnemonic_type, self.language);
         Ok(mnemonic.phrase().into())
     }
 
     fn derive_ed25519_keys_from_phrase(
         &self,
+        config: &CryptoConfig,
         phrase: &String,
         path: &String,
-        compliant: bool,
-    ) -> ApiResult<KeyPair> {
+    ) -> ClientResult<KeyPair> {
         check_phrase(self, phrase)?;
-        let derived = HDPrivateKey::from_mnemonic(phrase)?.derive_path(path, compliant)?;
+        let derived =
+            HDPrivateKey::from_mnemonic(phrase)?.derive_path(path, config.hdkey_compliant)?;
         ed25519_keys_from_secret_bytes(&derived.secret())
     }
 
-    fn phrase_from_entropy(&self, entropy: &[u8]) -> ApiResult<String> {
+    fn phrase_from_entropy(&self, entropy: &[u8]) -> ClientResult<String> {
         let mnemonic = Mnemonic::from_entropy(&entropy, self.language)
-            .map_err(|err| ApiError::crypto_bip39_invalid_entropy(err))?;
+            .map_err(|err| crypto::Error::bip39_invalid_entropy(err))?;
         Ok(mnemonic.phrase().into())
     }
 
-    fn is_phrase_valid(&self, phrase: &String) -> ApiResult<bool> {
+    fn is_phrase_valid(&self, phrase: &String) -> ClientResult<bool> {
         Ok(Mnemonic::validate(phrase.as_str(), self.language).is_ok())
     }
 
-    fn seed_from_phrase_and_salt(&self, phrase: &String, salt: &String) -> ApiResult<String> {
+    fn seed_from_phrase_and_salt(&self, phrase: &String, salt: &String) -> ClientResult<String> {
         check_phrase(self, phrase)?;
         let mnemonic = Mnemonic::from_phrase(phrase, self.language)
-            .map_err(|err| ApiError::crypto_bip39_invalid_phrase(err))?;
+            .map_err(|err| crypto::Error::bip39_invalid_phrase(err))?;
 
         let salt = format!("mnemonic{}", salt);
         let mut seed = vec![0u8; 64];
@@ -124,15 +325,15 @@ impl CryptoMnemonic for Bip39Mnemonic {
     }
 
     #[allow(dead_code)]
-    fn entropy_from_phrase(&self, phrase: &String) -> ApiResult<String> {
+    fn entropy_from_phrase(&self, phrase: &String) -> ClientResult<String> {
         check_phrase(self, phrase)?;
         let mnemonic = Mnemonic::from_phrase(phrase, self.language)
-            .map_err(|err| ApiError::crypto_bip39_invalid_phrase(err))?;
+            .map_err(|err| crypto::Error::bip39_invalid_phrase(err))?;
         Ok(hex::encode(mnemonic.entropy()))
     }
 }
 
-pub struct TonMnemonic {
+pub(crate) struct TonMnemonic {
     word_count: u8,
 }
 
@@ -177,21 +378,23 @@ impl TonMnemonic {
                 return false;
             }
             count += 1;
-        };
+        }
         count == self.word_count && Self::is_basic_seed(phrase)
     }
 }
 
-
 impl CryptoMnemonic for TonMnemonic {
-    fn get_words(&self) -> ApiResult<String> {
+    fn get_words(&self) -> ClientResult<String> {
         return Ok(TON_WORDS.join(" ").to_string());
     }
 
-    fn generate_random_phrase(&self) -> ApiResult<String> {
+    fn generate_random_phrase(&self) -> ClientResult<String> {
         let max_iterations: i32 = 256 * 20;
         for _ in 0..max_iterations {
-            let rnd = generate_bytes(((self.word_count as usize) * 11 + 7) / 8);
+            let mut rng = rand::thread_rng();
+            let mut rnd: Vec<u8> = Vec::new();
+            rnd.resize(((self.word_count as usize) * 11 + 7) / 8, 0);
+            rng.fill_bytes(&mut rnd);
             let words = self.words_from_bytes(&rnd);
             let phrase: String = words.join(" ");
             if !Self::is_basic_seed(&phrase) {
@@ -199,42 +402,51 @@ impl CryptoMnemonic for TonMnemonic {
             }
             return Ok(phrase);
         }
-        return Err(ApiError::crypto_mnemonic_generation_failed());
+        return Err(crypto::Error::mnemonic_generation_failed());
     }
 
     fn derive_ed25519_keys_from_phrase(
         &self,
+        config: &CryptoConfig,
         phrase: &String,
-        _path: &String,
-        _compliant: bool,
-    ) -> ApiResult<KeyPair> {
+        path: &String,
+    ) -> ClientResult<KeyPair> {
         check_phrase(self, phrase)?;
+
         let seed = Self::seed_from_string(&phrase, "TON default seed", 100_000);
-        ed25519_keys_from_secret_bytes(&seed[..32])
+        let master = HDPrivateKey::master(&key256(&seed[32..])?, &key256(&seed[..32])?);
+        let derived = master.derive_path(path, config.hdkey_compliant)?;
+        ed25519_keys_from_secret_bytes(&derived.secret())
     }
 
-    fn phrase_from_entropy(&self, entropy: &[u8]) -> ApiResult<String> {
+    fn phrase_from_entropy(&self, entropy: &[u8]) -> ClientResult<String> {
         if entropy.len() != 24 * 11 / 8 {
-            return Err(ApiError::crypto_mnemonic_from_entropy_failed("Invalid entropy size"));
+            return Err(crypto::Error::mnemonic_from_entropy_failed(
+                "Invalid entropy size",
+            ));
         }
         let phrase = self.words_from_bytes(entropy).join(" ");
         if Self::is_basic_seed(&phrase) {
             Ok(phrase)
         } else {
-            Err(ApiError::crypto_mnemonic_from_entropy_failed("Invalid entropy"))
+            Err(crypto::Error::mnemonic_from_entropy_failed(
+                "Invalid entropy",
+            ))
         }
     }
 
-    fn is_phrase_valid(&self, phrase: &String) -> ApiResult<bool> {
+    fn is_phrase_valid(&self, phrase: &String) -> ClientResult<bool> {
         Ok(self.internal_is_phrase_valid(phrase))
     }
 
-    fn seed_from_phrase_and_salt(&self, phrase: &String, salt: &String) -> ApiResult<String> {
+    fn seed_from_phrase_and_salt(&self, phrase: &String, salt: &String) -> ClientResult<String> {
         check_phrase(self, phrase)?;
-        Ok(hex::encode(Self::seed_from_string(phrase, salt, 100_000).as_ref()))
+        Ok(hex::encode(
+            Self::seed_from_string(phrase, salt, 100_000).as_ref(),
+        ))
     }
 
-    fn entropy_from_phrase(&self, phrase: &String) -> ApiResult<String> {
+    fn entropy_from_phrase(&self, phrase: &String) -> ClientResult<String> {
         check_phrase(self, phrase)?;
         Ok(hex::encode(Self::entropy_from_string(&phrase).as_ref()))
     }

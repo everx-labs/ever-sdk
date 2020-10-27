@@ -11,16 +11,10 @@
 * limitations under the License.
 */
 
-extern crate futures;
-extern crate websocket;
-
-use futures::task::{Poll, Context};
-use futures::stream::Stream;
+use futures::stream::{Stream, StreamExt};
+use futures::sink::{Sink, SinkExt};
 use serde_json::Value;
-use websocket::{ClientBuilder, OwnedMessage};
-use websocket::client::sync::Client;
-use websocket::stream::sync::NetworkStream;
-
+use tokio_tungstenite::tungstenite::{Message, Error as WsError};
 
 #[derive(Debug, failure::Fail)]
 pub enum GraphiteError {
@@ -61,60 +55,79 @@ impl VariableRequest {
 
 pub struct SubscribeStream {
     id: u32,
-    request: VariableRequest,
-    client: Client<Box<dyn NetworkStream + Send>>
+    read: std::pin::Pin<Box<dyn Stream<Item = Result<Value, GraphiteError>> + Send>>,
+    write: Box<dyn Sink<Message, Error = WsError> + Unpin + Send>,
 }
 
 impl SubscribeStream {
-    pub fn new(id: u32, request: VariableRequest, host:&str) -> Result<Self, GraphiteError> {
-        let client = ClientBuilder::new(host)
+    pub async fn new(id: u32, request: VariableRequest, host:&str) -> Result<Self, GraphiteError> {
+        let (client, _) = tokio_tungstenite::connect_async(host)
+            .await
             .map_err(|err| 
                 GraphiteError::NetworkError(
-                    format!("Can't create websocket client with address {}. Error {}", host, err)))?
-            .add_protocol("graphql-ws")
-            .connect(None)
-            .map_err(|err|
-                GraphiteError::NetworkError(
-                    format!("Can't connect to websocket server {}. Error {}", host, err)))?;
+                    format!("Can't create websocket client with address {}. Error {}", host, err)))?;
 
-        let mut future = Self {
-            id: id,
-            request: request,
-            client
+        let (mut write, read) = client.split();
+
+        let query = request.get_query();
+        let variables = request.get_variables();
+        let request = if let Some(vars) = variables {
+            format!(
+                "{{\"id\":{}, \"type\": \"start\", \"payload\":{{ \"query\": \"{}\", \"variables\": {} }}}}",
+                &id, &query, &vars)
+        } else {
+            format!(
+                "{{\"id\":{}, \"type\": \"start\", \"payload\":{{ \"query\": \"{}\" }}}}",
+                &id, &query)
         };
 
-        future.subscribe()?;
-        Ok(future)
-    }
-
-    pub fn subscribe(&mut self) -> Result<(), GraphiteError> {
-        let query = &self.request.get_query().clone();
-        let variables = &self.request.get_variables().clone();
-        let request: String;
-
-        if let Some(vars) = variables {
-            request = format!("{{\"id\":{}, \"type\": \"start\", \"payload\":{{ \"query\": \"{}\", \"variables\": {} }}}}", &self.id, &query, &vars);
-        } else {
-            request = format!("{{\"id\":{}, \"type\": \"start\", \"payload\":{{ \"query\": \"{}\" }}}}", &self.id, &query);
-        }
-
-        let msg = OwnedMessage::Text(request);
-        self.client.send_message(&msg)
+        let msg = Message::Text(request);
+        write.send(msg)
+            .await
             .map_err(|err| 
                 GraphiteError::NetworkError(
                     format!("Sending message across stdin channel failed. Error: {}", err)))?;
 
-        Ok(())
+        let read = read.filter_map(|result| async move {
+            match result {
+                Ok(message) => {
+                    match message {
+                        Message::Text(text) => {
+                            match serde_json::from_str(text.as_str()) {
+                                Ok(value) => {
+                                    if let Some(error) = try_extract_error(&value) {
+                                        return Some(Err(error));
+                                    }
+                                    Some(Ok(value))
+                                }
+                                Err(error) => {
+                                    Some(Err(GraphiteError::SerdeError(error, text)))
+                                }
+                            }
+                        },
+                        _ => None
+                    }
+                },
+                Err(err) => Some(Err(GraphiteError::NetworkError(
+                    format!("Can not recieve next message: {}", err.to_string())))),
+            }
+        });
+
+        Ok(Self {
+            id: id,
+            read: Box::pin(read),
+            write: Box::new(write)
+        })
     }
 
-    pub fn unsubscribe(&mut self) -> Result<(), GraphiteError> {
+    pub async fn unsubscribe(&mut self) -> Result<(), GraphiteError> {
         let query = format!("{{\"id\":{}, \"type\": \"stop\", \"payload\":{{}}}}", &self.id);
-        let msg = OwnedMessage::Text(query.to_string());
-        self.client.send_message(&msg)
+        let msg = Message::Text(query.to_string());
+        self.write.send(msg)
+            .await
             .map_err(|err| 
                 GraphiteError::NetworkError(
                     format!("Sending message across stdin channel failed. Error: {}", err)))?;
-
         Ok(())
     }
 
@@ -123,9 +136,11 @@ impl SubscribeStream {
     }
 }
 
-impl Drop for SubscribeStream {
-    fn drop(&mut self) {
-        let _ = self.unsubscribe();
+impl Stream for SubscribeStream {
+    type Item = Result<Value, GraphiteError>;
+
+    fn poll_next(mut self: std::pin::Pin<&mut Self>, cx: &mut futures::task::Context<'_>) -> futures::task::Poll<Option<Self::Item>> {
+        Stream::poll_next(self.read.as_mut(), cx)
     }
 }
 
@@ -151,41 +166,4 @@ pub fn try_extract_error(value: &Value) -> Option<GraphiteError> {
     }
 
     return None;
-}
-
-impl Stream for SubscribeStream {
-    type Item = Result<Value, GraphiteError>;
-
-    fn poll_next(self: std::pin::Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        if let Some(result) = self.get_mut().client.incoming_messages().next() {
-            match result {
-                Ok(message) => {
-                    match message {
-                        OwnedMessage::Text(text) => {
-                            match serde_json::from_str(text.as_str()) {
-                                Ok(value) => {
-                                    if let Some(error) = try_extract_error(&value) {
-                                        return Poll::Ready(Some(Err(error)));
-                                    }
-                                    Poll::Ready(Some(Ok(value)))
-                                }
-                                Err(error) => {
-                                    Poll::Ready(Some(Err(GraphiteError::SerdeError(error, text))))
-                                }
-                                
-                            }
-                        },
-                        _ => Poll::Pending
-                    }
-                },
-                Err(err) => Poll::Ready(
-                    Some(
-                        Err(
-                            GraphiteError::NetworkError(
-                                format!("Can not recieve next message: {}", err.to_string()))))),
-            }
-        } else {
-            Poll::Pending
-        }
-    }
 }

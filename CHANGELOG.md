@@ -1,9 +1,10 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
-## 0.26.0 Aug 7, 2020
+## 0.26.0 Aug 15, 2020
 ### New
-- `crypto` function `crypto.derive_sign_keys_from_mnemonic`
+- `config.get_api_reference` api function (pre release).
+- `ton_sdk_cli` cli tool (pre release).
 - full local run functions use `LocalRunContext` to exactly reproduce all transaction parameters and
 produce the same result as node
 
@@ -45,6 +46,8 @@ guarantee message expiration
 - `contracts.process.transaction` function processing transaction to check errors and get output
 - `contracts.run.local` and `contracts.run.local` functions now have `fullRun` flag to emulate
 node transaction processing and calculate fees
+- `tonsdk` command line tool.
+- `ton_client` function `get_method_names`.
 
 ## May 22, 2020
 #### Fix

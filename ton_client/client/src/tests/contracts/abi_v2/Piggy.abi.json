@@ -1,0 +1,48 @@
+{
+	"ABI version": 2,
+	"header": ["time", "expire"],
+	"functions": [
+		{
+			"name": "constructor",
+			"inputs": [
+				{"name":"amount","type":"uint64"},
+				{"name":"goal","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "transfer",
+			"inputs": [
+				{"name":"to","type":"address"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getGoal",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"value0","type":"bytes"}
+			]
+		},
+		{
+			"name": "getTargetAmount",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"value0","type":"uint64"}
+			]
+		},
+		{
+			"name": "fallback",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		}
+	],
+	"events": [
+	]
+}
