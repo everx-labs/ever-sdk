@@ -371,8 +371,7 @@ pub(crate) fn register(handlers: &mut DispatchTable) {
 
     // Encrypt
 
-    handlers.spawn("crypto.encrypt", crate::crypto::encryption::encrypt);
-    handlers.spawn("crypto.decrypt", crate::crypto::encryption::decrypt);
+    handlers.spawn("crypto.chacha20", crate::crypto::encryption::cha_cha_20);
 
     // NaCl
 
