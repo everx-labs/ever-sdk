@@ -14,6 +14,7 @@
 
 use crate::error::ClientError;
 use serde_json::Value;
+use chrono::TimeZone;
 
 const PROCESSING: isize = ClientError::PROCESSING; // 500
 
@@ -41,6 +42,14 @@ fn error(code: ErrorCode, message: String) -> ClientError {
 
 fn error_with_data(code: ErrorCode, message: String, data: Value) -> ClientError {
     ClientError::new(code as isize, message, data)
+}
+
+fn format_time(time: u32) -> String {
+    format!(
+        "{} ({})",
+        chrono::Local.timestamp(time as i64, 0).to_rfc2822(),
+        time
+    )
 }
 
 impl Error {
@@ -155,22 +164,44 @@ impl Error {
         )
     }
 
-    pub fn message_expired(message_id: &str, shard_block_id: &String) -> ClientError {
-        Self::processing_error(
+    pub fn message_expired(
+        message_id: &str,
+        shard_block_id: &String,
+        expiration_time: u32,
+        block_time: u32,
+    ) -> ClientError {
+        let mut error = Self::processing_error(
             ErrorCode::MessageExpired,
             "Message expired".into(),
             message_id,
             Some(shard_block_id),
-        )
+        );
+
+        error.data["waiting_expiration_time"] = format_time(expiration_time).into();
+        error.data["block_time"] = format_time(block_time).into();
+
+        error
     }
 
-    pub fn transaction_wait_timeout(message_id: &str, shard_block_id: &String) -> ClientError {
-        Self::processing_error(
+    pub fn transaction_wait_timeout(
+        message_id: &str,
+        shard_block_id: &String,
+        expiration_time: u32,
+        timeout: u32,
+        block_time: u32,
+    ) -> ClientError {
+        let mut error = Self::processing_error(
             ErrorCode::TransactionWaitTimeout,
             "Transaction wait timeout".into(),
             message_id,
             Some(shard_block_id),
-        )
+        );
+
+        error.data["waiting_expiration_time"] = format_time(expiration_time).into();
+        error.data["timeout"] = timeout.into();
+        error.data["block_time"] = format_time(block_time).into();
+
+        error
     }
 
     pub fn can_not_check_block_shard<E: std::fmt::Display>(err: E) -> ClientError {

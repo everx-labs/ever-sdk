@@ -38,7 +38,6 @@ pub use encode_message::{
 };
 pub use errors::{Error, ErrorCode};
 pub use signing::Signer;
-use ton_sdk::SdkAbiConfig;
 pub use types::{
     Abi, AbiContract, AbiData, AbiEvent, AbiFunction, AbiHandle, AbiParam, FunctionHeader,
     MessageSource,
@@ -90,16 +89,6 @@ pub struct AbiConfig {
         deserialize_with = "deserialize_message_expiration_timeout_grow_factor"
     )]
     pub message_expiration_timeout_grow_factor: f32,
-}
-
-impl AbiConfig {
-    pub fn to_sdk(&self) -> SdkAbiConfig {
-        SdkAbiConfig {
-            workchain: self.workchain,
-            message_expiration_timeout_grow_factor: self.message_expiration_timeout_grow_factor,
-            message_expiration_timeout: self.message_expiration_timeout,
-        }
-    }
 }
 
 impl Default for AbiConfig {

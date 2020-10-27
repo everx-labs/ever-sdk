@@ -13,7 +13,7 @@
  */
 
 use crate::client::{ClientContext, Error};
-use crate::error::{ClientError, ClientResult};
+use crate::error::ClientResult;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use futures::Future;
@@ -24,7 +24,7 @@ use super::request::Request;
 use super::runtime::{AsyncHandler, SyncHandler};
 
 fn parse_params<P: DeserializeOwned>(params_json: &str) -> ClientResult<P> {
-    serde_json::from_str(params_json).map_err(|err| ClientError::invalid_params(params_json, err))
+    serde_json::from_str(params_json).map_err(|err| Error::invalid_params(params_json, err))
 }
 
 pub struct SpawnHandlerCallback<P, R, Fut, F>

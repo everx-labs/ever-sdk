@@ -147,6 +147,8 @@ pub async fn fetch_transaction_result(
     transaction_id: &str,
     abi: &Option<Abi>,
     address: MsgAddressInt,
+    expiration_time: u32,
+    block_time: u32,
 ) -> ClientResult<ResultOfProcessMessage> {
     let transaction_boc =
         fetch_transaction_boc(context, transaction_id, message_id, shard_block_id).await?;
@@ -168,7 +170,7 @@ pub async fn fetch_transaction_result(
     if exit_code == ExitCode::MessageExpired as i32
         || exit_code == ExitCode::ReplayProtection as i32
     {
-        Err(Error::message_expired(&message_id, shard_block_id))
+        Err(Error::message_expired(&message_id, shard_block_id, expiration_time, block_time))
     } else {
         Ok(ResultOfProcessMessage {
             transaction,

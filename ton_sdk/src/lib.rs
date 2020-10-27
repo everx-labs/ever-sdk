@@ -12,14 +12,9 @@
 */
 
 #[macro_use]
-extern crate ton_vm;
-
-#[macro_use]
 extern crate serde_derive;
 #[macro_use]
 extern crate failure;
-#[macro_use]
-extern crate serde_json;
 
 extern crate api_info;
 #[macro_use]
@@ -34,15 +29,11 @@ pub use error::SdkError;
 
 mod contract;
 pub use contract::{
-    Contract, ContractImage, FunctionCallSet, LocalRunContext, MessageProcessingState,
-    ReceivedTransaction, SdkMessage,
+    Contract, ContractImage, FunctionCallSet, SdkMessage,
 };
 
 mod message;
 pub use message::{Message, MessageId, MessageType};
-
-mod local_tvm;
-pub use local_tvm::{call_tvm, call_tvm_stack};
 
 mod transaction;
 pub use transaction::{Transaction, TransactionFees, TransactionId};
@@ -51,18 +42,6 @@ mod block;
 pub use block::{Block, MsgDescr};
 
 pub mod types;
-pub use types::{SdkAbiConfig, BlockId};
+pub use types::BlockId;
 
 pub mod json_helper;
-
-#[cfg(test)]
-#[path = "tests/test_lib.rs"]
-mod tests;
-
-#[cfg(test)]
-#[path = "tests/test_piggy_bank.rs"]
-mod test_piggy_bank;
-
-#[cfg(test)]
-#[path = "tests/tests_common.rs"]
-mod tests_common;

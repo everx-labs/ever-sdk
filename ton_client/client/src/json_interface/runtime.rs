@@ -14,8 +14,8 @@
 
 use super::modules::register_modules;
 use super::request::Request;
-use crate::client::{ClientConfig, ClientContext};
-use crate::error::{ClientError, ClientResult};
+use crate::client::{ClientConfig, ClientContext, Error};
+use crate::error::ClientResult;
 use crate::ContextHandle;
 use api_info::{Module, API};
 use std::collections::HashMap;
@@ -104,7 +104,7 @@ impl Runtime {
     ) -> ClientResult<String> {
         match Self::handlers().sync_handlers.get(&function_name) {
             Some(handler) => handler.handle(context, params_json.as_str()),
-            None => Err(ClientError::unknown_function(&function_name)),
+            None => Err(Error::unknown_function(&function_name)),
         }
     }
 
@@ -116,7 +116,7 @@ impl Runtime {
     ) {
         match Self::handlers().async_handlers.get(&function_name) {
             Some(handler) => handler.handle(context, params_json, request),
-            None => request.finish_with_error(ClientError::unknown_function(&function_name)),
+            None => request.finish_with_error(Error::unknown_function(&function_name)),
         }
     }
 
@@ -131,7 +131,7 @@ impl Runtime {
             "{}"
         };
         let config = serde_json::from_str::<ClientConfig>(config_json)
-            .map_err(|err| ClientError::invalid_params(config_json, err))?;
+            .map_err(|err| Error::invalid_params(config_json, err))?;
 
         let mut contexts = Self::contexts();
         let handle = contexts.next_context_handle;
@@ -150,7 +150,7 @@ impl Runtime {
             Self::contexts()
                 .contexts
                 .get(&context)
-                .ok_or(ClientError::invalid_context_handle(context))?,
+                .ok_or(Error::invalid_context_handle(context))?,
         ))
     }
 }
