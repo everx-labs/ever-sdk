@@ -25,6 +25,9 @@ pub enum ErrorCode {
     CannotConvertJsValueToJson = CLIENT + 20,
     CannotReceiveSpawnedResult = CLIENT + 21,
     SetTimerError = CLIENT + 22,
+    InvalidParams = CLIENT + 23,
+    ContractsAddressConversionFailed = CLIENT + 24,
+    UnknownFunction = CLIENT + 25,
 }
 pub struct Error;
 
@@ -160,6 +163,27 @@ impl Error {
         error(
             ErrorCode::CannotSerializeResult,
             format!("Can't serialize result: {}", err),
+        )
+    }
+
+    pub fn invalid_params(params_json: &str, err: impl Display) -> ClientError {
+        error(
+            ErrorCode::InvalidParams,
+            format!("Invalid parameters: {}\nparams: {}", err, params_json)
+        )
+    }
+
+    pub fn contracts_address_conversion_failed(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::ContractsAddressConversionFailed,
+            format!("Address conversion failed: {}", err)
+        )
+    }
+
+    pub fn unknown_function(name: &String) -> ClientError {
+        error(
+            ErrorCode::UnknownFunction, 
+            format!("Unknown function: {}", name)
         )
     }
 }

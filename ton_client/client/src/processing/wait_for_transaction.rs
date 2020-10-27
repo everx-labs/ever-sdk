@@ -81,7 +81,9 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send + Sync>
                 &message_id,
                 &transaction_id,
                 &params.abi,
-                address
+                address,
+                (max_block_time / 1000) as u32,
+                block.gen_utime,
             )
             .await?);
         }
@@ -90,12 +92,21 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send + Sync>
         if block.gen_utime as u64 * 1000 > max_block_time {
             // TODO: here we must execute contract and collect execution result
             // TODO: to get more diagnostic data for application
+            let waiting_expiration_time = (max_block_time / 1000) as u32;
             return if message_expiration_time.is_some() {
-                Err(Error::message_expired(&message_id, &shard_block_id))
+                Err(Error::message_expired(
+                    &message_id,
+                    &shard_block_id,
+                    waiting_expiration_time,
+                    block.gen_utime,
+                ))
             } else {
                 Err(Error::transaction_wait_timeout(
                     &message_id,
                     &shard_block_id,
+                    waiting_expiration_time,
+                    processing_timeout,
+                    block.gen_utime,
                 ))
             };
         }

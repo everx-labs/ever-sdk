@@ -17,41 +17,6 @@ use ton_types::Result;
 
 use crate::error::SdkError;
 
-pub const MASTERCHAIN_ID: i32 = -1;
-
-fn default_workchain() -> i32 {
-    0
-}
-
-fn default_message_expiration_timeout() -> u32 {
-    40000
-}
-
-fn default_message_expiration_timeout_grow_factor() -> f32 {
-    1.5
-}
-
-#[derive(Deserialize, Debug, Clone, ApiType)]
-pub struct SdkAbiConfig {
-    #[serde(default = "default_workchain")]
-    pub workchain: i32,
-    #[serde(default = "default_message_expiration_timeout")]
-    pub message_expiration_timeout: u32,
-    #[serde(default = "default_message_expiration_timeout_grow_factor")]
-    pub message_expiration_timeout_grow_factor: f32,
-}
-
-impl Default for SdkAbiConfig {
-    fn default() -> Self {
-        Self {
-            workchain: default_workchain(),
-            message_expiration_timeout: default_message_expiration_timeout(),
-            message_expiration_timeout_grow_factor: default_message_expiration_timeout_grow_factor(
-            ),
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq)]
 pub struct StringId(String);
 

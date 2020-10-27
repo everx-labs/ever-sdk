@@ -13,7 +13,7 @@
 
 #![allow(dead_code)]
 
-use crate::error::{ClientResult, ClientError};
+use crate::error::ClientResult;
 use crate::client;
 use ton_block::MsgAddressInt;
 use std::str::FromStr;
@@ -47,8 +47,8 @@ pub(crate) fn account_encode_ex(
         AccountAddressType::AccountId => Ok(value.get_address().to_hex_string()),
         AccountAddressType::Hex => Ok(value.to_string()),
         AccountAddressType::Base64 => {
-            let params = base64_params.ok_or(ClientError::contracts_address_conversion_failed(
-                "No base64 address parameters provided".to_owned()))?;
+            let params = base64_params.ok_or(client::Error::contracts_address_conversion_failed(
+                "No base64 address parameters provided"))?;
             encode_base64(value, params.bounce, params.test, params.url)
         }
     }

@@ -500,7 +500,7 @@ impl TestClient {
     pub(crate) fn request_no_params<R: DeserializeOwned>(&self, method: &str) -> R {
         let result = self.request_json(method, Value::Null).unwrap();
         serde_json::from_value(result)
-            .map_err(|err| ClientError::invalid_params("", err))
+            .map_err(|err| Error::invalid_params("", err))
             .unwrap()
     }
 
