@@ -16,7 +16,7 @@ use crate::error::ClientResult;
 use ton_block::AccStatusChange;
 use std::convert::TryFrom;
 
-pub(crate) async fn check_transaction<F>(
+pub(crate) async fn calc_transaction_fees<F>(
     transaction: &ton_block::Transaction,
     real_tr: bool,
     skip_check: bool,

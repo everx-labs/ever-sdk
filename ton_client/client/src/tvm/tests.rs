@@ -120,7 +120,7 @@ async fn test_run_executor() {
             .call(ParamsOfRunExecutor {
                 message: message.message.clone(),
                 abi: Some(abi.clone()),
-                account: AccountForExecutor::State {
+                account: AccountForExecutor::Account {
                     boc: account.clone(),
                     unlimited_balance: Some(true)
                 },
@@ -142,7 +142,7 @@ async fn test_run_executor() {
             .call(ParamsOfRunExecutor {
                 message: message.message,
                 abi: Some(abi.clone()),
-                account: AccountForExecutor::State {
+                account: AccountForExecutor::Account {
                     boc: account,
                     unlimited_balance: None
                 },

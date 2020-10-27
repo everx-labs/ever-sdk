@@ -21,7 +21,7 @@ use crate::{
     client::ClientContext,
     error::ClientResult,
     processing::{parsing::decode_output, DecodedOutput},
-    tvm::{check_transaction::check_transaction, Error},
+    tvm::{check_transaction::calc_transaction_fees, Error},
 };
 use super::types::{ExecutionOptions, ResolvedExecutionOptions};
 use num_traits::ToPrimitive;
@@ -42,7 +42,7 @@ pub enum AccountForExecutor {
     /// Emulate unitialized account to run deploy message
     Uninit,
     /// Account state to run message
-    State {
+    Account {
         /// Account BOC. Encoded as base64.
         boc: String,
         /// Flag for running account with the unlimited balance. Can be used to calculate
@@ -73,7 +73,7 @@ impl AccountForExecutor {
                 let account = serialize_object_to_cell(&account, "account")?;
                 Ok((account, None))
             },
-            AccountForExecutor::State { boc, unlimited_balance } => {
+            AccountForExecutor::Account { boc, unlimited_balance } => {
                 if unlimited_balance.unwrap_or_default() {
                     let mut account: Account = deserialize_object_from_base64(&boc, "account")?
                         .object;
@@ -93,7 +93,7 @@ impl AccountForExecutor {
         }
     }
 
-    pub fn restore_balance(
+    pub fn restore_balance_if_needed(
         account: Cell,
         balance: Option<ton_block::CurrencyCollection>
     ) -> ClientResult<Cell> {
@@ -216,7 +216,7 @@ pub async fn run_executor(
 
     let (transaction, account) = call_executor(account, message, options, contract_info.clone()).await?;
 
-    let fees = check_transaction(
+    let fees = calc_transaction_fees(
         &transaction,
         false,
         params.skip_transaction_check.unwrap_or_default(),
@@ -239,7 +239,7 @@ pub async fn run_executor(
         None
     };
 
-    let account = AccountForExecutor::restore_balance(account, original_balance)?;
+    let account = AccountForExecutor::restore_balance_if_needed(account, original_balance)?;
 
     Ok(ResultOfRunExecutor {
         out_messages,
