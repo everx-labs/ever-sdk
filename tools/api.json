@@ -4578,6 +4578,51 @@
           "description": null
         },
         {
+          "name": "AccountForExecutor",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "None",
+              "type": "Struct",
+              "struct_fields": [],
+              "summary": " Non-existing account to run a creation internal message.",
+              "description": " Non-existing account to run a creation internal message.\n Should be used with `skip_transaction_check = true` if the message has no deploy data\n since transaction on the unitialized account are always aborted"
+            },
+            {
+              "name": "Uninit",
+              "type": "Struct",
+              "struct_fields": [],
+              "summary": " Emulate unitialized account to run deploy message",
+              "description": " Emulate unitialized account to run deploy message"
+            },
+            {
+              "name": "Account",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "boc",
+                  "type": "String",
+                  "summary": " Account BOC. Encoded as base64.",
+                  "description": " Account BOC. Encoded as base64."
+                },
+                {
+                  "name": "unlimited_balance",
+                  "type": "Optional",
+                  "optional_inner": {
+                    "type": "Boolean"
+                  },
+                  "summary": " Flag for running account with the unlimited balance. Can be used to calculate",
+                  "description": " Flag for running account with the unlimited balance. Can be used to calculate\n transaction fees without balance check"
+                }
+              ],
+              "summary": " Account state to run message",
+              "description": " Account state to run message"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfRunExecutor",
           "type": "Struct",
           "struct_fields": [
@@ -4589,12 +4634,10 @@
             },
             {
               "name": "account",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "String"
-              },
-              "summary": " Account BOC. Must be encoded as base64.",
-              "description": " Account BOC. Must be encoded as base64."
+              "type": "Ref",
+              "ref_name": "AccountForExecutor",
+              "summary": " Account to run on executor",
+              "description": " Account to run on executor"
             },
             {
               "name": "execution_options",
@@ -4613,8 +4656,17 @@
                 "type": "Ref",
                 "ref_name": "Abi"
               },
-              "summary": " Contract ABI for dedcoding output messages",
-              "description": " Contract ABI for dedcoding output messages"
+              "summary": " Contract ABI for decoding output messages",
+              "description": " Contract ABI for decoding output messages"
+            },
+            {
+              "name": "skip_transaction_check",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": " Skip transaction check flag",
+              "description": " Skip transaction check flag"
             }
           ],
           "summary": null,

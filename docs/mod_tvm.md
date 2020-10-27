@@ -11,6 +11,8 @@ null
 ## Types
 [ExecutionOptions](#ExecutionOptions)
 
+[AccountForExecutor](#AccountForExecutor)
+
 [ParamsOfRunExecutor](#ParamsOfRunExecutor)
 
 [ResultOfRunExecutor](#ResultOfRunExecutor)
@@ -30,9 +32,10 @@ null
 ```ts
 type ParamsOfRunExecutor = {
     message: string,
-    account?: string,
+    account: AccountForExecutor,
     execution_options?: ExecutionOptions,
-    abi?: Abi
+    abi?: Abi,
+    skip_transaction_check?: boolean
 };
 
 type ResultOfRunExecutor = {
@@ -49,9 +52,10 @@ function run_executor(
 ```
 ### Parameters
 - `message`: _string_ – Input message BOC. Must be encoded as base64.
-- `account`?: _string_ – Account BOC. Must be encoded as base64.
+- `account`: _[AccountForExecutor](mod_tvm.md#AccountForExecutor)_ – Account to run on executor
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
-- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for dedcoding output messages
+- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for decoding output messages
+- `skip_transaction_check`?: _boolean_ – Skip transaction check flag
 ### Result
 
 - `transaction`: _any_ – Parsed transaction.
@@ -140,19 +144,54 @@ type ExecutionOptions = {
 - `transaction_lt`?: _bigint_ – transaction logical time
 
 
+## AccountForExecutor
+```ts
+type AccountForExecutor = {
+    type: 'None'
+} | {
+    type: 'Uninit'
+} | {
+    type: 'Account'
+    boc: string,
+    unlimited_balance?: boolean
+};
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'None'_
+
+Non-existing account to run a creation internal message. Should be used with `skip_transaction_check = true` if the message has no deploy data since transaction on the unitialized account are always aborted
+
+
+When _type_ is _'Uninit'_
+
+Emulate unitialized account to run deploy message
+
+
+When _type_ is _'Account'_
+
+Account state to run message
+
+
+- `boc`: _string_ – Account BOC. Encoded as base64.
+- `unlimited_balance`?: _boolean_ – Flag for running account with the unlimited balance. Can be used to calculate transaction fees without balance check
+
+
 ## ParamsOfRunExecutor
 ```ts
 type ParamsOfRunExecutor = {
     message: string,
-    account?: string,
+    account: AccountForExecutor,
     execution_options?: ExecutionOptions,
-    abi?: Abi
+    abi?: Abi,
+    skip_transaction_check?: boolean
 };
 ```
 - `message`: _string_ – Input message BOC. Must be encoded as base64.
-- `account`?: _string_ – Account BOC. Must be encoded as base64.
+- `account`: _[AccountForExecutor](mod_tvm.md#AccountForExecutor)_ – Account to run on executor
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
-- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for dedcoding output messages
+- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for decoding output messages
+- `skip_transaction_check`?: _boolean_ – Skip transaction check flag
 
 
 ## ResultOfRunExecutor
