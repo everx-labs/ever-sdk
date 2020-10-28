@@ -71,6 +71,8 @@
 
 [hdkey_public_from_xprv](mod_crypto.md#hdkey_public_from_xprv) – Extracts the public key from the serialized extended private key
 
+[chacha20](mod_crypto.md#chacha20) – Performs symmetric `chacha20` encryption.
+
 ## [abi](mod_abi.md) – Provides message encoding and decoding according to the ABI specification.
 
 [encode_message_body](mod_abi.md#encode_message_body) – Encodes message body according to ABI function call.

@@ -1,6 +1,11 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## 1.1.0 Oct 30, 2020
+
+### New
+- ChaCha20 encryption support `crypto.chacha20`. 
+
 ## 1.0.0 Oct 27, 2020
 
 ### Differences between Core SDK v0 and v1
