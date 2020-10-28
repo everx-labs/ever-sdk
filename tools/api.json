@@ -1350,6 +1350,46 @@
           ],
           "summary": null,
           "description": null
+        },
+        {
+          "name": "ParamsOfChaCha20",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "data",
+              "type": "String",
+              "summary": " Source data that must be encrypted/decrypted. Must be encoded with `base64`.",
+              "description": " Source data that must be encrypted/decrypted. Must be encoded with `base64`."
+            },
+            {
+              "name": "key",
+              "type": "String",
+              "summary": " 256-bit key. Must be encoded with `hex`.",
+              "description": " 256-bit key. Must be encoded with `hex`."
+            },
+            {
+              "name": "nonce",
+              "type": "String",
+              "summary": " 96-bit nonce. Must be encoded with `hex`.",
+              "description": " 96-bit nonce. Must be encoded with `hex`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfChaCha20",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "data",
+              "type": "String",
+              "summary": " Encrypted/decrypted data. Encoded with `base64`.",
+              "description": " Encrypted/decrypted data. Encoded with `base64`."
+            }
+          ],
+          "summary": null,
+          "description": null
         }
       ],
       "functions": [
@@ -2512,6 +2552,44 @@
               {
                 "type": "Ref",
                 "ref_name": "ResultOfHDKeyPublicFromXPrv"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "chacha20",
+          "summary": " Performs symmetric `chacha20` encryption.",
+          "description": " Performs symmetric `chacha20` encryption.",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfChaCha20",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfChaCha20"
               }
             ]
           },
