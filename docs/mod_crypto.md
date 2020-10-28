@@ -64,6 +64,8 @@
 
 [hdkey_public_from_xprv](#hdkey_public_from_xprv) – Extracts the public key from the serialized extended private key
 
+[chacha20](#chacha20) – Performs symmetric `chacha20` encryption.
+
 ## Types
 [SigningBoxHandle](#SigningBoxHandle)
 
@@ -168,6 +170,10 @@
 [ParamsOfHDKeyPublicFromXPrv](#ParamsOfHDKeyPublicFromXPrv)
 
 [ResultOfHDKeyPublicFromXPrv](#ResultOfHDKeyPublicFromXPrv)
+
+[ParamsOfChaCha20](#ParamsOfChaCha20)
+
+[ResultOfChaCha20](#ResultOfChaCha20)
 
 
 # Functions
@@ -991,6 +997,34 @@ function hdkey_public_from_xprv(
 - `public`: _string_ – Public key - 64 symbols hex string
 
 
+## chacha20
+
+Performs symmetric `chacha20` encryption.
+
+```ts
+type ParamsOfChaCha20 = {
+    data: string,
+    key: string,
+    nonce: string
+};
+
+type ResultOfChaCha20 = {
+    data: string
+};
+
+function chacha20(
+    params: ParamsOfChaCha20,
+): Promise<ResultOfChaCha20>;
+```
+### Parameters
+- `data`: _string_ – Source data that must be encrypted/decrypted. Must be encoded with `base64`.
+- `key`: _string_ – 256-bit key. Must be encoded with `hex`.
+- `nonce`: _string_ – 96-bit nonce. Must be encoded with `hex`.
+### Result
+
+- `data`: _string_ – Encrypted/decrypted data. Encoded with `base64`.
+
+
 # Types
 ## SigningBoxHandle
 ```ts
@@ -1528,5 +1562,27 @@ type ResultOfHDKeyPublicFromXPrv = {
 };
 ```
 - `public`: _string_ – Public key - 64 symbols hex string
+
+
+## ParamsOfChaCha20
+```ts
+type ParamsOfChaCha20 = {
+    data: string,
+    key: string,
+    nonce: string
+};
+```
+- `data`: _string_ – Source data that must be encrypted/decrypted. Must be encoded with `base64`.
+- `key`: _string_ – 256-bit key. Must be encoded with `hex`.
+- `nonce`: _string_ – 96-bit nonce. Must be encoded with `hex`.
+
+
+## ResultOfChaCha20
+```ts
+type ResultOfChaCha20 = {
+    data: string
+};
+```
+- `data`: _string_ – Encrypted/decrypted data. Encoded with `base64`.
 
 
