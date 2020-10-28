@@ -21,7 +21,7 @@ use crate::error::ClientResult;
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfChaCha20 {
-    /// Source data that must be encrypted/decrypted. Must be encoded with `base64`.
+    /// Source data to be encrypted or decrypted. Must be encoded with `base64`.
     pub data: String,
     /// 256-bit key. Must be encoded with `hex`.
     pub key: String,
