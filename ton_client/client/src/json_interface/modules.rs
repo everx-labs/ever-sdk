@@ -246,6 +246,10 @@ fn register_boc(handlers: &mut RuntimeHandlers) {
     );
     module.register_sync_fn(crate::boc::parse_block, crate::boc::parse::parse_block_api);
     module.register_sync_fn(
+        crate::boc::parse_shardstate,
+        crate::boc::parse::parse_shardstate_api,
+    );
+    module.register_sync_fn(
         crate::boc::get_blockchain_config,
         crate::boc::blockchain_config::get_blockchain_config_api,
     );

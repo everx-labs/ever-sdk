@@ -20,7 +20,8 @@ pub(crate) mod internal;
 
 pub use crate::boc::parse::{
     source_boc, required_boc,
-    parse_account, parse_block, parse_message, parse_transaction, ParamsOfParse, ResultOfParse,
+    parse_account, parse_block, parse_message, parse_transaction, parse_shardstate,
+    ParamsOfParse, ParamsOfParseShardstate, ResultOfParse,
 };
 pub use blockchain_config::{
     get_blockchain_config, ParamsOfGetBlockchainConfig, ResultOfGetBlockchainConfig,
