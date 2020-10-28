@@ -15,8 +15,9 @@ const exec = require('util').promisify(require('child_process').exec);
 
 const outDir = root_path('bin');
 const ndkURLStr = 'http://dl.google.com/android/repository/android-ndk-r17c-darwin-x86_64.zip';
-const ndkZipFile = root_path(((parts = ndkURLStr.split('/')).length < 1 ? null : parts[parts.length - 1]));
-const ndkDirName = root_path('android-ndk-r17c');
+const ndkUrlParts = ndkURLStr.split('/');
+const ndkZipFile = root_path('android', ndkUrlParts.length < 1 ? null : ndkUrlParts[ndkUrlParts.length - 1]);
+const ndkDirName = root_path('android', 'android-ndk-r17c');
 
 // parse arguments
 
@@ -46,8 +47,8 @@ const ios = {
         { target: 'x86_64-apple-ios' },
         { target: 'aarch64-apple-ios' },
     ],
-    lib: 'libtonclient.a',
-    header: 'ton_client.h'
+    lib: 'libtonosclient.a',
+    header: 'tonos_client.h'
 };
 const android = {
     archs: [
@@ -55,7 +56,7 @@ const android = {
         { target: 'aarch64-linux-android', jni: 'arm64-v8a', ndk: 'arm64' },
         { target: 'armv7-linux-androideabi', jni: 'armeabi-v7a', ndk: 'arm' },
     ],
-    lib: 'libtonclient.so',
+    lib: 'libtonosclient.so',
 };
 
 if (devMode) {
@@ -65,7 +66,7 @@ if (devMode) {
 
 spawnEnv.PATH = [
     (spawnEnv.PATH || ''),
-    ...(android.archs.map(x => root_path('NDK', x.ndk, 'bin'))),
+    ...(android.archs.map(x => root_path('android', 'NDK', x.ndk, 'bin'))),
 ].join(':');
 
 async function getNDK() {
@@ -77,7 +78,7 @@ async function getNDK() {
                 await spawnProcess('curl', [ndkURLStr, '-o', ndkZipFile]);
             }
             console.log('Unzipping android NDK...');
-            await spawnProcess('unzip', ['-q', '-d', root_path(''), ndkZipFile]);
+            await spawnProcess('unzip', ['-q', '-d', root_path('android'), ndkZipFile]);
             ndkHomeDir = ndkDirName;
             process.env.NDK_HOME = ndkHomeDir;
         } catch (err) {
@@ -89,7 +90,7 @@ async function getNDK() {
 
 
 async function checkNDK() {
-    const ndkDir = root_path('NDK');
+    const ndkDir = root_path('android', 'NDK');
     const missingArchs = android.archs.map(x =>
         !fs.existsSync(path.resolve(ndkDir, x.ndk)) ? x : null
     ).filter(x => x);
@@ -121,7 +122,7 @@ async function cargoBuild(targets) {
 
 async function buildReactNativeIosLibrary() {
     const buildRel = ['build', 'ios'];
-    process.chdir(root_path(''));
+    process.chdir(root_path('ios'));
 
     await cargoBuild(ios.archs.map(x => x.target));
     mkdir(root_path(buildRel));
@@ -134,9 +135,6 @@ async function buildReactNativeIosLibrary() {
     ]);
 
     if (fs.existsSync(dest)) {
-        const header_src = root_path(ios.header);
-        const header_dst = root_path(buildRel, ios.header);
-        fs.copyFileSync(header_src, header_dst);
         await gz(
             [...buildRel, ios.lib],
             `tonclient_${version}_react_native_ios`,
@@ -147,7 +145,7 @@ async function buildReactNativeIosLibrary() {
 
 
 async function buildReactNativeAndroidLibrary() {
-    process.chdir(root_path(''));
+    process.chdir(root_path('android'));
 
     const buildRel = ['build', 'android'];
 

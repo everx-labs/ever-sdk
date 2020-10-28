@@ -11,33 +11,18 @@
 * limitations under the License.
 */
 
+extern crate libc;
 extern crate ton_client;
 
-pub use self::ton_client::{
+pub use ton_client::{
     tc_create_context,
     tc_destroy_context,
-    tc_json_request_async,
-    InteropContext,
+    tc_request,
+    tc_request_sync,
+    tc_read_string,
+    tc_destroy_string,
+    ContextHandle,
+    ResponseType,
     StringData,
-    CResponseHandler
+    CResponseHandler,
 };
-
-// Obsolete. Used for backward compatibility only.
-//
-#[no_mangle]
-pub unsafe extern fn ton_sdk_json_rpc_request(
-    method: &StringData,
-    params_json: &StringData,
-    request_id: i32,
-    on_result: CResponseHandler,
-) {
-    let context = self::ton_client::create_context();
-    self::ton_client::tc_json_request_async(
-        context,
-        (*method).clone(),
-        (*params_json).clone(),
-        request_id,
-        on_result);
-    self::ton_client::destroy_context(context)
-}
-

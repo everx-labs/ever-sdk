@@ -11,9 +11,18 @@
 * limitations under the License.
 */
 
+extern crate jni;
 extern crate ton_client;
 
-use self::ton_client::{create_context, json_sync_request, destroy_context, InteropContext};
+pub use self::ton_client::{
+    create_context,
+    destroy_context,
+    request,
+    request_sync,
+    ContextHandle,
+    ResponseType,
+    ResponseHandler,
+};
 
 extern crate jni;
 
@@ -61,26 +70,26 @@ impl JniResultHandler {
 
 #[allow(non_snake_case)]
 #[no_mangle]
-pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_createContext(
+pub unsafe extern fn Java_tonos_ClientJsonInterface_createContext(
     _env: JNIEnv,
     _class: JClass,
-) -> jint {
-    create_context() as jint
+) -> JString {
+    create_context()
 }
 
 #[allow(non_snake_case)]
 #[no_mangle]
-pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_destroyContext(
+pub unsafe extern fn Java_tonos_ClientJsonInterface_destroyContext(
     _env: JNIEnv,
     _class: JClass,
     context: jint,
 ) {
-    destroy_context(context as InteropContext)
+    destroy_context(context as ContextHandle)
 }
 
 #[allow(non_snake_case)]
 #[no_mangle]
-pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_jsonRequestAsync(
+pub unsafe extern fn Java_tonos_ClientJsonInterface_request(
     env: JNIEnv,
     _class: JClass,
     context: jint,
@@ -98,29 +107,3 @@ pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_jsonRequestAsync(
 
     handler.on_result(response.result_json, response.error_json, 1);
 }
-
-
-// Obsolete. For backward compatibility only.
-//
-#[allow(non_snake_case)]
-#[no_mangle]
-pub unsafe extern fn Java_ton_sdk_TONSDKJsonApi_request(
-    env: JNIEnv,
-    _class: JClass,
-    method: JString,
-    params_json: JString,
-    on_result: JObject,
-) {
-    let context = create_context();
-    let response = json_sync_request(
-        context,
-        rust_string(&env, method),
-        rust_string(&env, params_json),
-    );
-
-    let handler = JniResultHandler::new(env, on_result);
-
-    handler.on_result(response.result_json, response.error_json, 0);
-    destroy_context(context)
-}
-
