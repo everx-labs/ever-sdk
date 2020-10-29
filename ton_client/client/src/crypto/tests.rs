@@ -25,6 +25,7 @@ use crate::crypto::nacl::{
     ParamsOfNaclSignOpen, ResultOfNaclBox, ResultOfNaclBoxOpen, ResultOfNaclSign,
     ResultOfNaclSignDetached, ResultOfNaclSignOpen,
 };
+use crate::crypto::{ParamsOfChaCha20, ResultOfChaCha20};
 use crate::tests::TestClient;
 
 fn base64_from_hex(hex: &str) -> String {
@@ -33,6 +34,32 @@ fn base64_from_hex(hex: &str) -> String {
 
 fn text_from_base64(b64: &str) -> String {
     String::from_utf8(base64::decode(b64).unwrap()).unwrap()
+}
+
+#[test]
+fn encryption() {
+    TestClient::init_log();
+    let client = TestClient::new();
+    let key = "01".repeat(32);
+    let nonce = "ff".repeat(12);
+    let encrypted: ResultOfChaCha20 = client.request(
+        "crypto.chacha20",
+        ParamsOfChaCha20 {
+            data: base64::encode("Message"),
+            key: key.clone(),
+            nonce: nonce.clone(),
+        },
+    );
+    assert_eq!(encrypted.data, "w5QOGsJodQ==");
+    let decrypted: ResultOfChaCha20 = client.request(
+        "crypto.chacha20",
+        ParamsOfChaCha20 {
+            data: encrypted.data.clone(),
+            key: key.clone(),
+            nonce: nonce.clone(),
+        },
+    );
+    assert_eq!(decrypted.data, "TWVzc2FnZQ==");
 }
 
 #[test]

@@ -23,6 +23,7 @@ pub(crate) mod mnemonic;
 pub(crate) mod nacl;
 
 pub use errors::{Error, ErrorCode};
+pub(crate) mod encryption;
 #[cfg(test)]
 mod tests;
 
@@ -61,6 +62,7 @@ pub use crate::crypto::nacl::{
     ParamsOfNaclSignKeyPairFromSecret, ParamsOfNaclSignOpen, ResultOfNaclBox, ResultOfNaclBoxOpen,
     ResultOfNaclSign, ResultOfNaclSignDetached, ResultOfNaclSignOpen,
 };
+pub use encryption::{chacha20, ParamsOfChaCha20, ResultOfChaCha20};
 
 use serde::{Deserialize, Deserializer};
 

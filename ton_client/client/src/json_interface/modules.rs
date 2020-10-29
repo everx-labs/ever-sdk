@@ -173,6 +173,14 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
         crate::crypto::hdkey_public_from_xprv,
         crate::crypto::hdkey::hdkey_public_from_xprv_api,
     );
+
+    // Encryption
+
+    module.register_sync_fn(
+        crate::crypto::chacha20,
+        crate::crypto::encryption::chacha20_api,
+    );
+
     module.register();
 }
 
