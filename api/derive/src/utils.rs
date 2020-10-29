@@ -19,8 +19,13 @@ pub(crate) fn field_from(
     } else {
         value
     };
+    let name = if let Some(name) = find_attr_value("serde", "rename", attrs) {
+        name
+    } else {
+        name.map(|x| x.to_string()).unwrap_or("".into())
+    };
     api_info::Field {
-        name: name.map(|x| x.to_string()).unwrap_or("".into()),
+        name,
         summary,
         description,
         value,

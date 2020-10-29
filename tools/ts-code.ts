@@ -38,6 +38,27 @@ interface IClient {
 }
 `;
 
+function isLatinLetter(c: string): boolean {
+    return c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z';
+}
+
+function isDigit(c: string): boolean {
+    return c >= '0' && c <= '9';
+}
+
+function fixFieldName(name: string): string {
+    let isValidIdent = name !== '' && isLatinLetter(name[0]);
+    if (isValidIdent) {
+        for (let i = 1; i < name.length; i += 1) {
+            if (!(isLatinLetter(name[i]) || isDigit(name[i]))) {
+                isValidIdent = false;
+                break;
+            }
+        }
+    }
+    return isValidIdent ? name : `'${name.split('\'').join('\\\'')}'`;
+}
+
 export class TSCode extends Code {
     language(): string {
         return 'ts';
@@ -111,7 +132,7 @@ export class ${Code.upperFirst(module.name)}Module {
                             params += ', ';
                         }
                         params += `${this.field(field, '')}`;
-                        properties += `        ${field.name},\n`;
+                        properties += `        ${fixFieldName(field.name)},\n`;
                         
                     }
                 }
@@ -127,7 +148,7 @@ export class ${Code.upperFirst(module.name)}Module {
     }
     
     field(field: ApiField, indent: string): string {
-        const name = `${field.name}${field.type === ApiTypeIs.Optional ? '?' : ''}`;
+        const name = `${fixFieldName(field.name)}${field.type === ApiTypeIs.Optional ? '?' : ''}`;
         const type = field.type === ApiTypeIs.Optional ? field.optional_inner : field;
         return `${indent}${name}: ${this.type(type, indent)}`;
     }

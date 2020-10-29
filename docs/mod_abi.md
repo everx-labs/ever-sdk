@@ -38,6 +38,16 @@
 
 [MessageSource](#MessageSource)
 
+[AbiParam](#AbiParam)
+
+[AbiEvent](#AbiEvent)
+
+[AbiData](#AbiData)
+
+[AbiFunction](#AbiFunction)
+
+[AbiContract](#AbiContract)
+
 [ParamsOfEncodeMessageBody](#ParamsOfEncodeMessageBody)
 
 [ResultOfEncodeMessageBody](#ResultOfEncodeMessageBody)
@@ -73,15 +83,15 @@ Encodes message body according to ABI function call.
 ```ts
 type ParamsOfEncodeMessageBody = {
     abi: Abi,
-    call_set: CallSet,
-    is_internal: boolean,
+    'call_set': CallSet,
+    'is_internal': boolean,
     signer: Signer,
-    processing_try_index?: number
+    'processing_try_index'?: number
 };
 
 type ResultOfEncodeMessageBody = {
     body: string,
-    data_to_sign?: string
+    'data_to_sign'?: string
 };
 
 function encode_message_body(
@@ -108,7 +118,7 @@ function encode_message_body(
 ```ts
 type ParamsOfAttachSignatureToMessageBody = {
     abi: Abi,
-    public_key: string,
+    'public_key': string,
     message: string,
     signature: string
 };
@@ -162,17 +172,17 @@ when application calls some API to sign data.
 type ParamsOfEncodeMessage = {
     abi: Abi,
     address?: string,
-    deploy_set?: DeploySet,
-    call_set?: CallSet,
+    'deploy_set'?: DeploySet,
+    'call_set'?: CallSet,
     signer: Signer,
-    processing_try_index?: number
+    'processing_try_index'?: number
 };
 
 type ResultOfEncodeMessage = {
     message: string,
-    data_to_sign?: string,
+    'data_to_sign'?: string,
     address: string,
-    message_id: string
+    'message_id': string
 };
 
 function encode_message(
@@ -206,14 +216,14 @@ Combines `hex`-encoded `signature` with `base64`-encoded `unsigned_message`. Ret
 ```ts
 type ParamsOfAttachSignature = {
     abi: Abi,
-    public_key: string,
+    'public_key': string,
     message: string,
     signature: string
 };
 
 type ResultOfAttachSignature = {
     message: string,
-    message_id: string
+    'message_id': string
 };
 
 function attach_signature(
@@ -242,7 +252,7 @@ type ParamsOfDecodeMessage = {
 };
 
 type DecodedMessageBody = {
-    body_type: MessageBodyType,
+    'body_type': MessageBodyType,
     name: string,
     value?: any,
     header?: FunctionHeader
@@ -271,11 +281,11 @@ Decodes message body using provided body BOC and ABI.
 type ParamsOfDecodeMessageBody = {
     abi: Abi,
     body: string,
-    is_internal: boolean
+    'is_internal': boolean
 };
 
 type DecodedMessageBody = {
-    body_type: MessageBodyType,
+    'body_type': MessageBodyType,
     name: string,
     value?: any,
     header?: FunctionHeader
@@ -307,10 +317,10 @@ Creates account state provided with one of these sets of data :
 
 ```ts
 type ParamsOfEncodeAccount = {
-    state_init: StateInitSource,
+    'state_init': StateInitSource,
     balance?: bigint,
-    last_trans_lt?: bigint,
-    last_paid?: number
+    'last_trans_lt'?: bigint,
+    'last_paid'?: number
 };
 
 type ResultOfEncodeAccount = {
@@ -338,7 +348,11 @@ function encode_account(
 ```ts
 type Abi = {
     type: 'Serialized'
-    value: AbiContract
+    'ABI version': number,
+    header?: string[],
+    functions?: AbiFunction[],
+    events?: AbiEvent[],
+    data?: AbiData[]
 } | {
     type: 'Handle'
     value: number
@@ -349,7 +363,11 @@ Depends on value of the  `type` field.
 When _type_ is _'Serialized'_
 
 
-- `value`: _AbiContract_
+- `ABI version`: _number_
+- `header`?: _string[]_
+- `functions`?: _[AbiFunction](mod_abi.md#AbiFunction)[]_
+- `events`?: _[AbiEvent](mod_abi.md#AbiEvent)[]_
+- `data`?: _[AbiData](mod_abi.md#AbiData)[]_
 
 When _type_ is _'Handle'_
 
@@ -387,7 +405,7 @@ type FunctionHeader = {
 ## CallSet
 ```ts
 type CallSet = {
-    function_name: string,
+    'function_name': string,
     header?: FunctionHeader,
     input?: any
 };
@@ -402,8 +420,8 @@ type CallSet = {
 ```ts
 type DeploySet = {
     tvc: string,
-    workchain_id?: number,
-    initial_data?: any
+    'workchain_id'?: number,
+    'initial_data'?: any
 };
 ```
 - `tvc`: _string_ – Content of TVC file encoded in `base64`.
@@ -417,7 +435,7 @@ type Signer = {
     type: 'None'
 } | {
     type: 'External'
-    public_key: string
+    'public_key': string
 } | {
     type: 'Keys'
     keys: KeyPair
@@ -481,8 +499,8 @@ type StateInitSource = {
 } | {
     type: 'Tvc'
     tvc: string,
-    public_key?: string,
-    init_params?: StateInitParams
+    'public_key'?: string,
+    'init_params'?: StateInitParams
 };
 ```
 Depends on value of the  `type` field.
@@ -534,10 +552,10 @@ type MessageSource = {
     type: 'EncodingParams'
     abi: Abi,
     address?: string,
-    deploy_set?: DeploySet,
-    call_set?: CallSet,
+    'deploy_set'?: DeploySet,
+    'call_set'?: CallSet,
     signer: Signer,
-    processing_try_index?: number
+    'processing_try_index'?: number
 };
 ```
 Depends on value of the  `type` field.
@@ -563,14 +581,87 @@ When _type_ is _'EncodingParams'_
 <br>Used in message processing with retries (if contract's ABI includes "expire" header).<br><br>Encoder uses the provided try index to calculate message<br>expiration time. The 1st message expiration time is specified in<br>Client config.<br><br>Expiration timeouts will grow with every retry.<br>Retry grow factor is set in Client config:<br><.....add config parameter with default value here><br><br>Default value is 0.
 
 
+## AbiParam
+```ts
+type AbiParam = {
+    name: string,
+    type: string,
+    components?: AbiParam[]
+};
+```
+- `name`: _string_
+- `type`: _string_
+- `components`?: _[AbiParam](mod_abi.md#AbiParam)[]_
+
+
+## AbiEvent
+```ts
+type AbiEvent = {
+    name: string,
+    inputs: AbiParam[],
+    id?: number | null
+};
+```
+- `name`: _string_
+- `inputs`: _[AbiParam](mod_abi.md#AbiParam)[]_
+- `id`?: _number?_
+
+
+## AbiData
+```ts
+type AbiData = {
+    key: bigint,
+    name: string,
+    type: string,
+    components?: AbiParam[]
+};
+```
+- `key`: _bigint_
+- `name`: _string_
+- `type`: _string_
+- `components`?: _[AbiParam](mod_abi.md#AbiParam)[]_
+
+
+## AbiFunction
+```ts
+type AbiFunction = {
+    name: string,
+    inputs: AbiParam[],
+    outputs: AbiParam[],
+    id?: number | null
+};
+```
+- `name`: _string_
+- `inputs`: _[AbiParam](mod_abi.md#AbiParam)[]_
+- `outputs`: _[AbiParam](mod_abi.md#AbiParam)[]_
+- `id`?: _number?_
+
+
+## AbiContract
+```ts
+type AbiContract = {
+    'ABI version': number,
+    header?: string[],
+    functions?: AbiFunction[],
+    events?: AbiEvent[],
+    data?: AbiData[]
+};
+```
+- `ABI version`: _number_
+- `header`?: _string[]_
+- `functions`?: _[AbiFunction](mod_abi.md#AbiFunction)[]_
+- `events`?: _[AbiEvent](mod_abi.md#AbiEvent)[]_
+- `data`?: _[AbiData](mod_abi.md#AbiData)[]_
+
+
 ## ParamsOfEncodeMessageBody
 ```ts
 type ParamsOfEncodeMessageBody = {
     abi: Abi,
-    call_set: CallSet,
-    is_internal: boolean,
+    'call_set': CallSet,
+    'is_internal': boolean,
     signer: Signer,
-    processing_try_index?: number
+    'processing_try_index'?: number
 };
 ```
 - `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
@@ -586,7 +677,7 @@ type ParamsOfEncodeMessageBody = {
 ```ts
 type ResultOfEncodeMessageBody = {
     body: string,
-    data_to_sign?: string
+    'data_to_sign'?: string
 };
 ```
 - `body`: _string_ – Message body BOC encoded with `base64`.
@@ -598,7 +689,7 @@ type ResultOfEncodeMessageBody = {
 ```ts
 type ParamsOfAttachSignatureToMessageBody = {
     abi: Abi,
-    public_key: string,
+    'public_key': string,
     message: string,
     signature: string
 };
@@ -623,10 +714,10 @@ type ResultOfAttachSignatureToMessageBody = {
 type ParamsOfEncodeMessage = {
     abi: Abi,
     address?: string,
-    deploy_set?: DeploySet,
-    call_set?: CallSet,
+    'deploy_set'?: DeploySet,
+    'call_set'?: CallSet,
     signer: Signer,
-    processing_try_index?: number
+    'processing_try_index'?: number
 };
 ```
 - `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
@@ -645,9 +736,9 @@ type ParamsOfEncodeMessage = {
 ```ts
 type ResultOfEncodeMessage = {
     message: string,
-    data_to_sign?: string,
+    'data_to_sign'?: string,
     address: string,
-    message_id: string
+    'message_id': string
 };
 ```
 - `message`: _string_ – Message BOC encoded with `base64`.
@@ -661,7 +752,7 @@ type ResultOfEncodeMessage = {
 ```ts
 type ParamsOfAttachSignature = {
     abi: Abi,
-    public_key: string,
+    'public_key': string,
     message: string,
     signature: string
 };
@@ -676,7 +767,7 @@ type ParamsOfAttachSignature = {
 ```ts
 type ResultOfAttachSignature = {
     message: string,
-    message_id: string
+    'message_id': string
 };
 ```
 - `message`: _string_ – Signed message BOC
@@ -697,7 +788,7 @@ type ParamsOfDecodeMessage = {
 ## DecodedMessageBody
 ```ts
 type DecodedMessageBody = {
-    body_type: MessageBodyType,
+    'body_type': MessageBodyType,
     name: string,
     value?: any,
     header?: FunctionHeader
@@ -714,7 +805,7 @@ type DecodedMessageBody = {
 type ParamsOfDecodeMessageBody = {
     abi: Abi,
     body: string,
-    is_internal: boolean
+    'is_internal': boolean
 };
 ```
 - `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI used to decode.
@@ -725,10 +816,10 @@ type ParamsOfDecodeMessageBody = {
 ## ParamsOfEncodeAccount
 ```ts
 type ParamsOfEncodeAccount = {
-    state_init: StateInitSource,
+    'state_init': StateInitSource,
     balance?: bigint,
-    last_trans_lt?: bigint,
-    last_paid?: number
+    'last_trans_lt'?: bigint,
+    'last_paid'?: number
 };
 ```
 - `state_init`: _[StateInitSource](mod_abi.md#StateInitSource)_ – Source of the account state init.

@@ -27,6 +27,7 @@ fn register_client(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::net::NetworkConfig>();
     module.register_type::<crate::crypto::CryptoConfig>();
     module.register_type::<crate::abi::AbiConfig>();
+    module.register_type::<crate::client::BuildInfoDependency>();
 
     module.register_sync_fn_without_args(
         crate::client::get_api_reference,
@@ -193,6 +194,11 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::abi::StateInitSource>();
     module.register_type::<crate::abi::StateInitParams>();
     module.register_type::<crate::abi::MessageSource>();
+    module.register_type::<crate::abi::AbiParam>();
+    module.register_type::<crate::abi::AbiEvent>();
+    module.register_type::<crate::abi::AbiData>();
+    module.register_type::<crate::abi::AbiFunction>();
+    module.register_type::<crate::abi::AbiContract>();
 
     module.register_async_fn(
         crate::abi::encode_message_body,
@@ -357,6 +363,5 @@ pub(crate) fn register_modules(handlers: &mut RuntimeHandlers) {
     register_processing(handlers);
     register_utils(handlers);
     register_tvm(handlers);
-
-        register_net(handlers);
+    register_net(handlers);
 }

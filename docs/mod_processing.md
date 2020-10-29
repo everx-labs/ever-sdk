@@ -39,11 +39,11 @@ before the message was sent. It will be required later for message processing.
 type ParamsOfSendMessage = {
     message: string,
     abi?: Abi,
-    send_events: boolean
+    'send_events': boolean
 };
 
 type ResultOfSendMessage = {
-    shard_block_id: string
+    'shard_block_id': string
 };
 
 function send_message(
@@ -95,13 +95,13 @@ the processing will exit with an error.
 type ParamsOfWaitForTransaction = {
     abi?: Abi,
     message: string,
-    shard_block_id: string,
-    send_events: boolean
+    'shard_block_id': string,
+    'send_events': boolean
 };
 
 type ResultOfProcessMessage = {
     transaction: any,
-    out_messages: string[],
+    'out_messages': string[],
     decoded?: DecodedOutput,
     fees: TransactionFees
 };
@@ -153,13 +153,13 @@ then if no transaction is found within the network timeout (see config parameter
 
 ```ts
 type ParamsOfProcessMessage = {
-    message_encode_params: ParamsOfEncodeMessage,
-    send_events: boolean
+    'message_encode_params': ParamsOfEncodeMessage,
+    'send_events': boolean
 };
 
 type ResultOfProcessMessage = {
     transaction: any,
-    out_messages: string[],
+    'out_messages': string[],
     decoded?: DecodedOutput,
     fees: TransactionFees
 };
@@ -191,34 +191,34 @@ type ProcessingEvent = {
     error: ClientError
 } | {
     type: 'WillSend'
-    shard_block_id: string,
-    message_id: string,
+    'shard_block_id': string,
+    'message_id': string,
     message: string
 } | {
     type: 'DidSend'
-    shard_block_id: string,
-    message_id: string,
+    'shard_block_id': string,
+    'message_id': string,
     message: string
 } | {
     type: 'SendFailed'
-    shard_block_id: string,
-    message_id: string,
+    'shard_block_id': string,
+    'message_id': string,
     message: string,
     error: ClientError
 } | {
     type: 'WillFetchNextBlock'
-    shard_block_id: string,
-    message_id: string,
+    'shard_block_id': string,
+    'message_id': string,
     message: string
 } | {
     type: 'FetchNextBlockFailed'
-    shard_block_id: string,
-    message_id: string,
+    'shard_block_id': string,
+    'message_id': string,
     message: string,
     error: ClientError
 } | {
     type: 'MessageExpired'
-    message_id: string,
+    'message_id': string,
     message: string,
     error: ClientError
 };
@@ -316,7 +316,7 @@ Processing will be continued from encoding phase after
 ```ts
 type ResultOfProcessMessage = {
     transaction: any,
-    out_messages: string[],
+    'out_messages': string[],
     decoded?: DecodedOutput,
     fees: TransactionFees
 };
@@ -331,7 +331,7 @@ type ResultOfProcessMessage = {
 ## DecodedOutput
 ```ts
 type DecodedOutput = {
-    out_messages: DecodedMessageBody | null[],
+    'out_messages': DecodedMessageBody | null[],
     output?: any
 };
 ```
@@ -345,7 +345,7 @@ type DecodedOutput = {
 type ParamsOfSendMessage = {
     message: string,
     abi?: Abi,
-    send_events: boolean
+    'send_events': boolean
 };
 ```
 - `message`: _string_ – Message BOC.
@@ -357,7 +357,7 @@ type ParamsOfSendMessage = {
 ## ResultOfSendMessage
 ```ts
 type ResultOfSendMessage = {
-    shard_block_id: string
+    'shard_block_id': string
 };
 ```
 - `shard_block_id`: _string_ – The last generated shard block of the message destination account before the message was sent.
@@ -369,8 +369,8 @@ type ResultOfSendMessage = {
 type ParamsOfWaitForTransaction = {
     abi?: Abi,
     message: string,
-    shard_block_id: string,
-    send_events: boolean
+    'shard_block_id': string,
+    'send_events': boolean
 };
 ```
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Optional ABI for decoding the transaction result.
@@ -384,8 +384,8 @@ type ParamsOfWaitForTransaction = {
 ## ParamsOfProcessMessage
 ```ts
 type ParamsOfProcessMessage = {
-    message_encode_params: ParamsOfEncodeMessage,
-    send_events: boolean
+    'message_encode_params': ParamsOfEncodeMessage,
+    'send_events': boolean
 };
 ```
 - `message_encode_params`: _[ParamsOfEncodeMessage](mod_abi.md#ParamsOfEncodeMessage)_ – Message encode parameters.

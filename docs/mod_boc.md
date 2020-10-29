@@ -131,11 +131,11 @@ function parse_block(
 
 ```ts
 type ParamsOfGetBlockchainConfig = {
-    block_boc: string
+    'block_boc': string
 };
 
 type ResultOfGetBlockchainConfig = {
-    config_boc: string
+    'config_boc': string
 };
 
 function get_blockchain_config(
@@ -171,7 +171,7 @@ type ResultOfParse = {
 ## ParamsOfGetBlockchainConfig
 ```ts
 type ParamsOfGetBlockchainConfig = {
-    block_boc: string
+    'block_boc': string
 };
 ```
 - `block_boc`: _string_ – Key block BOC encoded as base64
@@ -180,7 +180,7 @@ type ParamsOfGetBlockchainConfig = {
 ## ResultOfGetBlockchainConfig
 ```ts
 type ResultOfGetBlockchainConfig = {
-    config_boc: string
+    'config_boc': string
 };
 ```
 - `config_boc`: _string_ – Blockchain config BOC encoded as base64

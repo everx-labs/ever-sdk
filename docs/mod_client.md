@@ -63,7 +63,7 @@ function version(): Promise<ResultOfVersion>;
 
 ```ts
 type ResultOfBuildInfo = {
-    build_info: any
+    'build_info': any
 };
 
 function build_info(): Promise<ResultOfBuildInfo>;
@@ -103,13 +103,13 @@ type ClientConfig = {
 ## NetworkConfig
 ```ts
 type NetworkConfig = {
-    server_address?: string,
-    network_retries_count?: number,
-    message_retries_count?: number,
-    message_processing_timeout?: number,
-    wait_for_timeout?: number,
-    out_of_sync_threshold?: bigint,
-    access_key?: string
+    'server_address'?: string,
+    'network_retries_count'?: number,
+    'message_retries_count'?: number,
+    'message_processing_timeout'?: number,
+    'wait_for_timeout'?: number,
+    'out_of_sync_threshold'?: bigint,
+    'access_key'?: string
 };
 ```
 - `server_address`?: _string_
@@ -124,10 +124,10 @@ type NetworkConfig = {
 ## CryptoConfig
 ```ts
 type CryptoConfig = {
-    mnemonic_dictionary?: number,
-    mnemonic_word_count?: number,
-    hdkey_derivation_path?: string,
-    hdkey_compliant?: boolean
+    'mnemonic_dictionary'?: number,
+    'mnemonic_word_count'?: number,
+    'hdkey_derivation_path'?: string,
+    'hdkey_compliant'?: boolean
 };
 ```
 - `mnemonic_dictionary`?: _number_
@@ -140,8 +140,8 @@ type CryptoConfig = {
 ```ts
 type AbiConfig = {
     workchain?: number,
-    message_expiration_timeout?: number,
-    message_expiration_timeout_grow_factor?: number
+    'message_expiration_timeout'?: number,
+    'message_expiration_timeout_grow_factor'?: number
 };
 ```
 - `workchain`?: _number_
@@ -170,7 +170,7 @@ type ResultOfVersion = {
 ## ResultOfBuildInfo
 ```ts
 type ResultOfBuildInfo = {
-    build_info: any
+    'build_info': any
 };
 ```
 - `build_info`: _any_

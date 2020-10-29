@@ -33,14 +33,14 @@ null
 type ParamsOfRunExecutor = {
     message: string,
     account: AccountForExecutor,
-    execution_options?: ExecutionOptions,
+    'execution_options'?: ExecutionOptions,
     abi?: Abi,
-    skip_transaction_check?: boolean
+    'skip_transaction_check'?: boolean
 };
 
 type ResultOfRunExecutor = {
     transaction: any,
-    out_messages: string[],
+    'out_messages': string[],
     decoded?: DecodedOutput,
     account: string,
     fees: TransactionFees
@@ -72,12 +72,12 @@ function run_executor(
 type ParamsOfRunTvm = {
     message: string,
     account: string,
-    execution_options?: ExecutionOptions,
+    'execution_options'?: ExecutionOptions,
     abi?: Abi
 };
 
 type ResultOfRunTvm = {
-    out_messages: string[],
+    'out_messages': string[],
     decoded?: DecodedOutput,
     account: string
 };
@@ -105,9 +105,9 @@ Executes getmethod and returns data from TVM stack
 ```ts
 type ParamsOfRunGet = {
     account: string,
-    function_name: string,
+    'function_name': string,
     input?: any,
-    execution_options?: ExecutionOptions
+    'execution_options'?: ExecutionOptions
 };
 
 type ResultOfRunGet = {
@@ -132,10 +132,10 @@ function run_get(
 ## ExecutionOptions
 ```ts
 type ExecutionOptions = {
-    blockchain_config?: string,
-    block_time?: number,
-    block_lt?: bigint,
-    transaction_lt?: bigint
+    'blockchain_config'?: string,
+    'block_time'?: number,
+    'block_lt'?: bigint,
+    'transaction_lt'?: bigint
 };
 ```
 - `blockchain_config`?: _string_ – boc with config
@@ -153,7 +153,7 @@ type AccountForExecutor = {
 } | {
     type: 'Account'
     boc: string,
-    unlimited_balance?: boolean
+    'unlimited_balance'?: boolean
 };
 ```
 Depends on value of the  `type` field.
@@ -182,9 +182,9 @@ Account state to run message
 type ParamsOfRunExecutor = {
     message: string,
     account: AccountForExecutor,
-    execution_options?: ExecutionOptions,
+    'execution_options'?: ExecutionOptions,
     abi?: Abi,
-    skip_transaction_check?: boolean
+    'skip_transaction_check'?: boolean
 };
 ```
 - `message`: _string_ – Input message BOC. Must be encoded as base64.
@@ -198,7 +198,7 @@ type ParamsOfRunExecutor = {
 ```ts
 type ResultOfRunExecutor = {
     transaction: any,
-    out_messages: string[],
+    'out_messages': string[],
     decoded?: DecodedOutput,
     account: string,
     fees: TransactionFees
@@ -217,7 +217,7 @@ type ResultOfRunExecutor = {
 type ParamsOfRunTvm = {
     message: string,
     account: string,
-    execution_options?: ExecutionOptions,
+    'execution_options'?: ExecutionOptions,
     abi?: Abi
 };
 ```
@@ -230,7 +230,7 @@ type ParamsOfRunTvm = {
 ## ResultOfRunTvm
 ```ts
 type ResultOfRunTvm = {
-    out_messages: string[],
+    'out_messages': string[],
     decoded?: DecodedOutput,
     account: string
 };
@@ -244,9 +244,9 @@ type ResultOfRunTvm = {
 ```ts
 type ParamsOfRunGet = {
     account: string,
-    function_name: string,
+    'function_name': string,
     input?: any,
-    execution_options?: ExecutionOptions
+    'execution_options'?: ExecutionOptions
 };
 ```
 - `account`: _string_ – Account BOC in `base64`
