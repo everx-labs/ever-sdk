@@ -1,6 +1,10 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## 0.27.0 Oct 28, 2020
+### New
+- `crypto` function `crypto.chacha20`
+
 ## 0.26.0 Aug 7, 2020
 ### New
 - `crypto` function `crypto.derive_sign_keys_from_mnemonic`
