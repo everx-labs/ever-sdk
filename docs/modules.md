@@ -99,6 +99,8 @@
 
 [parse_block](mod_boc.md#parse_block) – Parses block boc into a JSON
 
+[parse_shardstate](mod_boc.md#parse_shardstate) – Parses shardstate boc into a JSON
+
 [get_blockchain_config](mod_boc.md#get_blockchain_config)
 
 ## [processing](mod_processing.md) – Message processing module.

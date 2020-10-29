@@ -222,6 +222,26 @@
           "description": null
         },
         {
+          "name": "BuildInfoDependency",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "name",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "git_commit",
+              "type": "String",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ResultOfGetApiReference",
           "type": "Struct",
           "struct_fields": [
@@ -255,9 +275,18 @@
           "type": "Struct",
           "struct_fields": [
             {
-              "name": "build_info",
-              "type": "Ref",
-              "ref_name": "Value",
+              "name": "build_number",
+              "type": "Number",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "dependencies",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "BuildInfoDependency"
+              },
               "summary": null,
               "description": null
             }
@@ -1358,8 +1387,8 @@
             {
               "name": "data",
               "type": "String",
-              "summary": " Source data that must be encrypted/decrypted. Must be encoded with `base64`.",
-              "description": " Source data that must be encrypted/decrypted. Must be encoded with `base64`."
+              "summary": " Source data to be encrypted or decrypted. Must be encoded with `base64`.",
+              "description": " Source data to be encrypted or decrypted. Must be encoded with `base64`."
             },
             {
               "name": "key",
@@ -3938,6 +3967,32 @@
           "description": null
         },
         {
+          "name": "ParamsOfParseShardstate",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "boc",
+              "type": "String",
+              "summary": " BOC encoded as base64",
+              "description": " BOC encoded as base64"
+            },
+            {
+              "name": "id",
+              "type": "String",
+              "summary": " Shardstate identificator",
+              "description": " Shardstate identificator"
+            },
+            {
+              "name": "workchain_id",
+              "type": "Number",
+              "summary": " Workchain shardstate belongs to ",
+              "description": " Workchain shardstate belongs to "
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfGetBlockchainConfig",
           "type": "Struct",
           "struct_fields": [
@@ -4103,6 +4158,44 @@
               "name": "params",
               "type": "Ref",
               "ref_name": "ParamsOfParse",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfParse"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "parse_shardstate",
+          "summary": " Parses shardstate boc into a JSON ",
+          "description": " Parses shardstate boc into a JSON \n \n JSON structure is compatible with GraphQL API shardstate object",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfParseShardstate",
               "summary": null,
               "description": null
             }
