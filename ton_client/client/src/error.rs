@@ -12,7 +12,11 @@ pub type ClientResult<T> = Result<T, ClientError>;
 
 impl Display for ClientError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.message)
+        if f.alternate() {
+            write!(f, "{:#}", json!(self))
+        } else {
+            write!(f, "{}", self.message)
+        }
     }
 }
 
