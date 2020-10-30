@@ -19,6 +19,8 @@
 
 [AbiConfig](#AbiConfig)
 
+[BuildInfoDependency](#BuildInfoDependency)
+
 [ResultOfGetApiReference](#ResultOfGetApiReference)
 
 [ResultOfVersion](#ResultOfVersion)
@@ -63,14 +65,16 @@ function version(): Promise<ResultOfVersion>;
 
 ```ts
 type ResultOfBuildInfo = {
-    build_info: any
+    build_number: number,
+    dependencies: BuildInfoDependency[]
 };
 
 function build_info(): Promise<ResultOfBuildInfo>;
 ```
 ### Result
 
-- `build_info`: _any_
+- `build_number`: _number_
+- `dependencies`: _[BuildInfoDependency](mod_client.md#BuildInfoDependency)[]_
 
 
 # Types
@@ -149,6 +153,17 @@ type AbiConfig = {
 - `message_expiration_timeout_grow_factor`?: _number_
 
 
+## BuildInfoDependency
+```ts
+type BuildInfoDependency = {
+    name: string,
+    git_commit: string
+};
+```
+- `name`: _string_
+- `git_commit`: _string_
+
+
 ## ResultOfGetApiReference
 ```ts
 type ResultOfGetApiReference = {
@@ -170,9 +185,11 @@ type ResultOfVersion = {
 ## ResultOfBuildInfo
 ```ts
 type ResultOfBuildInfo = {
-    build_info: any
+    build_number: number,
+    dependencies: BuildInfoDependency[]
 };
 ```
-- `build_info`: _any_
+- `build_number`: _number_
+- `dependencies`: _[BuildInfoDependency](mod_client.md#BuildInfoDependency)[]_
 
 

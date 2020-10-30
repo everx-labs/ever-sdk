@@ -5,7 +5,14 @@ All notable changes to this project will be documented in this file.
 
 ### New
 - ChaCha20 encryption support `crypto.chacha20`. 
-- `boc.parse_shardstate` function for shardstates parsing
+- `boc.parse_shardstate` function for shardstates parsing.
+- `client.build_info` fully defined and documented.
+
+### Fixed
+- TS generator fix some field names that is an invalid JS identifiers.   
+
+### Breaking
+- `Abi::Serialized` renamed to `Abi::ContractAbi` 
 
 ## 1.0.0 Oct 27, 2020
 

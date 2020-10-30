@@ -10,15 +10,15 @@ pub struct AbiHandle(u32);
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 #[serde(tag = "type", content = "value")]
 pub enum Abi {
-    Serialized(AbiContract),
+    ContractAbi(AbiContract),
     Handle(AbiHandle),
 }
 
 impl Abi {
     pub(crate) fn json_string(&self) -> ClientResult<String> {
         match self {
-            Self::Serialized(serialized) => {
-                Ok(serde_json::to_string(serialized).map_err(|err| Error::invalid_abi(err))?)
+            Self::ContractAbi(abi) => {
+                Ok(serde_json::to_string(abi).map_err(|err| Error::invalid_abi(err))?)
             }
             _ => Err(crate::client::Error::not_implemented(
                 "ABI handles are not supported yet",

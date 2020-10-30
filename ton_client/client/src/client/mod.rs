@@ -42,7 +42,6 @@ pub struct ResultOfVersion {
     pub version: String,
 }
 
-
 /// Returns Core Library version
 #[api_function]
 pub fn version(_context: Arc<ClientContext>) -> ClientResult<ResultOfVersion> {
@@ -56,7 +55,6 @@ pub struct ResultOfGetApiReference {
     pub api: API,
 }
 
-
 /// Returns Core Library API reference
 #[api_function]
 pub fn get_api_reference(_context: Arc<ClientContext>) -> ClientResult<ResultOfGetApiReference> {
@@ -66,14 +64,28 @@ pub fn get_api_reference(_context: Arc<ClientContext>) -> ClientResult<ResultOfG
 }
 
 #[derive(ApiType, Serialize, Deserialize, Clone)]
-pub struct ResultOfBuildInfo {
-    pub build_info: serde_json::Value,
+pub struct BuildInfoDependency {
+    /// Dependency name. Usually it is a crate name.
+    pub name: String,
+    /// Git commit hash of the related repository.
+    pub git_commit: String,
 }
 
+#[derive(ApiType, Serialize, Deserialize, Clone)]
+pub struct ResultOfBuildInfo {
+    /// Build number assigned to this build by the CI.
+    build_number: u32,
+    /// Fingerprint of the most important dependencies.
+    dependencies: Vec<BuildInfoDependency>,
+}
+
+/// Returns detailed information about this build.
 #[api_function]
 pub fn build_info(_context: Arc<ClientContext>) -> ClientResult<ResultOfBuildInfo> {
-    Ok(ResultOfBuildInfo {
-        build_info: serde_json::from_str(include_str!("../build_info.json")).unwrap_or(json!({}))
-    })
+    Ok(
+        serde_json::from_str(include_str!("../build_info.json")).unwrap_or(ResultOfBuildInfo {
+            build_number: 0,
+            dependencies: vec![],
+        }),
+    )
 }
-

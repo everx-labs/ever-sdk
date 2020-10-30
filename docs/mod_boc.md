@@ -10,12 +10,16 @@
 
 [parse_block](#parse_block) – Parses block boc into a JSON
 
+[parse_shardstate](#parse_shardstate) – Parses shardstate boc into a JSON
+
 [get_blockchain_config](#get_blockchain_config)
 
 ## Types
 [ParamsOfParse](#ParamsOfParse)
 
 [ResultOfParse](#ResultOfParse)
+
+[ParamsOfParseShardstate](#ParamsOfParseShardstate)
 
 [ParamsOfGetBlockchainConfig](#ParamsOfGetBlockchainConfig)
 
@@ -127,6 +131,36 @@ function parse_block(
 - `parsed`: _any_ – JSON containing parsed BOC
 
 
+## parse_shardstate
+
+Parses shardstate boc into a JSON
+
+JSON structure is compatible with GraphQL API shardstate object
+
+```ts
+type ParamsOfParseShardstate = {
+    boc: string,
+    id: string,
+    workchain_id: number
+};
+
+type ResultOfParse = {
+    parsed: any
+};
+
+function parse_shardstate(
+    params: ParamsOfParseShardstate,
+): Promise<ResultOfParse>;
+```
+### Parameters
+- `boc`: _string_ – BOC encoded as base64
+- `id`: _string_ – Shardstate identificator
+- `workchain_id`: _number_ – Workchain shardstate belongs to
+### Result
+
+- `parsed`: _any_ – JSON containing parsed BOC
+
+
 ## get_blockchain_config
 
 ```ts
@@ -166,6 +200,19 @@ type ResultOfParse = {
 };
 ```
 - `parsed`: _any_ – JSON containing parsed BOC
+
+
+## ParamsOfParseShardstate
+```ts
+type ParamsOfParseShardstate = {
+    boc: string,
+    id: string,
+    workchain_id: number
+};
+```
+- `boc`: _string_ – BOC encoded as base64
+- `id`: _string_ – Shardstate identificator
+- `workchain_id`: _number_ – Workchain shardstate belongs to
 
 
 ## ParamsOfGetBlockchainConfig

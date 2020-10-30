@@ -1017,7 +1017,7 @@ function chacha20(
 ): Promise<ResultOfChaCha20>;
 ```
 ### Parameters
-- `data`: _string_ – Source data that must be encrypted/decrypted. Must be encoded with `base64`.
+- `data`: _string_ – Source data to be encrypted or decrypted. Must be encoded with `base64`.
 - `key`: _string_ – 256-bit key. Must be encoded with `hex`.
 - `nonce`: _string_ – 96-bit nonce. Must be encoded with `hex`.
 ### Result
@@ -1572,7 +1572,7 @@ type ParamsOfChaCha20 = {
     nonce: string
 };
 ```
-- `data`: _string_ – Source data that must be encrypted/decrypted. Must be encoded with `base64`.
+- `data`: _string_ – Source data to be encrypted or decrypted. Must be encoded with `base64`.
 - `key`: _string_ – 256-bit key. Must be encoded with `hex`.
 - `nonce`: _string_ – 96-bit nonce. Must be encoded with `hex`.
 

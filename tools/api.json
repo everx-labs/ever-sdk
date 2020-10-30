@@ -222,6 +222,26 @@
           "description": null
         },
         {
+          "name": "BuildInfoDependency",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "name",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "git_commit",
+              "type": "String",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ResultOfGetApiReference",
           "type": "Struct",
           "struct_fields": [
@@ -255,9 +275,18 @@
           "type": "Struct",
           "struct_fields": [
             {
-              "name": "build_info",
-              "type": "Ref",
-              "ref_name": "Value",
+              "name": "build_number",
+              "type": "Number",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "dependencies",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "BuildInfoDependency"
+              },
               "summary": null,
               "description": null
             }
@@ -1358,8 +1387,8 @@
             {
               "name": "data",
               "type": "String",
-              "summary": " Source data that must be encrypted/decrypted. Must be encoded with `base64`.",
-              "description": " Source data that must be encrypted/decrypted. Must be encoded with `base64`."
+              "summary": " Source data to be encrypted or decrypted. Must be encoded with `base64`.",
+              "description": " Source data to be encrypted or decrypted. Must be encoded with `base64`."
             },
             {
               "name": "key",
@@ -2607,7 +2636,7 @@
           "type": "EnumOfTypes",
           "enum_types": [
             {
-              "name": "Serialized",
+              "name": "ContractAbi",
               "type": "Struct",
               "struct_fields": [
                 {
@@ -2994,6 +3023,225 @@
                   "description": null
                 }
               ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "AbiParam",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "name",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "type",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "components",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "Ref",
+                  "ref_name": "AbiParam"
+                }
+              },
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "AbiEvent",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "name",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "inputs",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "AbiParam"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "id",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Optional",
+                "optional_inner": {
+                  "type": "Number"
+                }
+              },
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "AbiData",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "key",
+              "type": "BigInt",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "name",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "type",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "components",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "Ref",
+                  "ref_name": "AbiParam"
+                }
+              },
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "AbiFunction",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "name",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "inputs",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "AbiParam"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "outputs",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "AbiParam"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "id",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Optional",
+                "optional_inner": {
+                  "type": "Number"
+                }
+              },
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "AbiContract",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "ABI version",
+              "type": "Number",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "header",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "String"
+                }
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "functions",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "Ref",
+                  "ref_name": "AbiFunction"
+                }
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "events",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "Ref",
+                  "ref_name": "AbiEvent"
+                }
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "data",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "Ref",
+                  "ref_name": "AbiData"
+                }
+              },
               "summary": null,
               "description": null
             }
@@ -3719,6 +3967,32 @@
           "description": null
         },
         {
+          "name": "ParamsOfParseShardstate",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "boc",
+              "type": "String",
+              "summary": " BOC encoded as base64",
+              "description": " BOC encoded as base64"
+            },
+            {
+              "name": "id",
+              "type": "String",
+              "summary": " Shardstate identificator",
+              "description": " Shardstate identificator"
+            },
+            {
+              "name": "workchain_id",
+              "type": "Number",
+              "summary": " Workchain shardstate belongs to ",
+              "description": " Workchain shardstate belongs to "
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfGetBlockchainConfig",
           "type": "Struct",
           "struct_fields": [
@@ -3884,6 +4158,44 @@
               "name": "params",
               "type": "Ref",
               "ref_name": "ParamsOfParse",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "ResultOfParse"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "parse_shardstate",
+          "summary": " Parses shardstate boc into a JSON ",
+          "description": " Parses shardstate boc into a JSON \n \n JSON structure is compatible with GraphQL API shardstate object",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "ParamsOfParseShardstate",
               "summary": null,
               "description": null
             }

@@ -38,6 +38,16 @@
 
 [MessageSource](#MessageSource)
 
+[AbiParam](#AbiParam)
+
+[AbiEvent](#AbiEvent)
+
+[AbiData](#AbiData)
+
+[AbiFunction](#AbiFunction)
+
+[AbiContract](#AbiContract)
+
 [ParamsOfEncodeMessageBody](#ParamsOfEncodeMessageBody)
 
 [ResultOfEncodeMessageBody](#ResultOfEncodeMessageBody)
@@ -337,8 +347,12 @@ function encode_account(
 ## Abi
 ```ts
 type Abi = {
-    type: 'Serialized'
-    value: AbiContract
+    type: 'ContractAbi'
+    'ABI version': number,
+    header?: string[],
+    functions?: AbiFunction[],
+    events?: AbiEvent[],
+    data?: AbiData[]
 } | {
     type: 'Handle'
     value: number
@@ -346,10 +360,14 @@ type Abi = {
 ```
 Depends on value of the  `type` field.
 
-When _type_ is _'Serialized'_
+When _type_ is _'ContractAbi'_
 
 
-- `value`: _AbiContract_
+- `ABI version`: _number_
+- `header`?: _string[]_
+- `functions`?: _[AbiFunction](mod_abi.md#AbiFunction)[]_
+- `events`?: _[AbiEvent](mod_abi.md#AbiEvent)[]_
+- `data`?: _[AbiData](mod_abi.md#AbiData)[]_
 
 When _type_ is _'Handle'_
 
@@ -561,6 +579,79 @@ When _type_ is _'EncodingParams'_
 - `signer`: _[Signer](mod_abi.md#Signer)_ – Signing parameters.
 - `processing_try_index`?: _number_ – Processing try index.
 <br>Used in message processing with retries (if contract's ABI includes "expire" header).<br><br>Encoder uses the provided try index to calculate message<br>expiration time. The 1st message expiration time is specified in<br>Client config.<br><br>Expiration timeouts will grow with every retry.<br>Retry grow factor is set in Client config:<br><.....add config parameter with default value here><br><br>Default value is 0.
+
+
+## AbiParam
+```ts
+type AbiParam = {
+    name: string,
+    type: string,
+    components?: AbiParam[]
+};
+```
+- `name`: _string_
+- `type`: _string_
+- `components`?: _[AbiParam](mod_abi.md#AbiParam)[]_
+
+
+## AbiEvent
+```ts
+type AbiEvent = {
+    name: string,
+    inputs: AbiParam[],
+    id?: number | null
+};
+```
+- `name`: _string_
+- `inputs`: _[AbiParam](mod_abi.md#AbiParam)[]_
+- `id`?: _number?_
+
+
+## AbiData
+```ts
+type AbiData = {
+    key: bigint,
+    name: string,
+    type: string,
+    components?: AbiParam[]
+};
+```
+- `key`: _bigint_
+- `name`: _string_
+- `type`: _string_
+- `components`?: _[AbiParam](mod_abi.md#AbiParam)[]_
+
+
+## AbiFunction
+```ts
+type AbiFunction = {
+    name: string,
+    inputs: AbiParam[],
+    outputs: AbiParam[],
+    id?: number | null
+};
+```
+- `name`: _string_
+- `inputs`: _[AbiParam](mod_abi.md#AbiParam)[]_
+- `outputs`: _[AbiParam](mod_abi.md#AbiParam)[]_
+- `id`?: _number?_
+
+
+## AbiContract
+```ts
+type AbiContract = {
+    'ABI version': number,
+    header?: string[],
+    functions?: AbiFunction[],
+    events?: AbiEvent[],
+    data?: AbiData[]
+};
+```
+- `ABI version`: _number_
+- `header`?: _string[]_
+- `functions`?: _[AbiFunction](mod_abi.md#AbiFunction)[]_
+- `events`?: _[AbiEvent](mod_abi.md#AbiEvent)[]_
+- `data`?: _[AbiData](mod_abi.md#AbiData)[]_
 
 
 ## ParamsOfEncodeMessageBody
