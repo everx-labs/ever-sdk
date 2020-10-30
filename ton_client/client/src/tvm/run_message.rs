@@ -24,6 +24,7 @@ use crate::{
     tvm::{check_transaction::calc_transaction_fees, Error},
 };
 use super::types::{ExecutionOptions, ResolvedExecutionOptions};
+use super::stack::serialize_item;
 use num_traits::ToPrimitive;
 use serde_json::Value;
 use std::sync::{Arc, atomic::AtomicU64};
@@ -311,11 +312,18 @@ where
             let err_message = err.to_string();
             let err = match contract_info().await {
                 Ok((address, balance)) => match &err.downcast_ref::<ExecutorError>() {
-                    Some(ExecutorError::NoAcceptError(code)) => {
-                        Error::tvm_execution_failed(err_message, *code, None, &address)
+                    Some(ExecutorError::NoAcceptError(code, exit_arg)) => {
+                        let exit_arg = exit_arg
+                            .as_ref()
+                            .map(|item| serialize_item(item))
+                            .transpose()?;
+                        Error::tvm_execution_failed(err_message, *code, exit_arg, &address)
                     }
                     Some(ExecutorError::NoFundsToImportMsg) => {
                         Error::low_balance(&address, balance)
+                    }
+                    Some(ExecutorError::ExtMsgComputeSkipped(reason)) => {
+                        Error::tvm_execution_skipped(reason, &address, balance)
                     }
                     _ => Error::unknown_execution_error(err),
                 },

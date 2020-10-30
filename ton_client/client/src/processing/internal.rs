@@ -1,10 +1,11 @@
 use crate::abi::{Abi, ParamsOfDecodeMessage};
 use crate::client::ClientContext;
-use crate::error::ClientResult;
+use crate::error::{ClientError, ClientResult};
 use crate::processing::Error;
-use serde_json::Value;
+use crate::tvm::{AccountForExecutor, ParamsOfRunExecutor};
+use super::fetching::fetch_account;
 use std::sync::Arc;
-use ton_block::Serializable;
+use ton_block::{MsgAddressInt, Serializable};
 use ton_sdk::{Block, MessageId};
 
 pub(crate) fn get_message_id(message: &ton_block::Message) -> ClientResult<String> {
@@ -16,7 +17,7 @@ pub(crate) fn get_message_id(message: &ton_block::Message) -> ClientResult<Strin
     Ok(hex::encode(&id))
 }
 
-/// Increments `retries` and returns `true` if `retries` isn't reach `limit`.
+/// Increments `retries` and returns `true` if `retries` hasn't reached `limit`.
 pub(crate) fn can_retry_more(retries: u8, limit: i8) -> bool {
     limit < 0 || retries <= limit as u8
 }
@@ -53,35 +54,6 @@ pub fn find_transaction(
     Ok(None)
 }
 
-#[derive(Deserialize)]
-struct ComputePhase {
-    exit_code: i32,
-}
-
-#[derive(Deserialize)]
-struct Transaction {
-    compute: ComputePhase,
-}
-
-pub(crate) fn get_exit_code(
-    parsed_transaction: &Value,
-    shard_block_id: &String,
-    message_id: &str,
-) -> ClientResult<i32> {
-    Ok(
-        serde_json::from_value::<Transaction>(parsed_transaction.clone())
-            .map_err(|err| {
-                Error::fetch_transaction_result_failed(
-                    format!("Transaction can't be parsed: {}", err),
-                    message_id,
-                    shard_block_id,
-                )
-            })?
-            .compute
-            .exit_code,
-    )
-}
-
 pub(crate) fn get_message_expiration_time(
     context: Arc<ClientContext>,
     abi: Option<&Abi>,
@@ -104,4 +76,40 @@ pub(crate) fn get_message_expiration_time(
         .map_or(None, |x| x.expire)
         .map(|x| x as u64 * 1000);
     Ok(time)
+}
+
+pub(crate) async fn resolve_error(
+    context: Arc<ClientContext>,
+    address: &MsgAddressInt,
+    message: String,
+    mut original_error: ClientError,
+) -> ClientResult<()> {
+    let account = fetch_account(context.clone(), address, "boc").await?;
+
+    let boc = account["boc"]
+        .as_str()
+        .ok_or(Error::invalid_data("Account doesn't contain 'boc'"))?
+        .to_owned();
+
+    let result = crate::tvm::run_executor(
+        context,
+        ParamsOfRunExecutor {
+            abi: None,
+            account: AccountForExecutor::Account { boc, unlimited_balance: None },
+            execution_options: None,
+            message,
+            skip_transaction_check: None
+        }
+    ).await;
+
+    match result {
+        Err(mut err) => {
+            err.data["original_error"] = serde_json::json!(original_error);
+            Err(err)
+        },
+        Ok(_) => {
+            original_error.data["disclaimer"] = "Local contract call succeded. Can not resolve extended error".into();
+            Err(original_error)
+        }
+    }
 }

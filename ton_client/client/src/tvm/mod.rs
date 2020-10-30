@@ -23,10 +23,10 @@ mod stack;
 #[cfg(test)]
 mod tests;
 
-pub use errors::{Error, ErrorCode};
+pub use errors::{Error, ErrorCode, StdContractError};
 pub use run_get::{run_get, ParamsOfRunGet, ResultOfRunGet};
 pub use run_message::{
     run_executor, run_tvm, AccountForExecutor, ParamsOfRunExecutor, ParamsOfRunTvm,
     ResultOfRunExecutor, ResultOfRunTvm
 };
-pub use types::{ExitCode, ExecutionOptions};
+pub use types::ExecutionOptions;

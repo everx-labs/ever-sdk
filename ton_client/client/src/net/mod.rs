@@ -89,7 +89,6 @@ fn deserialize_out_of_sync_threshold<'de, D: Deserializer<'de>>(
 
 #[derive(Serialize, Deserialize, Debug, Clone, ApiType)]
 pub struct NetworkConfig {
-    #[serde(default)]
     pub server_address: String,
     #[serde(
         default = "default_network_retries_count",

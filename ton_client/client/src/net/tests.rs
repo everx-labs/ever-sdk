@@ -23,7 +23,8 @@ async fn block_signatures() {
                 order: None,
             },
         )
-        .await;
+        .await
+        .unwrap();
 }
 
 #[tokio::test(core_threads = 2)]
@@ -41,7 +42,8 @@ async fn all_accounts() {
                 order: None,
             },
         )
-        .await;
+        .await
+        .unwrap();
 
     assert!(accounts.result.len() > 0);
 }
@@ -63,7 +65,8 @@ async fn ranges() {
                 order: None,
             },
         )
-        .await;
+        .await
+        .unwrap();
 
     assert!(accounts.result[0]["created_at"].as_u64().unwrap() > 1562342740);
 }
@@ -85,7 +88,8 @@ async fn wait_for() {
                     timeout: None,
                 },
             )
-            .await;
+            .await
+            .unwrap();
         assert!(transactions.result["now"].as_u64().unwrap() > now as u64);
     });
 
@@ -115,7 +119,7 @@ async fn subscribe_for_transactions_with_addresses() {
         call_set: CallSet::some_with_function("constructor"),
     };
 
-    let msg = client.encode_message(deploy_params.clone()).await;
+    let msg = client.encode_message(deploy_params.clone()).await.unwrap();
     let transactions = std::sync::Arc::new(Mutex::new(vec![]));
     let transactions_copy = transactions.clone();
     let address = msg.address.clone();
@@ -147,7 +151,7 @@ async fn subscribe_for_transactions_with_addresses() {
                 result: "id account_addr".to_owned(),
             },
             callback
-        ).await;
+        ).await.unwrap();
     client.deploy_with_giver_async(deploy_params, None).await;
 
     // give some time for subscription to receive all data
@@ -157,7 +161,7 @@ async fn subscribe_for_transactions_with_addresses() {
     assert_eq!(transactions.len(), 2);
     assert_ne!(transactions[0]["id"], transactions[1]["id"]);
 
-    let _: () = client.request_async("net.unsubscribe", handle).await;
+    let _: () = client.request_async("net.unsubscribe", handle).await.unwrap();
 }
 
 #[tokio::test(core_threads = 2)]
@@ -195,7 +199,8 @@ async fn subscribe_for_messages() {
             },
             callback,
         )
-        .await;
+        .await
+        .unwrap();
 
     client
         .get_grams_from_giver_async(&TestClient::get_giver_address(), None)
@@ -203,5 +208,5 @@ async fn subscribe_for_messages() {
 
     assert_eq!(messages.lock().await.len(), 0);
 
-    let _: () = client.request_async("net.unsubscribe", handle).await;
+    let _: () = client.request_async("net.unsubscribe", handle).await.unwrap();
 }

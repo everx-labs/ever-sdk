@@ -66,7 +66,6 @@ pub async fn send_message<F: futures::Future<Output = ()> + Send + Sync>(
     let message = Contract::deserialize_message(&message_boc)
         .map_err(|err| Error::invalid_message_boc(err))?;
     let message_id = get_message_id(&message)?;
-    let hex_message_id = hex::encode(&message_id);
 
     let address = message
         .dst()
@@ -88,7 +87,7 @@ pub async fn send_message<F: futures::Future<Output = ()> + Send + Sync>(
     let shard_block_id = match find_last_shard_block(&context, &address).await {
         Ok(block) => block.to_string(),
         Err(err) => {
-            let error = Error::fetch_first_block_failed(err, &hex_message_id);
+            let error = Error::fetch_first_block_failed(err, &message_id);
             if params.send_events {
                 callback(ProcessingEvent::FetchFirstBlockFailed {
                     error: error.clone(),
@@ -102,7 +101,7 @@ pub async fn send_message<F: futures::Future<Output = ()> + Send + Sync>(
     if params.send_events {
         callback(ProcessingEvent::WillSend {
             shard_block_id: shard_block_id.clone(),
-            message_id: hex_message_id.clone(),
+            message_id: message_id.clone(),
             message: params.message.clone(),
         }).await;
     }
@@ -114,14 +113,14 @@ pub async fn send_message<F: futures::Future<Output = ()> + Send + Sync>(
         let event= match send_result {
             Ok(_) => ProcessingEvent::DidSend {
                 shard_block_id: shard_block_id.clone(),
-                message_id: hex_message_id.clone(),
+                message_id: message_id.clone(),
                 message: params.message.clone(),
             },
             Err(error) => ProcessingEvent::SendFailed {
                 shard_block_id: shard_block_id.clone(),
-                message_id: hex_message_id.clone(),
+                message_id: message_id.clone(),
                 message: params.message.clone(),
-                error: Error::send_message_failed(error, &hex_message_id, &shard_block_id),
+                error: Error::send_message_failed(error, &message_id, &shard_block_id),
             },
         };
         callback(event).await;

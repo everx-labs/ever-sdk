@@ -52,6 +52,7 @@ async fn test_execute_get() {
             balance: None,
         })
         .await
+        .unwrap()
         .account;
 
     let result = run_get
@@ -62,6 +63,7 @@ async fn test_execute_get() {
             execution_options: None,
         })
         .await
+        .unwrap()
         .output;
     assert_eq!(
         result.to_string(),
@@ -82,6 +84,7 @@ async fn test_execute_get() {
             execution_options: None,
         })
         .await
+        .unwrap()
         .output;
     assert_eq!(result[0], "0");
 
@@ -93,6 +96,7 @@ async fn test_execute_get() {
             execution_options: None,
         })
         .await
+        .unwrap()
         .output;
 
     assert_eq!(result[0][0][0], "1588268660");
@@ -113,7 +117,7 @@ async fn test_run_executor() {
             crate::boc::ParamsOfParse {
                 boc: account.clone()
             }
-        );
+        ).unwrap();
         let original_balance = parsed.parsed["balance"].as_str().unwrap();
 
         let result = run_executor
@@ -127,14 +131,15 @@ async fn test_run_executor() {
                 execution_options: None,
                 skip_transaction_check: None,
             })
-            .await;
+            .await
+            .unwrap();
 
         let parsed: crate::boc::ResultOfParse = client.request(
             "boc.parse_account",
             crate::boc::ParamsOfParse {
                 boc: result.account
             }
-        );
+        ).unwrap();
         assert_eq!(parsed.parsed["balance"], original_balance);
 
         // check standard run
@@ -149,7 +154,8 @@ async fn test_run_executor() {
                 execution_options: None,
                 skip_transaction_check: None,
             })
-            .await;
+            .await
+            .unwrap();
         
         assert_eq!(result.transaction["in_msg"], message.message_id);
         assert!(result.fees.total_account_fees > 0);
@@ -175,7 +181,8 @@ async fn test_run_tvm() {
                 account: account.clone(),
                 execution_options: None,
             })
-            .await;
+            .await
+            .unwrap();
 
         result.account
     };
@@ -243,7 +250,7 @@ where
             signer: Signer::Keys { keys: keys.clone() },
             deploy_set: None,
             processing_try_index: None,
-        }).await;
+        }).await.unwrap();
 
     let account = run(client.clone(), message, abi.clone(), account).await;
 
@@ -261,7 +268,7 @@ where
         address: Some(address.clone()),
         deploy_set: None,
         processing_try_index: None,
-    }).await;
+    }).await.unwrap();
 
     let result = run_tvm
         .call(ParamsOfRunTvm {
@@ -270,7 +277,7 @@ where
             message: message.message,
             execution_options: None,
         })
-        .await;
+        .await.unwrap();
     assert_eq!(
         result.decoded.unwrap().output.unwrap()[if TestClient::abi_version() == 1 {
             "subscription"
@@ -302,14 +309,15 @@ async fn test_run_account_none() {
             execution_options: None,
             skip_transaction_check: Some(true),
         })
-        .await;
+        .await
+        .unwrap();
 
     let parsed: crate::boc::ResultOfParse = client.request(
         "boc.parse_account",
         crate::boc::ParamsOfParse {
             boc: result.account
         }
-    );
+    ).unwrap();
     assert_eq!(parsed.parsed["id"], "0:f18d106c11586689b11e946269ec1550b69654a8d5964de668149c28877fb65a");
     assert_eq!(parsed.parsed["acc_type_name"], "Uninit");
 }
@@ -342,7 +350,7 @@ async fn test_run_account_uninit() {
         }),
         processing_try_index: None,
         signer: Signer::Keys { keys: keys.clone() }
-    }).await;
+    }).await.unwrap();
 
     let result = run_executor
         .call(ParamsOfRunExecutor {
@@ -352,14 +360,15 @@ async fn test_run_account_uninit() {
             execution_options: None,
             skip_transaction_check: None,
         })
-        .await;
+        .await
+        .unwrap();
 
     let parsed: crate::boc::ResultOfParse = client.request(
         "boc.parse_account",
         crate::boc::ParamsOfParse {
             boc: result.account
         }
-    );
+    ).unwrap();
     assert_eq!(parsed.parsed["id"], message.address);
     assert_eq!(parsed.parsed["acc_type_name"], "Active");
 }

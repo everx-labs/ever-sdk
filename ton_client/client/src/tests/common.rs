@@ -35,7 +35,7 @@ fn test_parallel_requests() {
                 limit: Some(1),
                 order: None,
             }
-        );
+        ).unwrap();
     };
 
     // check that request with another context doesn't wait

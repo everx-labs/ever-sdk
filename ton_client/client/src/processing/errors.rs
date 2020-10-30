@@ -92,7 +92,7 @@ impl Error {
     pub fn fetch_first_block_failed<E: std::fmt::Display>(err: E, message_id: &str) -> ClientError {
         Self::processing_error(
             ErrorCode::FetchBlockFailed,
-            format!("Fetch block failed: {}", err),
+            format!("Fetch first block failed: {}", err),
             message_id,
             None,
         )

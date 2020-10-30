@@ -10,14 +10,6 @@ pub struct ClientError {
 
 pub type ClientResult<T> = Result<T, ClientError>;
 
-pub trait ClientErrorCode {
-    fn as_number(&self) -> isize;
-}
-
-trait AsString {
-    fn as_string(&self) -> String;
-}
-
 impl Display for ClientError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.message)
