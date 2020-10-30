@@ -311,7 +311,7 @@ where
             let err_message = err.to_string();
             let err = match contract_info().await {
                 Ok((address, balance)) => match &err.downcast_ref::<ExecutorError>() {
-                    Some(ExecutorError::NoAcceptError(code)) => {
+                    Some(ExecutorError::NoAcceptError(code, _)) => {
                         Error::tvm_execution_failed(err_message, *code, None, &address)
                     }
                     Some(ExecutorError::NoFundsToImportMsg) => {
