@@ -1,8 +1,0 @@
-{
-	"name": "tonos-client-react-native",
-	"version": "0.11.2",
-	"description": "TONOS Client Library for React Native",
-	"scripts": {
-		"build": "node build.js"
-	}
-}
