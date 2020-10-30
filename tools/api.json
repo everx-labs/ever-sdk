@@ -2636,7 +2636,7 @@
           "type": "EnumOfTypes",
           "enum_types": [
             {
-              "name": "Serialized",
+              "name": "ContractAbi",
               "type": "Struct",
               "struct_fields": [
                 {
