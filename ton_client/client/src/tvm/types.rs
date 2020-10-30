@@ -18,11 +18,6 @@ use crate::error::ClientResult;
 use super::Error;
 use ton_executor::BlockchainConfig;
 
- pub enum ExitCode {
-    MessageExpired = 57,
-    ReplayProtection = 52,
-}
-
  #[derive(Serialize, Deserialize, ApiType, Clone, Default)]
  pub struct ExecutionOptions {
      /// boc with config
