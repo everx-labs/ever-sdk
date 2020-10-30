@@ -7,8 +7,7 @@ typedef struct {
     uint32_t len;
 } tc_string_data_t;
 
-typedef struct  {
-} tc_string_handle_t;
+typedef struct tc_string_handle_t tc_string_handle_t;
 
 enum tc_response_types_t {
     tc_response_success = 0,
