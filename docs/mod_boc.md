@@ -141,7 +141,7 @@ JSON structure is compatible with GraphQL API shardstate object
 type ParamsOfParseShardstate = {
     boc: string,
     id: string,
-    'workchain_id': number
+    workchain_id: number
 };
 
 type ResultOfParse = {
@@ -165,11 +165,11 @@ function parse_shardstate(
 
 ```ts
 type ParamsOfGetBlockchainConfig = {
-    'block_boc': string
+    block_boc: string
 };
 
 type ResultOfGetBlockchainConfig = {
-    'config_boc': string
+    config_boc: string
 };
 
 function get_blockchain_config(
@@ -207,7 +207,7 @@ type ResultOfParse = {
 type ParamsOfParseShardstate = {
     boc: string,
     id: string,
-    'workchain_id': number
+    workchain_id: number
 };
 ```
 - `boc`: _string_ – BOC encoded as base64
@@ -218,7 +218,7 @@ type ParamsOfParseShardstate = {
 ## ParamsOfGetBlockchainConfig
 ```ts
 type ParamsOfGetBlockchainConfig = {
-    'block_boc': string
+    block_boc: string
 };
 ```
 - `block_boc`: _string_ – Key block BOC encoded as base64
@@ -227,7 +227,7 @@ type ParamsOfGetBlockchainConfig = {
 ## ResultOfGetBlockchainConfig
 ```ts
 type ResultOfGetBlockchainConfig = {
-    'config_boc': string
+    config_boc: string
 };
 ```
 - `config_boc`: _string_ – Blockchain config BOC encoded as base64

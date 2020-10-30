@@ -213,7 +213,7 @@ type ParamsOfModularPower = {
 };
 
 type ResultOfModularPower = {
-    'modular_power': string
+    modular_power: string
 };
 
 function modular_power(
@@ -283,11 +283,11 @@ Converts public key to ton safe_format
 
 ```ts
 type ParamsOfConvertPublicKeyToTonSafeFormat = {
-    'public_key': string
+    public_key: string
 };
 
 type ResultOfConvertPublicKeyToTonSafeFormat = {
-    'ton_public_key': string
+    ton_public_key: string
 };
 
 function convert_public_key_to_ton_safe_format(
@@ -442,10 +442,10 @@ Derives key from `password` and `key` using `scrypt` algorithm. See [https://en.
 type ParamsOfScrypt = {
     password: string,
     salt: string,
-    'log_n': number,
+    log_n: number,
     r: number,
     p: number,
-    'dk_len': number
+    dk_len: number
 };
 
 type ResultOfScrypt = {
@@ -621,7 +621,7 @@ key, and a nonce.
 type ParamsOfNaclBox = {
     decrypted: string,
     nonce: string,
-    'their_public': string,
+    their_public: string,
     secret: string
 };
 
@@ -651,7 +651,7 @@ Decrypt and verify the cipher text using the recievers secret key, the senders p
 type ParamsOfNaclBoxOpen = {
     encrypted: string,
     nonce: string,
-    'their_public': string,
+    their_public: string,
     secret: string
 };
 
@@ -760,7 +760,7 @@ Generates a random mnemonic from the specified dictionary and word count
 ```ts
 type ParamsOfMnemonicFromRandom = {
     dictionary?: number,
-    'word_count'?: number
+    word_count?: number
 };
 
 type ResultOfMnemonicFromRandom = {
@@ -787,7 +787,7 @@ Generates mnemonic from pre-generated entropy
 type ParamsOfMnemonicFromEntropy = {
     entropy: string,
     dictionary?: number,
-    'word_count'?: number
+    word_count?: number
 };
 
 type ResultOfMnemonicFromEntropy = {
@@ -815,7 +815,7 @@ The phrase supplied will be checked for word length and validated according to t
 type ParamsOfMnemonicVerify = {
     phrase: string,
     dictionary?: number,
-    'word_count'?: number
+    word_count?: number
 };
 
 type ResultOfMnemonicVerify = {
@@ -844,7 +844,7 @@ type ParamsOfMnemonicDeriveSignKeys = {
     phrase: string,
     path?: string,
     dictionary?: number,
-    'word_count'?: number
+    word_count?: number
 };
 
 type KeyPair = {
@@ -875,7 +875,7 @@ Generates an extended master private key that will be the root for all the deriv
 type ParamsOfHDKeyXPrvFromMnemonic = {
     phrase: string,
     dictionary?: number,
-    'word_count'?: number
+    word_count?: number
 };
 
 type ResultOfHDKeyXPrvFromMnemonic = {
@@ -902,7 +902,7 @@ Returns extended private key derived from the specified extended private key and
 ```ts
 type ParamsOfHDKeyDeriveFromXPrv = {
     xprv: string,
-    'child_index': number,
+    child_index: number,
     hardened: boolean
 };
 
@@ -1067,7 +1067,7 @@ type ParamsOfModularPower = {
 ## ResultOfModularPower
 ```ts
 type ResultOfModularPower = {
-    'modular_power': string
+    modular_power: string
 };
 ```
 - `modular_power`: _string_ – Result of modular exponentiation
@@ -1112,7 +1112,7 @@ type ResultOfGenerateRandomBytes = {
 ## ParamsOfConvertPublicKeyToTonSafeFormat
 ```ts
 type ParamsOfConvertPublicKeyToTonSafeFormat = {
-    'public_key': string
+    public_key: string
 };
 ```
 - `public_key`: _string_ – Public key - 64 symbols hex string
@@ -1121,7 +1121,7 @@ type ParamsOfConvertPublicKeyToTonSafeFormat = {
 ## ResultOfConvertPublicKeyToTonSafeFormat
 ```ts
 type ResultOfConvertPublicKeyToTonSafeFormat = {
-    'ton_public_key': string
+    ton_public_key: string
 };
 ```
 - `ton_public_key`: _string_ – Public key represented in TON safe format.
@@ -1203,10 +1203,10 @@ type ResultOfHash = {
 type ParamsOfScrypt = {
     password: string,
     salt: string,
-    'log_n': number,
+    log_n: number,
     r: number,
     p: number,
-    'dk_len': number
+    dk_len: number
 };
 ```
 - `password`: _string_ – The password bytes to be hashed. Must be encoded with `base64`.
@@ -1298,7 +1298,7 @@ type ParamsOfNaclBoxKeyPairFromSecret = {
 type ParamsOfNaclBox = {
     decrypted: string,
     nonce: string,
-    'their_public': string,
+    their_public: string,
     secret: string
 };
 ```
@@ -1322,7 +1322,7 @@ type ResultOfNaclBox = {
 type ParamsOfNaclBoxOpen = {
     encrypted: string,
     nonce: string,
-    'their_public': string,
+    their_public: string,
     secret: string
 };
 ```
@@ -1389,7 +1389,7 @@ type ResultOfMnemonicWords = {
 ```ts
 type ParamsOfMnemonicFromRandom = {
     dictionary?: number,
-    'word_count'?: number
+    word_count?: number
 };
 ```
 - `dictionary`?: _number_ – Dictionary identifier
@@ -1410,7 +1410,7 @@ type ResultOfMnemonicFromRandom = {
 type ParamsOfMnemonicFromEntropy = {
     entropy: string,
     dictionary?: number,
-    'word_count'?: number
+    word_count?: number
 };
 ```
 - `entropy`: _string_ – Entropy bytes. Hex encoded.
@@ -1432,7 +1432,7 @@ type ResultOfMnemonicFromEntropy = {
 type ParamsOfMnemonicVerify = {
     phrase: string,
     dictionary?: number,
-    'word_count'?: number
+    word_count?: number
 };
 ```
 - `phrase`: _string_ – Phrase
@@ -1455,7 +1455,7 @@ type ParamsOfMnemonicDeriveSignKeys = {
     phrase: string,
     path?: string,
     dictionary?: number,
-    'word_count'?: number
+    word_count?: number
 };
 ```
 - `phrase`: _string_ – Phrase
@@ -1469,7 +1469,7 @@ type ParamsOfMnemonicDeriveSignKeys = {
 type ParamsOfHDKeyXPrvFromMnemonic = {
     phrase: string,
     dictionary?: number,
-    'word_count'?: number
+    word_count?: number
 };
 ```
 - `phrase`: _string_ – String with seed phrase
@@ -1490,7 +1490,7 @@ type ResultOfHDKeyXPrvFromMnemonic = {
 ```ts
 type ParamsOfHDKeyDeriveFromXPrv = {
     xprv: string,
-    'child_index': number,
+    child_index: number,
     hardened: boolean
 };
 ```

@@ -38,19 +38,19 @@ interface IClient {
 }
 `;
 
-function isLatinLetter(c: string): boolean {
-    return c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z';
+function isValidIdentFirstChar(c: string): boolean {
+    return c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c === '_';
 }
 
-function isDigit(c: string): boolean {
-    return c >= '0' && c <= '9';
+function isValidIdentChar(c: string): boolean {
+    return isValidIdentFirstChar(c) || (c >= '0' && c <= '9');
 }
 
 function fixFieldName(name: string): string {
-    let isValidIdent = name !== '' && isLatinLetter(name[0]);
+    let isValidIdent = name !== '' && isValidIdentFirstChar(name[0]);
     if (isValidIdent) {
         for (let i = 1; i < name.length; i += 1) {
-            if (!(isLatinLetter(name[i]) || isDigit(name[i]))) {
+            if (!isValidIdentChar(name[i])) {
                 isValidIdent = false;
                 break;
             }

@@ -20,7 +20,7 @@ Converts address from any TON format to any TON format
 ```ts
 type ParamsOfConvertAddress = {
     address: string,
-    'output_format': AddressStringFormat
+    output_format: AddressStringFormat
 };
 
 type ResultOfConvertAddress = {
@@ -73,7 +73,7 @@ When _type_ is _'Base64'_
 ```ts
 type ParamsOfConvertAddress = {
     address: string,
-    'output_format': AddressStringFormat
+    output_format: AddressStringFormat
 };
 ```
 - `address`: _string_ – Account address in any TON format.
