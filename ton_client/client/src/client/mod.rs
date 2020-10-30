@@ -65,16 +65,21 @@ pub fn get_api_reference(_context: Arc<ClientContext>) -> ClientResult<ResultOfG
 
 #[derive(ApiType, Serialize, Deserialize, Clone)]
 pub struct BuildInfoDependency {
+    /// Dependency name. Usually it is a crate name.
     pub name: String,
+    /// Git commit hash of the related repository.
     pub git_commit: String,
 }
 
 #[derive(ApiType, Serialize, Deserialize, Clone)]
 pub struct ResultOfBuildInfo {
+    /// Build number assigned to this build by the CI.
     build_number: u32,
+    /// Fingerprint of the most important dependencies.
     dependencies: Vec<BuildInfoDependency>,
 }
 
+/// Returns detailed information about this build.
 #[api_function]
 pub fn build_info(_context: Arc<ClientContext>) -> ClientResult<ResultOfBuildInfo> {
     Ok(
