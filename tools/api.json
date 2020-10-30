@@ -77,10 +77,7 @@
           "struct_fields": [
             {
               "name": "server_address",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "String"
-              },
+              "type": "String",
               "summary": null,
               "description": null
             },
@@ -228,14 +225,14 @@
             {
               "name": "name",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Dependency name. Usually it is a crate name.",
+              "description": " Dependency name. Usually it is a crate name."
             },
             {
               "name": "git_commit",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Git commit hash of the related repository.",
+              "description": " Git commit hash of the related repository."
             }
           ],
           "summary": null,
@@ -277,8 +274,8 @@
             {
               "name": "build_number",
               "type": "Number",
-              "summary": null,
-              "description": null
+              "summary": " Build number assigned to this build by the CI.",
+              "description": " Build number assigned to this build by the CI."
             },
             {
               "name": "dependencies",
@@ -287,8 +284,8 @@
                 "type": "Ref",
                 "ref_name": "BuildInfoDependency"
               },
-              "summary": null,
-              "description": null
+              "summary": " Fingerprint of the most important dependencies.",
+              "description": " Fingerprint of the most important dependencies."
             }
           ],
           "summary": null,
@@ -360,8 +357,8 @@
         },
         {
           "name": "build_info",
-          "summary": null,
-          "description": null,
+          "summary": " Returns detailed information about this build.",
+          "description": " Returns detailed information about this build.",
           "params": [
             {
               "name": "_context",
@@ -2636,7 +2633,7 @@
           "type": "EnumOfTypes",
           "enum_types": [
             {
-              "name": "ContractAbi",
+              "name": "Contract",
               "type": "Struct",
               "struct_fields": [
                 {

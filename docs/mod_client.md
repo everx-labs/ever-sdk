@@ -6,7 +6,7 @@
 
 [version](#version) – Returns Core Library version
 
-[build_info](#build_info)
+[build_info](#build_info) – Returns detailed information about this build.
 
 ## Types
 [ClientError](#ClientError)
@@ -63,6 +63,8 @@ function version(): Promise<ResultOfVersion>;
 
 ## build_info
 
+Returns detailed information about this build.
+
 ```ts
 type ResultOfBuildInfo = {
     build_number: number,
@@ -73,8 +75,8 @@ function build_info(): Promise<ResultOfBuildInfo>;
 ```
 ### Result
 
-- `build_number`: _number_
-- `dependencies`: _[BuildInfoDependency](mod_client.md#BuildInfoDependency)[]_
+- `build_number`: _number_ – Build number assigned to this build by the CI.
+- `dependencies`: _[BuildInfoDependency](mod_client.md#BuildInfoDependency)[]_ – Fingerprint of the most important dependencies.
 
 
 # Types
@@ -107,7 +109,7 @@ type ClientConfig = {
 ## NetworkConfig
 ```ts
 type NetworkConfig = {
-    server_address?: string,
+    server_address: string,
     network_retries_count?: number,
     message_retries_count?: number,
     message_processing_timeout?: number,
@@ -116,7 +118,7 @@ type NetworkConfig = {
     access_key?: string
 };
 ```
-- `server_address`?: _string_
+- `server_address`: _string_
 - `network_retries_count`?: _number_
 - `message_retries_count`?: _number_
 - `message_processing_timeout`?: _number_
@@ -160,8 +162,8 @@ type BuildInfoDependency = {
     git_commit: string
 };
 ```
-- `name`: _string_
-- `git_commit`: _string_
+- `name`: _string_ – Dependency name. Usually it is a crate name.
+- `git_commit`: _string_ – Git commit hash of the related repository.
 
 
 ## ResultOfGetApiReference
@@ -189,7 +191,7 @@ type ResultOfBuildInfo = {
     dependencies: BuildInfoDependency[]
 };
 ```
-- `build_number`: _number_
-- `dependencies`: _[BuildInfoDependency](mod_client.md#BuildInfoDependency)[]_
+- `build_number`: _number_ – Build number assigned to this build by the CI.
+- `dependencies`: _[BuildInfoDependency](mod_client.md#BuildInfoDependency)[]_ – Fingerprint of the most important dependencies.
 
 

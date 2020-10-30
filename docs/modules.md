@@ -5,7 +5,7 @@
 
 [version](mod_client.md#version) – Returns Core Library version
 
-[build_info](mod_client.md#build_info)
+[build_info](mod_client.md#build_info) – Returns detailed information about this build.
 
 ## [crypto](mod_crypto.md) – Crypto functions.
 
