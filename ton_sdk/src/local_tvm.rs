@@ -159,7 +159,7 @@ pub mod executor {
             false)
             .map_err(|err| {
                 match err.downcast_ref::<ExecutorError>() {
-                    Some(ExecutorError::NoAcceptError(code)) => SdkError::ContractError(*code).into(),
+                    Some(ExecutorError::NoAcceptError(code, _)) => SdkError::ContractError(*code).into(),
                     Some(ExecutorError::NoFundsToImportMsg) => SdkError::NoFundsError.into(),
                     _ => err
                 }
