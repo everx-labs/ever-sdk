@@ -170,7 +170,7 @@ function main(f) {
 async function writeBuildInfo(path, build_number) {
     try {
         const tonClientGitHash = await spawnProcess('git', ['rev-parse', 'HEAD'], { quiet: true });
-        const dependencies = JSON.parse(await spawnProcess('cargo', ['metadata'], { quiet: true }))
+        const dependencies = JSON.parse(await spawnProcess('cargo', ['metadata', '--frozen', '--format-version', '1'], { quiet: true }))
             .packages
             .filter(_ => _.source && _.source.startsWith('git+https://github.com/tonlabs/'))
             .map(_ =>
@@ -184,7 +184,7 @@ async function writeBuildInfo(path, build_number) {
         fs.writeFileSync(path, JSON.stringify(buildInfo));
         console.log(`Write: ${path}`, buildInfo);
     } catch(err) {
-        console.error(`FAILED: path:${path}`, err.message);
+        console.error(`FAILED: path:${path}`, err);
     }
 }
 
