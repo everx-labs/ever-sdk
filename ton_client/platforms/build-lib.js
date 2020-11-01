@@ -22,6 +22,7 @@ function spawnProcess(name, args, options) {
     return new Promise((resolve, reject) => {
         const spawned = spawn(name, args, { env: spawnEnv });
         let res = '';
+        let err = '';
 
         spawned.stdout.on('data', function (data) {
             res += data;
@@ -32,6 +33,7 @@ function spawnProcess(name, args, options) {
         });
 
         spawned.stderr.on('data', (data) => {
+            err += data;
             if (options && options.quiet === true) {
                 return;
             }
@@ -46,7 +48,7 @@ function spawnProcess(name, args, options) {
             if (code === 0) {
                 resolve(res);
             } else {
-                reject();
+                reject(`return code: ${code}\ncmdline: ${name} ${args.join(' ')}\n` + err);
             }
         });
     });
@@ -83,6 +85,8 @@ const getOption = opt => options[opt] || '';
 
 const buildNumberOpt = Number(getOption('build-number'));
 const buildNumber = isNaN(buildNumberOpt) ? 0 : buildNumberOpt;
+const gitCommit = getOption('git-commit');
+const verboseMode = getOption('verbose');
 const devOut = getOption('dev-out');
 const devMode = !!devOut;
 
@@ -106,7 +110,9 @@ async function postBuild(target, platform) {
             const libPath = root_path(target);
             const libFileName = path.basename(libPath);
             const libFixedPath = `@loader_path/${libFileName}`;
-            console.log(`Fix lib:${libPath} using id:${libFixedPath}`);
+            if (verboseMode) {
+                console.log(`Fix lib:${libPath} using id:${libFixedPath}`);
+            }
             await spawnProcess('install_name_tool', ['-id', libFixedPath, libPath]);
     }
 
@@ -126,7 +132,9 @@ function gz(src, dst, devPath) {
             mkdir(path.dirname(dstDevPath))
             fs.copyFileSync(srcPath, dstDevPath);
         }
-        console.log(`Gzip src:${srcPath} to dst:${dstPath}`);
+        if (verboseMode) {
+            console.log(`Gzip src:${srcPath} to dst:${dstPath}`);
+        }
         fs.createReadStream(srcPath)
             .pipe(zlib.createGzip({ level: 9 }))
             .pipe(fs.createWriteStream(dstPath))
@@ -167,24 +175,26 @@ function main(f) {
     })();
 }
 
-async function writeBuildInfo(path, build_number) {
+async function writeBuildInfo(path, build_number = 0, git_commit) {
     try {
-        const tonClientGitHash = await spawnProcess('git', ['rev-parse', 'HEAD'], { quiet: true });
-        const dependencies = JSON.parse(await spawnProcess('cargo', ['metadata', '--frozen', '--format-version', '1'], { quiet: true }))
-            .packages
-            .filter(_ => _.source && _.source.startsWith('git+https://github.com/tonlabs/'))
-            .map(_ =>
-                ({
-                    name: _.name,
-                    git_commit: _.source.split('#')[1]
-                })
-            );
-        dependencies.push({name: 'ton_client', git_commit: tonClientGitHash.trim()});
+        const metadata = await spawnProcess('cargo', ['metadata', '--locked', '--format-version', '1'], { quiet: true });
+        const packages = JSON.parse(metadata).packages;
+        const filtered = packages.filter(_ => _.source && _.source.startsWith('git+https://github.com/tonlabs/'));
+        const dependencies = filtered.map(_ => ({ name: _.name, git_commit: _.source.split('#')[1] }));
+        try {
+            git_commit = git_commit || await spawnProcess('git', ['rev-parse', 'HEAD'], { quiet: true });
+            git_commit = git_commit.trim();
+            dependencies.push({name: 'ton_client', git_commit});
+        } catch(err) {
+            // Don't crash if the build started from outside a git repository
+        }
         const buildInfo = {build_number, dependencies};
         fs.writeFileSync(path, JSON.stringify(buildInfo));
-        console.log(`Write: ${path}`, buildInfo);
+        if (verboseMode) {
+            console.log(`Write: ${path}`, buildInfo);
+        }
     } catch(err) {
-        console.error(`FAILED: path:${path}`, err);
+        console.error(`FAILED: creation of build_info\npath:${path}\n` + err);
     }
 }
 
@@ -204,4 +214,5 @@ module.exports = {
     mkdir,
     writeBuildInfo,
     buildNumber,
+    gitCommit,
 };

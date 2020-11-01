@@ -6,6 +6,9 @@ const {
     root_path,
     main,
     gz,
+    writeBuildInfo,
+    buildNumber,
+    gitCommit,
     devMode,
     version,
 } = require('../build-lib');
@@ -19,6 +22,7 @@ async function buildNodeJsAddon() {
         // await spawnProcess('cargo', ['clean']);
         await spawnProcess('cargo', ['update']);
     }
+    await writeBuildInfo(root_path('..', '..', 'client', 'src', 'build_info.json'), buildNumber, gitCommit);
     await spawnProcess('cargo', ['build', '--release']);
     // build addon
     if (os.platform() !== 'win32') {

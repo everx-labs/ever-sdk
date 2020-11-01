@@ -8,6 +8,9 @@ const {
     toml_version,
     version,
     root_path,
+    writeBuildInfo,
+    buildNumber,
+    gitCommit,
     devMode,
     mkdir,
 } = require('../build-lib');
@@ -59,6 +62,8 @@ main(async () => {
         // await spawnProcess('cargo', ['clean']);
         await spawnProcess('cargo', ['update']);
     }
+    await writeBuildInfo(root_path('..', '..', 'client', 'src', 'build_info.json'), buildNumber, gitCommit);
+    await spawnProcess('cargo', ['install', 'wasm-pack', '--version', '0.9.1']);
     await spawnProcess('wasm-pack', ['build', '--release', '--target', 'web']);
 
     mkdir(root_path('build'));
