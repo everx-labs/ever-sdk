@@ -1,5 +1,9 @@
 package io.tonlabs.client;
 
+/**
+ * Abstract Java Native Interface
+ * @author Martin Zeitler
+ **/
 abstract public class NativeInterface {
 
     /**
