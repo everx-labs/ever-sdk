@@ -1,0 +1,13 @@
+/** Module Level: Tasks */
+
+// https://ant.apache.org/manual/Tasks/javah.html
+task updateJniHeader {
+    description 'An ant.javah task which generates the JNI header `io_tonlabs_client_NativeInterface.h`'
+    doLast {
+        ant.javah(
+                classpath: compileDebugJavaWithJavac.destinationDir,
+                class: 'io.tonlabs.client.NativeInterface',
+                destdir: 'src/main/include'
+        )
+    }
+}
