@@ -1,6 +1,6 @@
 package io.tonlabs.client;
 
-public class NativeInterface {
+abstract public class NativeInterface {
 
     /**
      * JNI tc_create_context
