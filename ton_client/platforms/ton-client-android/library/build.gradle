@@ -1,0 +1,75 @@
+/** Module Level */
+plugins {
+    id 'com.android.library'
+}
+
+android {
+    compileSdkVersion 30
+    buildToolsVersion '30.0.2'
+    defaultConfig {
+        minSdkVersion 22
+        targetSdkVersion 30
+        versionCode 1
+        versionName '0.26.0'
+        ndkVersion '21.3.6528147'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+        testBuildType "debug"
+        consumerProguardFiles "consumer-rules.pro"
+    }
+    externalNativeBuild {
+        cmake {
+            path file('CMakeLists.txt')
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    splits {
+        abi {
+            enable true
+            reset()
+            include "armeabi-v7a", "arm64-v8a", "x86"
+            universalApk true
+        }
+    }
+    buildTypes {
+        debug {
+            debuggable true
+            jniDebuggable true
+            zipAlignEnabled true
+            renderscriptDebuggable true
+            pseudoLocalesEnabled false
+            shrinkResources false
+            minifyEnabled false
+            testCoverageEnabled = false
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    sourceSets {
+        main {
+            jni.srcDirs = ['src/main/cpp']
+            jniLibs.srcDirs = ['libs']
+        }
+    }
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+            returnDefaultValues = true
+        }
+    }
+    packagingOptions {
+         // workaround, because jniLibs + cmake is required to link locally and on-device.
+         pickFirst "**/libtonclient.so"
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.2.0' // it provides AndroidX annotations
+    testImplementation 'junit:junit:4.13.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+}
