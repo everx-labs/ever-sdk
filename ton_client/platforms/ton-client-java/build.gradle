@@ -1,0 +1,13 @@
+/** Root Project */
+
+buildscript {
+    group 'io.tonlabs.client'
+    version '0.26.0'
+}
+
+allprojects {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+}

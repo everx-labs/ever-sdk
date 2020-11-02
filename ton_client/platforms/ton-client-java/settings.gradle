@@ -1,0 +1,3 @@
+rootProject.name = 'ton-client-java
+include("library")
+include("testapp")
