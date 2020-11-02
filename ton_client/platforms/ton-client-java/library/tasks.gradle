@@ -1,0 +1,29 @@
+/** Module Level: Tasks */
+
+// https://ant.apache.org/manual/Tasks/javah.html
+task updateJniHeader {
+    description 'An ant.javah task which generates the JNI header `io_tonlabs_client_NativeInterface.h`'
+    doLast {
+        ant.javah(
+                classpath: sourceSets.main.output.asPath,
+                class: "io.tonlabs.client.NativeInterface",
+                destdir: "src/main/include"
+        )
+    }
+}
+
+task updateJniBindings(type: Copy) {
+    description "It copies the JNI shared library into the projets's resources, in order to have it packaged"
+    from "${buildDir}/libs/tonclientjni/shared"
+    include "**/*.so", "**/*.dynlib", "**/*.dll", "**/*.lib"
+    into "src/main/resources"
+    rename "libtonclientjni.so", "tonclientjni.so"
+}
+tasks.withType(JavaCompile) { compileTask ->
+    compileTask.dependsOn(updateJniBindings)
+}
+
+/* It sets `java.library.path` for tasks of type Test. */
+tasks.withType(Test) {
+    System.setProperty("java.library.path", "${System.getProperty("java.io.tmpdir")}")
+}

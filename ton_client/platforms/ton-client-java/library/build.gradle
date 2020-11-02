@@ -1,0 +1,144 @@
+/** Module Level: Build */
+plugins {
+    id 'java-library'
+    id 'cpp'
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+javadoc {
+    if(JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
+    }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.1'
+    testImplementation 'org.hamcrest:hamcrest-all:1.3'
+}
+
+// sourceSet main supports any platform
+sourceSets {
+    win32 {
+        resources.exclude "ton_client.dynlib"
+        resources.exclude "ton_client.so"
+    }
+    darwin {
+        resources.exclude "ton_client.dll"
+        resources.exclude "ton_client.so"
+    }
+    linux {
+        resources.exclude "ton_client.dynlib"
+        resources.exclude "ton_client.dll"
+    }
+}
+
+/* TODO: jar task not working */
+jar {
+    into 'resources', {
+        from 'resources'
+    }
+    into('build/libs', {from( sourceSets.main.resources )})
+    into('build/libs', {from( sourceSets.main.java )})
+    manifest {
+        attributes(
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version
+        )
+    }
+}
+
+sourceSets.each { sourceset ->
+    def jarTask = task("${sourceset.name}Jar", type: Jar) {
+        setArchivesBaseName("tonclient_${sourceset.name}")
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        from(sourceset.resources)
+        from(sourceset.output)
+        into('build/libs')
+    }
+    artifacts {
+        archives jarTask
+    }
+}
+
+model {
+
+    // buildTypes {debug release}
+
+    platforms {
+        x64 {
+            architecture "x86_64"
+        }
+        x86 {
+            if (operatingSystem.macOsX) {
+                architecture "x64"
+            } else {
+                architecture "x86"
+            }
+        }
+    }
+    toolChains {
+        visualCpp(VisualCpp) {
+            eachPlatform {
+                cppCompiler.withArguments { args ->
+                    args << "/I${System.env.JAVA_HOME}/include" << "/I${System.env.JAVA_HOME}/include/win32"
+                }
+            }
+        }
+        gcc(Gcc) {
+            eachPlatform {
+                cppCompiler.withArguments { args ->
+                    args << "-I${System.env.JAVA_HOME}/include" << "-I${System.env.JAVA_HOME}/include/linux"
+                }
+            }
+        }
+        clang(Clang) {
+
+        }
+    }
+
+    repositories {
+        libs(PrebuiltLibraries) {
+            ton_client { lib ->
+                def libPath = "${projectDir.toString()}/src/main/libs/${name}"
+                binaries.withType(SharedLibraryBinary) {
+                    if(targetPlatform.operatingSystem.linux) {
+                        sharedLibraryFile = file("${libPath}.so")
+                    } else if(targetPlatform.operatingSystem.windows) {
+                        sharedLibraryLinkFile = file("${libPath}.lib")
+                        sharedLibraryFile = file("${libPath}.dll")
+                    } else if(targetPlatform.operatingSystem.macOsX) {
+                        sharedLibraryFile = file("${libPath}.dynlib")
+                    }
+                }
+            }
+        }
+    }
+
+    components {
+        tonclientjni(NativeLibrarySpec) {
+            targetPlatform "x64"
+            sources {
+                cpp {
+                    lib library: "ton_client"
+                    exportedHeaders {
+                        srcDirs "src/main/include"
+                        include "*.h"
+                    }
+                    source {
+                        srcDir "src/main/cpp"
+                        include "tonclientjni.cpp"
+                    }
+                }
+            }
+            binaries.withType(StaticLibraryBinarySpec) {
+                buildable = false
+            }
+        }
+    }
+}
+
+apply from: 'tasks.gradle'
