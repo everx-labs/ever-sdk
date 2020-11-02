@@ -7,6 +7,7 @@ const {
     main,
     version,
     root_path,
+    postBuild,
 } = require('../platforms/build-lib');
 const platform = os.platform();
 
@@ -22,8 +23,10 @@ main(async () => {
         darwin: [['lib{}.dylib', '']],
     };
     for (const [src, dstSuffix] of platformNames[platform] || []) {
+        const target = ['..', '..', 'target', 'release', src.replace('{}', 'ton_client')];
+        await postBuild(target, platform);
         await gz(
-            ['..', '..', 'target', 'release', src.replace('{}', 'ton_client')],
+            target,
             `tonclient_${version}_${platform}${dstSuffix || ''}`, [__dirname, 'build']);
     }
 });

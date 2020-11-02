@@ -85,6 +85,19 @@ function appendFileNameIfMissing(fileOrDirPath, defaultFileName) {
 
 }
 
+async function postBuild(target, platform) {
+    switch (platform) {
+        case 'darwin':
+            const libPath = root_path(target);
+            const libFileName = path.basename(libPath);
+            await spawnProcess('install_name_tool', ['-id',
+                                                     `@loader_path/${libFileName}`,
+                                                     libPath]);
+    }
+
+    return Promise.resolve();
+}
+
 function gz(src, dst, devPath) {
     return new Promise((resolve, reject) => {
         const srcPath = root_path(src);
@@ -145,6 +158,7 @@ module.exports = {
     spawnAll,
     deleteFolderRecursive,
     main,
+    postBuild,
     gz,
     toml_version,
     version,
