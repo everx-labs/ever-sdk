@@ -1,0 +1,31 @@
+plugins {
+    id 'java'
+}
+
+group 'io.tonlabs.client'
+version '0.26.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(":library")
+    testImplementation 'junit:junit:4.13.1'
+}
+
+jar {
+    manifest {
+        // https://docs.oracle.com/javase/10/docs/specs/jar/jar.html#main-attributes
+        attributes(
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version,
+                'Class-Path': configurations.compileClasspath.files.collect { it.getName() }.join(' '),
+                'Main-Class': 'Main'
+        )
+    }
+    from {
+        configurations.compileClasspath.files.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    // TODO: add the libraries resources.
+}
