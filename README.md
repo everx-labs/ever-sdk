@@ -97,12 +97,12 @@ TON Labs SDK Binaries Store.
 
 Platform | Major | Download links
 -------- | ----- | --------------
-Win32    | 0     | [`tonclient.lib`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_win32_lib.gz), [`tonclient.dll`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_win32_dll.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_nodejs_addon_win32.gz)
-&nbsp;   | 1     | [`tonclient.lib`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_win32_lib.gz), [`tonclient.dll`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_win32_dll.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_nodejs_addon_win32.gz)
-macOS    | 0     | [`libtonclient.dylib`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_darwin.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_nodejs_addon_darwin.gz), [`libtonclientnodejs.dylib`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_nodejs_dylib_darwin.gz)
-&nbsp;   | 1     | [`libtonclient.dylib`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_darwin.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_nodejs_addon_darwin.gz)
-Linux    | 0     | [`libtonclient.so`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_linux.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_nodejs_addon_linux.gz)
-&nbsp;   | 1     | [`libtonclient.so`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_linux.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_nodejs_addon_linux.gz)
+Win32    | 0     | [`ton_client.lib`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_win32_lib.gz), [`ton_client.dll`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_win32_dll.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_nodejs_addon_win32.gz)
+&nbsp;   | 1     | [`ton_client.lib`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_win32_lib.gz), [`ton_client.dll`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_win32_dll.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_nodejs_addon_win32.gz)
+macOS    | 0     | [`libton_client.dylib`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_darwin.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_nodejs_addon_darwin.gz), [`libtonclientnodejs.dylib`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_nodejs_dylib_darwin.gz)
+&nbsp;   | 1     | [`libton_client.dylib`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_darwin.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_nodejs_addon_darwin.gz)
+Linux    | 0     | [`libton_client.so`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_linux.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_nodejs_addon_linux.gz)
+&nbsp;   | 1     | [`libton_client.so`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_linux.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_nodejs_addon_linux.gz)
 WASM     | 0     | [`tonclient.wasm`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_wasm.gz), [`tonclient.js`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_wasm_js.gz)
 &nbsp;   | 1     | [`tonclient.wasm`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_wasm.gz), [`tonclient.js`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_wasm_js.gz)
 iOS      | 0     | [`libtonclient.a`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_react_native_ios.gz)
