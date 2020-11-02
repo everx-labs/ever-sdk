@@ -1,0 +1,4 @@
+rootProject.name = 'ton-client-android'
+include ':library'
+include ':mobile'
+include ':kotlin'
