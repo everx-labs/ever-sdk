@@ -14,8 +14,5 @@
 extern crate libc;
 extern crate ton_client;
 
-pub use self::ton_client::{
-    tc_create_context,
-    tc_destroy_context,
-    tc_json_request_async,
-};
+pub use ton_client::{tc_create_context, tc_destroy_context, tc_request};
+

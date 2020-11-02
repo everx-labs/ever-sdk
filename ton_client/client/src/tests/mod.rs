@@ -11,88 +11,681 @@
 * limitations under the License.
 */
 
-use crate::crypto::keys::{account_decode, account_encode_ex, AccountAddressType, Base64AddressParams};
-use super::InteropContext;
-use super::{tc_json_request, InteropString};
-use super::{tc_read_json_response, tc_destroy_json_response};
-use serde_json::{Value, Map};
-use log::{Metadata, Record, LevelFilter};
-use crate::{tc_create_context, tc_destroy_context};
-use ton_block::MsgAddressInt;
-use std::str::FromStr;
-use crate::types::{ApiError};
+use super::{tc_destroy_string, tc_read_string, tc_request, tc_request_sync};
+use crate::abi::{
+    encode_message, Abi, CallSet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
+};
+use crate::json_interface::interop::{ResponseType, StringData};
+use crate::client::{ClientContext, Error};
+use crate::crypto::{
+    ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
+};
+use crate::processing::{ParamsOfProcessMessage, ResultOfProcessMessage};
+use crate::{crypto::KeyPair, error::{ClientError, ClientResult}, net::{ParamsOfWaitForCollection, ResultOfWaitForCollection}, tc_create_context, tc_destroy_context, ContextHandle, ClientConfig};
+use crate::boc::{ParamsOfParse, ResultOfParse};
+use api_info::ApiModule;
+use futures::Future;
+use num_traits::FromPrimitive;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
+use serde_json::Value;
+use std::collections::HashMap;
+use std::pin::Pin;
+use std::sync::Arc;
+use tokio::sync::{
+    mpsc::{channel, Sender},
+    Mutex,
+};
+use crate::json_interface::modules::{AbiModule, ProcessingModule, NetModule};
 
-//mod resolve_error;
+mod common;
 
-pub const LOG_CGF_PATH: &str = "src/tests/log_cfg.yaml";
-const MISSING: Value = Value::String(String::new());
+const DEFAULT_NETWORK_ADDRESS: &str = "http://localhost";
+//const DEFAULT_NETWORK_ADDRESS: &str = "cinet.tonlabs.io";
+//const DEFAULT_NETWORK_ADDRESS: &str = "net.ton.dev";
+
+const ROOT_CONTRACTS_PATH: &str = "src/tests/contracts/";
+const LOG_CGF_PATH: &str = "src/tests/log_cfg.yaml";
 
 struct SimpleLogger;
 
+const MAX_LEVEL: log::LevelFilter = log::LevelFilter::Warn;
+
 impl log::Log for SimpleLogger {
-    fn enabled(&self, _metadata: &Metadata) -> bool {
-        true
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        metadata.level() < MAX_LEVEL
     }
 
-    fn log(&self, record: &Record) {
-        println!("{} - {}", record.level(), record.args());
+    fn log(&self, record: &log::Record) {
+        match record.level() {
+            log::Level::Error | log::Level::Warn => {
+                eprintln!("{}", record.args());
+            }
+            _ => {
+                println!("{}", record.args());
+            }
+        }
     }
 
     fn flush(&self) {}
 }
 
-fn get_network_address() -> String {
-    std::env::var("TON_NETWORK_ADDRESS").unwrap_or("http://localhost:80".to_owned())
+pub const SUBSCRIBE: &str = "Subscription";
+// pub const PIGGY_BANK: &str = "Piggy";
+// pub const WALLET: &str = "LimitWallet";
+// pub const SIMPLE_WALLET: &str = "Wallet";
+pub const GIVER: &str = "Giver";
+pub const GIVER_WALLET: &str = "GiverWallet";
+pub const HELLO: &str = "Hello";
+pub const EVENTS: &str = "Events";
+
+struct RequestData {
+    sender: Sender<ClientResult<Value>>,
+    callback:
+        Box<dyn Fn(String, u32) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>> + Send + Sync>,
 }
 
-#[derive(Clone)]
-struct TestClient {
-    context: InteropContext,
+struct TestRuntime {
+    pub next_request_id: u32,
+    pub next_callback_id: u32,
+    pub requests: HashMap<u32, RequestData>,
+}
+
+impl TestRuntime {
+    fn new() -> Self {
+        Self {
+            next_callback_id: 1,
+            next_request_id: 1,
+            requests: HashMap::new(),
+        }
+    }
+
+    fn gen_request_id(&mut self) -> u32 {
+        let id = self.next_request_id;
+        self.next_request_id += 1;
+        id
+    }
+}
+
+lazy_static::lazy_static! {
+    static ref TEST_RUNTIME: Mutex<TestRuntime> = Mutex::new(TestRuntime::new());
+}
+
+pub(crate) struct TestClient {
+    config: ClientConfig,
+    context: ContextHandle,
+}
+
+extern "C" fn on_result(
+    request_id: u32,
+    params_json: StringData,
+    response_type: u32,
+    finished: bool,
+) {
+    TestClient::on_result(request_id, params_json.to_string(), response_type, finished)
+}
+
+pub struct AsyncFuncWrapper<'a, P, R> {
+    client: &'a TestClient,
+    name: String,
+    p: std::marker::PhantomData<(P, R)>,
+}
+
+impl<'a, P: Serialize, R: DeserializeOwned> AsyncFuncWrapper<'a, P, R> {
+    pub(crate) async fn call(&self, params: P) -> R {
+        self.client.request_async(&self.name, params).await
+    }
+
+    pub(crate) async fn call_with_callback<CF, CT, CR>(
+        &self,
+        params: P,
+        callback: impl Fn(CR, CT) -> CF + Send + Sync + 'static,
+    ) -> R
+    where
+        CF: Future<Output = ()> + Send + Sync + 'static,
+        CT: FromPrimitive,
+        CR: DeserializeOwned,
+    {
+        self.client
+            .request_async_callback(&self.name, params, callback)
+            .await
+    }
+}
+
+pub struct FuncWrapper<'a, P, R> {
+    client: &'a TestClient,
+    name: String,
+    p: std::marker::PhantomData<(P, R)>,
+}
+
+impl<'a, P: Serialize, R: DeserializeOwned> FuncWrapper<'a, P, R> {
+    pub(crate) fn call(&self, params: P) -> R {
+        self.client.request(&self.name, params)
+    }
+}
+
+fn parse_sync_response<R: DeserializeOwned>(response: *const String) -> ClientResult<R> {
+    let response = unsafe {
+        let result = tc_read_string(response).to_string();
+        tc_destroy_string(response);
+        result
+    };
+    match serde_json::from_str::<Value>(&response) {
+        Ok(value) => {
+            if value["error"].is_object() {
+                Err(serde_json::from_value::<ClientError>(value["error"].clone()).unwrap())
+            } else {
+                Ok(serde_json::from_value(value["result"].clone()).unwrap())
+            }
+        }
+        Err(err) => Err(Error::cannot_serialize_result(err)),
+    }
 }
 
 impl TestClient {
-    fn new() -> Self {
+    pub(crate) fn wrap_async<P, R, F>(
+        self: &TestClient,
+        _: fn(Arc<ClientContext>, P) -> F,
+        module: api_info::Module,
+        function: api_info::Function,
+    ) -> AsyncFuncWrapper<P, R>
+    where
+        P: Serialize,
+        R: DeserializeOwned,
+        F: Future<Output = ClientResult<R>>,
+    {
+        AsyncFuncWrapper {
+            client: self,
+            name: format!("{}.{}", module.name, function.name),
+            p: std::marker::PhantomData::default(),
+        }
+    }
+
+    pub(crate) fn wrap_async_callback<P, R, F>(
+        self: &TestClient,
+        _: fn(Arc<ClientContext>, P, std::sync::Arc<crate::json_interface::request::Request>) -> F,
+        module: api_info::Module,
+        function: api_info::Function,
+    ) -> AsyncFuncWrapper<P, R>
+    where
+        P: Serialize,
+        R: DeserializeOwned,
+        F: Future<Output = ClientResult<R>>,
+    {
+        AsyncFuncWrapper {
+            client: self,
+            name: format!("{}.{}", module.name, function.name),
+            p: std::marker::PhantomData::default(),
+        }
+    }
+
+    pub(crate) fn wrap<P, R>(
+        self: &TestClient,
+        _: fn(Arc<ClientContext>, P) -> ClientResult<R>,
+        module: api_info::Module,
+        function: api_info::Function,
+    ) -> FuncWrapper<P, R>
+    where
+        P: Serialize,
+        R: DeserializeOwned,
+    {
+        FuncWrapper {
+            client: self,
+            name: format!("{}.{}", module.name, function.name),
+            p: std::marker::PhantomData::default(),
+        }
+    }
+
+    fn read_abi(path: String) -> Abi {
+        Abi::Serialized(serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap())
+    }
+
+    pub fn giver_address() -> String {
+        "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94".into()
+    }
+
+    pub fn giver_abi() -> Abi {
+        if Self::node_se() {
+            Self::abi(GIVER, Some(1))
+        } else {
+            Self::abi(GIVER_WALLET, Some(2))
+        }
+    }
+
+    pub fn wallet_address() -> String {
+        "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13".into()
+    }
+
+    pub fn wallet_keys() -> Option<KeyPair> {
+        if Self::node_se() {
+            return None;
+        }
+
+        let mut keys_file = dirs::home_dir().unwrap();
+        keys_file.push("giverKeys.json");
+        let keys = std::fs::read_to_string(keys_file).unwrap();
+
+        Some(serde_json::from_str(&keys).unwrap())
+    }
+
+    pub fn network_address() -> String {
+        std::env::var("TON_NETWORK_ADDRESS").unwrap_or(DEFAULT_NETWORK_ADDRESS.into())
+    }
+
+    pub fn node_se() -> bool {
+        std::env::var("USE_NODE_SE").unwrap_or("true".to_owned()) == "true".to_owned()
+    }
+
+    pub fn abi_version() -> u8 {
+        u8::from_str_radix(&std::env::var("ABI_VERSION").unwrap_or("2".to_owned()), 10).unwrap()
+    }
+
+    pub fn contracts_path(abi_version: Option<u8>) -> String {
+        format!(
+            "{}abi_v{}/",
+            ROOT_CONTRACTS_PATH,
+            abi_version.unwrap_or(Self::abi_version())
+        )
+    }
+
+    pub fn abi(name: &str, version: Option<u8>) -> Abi {
+        Self::read_abi(format!(
+            "{}{}.abi.json",
+            Self::contracts_path(version),
+            name
+        ))
+    }
+
+    pub fn tvc(name: &str, abi_version: Option<u8>) -> String {
+        base64::encode(
+            &std::fs::read(format!("{}{}.tvc", Self::contracts_path(abi_version), name)).unwrap(),
+        )
+    }
+
+    pub fn package(name: &str, abi_version: Option<u8>) -> (Abi, String) {
+        (Self::abi(name, abi_version), Self::tvc(name, abi_version))
+    }
+
+    pub(crate) fn init_log() {
+        let log_cfg_path = LOG_CGF_PATH;
+        let _ = log4rs::init_file(log_cfg_path, Default::default());
+    }
+
+    pub(crate) fn new() -> Self {
         Self::new_with_config(json!({
-            "baseUrl": get_network_address()
+            "network": {
+                "server_address": Self::network_address()
+            }
         }))
     }
 
-    fn new_with_config(config: Value) -> Self {
-        let _ = log::set_boxed_logger(Box::new(SimpleLogger))
-            .map(|()| log::set_max_level(LevelFilter::Debug));
+    pub(crate) fn new_with_config(config: Value) -> Self {
+        let _ =
+            log::set_boxed_logger(Box::new(SimpleLogger)).map(|()| log::set_max_level(MAX_LEVEL));
 
-        let context: InteropContext;
         unsafe {
-            context = tc_create_context()
-        }
-        let client = Self { context };
-        if config != Value::Null {
-            client.request("setup", config).unwrap();
-        }
-        client
-    }
-
-    fn request(
-        &self,
-        method_name: &str,
-        params: Value,
-    ) -> Result<String, String> {
-        unsafe {
-            let params_json = if params.is_null() { String::new() } else { params.to_string() };
-            let response_ptr = tc_json_request(
-                self.context,
-                InteropString::from(&method_name.to_string()),
-                InteropString::from(&params_json),
-            );
-            let interop_response = tc_read_json_response(response_ptr);
-            let response = interop_response.to_response();
-            tc_destroy_json_response(response_ptr);
-            if response.error_json.is_empty() {
-                Ok(response.result_json)
-            } else {
-                Err(response.error_json)
+            let response = tc_create_context(StringData::new(&config.to_string()));
+            Self {
+                config: serde_json::from_value(config).unwrap(),
+                context: parse_sync_response(response).unwrap(),
             }
         }
+    }
+
+    pub(crate) fn request_json(&self, method: &str, params: Value) -> ClientResult<Value> {
+        let params_json = if params.is_null() {
+            String::new()
+        } else {
+            params.to_string()
+        };
+        parse_sync_response(unsafe {
+            tc_request_sync(
+                self.context,
+                StringData::new(&method.to_string()),
+                StringData::new(&params_json),
+            )
+        })
+    }
+
+    pub(crate) fn request<P, R>(&self, method: &str, params: P) -> R
+    where
+        P: Serialize,
+        R: DeserializeOwned,
+    {
+        let params = serde_json::to_value(params).unwrap();
+        let result = self.request_json(method, params).unwrap();
+        serde_json::from_value(result).unwrap()
+    }
+
+    fn on_result(request_id: u32, params_json: String, response_type: u32, finished: bool) {
+        // we have to process callback in another thread because:
+        // 1. processing must be async because sender which resolves function result is async
+        // 2. `rt_handle.enter` function processes task in background without ability to wait for its completion.
+        //  But we need to preserve the order of `on_result` calls processing, otherwise call with
+        //  `finished` = true can be processed before previous call and remove callback handler
+        //  while it's still needed
+        // 3. `rt_handle.block_on` function can't be used in current thread because thread is in async
+        //  context so we have spawn another thread and use `rt_handle.block_on` function there
+        //  and then wait for thread completion
+        let rt_handle = tokio::runtime::Handle::current();
+        std::thread::spawn(move || {
+            rt_handle.block_on(Self::on_result_async(
+                request_id,
+                params_json.to_string(),
+                response_type,
+                finished,
+            ));
+        })
+        .join()
+        .unwrap();
+    }
+
+    async fn on_result_async(
+        request_id: u32,
+        params_json: String,
+        response_type: u32,
+        finished: bool,
+    ) {
+        //log::debug!("on_result response-type: {} params_json: {}", response_type, params_json);
+        let requests = &mut TEST_RUNTIME.lock().await.requests;
+        let request = requests.get_mut(&request_id).unwrap();
+
+        if response_type == ResponseType::Success as u32 {
+            request
+                .sender
+                .send(Ok(serde_json::from_str::<Value>(&params_json).unwrap()))
+                .await
+                .unwrap();
+        } else if response_type == ResponseType::Error as u32 {
+            let err = match serde_json::from_str::<ClientError>(&params_json) {
+                Ok(err) => err,
+                Err(err) => Error::callback_params_cant_be_converted_to_json(err),
+            };
+            request.sender.send(Err(err)).await.unwrap();
+        } else if response_type == ResponseType::Nop as u32 {
+        } else if response_type >= ResponseType::Custom as u32 {
+            (request.callback)(params_json.to_string(), response_type).await
+        } else {
+            panic!(format!("Unsupported response type: {}", response_type));
+        }
+
+        if finished {
+            requests.remove(&request_id);
+        }
+    }
+
+    pub(crate) async fn request_json_async_callback<CR, CT, CF>(
+        &self,
+        method: &str,
+        params: Value,
+        callback: impl Fn(CR, CT) -> CF + Send + Sync + 'static,
+    ) -> ClientResult<Value>
+    where
+        CF: Future<Output = ()> + Send + Sync + 'static,
+        CT: FromPrimitive,
+        CR: DeserializeOwned,
+    {
+        let callback = move |params_json: String, response_type: u32| {
+            let params: CR = serde_json::from_str(&params_json).unwrap();
+            let response_type = CT::from_u32(response_type).unwrap();
+            Box::pin(callback(params, response_type))
+                as Pin<Box<dyn Future<Output = ()> + Send + Sync>>
+        };
+        //let callback = Box::new(callback);
+        let (request_id, mut receiver) = {
+            let mut runtime = TEST_RUNTIME.lock().await;
+            let id = runtime.gen_request_id();
+            let (sender, receiver) = channel(10);
+            runtime.requests.insert(
+                id,
+                RequestData {
+                    sender,
+                    callback: Box::new(callback), // as Box<dyn Fn(String, u32) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>> + Send + Sync>
+                },
+            );
+            (id, receiver)
+        };
+        unsafe {
+            let params_json = if params.is_null() {
+                String::new()
+            } else {
+                params.to_string()
+            };
+            tc_request(
+                self.context,
+                StringData::new(&method.to_string()),
+                StringData::new(&params_json),
+                request_id,
+                on_result,
+            );
+        };
+        let response = receiver.recv().await.unwrap();
+        response
+    }
+
+    pub(crate) async fn request_async_callback<P, R, CR, CT, CF>(
+        &self,
+        method: &str,
+        params: P,
+        callback: impl Fn(CR, CT) -> CF + Send + Sync + 'static,
+    ) -> R
+    where
+        P: Serialize,
+        R: DeserializeOwned,
+        CF: Future<Output = ()> + Send + Sync + 'static,
+        CT: FromPrimitive,
+        CR: DeserializeOwned,
+    {
+        let params = serde_json::to_value(params).unwrap();
+        let result = self
+            .request_json_async_callback(method, params, callback)
+            .await
+            .unwrap();
+        serde_json::from_value(result).unwrap()
+    }
+
+    async fn default_callback(_: Value, _: u32) {
+        panic!("wrong response type");
+    }
+
+    pub(crate) async fn request_async<P, R>(&self, method: &str, params: P) -> R
+    where
+        P: Serialize,
+        R: DeserializeOwned,
+    {
+        self.request_async_callback(method, params, Self::default_callback)
+            .await
+    }
+
+    pub(crate) fn request_no_params<R: DeserializeOwned>(&self, method: &str) -> R {
+        let result = self.request_json(method, Value::Null).unwrap();
+        serde_json::from_value(result)
+            .map_err(|err| Error::invalid_params("", err))
+            .unwrap()
+    }
+
+    pub(crate) async fn encode_message(
+        &self,
+        params: ParamsOfEncodeMessage,
+    ) -> ResultOfEncodeMessage {
+        let encode = self.wrap_async(
+            encode_message,
+            AbiModule::api(),
+            crate::abi::encode_message::encode_message_api(),
+        );
+        encode.call(params).await
+    }
+
+    pub(crate) async fn net_process_message<CF, CT, CR>(
+        &self,
+        params: ParamsOfProcessMessage,
+        callback: impl Fn(CR, CT) -> CF + Send + Sync + 'static,
+    ) -> ResultOfProcessMessage
+    where
+        CF: Future<Output = ()> + Send + Sync + 'static,
+        CT: FromPrimitive,
+        CR: DeserializeOwned,
+    {
+        let process = self.wrap_async_callback(
+            crate::json_interface::processing::process_message,
+            ProcessingModule::api(),
+            crate::json_interface::processing::process_message_api(),
+        );
+        process.call_with_callback(params, callback).await
+    }
+
+    pub(crate) async fn fetch_account(&self, address: &str) -> Value {
+        let wait_for = self.wrap_async(
+            crate::net::wait_for_collection,
+            NetModule::api(),
+            crate::net::wait_for_collection_api(),
+        );
+        let result = wait_for
+            .call(ParamsOfWaitForCollection {
+                collection: "accounts".into(),
+                filter: Some(json!({
+                    "id": { "eq": address.to_string() }
+                })),
+                result: "id boc".into(),
+                ..Default::default()
+            })
+            .await;
+        result.result
+    }
+
+    pub(crate) async fn net_process_function(
+        &self,
+        address: String,
+        abi: Abi,
+        function_name: &str,
+        input: Value,
+        signer: Signer,
+    ) -> ResultOfProcessMessage {
+        self.net_process_message(
+            ParamsOfProcessMessage {
+                message_encode_params: ParamsOfEncodeMessage {
+                    address: Some(address),
+                    abi,
+                    deploy_set: None,
+                    call_set: Some(CallSet {
+                        header: None,
+                        function_name: function_name.into(),
+                        input: Some(input),
+                    }),
+                    processing_try_index: None,
+                    signer,
+                },
+                send_events: false,
+            },
+            Self::default_callback,
+        )
+        .await
+    }
+    pub(crate) async fn get_grams_from_giver_async(&self, account: &str, value: Option<u64>) {
+        let run_result = if Self::node_se() {
+            self.net_process_function(
+                Self::giver_address(),
+                Self::giver_abi(),
+                "sendGrams",
+                json!({
+                    "dest": account,
+                    "amount": value.unwrap_or(500_000_000u64)
+                }),
+                Signer::None,
+            )
+            .await
+        } else {
+            self.net_process_function(
+                Self::wallet_address(),
+                Self::giver_abi(),
+                "sendTransaction",
+                json!({
+                    "dest": account.to_string(),
+                    "value": value.unwrap_or(500_000_000u64),
+                    "bounce": false
+                }),
+                Signer::Keys { keys: Self::wallet_keys().unwrap() },
+            )
+            .await
+        };
+
+        // wait for grams receiving
+        for message in run_result.out_messages.iter() {
+            let parsed: ResultOfParse = self.request(
+                "boc.parse_message",
+                ParamsOfParse {
+                    boc: message.clone()
+                }
+            );
+            let message: ton_sdk::Message = serde_json::from_value(parsed.parsed).unwrap();
+            if ton_sdk::MessageType::Internal == message.msg_type() {
+                let _: ResultOfWaitForCollection = self
+                    .request_async(
+                        "net.wait_for_collection",
+                        ParamsOfWaitForCollection {
+                            collection: "transactions".to_owned(),
+                            filter: Some(json!({
+                                "in_msg": { "eq": message.id()}
+                            })),
+                            result: "id".to_owned(),
+                            timeout: Some(self.config.network.wait_for_timeout),
+                        },
+                    )
+                    .await;
+            }
+        }
+    }
+
+    pub(crate) async fn deploy_with_giver_async(
+        &self,
+        params: ParamsOfEncodeMessage,
+        value: Option<u64>,
+    ) -> String {
+        let msg = self.encode_message(params.clone()).await;
+
+        self.get_grams_from_giver_async(&msg.address, value).await;
+
+        let _ = self
+            .net_process_message(
+                ParamsOfProcessMessage {
+                    message_encode_params: params,
+                    send_events: false,
+                },
+                Self::default_callback,
+            )
+            .await;
+
+        msg.address
+    }
+
+    pub(crate) fn generate_sign_keys(&self) -> KeyPair {
+        self.request("crypto.generate_random_sign_keys", ())
+    }
+
+    pub fn sign_detached(&self, data: &str, keys: &KeyPair) -> String {
+        let sign_keys: KeyPair = self.request(
+            "crypto.nacl_sign_keypair_from_secret_key",
+            ParamsOfNaclSignKeyPairFromSecret {
+                secret: keys.secret.clone(),
+            },
+        );
+        let result: ResultOfNaclSignDetached = self.request(
+            "crypto.nacl_sign_detached",
+            ParamsOfNaclSignDetached {
+                unsigned: data.into(),
+                secret: sign_keys.secret.clone(),
+            },
+        );
+        result.signature
+    }
+
+    pub(crate) fn get_giver_address() -> String {
+        if Self::node_se() {
+            Self::giver_address()
+        } else {
+            Self::wallet_address()
+        }
+        .into()
     }
 }
 
@@ -105,582 +698,3 @@ impl Drop for TestClient {
         }
     }
 }
-
-
-fn parse_object(s: Result<String, String>) -> Map<String, Value> {
-    if let Value::Object(m) = serde_json::from_str(s.unwrap().as_str()).unwrap() {
-        return m.clone();
-    }
-    panic!("Object expected");
-}
-
-fn parse_string(r: Result<String, String>) -> String {
-    if let Value::String(s) = serde_json::from_str(r.unwrap().as_str()).unwrap() {
-        return s.clone();
-    }
-    panic!("String expected");
-}
-
-fn get_map_string(m: &Map<String, Value>, f: &str) -> String {
-    if let Value::String(s) = m.get(f).unwrap() {
-        return s.clone();
-    }
-    panic!("Field not fount");
-}
-
-const ELECTOR_CODE: &str = "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";
-const ELECTOR_DATA: &str = "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";
-
-#[test]
-fn test_tvm_get() {
-    let log_cfg_path = LOG_CGF_PATH;
-    let _ = log4rs::init_file(log_cfg_path, Default::default());
-
-    let client = TestClient::new();
-    let result = parse_object(client.request("tvm.get", json!({
-        "functionName": "participant_list",
-        "codeBase64": ELECTOR_CODE,
-        "dataBase64": ELECTOR_DATA,
-    })));
-    let expected_result = r#"{"output":[[["0x101b6d65a384b9c70deb49fd6c43ffc0f60ed22fcc3a4966f7043794a749228","0x36b1f820a400"],[["0x3de5d8590fe6ad191bf94d4136dfb630e9b3447bb2f1a6ae2d8e3e4cbee1d9f","0x377aab54d000"],[["0x558f90c0682d677b46005ce2e04206c255ea9a05bfac0ff5aea9d7182a28913","0x36b1f820a400"],[["0x7698228973a595751d79e1fafd5a4145b3d35349bf0b43322afb61b138f01eb","0x36b1f820a400"],[["0x9d1ef8a40a9fbf1ca505f072258048ec15e0637baa085649d77b9a90220003e","0x36b1f820a400"],[["0xac21ef27c8ed4487270f1c45e99dac091ca4007951217ece344452df7047e5a","0x36b1f820a400"],[["0xaed529418ab67a31a4b98c224f8fdb2fec11f0100c23751e67b312cba11fb23","0x36b1f820a400"],[["0xbd14cdade9067c523f44fd208dee5daa7d852151725d713b92c840a031018a6","0x36b1f820a400"],[["0xbddff0d98f42a3155e577a5579623a911e3b03401835166553f88375cbd9657","0x36b1f820a400"],[["0x12893bbd649bf2e1e79cb084025638cdd7906eebca40efeee7fdbd548cc96391","0x36b1f820a400"],[["0x15546bc7b5124f6d83d6c5a62b8890a48b933168e141c01229431a6c0c499780","0x36b1f820a400"],[["0x1cbea6a399ba200958db255579cda2195006f3a3108b2d6ef7e258e42c101479","0x36b1f820a400"],[["0x1f8ee6ba2902715804c769c3845b6b3a37802e462e8df63ba19f827a92dbbda0","0x36b1f820a400"],[["0x1fdd556d84d1d9f24a739c2600ec72256cc00920d85ad3a2edb3e0d72146789d","0x36b1f820a400"],[["0x20f20c2cfa4d72afb9c5f64d4735070962b3323b3629892c75f56427f175ebe4","0x36b1f820a400"],[["0x219d32737b0f3769869b8fa750ba8e3cd9f19b21a4d669c7c79d420d7f7cdb24","0x36b1f820a400"],[["0x2615b4aeb69140531228248a9d84593117b64e22d462e3968e39c1840a260523","0x36b1f820a400"],[["0x26984c9f04bc1889061e98bd9caf6955f750219d8e8dbc0986feb9d770e5a15b","0x36b1f820a400"],[["0x28bb07d80e20aa624ae47dfe53f915b23a666bf825ff283bac06c14bea1eaa74","0x36b1f820a400"],[["0x2a23566008fd4f87105b09d02c739452e45187fbada5e7e52ada356264cd6751","0x36b1f820a400"],[["0x2dcc70859876106b21b598ba9a10c9932259c36f44adeb95a178e67f6afd2f7a","0x36b1f820a400"],[["0x30b854226ef943d738d2dfcc72ede3b39d08604ca7211abf3c76f488441c77fc","0x36b1f820a400"],[["0x31bb74a5a53769d3db789d961375ea569d4da0bd6ac2b12f830dd6be81968ef1","0x36b1f820a400"],[["0x334f22e0de2e24a070fec7c1d77d7a988a79d66b79e2d654310a963964edd337","0x36b1f820a400"],[["0x36c44eddf773390cdb42f93f8454ea9c7ca45aa8948346df8f642a59ce44c442","0x36b1f820a400"],[["0x3d29d2b5ceef46703255ce8cfe3aad3c4fefd3a2025e5a48ce78a63f20887eff","0x36b1f820a400"],[["0x41b047a20ed691e9376f7f2f60d6571290e34ef4e1b85467dcc3d7c0cf7fae90","0x36b1f820a400"],[["0x41e7541c377b58a0cfc4ca954731e971f6dc9fa6806eaa1709d011d3d32593ce","0x36b1f820a400"],[["0x426a52d3b3d016451c46b3a0eacb382fbbb38739e00d041d4038f795a54e25b5","0x36b1f820a400"],[["0x42f89915ca540af691f623f201b616caa7f5e104f8293698f8b46c4e7bb5b292","0x36b1f820a400"],[["0x4449521e793b02b036ce698c3af951e9548cd5b862b704fa5cc9e80b171a3c61","0x36b1f820a400"],[["0x492f4fee6a035a09e9ff09d65a65768899b04797cff08dc2c64ae11cd94d1968","0x36b1f820a400"],[["0x4947018f9c0c9302b2783eb5edacb76ccae3b5c5a2f6355b5b51afd1a18075f8","0x36b1f820a400"],[["0x4c27708e4ce81a0bbeb315ece024ba495f3e3fab5f83a2941b7731a58ad32160","0x36b1f820a400"],[["0x5059d40f80f578c3c384239415f54af35ab4dbdea0251618d4c3c7b4937e7e69","0x36b1f820a400"],[["0x5191f8cbfe1ce25a68c337ede75638321374112b868584092a335f83caad59a4","0x36b1f820a400"],[["0x531296c32ea64d09dcb44ff0b99843dc9855143c70b9fad42deb33881525fb84","0x36b1f820a400"],[["0x54c9860aa34ddba2a16e4f4271e1771f61f1e8a7a116fbbfa62f0e535b95559e","0x36b1f820a400"],[["0x54ce2d6b35d0d670e37fcd533ff17c2116e0acead719194e46d478944b33108e","0x36b1f820a400"],[["0x576af5e4af963a0caa957629d009906119e418e7f7778f5a55d41c0905b73a4f","0x36b1f820a400"],[["0x59905476f4781f6a79359079bfa3fe295c65d6b918afadbc352edcdb558ad094","0x36b1f820a400"],[["0x5a4e95cdf94bed240ebabded084b70b2548601686d94a751f240aedd2032e4f2","0x36b1f820a400"],[["0x5a7500f11becf6741fe5624d2298f6b830ead261871a48a81f80bf9be09ed866","0xa3b5840f4000"],[["0x5c26942bf33c49485db3b2693e5d582708b44705f712c4e24af1ee84744c079e","0x36b1f820a400"],[["0x5fcdcc107e81ef4399c9d603a25fcba75cb78f1fa1bafd3acb39e3521d7fc9ce","0x36b1f820a400"],[["0x6107f5b2974fabf6f0aa1a7898340b3f76c4ba272b95a3e4bb809c1d529b6997","0x36b1f820a400"],[["0x647b9a476f733ec5ee9cbc0bfb021335cd3166b9aaa8ad27ed0f88d9f6bf9dbe","0x36b1f820a400"],[["0x658c461d8dad54a5a9cbbbb2711920a541ba58003e7029cc228dfdfbc17ede3f","0x36b1f820a400"],[["0x661336351b889e0124fbc19f9f35f6a0f6e8c4fa9b89e9ef527718bd6aa254be","0x36b1f820a400"],[["0x6852746bbfb41e556daae99d375b2839ad62b35355c3b9fbbd54b4946ae2050f","0x36b1f820a400"],[["0x68ad3d98642913848b605dbad3f1df971f21908d360c37af4a493e9b4646b45e","0x36b1f820a400"],[["0x6c07c6be93940a83b30514b21531fd3dd204bb89e7f77b5a2421a41d4e85c74d","0x36b1f820a400"],[["0x6d4ad504054f292b7f66c7ed32f3b123bfa5c7be9c45faf26d77ad85efa64a38","0x36b1f820a400"],[["0x6e77d45d07651565be5cdb11b80c91fa18def0a434f246c0b25bb50fc4877dd4","0x36b1f820a400"],[["0x738600c570c19ef1b91bf2cd83709d71899c246bfabb5b08dc70fe32b5c81f7d","0x36b1f820a400"],[["0x7469b663b9fa7be185aa1819bfb48a4eda6e4d8af33e1955d95fa5e156d50f12","0x36b1f820a400"],[["0x77410e09363239b0999198a701e37f75775cc55049ba541497967f5d8ba74ef4","0x36b1f820a400"],[["0x781c96175cf45b791142326964347095fd0fbdd3c8579c42cea108798e025152","0x36b1f820a400"],[["0x79b43e9c18241636ae7c554097bb4bc5da03249bee67abe5366a5b093b708cab","0x36b1f820a400"],[["0x7ad807b91790868497768476e8c8e6b53ff9b1a91fbfe6a7edae8de0307a8157","0x36b1f820a400"],[["0x8308ff2b214d509d3781d7361a7ccb5f4fb976f8e386ce3c9082bcad8805d13d","0x36b1f820a400"],[["0x845a0fff44669c941475eb3f3ffd6e065ee94cfbfdcb820877744d6f9647a5d0","0x2d62042b6e00"],[["0x88700f083f3bc7971c348de8357ee36b2551d8cdb7ea4b4e4e8aae558d67a231","0x36b1f820a400"],[["0x8b08c457cac18642f49ab7de0ef7551b93e11dbc2979062f22b271b890e8d2f0","0x36b1f820a400"],[["0x8bc840e0c5a98e608e70307ada41aa94a745a51f6065111942021a4e601dc328","0x36b1f820a400"],[["0x93e518529faa2244ee1bdc24a5459d4b3d2047f8756b12636e2cba3b766ec201","0x36b1f820a400"],[["0x993d90fac526bdad11549104105452e9198da8d485dbb4af17b044a721fa8b82","0x36b1f820a400"],[["0x9997880b1dcc011ce4fefeb587eca16c027c81aafeb4305d3a1755182c269b5e","0x36b1f820a400"],[["0x9d998de650f13c85da4ab08de0fa7960771d4269081fa1ed1f9940c5cd8bb57c","0x36b1f820a400"],[["0x9fab138505d28c3c2d68509c5414abe933ab7de90610d8cc84edaf380e739f48","0x36b1f820a400"],[["0x9fd585f4d71c50ff54b69255ddbaa4a30eae31cde2d02ba6d4c0f87faf288f9a","0x36b1f820a400"],[["0xa42d598e3d6c051880488bfd139705c9853ff2e93046c6e096eba5f5b8dd714e","0x36b1f820a400"],[["0xa6e3ff7b1f340f7d02a1b64ade185c9039cd2751ef47ac5d7950b527b377d566","0x36b1f820a400"],[["0xa79d52472a9343b4f91c61b7e065cd736844064c11188fb86fef32447b163462","0x36b1f820a400"],[["0xa82bdb918a99f7192b0ebe745f04217991d2077dc43ffe75956782f55c7c9805","0x36b1f820a400"],[["0xa87f60cfad2f10ec420d4660d98a43a1105a867aac63a2724075f155b991fd35","0x36b1f820a400"],[["0xad1e503c43f7f62bb672b234eb1510b8ccef4d23b6de1f53a8a0d738c961cee2","0x36b1f820a400"],[["0xad8dd15447ac5c3b0ac9ed9ebae3b32cfe3cda5442bfce7843443a353701eb34","0x36b1f820a400"],[["0xade82619842d2257fb19097c990b77818f2352e3809b9c179b3b66989b8e01c3","0x36b1f820a400"],[["0xb739a017b3b9c9577eeba0d3b94fe2027333ccdad378f0aa67b441eb8cbd675a","0x36b1f820a400"],[["0xb85ed5c5a48abadc5bf4a85185f781aa60eebe7ef20642f660c7e90d481984cf","0x36b1f820a400"],[["0xbcb7406f71b46a5171b822f609d50df1a485bbae832f76db0a356b243616ca8e","0x36b1f820a400"],[["0xbedc1da66f906866cf8af7e57cda645018c39d1b028e9ed4682643941c940348","0x36b1f820a400"],[["0xc2660177ec158c05676b396baab45f8f8a63f74a0eaf1a7cfe011c7eea0cd8a4","0x340141969800"],[["0xc536058376e87f6481ce31b0e088235b4be9df00145c97081c45a28cce64c684","0x36b1f820a400"],[["0xc8fd550fcf32a9ea6aef295e788e4394e744f0939ab5fa8b9009577e274a477e","0x36b1f820a400"],[["0xcbfe056a9e9fafd246a8fa3025c3d870dac6b01f68adc847f03277eac906452f","0x36b1f820a400"],[["0xd023735d89cb9d29c5301b87f00d3f7a42aa6f0320086473e50b7e3b8b9acb12","0x36b1f820a400"],[["0xd17002d5872d62876fc4cae771c472ececae0b50820d760718a753acf431f31c","0x36b1f820a400"],[["0xd847bac558e925bd87b15a9e8c077df36537e6fc52d5c2019004c0c570fd0266","0x36b1f820a400"],[["0xdab17536c875995ce144f17771c79e7e9d6adcaaa66cce64947c8d17a363a2dd","0x36b1f820a400"],[["0xdf0b5c031ece9dadfd23c63a41e4e7f1ae4138b157ff7588c21083853d585789","0x36b1f820a400"],[["0xe087dae3faaf4748c8bcd237ca7ece5f8bcddf6b60db216252c5e29a7f6a33a4","0x36b1f820a400"],[["0xe09755d90d62160409b67ff28584f2800087f9063d76b3240c4d3f94f0880c41","0x36b1f820a400"],[["0xe23c47f9c2e9d2d87d9f1fcc0352ef28d13f322f8003d4210bb33692e77fd988","0x36b1f820a400"],[["0xeb2269b0ea934046a59399bd824f6a7fae4c7d696bb163e1bd235cbc21aa2b55","0x36b1f820a400"],[["0xedf8d203bebac7d629840ca0a704cbff92607d6bf538bc99ab65fada6a7b3c65","0x36b1f820a400"],[["0xf179ca30b1a9c8c33e33863b04d8d0078dddbf974a1e8666d072e0403c997f21","0x36b1f820a400"],[["0xf199c75a842c96c459272502b7010a78f29e7d00ad649f7756dd11c8d321a97c","0x36b1f820a400"],[["0xf19a880d58384bfaf5c839e7b6502ff7e6dc11cc38a77f651c948ea8475a37f7","0x36b1f820a400"],[["0xf25841168bb223f03cc01f5934474e56ae3ac0307a048ab167326c7d655c25db","0x4ef873b38200"],[["0xf25e305cc44404dae89a8f3b577cf94c367ab28a8ebc81a5c551d39303e254c2","0x36b1f820a400"],[["0xf3c0eed928d059ec9c99fd55ef4df9ccdaa30626e14b833f064936099b8088e1","0x36b1f820a400"],[["0xf6fe4424c9df211b1d2e92f7a91889aac643c605de458fa8f2af90534b885654","0x8cbf79329400"],[["0xf8a26375e76f1f8ff763787507fe2e01ed257b1a6b1772e48338606862a80da4","0x36b1f820a400"],[["0xfb471071aa87f25465da8c98bdeb1b24165b4a1694c5a6ab9f59eb57ce9e451d","0x36b1f820a400"],[["0xfb66f351a3b27e1702a21bfd189f3db5053f9f0089b26e7f05218fa87b925e2e","0x36b1f820a400"],[["0xfbcd15956e466a3c945c8bee6e6bc6bdab6b1b2ec0c07a3ba431091795751bef","0x36b1f820a400"],[["0xfced4379f1cb13157b34d50301a65ab47dc3452f4cd0e2a2d8e0b33a07350f43","0x36b1f820a400"],null]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}"#;
-    assert_eq!(expected_result, serde_json::Value::Object(result).to_string());
-}
-
-#[test]
-fn test_contexts() {
-    let log_cfg_path = LOG_CGF_PATH;
-    let _ = log4rs::init_file(log_cfg_path, Default::default());
-
-    let foo = TestClient::new();
-    let bar = TestClient::new();
-    let foo_context = foo.request("context.get", MISSING).unwrap().parse::<u32>().unwrap();
-    let bar_context = bar.request("context.get", MISSING).unwrap().parse::<u32>().unwrap();
-    assert_ne!(foo_context, bar_context);
-}
-
-#[test]
-#[ignore]
-fn test_query_cell() {
-    let client = TestClient::new();
-    let participant_list = r"
-        elect_at:u32
-        elect_close:u32
-        min_stake:grams
-        total_stake:grams
-        members:dict()
-        failed:i1
-        finished:i1";
-    let result = client.request("cell.query", json!({
-        "cellBase64": ELECTOR_DATA,
-        "query": participant_list,
-    }));
-
-    let result2 = client.request("cell.query", json!({
-        "cellBase64": ELECTOR_DATA,
-        "query": participant_list,
-    })).unwrap();
-
-    println!("{}", result2);
-    println!("{}", result.unwrap())
-}
-
-#[test]
-fn test_tg_mnemonic() {
-    let client = TestClient::new();
-    let crc16 = client.request("crypto.ton_crc16", json!({
-        "hex": "0123456789abcdef"
-    })).unwrap();
-    assert_eq!(crc16, "43349");
-
-    let keys = parse_object(client.request(
-        "crypto.mnemonic.derive.sign.keys",
-        json!({
-            "phrase": "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle",
-        }),
-    ));
-    assert_eq!(get_map_string(&keys, "public"), "c374990ccacb36a87cb016e54fd6fcf0c344e9b0bc6744d9db89f4c272ef9712");
-
-    let keys = parse_object(client.request(
-        "crypto.mnemonic.derive.sign.keys",
-        json!({
-            "phrase": "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle",
-            "dictionary": 0,
-            "wordCount": 24,
-        }),
-    ));
-    let ton_public = parse_string(client.request(
-        "crypto.ton_public_key_string",
-        Value::String(get_map_string(&keys, "public")),
-    ));
-    assert_eq!(ton_public, "PubDdJkMyss2qHywFuVP1vzww0TpsLxnRNnbifTCcu-XEgW0");
-
-    let words = parse_string(client.request("crypto.mnemonic.words", json!({
-    })));
-    assert_eq!(words.split(" ").count(), 2048);
-
-    let phrase = parse_string(client.request("crypto.mnemonic.from.random", json!({
-    })));
-    assert_eq!(phrase.split(" ").count(), 24);
-
-    let phrase = parse_string(client.request("crypto.mnemonic.from.random", json!({
-        "dictionary": 1,
-        "wordCount": 24,
-    })));
-    assert_eq!(phrase.split(" ").count(), 24);
-
-    let entropy = "2199ebe996f14d9e4e2595113ad1e6276bd05e2e147e16c8ab8ad5d47d13b44fcf";
-    let mnemonic = parse_string(client.request("crypto.mnemonic.from.entropy", json!({
-        "dictionary": 0,
-        "wordCount": 24,
-        "entropy": json!({
-            "hex": entropy,
-        }),
-    })));
-    let public = get_map_string(&parse_object(client.request(
-        "crypto.mnemonic.derive.sign.keys",
-        json!({
-            "phrase": mnemonic,
-            "dictionary": 0,
-            "wordCount": 24
-        }),
-    )), "public");
-    let ton_public = parse_string(client.request(
-        "crypto.ton_public_key_string",
-        Value::String(public),
-    ));
-    assert_eq!(ton_public, "PuYGEX9Zreg-CX4Psz5dKehzW9qCs794oBVUKqqFO7aWAOTD");
-
-//    let ton_phrase = "shove often foil innocent soft slim pioneer day uncle drop nephew soccer worry renew public hand word nut again dry first delay first maple";
-    let is_valid = client.request(
-        "crypto.mnemonic.verify",
-        json!({
-            "phrase": "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle",
-            "dictionary": 0,
-            "wordCount": 24,
-        }),
-    ).unwrap();
-    assert_eq!(is_valid, "true");
-    let is_valid = client.request(
-        "crypto.mnemonic.verify",
-        json!({
-            "phrase": "unit follow"
-        }),
-    ).unwrap();
-    assert_eq!(is_valid, "false");
-    let is_valid = client.request(
-        "crypto.mnemonic.verify",
-        json!({
-            "phrase": "unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit unit"
-        }),
-    ).unwrap();
-    assert_eq!(is_valid, "false");
-
-    let invalid_phrase = "invalid phrase for TON dictionary";
-    let result = client.request(
-        "crypto.mnemonic.derive.sign.keys",
-        json!({
-            "phrase": invalid_phrase
-        }),
-    );
-    let expected_error = ApiError::crypto_bip39_invalid_phrase(invalid_phrase);
-    assert_eq!(result.unwrap_err(), serde_json::to_string(&expected_error).unwrap());
-}
-
-#[test]
-fn test_wallet_deploy() {
-    let client = TestClient::new();
-    let version = client.request("version", Value::Null).unwrap();
-    println!("result: {}", version.to_string());
-
-    let keys = client.request("crypto.ed25519.keypair", json!({})).unwrap();
-
-    let abi: Value = serde_json::from_str(WALLET_ABI).unwrap();
-    let keys: Value = serde_json::from_str(&keys).unwrap();
-
-    let address = client.request("contracts.deploy.message",
-        json!({
-                "abi": abi.clone(),
-                "constructorParams": json!({}),
-                "imageBase64": WALLET_CODE_BASE64,
-                "keyPair": keys,
-                "workchainId": 0,
-            }),
-    ).unwrap();
-
-    let address = serde_json::from_str::<Value>(&address).unwrap()["address"].clone();
-    let address = MsgAddressInt::from_str(address.as_str().unwrap()).unwrap();
-
-    let giver_abi: Value = serde_json::from_str(GIVER_ABI).unwrap();
-
-    let _ = client.request("contracts.run",
-        json!({
-                "address": GIVER_ADDRESS,
-                "abi": giver_abi,
-                "functionName": "sendGrams",
-                "input": &json!({
-					"dest": address.to_string(),
-					"amount": 10_000_000_000u64
-					}),
-            }),
-    ).unwrap();
-
-    let _ = client.request("queries.wait.for",
-        json!({
-                "table": "accounts".to_owned(),
-                "filter": json!({
-					"id": { "eq": address.to_string() },
-					"balance": { "gt": "0" }
-				}).to_string(),
-				"result": "id balance".to_owned()
-            }),
-    ).unwrap();
-
-    let deployed = parse_object(client.request("contracts.deploy",
-        json!({
-                "abi": abi.clone(),
-                "constructorParams": json!({}),
-                "imageBase64": WALLET_CODE_BASE64,
-                "keyPair": keys,
-                "workchainId": 0,
-            }),
-    ));
-
-    assert_eq!(deployed["address"], address.to_string());
-    assert_eq!(deployed["alreadyDeployed"], false);
-
-    let result = parse_object(client.request("contracts.run",
-        json!({
-                "address": address.to_string(),
-                "abi": abi.clone(),
-                "functionName": "createOperationLimit",
-                "input": json!({
-					"value": 123
-				}),
-                "keyPair": keys,
-            }),
-    ));
-    assert_eq!(result["output"]["value0"], "0x0");
-}
-
-const GIVER_ADDRESS: &str = "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94";
-const GIVER_ABI: &str = r#"
-{
-	"ABI version": 1,
-	"functions": [
-		{
-			"name": "constructor",
-			"inputs": [
-			],
-			"outputs": [
-			]
-		},
-		{
-			"name": "sendGrams",
-			"inputs": [
-				{"name":"dest","type":"address"},
-				{"name":"amount","type":"uint64"}
-			],
-			"outputs": [
-			]
-		}
-	],
-	"events": [
-	],
-	"data": [
-	]
-}"#;
-
-pub const WALLET_CODE_BASE64: &str = r#"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"#;
-pub const WALLET_ABI: &str = r#"{
-	"ABI version": 1,
-	"functions": [
-		{
-			"name": "sendTransaction",
-			"inputs": [
-				{"name":"dest","type":"address"},
-				{"name":"value","type":"uint128"},
-				{"name":"bounce","type":"bool"}
-			],
-			"outputs": [
-			]
-		},
-		{
-			"name": "setSubscriptionAccount",
-			"inputs": [
-				{"name":"addr","type":"address"}
-			],
-			"outputs": [
-			]
-		},
-		{
-			"name": "getSubscriptionAccount",
-			"inputs": [
-			],
-			"outputs": [
-				{"name":"value0","type":"address"}
-			]
-		},
-		{
-			"name": "createOperationLimit",
-			"inputs": [
-				{"name":"value","type":"uint256"}
-			],
-			"outputs": [
-				{"name":"value0","type":"uint256"}
-			]
-		},
-		{
-			"name": "createArbitraryLimit",
-			"inputs": [
-				{"name":"value","type":"uint256"},
-				{"name":"period","type":"uint32"}
-			],
-			"outputs": [
-				{"name":"value0","type":"uint64"}
-			]
-		},
-		{
-			"name": "changeLimit",
-			"inputs": [
-				{"name":"limitId","type":"uint64"},
-				{"name":"value","type":"uint256"},
-				{"name":"period","type":"uint32"}
-			],
-			"outputs": [
-			]
-		},
-		{
-			"name": "deleteLimit",
-			"inputs": [
-				{"name":"limitId","type":"uint64"}
-			],
-			"outputs": [
-			]
-		},
-		{
-			"name": "getLimit",
-			"inputs": [
-				{"name":"limitId","type":"uint64"}
-			],
-			"outputs": [
-				{"components":[{"name":"value","type":"uint256"},{"name":"period","type":"uint32"},{"name":"ltype","type":"uint8"},{"name":"spent","type":"uint256"},{"name":"start","type":"uint32"}],"name":"value0","type":"tuple"}
-			]
-		},
-		{
-			"name": "getLimitCount",
-			"inputs": [
-			],
-			"outputs": [
-				{"name":"value0","type":"uint64"}
-			]
-		},
-		{
-			"name": "getLimits",
-			"inputs": [
-			],
-			"outputs": [
-				{"name":"value0","type":"uint64[]"}
-			]
-		},
-		{
-			"name": "constructor",
-			"inputs": [
-			],
-			"outputs": [
-			]
-		}
-	],
-	"events": [
-	],
-	"data": [
-		{"key":101,"name":"subscription","type":"address"},
-		{"key":100,"name":"owner","type":"uint256"}
-	]
-}
-"#;
-
-#[test]
-fn test_address_parsing() {
-    let short = "fcb91a3a3816d0f7b8c2c76108b8a9bc5a6b7a55bd79f8ab101c52db29232260";
-    let full_std = "-1:fcb91a3a3816d0f7b8c2c76108b8a9bc5a6b7a55bd79f8ab101c52db29232260";
-    let base64 = "kf/8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15+KsQHFLbKSMiYIny";
-    let base64_url = "kf_8uRo6OBbQ97jCx2EIuKm8Wmt6Vb15-KsQHFLbKSMiYIny";
-
-    let address = ton_block::MsgAddressInt::with_standart(None, -1, hex::decode(short).unwrap().into()).unwrap();
-    let wc0_address = ton_block::MsgAddressInt::with_standart(None, 0, hex::decode(short).unwrap().into()).unwrap();
-
-    assert_eq!(wc0_address, account_decode(short).expect("Couldn't parse short address"));
-    assert_eq!(address, account_decode(full_std).expect("Couldn't parse full_std address"));
-    assert_eq!(address, account_decode(base64).expect("Couldn't parse base64 address"));
-    assert_eq!(address, account_decode(base64_url).expect("Couldn't parse base64_url address"));
-
-    assert_eq!(account_encode_ex(
-        &address,
-        AccountAddressType::Base64,
-        Some(Base64AddressParams {
-            bounce: true,
-            test: true,
-            url: false,
-        })).unwrap(),
-        base64);
-    assert_eq!(account_encode_ex(
-        &address,
-        AccountAddressType::Base64,
-        Some(Base64AddressParams {
-            bounce: true,
-            test: true,
-            url: true,
-        })).unwrap(),
-        base64_url);
-}
-
-
-#[test]
-fn test_out_of_sync() {
-    let client = TestClient::new_with_config(Value::Null);
-
-    let error = client.request("setup",
-        json!({
-            "baseUrl": get_network_address(),
-            "outOfSyncThreshold": -1
-        })).unwrap_err();
-
-    let value: Value = serde_json::from_str(&error).unwrap();
-
-   assert_eq!(value["code"], 1013);
-}
-
-
-#[test]
-fn test_parallel_requests() {
-    let client1 = TestClient::new();
-    let client2 = TestClient::new();
-    let client3 = client1.clone();
-
-    let start = std::time::Instant::now();
-    let timeout: u32 = 5000;
-    let long_wait = std::thread::spawn(move || {
-        client3.request("queries.wait.for",
-            json!({
-                    "table": "accounts".to_owned(),
-                    "filter": json!({
-                        "id": { "eq": "123" }
-                    }).to_string(),
-                    "result": "id",
-                    "timeout": timeout
-                }),
-        ).unwrap_err();
-        client3
-    });
-
-    std::thread::sleep(std::time::Duration::from_millis(500));
-
-    // check that request with another context don't wait
-    client2.request("crypto.ed25519.keypair", json!({})).unwrap();
-    assert!(start.elapsed().as_millis() < timeout as u128);
-
-    // check that request with same context waits for previous call
-    client1.request("crypto.ed25519.keypair", json!({})).unwrap();
-    assert!(start.elapsed().as_millis() > timeout as u128);
-    long_wait.join().unwrap();
-}
-
-#[test]
-fn test_find_shard() {
-    let client = TestClient::new();
-
-    let shards = json!([
-        {
-          "workchain_id": 0,
-          "shard": "0800000000000000"
-        },
-        {
-          "workchain_id": 0,
-          "shard": "1800000000000000"
-        },
-        {
-          "workchain_id": 0,
-          "shard": "2800000000000000",
-          "hello": "my shard"
-        },
-        {
-          "workchain_id": 0,
-          "shard": "3800000000000000"
-        },
-        {
-          "workchain_id": 0,
-          "shard": "4800000000000000"
-        },
-        {
-          "workchain_id": 0,
-          "shard": "5800000000000000"
-        },
-        {
-          "workchain_id": 0,
-          "shard": "6800000000000000"
-        },
-        {
-          "workchain_id": 0,
-          "shard": "7800000000000000"
-        },
-        {
-          "workchain_id": 0,
-          "shard": "8800000000000000"
-        },
-        {
-          "workchain_id": 0,
-          "shard": "9800000000000000"
-        },
-        {
-          "workchain_id": 0,
-          "shard": "a800000000000000"
-        },
-        {
-          "workchain_id": 0,
-          "shard": "b800000000000000"
-        },
-        {
-          "workchain_id": 0,
-          "shard": "c800000000000000"
-        },
-        {
-          "workchain_id": 0,
-          "shard": "d800000000000000"
-        },
-        {
-          "workchain_id": 0,
-          "shard": "e800000000000000"
-        },
-        {
-          "workchain_id": 0,
-          "shard": "f800000000000000"
-        }
-      ]);
-
-    let address = "0:2222222222222222222222222222222222222222222222222222222222222222";
-
-    let result = client.request(
-        "contracts.find.shard",
-        json!({
-            "address": address,
-            "shards": shards,
-        }
-    )).unwrap();
-
-    assert_eq!(result, json!({
-        "workchain_id": 0,
-        "shard": "2800000000000000",
-        "hello": "my shard"
-      }).to_string());
-
-    let result = client.request(
-        "contracts.find.shard",
-        json!({
-            "address": address,
-            "shards": json!([]),
-        }
-    )).unwrap();
-
-    assert_eq!(result, Value::Null.to_string());
-}
-

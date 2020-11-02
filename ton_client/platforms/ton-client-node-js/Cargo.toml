@@ -1,19 +1,18 @@
 [package]
 name = "ton_client_node_js"
-version = "0.25.3"
-authors = ["Michael Vlasov"]
+version = "1.0.0"
+authors = ["TON Labs"]
 license = "Apache-2.0"
 
 [lib]
 name = "tonclient"
-crate-type = ["staticlib", "cdylib"]
+crate-type = ["staticlib"]
 
 [dependencies]
 libc = "0.2"
 
 [dependencies.ton_client]
 path = "../../client"
-default-features = false
 
 [profile.release]
 lto = true

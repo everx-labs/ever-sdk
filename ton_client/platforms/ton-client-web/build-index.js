@@ -1,23 +1,16 @@
 // This file is just a template that used to generate index.js at npm installation stage
 
-import {TONClient} from 'ton-client-js';
-
 const workerScript = '';
 
 //---
 
-const wasmOptions = {
-    debugLog: null,
-    binaryURL: '/tonclient.wasm',
-};
-
-function debugLog(message) {
-    if (wasmOptions.debugLog) {
-        wasmOptions.debugLog(message);
+function load(options) {
+    function debugLog(message) {
+        if (options && options.debugLog) {
+            options.debugLog(message);
+        }
     }
-}
 
-const createLibrary = async () => {
     const workerBlob = new Blob(
         [workerScript],
         { type: 'application/javascript' }
@@ -25,102 +18,92 @@ const createLibrary = async () => {
     const workerUrl = URL.createObjectURL(workerBlob);
     const worker = new Worker(workerUrl);
 
-    const activeRequests = new Map();
 
-    // Deferred requests are accumulated before WASM module have been loaded
-    let deferredRequests = [];
+    let nextCreateContextRequestId = 1;
+    const createContextRequests = new Map();
+    let initComplete = false;
 
-    let nextActiveRequestId = 1;
+    let responseHandler = null;
+    const library = {
+        setResponseHandler: (handler) => {
+            responseHandler = handler;
+        },
+        createContext: (configJson) => {
+            return new Promise((resolve) => {
+                const requestId = nextCreateContextRequestId;
+                nextCreateContextRequestId += 1;
+                createContextRequests.set(requestId, {
+                    configJson,
+                    resolve,
+                })
+                if (initComplete) {
+                    worker.postMessage({
+                        type: 'createContext',
+                        requestId,
+                        configJson,
+                    });
+                }
+            });
+        },
+        destroyContext: (context) => {
+            worker.postMessage({
+                type: 'destroyContext',
+                context,
+            })
+        },
+        sendRequest: (context, requestId, functionName, functionParamsJson) => {
+            worker.postMessage({
+                type: 'request',
+                context,
+                requestId,
+                functionName,
+                functionParamsJson
+            })
+        }
+    };
+
+    worker.onmessage = (evt) => {
+        const message = evt.data;
+        switch (message.type) {
+        case 'init':
+            initComplete = true;
+            for (const [requestId, request] of createContextRequests.entries()) {
+                worker.postMessage({
+                    type: 'createContext',
+                    requestId,
+                    configJson: request.configJson,
+                });
+            }
+            break;
+        case 'createContext':
+            const request = createContextRequests.get(message.requestId);
+            if (request) {
+                createContextRequests.delete(message.requestId);
+                request.resolve(message.result);
+            }
+            break;
+        case 'destroyContext':
+            break;
+        case 'response':
+            if (responseHandler) {
+                let paramsJson = message.paramsJson;
+                if (paramsJson.charCodeAt(0) === 0xFEFF) {
+                    paramsJson = paramsJson.substr(1);
+                }
+                responseHandler(message.requestId, paramsJson, message.responseType, message.finished);
+            }
+            break;
+        }
+    }
 
     worker.onerror = (evt) => {
         console.log(`Error from Web Worker: ${evt.message}`);
     };
 
-    const coreRequest = (context, method, params, callback) => {
-        const id = nextActiveRequestId;
-        nextActiveRequestId += 1;
-        const request = {
-            id,
-            context,
-            method,
-            params,
-        };
-        const isDeferredSetup = (method === 'setup') && (deferredRequests !== null);
-        activeRequests.set(id, {
-            callback: isDeferredSetup ? () => {
-            } : callback
-        });
-        if (deferredRequests !== null) {
-            deferredRequests.push(request);
-        } else {
-            worker.postMessage({ request });
-        }
-        if (isDeferredSetup) {
-            callback('', '');
-        }
-    }
-
-    let legacyCoreContext = null;
-    const library = {
-        coreCreateContext: (callback) => {
-            coreRequest(0, 'context.create', '', (resultJson) => {
-                if (callback) {
-                    const context = JSON.parse(resultJson);
-                    callback(context);
-                }
-            });
-        },
-        coreDestroyContext: (context, callback) => {
-            coreRequest(context, 'context.destroy', '', () => {
-                if (callback) {
-                    callback();
-                }
-            });
-        },
-        coreRequest,
-        request: (method, params, callback) => {
-            if (legacyCoreContext === null) {
-                library.coreCreateContext((context) => {
-                    legacyCoreContext = context;
-                    coreRequest(legacyCoreContext, method, params, callback);
-                });
-            } else {
-                coreRequest(legacyCoreContext, method, params, callback);
-            }
-        },
-    };
-
-    worker.onmessage = (evt) => {
-        const setup = evt.data.setup;
-        if (setup) {
-            for (const request of deferredRequests) {
-                worker.postMessage({ request });
-            }
-            deferredRequests = null;
-            return;
-        }
-
-        const response = evt.data.response;
-        if (response) {
-            const activeRequest = activeRequests.get(response.id);
-            if (!activeRequest) {
-                return;
-            }
-            activeRequests.delete(response.id);
-            if (activeRequest.callback) {
-                let { result } = response;
-                // Remove BOM from result
-                result = result.charCodeAt(0) === 0xFEFF ? result.substr(1) : result;
-                const { result_json, error_json } = JSON.parse(result);
-                activeRequest.callback(result_json, error_json);
-            }
-        }
-    };
-
     (async () => {
         const e = Date.now();
         let wasmModule;
-        const fetched = fetch(wasmOptions.binaryURL);
+        const fetched = fetch((options && options.binaryURL) || '/tonclient.wasm');
         if (WebAssembly.compileStreaming) {
             debugLog('compileStreaming binary');
             wasmModule = await WebAssembly.compileStreaming(fetched);
@@ -129,36 +112,15 @@ const createLibrary = async () => {
             wasmModule = await WebAssembly.compile(await (await fetched).arrayBuffer());
         }
         worker.postMessage({
-            setup: {
-                wasmModule,
-            }
+            type: 'init',
+            wasmModule,
         });
         debugLog(`compile time ${Date.now() - e}`);
     })();
 
     return Promise.resolve(library);
-};
-
-function setWasmOptions(options) {
-    Object.assign(wasmOptions, options);
 }
 
-const clientPlatform = {
-    fetch: window ? window.fetch.bind(window) : fetch,
-    WebSocket,
-    createLibrary,
-};
-
-function initTONClient(tonClientClass) {
-    tonClientClass.setLibrary(clientPlatform);
+export default function wasmModule(options) {
+    return () => load(options);
 }
-
-initTONClient(TONClient);
-
-export {
-    createLibrary,
-    setWasmOptions,
-    clientPlatform,
-    initTONClient,
-    TONClient
-};

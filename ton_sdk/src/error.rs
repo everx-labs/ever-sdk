@@ -14,24 +14,8 @@
 #[derive(Debug, failure::Fail)]
 pub enum SdkError {
 
-    #[fail(display = "Requested item not found: {}", 0)]
-    NotFound(String),
-
-    #[fail(display = "No data")]
-    NoData,
-
-    #[fail(display = "Invalid operation: {}", msg)]
-    InvalidOperation {
-        msg: String
-    },
-
     #[fail(display = "Invalid data: {}", msg)]
     InvalidData {
-        msg: String
-    },
-
-    #[fail(display = "Invalid argument: {}", msg)]
-    InvalidArg {
         msg: String
     },
 
@@ -39,70 +23,4 @@ pub enum SdkError {
     InternalError {
         msg: String
     },
-
-    #[fail(display = "SDK is not initialized")]
-    NotInitialized,
-
-    #[fail(display = "SDK initialize error")]
-    InitializeError,
-
-    #[fail(display = "Network error: {}", msg)]
-    NetworkError {
-        msg: String
-    },
-
-    #[fail(display = "Contract execution error, exit code: {}", 0)]
-    ContractError(i32),
-
-    #[fail(display = "Contract has no funds for requested operation")]
-    NoFundsError,
-
-    #[fail(display = "Wait for operation rejected on timeout")]
-    WaitForTimeout,
-
-    #[fail(display =
-        "Message expired\n\tid: {}\n\tsend time: {}\n\texpiration time: {}\n\tblock time: {}",
-        msg_id, sending_time, expire, block_time)]
-    MessageExpired {
-        msg_id: crate::MessageId,
-        sending_time: u32,
-        expire: u32,
-        block_id: crate::BlockId,
-        block_time: u32
-    },
-
-    #[fail(display = "SDK is initialized without node address")]
-    SdkNotInitialized,
-
-    #[fail(display = "No blocks produced during timeout")]
-    NetworkSilent{
-        msg_id: crate::MessageId,
-        block_id: crate::BlockId,
-        timeout: u32,
-        state: crate::MessageProcessingState
-    },
-
-    #[fail(display = "Transaction was not produced during the specified timeout")]
-    TransactionWaitTimeout{
-        msg_id: crate::MessageId,
-        sending_time: u32,
-        timeout: u32,
-        state: crate::MessageProcessingState
-    },
-
-    #[fail(display = "Invalid server response: {}", 0)]
-    InvalidServerResponse(String),
-
-    #[fail(display = "Clock out of sync: {}", delta_ms)]
-    ClockOutOfSync {
-        delta_ms: i64,
-        threshold_ms: i64,
-        expiration_timeout: u32
-    },
-
-    #[fail(display = "Existing block transaction not found")]
-    ResumableNetworkError {
-        state: crate::MessageProcessingState,
-        error: failure::Error
-    }
 }

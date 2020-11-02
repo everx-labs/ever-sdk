@@ -23,19 +23,13 @@ use ton_block::{TransactionProcessingStatus, AccStatusChange, ComputeSkipReason,
 
 use std::convert::TryFrom;
 
-#[cfg(feature = "node_interaction")]
-use futures::{Stream, StreamExt};
-#[cfg(feature = "node_interaction")]
-use crate::node_client::NodeClient;
-#[cfg(feature = "node_interaction")]
-use crate::types::TRANSACTIONS_TABLE_NAME;
-
 #[derive(Deserialize, Default, Debug)]
 #[serde(default)]
 pub struct ComputePhase {
     #[serde(deserialize_with = "json_helper::deserialize_skipped_reason")]
     pub skipped_reason: Option<ComputeSkipReason>,
     pub exit_code: Option<i32>,
+    pub exit_arg: Option<i32>,
     pub success: Option<bool>,
     #[serde(with = "json_helper::uint")]
     pub gas_fees: u64,
@@ -83,9 +77,9 @@ pub struct Transaction {
     pub total_fees: u64,
 }
 
-impl TryFrom<ton_block::Transaction> for Transaction {
+impl TryFrom<&ton_block::Transaction> for Transaction {
     type Error = failure::Error;
-    fn try_from(transaction: ton_block::Transaction) -> Result<Self> {
+    fn try_from(transaction: &ton_block::Transaction) -> Result<Self> {
         let descr = if let TransactionDescr::Ordinary(descr) = transaction.read_description()? {
             descr
         } else {
@@ -106,6 +100,7 @@ impl TryFrom<ton_block::Transaction> for Transaction {
                 ComputePhase {
                     skipped_reason: Some(ph.reason),
                     exit_code: None,
+                    exit_arg: None,
                     success: None,
                     gas_fees: 0
                 }
@@ -114,6 +109,7 @@ impl TryFrom<ton_block::Transaction> for Transaction {
                 ComputePhase {
                     skipped_reason: None,
                     exit_code: Some(ph.exit_code),
+                    exit_arg: ph.exit_arg,
                     success: Some(ph.success),
                     gas_fees: grams_to_u64(&ph.gas_fees)?
                 }
@@ -163,7 +159,7 @@ impl TryFrom<ton_block::Transaction> for Transaction {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Debug, PartialEq, Clone, Default)]
 pub struct TransactionFees {
     pub in_msg_fwd_fee: u64,
     pub storage_fee: u64,
@@ -239,75 +235,3 @@ impl Transaction {
         fees
     }
 }
-
-#[cfg(feature = "node_interaction")]
-impl Transaction {
-    // Asynchronously loads a Transaction instance or None if transaction with given id is not exists
-    pub async fn load<'a>(client: &'a NodeClient, id: &TransactionId) -> Result<Option<Transaction>> {
-        let value = client.load_record_fields(
-            TRANSACTIONS_TABLE_NAME,
-            &id.to_string(),
-            TRANSACTION_FIELDS_ORDINARY).await?;
-
-        if value == serde_json::Value::Null {
-            Ok(None)
-        } else {
-            Ok(Some(serde_json::from_value(value)
-                .map_err(|err| SdkError::InvalidData {
-                    msg: format!("error parsing transaction: {}", err)
-                })?))
-        }
-    }
-
-    // Asynchronously loads an instances of transaction's out messages
-    pub fn load_out_messages<'a>(&self, client: &'a NodeClient) -> Result<impl Stream<Item = Result<Message>> + Send + 'a> {
-        Ok(futures::stream::iter(self.out_messages_id().clone()).then(move |id| async move { 
-            match Message::load(client, &id).await {
-                Err(err) => Err(err),
-                Ok(msg) => msg.ok_or(SdkError::NoData.into())
-            }}))
-    }
-
-    // Asynchronously loads an instance of transaction's input message
-    pub async fn load_in_message(&self, client: &NodeClient) -> Result<Option<Message>> {
-        match self.in_message_id() {
-            Some(m) => Message::load(client, &m).await,
-            None => bail!(SdkError::InvalidOperation { msg: "transaction doesn't have inbound message".into() } )
-        }
-    }
-}
-
-#[cfg(feature = "node_interaction")]
-pub const TRANSACTION_FIELDS_ORDINARY: &str = r#"
-    id
-    aborted
-    compute {
-        skipped_reason
-        exit_code
-        success
-        gas_fees
-    }
-    storage {
-       status_change
-       storage_fees_collected
-    }
-    action {
-        success
-        valid
-        no_funds
-        result_code
-        total_fwd_fees
-        total_action_fees
-    }
-    in_msg
-    now
-    out_msgs
-    out_messages {
-        id
-        body
-        msg_type
-        value
-    }
-    status
-    total_fees
-"#;
