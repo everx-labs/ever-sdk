@@ -92,7 +92,7 @@ export class ${Code.upperFirst(module.name)}Module {
         return ts;
     }
     
-    private isStruct(type: ApiType): boolean {
+    private static isStruct(type: ApiType): boolean {
         return type.type === ApiTypeIs.Struct
             && type.struct_fields.length > 0
             && type.struct_fields[0].name !== '';
@@ -101,7 +101,7 @@ export class ${Code.upperFirst(module.name)}Module {
     private isRefToStruct(type: ApiType): boolean {
         if (type.type === ApiTypeIs.Ref) {
             const refType = this.findType(type.ref_name);
-            if (refType && this.isStruct(refType)) {
+            if (refType && TSCode.isStruct(refType)) {
                 return true;
             }
         }

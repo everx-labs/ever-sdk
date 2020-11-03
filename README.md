@@ -1,4 +1,4 @@
-# TON Client Library for TON DApp development
+# TONOS Client Library for TON DApp development
 
 **Community links:**
 
@@ -8,9 +8,9 @@
 
 [GraphQL API and SDK documentation](https://docs.ton.dev/86757ecb2/p/92b041-overview)
 
-# What is TON Client Library
+# What is TONOS Client Library
 
-TON Client Library is a library written in Rust that can be dynamically linked. It provides all 
+TONOS Client Library is a library written in Rust that can be dynamically linked. It provides all 
 heavy-computation components and functions, such as TON Virtual Machine, TON Transaction 
 Executor, ABI-related functions, boc-related functions, crypto functions. 
 
@@ -55,6 +55,57 @@ You have some options:
 If you choose using JSON Interface please read this document [JSON Interface](docs/json_interface.md).   
 Here you can find directions how to use `json_interface` and write your own binding.
  
+# Avoiding Soft Breaking Problems
+
+Soft Breaking is API changes that include only new optional fields in the existing structures. This changes are fully backward compatible for JSON Interface.
+
+But in Rust such changes can produce some problems with an old client code.
+
+Look at the example below:
+
+1) There is an API v1.0 function `foo` and the corresponding params structure:
+
+```rust
+#[derive(Default)]
+struct ParamsOfFoo {
+		pub foo: String,
+}
+
+pub fn foo(params: ParamsOfFoo)
+```
+
+2) Application uses this function in this way:
+
+```rust
+foo(ParamsOfFoo {
+		foo: "foo".into(),
+});
+```
+
+3) API v.1.1 introduces new field in `ParamsOfFoo`:
+
+```rust
+#[derive(Default)]
+struct ParamsOfFoo {
+		pub foo: String,
+		pub bar: Option<String>,
+}
+```
+
+From the perspective of JSON-interface it isn't breaking change because the new parameter is optional. But code snippet (2) will produce Rust compilation error.
+
+4) To avoid such problems we recommend to use default implementation inside structure initialisation:
+
+```rust
+oo(ParamsOfFoo {
+		foo: "foo".into(),
+		..Default::default(),
+});
+```
+
+For all Ton Client API structures `Default` trait is implemented.
+
+
 # Bindings
 
 Binding is a thin client library written on the specific language that acts like a bridge between 

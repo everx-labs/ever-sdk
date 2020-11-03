@@ -124,7 +124,7 @@ function wait_for_transaction(
 <br>In addition to the regular transaction fields there is a<br>`boc` field encoded with `base64` which contains source<br>transaction BOC.
 - `out_messages`: _string[]_ – List of output messages' BOCs. Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
-- `fees`: _TransactionFees_ – Transaction fees
+- `fees`: _[TransactionFees](mod_tvm.md#TransactionFees)_ – Transaction fees
 
 
 ## process_message
@@ -178,7 +178,7 @@ function process_message(
 <br>In addition to the regular transaction fields there is a<br>`boc` field encoded with `base64` which contains source<br>transaction BOC.
 - `out_messages`: _string[]_ – List of output messages' BOCs. Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
-- `fees`: _TransactionFees_ – Transaction fees
+- `fees`: _[TransactionFees](mod_tvm.md#TransactionFees)_ – Transaction fees
 
 
 # Types
@@ -325,7 +325,7 @@ type ResultOfProcessMessage = {
 <br>In addition to the regular transaction fields there is a<br>`boc` field encoded with `base64` which contains source<br>transaction BOC.
 - `out_messages`: _string[]_ – List of output messages' BOCs. Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
-- `fees`: _TransactionFees_ – Transaction fees
+- `fees`: _[TransactionFees](mod_tvm.md#TransactionFees)_ – Transaction fees
 
 
 ## DecodedOutput

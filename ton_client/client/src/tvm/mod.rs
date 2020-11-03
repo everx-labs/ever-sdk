@@ -29,4 +29,5 @@ pub use run_message::{
     run_executor, run_tvm, AccountForExecutor, ParamsOfRunExecutor, ParamsOfRunTvm,
     ResultOfRunExecutor, ResultOfRunTvm
 };
+pub use ton_sdk::TransactionFees;
 pub use types::ExecutionOptions;

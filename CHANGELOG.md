@@ -1,7 +1,7 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
-## 1.1.0 Oct 30, 2020
+## 1.1.0 Nov 3, 2020
 
 ### New
 - ChaCha20 encryption support `crypto.chacha20`. 
@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - `client.build_info` fully defined and documented.
 - `processing.wait_for_transaction` and `processing.process_message` functions execute contract 
 locally in case if transaction waiting fails in order to resolve the contract execution error
+- `run_executor`, `run_tvm` now return `exit_arg` in case of TVM errors.  
 - Create the `build_info.json` on the buld stage.
 
 ### Fixed
@@ -16,7 +17,7 @@ locally in case if transaction waiting fails in order to resolve the contract ex
 - Use `install_name_tool` to fix loading library paths at `libton_client.dylib`.
 
 ### Breaking
-- `Abi::Serialized` renamed to `Abi::ContractAbi` 
+- `Abi::Serialized` renamed to `Abi::Contract` 
 
 ## 1.0.0 Oct 27, 2020
 

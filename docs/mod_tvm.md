@@ -13,6 +13,8 @@ null
 
 [AccountForExecutor](#AccountForExecutor)
 
+[TransactionFees](#TransactionFees)
+
 [ParamsOfRunExecutor](#ParamsOfRunExecutor)
 
 [ResultOfRunExecutor](#ResultOfRunExecutor)
@@ -63,7 +65,7 @@ function run_executor(
 - `out_messages`: _string[]_ – List of output messages' BOCs. Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
 - `account`: _string_ – Updated account state BOC. Encoded as `base64`
-- `fees`: _TransactionFees_ – Transaction fees
+- `fees`: _[TransactionFees](mod_tvm.md#TransactionFees)_ – Transaction fees
 
 
 ## run_tvm
@@ -177,6 +179,25 @@ Account state to run message
 - `unlimited_balance`?: _boolean_ – Flag for running account with the unlimited balance. Can be used to calculate transaction fees without balance check
 
 
+## TransactionFees
+```ts
+type TransactionFees = {
+    in_msg_fwd_fee: bigint,
+    storage_fee: bigint,
+    gas_fee: bigint,
+    out_msgs_fwd_fee: bigint,
+    total_account_fees: bigint,
+    total_output: bigint
+};
+```
+- `in_msg_fwd_fee`: _bigint_
+- `storage_fee`: _bigint_
+- `gas_fee`: _bigint_
+- `out_msgs_fwd_fee`: _bigint_
+- `total_account_fees`: _bigint_
+- `total_output`: _bigint_
+
+
 ## ParamsOfRunExecutor
 ```ts
 type ParamsOfRunExecutor = {
@@ -209,7 +230,7 @@ type ResultOfRunExecutor = {
 - `out_messages`: _string[]_ – List of output messages' BOCs. Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
 - `account`: _string_ – Updated account state BOC. Encoded as `base64`
-- `fees`: _TransactionFees_ – Transaction fees
+- `fees`: _[TransactionFees](mod_tvm.md#TransactionFees)_ – Transaction fees
 
 
 ## ParamsOfRunTvm
