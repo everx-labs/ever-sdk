@@ -2633,7 +2633,7 @@
           "type": "EnumOfTypes",
           "enum_types": [
             {
-              "name": "Contract",
+              "name": "Serialized",
               "type": "Struct",
               "struct_fields": [
                 {

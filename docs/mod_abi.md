@@ -347,7 +347,7 @@ function encode_account(
 ## Abi
 ```ts
 type Abi = {
-    type: 'Contract'
+    type: 'Serialized'
     'ABI version': number,
     header?: string[],
     functions?: AbiFunction[],
@@ -360,7 +360,7 @@ type Abi = {
 ```
 Depends on value of the  `type` field.
 
-When _type_ is _'Contract'_
+When _type_ is _'Serialized'_
 
 
 - `ABI version`: _number_
