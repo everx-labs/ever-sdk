@@ -55,7 +55,7 @@ You have some options:
 If you choose using JSON Interface please read this document [JSON Interface](docs/json_interface.md).   
 Here you can find directions how to use `json_interface` and write your own binding.
  
-# Avoiding Soft Breaking Problems
+# How to avoid Soft Breaking Problems
 
 Soft Breaking is API changes that include only new optional fields in the existing structures. This changes are fully backward compatible for JSON Interface.
 
