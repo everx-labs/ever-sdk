@@ -49,12 +49,18 @@ fn include_json(json_ref: &str) -> Result<String, CliError> {
     } else {
         ""
     };
-    let ref_string = std::fs::read_to_string(&ref_file)
-        .map_err(|e| CliError::with_message(format!("Include [{}] failed: {}", ref_file, e)))?;
-    let value: Value = serde_json::from_str(&ref_string)
-        .map_err(|e| CliError::with_message(format!("Include [{}] failed: {}", ref_file, e)))?;
-    let value = resolve_json_path(&value, ref_path);
-    Ok(value.to_string())
+    if ref_file.ends_with(".json") {
+        let ref_string = std::fs::read_to_string(&ref_file)
+            .map_err(|e| CliError::with_message(format!("Include [{}] failed: {}", ref_file, e)))?;
+        let value: Value = serde_json::from_str(&ref_string)
+            .map_err(|e| CliError::with_message(format!("Include [{}] failed: {}", ref_file, e)))?;
+        let value = resolve_json_path(&value, ref_path);
+        Ok(value.to_string())
+    } else {
+        let ref_bytes = std::fs::read(&ref_file)
+            .map_err(|e| CliError::with_message(format!("Include [{}] failed: {}", ref_file, e)))?;
+        Ok(format!("\"{}\"", base64::encode(&ref_bytes)))
+    }
 }
 
 fn parse_sync_response<R: DeserializeOwned>(response: *const String) -> Result<R, CliError> {
@@ -124,9 +130,9 @@ pub fn command(args: &[String]) -> Result<(), CliError> {
         }
     }
     if !parameters.trim().is_empty() {
-        let file_refs = Regex::new(r"@(\S*)")?;
+        let file_refs = Regex::new(r"@([^\s,]*)")?;
         parameters = file_refs
-            .replace(&parameters, |caps: &Captures| {
+            .replace_all(&parameters, |caps: &Captures| {
                 match include_json(&caps[1]) {
                     Ok(content) => content,
                     Err(e) => {
@@ -192,11 +198,17 @@ pub fn command(args: &[String]) -> Result<(), CliError> {
         }
     });
     let context = unsafe {
-        parse_sync_response::<ContextHandle>(tc_create_context(StringData::new(&config.to_string())))
+        parse_sync_response::<ContextHandle>(tc_create_context(StringData::new(
+            &config.to_string(),
+        )))
     }?;
 
     let response = unsafe {
-        parse_sync_response::<Value>(tc_request_sync(context, StringData::new(&function), StringData::new(&parameters)))
+        parse_sync_response::<Value>(tc_request_sync(
+            context,
+            StringData::new(&function),
+            StringData::new(&parameters),
+        ))
     };
     unsafe { tc_destroy_context(context) };
     let result = match response {
