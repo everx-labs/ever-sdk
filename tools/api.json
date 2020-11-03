@@ -5010,6 +5010,50 @@
           "description": null
         },
         {
+          "name": "TransactionFees",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "in_msg_fwd_fee",
+              "type": "BigInt",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "storage_fee",
+              "type": "BigInt",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "gas_fee",
+              "type": "BigInt",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "out_msgs_fwd_fee",
+              "type": "BigInt",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "total_account_fees",
+              "type": "BigInt",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "total_output",
+              "type": "BigInt",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfRunExecutor",
           "type": "Struct",
           "struct_fields": [
