@@ -1,4 +1,4 @@
-# TON Client Library for TON DApp development
+# TONOS Client Library for TON DApp development
 
 **Community links:**
 
@@ -8,9 +8,9 @@
 
 [GraphQL API and SDK documentation](https://docs.ton.dev/86757ecb2/p/92b041-overview)
 
-# What is TON Client Library
+# What is TONOS Client Library
 
-TON Client Library is a library written in Rust that can be dynamically linked. It provides all 
+TONOS Client Library is a library written in Rust that can be dynamically linked. It provides all 
 heavy-computation components and functions, such as TON Virtual Machine, TON Transaction 
 Executor, ABI-related functions, boc-related functions, crypto functions. 
 
