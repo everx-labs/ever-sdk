@@ -291,8 +291,8 @@ async fn call_executor<F>(
     msg: ton_block::Message,
     options: ResolvedExecutionOptions,
     contract_info: impl FnOnce() -> F,
-) -> ClientResult<(ton_block::Transaction, Cell)> 
-where 
+) -> ClientResult<(ton_block::Transaction, Cell)>
+where
     F: futures::Future<Output=ClientResult<(ton_block::MsgAddressInt, u64)>>
 {
     let executor = OrdinaryTransactionExecutor::new(options.blockchain_config);
