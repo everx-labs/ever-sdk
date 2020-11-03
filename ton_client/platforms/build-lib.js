@@ -18,15 +18,23 @@ const toml_version = /^\s*version\s*=\s*"([0-9.]+)"\s*$/gm.exec(ton_client_toml)
 const version = toml_version.split('.').join('_');
 
 
-function spawnProcess(name, args) {
+function spawnProcess(name, args, options) {
     return new Promise((resolve, reject) => {
         const spawned = spawn(name, args, { env: spawnEnv });
+        let res = '';
 
         spawned.stdout.on('data', function (data) {
+            res += data;
+            if (options && options.quiet === true) {
+                return;
+            }
             process.stdout.write(data);
         });
 
         spawned.stderr.on('data', (data) => {
+            if (options && options.quiet === true) {
+                return;
+            }
             process.stderr.write(data);
         });
 
@@ -36,7 +44,7 @@ function spawnProcess(name, args) {
 
         spawned.on('close', (code) => {
             if (code === 0) {
-                resolve();
+                resolve(res);
             } else {
                 reject();
             }
@@ -55,19 +63,26 @@ async function spawnAll(items, getArgs) {
 }
 
 
-function getOption(option) {
-    const prefixes = [];
-    ['--', '-'].forEach(pfx => [':', '='].forEach(sfx => prefixes.push(`${pfx}${option}${sfx}`)));
-    for (const arg of process.argv) {
-        for (const pfx of prefixes) {
-            if (arg.startsWith(pfx)) {
-                return arg.slice(pfx.length);
-            }
+const options = process.argv.slice(2).reduce((acc, key, ind, argv) => {
+    if (key.startsWith('-')) {
+        const name=key.split(/^--/, 2)[1];
+        const [nameVal, val] = name.split(/=(.*)/, 2);
+        if (nameVal && val) {
+            acc[nameVal] = val;
+        } else if (name && argv[ind+1] && argv[ind+1].startsWith('-')) {
+            acc[name] = true;
+        } else if (name && argv[ind+1]) {
+            acc[name] = argv[ind + 1];
+        } else if (name && !argv[ind+1]) {
+            acc[name] = true;
         }
     }
-    return '';
-}
+    return acc;
+}, {});
+const getOption = opt => options[opt] || '';
 
+const buildNumberOpt = Number(getOption('build-number'));
+const buildNumber = isNaN(buildNumberOpt) ? 0 : buildNumberOpt;
 const devOut = getOption('dev-out');
 const devMode = !!devOut;
 
@@ -85,10 +100,23 @@ function appendFileNameIfMissing(fileOrDirPath, defaultFileName) {
 
 }
 
+async function postBuild(target, platform) {
+    switch (platform) {
+        case 'darwin':
+            const libPath = root_path(target);
+            const libFileName = path.basename(libPath);
+            const libFixedPath = `@loader_path/${libFileName}`;
+            console.log(`Fix lib:${libPath} using id:${libFixedPath}`);
+            await spawnProcess('install_name_tool', ['-id', libFixedPath, libPath]);
+    }
+
+    return Promise.resolve();
+}
+
 function gz(src, dst, devPath) {
     return new Promise((resolve, reject) => {
         const srcPath = root_path(src);
-        const dstPath = root_path('bin', dst);
+        const dstPath = root_path('bin', dst) + '.gz';
 
         if (devOut || devPath) {
             let dstDevPath = appendFileNameIfMissing(
@@ -98,12 +126,12 @@ function gz(src, dst, devPath) {
             mkdir(path.dirname(dstDevPath))
             fs.copyFileSync(srcPath, dstDevPath);
         }
-
+        console.log(`Gzip src:${srcPath} to dst:${dstPath}`);
         fs.createReadStream(srcPath)
             .pipe(zlib.createGzip({ level: 9 }))
-            .pipe(fs.createWriteStream(dstPath + '.gz'))
+            .pipe(fs.createWriteStream(dstPath))
             .on('finish', () => {
-                fs.chmodSync(dstPath + '.gz', 0o666);
+                fs.chmodSync(dstPath, 0o666);
                 resolve();
             })
             .on('error', (error) => {
@@ -139,12 +167,34 @@ function main(f) {
     })();
 }
 
+async function writeBuildInfo(path, build_number) {
+    try {
+        const tonClientGitHash = await spawnProcess('git', ['rev-parse', 'HEAD'], { quiet: true });
+        const dependencies = JSON.parse(await spawnProcess('cargo', ['metadata'], { quiet: true }))
+            .packages
+            .filter(_ => _.source && _.source.startsWith('git+https://github.com/tonlabs/'))
+            .map(_ =>
+                ({
+                    name: _.name,
+                    git_commit: _.source.split('#')[1]
+                })
+            );
+        dependencies.push({name: 'ton_client', git_commit: tonClientGitHash.trim()});
+        const buildInfo = {build_number, dependencies};
+        fs.writeFileSync(path, JSON.stringify(buildInfo));
+        console.log(`Write: ${path}`, buildInfo);
+    } catch(err) {
+        console.error(`FAILED: path:${path}`, err.message);
+    }
+}
+
 module.exports = {
     spawnEnv,
     spawnProcess,
     spawnAll,
     deleteFolderRecursive,
     main,
+    postBuild,
     gz,
     toml_version,
     version,
@@ -152,4 +202,6 @@ module.exports = {
     devOut,
     devMode,
     mkdir,
+    writeBuildInfo,
+    buildNumber,
 };
