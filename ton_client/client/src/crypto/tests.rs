@@ -167,7 +167,7 @@ fn keys() {
     let result: ResultOfConvertPublicKeyToTonSafeFormat = client.request(
         "crypto.convert_public_key_to_ton_safe_format",
         ParamsOfConvertPublicKeyToTonSafeFormat {
-            public_key: "06117f59ade83e097e0fb33e5d29e8735bda82b3bf78a015542aaa853bb69600".into(),
+            pubkey: "06117f59ade83e097e0fb33e5d29e8735bda82b3bf78a015542aaa853bb69600".into(),
         },
     ).unwrap();
     assert_eq!(
@@ -416,7 +416,7 @@ fn mnemonic() {
     let result: ResultOfConvertPublicKeyToTonSafeFormat = client.request(
         "crypto.convert_public_key_to_ton_safe_format",
         ParamsOfConvertPublicKeyToTonSafeFormat {
-            public_key: result.public,
+            pubkey: result.public,
         },
     ).unwrap();
     assert_eq!(
@@ -433,7 +433,7 @@ fn mnemonic() {
     let result: ResultOfConvertPublicKeyToTonSafeFormat = client.request(
         "crypto.convert_public_key_to_ton_safe_format",
         ParamsOfConvertPublicKeyToTonSafeFormat {
-            public_key: result.public,
+            pubkey: result.public,
         },
     ).unwrap();
     assert_eq!(
@@ -455,7 +455,7 @@ fn mnemonic() {
     let result: ResultOfConvertPublicKeyToTonSafeFormat = client.request(
         "crypto.convert_public_key_to_ton_safe_format",
         ParamsOfConvertPublicKeyToTonSafeFormat {
-            public_key: result.public,
+            pubkey: result.public,
         },
     ).unwrap();
     assert_eq!(
@@ -511,7 +511,7 @@ fn mnemonic() {
     let result: ResultOfConvertPublicKeyToTonSafeFormat = client.request(
         "crypto.convert_public_key_to_ton_safe_format",
         ParamsOfConvertPublicKeyToTonSafeFormat {
-            public_key: result.public,
+            pubkey: result.public,
         },
     ).unwrap();
     assert_eq!(

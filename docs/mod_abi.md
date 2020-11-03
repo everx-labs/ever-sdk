@@ -118,7 +118,7 @@ function encode_message_body(
 ```ts
 type ParamsOfAttachSignatureToMessageBody = {
     abi: Abi,
-    public_key: string,
+    pubkey: string,
     message: string,
     signature: string
 };
@@ -133,7 +133,7 @@ function attach_signature_to_message_body(
 ```
 ### Parameters
 - `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI
-- `public_key`: _string_ – Public key. Must be encoded with `hex`.
+- `pubkey`: _string_ – Public key. Must be encoded with `hex`.
 - `message`: _string_ – Unsigned message BOC. Must be encoded with `base64`.
 - `signature`: _string_ – Signature. Must be encoded with `hex`.
 ### Result
@@ -216,7 +216,7 @@ Combines `hex`-encoded `signature` with `base64`-encoded `unsigned_message`. Ret
 ```ts
 type ParamsOfAttachSignature = {
     abi: Abi,
-    public_key: string,
+    pubkey: string,
     message: string,
     signature: string
 };
@@ -232,7 +232,7 @@ function attach_signature(
 ```
 ### Parameters
 - `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI
-- `public_key`: _string_ – Public key encoded in `hex`.
+- `pubkey`: _string_ – Public key encoded in `hex`.
 - `message`: _string_ – Unsigned message BOC encoded in `base64`.
 - `signature`: _string_ – Signature encoded in `hex`.
 ### Result
@@ -435,7 +435,7 @@ type Signer = {
     type: 'None'
 } | {
     type: 'External'
-    public_key: string
+    pubkey: string
 } | {
     type: 'Keys'
     keys: KeyPair
@@ -456,7 +456,7 @@ When _type_ is _'External'_
 Only public key is provided to generate unsigned message and `data_to_sign` which can be signed later.
 
 
-- `public_key`: _string_
+- `pubkey`: _string_
 
 When _type_ is _'Keys'_
 
@@ -499,7 +499,7 @@ type StateInitSource = {
 } | {
     type: 'Tvc'
     tvc: string,
-    public_key?: string,
+    pubkey?: string,
     init_params?: StateInitParams
 };
 ```
@@ -527,7 +527,7 @@ Content of the TVC file. Encoded in `base64`.
 
 
 - `tvc`: _string_
-- `public_key`?: _string_
+- `pubkey`?: _string_
 - `init_params`?: _[StateInitParams](mod_abi.md#StateInitParams)_
 
 
@@ -689,13 +689,13 @@ type ResultOfEncodeMessageBody = {
 ```ts
 type ParamsOfAttachSignatureToMessageBody = {
     abi: Abi,
-    public_key: string,
+    pubkey: string,
     message: string,
     signature: string
 };
 ```
 - `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI
-- `public_key`: _string_ – Public key. Must be encoded with `hex`.
+- `pubkey`: _string_ – Public key. Must be encoded with `hex`.
 - `message`: _string_ – Unsigned message BOC. Must be encoded with `base64`.
 - `signature`: _string_ – Signature. Must be encoded with `hex`.
 
@@ -752,13 +752,13 @@ type ResultOfEncodeMessage = {
 ```ts
 type ParamsOfAttachSignature = {
     abi: Abi,
-    public_key: string,
+    pubkey: string,
     message: string,
     signature: string
 };
 ```
 - `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI
-- `public_key`: _string_ – Public key encoded in `hex`.
+- `pubkey`: _string_ – Public key encoded in `hex`.
 - `message`: _string_ – Unsigned message BOC encoded in `base64`.
 - `signature`: _string_ – Signature encoded in `hex`.
 

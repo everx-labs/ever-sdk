@@ -10,7 +10,7 @@ pub enum Signer {
     None,
     /// Only public key is provided to generate unsigned message and `data_to_sign`
     /// which can be signed later.  
-    External { public_key: String },
+    External { pubkey: String },
     /// Key pair is provided for signing
     Keys { keys: KeyPair },
     /// Signing Box interface is provided for signing, allows Dapps to sign messages using external APIs,
@@ -44,7 +44,7 @@ impl Signer {
         match self {
             Signer::None => Ok(None),
             Signer::Keys { keys } => Ok(Some(keys.public.clone())),
-            Signer::External { public_key } => Ok(Some(public_key.clone())),
+            Signer::External { pubkey } => Ok(Some(pubkey.clone())),
             Signer::SigningBox { .. } => Err(client::Error::not_implemented(
                 "Signing boxes doesn't supported yet",
             )),

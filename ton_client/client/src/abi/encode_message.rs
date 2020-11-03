@@ -221,8 +221,8 @@ pub struct ResultOfEncodeMessage {
     pub message_id: String,
 }
 
-fn required_public_key(public_key: Option<String>) -> ClientResult<String> {
-    if let Some(public_key) = public_key {
+fn required_public_key(pubkey: Option<String>) -> ClientResult<String> {
+    if let Some(public_key) = pubkey {
         Ok(public_key)
     } else {
         Err(abi::Error::encode_deploy_message_failed(
@@ -504,7 +504,7 @@ pub struct ParamsOfAttachSignature {
     pub abi: Abi,
 
     /// Public key encoded in `hex`.
-    pub public_key: String,
+    pub pubkey: String,
 
     /// Unsigned message BOC encoded in `base64`.
     pub message: String,
@@ -531,7 +531,7 @@ pub fn attach_signature(
     let signed = add_sign_to_message(
         &params.abi.json_string()?,
         &hex_decode(&params.signature)?,
-        Some(&hex_decode(&params.public_key)?),
+        Some(&hex_decode(&params.pubkey)?),
         &base64_decode(&params.message)?,
     )?;
     Ok(ResultOfAttachSignature {
@@ -548,7 +548,7 @@ pub struct ParamsOfAttachSignatureToMessageBody {
     pub abi: Abi,
 
     /// Public key. Must be encoded with `hex`.
-    pub public_key: String,
+    pub pubkey: String,
 
     /// Unsigned message BOC. Must be encoded with `base64`.
     pub message: String,
@@ -571,7 +571,7 @@ pub fn attach_signature_to_message_body(
     let signed = add_sign_to_message_body(
         &params.abi.json_string()?,
         &hex_decode(&params.signature)?,
-        Some(&hex_decode(&params.public_key)?),
+        Some(&hex_decode(&params.pubkey)?),
         &base64_decode(&params.message)?,
     )?;
     Ok(ResultOfAttachSignatureToMessageBody {

@@ -539,7 +539,7 @@
           "type": "Struct",
           "struct_fields": [
             {
-              "name": "public_key",
+              "name": "pubkey",
               "type": "String",
               "summary": " Public key - 64 symbols hex string",
               "description": " Public key - 64 symbols hex string"
@@ -2798,7 +2798,7 @@
               "type": "Struct",
               "struct_fields": [
                 {
-                  "name": "public_key",
+                  "name": "pubkey",
                   "type": "String",
                   "summary": null,
                   "description": null
@@ -2932,7 +2932,7 @@
                   "description": null
                 },
                 {
-                  "name": "public_key",
+                  "name": "pubkey",
                   "type": "Optional",
                   "optional_inner": {
                     "type": "String"
@@ -3325,7 +3325,7 @@
               "description": " Contract ABI"
             },
             {
-              "name": "public_key",
+              "name": "pubkey",
               "type": "String",
               "summary": " Public key. Must be encoded with `hex`.",
               "description": " Public key. Must be encoded with `hex`."
@@ -3467,7 +3467,7 @@
               "description": " Contract ABI"
             },
             {
-              "name": "public_key",
+              "name": "pubkey",
               "type": "String",
               "summary": " Public key encoded in `hex`.",
               "description": " Public key encoded in `hex`."

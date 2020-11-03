@@ -283,7 +283,7 @@ Converts public key to ton safe_format
 
 ```ts
 type ParamsOfConvertPublicKeyToTonSafeFormat = {
-    public_key: string
+    pubkey: string
 };
 
 type ResultOfConvertPublicKeyToTonSafeFormat = {
@@ -295,7 +295,7 @@ function convert_public_key_to_ton_safe_format(
 ): Promise<ResultOfConvertPublicKeyToTonSafeFormat>;
 ```
 ### Parameters
-- `public_key`: _string_ – Public key - 64 symbols hex string
+- `pubkey`: _string_ – Public key - 64 symbols hex string
 ### Result
 
 - `ton_public_key`: _string_ – Public key represented in TON safe format.
@@ -1112,10 +1112,10 @@ type ResultOfGenerateRandomBytes = {
 ## ParamsOfConvertPublicKeyToTonSafeFormat
 ```ts
 type ParamsOfConvertPublicKeyToTonSafeFormat = {
-    public_key: string
+    pubkey: string
 };
 ```
-- `public_key`: _string_ – Public key - 64 symbols hex string
+- `pubkey`: _string_ – Public key - 64 symbols hex string
 
 
 ## ResultOfConvertPublicKeyToTonSafeFormat

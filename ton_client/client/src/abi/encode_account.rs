@@ -40,7 +40,7 @@ pub enum StateInitSource {
     /// Content of the TVC file. Encoded in `base64`.
     Tvc {
         tvc: String,
-        public_key: Option<String>,
+        pubkey: Option<String>,
         init_params: Option<StateInitParams>,
     },
 }
@@ -97,11 +97,11 @@ fn state_init_from_bocs(
 
 fn state_init_from_tvc(
     tvc: &String,
-    public_key: &Option<String>,
+    pubkey: &Option<String>,
     init_params: &Option<StateInitParams>,
 ) -> ClientResult<StateInit> {
     let tvc = base64::decode(tvc).map_err(|err| Error::invalid_tvc_image(err))?;
-    let public_key = public_key
+    let public_key = pubkey
         .as_ref()
         .map(|x| decode_public_key(x))
         .transpose()?;
@@ -145,9 +145,9 @@ pub async fn encode_account(
         } => state_init_from_bocs(code, data, library),
         StateInitSource::Tvc {
             tvc,
-            public_key,
+            pubkey,
             init_params,
-        } => state_init_from_tvc(tvc, public_key, init_params),
+        } => state_init_from_tvc(tvc, pubkey, init_params),
     }?;
     let id = state_init
         .hash()

@@ -355,7 +355,7 @@ impl Contract {
     pub fn add_sign_to_message(
         abi: String,
         signature: &[u8],
-        public_key: Option<&[u8]>,
+        pubkey: Option<&[u8]>,
         message: &[u8],
     ) -> Result<SdkMessage> {
         let mut slice = Self::deserialize_tree_to_slice(message)?;
@@ -365,7 +365,7 @@ impl Contract {
         let body = message.body()
             .ok_or(error!(SdkError::InvalidData { msg: "No message body".to_owned() }))?;
 
-        let signed_body = ton_abi::add_sign_to_function_call(abi, signature, public_key, body)?;
+        let signed_body = ton_abi::add_sign_to_function_call(abi, signature, pubkey, body)?;
         message.set_body(signed_body.into());
 
         let address = message.dst().ok_or_else(|| error!(SdkError::InternalError {
@@ -387,7 +387,7 @@ impl Contract {
     pub fn attach_signature(
         abi: &AbiContract,
         signature: &[u8],
-        public_key: Option<&[u8]>,
+        pubkey: Option<&[u8]>,
         message: &[u8],
     ) -> Result<SdkMessage> {
         let mut slice = Self::deserialize_tree_to_slice(message)?;
@@ -397,7 +397,7 @@ impl Contract {
         let body = message.body()
             .ok_or(error!(SdkError::InvalidData { msg: "No message body".to_owned() }))?;
 
-        let signed_body = abi.add_sign_to_encoded_input(signature, public_key, body)?;
+        let signed_body = abi.add_sign_to_encoded_input(signature, pubkey, body)?;
         message.set_body(signed_body.into());
 
         let address = message.dst().ok_or_else(|| error!(SdkError::InternalError {

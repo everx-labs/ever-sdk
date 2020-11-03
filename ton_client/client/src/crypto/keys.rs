@@ -51,7 +51,7 @@ impl KeyPair {
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfConvertPublicKeyToTonSafeFormat {
     /// Public key - 64 symbols hex string
-    pub public_key: String,
+    pub pubkey: String,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
@@ -66,7 +66,7 @@ pub fn convert_public_key_to_ton_safe_format(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfConvertPublicKeyToTonSafeFormat,
 ) -> ClientResult<ResultOfConvertPublicKeyToTonSafeFormat> {
-    let public_key = hex_decode(&params.public_key)?;
+    let public_key = hex_decode(&params.pubkey)?;
     let mut ton_public_key: Vec<u8> = Vec::new();
     ton_public_key.push(0x3e);
     ton_public_key.push(0xe6);
