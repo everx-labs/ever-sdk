@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 - ChaCha20 encryption support `crypto.chacha20`. 
 - `boc.parse_shardstate` function for shardstates parsing.
 - `client.build_info` fully defined and documented.
+- `processing.wait_for_transaction` and `processing.process_message` functions execute contract 
+locally in case if transaction waiting fails in order to resolve the contract execution error
 
 ### Fixed
 - TS generator fix some field names that is an invalid JS identifiers.   
