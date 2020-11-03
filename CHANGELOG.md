@@ -16,9 +16,6 @@ locally in case if transaction waiting fails in order to resolve the contract ex
 - TS generator fix some field names that is an invalid JS identifiers.   
 - Use `install_name_tool` to fix loading library paths at `libton_client.dylib`.
 
-### Breaking
-- `Abi::Serialized` renamed to `Abi::Contract` 
-
 ## 1.0.0 Oct 27, 2020
 
 ### Differences between Core SDK v0 and v1

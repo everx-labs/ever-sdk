@@ -10,14 +10,14 @@ pub struct AbiHandle(u32);
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 #[serde(tag = "type", content = "value")]
 pub enum Abi {
-    Contract(AbiContract),
+    Serialized(AbiContract),
     Handle(AbiHandle),
 }
 
 impl Abi {
     pub(crate) fn json_string(&self) -> ClientResult<String> {
         match self {
-            Self::Contract(abi) => {
+            Self::Serialized(abi) => {
                 Ok(serde_json::to_string(abi).map_err(|err| Error::invalid_abi(err))?)
             }
             _ => Err(crate::client::Error::not_implemented(

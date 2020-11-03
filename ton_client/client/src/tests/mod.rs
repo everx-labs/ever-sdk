@@ -237,7 +237,7 @@ impl TestClient {
     }
 
     fn read_abi(path: String) -> Abi {
-        Abi::Contract(serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap())
+        Abi::Serialized(serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap())
     }
 
     pub fn giver_address() -> String {
