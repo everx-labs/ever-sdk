@@ -9,9 +9,11 @@ All notable changes to this project will be documented in this file.
 - `client.build_info` fully defined and documented.
 - `processing.wait_for_transaction` and `processing.process_message` functions execute contract 
 locally in case if transaction waiting fails in order to resolve the contract execution error
+- Create the `build_info.json` on the buld stage.
 
 ### Fixed
 - TS generator fix some field names that is an invalid JS identifiers.   
+- Use `install_name_tool` to fix loading library paths at `libton_client.dylib`.
 
 ### Breaking
 - `Abi::Serialized` renamed to `Abi::ContractAbi` 
