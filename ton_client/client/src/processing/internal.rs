@@ -16,7 +16,7 @@ pub(crate) fn get_message_id(message: &ton_block::Message) -> ClientResult<Strin
     Ok(hex::encode(&id))
 }
 
-/// Increments `retries` and returns `true` if `retries` isn't reach `limit`.
+/// Increments `retries` and returns `true` if `retries` hasn't reached `limit`.
 pub(crate) fn can_retry_more(retries: u8, limit: i8) -> bool {
     limit < 0 || retries <= limit as u8
 }

@@ -273,7 +273,7 @@ impl HDPrivateKey {
         let secret_key = SecretKey::parse(&self.key).unwrap();
         if hardened && !compliant {
             // The private key serialization in this case will not be exactly 32 bytes and can be
-            // any value less, and the value is not zero-padded.
+            // any smaller value, and the value is not zero-padded.
             hmac.input(&[0]);
             hmac.input(&secret_key.serialize());
         } else if hardened {
