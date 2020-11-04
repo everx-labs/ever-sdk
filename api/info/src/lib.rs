@@ -35,7 +35,7 @@ pub struct Field {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(tag = "type", content="value")]
+#[serde(tag = "type", content = "value")]
 pub enum ConstValue {
     None,
     Bool(String),
@@ -53,44 +53,92 @@ pub struct Const {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum NumberType {
+    UInt,
+    Int,
+    Float,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum Type {
     None,
     Any,
     Boolean,
     String,
-    Number,
-    BigInt,
+    Number {
+        number_type: NumberType,
+        number_size: usize,
+    },
+    BigInt {
+        number_type: NumberType,
+        number_size: usize,
+    },
     Ref {
-        #[serde(rename="ref_name")]
+        #[serde(rename = "ref_name")]
         name: String,
     },
     Optional {
-        #[serde(rename="optional_inner")]
+        #[serde(rename = "optional_inner")]
         inner: Box<Type>,
     },
     Array {
-        #[serde(rename="array_item")]
+        #[serde(rename = "array_item")]
         item: Box<Type>,
     },
     Struct {
-        #[serde(rename="struct_fields")]
+        #[serde(rename = "struct_fields")]
         fields: Vec<Field>,
     },
     EnumOfConsts {
-        #[serde(rename="enum_consts")]
+        #[serde(rename = "enum_consts")]
         consts: Vec<Const>,
     },
     EnumOfTypes {
-        #[serde(rename="enum_types")]
+        #[serde(rename = "enum_types")]
         types: Vec<Field>,
     },
     Generic {
-        #[serde(rename="generic_name")]
+        #[serde(rename = "generic_name")]
         name: String,
-        #[serde(rename="generic_args")]
+        #[serde(rename = "generic_args")]
         args: Vec<Type>,
     },
+}
+
+impl Type {
+    pub fn u(size: usize) -> Type {
+        if size > 32 {
+            Type::BigInt {
+                number_type: NumberType::UInt,
+                number_size: size,
+            }
+        } else {
+            Type::Number {
+                number_type: NumberType::UInt,
+                number_size: size,
+            }
+        }
+    }
+    pub fn i(size: usize) -> Type {
+        if size > 32 {
+            Type::BigInt {
+                number_type: NumberType::Int,
+                number_size: size,
+            }
+        } else {
+            Type::Number {
+                number_type: NumberType::Int,
+                number_size: size,
+            }
+        }
+    }
+    pub fn f(size: usize) -> Type {
+        Type::BigInt {
+            number_type: NumberType::Float,
+            number_size: size,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -136,7 +184,7 @@ impl ApiType for u16 {
             name: "u16".into(),
             summary: None,
             description: None,
-            value: Type::Number {},
+            value: Type::u(16),
         }
     }
 }
@@ -147,7 +195,7 @@ impl ApiType for u32 {
             name: "u32".into(),
             summary: None,
             description: None,
-            value: Type::Number {},
+            value: Type::u(32),
         }
     }
 }

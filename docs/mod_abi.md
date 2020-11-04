@@ -354,8 +354,18 @@ type Abi = {
     events?: AbiEvent[],
     data?: AbiData[]
 } | {
+    type: 'Json'
+    value: string
+} | {
     type: 'Handle'
     value: number
+} | {
+    type: 'Serialized'
+    'ABI version': number,
+    header?: string[],
+    functions?: AbiFunction[],
+    events?: AbiEvent[],
+    data?: AbiData[]
 };
 ```
 Depends on value of the  `type` field.
@@ -369,10 +379,24 @@ When _type_ is _'Contract'_
 - `events`?: _[AbiEvent](mod_abi.md#AbiEvent)[]_
 - `data`?: _[AbiData](mod_abi.md#AbiData)[]_
 
+When _type_ is _'Json'_
+
+
+- `value`: _string_
+
 When _type_ is _'Handle'_
 
 
 - `value`: _number_
+
+When _type_ is _'Serialized'_
+
+
+- `ABI version`: _number_
+- `header`?: _string[]_
+- `functions`?: _[AbiFunction](mod_abi.md#AbiFunction)[]_
+- `events`?: _[AbiEvent](mod_abi.md#AbiEvent)[]_
+- `data`?: _[AbiData](mod_abi.md#AbiData)[]_
 
 
 ## AbiHandle

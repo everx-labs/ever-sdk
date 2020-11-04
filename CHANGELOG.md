@@ -10,14 +10,19 @@ All notable changes to this project will be documented in this file.
 - `processing.wait_for_transaction` and `processing.process_message` functions execute contract 
 locally in case if transaction waiting fails in order to resolve the contract execution error
 - `run_executor`, `run_tvm` now return `exit_arg` in case of TVM errors.  
-- Create the `build_info.json` on the buld stage.
+- Create the `build_info.json` on the build stage.
+- `Abi::Contract` variant as an alias to deprecated `Abi::Serialized`
+- `Abi::Json` variant to specify an ABI as a raw JSON string. 
+- `api.json` now contains details about numeric types: Number and BigInt are now 
+have new fields `number_type` and `number_size`. 
 
 ### Fixed
 - TS generator fix some field names that is an invalid JS identifiers.   
 - Use `install_name_tool` to fix loading library paths at `libton_client.dylib`.
-
-### Breaking
-- `Abi::Serialized` renamed to `Abi::Contract` 
+- `api.json` is reduced, so it can't contains tuple types. All types are exactly
+match to JSON.
+- `summary` inferring is more sophisticated now.
+- `description` is optimized a little. Leading spaces are reduced. 
 
 ## 1.0.0 Oct 27, 2020
 

@@ -14,11 +14,10 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 
-mod docs;
+mod api;
 mod errors;
 mod command_line;
 mod request;
-mod api_item;
 
 const USAGE: &str = r#"
 toncli <command> args...
@@ -40,7 +39,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let cmd = args.iter().skip(1).next().map(|x| x.as_str());
     let result = match cmd.unwrap_or("") {
-        "api" => docs::command(&args[2..]),
+        "api" => api::command(&args[2..]),
         "request" => request::command(&args[2..]),
         _ => {
             print_usage_and_exit();

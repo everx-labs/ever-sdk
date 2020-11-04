@@ -13,6 +13,8 @@
             {
               "name": "code",
               "type": "Number",
+              "number_type": "Int",
+              "number_size": 32,
               "summary": null,
               "description": null
             },
@@ -85,7 +87,9 @@
               "name": "network_retries_count",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "Int",
+                "number_size": 8
               },
               "summary": null,
               "description": null
@@ -94,7 +98,9 @@
               "name": "message_retries_count",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "Int",
+                "number_size": 8
               },
               "summary": null,
               "description": null
@@ -103,7 +109,9 @@
               "name": "message_processing_timeout",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
               },
               "summary": null,
               "description": null
@@ -112,7 +120,9 @@
               "name": "wait_for_timeout",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
               },
               "summary": null,
               "description": null
@@ -121,7 +131,9 @@
               "name": "out_of_sync_threshold",
               "type": "Optional",
               "optional_inner": {
-                "type": "BigInt"
+                "type": "BigInt",
+                "number_type": "Int",
+                "number_size": 64
               },
               "summary": null,
               "description": null
@@ -147,7 +159,9 @@
               "name": "mnemonic_dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": null,
               "description": null
@@ -156,7 +170,9 @@
               "name": "mnemonic_word_count",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": null,
               "description": null
@@ -191,7 +207,9 @@
               "name": "workchain",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "Int",
+                "number_size": 32
               },
               "summary": null,
               "description": null
@@ -200,7 +218,9 @@
               "name": "message_expiration_timeout",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
               },
               "summary": null,
               "description": null
@@ -209,7 +229,9 @@
               "name": "message_expiration_timeout_grow_factor",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "BigInt",
+                "number_type": "Float",
+                "number_size": 32
               },
               "summary": null,
               "description": null
@@ -274,6 +296,8 @@
             {
               "name": "build_number",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
               "summary": " Build number assigned to this build by the CI.",
               "description": " Build number assigned to this build by the CI."
             },
@@ -400,6 +424,8 @@
             {
               "name": "",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
               "summary": null,
               "description": null
             }
@@ -499,6 +525,8 @@
             {
               "name": "crc",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 16,
               "summary": " Calculated CRC for input data.",
               "description": " Calculated CRC for input data."
             }
@@ -513,6 +541,8 @@
             {
               "name": "length",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
               "summary": " Size of random byte array.",
               "description": " Size of random byte array."
             }
@@ -704,24 +734,32 @@
             {
               "name": "log_n",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 8,
               "summary": " CPU/memory cost parameter",
               "description": " CPU/memory cost parameter"
             },
             {
               "name": "r",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
               "summary": " The block size parameter, which fine-tunes sequential memory read size and performance.",
               "description": " The block size parameter, which fine-tunes sequential memory read size and performance."
             },
             {
               "name": "p",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
               "summary": " Parallelization parameter.",
               "description": " Parallelization parameter."
             },
             {
               "name": "dk_len",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
               "summary": " Intended output length in octets of the derived key.",
               "description": " Intended output length in octets of the derived key."
             }
@@ -1005,7 +1043,9 @@
               "name": "dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Dictionary identifier",
               "description": " Dictionary identifier"
@@ -1036,7 +1076,9 @@
               "name": "dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Dictionary identifier",
               "description": " Dictionary identifier"
@@ -1045,7 +1087,9 @@
               "name": "word_count",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Mnemonic word count",
               "description": " Mnemonic word count"
@@ -1082,7 +1126,9 @@
               "name": "dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Dictionary identifier",
               "description": " Dictionary identifier"
@@ -1091,7 +1137,9 @@
               "name": "word_count",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Mnemonic word count",
               "description": " Mnemonic word count"
@@ -1128,7 +1176,9 @@
               "name": "dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Dictionary identifier",
               "description": " Dictionary identifier"
@@ -1137,7 +1187,9 @@
               "name": "word_count",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Word count",
               "description": " Word count"
@@ -1183,7 +1235,9 @@
               "name": "dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Dictionary identifier",
               "description": " Dictionary identifier"
@@ -1192,7 +1246,9 @@
               "name": "word_count",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Word count",
               "description": " Word count"
@@ -1215,7 +1271,9 @@
               "name": "dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Dictionary identifier",
               "description": " Dictionary identifier"
@@ -1224,7 +1282,9 @@
               "name": "word_count",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Mnemonic word count",
               "description": " Mnemonic word count"
@@ -1260,6 +1320,8 @@
             {
               "name": "child_index",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
               "summary": " Child index (see BIP-0032)",
               "description": " Child index (see BIP-0032)"
             },
@@ -2648,6 +2710,20 @@
               "description": null
             },
             {
+              "name": "Json",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
               "name": "Handle",
               "type": "Struct",
               "struct_fields": [
@@ -2655,6 +2731,21 @@
                   "name": "",
                   "type": "Ref",
                   "ref_name": "AbiHandle",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Serialized",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "",
+                  "type": "Ref",
+                  "ref_name": "AbiContract",
                   "summary": null,
                   "description": null
                 }
@@ -2673,6 +2764,8 @@
             {
               "name": "",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
               "summary": null,
               "description": null
             }
@@ -2688,7 +2781,9 @@
               "name": "expire",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
               },
               "summary": " Message expiration time in seconds.",
               "description": " Message expiration time in seconds."
@@ -2697,7 +2792,9 @@
               "name": "time",
               "type": "Optional",
               "optional_inner": {
-                "type": "BigInt"
+                "type": "BigInt",
+                "number_type": "UInt",
+                "number_size": 64
               },
               "summary": " Message creation time in milliseconds.",
               "description": " Message creation time in milliseconds."
@@ -2763,7 +2860,9 @@
               "name": "workchain_id",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "Int",
+                "number_size": 32
               },
               "summary": " Target workchain for destination address. Default is `0`.",
               "description": " Target workchain for destination address. Default is `0`."
@@ -3086,7 +3185,9 @@
               "optional_inner": {
                 "type": "Optional",
                 "optional_inner": {
-                  "type": "Number"
+                  "type": "Number",
+                  "number_type": "UInt",
+                  "number_size": 32
                 }
               },
               "summary": null,
@@ -3103,6 +3204,8 @@
             {
               "name": "key",
               "type": "BigInt",
+              "number_type": "UInt",
+              "number_size": 64,
               "summary": null,
               "description": null
             },
@@ -3171,7 +3274,9 @@
               "optional_inner": {
                 "type": "Optional",
                 "optional_inner": {
-                  "type": "Number"
+                  "type": "Number",
+                  "number_type": "UInt",
+                  "number_size": 32
                 }
               },
               "summary": null,
@@ -3188,6 +3293,19 @@
             {
               "name": "ABI version",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "abi_version",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
               "summary": null,
               "description": null
             },
@@ -3281,7 +3399,9 @@
               "name": "processing_try_index",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Processing try index.",
               "description": " Processing try index.\n\n Used in message processing with retries.\n\n Encoder uses the provided try index to calculate message\n expiration time.\n\n Expiration timeouts will grow with every retry.\n\n Default value is 0."
@@ -3411,7 +3531,9 @@
               "name": "processing_try_index",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Processing try index.",
               "description": " Processing try index.\n\n Used in message processing with retries (if contract's ABI includes \"expire\" header).\n\n Encoder uses the provided try index to calculate message\n expiration time. The 1st message expiration time is specified in\n Client config.\n\n Expiration timeouts will grow with every retry.\n Retry grow factor is set in Client config:\n <.....add config parameter with default value here>\n\n Default value is 0."
@@ -3612,7 +3734,9 @@
               "name": "balance",
               "type": "Optional",
               "optional_inner": {
-                "type": "BigInt"
+                "type": "BigInt",
+                "number_type": "UInt",
+                "number_size": 64
               },
               "summary": " Initial balance.",
               "description": " Initial balance."
@@ -3621,7 +3745,9 @@
               "name": "last_trans_lt",
               "type": "Optional",
               "optional_inner": {
-                "type": "BigInt"
+                "type": "BigInt",
+                "number_type": "UInt",
+                "number_size": 64
               },
               "summary": " Initial value for the `last_trans_lt`.",
               "description": " Initial value for the `last_trans_lt`."
@@ -3630,7 +3756,9 @@
               "name": "last_paid",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
               },
               "summary": " Initial value for the `last_paid`.",
               "description": " Initial value for the `last_paid`."
@@ -3982,6 +4110,8 @@
             {
               "name": "workchain_id",
               "type": "Number",
+              "number_type": "Int",
+              "number_size": 32,
               "summary": " Workchain shardstate belongs to ",
               "description": " Workchain shardstate belongs to "
             }
@@ -4937,7 +5067,9 @@
               "name": "block_time",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
               },
               "summary": " time that is used as transaction time",
               "description": " time that is used as transaction time"
@@ -4946,7 +5078,9 @@
               "name": "block_lt",
               "type": "Optional",
               "optional_inner": {
-                "type": "BigInt"
+                "type": "BigInt",
+                "number_type": "UInt",
+                "number_size": 64
               },
               "summary": " block logical time",
               "description": " block logical time"
@@ -4955,7 +5089,9 @@
               "name": "transaction_lt",
               "type": "Optional",
               "optional_inner": {
-                "type": "BigInt"
+                "type": "BigInt",
+                "number_type": "UInt",
+                "number_size": 64
               },
               "summary": " transaction logical time",
               "description": " transaction logical time"
@@ -5016,36 +5152,48 @@
             {
               "name": "in_msg_fwd_fee",
               "type": "BigInt",
+              "number_type": "UInt",
+              "number_size": 64,
               "summary": null,
               "description": null
             },
             {
               "name": "storage_fee",
               "type": "BigInt",
+              "number_type": "UInt",
+              "number_size": 64,
               "summary": null,
               "description": null
             },
             {
               "name": "gas_fee",
               "type": "BigInt",
+              "number_type": "UInt",
+              "number_size": 64,
               "summary": null,
               "description": null
             },
             {
               "name": "out_msgs_fwd_fee",
               "type": "BigInt",
+              "number_type": "UInt",
+              "number_size": 64,
               "summary": null,
               "description": null
             },
             {
               "name": "total_account_fees",
               "type": "BigInt",
+              "number_type": "UInt",
+              "number_size": 64,
               "summary": null,
               "description": null
             },
             {
               "name": "total_output",
               "type": "BigInt",
+              "number_type": "UInt",
+              "number_size": 64,
               "summary": null,
               "description": null
             }
@@ -5485,7 +5633,9 @@
               "name": "limit",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
               },
               "summary": " Number of documents to return",
               "description": " Number of documents to return"
@@ -5542,7 +5692,9 @@
               "name": "timeout",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
               },
               "summary": " Query timeout",
               "description": " Query timeout"
@@ -5573,6 +5725,8 @@
             {
               "name": "handle",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
               "summary": " Subscription handle. Must be closed with `unsubscribe`",
               "description": " Subscription handle. Must be closed with `unsubscribe`"
             }

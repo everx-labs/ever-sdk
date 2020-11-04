@@ -11,7 +11,10 @@ pub struct AbiHandle(u32);
 #[serde(tag = "type", content = "value")]
 pub enum Abi {
     Contract(AbiContract),
+    Json(String),
     Handle(AbiHandle),
+
+    Serialized(AbiContract),
 }
 
 impl Abi {
@@ -20,6 +23,10 @@ impl Abi {
             Self::Contract(abi) => {
                 Ok(serde_json::to_string(abi).map_err(|err| Error::invalid_abi(err))?)
             }
+            Self::Serialized(abi) => {
+                Ok(serde_json::to_string(abi).map_err(|err| Error::invalid_abi(err))?)
+            }
+            Self::Json(abi) => Ok(abi.clone()),
             _ => Err(crate::client::Error::not_implemented(
                 "ABI handles are not supported yet",
             )),
@@ -29,7 +36,9 @@ impl Abi {
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 pub struct AbiContract {
-    #[serde(rename = "ABI version")]
+    #[serde(rename="ABI version", default = "default_abi_version")]
+    pub obsolete_abi_version: u32,
+    #[serde(default = "default_abi_version")]
     pub abi_version: u32,
     #[serde(default)]
     pub header: Vec<String>,
@@ -39,6 +48,10 @@ pub struct AbiContract {
     pub events: Vec<AbiEvent>,
     #[serde(default)]
     pub data: Vec<AbiData>,
+}
+
+fn default_abi_version() -> u32 {
+    2
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]

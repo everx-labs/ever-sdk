@@ -68,6 +68,7 @@ export enum ApiTypeIs {
 export type ApiRef = {
     type: ApiTypeIs.Ref,
     ref_name: string,
+    ref_type?: ApiType,
 }
 
 export type ApiOptional = {
@@ -149,14 +150,10 @@ export function parseApi(json: any): Api {
         case ApiTypeIs.Ref:
             const name = type.ref_name;
             if (!isFullName(name)) {
-                const fullName = `${module.name}.${name}`;
-                if (types.has(fullName)) {
-                    type.ref_name = fullName;
-                } else {
-                    const refType = types.get(name);
-                    if (refType) {
-                        type.ref_name = `${refType.module.name}.${refType.name}`;
-                    }
+                const refType = types.get(`${module.name}.${name}`) ?? types.get(name);
+                if (refType) {
+                    type.ref_name = `${refType.module.name}.${refType.name}`;
+                    type.ref_type = refType;
                 }
             }
             break;
@@ -183,7 +180,7 @@ export function parseApi(json: any): Api {
             break;
         }
     };
-    
+
     const reduceFunc = (func: ApiFunction) => {
         for (const param of func.params) {
             resolveRefs(func.module, param);
@@ -193,7 +190,7 @@ export function parseApi(json: any): Api {
         }
         resolveRefs(func.module, func.result);
     };
-    
+
     for (const module of api.modules) {
         module.api = api;
         for (const type of module.types) {
@@ -213,11 +210,11 @@ export type ApiFunctionInfo = {
 
 export abstract class Code {
     readonly api: Api;
-    
+
     constructor(api: Api) {
         this.api = api;
     }
-    
+
     findType(name: string): ApiField | null {
         for (const module of this.api.modules) {
             for (const type of module.types) {
@@ -228,7 +225,7 @@ export abstract class Code {
         }
         return null;
     }
-    
+
     getFunctionInfo(func: ApiFunction): ApiFunctionInfo {
         const info: ApiFunctionInfo = {
             hasResponseHandler: false,
@@ -246,40 +243,41 @@ export abstract class Code {
         }
         return info;
     }
-    
+
+
     abstract language(): string;
-    
+
     abstract module(module: ApiModule): string;
-    
+
     abstract field(field: ApiField, indent: string): string;
-    
+
     abstract typeVariant(variant: ApiField, indent: string): string;
-    
+
     abstract constVariant(variant: ApiConst): string;
-    
+
     abstract type(type: ApiType, indent: string): string;
-    
+
     abstract typeDef(type: ApiField): string;
-    
+
     abstract functionImpl(func: ApiFunction): string;
-    
+
     abstract functionInterface(func: ApiFunction): string;
-    
+
     abstract modules(): string;
-    
+
     static upperFirst(ident: string): string {
         return ident !== '' ? `${ident[0].toUpperCase()}${ident.substr(1)}` : '';
     }
-    
+
     static lowerFirst(ident: string): string {
         return ident !== '' ? `${ident[0].toLowerCase()}${ident.substr(1)}` : '';
     }
-    
-    
+
+
     static pascal(words: string[]): string {
         return words.map(this.upperFirst).join('');
     }
-    
+
     static camel(words: string[]): string {
         return this.lowerFirst(this.pascal(words));
     }
