@@ -348,24 +348,16 @@ function encode_account(
 ```ts
 type Abi = {
     type: 'Contract'
-    'ABI version': number,
-    header?: string[],
-    functions?: AbiFunction[],
-    events?: AbiEvent[],
-    data?: AbiData[]
+    value: AbiContract
 } | {
     type: 'Json'
     value: string
 } | {
     type: 'Handle'
-    value: number
+    value: AbiHandle
 } | {
     type: 'Serialized'
-    'ABI version': number,
-    header?: string[],
-    functions?: AbiFunction[],
-    events?: AbiEvent[],
-    data?: AbiData[]
+    value: AbiContract
 };
 ```
 Depends on value of the  `type` field.
@@ -373,11 +365,7 @@ Depends on value of the  `type` field.
 When _type_ is _'Contract'_
 
 
-- `ABI version`: _number_
-- `header`?: _string[]_
-- `functions`?: _[AbiFunction](mod_abi.md#AbiFunction)[]_
-- `events`?: _[AbiEvent](mod_abi.md#AbiEvent)[]_
-- `data`?: _[AbiData](mod_abi.md#AbiData)[]_
+- `value`: _[AbiContract](mod_abi.md#AbiContract)_
 
 When _type_ is _'Json'_
 
@@ -387,23 +375,18 @@ When _type_ is _'Json'_
 When _type_ is _'Handle'_
 
 
-- `value`: _number_
+- `value`: _[AbiHandle](mod_abi.md#AbiHandle)_
 
 When _type_ is _'Serialized'_
 
 
-- `ABI version`: _number_
-- `header`?: _string[]_
-- `functions`?: _[AbiFunction](mod_abi.md#AbiFunction)[]_
-- `events`?: _[AbiEvent](mod_abi.md#AbiEvent)[]_
-- `data`?: _[AbiData](mod_abi.md#AbiData)[]_
+- `value`: _[AbiContract](mod_abi.md#AbiContract)_
 
 
 ## AbiHandle
 ```ts
 type AbiHandle = number;
 ```
-- _number_
 
 
 ## FunctionHeader
@@ -572,15 +555,7 @@ type MessageSource = {
     type: 'Encoded'
     message: string,
     abi?: Abi
-} | {
-    type: 'EncodingParams'
-    abi: Abi,
-    address?: string,
-    deploy_set?: DeploySet,
-    call_set?: CallSet,
-    signer: Signer,
-    processing_try_index?: number
-};
+} | ParamsOfEncodeMessage;
 ```
 Depends on value of the  `type` field.
 
@@ -591,7 +566,6 @@ When _type_ is _'Encoded'_
 - `abi`?: _[Abi](mod_abi.md#Abi)_
 
 When _type_ is _'EncodingParams'_
-
 
 - `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
 - `address`?: _string_ – Target address the message will be sent to.
@@ -665,6 +639,7 @@ type AbiFunction = {
 ```ts
 type AbiContract = {
     'ABI version': number,
+    abi_version?: number,
     header?: string[],
     functions?: AbiFunction[],
     events?: AbiEvent[],
@@ -672,6 +647,7 @@ type AbiContract = {
 };
 ```
 - `ABI version`: _number_
+- `abi_version`?: _number_
 - `header`?: _string[]_
 - `functions`?: _[AbiFunction](mod_abi.md#AbiFunction)[]_
 - `events`?: _[AbiEvent](mod_abi.md#AbiEvent)[]_

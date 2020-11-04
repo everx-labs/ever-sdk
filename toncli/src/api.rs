@@ -20,14 +20,14 @@ use ton_client::ClientContext;
 
 fn find_type<'a>(
     name: &str,
-    default_module_name: &str,
+    default_module: &Module,
     api: &'a API,
 ) -> Option<(&'a Module, &'a Field)> {
-    let names = name.split('.').collect::<Vec<&str>>();
-    let (module_name, type_name) = if names.len() > 1 {
-        (names[0], names[1])
+    let mut names = name.split('.');
+    let (module_name, type_name) = if let (Some(m), Some(t)) = (names.next(), names.next()) {
+        (m, t)
     } else {
-        (default_module_name, name)
+        (default_module.name.as_str(), name)
     };
     let mut fallback = None;
     for module in &api.modules {
@@ -43,8 +43,98 @@ fn find_type<'a>(
     fallback
 }
 
+fn can_be_serialized_as_struct(ty: &Type, module: &Module, api: &API) -> bool {
+    match &ty {
+        Type::Struct { fields } => {
+            if fields.is_empty() {
+                true
+            } else if fields.len() == 1 && fields[0].name.is_empty() {
+                can_be_serialized_as_struct(&fields[0].value, module, api)
+            } else {
+                fields.iter().find(|x| x.name.is_empty()).is_none()
+            }
+        }
+        Type::Ref { name } => {
+            if let Some((ref_module, ref_type)) = find_type(&name, module, api) {
+                can_be_serialized_as_struct(&ref_type.value, ref_module, api)
+            } else {
+                false
+            }
+        }
+        _ => false,
+    }
+}
+
+fn detect_separated_content(variants: &Vec<Field>, module: &Module, api: &API) -> bool {
+    for variant in variants {
+        if !can_be_serialized_as_struct(&variant.value, module, api) {
+            return true;
+        }
+    }
+    false
+}
+
 fn reduce_type(ty: &Type, module: &Module, api: &API) -> Type {
-    ty.clone()
+    match ty {
+        Type::Array { item } => Type::Array {
+            item: Box::new(reduce_type(item, module, api)),
+        },
+        Type::Optional { inner } => Type::Optional {
+            inner: Box::new(reduce_type(inner, module, api)),
+        },
+        Type::Generic { name, args } => Type::Generic {
+            name: name.clone(),
+            args: args.iter().map(|a| reduce_type(a, module, api)).collect(),
+        },
+        Type::Ref { name } => {
+            if let Some((m, t)) = find_type(&name, module, api) {
+                Type::Ref {
+                    name: format!("{}.{}", m.name, t.name),
+                }
+            } else {
+                ty.clone()
+            }
+        }
+        Type::Struct { fields } => {
+            if fields.len() == 1 && fields[0].name.is_empty() {
+                reduce_type(&fields[0].value, module, api)
+            } else {
+                for f in fields {
+                    if f.name.is_empty() {
+                        panic!("API can't contains tuples")
+                    }
+                }
+                ty.clone()
+            }
+        }
+        Type::EnumOfTypes { types } => {
+            let is_content_separated = detect_separated_content(types, module, api);
+            let mut reduced_types = Vec::new();
+            for variant in types {
+                reduced_types.push(if is_content_separated {
+                    Field {
+                        name: variant.name.clone(),
+                        summary: variant.summary.clone(),
+                        description: variant.description.clone(),
+                        value: Type::Struct {
+                            fields: vec![Field {
+                                name: "value".into(),
+                                summary: None,
+                                description: None,
+                                value: reduce_type(&variant.value, module, api),
+                            }],
+                        },
+                    }
+                } else {
+                    reduce_field(variant, module, api)
+                });
+            }
+            Type::EnumOfTypes {
+                types: reduced_types,
+            }
+        }
+        _ => ty.clone(),
+    }
 }
 
 fn reduce_field(field: &Field, module: &Module, api: &API) -> Field {

@@ -1030,7 +1030,6 @@ function chacha20(
 ```ts
 type SigningBoxHandle = number;
 ```
-- _number_
 
 
 ## ParamsOfFactorize
