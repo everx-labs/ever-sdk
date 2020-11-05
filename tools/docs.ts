@@ -19,7 +19,7 @@ type Doc = {
 
 type Documented = {
     summary?: string,
-    description?: string
+    description?: string,
 }
 
 function replaceTabs(s: string): string {
@@ -60,7 +60,10 @@ function reduceLines(lines: string[]) {
 
 function getDoc(element: Documented): Doc {
     if (!element.description || element.description.trim() === '') {
-        return {summary: element.summary ?? '', description: ''};
+        return {
+            summary: element.summary ?? '',
+            description: '',
+        };
     }
     const lines = element.description.split('\n');
     reduceLines(lines);
@@ -167,25 +170,8 @@ export class Docs extends Code {
         return '';
     }
 
-    private typeFields(fields: ApiField[]): string {
-        let md = '';
-        for (const field of fields) {
-            md += this.field(field);
-        }
-        return md;
-    }
-
-    private enumOfTypes(type: ApiEnumOfTypes, indent: string) {
-        let md = `Depends on value of the  \`type\` field.\n\n`;
-        md += type.enum_types.map(v => this.typeVariant(v, indent)).join('\n');
-        return md;
-    }
-
     tupleFields(variant: ApiStruct, indent: string): ApiField[] {
         let fields = variant.struct_fields;
-        if (fields.length !== 1 && fields[0].name !== '') {
-            throw new Error(`Expected tuple with single value`);
-        }
         const innerType = fields[0];
         if (innerType.type === ApiTypeIs.Ref) {
             const refType = this.findType(innerType.ref_name);
@@ -203,13 +189,10 @@ export class Docs extends Code {
         ];
     }
 
-    structFields(variant: ApiStruct, indent: string): ApiField[] {
+    structFields(variant: ApiStruct, _indent: string): ApiField[] {
         const fields = variant.struct_fields;
         if (fields.length === 0) {
             return fields;
-        }
-        if (fields[0].name === '') {
-            return this.tupleFields(variant, indent);
         }
         return fields;
     }
@@ -233,13 +216,6 @@ export class Docs extends Code {
         }
         return md;
     }
-
-    private enumOfConsts(type: ApiEnumOfConsts) {
-        let md = `One of the following value:\n\n`;
-        md += type.enum_consts.map(c => this.constVariant(c)).join('');
-        return md;
-    }
-
 
     constVariant(variant: ApiConst): string {
         let md = '- \`';
@@ -298,7 +274,7 @@ export class Docs extends Code {
     field(field: ApiField): string {
         const opt = field.type === ApiTypeIs.Optional ? '?' : '';
         const type = field.type === ApiTypeIs.Optional ? field.optional_inner : field;
-        const name = field.name !== '' ? `\`${field.name}\`${opt}: ` : '';
+        const name = `\`${field.name}\`${opt}: `;
         let md = `- ${name}_${this.fieldType(type)}_${summaryOf(field)}\n`;
         md += descriptionOf(field);
         return md;
@@ -384,6 +360,26 @@ export class Docs extends Code {
 
     functionImpl(func: ApiFunction): string {
         return this.functionInterface(func);
+    }
+
+    private typeFields(fields: ApiField[]): string {
+        let md = '';
+        for (const field of fields) {
+            md += this.field(field);
+        }
+        return md;
+    }
+
+    private enumOfTypes(type: ApiEnumOfTypes, indent: string) {
+        let md = `Depends on value of the  \`type\` field.\n\n`;
+        md += type.enum_types.map(v => this.typeVariant(v, indent)).join('\n');
+        return md;
+    }
+
+    private enumOfConsts(type: ApiEnumOfConsts) {
+        let md = `One of the following value:\n\n`;
+        md += type.enum_consts.map(c => this.constVariant(c)).join('');
+        return md;
     }
 }
 

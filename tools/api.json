@@ -44,7 +44,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "NetworkConfig"
+                "ref_name": "client.NetworkConfig"
               },
               "summary": null,
               "description": null
@@ -54,7 +54,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "CryptoConfig"
+                "ref_name": "client.CryptoConfig"
               },
               "summary": null,
               "description": null
@@ -64,7 +64,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "AbiConfig"
+                "ref_name": "client.AbiConfig"
               },
               "summary": null,
               "description": null
@@ -306,7 +306,7 @@
               "type": "Array",
               "array_item": {
                 "type": "Ref",
-                "ref_name": "BuildInfoDependency"
+                "ref_name": "client.BuildInfoDependency"
               },
               "summary": " Fingerprint of the most important dependencies.",
               "description": " Fingerprint of the most important dependencies."
@@ -617,7 +617,7 @@
             {
               "name": "keys",
               "type": "Ref",
-              "ref_name": "KeyPair",
+              "ref_name": "crypto.KeyPair",
               "summary": " Sign keys.",
               "description": " Sign keys."
             }
@@ -2811,7 +2811,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "FunctionHeader"
+                "ref_name": "abi.FunctionHeader"
               },
               "summary": " Function header.",
               "description": " Function header.\n\n If an application omits some header parameters required by the\n contract's ABI, the library will set the default values for\n them."
@@ -2897,7 +2897,7 @@
                 {
                   "name": "keys",
                   "type": "Ref",
-                  "ref_name": "KeyPair",
+                  "ref_name": "crypto.KeyPair",
                   "summary": null,
                   "description": null
                 }
@@ -2912,7 +2912,7 @@
                 {
                   "name": "handle",
                   "type": "Ref",
-                  "ref_name": "SigningBoxHandle",
+                  "ref_name": "crypto.SigningBoxHandle",
                   "summary": null,
                   "description": null
                 }
@@ -2967,7 +2967,7 @@
                 {
                   "name": "source",
                   "type": "Ref",
-                  "ref_name": "MessageSource",
+                  "ref_name": "abi.MessageSource",
                   "summary": null,
                   "description": null
                 }
@@ -3028,7 +3028,7 @@
                   "type": "Optional",
                   "optional_inner": {
                     "type": "Ref",
-                    "ref_name": "StateInitParams"
+                    "ref_name": "abi.StateInitParams"
                   },
                   "summary": null,
                   "description": null
@@ -3048,7 +3048,7 @@
             {
               "name": "abi",
               "type": "Ref",
-              "ref_name": "Abi",
+              "ref_name": "abi.Abi",
               "summary": null,
               "description": null
             },
@@ -3082,7 +3082,7 @@
                   "type": "Optional",
                   "optional_inner": {
                     "type": "Ref",
-                    "ref_name": "Abi"
+                    "ref_name": "abi.Abi"
                   },
                   "summary": null,
                   "description": null
@@ -3125,7 +3125,7 @@
                 "type": "Array",
                 "array_item": {
                   "type": "Ref",
-                  "ref_name": "AbiParam"
+                  "ref_name": "abi.AbiParam"
                 }
               },
               "summary": null,
@@ -3150,7 +3150,7 @@
               "type": "Array",
               "array_item": {
                 "type": "Ref",
-                "ref_name": "AbiParam"
+                "ref_name": "abi.AbiParam"
               },
               "summary": null,
               "description": null
@@ -3204,7 +3204,7 @@
                 "type": "Array",
                 "array_item": {
                   "type": "Ref",
-                  "ref_name": "AbiParam"
+                  "ref_name": "abi.AbiParam"
                 }
               },
               "summary": null,
@@ -3229,7 +3229,7 @@
               "type": "Array",
               "array_item": {
                 "type": "Ref",
-                "ref_name": "AbiParam"
+                "ref_name": "abi.AbiParam"
               },
               "summary": null,
               "description": null
@@ -3239,7 +3239,7 @@
               "type": "Array",
               "array_item": {
                 "type": "Ref",
-                "ref_name": "AbiParam"
+                "ref_name": "abi.AbiParam"
               },
               "summary": null,
               "description": null
@@ -3304,7 +3304,7 @@
                 "type": "Array",
                 "array_item": {
                   "type": "Ref",
-                  "ref_name": "AbiFunction"
+                  "ref_name": "abi.AbiFunction"
                 }
               },
               "summary": null,
@@ -3317,7 +3317,7 @@
                 "type": "Array",
                 "array_item": {
                   "type": "Ref",
-                  "ref_name": "AbiEvent"
+                  "ref_name": "abi.AbiEvent"
                 }
               },
               "summary": null,
@@ -3330,7 +3330,7 @@
                 "type": "Array",
                 "array_item": {
                   "type": "Ref",
-                  "ref_name": "AbiData"
+                  "ref_name": "abi.AbiData"
                 }
               },
               "summary": null,
@@ -3347,14 +3347,14 @@
             {
               "name": "abi",
               "type": "Ref",
-              "ref_name": "Abi",
+              "ref_name": "abi.Abi",
               "summary": " Contract ABI.",
               "description": " Contract ABI."
             },
             {
               "name": "call_set",
               "type": "Ref",
-              "ref_name": "CallSet",
+              "ref_name": "abi.CallSet",
               "summary": " Function call parameters.",
               "description": " Function call parameters.\n\n Must be specified in non deploy message.\n\n In case of deploy message contains parameters of constructor."
             },
@@ -3367,7 +3367,7 @@
             {
               "name": "signer",
               "type": "Ref",
-              "ref_name": "Signer",
+              "ref_name": "abi.Signer",
               "summary": " Signing parameters.",
               "description": " Signing parameters."
             },
@@ -3416,7 +3416,7 @@
             {
               "name": "abi",
               "type": "Ref",
-              "ref_name": "Abi",
+              "ref_name": "abi.Abi",
               "summary": " Contract ABI",
               "description": " Contract ABI"
             },
@@ -3463,7 +3463,7 @@
             {
               "name": "abi",
               "type": "Ref",
-              "ref_name": "Abi",
+              "ref_name": "abi.Abi",
               "summary": " Contract ABI.",
               "description": " Contract ABI."
             },
@@ -3481,7 +3481,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "DeploySet"
+                "ref_name": "abi.DeploySet"
               },
               "summary": " Deploy parameters.",
               "description": " Deploy parameters.\n\n Must be specified in case of deploy message."
@@ -3491,7 +3491,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "CallSet"
+                "ref_name": "abi.CallSet"
               },
               "summary": " Function call parameters.",
               "description": " Function call parameters.\n\n Must be specified in case of non-deploy message.\n\n In case of deploy message it is optional and contains parameters\n of the functions that will to be called upon deploy transaction."
@@ -3499,7 +3499,7 @@
             {
               "name": "signer",
               "type": "Ref",
-              "ref_name": "Signer",
+              "ref_name": "abi.Signer",
               "summary": " Signing parameters.",
               "description": " Signing parameters."
             },
@@ -3560,7 +3560,7 @@
             {
               "name": "abi",
               "type": "Ref",
-              "ref_name": "Abi",
+              "ref_name": "abi.Abi",
               "summary": " Contract ABI",
               "description": " Contract ABI"
             },
@@ -3613,7 +3613,7 @@
             {
               "name": "abi",
               "type": "Ref",
-              "ref_name": "Abi",
+              "ref_name": "abi.Abi",
               "summary": " contract ABI",
               "description": " contract ABI"
             },
@@ -3634,7 +3634,7 @@
             {
               "name": "body_type",
               "type": "Ref",
-              "ref_name": "MessageBodyType",
+              "ref_name": "abi.MessageBodyType",
               "summary": " Type of the message body content.",
               "description": " Type of the message body content."
             },
@@ -3659,7 +3659,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "FunctionHeader"
+                "ref_name": "abi.FunctionHeader"
               },
               "summary": " Function header.",
               "description": " Function header."
@@ -3675,7 +3675,7 @@
             {
               "name": "abi",
               "type": "Ref",
-              "ref_name": "Abi",
+              "ref_name": "abi.Abi",
               "summary": " Contract ABI used to decode.",
               "description": " Contract ABI used to decode."
             },
@@ -3702,7 +3702,7 @@
             {
               "name": "state_init",
               "type": "Ref",
-              "ref_name": "StateInitSource",
+              "ref_name": "abi.StateInitSource",
               "summary": " Source of the account state init.",
               "description": " Source of the account state init."
             },
@@ -4378,7 +4378,7 @@
                 {
                   "name": "error",
                   "type": "Ref",
-                  "ref_name": "ClientError",
+                  "ref_name": "client.ClientError",
                   "summary": null,
                   "description": null
                 }
@@ -4463,7 +4463,7 @@
                 {
                   "name": "error",
                   "type": "Ref",
-                  "ref_name": "ClientError",
+                  "ref_name": "client.ClientError",
                   "summary": null,
                   "description": null
                 }
@@ -4522,7 +4522,7 @@
                 {
                   "name": "error",
                   "type": "Ref",
-                  "ref_name": "ClientError",
+                  "ref_name": "client.ClientError",
                   "summary": null,
                   "description": null
                 }
@@ -4549,7 +4549,7 @@
                 {
                   "name": "error",
                   "type": "Ref",
-                  "ref_name": "ClientError",
+                  "ref_name": "client.ClientError",
                   "summary": null,
                   "description": null
                 }
@@ -4586,7 +4586,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "DecodedOutput"
+                "ref_name": "processing.DecodedOutput"
               },
               "summary": " Optional decoded message bodies according to the optional",
               "description": " Optional decoded message bodies according to the optional\n `abi` parameter."
@@ -4594,7 +4594,7 @@
             {
               "name": "fees",
               "type": "Ref",
-              "ref_name": "TransactionFees",
+              "ref_name": "tvm.TransactionFees",
               "summary": " Transaction fees",
               "description": " Transaction fees"
             }
@@ -4613,7 +4613,7 @@
                 "type": "Optional",
                 "optional_inner": {
                   "type": "Ref",
-                  "ref_name": "DecodedMessageBody"
+                  "ref_name": "abi.DecodedMessageBody"
                 }
               },
               "summary": " Decoded bodies of the out messages.",
@@ -4648,7 +4648,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "Abi"
+                "ref_name": "abi.Abi"
               },
               "summary": " Optional message ABI.",
               "description": " Optional message ABI.\n\n If this parameter is specified and the message has the\n `expire` header then expiration time will be checked against\n the current time to prevent an unnecessary sending of already expired message.\n\n The `message already expired` error will be returned in this\n case.\n\n Note that specifying `abi` for ABI compliant contracts is\n strongly recommended due to choosing proper processing\n strategy."
@@ -4686,7 +4686,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "Abi"
+                "ref_name": "abi.Abi"
               },
               "summary": " Optional ABI for decoding the transaction result.",
               "description": " Optional ABI for decoding the transaction result.\n\n If it is specified then the output messages' bodies will be\n decoded according to this ABI.\n\n The `abi_decoded` result field will be filled out."
@@ -4720,7 +4720,7 @@
             {
               "name": "message_encode_params",
               "type": "Ref",
-              "ref_name": "ParamsOfEncodeMessage",
+              "ref_name": "abi.ParamsOfEncodeMessage",
               "summary": " Message encode parameters.",
               "description": " Message encode parameters."
             },
@@ -4957,7 +4957,7 @@
             {
               "name": "output_format",
               "type": "Ref",
-              "ref_name": "AddressStringFormat",
+              "ref_name": "utils.AddressStringFormat",
               "summary": " Specify the format to convert to.",
               "description": " Specify the format to convert to."
             }
@@ -5190,7 +5190,7 @@
             {
               "name": "account",
               "type": "Ref",
-              "ref_name": "AccountForExecutor",
+              "ref_name": "tvm.AccountForExecutor",
               "summary": " Account to run on executor",
               "description": " Account to run on executor"
             },
@@ -5199,7 +5199,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "ExecutionOptions"
+                "ref_name": "tvm.ExecutionOptions"
               },
               "summary": " Execution options.",
               "description": " Execution options."
@@ -5209,7 +5209,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "Abi"
+                "ref_name": "abi.Abi"
               },
               "summary": " Contract ABI for decoding output messages",
               "description": " Contract ABI for decoding output messages"
@@ -5252,7 +5252,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "DecodedOutput"
+                "ref_name": "processing.DecodedOutput"
               },
               "summary": " Optional decoded message bodies according to the optional",
               "description": " Optional decoded message bodies according to the optional\n `abi` parameter."
@@ -5266,7 +5266,7 @@
             {
               "name": "fees",
               "type": "Ref",
-              "ref_name": "TransactionFees",
+              "ref_name": "tvm.TransactionFees",
               "summary": " Transaction fees",
               "description": " Transaction fees"
             }
@@ -5295,7 +5295,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "ExecutionOptions"
+                "ref_name": "tvm.ExecutionOptions"
               },
               "summary": " Execution options.",
               "description": " Execution options."
@@ -5305,7 +5305,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "Abi"
+                "ref_name": "abi.Abi"
               },
               "summary": " Contract ABI for dedcoding output messages",
               "description": " Contract ABI for dedcoding output messages"
@@ -5332,7 +5332,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "DecodedOutput"
+                "ref_name": "processing.DecodedOutput"
               },
               "summary": " Optional decoded message bodies according to the optional",
               "description": " Optional decoded message bodies according to the optional\n `abi` parameter."
@@ -5378,7 +5378,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "ExecutionOptions"
+                "ref_name": "tvm.ExecutionOptions"
               },
               "summary": null,
               "description": null
@@ -5538,7 +5538,7 @@
             {
               "name": "direction",
               "type": "Ref",
-              "ref_name": "SortDirection",
+              "ref_name": "net.SortDirection",
               "summary": null,
               "description": null
             }
@@ -5599,7 +5599,7 @@
                 "type": "Array",
                 "array_item": {
                   "type": "Ref",
-                  "ref_name": "OrderBy"
+                  "ref_name": "net.OrderBy"
                 }
               },
               "summary": " Sorting order",

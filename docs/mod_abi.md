@@ -555,7 +555,9 @@ type MessageSource = {
     type: 'Encoded'
     message: string,
     abi?: Abi
-} | ParamsOfEncodeMessage;
+} | ({
+    type: 'EncodingParams'
+} & ParamsOfEncodeMessage);
 ```
 Depends on value of the  `type` field.
 

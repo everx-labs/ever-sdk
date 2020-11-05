@@ -104,7 +104,12 @@ fn reduce_type(ty: &Type, module: &Module, api: &API) -> Type {
                         panic!("API can't contains tuples")
                     }
                 }
-                ty.clone()
+                Type::Struct {
+                    fields: fields
+                        .iter()
+                        .map(|x| reduce_field(x, module, api))
+                        .collect(),
+                }
             }
         }
         Type::EnumOfTypes { types } => {
