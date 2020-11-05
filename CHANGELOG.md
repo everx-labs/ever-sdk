@@ -14,7 +14,8 @@ locally in case if transaction waiting fails in order to resolve the contract ex
 - `Abi::Contract` variant as an alias to deprecated `Abi::Serialized`
 - `Abi::Json` variant to specify an ABI as a raw JSON string. 
 - `api.json` now contains details about numeric types: Number and BigInt are now 
-have new fields `number_type` and `number_size`. 
+have new fields `number_type` and `number_size`.
+- `tc_request_ptr` function to use pointers `void*` instead of request_id `u32`.
 
 ### Fixed
 - TS generator fix some field names that is an invalid JS identifiers.   
