@@ -21,6 +21,11 @@ typedef void (*tc_response_handler_t)(
     tc_string_data_t params_json,
     uint32_t response_type,
     bool finished);
+typedef void (*tc_response_handler_ptr_t)(
+    void* request_ptr,
+    tc_string_data_t params_json,
+    uint32_t response_type,
+    bool finished);
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,6 +39,12 @@ void tc_request(
     tc_string_data_t function_params_json,
     uint32_t request_id,
     tc_response_handler_t response_handler);
+void tc_request_ptr(
+    uint32_t context,
+    tc_string_data_t function_name,
+    tc_string_data_t function_params_json,
+    void* request_ptr,
+    tc_response_handler_ptr_t response_handler);
 
 tc_string_handle_t* tc_request_sync(
     uint32_t context,
