@@ -174,7 +174,7 @@ impl NodeClient {
 
     async fn check_time_delta(&self, address: &str, config: &NetworkConfig) -> ClientResult<()> {
         let delta = self.get_time_delta(address).await?;
-        if delta.abs() >= config.out_of_sync_threshold {
+        if delta.abs() as u32 >= config.out_of_sync_threshold {
             Err(Error::clock_out_of_sync(
                 delta,
                 config.out_of_sync_threshold,

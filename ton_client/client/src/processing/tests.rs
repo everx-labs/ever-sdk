@@ -347,7 +347,7 @@ async fn test_error_resolving() {
         TestClient::default_callback
     ).await.unwrap_err();
 
-    assert_eq!(result.code, TvmErrorCode::AccountMissing as isize);
+    assert_eq!(result.code, TvmErrorCode::AccountMissing as u32);
 
 
     // deploy with low balance
@@ -366,7 +366,7 @@ async fn test_error_resolving() {
         ErrorCode::MessageExpired
     } as isize;
 
-    assert_eq!(result.code, TvmErrorCode::LowBalance as isize);
+    assert_eq!(result.code, TvmErrorCode::LowBalance as u32);
     assert_eq!(result.data["original_error"]["code"], original_code);
 
     // ABI version 1 messages don't expire so previous deploy message can be processed after
@@ -386,7 +386,7 @@ async fn test_error_resolving() {
         TestClient::default_callback
     ).await.unwrap_err();
 
-    assert_eq!(result.code, TvmErrorCode::AccountCodeMissing as isize);
+    assert_eq!(result.code, TvmErrorCode::AccountCodeMissing as u32);
     assert_eq!(result.data["original_error"]["code"], original_code);
 
 
@@ -408,6 +408,6 @@ async fn test_error_resolving() {
         TestClient::default_callback
     ).await.unwrap_err();
 
-    assert_eq!(result.code, TvmErrorCode::ContractExecutionError as isize);
+    assert_eq!(result.code, TvmErrorCode::ContractExecutionError as u32);
     assert_eq!(result.data["original_error"]["code"], original_code);
 }

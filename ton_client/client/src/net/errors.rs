@@ -45,7 +45,7 @@ impl Error {
         )
     }
 
-    pub fn clock_out_of_sync(delta_ms: i64, threshold: i64) -> ClientError {
+    pub fn clock_out_of_sync(delta_ms: i64, threshold: u32) -> ClientError {
         let mut error = error(
             ErrorCode::ClockOutOfSync,
             "The time on the device is out of sync with the time on the server. Synchronize your device time with internet time".to_owned(),
