@@ -1,7 +1,7 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
-## 0.28.8 Nov 6, 2020
+## 0.28.0 Nov 6, 2020
 ### Fixed
 - local error resolving processes `NoGas` and `NoState` errors properly
 
