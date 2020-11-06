@@ -261,9 +261,8 @@ fn resolve_type_name(name: String) -> api_info::Type {
         "i32" => api_info::Type::i(32),
         "i64" => api_info::Type::i(64),
         "i128" => api_info::Type::i(128),
-        "usize" => api_info::Type::u(32),
-        "isize" => api_info::Type::i(32),
         "f32" => api_info::Type::f(32),
+        "usize" | "isize" => panic!("usize and isize can't be used in API"),
         _ => api_info::Type::Ref { name },
     }
 }

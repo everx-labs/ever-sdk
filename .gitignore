@@ -42,3 +42,4 @@ Cargo.lock
 /tools/**/*.d.ts
 /tools/**/*.tsbuildinfo
 /tools/package-lock.json
+/**/clion-log.txt

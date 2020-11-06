@@ -162,12 +162,12 @@ Depends on value of the  `type` field.
 
 When _type_ is _'None'_
 
-Non-existing account to run a creation internal message. Should be used with `skip_transaction_check = true` if the message has no deploy data since transaction on the unitialized account are always aborted
+Non-existing account to run a creation internal message. Should be used with `skip_transaction_check = true` if the message has no deploy data since transactions on the uninitialized account are always aborted
 
 
 When _type_ is _'Uninit'_
 
-Emulate unitialized account to run deploy message
+Emulate uninitialized account to run deploy message
 
 
 When _type_ is _'Account'_

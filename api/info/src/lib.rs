@@ -178,17 +178,6 @@ impl ApiType for &str {
     }
 }
 
-impl ApiType for u16 {
-    fn api() -> Field {
-        Field {
-            name: "u16".into(),
-            summary: None,
-            description: None,
-            value: Type::u(16),
-        }
-    }
-}
-
 impl ApiType for u32 {
     fn api() -> Field {
         Field {

@@ -64,7 +64,7 @@ pub async fn process_message<F: futures::Future<Output = ()> + Send + Sync>(
                 return Ok(output);
             }
             Err(err) => {
-                let can_retry = err.code == ErrorCode::MessageExpired as isize
+                let can_retry = err.code == ErrorCode::MessageExpired as u32
                     && can_retry_expired_message(&context, try_index);
                 if !can_retry {
                     // Waiting error is unrecoverable, return it

@@ -13,7 +13,7 @@
             {
               "name": "code",
               "type": "Number",
-              "number_type": "Int",
+              "number_type": "UInt",
               "number_size": 32,
               "summary": null,
               "description": null
@@ -720,8 +720,8 @@
             {
               "name": "salt",
               "type": "String",
-              "summary": " A salt bytes that modifies the hash to protect against Rainbow table attacks.",
-              "description": " A salt bytes that modifies the hash to protect against Rainbow table attacks.\n Must be encoded with `base64`."
+              "summary": " Salt bytes that modify the hash to protect against Rainbow table attacks.",
+              "description": " Salt bytes that modify the hash to protect against Rainbow table attacks.\n Must be encoded with `base64`."
             },
             {
               "name": "log_n",
@@ -1197,8 +1197,8 @@
             {
               "name": "valid",
               "type": "Boolean",
-              "summary": " Flag indicating the mnemonic is valid or not",
-              "description": " Flag indicating the mnemonic is valid or not"
+              "summary": " Flag indicating if the mnemonic is valid or not",
+              "description": " Flag indicating if the mnemonic is valid or not"
             }
           ],
           "summary": null,
@@ -2770,7 +2770,7 @@
                 "number_size": 32
               },
               "summary": " Message expiration time in seconds.",
-              "description": " Message expiration time in seconds."
+              "description": " Message expiration time in seconds.\n If not specified - calculated automatically from message_expiration_timeout(),\n try_index and message_expiration_timeout_grow_factor() (if ABI includes `expire` header)."
             },
             {
               "name": "time",
@@ -2780,8 +2780,8 @@
                 "number_type": "UInt",
                 "number_size": 64
               },
-              "summary": " Message creation time in milliseconds.",
-              "description": " Message creation time in milliseconds."
+              "summary": " Message creation time in milliseconds. If not specified, `now` is used ",
+              "description": " Message creation time in milliseconds. If not specified, `now` is used \n (if ABI includes `time` header)."
             },
             {
               "name": "pubkey",
@@ -2789,12 +2789,12 @@
               "optional_inner": {
                 "type": "String"
               },
-              "summary": " Public key used to sign message. Encoded with `hex`.",
-              "description": " Public key used to sign message. Encoded with `hex`."
+              "summary": " Public key is used by the contract to check the signature. Encoded in `hex`.",
+              "description": " Public key is used by the contract to check the signature. Encoded in `hex`.\n If not specified, method fails with exception (if ABI includes `pubkey` header).. "
             }
           ],
           "summary": " The ABI function header.",
-          "description": " The ABI function header.\n\n Includes several hidden function parameters that contract\n uses for security and replay protection reasons.\n\n The actual set of header fields depends on the contract's ABI."
+          "description": " The ABI function header.\n\n Includes several hidden function parameters that contract\n uses for security, message delivery monitoring and replay protection reasons.\n\n The actual set of header fields depends on the contract's ABI.\n If a contract's ABI does not include some headers, then they are not filled. "
         },
         {
           "name": "CallSet",
@@ -2887,8 +2887,8 @@
                   "description": null
                 }
               ],
-              "summary": " Only public key is provided to generate unsigned message and `data_to_sign`",
-              "description": " Only public key is provided to generate unsigned message and `data_to_sign`\n which can be signed later.  "
+              "summary": " Only public key is provided in unprefixed hex string format to generate unsigned message ",
+              "description": " Only public key is provided in unprefixed hex string format to generate unsigned message \n and `data_to_sign` which can be signed later.  "
             },
             {
               "name": "Keys",
@@ -4617,7 +4617,7 @@
                 }
               },
               "summary": " Decoded bodies of the out messages.",
-              "description": " Decoded bodies of the out messages.\n\n If the message can't be decoded then `None` will be stored in\n the appropriate position."
+              "description": " Decoded bodies of the out messages.\n\n If the message can't be decoded, then `None` will be stored in\n the appropriate position."
             },
             {
               "name": "output",
@@ -4651,7 +4651,7 @@
                 "ref_name": "abi.Abi"
               },
               "summary": " Optional message ABI.",
-              "description": " Optional message ABI.\n\n If this parameter is specified and the message has the\n `expire` header then expiration time will be checked against\n the current time to prevent an unnecessary sending of already expired message.\n\n The `message already expired` error will be returned in this\n case.\n\n Note that specifying `abi` for ABI compliant contracts is\n strongly recommended due to choosing proper processing\n strategy."
+              "description": " Optional message ABI.\n\n If this parameter is specified and the message has the\n `expire` header then expiration time will be checked against\n the current time to prevent unnecessary sending of already expired message.\n\n The `message already expired` error will be returned in this\n case.\n\n Note, that specifying `abi` for ABI compliant contracts is\n strongly recommended, so that proper processing strategy can be\n chosen."
             },
             {
               "name": "send_events",
@@ -4689,7 +4689,7 @@
                 "ref_name": "abi.Abi"
               },
               "summary": " Optional ABI for decoding the transaction result.",
-              "description": " Optional ABI for decoding the transaction result.\n\n If it is specified then the output messages' bodies will be\n decoded according to this ABI.\n\n The `abi_decoded` result field will be filled out."
+              "description": " Optional ABI for decoding the transaction result.\n\n If it is specified, then the output messages' bodies will be\n decoded according to this ABI.\n\n The `abi_decoded` result field will be filled out."
             },
             {
               "name": "message",
@@ -4790,7 +4790,7 @@
         {
           "name": "wait_for_transaction",
           "summary": " Performs monitoring of the network for the result transaction",
-          "description": " Performs monitoring of the network for the result transaction\n of the external inbound message processing.\n \n `send_events` enables intermediate events, such as `WillFetchNextBlock`,\n `FetchNextBlockFailed` that may be useful for logging of new shard blocks creation \n during message processing.\n\n Note that presence of the `abi` parameter is critical for ABI\n compliant contracts. Message processing uses drastically\n different strategy for processing message for contracts which\n ABI includes \"expire\" header.\n\n When the ABI header `expire` is present, the processing uses\n `message expiration` strategy:\n - The maximum block gen time is set to\n   `message_expiration_time + transaction_wait_timeout`.\n - When maximum block gen time is reached the processing will\n   be finished with `MessageExpired` error.\n\n When the ABI header `expire` isn't present or `abi` parameter\n isn't specified, the processing uses `transaction waiting`\n strategy:\n - The maximum block gen time is set to\n   `now() + transaction_wait_timeout`.\n \n - If maximum block gen time is reached and no result transaction is found \n the processing will exit with an error.",
+          "description": " Performs monitoring of the network for the result transaction\n of the external inbound message processing.\n \n `send_events` enables intermediate events, such as `WillFetchNextBlock`,\n `FetchNextBlockFailed` that may be useful for logging of new shard blocks creation \n during message processing.\n\n Note, that presence of the `abi` parameter is critical for ABI\n compliant contracts. Message processing uses drastically\n different strategy for processing message for contracts which\n ABI includes \"expire\" header.\n\n When the ABI header `expire` is present, the processing uses\n `message expiration` strategy:\n - The maximum block gen time is set to\n   `message_expiration_timeout + transaction_wait_timeout`.\n - When maximum block gen time is reached, the processing will\n   be finished with `MessageExpired` error.\n\n When the ABI header `expire` isn't present or `abi` parameter\n isn't specified, the processing uses `transaction waiting`\n strategy:\n - The maximum block gen time is set to\n   `now() + transaction_wait_timeout`.\n \n - If maximum block gen time is reached and no result transaction is found, \n the processing will exit with an error.",
           "params": [
             {
               "name": "context",
@@ -4841,7 +4841,7 @@
         {
           "name": "process_message",
           "summary": " Creates message, sends it to the network and monitors its processing.",
-          "description": " Creates message, sends it to the network and monitors its processing.\n \n Creates ABI-compatible message,\n sends it to the network and monitors for the result transaction.\n Decodes the output messages's bodies.\n \n If contract's ABI includes \"expire\" header then\n SDK implements retries in case of unsuccessful message delivery within the expiration\n timeout: SDK recreates the message, sends it and processes it again. \n \n The intermediate events, such as `WillFetchFirstBlock`, `WillSend`, `DidSend`,\n `WillFetchNextBlock`, etc - are switched on/off by `send_events` flag \n and logged into the supplied callback function.\n The retry configuration parameters are defined in config:\n <add correct config params here>\n pub const DEFAULT_EXPIRATION_RETRIES_LIMIT: i8 = 3; - max number of retries\n pub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 40000;  - message expiration timeout in ms.\n pub const DEFAULT_....expiration_timeout_grow_factor... = 1.5 - factor that increases the expiration timeout for each retry\n \n If contract's ABI does not include \"expire\" header\n then if no transaction is found within the network timeout (see config parameter ), exits with error.",
+          "description": " Creates message, sends it to the network and monitors its processing.\n \n Creates ABI-compatible message,\n sends it to the network and monitors for the result transaction.\n Decodes the output messages' bodies.\n \n If contract's ABI includes \"expire\" header, then\n SDK implements retries in case of unsuccessful message delivery within the expiration\n timeout: SDK recreates the message, sends it and processes it again. \n \n The intermediate events, such as `WillFetchFirstBlock`, `WillSend`, `DidSend`,\n `WillFetchNextBlock`, etc - are switched on/off by `send_events` flag \n and logged into the supplied callback function.\n The retry configuration parameters are defined in config:\n <add correct config params here>\n pub const DEFAULT_EXPIRATION_RETRIES_LIMIT: i8 = 3; - max number of retries\n pub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 40000;  - message expiration timeout in ms.\n pub const DEFAULT_....expiration_timeout_grow_factor... = 1.5 - factor that increases the expiration timeout for each retry\n \n If contract's ABI does not include \"expire\" header\n then, if no transaction is found within the network timeout (see config parameter ), exits with error.",
           "params": [
             {
               "name": "context",
@@ -5085,14 +5085,14 @@
               "type": "Struct",
               "struct_fields": [],
               "summary": " Non-existing account to run a creation internal message.",
-              "description": " Non-existing account to run a creation internal message.\n Should be used with `skip_transaction_check = true` if the message has no deploy data\n since transaction on the unitialized account are always aborted"
+              "description": " Non-existing account to run a creation internal message.\n Should be used with `skip_transaction_check = true` if the message has no deploy data\n since transactions on the uninitialized account are always aborted"
             },
             {
               "name": "Uninit",
               "type": "Struct",
               "struct_fields": [],
-              "summary": " Emulate unitialized account to run deploy message",
-              "description": " Emulate unitialized account to run deploy message"
+              "summary": " Emulate uninitialized account to run deploy message",
+              "description": " Emulate uninitialized account to run deploy message"
             },
             {
               "name": "Account",
@@ -5751,7 +5751,7 @@
         {
           "name": "query_collection",
           "summary": " Queries collection data",
-          "description": " Queries collection data\n\n Queries data that satisfies the `filter` conditions,\n limits the number of returned records and orders them.\n The projection fields are limited to  `result` fields",
+          "description": " Queries collection data\n\n Queries data that satisfies the `filter` conditions,\n limits the number of returned records and orders them.\n The projection fields are limited to `result` fields",
           "params": [
             {
               "name": "context",
@@ -5789,7 +5789,7 @@
         {
           "name": "wait_for_collection",
           "summary": " Returns an object that fulfills the conditions or waits for its appearance",
-          "description": " Returns an object that fulfills the conditions or waits for its appearance\n\n Triggers only once.\n If object that satisfies the `filter` conditions\n already exists - returns it immediately.\n If not - waits for insert/update of data withing the specified `timeout`,\n and returns it.\n The projection fields are limited to  `result` fields",
+          "description": " Returns an object that fulfills the conditions or waits for its appearance\n\n Triggers only once.\n If object that satisfies the `filter` conditions\n already exists - returns it immediately.\n If not - waits for insert/update of data within the specified `timeout`,\n and returns it.\n The projection fields are limited to `result` fields",
           "params": [
             {
               "name": "context",
@@ -5864,7 +5864,7 @@
         {
           "name": "subscribe_collection",
           "summary": " Creates a subscription",
-          "description": " Creates a subscription\n \n Triggers for each insert/update of data\n that satisfies the `filter` conditions.\n The projection fields are limited to  `result` fields.",
+          "description": " Creates a subscription\n \n Triggers for each insert/update of data\n that satisfies the `filter` conditions.\n The projection fields are limited to `result` fields.",
           "params": [
             {
               "name": "context",

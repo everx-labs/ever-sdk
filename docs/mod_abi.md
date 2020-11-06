@@ -393,9 +393,10 @@ type AbiHandle = number;
 The ABI function header.
 
 Includes several hidden function parameters that contract
-uses for security and replay protection reasons.
+uses for security, message delivery monitoring and replay protection reasons.
 
 The actual set of header fields depends on the contract's ABI.
+If a contract's ABI does not include some headers, then they are not filled.
 
 ```ts
 type FunctionHeader = {
@@ -404,9 +405,9 @@ type FunctionHeader = {
     pubkey?: string
 };
 ```
-- `expire`?: _number_ – Message expiration time in seconds.
-- `time`?: _bigint_ – Message creation time in milliseconds.
-- `pubkey`?: _string_ – Public key used to sign message. Encoded with `hex`.
+- `expire`?: _number_ – Message expiration time in seconds. If not specified - calculated automatically from message_expiration_timeout(), try_index and message_expiration_timeout_grow_factor() (if ABI includes `expire` header).
+- `time`?: _bigint_ – Message creation time in milliseconds. If not specified, `now` is used (if ABI includes `time` header).
+- `pubkey`?: _string_ – Public key is used by the contract to check the signature. Encoded in `hex`. If not specified, method fails with exception (if ABI includes `pubkey` header)..
 
 
 ## CallSet
@@ -460,7 +461,7 @@ No keys are provided. Creates an unsigned message.
 
 When _type_ is _'External'_
 
-Only public key is provided to generate unsigned message and `data_to_sign` which can be signed later.
+Only public key is provided in unprefixed hex string format to generate unsigned message and `data_to_sign` which can be signed later.
 
 
 - `public_key`: _string_
