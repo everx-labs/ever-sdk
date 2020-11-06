@@ -48,7 +48,7 @@ function spawnProcess(name, args, options) {
             if (code === 0) {
                 resolve(res);
             } else {
-                reject(`return code: ${code}\ncmdline: ${name} ${args.join(' ')}\n` + err);
+                reject(options && options.quiet ? `return code: ${code}\ncmdline: ${name} ${args.join(' ')}\n` + err : '');
             }
         });
     });
