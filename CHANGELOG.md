@@ -15,18 +15,18 @@ locally in case if transaction waiting fails in order to resolve the contract ex
 - `Abi::Json` variant to specify an ABI as a raw JSON string. 
 - `api.json` now contains details about numeric types: Number and BigInt are now 
 have new fields `number_type` and `number_size`.
-
-### Unstable
-- `tc_request_ptr` function to use pointers `void*` instead of request_id `u32`.
-This feature is **UNSTABLE** yet.
+- `api.json` ref type names are fully qualified now in form of `module.type`,
+for example `abi.Signer`.
 
 ### Fixed
 - TS generator fix some field names that is an invalid JS identifiers.   
 - Use `install_name_tool` to fix loading library paths at `libton_client.dylib`.
-- `api.json` is reduced, so it can't contains tuple types. All types are exactly
-match to JSON.
-- `summary` inferring is more sophisticated now.
-- `description` is optimized a little. Leading spaces are reduced. 
+- `api.json` is reduced, so it can't contains tuple types, only structs.
+All types are exactly match to JSON.
+
+### Unstable
+- `tc_request_ptr` function to use pointers `void*` instead of request_id `u32`.
+This feature is **UNSTABLE** yet.
 
 ## 1.0.0 Oct 27, 2020
 

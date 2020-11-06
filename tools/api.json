@@ -2780,8 +2780,8 @@
                 "number_type": "UInt",
                 "number_size": 64
               },
-              "summary": " Message creation time in milliseconds. If not specified, `now` is used ",
-              "description": " Message creation time in milliseconds. If not specified, `now` is used \n (if ABI includes `time` header)."
+              "summary": " Message creation time in milliseconds. If not specified, `now` is used",
+              "description": " Message creation time in milliseconds. If not specified, `now` is used\n (if ABI includes `time` header)."
             },
             {
               "name": "pubkey",
@@ -2790,11 +2790,11 @@
                 "type": "String"
               },
               "summary": " Public key is used by the contract to check the signature. Encoded in `hex`.",
-              "description": " Public key is used by the contract to check the signature. Encoded in `hex`.\n If not specified, method fails with exception (if ABI includes `pubkey` header).. "
+              "description": " Public key is used by the contract to check the signature. Encoded in `hex`.\n If not specified, method fails with exception (if ABI includes `pubkey` header).."
             }
           ],
           "summary": " The ABI function header.",
-          "description": " The ABI function header.\n\n Includes several hidden function parameters that contract\n uses for security, message delivery monitoring and replay protection reasons.\n\n The actual set of header fields depends on the contract's ABI.\n If a contract's ABI does not include some headers, then they are not filled. "
+          "description": " The ABI function header.\n\n Includes several hidden function parameters that contract\n uses for security, message delivery monitoring and replay protection reasons.\n\n The actual set of header fields depends on the contract's ABI.\n If a contract's ABI does not include some headers, then they are not filled."
         },
         {
           "name": "CallSet",
