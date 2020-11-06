@@ -128,8 +128,8 @@ additional response dispatch information.
 - `pointer` – Each request is identified by `void*` pointer defined by application.
 In this case the application or binding uses pointers to native objects with 
 additional response dispatch information. For example a pointer to closure.
-Note, that library doesn't use this pointer and memory pointed to. It just store
-this pointer and provide it back to application when library calls response handler.
+Note, that library doesn't use this pointer and memory pointed to. It just stores
+this pointer and provides it back to application when library calls response handler.
 
 **Note** `pointer` supports is UNSTABLE feature yet and can be refined. 
 
