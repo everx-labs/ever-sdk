@@ -38,7 +38,7 @@ pub enum ErrorCode {
 pub struct Error;
 
 fn error(code: ErrorCode, message: String) -> ClientError {
-    ClientError::with_code_message(code as isize, message)
+    ClientError::with_code_message(code as u32, message)
 }
 
 impl Error {

@@ -54,7 +54,7 @@ function send_message(
 ### Parameters
 - `message`: _string_ – Message BOC.
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Optional message ABI.
-<br>If this parameter is specified and the message has the<br>`expire` header then expiration time will be checked against<br>the current time to prevent an unnecessary sending of already expired message.<br><br>The `message already expired` error will be returned in this<br>case.<br><br>Note that specifying `abi` for ABI compliant contracts is<br>strongly recommended due to choosing proper processing<br>strategy.
+<br>If this parameter is specified and the message has the<br>`expire` header then expiration time will be checked against<br>the current time to prevent unnecessary sending of already expired message.<br><br>The `message already expired` error will be returned in this<br>case.<br><br>Note, that specifying `abi` for ABI compliant contracts is<br>strongly recommended, so that proper processing strategy can be<br>chosen.
 - `send_events`: _boolean_ – Flag for requesting events sending
 - `responseHandler`?: _ResponseHandler_ – additional responses handler.### Result
 
@@ -70,7 +70,7 @@ Performs monitoring of the network for the result transaction of the external in
 `FetchNextBlockFailed` that may be useful for logging of new shard blocks creation
 during message processing.
 
-Note that presence of the `abi` parameter is critical for ABI
+Note, that presence of the `abi` parameter is critical for ABI
 compliant contracts. Message processing uses drastically
 different strategy for processing message for contracts which
 ABI includes "expire" header.
@@ -78,8 +78,8 @@ ABI includes "expire" header.
 When the ABI header `expire` is present, the processing uses
 `message expiration` strategy:
 - The maximum block gen time is set to
-  `message_expiration_time + transaction_wait_timeout`.
-- When maximum block gen time is reached the processing will
+  `message_expiration_timeout + transaction_wait_timeout`.
+- When maximum block gen time is reached, the processing will
   be finished with `MessageExpired` error.
 
 When the ABI header `expire` isn't present or `abi` parameter
@@ -88,7 +88,7 @@ strategy:
 - The maximum block gen time is set to
   `now() + transaction_wait_timeout`.
 
-- If maximum block gen time is reached and no result transaction is found
+- If maximum block gen time is reached and no result transaction is found,
 the processing will exit with an error.
 
 ```ts
@@ -113,7 +113,7 @@ function wait_for_transaction(
 ```
 ### Parameters
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Optional ABI for decoding the transaction result.
-<br>If it is specified then the output messages' bodies will be<br>decoded according to this ABI.<br><br>The `abi_decoded` result field will be filled out.
+<br>If it is specified, then the output messages' bodies will be<br>decoded according to this ABI.<br><br>The `abi_decoded` result field will be filled out.
 - `message`: _string_ – Message BOC. Encoded with `base64`.
 - `shard_block_id`: _string_ – The last generated block id of the destination account shard before the message was sent.
 <br>You must provide the same value as the `send_message` has returned.
@@ -133,9 +133,9 @@ Creates message, sends it to the network and monitors its processing.
 
 Creates ABI-compatible message,
 sends it to the network and monitors for the result transaction.
-Decodes the output messages's bodies.
+Decodes the output messages' bodies.
 
-If contract's ABI includes "expire" header then
+If contract's ABI includes "expire" header, then
 SDK implements retries in case of unsuccessful message delivery within the expiration
 timeout: SDK recreates the message, sends it and processes it again.
 
@@ -149,7 +149,7 @@ pub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 40000;  - message expiration timeout
 pub const DEFAULT_....expiration_timeout_grow_factor... = 1.5 - factor that increases the expiration timeout for each retry
 
 If contract's ABI does not include "expire" header
-then if no transaction is found within the network timeout (see config parameter ), exits with error.
+then, if no transaction is found within the network timeout (see config parameter ), exits with error.
 
 ```ts
 type ParamsOfProcessMessage = {
@@ -336,7 +336,7 @@ type DecodedOutput = {
 };
 ```
 - `out_messages`: _[DecodedMessageBody](mod_abi.md#DecodedMessageBody)?[]_ – Decoded bodies of the out messages.
-<br>If the message can't be decoded then `None` will be stored in<br>the appropriate position.
+<br>If the message can't be decoded, then `None` will be stored in<br>the appropriate position.
 - `output`?: _any_ – Decoded body of the function output message.
 
 
@@ -350,7 +350,7 @@ type ParamsOfSendMessage = {
 ```
 - `message`: _string_ – Message BOC.
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Optional message ABI.
-<br>If this parameter is specified and the message has the<br>`expire` header then expiration time will be checked against<br>the current time to prevent an unnecessary sending of already expired message.<br><br>The `message already expired` error will be returned in this<br>case.<br><br>Note that specifying `abi` for ABI compliant contracts is<br>strongly recommended due to choosing proper processing<br>strategy.
+<br>If this parameter is specified and the message has the<br>`expire` header then expiration time will be checked against<br>the current time to prevent unnecessary sending of already expired message.<br><br>The `message already expired` error will be returned in this<br>case.<br><br>Note, that specifying `abi` for ABI compliant contracts is<br>strongly recommended, so that proper processing strategy can be<br>chosen.
 - `send_events`: _boolean_ – Flag for requesting events sending
 
 
@@ -374,7 +374,7 @@ type ParamsOfWaitForTransaction = {
 };
 ```
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Optional ABI for decoding the transaction result.
-<br>If it is specified then the output messages' bodies will be<br>decoded according to this ABI.<br><br>The `abi_decoded` result field will be filled out.
+<br>If it is specified, then the output messages' bodies will be<br>decoded according to this ABI.<br><br>The `abi_decoded` result field will be filled out.
 - `message`: _string_ – Message BOC. Encoded with `base64`.
 - `shard_block_id`: _string_ – The last generated block id of the destination account shard before the message was sent.
 <br>You must provide the same value as the `send_message` has returned.

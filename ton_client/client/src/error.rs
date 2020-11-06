@@ -3,7 +3,7 @@ use std::fmt::Display;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default, ApiType)]
 pub struct ClientError {
-    pub code: isize,
+    pub code: u32,
     pub message: String,
     pub data: serde_json::Value,
 }
@@ -32,7 +32,7 @@ impl ClientError {
     pub const NET: isize = 600;
     pub const UTILS: isize = 700;
 
-    pub fn new(code: isize, message: String, data: Value) -> Self {
+    pub fn new(code: u32, message: String, data: Value) -> Self {
         let mut data = data;
         data["core_version"] = Value::String(env!("CARGO_PKG_VERSION").to_owned());
         Self {
@@ -42,7 +42,7 @@ impl ClientError {
         }
     }
 
-    pub fn with_code_message(code: isize, message: String) -> Self {
+    pub fn with_code_message(code: u32, message: String) -> Self {
         Self {
             code,
             message,

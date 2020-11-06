@@ -14,21 +14,41 @@ extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
 
-mod docs;
+mod api;
 mod errors;
 mod command_line;
 mod request;
-mod api_item;
 
 const USAGE: &str = r#"
-toncli <command> args...
-where command is:
+Usage:  toncli [OPTIONS] <command> [args...]
 
-api – export ton client api JSON
+Commands:
+    api      Exports ton client api JSON
+    request  Executes ton client api function
 
-request <function> <params> – executes ton client api function
-    <function> – any possible api function name in form of module.function
-    <params> – all args next to <function> collected as a JSON5 function parameters
+api [OPTIONS]
+Options:
+    -o, --out-dir string  Path to folder where the `api.json` will be stored.
+                          If omitted, then api json will be printed to console.
+Example:
+    toncli api -o ~/ton
+
+request <function> [params...]
+    function  Any possible api function name in form of `module.function`.
+    params    All params collected as a JSON5 function parameters.
+              You can use file includes in params. File include must be specified in
+              form of `@filename`. If file has an extension `.json` then content of json
+              will be inserted as is. Elsewhere the content of specified file
+              will be encoded with base64 and enclosed in double quotes.
+
+Example:
+    toncli request client.version
+    toncli request crypto.generate_random_bytes { length: 32 }
+    toncli request abi.attach_signature_to_message_body { \
+        abi: { type: \"Contract\", value: @hello.abi.json }, \
+        public_key: \"...\", \
+        message: @message.boc, \
+        signature: \"...\" }
 "#;
 
 fn print_usage_and_exit() {
@@ -40,7 +60,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let cmd = args.iter().skip(1).next().map(|x| x.as_str());
     let result = match cmd.unwrap_or("") {
-        "api" => docs::command(&args[2..]),
+        "api" => api::command(&args[2..]),
         "request" => request::command(&args[2..]),
         _ => {
             print_usage_and_exit();

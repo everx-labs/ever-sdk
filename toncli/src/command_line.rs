@@ -13,7 +13,7 @@
  */
 
 use crate::errors::CliError;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap};
 
 enum ParseState {
     OptionOrArg,
@@ -31,15 +31,6 @@ impl CommandLine {
         names
             .split("|")
             .find_map(|x| self.options.get(x.trim()).map(|x| x.as_str()))
-    }
-
-    pub fn get_opt_set(&self, names: &str) -> HashSet<String> {
-        self.get_opt(names)
-            .unwrap_or("")
-            .split(',')
-            .filter(|x| !x.is_empty())
-            .map(|x| x.to_string())
-            .collect()
     }
 
     pub fn parse(args: &[String]) -> Result<Self, CliError> {

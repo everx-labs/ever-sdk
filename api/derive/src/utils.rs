@@ -1,4 +1,5 @@
 use api_info;
+use api_info::NumberType;
 use quote::__private::TokenStream;
 use quote::quote;
 use syn::{
@@ -135,13 +136,33 @@ pub(crate) fn function_to_tokens(m: &api_info::Function) -> TokenStream {
     }
 }
 
+fn number_type_to_tokens(number_type: &NumberType) -> TokenStream {
+    match number_type {
+        NumberType::UInt => quote! { api_info::NumberType::UInt },
+        NumberType::Int => quote! { api_info::NumberType::Int },
+        NumberType::Float => quote! { api_info::NumberType::Float },
+    }
+}
+
 fn type_to_tokens(t: &api_info::Type) -> TokenStream {
     match t {
         api_info::Type::None {} => quote! { api_info::Type::None {} },
         api_info::Type::Any {} => quote! { api_info::Type::Any {} },
         api_info::Type::Boolean {} => quote! { api_info::Type::Boolean {} },
-        api_info::Type::Number {} => quote! { api_info::Type::Number {} },
-        api_info::Type::BigInt {} => quote! { api_info::Type::BigInt {} },
+        api_info::Type::Number {
+            number_type,
+            number_size: size,
+        } => {
+            let number_type_tokens = number_type_to_tokens(number_type);
+            quote! { api_info::Type::Number { number_type: #number_type_tokens, number_size: #size } }
+        }
+        api_info::Type::BigInt {
+            number_type,
+            number_size: size,
+        } => {
+            let number_type_tokens = number_type_to_tokens(number_type);
+            quote! { api_info::Type::BigInt { number_type: #number_type_tokens, number_size: #size } }
+        }
         api_info::Type::String {} => quote! { api_info::Type::String {} },
         api_info::Type::Ref { name } => {
             quote! { api_info::Type::Ref { name: #name.into() } }
@@ -230,10 +251,18 @@ fn resolve_type_name(name: String) -> api_info::Type {
     match name.as_ref() {
         "String" => api_info::Type::String {},
         "bool" => api_info::Type::Boolean {},
-        "u8" | "u16" | "u32" | "i8" | "i16" | "i32" | "usize" | "isize" | "f32" => {
-            api_info::Type::Number {}
-        }
-        "u64" | "i64" | "u128" | "i128" => api_info::Type::BigInt {},
+        "u8" => api_info::Type::u(8),
+        "u16" => api_info::Type::u(16),
+        "u32" => api_info::Type::u(32),
+        "u64" => api_info::Type::u(64),
+        "u128" => api_info::Type::u(128),
+        "i8" => api_info::Type::i(8),
+        "i16" => api_info::Type::i(16),
+        "i32" => api_info::Type::i(32),
+        "i64" => api_info::Type::i(64),
+        "i128" => api_info::Type::i(128),
+        "f32" => api_info::Type::f(32),
+        "usize" | "isize" => panic!("usize and isize can't be used in API"),
         _ => api_info::Type::Ref { name },
     }
 }

@@ -458,7 +458,7 @@ function scrypt(
 ```
 ### Parameters
 - `password`: _string_ – The password bytes to be hashed. Must be encoded with `base64`.
-- `salt`: _string_ – A salt bytes that modifies the hash to protect against Rainbow table attacks. Must be encoded with `base64`.
+- `salt`: _string_ – Salt bytes that modify the hash to protect against Rainbow table attacks. Must be encoded with `base64`.
 - `log_n`: _number_ – CPU/memory cost parameter
 - `r`: _number_ – The block size parameter, which fine-tunes sequential memory read size and performance.
 - `p`: _number_ – Parallelization parameter.
@@ -832,7 +832,7 @@ function mnemonic_verify(
 - `word_count`?: _number_ – Word count
 ### Result
 
-- `valid`: _boolean_ – Flag indicating the mnemonic is valid or not
+- `valid`: _boolean_ – Flag indicating if the mnemonic is valid or not
 
 
 ## mnemonic_derive_sign_keys
@@ -1030,7 +1030,6 @@ function chacha20(
 ```ts
 type SigningBoxHandle = number;
 ```
-- _number_
 
 
 ## ParamsOfFactorize
@@ -1210,7 +1209,7 @@ type ParamsOfScrypt = {
 };
 ```
 - `password`: _string_ – The password bytes to be hashed. Must be encoded with `base64`.
-- `salt`: _string_ – A salt bytes that modifies the hash to protect against Rainbow table attacks. Must be encoded with `base64`.
+- `salt`: _string_ – Salt bytes that modify the hash to protect against Rainbow table attacks. Must be encoded with `base64`.
 - `log_n`: _number_ – CPU/memory cost parameter
 - `r`: _number_ – The block size parameter, which fine-tunes sequential memory read size and performance.
 - `p`: _number_ – Parallelization parameter.
@@ -1446,7 +1445,7 @@ type ResultOfMnemonicVerify = {
     valid: boolean
 };
 ```
-- `valid`: _boolean_ – Flag indicating the mnemonic is valid or not
+- `valid`: _boolean_ – Flag indicating if the mnemonic is valid or not
 
 
 ## ParamsOfMnemonicDeriveSignKeys

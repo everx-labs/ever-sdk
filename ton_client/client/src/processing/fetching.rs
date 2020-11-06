@@ -167,7 +167,7 @@ pub async fn fetch_transaction_result(
     let fees = calc_transaction_fees(&transaction_object.object, true, false, get_contract_info)
         .await
         .map_err(|err| {
-            if err.code == crate::tvm::ErrorCode::ContractExecutionError as isize &&
+            if err.code == crate::tvm::ErrorCode::ContractExecutionError as u32 &&
                 (err.data["exit_code"] == crate::tvm::StdContractError::ReplayProtection as i32 ||
                 err.data["exit_code"] == crate::tvm::StdContractError::ExtMessageExpired as i32)
             {

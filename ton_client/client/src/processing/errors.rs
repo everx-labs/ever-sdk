@@ -37,11 +37,11 @@ pub enum ErrorCode {
 pub struct Error;
 
 fn error(code: ErrorCode, message: String) -> ClientError {
-    ClientError::with_code_message(code as isize, message)
+    ClientError::with_code_message(code as u32, message)
 }
 
 fn error_with_data(code: ErrorCode, message: String, data: Value) -> ClientError {
-    ClientError::new(code as isize, message, data)
+    ClientError::new(code as u32, message, data)
 }
 
 fn format_time(time: u32) -> String {

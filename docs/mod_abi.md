@@ -348,14 +348,16 @@ function encode_account(
 ```ts
 type Abi = {
     type: 'Contract'
-    'ABI version': number,
-    header?: string[],
-    functions?: AbiFunction[],
-    events?: AbiEvent[],
-    data?: AbiData[]
+    value: AbiContract
+} | {
+    type: 'Json'
+    value: string
 } | {
     type: 'Handle'
-    value: number
+    value: AbiHandle
+} | {
+    type: 'Serialized'
+    value: AbiContract
 };
 ```
 Depends on value of the  `type` field.
@@ -363,32 +365,38 @@ Depends on value of the  `type` field.
 When _type_ is _'Contract'_
 
 
-- `ABI version`: _number_
-- `header`?: _string[]_
-- `functions`?: _[AbiFunction](mod_abi.md#AbiFunction)[]_
-- `events`?: _[AbiEvent](mod_abi.md#AbiEvent)[]_
-- `data`?: _[AbiData](mod_abi.md#AbiData)[]_
+- `value`: _[AbiContract](mod_abi.md#AbiContract)_
+
+When _type_ is _'Json'_
+
+
+- `value`: _string_
 
 When _type_ is _'Handle'_
 
 
-- `value`: _number_
+- `value`: _[AbiHandle](mod_abi.md#AbiHandle)_
+
+When _type_ is _'Serialized'_
+
+
+- `value`: _[AbiContract](mod_abi.md#AbiContract)_
 
 
 ## AbiHandle
 ```ts
 type AbiHandle = number;
 ```
-- _number_
 
 
 ## FunctionHeader
 The ABI function header.
 
 Includes several hidden function parameters that contract
-uses for security and replay protection reasons.
+uses for security, message delivery monitoring and replay protection reasons.
 
 The actual set of header fields depends on the contract's ABI.
+If a contract's ABI does not include some headers, then they are not filled.
 
 ```ts
 type FunctionHeader = {
@@ -397,9 +405,9 @@ type FunctionHeader = {
     pubkey?: string
 };
 ```
-- `expire`?: _number_ – Message expiration time in seconds.
-- `time`?: _bigint_ – Message creation time in milliseconds.
-- `pubkey`?: _string_ – Public key used to sign message. Encoded with `hex`.
+- `expire`?: _number_ – Message expiration time in seconds. If not specified - calculated automatically from message_expiration_timeout(), try_index and message_expiration_timeout_grow_factor() (if ABI includes `expire` header).
+- `time`?: _bigint_ – Message creation time in milliseconds. If not specified, `now` is used (if ABI includes `time` header).
+- `pubkey`?: _string_ – Public key is used by the contract to check the signature. Encoded in `hex`. If not specified, method fails with exception (if ABI includes `pubkey` header)..
 
 
 ## CallSet
@@ -453,7 +461,7 @@ No keys are provided. Creates an unsigned message.
 
 When _type_ is _'External'_
 
-Only public key is provided to generate unsigned message and `data_to_sign` which can be signed later.
+Only public key is provided in unprefixed hex string format to generate unsigned message and `data_to_sign` which can be signed later.
 
 
 - `public_key`: _string_
@@ -548,15 +556,9 @@ type MessageSource = {
     type: 'Encoded'
     message: string,
     abi?: Abi
-} | {
+} | ({
     type: 'EncodingParams'
-    abi: Abi,
-    address?: string,
-    deploy_set?: DeploySet,
-    call_set?: CallSet,
-    signer: Signer,
-    processing_try_index?: number
-};
+} & ParamsOfEncodeMessage);
 ```
 Depends on value of the  `type` field.
 
@@ -567,7 +569,6 @@ When _type_ is _'Encoded'_
 - `abi`?: _[Abi](mod_abi.md#Abi)_
 
 When _type_ is _'EncodingParams'_
-
 
 - `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
 - `address`?: _string_ – Target address the message will be sent to.
@@ -641,6 +642,7 @@ type AbiFunction = {
 ```ts
 type AbiContract = {
     'ABI version': number,
+    abi_version?: number,
     header?: string[],
     functions?: AbiFunction[],
     events?: AbiEvent[],
@@ -648,6 +650,7 @@ type AbiContract = {
 };
 ```
 - `ABI version`: _number_
+- `abi_version`?: _number_
 - `header`?: _string[]_
 - `functions`?: _[AbiFunction](mod_abi.md#AbiFunction)[]_
 - `events`?: _[AbiEvent](mod_abi.md#AbiEvent)[]_
