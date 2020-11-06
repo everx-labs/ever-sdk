@@ -23,6 +23,7 @@ for example `abi.Signer`.
 - Use `install_name_tool` to fix loading library paths at `libton_client.dylib`.
 - `api.json` is reduced, so it can't contains tuple types, only structs.
 All types are exactly match to JSON.
+- `out_of_sync_threshold` config parameter is `u32`
 
 ### Unstable
 - `tc_request_ptr` function to use pointers `void*` instead of request_id `u32`.
