@@ -87,6 +87,7 @@ const buildNumberOpt = Number(getOption('build-number'));
 const buildNumber = isNaN(buildNumberOpt) ? 0 : buildNumberOpt;
 const gitCommit = getOption('git-commit');
 const verboseMode = getOption('verbose');
+const noBuildInfo = getOption('no-build-info');
 const devOut = getOption('dev-out');
 const devMode = !!devOut;
 
@@ -176,6 +177,9 @@ function main(f) {
 }
 
 async function writeBuildInfo(path, build_number = 0, git_commit) {
+    if (noBuildInfo) {
+        return
+    }
     try {
         const metadata = await spawnProcess('cargo', ['metadata', '--locked', '--format-version', '1'], { quiet: true });
         const packages = JSON.parse(metadata).packages;
