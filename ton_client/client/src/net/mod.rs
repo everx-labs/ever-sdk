@@ -53,7 +53,7 @@ pub fn default_wait_for_timeout() -> u32 {
     40000
 }
 
-pub fn default_out_of_sync_threshold() -> i64 {
+pub fn default_out_of_sync_threshold() -> u32 {
     15000
 }
 
@@ -83,7 +83,7 @@ fn deserialize_wait_for_timeout<'de, D: Deserializer<'de>>(
 
 fn deserialize_out_of_sync_threshold<'de, D: Deserializer<'de>>(
     deserializer: D,
-) -> Result<i64, D::Error> {
+) -> Result<u32, D::Error> {
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_out_of_sync_threshold()))
 }
 
@@ -114,7 +114,7 @@ pub struct NetworkConfig {
         default = "default_out_of_sync_threshold",
         deserialize_with = "deserialize_out_of_sync_threshold"
     )]
-    pub out_of_sync_threshold: i64,
+    pub out_of_sync_threshold: u32,
     pub access_key: Option<String>,
 }
 

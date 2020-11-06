@@ -46,7 +46,7 @@ impl ClientContext {
 
         let client = if !config.network.server_address.is_empty() {
             if config.network.out_of_sync_threshold
-                > config.abi.message_expiration_timeout as i64 / 2
+                > config.abi.message_expiration_timeout / 2
             {
                 return Err(Error::invalid_config(format!(
                     r#"`out_of_sync_threshold` can not be more then `message_expiration_timeout / 2`.
