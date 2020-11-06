@@ -41,7 +41,7 @@ pub fn deserialize_items(values: Iter<Value>) -> ClientResult<Vec<StackItem>> {
 
 fn serialize_integer_data(data: &ton_vm::stack::integer::IntegerData) -> String{
     let hex = data.to_str_radix(16);
-    // all negative nubers and positive numbers less then u128::MAX are encoded as decimal
+    // all negative nubers and positive numbers less than u128::MAX are encoded as decimal
     if hex.starts_with("-") || hex.len() <= 32 {
         data.to_str_radix(10)
     } else {

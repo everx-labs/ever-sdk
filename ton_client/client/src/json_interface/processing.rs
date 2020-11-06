@@ -23,9 +23,9 @@ use super::request::Request;
 /// 
 /// Creates ABI-compatible message,
 /// sends it to the network and monitors for the result transaction.
-/// Decodes the output messages's bodies.
+/// Decodes the output messages' bodies.
 /// 
-/// If contract's ABI includes "expire" header then
+/// If contract's ABI includes "expire" header, then
 /// SDK implements retries in case of unsuccessful message delivery within the expiration
 /// timeout: SDK recreates the message, sends it and processes it again. 
 /// 
@@ -39,7 +39,7 @@ use super::request::Request;
 /// pub const DEFAULT_....expiration_timeout_grow_factor... = 1.5 - factor that increases the expiration timeout for each retry
 /// 
 /// If contract's ABI does not include "expire" header
-/// then if no transaction is found within the network timeout (see config parameter ), exits with error.
+/// then, if no transaction is found within the network timeout (see config parameter ), exits with error.
 #[api_function]
 pub(crate) async fn process_message(
     context: Arc<ClientContext>,
@@ -79,7 +79,7 @@ pub(crate) async fn send_message(
 /// `FetchNextBlockFailed` that may be useful for logging of new shard blocks creation 
 /// during message processing.
 ///
-/// Note that presence of the `abi` parameter is critical for ABI
+/// Note, that presence of the `abi` parameter is critical for ABI
 /// compliant contracts. Message processing uses drastically
 /// different strategy for processing message for contracts which
 /// ABI includes "expire" header.
@@ -88,7 +88,7 @@ pub(crate) async fn send_message(
 /// `message expiration` strategy:
 /// - The maximum block gen time is set to
 ///   `message_expiration_timeout + transaction_wait_timeout`.
-/// - When maximum block gen time is reached the processing will
+/// - When maximum block gen time is reached, the processing will
 ///   be finished with `MessageExpired` error.
 ///
 /// When the ABI header `expire` isn't present or `abi` parameter
@@ -97,7 +97,7 @@ pub(crate) async fn send_message(
 /// - The maximum block gen time is set to
 ///   `now() + transaction_wait_timeout`.
 /// 
-/// - If maximum block gen time is reached and no result transaction is found 
+/// - If maximum block gen time is reached and no result transaction is found, 
 /// the processing will exit with an error.
 #[api_function]
 pub(crate) async fn wait_for_transaction(

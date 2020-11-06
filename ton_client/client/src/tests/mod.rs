@@ -365,7 +365,7 @@ impl TestClient {
         //  `finished` = true can be processed before previous call and remove callback handler
         //  while it's still needed
         // 3. `rt_handle.block_on` function can't be used in current thread because thread is in async
-        //  context so we have spawn another thread and use `rt_handle.block_on` function there
+        //  context so we have to spawn another thread and use `rt_handle.block_on` function there
         //  and then wait for thread completion
         let rt_handle = tokio::runtime::Handle::current();
         std::thread::spawn(move || {
@@ -609,7 +609,7 @@ impl TestClient {
             .await
         };
 
-        // wait for grams receiving
+        // wait for tokens reception
         for message in run_result.out_messages.iter() {
             let parsed: ResultOfParse = self.request(
                 "boc.parse_message",

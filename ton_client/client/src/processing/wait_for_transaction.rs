@@ -14,7 +14,7 @@ use ton_sdk::Contract;
 pub struct ParamsOfWaitForTransaction {
     /// Optional ABI for decoding the transaction result.
     ///
-    /// If it is specified then the output messages' bodies will be
+    /// If it is specified, then the output messages' bodies will be
     /// decoded according to this ABI.
     ///
     /// The `abi_decoded` result field will be filled out.

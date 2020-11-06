@@ -140,7 +140,7 @@ pub struct ParamsOfMnemonicVerify {
 
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfMnemonicVerify {
-    /// Flag indicating the mnemonic is valid or not
+    /// Flag indicating if the mnemonic is valid or not
     pub valid: bool,
 }
 

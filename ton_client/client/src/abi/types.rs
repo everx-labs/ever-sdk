@@ -83,7 +83,7 @@ pub struct AbiParam {
 /// uses for security, message delivery monitoring and replay protection reasons.
 ///
 /// The actual set of header fields depends on the contract's ABI.
-/// If a contract's ABI does not include some headers, they are not filled then. 
+/// If a contract's ABI does not include some headers, then they are not filled. 
 #[derive(Serialize, Deserialize, ApiType, PartialEq, Debug, Clone, Default)]
 pub struct FunctionHeader {
     /// Message expiration time in seconds.
