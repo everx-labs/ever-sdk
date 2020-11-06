@@ -147,12 +147,12 @@ type CryptoConfig = {
 type AbiConfig = {
     workchain?: number,
     message_expiration_timeout?: number,
-    message_expiration_timeout_grow_factor?: bigint
+    message_expiration_timeout_grow_factor?: number
 };
 ```
 - `workchain`?: _number_
 - `message_expiration_timeout`?: _number_
-- `message_expiration_timeout_grow_factor`?: _bigint_
+- `message_expiration_timeout_grow_factor`?: _number_
 
 
 ## BuildInfoDependency

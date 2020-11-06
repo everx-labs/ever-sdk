@@ -229,7 +229,7 @@
               "name": "message_expiration_timeout_grow_factor",
               "type": "Optional",
               "optional_inner": {
-                "type": "BigInt",
+                "type": "Number",
                 "number_type": "Float",
                 "number_size": 32
               },

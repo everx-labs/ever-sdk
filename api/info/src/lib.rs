@@ -134,7 +134,7 @@ impl Type {
         }
     }
     pub fn f(size: usize) -> Type {
-        Type::BigInt {
+        Type::Number {
             number_type: NumberType::Float,
             number_size: size,
         }
