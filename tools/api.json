@@ -131,9 +131,9 @@
               "name": "out_of_sync_threshold",
               "type": "Optional",
               "optional_inner": {
-                "type": "BigInt",
-                "number_type": "Int",
-                "number_size": 64
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
               },
               "summary": null,
               "description": null

@@ -114,7 +114,7 @@ type NetworkConfig = {
     message_retries_count?: number,
     message_processing_timeout?: number,
     wait_for_timeout?: number,
-    out_of_sync_threshold?: bigint,
+    out_of_sync_threshold?: number,
     access_key?: string
 };
 ```
@@ -123,7 +123,7 @@ type NetworkConfig = {
 - `message_retries_count`?: _number_
 - `message_processing_timeout`?: _number_
 - `wait_for_timeout`?: _number_
-- `out_of_sync_threshold`?: _bigint_
+- `out_of_sync_threshold`?: _number_
 - `access_key`?: _string_
 
 
