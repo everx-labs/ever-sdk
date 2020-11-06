@@ -38,9 +38,9 @@ use ton_types::Cell;
 pub enum AccountForExecutor {
     /// Non-existing account to run a creation internal message.
     /// Should be used with `skip_transaction_check = true` if the message has no deploy data
-    /// since transaction on the unitialized account are always aborted
+    /// since transactions on the uninitialized account are always aborted
     None,
-    /// Emulate unitialized account to run deploy message
+    /// Emulate uninitialized account to run deploy message
     Uninit,
     /// Account state to run message
     Account {

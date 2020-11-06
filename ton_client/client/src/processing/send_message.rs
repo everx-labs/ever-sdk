@@ -32,14 +32,14 @@ pub struct ParamsOfSendMessage {
     ///
     /// If this parameter is specified and the message has the
     /// `expire` header then expiration time will be checked against
-    /// the current time to prevent an unnecessary sending of already expired message.
+    /// the current time to prevent unnecessary sending of already expired message.
     ///
     /// The `message already expired` error will be returned in this
     /// case.
     ///
-    /// Note that specifying `abi` for ABI compliant contracts is
-    /// strongly recommended due to choosing proper processing
-    /// strategy.
+    /// Note, that specifying `abi` for ABI compliant contracts is
+    /// strongly recommended, so that proper processing strategy can be
+    /// chosen.
     pub abi: Option<Abi>,
 
     /// Flag for requesting events sending

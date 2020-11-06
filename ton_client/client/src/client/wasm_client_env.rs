@@ -36,9 +36,9 @@ fn js_value_to_string(js_value: JsValue) -> String {
 }
 
 // web-sys and wasm-bindgen types are not `Send` so we cannot use them directly in async
-// functions which are registered in dispather: registration requires `Future` returned
+// functions which are registered in dispatcher: registration requires `Future` returned
 // by the function to be `Send`, but using not `Send` types inside prevents it. So we have
-// to process functions in another task which encapsulates work with non-`Send` types
+// to process functions in another task, which encapsulates work with non-`Send` types
 async fn execute_spawned<R, Fut, F>(func: F) -> ClientResult<R>
 where
     R: 'static,
