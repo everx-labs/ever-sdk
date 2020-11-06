@@ -1,6 +1,10 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## 0.28.8 Nov 6, 2020
+### Fixed
+- local error resolving processes `NoGas` and `NoState` errors properly
+
 ## 0.27.0 Oct 28, 2020
 ### New
 - `crypto` function `crypto.chacha20`
