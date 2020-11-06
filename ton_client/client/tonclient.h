@@ -9,12 +9,12 @@ typedef struct {
 
 typedef struct tc_string_handle_t tc_string_handle_t;
 
-enum tc_response_types_t {
+typedef enum tc_response_types {
     tc_response_success = 0,
     tc_response_error = 1,
     tc_response_nop = 2,
     tc_response_custom = 100,
-};
+} tc_response_types_t;
 
 typedef void (*tc_response_handler_t)(
     uint32_t request_id,
