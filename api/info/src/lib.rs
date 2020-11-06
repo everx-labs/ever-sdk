@@ -141,65 +141,6 @@ impl Type {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Error {
-    pub code: i32,
-    pub message: String,
-    pub data: Type,
-}
-
-pub trait ApiType {
-    fn api() -> Field;
-}
-
-pub trait ApiModule {
-    fn api() -> Module;
-}
-
-impl ApiType for String {
-    fn api() -> Field {
-        Field {
-            name: "string".into(),
-            summary: None,
-            description: None,
-            value: Type::String {},
-        }
-    }
-}
-
-impl ApiType for &str {
-    fn api() -> Field {
-        Field {
-            name: "string".into(),
-            summary: None,
-            description: None,
-            value: Type::String {},
-        }
-    }
-}
-
-impl ApiType for u32 {
-    fn api() -> Field {
-        Field {
-            name: "u32".into(),
-            summary: None,
-            description: None,
-            value: Type::u(32),
-        }
-    }
-}
-
-impl ApiType for bool {
-    fn api() -> Field {
-        Field {
-            name: "boolean".into(),
-            summary: None,
-            description: None,
-            value: Type::Boolean {},
-        }
-    }
-}
-
 impl ApiType for () {
     fn api() -> Field {
         Field {
@@ -211,13 +152,17 @@ impl ApiType for () {
     }
 }
 
-impl ApiType for API {
-    fn api() -> Field {
-        Field {
-            name: "API".into(),
-            summary: None,
-            description: None,
-            value: Type::None {},
-        }
-    }
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Error {
+    pub code: u32,
+    pub message: String,
+    pub data: Type,
+}
+
+pub trait ApiType {
+    fn api() -> Field;
+}
+
+pub trait ApiModule {
+    fn api() -> Module;
 }
