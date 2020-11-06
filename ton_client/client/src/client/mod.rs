@@ -83,7 +83,7 @@ pub struct ResultOfBuildInfo {
 #[api_function]
 pub fn build_info(_context: Arc<ClientContext>) -> ClientResult<ResultOfBuildInfo> {
     Ok(
-        serde_json::from_str(include_str!("../build_info.json")).unwrap_or(ResultOfBuildInfo {
+        serde_json::from_str(include_build_info!()).unwrap_or(ResultOfBuildInfo {
             build_number: 0,
             dependencies: vec![],
         }),
