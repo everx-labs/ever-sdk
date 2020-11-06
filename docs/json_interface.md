@@ -29,8 +29,7 @@ typedef struct {
     uint32_t len;
 } tc_string_data_t;
 
-typedef struct  {
-} tc_string_handle_t;
+typedef struct tc_string_handle_t tc_string_handle_t;
 
 ```
 - `tc_string_handle_t` – internal Rust string representation.
@@ -94,14 +93,21 @@ void tc_request(
     tc_string_data_t function_params_json,
     uint32_t request_id,
     tc_response_handler_t response_handler);
+
+void tc_request_ptr(
+    uint32_t context,
+    tc_string_data_t function_name,
+    tc_string_data_t function_params_json,
+    void* request_ptr,
+    tc_response_handler_ptr_t response_handler);
 ```
 Where:
 - `function_name` – function name requested.
 - `function_params_json` – function parameters encoded as a JSON string. If a function 
   hasn't parameters then en empty string must be passed.
-- `request_id` – application (or binding) defined request identifier. Usually binding
-allocates and stores some additional data with every request. This data will help in 
-the future to properly route responses to the application. 
+- `request_id` or `request_ptr` – application (or binding) defined request identifier or pointer.
+Usually binding allocates and stores some additional data with every request.
+This data will help in the future to properly route responses to the application. 
 - `response_handler` – function that will receive responses related to this request.
 
 This function returns nothing. The function execution result will be sent to 
@@ -112,6 +118,20 @@ the `response_handler`.
 **Note**: `tc_request` doesn't store pointers passed in `function_name` and 
 `function_params_json` parameters. So it is safe to free this memory after the 
 function returns.  
+
+### Request Id versus Request Pointer
+
+Ton Client Library has two version of request context representation:
+- `id` – Each request is identified by `u32` integer value defined by application.
+In this case the application or binding usually uses global hash map to associate 
+additional response dispatch information.
+- `pointer` – Each request is identified by `void*` pointer defined by application.
+In this case the application or binding uses pointers to native objects with 
+additional response dispatch information. For example a pointer to closure.
+Note, that library doesn't use this pointer and memory pointed to. It just store
+this pointer and provide it back to application when library calls response handler.
+
+**Note** `pointer` supports is UNSTABLE feature yet and can be refined. 
 
 ## Responses
 
@@ -134,11 +154,17 @@ typedef void (*tc_response_handler_t)(
     tc_string_data_t params_json,
     uint32_t response_type,
     bool finished);
+
+typedef void (*tc_response_handler_ptr_t)(
+    void* request_ptr,
+    tc_string_data_t params_json,
+    uint32_t response_type,
+    bool finished);
 ```
 
 `response_handler` – handles responses from the library. Note that an application 
 can receive an unlimited count of responses related to single request. Parameters:
-- `request_id` – the request to which this response is addressed.
+- `request_id` or `request_ptr` – the request to which this response is addressed.
 - `params_json` – response parameters encoded into JSON string.
 - `response_type` – type of this response:
     - `RESULT = 0`, function result.
