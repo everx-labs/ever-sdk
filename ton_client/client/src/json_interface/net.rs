@@ -22,7 +22,7 @@ use super::request::Request;
 /// 
 /// Triggers for each insert/update of data
 /// that satisfies the `filter` conditions.
-/// The projection fields are limited to  `result` fields.
+/// The projection fields are limited to `result` fields.
 #[api_function]
 pub(crate) async fn subscribe_collection(
     context: std::sync::Arc<ClientContext>,

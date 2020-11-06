@@ -102,8 +102,8 @@ pub(crate) fn call_tvm_msg(
             return Err(Error::invalid_message_type())
     };
     stack
-        .push(ton_vm::int!(balance))                            // gram balance of contract
-        .push(ton_vm::int!(0))                                  // gram balance of msg
+        .push(ton_vm::int!(balance))                            // token balance of contract
+        .push(ton_vm::int!(0))                                  // token balance of msg
         .push(StackItem::Cell(msg_cell.into()))                 // message
         .push(StackItem::Slice(msg.body().unwrap_or_default())) // message body
         .push(function_selector);                                           // function selector

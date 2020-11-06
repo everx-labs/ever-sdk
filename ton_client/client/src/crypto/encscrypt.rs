@@ -24,7 +24,7 @@ pub struct ParamsOfScrypt {
     /// The password bytes to be hashed.
     /// Must be encoded with `base64`.
     pub password: String,
-    /// A salt bytes that modifies the hash to protect against Rainbow table attacks.
+    /// Salt bytes that modify the hash to protect against Rainbow table attacks.
     /// Must be encoded with `base64`.
     pub salt: String,
     /// CPU/memory cost parameter

@@ -503,7 +503,7 @@ fn test_parallel_requests() {
 
     std::thread::sleep(std::time::Duration::from_millis(500));
 
-    // check that request with another context don't wait
+    // check that request with another context doesn't wait
     client2.request_json("crypto.ed25519.keypair", json!({})).unwrap();
     assert!(start.elapsed().as_millis() < timeout as u128);
 

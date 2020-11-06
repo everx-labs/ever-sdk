@@ -8,8 +8,8 @@ use crate::error::ClientResult;
 pub enum Signer {
     /// No keys are provided. Creates an unsigned message. 
     None,
-    /// Only public key is provided to generate unsigned message and `data_to_sign`
-    /// which can be signed later.  
+    /// Only public key is provided in unprefixed hex string format to generate unsigned message 
+    /// and `data_to_sign` which can be signed later.  
     External { public_key: String },
     /// Key pair is provided for signing
     Keys { keys: KeyPair },
