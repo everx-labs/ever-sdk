@@ -28,8 +28,6 @@ enum ResponseHandlerImpl {
     CPtr(usize, CResponseHandlerPtr),
 }
 
-unsafe impl Send for ResponseHandlerImpl {}
-
 pub struct Request {
     response_handler: ResponseHandlerImpl,
     finished: AtomicBool,
