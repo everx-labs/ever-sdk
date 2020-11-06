@@ -33,8 +33,6 @@ pub struct Request {
     finished: AtomicBool,
 }
 
-unsafe impl Send for Request {}
-
 impl Request {
     pub(crate) fn new(request_id: u32, response_handler: ResponseHandler) -> Self {
         Self {
