@@ -161,6 +161,8 @@ pub mod executor {
                 match err.downcast_ref::<ExecutorError>() {
                     Some(ExecutorError::NoAcceptError(code, _)) => SdkError::ContractError(*code).into(),
                     Some(ExecutorError::NoFundsToImportMsg) => SdkError::NoFundsError.into(),
+                    Some(ExecutorError::ExtMsgComputeSkipped(reason)) =>
+                        SdkError::ComputePhaseSkipped(reason.clone()).into(),
                     _ => err
                 }
             })?;

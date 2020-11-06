@@ -57,6 +57,9 @@ pub enum SdkError {
     #[fail(display = "Contract has no funds for requested operation")]
     NoFundsError,
 
+    #[fail(display = "Contract has no funds for requested operation")]
+    ComputePhaseSkipped(ton_block::ComputeSkipReason),
+
     #[fail(display = "Wait for operation rejected on timeout")]
     WaitForTimeout,
 
