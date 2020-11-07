@@ -3268,9 +3268,12 @@
           "struct_fields": [
             {
               "name": "ABI version",
-              "type": "Number",
-              "number_type": "UInt",
-              "number_size": 32,
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
               "summary": null,
               "description": null
             },
