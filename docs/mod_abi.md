@@ -641,7 +641,7 @@ type AbiFunction = {
 ## AbiContract
 ```ts
 type AbiContract = {
-    'ABI version': number,
+    'ABI version'?: number,
     abi_version?: number,
     header?: string[],
     functions?: AbiFunction[],
@@ -649,7 +649,7 @@ type AbiContract = {
     data?: AbiData[]
 };
 ```
-- `ABI version`: _number_
+- `ABI version`?: _number_
 - `abi_version`?: _number_
 - `header`?: _string[]_
 - `functions`?: _[AbiFunction](mod_abi.md#AbiFunction)[]_

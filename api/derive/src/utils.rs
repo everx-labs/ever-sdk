@@ -358,18 +358,42 @@ impl DocAttr {
     }
 }
 
+fn find_attr_value_meta(
+    attr_name: &'static str,
+    value_name: &'static str,
+    attrs: &Vec<Attribute>,
+) -> Option<Meta> {
+    for attr in attrs {
+        if let Ok(Meta::List(list)) = attr.parse_meta() {
+            if path_is(&list.path, attr_name) {
+                for item in list.nested {
+                    if let NestedMeta::Meta(meta) = item {
+                        let value_path = match &meta {
+                            Meta::NameValue(name_value) => Some(&name_value.path),
+                            Meta::Path(path) => Some(path),
+                            _ => None,
+                        };
+                        if let Some(path) = value_path {
+                            if path_is(path, value_name) {
+                                return Some(meta);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
 pub(crate) fn find_attr_value(
     attr_name: &'static str,
     value_name: &'static str,
     attrs: &Vec<Attribute>,
 ) -> Option<String> {
-    for attr in attrs {
-        if let Ok(Meta::List(ref list)) = attr.parse_meta() {
-            if path_is(&list.path, attr_name) {
-                if let Some(NestedMeta::Meta(Meta::NameValue(meta))) = list.nested.first() {
-                    return get_value_of(value_name, &meta);
-                }
-            }
+    if let Some(Meta::NameValue(name_value)) = find_attr_value_meta(attr_name, value_name, attrs) {
+        if let Lit::Str(lit) = &name_value.lit {
+            return Some(lit.value());
         }
     }
     None
@@ -380,22 +404,7 @@ pub(crate) fn has_attr_value(
     value_name: &'static str,
     attrs: &Vec<Attribute>,
 ) -> bool {
-    for attr in attrs {
-        if let Ok(Meta::List(ref list)) = attr.parse_meta() {
-            if path_is(&list.path, attr_name) {
-                match list.nested.first() {
-                    Some(NestedMeta::Meta(Meta::NameValue(meta))) => {
-                        return path_is(&meta.path, value_name);
-                    }
-                    Some(NestedMeta::Meta(Meta::Path(path))) => {
-                        return path_is(&path, value_name);
-                    }
-                    _ => {}
-                }
-            }
-        }
-    }
-    false
+    find_attr_value_meta(attr_name, value_name, attrs).is_some()
 }
 
 pub(crate) fn get_value_of(name: &'static str, meta: &MetaNameValue) -> Option<String> {
