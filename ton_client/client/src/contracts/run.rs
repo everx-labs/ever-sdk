@@ -694,6 +694,8 @@ pub(crate) fn do_local_run_msg(
                         ApiError::tvm_execution_failed(None, *exit_code, &address),
                     Some(ton_sdk::SdkError::NoFundsError) =>
                         ApiError::low_balance(&address, Some(contract.balance_grams())),
+                    Some(ton_sdk::SdkError::ComputePhaseSkipped(reason)) =>
+                        ApiError::tvm_execution_skipped(None, reason, &address, Some(contract.balance_grams())),
                     _ => ApiError::contracts_local_run_failed(err)
                 }
                     .add_function(function_name.as_ref().map(|string| string.as_str()))
