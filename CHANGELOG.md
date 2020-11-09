@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 ### New
 - ChaCha20 encryption support `crypto.chacha20`. 
 - `boc.parse_shardstate` function for shardstates parsing.
+- `boc.get_boc_hash` function for calculating BOC root hash
 - `client.build_info` fully defined and documented.
 - `processing.wait_for_transaction` and `processing.process_message` functions execute contract 
 locally in case if transaction waiting fails in order to resolve the contract execution error
