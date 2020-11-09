@@ -66,7 +66,7 @@
 
 - `modularity` – each module placed inside own folder
 - `similarity` – each API function has parameters represented as a structure 
-    and a result represent as a structure
+    and a result represented as a structure
 - `encodings` – each var len byte buffer encoded with `base64` 
     and each fixed len byte buffer encoded with `hex`
 - `errors` – each module has own errors definitions (instead of huge common file)

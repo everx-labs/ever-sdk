@@ -1,9 +1,0 @@
-.DS_Store
-.idea/
-NDK/
-target/
-Cargo.lock
-bin/
-output/
-/build/
-

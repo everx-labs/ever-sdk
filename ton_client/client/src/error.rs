@@ -3,24 +3,20 @@ use std::fmt::Display;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default, ApiType)]
 pub struct ClientError {
-    pub code: isize,
+    pub code: u32,
     pub message: String,
     pub data: serde_json::Value,
 }
 
 pub type ClientResult<T> = Result<T, ClientError>;
 
-pub trait ClientErrorCode {
-    fn as_number(&self) -> isize;
-}
-
-trait AsString {
-    fn as_string(&self) -> String;
-}
-
 impl Display for ClientError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.message)
+        if f.alternate() {
+            write!(f, "{:#}", json!(self))
+        } else {
+            write!(f, "{}", self.message)
+        }
     }
 }
 
@@ -36,7 +32,7 @@ impl ClientError {
     pub const NET: isize = 600;
     pub const UTILS: isize = 700;
 
-    pub fn new(code: isize, message: String, data: Value) -> Self {
+    pub fn new(code: u32, message: String, data: Value) -> Self {
         let mut data = data;
         data["core_version"] = Value::String(env!("CARGO_PKG_VERSION").to_owned());
         Self {
@@ -46,7 +42,7 @@ impl ClientError {
         }
     }
 
-    pub fn with_code_message(code: isize, message: String) -> Self {
+    pub fn with_code_message(code: u32, message: String) -> Self {
         Self {
             code,
             message,

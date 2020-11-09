@@ -6,7 +6,7 @@
 
 [version](#version) – Returns Core Library version
 
-[build_info](#build_info)
+[build_info](#build_info) – Returns detailed information about this build.
 
 ## Types
 [ClientError](#ClientError)
@@ -18,6 +18,8 @@
 [CryptoConfig](#CryptoConfig)
 
 [AbiConfig](#AbiConfig)
+
+[BuildInfoDependency](#BuildInfoDependency)
 
 [ResultOfGetApiReference](#ResultOfGetApiReference)
 
@@ -61,16 +63,20 @@ function version(): Promise<ResultOfVersion>;
 
 ## build_info
 
+Returns detailed information about this build.
+
 ```ts
 type ResultOfBuildInfo = {
-    build_info: any
+    build_number: number,
+    dependencies: BuildInfoDependency[]
 };
 
 function build_info(): Promise<ResultOfBuildInfo>;
 ```
 ### Result
 
-- `build_info`: _any_
+- `build_number`: _number_ – Build number assigned to this build by the CI.
+- `dependencies`: _[BuildInfoDependency](mod_client.md#BuildInfoDependency)[]_ – Fingerprint of the most important dependencies.
 
 
 # Types
@@ -103,21 +109,21 @@ type ClientConfig = {
 ## NetworkConfig
 ```ts
 type NetworkConfig = {
-    server_address?: string,
+    server_address: string,
     network_retries_count?: number,
     message_retries_count?: number,
     message_processing_timeout?: number,
     wait_for_timeout?: number,
-    out_of_sync_threshold?: bigint,
+    out_of_sync_threshold?: number,
     access_key?: string
 };
 ```
-- `server_address`?: _string_
+- `server_address`: _string_
 - `network_retries_count`?: _number_
 - `message_retries_count`?: _number_
 - `message_processing_timeout`?: _number_
 - `wait_for_timeout`?: _number_
-- `out_of_sync_threshold`?: _bigint_
+- `out_of_sync_threshold`?: _number_
 - `access_key`?: _string_
 
 
@@ -149,6 +155,17 @@ type AbiConfig = {
 - `message_expiration_timeout_grow_factor`?: _number_
 
 
+## BuildInfoDependency
+```ts
+type BuildInfoDependency = {
+    name: string,
+    git_commit: string
+};
+```
+- `name`: _string_ – Dependency name. Usually it is a crate name.
+- `git_commit`: _string_ – Git commit hash of the related repository.
+
+
 ## ResultOfGetApiReference
 ```ts
 type ResultOfGetApiReference = {
@@ -170,9 +187,11 @@ type ResultOfVersion = {
 ## ResultOfBuildInfo
 ```ts
 type ResultOfBuildInfo = {
-    build_info: any
+    build_number: number,
+    dependencies: BuildInfoDependency[]
 };
 ```
-- `build_info`: _any_
+- `build_number`: _number_ – Build number assigned to this build by the CI.
+- `dependencies`: _[BuildInfoDependency](mod_client.md#BuildInfoDependency)[]_ – Fingerprint of the most important dependencies.
 
 

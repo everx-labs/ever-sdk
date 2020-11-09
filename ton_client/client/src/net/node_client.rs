@@ -174,7 +174,7 @@ impl NodeClient {
 
     async fn check_time_delta(&self, address: &str, config: &NetworkConfig) -> ClientResult<()> {
         let delta = self.get_time_delta(address).await?;
-        if delta.abs() >= config.out_of_sync_threshold {
+        if delta.abs() as u32 >= config.out_of_sync_threshold {
             Err(Error::clock_out_of_sync(
                 delta,
                 config.out_of_sync_threshold,
@@ -528,7 +528,7 @@ impl NodeClient {
             .await;
 
         // send message is always successful in order to process case when server received message
-        // but client didn't receive responce
+        // but client didn't receive response
         if let Err(err) = result {
             log::warn!("Post message error: {}", err.message);
         }

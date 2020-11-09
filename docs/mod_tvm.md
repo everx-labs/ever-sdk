@@ -13,6 +13,8 @@ null
 
 [AccountForExecutor](#AccountForExecutor)
 
+[TransactionFees](#TransactionFees)
+
 [ParamsOfRunExecutor](#ParamsOfRunExecutor)
 
 [ResultOfRunExecutor](#ResultOfRunExecutor)
@@ -63,7 +65,7 @@ function run_executor(
 - `out_messages`: _string[]_ – List of output messages' BOCs. Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
 - `account`: _string_ – Updated account state BOC. Encoded as `base64`
-- `fees`: _TransactionFees_ – Transaction fees
+- `fees`: _[TransactionFees](mod_tvm.md#TransactionFees)_ – Transaction fees
 
 
 ## run_tvm
@@ -160,12 +162,12 @@ Depends on value of the  `type` field.
 
 When _type_ is _'None'_
 
-Non-existing account to run a creation internal message. Should be used with `skip_transaction_check = true` if the message has no deploy data since transaction on the unitialized account are always aborted
+Non-existing account to run a creation internal message. Should be used with `skip_transaction_check = true` if the message has no deploy data since transactions on the uninitialized account are always aborted
 
 
 When _type_ is _'Uninit'_
 
-Emulate unitialized account to run deploy message
+Emulate uninitialized account to run deploy message
 
 
 When _type_ is _'Account'_
@@ -175,6 +177,25 @@ Account state to run message
 
 - `boc`: _string_ – Account BOC. Encoded as base64.
 - `unlimited_balance`?: _boolean_ – Flag for running account with the unlimited balance. Can be used to calculate transaction fees without balance check
+
+
+## TransactionFees
+```ts
+type TransactionFees = {
+    in_msg_fwd_fee: bigint,
+    storage_fee: bigint,
+    gas_fee: bigint,
+    out_msgs_fwd_fee: bigint,
+    total_account_fees: bigint,
+    total_output: bigint
+};
+```
+- `in_msg_fwd_fee`: _bigint_
+- `storage_fee`: _bigint_
+- `gas_fee`: _bigint_
+- `out_msgs_fwd_fee`: _bigint_
+- `total_account_fees`: _bigint_
+- `total_output`: _bigint_
 
 
 ## ParamsOfRunExecutor
@@ -209,7 +230,7 @@ type ResultOfRunExecutor = {
 - `out_messages`: _string[]_ – List of output messages' BOCs. Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
 - `account`: _string_ – Updated account state BOC. Encoded as `base64`
-- `fees`: _TransactionFees_ – Transaction fees
+- `fees`: _[TransactionFees](mod_tvm.md#TransactionFees)_ – Transaction fees
 
 
 ## ParamsOfRunTvm

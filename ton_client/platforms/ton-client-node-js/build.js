@@ -6,6 +6,9 @@ const {
     root_path,
     main,
     gz,
+    writeBuildInfo,
+    buildNumber,
+    gitCommit,
     devMode,
     version,
 } = require('../build-lib');
@@ -15,10 +18,11 @@ const platform = require('os').platform();
 async function buildNodeJsAddon() {
     deleteFolderRecursive(root_path('bin'));
     // build sdk release
-    // await spawnProcess('cargo', ['clean']);
-    // if (!devMode) {
-    //     await spawnProcess('cargo', ['update']);
-    // }
+    if (!devMode) {
+        // await spawnProcess('cargo', ['clean']);
+        await spawnProcess('cargo', ['update']);
+    }
+    await writeBuildInfo(root_path('..', '..', 'client', 'src', 'build_info.json'), buildNumber, gitCommit);
     await spawnProcess('cargo', ['build', '--release']);
     // build addon
     if (os.platform() !== 'win32') {

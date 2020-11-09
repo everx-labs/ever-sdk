@@ -15,7 +15,7 @@ pub enum ErrorCode {
 pub struct Error;
 
 fn error(code: ErrorCode, message: String) -> ClientError {
-    ClientError::with_code_message(code as isize, message)
+    ClientError::with_code_message(code as u32, message)
 }
 
 impl Error {
@@ -45,16 +45,15 @@ impl Error {
         )
     }
 
-    pub fn clock_out_of_sync(delta_ms: i64, threshold: i64) -> ClientError {
+    pub fn clock_out_of_sync(delta_ms: i64, threshold: u32) -> ClientError {
         let mut error = error(
             ErrorCode::ClockOutOfSync,
-            "The time on the device is out of sync with the time on the server".to_owned(),
+            "The time on the device is out of sync with the time on the server. Synchronize your device time with internet time".to_owned(),
         );
 
         error.data = serde_json::json!({
             "delta_ms": delta_ms,
             "threshold_ms": threshold,
-            "tip": "Synchronize your device time with internet time"
         });
         error
     }

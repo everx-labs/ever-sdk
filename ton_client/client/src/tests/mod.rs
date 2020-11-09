@@ -132,7 +132,7 @@ pub struct AsyncFuncWrapper<'a, P, R> {
 }
 
 impl<'a, P: Serialize, R: DeserializeOwned> AsyncFuncWrapper<'a, P, R> {
-    pub(crate) async fn call(&self, params: P) -> R {
+    pub(crate) async fn call(&self, params: P) -> ClientResult<R> {
         self.client.request_async(&self.name, params).await
     }
 
@@ -140,7 +140,7 @@ impl<'a, P: Serialize, R: DeserializeOwned> AsyncFuncWrapper<'a, P, R> {
         &self,
         params: P,
         callback: impl Fn(CR, CT) -> CF + Send + Sync + 'static,
-    ) -> R
+    ) -> ClientResult<R>
     where
         CF: Future<Output = ()> + Send + Sync + 'static,
         CT: FromPrimitive,
@@ -159,7 +159,7 @@ pub struct FuncWrapper<'a, P, R> {
 }
 
 impl<'a, P: Serialize, R: DeserializeOwned> FuncWrapper<'a, P, R> {
-    pub(crate) fn call(&self, params: P) -> R {
+    pub(crate) fn call(&self, params: P) -> ClientResult<R> {
         self.client.request(&self.name, params)
     }
 }
@@ -237,7 +237,7 @@ impl TestClient {
     }
 
     fn read_abi(path: String) -> Abi {
-        Abi::Serialized(serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap())
+        Abi::Contract(serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap())
     }
 
     pub fn giver_address() -> String {
@@ -347,14 +347,14 @@ impl TestClient {
         })
     }
 
-    pub(crate) fn request<P, R>(&self, method: &str, params: P) -> R
+    pub(crate) fn request<P, R>(&self, method: &str, params: P) -> ClientResult<R>
     where
         P: Serialize,
         R: DeserializeOwned,
     {
         let params = serde_json::to_value(params).unwrap();
-        let result = self.request_json(method, params).unwrap();
-        serde_json::from_value(result).unwrap()
+        self.request_json(method, params)
+            .map(|result| serde_json::from_value(result).unwrap())
     }
 
     fn on_result(request_id: u32, params_json: String, response_type: u32, finished: bool) {
@@ -365,7 +365,7 @@ impl TestClient {
         //  `finished` = true can be processed before previous call and remove callback handler
         //  while it's still needed
         // 3. `rt_handle.block_on` function can't be used in current thread because thread is in async
-        //  context so we have spawn another thread and use `rt_handle.block_on` function there
+        //  context so we have to spawn another thread and use `rt_handle.block_on` function there
         //  and then wait for thread completion
         let rt_handle = tokio::runtime::Handle::current();
         std::thread::spawn(move || {
@@ -468,7 +468,7 @@ impl TestClient {
         method: &str,
         params: P,
         callback: impl Fn(CR, CT) -> CF + Send + Sync + 'static,
-    ) -> R
+    ) -> ClientResult<R>
     where
         P: Serialize,
         R: DeserializeOwned,
@@ -477,18 +477,17 @@ impl TestClient {
         CR: DeserializeOwned,
     {
         let params = serde_json::to_value(params).unwrap();
-        let result = self
+         self
             .request_json_async_callback(method, params, callback)
             .await
-            .unwrap();
-        serde_json::from_value(result).unwrap()
+            .map(|result| serde_json::from_value(result).unwrap())
     }
 
-    async fn default_callback(_: Value, _: u32) {
+    pub async fn default_callback(_: Value, _: u32) {
         panic!("wrong response type");
     }
 
-    pub(crate) async fn request_async<P, R>(&self, method: &str, params: P) -> R
+    pub(crate) async fn request_async<P, R>(&self, method: &str, params: P) -> ClientResult<R>
     where
         P: Serialize,
         R: DeserializeOwned,
@@ -497,17 +496,15 @@ impl TestClient {
             .await
     }
 
-    pub(crate) fn request_no_params<R: DeserializeOwned>(&self, method: &str) -> R {
-        let result = self.request_json(method, Value::Null).unwrap();
-        serde_json::from_value(result)
-            .map_err(|err| Error::invalid_params("", err))
-            .unwrap()
+    pub(crate) fn request_no_params<R: DeserializeOwned>(&self, method: &str) -> ClientResult<R> {
+        self.request_json(method, Value::Null)
+            .map(|result| serde_json::from_value(result).unwrap())
     }
 
     pub(crate) async fn encode_message(
         &self,
         params: ParamsOfEncodeMessage,
-    ) -> ResultOfEncodeMessage {
+    ) -> ClientResult<ResultOfEncodeMessage> {
         let encode = self.wrap_async(
             encode_message,
             AbiModule::api(),
@@ -520,7 +517,7 @@ impl TestClient {
         &self,
         params: ParamsOfProcessMessage,
         callback: impl Fn(CR, CT) -> CF + Send + Sync + 'static,
-    ) -> ResultOfProcessMessage
+    ) -> ClientResult<ResultOfProcessMessage>
     where
         CF: Future<Output = ()> + Send + Sync + 'static,
         CT: FromPrimitive,
@@ -549,7 +546,8 @@ impl TestClient {
                 result: "id boc".into(),
                 ..Default::default()
             })
-            .await;
+            .await
+            .unwrap();
         result.result
     }
 
@@ -560,7 +558,7 @@ impl TestClient {
         function_name: &str,
         input: Value,
         signer: Signer,
-    ) -> ResultOfProcessMessage {
+    ) -> ClientResult<ResultOfProcessMessage> {
         self.net_process_message(
             ParamsOfProcessMessage {
                 message_encode_params: ParamsOfEncodeMessage {
@@ -581,6 +579,7 @@ impl TestClient {
         )
         .await
     }
+
     pub(crate) async fn get_grams_from_giver_async(&self, account: &str, value: Option<u64>) {
         let run_result = if Self::node_se() {
             self.net_process_function(
@@ -594,6 +593,7 @@ impl TestClient {
                 Signer::None,
             )
             .await
+            .unwrap()
         } else {
             self.net_process_function(
                 Self::wallet_address(),
@@ -607,16 +607,17 @@ impl TestClient {
                 Signer::Keys { keys: Self::wallet_keys().unwrap() },
             )
             .await
+            .unwrap()
         };
 
-        // wait for grams receiving
+        // wait for tokens reception
         for message in run_result.out_messages.iter() {
             let parsed: ResultOfParse = self.request(
                 "boc.parse_message",
                 ParamsOfParse {
                     boc: message.clone()
                 }
-            );
+            ).unwrap();
             let message: ton_sdk::Message = serde_json::from_value(parsed.parsed).unwrap();
             if ton_sdk::MessageType::Internal == message.msg_type() {
                 let _: ResultOfWaitForCollection = self
@@ -631,7 +632,8 @@ impl TestClient {
                             timeout: Some(self.config.network.wait_for_timeout),
                         },
                     )
-                    .await;
+                    .await
+                    .unwrap();
             }
         }
     }
@@ -641,7 +643,7 @@ impl TestClient {
         params: ParamsOfEncodeMessage,
         value: Option<u64>,
     ) -> String {
-        let msg = self.encode_message(params.clone()).await;
+        let msg = self.encode_message(params.clone()).await.unwrap();
 
         self.get_grams_from_giver_async(&msg.address, value).await;
 
@@ -653,13 +655,14 @@ impl TestClient {
                 },
                 Self::default_callback,
             )
-            .await;
+            .await
+            .unwrap();
 
         msg.address
     }
 
     pub(crate) fn generate_sign_keys(&self) -> KeyPair {
-        self.request("crypto.generate_random_sign_keys", ())
+        self.request("crypto.generate_random_sign_keys", ()).unwrap()
     }
 
     pub fn sign_detached(&self, data: &str, keys: &KeyPair) -> String {
@@ -668,14 +671,14 @@ impl TestClient {
             ParamsOfNaclSignKeyPairFromSecret {
                 secret: keys.secret.clone(),
             },
-        );
+        ).unwrap();
         let result: ResultOfNaclSignDetached = self.request(
             "crypto.nacl_sign_detached",
             ParamsOfNaclSignDetached {
                 unsigned: data.into(),
                 secret: sign_keys.secret.clone(),
             },
-        );
+        ).unwrap();
         result.signature
     }
 

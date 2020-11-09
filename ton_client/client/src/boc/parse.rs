@@ -11,6 +11,16 @@ pub struct ParamsOfParse {
 }
 
 #[derive(Serialize, Deserialize, Clone, ApiType)]
+pub struct ParamsOfParseShardstate {
+    /// BOC encoded as base64
+    pub boc: String,
+    /// Shardstate identificator
+    pub id: String,
+    /// Workchain shardstate belongs to 
+    pub workchain_id: i32,
+}
+
+#[derive(Serialize, Deserialize, Clone, ApiType)]
 pub struct ResultOfParse {
     /// JSON containing parsed BOC
     pub parsed: serde_json::Value,
@@ -135,6 +145,36 @@ pub fn parse_block(
         ton_block_json::SerializationMode::QServer,
     )
     .map_err(|err| Error::serialization_error(err, "block"))?;
+
+    Ok(ResultOfParse {
+        parsed: parsed.into(),
+    })
+}
+
+/// Parses shardstate boc into a JSON 
+/// 
+/// JSON structure is compatible with GraphQL API shardstate object
+#[api_function]
+pub fn parse_shardstate(
+    _context: std::sync::Arc<ClientContext>,
+    params: ParamsOfParseShardstate,
+) -> ClientResult<ResultOfParse> {
+    let object = deserialize_object_from_base64::<ton_block::ShardStateUnsplit>(&params.boc, "block")?;
+
+    let set = ton_block_json::ShardStateSerializationSet {
+        boc: object.boc,
+        id: params.id,
+        state: object.object,
+        block_id: None,
+        workchain_id: params.workchain_id
+    };
+
+    let parsed = ton_block_json::db_serialize_shard_state_ex(
+        "id",
+        &set,
+        ton_block_json::SerializationMode::QServer,
+    )
+    .map_err(|err| Error::serialization_error(err, "shardstate"))?;
 
     Ok(ResultOfParse {
         parsed: parsed.into(),

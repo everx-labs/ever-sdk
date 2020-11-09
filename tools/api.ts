@@ -4,7 +4,7 @@ export type Api = {
 }
 
 export type ApiModule = {
-    api: Api;
+    api: Api,
     name: string,
     summary?: string,
     description?: string,
@@ -91,14 +91,32 @@ export type ApiEnumOfConsts = {
 }
 
 export type ApiEnumOfTypes = {
-    type: ApiTypeIs.EnumOfTypes
-    enum_types: ApiField[]
+    type: ApiTypeIs.EnumOfTypes,
+    enum_types: ApiField[],
 }
 
 export type ApiGeneric = {
     type: ApiTypeIs.Generic,
     generic_name: string,
     generic_args: ApiType[],
+}
+
+export enum ApiNumberType {
+    UInt = 'UInt',
+    Int = 'Int',
+    Float = 'Float',
+}
+
+export type ApiNumber = {
+    type: ApiTypeIs.Number,
+    number_type: ApiNumberType,
+    number_size: number,
+}
+
+export type ApiBigInt = {
+    type: ApiTypeIs.BigInt,
+    number_type: ApiNumberType,
+    number_size: number,
 }
 
 export type ApiType = {
@@ -108,8 +126,8 @@ export type ApiType = {
     { type: ApiTypeIs.Any } |
     { type: ApiTypeIs.Boolean } |
     { type: ApiTypeIs.String } |
-    { type: ApiTypeIs.Number } |
-    { type: ApiTypeIs.BigInt } |
+    ApiNumber |
+    ApiBigInt |
     ApiRef |
     ApiOptional |
     ApiArray |
@@ -125,11 +143,6 @@ export type ApiError = {
     data?: any,
 }
 
-function isFullName(name: string): boolean {
-    return name.includes('.');
-}
-
-
 export function parseApi(json: any): Api {
     const api: Api = json;
     const types = new Map<string, ApiField>();
@@ -142,82 +155,41 @@ export function parseApi(json: any): Api {
         }
         for (const func of module.functions) {
             func.module = module;
-        }
-    }
-    const resolveRefs = (module: ApiModule, type: ApiType) => {
-        switch (type.type) {
-        case ApiTypeIs.Ref:
-            const name = type.ref_name;
-            if (!isFullName(name)) {
-                const fullName = `${module.name}.${name}`;
-                if (types.has(fullName)) {
-                    type.ref_name = fullName;
-                } else {
-                    const refType = types.get(name);
-                    if (refType) {
-                        type.ref_name = `${refType.module.name}.${refType.name}`;
-                    }
-                }
+            if (func.result.type === ApiTypeIs.Generic && func.result.generic_name === 'ClientResult') {
+                func.result = func.result.generic_args[0];
             }
-            break;
-        case ApiTypeIs.Generic:
-            for (const arg of type.generic_args) {
-                resolveRefs(module, arg);
-            }
-            break;
-        case ApiTypeIs.Array:
-            resolveRefs(module, type.array_item);
-            break;
-        case ApiTypeIs.EnumOfTypes:
-            for (const variant of type.enum_types) {
-                resolveRefs(module, variant);
-            }
-            break;
-        case ApiTypeIs.Optional:
-            resolveRefs(module, type.optional_inner);
-            break;
-        case ApiTypeIs.Struct:
-            for (const field of type.struct_fields) {
-                resolveRefs(module, field);
-            }
-            break;
-        }
-    };
-    
-    const reduceFunc = (func: ApiFunction) => {
-        for (const param of func.params) {
-            resolveRefs(func.module, param);
-        }
-        if (func.result.type === ApiTypeIs.Generic && func.result.generic_name === 'ClientResult') {
-            func.result = func.result.generic_args[0];
-        }
-        resolveRefs(func.module, func.result);
-    };
-    
-    for (const module of api.modules) {
-        module.api = api;
-        for (const type of module.types) {
-            resolveRefs(module, type);
-        }
-        for (const func of module.functions) {
-            reduceFunc(func);
         }
     }
     return api;
 }
 
 export type ApiFunctionInfo = {
-    params?: ApiField,
-    hasResponseHandler: boolean,
+    params?: ApiField, hasResponseHandler: boolean,
 }
 
 export abstract class Code {
     readonly api: Api;
-    
+
     constructor(api: Api) {
         this.api = api;
     }
-    
+
+    static upperFirst(ident: string): string {
+        return ident !== '' ? `${ident[0].toUpperCase()}${ident.substr(1)}` : '';
+    }
+
+    static lowerFirst(ident: string): string {
+        return ident !== '' ? `${ident[0].toLowerCase()}${ident.substr(1)}` : '';
+    }
+
+    static pascal(words: string[]): string {
+        return words.map(this.upperFirst).join('');
+    }
+
+    static camel(words: string[]): string {
+        return this.lowerFirst(this.pascal(words));
+    }
+
     findType(name: string): ApiField | null {
         for (const module of this.api.modules) {
             for (const type of module.types) {
@@ -228,7 +200,7 @@ export abstract class Code {
         }
         return null;
     }
-    
+
     getFunctionInfo(func: ApiFunction): ApiFunctionInfo {
         const info: ApiFunctionInfo = {
             hasResponseHandler: false,
@@ -246,41 +218,24 @@ export abstract class Code {
         }
         return info;
     }
-    
+
     abstract language(): string;
-    
+
     abstract module(module: ApiModule): string;
-    
+
     abstract field(field: ApiField, indent: string): string;
-    
+
     abstract typeVariant(variant: ApiField, indent: string): string;
-    
+
     abstract constVariant(variant: ApiConst): string;
-    
+
     abstract type(type: ApiType, indent: string): string;
-    
+
     abstract typeDef(type: ApiField): string;
-    
+
     abstract functionImpl(func: ApiFunction): string;
-    
+
     abstract functionInterface(func: ApiFunction): string;
-    
+
     abstract modules(): string;
-    
-    static upperFirst(ident: string): string {
-        return ident !== '' ? `${ident[0].toUpperCase()}${ident.substr(1)}` : '';
-    }
-    
-    static lowerFirst(ident: string): string {
-        return ident !== '' ? `${ident[0].toLowerCase()}${ident.substr(1)}` : '';
-    }
-    
-    
-    static pascal(words: string[]): string {
-        return words.map(this.upperFirst).join('');
-    }
-    
-    static camel(words: string[]): string {
-        return this.lowerFirst(this.pascal(words));
-    }
 }

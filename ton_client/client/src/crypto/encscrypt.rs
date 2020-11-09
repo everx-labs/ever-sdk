@@ -24,7 +24,7 @@ pub struct ParamsOfScrypt {
     /// The password bytes to be hashed.
     /// Must be encoded with `base64`.
     pub password: String,
-    /// A salt bytes that modifies the hash to protect against Rainbow table attacks.
+    /// Salt bytes that modify the hash to protect against Rainbow table attacks.
     /// Must be encoded with `base64`.
     pub salt: String,
     /// CPU/memory cost parameter
@@ -34,7 +34,7 @@ pub struct ParamsOfScrypt {
     /// Parallelization parameter.
     pub p: u32,
     /// Intended output length in octets of the derived key.
-    pub dk_len: usize,
+    pub dk_len: u32,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
@@ -65,7 +65,7 @@ pub fn scrypt(
     params: ParamsOfScrypt,
 ) -> ClientResult<ResultOfScrypt> {
     let mut key = Vec::new();
-    key.resize(params.dk_len, 0);
+    key.resize(params.dk_len as usize, 0);
     let scrypt_params = scrypt::ScryptParams::new(params.log_n, params.r, params.p)
         .map_err(|err| crypto::Error::scrypt_failed(err))?;
     let password = base64_decode(&params.password)?;

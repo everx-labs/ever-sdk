@@ -3,13 +3,13 @@ use crate::abi::{
     ParamsOfEncodeMessage, Signer,
 };
 use crate::processing::{
-    ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction,
+    ErrorCode, ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction,
     ProcessingEvent, ProcessingResponseType,
 };
-
 use crate::json_interface::modules::ProcessingModule;
 use crate::processing::types::DecodedOutput;
-use crate::tests::{TestClient, EVENTS};
+use crate::tests::{TestClient, EVENTS, HELLO};
+use crate::tvm::ErrorCode as TvmErrorCode;
 use api_info::ApiModule;
 use crate::utils::conversion::{abi_uint};
 
@@ -59,7 +59,8 @@ async fn test_wait_message() {
             signer: Signer::Keys { keys: keys.clone() },
             processing_try_index: None,
         })
-        .await;
+        .await
+        .unwrap();
 
     client
         .get_grams_from_giver_async(&encoded.address, None)
@@ -74,7 +75,8 @@ async fn test_wait_message() {
             },
             callback.clone(),
         )
-        .await;
+        .await
+        .unwrap();
 
     let output = wait_for_transaction
         .call_with_callback(
@@ -86,7 +88,8 @@ async fn test_wait_message() {
             },
             callback.clone(),
         )
-        .await;
+        .await
+        .unwrap();
 
     assert_eq!(output.out_messages.len(), 0);
     assert_eq!(
@@ -156,7 +159,8 @@ async fn test_process_message() {
 
     let encoded = client
         .encode_message(encode_params.clone())
-        .await;
+        .await
+        .unwrap();
 
     client
         .get_grams_from_giver_async(&encoded.address, None)
@@ -170,7 +174,8 @@ async fn test_process_message() {
             },
             callback,
         )
-        .await;
+        .await
+        .unwrap();
 
     assert!(output.fees.total_account_fees > 0);
     assert_eq!(output.out_messages.len(), 0);
@@ -233,7 +238,8 @@ async fn test_process_message() {
             },
             callback,
         )
-        .await;
+        .await
+        .unwrap();
     assert_eq!(output.out_messages.len(), 2);
     assert_eq!(
         output.decoded,
@@ -279,4 +285,129 @@ async fn test_process_message() {
     } {
         evt = events.next();
     }
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_error_resolving() {
+    // skip on Node SE since it behaves different to real node
+    if TestClient::node_se() {
+        return;
+    }
+
+    let default_client = TestClient::new();
+    let client = TestClient::new_with_config(json!({
+        "network": {
+            "server_address": TestClient::network_address(),
+            "message_processing_timeout": 10000,
+            "message_retries_count": 0,
+            "out_of_sync_threshold": 2500,
+        },
+        "abi": {
+            "message_expiration_timeout": 5000,
+        }
+    }));
+    let keys = client.generate_sign_keys();
+
+    let deploy_params = ParamsOfEncodeMessage {
+        abi: TestClient::abi(HELLO, None),
+        deploy_set: Some(DeploySet {
+            initial_data: None,
+            tvc: TestClient::tvc(HELLO, None),
+            workchain_id: None,
+        }),
+        signer: Signer::Keys { keys: keys.clone() },
+        processing_try_index: None,
+        address: None,
+        call_set: CallSet::some_with_function("constructor")
+    };
+
+    let address = client.encode_message(deploy_params.clone()).await.unwrap().address;
+
+    let mut run_params = ParamsOfEncodeMessage {
+        abi: TestClient::abi(HELLO, None),
+        deploy_set: None,
+        signer: Signer::Keys { keys },
+        processing_try_index: None,
+        address: Some(address.clone()),
+        call_set: Some(CallSet {
+            function_name: "sendAllMoney".to_owned(),
+            header: None,
+            input: Some(json!({
+                "dest_addr": TestClient::giver_address()
+            }))
+        }),
+    };
+
+    
+    // deploy to non-exesting account
+    let result = client.net_process_message(ParamsOfProcessMessage { 
+            message_encode_params: deploy_params.clone(),
+            send_events: false,
+        },
+        TestClient::default_callback
+    ).await.unwrap_err();
+
+    assert_eq!(result.code, TvmErrorCode::AccountMissing as u32);
+
+
+    // deploy with low balance
+    default_client.get_grams_from_giver_async(&address, Some(1000)).await;
+
+    let result = client.net_process_message(ParamsOfProcessMessage { 
+            message_encode_params: deploy_params.clone(),
+            send_events: false,
+        },
+        TestClient::default_callback
+    ).await.unwrap_err();
+
+    let original_code = if TestClient::abi_version() == 1 {
+        ErrorCode::TransactionWaitTimeout
+    } else {
+        ErrorCode::MessageExpired
+    } as isize;
+
+    assert_eq!(result.code, TvmErrorCode::LowBalance as u32);
+    assert_eq!(result.data["original_error"]["code"], original_code);
+
+    // ABI version 1 messages don't expire so previous deploy message can be processed after
+    // increasing balance. Need to wait until message will be rejected by all validators
+    if TestClient::abi_version() == 1 {
+        tokio::time::delay_for(tokio::time::Duration::from_secs(40)).await;
+    }
+
+
+    // run before deploy
+    default_client.get_grams_from_giver_async(&address, None).await;
+
+    let result = client.net_process_message(ParamsOfProcessMessage { 
+            message_encode_params: run_params.clone(),
+            send_events: false,
+        },
+        TestClient::default_callback
+    ).await.unwrap_err();
+
+    assert_eq!(result.code, TvmErrorCode::AccountCodeMissing as u32);
+    assert_eq!(result.data["original_error"]["code"], original_code);
+
+
+    // normal deploy
+    client.net_process_message(ParamsOfProcessMessage { 
+            message_encode_params: deploy_params.clone(),
+            send_events: false,
+        },
+        TestClient::default_callback
+    ).await.unwrap();
+
+
+    // unsigned message
+    run_params.signer = Signer::None;
+    let result = client.net_process_message(ParamsOfProcessMessage { 
+            message_encode_params: run_params.clone(),
+            send_events: false,
+        },
+        TestClient::default_callback
+    ).await.unwrap_err();
+
+    assert_eq!(result.code, TvmErrorCode::ContractExecutionError as u32);
+    assert_eq!(result.data["original_error"]["code"], original_code);
 }

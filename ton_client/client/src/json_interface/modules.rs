@@ -27,6 +27,7 @@ fn register_client(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::net::NetworkConfig>();
     module.register_type::<crate::crypto::CryptoConfig>();
     module.register_type::<crate::abi::AbiConfig>();
+    module.register_type::<crate::client::BuildInfoDependency>();
 
     module.register_sync_fn_without_args(
         crate::client::get_api_reference,
@@ -172,6 +173,14 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
         crate::crypto::hdkey_public_from_xprv,
         crate::crypto::hdkey::hdkey_public_from_xprv_api,
     );
+
+    // Encryption
+
+    module.register_sync_fn(
+        crate::crypto::chacha20,
+        crate::crypto::encryption::chacha20_api,
+    );
+
     module.register();
 }
 
@@ -193,6 +202,11 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::abi::StateInitSource>();
     module.register_type::<crate::abi::StateInitParams>();
     module.register_type::<crate::abi::MessageSource>();
+    module.register_type::<crate::abi::AbiParam>();
+    module.register_type::<crate::abi::AbiEvent>();
+    module.register_type::<crate::abi::AbiData>();
+    module.register_type::<crate::abi::AbiFunction>();
+    module.register_type::<crate::abi::AbiContract>();
 
     module.register_async_fn(
         crate::abi::encode_message_body,
@@ -246,9 +260,14 @@ fn register_boc(handlers: &mut RuntimeHandlers) {
     );
     module.register_sync_fn(crate::boc::parse_block, crate::boc::parse::parse_block_api);
     module.register_sync_fn(
+        crate::boc::parse_shardstate,
+        crate::boc::parse::parse_shardstate_api,
+    );
+    module.register_sync_fn(
         crate::boc::get_blockchain_config,
         crate::boc::blockchain_config::get_blockchain_config_api,
     );
+    module.register_sync_fn(crate::boc::get_boc_hash, crate::boc::hash::get_boc_hash_api);
     module.register();
 }
 
@@ -315,6 +334,7 @@ fn register_tvm(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<TvmModule>(handlers);
     module.register_type::<crate::tvm::types::ExecutionOptions>();
     module.register_type::<crate::tvm::AccountForExecutor>();
+    module.register_type::<crate::tvm::TransactionFees>();
     module.register_async_fn(
         crate::tvm::run_executor,
         crate::tvm::run_message::run_executor_api,
@@ -353,6 +373,5 @@ pub(crate) fn register_modules(handlers: &mut RuntimeHandlers) {
     register_processing(handlers);
     register_utils(handlers);
     register_tvm(handlers);
-
-        register_net(handlers);
+    register_net(handlers);
 }

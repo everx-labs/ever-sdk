@@ -13,17 +13,22 @@
  */
 
 use crate::error::{ClientError, ClientResult};
-use crate::{CResponseHandler, ResponseHandler, ResponseType, StringData};
+use crate::{
+    CResponseHandler, CResponseHandlerPtr, ResponseHandler, ResponseHandlerPtr, ResponseType,
+    StringData,
+};
 use serde::Serialize;
+use std::ffi::c_void;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 enum ResponseHandlerImpl {
-    Rust(ResponseHandler),
-    C(CResponseHandler),
+    Rust(u32, ResponseHandler),
+    C(u32, CResponseHandler),
+    RustPtr(usize, ResponseHandlerPtr),
+    CPtr(usize, CResponseHandlerPtr),
 }
 
 pub struct Request {
-    request_id: u32,
     response_handler: ResponseHandlerImpl,
     finished: AtomicBool,
 }
@@ -31,16 +36,34 @@ pub struct Request {
 impl Request {
     pub(crate) fn new(request_id: u32, response_handler: ResponseHandler) -> Self {
         Self {
-            request_id,
-            response_handler: ResponseHandlerImpl::Rust(response_handler),
+            response_handler: ResponseHandlerImpl::Rust(request_id, response_handler),
             finished: AtomicBool::new(false),
         }
     }
 
     pub(crate) fn new_with_c_handler(request_id: u32, response_handler: CResponseHandler) -> Self {
         Self {
-            request_id,
-            response_handler: ResponseHandlerImpl::C(response_handler),
+            response_handler: ResponseHandlerImpl::C(request_id, response_handler),
+            finished: AtomicBool::new(false),
+        }
+    }
+
+    pub(crate) fn new_with_ptr(
+        request_ptr: *const (),
+        response_handler: ResponseHandlerPtr,
+    ) -> Self {
+        Self {
+            response_handler: ResponseHandlerImpl::RustPtr(request_ptr as usize, response_handler),
+            finished: AtomicBool::new(false),
+        }
+    }
+
+    pub(crate) fn new_with_c_handler_ptr(
+        request_ptr: *const c_void,
+        response_handler: CResponseHandlerPtr,
+    ) -> Self {
+        Self {
+            response_handler: ResponseHandlerImpl::CPtr(request_ptr as usize, response_handler),
             finished: AtomicBool::new(false),
         }
     }
@@ -97,11 +120,17 @@ impl Request {
             return;
         }
         match self.response_handler {
-            ResponseHandlerImpl::Rust(handler) => {
-                handler(self.request_id, params_json, response_type, finished)
+            ResponseHandlerImpl::Rust(id, handler) => {
+                handler(id, params_json, response_type, finished)
             }
-            ResponseHandlerImpl::C(handler) => handler(
-                self.request_id,
+            ResponseHandlerImpl::C(id, handler) => {
+                handler(id, StringData::new(&params_json), response_type, finished)
+            }
+            ResponseHandlerImpl::RustPtr(ptr, handler) => {
+                handler(ptr as *const (), params_json, response_type, finished)
+            }
+            ResponseHandlerImpl::CPtr(ptr, handler) => handler(
+                ptr as *const c_void,
                 StringData::new(&params_json),
                 response_type,
                 finished,

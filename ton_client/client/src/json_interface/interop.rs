@@ -16,8 +16,9 @@ use super::request::Request;
 use super::runtime::Runtime;
 use crate::client::Error;
 use crate::error::ClientResult;
-use failure::_core::ptr::null;
 use serde_json::Value;
+use std::ffi::c_void;
+use std::ptr::null;
 
 pub type ContextHandle = u32;
 
@@ -31,9 +32,6 @@ pub enum ResponseType {
 
 // Rust-style interface
 
-pub type ResponseHandler =
-    fn(request_id: u32, params_json: String, response_type: u32, finished: bool);
-
 pub fn create_context(config: String) -> String {
     let context = Runtime::create_context(&config.to_string());
     convert_result_to_sync_response(context.map(|x| Value::from(x)))
@@ -42,6 +40,9 @@ pub fn create_context(config: String) -> String {
 pub fn destroy_context(context: ContextHandle) {
     Runtime::destroy_context(context)
 }
+
+pub type ResponseHandler =
+    fn(request_id: u32, params_json: String, response_type: u32, finished: bool);
 
 pub fn request(
     context: ContextHandle,
@@ -55,6 +56,24 @@ pub fn request(
         function_name,
         params_json,
         Request::new(request_id, response_handler),
+    )
+}
+
+pub type ResponseHandlerPtr =
+    fn(request_ptr: *const (), params_json: String, response_type: u32, finished: bool);
+
+pub fn request_ptr(
+    context: ContextHandle,
+    function_name: String,
+    params_json: String,
+    request_ptr: *const (),
+    response_handler: ResponseHandlerPtr,
+) {
+    dispatch_request(
+        context,
+        function_name,
+        params_json,
+        Request::new_with_ptr(request_ptr, response_handler),
     )
 }
 
@@ -74,9 +93,6 @@ pub fn request_sync(context: ContextHandle, function_name: String, params_json: 
 
 // C-style interface
 
-pub type CResponseHandler =
-    extern "C" fn(request_id: u32, params_json: StringData, response_type: u32, finished: bool);
-
 #[no_mangle]
 pub unsafe extern "C" fn tc_create_context(config: StringData) -> *const String {
     Box::into_raw(Box::new(create_context(config.to_string())))
@@ -86,6 +102,9 @@ pub unsafe extern "C" fn tc_create_context(config: StringData) -> *const String 
 pub unsafe extern "C" fn tc_destroy_context(context: ContextHandle) {
     destroy_context(context)
 }
+
+pub type CResponseHandler =
+    extern "C" fn(request_id: u32, params_json: StringData, response_type: u32, finished: bool);
 
 #[no_mangle]
 pub unsafe extern "C" fn tc_request(
@@ -100,6 +119,29 @@ pub unsafe extern "C" fn tc_request(
         function_name.to_string(),
         params_json.to_string(),
         Request::new_with_c_handler(request_id, response_handler),
+    )
+}
+
+pub type CResponseHandlerPtr = extern "C" fn(
+    request_ptr: *const c_void,
+    params_json: StringData,
+    response_type: u32,
+    finished: bool,
+);
+
+#[no_mangle]
+pub unsafe extern "C" fn tc_request_ptr(
+    context: ContextHandle,
+    function_name: StringData,
+    params_json: StringData,
+    request_ptr: *const c_void,
+    response_handler: CResponseHandlerPtr,
+) {
+    dispatch_request(
+        context,
+        function_name.to_string(),
+        params_json.to_string(),
+        Request::new_with_c_handler_ptr(request_ptr, response_handler),
     )
 }
 

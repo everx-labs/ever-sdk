@@ -13,12 +13,14 @@ fn test_config_fields() {
             "message_expiration_timeout": null
         },
         "network": {
+            "server_address": "mandatory",
             "network_retries_count": 100
         }
     }
     "#).unwrap();
     assert_eq!(config.crypto.mnemonic_word_count, default_mnemonic_word_count());
     assert_eq!(config.network.network_retries_count, 100);
+    assert_eq!(config.network.server_address, "mandatory");
 }
 
 #[test]
@@ -28,6 +30,6 @@ fn api_reference() {
         "{}.{}",
         ClientModule::api().name,
         crate::client::get_api_reference_api().name
-    ));
+    )).unwrap();
     assert_ne!(api.api.modules.len(), 0);
 }

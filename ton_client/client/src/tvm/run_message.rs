@@ -24,6 +24,7 @@ use crate::{
     tvm::{check_transaction::calc_transaction_fees, Error},
 };
 use super::types::{ExecutionOptions, ResolvedExecutionOptions};
+use super::stack::serialize_item;
 use num_traits::ToPrimitive;
 use serde_json::Value;
 use std::sync::{Arc, atomic::AtomicU64};
@@ -37,9 +38,9 @@ use ton_types::Cell;
 pub enum AccountForExecutor {
     /// Non-existing account to run a creation internal message.
     /// Should be used with `skip_transaction_check = true` if the message has no deploy data
-    /// since transaction on the unitialized account are always aborted
+    /// since transactions on the uninitialized account are always aborted
     None,
-    /// Emulate unitialized account to run deploy message
+    /// Emulate uninitialized account to run deploy message
     Uninit,
     /// Account state to run message
     Account {
@@ -290,8 +291,8 @@ async fn call_executor<F>(
     msg: ton_block::Message,
     options: ResolvedExecutionOptions,
     contract_info: impl FnOnce() -> F,
-) -> ClientResult<(ton_block::Transaction, Cell)> 
-where 
+) -> ClientResult<(ton_block::Transaction, Cell)>
+where
     F: futures::Future<Output=ClientResult<(ton_block::MsgAddressInt, u64)>>
 {
     let executor = OrdinaryTransactionExecutor::new(options.blockchain_config);
@@ -311,11 +312,18 @@ where
             let err_message = err.to_string();
             let err = match contract_info().await {
                 Ok((address, balance)) => match &err.downcast_ref::<ExecutorError>() {
-                    Some(ExecutorError::NoAcceptError(code, _)) => {
-                        Error::tvm_execution_failed(err_message, *code, None, &address)
+                    Some(ExecutorError::NoAcceptError(code, exit_arg)) => {
+                        let exit_arg = exit_arg
+                            .as_ref()
+                            .map(|item| serialize_item(item))
+                            .transpose()?;
+                        Error::tvm_execution_failed(err_message, *code, exit_arg, &address)
                     }
                     Some(ExecutorError::NoFundsToImportMsg) => {
                         Error::low_balance(&address, balance)
+                    }
+                    Some(ExecutorError::ExtMsgComputeSkipped(reason)) => {
+                        Error::tvm_execution_skipped(reason, &address, balance)
                     }
                     _ => Error::unknown_execution_error(err),
                 },

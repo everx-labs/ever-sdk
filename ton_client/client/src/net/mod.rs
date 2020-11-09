@@ -53,7 +53,7 @@ pub fn default_wait_for_timeout() -> u32 {
     40000
 }
 
-pub fn default_out_of_sync_threshold() -> i64 {
+pub fn default_out_of_sync_threshold() -> u32 {
     15000
 }
 
@@ -83,13 +83,12 @@ fn deserialize_wait_for_timeout<'de, D: Deserializer<'de>>(
 
 fn deserialize_out_of_sync_threshold<'de, D: Deserializer<'de>>(
     deserializer: D,
-) -> Result<i64, D::Error> {
+) -> Result<u32, D::Error> {
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_out_of_sync_threshold()))
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ApiType)]
 pub struct NetworkConfig {
-    #[serde(default)]
     pub server_address: String,
     #[serde(
         default = "default_network_retries_count",
@@ -115,7 +114,7 @@ pub struct NetworkConfig {
         default = "default_out_of_sync_threshold",
         deserialize_with = "deserialize_out_of_sync_threshold"
     )]
-    pub out_of_sync_threshold: i64,
+    pub out_of_sync_threshold: u32,
     pub access_key: Option<String>,
 }
 
@@ -215,7 +214,7 @@ async fn extract_subscription_handle(handle: &u32) -> Option<Sender<bool>> {
 ///
 /// Queries data that satisfies the `filter` conditions,
 /// limits the number of returned records and orders them.
-/// The projection fields are limited to  `result` fields
+/// The projection fields are limited to `result` fields
 #[api_function]
 pub async fn query_collection(
     context: std::sync::Arc<ClientContext>,
@@ -247,9 +246,9 @@ pub async fn query_collection(
 /// Triggers only once.
 /// If object that satisfies the `filter` conditions
 /// already exists - returns it immediately.
-/// If not - waits for insert/update of data withing the specified `timeout`,
+/// If not - waits for insert/update of data within the specified `timeout`,
 /// and returns it.
-/// The projection fields are limited to  `result` fields
+/// The projection fields are limited to `result` fields
 #[api_function]
 pub async fn wait_for_collection(
     context: std::sync::Arc<ClientContext>,

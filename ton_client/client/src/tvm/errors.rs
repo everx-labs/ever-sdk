@@ -38,7 +38,7 @@ pub enum ErrorCode {
 pub struct Error;
 
 fn error(code: ErrorCode, message: String) -> ClientError {
-    ClientError::with_code_message(code as isize, message)
+    ClientError::with_code_message(code as u32, message)
 }
 
 impl Error {
@@ -109,12 +109,13 @@ impl Error {
             .or(ExceptionCode::from_usize(!exit_code as usize))
         {
             if error_code == ExceptionCode::OutOfGas {
-                data["tip"] = "Check account balance".into();
+                error.message.push_str(". Check account balance");
             }
             data["description"] = error_code.to_string().into();
         } else if let Some(code) = StdContractError::from_usize(exit_code as usize) {
             if let Some(tip) = code.tip() {
-                data["tip"] = tip.into();
+                error.message.push_str(". ");
+                error.message.push_str(tip);
             }
             data["description"] = code.to_string().into();
         }
@@ -169,11 +170,10 @@ impl Error {
     pub fn account_code_missing(address: &MsgAddressInt) -> ClientError {
         let mut error = error(
             ErrorCode::AccountCodeMissing,
-            "Contract is not deployed".to_owned(),
+            "Contract is not deployed. Contract should be in `Active` state to call its functions".to_owned(),
         );
 
         error.data = serde_json::json!({
-            "tip": "Contract code should be deployed before calling contract functions",
             "account_address": address.to_string(),
         });
         error
@@ -182,12 +182,11 @@ impl Error {
     pub fn low_balance(address: &MsgAddressInt, balance: u64) -> ClientError {
         let mut error = error(
             ErrorCode::LowBalance,
-            "Account has insufficient balance for the requested operation".to_owned(),
+            "Account has insufficient balance for the requested operation. Send some value to account balance".to_owned(),
         );
 
         error.data = serde_json::json!({
             "account_address": address.to_string(),
-            "tip": "Send some value to account balance",
             "account_balance": balance
         });
         error
@@ -208,12 +207,11 @@ impl Error {
     pub fn account_missing(address: &MsgAddressInt) -> ClientError {
         let mut error = error(
             ErrorCode::AccountMissing,
-            "Account does not exist".to_owned(),
+            "Account does not exist. You need to transfer funds to this account first to have a positive balance and then deploy its code".to_owned(),
         );
 
         error.data = serde_json::json!({
             "account_address": address.to_string(),
-            "tip": "You need to transfer funds to this account first to have a positive balance and then deploy its code."
         });
         error
     }

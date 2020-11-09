@@ -13,6 +13,8 @@
             {
               "name": "code",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
               "summary": null,
               "description": null
             },
@@ -42,7 +44,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "NetworkConfig"
+                "ref_name": "client.NetworkConfig"
               },
               "summary": null,
               "description": null
@@ -52,7 +54,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "CryptoConfig"
+                "ref_name": "client.CryptoConfig"
               },
               "summary": null,
               "description": null
@@ -62,7 +64,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "AbiConfig"
+                "ref_name": "client.AbiConfig"
               },
               "summary": null,
               "description": null
@@ -77,10 +79,7 @@
           "struct_fields": [
             {
               "name": "server_address",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "String"
-              },
+              "type": "String",
               "summary": null,
               "description": null
             },
@@ -88,7 +87,9 @@
               "name": "network_retries_count",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "Int",
+                "number_size": 8
               },
               "summary": null,
               "description": null
@@ -97,7 +98,9 @@
               "name": "message_retries_count",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "Int",
+                "number_size": 8
               },
               "summary": null,
               "description": null
@@ -106,7 +109,9 @@
               "name": "message_processing_timeout",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
               },
               "summary": null,
               "description": null
@@ -115,7 +120,9 @@
               "name": "wait_for_timeout",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
               },
               "summary": null,
               "description": null
@@ -124,7 +131,9 @@
               "name": "out_of_sync_threshold",
               "type": "Optional",
               "optional_inner": {
-                "type": "BigInt"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
               },
               "summary": null,
               "description": null
@@ -150,7 +159,9 @@
               "name": "mnemonic_dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": null,
               "description": null
@@ -159,7 +170,9 @@
               "name": "mnemonic_word_count",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": null,
               "description": null
@@ -194,7 +207,9 @@
               "name": "workchain",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "Int",
+                "number_size": 32
               },
               "summary": null,
               "description": null
@@ -203,7 +218,9 @@
               "name": "message_expiration_timeout",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
               },
               "summary": null,
               "description": null
@@ -212,10 +229,32 @@
               "name": "message_expiration_timeout_grow_factor",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "Float",
+                "number_size": 32
               },
               "summary": null,
               "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "BuildInfoDependency",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "name",
+              "type": "String",
+              "summary": " Dependency name. Usually it is a crate name.",
+              "description": " Dependency name. Usually it is a crate name."
+            },
+            {
+              "name": "git_commit",
+              "type": "String",
+              "summary": " Git commit hash of the related repository.",
+              "description": " Git commit hash of the related repository."
             }
           ],
           "summary": null,
@@ -255,11 +294,22 @@
           "type": "Struct",
           "struct_fields": [
             {
-              "name": "build_info",
-              "type": "Ref",
-              "ref_name": "Value",
-              "summary": null,
-              "description": null
+              "name": "build_number",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
+              "summary": " Build number assigned to this build by the CI.",
+              "description": " Build number assigned to this build by the CI."
+            },
+            {
+              "name": "dependencies",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "client.BuildInfoDependency"
+              },
+              "summary": " Fingerprint of the most important dependencies.",
+              "description": " Fingerprint of the most important dependencies."
             }
           ],
           "summary": null,
@@ -292,7 +342,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfGetApiReference"
+                "ref_name": "client.ResultOfGetApiReference"
               }
             ]
           },
@@ -323,7 +373,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfVersion"
+                "ref_name": "client.ResultOfVersion"
               }
             ]
           },
@@ -331,8 +381,8 @@
         },
         {
           "name": "build_info",
-          "summary": null,
-          "description": null,
+          "summary": " Returns detailed information about this build.",
+          "description": " Returns detailed information about this build.",
           "params": [
             {
               "name": "_context",
@@ -354,7 +404,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfBuildInfo"
+                "ref_name": "client.ResultOfBuildInfo"
               }
             ]
           },
@@ -369,15 +419,9 @@
       "types": [
         {
           "name": "SigningBoxHandle",
-          "type": "Struct",
-          "struct_fields": [
-            {
-              "name": "",
-              "type": "Number",
-              "summary": null,
-              "description": null
-            }
-          ],
+          "type": "Number",
+          "number_type": "UInt",
+          "number_size": 32,
           "summary": null,
           "description": null
         },
@@ -473,6 +517,8 @@
             {
               "name": "crc",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 16,
               "summary": " Calculated CRC for input data.",
               "description": " Calculated CRC for input data."
             }
@@ -487,6 +533,8 @@
             {
               "name": "length",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
               "summary": " Size of random byte array.",
               "description": " Size of random byte array."
             }
@@ -569,7 +617,7 @@
             {
               "name": "keys",
               "type": "Ref",
-              "ref_name": "KeyPair",
+              "ref_name": "crypto.KeyPair",
               "summary": " Sign keys.",
               "description": " Sign keys."
             }
@@ -672,30 +720,38 @@
             {
               "name": "salt",
               "type": "String",
-              "summary": " A salt bytes that modifies the hash to protect against Rainbow table attacks.",
-              "description": " A salt bytes that modifies the hash to protect against Rainbow table attacks.\n Must be encoded with `base64`."
+              "summary": " Salt bytes that modify the hash to protect against Rainbow table attacks.",
+              "description": " Salt bytes that modify the hash to protect against Rainbow table attacks.\n Must be encoded with `base64`."
             },
             {
               "name": "log_n",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 8,
               "summary": " CPU/memory cost parameter",
               "description": " CPU/memory cost parameter"
             },
             {
               "name": "r",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
               "summary": " The block size parameter, which fine-tunes sequential memory read size and performance.",
               "description": " The block size parameter, which fine-tunes sequential memory read size and performance."
             },
             {
               "name": "p",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
               "summary": " Parallelization parameter.",
               "description": " Parallelization parameter."
             },
             {
               "name": "dk_len",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
               "summary": " Intended output length in octets of the derived key.",
               "description": " Intended output length in octets of the derived key."
             }
@@ -979,7 +1035,9 @@
               "name": "dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Dictionary identifier",
               "description": " Dictionary identifier"
@@ -1010,7 +1068,9 @@
               "name": "dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Dictionary identifier",
               "description": " Dictionary identifier"
@@ -1019,7 +1079,9 @@
               "name": "word_count",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Mnemonic word count",
               "description": " Mnemonic word count"
@@ -1056,7 +1118,9 @@
               "name": "dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Dictionary identifier",
               "description": " Dictionary identifier"
@@ -1065,7 +1129,9 @@
               "name": "word_count",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Mnemonic word count",
               "description": " Mnemonic word count"
@@ -1102,7 +1168,9 @@
               "name": "dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Dictionary identifier",
               "description": " Dictionary identifier"
@@ -1111,7 +1179,9 @@
               "name": "word_count",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Word count",
               "description": " Word count"
@@ -1127,8 +1197,8 @@
             {
               "name": "valid",
               "type": "Boolean",
-              "summary": " Flag indicating the mnemonic is valid or not",
-              "description": " Flag indicating the mnemonic is valid or not"
+              "summary": " Flag indicating if the mnemonic is valid or not",
+              "description": " Flag indicating if the mnemonic is valid or not"
             }
           ],
           "summary": null,
@@ -1157,7 +1227,9 @@
               "name": "dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Dictionary identifier",
               "description": " Dictionary identifier"
@@ -1166,7 +1238,9 @@
               "name": "word_count",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Word count",
               "description": " Word count"
@@ -1189,7 +1263,9 @@
               "name": "dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Dictionary identifier",
               "description": " Dictionary identifier"
@@ -1198,7 +1274,9 @@
               "name": "word_count",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Mnemonic word count",
               "description": " Mnemonic word count"
@@ -1234,6 +1312,8 @@
             {
               "name": "child_index",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
               "summary": " Child index (see BIP-0032)",
               "description": " Child index (see BIP-0032)"
             },
@@ -1350,6 +1430,46 @@
           ],
           "summary": null,
           "description": null
+        },
+        {
+          "name": "ParamsOfChaCha20",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "data",
+              "type": "String",
+              "summary": " Source data to be encrypted or decrypted. Must be encoded with `base64`.",
+              "description": " Source data to be encrypted or decrypted. Must be encoded with `base64`."
+            },
+            {
+              "name": "key",
+              "type": "String",
+              "summary": " 256-bit key. Must be encoded with `hex`.",
+              "description": " 256-bit key. Must be encoded with `hex`."
+            },
+            {
+              "name": "nonce",
+              "type": "String",
+              "summary": " 96-bit nonce. Must be encoded with `hex`.",
+              "description": " 96-bit nonce. Must be encoded with `hex`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfChaCha20",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "data",
+              "type": "String",
+              "summary": " Encrypted/decrypted data. Encoded with `base64`.",
+              "description": " Encrypted/decrypted data. Encoded with `base64`."
+            }
+          ],
+          "summary": null,
+          "description": null
         }
       ],
       "functions": [
@@ -1374,7 +1494,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfFactorize",
+              "ref_name": "crypto.ParamsOfFactorize",
               "summary": null,
               "description": null
             }
@@ -1385,7 +1505,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfFactorize"
+                "ref_name": "crypto.ResultOfFactorize"
               }
             ]
           },
@@ -1412,7 +1532,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfModularPower",
+              "ref_name": "crypto.ParamsOfModularPower",
               "summary": null,
               "description": null
             }
@@ -1423,7 +1543,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfModularPower"
+                "ref_name": "crypto.ResultOfModularPower"
               }
             ]
           },
@@ -1450,7 +1570,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfTonCrc16",
+              "ref_name": "crypto.ParamsOfTonCrc16",
               "summary": null,
               "description": null
             }
@@ -1461,7 +1581,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfTonCrc16"
+                "ref_name": "crypto.ResultOfTonCrc16"
               }
             ]
           },
@@ -1488,7 +1608,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfGenerateRandomBytes",
+              "ref_name": "crypto.ParamsOfGenerateRandomBytes",
               "summary": null,
               "description": null
             }
@@ -1499,7 +1619,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfGenerateRandomBytes"
+                "ref_name": "crypto.ResultOfGenerateRandomBytes"
               }
             ]
           },
@@ -1526,7 +1646,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfConvertPublicKeyToTonSafeFormat",
+              "ref_name": "crypto.ParamsOfConvertPublicKeyToTonSafeFormat",
               "summary": null,
               "description": null
             }
@@ -1537,7 +1657,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfConvertPublicKeyToTonSafeFormat"
+                "ref_name": "crypto.ResultOfConvertPublicKeyToTonSafeFormat"
               }
             ]
           },
@@ -1568,7 +1688,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "KeyPair"
+                "ref_name": "crypto.KeyPair"
               }
             ]
           },
@@ -1595,7 +1715,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfSign",
+              "ref_name": "crypto.ParamsOfSign",
               "summary": null,
               "description": null
             }
@@ -1606,7 +1726,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfSign"
+                "ref_name": "crypto.ResultOfSign"
               }
             ]
           },
@@ -1633,7 +1753,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfVerifySignature",
+              "ref_name": "crypto.ParamsOfVerifySignature",
               "summary": null,
               "description": null
             }
@@ -1644,7 +1764,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfVerifySignature"
+                "ref_name": "crypto.ResultOfVerifySignature"
               }
             ]
           },
@@ -1671,7 +1791,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfHash",
+              "ref_name": "crypto.ParamsOfHash",
               "summary": null,
               "description": null
             }
@@ -1682,7 +1802,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfHash"
+                "ref_name": "crypto.ResultOfHash"
               }
             ]
           },
@@ -1709,7 +1829,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfHash",
+              "ref_name": "crypto.ParamsOfHash",
               "summary": null,
               "description": null
             }
@@ -1720,7 +1840,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfHash"
+                "ref_name": "crypto.ResultOfHash"
               }
             ]
           },
@@ -1747,7 +1867,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfScrypt",
+              "ref_name": "crypto.ParamsOfScrypt",
               "summary": null,
               "description": null
             }
@@ -1758,7 +1878,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfScrypt"
+                "ref_name": "crypto.ResultOfScrypt"
               }
             ]
           },
@@ -1785,7 +1905,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfNaclSignKeyPairFromSecret",
+              "ref_name": "crypto.ParamsOfNaclSignKeyPairFromSecret",
               "summary": null,
               "description": null
             }
@@ -1796,7 +1916,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "KeyPair"
+                "ref_name": "crypto.KeyPair"
               }
             ]
           },
@@ -1823,7 +1943,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfNaclSign",
+              "ref_name": "crypto.ParamsOfNaclSign",
               "summary": null,
               "description": null
             }
@@ -1834,7 +1954,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfNaclSign"
+                "ref_name": "crypto.ResultOfNaclSign"
               }
             ]
           },
@@ -1861,7 +1981,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfNaclSignOpen",
+              "ref_name": "crypto.ParamsOfNaclSignOpen",
               "summary": null,
               "description": null
             }
@@ -1872,7 +1992,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfNaclSignOpen"
+                "ref_name": "crypto.ResultOfNaclSignOpen"
               }
             ]
           },
@@ -1899,7 +2019,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfNaclSign",
+              "ref_name": "crypto.ParamsOfNaclSign",
               "summary": null,
               "description": null
             }
@@ -1910,7 +2030,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfNaclSignDetached"
+                "ref_name": "crypto.ResultOfNaclSignDetached"
               }
             ]
           },
@@ -1941,7 +2061,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "KeyPair"
+                "ref_name": "crypto.KeyPair"
               }
             ]
           },
@@ -1968,7 +2088,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfNaclBoxKeyPairFromSecret",
+              "ref_name": "crypto.ParamsOfNaclBoxKeyPairFromSecret",
               "summary": null,
               "description": null
             }
@@ -1979,7 +2099,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "KeyPair"
+                "ref_name": "crypto.KeyPair"
               }
             ]
           },
@@ -2006,7 +2126,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfNaclBox",
+              "ref_name": "crypto.ParamsOfNaclBox",
               "summary": null,
               "description": null
             }
@@ -2017,7 +2137,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfNaclBox"
+                "ref_name": "crypto.ResultOfNaclBox"
               }
             ]
           },
@@ -2044,7 +2164,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfNaclBoxOpen",
+              "ref_name": "crypto.ParamsOfNaclBoxOpen",
               "summary": null,
               "description": null
             }
@@ -2055,7 +2175,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfNaclBoxOpen"
+                "ref_name": "crypto.ResultOfNaclBoxOpen"
               }
             ]
           },
@@ -2082,7 +2202,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfNaclSecretBox",
+              "ref_name": "crypto.ParamsOfNaclSecretBox",
               "summary": null,
               "description": null
             }
@@ -2093,7 +2213,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfNaclBox"
+                "ref_name": "crypto.ResultOfNaclBox"
               }
             ]
           },
@@ -2120,7 +2240,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfNaclSecretBoxOpen",
+              "ref_name": "crypto.ParamsOfNaclSecretBoxOpen",
               "summary": null,
               "description": null
             }
@@ -2131,7 +2251,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfNaclBoxOpen"
+                "ref_name": "crypto.ResultOfNaclBoxOpen"
               }
             ]
           },
@@ -2158,7 +2278,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfMnemonicWords",
+              "ref_name": "crypto.ParamsOfMnemonicWords",
               "summary": null,
               "description": null
             }
@@ -2169,7 +2289,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfMnemonicWords"
+                "ref_name": "crypto.ResultOfMnemonicWords"
               }
             ]
           },
@@ -2196,7 +2316,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfMnemonicFromRandom",
+              "ref_name": "crypto.ParamsOfMnemonicFromRandom",
               "summary": null,
               "description": null
             }
@@ -2207,7 +2327,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfMnemonicFromRandom"
+                "ref_name": "crypto.ResultOfMnemonicFromRandom"
               }
             ]
           },
@@ -2234,7 +2354,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfMnemonicFromEntropy",
+              "ref_name": "crypto.ParamsOfMnemonicFromEntropy",
               "summary": null,
               "description": null
             }
@@ -2245,7 +2365,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfMnemonicFromEntropy"
+                "ref_name": "crypto.ResultOfMnemonicFromEntropy"
               }
             ]
           },
@@ -2272,7 +2392,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfMnemonicVerify",
+              "ref_name": "crypto.ParamsOfMnemonicVerify",
               "summary": null,
               "description": null
             }
@@ -2283,7 +2403,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfMnemonicVerify"
+                "ref_name": "crypto.ResultOfMnemonicVerify"
               }
             ]
           },
@@ -2310,7 +2430,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfMnemonicDeriveSignKeys",
+              "ref_name": "crypto.ParamsOfMnemonicDeriveSignKeys",
               "summary": null,
               "description": null
             }
@@ -2321,7 +2441,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "KeyPair"
+                "ref_name": "crypto.KeyPair"
               }
             ]
           },
@@ -2348,7 +2468,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfHDKeyXPrvFromMnemonic",
+              "ref_name": "crypto.ParamsOfHDKeyXPrvFromMnemonic",
               "summary": null,
               "description": null
             }
@@ -2359,7 +2479,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfHDKeyXPrvFromMnemonic"
+                "ref_name": "crypto.ResultOfHDKeyXPrvFromMnemonic"
               }
             ]
           },
@@ -2386,7 +2506,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfHDKeyDeriveFromXPrv",
+              "ref_name": "crypto.ParamsOfHDKeyDeriveFromXPrv",
               "summary": null,
               "description": null
             }
@@ -2397,7 +2517,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfHDKeyDeriveFromXPrv"
+                "ref_name": "crypto.ResultOfHDKeyDeriveFromXPrv"
               }
             ]
           },
@@ -2424,7 +2544,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfHDKeyDeriveFromXPrvPath",
+              "ref_name": "crypto.ParamsOfHDKeyDeriveFromXPrvPath",
               "summary": null,
               "description": null
             }
@@ -2435,7 +2555,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfHDKeyDeriveFromXPrvPath"
+                "ref_name": "crypto.ResultOfHDKeyDeriveFromXPrvPath"
               }
             ]
           },
@@ -2462,7 +2582,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfHDKeySecretFromXPrv",
+              "ref_name": "crypto.ParamsOfHDKeySecretFromXPrv",
               "summary": null,
               "description": null
             }
@@ -2473,7 +2593,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfHDKeySecretFromXPrv"
+                "ref_name": "crypto.ResultOfHDKeySecretFromXPrv"
               }
             ]
           },
@@ -2500,7 +2620,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfHDKeyPublicFromXPrv",
+              "ref_name": "crypto.ParamsOfHDKeyPublicFromXPrv",
               "summary": null,
               "description": null
             }
@@ -2511,7 +2631,45 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfHDKeyPublicFromXPrv"
+                "ref_name": "crypto.ResultOfHDKeyPublicFromXPrv"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "chacha20",
+          "summary": " Performs symmetric `chacha20` encryption.",
+          "description": " Performs symmetric `chacha20` encryption.",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "crypto.ParamsOfChaCha20",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "crypto.ResultOfChaCha20"
               }
             ]
           },
@@ -2529,13 +2687,27 @@
           "type": "EnumOfTypes",
           "enum_types": [
             {
-              "name": "Serialized",
+              "name": "Contract",
               "type": "Struct",
               "struct_fields": [
                 {
-                  "name": "",
+                  "name": "value",
                   "type": "Ref",
-                  "ref_name": "AbiContract",
+                  "ref_name": "abi.AbiContract",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Json",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "value",
+                  "type": "String",
                   "summary": null,
                   "description": null
                 }
@@ -2548,9 +2720,24 @@
               "type": "Struct",
               "struct_fields": [
                 {
-                  "name": "",
+                  "name": "value",
                   "type": "Ref",
-                  "ref_name": "AbiHandle",
+                  "ref_name": "abi.AbiHandle",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Serialized",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "value",
+                  "type": "Ref",
+                  "ref_name": "abi.AbiContract",
                   "summary": null,
                   "description": null
                 }
@@ -2564,15 +2751,9 @@
         },
         {
           "name": "AbiHandle",
-          "type": "Struct",
-          "struct_fields": [
-            {
-              "name": "",
-              "type": "Number",
-              "summary": null,
-              "description": null
-            }
-          ],
+          "type": "Number",
+          "number_type": "UInt",
+          "number_size": 32,
           "summary": null,
           "description": null
         },
@@ -2584,19 +2765,23 @@
               "name": "expire",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
               },
               "summary": " Message expiration time in seconds.",
-              "description": " Message expiration time in seconds."
+              "description": " Message expiration time in seconds.\n If not specified - calculated automatically from message_expiration_timeout(),\n try_index and message_expiration_timeout_grow_factor() (if ABI includes `expire` header)."
             },
             {
               "name": "time",
               "type": "Optional",
               "optional_inner": {
-                "type": "BigInt"
+                "type": "BigInt",
+                "number_type": "UInt",
+                "number_size": 64
               },
-              "summary": " Message creation time in milliseconds.",
-              "description": " Message creation time in milliseconds."
+              "summary": " Message creation time in milliseconds. If not specified, `now` is used",
+              "description": " Message creation time in milliseconds. If not specified, `now` is used\n (if ABI includes `time` header)."
             },
             {
               "name": "pubkey",
@@ -2604,12 +2789,12 @@
               "optional_inner": {
                 "type": "String"
               },
-              "summary": " Public key used to sign message. Encoded with `hex`.",
-              "description": " Public key used to sign message. Encoded with `hex`."
+              "summary": " Public key is used by the contract to check the signature. Encoded in `hex`.",
+              "description": " Public key is used by the contract to check the signature. Encoded in `hex`.\n If not specified, method fails with exception (if ABI includes `pubkey` header).."
             }
           ],
           "summary": " The ABI function header.",
-          "description": " The ABI function header.\n\n Includes several hidden function parameters that contract\n uses for security and replay protection reasons.\n\n The actual set of header fields depends on the contract's ABI."
+          "description": " The ABI function header.\n\n Includes several hidden function parameters that contract\n uses for security, message delivery monitoring and replay protection reasons.\n\n The actual set of header fields depends on the contract's ABI.\n If a contract's ABI does not include some headers, then they are not filled."
         },
         {
           "name": "CallSet",
@@ -2626,7 +2811,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "FunctionHeader"
+                "ref_name": "abi.FunctionHeader"
               },
               "summary": " Function header.",
               "description": " Function header.\n\n If an application omits some header parameters required by the\n contract's ABI, the library will set the default values for\n them."
@@ -2659,7 +2844,9 @@
               "name": "workchain_id",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "Int",
+                "number_size": 32
               },
               "summary": " Target workchain for destination address. Default is `0`.",
               "description": " Target workchain for destination address. Default is `0`."
@@ -2700,8 +2887,8 @@
                   "description": null
                 }
               ],
-              "summary": " Only public key is provided to generate unsigned message and `data_to_sign`",
-              "description": " Only public key is provided to generate unsigned message and `data_to_sign`\n which can be signed later.  "
+              "summary": " Only public key is provided in unprefixed hex string format to generate unsigned message ",
+              "description": " Only public key is provided in unprefixed hex string format to generate unsigned message \n and `data_to_sign` which can be signed later.  "
             },
             {
               "name": "Keys",
@@ -2710,7 +2897,7 @@
                 {
                   "name": "keys",
                   "type": "Ref",
-                  "ref_name": "KeyPair",
+                  "ref_name": "crypto.KeyPair",
                   "summary": null,
                   "description": null
                 }
@@ -2725,7 +2912,7 @@
                 {
                   "name": "handle",
                   "type": "Ref",
-                  "ref_name": "SigningBoxHandle",
+                  "ref_name": "crypto.SigningBoxHandle",
                   "summary": null,
                   "description": null
                 }
@@ -2780,7 +2967,7 @@
                 {
                   "name": "source",
                   "type": "Ref",
-                  "ref_name": "MessageSource",
+                  "ref_name": "abi.MessageSource",
                   "summary": null,
                   "description": null
                 }
@@ -2841,7 +3028,7 @@
                   "type": "Optional",
                   "optional_inner": {
                     "type": "Ref",
-                    "ref_name": "StateInitParams"
+                    "ref_name": "abi.StateInitParams"
                   },
                   "summary": null,
                   "description": null
@@ -2861,7 +3048,7 @@
             {
               "name": "abi",
               "type": "Ref",
-              "ref_name": "Abi",
+              "ref_name": "abi.Abi",
               "summary": null,
               "description": null
             },
@@ -2895,7 +3082,7 @@
                   "type": "Optional",
                   "optional_inner": {
                     "type": "Ref",
-                    "ref_name": "Abi"
+                    "ref_name": "abi.Abi"
                   },
                   "summary": null,
                   "description": null
@@ -2906,16 +3093,249 @@
             },
             {
               "name": "EncodingParams",
-              "type": "Struct",
-              "struct_fields": [
-                {
-                  "name": "",
+              "type": "Ref",
+              "ref_name": "abi.ParamsOfEncodeMessage",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "AbiParam",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "name",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "type",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "components",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
                   "type": "Ref",
-                  "ref_name": "ParamsOfEncodeMessage",
-                  "summary": null,
-                  "description": null
+                  "ref_name": "abi.AbiParam"
                 }
-              ],
+              },
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "AbiEvent",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "name",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "inputs",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "abi.AbiParam"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "id",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Optional",
+                "optional_inner": {
+                  "type": "Number",
+                  "number_type": "UInt",
+                  "number_size": 32
+                }
+              },
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "AbiData",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "key",
+              "type": "BigInt",
+              "number_type": "UInt",
+              "number_size": 64,
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "name",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "type",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "components",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "Ref",
+                  "ref_name": "abi.AbiParam"
+                }
+              },
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "AbiFunction",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "name",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "inputs",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "abi.AbiParam"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "outputs",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "abi.AbiParam"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "id",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Optional",
+                "optional_inner": {
+                  "type": "Number",
+                  "number_type": "UInt",
+                  "number_size": 32
+                }
+              },
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "AbiContract",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "ABI version",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "abi_version",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "header",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "String"
+                }
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "functions",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "Ref",
+                  "ref_name": "abi.AbiFunction"
+                }
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "events",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "Ref",
+                  "ref_name": "abi.AbiEvent"
+                }
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "data",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "Ref",
+                  "ref_name": "abi.AbiData"
+                }
+              },
               "summary": null,
               "description": null
             }
@@ -2930,14 +3350,14 @@
             {
               "name": "abi",
               "type": "Ref",
-              "ref_name": "Abi",
+              "ref_name": "abi.Abi",
               "summary": " Contract ABI.",
               "description": " Contract ABI."
             },
             {
               "name": "call_set",
               "type": "Ref",
-              "ref_name": "CallSet",
+              "ref_name": "abi.CallSet",
               "summary": " Function call parameters.",
               "description": " Function call parameters.\n\n Must be specified in non deploy message.\n\n In case of deploy message contains parameters of constructor."
             },
@@ -2950,7 +3370,7 @@
             {
               "name": "signer",
               "type": "Ref",
-              "ref_name": "Signer",
+              "ref_name": "abi.Signer",
               "summary": " Signing parameters.",
               "description": " Signing parameters."
             },
@@ -2958,7 +3378,9 @@
               "name": "processing_try_index",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Processing try index.",
               "description": " Processing try index.\n\n Used in message processing with retries.\n\n Encoder uses the provided try index to calculate message\n expiration time.\n\n Expiration timeouts will grow with every retry.\n\n Default value is 0."
@@ -2997,7 +3419,7 @@
             {
               "name": "abi",
               "type": "Ref",
-              "ref_name": "Abi",
+              "ref_name": "abi.Abi",
               "summary": " Contract ABI",
               "description": " Contract ABI"
             },
@@ -3044,7 +3466,7 @@
             {
               "name": "abi",
               "type": "Ref",
-              "ref_name": "Abi",
+              "ref_name": "abi.Abi",
               "summary": " Contract ABI.",
               "description": " Contract ABI."
             },
@@ -3062,7 +3484,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "DeploySet"
+                "ref_name": "abi.DeploySet"
               },
               "summary": " Deploy parameters.",
               "description": " Deploy parameters.\n\n Must be specified in case of deploy message."
@@ -3072,7 +3494,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "CallSet"
+                "ref_name": "abi.CallSet"
               },
               "summary": " Function call parameters.",
               "description": " Function call parameters.\n\n Must be specified in case of non-deploy message.\n\n In case of deploy message it is optional and contains parameters\n of the functions that will to be called upon deploy transaction."
@@ -3080,7 +3502,7 @@
             {
               "name": "signer",
               "type": "Ref",
-              "ref_name": "Signer",
+              "ref_name": "abi.Signer",
               "summary": " Signing parameters.",
               "description": " Signing parameters."
             },
@@ -3088,7 +3510,9 @@
               "name": "processing_try_index",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
               },
               "summary": " Processing try index.",
               "description": " Processing try index.\n\n Used in message processing with retries (if contract's ABI includes \"expire\" header).\n\n Encoder uses the provided try index to calculate message\n expiration time. The 1st message expiration time is specified in\n Client config.\n\n Expiration timeouts will grow with every retry.\n Retry grow factor is set in Client config:\n <.....add config parameter with default value here>\n\n Default value is 0."
@@ -3139,7 +3563,7 @@
             {
               "name": "abi",
               "type": "Ref",
-              "ref_name": "Abi",
+              "ref_name": "abi.Abi",
               "summary": " Contract ABI",
               "description": " Contract ABI"
             },
@@ -3192,7 +3616,7 @@
             {
               "name": "abi",
               "type": "Ref",
-              "ref_name": "Abi",
+              "ref_name": "abi.Abi",
               "summary": " contract ABI",
               "description": " contract ABI"
             },
@@ -3213,7 +3637,7 @@
             {
               "name": "body_type",
               "type": "Ref",
-              "ref_name": "MessageBodyType",
+              "ref_name": "abi.MessageBodyType",
               "summary": " Type of the message body content.",
               "description": " Type of the message body content."
             },
@@ -3238,7 +3662,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "FunctionHeader"
+                "ref_name": "abi.FunctionHeader"
               },
               "summary": " Function header.",
               "description": " Function header."
@@ -3254,7 +3678,7 @@
             {
               "name": "abi",
               "type": "Ref",
-              "ref_name": "Abi",
+              "ref_name": "abi.Abi",
               "summary": " Contract ABI used to decode.",
               "description": " Contract ABI used to decode."
             },
@@ -3281,7 +3705,7 @@
             {
               "name": "state_init",
               "type": "Ref",
-              "ref_name": "StateInitSource",
+              "ref_name": "abi.StateInitSource",
               "summary": " Source of the account state init.",
               "description": " Source of the account state init."
             },
@@ -3289,7 +3713,9 @@
               "name": "balance",
               "type": "Optional",
               "optional_inner": {
-                "type": "BigInt"
+                "type": "BigInt",
+                "number_type": "UInt",
+                "number_size": 64
               },
               "summary": " Initial balance.",
               "description": " Initial balance."
@@ -3298,7 +3724,9 @@
               "name": "last_trans_lt",
               "type": "Optional",
               "optional_inner": {
-                "type": "BigInt"
+                "type": "BigInt",
+                "number_type": "UInt",
+                "number_size": 64
               },
               "summary": " Initial value for the `last_trans_lt`.",
               "description": " Initial value for the `last_trans_lt`."
@@ -3307,7 +3735,9 @@
               "name": "last_paid",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
               },
               "summary": " Initial value for the `last_paid`.",
               "description": " Initial value for the `last_paid`."
@@ -3359,7 +3789,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfEncodeMessageBody",
+              "ref_name": "abi.ParamsOfEncodeMessageBody",
               "summary": null,
               "description": null
             }
@@ -3370,7 +3800,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfEncodeMessageBody"
+                "ref_name": "abi.ResultOfEncodeMessageBody"
               }
             ]
           },
@@ -3397,7 +3827,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfAttachSignatureToMessageBody",
+              "ref_name": "abi.ParamsOfAttachSignatureToMessageBody",
               "summary": null,
               "description": null
             }
@@ -3408,7 +3838,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfAttachSignatureToMessageBody"
+                "ref_name": "abi.ResultOfAttachSignatureToMessageBody"
               }
             ]
           },
@@ -3435,7 +3865,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfEncodeMessage",
+              "ref_name": "abi.ParamsOfEncodeMessage",
               "summary": null,
               "description": null
             }
@@ -3446,7 +3876,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfEncodeMessage"
+                "ref_name": "abi.ResultOfEncodeMessage"
               }
             ]
           },
@@ -3473,7 +3903,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfAttachSignature",
+              "ref_name": "abi.ParamsOfAttachSignature",
               "summary": null,
               "description": null
             }
@@ -3484,7 +3914,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfAttachSignature"
+                "ref_name": "abi.ResultOfAttachSignature"
               }
             ]
           },
@@ -3511,7 +3941,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfDecodeMessage",
+              "ref_name": "abi.ParamsOfDecodeMessage",
               "summary": null,
               "description": null
             }
@@ -3522,7 +3952,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "DecodedMessageBody"
+                "ref_name": "abi.DecodedMessageBody"
               }
             ]
           },
@@ -3549,7 +3979,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfDecodeMessageBody",
+              "ref_name": "abi.ParamsOfDecodeMessageBody",
               "summary": null,
               "description": null
             }
@@ -3560,7 +3990,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "DecodedMessageBody"
+                "ref_name": "abi.DecodedMessageBody"
               }
             ]
           },
@@ -3587,7 +4017,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfEncodeAccount",
+              "ref_name": "abi.ParamsOfEncodeAccount",
               "summary": null,
               "description": null
             }
@@ -3598,7 +4028,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfEncodeAccount"
+                "ref_name": "abi.ResultOfEncodeAccount"
               }
             ]
           },
@@ -3641,6 +4071,34 @@
           "description": null
         },
         {
+          "name": "ParamsOfParseShardstate",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "boc",
+              "type": "String",
+              "summary": " BOC encoded as base64",
+              "description": " BOC encoded as base64"
+            },
+            {
+              "name": "id",
+              "type": "String",
+              "summary": " Shardstate identificator",
+              "description": " Shardstate identificator"
+            },
+            {
+              "name": "workchain_id",
+              "type": "Number",
+              "number_type": "Int",
+              "number_size": 32,
+              "summary": " Workchain shardstate belongs to ",
+              "description": " Workchain shardstate belongs to "
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfGetBlockchainConfig",
           "type": "Struct",
           "struct_fields": [
@@ -3663,6 +4121,34 @@
               "type": "String",
               "summary": " Blockchain config BOC encoded as base64",
               "description": " Blockchain config BOC encoded as base64"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfGetBocHash",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "boc",
+              "type": "String",
+              "summary": " BOC encoded as base64",
+              "description": " BOC encoded as base64"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfGetBocHash",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "hash",
+              "type": "String",
+              "summary": " BOC root hash encoded with hex",
+              "description": " BOC root hash encoded with hex"
             }
           ],
           "summary": null,
@@ -3691,7 +4177,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfParse",
+              "ref_name": "boc.ParamsOfParse",
               "summary": null,
               "description": null
             }
@@ -3702,7 +4188,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfParse"
+                "ref_name": "boc.ResultOfParse"
               }
             ]
           },
@@ -3729,7 +4215,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfParse",
+              "ref_name": "boc.ParamsOfParse",
               "summary": null,
               "description": null
             }
@@ -3740,7 +4226,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfParse"
+                "ref_name": "boc.ResultOfParse"
               }
             ]
           },
@@ -3767,7 +4253,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfParse",
+              "ref_name": "boc.ParamsOfParse",
               "summary": null,
               "description": null
             }
@@ -3778,7 +4264,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfParse"
+                "ref_name": "boc.ResultOfParse"
               }
             ]
           },
@@ -3805,7 +4291,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfParse",
+              "ref_name": "boc.ParamsOfParse",
               "summary": null,
               "description": null
             }
@@ -3816,7 +4302,45 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfParse"
+                "ref_name": "boc.ResultOfParse"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "parse_shardstate",
+          "summary": " Parses shardstate boc into a JSON ",
+          "description": " Parses shardstate boc into a JSON \n \n JSON structure is compatible with GraphQL API shardstate object",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "boc.ParamsOfParseShardstate",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "boc.ResultOfParse"
               }
             ]
           },
@@ -3843,7 +4367,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfGetBlockchainConfig",
+              "ref_name": "boc.ParamsOfGetBlockchainConfig",
               "summary": null,
               "description": null
             }
@@ -3854,7 +4378,45 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfGetBlockchainConfig"
+                "ref_name": "boc.ResultOfGetBlockchainConfig"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "get_boc_hash",
+          "summary": " Calculates BOC root hash",
+          "description": " Calculates BOC root hash",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "boc.ParamsOfGetBocHash",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "boc.ResultOfGetBocHash"
               }
             ]
           },
@@ -3885,7 +4447,7 @@
                 {
                   "name": "error",
                   "type": "Ref",
-                  "ref_name": "ClientError",
+                  "ref_name": "client.ClientError",
                   "summary": null,
                   "description": null
                 }
@@ -3970,7 +4532,7 @@
                 {
                   "name": "error",
                   "type": "Ref",
-                  "ref_name": "ClientError",
+                  "ref_name": "client.ClientError",
                   "summary": null,
                   "description": null
                 }
@@ -4029,7 +4591,7 @@
                 {
                   "name": "error",
                   "type": "Ref",
-                  "ref_name": "ClientError",
+                  "ref_name": "client.ClientError",
                   "summary": null,
                   "description": null
                 }
@@ -4056,7 +4618,7 @@
                 {
                   "name": "error",
                   "type": "Ref",
-                  "ref_name": "ClientError",
+                  "ref_name": "client.ClientError",
                   "summary": null,
                   "description": null
                 }
@@ -4093,7 +4655,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "DecodedOutput"
+                "ref_name": "processing.DecodedOutput"
               },
               "summary": " Optional decoded message bodies according to the optional",
               "description": " Optional decoded message bodies according to the optional\n `abi` parameter."
@@ -4101,7 +4663,7 @@
             {
               "name": "fees",
               "type": "Ref",
-              "ref_name": "TransactionFees",
+              "ref_name": "tvm.TransactionFees",
               "summary": " Transaction fees",
               "description": " Transaction fees"
             }
@@ -4120,11 +4682,11 @@
                 "type": "Optional",
                 "optional_inner": {
                   "type": "Ref",
-                  "ref_name": "DecodedMessageBody"
+                  "ref_name": "abi.DecodedMessageBody"
                 }
               },
               "summary": " Decoded bodies of the out messages.",
-              "description": " Decoded bodies of the out messages.\n\n If the message can't be decoded then `None` will be stored in\n the appropriate position."
+              "description": " Decoded bodies of the out messages.\n\n If the message can't be decoded, then `None` will be stored in\n the appropriate position."
             },
             {
               "name": "output",
@@ -4155,10 +4717,10 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "Abi"
+                "ref_name": "abi.Abi"
               },
               "summary": " Optional message ABI.",
-              "description": " Optional message ABI.\n\n If this parameter is specified and the message has the\n `expire` header then expiration time will be checked against\n the current time to prevent an unnecessary sending of already expired message.\n\n The `message already expired` error will be returned in this\n case.\n\n Note that specifying `abi` for ABI compliant contracts is\n strongly recommended due to choosing proper processing\n strategy."
+              "description": " Optional message ABI.\n\n If this parameter is specified and the message has the\n `expire` header then expiration time will be checked against\n the current time to prevent unnecessary sending of already expired message.\n\n The `message already expired` error will be returned in this\n case.\n\n Note, that specifying `abi` for ABI compliant contracts is\n strongly recommended, so that proper processing strategy can be\n chosen."
             },
             {
               "name": "send_events",
@@ -4193,10 +4755,10 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "Abi"
+                "ref_name": "abi.Abi"
               },
               "summary": " Optional ABI for decoding the transaction result.",
-              "description": " Optional ABI for decoding the transaction result.\n\n If it is specified then the output messages' bodies will be\n decoded according to this ABI.\n\n The `abi_decoded` result field will be filled out."
+              "description": " Optional ABI for decoding the transaction result.\n\n If it is specified, then the output messages' bodies will be\n decoded according to this ABI.\n\n The `abi_decoded` result field will be filled out."
             },
             {
               "name": "message",
@@ -4227,7 +4789,7 @@
             {
               "name": "message_encode_params",
               "type": "Ref",
-              "ref_name": "ParamsOfEncodeMessage",
+              "ref_name": "abi.ParamsOfEncodeMessage",
               "summary": " Message encode parameters.",
               "description": " Message encode parameters."
             },
@@ -4264,7 +4826,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfSendMessage",
+              "ref_name": "processing.ParamsOfSendMessage",
               "summary": null,
               "description": null
             },
@@ -4288,7 +4850,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfSendMessage"
+                "ref_name": "processing.ResultOfSendMessage"
               }
             ]
           },
@@ -4297,7 +4859,7 @@
         {
           "name": "wait_for_transaction",
           "summary": " Performs monitoring of the network for the result transaction",
-          "description": " Performs monitoring of the network for the result transaction\n of the external inbound message processing.\n \n `send_events` enables intermediate events, such as `WillFetchNextBlock`,\n `FetchNextBlockFailed` that may be useful for logging of new shard blocks creation \n during message processing.\n\n Note that presence of the `abi` parameter is critical for ABI\n compliant contracts. Message processing uses drastically\n different strategy for processing message for contracts which\n ABI includes \"expire\" header.\n\n When the ABI header `expire` is present, the processing uses\n `message expiration` strategy:\n - The maximum block gen time is set to\n   `message_expiration_time + transaction_wait_timeout`.\n - When maximum block gen time is reached the processing will\n   be finished with `MessageExpired` error.\n\n When the ABI header `expire` isn't present or `abi` parameter\n isn't specified, the processing uses `transaction waiting`\n strategy:\n - The maximum block gen time is set to\n   `now() + transaction_wait_timeout`.\n \n - If maximum block gen time is reached and no result transaction is found \n the processing will exit with an error.",
+          "description": " Performs monitoring of the network for the result transaction\n of the external inbound message processing.\n \n `send_events` enables intermediate events, such as `WillFetchNextBlock`,\n `FetchNextBlockFailed` that may be useful for logging of new shard blocks creation \n during message processing.\n\n Note, that presence of the `abi` parameter is critical for ABI\n compliant contracts. Message processing uses drastically\n different strategy for processing message for contracts which\n ABI includes \"expire\" header.\n\n When the ABI header `expire` is present, the processing uses\n `message expiration` strategy:\n - The maximum block gen time is set to\n   `message_expiration_timeout + transaction_wait_timeout`.\n - When maximum block gen time is reached, the processing will\n   be finished with `MessageExpired` error.\n\n When the ABI header `expire` isn't present or `abi` parameter\n isn't specified, the processing uses `transaction waiting`\n strategy:\n - The maximum block gen time is set to\n   `now() + transaction_wait_timeout`.\n \n - If maximum block gen time is reached and no result transaction is found, \n the processing will exit with an error.",
           "params": [
             {
               "name": "context",
@@ -4315,7 +4877,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfWaitForTransaction",
+              "ref_name": "processing.ParamsOfWaitForTransaction",
               "summary": null,
               "description": null
             },
@@ -4339,7 +4901,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfProcessMessage"
+                "ref_name": "processing.ResultOfProcessMessage"
               }
             ]
           },
@@ -4348,7 +4910,7 @@
         {
           "name": "process_message",
           "summary": " Creates message, sends it to the network and monitors its processing.",
-          "description": " Creates message, sends it to the network and monitors its processing.\n \n Creates ABI-compatible message,\n sends it to the network and monitors for the result transaction.\n Decodes the output messages's bodies.\n \n If contract's ABI includes \"expire\" header then\n SDK implements retries in case of unsuccessful message delivery within the expiration\n timeout: SDK recreates the message, sends it and processes it again. \n \n The intermediate events, such as `WillFetchFirstBlock`, `WillSend`, `DidSend`,\n `WillFetchNextBlock`, etc - are switched on/off by `send_events` flag \n and logged into the supplied callback function.\n The retry configuration parameters are defined in config:\n <add correct config params here>\n pub const DEFAULT_EXPIRATION_RETRIES_LIMIT: i8 = 3; - max number of retries\n pub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 40000;  - message expiration timeout in ms.\n pub const DEFAULT_....expiration_timeout_grow_factor... = 1.5 - factor that increases the expiration timeout for each retry\n \n If contract's ABI does not include \"expire\" header\n then if no transaction is found within the network timeout (see config parameter ), exits with error.",
+          "description": " Creates message, sends it to the network and monitors its processing.\n \n Creates ABI-compatible message,\n sends it to the network and monitors for the result transaction.\n Decodes the output messages' bodies.\n \n If contract's ABI includes \"expire\" header, then\n SDK implements retries in case of unsuccessful message delivery within the expiration\n timeout: SDK recreates the message, sends it and processes it again. \n \n The intermediate events, such as `WillFetchFirstBlock`, `WillSend`, `DidSend`,\n `WillFetchNextBlock`, etc - are switched on/off by `send_events` flag \n and logged into the supplied callback function.\n The retry configuration parameters are defined in config:\n <add correct config params here>\n pub const DEFAULT_EXPIRATION_RETRIES_LIMIT: i8 = 3; - max number of retries\n pub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 40000;  - message expiration timeout in ms.\n pub const DEFAULT_....expiration_timeout_grow_factor... = 1.5 - factor that increases the expiration timeout for each retry\n \n If contract's ABI does not include \"expire\" header\n then, if no transaction is found within the network timeout (see config parameter ), exits with error.",
           "params": [
             {
               "name": "context",
@@ -4366,7 +4928,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfProcessMessage",
+              "ref_name": "processing.ParamsOfProcessMessage",
               "summary": null,
               "description": null
             },
@@ -4390,7 +4952,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfProcessMessage"
+                "ref_name": "processing.ResultOfProcessMessage"
               }
             ]
           },
@@ -4464,7 +5026,7 @@
             {
               "name": "output_format",
               "type": "Ref",
-              "ref_name": "AddressStringFormat",
+              "ref_name": "utils.AddressStringFormat",
               "summary": " Specify the format to convert to.",
               "description": " Specify the format to convert to."
             }
@@ -4509,7 +5071,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfConvertAddress",
+              "ref_name": "utils.ParamsOfConvertAddress",
               "summary": null,
               "description": null
             }
@@ -4520,7 +5082,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfConvertAddress"
+                "ref_name": "utils.ResultOfConvertAddress"
               }
             ]
           },
@@ -4550,7 +5112,9 @@
               "name": "block_time",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
               },
               "summary": " time that is used as transaction time",
               "description": " time that is used as transaction time"
@@ -4559,7 +5123,9 @@
               "name": "block_lt",
               "type": "Optional",
               "optional_inner": {
-                "type": "BigInt"
+                "type": "BigInt",
+                "number_type": "UInt",
+                "number_size": 64
               },
               "summary": " block logical time",
               "description": " block logical time"
@@ -4568,7 +5134,9 @@
               "name": "transaction_lt",
               "type": "Optional",
               "optional_inner": {
-                "type": "BigInt"
+                "type": "BigInt",
+                "number_type": "UInt",
+                "number_size": 64
               },
               "summary": " transaction logical time",
               "description": " transaction logical time"
@@ -4586,14 +5154,14 @@
               "type": "Struct",
               "struct_fields": [],
               "summary": " Non-existing account to run a creation internal message.",
-              "description": " Non-existing account to run a creation internal message.\n Should be used with `skip_transaction_check = true` if the message has no deploy data\n since transaction on the unitialized account are always aborted"
+              "description": " Non-existing account to run a creation internal message.\n Should be used with `skip_transaction_check = true` if the message has no deploy data\n since transactions on the uninitialized account are always aborted"
             },
             {
               "name": "Uninit",
               "type": "Struct",
               "struct_fields": [],
-              "summary": " Emulate unitialized account to run deploy message",
-              "description": " Emulate unitialized account to run deploy message"
+              "summary": " Emulate uninitialized account to run deploy message",
+              "description": " Emulate uninitialized account to run deploy message"
             },
             {
               "name": "Account",
@@ -4623,6 +5191,62 @@
           "description": null
         },
         {
+          "name": "TransactionFees",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "in_msg_fwd_fee",
+              "type": "BigInt",
+              "number_type": "UInt",
+              "number_size": 64,
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "storage_fee",
+              "type": "BigInt",
+              "number_type": "UInt",
+              "number_size": 64,
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "gas_fee",
+              "type": "BigInt",
+              "number_type": "UInt",
+              "number_size": 64,
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "out_msgs_fwd_fee",
+              "type": "BigInt",
+              "number_type": "UInt",
+              "number_size": 64,
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "total_account_fees",
+              "type": "BigInt",
+              "number_type": "UInt",
+              "number_size": 64,
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "total_output",
+              "type": "BigInt",
+              "number_type": "UInt",
+              "number_size": 64,
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfRunExecutor",
           "type": "Struct",
           "struct_fields": [
@@ -4635,7 +5259,7 @@
             {
               "name": "account",
               "type": "Ref",
-              "ref_name": "AccountForExecutor",
+              "ref_name": "tvm.AccountForExecutor",
               "summary": " Account to run on executor",
               "description": " Account to run on executor"
             },
@@ -4644,7 +5268,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "ExecutionOptions"
+                "ref_name": "tvm.ExecutionOptions"
               },
               "summary": " Execution options.",
               "description": " Execution options."
@@ -4654,7 +5278,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "Abi"
+                "ref_name": "abi.Abi"
               },
               "summary": " Contract ABI for decoding output messages",
               "description": " Contract ABI for decoding output messages"
@@ -4697,7 +5321,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "DecodedOutput"
+                "ref_name": "processing.DecodedOutput"
               },
               "summary": " Optional decoded message bodies according to the optional",
               "description": " Optional decoded message bodies according to the optional\n `abi` parameter."
@@ -4711,7 +5335,7 @@
             {
               "name": "fees",
               "type": "Ref",
-              "ref_name": "TransactionFees",
+              "ref_name": "tvm.TransactionFees",
               "summary": " Transaction fees",
               "description": " Transaction fees"
             }
@@ -4740,7 +5364,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "ExecutionOptions"
+                "ref_name": "tvm.ExecutionOptions"
               },
               "summary": " Execution options.",
               "description": " Execution options."
@@ -4750,7 +5374,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "Abi"
+                "ref_name": "abi.Abi"
               },
               "summary": " Contract ABI for dedcoding output messages",
               "description": " Contract ABI for dedcoding output messages"
@@ -4777,7 +5401,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "DecodedOutput"
+                "ref_name": "processing.DecodedOutput"
               },
               "summary": " Optional decoded message bodies according to the optional",
               "description": " Optional decoded message bodies according to the optional\n `abi` parameter."
@@ -4823,7 +5447,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "ExecutionOptions"
+                "ref_name": "tvm.ExecutionOptions"
               },
               "summary": null,
               "description": null
@@ -4870,7 +5494,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfRunExecutor",
+              "ref_name": "tvm.ParamsOfRunExecutor",
               "summary": null,
               "description": null
             }
@@ -4881,7 +5505,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfRunExecutor"
+                "ref_name": "tvm.ResultOfRunExecutor"
               }
             ]
           },
@@ -4908,7 +5532,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfRunTvm",
+              "ref_name": "tvm.ParamsOfRunTvm",
               "summary": null,
               "description": null
             }
@@ -4919,7 +5543,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfRunTvm"
+                "ref_name": "tvm.ResultOfRunTvm"
               }
             ]
           },
@@ -4946,7 +5570,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfRunGet",
+              "ref_name": "tvm.ParamsOfRunGet",
               "summary": null,
               "description": null
             }
@@ -4957,7 +5581,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfRunGet"
+                "ref_name": "tvm.ResultOfRunGet"
               }
             ]
           },
@@ -4983,7 +5607,7 @@
             {
               "name": "direction",
               "type": "Ref",
-              "ref_name": "SortDirection",
+              "ref_name": "net.SortDirection",
               "summary": null,
               "description": null
             }
@@ -5044,7 +5668,7 @@
                 "type": "Array",
                 "array_item": {
                   "type": "Ref",
-                  "ref_name": "OrderBy"
+                  "ref_name": "net.OrderBy"
                 }
               },
               "summary": " Sorting order",
@@ -5054,7 +5678,9 @@
               "name": "limit",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
               },
               "summary": " Number of documents to return",
               "description": " Number of documents to return"
@@ -5111,7 +5737,9 @@
               "name": "timeout",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number"
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
               },
               "summary": " Query timeout",
               "description": " Query timeout"
@@ -5142,6 +5770,8 @@
             {
               "name": "handle",
               "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
               "summary": " Subscription handle. Must be closed with `unsubscribe`",
               "description": " Subscription handle. Must be closed with `unsubscribe`"
             }
@@ -5190,7 +5820,7 @@
         {
           "name": "query_collection",
           "summary": " Queries collection data",
-          "description": " Queries collection data\n\n Queries data that satisfies the `filter` conditions,\n limits the number of returned records and orders them.\n The projection fields are limited to  `result` fields",
+          "description": " Queries collection data\n\n Queries data that satisfies the `filter` conditions,\n limits the number of returned records and orders them.\n The projection fields are limited to `result` fields",
           "params": [
             {
               "name": "context",
@@ -5208,7 +5838,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfQueryCollection",
+              "ref_name": "net.ParamsOfQueryCollection",
               "summary": null,
               "description": null
             }
@@ -5219,7 +5849,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfQueryCollection"
+                "ref_name": "net.ResultOfQueryCollection"
               }
             ]
           },
@@ -5228,7 +5858,7 @@
         {
           "name": "wait_for_collection",
           "summary": " Returns an object that fulfills the conditions or waits for its appearance",
-          "description": " Returns an object that fulfills the conditions or waits for its appearance\n\n Triggers only once.\n If object that satisfies the `filter` conditions\n already exists - returns it immediately.\n If not - waits for insert/update of data withing the specified `timeout`,\n and returns it.\n The projection fields are limited to  `result` fields",
+          "description": " Returns an object that fulfills the conditions or waits for its appearance\n\n Triggers only once.\n If object that satisfies the `filter` conditions\n already exists - returns it immediately.\n If not - waits for insert/update of data within the specified `timeout`,\n and returns it.\n The projection fields are limited to `result` fields",
           "params": [
             {
               "name": "context",
@@ -5246,7 +5876,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfWaitForCollection",
+              "ref_name": "net.ParamsOfWaitForCollection",
               "summary": null,
               "description": null
             }
@@ -5257,7 +5887,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfWaitForCollection"
+                "ref_name": "net.ResultOfWaitForCollection"
               }
             ]
           },
@@ -5284,7 +5914,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ResultOfSubscribeCollection",
+              "ref_name": "net.ResultOfSubscribeCollection",
               "summary": null,
               "description": null
             }
@@ -5303,7 +5933,7 @@
         {
           "name": "subscribe_collection",
           "summary": " Creates a subscription",
-          "description": " Creates a subscription\n \n Triggers for each insert/update of data\n that satisfies the `filter` conditions.\n The projection fields are limited to  `result` fields.",
+          "description": " Creates a subscription\n \n Triggers for each insert/update of data\n that satisfies the `filter` conditions.\n The projection fields are limited to `result` fields.",
           "params": [
             {
               "name": "context",
@@ -5321,7 +5951,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "ParamsOfSubscribeCollection",
+              "ref_name": "net.ParamsOfSubscribeCollection",
               "summary": null,
               "description": null
             },
@@ -5345,7 +5975,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "ResultOfSubscribeCollection"
+                "ref_name": "net.ResultOfSubscribeCollection"
               }
             ]
           },

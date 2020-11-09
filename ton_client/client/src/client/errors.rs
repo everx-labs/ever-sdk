@@ -32,7 +32,7 @@ pub enum ErrorCode {
 pub struct Error;
 
 fn error(code: ErrorCode, message: String) -> ClientError {
-    ClientError::with_code_message(code as isize, message)
+    ClientError::with_code_message(code as u32, message)
 }
 
 pub const CANNOT_SERIALIZE_RESULT: &str =
@@ -40,10 +40,10 @@ pub const CANNOT_SERIALIZE_RESULT: &str =
 
 impl Error {
     pub fn is_network_error(error: &ClientError) -> bool {
-        error.code == ErrorCode::WebsocketConnectError as isize
-            || error.code == ErrorCode::WebsocketReceiveError as isize
-            || error.code == ErrorCode::WebsocketSendError as isize
-            || error.code == ErrorCode::HttpRequestSendError as isize
+        error.code == ErrorCode::WebsocketConnectError as u32
+            || error.code == ErrorCode::WebsocketReceiveError as u32
+            || error.code == ErrorCode::WebsocketSendError as u32
+            || error.code == ErrorCode::HttpRequestSendError as u32
     }
 
     pub fn not_implemented(message: &str) -> ClientError {
@@ -182,7 +182,7 @@ impl Error {
 
     pub fn unknown_function(name: &String) -> ClientError {
         error(
-            ErrorCode::UnknownFunction, 
+            ErrorCode::UnknownFunction,
             format!("Unknown function: {}", name)
         )
     }

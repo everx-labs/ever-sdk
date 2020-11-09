@@ -35,7 +35,7 @@ fn test_parallel_requests() {
                 limit: Some(1),
                 order: None,
             }
-        );
+        ).unwrap();
     };
 
     // check that request with another context doesn't wait
@@ -74,5 +74,28 @@ fn test_deferred_init() {
     //println!("{:#?}", result);
 
 
-    assert_eq!(result.code, crate::net::ErrorCode::QueryFailed as isize);
+    assert_eq!(result.code, crate::net::ErrorCode::QueryFailed as u32);
+}
+
+#[test]
+fn test_clock_sync() {
+    let client = TestClient::new_with_config(
+        json!({
+            "network": {
+                "server_address": TestClient::network_address(),
+                "out_of_sync_threshold": 0,
+            }
+        })
+    );
+
+    // deferred network init should fail due to wrong server address
+    let result = client.request_json(
+        "net.query_collection",
+        json!({
+            "collection": "accounts",
+            "result": "id".to_owned(),
+        })
+    ).unwrap_err();
+
+    assert!(result.message.ends_with("Synchronize your device time with internet time"));
 }

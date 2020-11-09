@@ -37,11 +37,11 @@ pub enum ErrorCode {
 pub struct Error;
 
 fn error(code: ErrorCode, message: String) -> ClientError {
-    ClientError::with_code_message(code as isize, message)
+    ClientError::with_code_message(code as u32, message)
 }
 
 fn error_with_data(code: ErrorCode, message: String, data: Value) -> ClientError {
-    ClientError::new(code as isize, message, data)
+    ClientError::new(code as u32, message, data)
 }
 
 fn format_time(time: u32) -> String {
@@ -92,7 +92,7 @@ impl Error {
     pub fn fetch_first_block_failed<E: std::fmt::Display>(err: E, message_id: &str) -> ClientError {
         Self::processing_error(
             ErrorCode::FetchBlockFailed,
-            format!("Fetch block failed: {}", err),
+            format!("Fetch first block failed: {}", err),
             message_id,
             None,
         )

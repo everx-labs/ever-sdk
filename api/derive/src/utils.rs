@@ -1,4 +1,5 @@
 use api_info;
+use api_info::NumberType;
 use quote::__private::TokenStream;
 use quote::quote;
 use syn::{
@@ -19,8 +20,13 @@ pub(crate) fn field_from(
     } else {
         value
     };
+    let name = if let Some(name) = find_attr_value("serde", "rename", attrs) {
+        name
+    } else {
+        name.map(|x| x.to_string()).unwrap_or("".into())
+    };
     api_info::Field {
-        name: name.map(|x| x.to_string()).unwrap_or("".into()),
+        name,
         summary,
         description,
         value,
@@ -130,13 +136,33 @@ pub(crate) fn function_to_tokens(m: &api_info::Function) -> TokenStream {
     }
 }
 
+fn number_type_to_tokens(number_type: &NumberType) -> TokenStream {
+    match number_type {
+        NumberType::UInt => quote! { api_info::NumberType::UInt },
+        NumberType::Int => quote! { api_info::NumberType::Int },
+        NumberType::Float => quote! { api_info::NumberType::Float },
+    }
+}
+
 fn type_to_tokens(t: &api_info::Type) -> TokenStream {
     match t {
         api_info::Type::None {} => quote! { api_info::Type::None {} },
         api_info::Type::Any {} => quote! { api_info::Type::Any {} },
         api_info::Type::Boolean {} => quote! { api_info::Type::Boolean {} },
-        api_info::Type::Number {} => quote! { api_info::Type::Number {} },
-        api_info::Type::BigInt {} => quote! { api_info::Type::BigInt {} },
+        api_info::Type::Number {
+            number_type,
+            number_size: size,
+        } => {
+            let number_type_tokens = number_type_to_tokens(number_type);
+            quote! { api_info::Type::Number { number_type: #number_type_tokens, number_size: #size } }
+        }
+        api_info::Type::BigInt {
+            number_type,
+            number_size: size,
+        } => {
+            let number_type_tokens = number_type_to_tokens(number_type);
+            quote! { api_info::Type::BigInt { number_type: #number_type_tokens, number_size: #size } }
+        }
         api_info::Type::String {} => quote! { api_info::Type::String {} },
         api_info::Type::Ref { name } => {
             quote! { api_info::Type::Ref { name: #name.into() } }
@@ -225,10 +251,18 @@ fn resolve_type_name(name: String) -> api_info::Type {
     match name.as_ref() {
         "String" => api_info::Type::String {},
         "bool" => api_info::Type::Boolean {},
-        "u8" | "u16" | "u32" | "i8" | "i16" | "i32" | "usize" | "isize" | "f32" => {
-            api_info::Type::Number {}
-        }
-        "u64" | "i64" | "u128" | "i128" => api_info::Type::BigInt {},
+        "u8" => api_info::Type::u(8),
+        "u16" => api_info::Type::u(16),
+        "u32" => api_info::Type::u(32),
+        "u64" => api_info::Type::u(64),
+        "u128" => api_info::Type::u(128),
+        "i8" => api_info::Type::i(8),
+        "i16" => api_info::Type::i(16),
+        "i32" => api_info::Type::i(32),
+        "i64" => api_info::Type::i(64),
+        "i128" => api_info::Type::i(128),
+        "f32" => api_info::Type::f(32),
+        "usize" | "isize" => panic!("usize and isize can't be used in API"),
         _ => api_info::Type::Ref { name },
     }
 }
@@ -324,18 +358,42 @@ impl DocAttr {
     }
 }
 
+fn find_attr_value_meta(
+    attr_name: &'static str,
+    value_name: &'static str,
+    attrs: &Vec<Attribute>,
+) -> Option<Meta> {
+    for attr in attrs {
+        if let Ok(Meta::List(list)) = attr.parse_meta() {
+            if path_is(&list.path, attr_name) {
+                for item in list.nested {
+                    if let NestedMeta::Meta(meta) = item {
+                        let value_path = match &meta {
+                            Meta::NameValue(name_value) => Some(&name_value.path),
+                            Meta::Path(path) => Some(path),
+                            _ => None,
+                        };
+                        if let Some(path) = value_path {
+                            if path_is(path, value_name) {
+                                return Some(meta);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
 pub(crate) fn find_attr_value(
     attr_name: &'static str,
     value_name: &'static str,
     attrs: &Vec<Attribute>,
 ) -> Option<String> {
-    for attr in attrs {
-        if let Ok(Meta::List(ref list)) = attr.parse_meta() {
-            if path_is(&list.path, attr_name) {
-                if let Some(NestedMeta::Meta(Meta::NameValue(meta))) = list.nested.first() {
-                    return get_value_of(value_name, &meta);
-                }
-            }
+    if let Some(Meta::NameValue(name_value)) = find_attr_value_meta(attr_name, value_name, attrs) {
+        if let Lit::Str(lit) = &name_value.lit {
+            return Some(lit.value());
         }
     }
     None
@@ -346,22 +404,7 @@ pub(crate) fn has_attr_value(
     value_name: &'static str,
     attrs: &Vec<Attribute>,
 ) -> bool {
-    for attr in attrs {
-        if let Ok(Meta::List(ref list)) = attr.parse_meta() {
-            if path_is(&list.path, attr_name) {
-                match list.nested.first() {
-                    Some(NestedMeta::Meta(Meta::NameValue(meta))) => {
-                        return path_is(&meta.path, value_name);
-                    }
-                    Some(NestedMeta::Meta(Meta::Path(path))) => {
-                        return path_is(&path, value_name);
-                    }
-                    _ => {}
-                }
-            }
-        }
-    }
-    false
+    find_attr_value_meta(attr_name, value_name, attrs).is_some()
 }
 
 pub(crate) fn get_value_of(name: &'static str, meta: &MetaNameValue) -> Option<String> {

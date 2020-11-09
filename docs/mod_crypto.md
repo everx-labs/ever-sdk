@@ -64,6 +64,8 @@
 
 [hdkey_public_from_xprv](#hdkey_public_from_xprv) – Extracts the public key from the serialized extended private key
 
+[chacha20](#chacha20) – Performs symmetric `chacha20` encryption.
+
 ## Types
 [SigningBoxHandle](#SigningBoxHandle)
 
@@ -168,6 +170,10 @@
 [ParamsOfHDKeyPublicFromXPrv](#ParamsOfHDKeyPublicFromXPrv)
 
 [ResultOfHDKeyPublicFromXPrv](#ResultOfHDKeyPublicFromXPrv)
+
+[ParamsOfChaCha20](#ParamsOfChaCha20)
+
+[ResultOfChaCha20](#ResultOfChaCha20)
 
 
 # Functions
@@ -452,7 +458,7 @@ function scrypt(
 ```
 ### Parameters
 - `password`: _string_ – The password bytes to be hashed. Must be encoded with `base64`.
-- `salt`: _string_ – A salt bytes that modifies the hash to protect against Rainbow table attacks. Must be encoded with `base64`.
+- `salt`: _string_ – Salt bytes that modify the hash to protect against Rainbow table attacks. Must be encoded with `base64`.
 - `log_n`: _number_ – CPU/memory cost parameter
 - `r`: _number_ – The block size parameter, which fine-tunes sequential memory read size and performance.
 - `p`: _number_ – Parallelization parameter.
@@ -826,7 +832,7 @@ function mnemonic_verify(
 - `word_count`?: _number_ – Word count
 ### Result
 
-- `valid`: _boolean_ – Flag indicating the mnemonic is valid or not
+- `valid`: _boolean_ – Flag indicating if the mnemonic is valid or not
 
 
 ## mnemonic_derive_sign_keys
@@ -991,12 +997,39 @@ function hdkey_public_from_xprv(
 - `public`: _string_ – Public key - 64 symbols hex string
 
 
+## chacha20
+
+Performs symmetric `chacha20` encryption.
+
+```ts
+type ParamsOfChaCha20 = {
+    data: string,
+    key: string,
+    nonce: string
+};
+
+type ResultOfChaCha20 = {
+    data: string
+};
+
+function chacha20(
+    params: ParamsOfChaCha20,
+): Promise<ResultOfChaCha20>;
+```
+### Parameters
+- `data`: _string_ – Source data to be encrypted or decrypted. Must be encoded with `base64`.
+- `key`: _string_ – 256-bit key. Must be encoded with `hex`.
+- `nonce`: _string_ – 96-bit nonce. Must be encoded with `hex`.
+### Result
+
+- `data`: _string_ – Encrypted/decrypted data. Encoded with `base64`.
+
+
 # Types
 ## SigningBoxHandle
 ```ts
 type SigningBoxHandle = number;
 ```
-- _number_
 
 
 ## ParamsOfFactorize
@@ -1176,7 +1209,7 @@ type ParamsOfScrypt = {
 };
 ```
 - `password`: _string_ – The password bytes to be hashed. Must be encoded with `base64`.
-- `salt`: _string_ – A salt bytes that modifies the hash to protect against Rainbow table attacks. Must be encoded with `base64`.
+- `salt`: _string_ – Salt bytes that modify the hash to protect against Rainbow table attacks. Must be encoded with `base64`.
 - `log_n`: _number_ – CPU/memory cost parameter
 - `r`: _number_ – The block size parameter, which fine-tunes sequential memory read size and performance.
 - `p`: _number_ – Parallelization parameter.
@@ -1412,7 +1445,7 @@ type ResultOfMnemonicVerify = {
     valid: boolean
 };
 ```
-- `valid`: _boolean_ – Flag indicating the mnemonic is valid or not
+- `valid`: _boolean_ – Flag indicating if the mnemonic is valid or not
 
 
 ## ParamsOfMnemonicDeriveSignKeys
@@ -1528,5 +1561,27 @@ type ResultOfHDKeyPublicFromXPrv = {
 };
 ```
 - `public`: _string_ – Public key - 64 symbols hex string
+
+
+## ParamsOfChaCha20
+```ts
+type ParamsOfChaCha20 = {
+    data: string,
+    key: string,
+    nonce: string
+};
+```
+- `data`: _string_ – Source data to be encrypted or decrypted. Must be encoded with `base64`.
+- `key`: _string_ – 256-bit key. Must be encoded with `hex`.
+- `nonce`: _string_ – 96-bit nonce. Must be encoded with `hex`.
+
+
+## ResultOfChaCha20
+```ts
+type ResultOfChaCha20 = {
+    data: string
+};
+```
+- `data`: _string_ – Encrypted/decrypted data. Encoded with `base64`.
 
 

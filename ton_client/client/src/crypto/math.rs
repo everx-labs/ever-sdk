@@ -222,7 +222,7 @@ pub fn ton_crc16(
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfGenerateRandomBytes {
     /// Size of random byte array.
-    pub length: usize,
+    pub length: u32,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
@@ -239,7 +239,7 @@ pub fn generate_random_bytes(
 ) -> ClientResult<ResultOfGenerateRandomBytes> {
     let mut rng = rand::thread_rng();
     let mut bytes: Vec<u8> = Vec::new();
-    bytes.resize(params.length, 0);
+    bytes.resize(params.length as usize, 0);
     rng.fill_bytes(&mut bytes);
     Ok(ResultOfGenerateRandomBytes {
         bytes: base64::encode(&bytes)

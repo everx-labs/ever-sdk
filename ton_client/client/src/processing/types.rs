@@ -7,7 +7,7 @@ use ton_sdk::TransactionFees;
 pub struct DecodedOutput {
     /// Decoded bodies of the out messages.
     ///
-    /// If the message can't be decoded then `None` will be stored in
+    /// If the message can't be decoded, then `None` will be stored in
     /// the appropriate position.
     pub out_messages: Vec<Option<DecodedMessageBody>>,
 

@@ -5,7 +5,7 @@
 
 [version](mod_client.md#version) – Returns Core Library version
 
-[build_info](mod_client.md#build_info)
+[build_info](mod_client.md#build_info) – Returns detailed information about this build.
 
 ## [crypto](mod_crypto.md) – Crypto functions.
 
@@ -71,6 +71,8 @@
 
 [hdkey_public_from_xprv](mod_crypto.md#hdkey_public_from_xprv) – Extracts the public key from the serialized extended private key
 
+[chacha20](mod_crypto.md#chacha20) – Performs symmetric `chacha20` encryption.
+
 ## [abi](mod_abi.md) – Provides message encoding and decoding according to the ABI specification.
 
 [encode_message_body](mod_abi.md#encode_message_body) – Encodes message body according to ABI function call.
@@ -97,7 +99,11 @@
 
 [parse_block](mod_boc.md#parse_block) – Parses block boc into a JSON
 
+[parse_shardstate](mod_boc.md#parse_shardstate) – Parses shardstate boc into a JSON
+
 [get_blockchain_config](mod_boc.md#get_blockchain_config)
+
+[get_boc_hash](mod_boc.md#get_boc_hash) – Calculates BOC root hash
 
 ## [processing](mod_processing.md) – Message processing module.
 
