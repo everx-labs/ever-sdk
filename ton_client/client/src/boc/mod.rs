@@ -14,9 +14,11 @@
 pub(crate) mod blockchain_config;
 mod errors;
 pub(crate) mod parse;
+pub(crate) mod internal;
+pub(crate) mod hash;
+
 #[cfg(test)]
 mod tests;
-pub(crate) mod internal;
 
 pub use crate::boc::parse::{
     source_boc, required_boc,
@@ -25,5 +27,8 @@ pub use crate::boc::parse::{
 };
 pub use blockchain_config::{
     get_blockchain_config, ParamsOfGetBlockchainConfig, ResultOfGetBlockchainConfig,
+};
+pub use hash::{
+    get_boc_hash, ParamsOfGetBocHash, ResultOfGetBocHash
 };
 pub use errors::{Error, ErrorCode};

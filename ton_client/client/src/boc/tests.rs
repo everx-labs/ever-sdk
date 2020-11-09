@@ -17,6 +17,23 @@ use crate::tests::TestClient;
 use pretty_assertions::assert_eq;
 
 #[test]
+fn get_boc_hash() {
+    let client = TestClient::new();
+
+    let result: super::ResultOfGetBocHash = client.request(
+        "boc.get_boc_hash",
+        super::ParamsOfGetBocHash {
+            boc: String::from("te6ccgEBAQEAWAAAq2n+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE/zMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzSsG8DgAAAAAjuOu9NAL7BxYpA")
+        }
+    ).unwrap();
+
+    assert_eq!(
+        result.hash,
+        "dfd47194f3058ee058bfbfad3ea40cbbd9ad17ca77cd0904d4d9f18a48c2fbca"
+    );
+}
+
+#[test]
 fn parse_message() {
     let client = TestClient::new();
 
