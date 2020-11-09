@@ -103,6 +103,8 @@
 
 [get_blockchain_config](mod_boc.md#get_blockchain_config)
 
+[get_boc_hash](mod_boc.md#get_boc_hash) – Calculates BOC root hash
+
 ## [processing](mod_processing.md) – Message processing module.
 
 [send_message](mod_processing.md#send_message) – Sends message to the network

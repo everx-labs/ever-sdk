@@ -14,6 +14,8 @@
 
 [get_blockchain_config](#get_blockchain_config)
 
+[get_boc_hash](#get_boc_hash) – Calculates BOC root hash
+
 ## Types
 [ParamsOfParse](#ParamsOfParse)
 
@@ -24,6 +26,10 @@
 [ParamsOfGetBlockchainConfig](#ParamsOfGetBlockchainConfig)
 
 [ResultOfGetBlockchainConfig](#ResultOfGetBlockchainConfig)
+
+[ParamsOfGetBocHash](#ParamsOfGetBocHash)
+
+[ResultOfGetBocHash](#ResultOfGetBocHash)
 
 
 # Functions
@@ -183,6 +189,30 @@ function get_blockchain_config(
 - `config_boc`: _string_ – Blockchain config BOC encoded as base64
 
 
+## get_boc_hash
+
+Calculates BOC root hash
+
+```ts
+type ParamsOfGetBocHash = {
+    boc: string
+};
+
+type ResultOfGetBocHash = {
+    hash: string
+};
+
+function get_boc_hash(
+    params: ParamsOfGetBocHash,
+): Promise<ResultOfGetBocHash>;
+```
+### Parameters
+- `boc`: _string_ – BOC encoded as base64
+### Result
+
+- `hash`: _string_ – BOC root hash encoded with hex
+
+
 # Types
 ## ParamsOfParse
 ```ts
@@ -231,5 +261,23 @@ type ResultOfGetBlockchainConfig = {
 };
 ```
 - `config_boc`: _string_ – Blockchain config BOC encoded as base64
+
+
+## ParamsOfGetBocHash
+```ts
+type ParamsOfGetBocHash = {
+    boc: string
+};
+```
+- `boc`: _string_ – BOC encoded as base64
+
+
+## ResultOfGetBocHash
+```ts
+type ResultOfGetBocHash = {
+    hash: string
+};
+```
+- `hash`: _string_ – BOC root hash encoded with hex
 
 

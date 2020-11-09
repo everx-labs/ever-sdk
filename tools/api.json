@@ -4125,6 +4125,34 @@
           ],
           "summary": null,
           "description": null
+        },
+        {
+          "name": "ParamsOfGetBocHash",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "boc",
+              "type": "String",
+              "summary": " BOC encoded as base64",
+              "description": " BOC encoded as base64"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfGetBocHash",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "hash",
+              "type": "String",
+              "summary": " BOC root hash encoded with hex",
+              "description": " BOC root hash encoded with hex"
+            }
+          ],
+          "summary": null,
+          "description": null
         }
       ],
       "functions": [
@@ -4351,6 +4379,44 @@
               {
                 "type": "Ref",
                 "ref_name": "boc.ResultOfGetBlockchainConfig"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "get_boc_hash",
+          "summary": " Calculates BOC root hash",
+          "description": " Calculates BOC root hash",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "boc.ParamsOfGetBocHash",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "boc.ResultOfGetBocHash"
               }
             ]
           },
