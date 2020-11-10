@@ -16,6 +16,7 @@ Cargo.lock
 *.pdb
 *.exe
 *.rlib
+build/
 
 # IDE files
 .idea
