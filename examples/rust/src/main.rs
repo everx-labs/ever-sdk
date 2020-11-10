@@ -1,19 +1,16 @@
 use std::sync::Arc;
-use ton_client::error::ClientResult;
-use ton_client::net::ResultOfSubscription;
 
 #[tokio::main]
 async fn main() {
     let context = Arc::new(
-        ton_client::ClientContext::new(Some(ton_client::ClientConfig {
-            abi: None,
-            crypto: None,
-            network: Some(ton_client::net::NetworkConfig {
+        ton_client::ClientContext::new(ton_client::ClientConfig {
+            network: ton_client::net::NetworkConfig {
                 //server_address: "http://localhost:80".to_owned(),
                 server_address: "cinet.tonlabs.io".to_owned(),
                 ..Default::default()
-            }),
-        }))
+            },
+            ..Default::default()
+        })
         .unwrap(),
     );
 
