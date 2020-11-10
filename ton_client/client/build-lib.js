@@ -1,3 +1,17 @@
+/*
+ * Copyright 2018-2020 TON DEV SOLUTIONS LTD.
+ *
+ * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+ * this file except in compliance with the License.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific TON DEV software governing permissions and
+ * limitations under the License.
+ *
+ */
+
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
@@ -83,11 +97,7 @@ const options = process.argv.slice(2).reduce((acc, key, ind, argv) => {
 }, {});
 const getOption = opt => options[opt] || '';
 
-const buildNumberOpt = Number(getOption('build-number'));
-const buildNumber = isNaN(buildNumberOpt) ? 0 : buildNumberOpt;
-const gitCommit = getOption('git-commit');
 const verboseMode = getOption('verbose');
-const noBuildInfo = getOption('no-build-info');
 const devOut = getOption('dev-out');
 const devMode = !!devOut;
 
@@ -176,32 +186,6 @@ function main(f) {
     })();
 }
 
-async function writeBuildInfo(path, build_number = 0, git_commit) {
-    if (noBuildInfo) {
-        return
-    }
-    try {
-        const metadata = await spawnProcess('cargo', ['metadata', '--locked', '--format-version', '1'], { quiet: true });
-        const packages = JSON.parse(metadata).packages;
-        const filtered = packages.filter(_ => _.source && _.source.startsWith('git+https://github.com/tonlabs/'));
-        const dependencies = filtered.map(_ => ({ name: _.name, git_commit: _.source.split('#')[1] }));
-        try {
-            git_commit = git_commit || await spawnProcess('git', ['rev-parse', 'HEAD'], { quiet: true });
-            git_commit = git_commit.trim();
-            dependencies.push({name: 'ton_client', git_commit});
-        } catch(err) {
-            // Don't crash if the build started from outside a git repository
-        }
-        const buildInfo = {build_number, dependencies};
-        fs.writeFileSync(path, JSON.stringify(buildInfo));
-        if (verboseMode) {
-            console.log(`Write: ${path}`, buildInfo);
-        }
-    } catch(err) {
-        console.error(`FAILED: creation of build_info\npath:${path}\n` + err);
-    }
-}
-
 module.exports = {
     spawnEnv,
     spawnProcess,
@@ -216,7 +200,4 @@ module.exports = {
     devOut,
     devMode,
     mkdir,
-    writeBuildInfo,
-    buildNumber,
-    gitCommit,
 };

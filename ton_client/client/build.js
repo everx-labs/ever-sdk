@@ -8,11 +8,8 @@ const {
     version,
     root_path,
     postBuild,
-    writeBuildInfo,
-    buildNumber,
-    gitCommit,
     devMode,
-} = require('../platforms/build-lib');
+} = require('./build-lib');
 const platform = os.platform();
 
 main(async () => {
@@ -20,7 +17,6 @@ main(async () => {
         // await spawnProcess('cargo', ['clean']);
         await spawnProcess('cargo', ['update']);
     }
-    await writeBuildInfo(root_path('src', 'build_info.json'), buildNumber, gitCommit);
     await spawnProcess('cargo', ['build', '--release']);
     deleteFolderRecursive(root_path('bin'));
     fs.mkdirSync(root_path('bin'), { recursive: true });
