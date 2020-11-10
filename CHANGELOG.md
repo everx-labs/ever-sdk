@@ -1,6 +1,10 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## 1.1.0 Nov 11, 2020
+### Fixed
+- api type derivation uses `vec![]` instead of prev `[].into()` (to be compatible with older rust version)
+
 ## 1.1.0 Nov 3, 2020
 
 ### New
