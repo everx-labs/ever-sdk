@@ -13,7 +13,7 @@
  */
 
 use crate::errors::CliError;
-use std::collections::{HashMap};
+use std::collections::HashMap;
 
 enum ParseState {
     OptionOrArg,

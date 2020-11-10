@@ -1,13 +1,11 @@
 [workspace]
 members = [
     "ton_sdk",
-    "ton_client/client",
+    "ton_client",
     "toncli",
     "api/test",
 ]
 
 exclude = [
-    "ton_client/platforms/ton-client-node-js",
-    "ton_client/platforms/ton-client-web",
     "examples/rust"
 ]

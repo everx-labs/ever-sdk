@@ -577,8 +577,8 @@
             {
               "name": "ton_public_key",
               "type": "String",
-              "summary": " Public key represented in TON safe format. ",
-              "description": " Public key represented in TON safe format. "
+              "summary": " Public key represented in TON safe format.",
+              "description": " Public key represented in TON safe format."
             }
           ],
           "summary": null,
@@ -780,8 +780,8 @@
             {
               "name": "secret",
               "type": "String",
-              "summary": " Secret key - unprefixed 0-padded to 64 symbols hex string ",
-              "description": " Secret key - unprefixed 0-padded to 64 symbols hex string "
+              "summary": " Secret key - unprefixed 0-padded to 64 symbols hex string",
+              "description": " Secret key - unprefixed 0-padded to 64 symbols hex string"
             }
           ],
           "summary": null,
@@ -800,8 +800,8 @@
             {
               "name": "secret",
               "type": "String",
-              "summary": " Signer's secret key - unprefixed 0-padded to 64 symbols hex string ",
-              "description": " Signer's secret key - unprefixed 0-padded to 64 symbols hex string "
+              "summary": " Signer's secret key - unprefixed 0-padded to 64 symbols hex string",
+              "description": " Signer's secret key - unprefixed 0-padded to 64 symbols hex string"
             }
           ],
           "summary": null,
@@ -834,8 +834,8 @@
             {
               "name": "public",
               "type": "String",
-              "summary": " Signer's public key - unprefixed 0-padded to 64 symbols hex string ",
-              "description": " Signer's public key - unprefixed 0-padded to 64 symbols hex string "
+              "summary": " Signer's public key - unprefixed 0-padded to 64 symbols hex string",
+              "description": " Signer's public key - unprefixed 0-padded to 64 symbols hex string"
             }
           ],
           "summary": null,
@@ -876,8 +876,8 @@
             {
               "name": "secret",
               "type": "String",
-              "summary": " Secret key - unprefixed 0-padded to 64 symbols hex string ",
-              "description": " Secret key - unprefixed 0-padded to 64 symbols hex string "
+              "summary": " Secret key - unprefixed 0-padded to 64 symbols hex string",
+              "description": " Secret key - unprefixed 0-padded to 64 symbols hex string"
             }
           ],
           "summary": null,
@@ -902,14 +902,14 @@
             {
               "name": "their_public",
               "type": "String",
-              "summary": " Receiver's public key - unprefixed 0-padded to 64 symbols hex string ",
-              "description": " Receiver's public key - unprefixed 0-padded to 64 symbols hex string "
+              "summary": " Receiver's public key - unprefixed 0-padded to 64 symbols hex string",
+              "description": " Receiver's public key - unprefixed 0-padded to 64 symbols hex string"
             },
             {
               "name": "secret",
               "type": "String",
-              "summary": " Sender's private key - unprefixed 0-padded to 64 symbols hex string ",
-              "description": " Sender's private key - unprefixed 0-padded to 64 symbols hex string "
+              "summary": " Sender's private key - unprefixed 0-padded to 64 symbols hex string",
+              "description": " Sender's private key - unprefixed 0-padded to 64 symbols hex string"
             }
           ],
           "summary": null,
@@ -948,14 +948,14 @@
             {
               "name": "their_public",
               "type": "String",
-              "summary": " Sender's public key - unprefixed 0-padded to 64 symbols hex string ",
-              "description": " Sender's public key - unprefixed 0-padded to 64 symbols hex string "
+              "summary": " Sender's public key - unprefixed 0-padded to 64 symbols hex string",
+              "description": " Sender's public key - unprefixed 0-padded to 64 symbols hex string"
             },
             {
               "name": "secret",
               "type": "String",
-              "summary": " Receiver's private key - unprefixed 0-padded to 64 symbols hex string ",
-              "description": " Receiver's private key - unprefixed 0-padded to 64 symbols hex string "
+              "summary": " Receiver's private key - unprefixed 0-padded to 64 symbols hex string",
+              "description": " Receiver's private key - unprefixed 0-padded to 64 symbols hex string"
             }
           ],
           "summary": null,
@@ -994,8 +994,8 @@
             {
               "name": "key",
               "type": "String",
-              "summary": " Secret key - unprefixed 0-padded to 64 symbols hex string ",
-              "description": " Secret key - unprefixed 0-padded to 64 symbols hex string "
+              "summary": " Secret key - unprefixed 0-padded to 64 symbols hex string",
+              "description": " Secret key - unprefixed 0-padded to 64 symbols hex string"
             }
           ],
           "summary": null,
@@ -1020,8 +1020,8 @@
             {
               "name": "key",
               "type": "String",
-              "summary": " Public key - unprefixed 0-padded to 64 symbols hex string ",
-              "description": " Public key - unprefixed 0-padded to 64 symbols hex string "
+              "summary": " Public key - unprefixed 0-padded to 64 symbols hex string",
+              "description": " Public key - unprefixed 0-padded to 64 symbols hex string"
             }
           ],
           "summary": null,
@@ -2108,7 +2108,7 @@
         {
           "name": "nacl_box",
           "summary": " Public key authenticated encryption",
-          "description": " Public key authenticated encryption\n\n Encrypt and authenticate a message using the senders secret key, the recievers public\n key, and a nonce. ",
+          "description": " Public key authenticated encryption\n\n Encrypt and authenticate a message using the senders secret key, the recievers public\n key, and a nonce.",
           "params": [
             {
               "name": "_context",
@@ -2873,8 +2873,8 @@
               "name": "None",
               "type": "Struct",
               "struct_fields": [],
-              "summary": " No keys are provided. Creates an unsigned message. ",
-              "description": " No keys are provided. Creates an unsigned message. "
+              "summary": " No keys are provided. Creates an unsigned message.",
+              "description": " No keys are provided. Creates an unsigned message."
             },
             {
               "name": "External",
@@ -2887,8 +2887,8 @@
                   "description": null
                 }
               ],
-              "summary": " Only public key is provided in unprefixed hex string format to generate unsigned message ",
-              "description": " Only public key is provided in unprefixed hex string format to generate unsigned message \n and `data_to_sign` which can be signed later.  "
+              "summary": " Only public key is provided in unprefixed hex string format to generate unsigned message",
+              "description": " Only public key is provided in unprefixed hex string format to generate unsigned message\n and `data_to_sign` which can be signed later.  "
             },
             {
               "name": "Keys",
@@ -3999,7 +3999,7 @@
         {
           "name": "encode_account",
           "summary": " Creates account state BOC",
-          "description": " Creates account state BOC\n \n Creates account state provided with one of these sets of data :\n 1. BOC of code, BOC of data, BOC of library\n 2. TVC (string in `base64`), keys, init params",
+          "description": " Creates account state BOC\n\n Creates account state provided with one of these sets of data :\n 1. BOC of code, BOC of data, BOC of library\n 2. TVC (string in `base64`), keys, init params",
           "params": [
             {
               "name": "context",
@@ -4091,8 +4091,8 @@
               "type": "Number",
               "number_type": "Int",
               "number_size": 32,
-              "summary": " Workchain shardstate belongs to ",
-              "description": " Workchain shardstate belongs to "
+              "summary": " Workchain shardstate belongs to",
+              "description": " Workchain shardstate belongs to"
             }
           ],
           "summary": null,
@@ -4158,8 +4158,8 @@
       "functions": [
         {
           "name": "parse_message",
-          "summary": " Parses message boc into a JSON ",
-          "description": " Parses message boc into a JSON \n \n JSON structure is compatible with GraphQL API message object",
+          "summary": " Parses message boc into a JSON",
+          "description": " Parses message boc into a JSON\n\n JSON structure is compatible with GraphQL API message object",
           "params": [
             {
               "name": "_context",
@@ -4196,8 +4196,8 @@
         },
         {
           "name": "parse_transaction",
-          "summary": " Parses transaction boc into a JSON ",
-          "description": " Parses transaction boc into a JSON \n \n JSON structure is compatible with GraphQL API transaction object",
+          "summary": " Parses transaction boc into a JSON",
+          "description": " Parses transaction boc into a JSON\n\n JSON structure is compatible with GraphQL API transaction object",
           "params": [
             {
               "name": "_context",
@@ -4234,8 +4234,8 @@
         },
         {
           "name": "parse_account",
-          "summary": " Parses account boc into a JSON ",
-          "description": " Parses account boc into a JSON \n \n JSON structure is compatible with GraphQL API account object",
+          "summary": " Parses account boc into a JSON",
+          "description": " Parses account boc into a JSON\n\n JSON structure is compatible with GraphQL API account object",
           "params": [
             {
               "name": "_context",
@@ -4272,8 +4272,8 @@
         },
         {
           "name": "parse_block",
-          "summary": " Parses block boc into a JSON ",
-          "description": " Parses block boc into a JSON \n \n JSON structure is compatible with GraphQL API block object",
+          "summary": " Parses block boc into a JSON",
+          "description": " Parses block boc into a JSON\n\n JSON structure is compatible with GraphQL API block object",
           "params": [
             {
               "name": "_context",
@@ -4310,8 +4310,8 @@
         },
         {
           "name": "parse_shardstate",
-          "summary": " Parses shardstate boc into a JSON ",
-          "description": " Parses shardstate boc into a JSON \n \n JSON structure is compatible with GraphQL API shardstate object",
+          "summary": " Parses shardstate boc into a JSON",
+          "description": " Parses shardstate boc into a JSON\n\n JSON structure is compatible with GraphQL API shardstate object",
           "params": [
             {
               "name": "_context",
@@ -4808,7 +4808,7 @@
         {
           "name": "send_message",
           "summary": " Sends message to the network",
-          "description": " Sends message to the network\n \n Sends message to the network and returns the last generated shard block of the destination account\n before the message was sent. It will be required later for message processing.",
+          "description": " Sends message to the network\n\n Sends message to the network and returns the last generated shard block of the destination account\n before the message was sent. It will be required later for message processing.",
           "params": [
             {
               "name": "context",
@@ -4859,7 +4859,7 @@
         {
           "name": "wait_for_transaction",
           "summary": " Performs monitoring of the network for the result transaction",
-          "description": " Performs monitoring of the network for the result transaction\n of the external inbound message processing.\n \n `send_events` enables intermediate events, such as `WillFetchNextBlock`,\n `FetchNextBlockFailed` that may be useful for logging of new shard blocks creation \n during message processing.\n\n Note, that presence of the `abi` parameter is critical for ABI\n compliant contracts. Message processing uses drastically\n different strategy for processing message for contracts which\n ABI includes \"expire\" header.\n\n When the ABI header `expire` is present, the processing uses\n `message expiration` strategy:\n - The maximum block gen time is set to\n   `message_expiration_timeout + transaction_wait_timeout`.\n - When maximum block gen time is reached, the processing will\n   be finished with `MessageExpired` error.\n\n When the ABI header `expire` isn't present or `abi` parameter\n isn't specified, the processing uses `transaction waiting`\n strategy:\n - The maximum block gen time is set to\n   `now() + transaction_wait_timeout`.\n \n - If maximum block gen time is reached and no result transaction is found, \n the processing will exit with an error.",
+          "description": " Performs monitoring of the network for the result transaction\n of the external inbound message processing.\n\n `send_events` enables intermediate events, such as `WillFetchNextBlock`,\n `FetchNextBlockFailed` that may be useful for logging of new shard blocks creation\n during message processing.\n\n Note, that presence of the `abi` parameter is critical for ABI\n compliant contracts. Message processing uses drastically\n different strategy for processing message for contracts which\n ABI includes \"expire\" header.\n\n When the ABI header `expire` is present, the processing uses\n `message expiration` strategy:\n - The maximum block gen time is set to\n   `message_expiration_timeout + transaction_wait_timeout`.\n - When maximum block gen time is reached, the processing will\n   be finished with `MessageExpired` error.\n\n When the ABI header `expire` isn't present or `abi` parameter\n isn't specified, the processing uses `transaction waiting`\n strategy:\n - The maximum block gen time is set to\n   `now() + transaction_wait_timeout`.\n\n - If maximum block gen time is reached and no result transaction is found,\n the processing will exit with an error.",
           "params": [
             {
               "name": "context",
@@ -4910,7 +4910,7 @@
         {
           "name": "process_message",
           "summary": " Creates message, sends it to the network and monitors its processing.",
-          "description": " Creates message, sends it to the network and monitors its processing.\n \n Creates ABI-compatible message,\n sends it to the network and monitors for the result transaction.\n Decodes the output messages' bodies.\n \n If contract's ABI includes \"expire\" header, then\n SDK implements retries in case of unsuccessful message delivery within the expiration\n timeout: SDK recreates the message, sends it and processes it again. \n \n The intermediate events, such as `WillFetchFirstBlock`, `WillSend`, `DidSend`,\n `WillFetchNextBlock`, etc - are switched on/off by `send_events` flag \n and logged into the supplied callback function.\n The retry configuration parameters are defined in config:\n <add correct config params here>\n pub const DEFAULT_EXPIRATION_RETRIES_LIMIT: i8 = 3; - max number of retries\n pub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 40000;  - message expiration timeout in ms.\n pub const DEFAULT_....expiration_timeout_grow_factor... = 1.5 - factor that increases the expiration timeout for each retry\n \n If contract's ABI does not include \"expire\" header\n then, if no transaction is found within the network timeout (see config parameter ), exits with error.",
+          "description": " Creates message, sends it to the network and monitors its processing.\n\n Creates ABI-compatible message,\n sends it to the network and monitors for the result transaction.\n Decodes the output messages' bodies.\n\n If contract's ABI includes \"expire\" header, then\n SDK implements retries in case of unsuccessful message delivery within the expiration\n timeout: SDK recreates the message, sends it and processes it again.\n\n The intermediate events, such as `WillFetchFirstBlock`, `WillSend`, `DidSend`,\n `WillFetchNextBlock`, etc - are switched on/off by `send_events` flag\n and logged into the supplied callback function.\n The retry configuration parameters are defined in config:\n <add correct config params here>\n pub const DEFAULT_EXPIRATION_RETRIES_LIMIT: i8 = 3; - max number of retries\n pub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 40000;  - message expiration timeout in ms.\n pub const DEFAULT_....expiration_timeout_grow_factor... = 1.5 - factor that increases the expiration timeout for each retry\n\n If contract's ABI does not include \"expire\" header\n then, if no transaction is found within the network timeout (see config parameter ), exits with error.",
           "params": [
             {
               "name": "context",
@@ -5933,7 +5933,7 @@
         {
           "name": "subscribe_collection",
           "summary": " Creates a subscription",
-          "description": " Creates a subscription\n \n Triggers for each insert/update of data\n that satisfies the `filter` conditions.\n The projection fields are limited to `result` fields.",
+          "description": " Creates a subscription\n\n Triggers for each insert/update of data\n that satisfies the `filter` conditions.\n The projection fields are limited to `result` fields.",
           "params": [
             {
               "name": "context",
