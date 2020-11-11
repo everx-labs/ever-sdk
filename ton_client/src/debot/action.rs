@@ -1,4 +1,4 @@
-use super::context::{from_hex_to_utf8_str, from_0x_hex};
+use super::context::{from_0x_hex, from_hex_to_utf8_str};
 use serde::{de, Deserialize, Deserializer};
 use std::convert::From;
 
@@ -59,7 +59,6 @@ impl DAction {
             misc: String::new(),
         }
     }
-    
     #[allow(dead_code)]
     pub fn new(desc: String, name: String, action_type: u8, to: u8) -> Self {
         DAction {
@@ -80,7 +79,8 @@ impl DAction {
     }
 
     pub fn is_instant(&self) -> bool {
-        self.attrs.split(',')
+        self.attrs
+            .split(',')
             .find(|val| val.to_owned() == "instant")
             .map(|_| true)
             .unwrap_or(false)
@@ -106,22 +106,22 @@ impl DAction {
 
     fn attr_value(&self, name: &str) -> Option<String> {
         let name = name.to_owned() + "=";
-        self.attrs.split(',')
+        self.attrs
+            .split(',')
             .find(|val| val.starts_with(&name))
-            .map(|val| { 
+            .map(|val| {
                 let vec: Vec<&str> = val.split('=').collect();
                 vec[1].to_owned()
             })
     }
 }
 
-fn str_to_actype<'de, D>(des: D) -> Result<AcType, D::Error> 
-where 
-    D: Deserializer<'de>
+fn str_to_actype<'de, D>(des: D) -> Result<AcType, D::Error>
+where
+    D: Deserializer<'de>,
 {
     let s: String = Deserialize::deserialize(des)?;
     u8::from_str_radix(s.trim_start_matches("0x"), 16)
         .map_err(de::Error::custom)
         .map(|t| t.into())
 }
-
