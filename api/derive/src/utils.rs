@@ -129,7 +129,7 @@ pub(crate) fn function_to_tokens(m: &api_info::Function) -> TokenStream {
             name: #name.into(),
             summary: #summary,
             description: #description,
-            params: [#(#params), *].into(),
+            params: vec![#(#params), *],
             result: #result,
             errors: None,
         }
@@ -177,19 +177,19 @@ fn type_to_tokens(t: &api_info::Type) -> TokenStream {
         }
         api_info::Type::Struct { fields } => {
             let field_types = fields.iter().map(|x| field_to_tokens(x));
-            quote! { api_info::Type::Struct { fields: [#(#field_types),*].into() } }
+            quote! { api_info::Type::Struct { fields: vec![#(#field_types),*] } }
         }
         api_info::Type::EnumOfConsts { consts } => {
             let consts = consts.iter().map(|x| const_to_tokens(x));
-            quote! { api_info::Type::EnumOfConsts { consts: [#(#consts),*].into() } }
+            quote! { api_info::Type::EnumOfConsts { consts: vec![#(#consts),*] } }
         }
         api_info::Type::EnumOfTypes { types } => {
             let types = types.iter().map(|x| field_to_tokens(x));
-            quote! { api_info::Type::EnumOfTypes { types: [#(#types),*].into() } }
+            quote! { api_info::Type::EnumOfTypes { types: vec![#(#types),*] } }
         }
         api_info::Type::Generic { name, args } => {
             let types = args.iter().map(|x| type_to_tokens(x));
-            quote! { api_info::Type::Generic { name: #name.into(), args: [#(#types),*].into() } }
+            quote! { api_info::Type::Generic { name: #name.into(), args: vec![#(#types),*] } }
         }
     }
 }
