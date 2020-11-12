@@ -718,22 +718,3 @@ impl DEngine {
         }
     }
 }
-
-/*
-fn pack_state(mut msg: EncodedMessage, state: Option<Vec<u8>>) -> Result<EncodedMessage, String> {
-    if state.is_some() {
-        let mut buff = Cursor::new(state.unwrap());
-        let image = ton_sdk::ContractImage::from_state_init(&mut buff)
-            .map_err(|e| format!("unable to build contract image: {}", e))?;
-        let state_init = image.state_init();
-        let mut raw_msg = ton_sdk::Contract::deserialize_message(&msg.message_body[..])
-            .map_err(|e| format!("cannot deserialize buffer to msg: {}", e))?;
-        raw_msg.set_state_init(state_init);
-        let (msg_bytes, message_id) = ton_sdk::Contract::serialize_message(&raw_msg)
-            .map_err(|e| format!("cannot serialize msg with state: {}", e))?;
-        msg.message_body = msg_bytes;
-        msg.message_id = message_id.to_string();
-    }
-    Ok(msg)
-}
-*/

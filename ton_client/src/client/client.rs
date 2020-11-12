@@ -13,6 +13,7 @@
 
 use crate::error::ClientResult;
 use std::sync::Arc;
+use crate::debot::DebotConfig;
 
 use crate::net::{NetworkConfig, NodeClient};
 
@@ -30,6 +31,7 @@ pub struct ClientContext {
     pub(crate) client: Option<NodeClient>,
     pub(crate) config: ClientConfig,
     pub(crate) env: Arc<ClientEnv>,
+    pub(crate) debot_config: tokio::sync::RwLock<DebotConfig>
 }
 
 impl ClientContext {
@@ -58,10 +60,13 @@ Note that default values are used if parameters are omitted in config"#,
             None
         };
 
+        let debot_config = tokio::sync::RwLock::new(DebotConfig::new());
+
         Ok(Self {
             client,
             config,
             env,
+            debot_config,
         })
     }
 }
