@@ -1,6 +1,12 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## 1.1.2 Nov 12, 2020
+### Fixed
+- `client.factorize` doesn't panic on invalid challenge
+- `client.get_api_reference` returns proper version
+- ABI JSON with explicit function ID is parsed properly
+
 ## 1.1.1 Nov 11, 2020
 ### Fixed
 - To be compatible with older rust version change api type derivation with `vec![]`
