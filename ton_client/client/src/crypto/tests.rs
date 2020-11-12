@@ -76,6 +76,14 @@ fn math() {
     assert_eq!("494C553B", result.factors[0]);
     assert_eq!("53911073", result.factors[1]);
 
+    let result = client.request::<_, ResultOfFactorize>(
+        "crypto.factorize",
+        ParamsOfFactorize {
+            composite: "10".into(),
+        },
+    );
+    assert!(result.is_err());
+
     let result: ResultOfModularPower = client.request(
         "crypto.modular_power",
         ParamsOfModularPower {
