@@ -50,36 +50,33 @@ impl SigningBox for KeysSigningBox {
 
 pub struct ExternalSigningBox<F, Fut>
 where
-    F: Fn(SigningBoxRequest) -> Fut + Send + Sync,
-    Fut: Future<Output=ClientResult<SigningBoxResponse>> + Send + Sync + 'static,
+    F: Fn(SigningBoxAppRequest) -> Fut + Send + Sync,
+    Fut: Future<Output=ClientResult<SigningBoxAppResponse>> + Send + Sync + 'static,
 {
     callback: F,
-    signing_box_ref: String,
 }
 
 impl<F, Fut> ExternalSigningBox<F, Fut>
 where
-    F: Fn(SigningBoxRequest) -> Fut + Send + Sync,
-    Fut: Future<Output=ClientResult<SigningBoxResponse>> + Send + Sync + 'static,
+    F: Fn(SigningBoxAppRequest) -> Fut + Send + Sync,
+    Fut: Future<Output=ClientResult<SigningBoxAppResponse>> + Send + Sync + 'static,
 {
-    pub fn new(callback: F, signing_box_ref: String) -> Self {
-        Self { callback, signing_box_ref }
+    pub fn new(callback: F) -> Self {
+        Self { callback }
     }
 }
 
 #[async_trait::async_trait]
 impl<F, Fut> SigningBox for ExternalSigningBox<F, Fut>
 where
-    F: Fn(SigningBoxRequest) -> Fut + Send + Sync,
-    Fut: Future<Output=ClientResult<SigningBoxResponse>> + Send + Sync + 'static,
+    F: Fn(SigningBoxAppRequest) -> Fut + Send + Sync,
+    Fut: Future<Output=ClientResult<SigningBoxAppResponse>> + Send + Sync + 'static,
 {
     async fn get_public_key(&self) -> ClientResult<Vec<u8>> {
-        let response = (self.callback)(SigningBoxRequest::GetPublicKey { 
-            signing_box_ref: self.signing_box_ref.clone()
-        }).await?;
+        let response = (self.callback)(SigningBoxAppRequest::GetPublicKey).await?;
 
         match response {
-            SigningBoxResponse::SigningBoxGetPublicKey { public_key } => {
+            SigningBoxAppResponse::SigningBoxGetPublicKey { public_key } => {
                crate::encoding::hex_decode(&public_key)
             },
             _ => Err(Error::unexpected_callback_response(
@@ -88,13 +85,12 @@ where
     }
 
     async fn sign(&self, unsigned: &[u8]) -> ClientResult<Vec<u8>> {
-        let response = (self.callback)(SigningBoxRequest::Sign { 
-            signing_box_ref: self.signing_box_ref.clone(),
+        let response = (self.callback)(SigningBoxAppRequest::Sign { 
             unsigned: base64::encode(unsigned)
         }).await?;
 
         match response {
-            SigningBoxResponse::SigningBoxSign { signature: signed } => {
+            SigningBoxAppResponse::SigningBoxSign { signature: signed } => {
                crate::encoding::hex_decode(&signed)
             },
             _ => Err(Error::unexpected_callback_response(
@@ -145,14 +141,16 @@ pub async fn register_signing_box(
 ) -> ClientResult<ResultOfRegisterSigningBox> {
     let id = context.next_box_id.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     let context_copy = context.clone();
+    let object_ref = params.signing_box_ref;
     let callback = move |request| {
         let callback = callback.clone();
         let context = context_copy.clone();
+        let object_ref = object_ref.clone();
         async move {
-            context.app_request(&callback, request).await
+            context.app_request(&callback, object_ref, request).await
         }
     };
-    let signing_box = ExternalSigningBox::new(callback, params.signing_box_ref);
+    let signing_box = ExternalSigningBox::new(callback);
     context.boxes.insert(id, Box::new(signing_box));
 
     Ok(ResultOfRegisterSigningBox {
@@ -223,18 +221,17 @@ pub async fn signing_box_sign(
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
-pub enum SigningBoxRequest {
-    GetPublicKey {
-        signing_box_ref: String,
-    },
+#[serde(tag="type")]
+pub enum SigningBoxAppRequest {
+    GetPublicKey,
     Sign {
-        signing_box_ref: String,
         unsigned: String,
     },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
-pub enum SigningBoxResponse {
+#[serde(tag="type")]
+pub enum SigningBoxAppResponse {
     SigningBoxGetPublicKey {
         public_key: String,
     },
@@ -246,5 +243,5 @@ pub enum SigningBoxResponse {
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 pub struct ParamsOfSigningBoxResponse {
     error: Option<String>,
-    result: Option<SigningBoxResponse>,
+    result: Option<SigningBoxAppResponse>,
 }

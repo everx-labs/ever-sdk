@@ -77,6 +77,7 @@ Note that default values are used if parameters are omitted in config"#,
     pub(crate) async fn app_request<R: serde::de::DeserializeOwned>(
         &self,
         callback: &crate::json_interface::request::Request,
+        object_ref: String,
         params: impl serde::Serialize,
     ) -> ClientResult<R> {
         let id = self.next_app_request_id.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -87,8 +88,9 @@ Note that default values are used if parameters are omitted in config"#,
             .insert(id, sender);
         
         callback.response(
-            super::AppRequest {
+            super::AppRequestParams {
                 app_request_id: id,
+                object_ref,
                 request_data: params
             },
             crate::json_interface::interop::ResponseType::AppRequest as u32);

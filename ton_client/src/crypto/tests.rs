@@ -744,14 +744,12 @@ async fn test_signing_box() {
         .handle
         .0;
 
-    const BOX_REF: &str = "123";
     // external signing box uses keys box inside
-    let callback = move |request: crate::client::AppRequest<boxes::SigningBoxRequest>, _: u32| {
+    let callback = move |request: crate::client::AppRequestParams<boxes::SigningBoxAppRequest>, _: u32| {
         let client = client_copy.clone();
         tokio::spawn(async move {
             match request.request_data {
-                boxes::SigningBoxRequest::GetPublicKey { signing_box_ref } => {
-                    assert_eq!(signing_box_ref, BOX_REF);
+                boxes::SigningBoxAppRequest::GetPublicKey => {
                     let result: super::boxes::ResultOfSigningBoxGetPublicKey = client
                         .request_async(
                             "crypto.signing_box_get_public_key",
@@ -763,15 +761,14 @@ async fn test_signing_box() {
                         .request_async::<_, ()>(
                             "client.resolve_app_request",
                             crate::client::ParamsOfResolveRequest {
-                                request_id: request.app_request_id,
+                                app_request_id: request.app_request_id,
                                 result: crate::client::RequestResult::Ok { 
-                                    result: json!(boxes::SigningBoxResponse::SigningBoxGetPublicKey { public_key: result.pubkey })
+                                    result: json!(boxes::SigningBoxAppResponse::SigningBoxGetPublicKey { public_key: result.pubkey })
                                 }
                             },
                         ).await.unwrap();
                 },
-                boxes::SigningBoxRequest::Sign { signing_box_ref, unsigned } => {
-                    assert_eq!(signing_box_ref, BOX_REF);
+                boxes::SigningBoxAppRequest::Sign { unsigned } => {
                     let result: super::boxes::ResultOfSigningBoxSign = client
                         .request_async(
                             "crypto.signing_box_sign",
@@ -784,9 +781,9 @@ async fn test_signing_box() {
                         .request_async::<_, ()>(
                             "client.resolve_app_request",
                             crate::client::ParamsOfResolveRequest {
-                                request_id: request.app_request_id,
+                                app_request_id: request.app_request_id,
                                 result: crate::client::RequestResult::Ok { 
-                                    result: json!(boxes::SigningBoxResponse::SigningBoxSign { signature: result.signature })
+                                    result: json!(boxes::SigningBoxAppResponse::SigningBoxSign { signature: result.signature })
                                 }
                             },
                         ).await.unwrap();
@@ -799,7 +796,7 @@ async fn test_signing_box() {
     let external_box: boxes::ResultOfRegisterSigningBox = client.request_async_callback(
         "crypto.register_signing_box",
         boxes::ParamsOfRegisterSigningBox {
-            signing_box_ref: BOX_REF.to_owned(),
+            signing_box_ref: "123".to_owned(),
         },
         callback
     ).await.unwrap();
