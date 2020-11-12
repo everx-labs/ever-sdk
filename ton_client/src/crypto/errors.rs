@@ -1,5 +1,5 @@
 use crate::error::ClientError;
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 const CRYPTO: isize = ClientError::CRYPTO; // 100
 
 pub enum ErrorCode {
@@ -21,6 +21,8 @@ pub enum ErrorCode {
     Bip39InvalidWordCount = CRYPTO + 18,
     MnemonicGenerationFailed = CRYPTO + 19,
     MnemonicFromEntropyFailed = CRYPTO + 20,
+    UnexpectedCallbackResponse = CRYPTO + 21,
+    SigningBoxNotRegistered = CRYPTO + 22,
 }
 pub struct Error;
 
@@ -149,6 +151,20 @@ impl Error {
         error(
             ErrorCode::MnemonicFromEntropyFailed,
             format!("Mnemonic from entropy failed: {}", reason),
+        )
+    }
+
+    pub fn unexpected_callback_response<R: Debug>(expected: &str, received: R) -> ClientError {
+        error(
+            ErrorCode::UnexpectedCallbackResponse,
+            format!("Unexpected callback response. Expected {}, received {:#?}", expected, received),
+        )
+    }
+
+    pub fn signing_box_not_registered(id: u32) -> ClientError {
+        error(
+            ErrorCode::SigningBoxNotRegistered,
+            format!("Signing box is not registered. ID {}", id),
         )
     }
 }

@@ -13,6 +13,7 @@
 
 use crate::error::ClientResult;
 use std::sync::Arc;
+use std::collections::HashMap;
 
 use crate::net::{NetworkConfig, NodeClient};
 
@@ -30,6 +31,10 @@ pub struct ClientContext {
     pub(crate) client: Option<NodeClient>,
     pub(crate) config: ClientConfig,
     pub(crate) env: Arc<ClientEnv>,
+    pub(crate) boxes: lockfree::map::Map<u32, Box<dyn crate::crypto::boxes::SigningBox + Send + Sync>>,
+    pub(crate) next_box_id: std::sync::atomic::AtomicU32,
+    pub(crate) app_requests: tokio::sync::Mutex<HashMap<u32, tokio::sync::oneshot::Sender<super::RequestResult>>>,
+    pub(crate) next_app_request_id: std::sync::atomic::AtomicU32,
 }
 
 impl ClientContext {
@@ -62,7 +67,42 @@ Note that default values are used if parameters are omitted in config"#,
             client,
             config,
             env,
+            boxes: lockfree::map::Map::new(),
+            next_box_id: Default::default(),
+            app_requests: tokio::sync::Mutex::new(HashMap::new()),
+            next_app_request_id: Default::default(),
         })
+    }
+
+    pub(crate) async fn app_request<R: serde::de::DeserializeOwned>(
+        &self,
+        callback: &crate::json_interface::request::Request,
+        params: impl serde::Serialize,
+    ) -> ClientResult<R> {
+        let id = self.next_app_request_id.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        self.app_requests
+            .lock()
+            .await
+            .insert(id, sender);
+        
+        callback.response(
+            super::AppRequest {
+                app_request_id: id,
+                request_data: params
+            },
+            crate::json_interface::interop::ResponseType::AppRequest as u32);
+        let result = receiver
+            .await
+            .map_err(|err| Error::can_not_receive_request_result(err))?;
+
+        match result {
+            super::RequestResult::Error { text } => Err(Error::app_request_error(&text)),
+            super::RequestResult::Ok { result } => {
+                serde_json::from_value(result)
+                    .map_err(|err| Error::can_not_parse_request_result(err))
+            }
+        }
     }
 }
 

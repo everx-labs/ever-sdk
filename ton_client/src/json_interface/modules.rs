@@ -35,6 +35,10 @@ fn register_client(handlers: &mut RuntimeHandlers) {
     );
     module.register_sync_fn_without_args(crate::client::version, crate::client::version_api);
     module.register_sync_fn_without_args(crate::client::build_info, crate::client::build_info_api);
+    module.register_async_fn(
+        crate::client::resolve_app_request,
+        crate::client::resolve_app_request_api,
+    );
     module.register();
 }
 
@@ -179,6 +183,25 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
     module.register_sync_fn(
         crate::crypto::chacha20,
         crate::crypto::encryption::chacha20_api,
+    );
+
+    // Boxes
+
+    module.register_async_fn_with_callback(
+        crate::crypto::boxes::register_signing_box,
+        crate::crypto::boxes::register_signing_box_api,
+    );
+    module.register_async_fn(
+        crate::crypto::boxes::get_signing_box,
+        crate::crypto::boxes::get_signing_box_api,
+    );
+    module.register_async_fn(
+        crate::crypto::boxes::signing_box_get_public_key,
+        crate::crypto::boxes::signing_box_get_public_key_api,
+    );
+    module.register_async_fn(
+        crate::crypto::boxes::signing_box_sign,
+        crate::crypto::boxes::signing_box_sign_api,
     );
 
     module.register();

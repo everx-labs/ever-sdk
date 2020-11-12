@@ -11,7 +11,7 @@
 * limitations under the License.
 */
 
-mod boxes;
+pub(crate) mod boxes;
 pub(crate) mod encscrypt;
 mod errors;
 pub(crate) mod hash;
