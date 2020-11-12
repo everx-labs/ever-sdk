@@ -43,7 +43,7 @@ impl RuntimeHandlers {
             sync_handlers: HashMap::new(),
             async_handlers: HashMap::new(),
             api: API {
-                version: "1.0.0".into(),
+                version: env!("CARGO_PKG_VERSION").to_owned(),
                 modules: Vec::new(),
             },
         };
