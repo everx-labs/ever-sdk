@@ -12,15 +12,17 @@
 */
 
 use crate::error::ClientError;
-use std::fmt::Display;
+//use std::fmt::Display;
 const DEBOT: isize = ClientError::DEBOT; // 200
 
 pub enum ErrorCode {
-    SampleCode = DEBOT + 1
+    DebotStartFailed = DEBOT + 1,
+    DebotExecutionFailed,
+    DebotInvalidHandle,
 }
 pub struct Error;
 
-fn error(code: ErrorCode, message: String) -> ClientError {
+pub fn error(code: ErrorCode, message: String) -> ClientError {
     ClientError::with_code_message(code as u32, message)
 }
 

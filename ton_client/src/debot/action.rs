@@ -1,5 +1,5 @@
 use super::context::{from_0x_hex, from_hex_to_utf8_str};
-use serde::{de, Deserialize, Deserializer};
+use serde::{de, Deserialize, Deserializer, Serializer};
 use std::convert::From;
 
 #[derive(Clone)]
@@ -31,7 +31,11 @@ impl From<u8> for AcType {
     }
 }
 
-#[derive(Deserialize, Clone)]
+impl Default for AcType {
+    fn default() -> Self { AcType::Empty }
+}
+
+#[derive(Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct DAction {
     #[serde(deserialize_with = "from_hex_to_utf8_str")]
@@ -39,6 +43,7 @@ pub struct DAction {
     #[serde(deserialize_with = "from_hex_to_utf8_str")]
     pub name: String,
     #[serde(deserialize_with = "str_to_actype")]
+    #[serde(serialize_with = "actype_to_str")]
     pub action_type: AcType,
     #[serde(deserialize_with = "from_0x_hex")]
     pub to: u8,
@@ -124,4 +129,23 @@ where
     u8::from_str_radix(s.trim_start_matches("0x"), 16)
         .map_err(de::Error::custom)
         .map(|t| t.into())
+}
+
+fn actype_to_str<S>(a: &AcType, s: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let num: u8 = match a {
+        AcType::Empty => 0,
+        AcType::RunAction => 1,
+        AcType::RunMethod => 2,
+        AcType::SendMsg => 3,
+        AcType::Invoke => 4,
+        AcType::Print => 5,
+        AcType::Goto => 6,
+        AcType::CallEngine => 10,
+        AcType::Unknown => 255,
+    };
+    
+    s.serialize_str(&format!("{:x}", num))
 }

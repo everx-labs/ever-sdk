@@ -85,7 +85,7 @@ pub struct DEngine {
     prev_state: u8,
     target_addr: Option<String>,
     target_abi: Option<String>,
-    browser: Box<dyn BrowserCallbacks>,
+    browser: Box<dyn BrowserCallbacks + Send + Sync>,
 }
 
 impl DEngine {
@@ -93,7 +93,7 @@ impl DEngine {
         addr: String,
         abi: Option<String>,
         url: &str,
-        browser: Box<dyn BrowserCallbacks>,
+        browser: Box<dyn BrowserCallbacks + Send + Sync>,
     ) -> Self {
         DEngine::new_with_client(addr, abi, create_client(url).unwrap(), browser)
     }
@@ -102,7 +102,7 @@ impl DEngine {
         addr: String,
         abi: Option<String>,
         ton: TonClient,
-        browser: Box<dyn BrowserCallbacks>,
+        browser: Box<dyn BrowserCallbacks + Send + Sync>,
     ) -> Self {
         DEngine {
             abi: abi
@@ -226,7 +226,7 @@ impl DEngine {
                     "invoke debot: {}, action name: {}",
                     &debot_addr, debot_action.name
                 );
-                self.browser.invoke_debot(debot_addr, debot_action)?;
+                self.browser.invoke_debot(debot_addr, debot_action).await?;
                 Ok(None)
             }
             AcType::Print => {
@@ -262,7 +262,7 @@ impl DEngine {
                 let keys = if a.sign_by_user() {
                     // TODO: dont' use KeyPair here - send buffer for signing to browser
                     let mut keys = KeyPair::new(String::new(), String::new());
-                    self.browser.load_key(&mut keys);
+                    self.browser.load_key(&mut keys).await;
                     Some(keys)
                 } else {
                     None
@@ -277,7 +277,7 @@ impl DEngine {
             }
             _ => {
                 let err_msg = "unsupported action type".to_owned();
-                self.browser.log(err_msg.clone());
+                self.browser.log(err_msg.clone()).await;
                 Err(err_msg)
             }
         }
@@ -306,7 +306,7 @@ impl DEngine {
                     .map(|ctx| ctx.clone());
                 if let Some(ctx) = jump_to_ctx {
                     self.browser.switch(state_to);
-                    self.browser.log(ctx.desc.clone());
+                    self.browser.log(ctx.desc.clone()).await;
                     instant_switch = self.enumerate_actions(ctx).await?;
                     state_to = self.curr_state;
                 } else if state_to == STATE_EXIT {
