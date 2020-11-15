@@ -1,6 +1,10 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## 1.1.2 Nov 15, 2020
+### Fixed
+- `wasm` feature was not worked.
+
 ## 1.1.1 Nov 11, 2020
 ### Fixed
 - To be compatible with older rust version change api type derivation with `vec![]`

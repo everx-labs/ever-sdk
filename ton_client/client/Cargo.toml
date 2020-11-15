@@ -1,6 +1,6 @@
 [package]
 name = "ton_client"
-version = "1.1.1"
+version = "1.1.2"
 authors = ["Michael Vlasov"]
 edition = "2018"
 license = "Apache-2.0"
@@ -81,4 +81,4 @@ pretty_assertions = "0.6.1"
 [features]
 default = ["std"]
 std = ["tokio/rt-threaded", "tokio/macros", "tokio/sync", "reqwest", "tokio-tungstenite"]
-wasm = ["wasm-bindgen", "wasm-bindgen-futures", "js-sys", "web-sys"]
+wasm = ["wasm-bindgen", "wasm-bindgen-futures", "js-sys", "web-sys", "rand/wasm-bindgen", "chrono/wasmbind"]
