@@ -111,9 +111,9 @@ pub async fn get_signing_box(
     context: std::sync::Arc<ClientContext>,
     params: KeyPair,
 ) -> ClientResult<ResultOfGetSigningBox> {
-    let id = context.next_box_id.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let id = context.get_next_id();
     let signing_box = KeysSigningBox::from_encoded(params)?;
-    context.boxes.insert(id, Box::new(signing_box));
+    context.boxes.signing_boxes.insert(id, Box::new(signing_box));
 
     Ok(ResultOfGetSigningBox {
         handle: SigningBoxHandle(id),
@@ -139,7 +139,7 @@ pub async fn register_signing_box(
     params: ParamsOfRegisterSigningBox,
     callback: std::sync::Arc<Request>,
 ) -> ClientResult<ResultOfRegisterSigningBox> {
-    let id = context.next_box_id.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let id = context.get_next_id();
     let context_copy = context.clone();
     let object_ref = params.signing_box_ref;
     let callback = move |request| {
@@ -151,7 +151,7 @@ pub async fn register_signing_box(
         }
     };
     let signing_box = ExternalSigningBox::new(callback);
-    context.boxes.insert(id, Box::new(signing_box));
+    context.boxes.signing_boxes.insert(id, Box::new(signing_box));
 
     Ok(ResultOfRegisterSigningBox {
         handle: SigningBoxHandle(id),
@@ -176,10 +176,10 @@ pub async fn signing_box_get_public_key(
     context: Arc<ClientContext>,
     params: ParamsOfSigningBoxGetPublicKey,
 ) -> ClientResult<ResultOfSigningBoxGetPublicKey> {
-    let signing_box = context.boxes
+    let signing_box = context.boxes.signing_boxes
         .get(&params.signing_box.0)
-        .ok_or(Error::signing_box_not_registered(params.signing_box.0))?
-        ;
+        .ok_or(Error::signing_box_not_registered(params.signing_box.0))?;
+
     let key = signing_box.1.get_public_key().await?;
 
     Ok(ResultOfSigningBoxGetPublicKey {
@@ -207,7 +207,7 @@ pub async fn signing_box_sign(
     context: Arc<ClientContext>,
     params: ParamsOfSigningBoxSign,
 ) -> ClientResult<ResultOfSigningBoxSign> {
-    let signing_box = context.boxes
+    let signing_box = context.boxes.signing_boxes
         .get(&params.signing_box.0)
         .ok_or(Error::signing_box_not_registered(params.signing_box.0))?;
 
@@ -238,10 +238,4 @@ pub enum SigningBoxAppResponse {
     SigningBoxSign {
         signature: String,
     },
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
-pub struct ParamsOfSigningBoxResponse {
-    error: Option<String>,
-    result: Option<SigningBoxAppResponse>,
 }
