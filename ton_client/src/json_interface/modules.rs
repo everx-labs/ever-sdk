@@ -188,19 +188,19 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
     // Boxes
 
     module.register_async_fn_with_callback(
-        crate::crypto::boxes::register_signing_box,
-        crate::crypto::boxes::register_signing_box_api,
+        super::crypto::register_signing_box,
+        super::crypto::register_signing_box_api,
     );
     module.register_async_fn(
-        crate::crypto::boxes::get_signing_box,
+        crate::crypto::get_signing_box,
         crate::crypto::boxes::get_signing_box_api,
     );
     module.register_async_fn(
-        crate::crypto::boxes::signing_box_get_public_key,
+        crate::crypto::signing_box_get_public_key,
         crate::crypto::boxes::signing_box_get_public_key_api,
     );
     module.register_async_fn(
-        crate::crypto::boxes::signing_box_sign,
+        crate::crypto::signing_box_sign,
         crate::crypto::boxes::signing_box_sign_api,
     );
 

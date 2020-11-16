@@ -2,8 +2,6 @@ use super::KeyPair;
 use super::Error;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
-use crate::json_interface::request::Request;
-use futures::Future;
 use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
@@ -17,11 +15,13 @@ impl From<u32> for SigningBoxHandle {
 
 #[async_trait::async_trait]
 pub trait SigningBox {
+    /// Get public key of key pair
     async fn get_public_key(&self) -> ClientResult<Vec<u8>>;
+    /// Sign data with key pair
     async fn sign(&self, unsigned: &[u8]) -> ClientResult<Vec<u8>>;
 }
 
-pub struct KeysSigningBox {
+pub(crate) struct KeysSigningBox {
     key_pair: ed25519_dalek::Keypair
 }
 
@@ -45,57 +45,6 @@ impl SigningBox for KeysSigningBox {
 
     async fn sign(&self, unsigned: &[u8]) -> ClientResult<Vec<u8>> {
         super::internal::sign_using_keys(unsigned, &self.key_pair).map(|result| result.1)
-    }
-}
-
-pub struct ExternalSigningBox<F, Fut>
-where
-    F: Fn(SigningBoxAppRequest) -> Fut + Send + Sync,
-    Fut: Future<Output=ClientResult<SigningBoxAppResponse>> + Send + Sync + 'static,
-{
-    callback: F,
-}
-
-impl<F, Fut> ExternalSigningBox<F, Fut>
-where
-    F: Fn(SigningBoxAppRequest) -> Fut + Send + Sync,
-    Fut: Future<Output=ClientResult<SigningBoxAppResponse>> + Send + Sync + 'static,
-{
-    pub fn new(callback: F) -> Self {
-        Self { callback }
-    }
-}
-
-#[async_trait::async_trait]
-impl<F, Fut> SigningBox for ExternalSigningBox<F, Fut>
-where
-    F: Fn(SigningBoxAppRequest) -> Fut + Send + Sync,
-    Fut: Future<Output=ClientResult<SigningBoxAppResponse>> + Send + Sync + 'static,
-{
-    async fn get_public_key(&self) -> ClientResult<Vec<u8>> {
-        let response = (self.callback)(SigningBoxAppRequest::GetPublicKey).await?;
-
-        match response {
-            SigningBoxAppResponse::SigningBoxGetPublicKey { public_key } => {
-               crate::encoding::hex_decode(&public_key)
-            },
-            _ => Err(Error::unexpected_callback_response(
-                "SigningBoxResponse::SigningBoxGetPublicKey", &response))
-        }
-    }
-
-    async fn sign(&self, unsigned: &[u8]) -> ClientResult<Vec<u8>> {
-        let response = (self.callback)(SigningBoxAppRequest::Sign { 
-            unsigned: base64::encode(unsigned)
-        }).await?;
-
-        match response {
-            SigningBoxAppResponse::SigningBoxSign { signature: signed } => {
-               crate::encoding::hex_decode(&signed)
-            },
-            _ => Err(Error::unexpected_callback_response(
-                "SigningBoxResponse::SigningBoxSign", &response))
-        }
     }
 }
 
@@ -133,24 +82,11 @@ pub struct ResultOfRegisterSigningBox {
 }
 
 /// Register an application implemented signing box.
-#[api_function]
 pub async fn register_signing_box(
     context: std::sync::Arc<ClientContext>,
-    params: ParamsOfRegisterSigningBox,
-    callback: std::sync::Arc<Request>,
+    signing_box: impl SigningBox + Send + Sync + 'static,
 ) -> ClientResult<ResultOfRegisterSigningBox> {
     let id = context.get_next_id();
-    let context_copy = context.clone();
-    let object_ref = params.signing_box_ref;
-    let callback = move |request| {
-        let callback = callback.clone();
-        let context = context_copy.clone();
-        let object_ref = object_ref.clone();
-        async move {
-            context.app_request(&callback, object_ref, request).await
-        }
-    };
-    let signing_box = ExternalSigningBox::new(callback);
     context.boxes.signing_boxes.insert(id, Box::new(signing_box));
 
     Ok(ResultOfRegisterSigningBox {
@@ -218,24 +154,4 @@ pub async fn signing_box_sign(
     Ok(ResultOfSigningBoxSign {
         signature: hex::encode(&signed)
     })
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
-#[serde(tag="type")]
-pub enum SigningBoxAppRequest {
-    GetPublicKey,
-    Sign {
-        unsigned: String,
-    },
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
-#[serde(tag="type")]
-pub enum SigningBoxAppResponse {
-    SigningBoxGetPublicKey {
-        public_key: String,
-    },
-    SigningBoxSign {
-        signature: String,
-    },
 }
