@@ -1,8 +1,0 @@
-{
-	"name": "ton-client-node-js",
-	"version": "0.11.2",
-	"description": "TON Client Library for Node.Js",
-	"scripts": {
-		"build": "node-gyp rebuild"
-	}
-}

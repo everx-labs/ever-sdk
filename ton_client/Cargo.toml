@@ -1,0 +1,90 @@
+[package]
+name = "ton_client"
+version = "1.2.0"
+authors = ["Michael Vlasov"]
+edition = "2018"
+license = "Apache-2.0"
+build = "build.rs"
+
+[lib]
+name = "ton_client"
+crate-type = ["cdylib", "rlib"]
+
+[build-dependencies]
+serde = "1.0.117"
+serde_json = "1.0.59"
+serde_derive = "1.0.117"
+
+[dependencies]
+ton_sdk = { path = "../ton_sdk", default-features = false }
+api_info = { path = "../api/info" }
+api_derive = { path = "../api/derive" }
+
+ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git", branch = "1.0.0-rc"}
+ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }
+ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git" }
+ton_block_json = { git = "https://github.com/tonlabs/ton-labs-block-json.git" }
+ton_executor = { git = "https://github.com/tonlabs/ton-labs-executor.git", default-features = false }
+ton_vm = { git = "https://github.com/tonlabs/ton-labs-vm.git", default-features = false }
+sodalite = { git = "https://github.com/tonlabs/sodalite.git", features = ["rand"] }
+bip39 = { git = "https://github.com/tonlabs/bip39-rs.git" }
+
+rand = "0.7.3"
+hex = "0.3.2"
+serde_json = "1.0.41"
+serde_derive = "1.0.91"
+serde = "1.0.91"
+ed25519-dalek = "1.0.0"
+sha2 = "0.8"
+base64 = "0.10.0"
+lazy_static = "1.1.0"
+num-bigint = "0.2.2"
+chrono = "0.4.6"
+scrypt = { version = "0.2.0", default-features = false }
+hmac = "0.7.1"
+chacha20 = "0.6.0"
+base58 = "0.1.0"
+pbkdf2 = { version = "0.3.0", default-features = false }
+byteorder = "1.3.2"
+libsecp256k1 = "0.2.2"
+log = "0.4.11"
+crc-any = "2.2.3"
+failure = "0.1"
+num-traits = "0.2"
+num-derive = "0.3"
+async-trait = "0.1.40"
+futures = "0.3.4"
+tokio = { version = "0.2.13", features = ["sync"], default-features = false }
+lockfree = { git = "https://github.com/tonlabs/lockfree.git", package = "lockfree" }
+
+# optional for std
+reqwest = { version = "0.10.4", optional = true }
+tokio-tungstenite = { version =  "0.11.0", features = ["tls"], optional = true }
+
+# optional for wasm
+wasm-bindgen = { version = "=0.2.65", features = ["serde-serialize"], optional = true }
+wasm-bindgen-futures = { version = "0.4.15", optional = true }
+js-sys = { version = "0.3", optional = true }
+web-sys = { version =  "0.3.42", optional = true, features = [
+    "ErrorEvent",
+    "FileReader",
+    "Headers",
+    "MessageEvent",
+    "ProgressEvent",
+    "Request",
+    "RequestInit",
+    "Response",
+    "Window",
+    "WebSocket",
+    ] }
+
+[dev-dependencies]
+log4rs = "^0"
+dirs = "2.0.2"
+pretty_assertions = "0.6.1"
+
+
+[features]
+default = ["std"]
+std = ["tokio/rt-threaded", "tokio/macros", "tokio/sync", "reqwest", "tokio-tungstenite"]
+wasm = ["wasm-bindgen", "wasm-bindgen-futures", "js-sys", "web-sys"]

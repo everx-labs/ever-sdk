@@ -15,12 +15,9 @@ use crate::json_helper;
 use crate::types::StringId;
 use ton_types::Result;
 
-use ton_types::{SliceData, Cell};
-use ton_block::{
-    CommonMsgInfo, Message as TvmMessage
-};
 use ton_block::GetRepresentationHash;
-
+use ton_block::{CommonMsgInfo, Message as TvmMessage};
+use ton_types::{Cell, SliceData};
 
 #[derive(Deserialize, Debug, PartialEq, Clone)]
 pub enum MessageType {
@@ -46,13 +43,12 @@ pub struct Message {
     #[serde(deserialize_with = "json_helper::deserialize_message_type")]
     pub msg_type: MessageType,
     #[serde(with = "json_helper::uint")]
-    pub value: u64
+    pub value: u64,
 }
 
 // The struct represents sent message and allows to access their properties.
 #[allow(dead_code)]
 impl Message {
-
     pub fn with_msg(tvm_msg: &TvmMessage) -> Result<Self> {
         let mut msg = Self::default();
         msg.id = tvm_msg.hash()?.as_slice()[..].into();
@@ -61,7 +57,7 @@ impl Message {
         msg.msg_type = match tvm_msg.header() {
             CommonMsgInfo::IntMsgInfo(_) => MessageType::Internal,
             CommonMsgInfo::ExtInMsgInfo(_) => MessageType::ExternalInbound,
-            CommonMsgInfo::ExtOutMsgInfo(_) => MessageType::ExternalOutbound
+            CommonMsgInfo::ExtOutMsgInfo(_) => MessageType::ExternalOutbound,
         };
 
         Ok(msg)

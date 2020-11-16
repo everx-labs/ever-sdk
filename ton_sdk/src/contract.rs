@@ -11,22 +11,22 @@
 * limitations under the License.
 */
 
-use crate::json_helper;
 use crate::error::SdkError;
+use crate::json_helper;
 use crate::{AbiContract, MessageId};
 
-use ed25519_dalek::{Keypair, PublicKey};
 use chrono::prelude::Utc;
+use ed25519_dalek::{Keypair, PublicKey};
 use serde_json::Value;
 use std::convert::Into;
 use std::io::{Cursor, Read, Seek};
+use ton_abi::json_abi::DecodedMessage;
 use ton_block::{
-    AccountIdPrefixFull, Deserializable, ExternalInboundMessageHeader, GetRepresentationHash, 
-    Message as TvmMessage, MsgAddressInt, Serializable, ShardIdent, StateInit
+    AccountIdPrefixFull, Deserializable, ExternalInboundMessageHeader, GetRepresentationHash,
+    Message as TvmMessage, MsgAddressInt, Serializable, ShardIdent, StateInit,
 };
 use ton_types::cells_serialization::deserialize_cells_tree;
-use ton_types::{error, Result, AccountId, SliceData};
-use ton_abi::json_abi::DecodedMessage;
+use ton_types::{error, AccountId, Result, SliceData};
 
 pub struct Contract {}
 
@@ -55,20 +55,30 @@ pub struct ContractImage {
 #[allow(dead_code)]
 impl ContractImage {
     // Creating contract image from code data and library bags of cells
-    pub fn from_code_data_and_library<T>(code: &mut T, data: Option<&mut T>, library: Option<&mut T>) -> Result<Self>
-        where T: Read + Seek {
+    pub fn from_code_data_and_library<T>(
+        code: &mut T,
+        data: Option<&mut T>,
+        library: Option<&mut T>,
+    ) -> Result<Self>
+    where
+        T: Read + Seek,
+    {
         let mut state_init = StateInit::default();
 
         let mut code_roots = deserialize_cells_tree(code)?;
         if code_roots.len() != 1 {
-            bail!(SdkError::InvalidData { msg: "Invalid code's bag of cells".into() } );
+            bail!(SdkError::InvalidData {
+                msg: "Invalid code's bag of cells".into()
+            });
         }
         state_init.set_code(code_roots.remove(0));
 
         if let Some(data_) = data {
             let mut data_roots = deserialize_cells_tree(data_)?;
             if data_roots.len() != 1 {
-                bail!(SdkError::InvalidData { msg: "Invalid data's bag of cells".into() } );
+                bail!(SdkError::InvalidData {
+                    msg: "Invalid data's bag of cells".into()
+                });
             }
             state_init.set_data(data_roots.remove(0));
         }
@@ -76,7 +86,9 @@ impl ContractImage {
         if let Some(library_) = library {
             let mut library_roots = deserialize_cells_tree(library_)?;
             if library_roots.len() != 1 {
-                bail!(SdkError::InvalidData { msg: "Invalid library's bag of cells".into() } );
+                bail!(SdkError::InvalidData {
+                    msg: "Invalid library's bag of cells".into()
+                });
             }
             state_init.set_library(library_roots.remove(0));
         }
@@ -94,14 +106,18 @@ impl ContractImage {
     }
 
     pub fn from_state_init<T>(state_init_bag: &mut T) -> Result<Self>
-        where T: Read {
+    where
+        T: Read,
+    {
         let mut si_roots = deserialize_cells_tree(state_init_bag)?;
         if si_roots.len() != 1 {
-            bail!(SdkError::InvalidData { msg: "Invalid state init's bag of cells".into() } );
+            bail!(SdkError::InvalidData {
+                msg: "Invalid state init's bag of cells".into()
+            });
         }
 
-        let state_init: StateInit
-            = StateInit::construct_from(&mut SliceData::from(si_roots.remove(0)))?;
+        let state_init: StateInit =
+            StateInit::construct_from(&mut SliceData::from(si_roots.remove(0)))?;
 
         let id = state_init.hash()?.into();
 
@@ -109,7 +125,9 @@ impl ContractImage {
     }
 
     pub fn from_state_init_and_key<T>(state_init_bag: &mut T, pub_key: &PublicKey) -> Result<Self>
-        where T: Read {
+    where
+        T: Read,
+    {
         let mut result = Self::from_state_init(state_init_bag)?;
         result.set_public_key(pub_key)?;
 
@@ -133,14 +151,18 @@ impl ContractImage {
     pub fn get_serialized_code(&self) -> Result<Vec<u8>> {
         match &self.state_init.code {
             Some(cell) => ton_types::serialize_toc(cell),
-            None => bail!(SdkError::InvalidData { msg: "State init has no code".to_owned() } )
+            None => bail!(SdkError::InvalidData {
+                msg: "State init has no code".to_owned()
+            }),
         }
     }
 
     pub fn get_serialized_data(&self) -> Result<Vec<u8>> {
         match &self.state_init.data {
             Some(cell) => ton_types::serialize_toc(cell),
-            None => bail!(SdkError::InvalidData { msg: "State init has no data".to_owned() } )
+            None => bail!(SdkError::InvalidData {
+                msg: "State init has no data".to_owned()
+            }),
         }
     }
 
@@ -171,7 +193,8 @@ impl ContractImage {
         let new_data = ton_abi::json_abi::update_contract_data(
             abi_json,
             data_json,
-            self.state_init.data.clone().unwrap_or_default().into())?;
+            self.state_init.data.clone().unwrap_or_default().into(),
+        )?;
 
         self.state_init.set_data(new_data.into_cell());
         self.id = self.state_init.hash()?.into();
@@ -194,42 +217,62 @@ pub struct ShardDescr {
 
 impl Contract {
     /// Decodes output parameters returned by contract function call
-    pub fn decode_function_response_json(abi: String, function: String, response: SliceData, internal: bool)
-        -> Result<String> {
+    pub fn decode_function_response_json(
+        abi: String,
+        function: String,
+        response: SliceData,
+        internal: bool,
+    ) -> Result<String> {
         ton_abi::json_abi::decode_function_response(abi, function, response, internal)
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
-    pub fn decode_function_response_from_bytes_json(abi: String, function: String, response: &[u8], internal: bool)
-        -> Result<String> {
+    pub fn decode_function_response_from_bytes_json(
+        abi: String,
+        function: String,
+        response: &[u8],
+        internal: bool,
+    ) -> Result<String> {
         let slice = Self::deserialize_tree_to_slice(response)?;
 
         Self::decode_function_response_json(abi, function, slice, internal)
     }
 
     /// Decodes output parameters returned by contract function call
-    pub fn decode_unknown_function_response_json(abi: String, response: SliceData, internal: bool)
-        -> Result<DecodedMessage> {
+    pub fn decode_unknown_function_response_json(
+        abi: String,
+        response: SliceData,
+        internal: bool,
+    ) -> Result<DecodedMessage> {
         ton_abi::json_abi::decode_unknown_function_response(abi, response, internal)
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
-    pub fn decode_unknown_function_response_from_bytes_json(abi: String, response: &[u8], internal: bool)
-        -> Result<DecodedMessage> {
+    pub fn decode_unknown_function_response_from_bytes_json(
+        abi: String,
+        response: &[u8],
+        internal: bool,
+    ) -> Result<DecodedMessage> {
         let slice = Self::deserialize_tree_to_slice(response)?;
 
         Self::decode_unknown_function_response_json(abi, slice, internal)
     }
 
     /// Decodes output parameters returned by contract function call
-    pub fn decode_unknown_function_call_json(abi: String, response: SliceData, internal: bool)
-        -> Result<DecodedMessage> {
+    pub fn decode_unknown_function_call_json(
+        abi: String,
+        response: SliceData,
+        internal: bool,
+    ) -> Result<DecodedMessage> {
         ton_abi::json_abi::decode_unknown_function_call(abi, response, internal)
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
-    pub fn decode_unknown_function_call_from_bytes_json(abi: String, response: &[u8], internal: bool)
-        -> Result<DecodedMessage> {
+    pub fn decode_unknown_function_call_from_bytes_json(
+        abi: String,
+        response: &[u8],
+        internal: bool,
+    ) -> Result<DecodedMessage> {
         let slice = Self::deserialize_tree_to_slice(response)?;
 
         Self::decode_unknown_function_call_json(abi, slice, internal)
@@ -248,7 +291,12 @@ impl Contract {
     ) -> Result<SdkMessage> {
         // pack params into bag of cells via ABI
         let msg_body = ton_abi::encode_function_call(
-            params.abi, params.func, params.header, params.input, internal, key_pair,
+            params.abi,
+            params.func,
+            params.header,
+            params.input,
+            internal,
+            key_pair,
         )?;
 
         let msg = Self::create_message(address.clone(), msg_body.into())?;
@@ -270,13 +318,17 @@ impl Contract {
     ) -> Result<MessageToSign> {
         // pack params into bag of cells via ABI
         let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(
-            params.abi, params.func, params.header, params.input,
+            params.abi,
+            params.func,
+            params.header,
+            params.input,
         )?;
 
         let msg = Self::create_message(address, msg_body.into())?;
 
-        Self::serialize_message(&msg).map(|(msg_data, _id)| {
-            MessageToSign { message: msg_data, data_to_sign }
+        Self::serialize_message(&msg).map(|(msg_data, _id)| MessageToSign {
+            message: msg_data,
+            data_to_sign,
         })
     }
 
@@ -292,14 +344,22 @@ impl Contract {
         workchain_id: i32,
     ) -> Result<SdkMessage> {
         let msg_body = ton_abi::encode_function_call(
-            params.abi, params.func, params.header, params.input, false, key_pair)?;
+            params.abi,
+            params.func,
+            params.header,
+            params.input,
+            false,
+            key_pair,
+        )?;
 
         let cell = msg_body.into();
         let msg = Self::create_deploy_message(Some(cell), image, workchain_id)?;
 
-        let address = msg.dst().ok_or_else(|| error!(SdkError::InternalError {
-            msg: "No address in created deploy message".to_owned()
-        }))?;
+        let address = msg.dst().ok_or_else(|| {
+            error!(SdkError::InternalError {
+                msg: "No address in created deploy message".to_owned()
+            })
+        })?;
         let (body, id) = Self::serialize_message(&msg)?;
 
         Ok(SdkMessage {
@@ -312,10 +372,14 @@ impl Contract {
 
     // Packs given image and body into Message struct.
     // Returns message's bag of cells and identifier.
-    pub fn construct_deploy_message_with_body(image: ContractImage, body: Option<&[u8]>, workchain_id: i32) -> Result<TvmMessage> {
+    pub fn construct_deploy_message_with_body(
+        image: ContractImage,
+        body: Option<&[u8]>,
+        workchain_id: i32,
+    ) -> Result<TvmMessage> {
         let body_cell = match body {
             None => None,
-            Some(data) => Some(Self::deserialize_tree_to_slice(data)?)
+            Some(data) => Some(Self::deserialize_tree_to_slice(data)?),
         };
 
         Self::create_deploy_message(body_cell, image, workchain_id)
@@ -323,9 +387,10 @@ impl Contract {
 
     // Packs given image into Message struct.
     // Returns message's bag of cells and identifier.
-    pub fn construct_deploy_message_no_constructor(image: ContractImage, workchain_id: i32)
-        -> Result<TvmMessage>
-    {
+    pub fn construct_deploy_message_no_constructor(
+        image: ContractImage,
+        workchain_id: i32,
+    ) -> Result<TvmMessage> {
         Self::create_deploy_message(None, image, workchain_id)
     }
 
@@ -338,16 +403,20 @@ impl Contract {
         workchain_id: i32,
     ) -> Result<MessageToSign> {
         let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(
-            params.abi, params.func, params.header, params.input)?;
+            params.abi,
+            params.func,
+            params.header,
+            params.input,
+        )?;
 
         let cell = msg_body.into();
         let msg = Self::create_deploy_message(Some(cell), image, workchain_id)?;
 
-        Self::serialize_message(&msg).map(|(msg_data, _id)| {
-            MessageToSign { message: msg_data, data_to_sign }
+        Self::serialize_message(&msg).map(|(msg_data, _id)| MessageToSign {
+            message: msg_data,
+            data_to_sign,
         })
     }
-
 
     // Add sign to message, returned by `get_deploy_message_bytes_for_signing` or
     // `get_run_message_bytes_for_signing` function.
@@ -362,15 +431,18 @@ impl Contract {
 
         let mut message: TvmMessage = TvmMessage::construct_from(&mut slice)?;
 
-        let body = message.body()
-            .ok_or(error!(SdkError::InvalidData { msg: "No message body".to_owned() }))?;
+        let body = message.body().ok_or(error!(SdkError::InvalidData {
+            msg: "No message body".to_owned()
+        }))?;
 
         let signed_body = ton_abi::add_sign_to_function_call(abi, signature, public_key, body)?;
         message.set_body(signed_body.into());
 
-        let address = message.dst().ok_or_else(|| error!(SdkError::InternalError {
-            msg: "No address in signed message".to_owned()
-        }))?;
+        let address = message.dst().ok_or_else(|| {
+            error!(SdkError::InternalError {
+                msg: "No address in signed message".to_owned()
+            })
+        })?;
         let (body, id) = Self::serialize_message(&message)?;
 
         Ok(SdkMessage {
@@ -394,15 +466,18 @@ impl Contract {
 
         let mut message: TvmMessage = TvmMessage::construct_from(&mut slice)?;
 
-        let body = message.body()
-            .ok_or(error!(SdkError::InvalidData { msg: "No message body".to_owned() }))?;
+        let body = message.body().ok_or(error!(SdkError::InvalidData {
+            msg: "No message body".to_owned()
+        }))?;
 
         let signed_body = abi.add_sign_to_encoded_input(signature, public_key, body)?;
         message.set_body(signed_body.into());
 
-        let address = message.dst().ok_or_else(|| error!(SdkError::InternalError {
-            msg: "No address in signed message".to_owned()
-        }))?;
+        let address = message.dst().ok_or_else(|| {
+            error!(SdkError::InternalError {
+                msg: "No address in signed message".to_owned()
+            })
+        })?;
         let (body, id) = Self::serialize_message(&message)?;
 
         Ok(SdkMessage {
@@ -438,7 +513,10 @@ impl Contract {
 
     pub fn serialize_message(msg: &TvmMessage) -> Result<(Vec<u8>, MessageId)> {
         let cells = msg.write_to_new_cell()?.into();
-        Ok((ton_types::serialize_toc(&cells)?, (&cells.repr_hash().as_slice()[..]).into()))
+        Ok((
+            ton_types::serialize_toc(&cells)?,
+            (&cells.repr_hash().as_slice()[..]).into(),
+        ))
     }
 
     /// Deserializes tree of cells from byte array into `SliceData`
@@ -446,7 +524,9 @@ impl Contract {
         let mut response_cells = deserialize_cells_tree(&mut Cursor::new(data))?;
 
         if response_cells.len() != 1 {
-            bail!(SdkError::InvalidData { msg: "Deserialize message error".to_owned() } );
+            bail!(SdkError::InvalidData {
+                msg: "Deserialize message error".to_owned()
+            });
         }
 
         Ok(response_cells.remove(0).into())
@@ -455,9 +535,12 @@ impl Contract {
     pub fn get_dst_from_msg(msg: &[u8]) -> Result<MsgAddressInt> {
         let msg = Contract::deserialize_message(msg)?;
 
-        msg.dst().ok_or(SdkError::InvalidData {
-            msg: "Wrong message type (extOut)".to_owned()
-        }.into())
+        msg.dst().ok_or(
+            SdkError::InvalidData {
+                msg: "Wrong message type (extOut)".to_owned(),
+            }
+            .into(),
+        )
     }
 
     /// Deserializes TvmMessage from byte array
@@ -465,10 +548,14 @@ impl Contract {
         let mut root_cells = deserialize_cells_tree(&mut Cursor::new(message))?;
 
         if root_cells.len() != 1 {
-            bail!(SdkError::InvalidData { msg: "Deserialize message error".to_owned() } );
+            bail!(SdkError::InvalidData {
+                msg: "Deserialize message error".to_owned()
+            });
         }
 
-        Ok(TvmMessage::construct_from(&mut root_cells.remove(0).into())?)
+        Ok(TvmMessage::construct_from(
+            &mut root_cells.remove(0).into(),
+        )?)
     }
 
     pub fn now() -> u32 {
@@ -486,7 +573,7 @@ impl Contract {
             if Self::check_shard_match(shard.clone(), address)? {
                 return Ok(shard.clone());
             }
-        };
+        }
         Ok(Value::Null)
     }
 }

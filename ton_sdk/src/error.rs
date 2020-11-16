@@ -13,14 +13,9 @@
 
 #[derive(Debug, failure::Fail)]
 pub enum SdkError {
-
     #[fail(display = "Invalid data: {}", msg)]
-    InvalidData {
-        msg: String
-    },
+    InvalidData { msg: String },
 
     #[fail(display = "Internal error: {}", msg)]
-    InternalError {
-        msg: String
-    },
+    InternalError { msg: String },
 }
