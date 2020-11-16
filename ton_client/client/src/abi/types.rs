@@ -57,7 +57,7 @@ pub struct AbiFunction {
     pub inputs: Vec<AbiParam>,
     pub outputs: Vec<AbiParam>,
     #[serde(default)]
-    pub id: Option<u32>,
+    pub id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
@@ -65,7 +65,7 @@ pub struct AbiEvent {
     pub name: String,
     pub inputs: Vec<AbiParam>,
     #[serde(default)]
-    pub id: Option<u32>,
+    pub id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]

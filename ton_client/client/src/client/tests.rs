@@ -32,4 +32,5 @@ fn api_reference() {
         crate::client::get_api_reference_api().name
     )).unwrap();
     assert_ne!(api.api.modules.len(), 0);
+    assert_eq!(api.api.version, env!("CARGO_PKG_VERSION"));
 }
