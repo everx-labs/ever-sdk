@@ -91,16 +91,15 @@ pub fn build_info(_context: Arc<ClientContext>) -> ClientResult<ResultOfBuildInf
     )
 }
 
-#[derive(Serialize, Deserialize, Clone)]
-pub struct AppRequestParams<R: serde::Serialize> {
+#[derive(Serialize, Deserialize, ApiType, Clone)]
+pub struct AppRequestParams {
     pub app_request_id: u32,
-    pub object_ref: String,
-    pub request_data: R,
+    pub request_data: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 #[serde(tag="type")]
-pub enum RequestResult {
+pub enum AppRequestResult {
     Error { text: String },
     Ok { result: serde_json::Value }
 }
@@ -108,7 +107,7 @@ pub enum RequestResult {
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfResolveRequest {
     pub app_request_id: u32,
-    pub result: RequestResult,
+    pub result: AppRequestResult,
 }
 
 #[api_function]

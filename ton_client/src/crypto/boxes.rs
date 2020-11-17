@@ -70,12 +70,6 @@ pub async fn get_signing_box(
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
-pub struct ParamsOfRegisterSigningBox {
-    /// Application defined reference to signing box implementation.
-    pub signing_box_ref: String,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 pub struct ResultOfRegisterSigningBox {
     /// Handle of the signing box.
     pub handle: SigningBoxHandle,

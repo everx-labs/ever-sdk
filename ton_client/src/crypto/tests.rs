@@ -746,10 +746,10 @@ async fn test_signing_box() {
         .0;
 
     // external signing box uses keys box inside
-    let callback = move |request: crate::client::AppRequestParams<SigningBoxAppRequest>, _: u32| {
+    let callback = move |request: crate::client::AppRequestParams, _: u32| {
         let client = client_copy.clone();
         tokio::spawn(async move {
-            match request.request_data {
+            match serde_json::from_value(request.request_data).unwrap() {
                 SigningBoxAppRequest::GetPublicKey => {
                     let result: boxes::ResultOfSigningBoxGetPublicKey = client
                         .request_async(
@@ -763,7 +763,7 @@ async fn test_signing_box() {
                             "client.resolve_app_request",
                             crate::client::ParamsOfResolveRequest {
                                 app_request_id: request.app_request_id,
-                                result: crate::client::RequestResult::Ok { 
+                                result: crate::client::AppRequestResult::Ok { 
                                     result: json!(SigningBoxAppResponse::SigningBoxGetPublicKey { public_key: result.pubkey })
                                 }
                             },
@@ -783,7 +783,7 @@ async fn test_signing_box() {
                             "client.resolve_app_request",
                             crate::client::ParamsOfResolveRequest {
                                 app_request_id: request.app_request_id,
-                                result: crate::client::RequestResult::Ok { 
+                                result: crate::client::AppRequestResult::Ok { 
                                     result: json!(SigningBoxAppResponse::SigningBoxSign { signature: result.signature })
                                 }
                             },
@@ -796,9 +796,7 @@ async fn test_signing_box() {
 
     let external_box: boxes::ResultOfRegisterSigningBox = client.request_async_callback(
         "crypto.register_signing_box",
-        boxes::ParamsOfRegisterSigningBox {
-            signing_box_ref: "123".to_owned(),
-        },
+        (),
         callback
     ).await.unwrap();
 

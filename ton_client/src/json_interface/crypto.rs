@@ -12,10 +12,9 @@
  *
  */
 
- use super::request::Request;
  use crate::client::{AppObject, ClientContext};
  use crate::error::ClientResult;
- use crate::crypto::{Error, ParamsOfRegisterSigningBox, ResultOfRegisterSigningBox, SigningBox};
+ use crate::crypto::{Error, ResultOfRegisterSigningBox, SigningBox};
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 #[serde(tag="type")]
@@ -38,11 +37,11 @@ pub enum SigningBoxAppResponse {
 }
 
 struct ExternalSigningBox {
-    app_object: AppObject,
+    app_object: AppObject<SigningBoxAppRequest, SigningBoxAppResponse>,
 }
 
 impl ExternalSigningBox {
-    pub fn new(app_object: AppObject) -> Self {
+    pub fn new(app_object: AppObject<SigningBoxAppRequest, SigningBoxAppResponse>) -> Self {
         Self { app_object }
     }
 }
@@ -80,10 +79,7 @@ impl SigningBox for ExternalSigningBox {
 #[api_function]
 pub(crate) async fn register_signing_box(
     context: std::sync::Arc<ClientContext>,
-    params: ParamsOfRegisterSigningBox,
-    callback: std::sync::Arc<Request>,
+    app_object: AppObject<SigningBoxAppRequest, SigningBoxAppResponse>,
 ) -> ClientResult<ResultOfRegisterSigningBox> {
-    let app_object = AppObject::new(context.clone(), params.signing_box_ref, callback);
-    
     crate::crypto::register_signing_box(context, ExternalSigningBox::new(app_object)).await
 }

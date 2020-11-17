@@ -28,6 +28,8 @@ fn register_client(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::crypto::CryptoConfig>();
     module.register_type::<crate::abi::AbiConfig>();
     module.register_type::<crate::client::BuildInfoDependency>();
+    module.register_type::<crate::client::AppRequestParams>();
+    module.register_type::<crate::client::AppRequestResult>();
 
     module.register_sync_fn_without_args(
         crate::client::get_api_reference,
@@ -187,7 +189,7 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
 
     // Boxes
 
-    module.register_async_fn_with_callback(
+    module.register_async_fn_with_app_object_no_args(
         super::crypto::register_signing_box,
         super::crypto::register_signing_box_api,
     );
