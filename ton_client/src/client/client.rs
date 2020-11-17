@@ -158,3 +158,21 @@ impl Default for ClientConfig {
         }
     }
 }
+
+pub(crate)struct AppObject {
+    context: Arc<ClientContext>,
+    object_ref: String,
+    object_handler: Arc<Request>,
+}
+
+impl AppObject {
+    pub fn new(context: Arc<ClientContext>, object_ref: String, object_handler: Arc<Request>) -> Self {
+        Self { context, object_ref, object_handler }
+    }
+
+    pub async fn call<R: serde::de::DeserializeOwned>(
+        &self, params: impl serde::Serialize
+    ) -> ClientResult<R> {
+        self.context.app_request(&self.object_handler, self.object_ref.clone(), params).await
+    }
+}
