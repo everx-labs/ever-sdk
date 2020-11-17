@@ -261,6 +261,66 @@
           "description": null
         },
         {
+          "name": "ParamsOfAppRequest",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "app_request_id",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "request_data",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "AppRequestResult",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "Error",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "text",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Ok",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "result",
+                  "type": "Ref",
+                  "ref_name": "Value",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ResultOfGetApiReference",
           "type": "Struct",
           "struct_fields": [
@@ -310,6 +370,29 @@
               },
               "summary": " Fingerprint of the most important dependencies.",
               "description": " Fingerprint of the most important dependencies."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfResolveAppRequest",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "app_request_id",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "result",
+              "type": "Ref",
+              "ref_name": "client.AppRequestResult",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -405,6 +488,43 @@
               {
                 "type": "Ref",
                 "ref_name": "client.ResultOfBuildInfo"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "resolve_app_request",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "client.ParamsOfResolveAppRequest",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
               }
             ]
           },
@@ -1466,6 +1586,165 @@
               "type": "String",
               "summary": " Encrypted/decrypted data. Encoded with `base64`.",
               "description": " Encrypted/decrypted data. Encoded with `base64`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfRegisterSigningBox",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "handle",
+              "type": "Ref",
+              "ref_name": "crypto.SigningBoxHandle",
+              "summary": " Handle of the signing box.",
+              "description": " Handle of the signing box."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfAppSigningBox",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "GetPublicKey",
+              "type": "Struct",
+              "struct_fields": [],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Sign",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "unsigned",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfAppSigningBox",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "GetPublicKey",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "public_key",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Sign",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "signature",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfGetSigningBox",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "handle",
+              "type": "Ref",
+              "ref_name": "crypto.SigningBoxHandle",
+              "summary": " Handle of the signing box.",
+              "description": " Handle of the signing box."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfSigningBoxGetPublicKey",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "signing_box",
+              "type": "Ref",
+              "ref_name": "crypto.SigningBoxHandle",
+              "summary": " Signing Box handle.",
+              "description": " Signing Box handle."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfSigningBoxGetPublicKey",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "pubkey",
+              "type": "String",
+              "summary": " Public key of signing box. Encoded with hex",
+              "description": " Public key of signing box. Encoded with hex"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfSigningBoxSign",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "signing_box",
+              "type": "Ref",
+              "ref_name": "crypto.SigningBoxHandle",
+              "summary": " Signing Box handle.",
+              "description": " Signing Box handle."
+            },
+            {
+              "name": "unsigned",
+              "type": "String",
+              "summary": " Unsigned user data. Must be encoded with `base64`.",
+              "description": " Unsigned user data. Must be encoded with `base64`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfSigningBoxSign",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "signature",
+              "type": "String",
+              "summary": " Data signature. Encoded with `base64`.",
+              "description": " Data signature. Encoded with `base64`."
             }
           ],
           "summary": null,
@@ -2674,6 +2953,168 @@
             ]
           },
           "errors": null
+        },
+        {
+          "name": "register_signing_box",
+          "summary": " Register an application implemented signing box.",
+          "description": " Register an application implemented signing box.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "app_object",
+              "type": "Generic",
+              "generic_name": "AppObject",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "crypto.ParamsOfAppSigningBox"
+                },
+                {
+                  "type": "Ref",
+                  "ref_name": "crypto.ResultOfAppSigningBox"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "crypto.ResultOfRegisterSigningBox"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "get_signing_box",
+          "summary": " Gets a default signing box implementation.",
+          "description": " Gets a default signing box implementation.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "crypto.KeyPair",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "crypto.ResultOfGetSigningBox"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "signing_box_get_public_key",
+          "summary": " Returns public key of signing key pair.",
+          "description": " Returns public key of signing key pair.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "crypto.ParamsOfSigningBoxGetPublicKey",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "crypto.ResultOfSigningBoxGetPublicKey"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "signing_box_sign",
+          "summary": " Returns signed user data.",
+          "description": " Returns signed user data.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "crypto.ParamsOfSigningBoxSign",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "crypto.ResultOfSigningBoxSign"
+              }
+            ]
+          },
+          "errors": null
         }
       ]
     },
@@ -3432,8 +3873,8 @@
             {
               "name": "message",
               "type": "String",
-              "summary": " Unsigned message BOC. Must be encoded with `base64`.",
-              "description": " Unsigned message BOC. Must be encoded with `base64`."
+              "summary": " Unsigned message body BOC. Must be encoded with `base64`.",
+              "description": " Unsigned message body BOC. Must be encoded with `base64`."
             },
             {
               "name": "signature",
@@ -5776,12 +6217,6 @@
               "description": " Subscription handle. Must be closed with `unsubscribe`"
             }
           ],
-          "summary": null,
-          "description": null
-        },
-        {
-          "name": "unit",
-          "type": "None",
           "summary": null,
           "description": null
         },

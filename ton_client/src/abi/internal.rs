@@ -1,7 +1,9 @@
+use crate::ClientContext;
 use crate::abi::{Error, Signer};
-use crate::crypto::internal::{decode_public_key, sign_using_secret};
+use crate::crypto::internal::decode_public_key;
 use crate::encoding::hex_decode;
 use crate::error::ClientResult;
+use std::sync::Arc;
 use serde_json::Value;
 use ton_sdk::ContractImage;
 
@@ -43,18 +45,22 @@ pub(crate) fn add_sign_to_message_body(
     .map_err(|err| Error::attach_signature_failed(err))?)
 }
 
-pub(crate) fn result_of_encode_message(
+pub(crate) async fn result_of_encode_message(
+    context: Arc<ClientContext>,
     abi: &str,
     message: Vec<u8>,
     data_to_sign: Option<Vec<u8>>,
     signer: &Signer,
 ) -> ClientResult<(Vec<u8>, Option<String>)> {
-    if let Some(keys) = signer.resolve_keys()? {
-        if let Some(data_to_sign) = data_to_sign {
-            let secret = hex_decode(&format!("{}{}", &keys.secret, &keys.public))?;
-            let (_, signature) = sign_using_secret(&data_to_sign, &secret)?;
-            let message =
-                add_sign_to_message(abi, &signature, Some(&hex_decode(&keys.public)?), &message)?;
+    if let Some(unsigned) = &data_to_sign {
+        if let Some(signature) = signer.sign(context.clone(), unsigned).await? {
+            let pubkey = signer.resolve_public_key(context)
+                .await?
+                .map(|string| hex_decode(&string))
+                .transpose()?;
+            let message = add_sign_to_message(
+                abi, &signature, pubkey.as_ref().map(|vec| vec.as_slice()), &message
+            )?;
             return Ok((message, None));
         }
     }

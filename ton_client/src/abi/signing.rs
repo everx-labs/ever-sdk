@@ -1,7 +1,7 @@
-use crate::abi::Error;
-use crate::client;
+use crate::ClientContext;
 use crate::crypto::{KeyPair, SigningBoxHandle};
 use crate::error::ClientResult;
+use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 #[serde(tag = "type")]
@@ -29,25 +29,44 @@ impl Signer {
 }
 
 impl Signer {
-    pub fn resolve_keys(&self) -> ClientResult<Option<KeyPair>> {
+    pub async fn sign(&self, context: Arc<ClientContext>, data_to_sign: &[u8]) -> ClientResult<Option<Vec<u8>>> {
         match self {
             Signer::None => Ok(None),
-            Signer::Keys { keys } => Ok(Some(keys.clone())),
+            Signer::Keys { keys } => {
+                crate::crypto::internal::sign_using_keys(data_to_sign, &keys.decode()?)
+                    .map(|(_, sign)| Some(sign))
+            },
             Signer::External { .. } => Ok(None),
-            Signer::SigningBox { .. } => Err(Error::invalid_signer(
-                "Signing box can't provide secret key".into(),
-            )),
+            Signer::SigningBox { handle } => {
+                let result = crate::crypto::boxes::signing_box_sign(
+                    context,
+                    crate::crypto::boxes::ParamsOfSigningBoxSign {
+                        signing_box: handle.clone(),
+                        unsigned: base64::encode(data_to_sign)
+                    }
+                ).await?;
+
+                Some(crate::encoding::hex_decode(&result.signature))
+                    .transpose()
+            },
         }
     }
 
-    pub fn resolve_public_key(&self) -> ClientResult<Option<String>> {
+    pub async fn resolve_public_key(&self, context: Arc<ClientContext>) -> ClientResult<Option<String>> {
         match self {
             Signer::None => Ok(None),
             Signer::Keys { keys } => Ok(Some(keys.public.clone())),
             Signer::External { public_key } => Ok(Some(public_key.clone())),
-            Signer::SigningBox { .. } => Err(client::Error::not_implemented(
-                "Signing boxes doesn't supported yet",
-            )),
+            Signer::SigningBox { handle } => {
+                crate::crypto::boxes::signing_box_get_public_key(
+                    context,
+                    crate::crypto::boxes::ParamsOfSigningBoxGetPublicKey {
+                        signing_box: handle.clone()
+                    }
+                )
+                    .await
+                    .map(|result| Some(result.pubkey))
+            },
         }
     }
 }

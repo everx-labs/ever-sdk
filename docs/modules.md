@@ -7,6 +7,8 @@
 
 [build_info](mod_client.md#build_info) – Returns detailed information about this build.
 
+[resolve_app_request](mod_client.md#resolve_app_request)
+
 ## [crypto](mod_crypto.md) – Crypto functions.
 
 [factorize](mod_crypto.md#factorize) – Performs prime factorization – decomposition of a composite number into a product of smaller prime integers (factors). See [https://en.wikipedia.org/wiki/Integer_factorization]
@@ -72,6 +74,14 @@
 [hdkey_public_from_xprv](mod_crypto.md#hdkey_public_from_xprv) – Extracts the public key from the serialized extended private key
 
 [chacha20](mod_crypto.md#chacha20) – Performs symmetric `chacha20` encryption.
+
+[register_signing_box](mod_crypto.md#register_signing_box) – Register an application implemented signing box.
+
+[get_signing_box](mod_crypto.md#get_signing_box) – Gets a default signing box implementation.
+
+[signing_box_get_public_key](mod_crypto.md#signing_box_get_public_key) – Returns public key of signing key pair.
+
+[signing_box_sign](mod_crypto.md#signing_box_sign) – Returns signed user data.
 
 ## [abi](mod_abi.md) – Provides message encoding and decoding according to the ABI specification.
 

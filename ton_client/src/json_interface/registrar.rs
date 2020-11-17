@@ -13,11 +13,12 @@
  */
 
 use super::handlers::{
-    CallHandler, CallNoArgsHandler, SpawnHandler, SpawnHandlerCallback, SpawnNoArgsHandler,
+    CallHandler, CallNoArgsHandler, SpawnHandler, SpawnHandlerCallback, SpawnHandlerAppObject,
+    SpawnHandlerAppObjectNoArgs, SpawnNoArgsHandler,
 };
 use super::request::Request;
 use super::runtime::RuntimeHandlers;
-use crate::client::ClientContext;
+use crate::client::{AppObject, ClientContext};
 use crate::error::ClientResult;
 use api_info::{ApiModule, ApiType, Module};
 use serde::de::DeserializeOwned;
@@ -44,6 +45,11 @@ impl<'h> ModuleReg<'h> {
 
     pub fn register_type<T: ApiType>(&mut self) {
         let ty = T::api();
+        if let api_info::Type::None = ty.value {
+            if ty.name == "unit" {
+                return;
+            }
+        }
         if self
             .module
             .types
@@ -62,7 +68,7 @@ impl<'h> ModuleReg<'h> {
     ) where
         P: ApiType + Send + DeserializeOwned + 'static,
         R: ApiType + Send + Serialize + 'static,
-        F: Send + Future<Output = ClientResult<R>> + 'static,
+        F: Send + Future<Output=ClientResult<R>> + 'static,
     {
         self.register_type::<P>();
         self.register_type::<R>();
@@ -73,7 +79,7 @@ impl<'h> ModuleReg<'h> {
         self.handlers
             .register_async(name.clone(), Box::new(SpawnHandler::new(handler)));
         #[cfg(not(feature = "wasm"))]
-        self.handlers.register_sync(
+            self.handlers.register_sync(
             name,
             Box::new(CallHandler::new(move |context, params| {
                 context.clone().env.block_on(handler(context, params))
@@ -88,7 +94,7 @@ impl<'h> ModuleReg<'h> {
     ) where
         P: ApiType + Send + DeserializeOwned + 'static,
         R: ApiType + Send + Serialize + 'static,
-        F: Send + Future<Output = ClientResult<R>> + 'static,
+        F: Send + Future<Output=ClientResult<R>> + 'static,
     {
         self.register_type::<P>();
         self.register_type::<R>();
@@ -97,6 +103,49 @@ impl<'h> ModuleReg<'h> {
         self.module.functions.push(function);
         self.handlers
             .register_async(name.clone(), Box::new(SpawnHandlerCallback::new(handler)));
+    }
+
+    #[allow(dead_code)]
+    pub fn register_async_fn_with_app_object<P, R, F, AP, AR>(
+        &mut self,
+        handler: fn(context: std::sync::Arc<ClientContext>, params: P, app_object: AppObject<AP, AR>) -> F,
+        api: fn() -> api_info::Function,
+    ) where
+        P: ApiType + Send + DeserializeOwned + 'static,
+        R: ApiType + Send + Serialize + 'static,
+        AP: ApiType + Send + Serialize + 'static,
+        AR: ApiType + Send + DeserializeOwned + 'static,
+        F: Send + Future<Output=ClientResult<R>> + 'static,
+    {
+        self.register_type::<P>();
+        self.register_type::<R>();
+        self.register_type::<AP>();
+        self.register_type::<AR>();
+        let function = api();
+        let name = format!("{}.{}", self.module.name, function.name);
+        self.module.functions.push(function);
+        self.handlers
+            .register_async(name.clone(), Box::new(SpawnHandlerAppObject::new(handler)));
+    }
+
+    pub fn register_async_fn_with_app_object_no_args<R, F, AP, AR>(
+        &mut self,
+        handler: fn(context: std::sync::Arc<ClientContext>, app_object: AppObject<AP, AR>) -> F,
+        api: fn() -> api_info::Function,
+    ) where
+        R: ApiType + Send + Serialize + 'static,
+        AP: ApiType + Send + Serialize + 'static,
+        AR: ApiType + Send + DeserializeOwned + 'static,
+        F: Send + Future<Output=ClientResult<R>> + 'static,
+    {
+        self.register_type::<R>();
+        self.register_type::<AP>();
+        self.register_type::<AR>();
+        let function = api();
+        let name = format!("{}.{}", self.module.name, function.name);
+        self.module.functions.push(function);
+        self.handlers
+            .register_async(name.clone(), Box::new(SpawnHandlerAppObjectNoArgs::new(handler)));
     }
 
     pub fn register_sync_fn<P, R>(

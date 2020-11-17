@@ -11,9 +11,20 @@
 * limitations under the License.
 */
 
-use crate::error::ClientResult;
+use lockfree::map::Map as LockfreeMap;
+use serde::{Deserialize, Deserializer, Serialize, de::DeserializeOwned};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::collections::HashMap;
+use tokio::sync::{oneshot, Mutex};
 
+use super::{ParamsOfAppRequest, Error, AppRequestResult};
+use crate::error::ClientResult;
+use crate::abi::AbiConfig;
+use crate::crypto::CryptoConfig;
+use crate::crypto::boxes::SigningBox;
+use crate::json_interface::request::Request;
+use crate::json_interface::interop::ResponseType;
 use crate::net::{NetworkConfig, NodeClient};
 
 #[cfg(not(feature = "wasm"))]
@@ -21,15 +32,19 @@ use super::std_client_env::ClientEnv;
 #[cfg(feature = "wasm")]
 use super::wasm_client_env::ClientEnv;
 
-use super::Error;
-use crate::abi::AbiConfig;
-use crate::crypto::CryptoConfig;
-use serde::{Deserialize, Deserializer};
+#[derive(Default)]
+pub struct Boxes {
+    pub(crate) signing_boxes: LockfreeMap<u32, Box<dyn SigningBox + Send + Sync>>,
+}
 
 pub struct ClientContext {
     pub(crate) client: Option<NodeClient>,
     pub(crate) config: ClientConfig,
     pub(crate) env: Arc<ClientEnv>,
+    pub(crate) boxes: Boxes,
+    pub(crate) app_requests: Mutex<HashMap<u32, oneshot::Sender<AppRequestResult>>>,
+
+    next_id: AtomicU32,
 }
 
 impl ClientContext {
@@ -42,7 +57,7 @@ impl ClientContext {
     }
 
     pub fn new(config: ClientConfig) -> ClientResult<ClientContext> {
-        let env = Arc::new(super::ClientEnv::new()?);
+        let env = Arc::new(ClientEnv::new()?);
 
         let client = if !config.network.server_address.is_empty() {
             if config.network.out_of_sync_threshold > config.abi.message_expiration_timeout / 2 {
@@ -62,7 +77,48 @@ Note that default values are used if parameters are omitted in config"#,
             client,
             config,
             env,
+            boxes: Default::default(),
+            app_requests: Mutex::new(HashMap::new()),
+            next_id: AtomicU32::new(1),
         })
+    }
+
+    pub(crate) fn get_next_id(&self) -> u32 {
+        self.next_id.fetch_add(1, Ordering::Relaxed)
+    }
+
+    pub(crate) async fn app_request<R: DeserializeOwned>(
+        &self,
+        callback: &Request,
+        params: impl Serialize,
+    ) -> ClientResult<R> {
+        let id = self.get_next_id();
+        let (sender, receiver) = oneshot::channel();
+        self.app_requests
+            .lock()
+            .await
+            .insert(id, sender);
+
+        let params = serde_json::to_value(params)
+            .map_err(Error::cannot_serialize_result)?;
+        
+        callback.response(
+            ParamsOfAppRequest {
+                app_request_id: id,
+                request_data: params
+            },
+            ResponseType::AppRequest as u32);
+        let result = receiver
+            .await
+            .map_err(|err| Error::can_not_receive_request_result(err))?;
+
+        match result {
+            AppRequestResult::Error { text } => Err(Error::app_request_error(&text)),
+            AppRequestResult::Ok { result } => {
+                serde_json::from_value(result)
+                    .map_err(|err| Error::can_not_parse_request_result(err))
+            }
+        }
     }
 }
 
@@ -101,5 +157,25 @@ impl Default for ClientConfig {
             crypto: Default::default(),
             abi: Default::default(),
         }
+    }
+}
+
+pub(crate) struct AppObject<P: Serialize, R: DeserializeOwned> {
+    context: Arc<ClientContext>,
+    object_handler: Arc<Request>,
+    phantom: std::marker::PhantomData<(P, R)>
+}
+
+impl<P, R> AppObject<P, R>
+where
+    P: Serialize,
+    R: DeserializeOwned,
+{
+    pub fn new(context: Arc<ClientContext>, object_handler: Arc<Request>) -> AppObject<P, R> {
+        AppObject { context, object_handler, phantom: std::marker::PhantomData }
+    }
+
+    pub async fn call(&self, params: P) -> ClientResult<R> {
+        self.context.app_request(&self.object_handler, params).await
     }
 }
