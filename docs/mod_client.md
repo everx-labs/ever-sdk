@@ -35,8 +35,6 @@
 
 [ParamsOfResolveAppRequest](#ParamsOfResolveAppRequest)
 
-[unit](#unit)
-
 
 # Functions
 ## get_api_reference
@@ -267,11 +265,5 @@ type ParamsOfResolveAppRequest = {
 ```
 - `app_request_id`: _number_
 - `result`: _[AppRequestResult](mod_client.md#AppRequestResult)_
-
-
-## unit
-```ts
-type unit = void;
-```
 
 

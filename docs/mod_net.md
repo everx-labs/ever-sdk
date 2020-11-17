@@ -25,8 +25,6 @@
 
 [ResultOfSubscribeCollection](#ResultOfSubscribeCollection)
 
-[unit](#unit)
-
 [ParamsOfSubscribeCollection](#ParamsOfSubscribeCollection)
 
 
@@ -237,12 +235,6 @@ type ResultOfSubscribeCollection = {
 };
 ```
 - `handle`: _number_ – Subscription handle. Must be closed with `unsubscribe`
-
-
-## unit
-```ts
-type unit = void;
-```
 
 
 ## ParamsOfSubscribeCollection
