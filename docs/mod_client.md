@@ -8,6 +8,8 @@
 
 [build_info](#build_info) – Returns detailed information about this build.
 
+[resolve_app_request](#resolve_app_request)
+
 ## Types
 [ClientError](#ClientError)
 
@@ -21,11 +23,19 @@
 
 [BuildInfoDependency](#BuildInfoDependency)
 
+[ParamsOfAppRequest](#ParamsOfAppRequest)
+
+[AppRequestResult](#AppRequestResult)
+
 [ResultOfGetApiReference](#ResultOfGetApiReference)
 
 [ResultOfVersion](#ResultOfVersion)
 
 [ResultOfBuildInfo](#ResultOfBuildInfo)
+
+[ParamsOfResolveAppRequest](#ParamsOfResolveAppRequest)
+
+[unit](#unit)
 
 
 # Functions
@@ -77,6 +87,25 @@ function build_info(): Promise<ResultOfBuildInfo>;
 
 - `build_number`: _number_ – Build number assigned to this build by the CI.
 - `dependencies`: _[BuildInfoDependency](mod_client.md#BuildInfoDependency)[]_ – Fingerprint of the most important dependencies.
+
+
+## resolve_app_request
+
+```ts
+type ParamsOfResolveAppRequest = {
+    app_request_id: number,
+    result: AppRequestResult
+};
+
+function resolve_app_request(
+    params: ParamsOfResolveAppRequest,
+): Promise<void>;
+```
+### Parameters
+- `app_request_id`: _number_
+- `result`: _[AppRequestResult](mod_client.md#AppRequestResult)_
+### Result
+
 
 
 # Types
@@ -166,6 +195,40 @@ type BuildInfoDependency = {
 - `git_commit`: _string_ – Git commit hash of the related repository.
 
 
+## ParamsOfAppRequest
+```ts
+type ParamsOfAppRequest = {
+    app_request_id: number,
+    request_data: any
+};
+```
+- `app_request_id`: _number_
+- `request_data`: _any_
+
+
+## AppRequestResult
+```ts
+type AppRequestResult = {
+    type: 'Error'
+    text: string
+} | {
+    type: 'Ok'
+    result: any
+};
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'Error'_
+
+
+- `text`: _string_
+
+When _type_ is _'Ok'_
+
+
+- `result`: _any_
+
+
 ## ResultOfGetApiReference
 ```ts
 type ResultOfGetApiReference = {
@@ -193,5 +256,22 @@ type ResultOfBuildInfo = {
 ```
 - `build_number`: _number_ – Build number assigned to this build by the CI.
 - `dependencies`: _[BuildInfoDependency](mod_client.md#BuildInfoDependency)[]_ – Fingerprint of the most important dependencies.
+
+
+## ParamsOfResolveAppRequest
+```ts
+type ParamsOfResolveAppRequest = {
+    app_request_id: number,
+    result: AppRequestResult
+};
+```
+- `app_request_id`: _number_
+- `result`: _[AppRequestResult](mod_client.md#AppRequestResult)_
+
+
+## unit
+```ts
+type unit = void;
+```
 
 

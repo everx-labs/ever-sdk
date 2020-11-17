@@ -134,7 +134,7 @@ function attach_signature_to_message_body(
 ### Parameters
 - `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI
 - `public_key`: _string_ – Public key. Must be encoded with `hex`.
-- `message`: _string_ – Unsigned message BOC. Must be encoded with `base64`.
+- `message`: _string_ – Unsigned message body BOC. Must be encoded with `base64`.
 - `signature`: _string_ – Signature. Must be encoded with `hex`.
 ### Result
 
@@ -699,7 +699,7 @@ type ParamsOfAttachSignatureToMessageBody = {
 ```
 - `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI
 - `public_key`: _string_ – Public key. Must be encoded with `hex`.
-- `message`: _string_ – Unsigned message BOC. Must be encoded with `base64`.
+- `message`: _string_ – Unsigned message body BOC. Must be encoded with `base64`.
 - `signature`: _string_ – Signature. Must be encoded with `hex`.
 
 
