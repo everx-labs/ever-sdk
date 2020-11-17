@@ -29,7 +29,7 @@ mod tests;
 
 pub use crate::crypto::boxes::{
     get_signing_box, register_signing_box, signing_box_get_public_key, signing_box_sign,
-    ParamsOfRegisterSigningBox, ParamsOfSigningBoxGetPublicKey, ParamsOfSigningBoxSign,
+    ParamsOfSigningBoxGetPublicKey, ParamsOfSigningBoxSign,
     ResultOfGetSigningBox, ResultOfRegisterSigningBox, ResultOfSigningBoxGetPublicKey,
     ResultOfSigningBoxSign, SigningBox, SigningBoxHandle
 };

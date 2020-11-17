@@ -91,30 +91,29 @@ pub fn build_info(_context: Arc<ClientContext>) -> ClientResult<ResultOfBuildInf
     )
 }
 
-#[derive(Serialize, Deserialize, Clone)]
-pub struct AppRequestParams<R: serde::Serialize> {
+#[derive(Serialize, Deserialize, ApiType, Clone)]
+pub struct ParamsOfAppRequest {
     pub app_request_id: u32,
-    pub object_ref: String,
-    pub request_data: R,
+    pub request_data: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 #[serde(tag="type")]
-pub enum RequestResult {
+pub enum AppRequestResult {
     Error { text: String },
     Ok { result: serde_json::Value }
 }
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
-pub struct ParamsOfResolveRequest {
+pub struct ParamsOfResolveAppRequest {
     pub app_request_id: u32,
-    pub result: RequestResult,
+    pub result: AppRequestResult,
 }
 
 #[api_function]
 pub async fn resolve_app_request(
     context: std::sync::Arc<ClientContext>,
-    params: ParamsOfResolveRequest,
+    params: ParamsOfResolveAppRequest,
 ) -> ClientResult<()> {
     let request_id = params.app_request_id;
     let sender = context.app_requests

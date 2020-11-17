@@ -12,13 +12,13 @@
 */
 
 use lockfree::map::Map as LockfreeMap;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize, de::DeserializeOwned};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::collections::HashMap;
 use tokio::sync::{oneshot, Mutex};
 
-use super::{AppRequestParams, Error, RequestResult};
+use super::{ParamsOfAppRequest, Error, AppRequestResult};
 use crate::error::ClientResult;
 use crate::abi::AbiConfig;
 use crate::crypto::CryptoConfig;
@@ -42,7 +42,7 @@ pub struct ClientContext {
     pub(crate) config: ClientConfig,
     pub(crate) env: Arc<ClientEnv>,
     pub(crate) boxes: Boxes,
-    pub(crate) app_requests: Mutex<HashMap<u32, oneshot::Sender<RequestResult>>>,
+    pub(crate) app_requests: Mutex<HashMap<u32, oneshot::Sender<AppRequestResult>>>,
 
     next_id: AtomicU32,
 }
@@ -87,11 +87,10 @@ Note that default values are used if parameters are omitted in config"#,
         self.next_id.fetch_add(1, Ordering::Relaxed)
     }
 
-    pub(crate) async fn app_request<R: serde::de::DeserializeOwned>(
+    pub(crate) async fn app_request<R: DeserializeOwned>(
         &self,
         callback: &Request,
-        object_ref: String,
-        params: impl serde::Serialize,
+        params: impl Serialize,
     ) -> ClientResult<R> {
         let id = self.get_next_id();
         let (sender, receiver) = oneshot::channel();
@@ -99,11 +98,13 @@ Note that default values are used if parameters are omitted in config"#,
             .lock()
             .await
             .insert(id, sender);
+
+        let params = serde_json::to_value(params)
+            .map_err(Error::cannot_serialize_result)?;
         
         callback.response(
-            AppRequestParams {
+            ParamsOfAppRequest {
                 app_request_id: id,
-                object_ref,
                 request_data: params
             },
             ResponseType::AppRequest as u32);
@@ -112,8 +113,8 @@ Note that default values are used if parameters are omitted in config"#,
             .map_err(|err| Error::can_not_receive_request_result(err))?;
 
         match result {
-            RequestResult::Error { text } => Err(Error::app_request_error(&text)),
-            RequestResult::Ok { result } => {
+            AppRequestResult::Error { text } => Err(Error::app_request_error(&text)),
+            AppRequestResult::Ok { result } => {
                 serde_json::from_value(result)
                     .map_err(|err| Error::can_not_parse_request_result(err))
             }
@@ -159,20 +160,22 @@ impl Default for ClientConfig {
     }
 }
 
-pub(crate)struct AppObject {
+pub(crate) struct AppObject<P: Serialize, R: DeserializeOwned> {
     context: Arc<ClientContext>,
-    object_ref: String,
     object_handler: Arc<Request>,
+    phantom: std::marker::PhantomData<(P, R)>
 }
 
-impl AppObject {
-    pub fn new(context: Arc<ClientContext>, object_ref: String, object_handler: Arc<Request>) -> Self {
-        Self { context, object_ref, object_handler }
+impl<P, R> AppObject<P, R>
+where
+    P: Serialize,
+    R: DeserializeOwned,
+{
+    pub fn new(context: Arc<ClientContext>, object_handler: Arc<Request>) -> AppObject<P, R> {
+        AppObject { context, object_handler, phantom: std::marker::PhantomData }
     }
 
-    pub async fn call<R: serde::de::DeserializeOwned>(
-        &self, params: impl serde::Serialize
-    ) -> ClientResult<R> {
-        self.context.app_request(&self.object_handler, self.object_ref.clone(), params).await
+    pub async fn call(&self, params: P) -> ClientResult<R> {
+        self.context.app_request(&self.object_handler, params).await
     }
 }
