@@ -397,12 +397,6 @@
           ],
           "summary": null,
           "description": null
-        },
-        {
-          "name": "unit",
-          "type": "None",
-          "summary": null,
-          "description": null
         }
       ],
       "functions": [
@@ -6223,12 +6217,6 @@
               "description": " Subscription handle. Must be closed with `unsubscribe`"
             }
           ],
-          "summary": null,
-          "description": null
-        },
-        {
-          "name": "unit",
-          "type": "None",
           "summary": null,
           "description": null
         },

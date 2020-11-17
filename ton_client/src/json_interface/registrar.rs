@@ -45,6 +45,11 @@ impl<'h> ModuleReg<'h> {
 
     pub fn register_type<T: ApiType>(&mut self) {
         let ty = T::api();
+        if let api_info::Type::None = ty.value {
+            if ty.name == "unit" {
+                return;
+            }
+        }
         if self
             .module
             .types
@@ -63,7 +68,7 @@ impl<'h> ModuleReg<'h> {
     ) where
         P: ApiType + Send + DeserializeOwned + 'static,
         R: ApiType + Send + Serialize + 'static,
-        F: Send + Future<Output = ClientResult<R>> + 'static,
+        F: Send + Future<Output=ClientResult<R>> + 'static,
     {
         self.register_type::<P>();
         self.register_type::<R>();
@@ -74,7 +79,7 @@ impl<'h> ModuleReg<'h> {
         self.handlers
             .register_async(name.clone(), Box::new(SpawnHandler::new(handler)));
         #[cfg(not(feature = "wasm"))]
-        self.handlers.register_sync(
+            self.handlers.register_sync(
             name,
             Box::new(CallHandler::new(move |context, params| {
                 context.clone().env.block_on(handler(context, params))
@@ -89,7 +94,7 @@ impl<'h> ModuleReg<'h> {
     ) where
         P: ApiType + Send + DeserializeOwned + 'static,
         R: ApiType + Send + Serialize + 'static,
-        F: Send + Future<Output = ClientResult<R>> + 'static,
+        F: Send + Future<Output=ClientResult<R>> + 'static,
     {
         self.register_type::<P>();
         self.register_type::<R>();
@@ -110,7 +115,7 @@ impl<'h> ModuleReg<'h> {
         R: ApiType + Send + Serialize + 'static,
         AP: ApiType + Send + Serialize + 'static,
         AR: ApiType + Send + DeserializeOwned + 'static,
-        F: Send + Future<Output = ClientResult<R>> + 'static,
+        F: Send + Future<Output=ClientResult<R>> + 'static,
     {
         self.register_type::<P>();
         self.register_type::<R>();
@@ -131,7 +136,7 @@ impl<'h> ModuleReg<'h> {
         R: ApiType + Send + Serialize + 'static,
         AP: ApiType + Send + Serialize + 'static,
         AR: ApiType + Send + DeserializeOwned + 'static,
-        F: Send + Future<Output = ClientResult<R>> + 'static,
+        F: Send + Future<Output=ClientResult<R>> + 'static,
     {
         self.register_type::<R>();
         self.register_type::<AP>();
