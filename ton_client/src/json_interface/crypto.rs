@@ -18,7 +18,7 @@
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 #[serde(tag="type")]
-pub enum SigningBoxAppRequest {
+pub enum ParamsOfAppSigningBox {
     GetPublicKey,
     Sign {
         unsigned: String,
@@ -27,21 +27,21 @@ pub enum SigningBoxAppRequest {
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 #[serde(tag="type")]
-pub enum SigningBoxAppResponse {
-    SigningBoxGetPublicKey {
+pub enum ResultOfAppSigningBox {
+    GetPublicKey {
         public_key: String,
     },
-    SigningBoxSign {
+    Sign {
         signature: String,
     },
 }
 
 struct ExternalSigningBox {
-    app_object: AppObject<SigningBoxAppRequest, SigningBoxAppResponse>,
+    app_object: AppObject<ParamsOfAppSigningBox, ResultOfAppSigningBox>,
 }
 
 impl ExternalSigningBox {
-    pub fn new(app_object: AppObject<SigningBoxAppRequest, SigningBoxAppResponse>) -> Self {
+    pub fn new(app_object: AppObject<ParamsOfAppSigningBox, ResultOfAppSigningBox>) -> Self {
         Self { app_object }
     }
 }
@@ -49,10 +49,10 @@ impl ExternalSigningBox {
 #[async_trait::async_trait]
 impl SigningBox for ExternalSigningBox {
     async fn get_public_key(&self) -> ClientResult<Vec<u8>> {
-        let response = self.app_object.call(SigningBoxAppRequest::GetPublicKey).await?;
+        let response = self.app_object.call(ParamsOfAppSigningBox::GetPublicKey).await?;
 
         match response {
-            SigningBoxAppResponse::SigningBoxGetPublicKey { public_key } => {
+            ResultOfAppSigningBox::GetPublicKey { public_key } => {
                crate::encoding::hex_decode(&public_key)
             },
             _ => Err(Error::unexpected_callback_response(
@@ -61,12 +61,12 @@ impl SigningBox for ExternalSigningBox {
     }
 
     async fn sign(&self, unsigned: &[u8]) -> ClientResult<Vec<u8>> {
-        let response = self.app_object.call(SigningBoxAppRequest::Sign { 
+        let response = self.app_object.call(ParamsOfAppSigningBox::Sign { 
             unsigned: base64::encode(unsigned)
         }).await?;
 
         match response {
-            SigningBoxAppResponse::SigningBoxSign { signature: signed } => {
+            ResultOfAppSigningBox::Sign { signature: signed } => {
                crate::encoding::hex_decode(&signed)
             },
             _ => Err(Error::unexpected_callback_response(
@@ -79,7 +79,7 @@ impl SigningBox for ExternalSigningBox {
 #[api_function]
 pub(crate) async fn register_signing_box(
     context: std::sync::Arc<ClientContext>,
-    app_object: AppObject<SigningBoxAppRequest, SigningBoxAppResponse>,
+    app_object: AppObject<ParamsOfAppSigningBox, ResultOfAppSigningBox>,
 ) -> ClientResult<ResultOfRegisterSigningBox> {
     crate::crypto::register_signing_box(context, ExternalSigningBox::new(app_object)).await
 }

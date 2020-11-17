@@ -18,7 +18,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::collections::HashMap;
 use tokio::sync::{oneshot, Mutex};
 
-use super::{AppRequestParams, Error, AppRequestResult};
+use super::{ParamsOfAppRequest, Error, AppRequestResult};
 use crate::error::ClientResult;
 use crate::abi::AbiConfig;
 use crate::crypto::CryptoConfig;
@@ -103,7 +103,7 @@ Note that default values are used if parameters are omitted in config"#,
             .map_err(Error::cannot_serialize_result)?;
         
         callback.response(
-            AppRequestParams {
+            ParamsOfAppRequest {
                 app_request_id: id,
                 request_data: params
             },

@@ -26,7 +26,7 @@ use crate::crypto::nacl::{
     ResultOfNaclSignDetached, ResultOfNaclSignOpen,
 };
 use crate::crypto::{ParamsOfChaCha20, ResultOfChaCha20};
-use crate::json_interface::crypto::{SigningBoxAppRequest, SigningBoxAppResponse};
+use crate::json_interface::crypto::{ParamsOfAppSigningBox, ResultOfAppSigningBox};
 use crate::tests::TestClient;
 use super::*;
 
@@ -746,11 +746,11 @@ async fn test_signing_box() {
         .0;
 
     // external signing box uses keys box inside
-    let callback = move |request: crate::client::AppRequestParams, _: u32| {
+    let callback = move |request: crate::client::ParamsOfAppRequest, _: u32| {
         let client = client_copy.clone();
         tokio::spawn(async move {
             match serde_json::from_value(request.request_data).unwrap() {
-                SigningBoxAppRequest::GetPublicKey => {
+                ParamsOfAppSigningBox::GetPublicKey => {
                     let result: boxes::ResultOfSigningBoxGetPublicKey = client
                         .request_async(
                             "crypto.signing_box_get_public_key",
@@ -761,15 +761,15 @@ async fn test_signing_box() {
                     client
                         .request_async::<_, ()>(
                             "client.resolve_app_request",
-                            crate::client::ParamsOfResolveRequest {
+                            crate::client::ParamsOfResolveAppRequest {
                                 app_request_id: request.app_request_id,
                                 result: crate::client::AppRequestResult::Ok { 
-                                    result: json!(SigningBoxAppResponse::SigningBoxGetPublicKey { public_key: result.pubkey })
+                                    result: json!(ResultOfAppSigningBox::GetPublicKey { public_key: result.pubkey })
                                 }
                             },
                         ).await.unwrap();
                 },
-                SigningBoxAppRequest::Sign { unsigned } => {
+                ParamsOfAppSigningBox::Sign { unsigned } => {
                     let result: boxes::ResultOfSigningBoxSign = client
                         .request_async(
                             "crypto.signing_box_sign",
@@ -781,10 +781,10 @@ async fn test_signing_box() {
                     client
                         .request_async::<_, ()>(
                             "client.resolve_app_request",
-                            crate::client::ParamsOfResolveRequest {
+                            crate::client::ParamsOfResolveAppRequest {
                                 app_request_id: request.app_request_id,
                                 result: crate::client::AppRequestResult::Ok { 
-                                    result: json!(SigningBoxAppResponse::SigningBoxSign { signature: result.signature })
+                                    result: json!(ResultOfAppSigningBox::Sign { signature: result.signature })
                                 }
                             },
                         ).await.unwrap();
