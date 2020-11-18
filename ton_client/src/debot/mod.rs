@@ -16,8 +16,6 @@ mod browser;
 mod context;
 mod debot_abi;
 mod dengine;
-mod drequest;
-mod dresponse;
 mod errors;
 mod routines;
 #[cfg(test)]
@@ -27,32 +25,18 @@ pub use action::DAction;
 pub use browser::BrowserCallbacks;
 pub use context::{DContext, STATE_EXIT, STATE_ZERO};
 pub use dengine::DEngine;
-pub use drequest::DebotBrowserRequest;
-pub use dresponse::DebotBrowserResponse;
 
 use crate::error::ClientResult;
-use crate::json_interface::request::Request;
 use crate::ClientContext;
+use crate::client::AppObject;
+use crate::crypto::KeyPair;
 use adapter::DebotBrowserAdapter;
 use errors::{error, ErrorCode};
-use std::collections::HashMap;
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
-pub type DebotHandle = u32;
-
-pub struct DebotContext {
-    handles: HashMap<DebotHandle, DEngine>,
-    next_handle: DebotHandle,
-}
-
-impl DebotContext {
-    pub fn new() -> Self {
-        DebotContext {
-            handles: HashMap::new(),
-            next_handle: 1,
-        }
-    }
-}
+#[derive(Serialize, Deserialize, Default, ApiType)]
+pub struct DebotHandle(u32);
 
 #[derive(Serialize, Deserialize, Default, ApiType)]
 pub struct ParamsOfDebotStart {
@@ -73,9 +57,6 @@ pub struct ParamsOfDebotExecute {
     pub action: DAction,
 }
 
-#[derive(Serialize, Deserialize, Default, ApiType)]
-pub struct ResultOfDebotExecute {}
-
 /*
 pub struct ParamsOfDebotFetch {
 
@@ -86,32 +67,51 @@ pub struct ResultOfDebotFetch {
 }
 */
 
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+pub enum ResultOfAppDebotBrowser {
+    Input { value: String },
+    LoadKey { keys: KeyPair },
+    InvokeDebot,
+}
+
+#[derive(Serialize, Deserialize, Clone, ApiType)]
+pub enum ParamsOfAppDebotBrowser {
+    Log {
+        msg: String,
+    },
+    Switch {
+        ctx_id: u8,
+    },
+    ShowAction {
+        action: DAction,
+    },
+    Input {
+        prefix: String,
+    },
+    LoadKey,
+    InvokeDebot {
+        debot_addr: String,
+        action: DAction,
+    },
+}
+
 #[api_function]
-pub async fn debot_start(
+pub(crate) async fn debot_start(
     context: Arc<ClientContext>,
     params: ParamsOfDebotStart,
-    callback: Arc<Request>,
+    app_object: AppObject<ParamsOfAppDebotBrowser, ResultOfAppDebotBrowser>,
 ) -> ClientResult<ResultOfDebotStart> {
-    let context_copy = context.clone();
-    let callback = move |request| {
-        let callback = callback.clone();
-        let context = context_copy.clone();
-        async move { context.app_request(&callback, request).await }
-    };
-
-    let browser_callbacks = Box::new(DebotBrowserAdapter::new(callback, params.app_ref));
+    let browser_callbacks = Box::new(DebotBrowserAdapter::new(app_object));
     let mut dengine = DEngine::new(params.address, params.abi, &params.url, browser_callbacks);
     dengine
         .start()
         .await
         .map_err(|e| error(ErrorCode::DebotStartFailed, e))?;
 
-    let mut ctx = context.debot_ctx.write().await;
-    ctx.handles.insert(ctx.next_handle, dengine);
-    let debot_handle = ctx.next_handle;
-    ctx.next_handle += 1;
+    let handle = context.get_next_id();
+    context.debots.insert(handle, Mutex::new(dengine));
 
-    Ok(ResultOfDebotStart { debot_handle })
+    Ok(ResultOfDebotStart { debot_handle: DebotHandle(handle) })
 }
 
 #[api_function]
@@ -119,11 +119,15 @@ pub async fn debot_execute_action(
     context: Arc<ClientContext>,
     params: ParamsOfDebotExecute,
 ) -> ClientResult<()> {
-    let mut ctx = context.debot_ctx.write().await;
-    let dengine = ctx.handles.get_mut(&params.debot_handle).ok_or(error(
+    let mutex = context.debots.get(&params.debot_handle.0).ok_or(error(
         ErrorCode::DebotInvalidHandle,
         "debot handle is invalid".to_string(),
     ))?;
+    let mut dengine = mutex
+        .1
+        .lock()
+        .await;
+    
     dengine
         .execute_action(&params.action)
         .await

@@ -28,6 +28,7 @@ pub enum ResponseType {
     Error = 1,
     Nop = 2,
     AppRequest = 3,
+    AppNotify = 4,
     Custom = 100,
 }
 

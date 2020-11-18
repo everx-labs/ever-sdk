@@ -140,7 +140,7 @@ impl DEngine {
             (ver >> 16) as u8,
             (ver >> 8) as u8,
             ver as u8
-        ));
+        )).await;
 
         self.update_options().await?;
         let mut result = self.run_debot_get("fetch", None).await?;
@@ -165,7 +165,8 @@ impl DEngine {
             Ok(_) => self.switch_state(act.to).await,
             Err(e) => {
                 self.browser
-                    .log(format!("Action failed: {}. Return to previous state.\n", e));
+                    .log(format!("Action failed: {}. Return to previous state.\n", e))
+                    .await;
                 self.switch_state(self.prev_state).await
             }
         }
@@ -196,7 +197,7 @@ impl DEngine {
                 debug!("sendmsg: {}", a.name);
                 let keys = if a.sign_by_user() {
                     let mut keys = KeyPair::new(String::new(), String::new());
-                    self.browser.load_key(&mut keys);
+                    self.browser.load_key(&mut keys).await;
                     Some(keys)
                 } else {
                     None
@@ -207,7 +208,7 @@ impl DEngine {
                     None
                 };
                 let result = self.run_sendmsg(&a.name, args, keys).await?;
-                self.browser.log(format!("Transaction succeeded."));
+                self.browser.log(format!("Transaction succeeded.")).await;
                 result.map(|r| self.browser.log(format!("Result: {}", r)));
                 Ok(None)
             }
@@ -244,7 +245,7 @@ impl DEngine {
                 } else {
                     a.name.clone()
                 };
-                self.browser.log(label);
+                self.browser.log(label).await;
                 Ok(None)
             }
             AcType::Goto => {
@@ -292,7 +293,7 @@ impl DEngine {
             state_to = self.prev_state;
         }
         if state_to == STATE_EXIT {
-            self.browser.switch(STATE_EXIT);
+            self.browser.switch(STATE_EXIT).await;
         } else if state_to != self.curr_state {
             let mut instant_switch = true;
             self.prev_state = self.curr_state;
@@ -305,16 +306,17 @@ impl DEngine {
                     .find(|ctx| ctx.id == state_to)
                     .map(|ctx| ctx.clone());
                 if let Some(ctx) = jump_to_ctx {
-                    self.browser.switch(state_to);
+                    self.browser.switch(state_to).await;
                     self.browser.log(ctx.desc.clone()).await;
                     instant_switch = self.enumerate_actions(ctx).await?;
                     state_to = self.curr_state;
                 } else if state_to == STATE_EXIT {
-                    self.browser.switch(STATE_EXIT);
+                    self.browser.switch(STATE_EXIT).await;
                     instant_switch = false;
                 } else {
                     self.browser
-                        .log(format!("Debot context #{} not found. Exit.", state_to));
+                        .log(format!("Debot context #{} not found. Exit.", state_to))
+                        .await;
                     instant_switch = false;
                 }
                 debug!(
@@ -335,7 +337,7 @@ impl DEngine {
             while let Some(act) = sub_actions.pop_front() {
                 if act.is_instant() {
                     if act.desc.len() != 0 {
-                        self.browser.log(act.desc.clone());
+                        self.browser.log(act.desc.clone()).await;
                     }
                     self.handle_action(&act).await?.and_then(|vec| {
                         vec.iter().for_each(|a| sub_actions.push_back(a.clone()));
@@ -356,7 +358,7 @@ impl DEngine {
                 } else if act.is_engine_call() {
                     self.handle_action(&act).await?;
                 } else {
-                    self.browser.show_action(act);
+                    self.browser.show_action(act).await;
                 }
             }
         }
@@ -427,7 +429,7 @@ impl DEngine {
     }
 
     async fn run_action(&mut self, action: &DAction) -> Result<Option<Vec<DAction>>, String> {
-        let args = self.query_action_args(action)?;
+        let args = self.query_action_args(action).await?;
 
         let output = self.run_debot(&action.name, args).await?;
 
@@ -539,7 +541,7 @@ impl DEngine {
         Ok(())
     }
 
-    fn query_action_args(&self, act: &DAction) -> Result<Option<JsonValue>, String> {
+    async fn query_action_args(&self, act: &DAction) -> Result<Option<JsonValue>, String> {
         let args: Option<JsonValue> = if act.misc != /*empty cell*/"te6ccgEBAQEAAgAAAA==" {
             Some(json!({ "misc": act.misc }).into())
         } else {
@@ -559,7 +561,7 @@ impl DEngine {
                 let arg_name = arg["name"].as_str().unwrap();
                 let prefix = "".to_owned();
                 let mut value = String::new();
-                self.browser.input(&prefix, &mut value);
+                self.browser.input(&prefix, &mut value).await;
                 if arg["type"].as_str().unwrap() == "bytes" {
                     value = hex::encode(value.as_bytes());
                 }

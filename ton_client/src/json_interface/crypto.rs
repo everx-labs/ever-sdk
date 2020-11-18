@@ -12,9 +12,9 @@
  *
  */
 
- use crate::client::{AppObject, ClientContext};
+ use crate::client::{AppObject, ClientContext, Error};
  use crate::error::ClientResult;
- use crate::crypto::{Error, ResultOfRegisterSigningBox, SigningBox};
+ use crate::crypto::{ResultOfRegisterSigningBox, SigningBox};
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 #[serde(tag="type")]
@@ -56,7 +56,7 @@ impl SigningBox for ExternalSigningBox {
                crate::encoding::hex_decode(&public_key)
             },
             _ => Err(Error::unexpected_callback_response(
-                "SigningBoxResponse::SigningBoxGetPublicKey", &response))
+                "SigningBoxGetPublicKey", &response))
         }
     }
 
@@ -70,7 +70,7 @@ impl SigningBox for ExternalSigningBox {
                crate::encoding::hex_decode(&signed)
             },
             _ => Err(Error::unexpected_callback_response(
-                "SigningBoxResponse::SigningBoxSign", &response))
+                "SigningBoxSign", &response))
         }
     }
 }

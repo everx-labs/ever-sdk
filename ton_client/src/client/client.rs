@@ -14,7 +14,6 @@
 use lockfree::map::Map as LockfreeMap;
 use serde::{Deserialize, Deserializer, Serialize, de::DeserializeOwned};
 use std::sync::Arc;
-use crate::debot::DebotContext;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::collections::HashMap;
 use tokio::sync::{oneshot, Mutex};
@@ -24,6 +23,7 @@ use crate::error::ClientResult;
 use crate::abi::AbiConfig;
 use crate::crypto::CryptoConfig;
 use crate::crypto::boxes::SigningBox;
+use crate::debot::DEngine;
 use crate::json_interface::request::Request;
 use crate::json_interface::interop::ResponseType;
 use crate::net::{NetworkConfig, NodeClient};
@@ -42,7 +42,7 @@ pub struct ClientContext {
     pub(crate) client: Option<NodeClient>,
     pub(crate) config: ClientConfig,
     pub(crate) env: Arc<ClientEnv>,
-    pub(crate) debot_ctx: tokio::sync::RwLock<DebotContext>
+    pub(crate) debots: LockfreeMap<u32, Mutex<DEngine>>,
     pub(crate) boxes: Boxes,
     pub(crate) app_requests: Mutex<HashMap<u32, oneshot::Sender<AppRequestResult>>>,
 
@@ -75,13 +75,11 @@ Note that default values are used if parameters are omitted in config"#,
             None
         };
 
-        let debot_ctx = tokio::sync::RwLock::new(DebotContext::new());
-
         Ok(Self {
             client,
             config,
             env,
-            debot_ctx,
+            debots: LockfreeMap::new(),
             boxes: Default::default(),
             app_requests: Mutex::new(HashMap::new()),
             next_id: AtomicU32::new(1),
@@ -182,5 +180,9 @@ where
 
     pub async fn call(&self, params: P) -> ClientResult<R> {
         self.context.app_request(&self.object_handler, params).await
+    }
+
+    pub fn notify(&self, params: P) {
+        self.object_handler.response(params, ResponseType::AppNotify as u32)
     }
 }
