@@ -26,7 +26,9 @@ use crate::crypto::nacl::{
     ResultOfNaclSignDetached, ResultOfNaclSignOpen,
 };
 use crate::crypto::{ParamsOfChaCha20, ResultOfChaCha20};
+use crate::json_interface::crypto::{ParamsOfAppSigningBox, ResultOfAppSigningBox};
 use crate::tests::TestClient;
+use super::*;
 
 fn base64_from_hex(hex: &str) -> String {
     base64::encode(&hex::decode(hex).unwrap())
@@ -724,4 +726,109 @@ fn hdkey() {
         result.public,
         "02a87d9764eedaacee45b0f777b5a242939b05fa06873bf511ca9a59cb46a5f526"
     );
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_signing_box() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let client_copy = client.clone();
+
+    let keys = client.generate_sign_keys();
+
+    let keys_box_handle = client
+        .request_async::<_, boxes::ResultOfGetSigningBox>(
+            "crypto.get_signing_box",
+            keys.clone(),
+        )
+        .await
+        .unwrap()
+        .handle
+        .0;
+
+    // external signing box uses keys box inside
+    let callback = move |request: crate::client::ParamsOfAppRequest, _: u32| {
+        let client = client_copy.clone();
+        tokio::spawn(async move {
+            match serde_json::from_value(request.request_data).unwrap() {
+                ParamsOfAppSigningBox::GetPublicKey => {
+                    let result: boxes::ResultOfSigningBoxGetPublicKey = client
+                        .request_async(
+                            "crypto.signing_box_get_public_key",
+                            boxes::ParamsOfSigningBoxGetPublicKey {
+                                signing_box: keys_box_handle.into()
+                            },
+                        ).await.unwrap();
+                    client
+                        .request_async::<_, ()>(
+                            "client.resolve_app_request",
+                            crate::client::ParamsOfResolveAppRequest {
+                                app_request_id: request.app_request_id,
+                                result: crate::client::AppRequestResult::Ok { 
+                                    result: json!(ResultOfAppSigningBox::GetPublicKey { public_key: result.pubkey })
+                                }
+                            },
+                        ).await.unwrap();
+                },
+                ParamsOfAppSigningBox::Sign { unsigned } => {
+                    let result: boxes::ResultOfSigningBoxSign = client
+                        .request_async(
+                            "crypto.signing_box_sign",
+                            boxes::ParamsOfSigningBoxSign {
+                                signing_box: keys_box_handle.into(),
+                                unsigned,
+                            },
+                        ).await.unwrap();
+                    client
+                        .request_async::<_, ()>(
+                            "client.resolve_app_request",
+                            crate::client::ParamsOfResolveAppRequest {
+                                app_request_id: request.app_request_id,
+                                result: crate::client::AppRequestResult::Ok { 
+                                    result: json!(ResultOfAppSigningBox::Sign { signature: result.signature })
+                                }
+                            },
+                        ).await.unwrap();
+                }
+            }
+        });
+        futures::future::ready(())
+    };
+
+    let external_box: boxes::ResultOfRegisterSigningBox = client.request_async_callback(
+        "crypto.register_signing_box",
+        (),
+        callback
+    ).await.unwrap();
+
+    
+    let box_pubkey: super::boxes::ResultOfSigningBoxGetPublicKey = client
+        .request_async(
+            "crypto.signing_box_get_public_key",
+            super::boxes::ParamsOfSigningBoxGetPublicKey {
+                signing_box: external_box.handle.clone(),
+            },
+        ).await.unwrap();
+
+    assert_eq!(box_pubkey.pubkey, keys.public);
+
+    let unsigned = base64::encode("Test Message");
+    let box_sign: super::boxes::ResultOfSigningBoxSign = client
+        .request_async(
+            "crypto.signing_box_sign",
+            super::boxes::ParamsOfSigningBoxSign {
+                signing_box: external_box.handle,
+                unsigned: unsigned.clone(),
+            },
+        ).await.unwrap();
+
+    let keys_sign: ResultOfSign = client
+        .request(
+            "crypto.sign",
+            ParamsOfSign {
+                unsigned,
+                keys,
+            },
+        ).unwrap();
+    
+    assert_eq!(box_sign.signature, keys_sign.signature);
 }

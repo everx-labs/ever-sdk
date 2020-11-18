@@ -66,6 +66,14 @@
 
 [chacha20](#chacha20) – Performs symmetric `chacha20` encryption.
 
+[register_signing_box](#register_signing_box) – Register an application implemented signing box.
+
+[get_signing_box](#get_signing_box) – Gets a default signing box implementation.
+
+[signing_box_get_public_key](#signing_box_get_public_key) – Returns public key of signing key pair.
+
+[signing_box_sign](#signing_box_sign) – Returns signed user data.
+
 ## Types
 [SigningBoxHandle](#SigningBoxHandle)
 
@@ -174,6 +182,22 @@
 [ParamsOfChaCha20](#ParamsOfChaCha20)
 
 [ResultOfChaCha20](#ResultOfChaCha20)
+
+[ResultOfRegisterSigningBox](#ResultOfRegisterSigningBox)
+
+[ParamsOfAppSigningBox](#ParamsOfAppSigningBox)
+
+[ResultOfAppSigningBox](#ResultOfAppSigningBox)
+
+[ResultOfGetSigningBox](#ResultOfGetSigningBox)
+
+[ParamsOfSigningBoxGetPublicKey](#ParamsOfSigningBoxGetPublicKey)
+
+[ResultOfSigningBoxGetPublicKey](#ResultOfSigningBoxGetPublicKey)
+
+[ParamsOfSigningBoxSign](#ParamsOfSigningBoxSign)
+
+[ResultOfSigningBoxSign](#ResultOfSigningBoxSign)
 
 
 # Functions
@@ -1025,6 +1049,98 @@ function chacha20(
 - `data`: _string_ – Encrypted/decrypted data. Encoded with `base64`.
 
 
+## register_signing_box
+
+Register an application implemented signing box.
+
+```ts
+type ResultOfRegisterSigningBox = {
+    handle: SigningBoxHandle
+};
+
+function register_signing_box(): Promise<ResultOfRegisterSigningBox>;
+```
+### Result
+
+- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
+
+
+## get_signing_box
+
+Gets a default signing box implementation.
+
+```ts
+type KeyPair = {
+    public: string,
+    secret: string
+};
+
+type ResultOfGetSigningBox = {
+    handle: SigningBoxHandle
+};
+
+function get_signing_box(
+    params: KeyPair,
+): Promise<ResultOfGetSigningBox>;
+```
+### Parameters
+- `public`: _string_ – Public key - 64 symbols hex string
+- `secret`: _string_ – Private key - u64 symbols hex string
+### Result
+
+- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
+
+
+## signing_box_get_public_key
+
+Returns public key of signing key pair.
+
+```ts
+type ParamsOfSigningBoxGetPublicKey = {
+    signing_box: SigningBoxHandle
+};
+
+type ResultOfSigningBoxGetPublicKey = {
+    pubkey: string
+};
+
+function signing_box_get_public_key(
+    params: ParamsOfSigningBoxGetPublicKey,
+): Promise<ResultOfSigningBoxGetPublicKey>;
+```
+### Parameters
+- `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing Box handle.
+### Result
+
+- `pubkey`: _string_ – Public key of signing box. Encoded with hex
+
+
+## signing_box_sign
+
+Returns signed user data.
+
+```ts
+type ParamsOfSigningBoxSign = {
+    signing_box: SigningBoxHandle,
+    unsigned: string
+};
+
+type ResultOfSigningBoxSign = {
+    signature: string
+};
+
+function signing_box_sign(
+    params: ParamsOfSigningBoxSign,
+): Promise<ResultOfSigningBoxSign>;
+```
+### Parameters
+- `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing Box handle.
+- `unsigned`: _string_ – Unsigned user data. Must be encoded with `base64`.
+### Result
+
+- `signature`: _string_ – Data signature. Encoded with `base64`.
+
+
 # Types
 ## SigningBoxHandle
 ```ts
@@ -1583,5 +1699,104 @@ type ResultOfChaCha20 = {
 };
 ```
 - `data`: _string_ – Encrypted/decrypted data. Encoded with `base64`.
+
+
+## ResultOfRegisterSigningBox
+```ts
+type ResultOfRegisterSigningBox = {
+    handle: SigningBoxHandle
+};
+```
+- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
+
+
+## ParamsOfAppSigningBox
+```ts
+type ParamsOfAppSigningBox = {
+    type: 'GetPublicKey'
+} | {
+    type: 'Sign'
+    unsigned: string
+};
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'GetPublicKey'_
+
+
+When _type_ is _'Sign'_
+
+
+- `unsigned`: _string_
+
+
+## ResultOfAppSigningBox
+```ts
+type ResultOfAppSigningBox = {
+    type: 'GetPublicKey'
+    public_key: string
+} | {
+    type: 'Sign'
+    signature: string
+};
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'GetPublicKey'_
+
+
+- `public_key`: _string_
+
+When _type_ is _'Sign'_
+
+
+- `signature`: _string_
+
+
+## ResultOfGetSigningBox
+```ts
+type ResultOfGetSigningBox = {
+    handle: SigningBoxHandle
+};
+```
+- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
+
+
+## ParamsOfSigningBoxGetPublicKey
+```ts
+type ParamsOfSigningBoxGetPublicKey = {
+    signing_box: SigningBoxHandle
+};
+```
+- `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing Box handle.
+
+
+## ResultOfSigningBoxGetPublicKey
+```ts
+type ResultOfSigningBoxGetPublicKey = {
+    pubkey: string
+};
+```
+- `pubkey`: _string_ – Public key of signing box. Encoded with hex
+
+
+## ParamsOfSigningBoxSign
+```ts
+type ParamsOfSigningBoxSign = {
+    signing_box: SigningBoxHandle,
+    unsigned: string
+};
+```
+- `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing Box handle.
+- `unsigned`: _string_ – Unsigned user data. Must be encoded with `base64`.
+
+
+## ResultOfSigningBoxSign
+```ts
+type ResultOfSigningBoxSign = {
+    signature: string
+};
+```
+- `signature`: _string_ – Data signature. Encoded with `base64`.
 
 

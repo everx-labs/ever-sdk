@@ -7,6 +7,7 @@ use crate::abi::{FunctionHeader, ParamsOfDecodeMessageBody, Signer};
 use crate::crypto::KeyPair;
 use crate::tests::{TestClient, EVENTS};
 use crate::utils::conversion::abi_uint;
+use super::*;
 
 #[test]
 fn encode_v2() {
@@ -20,6 +21,11 @@ fn encode_v2() {
     let abi = events_abi.clone();
     let time: u64 = 1599458364291;
     let expire: u32 = 1599458404;
+
+    let signing_box: crate::crypto::boxes::ResultOfRegisterSigningBox = client.request(
+        "crypto.get_signing_box",
+        keys.clone()
+    ).unwrap();
 
     let msg: ParamsOfEncodeMessage = serde_json::from_str(
         r#"{
@@ -38,6 +44,8 @@ fn encode_v2() {
 
     assert_eq!(msg.signer, Signer::Keys { keys: keys.clone() });
 
+    // check deploy params
+
     let deploy_params = |signing: Signer| ParamsOfEncodeMessage {
         abi: abi.clone(),
         address: None,
@@ -49,7 +57,7 @@ fn encode_v2() {
         call_set: Some(CallSet {
             function_name: "constructor".into(),
             header: Some(FunctionHeader {
-                pubkey: signing.resolve_public_key().unwrap(),
+                pubkey: Some(keys.public.clone()),
                 time: Some(time),
                 expire: Some(expire),
             }),
@@ -95,6 +103,16 @@ fn encode_v2() {
         .unwrap();
     assert_eq!(signed.message, "te6ccgECGAEAA6wAA0eIAAt9aqvShfTon7Lei1PVOhUEkEEZQkhDKPgNyzeTL6YSEbAHAgEA4bE5Gr3mWwDtlcEOWHr6slWoyQlpIWeYyw/00eKFGFkbAJMMFLWnu0mq4HSrPmktmzeeAboa4kxkFymCsRVt44dTHxAj/Hd67jWQF7peccWoU/dbMCBJBB6YdPCVZcJlJkAAAF0ZyXLg19VzGRotV8/gAQHAAwIDzyAGBAEB3gUAA9AgAEHaY+IEf47vXcayAvdLzji1Cn7rZgQJIIPTDp4SrLhMpMwCJv8A9KQgIsABkvSg4YrtU1gw9KEKCAEK9KQg9KEJAAACASANCwHI/38h7UTQINdJwgGOENP/0z/TANF/+GH4Zvhj+GKOGPQFcAGAQPQO8r3XC//4YnD4Y3D4Zn/4YeLTAAGOHYECANcYIPkBAdMAAZTT/wMBkwL4QuIg+GX5EPKoldMAAfJ64tM/AQwAao4e+EMhuSCfMCD4I4ED6KiCCBt3QKC53pL4Y+CANPI02NMfAfgjvPK50x8B8AH4R26S8jzeAgEgEw4CASAQDwC9uotV8/+EFujjXtRNAg10nCAY4Q0//TP9MA0X/4Yfhm+GP4Yo4Y9AVwAYBA9A7yvdcL//hicPhjcPhmf/hh4t74RvJzcfhm0fgA+ELIy//4Q88LP/hGzwsAye1Uf/hngCASASEQDluIAGtb8ILdHCfaiaGn/6Z/pgGi//DD8M3wx/DFvfSDK6mjofSBv6PwikDdJGDhvfCFdeXAyfABkZP2CEGRnwoRnRoIEB9AAAAAAAAAAAAAAAAAAIGeLZMCAQH2AGHwhZGX//CHnhZ/8I2eFgGT2qj/8M8ADFuZPCot8ILdHCfaiaGn/6Z/pgGi//DD8M3wx/DFva4b/yupo6Gn/7+j8AGRF7gAAAAAAAAAAAAAAAAhni2fA58jjyxi9EOeF/+S4/YAYfCFkZf/8IeeFn/wjZ4WAZPaqP/wzwAgFIFxQBCbi3xYJQFQH8+EFujhPtRNDT/9M/0wDRf/hh+Gb4Y/hi3tcN/5XU0dDT/9/R+ADIi9wAAAAAAAAAAAAAAAAQzxbPgc+Rx5YxeiHPC//JcfsAyIvcAAAAAAAAAAAAAAAAEM8Wz4HPklb4sEohzwv/yXH7ADD4QsjL//hDzws/+EbPCwDJ7VR/FgAE+GcActxwItDWAjHSADDcIccAkvI74CHXDR+S8jzhUxGS8jvhwQQighD////9vLGS8jzgAfAB+EdukvI83g==");
 
+    let signed_with_box: ResultOfEncodeMessage = client
+        .request(
+            "abi.encode_message",
+            deploy_params(Signer::SigningBox { handle: signing_box.handle.clone() }),
+        )
+        .unwrap();
+    assert_eq!(signed_with_box.message, "te6ccgECGAEAA6wAA0eIAAt9aqvShfTon7Lei1PVOhUEkEEZQkhDKPgNyzeTL6YSEbAHAgEA4bE5Gr3mWwDtlcEOWHr6slWoyQlpIWeYyw/00eKFGFkbAJMMFLWnu0mq4HSrPmktmzeeAboa4kxkFymCsRVt44dTHxAj/Hd67jWQF7peccWoU/dbMCBJBB6YdPCVZcJlJkAAAF0ZyXLg19VzGRotV8/gAQHAAwIDzyAGBAEB3gUAA9AgAEHaY+IEf47vXcayAvdLzji1Cn7rZgQJIIPTDp4SrLhMpMwCJv8A9KQgIsABkvSg4YrtU1gw9KEKCAEK9KQg9KEJAAACASANCwHI/38h7UTQINdJwgGOENP/0z/TANF/+GH4Zvhj+GKOGPQFcAGAQPQO8r3XC//4YnD4Y3D4Zn/4YeLTAAGOHYECANcYIPkBAdMAAZTT/wMBkwL4QuIg+GX5EPKoldMAAfJ64tM/AQwAao4e+EMhuSCfMCD4I4ED6KiCCBt3QKC53pL4Y+CANPI02NMfAfgjvPK50x8B8AH4R26S8jzeAgEgEw4CASAQDwC9uotV8/+EFujjXtRNAg10nCAY4Q0//TP9MA0X/4Yfhm+GP4Yo4Y9AVwAYBA9A7yvdcL//hicPhjcPhmf/hh4t74RvJzcfhm0fgA+ELIy//4Q88LP/hGzwsAye1Uf/hngCASASEQDluIAGtb8ILdHCfaiaGn/6Z/pgGi//DD8M3wx/DFvfSDK6mjofSBv6PwikDdJGDhvfCFdeXAyfABkZP2CEGRnwoRnRoIEB9AAAAAAAAAAAAAAAAAAIGeLZMCAQH2AGHwhZGX//CHnhZ/8I2eFgGT2qj/8M8ADFuZPCot8ILdHCfaiaGn/6Z/pgGi//DD8M3wx/DFva4b/yupo6Gn/7+j8AGRF7gAAAAAAAAAAAAAAAAhni2fA58jjyxi9EOeF/+S4/YAYfCFkZf/8IeeFn/wjZ4WAZPaqP/wzwAgFIFxQBCbi3xYJQFQH8+EFujhPtRNDT/9M/0wDRf/hh+Gb4Y/hi3tcN/5XU0dDT/9/R+ADIi9wAAAAAAAAAAAAAAAAQzxbPgc+Rx5YxeiHPC//JcfsAyIvcAAAAAAAAAAAAAAAAEM8Wz4HPklb4sEohzwv/yXH7ADD4QsjL//hDzws/+EbPCwDJ7VR/FgAE+GcActxwItDWAjHSADDcIccAkvI74CHXDR+S8jzhUxGS8jvhwQQighD////9vLGS8jzgAfAB+EdukvI83g==");
+
+    // check run params
+
     let address = "0:05beb555e942fa744fd96f45a9ea9d0a8248208ca12421947c06e59bc997d309";
     let run_params = |signing: Signer| ParamsOfEncodeMessage {
         address: Some(address.into()),
@@ -114,6 +132,29 @@ fn encode_v2() {
         signer: signing,
         processing_try_index: None,
     };
+    let body_params = |run_params: ParamsOfEncodeMessage| {
+        ParamsOfEncodeMessageBody {
+            abi: run_params.abi,
+            call_set: run_params.call_set.unwrap(),
+            is_internal: false,
+            processing_try_index: run_params.processing_try_index,
+            signer: run_params.signer,
+        }
+    };
+    let extract_body = |message| {
+        let unsigned_parsed: crate::boc::ResultOfParse = client.request(
+            "boc.parse_message",
+            crate::boc::ParamsOfParse {
+                boc: message
+            }).unwrap();
+        unsigned_parsed.parsed["body"].as_str().unwrap().to_owned()
+    };
+
+    let unsigned_message = "te6ccgEBAgEAeAABpYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIFMfECP8d3ruNZAXul5xxahT91swIEkEHph08JVlwmUmQAAAXRnJcuDX1XMZBW+LBKAQBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+    let signed_message = "te6ccgEBAwEAvAABRYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIMAQHhrd/b+MJ5Za+AygBc5qS/dVIPnqxCsM9PvqfVxutK+lnQEKzQoRTLYO6+jfM8TF4841bdNjLQwIDWL4UVFdxIhdMfECP8d3ruNZAXul5xxahT91swIEkEHph08JVlwmUmQAAAXRnJcuDX1XMZBW+LBKACAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==";
+    let data_to_sign = "i4Hs3PB12QA9UBFbOIpkG3JerHHqjm4LgvF4MA7TDsY=";
+
+    // encoding unsigned and attaching the signature
 
     let unsigned: ResultOfEncodeMessage = client
         .request(
@@ -123,11 +164,22 @@ fn encode_v2() {
             }),
         )
         .unwrap();
-    assert_eq!(unsigned.message, "te6ccgEBAgEAeAABpYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIFMfECP8d3ruNZAXul5xxahT91swIEkEHph08JVlwmUmQAAAXRnJcuDX1XMZBW+LBKAQBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=");
-    assert_eq!(
-        unsigned.data_to_sign.as_ref().unwrap(),
-        "i4Hs3PB12QA9UBFbOIpkG3JerHHqjm4LgvF4MA7TDsY="
-    );
+    assert_eq!(unsigned.message, unsigned_message);
+    assert_eq!(unsigned.data_to_sign, Some(data_to_sign.to_owned()));
+
+    let unsigned_body = extract_body(unsigned.message.clone());
+
+    let unsigned_body_encoded: ResultOfEncodeMessageBody = client
+        .request(
+            "abi.encode_message_body",
+            body_params(run_params(Signer::External {
+                public_key: keys.public.clone(),
+            })),
+        )
+        .unwrap();
+    assert_eq!(unsigned_body_encoded.body, unsigned_body);
+    assert_eq!(unsigned_body_encoded.data_to_sign, unsigned.data_to_sign);
+
     let signature = client.sign_detached(&unsigned.data_to_sign.unwrap(), &keys);
     assert_eq!(signature, "5bbfb7f184f2cb5f019400b9cd497eeaa41f3d5885619e9f7d4fab8dd695f4b3a02159a1422996c1dd7d1be67898bc79c6adba6c65a18101ac5f0a2a2bb8910b");
     let signed: ResultOfAttachSignature = client
@@ -137,11 +189,28 @@ fn encode_v2() {
                 abi: abi.clone(),
                 public_key: keys.public.clone(),
                 message: unsigned.message,
+                signature: signature.clone(),
+            },
+        )
+        .unwrap();
+    assert_eq!(signed.message, signed_message);
+
+    let signed_body = extract_body(signed.message);
+
+    let signed: ResultOfAttachSignatureToMessageBody = client
+        .request(
+            "abi.attach_signature_to_message_body",
+            ParamsOfAttachSignatureToMessageBody {
+                abi: abi.clone(),
+                public_key: keys.public.clone(),
+                message: unsigned_body_encoded.body,
                 signature,
             },
         )
         .unwrap();
-    assert_eq!(signed.message, "te6ccgEBAwEAvAABRYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIMAQHhrd/b+MJ5Za+AygBc5qS/dVIPnqxCsM9PvqfVxutK+lnQEKzQoRTLYO6+jfM8TF4841bdNjLQwIDWL4UVFdxIhdMfECP8d3ruNZAXul5xxahT91swIEkEHph08JVlwmUmQAAAXRnJcuDX1XMZBW+LBKACAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==");
+    assert_eq!(signed.body, signed_body);
+
+    // encoding signed
 
     let signed: ResultOfEncodeMessage = client
         .request(
@@ -149,12 +218,41 @@ fn encode_v2() {
             run_params(Signer::Keys { keys: keys.clone() }),
         )
         .unwrap();
-    assert_eq!(signed.message, "te6ccgEBAwEAvAABRYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIMAQHhrd/b+MJ5Za+AygBc5qS/dVIPnqxCsM9PvqfVxutK+lnQEKzQoRTLYO6+jfM8TF4841bdNjLQwIDWL4UVFdxIhdMfECP8d3ruNZAXul5xxahT91swIEkEHph08JVlwmUmQAAAXRnJcuDX1XMZBW+LBKACAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==");
+    assert_eq!(signed.message, signed_message);
+
+    let signed: ResultOfEncodeMessageBody = client
+        .request(
+            "abi.encode_message_body",
+            body_params(run_params(Signer::Keys { keys: keys.clone() })),
+        )
+        .unwrap();
+    assert_eq!(signed.body, signed_body);
+
+    let signed: ResultOfEncodeMessage = client
+        .request(
+            "abi.encode_message",
+            run_params(Signer::SigningBox { handle: signing_box.handle.clone() }),
+        )
+        .unwrap();
+    assert_eq!(signed.message, signed_message);
+
+    let signed: ResultOfEncodeMessageBody = client
+        .request(
+            "abi.encode_message_body",
+            body_params(run_params(Signer::SigningBox { handle: signing_box.handle.clone() })),
+        )
+        .unwrap();
+    assert_eq!(signed.body, signed_body);
 
     let no_pubkey: ResultOfEncodeMessage = client
         .request("abi.encode_message", run_params(Signer::None))
         .unwrap();
     assert_eq!(no_pubkey.message, "te6ccgEBAQEAVQAApYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIAAAAC6M5Llwa+q5jIK3xYJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB");
+
+    let no_pubkey_body: ResultOfEncodeMessageBody = client
+        .request("abi.encode_message_body", body_params(run_params(Signer::None)))
+        .unwrap();
+    assert_eq!(no_pubkey_body.body, extract_body(no_pubkey.message));
 }
 
 #[test]
@@ -173,6 +271,23 @@ fn decode_v2() {
                 },
             )
             .unwrap();
+        let parsed: crate::boc::ResultOfParse = client.request(
+                "boc.parse_message",
+                crate::boc::ParamsOfParse {
+                    boc: message.into()
+                }).unwrap();
+        let body = parsed.parsed["body"].as_str().unwrap().to_owned();
+        let result_body: DecodedMessageBody = client
+            .request(
+                "abi.decode_message_body",
+                ParamsOfDecodeMessageBody {
+                    abi: events_abi.clone(),
+                    body,
+                    is_internal: parsed.parsed["msg_type_name"] == "Internal",
+                },
+            )
+            .unwrap();
+        assert_eq!(result, result_body);
         result
     };
     let expected = DecodedMessageBody {

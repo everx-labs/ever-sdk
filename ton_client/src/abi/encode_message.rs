@@ -5,7 +5,6 @@ use crate::abi::internal::{
 use crate::abi::{Abi, Error, FunctionHeader, Signer};
 use crate::boc::internal::get_boc_hash;
 use crate::client::ClientContext;
-use crate::crypto::internal::sign_using_secret;
 use crate::encoding::{account_decode, account_encode, base64_decode, hex_decode};
 use crate::error::ClientResult;
 use serde_json::Value;
@@ -334,7 +333,7 @@ pub async fn encode_message(
 ) -> ClientResult<ResultOfEncodeMessage> {
     let abi = params.abi.json_string()?;
 
-    let public = params.signer.resolve_public_key()?;
+    let public = params.signer.resolve_public_key(context.clone()).await?;
     let (message, data_to_sign, address) = if let Some(deploy_set) = params.deploy_set {
         let workchain = deploy_set
             .workchain_id
@@ -348,7 +347,7 @@ pub async fn encode_message(
         )?;
         if let Some(call_set) = &params.call_set {
             encode_deploy(
-                context,
+                context.clone(),
                 &abi,
                 image,
                 workchain,
@@ -361,7 +360,7 @@ pub async fn encode_message(
         }
     } else if let Some(call_set) = &params.call_set {
         encode_run(
-            context,
+            context.clone(),
             &params,
             &abi,
             call_set,
@@ -372,8 +371,9 @@ pub async fn encode_message(
         return Err(abi::Error::missing_required_call_set_for_encode_message());
     };
 
-    let (message, data_to_sign) =
-        result_of_encode_message(&abi, message, data_to_sign, &params.signer)?;
+    let (message, data_to_sign) = result_of_encode_message(
+        context, &abi, message, data_to_sign, &params.signer
+    ).await?;
     Ok(ResultOfEncodeMessage {
         message: base64::encode(&message),
         data_to_sign,
@@ -436,7 +436,7 @@ pub async fn encode_message_body(
 ) -> ClientResult<ResultOfEncodeMessageBody> {
     let abi = params.abi.json_string()?;
 
-    let public = params.signer.resolve_public_key()?;
+    let public = params.signer.resolve_public_key(context.clone()).await?;
     let call = params.call_set.to_function_call_set(
         public.as_ref().map(|x| x.as_str()),
         params.processing_try_index,
@@ -475,14 +475,15 @@ pub async fn encode_message_body(
             .map_err(|err| Error::encode_run_message_failed(err, &func))?,
     )
     .map_err(|err| Error::encode_run_message_failed(err, &func))?;
-    if let Some(keys) = params.signer.resolve_keys()? {
-        if let Some(data_to_sign) = data_to_sign {
-            let secret = hex_decode(&format!("{}{}", &keys.secret, &keys.public))?;
-            let (_, signature) = sign_using_secret(&data_to_sign, &secret)?;
+    if let Some(unsigned) = &data_to_sign {
+        if let Some(signature) = params.signer.sign(context.clone(), unsigned).await? {
+            let pubkey = public
+                .map(|string| hex_decode(&string))
+                .transpose()?;
             let body = add_sign_to_message_body(
                 &abi,
                 &signature,
-                Some(&hex_decode(&keys.public)?),
+                pubkey.as_ref().map(|vec| vec.as_slice()),
                 &body,
             )?;
             return Ok(ResultOfEncodeMessageBody {
@@ -551,7 +552,7 @@ pub struct ParamsOfAttachSignatureToMessageBody {
     /// Public key. Must be encoded with `hex`.
     pub public_key: String,
 
-    /// Unsigned message BOC. Must be encoded with `base64`.
+    /// Unsigned message body BOC. Must be encoded with `base64`.
     pub message: String,
 
     /// Signature. Must be encoded with `hex`.

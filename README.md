@@ -112,10 +112,9 @@ Binding is a thin client library written on the specific language that acts like
 a client library and an application code written on that language.
 
 List of known bindings:
-- [Web binding](https://github.com/tonlabs/ton-client-web-js)  
-- [Node.js binding](https://github.com/tonlabs/ton-client-node-js)  
-- [React-native binding](https://github.com/tonlabs/ton-client-react-native-js)  
-- [Rust binding](https://github.com/tonlabs/ton-client-rs)  
+- [Web binding](https://github.com/tonlabs/ton-client-js)  
+- [Node.js binding](https://github.com/tonlabs/ton-client-js)  
+- [React-native binding](https://github.com/tonlabs/ton-client-js)  
 
 # Build client library
 
@@ -129,15 +128,8 @@ run `node build.js`.
 
 The resulting binaries are placed to `bin` folder in the gz-compressed format.
 
-The list defines all build targets (paths are relative and determined to the location where 
-you clone this repo):
+Note that the build script generates binaries compatible with the platform used to run the script. For example, if you run it on Mac OS, you get binaries targeted at Darwin (macOS) platform.
 
-- `ton_client/platforms/ton-client-node-js` – Node.js add-on (and an optional dylib for Mac OS)  used in Node.js-based JavaScript binding.
-
-    Note that the build script generates binaries compatible with the platform used to run the script. For example, if you run it on Mac OS, you get binaries targeted at Darwin (macOS) platform.
-
-- `ton_client/platforms/ton-client-react-native` –  iOS and Android native libraries for react-native mobile applications.
-- `ton_client/platforms/ton-client-web` – WASM and JavaScript wrapper for browser-based applications.
 - `ton_client/client` – general purpose dynamic link library. Currently, it is used in rust binding. It is a good starting place for creating a new bindings.
 
 

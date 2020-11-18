@@ -28,6 +28,11 @@ pub enum ErrorCode {
     InvalidParams = CLIENT + 23,
     ContractsAddressConversionFailed = CLIENT + 24,
     UnknownFunction = CLIENT + 25,
+    AppRequestError = CLIENT + 26,
+    NoSuchRequest = CLIENT + 27,
+    CanNotSendRequestResult = CLIENT + 28,
+    CanNotReceiveRequestResult = CLIENT + 29,
+    CanNotParseRequestResult = CLIENT + 30,
 }
 pub struct Error;
 
@@ -179,10 +184,45 @@ impl Error {
         )
     }
 
-    pub fn unknown_function(name: &String) -> ClientError {
+    pub fn unknown_function(name: &str) -> ClientError {
         error(
             ErrorCode::UnknownFunction,
             format!("Unknown function: {}", name),
+        )
+    }
+
+    pub fn app_request_error(text: &str) -> ClientError {
+        error(
+            ErrorCode::AppRequestError,
+            format!("Application request returned error: {}", text),
+        )
+    }
+
+    pub fn no_such_request(id: u32) -> ClientError {
+        error(
+            ErrorCode::NoSuchRequest,
+            format!("No such request. ID {}", id),
+        )
+    }
+
+    pub fn can_not_send_request_result(id: u32) -> ClientError {
+        error(
+            ErrorCode::CanNotSendRequestResult,
+            format!("Can not send request result. Probably receiver is already dropped. Request ID {}", id),
+        )
+    }
+
+    pub fn can_not_receive_request_result(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::CanNotReceiveRequestResult,
+            format!("Can not receive request result: {}", err),
+        )
+    }
+
+    pub fn can_not_parse_request_result(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::CanNotParseRequestResult,
+            format!("Can not parse request result: {}", err),
         )
     }
 }

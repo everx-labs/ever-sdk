@@ -12,7 +12,7 @@
  *
  */
 
-use crate::client::{ClientContext, Error};
+use crate::client::{AppObject, ClientContext, Error};
 use crate::error::ClientResult;
 use futures::Future;
 use serde::de::DeserializeOwned;
@@ -27,7 +27,7 @@ fn parse_params<P: DeserializeOwned>(params_json: &str) -> ClientResult<P> {
     serde_json::from_str(params_json).map_err(|err| Error::invalid_params(params_json, err))
 }
 
-pub struct SpawnHandlerCallback<P, R, Fut, F>
+pub(crate) struct SpawnHandlerCallback<P, R, Fut, F>
 where
     P: Send + DeserializeOwned + 'static,
     R: Send + Serialize + 'static,
@@ -64,6 +64,7 @@ where
     fn handle(&self, context: Arc<ClientContext>, params_json: String, request: Request) {
         let handler = self.handler.clone();
         let context_copy = context.clone();
+
         context.env.spawn(async move {
             let request = Arc::new(request);
             match parse_params(&params_json) {
@@ -77,7 +78,113 @@ where
     }
 }
 
-pub struct SpawnHandler<P, R, Fut, F>
+pub(crate) struct SpawnHandlerAppObject<P, R, Fut, F, AP, AR>
+where
+    P: Send + DeserializeOwned + 'static,
+    R: Send + Serialize + 'static,
+    AP: Send + Serialize + 'static,
+    AR: Send + DeserializeOwned + 'static,
+    Fut: Future<Output = ClientResult<R>> + 'static,
+    F: Send + Fn(Arc<ClientContext>, P, AppObject<AP, AR>) -> Fut + 'static,
+{
+    handler: Arc<F>,
+    // Mutex is needed to have Sync trait implemented for struct
+    phantom: PhantomData<std::sync::Mutex<(P, R, Fut, AP, AR)>>,
+}
+
+impl<P, R, Fut, F, AP, AR> SpawnHandlerAppObject<P, R, Fut, F, AP, AR>
+where
+    P: Send + DeserializeOwned + 'static,
+    R: Send + Serialize + 'static,
+    AP: Send + Serialize + 'static,
+    AR: Send + DeserializeOwned + 'static,
+    Fut: Future<Output = ClientResult<R>> + 'static,
+    F: Send + Fn(Arc<ClientContext>, P, AppObject<AP, AR>) -> Fut + 'static,
+{
+    pub fn new(handler: F) -> Self {
+        Self {
+            handler: Arc::new(handler),
+            phantom: PhantomData,
+        }
+    }
+}
+
+impl<P, R, Fut, F, AP, AR> AsyncHandler for SpawnHandlerAppObject<P, R, Fut, F, AP, AR>
+where
+    P: Send + DeserializeOwned + 'static,
+    R: Send + Serialize + 'static,
+    AP: Send + Serialize + 'static,
+    AR: Send + DeserializeOwned + 'static,
+    Fut: Send + Future<Output = ClientResult<R>> + 'static,
+    F: Send + Sync + Fn(Arc<ClientContext>, P, AppObject<AP, AR>) -> Fut + 'static,
+{
+    fn handle(&self, context: Arc<ClientContext>, params_json: String, request: Request) {
+        let handler = self.handler.clone();
+        let context_copy = context.clone();
+        context.env.spawn(async move {
+            let request = Arc::new(request);
+            match parse_params(&params_json) {
+                Ok(params) => {
+                    let app_object = AppObject::new(context_copy.clone(), request.clone());
+                    let result = handler(context_copy, params, app_object).await;
+                    request.response_result(result);
+                }
+                Err(err) => request.finish_with_error(err),
+            };
+        });
+    }
+}
+
+pub(crate) struct SpawnHandlerAppObjectNoArgs<R, Fut, F, AP, AR>
+where
+    R: Send + Serialize + 'static,
+    AP: Send + Serialize + 'static,
+    AR: Send + DeserializeOwned + 'static,
+    Fut: Future<Output = ClientResult<R>> + 'static,
+    F: Send + Fn(Arc<ClientContext>, AppObject<AP, AR>) -> Fut + 'static,
+{
+    handler: Arc<F>,
+    // Mutex is needed to have Sync trait implemented for struct
+    phantom: PhantomData<std::sync::Mutex<(R, Fut, AP, AR)>>,
+}
+
+impl<R, Fut, F, AP, AR> SpawnHandlerAppObjectNoArgs<R, Fut, F, AP, AR>
+where
+    R: Send + Serialize + 'static,
+    AP: Send + Serialize + 'static,
+    AR: Send + DeserializeOwned + 'static,
+    Fut: Future<Output = ClientResult<R>> + 'static,
+    F: Send + Fn(Arc<ClientContext>, AppObject<AP, AR>) -> Fut + 'static,
+{
+    pub fn new(handler: F) -> Self {
+        Self {
+            handler: Arc::new(handler),
+            phantom: PhantomData,
+        }
+    }
+}
+
+impl<R, Fut, F, AP, AR> AsyncHandler for SpawnHandlerAppObjectNoArgs<R, Fut, F, AP, AR>
+where
+    R: Send + Serialize + 'static,
+    AP: Send + Serialize + 'static,
+    AR: Send + DeserializeOwned + 'static,
+    Fut: Send + Future<Output = ClientResult<R>> + 'static,
+    F: Send + Sync + Fn(Arc<ClientContext>, AppObject<AP, AR>) -> Fut + 'static,
+{
+    fn handle(&self, context: Arc<ClientContext>, _params_json: String, request: Request) {
+        let handler = self.handler.clone();
+        let context_copy = context.clone();
+        context.env.spawn(async move {
+            let request = Arc::new(request);
+            let app_object = AppObject::new(context_copy.clone(), request.clone());
+            let result = handler(context_copy, app_object).await;
+            request.response_result(result);
+        });
+    }
+}
+
+pub(crate) struct SpawnHandler<P, R, Fut, F>
 where
     P: Send + DeserializeOwned + 'static,
     R: Send + Serialize + 'static,
@@ -126,7 +233,7 @@ where
     }
 }
 
-pub struct SpawnNoArgsHandler<R, Fut, F>
+pub(crate) struct SpawnNoArgsHandler<R, Fut, F>
 where
     R: Send + Serialize + 'static,
     Fut: Future<Output = ClientResult<R>> + 'static,
@@ -166,7 +273,7 @@ where
     }
 }
 
-pub struct CallHandler<P, R, F>
+pub(crate) struct CallHandler<P, R, F>
 where
     P: Send + DeserializeOwned,
     R: Send + Serialize,
@@ -206,7 +313,7 @@ where
     }
 }
 
-pub struct CallNoArgsHandler<R, F>
+pub(crate) struct CallNoArgsHandler<R, F>
 where
     R: Send + Serialize,
     F: Fn(Arc<ClientContext>) -> ClientResult<R>,

@@ -408,8 +408,10 @@ impl TestClient {
             };
             request.sender.send(Err(err)).await.unwrap();
         } else if response_type == ResponseType::Nop as u32 {
-        } else if response_type >= ResponseType::Custom as u32 {
-            (request.callback)(params_json.to_string(), response_type).await
+        } else if response_type >= ResponseType::Custom as u32
+            || response_type == ResponseType::AppRequest as u32
+        {
+            (request.callback)(params_json, response_type).await
         } else {
             panic!(format!("Unsupported response type: {}", response_type));
         }

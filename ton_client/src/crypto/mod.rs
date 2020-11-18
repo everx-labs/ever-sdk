@@ -11,7 +11,7 @@
 * limitations under the License.
 */
 
-mod boxes;
+pub(crate) mod boxes;
 pub(crate) mod encscrypt;
 mod errors;
 pub(crate) mod hash;
@@ -27,7 +27,12 @@ pub(crate) mod encryption;
 #[cfg(test)]
 mod tests;
 
-pub use crate::crypto::boxes::SigningBoxHandle;
+pub use crate::crypto::boxes::{
+    get_signing_box, register_signing_box, signing_box_get_public_key, signing_box_sign,
+    ParamsOfSigningBoxGetPublicKey, ParamsOfSigningBoxSign,
+    ResultOfGetSigningBox, ResultOfRegisterSigningBox, ResultOfSigningBoxGetPublicKey,
+    ResultOfSigningBoxSign, SigningBox, SigningBoxHandle
+};
 pub use crate::crypto::encscrypt::{scrypt, ParamsOfScrypt, ResultOfScrypt};
 pub use crate::crypto::hash::{sha256, sha512, ParamsOfHash, ResultOfHash};
 pub use crate::crypto::hdkey::{

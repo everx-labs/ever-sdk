@@ -30,6 +30,7 @@ pub use client::{ClientConfig, ClientContext};
 pub use errors::{Error, ErrorCode};
 
 pub(crate) use client_env::{FetchMethod, FetchResult, WebSocket};
+pub(crate) use client::AppObject;
 
 use crate::error::ClientResult;
 use crate::json_interface::runtime::Runtime;
@@ -88,4 +89,39 @@ pub fn build_info(_context: Arc<ClientContext>) -> ClientResult<ResultOfBuildInf
             dependencies: vec![],
         }),
     )
+}
+
+#[derive(Serialize, Deserialize, ApiType, Clone)]
+pub struct ParamsOfAppRequest {
+    pub app_request_id: u32,
+    pub request_data: serde_json::Value,
+}
+
+#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[serde(tag="type")]
+pub enum AppRequestResult {
+    Error { text: String },
+    Ok { result: serde_json::Value }
+}
+
+#[derive(Serialize, Deserialize, ApiType, Clone)]
+pub struct ParamsOfResolveAppRequest {
+    pub app_request_id: u32,
+    pub result: AppRequestResult,
+}
+
+#[api_function]
+pub async fn resolve_app_request(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfResolveAppRequest,
+) -> ClientResult<()> {
+    let request_id = params.app_request_id;
+    let sender = context.app_requests
+        .lock()
+        .await
+        .remove(&request_id)
+        .ok_or(Error::no_such_request(request_id))?;
+
+    sender.send(params.result)
+        .map_err(|_| Error::can_not_send_request_result(request_id))
 }

@@ -113,11 +113,11 @@ fn encode_base64(
     }
 }
 
-pub(crate) fn hex_decode(hex: &String) -> ClientResult<Vec<u8>> {
+pub(crate) fn hex_decode(hex: &str) -> ClientResult<Vec<u8>> {
     if hex.starts_with("x") || hex.starts_with("X") {
-        hex_decode(&hex.chars().skip(1).collect())
+        hex_decode(&hex[1..])
     } else if hex.starts_with("0x") || hex.starts_with("0X") {
-        hex_decode(&hex.chars().skip(2).collect())
+        hex_decode(&hex[2..])
     } else {
         hex::decode(hex).map_err(|err| client::Error::invalid_hex(&hex, err))
     }
