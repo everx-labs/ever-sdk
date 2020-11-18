@@ -26,10 +26,10 @@ pub use browser::BrowserCallbacks;
 pub use context::{DContext, STATE_EXIT, STATE_ZERO};
 pub use dengine::DEngine;
 
-use crate::error::ClientResult;
-use crate::ClientContext;
 use crate::client::AppObject;
 use crate::crypto::KeyPair;
+use crate::error::ClientResult;
+use crate::ClientContext;
 use adapter::DebotBrowserAdapter;
 use errors::{error, ErrorCode};
 use std::sync::Arc;
@@ -40,10 +40,7 @@ pub struct DebotHandle(u32);
 
 #[derive(Serialize, Deserialize, Default, ApiType)]
 pub struct ParamsOfDebotStart {
-    url: String,
-    abi: Option<String>,
     address: String,
-    app_ref: String,
 }
 
 #[derive(Serialize, Deserialize, Default, ApiType)]
@@ -57,15 +54,13 @@ pub struct ParamsOfDebotExecute {
     pub action: DAction,
 }
 
-/*
 pub struct ParamsOfDebotFetch {
-
+    pub address: String,
 }
 
 pub struct ResultOfDebotFetch {
-
+    pub debot_handle: DebotHandle,
 }
-*/
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 pub enum ResultOfAppDebotBrowser {
@@ -76,23 +71,12 @@ pub enum ResultOfAppDebotBrowser {
 
 #[derive(Serialize, Deserialize, Clone, ApiType)]
 pub enum ParamsOfAppDebotBrowser {
-    Log {
-        msg: String,
-    },
-    Switch {
-        ctx_id: u8,
-    },
-    ShowAction {
-        action: DAction,
-    },
-    Input {
-        prefix: String,
-    },
+    Log { msg: String },
+    Switch { ctx_id: u8 },
+    ShowAction { action: DAction },
+    Input { prefix: String },
     LoadKey,
-    InvokeDebot {
-        debot_addr: String,
-        action: DAction,
-    },
+    InvokeDebot { debot_addr: String, action: DAction },
 }
 
 #[api_function]
@@ -102,7 +86,12 @@ pub(crate) async fn debot_start(
     app_object: AppObject<ParamsOfAppDebotBrowser, ResultOfAppDebotBrowser>,
 ) -> ClientResult<ResultOfDebotStart> {
     let browser_callbacks = Box::new(DebotBrowserAdapter::new(app_object));
-    let mut dengine = DEngine::new(params.address, params.abi, &params.url, browser_callbacks);
+    let mut dengine = DEngine::new_with_client(
+        params.address,
+        None,
+        context.clone(),
+        browser_callbacks,
+    );
     dengine
         .start()
         .await
@@ -111,7 +100,9 @@ pub(crate) async fn debot_start(
     let handle = context.get_next_id();
     context.debots.insert(handle, Mutex::new(dengine));
 
-    Ok(ResultOfDebotStart { debot_handle: DebotHandle(handle) })
+    Ok(ResultOfDebotStart {
+        debot_handle: DebotHandle(handle),
+    })
 }
 
 #[api_function]
@@ -123,22 +114,35 @@ pub async fn debot_execute_action(
         ErrorCode::DebotInvalidHandle,
         "debot handle is invalid".to_string(),
     ))?;
-    let mut dengine = mutex
-        .1
-        .lock()
-        .await;
-    
+    let mut dengine = mutex.1.lock().await;
     dengine
         .execute_action(&params.action)
         .await
         .map_err(|e| error(ErrorCode::DebotExecutionFailed, e))
 }
 
-/*
-pub async fn debot_fetch(
+#[api_function]
+pub(crate) async fn debot_fetch(
     context: Arc<ClientContext>,
     params: ParamsOfDebotFetch,
-) -> DebotResult<ResultOfDebotFetch> {
+    app_object: AppObject<ParamsOfAppDebotBrowser, ResultOfAppDebotBrowser>,
+) -> ClientResult<ResultOfDebotFetch> {
+    let browser_callbacks = Box::new(DebotBrowserAdapter::new(app_object));
+    let mut dengine = DEngine::new_with_client(
+        params.address,
+        None,
+        context.clone(),
+        browser_callbacks,
+    );
+    dengine
+        .fetch()
+        .await
+        .map_err(|e| error(ErrorCode::DebotFetchFailed, e))?;
 
+    let handle = context.get_next_id();
+    context.debots.insert(handle, Mutex::new(dengine));
+
+    Ok(ResultOfDebotFetch {
+        debot_handle: DebotHandle(handle),
+    })
 }
-*/

@@ -17,6 +17,7 @@ const DEBOT: isize = ClientError::DEBOT; // 200
 
 pub enum ErrorCode {
     DebotStartFailed = DEBOT + 1,
+    DebotFetchFailed,
     DebotExecutionFailed,
     DebotInvalidHandle,
 }
