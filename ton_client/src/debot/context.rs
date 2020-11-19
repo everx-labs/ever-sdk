@@ -1,3 +1,4 @@
+use crate::encoding::decode_abi_number;
 use super::action::DAction;
 use serde::{de, Deserialize, Deserializer};
 use std::fmt::Display;
@@ -12,7 +13,7 @@ pub const STATE_EXIT: u8 = 255;
 #[serde(rename_all = "camelCase")]
 #[derive(Clone)]
 pub struct DContext {
-    #[serde(deserialize_with = "from_0x_hex")]
+    #[serde(deserialize_with = "from_abi_num")]
     pub id: u8,
     #[serde(deserialize_with = "from_hex_to_utf8_str")]
     pub desc: String,
@@ -35,12 +36,12 @@ impl DContext {
 
 }
 
-pub(super) fn from_0x_hex<'de, D>(des: D) -> Result<u8, D::Error> 
+pub(super) fn from_abi_num<'de, D>(des: D) -> Result<u8, D::Error> 
 where 
     D: Deserializer<'de>
 {
     let s: String = Deserialize::deserialize(des)?;
-    u8::from_str_radix(&s, 10).map_err(de::Error::custom)
+    decode_abi_number(&s).map_err(de::Error::custom)
 }
 
 pub(super) fn str_hex_to_utf8(s: &str) -> Option<String> {

@@ -1,4 +1,5 @@
-use super::context::{from_0x_hex, from_hex_to_utf8_str};
+use crate::encoding::decode_abi_number;
+use super::context::{from_abi_num, from_hex_to_utf8_str};
 use serde::{de, Deserialize, Deserializer, Serializer};
 use std::convert::From;
 
@@ -45,7 +46,7 @@ pub struct DAction {
     #[serde(deserialize_with = "str_to_actype")]
     #[serde(serialize_with = "actype_to_str")]
     pub action_type: AcType,
-    #[serde(deserialize_with = "from_0x_hex")]
+    #[serde(deserialize_with = "from_abi_num")]
     pub to: u8,
     #[serde(deserialize_with = "from_hex_to_utf8_str")]
     pub attrs: String,
@@ -126,7 +127,7 @@ where
     D: Deserializer<'de>,
 {
     let s: String = Deserialize::deserialize(des)?;
-    u8::from_str_radix(s.trim_start_matches("0x"), 16)
+    decode_abi_number::<u8>(&s)
         .map_err(de::Error::custom)
         .map(|t| t.into())
 }
