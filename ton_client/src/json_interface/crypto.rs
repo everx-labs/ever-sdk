@@ -14,7 +14,7 @@
 
  use crate::client::{AppObject, ClientContext};
  use crate::error::ClientResult;
- use crate::crypto::{Error, ResultOfRegisterSigningBox, SigningBox};
+ use crate::crypto::{Error, RegisteredSigningBox, SigningBox};
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 #[serde(tag="type")]
@@ -80,6 +80,6 @@ impl SigningBox for ExternalSigningBox {
 pub(crate) async fn register_signing_box(
     context: std::sync::Arc<ClientContext>,
     app_object: AppObject<ParamsOfAppSigningBox, ResultOfAppSigningBox>,
-) -> ClientResult<ResultOfRegisterSigningBox> {
+) -> ClientResult<RegisteredSigningBox> {
     crate::crypto::register_signing_box(context, ExternalSigningBox::new(app_object)).await
 }

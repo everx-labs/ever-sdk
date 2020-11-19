@@ -28,9 +28,8 @@ pub(crate) mod encryption;
 mod tests;
 
 pub use crate::crypto::boxes::{
-    get_signing_box, register_signing_box, signing_box_get_public_key, signing_box_sign,
-    ParamsOfSigningBoxGetPublicKey, ParamsOfSigningBoxSign,
-    ResultOfGetSigningBox, ResultOfRegisterSigningBox, ResultOfSigningBoxGetPublicKey,
+    get_signing_box, register_signing_box, remove_signing_box, signing_box_get_public_key, signing_box_sign,
+    ParamsOfSigningBoxSign, RegisteredSigningBox, ResultOfSigningBoxGetPublicKey,
     ResultOfSigningBoxSign, SigningBox, SigningBoxHandle
 };
 pub use crate::crypto::encscrypt::{scrypt, ParamsOfScrypt, ResultOfScrypt};

@@ -48,29 +48,23 @@ impl SigningBox for KeysSigningBox {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
-pub struct ResultOfGetSigningBox {
-    /// Handle of the signing box.
-    pub handle: SigningBoxHandle,
-}
-
 /// Gets a default signing box implementation.
 #[api_function]
 pub async fn get_signing_box(
     context: std::sync::Arc<ClientContext>,
     params: KeyPair,
-) -> ClientResult<ResultOfGetSigningBox> {
+) -> ClientResult<RegisteredSigningBox> {
     let id = context.get_next_id();
     let signing_box = KeysSigningBox::from_encoded(params)?;
     context.boxes.signing_boxes.insert(id, Box::new(signing_box));
 
-    Ok(ResultOfGetSigningBox {
+    Ok(RegisteredSigningBox {
         handle: SigningBoxHandle(id),
     })
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
-pub struct ResultOfRegisterSigningBox {
+pub struct RegisteredSigningBox {
     /// Handle of the signing box.
     pub handle: SigningBoxHandle,
 }
@@ -79,19 +73,13 @@ pub struct ResultOfRegisterSigningBox {
 pub async fn register_signing_box(
     context: std::sync::Arc<ClientContext>,
     signing_box: impl SigningBox + Send + Sync + 'static,
-) -> ClientResult<ResultOfRegisterSigningBox> {
+) -> ClientResult<RegisteredSigningBox> {
     let id = context.get_next_id();
     context.boxes.signing_boxes.insert(id, Box::new(signing_box));
 
-    Ok(ResultOfRegisterSigningBox {
+    Ok(RegisteredSigningBox {
         handle: SigningBoxHandle(id),
     })
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
-pub struct ParamsOfSigningBoxGetPublicKey {
-    /// Signing Box handle.
-    pub signing_box: SigningBoxHandle,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
@@ -104,11 +92,11 @@ pub struct ResultOfSigningBoxGetPublicKey {
 #[api_function]
 pub async fn signing_box_get_public_key(
     context: Arc<ClientContext>,
-    params: ParamsOfSigningBoxGetPublicKey,
+    params: RegisteredSigningBox,
 ) -> ClientResult<ResultOfSigningBoxGetPublicKey> {
     let signing_box = context.boxes.signing_boxes
-        .get(&params.signing_box.0)
-        .ok_or(Error::signing_box_not_registered(params.signing_box.0))?;
+        .get(&params.handle.0)
+        .ok_or(Error::signing_box_not_registered(params.handle.0))?;
 
     let key = signing_box.1.get_public_key().await?;
 
@@ -148,4 +136,14 @@ pub async fn signing_box_sign(
     Ok(ResultOfSigningBoxSign {
         signature: hex::encode(&signed)
     })
+}
+
+/// Removes signing box from SDK.
+#[api_function]
+pub fn remove_signing_box(
+    context: Arc<ClientContext>,
+    params: RegisteredSigningBox,
+) -> ClientResult<()> {
+    context.boxes.signing_boxes.remove(&params.handle.0);
+    Ok(())
 }
