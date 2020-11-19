@@ -1,6 +1,11 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## 1.2.0 Nov 20, 2020
+
+### Fixed
+- panic after `tc_destroy_context` call. Now all contexts use global async runtime
+
 ## 1.1.0 Nov 3, 2020
 
 ### New
