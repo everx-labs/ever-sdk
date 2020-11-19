@@ -1,0 +1,35 @@
+{
+	"ABI version": 2,
+	"header": ["time", "expire"],
+	"functions": [
+		{
+			"name": "constructor",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getData",
+			"inputs": [
+				{"name":"key","type":"uint32"}
+			],
+			"outputs": [
+				{"name":"num","type":"uint256"}
+			]
+		},
+		{
+			"name": "setData",
+			"inputs": [
+				{"name":"key","type":"uint32"},
+				{"name":"val","type":"uint256"}
+			],
+			"outputs": [
+			]
+		}
+	],
+	"data": [
+	],
+	"events": [
+	]
+}
