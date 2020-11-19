@@ -12,8 +12,8 @@
 */
 
 use crate::error::ClientError;
-//use std::fmt::Display;
-const DEBOT: isize = ClientError::DEBOT; // 200
+use std::fmt::Display;
+const DEBOT: isize = ClientError::DEBOT; // 800
 
 pub enum ErrorCode {
     DebotStartFailed = DEBOT + 1,
@@ -28,4 +28,31 @@ pub fn error(code: ErrorCode, message: String) -> ClientError {
 }
 
 impl Error {
+    pub fn start_failed(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::DebotStartFailed,
+            format!("Debot start failed: {}", err),
+        )
+    }
+
+    pub fn fetch_failed(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::DebotFetchFailed,
+            format!("Debot fetch failed: {}", err),
+        )
+    }
+
+    pub fn execute_failed(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::DebotExecutionFailed,
+            format!("Debot execution failed: {}", err),
+        )
+    }
+
+    pub fn invalid_handle(handle: u32) -> ClientError {
+        error(
+            ErrorCode::DebotInvalidHandle,
+            format!("Invalid debot handle: {}", handle),
+        )
+    }
 }

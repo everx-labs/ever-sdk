@@ -10,8 +10,8 @@
 * See the License for the specific TON DEV software governing permissions and
 * limitations under the License.
 */
+
 mod action;
-mod adapter;
 mod browser;
 mod context;
 mod debot_abi;
@@ -25,124 +25,141 @@ pub use action::DAction;
 pub use browser::BrowserCallbacks;
 pub use context::{DContext, STATE_EXIT, STATE_ZERO};
 pub use dengine::DEngine;
+pub use errors::Error;
 
-use crate::client::AppObject;
-use crate::crypto::KeyPair;
 use crate::error::ClientResult;
 use crate::ClientContext;
-use adapter::DebotBrowserAdapter;
-use errors::{error, ErrorCode};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
 #[derive(Serialize, Deserialize, Default, ApiType)]
 pub struct DebotHandle(u32);
 
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
+pub struct DebotAction {
+    pub description: String,
+    pub name: String,
+    pub action_type: u8,
+    pub to: u8,
+    pub attributes: String,
+    pub misc: String,
+}
+
+impl From<DAction> for DebotAction {
+    fn from(daction: DAction) -> Self {
+        Self {
+            description: daction.desc,
+            name: daction.name,
+            action_type: daction.action_type as u8,
+            to: daction.to,
+            attributes: daction.attrs,
+            misc: daction.misc,
+        }
+    }
+}
+
+impl Into<DAction> for DebotAction {
+    fn into(self) -> DAction {
+        DAction {
+            desc: self.description,
+            name: self.name,
+            action_type: self.action_type.into(),
+            to: self.to,
+            attrs: self.attributes,
+            misc: self.misc,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Default, ApiType)]
-pub struct ParamsOfDebotStart {
+pub struct ParamsOfStart {
     address: String,
 }
 
-#[derive(Serialize, Deserialize, Default, ApiType)]
-pub struct ResultOfDebotStart {
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct RegisteredDebot {
     pub debot_handle: DebotHandle,
 }
 
-#[derive(Serialize, Deserialize, Default, ApiType)]
-pub struct ParamsOfDebotExecute {
-    pub debot_handle: DebotHandle,
-    pub action: DAction,
-}
-
-pub struct ParamsOfDebotFetch {
-    pub address: String,
-}
-
-pub struct ResultOfDebotFetch {
-    pub debot_handle: DebotHandle,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
-pub enum ResultOfAppDebotBrowser {
-    Input { value: String },
-    LoadKey { keys: KeyPair },
-    InvokeDebot,
-}
-
-#[derive(Serialize, Deserialize, Clone, ApiType)]
-pub enum ParamsOfAppDebotBrowser {
-    Log { msg: String },
-    Switch { ctx_id: u8 },
-    ShowAction { action: DAction },
-    Input { prefix: String },
-    LoadKey,
-    InvokeDebot { debot_addr: String, action: DAction },
-}
-
-#[api_function]
-pub(crate) async fn debot_start(
+pub async fn start(
     context: Arc<ClientContext>,
-    params: ParamsOfDebotStart,
-    app_object: AppObject<ParamsOfAppDebotBrowser, ResultOfAppDebotBrowser>,
-) -> ClientResult<ResultOfDebotStart> {
-    let browser_callbacks = Box::new(DebotBrowserAdapter::new(app_object));
+    params: ParamsOfStart,
+    callbacks: impl BrowserCallbacks + Send + Sync + 'static,
+) -> ClientResult<RegisteredDebot> {
     let mut dengine = DEngine::new_with_client(
         params.address,
         None,
         context.clone(),
-        browser_callbacks,
+        Box::new(callbacks),
     );
     dengine
         .start()
         .await
-        .map_err(|e| error(ErrorCode::DebotStartFailed, e))?;
+        .map_err(Error::start_failed)?;
 
     let handle = context.get_next_id();
     context.debots.insert(handle, Mutex::new(dengine));
 
-    Ok(ResultOfDebotStart {
+    Ok(RegisteredDebot {
         debot_handle: DebotHandle(handle),
     })
 }
 
-#[api_function]
-pub async fn debot_execute_action(
-    context: Arc<ClientContext>,
-    params: ParamsOfDebotExecute,
-) -> ClientResult<()> {
-    let mutex = context.debots.get(&params.debot_handle.0).ok_or(error(
-        ErrorCode::DebotInvalidHandle,
-        "debot handle is invalid".to_string(),
-    ))?;
-    let mut dengine = mutex.1.lock().await;
-    dengine
-        .execute_action(&params.action)
-        .await
-        .map_err(|e| error(ErrorCode::DebotExecutionFailed, e))
+#[derive(Serialize, Deserialize, Default, ApiType)]
+pub struct ParamsOfFetch {
+    pub address: String,
 }
 
-#[api_function]
-pub(crate) async fn debot_fetch(
+pub async fn fetch(
     context: Arc<ClientContext>,
-    params: ParamsOfDebotFetch,
-    app_object: AppObject<ParamsOfAppDebotBrowser, ResultOfAppDebotBrowser>,
-) -> ClientResult<ResultOfDebotFetch> {
-    let browser_callbacks = Box::new(DebotBrowserAdapter::new(app_object));
+    params: ParamsOfFetch,
+    callbacks: impl BrowserCallbacks + Send + Sync + 'static,
+) -> ClientResult<RegisteredDebot> {
     let mut dengine = DEngine::new_with_client(
         params.address,
         None,
         context.clone(),
-        browser_callbacks,
+        Box::new(callbacks),
     );
     dengine
         .fetch()
         .await
-        .map_err(|e| error(ErrorCode::DebotFetchFailed, e))?;
+        .map_err(Error::fetch_failed)?;
 
     let handle = context.get_next_id();
     context.debots.insert(handle, Mutex::new(dengine));
 
-    Ok(ResultOfDebotFetch {
+    Ok(RegisteredDebot {
         debot_handle: DebotHandle(handle),
     })
+}
+
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct ParamsOfExecute {
+    pub debot_handle: DebotHandle,
+    pub action: DebotAction,
+}
+
+#[api_function]
+pub async fn execute(
+    context: Arc<ClientContext>,
+    params: ParamsOfExecute,
+) -> ClientResult<()> {
+    let mutex = context.debots.get(&params.debot_handle.0)
+        .ok_or(Error::invalid_handle(params.debot_handle.0))?;
+    let mut dengine = mutex.1.lock().await;
+    dengine
+        .execute_action(&params.action.into())
+        .await
+        .map_err(Error::execute_failed)
+}
+
+#[api_function]
+pub fn remove(
+    context: Arc<ClientContext>,
+    params: RegisteredDebot,
+) -> ClientResult<()> {
+    context.debots.remove(&params.debot_handle.0)
+        .ok_or(Error::invalid_handle(params.debot_handle.0))?;
+    Ok(())
 }
