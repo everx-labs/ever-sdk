@@ -83,11 +83,12 @@ pub(super) fn format_arg(params: &serde_json::Value, i: usize) -> String {
         debug!("parsing number{}: {}", idx, arg);
         return format!(
             "{}",
-            u64::from_str_radix(arg.get(2..).unwrap(), 16).unwrap()
+            // TODO: remove unwrap and return error
+            u64::from_str_radix(arg, 10).unwrap()
         );
     }
     if let Some(arg) = params["utime".to_owned() + &idx].as_str() {
-        let utime = u32::from_str_radix(arg.get(2..).unwrap(), 16).unwrap();
+        let utime = u32::from_str_radix(arg, 10).unwrap();
         return if utime == 0 {
             "undefined".to_owned()
         } else {

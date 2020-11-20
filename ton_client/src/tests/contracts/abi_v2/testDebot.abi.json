@@ -82,6 +82,14 @@
 			]
 		},
 		{
+			"name": "enterDebotAddress",
+			"inputs": [
+				{"name":"debot","type":"address"}
+			],
+			"outputs": [
+			]
+		},
+		{
 			"name": "enterString",
 			"inputs": [
 				{"name":"str","type":"bytes"}
@@ -121,6 +129,32 @@
 			],
 			"outputs": [
 				{"name":"key","type":"uint32"}
+			]
+		},
+		{
+			"name": "invokeDebot",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"debot","type":"address"},
+				{"components":[{"name":"desc","type":"bytes"},{"name":"name","type":"bytes"},{"name":"actionType","type":"uint8"},{"name":"attrs","type":"bytes"},{"name":"to","type":"uint8"},{"name":"misc","type":"cell"}],"name":"action","type":"tuple"}
+			]
+		},
+		{
+			"name": "invokePrint",
+			"inputs": [
+			],
+			"outputs": [
+				{"components":[{"name":"desc","type":"bytes"},{"name":"name","type":"bytes"},{"name":"actionType","type":"uint8"},{"name":"attrs","type":"bytes"},{"name":"to","type":"uint8"},{"name":"misc","type":"cell"}],"name":"actions","type":"tuple[]"}
+			]
+		},
+		{
+			"name": "sendSetDataMsg",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"dest","type":"address"},
+				{"name":"body","type":"cell"}
 			]
 		},
 		{

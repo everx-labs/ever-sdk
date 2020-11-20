@@ -77,6 +77,7 @@ impl TestBrowser {
                             serde_json::from_value(request.request_data).unwrap()
                         ).await;
                         client.resolve_app_request(request.app_request_id, result).await;
+                        println!("after resolve_app_request");
                     },
                     _ => panic!("Wrong response type"),
                 }
@@ -202,8 +203,8 @@ async fn test_debot() {
 
     let steps = json!([
         { "choice": 1, "inputs": [], "outputs": ["Test Goto Action"] },
-        { "choice": 1, "inputs": [], "outputs": ["Debot tests."] },
-        { "choice": 6, "inputs": [], "outputs": [] }
+        { "choice": 1, "inputs": [], "outputs": ["Debot Tests"] },
+        { "choice": 8, "inputs": [], "outputs": [] }
     ]);
     TestBrowser::execute(
         client.clone(),
@@ -218,8 +219,24 @@ async fn test_debot() {
         { "choice": 2, "inputs": [], "outputs": ["Test Print Action", "test2: instant print", "test instant print"] },
         { "choice": 1, "inputs": [], "outputs": ["test simple print"] },
         { "choice": 2, "inputs": [], "outputs": [ format!("integer=1,addr={},string=test_string_1", target_addr)] },
-        { "choice": 3, "inputs": [], "outputs": [] },
-        { "choice": 6, "inputs": [], "outputs": [] },
+        { "choice": 3, "inputs": [], "outputs": ["Debot Tests"] },
+        { "choice": 8, "inputs": [], "outputs": [] },
+    ]);
+    TestBrowser::execute(
+        client.clone(),
+        debot_addr.clone(),
+        keys.clone(),
+        serde_json::from_value(steps).unwrap()
+    ).await;
+
+    println!("Test 3");
+
+    let steps = json!([
+        { "choice": 3, "inputs": ["-1:1111111111111111111111111111111111111111111111111111111111111111"], "outputs": ["Test Run Action", "test1: instant run 1", "test2: instant run 2"] },
+        { "choice": 1, "inputs": ["hello"], "outputs": [] },
+        { "choice": 2, "inputs": [], "outputs": [ "integer=2,addr=-1:1111111111111111111111111111111111111111111111111111111111111111,string=hello"] },
+        { "choice": 3, "inputs": [], "outputs": ["Debot Tests"] },
+        { "choice": 8, "inputs": [], "outputs": [] },
     ]);
     TestBrowser::execute(
         client.clone(),
