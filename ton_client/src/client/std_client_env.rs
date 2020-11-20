@@ -22,18 +22,17 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use tokio_tungstenite::tungstenite::Message as WsMessage;
 
-pub(crate) struct ClientEnv {
-    http_client: HttpClient,
+lazy_static! {
+    static ref RUNTIME_CONTAINER: ClientResult<RuntimeContainer> = RuntimeContainer::new();
+}
+
+struct RuntimeContainer {
     _async_runtime: Option<tokio::runtime::Runtime>,
     async_runtime_handle: tokio::runtime::Handle,
 }
 
-impl ClientEnv {
-    pub fn new() -> ClientResult<Self> {
-        let client = ClientBuilder::new()
-            .build()
-            .map_err(|err| Error::http_client_create_error(err))?;
-
+impl RuntimeContainer {
+    fn new() -> ClientResult<Self> {
         let (async_runtime, async_runtime_handle) =
             if let Ok(existing) = tokio::runtime::Handle::try_current() {
                 (None, existing)
@@ -49,9 +48,32 @@ impl ClientEnv {
             };
 
         Ok(Self {
-            http_client: client,
             _async_runtime: async_runtime,
             async_runtime_handle,
+        })
+    }
+}
+
+pub(crate) struct ClientEnv {
+    http_client: HttpClient,
+    async_runtime_handle: tokio::runtime::Handle,
+}
+
+impl ClientEnv {
+    pub fn new() -> ClientResult<Self> {
+        let client = ClientBuilder::new()
+            .build()
+            .map_err(|err| Error::http_client_create_error(err))?;
+
+        let async_runtime_handle = RUNTIME_CONTAINER
+            .as_ref()
+            .map_err(|err| err.clone())?
+            .async_runtime_handle
+            .clone();
+
+        Ok(Self {
+            http_client: client,
+            async_runtime_handle
         })
     }
 

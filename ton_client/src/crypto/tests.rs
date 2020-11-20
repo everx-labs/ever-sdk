@@ -736,7 +736,7 @@ async fn test_signing_box() {
     let keys = client.generate_sign_keys();
 
     let keys_box_handle = client
-        .request_async::<_, boxes::ResultOfGetSigningBox>(
+        .request_async::<_, boxes::RegisteredSigningBox>(
             "crypto.get_signing_box",
             keys.clone(),
         )
@@ -754,8 +754,8 @@ async fn test_signing_box() {
                     let result: boxes::ResultOfSigningBoxGetPublicKey = client
                         .request_async(
                             "crypto.signing_box_get_public_key",
-                            boxes::ParamsOfSigningBoxGetPublicKey {
-                                signing_box: keys_box_handle.into()
+                            boxes::RegisteredSigningBox {
+                                handle: keys_box_handle.into()
                             },
                         ).await.unwrap();
                     client
@@ -794,7 +794,7 @@ async fn test_signing_box() {
         futures::future::ready(())
     };
 
-    let external_box: boxes::ResultOfRegisterSigningBox = client.request_async_callback(
+    let external_box: boxes::RegisteredSigningBox = client.request_async_callback(
         "crypto.register_signing_box",
         (),
         callback
@@ -804,8 +804,8 @@ async fn test_signing_box() {
     let box_pubkey: super::boxes::ResultOfSigningBoxGetPublicKey = client
         .request_async(
             "crypto.signing_box_get_public_key",
-            super::boxes::ParamsOfSigningBoxGetPublicKey {
-                signing_box: external_box.handle.clone(),
+            super::boxes::RegisteredSigningBox {
+                handle: external_box.handle.clone(),
             },
         ).await.unwrap();
 
@@ -816,7 +816,7 @@ async fn test_signing_box() {
         .request_async(
             "crypto.signing_box_sign",
             super::boxes::ParamsOfSigningBoxSign {
-                signing_box: external_box.handle,
+                signing_box: external_box.handle.clone(),
                 unsigned: unsigned.clone(),
             },
         ).await.unwrap();
@@ -831,4 +831,20 @@ async fn test_signing_box() {
         ).unwrap();
     
     assert_eq!(box_sign.signature, keys_sign.signature);
+
+    let _: () = client
+        .request_async(
+            "crypto.remove_signing_box",
+            super::boxes::RegisteredSigningBox {
+                handle: external_box.handle,
+        },
+    ).await.unwrap();
+
+    let _: () = client
+        .request_async(
+            "crypto.remove_signing_box",
+            super::boxes::RegisteredSigningBox {
+                handle: keys_box_handle.into(),
+        },
+    ).await.unwrap();
 }

@@ -60,8 +60,8 @@ impl Signer {
             Signer::SigningBox { handle } => {
                 crate::crypto::boxes::signing_box_get_public_key(
                     context,
-                    crate::crypto::boxes::ParamsOfSigningBoxGetPublicKey {
-                        signing_box: handle.clone()
+                    crate::crypto::boxes::RegisteredSigningBox {
+                        handle: handle.clone()
                     }
                 )
                     .await

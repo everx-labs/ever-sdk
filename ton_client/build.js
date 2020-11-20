@@ -26,7 +26,7 @@ main(async () => {
         darwin: [['lib{}.dylib', '']],
     };
     for (const [src, dstSuffix] of platformNames[platform] || []) {
-        const target = ['..', '..', 'target', 'release', src.replace('{}', 'ton_client')];
+        const target = ['..', 'target', 'release', src.replace('{}', 'ton_client')];
         await postBuild(target, platform);
         await gz(
             target,
