@@ -32,7 +32,7 @@ use crate::ClientContext;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-#[derive(Serialize, Deserialize, Default, ApiType)]
+#[derive(Serialize, Deserialize, Default, ApiType, Clone)]
 pub struct DebotHandle(u32);
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]

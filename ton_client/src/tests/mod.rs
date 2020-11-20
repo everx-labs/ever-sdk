@@ -16,7 +16,7 @@ use crate::abi::{
     encode_message, Abi, CallSet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
 use crate::boc::{ParamsOfParse, ResultOfParse};
-use crate::client::{ClientContext, Error};
+use crate::client::*;
 use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
@@ -54,7 +54,7 @@ const LOG_CGF_PATH: &str = "src/tests/log_cfg.yaml";
 
 struct SimpleLogger;
 
-const MAX_LEVEL: log::LevelFilter = log::LevelFilter::Warn;
+const MAX_LEVEL: log::LevelFilter = log::LevelFilter::Info;
 
 impl log::Log for SimpleLogger {
     fn enabled(&self, metadata: &log::Metadata) -> bool {
@@ -83,6 +83,8 @@ pub const GIVER: &str = "Giver";
 pub const GIVER_WALLET: &str = "GiverWallet";
 pub const HELLO: &str = "Hello";
 pub const EVENTS: &str = "Events";
+pub const TEST_DEBOT: &str = "testDebot";
+pub const TEST_DEBOT_TARGET: &str = "testDebotTarget";
 
 struct RequestData {
     sender: Sender<ClientResult<Value>>,
@@ -410,6 +412,7 @@ impl TestClient {
         } else if response_type == ResponseType::Nop as u32 {
         } else if response_type >= ResponseType::Custom as u32
             || response_type == ResponseType::AppRequest as u32
+            || response_type == ResponseType::AppNotify as u32
         {
             (request.callback)(params_json, response_type).await
         } else {
@@ -704,6 +707,19 @@ impl TestClient {
             Self::wallet_address()
         }
         .into()
+    }
+
+    pub async fn resolve_app_request(&self, app_request_id: u32, result: impl Serialize) {
+        self
+            .request_async::<_, ()>(
+                "client.resolve_app_request",
+                ParamsOfResolveAppRequest {
+                    app_request_id,
+                    result: AppRequestResult::Ok { 
+                        result: json!(result)
+                    }
+                },
+            ).await.unwrap();
     }
 }
 

@@ -24,7 +24,7 @@ pub enum ResultOfAppDebotBrowser {
     InvokeDebot,
 }
 
-#[derive(Serialize, Deserialize, Clone, ApiType)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 pub enum ParamsOfAppDebotBrowser {
     Log { msg: String },
     Switch { context_id: u8 },
