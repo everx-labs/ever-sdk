@@ -64,7 +64,7 @@ impl TestBrowser {
             log::info!("received from debot: {:#}", params);
             let client = client_copy.clone();
             let state = state_copy.clone();
-            async move {
+            tokio::spawn(async move {
                 match response_type {
                     ResponseType::AppNotify => {
                         Self::process_notification(&state, serde_json::from_value(params).unwrap()).await;
@@ -81,7 +81,8 @@ impl TestBrowser {
                     },
                     _ => panic!("Wrong response type"),
                 }
-            }
+            });
+            futures::future::ready(())
         };
 
         let handle: RegisteredDebot = client.request_async_callback(
