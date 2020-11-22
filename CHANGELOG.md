@@ -6,6 +6,18 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - panic after `tc_destroy_context` call. Now all contexts use global async runtime
 
+## 1.1.2 Nov 15, 2020
+### Fixed
+- `wasm` feature was not worked.
+- `crypto.factorize` doesn't panic on invalid challenge
+- `client.get_api_reference` returns proper version
+- ABI JSON with explicit function ID is parsed properly
+
+## 1.1.1 Nov 11, 2020
+### Fixed
+- To be compatible with older rust version change api type derivation with `vec![]`
+instead of prev `[].into()`
+
 ## 1.1.0 Nov 3, 2020
 
 ### New

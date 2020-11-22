@@ -103,7 +103,7 @@ pub fn factorize(
         let mut y = x;
 
         let q = ((rng.next_u64() & 0xF) + 17) % composite;
-        let lim = 1 << (i + 18);
+        let lim = 1 << (std::cmp::min(i, 5) + 18);
 
         for j in 1..lim {
             it += 1;
