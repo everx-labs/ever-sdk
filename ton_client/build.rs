@@ -99,12 +99,14 @@ impl BuildInfo {
 }
 
 fn main() -> Result<(), String> {
-    let build_info = BuildInfo::load()?;
-    let build_info_json = serde_json::to_string_pretty(&build_info).unwrap();
-    std::fs::write(
-        root().join("src").join("build_info.json").to_str().unwrap(),
-        build_info_json,
-    )
-    .map_err(|err| format!("{}", err))?;
+    if std::env::var("NO_BUILD_INFO").is_err() {
+        let build_info = BuildInfo::load()?;
+        let build_info_json = serde_json::to_string_pretty(&build_info).unwrap();
+        std::fs::write(
+            root().join("src").join("build_info.json").to_str().unwrap(),
+            build_info_json,
+        )
+        .map_err(|err| format!("{}", err))?;
+    }
     Ok(())
 }
