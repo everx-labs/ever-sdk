@@ -97,6 +97,10 @@ const options = process.argv.slice(2).reduce((acc, key, ind, argv) => {
 }, {});
 const getOption = opt => options[opt] || '';
 
+const noBuildInfo = getOption('no-build-info');
+if (noBuildInfo) {
+    spawnEnv['NO_BUILD_INFO'] = true
+}
 const verboseMode = getOption('verbose');
 const devOut = getOption('dev-out');
 const devMode = !!devOut;
