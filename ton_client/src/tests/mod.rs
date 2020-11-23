@@ -54,7 +54,7 @@ const LOG_CGF_PATH: &str = "src/tests/log_cfg.yaml";
 
 struct SimpleLogger;
 
-const MAX_LEVEL: log::LevelFilter = log::LevelFilter::Info;
+const MAX_LEVEL: log::LevelFilter = log::LevelFilter::Debug;
 
 impl log::Log for SimpleLogger {
     fn enabled(&self, metadata: &log::Metadata) -> bool {

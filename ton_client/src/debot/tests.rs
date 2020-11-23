@@ -17,6 +17,7 @@ use crate::tests::{TEST_DEBOT, TEST_DEBOT_TARGET, TestClient};
 use crate::crypto::KeyPair;
 use crate::json_interface::debot::*;
 use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer};
+use futures::future::{BoxFuture, FutureExt};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::sync::Mutex;
@@ -25,10 +26,12 @@ use super::*;
 struct TestBrowser {}
 
 #[derive(Default, Deserialize)]
+#[serde(default)]
 struct DebotStep {
     pub choice: u8,
     pub inputs: Vec<String>,
     pub outputs: Vec<String>,
+    pub invokes: Vec<Vec<DebotStep>>,
 }
 
 #[derive(Default)]
@@ -49,19 +52,11 @@ struct BrowserData {
 
 impl TestBrowser {
 
-    pub async fn execute(client: Arc<TestClient>, address: String, keys: KeyPair, steps: Vec<DebotStep>) {
-        let state = Arc::new(BrowserData {
-            current: Mutex::new(Default::default()), 
-            next: Mutex::new(steps),
-            client: client.clone(),
-            keys,
-            address: address.clone(),
-            finished: AtomicBool::new(false),
-        });
+    pub async fn execute_from_state(client: Arc<TestClient>, state: Arc<BrowserData>, start_function: &str) {
         let state_copy = state.clone();
         let client_copy = client.clone();
         let callback = move |params, response_type| {
-            log::info!("received from debot: {:#}", params);
+            log::debug!("received from debot: {:#}", params);
             let client = client_copy.clone();
             let state = state_copy.clone();
             tokio::spawn(async move {
@@ -77,7 +72,6 @@ impl TestBrowser {
                             serde_json::from_value(request.request_data).unwrap()
                         ).await;
                         client.resolve_app_request(request.app_request_id, result).await;
-                        println!("after resolve_app_request");
                     },
                     _ => panic!("Wrong response type"),
                 }
@@ -86,9 +80,9 @@ impl TestBrowser {
         };
 
         let handle: RegisteredDebot = client.request_async_callback(
-            "debot.start",
-            ParamsOfFetch {
-                address: address.clone()
+            start_function,
+            ParamsOfStart {
+                address: state.address.clone()
             },
             callback
         ).await.unwrap();
@@ -111,11 +105,25 @@ impl TestBrowser {
             let step = state.current.lock().await;
             assert_eq!(step.outputs, step.step.outputs);
             assert_eq!(step.step.inputs.len(), 0);
+            assert_eq!(step.step.invokes.len(), 0);
 
             if step.available_actions.len() == 0 { break; }
         }
 
         assert_eq!(state.next.lock().await.len(), 0);
+    }
+
+    pub async fn execute(client: Arc<TestClient>, address: String, keys: KeyPair, steps: Vec<DebotStep>) {
+        let state = Arc::new(BrowserData {
+            current: Mutex::new(Default::default()), 
+            next: Mutex::new(steps),
+            client: client.clone(),
+            keys,
+            address: address.clone(),
+            finished: AtomicBool::new(false),
+        });
+
+        Self::execute_from_state(client, state, "debot.start").await
     }
 
     async fn process_notification(state: &BrowserData, params: ParamsOfAppDebotBrowser) {
@@ -136,7 +144,13 @@ impl TestBrowser {
         }
     }
 
-    async fn process_call(_client: Arc<TestClient>, state: &BrowserData, params: ParamsOfAppDebotBrowser) -> ResultOfAppDebotBrowser {
+    fn call_execute_boxed(
+        client: Arc<TestClient>, state: Arc<BrowserData>, start_function: &'static str
+    ) -> BoxFuture<'static, ()> {
+        Self::execute_from_state(client, state, start_function).boxed()
+    }
+
+    async fn process_call(client: Arc<TestClient>, state: &BrowserData, params: ParamsOfAppDebotBrowser) -> ResultOfAppDebotBrowser {
         match params {
             ParamsOfAppDebotBrowser::Input { prefix: _ } => {
                 let value = state.current.lock().await.step.inputs.remove(0);
@@ -146,8 +160,24 @@ impl TestBrowser {
                 let keys = state.keys.clone();
                 ResultOfAppDebotBrowser::LoadKey { keys }
             },
-            ParamsOfAppDebotBrowser::InvokeDebot { action: _, debot_addr: _ } => {
-                unimplemented!();
+            ParamsOfAppDebotBrowser::InvokeDebot { action, debot_addr } => {
+                let mut steps = state.current.lock().await.step.invokes.remove(0);
+                steps[0].choice = 1;
+                let current = CurrentStepData {
+                    available_actions: vec![action],
+                    ..Default::default()
+                };
+
+                let state = Arc::new(BrowserData {
+                    current: Mutex::new(current), 
+                    next: Mutex::new(steps),
+                    client: client.clone(),
+                    keys: state.keys.clone(),
+                    address: debot_addr,
+                    finished: AtomicBool::new(false),
+                });
+                Self::call_execute_boxed(client, state, "debot.fetch").await;
+                ResultOfAppDebotBrowser::InvokeDebot
             },
             _ => panic!("invalid call {:#?}", params)
         }
@@ -253,6 +283,21 @@ async fn test_debot() {
         { "choice": 1, "inputs": [], "outputs": [] },
         { "choice": 2, "inputs": [], "outputs": ["data=64"] },
         { "choice": 3, "inputs": [], "outputs": ["Debot Tests"] },
+        { "choice": 8, "inputs": [], "outputs": [] },
+    ]);
+    TestBrowser::execute(
+        client.clone(),
+        debot_addr.clone(),
+        keys.clone(),
+        serde_json::from_value(steps).unwrap()
+    ).await;
+
+    println!("Test 5");
+
+    let steps = json!([
+        { "choice": 5, "inputs": [], "outputs": ["Test Send Msg Action"] },
+        { "choice": 1, "inputs": [], "outputs": ["Transaction succeeded."] },
+        { "choice": 2, "inputs": [], "outputs": ["Debot Tests"] },
         { "choice": 8, "inputs": [], "outputs": [] },
     ]);
     TestBrowser::execute(
