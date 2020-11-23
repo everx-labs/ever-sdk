@@ -340,6 +340,30 @@ async fn test_debot_send_msg() {
     let steps = json!([
         { "choice": 5, "inputs": [], "outputs": ["Test Send Msg Action"] },
         { "choice": 1, "inputs": [], "outputs": ["Transaction succeeded."] },
+        { "choice": 2, "inputs": [], "outputs": [] },
+        { "choice": 3, "inputs": [], "outputs": ["data=100"] },
+        { "choice": 4, "inputs": [], "outputs": ["Debot Tests"] },
+        { "choice": 8, "inputs": [], "outputs": [] },
+    ]);
+    TestBrowser::execute(
+        client.clone(),
+        debot_addr.clone(),
+        keys.clone(),
+        serde_json::from_value(steps).unwrap()
+    ).await;
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_debot_invoke_debot() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys } = init_debot(client.clone()).await;
+
+    let steps = json!([
+        { "choice": 6, "inputs": [debot_addr], "outputs": ["Test Invoke Debot Action", "enter debot address:"] },
+        { "choice": 1, "inputs": [], "outputs": [], "invokes": [
+                [{ "choice": 1, "inputs": [], "outputs": ["Print test string", "Debot is invoked"] }],
+            ] 
+        },
         { "choice": 2, "inputs": [], "outputs": ["Debot Tests"] },
         { "choice": 8, "inputs": [], "outputs": [] },
     ]);

@@ -124,6 +124,14 @@
 			]
 		},
 		{
+			"name": "setData2",
+			"inputs": [
+				{"name":"num","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
 			"name": "getKey",
 			"inputs": [
 			],
@@ -138,14 +146,6 @@
 			"outputs": [
 				{"name":"debot","type":"address"},
 				{"components":[{"name":"desc","type":"bytes"},{"name":"name","type":"bytes"},{"name":"actionType","type":"uint8"},{"name":"attrs","type":"bytes"},{"name":"to","type":"uint8"},{"name":"misc","type":"cell"}],"name":"action","type":"tuple"}
-			]
-		},
-		{
-			"name": "invokePrint",
-			"inputs": [
-			],
-			"outputs": [
-				{"components":[{"name":"desc","type":"bytes"},{"name":"name","type":"bytes"},{"name":"actionType","type":"uint8"},{"name":"attrs","type":"bytes"},{"name":"to","type":"uint8"},{"name":"misc","type":"cell"}],"name":"actions","type":"tuple[]"}
 			]
 		},
 		{
