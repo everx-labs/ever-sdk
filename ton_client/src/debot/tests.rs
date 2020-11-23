@@ -23,6 +23,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::sync::Mutex;
 use super::*;
 
+lazy_static!(
+    static ref DEBOT: Mutex<Option<DebotData>> = Mutex::new(None);
+);
+
 struct TestBrowser {}
 
 #[derive(Default, Deserialize)]
@@ -184,9 +188,20 @@ impl TestBrowser {
     }
 }
 
-#[tokio::test(core_threads = 2)]
-async fn test_debot() {
-    let client = std::sync::Arc::new(TestClient::new());
+#[derive(Clone)]
+struct DebotData {
+    debot_addr: String,
+    target_addr: String,
+    keys: KeyPair,
+}
+
+async fn init_debot(client: Arc<TestClient>) -> DebotData {
+    let mut debot = DEBOT.lock().await;
+
+    if let Some(data) = &*debot {
+        return data.clone();
+    }
+
     let keys = client.generate_sign_keys();
 
     let target_abi = TestClient::abi(TEST_DEBOT_TARGET, Some(2));
@@ -230,7 +245,19 @@ async fn test_debot() {
         None
     ).await;
 
-    println!("Test 1");
+    let data = DebotData {
+        debot_addr,
+        target_addr,
+        keys
+    };
+    *debot = Some(data.clone());
+    data
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_debot_goto() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys } = init_debot(client.clone()).await;
 
     let steps = json!([
         { "choice": 1, "inputs": [], "outputs": ["Test Goto Action"] },
@@ -243,8 +270,12 @@ async fn test_debot() {
         keys.clone(),
         serde_json::from_value(steps).unwrap()
     ).await;
+}
 
-    println!("Test 2");
+#[tokio::test(core_threads = 2)]
+async fn test_debot_print() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr, keys } = init_debot(client.clone()).await;
 
     let steps = json!([
         { "choice": 2, "inputs": [], "outputs": ["Test Print Action", "test2: instant print", "test instant print"] },
@@ -259,8 +290,12 @@ async fn test_debot() {
         keys.clone(),
         serde_json::from_value(steps).unwrap()
     ).await;
+}
 
-    println!("Test 3");
+#[tokio::test(core_threads = 2)]
+async fn test_debot_run() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys } = init_debot(client.clone()).await;
 
     let steps = json!([
         { "choice": 3, "inputs": ["-1:1111111111111111111111111111111111111111111111111111111111111111"], "outputs": ["Test Run Action", "test1: instant run 1", "test2: instant run 2"] },
@@ -275,8 +310,12 @@ async fn test_debot() {
         keys.clone(),
         serde_json::from_value(steps).unwrap()
     ).await;
+}
 
-    println!("Test 4");
+#[tokio::test(core_threads = 2)]
+async fn test_debot_run_method() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys } = init_debot(client.clone()).await;
 
     let steps = json!([
         { "choice": 4, "inputs": [], "outputs": ["Test Run Method Action"] },
@@ -291,8 +330,12 @@ async fn test_debot() {
         keys.clone(),
         serde_json::from_value(steps).unwrap()
     ).await;
+}
 
-    println!("Test 5");
+#[tokio::test(core_threads = 2)]
+async fn test_debot_send_msg() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys } = init_debot(client.clone()).await;
 
     let steps = json!([
         { "choice": 5, "inputs": [], "outputs": ["Test Send Msg Action"] },
