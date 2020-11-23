@@ -1,6 +1,7 @@
 use super::dengine::TonClient;
 use crate::crypto::{sign, KeyPair, ParamsOfSign};
 use crate::net::{query_collection, ParamsOfQueryCollection};
+use crate::encoding::decode_abi_number;
 use chrono::{Local, TimeZone};
 
 pub async fn call_routine(
@@ -84,11 +85,11 @@ pub(super) fn format_arg(params: &serde_json::Value, i: usize) -> String {
         return format!(
             "{}",
             // TODO: remove unwrap and return error
-            u64::from_str_radix(arg, 10).unwrap()
+            decode_abi_number::<u64>(arg).unwrap()
         );
     }
     if let Some(arg) = params["utime".to_owned() + &idx].as_str() {
-        let utime = u32::from_str_radix(arg, 10).unwrap();
+        let utime = decode_abi_number::<u32>(arg).unwrap();
         return if utime == 0 {
             "undefined".to_owned()
         } else {

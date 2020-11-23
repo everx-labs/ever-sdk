@@ -245,4 +245,20 @@ async fn test_debot() {
         keys.clone(),
         serde_json::from_value(steps).unwrap()
     ).await;
+
+    println!("Test 4");
+
+    let steps = json!([
+        { "choice": 4, "inputs": [], "outputs": ["Test Run Method Action"] },
+        { "choice": 1, "inputs": [], "outputs": [] },
+        { "choice": 2, "inputs": [], "outputs": ["data=64"] },
+        { "choice": 3, "inputs": [], "outputs": ["Debot Tests"] },
+        { "choice": 8, "inputs": [], "outputs": [] },
+    ]);
+    TestBrowser::execute(
+        client.clone(),
+        debot_addr.clone(),
+        keys.clone(),
+        serde_json::from_value(steps).unwrap()
+    ).await;
 }

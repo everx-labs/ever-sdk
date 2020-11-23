@@ -10,6 +10,7 @@ use crate::abi::{
     ParamsOfDecodeMessageBody, ParamsOfEncodeMessage, Signer,
 };
 use crate::crypto::{CryptoConfig, KeyPair};
+use crate::encoding::decode_abi_number;
 use crate::error::ClientError;
 use crate::net::{query_collection, NetworkConfig, ParamsOfQueryCollection};
 use crate::processing::{process_message, ParamsOfProcessMessage};
@@ -131,9 +132,9 @@ impl DEngine {
         let result = self.run_debot_get("getVersion", None).await?;
 
         let name_hex = result["name"].as_str().unwrap();
-        let ver_str = result["semver"].as_str().unwrap().trim_start_matches("0x");
+        let ver_str = result["semver"].as_str().unwrap();
         let name = str_hex_to_utf8(name_hex).unwrap();
-        let ver = u32::from_str_radix(ver_str, 16).unwrap();
+        let ver = decode_abi_number::<u32>(ver_str).unwrap();
         self.browser.log(format!(
             "{}, version {}.{}.{}",
             name,
@@ -525,7 +526,7 @@ impl DEngine {
     async fn update_options(&mut self) -> Result<(), String> {
         let params = self.run_debot_get("getDebotOptions", None).await?;
         let opt_str = params["options"].as_str().unwrap();
-        let options = u8::from_str_radix(opt_str.trim_start_matches("0x"), 16).unwrap();
+        let options = decode_abi_number::<u8>(opt_str).unwrap();
         if options & OPTION_ABI != 0 {
             let abi_str = str_hex_to_utf8(params["debotAbi"].as_str().unwrap())
                 .ok_or("cannot convert hex string to debot abi")?;
