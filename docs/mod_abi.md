@@ -600,12 +600,12 @@ type AbiParam = {
 type AbiEvent = {
     name: string,
     inputs: AbiParam[],
-    id?: number | null
+    id?: string | null
 };
 ```
 - `name`: _string_
 - `inputs`: _[AbiParam](mod_abi.md#AbiParam)[]_
-- `id`?: _number?_
+- `id`?: _string?_
 
 
 ## AbiData
@@ -629,13 +629,13 @@ type AbiFunction = {
     name: string,
     inputs: AbiParam[],
     outputs: AbiParam[],
-    id?: number | null
+    id?: string | null
 };
 ```
 - `name`: _string_
 - `inputs`: _[AbiParam](mod_abi.md#AbiParam)[]_
 - `outputs`: _[AbiParam](mod_abi.md#AbiParam)[]_
-- `id`?: _number?_
+- `id`?: _string?_
 
 
 ## AbiContract

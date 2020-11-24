@@ -159,14 +159,12 @@ type NetworkConfig = {
 type CryptoConfig = {
     mnemonic_dictionary?: number,
     mnemonic_word_count?: number,
-    hdkey_derivation_path?: string,
-    hdkey_compliant?: boolean
+    hdkey_derivation_path?: string
 };
 ```
 - `mnemonic_dictionary`?: _number_
 - `mnemonic_word_count`?: _number_
 - `hdkey_derivation_path`?: _string_
-- `hdkey_compliant`?: _boolean_
 
 
 ## AbiConfig
