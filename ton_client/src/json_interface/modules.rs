@@ -205,6 +205,10 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
         crate::crypto::signing_box_sign,
         crate::crypto::boxes::signing_box_sign_api,
     );
+    module.register_sync_fn(
+        crate::crypto::remove_signing_box,
+        crate::crypto::boxes::remove_signing_box_api,
+    );
 
     module.register();
 }

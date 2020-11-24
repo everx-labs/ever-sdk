@@ -40,4 +40,5 @@ fn api_reference() {
         ))
         .unwrap();
     assert_ne!(api.api.modules.len(), 0);
+    assert_eq!(api.api.version, env!("CARGO_PKG_VERSION"));
 }

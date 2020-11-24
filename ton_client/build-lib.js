@@ -26,7 +26,7 @@ function root_path(...items) {
     return path.resolve(root, ...(items.reduce((a, x) => a.concat(x), [])));
 }
 
-const ton_client_toml = fs.readFileSync(path.join(__dirname, '..', 'client', 'Cargo.toml'))
+const ton_client_toml = fs.readFileSync(path.join(__dirname, '..', 'ton_client', 'Cargo.toml'))
     .toString();
 const toml_version = /^\s*version\s*=\s*"([0-9.]+)"\s*$/gm.exec(ton_client_toml)[1] || '';
 const version = toml_version.split('.').join('_');
@@ -97,6 +97,10 @@ const options = process.argv.slice(2).reduce((acc, key, ind, argv) => {
 }, {});
 const getOption = opt => options[opt] || '';
 
+const noBuildInfo = getOption('no-build-info');
+if (noBuildInfo) {
+    spawnEnv['NO_BUILD_INFO'] = true
+}
 const verboseMode = getOption('verbose');
 const devOut = getOption('dev-out');
 const devMode = !!devOut;
