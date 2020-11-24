@@ -27,29 +27,22 @@ lazy_static! {
 }
 
 struct RuntimeContainer {
-    _async_runtime: Option<tokio::runtime::Runtime>,
+    _async_runtime: tokio::runtime::Runtime,
     async_runtime_handle: tokio::runtime::Handle,
 }
 
 impl RuntimeContainer {
     fn new() -> ClientResult<Self> {
-        let (async_runtime, async_runtime_handle) =
-            if let Ok(existing) = tokio::runtime::Handle::try_current() {
-                (None, existing)
-            } else {
-                let runtime = tokio::runtime::Builder::new()
-                    .threaded_scheduler()
-                    .enable_io()
-                    .enable_time()
-                    .build()
-                    .map_err(|err| Error::cannot_create_runtime(err))?;
-                let runtime_handle = runtime.handle().clone();
-                (Some(runtime), runtime_handle)
-            };
+        let async_runtime = tokio::runtime::Builder::new()
+            .threaded_scheduler()
+            .enable_io()
+            .enable_time()
+            .build()
+            .map_err(|err| Error::cannot_create_runtime(err))?;
 
         Ok(Self {
+            async_runtime_handle: async_runtime.handle().clone(),
             _async_runtime: async_runtime,
-            async_runtime_handle,
         })
     }
 }
@@ -117,13 +110,18 @@ impl ClientEnv {
 
     /// Sends asynchronous task to scheduler
     pub fn spawn(&self, future: impl Future<Output = ()> + Send + 'static) {
-        self.async_runtime_handle
+        tokio::runtime::Handle::try_current()
+            .as_ref()
+            .unwrap_or(&self.async_runtime_handle)
             .enter(move || tokio::spawn(future));
     }
 
     /// Executes asynchronous task blocking current thread
     pub fn block_on<F: Future>(&self, future: F) -> F::Output {
-        self.async_runtime_handle.block_on(future)
+        tokio::runtime::Handle::try_current()
+            .as_ref()
+            .unwrap_or(&self.async_runtime_handle)
+            .block_on(future)
     }
 
     /// Connects to the websocket endpoint
