@@ -207,7 +207,22 @@ async fn init_debot(client: Arc<TestClient>) -> DebotData {
     let target_abi = TestClient::abi(TEST_DEBOT_TARGET, Some(2));
     let debot_abi = TestClient::abi(TEST_DEBOT, Some(2));
 
-    let target_addr = client.deploy_with_giver_async(ParamsOfEncodeMessage {
+    let target_deploy_params = ParamsOfEncodeMessage {
+        abi: target_abi.clone(),
+        deploy_set: Some(DeploySet {
+            initial_data: None,
+            tvc: TestClient::tvc(TEST_DEBOT_TARGET, Some(2)),
+            workchain_id: None,
+        }),
+        signer: Signer::Keys { keys: keys.clone() },
+        processing_try_index: None,
+        address: None,
+        call_set: CallSet::some_with_function("constructor"),
+    };
+
+    let target_addr = client.encode_message(target_deploy_params.clone()).await.unwrap().address;
+
+    let target_future = client.deploy_with_giver_async(ParamsOfEncodeMessage {
             abi: target_abi.clone(),
             deploy_set: Some(DeploySet {
                 initial_data: None,
@@ -220,9 +235,9 @@ async fn init_debot(client: Arc<TestClient>) -> DebotData {
             call_set: CallSet::some_with_function("constructor"),
         },
         None
-    ).await;
+    );
 
-    let debot_addr = client.deploy_with_giver_async(ParamsOfEncodeMessage {
+    let debot_future = client.deploy_with_giver_async(ParamsOfEncodeMessage {
             abi: debot_abi.clone(),
             deploy_set: Some(DeploySet {
                 initial_data: None,
@@ -243,7 +258,9 @@ async fn init_debot(client: Arc<TestClient>) -> DebotData {
             }),
         },
         None
-    ).await;
+    );
+
+    let (_, debot_addr) = futures::join!(target_future, debot_future);
 
     let data = DebotData {
         debot_addr,
