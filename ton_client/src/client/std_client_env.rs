@@ -21,30 +21,19 @@ use reqwest::{
 use std::collections::HashMap;
 use std::str::FromStr;
 use tokio_tungstenite::tungstenite::Message as WsMessage;
+use tokio::runtime::Runtime;
 
 lazy_static! {
-    static ref RUNTIME_CONTAINER: ClientResult<RuntimeContainer> = RuntimeContainer::new();
+    static ref RUNTIME_CONTAINER: ClientResult<Runtime> = create_runtime();
 }
 
-struct RuntimeContainer {
-    _async_runtime: tokio::runtime::Runtime,
-    async_runtime_handle: tokio::runtime::Handle,
-}
-
-impl RuntimeContainer {
-    fn new() -> ClientResult<Self> {
-        let async_runtime = tokio::runtime::Builder::new()
-            .threaded_scheduler()
-            .enable_io()
-            .enable_time()
-            .build()
-            .map_err(|err| Error::cannot_create_runtime(err))?;
-
-        Ok(Self {
-            async_runtime_handle: async_runtime.handle().clone(),
-            _async_runtime: async_runtime,
-        })
-    }
+fn create_runtime() -> ClientResult<Runtime> {
+    tokio::runtime::Builder::new()
+        .threaded_scheduler()
+        .enable_io()
+        .enable_time()
+        .build()
+        .map_err(|err| Error::cannot_create_runtime(err))
 }
 
 pub(crate) struct ClientEnv {
@@ -58,11 +47,16 @@ impl ClientEnv {
             .build()
             .map_err(|err| Error::http_client_create_error(err))?;
 
-        let async_runtime_handle = RUNTIME_CONTAINER
-            .as_ref()
-            .map_err(|err| err.clone())?
-            .async_runtime_handle
-            .clone();
+        let async_runtime_handle = match tokio::runtime::Handle::try_current() {
+            Ok(handle) => handle,
+            Err(_) => {
+                RUNTIME_CONTAINER
+                    .as_ref()
+                    .map_err(|err| err.clone())?
+                    .handle()
+                    .clone()
+            }
+        };
 
         Ok(Self {
             http_client: client,
@@ -110,18 +104,13 @@ impl ClientEnv {
 
     /// Sends asynchronous task to scheduler
     pub fn spawn(&self, future: impl Future<Output = ()> + Send + 'static) {
-        tokio::runtime::Handle::try_current()
-            .as_ref()
-            .unwrap_or(&self.async_runtime_handle)
+        self.async_runtime_handle
             .enter(move || tokio::spawn(future));
     }
 
     /// Executes asynchronous task blocking current thread
     pub fn block_on<F: Future>(&self, future: F) -> F::Output {
-        tokio::runtime::Handle::try_current()
-            .as_ref()
-            .unwrap_or(&self.async_runtime_handle)
-            .block_on(future)
+        self.async_runtime_handle.block_on(future)
     }
 
     /// Connects to the websocket endpoint
