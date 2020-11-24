@@ -1,7 +1,7 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
-## 1.2.0 Nov 20, 2020
+## 1.2.0 Nov 24, 2020
 
 ### Featured
 - `debot` module was added with debot engine functions, such as : `start`, `fetch`, `execute`, `remove`. See the `debot` module documentation for more info.  
