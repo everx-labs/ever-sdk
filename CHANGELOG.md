@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - panic after `tc_destroy_context` call. Now all contexts use global async runtime
+- field `mnemonic_hdkey_compliant` was removed from `CryptoConfig` (unused by the library).
 
 ## 1.1.2 Nov 15, 2020
 ### Fixed

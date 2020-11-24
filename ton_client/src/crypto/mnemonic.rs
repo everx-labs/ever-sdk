@@ -16,7 +16,7 @@ use crate::crypto;
 use crate::crypto::hdkey::HDPrivateKey;
 use crate::crypto::internal::{hmac_sha512, key256, pbkdf2_hmac_sha512};
 use crate::crypto::keys::KeyPair;
-use crate::crypto::CryptoConfig;
+use crate::crypto::{CryptoConfig, default_hdkey_compliant};
 use crate::encoding::hex_decode;
 use crate::error::ClientResult;
 use bip39::{Language, Mnemonic, MnemonicType};
@@ -288,13 +288,13 @@ impl CryptoMnemonic for Bip39Mnemonic {
 
     fn derive_ed25519_keys_from_phrase(
         &self,
-        config: &CryptoConfig,
+        _config: &CryptoConfig,
         phrase: &String,
         path: &String,
     ) -> ClientResult<KeyPair> {
         check_phrase(self, phrase)?;
         let derived =
-            HDPrivateKey::from_mnemonic(phrase)?.derive_path(path, config.hdkey_compliant)?;
+            HDPrivateKey::from_mnemonic(phrase)?.derive_path(path, default_hdkey_compliant())?;
         ed25519_keys_from_secret_bytes(&derived.secret())
     }
 
@@ -407,7 +407,7 @@ impl CryptoMnemonic for TonMnemonic {
 
     fn derive_ed25519_keys_from_phrase(
         &self,
-        config: &CryptoConfig,
+        _config: &CryptoConfig,
         phrase: &String,
         path: &String,
     ) -> ClientResult<KeyPair> {
@@ -415,7 +415,7 @@ impl CryptoMnemonic for TonMnemonic {
 
         let seed = Self::seed_from_string(&phrase, "TON default seed", 100_000);
         let master = HDPrivateKey::master(&key256(&seed[32..])?, &key256(&seed[..32])?);
-        let derived = master.derive_path(path, config.hdkey_compliant)?;
+        let derived = master.derive_path(path, default_hdkey_compliant())?;
         ed25519_keys_from_secret_bytes(&derived.secret())
     }
 
