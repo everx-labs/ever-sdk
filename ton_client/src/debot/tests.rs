@@ -63,24 +63,25 @@ impl TestBrowser {
             log::debug!("received from debot: {:#}", params);
             let client = client_copy.clone();
             let state = state_copy.clone();
-            tokio::spawn(async move {
+            async move {
                 match response_type {
                     ResponseType::AppNotify => {
                         Self::process_notification(&state, serde_json::from_value(params).unwrap()).await;
                     },
                     ResponseType::AppRequest => {
-                        let request: ParamsOfAppRequest = serde_json::from_value(params).unwrap();
-                        let result = Self::process_call(
-                            client.clone(),
-                            &state,
-                            serde_json::from_value(request.request_data).unwrap()
-                        ).await;
-                        client.resolve_app_request(request.app_request_id, result).await;
+                        tokio::spawn(async move {
+                            let request: ParamsOfAppRequest = serde_json::from_value(params).unwrap();
+                            let result = Self::process_call(
+                                client.clone(),
+                                &state,
+                                serde_json::from_value(request.request_data).unwrap()
+                            ).await;
+                            client.resolve_app_request(request.app_request_id, result).await;
+                        });
                     },
                     _ => panic!("Wrong response type"),
                 }
-            });
-            futures::future::ready(())
+            }
         };
 
         let handle: RegisteredDebot = client.request_async_callback(
