@@ -7,8 +7,8 @@ All notable changes to this project will be documented in this file.
 - `debot` module was added with debot engine functions, such as : `start`, `fetch`, `execute`, `remove`. See the `debot` module documentation for more info.  
 Check our tests for code examples.  
 
-- External signing was supported for message encoding: `SigningBox` type for `Signer` enum is supported.   
-  Now it is possible to sign messages with externally implemented signing box interface without private key disclosure to the library. Can be used in case of signing via HSM API ir cold wallet - when there is no access to the private key.  
+- External signing was supported for message encoding: `SigningBox` type for `Signer` enum was supported.   
+  Now it is possible to sign messages with externally implemented signing box interface without private key disclosure to the library. Can be used in case of signing via HSM API or via cold wallet - when there is no access to the private key.  
   
   It is also possible to create a Signing Box instance inside SDK - from a key pair passed into the library with `get_signing_box` method. It can be used for some test cases. Also it increases security - you need to pass your keys one time only.  
   
