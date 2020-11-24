@@ -104,12 +104,6 @@ fn deserialize_hdkey_derivation_path<'de, D: Deserializer<'de>>(
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_hdkey_derivation_path()))
 }
 
-fn deserialize_hdkey_compliant<'de, D: Deserializer<'de>>(
-    deserializer: D,
-) -> Result<bool, D::Error> {
-    Ok(Option::deserialize(deserializer)?.unwrap_or(default_hdkey_compliant()))
-}
-
 #[derive(Deserialize, Debug, Clone, ApiType)]
 pub struct CryptoConfig {
     #[serde(
@@ -127,11 +121,6 @@ pub struct CryptoConfig {
         deserialize_with = "deserialize_hdkey_derivation_path"
     )]
     pub hdkey_derivation_path: String,
-    #[serde(
-        default = "default_hdkey_compliant",
-        deserialize_with = "deserialize_hdkey_compliant"
-    )]
-    pub hdkey_compliant: bool,
 }
 
 impl Default for CryptoConfig {
@@ -140,7 +129,6 @@ impl Default for CryptoConfig {
             mnemonic_dictionary: default_mnemonic_dictionary(),
             mnemonic_word_count: default_mnemonic_word_count(),
             hdkey_derivation_path: default_hdkey_derivation_path(),
-            hdkey_compliant: default_hdkey_compliant(),
         }
     }
 }
