@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file.
 
 ## 1.2.0 Nov 20, 2020
 
+### Featured
+- `debot` module added with debot using functions
+- signing boxes based on key pair and externally implemented signing boxes supported
+
 ### Fixed
 - panic after `tc_destroy_context` call. Now all contexts use global async runtime
 
