@@ -67,7 +67,7 @@
 
 [hdkey_derive_from_xprv](mod_crypto.md#hdkey_derive_from_xprv) – Returns extended private key derived from the specified extended private key and child index
 
-[hdkey_derive_from_xprv_path](mod_crypto.md#hdkey_derive_from_xprv_path) – Derives the exented private key from the specified key and path
+[hdkey_derive_from_xprv_path](mod_crypto.md#hdkey_derive_from_xprv_path) – Derives the extended private key from the specified key and path
 
 [hdkey_secret_from_xprv](mod_crypto.md#hdkey_secret_from_xprv) – Extracts the private key from the serialized extended private key
 
@@ -82,6 +82,8 @@
 [signing_box_get_public_key](mod_crypto.md#signing_box_get_public_key) – Returns public key of signing key pair.
 
 [signing_box_sign](mod_crypto.md#signing_box_sign) – Returns signed user data.
+
+[remove_signing_box](mod_crypto.md#remove_signing_box) – Removes signing box from SDK.
 
 ## [abi](mod_abi.md) – Provides message encoding and decoding according to the ABI specification.
 

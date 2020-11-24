@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.2.0",
   "modules": [
     {
       "name": "client",
@@ -182,15 +182,6 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "String"
-              },
-              "summary": null,
-              "description": null
-            },
-            {
-              "name": "hdkey_compliant",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Boolean"
               },
               "summary": null,
               "description": null
@@ -1592,7 +1583,7 @@
           "description": null
         },
         {
-          "name": "ResultOfRegisterSigningBox",
+          "name": "RegisteredSigningBox",
           "type": "Struct",
           "struct_fields": [
             {
@@ -1666,36 +1657,6 @@
               ],
               "summary": null,
               "description": null
-            }
-          ],
-          "summary": null,
-          "description": null
-        },
-        {
-          "name": "ResultOfGetSigningBox",
-          "type": "Struct",
-          "struct_fields": [
-            {
-              "name": "handle",
-              "type": "Ref",
-              "ref_name": "crypto.SigningBoxHandle",
-              "summary": " Handle of the signing box.",
-              "description": " Handle of the signing box."
-            }
-          ],
-          "summary": null,
-          "description": null
-        },
-        {
-          "name": "ParamsOfSigningBoxGetPublicKey",
-          "type": "Struct",
-          "struct_fields": [
-            {
-              "name": "signing_box",
-              "type": "Ref",
-              "ref_name": "crypto.SigningBoxHandle",
-              "summary": " Signing Box handle.",
-              "description": " Signing Box handle."
             }
           ],
           "summary": null,
@@ -2770,7 +2731,7 @@
           "description": " Returns extended private key derived from the specified extended private key and child index",
           "params": [
             {
-              "name": "context",
+              "name": "_context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -2804,11 +2765,11 @@
         },
         {
           "name": "hdkey_derive_from_xprv_path",
-          "summary": " Derives the exented private key from the specified key and path",
-          "description": " Derives the exented private key from the specified key and path",
+          "summary": " Derives the extended private key from the specified key and path",
+          "description": " Derives the extended private key from the specified key and path",
           "params": [
             {
-              "name": "context",
+              "name": "_context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -2996,7 +2957,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "crypto.ResultOfRegisterSigningBox"
+                "ref_name": "crypto.RegisteredSigningBox"
               }
             ]
           },
@@ -3034,7 +2995,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "crypto.ResultOfGetSigningBox"
+                "ref_name": "crypto.RegisteredSigningBox"
               }
             ]
           },
@@ -3061,7 +3022,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "crypto.ParamsOfSigningBoxGetPublicKey",
+              "ref_name": "crypto.RegisteredSigningBox",
               "summary": null,
               "description": null
             }
@@ -3111,6 +3072,43 @@
               {
                 "type": "Ref",
                 "ref_name": "crypto.ResultOfSigningBoxSign"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "remove_signing_box",
+          "summary": " Removes signing box from SDK.",
+          "description": " Removes signing box from SDK.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "crypto.RegisteredSigningBox",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
               }
             ]
           },
@@ -3602,9 +3600,7 @@
               "optional_inner": {
                 "type": "Optional",
                 "optional_inner": {
-                  "type": "Number",
-                  "number_type": "UInt",
-                  "number_size": 32
+                  "type": "String"
                 }
               },
               "summary": null,
@@ -3691,9 +3687,7 @@
               "optional_inner": {
                 "type": "Optional",
                 "optional_inner": {
-                  "type": "Number",
-                  "number_type": "UInt",
-                  "number_size": 32
+                  "type": "String"
                 }
               },
               "summary": null,

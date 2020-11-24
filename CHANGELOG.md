@@ -17,10 +17,11 @@ Check our tests for code examples.
 
 ### Fixed
 - panic after `tc_destroy_context` call. Now all contexts use global async runtime
+- field `mnemonic_hdkey_compliant` was removed from `CryptoConfig` (unused by the library).
 
 ## 1.1.2 Nov 15, 2020
 ### Fixed
-- `wasm` feature has been fixed.
+- `wasm` feature has been fixed
 - `crypto.factorize` doesn't panic on invalid challenge
 - `client.get_api_reference` returns proper version
 - ABI JSON with explicit function ID is parsed properly
