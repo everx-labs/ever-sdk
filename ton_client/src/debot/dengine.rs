@@ -22,18 +22,10 @@ use std::sync::Arc;
 pub type TonClient = Arc<ClientContext>;
 type JsonValue = serde_json::Value;
 
-pub const HD_PATH: &str = "m/44'/396'/0'/0/0";
-pub const WORD_COUNT: u8 = 12;
-
 fn create_client(url: &str) -> Result<TonClient, String> {
     let cli_conf = ClientConfig {
         abi: AbiConfig::default(),
-        crypto: CryptoConfig {
-            mnemonic_dictionary: 1,
-            mnemonic_word_count: WORD_COUNT,
-            hdkey_derivation_path: HD_PATH.to_string(),
-            hdkey_compliant: true,
-        },
+        crypto: CryptoConfig::default(),
         network: NetworkConfig {
             server_address: url.to_owned(),
             ..Default::default()
