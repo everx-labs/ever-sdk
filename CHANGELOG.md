@@ -4,22 +4,30 @@ All notable changes to this project will be documented in this file.
 ## 1.2.0 Nov 20, 2020
 
 ### Featured
-- `debot` module added with debot using functions
-- signing boxes based on key pair and externally implemented signing boxes supported
+- `debot` module was added with debot engine functions, such as : `start`, `fetch`, `execute`, `remove`. See the `debot` module documentation for more info.  
+Check our tests for code examples.  
+
+- External signing was supported for message encoding: `SigningBox` type for `Signer` enum is supported.   
+  Now it is possible to sign messages with externally implemented signing box interface without private key disclosure to the library. Can be used in case of signing via HSM API ir cold wallet - when there is no access to the private key.  
+  
+  It is also possible to create a Signing Box instance inside SDK - from a key pair passed into the library with `get_signing_box` method. It can be used for some test cases. Also it increases security - you need to pass your keys one time only.  
+  
+  Check the `crypto` module documentation for `SigningBoxHandle` type and  `register_signing_box`, `get_signing_box`, `signing_box_get_public_key`, `signing_box_sign`.   
+  Check our tests for code examples. 
 
 ### Fixed
 - panic after `tc_destroy_context` call. Now all contexts use global async runtime
 
 ## 1.1.2 Nov 15, 2020
 ### Fixed
-- `wasm` feature was not worked.
+- `wasm` feature has been fixed.
 - `crypto.factorize` doesn't panic on invalid challenge
 - `client.get_api_reference` returns proper version
 - ABI JSON with explicit function ID is parsed properly
 
 ## 1.1.1 Nov 11, 2020
 ### Fixed
-- To be compatible with older rust version change api type derivation with `vec![]`
+- Compatible with older rust version change api type derivation with `vec![]`
 instead of prev `[].into()`
 
 ## 1.1.0 Nov 3, 2020
