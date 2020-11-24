@@ -36,20 +36,30 @@ impl Default for AcType {
     fn default() -> Self { AcType::Empty }
 }
 
+/// Describes a debot action in a Debot Context.
 #[derive(Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct DAction {
+    /// a short action description. Should be used by Debot Browser as name of
+    /// menu item.
     #[serde(deserialize_with = "from_hex_to_utf8_str")]
     pub desc: String,
+    /// Depends on action type. Can be a debot function name or a print string 
+    /// (for Print Action).
     #[serde(deserialize_with = "from_hex_to_utf8_str")]
     pub name: String,
+    /// Action type. See structure AcType.
     #[serde(deserialize_with = "str_to_actype")]
     #[serde(serialize_with = "actype_to_str")]
     pub action_type: AcType,
+    /// Id of debot context to switch after action execution. 
     #[serde(deserialize_with = "from_abi_num")]
     pub to: u8,
+    /// Action attributes. In the form of "param=value,flag".
+    /// attribute example: instant, args, fargs, sign.
     #[serde(deserialize_with = "from_hex_to_utf8_str")]
     pub attrs: String,
+    /// Some internal action data. Used by debot only.
     pub misc: String,
 }
 

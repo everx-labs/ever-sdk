@@ -35,13 +35,23 @@ use tokio::sync::Mutex;
 #[derive(Serialize, Deserialize, Default, ApiType, Clone)]
 pub struct DebotHandle(u32);
 
+/// Describes a debot action in a Debot Context.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 pub struct DebotAction {
+    /// a short action description. Should be used by Debot Browser as name of
+    /// menu item.
     pub description: String,
+    /// Depends on action type. Can be a debot function name or a print string 
+    /// (for Print Action).
     pub name: String,
+    /// Action type. See structure AcType.
     pub action_type: u8,
+    /// Id of debot context to switch after action execution. 
     pub to: u8,
+    /// Action attributes. In the form of "param=value,flag".
+    /// attribute example: instant, args, fargs, sign.
     pub attributes: String,
+    /// Some internal action data. Used by debot only.
     pub misc: String,
 }
 
@@ -71,16 +81,31 @@ impl Into<DAction> for DebotAction {
     }
 }
 
+/// Parameters to start debot.
 #[derive(Serialize, Deserialize, Default, ApiType)]
 pub struct ParamsOfStart {
+    /// Debot smart contract address 
     address: String,
 }
 
+/// Structure for storing debot handle returned from [start] and [fetch] functions.
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct RegisteredDebot {
+    /// Debot handle which references an instance of debot engine.
     pub debot_handle: DebotHandle,
 }
 
+/// Starts an instance of debot.
+/// 
+/// Downloads debot smart contract from blockchain and switches it to
+/// context zero.
+/// Returns a debot handle which can be used later in [execute] function.
+/// This function must be used by Debot Browser to start a dialog with debot.
+/// While the function is executing, several Browser Callbacks can be called,
+/// since the debot tries to display all actions from the context 0 to the user.
+/// 
+/// # Remarks
+/// `start` is equivalent to `fetch` + switch to context 0.
 pub async fn start(
     context: Arc<ClientContext>,
     params: ParamsOfStart,
@@ -105,11 +130,20 @@ pub async fn start(
     })
 }
 
+/// Parameters to fetch debot.
 #[derive(Serialize, Deserialize, Default, ApiType)]
 pub struct ParamsOfFetch {
+    /// Debot smart contract address
     pub address: String,
 }
 
+/// Fetches debot from blockchain.
+/// 
+/// Downloads debot smart contract (code and data) from blockchain and creates 
+/// an instance of Debot Engine for it.
+/// 
+/// # Remarks
+/// It does not switch debot to context 0. Browser Callbacks are not called.
 pub async fn fetch(
     context: Arc<ClientContext>,
     params: ParamsOfFetch,
@@ -134,12 +168,22 @@ pub async fn fetch(
     })
 }
 
+/// Parameters for executing debot action.
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfExecute {
+    /// Debot handle which references an instance of debot engine.
     pub debot_handle: DebotHandle,
+    /// Debot Action that must be executed.
     pub action: DebotAction,
 }
 
+/// Executes debot action.
+/// 
+/// Calls debot engine referenced by debot handle to execute input action.
+/// Calls Debot Browser Callbacks if needed.
+/// 
+/// # Remarks
+/// Chain of actions can be executed if input action generates a list of subactions.
 #[api_function]
 pub async fn execute(
     context: Arc<ClientContext>,
@@ -154,6 +198,9 @@ pub async fn execute(
         .map_err(Error::execute_failed)
 }
 
+/// Destroys debot handle.
+/// 
+/// Removes handle from Client Context and drops debot engine referenced by that handle.
 #[api_function]
 pub fn remove(
     context: Arc<ClientContext>,

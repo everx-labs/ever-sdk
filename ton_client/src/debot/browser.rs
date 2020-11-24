@@ -1,18 +1,20 @@
 use super::action::DAction;
 use crate::crypto::KeyPair;
 
+/// Callbacks that are called by debot engine to communicate with Debot Browser.
 #[async_trait::async_trait]
 pub trait BrowserCallbacks {
-    /// Debot sends text message to user.
+    /// Prints text message to user.
     async fn log(&self, msg: String);
-    /// Debot is switched to another context.
+    /// Notify that debot is switched to another context.
     async fn switch(&self, ctx_id: u8);
-    // Dengine calls this callback after `switch` callback for every action in context
+    /// Show action to the user as menu item.
+    /// Called after `switch` callback for every action in context.
     async fn show_action(&self, act: DAction);
-    // Debot engine asks user to enter argument for an action.
+    /// Requests input from user.
     async fn input(&self, prefix: &str, value: &mut String);
-
+    /// Requests keys from user.
     async fn load_key(&self, keys: &mut KeyPair);
-
+    /// Executes action of another debot.
     async fn invoke_debot(&self, debot: String, action: DAction) -> Result<(), String>;
 }

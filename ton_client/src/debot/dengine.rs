@@ -76,6 +76,9 @@ const OPTION_ABI: u8 = 1;
 const OPTION_TARGET_ABI: u8 = 2;
 const OPTION_TARGET_ADDR: u8 = 4;
 
+/// Debot Engine.
+/// Downloads and stores debot, executes its actions and calls 
+/// Debot Browser callbacks.
 pub struct DEngine {
     abi: Abi,
     addr: String,
