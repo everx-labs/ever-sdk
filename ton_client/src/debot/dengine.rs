@@ -13,7 +13,7 @@ use crate::crypto::{CryptoConfig, KeyPair};
 use crate::encoding::decode_abi_number;
 use crate::error::ClientError;
 use crate::net::{query_collection, NetworkConfig, ParamsOfQueryCollection};
-use crate::processing::{process_message, ParamsOfProcessMessage};
+use crate::processing::{process_message, ParamsOfProcessMessage, ProcessingEvent};
 use crate::tvm::{run_tvm, ParamsOfRunTvm};
 use crate::{ClientConfig, ClientContext};
 use std::collections::VecDeque;
@@ -81,7 +81,7 @@ pub struct DEngine {
     prev_state: u8,
     target_addr: Option<String>,
     target_abi: Option<String>,
-    browser: Box<dyn BrowserCallbacks + Send + Sync>,
+    browser: Arc<dyn BrowserCallbacks + Send + Sync>,
 }
 
 impl DEngine {
@@ -89,7 +89,7 @@ impl DEngine {
         addr: String,
         abi: Option<String>,
         url: &str,
-        browser: Box<dyn BrowserCallbacks + Send + Sync>,
+        browser: Arc<dyn BrowserCallbacks + Send + Sync>,
     ) -> Self {
         DEngine::new_with_client(addr, abi, create_client(url).unwrap(), browser)
     }
@@ -98,7 +98,7 @@ impl DEngine {
         addr: String,
         abi: Option<String>,
         ton: TonClient,
-        browser: Box<dyn BrowserCallbacks + Send + Sync>,
+        browser: Arc<dyn BrowserCallbacks + Send + Sync>,
     ) -> Self {
         DEngine {
             abi: abi
@@ -113,7 +113,7 @@ impl DEngine {
             prev_state: STATE_ZERO,
             target_addr: None,
             target_abi: None,
-            browser,
+            browser: browser,
         }
     }
 
@@ -657,12 +657,20 @@ impl DEngine {
         };
 
         //let msg = pack_state(msg, state)?;
+        let browser = self.browser.clone();
         let callback = move |event| {
             debug!("{:?}", event);
-            async move {}
+            let browser = browser.clone();
+            async move {
+                match event {
+                    ProcessingEvent::WillSend { shard_block_id: _, message_id, message: _ } => {
+                        browser.log(format!("Sending message {}", message_id)).await;
+                    },
+                    _ => (),
+                }; 
+            }
         };
-
-        //self.browser.log(format!("sending message {}", msg.message_id));
+        
         match process_message(
             self.ton.clone(),
             ParamsOfProcessMessage {

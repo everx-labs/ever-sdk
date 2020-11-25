@@ -108,7 +108,17 @@ impl TestBrowser {
                 }).await.unwrap();
 
             let step = state.current.lock().await;
-            assert_eq!(step.outputs, step.step.outputs);
+            assert_eq!(step.outputs.len(), step.step.outputs.len());
+            step.outputs.iter().zip(step.step.outputs.iter())
+            .for_each(|outs| {
+                match outs.1.find("{}") {
+                    Some(pos) => assert_eq!(
+                        outs.0.get(..pos).unwrap(),
+                        outs.1.get(..pos).unwrap(),
+                    ),
+                    None => assert_eq!(outs.0, outs.1),
+                };
+            });
             assert_eq!(step.step.inputs.len(), 0);
             assert_eq!(step.step.invokes.len(), 0);
 
@@ -357,7 +367,7 @@ async fn test_debot_send_msg() {
 
     let steps = json!([
         { "choice": 5, "inputs": [], "outputs": ["Test Send Msg Action"] },
-        { "choice": 1, "inputs": [], "outputs": ["Transaction succeeded."] },
+        { "choice": 1, "inputs": [], "outputs": ["Sending message {}", "Transaction succeeded."] },
         { "choice": 2, "inputs": [], "outputs": [] },
         { "choice": 3, "inputs": [], "outputs": ["data=100"] },
         { "choice": 4, "inputs": [], "outputs": ["Debot Tests"] },
