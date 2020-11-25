@@ -103,12 +103,16 @@ impl Error {
             format!("Contract execution was terminated with error: {}", err),
         );
 
-        let mut data = serde_json::json!({
-            "phase": "computeVm",
-            "exit_code": exit_code,
-            "exit_arg": exit_arg,
-            "account_address": address.to_string()
-        });
+        if !error.message.contains("exit code") &&
+            !error.message.contains("Exit code")
+        {
+            error.message.push_str(&format!(", exit code: {}", exit_code));
+        }
+
+        error.data["phase"] = "computeVm".into();
+        error.data["exit_code"] = exit_code.into();
+        error.data["exit_arg"] = serde_json::json!(exit_arg);
+        error.data["account_address"] = address.to_string().into();
 
         if let Some(error_code) = ExceptionCode::from_usize(exit_code as usize)
             .or(ExceptionCode::from_usize(!exit_code as usize))
@@ -116,16 +120,15 @@ impl Error {
             if error_code == ExceptionCode::OutOfGas {
                 error.message.push_str(". Check account balance");
             }
-            data["description"] = error_code.to_string().into();
+            error.data["description"] = error_code.to_string().into();
         } else if let Some(code) = StdContractError::from_usize(exit_code as usize) {
             if let Some(tip) = code.tip() {
                 error.message.push_str(". ");
                 error.message.push_str(tip);
             }
-            data["description"] = code.to_string().into();
+            error.data["description"] = code.to_string().into();
         }
 
-        error.data = data;
         error
     }
 
@@ -191,10 +194,9 @@ impl Error {
             "Account has insufficient balance for the requested operation. Send some value to account balance".to_owned(),
         );
 
-        error.data = serde_json::json!({
-            "account_address": address.to_string(),
-            "account_balance": balance
-        });
+        error.data["account_address"] = address.to_string().into();
+        error.data["account_balance"] = balance.into();
+
         error
     }
 
@@ -204,9 +206,8 @@ impl Error {
             "Account is in a bad state. It is frozen or deleted".to_owned(),
         );
 
-        error.data = serde_json::json!({
-            "account_address": address.to_string(),
-        });
+        error.data["account_address"] = address.to_string().into();
+
         error
     }
 
@@ -216,9 +217,8 @@ impl Error {
             "Account does not exist. You need to transfer funds to this account first to have a positive balance and then deploy its code".to_owned(),
         );
 
-        error.data = serde_json::json!({
-            "account_address": address.to_string(),
-        });
+        error.data["account_address"] = address.to_string().into();
+
         error
     }
 

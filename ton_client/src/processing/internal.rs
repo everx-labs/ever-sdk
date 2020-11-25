@@ -78,11 +78,10 @@ pub(crate) fn get_message_expiration_time(
     Ok(time)
 }
 
-pub(crate) async fn resolve_error(
+async fn get_local_error(
     context: Arc<ClientContext>,
     address: &MsgAddressInt,
     message: String,
-    mut original_error: ClientError,
 ) -> ClientResult<()> {
     let account = fetch_account(context.clone(), address, "boc").await?;
 
@@ -91,7 +90,7 @@ pub(crate) async fn resolve_error(
         .ok_or(Error::invalid_data("Account doesn't contain 'boc'"))?
         .to_owned();
 
-    let result = crate::tvm::run_executor(
+    crate::tvm::run_executor(
         context,
         ParamsOfRunExecutor {
             abi: None,
@@ -104,16 +103,34 @@ pub(crate) async fn resolve_error(
             skip_transaction_check: None,
         },
     )
-    .await;
+    .await
+    .map(|_| ())
+}
+
+pub(crate) async fn resolve_error(
+    context: Arc<ClientContext>,
+    address: &MsgAddressInt,
+    message: String,
+    mut original_error: ClientError,
+) -> ClientResult<()> {
+    let result = get_local_error(context, address, message).await;
 
     match result {
-        Err(mut err) => {
-            err.data["original_error"] = serde_json::json!(original_error);
-            Err(err)
+        Err(err) => {
+            original_error.message = format!(
+                "{}. Possible reason: {}",
+                original_error.message.trim_end_matches("."),
+                err.message
+            );
+            original_error.data["local_error"] = serde_json::to_value(err)
+                .map_err(crate::client::Error::cannot_serialize_result)?;
+            Err(original_error)
         }
         Ok(_) => {
-            original_error.data["disclaimer"] =
-                "Local contract call succeded. Can not resolve extended error".into();
+            original_error.message = format!(
+                "{}. Possible reason: Local contract call succeded. Can not suggest a possible reason.",
+                original_error.message.trim_end_matches("."),
+            );
             Err(original_error)
         }
     }
