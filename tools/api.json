@@ -6422,8 +6422,8 @@
           "type": "Number",
           "number_type": "UInt",
           "number_size": 32,
-          "summary": null,
-          "description": null
+          "summary": " Handle of registered in SDK debot",
+          "description": " Handle of registered in SDK debot"
         },
         {
           "name": "DebotAction",
@@ -6432,46 +6432,46 @@
             {
               "name": "description",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " A short action description. Should be used by Debot Browser as name of",
+              "description": " A short action description. Should be used by Debot Browser as name of\n menu item."
             },
             {
               "name": "name",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Depends on action type. Can be a debot function name or a print string ",
+              "description": " Depends on action type. Can be a debot function name or a print string \n (for Print Action)."
             },
             {
               "name": "action_type",
               "type": "Number",
               "number_type": "UInt",
               "number_size": 8,
-              "summary": null,
-              "description": null
+              "summary": " Action type.",
+              "description": " Action type."
             },
             {
               "name": "to",
               "type": "Number",
               "number_type": "UInt",
               "number_size": 8,
-              "summary": null,
-              "description": null
+              "summary": " ID of debot context to switch after action execution. ",
+              "description": " ID of debot context to switch after action execution. "
             },
             {
               "name": "attributes",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Action attributes. In the form of \"param=value,flag\".",
+              "description": " Action attributes. In the form of \"param=value,flag\".\n attribute example: instant, args, fargs, sign."
             },
             {
               "name": "misc",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Some internal action data. Used by debot only.",
+              "description": " Some internal action data. Used by debot only."
             }
           ],
-          "summary": null,
-          "description": null
+          "summary": " Describes a debot action in a Debot Context.",
+          "description": " Describes a debot action in a Debot Context."
         },
         {
           "name": "ParamsOfStart",
@@ -6480,12 +6480,12 @@
             {
               "name": "address",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Debot smart contract address ",
+              "description": " Debot smart contract address "
             }
           ],
-          "summary": null,
-          "description": null
+          "summary": " Parameters to start debot.",
+          "description": " Parameters to start debot."
         },
         {
           "name": "RegisteredDebot",
@@ -6495,12 +6495,12 @@
               "name": "debot_handle",
               "type": "Ref",
               "ref_name": "debot.DebotHandle",
-              "summary": null,
-              "description": null
+              "summary": " Debot handle which references an instance of debot engine.",
+              "description": " Debot handle which references an instance of debot engine."
             }
           ],
-          "summary": null,
-          "description": null
+          "summary": " Structure for storing debot handle returned from `start` and `fetch` functions.",
+          "description": " Structure for storing debot handle returned from `start` and `fetch` functions."
         },
         {
           "name": "ParamsOfAppDebotBrowser",
@@ -6513,12 +6513,12 @@
                 {
                   "name": "msg",
                   "type": "String",
-                  "summary": null,
-                  "description": null
+                  "summary": " A string that must be printed to user.",
+                  "description": " A string that must be printed to user."
                 }
               ],
-              "summary": null,
-              "description": null
+              "summary": " Print message to user. ",
+              "description": " Print message to user. "
             },
             {
               "name": "Switch",
@@ -6529,12 +6529,12 @@
                   "type": "Number",
                   "number_type": "UInt",
                   "number_size": 8,
-                  "summary": null,
-                  "description": null
+                  "summary": " Debot context ID to which debot is switched.",
+                  "description": " Debot context ID to which debot is switched."
                 }
               ],
-              "summary": null,
-              "description": null
+              "summary": " Switch debot to another context (menu).",
+              "description": " Switch debot to another context (menu)."
             },
             {
               "name": "ShowAction",
@@ -6544,33 +6544,33 @@
                   "name": "action",
                   "type": "Ref",
                   "ref_name": "debot.DebotAction",
-                  "summary": null,
-                  "description": null
+                  "summary": " Debot action that must be shown to user as menu item.",
+                  "description": " Debot action that must be shown to user as menu item.\n At least `description` property must be shown from [DebotAction] structure."
                 }
               ],
-              "summary": null,
-              "description": null
+              "summary": " Show action to the user.",
+              "description": " Show action to the user.\n Called after `switch` for each action in context."
             },
             {
               "name": "Input",
               "type": "Struct",
               "struct_fields": [
                 {
-                  "name": "prefix",
+                  "name": "prompt",
                   "type": "String",
-                  "summary": null,
-                  "description": null
+                  "summary": " A prompt string that must be printed to user before input request.",
+                  "description": " A prompt string that must be printed to user before input request."
                 }
               ],
-              "summary": null,
-              "description": null
+              "summary": " Request user input. ",
+              "description": " Request user input. "
             },
             {
               "name": "LoadKey",
               "type": "Struct",
               "struct_fields": [],
-              "summary": null,
-              "description": null
+              "summary": " Load debot key pair.",
+              "description": " Load debot key pair."
             },
             {
               "name": "InvokeDebot",
@@ -6579,23 +6579,23 @@
                 {
                   "name": "debot_addr",
                   "type": "String",
-                  "summary": null,
-                  "description": null
+                  "summary": " Address of debot in blockchain.",
+                  "description": " Address of debot in blockchain."
                 },
                 {
                   "name": "action",
                   "type": "Ref",
                   "ref_name": "debot.DebotAction",
-                  "summary": null,
-                  "description": null
+                  "summary": " Debot action to execute.",
+                  "description": " Debot action to execute."
                 }
               ],
-              "summary": null,
-              "description": null
+              "summary": " Execute action of another debot.",
+              "description": " Execute action of another debot."
             }
           ],
-          "summary": null,
-          "description": null
+          "summary": " Debot Browser callbacks",
+          "description": " Debot Browser callbacks\n \n Called by debot engine to communicate with debot browser."
         },
         {
           "name": "ResultOfAppDebotBrowser",
@@ -6608,12 +6608,12 @@
                 {
                   "name": "value",
                   "type": "String",
-                  "summary": null,
-                  "description": null
+                  "summary": " String entered by user.",
+                  "description": " String entered by user."
                 }
               ],
-              "summary": null,
-              "description": null
+              "summary": " Result of user input.",
+              "description": " Result of user input."
             },
             {
               "name": "LoadKey",
@@ -6623,23 +6623,23 @@
                   "name": "keys",
                   "type": "Ref",
                   "ref_name": "crypto.KeyPair",
-                  "summary": null,
-                  "description": null
+                  "summary": " Key pair that browser asked from user.",
+                  "description": " Key pair that browser asked from user."
                 }
               ],
-              "summary": null,
-              "description": null
+              "summary": " Result of key loading.",
+              "description": " Result of key loading."
             },
             {
               "name": "InvokeDebot",
               "type": "Struct",
               "struct_fields": [],
-              "summary": null,
-              "description": null
+              "summary": " Result of debot invoking.",
+              "description": " Result of debot invoking."
             }
           ],
-          "summary": null,
-          "description": null
+          "summary": " Returning values from Debot Browser callbacks.",
+          "description": " Returning values from Debot Browser callbacks."
         },
         {
           "name": "ParamsOfFetch",
@@ -6648,12 +6648,12 @@
             {
               "name": "address",
               "type": "String",
-              "summary": null,
-              "description": null
+              "summary": " Debot smart contract address",
+              "description": " Debot smart contract address"
             }
           ],
-          "summary": null,
-          "description": null
+          "summary": " Parameters to fetch debot.",
+          "description": " Parameters to fetch debot."
         },
         {
           "name": "ParamsOfExecute",
@@ -6663,26 +6663,26 @@
               "name": "debot_handle",
               "type": "Ref",
               "ref_name": "debot.DebotHandle",
-              "summary": null,
-              "description": null
+              "summary": " Debot handle which references an instance of debot engine.",
+              "description": " Debot handle which references an instance of debot engine."
             },
             {
               "name": "action",
               "type": "Ref",
               "ref_name": "debot.DebotAction",
-              "summary": null,
-              "description": null
+              "summary": " Debot Action that must be executed.",
+              "description": " Debot Action that must be executed."
             }
           ],
-          "summary": null,
-          "description": null
+          "summary": " Parameters for executing debot action.",
+          "description": " Parameters for executing debot action."
         }
       ],
       "functions": [
         {
           "name": "start",
-          "summary": null,
-          "description": null,
+          "summary": " Starts an instance of debot.",
+          "description": " Starts an instance of debot.\n \n Downloads debot smart contract from blockchain and switches it to\n context zero.\n Returns a debot handle which can be used later in `execute` function.\n This function must be used by Debot Browser to start a dialog with debot.\n While the function is executing, several Browser Callbacks can be called,\n since the debot tries to display all actions from the context 0 to the user.\n \n # Remarks\n `start` is equivalent to `fetch` + switch to context 0.",
           "params": [
             {
               "name": "context",
@@ -6736,8 +6736,8 @@
         },
         {
           "name": "fetch",
-          "summary": null,
-          "description": null,
+          "summary": " Fetches debot from blockchain.",
+          "description": " Fetches debot from blockchain.\n \n Downloads debot smart contract (code and data) from blockchain and creates \n an instance of Debot Engine for it.\n \n # Remarks\n It does not switch debot to context 0. Browser Callbacks are not called.",
           "params": [
             {
               "name": "context",
@@ -6791,8 +6791,8 @@
         },
         {
           "name": "execute",
-          "summary": null,
-          "description": null,
+          "summary": " Executes debot action.",
+          "description": " Executes debot action.\n \n Calls debot engine referenced by debot handle to execute input action.\n Calls Debot Browser Callbacks if needed.\n \n # Remarks\n Chain of actions can be executed if input action generates a list of subactions.",
           "params": [
             {
               "name": "context",
@@ -6828,8 +6828,8 @@
         },
         {
           "name": "remove",
-          "summary": null,
-          "description": null,
+          "summary": " Destroys debot handle.",
+          "description": " Destroys debot handle.\n \n Removes handle from Client Context and drops debot engine referenced by that handle.",
           "params": [
             {
               "name": "context",

@@ -2,34 +2,46 @@
 
  Module for working with debot.
 ## Functions
-[start](#start)
+[start](#start) – Starts an instance of debot.
 
-[fetch](#fetch)
+[fetch](#fetch) – Fetches debot from blockchain.
 
-[execute](#execute)
+[execute](#execute) – Executes debot action.
 
-[remove](#remove)
+[remove](#remove) – Destroys debot handle.
 
 ## Types
-[DebotHandle](#DebotHandle)
+[DebotHandle](#DebotHandle) – Handle of registered in SDK debot
 
-[DebotAction](#DebotAction)
+[DebotAction](#DebotAction) – Describes a debot action in a Debot Context.
 
-[ParamsOfStart](#ParamsOfStart)
+[ParamsOfStart](#ParamsOfStart) – Parameters to start debot.
 
-[RegisteredDebot](#RegisteredDebot)
+[RegisteredDebot](#RegisteredDebot) – Structure for storing debot handle returned from `start` and `fetch` functions.
 
-[ParamsOfAppDebotBrowser](#ParamsOfAppDebotBrowser)
+[ParamsOfAppDebotBrowser](#ParamsOfAppDebotBrowser) – Debot Browser callbacks
 
-[ResultOfAppDebotBrowser](#ResultOfAppDebotBrowser)
+[ResultOfAppDebotBrowser](#ResultOfAppDebotBrowser) – Returning values from Debot Browser callbacks.
 
-[ParamsOfFetch](#ParamsOfFetch)
+[ParamsOfFetch](#ParamsOfFetch) – Parameters to fetch debot.
 
-[ParamsOfExecute](#ParamsOfExecute)
+[ParamsOfExecute](#ParamsOfExecute) – Parameters for executing debot action.
 
 
 # Functions
 ## start
+
+Starts an instance of debot.
+
+Downloads debot smart contract from blockchain and switches it to
+context zero.
+Returns a debot handle which can be used later in `execute` function.
+This function must be used by Debot Browser to start a dialog with debot.
+While the function is executing, several Browser Callbacks can be called,
+since the debot tries to display all actions from the context 0 to the user.
+
+# Remarks
+`start` is equivalent to `fetch` + switch to context 0.
 
 ```ts
 type ParamsOfStart = {
@@ -46,13 +58,21 @@ function start(
 ): Promise<RegisteredDebot>;
 ```
 ### Parameters
-- `address`: _string_
+- `address`: _string_ – Debot smart contract address
 ### Result
 
-- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_
+- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
 
 
 ## fetch
+
+Fetches debot from blockchain.
+
+Downloads debot smart contract (code and data) from blockchain and creates
+an instance of Debot Engine for it.
+
+# Remarks
+It does not switch debot to context 0. Browser Callbacks are not called.
 
 ```ts
 type ParamsOfFetch = {
@@ -69,13 +89,21 @@ function fetch(
 ): Promise<RegisteredDebot>;
 ```
 ### Parameters
-- `address`: _string_
+- `address`: _string_ – Debot smart contract address
 ### Result
 
-- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_
+- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
 
 
 ## execute
+
+Executes debot action.
+
+Calls debot engine referenced by debot handle to execute input action.
+Calls Debot Browser Callbacks if needed.
+
+# Remarks
+Chain of actions can be executed if input action generates a list of subactions.
 
 ```ts
 type ParamsOfExecute = {
@@ -88,13 +116,17 @@ function execute(
 ): Promise<void>;
 ```
 ### Parameters
-- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_
-- `action`: _[DebotAction](mod_debot.md#DebotAction)_
+- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+- `action`: _[DebotAction](mod_debot.md#DebotAction)_ – Debot Action that must be executed.
 ### Result
 
 
 
 ## remove
+
+Destroys debot handle.
+
+Removes handle from Client Context and drops debot engine referenced by that handle.
 
 ```ts
 type RegisteredDebot = {
@@ -106,19 +138,23 @@ function remove(
 ): Promise<void>;
 ```
 ### Parameters
-- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_
+- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
 ### Result
 
 
 
 # Types
 ## DebotHandle
+Handle of registered in SDK debot
+
 ```ts
 type DebotHandle = number;
 ```
 
 
 ## DebotAction
+Describes a debot action in a Debot Context.
+
 ```ts
 type DebotAction = {
     description: string,
@@ -129,33 +165,41 @@ type DebotAction = {
     misc: string
 };
 ```
-- `description`: _string_
-- `name`: _string_
-- `action_type`: _number_
-- `to`: _number_
-- `attributes`: _string_
-- `misc`: _string_
+- `description`: _string_ – A short action description. Should be used by Debot Browser as name of menu item.
+- `name`: _string_ – Depends on action type. Can be a debot function name or a print string (for Print Action).
+- `action_type`: _number_ – Action type.
+- `to`: _number_ – ID of debot context to switch after action execution.
+- `attributes`: _string_ – Action attributes. In the form of "param=value,flag". attribute example: instant, args, fargs, sign.
+- `misc`: _string_ – Some internal action data. Used by debot only.
 
 
 ## ParamsOfStart
+Parameters to start debot.
+
 ```ts
 type ParamsOfStart = {
     address: string
 };
 ```
-- `address`: _string_
+- `address`: _string_ – Debot smart contract address
 
 
 ## RegisteredDebot
+Structure for storing debot handle returned from `start` and `fetch` functions.
+
 ```ts
 type RegisteredDebot = {
     debot_handle: DebotHandle
 };
 ```
-- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_
+- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
 
 
 ## ParamsOfAppDebotBrowser
+Debot Browser callbacks
+
+Called by debot engine to communicate with debot browser.
+
 ```ts
 type ParamsOfAppDebotBrowser = {
     type: 'Log'
@@ -168,7 +212,7 @@ type ParamsOfAppDebotBrowser = {
     action: DebotAction
 } | {
     type: 'Input'
-    prefix: string
+    prompt: string
 } | {
     type: 'LoadKey'
 } | {
@@ -181,35 +225,49 @@ Depends on value of the  `type` field.
 
 When _type_ is _'Log'_
 
+Print message to user.
 
-- `msg`: _string_
+
+- `msg`: _string_ – A string that must be printed to user.
 
 When _type_ is _'Switch'_
 
+Switch debot to another context (menu).
 
-- `context_id`: _number_
+
+- `context_id`: _number_ – Debot context ID to which debot is switched.
 
 When _type_ is _'ShowAction'_
 
+Show action to the user. Called after `switch` for each action in context.
 
-- `action`: _[DebotAction](mod_debot.md#DebotAction)_
+
+- `action`: _[DebotAction](mod_debot.md#DebotAction)_ – Debot action that must be shown to user as menu item. At least `description` property must be shown from [DebotAction] structure.
 
 When _type_ is _'Input'_
 
+Request user input.
 
-- `prefix`: _string_
+
+- `prompt`: _string_ – A prompt string that must be printed to user before input request.
 
 When _type_ is _'LoadKey'_
+
+Load debot key pair.
 
 
 When _type_ is _'InvokeDebot'_
 
+Execute action of another debot.
 
-- `debot_addr`: _string_
-- `action`: _[DebotAction](mod_debot.md#DebotAction)_
+
+- `debot_addr`: _string_ – Address of debot in blockchain.
+- `action`: _[DebotAction](mod_debot.md#DebotAction)_ – Debot action to execute.
 
 
 ## ResultOfAppDebotBrowser
+Returning values from Debot Browser callbacks.
+
 ```ts
 type ResultOfAppDebotBrowser = {
     type: 'Input'
@@ -225,35 +283,45 @@ Depends on value of the  `type` field.
 
 When _type_ is _'Input'_
 
+Result of user input.
 
-- `value`: _string_
+
+- `value`: _string_ – String entered by user.
 
 When _type_ is _'LoadKey'_
 
+Result of key loading.
 
-- `keys`: _[KeyPair](mod_crypto.md#KeyPair)_
+
+- `keys`: _[KeyPair](mod_crypto.md#KeyPair)_ – Key pair that browser asked from user.
 
 When _type_ is _'InvokeDebot'_
+
+Result of debot invoking.
 
 
 
 ## ParamsOfFetch
+Parameters to fetch debot.
+
 ```ts
 type ParamsOfFetch = {
     address: string
 };
 ```
-- `address`: _string_
+- `address`: _string_ – Debot smart contract address
 
 
 ## ParamsOfExecute
+Parameters for executing debot action.
+
 ```ts
 type ParamsOfExecute = {
     debot_handle: DebotHandle,
     action: DebotAction
 };
 ```
-- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_
-- `action`: _[DebotAction](mod_debot.md#DebotAction)_
+- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+- `action`: _[DebotAction](mod_debot.md#DebotAction)_ – Debot Action that must be executed.
 
 

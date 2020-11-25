@@ -149,11 +149,11 @@
 
 ## [debot](mod_debot.md) – Module for working with debot.
 
-[start](mod_debot.md#start)
+[start](mod_debot.md#start) – Starts an instance of debot.
 
-[fetch](mod_debot.md#fetch)
+[fetch](mod_debot.md#fetch) – Fetches debot from blockchain.
 
-[execute](mod_debot.md#execute)
+[execute](mod_debot.md#execute) – Executes debot action.
 
-[remove](mod_debot.md#remove)
+[remove](mod_debot.md#remove) – Destroys debot handle.
 
