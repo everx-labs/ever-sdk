@@ -40,7 +40,7 @@ impl Default for AcType {
 #[derive(Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct DAction {
-    /// a short action description. Should be used by Debot Browser as name of
+    /// A short action description. Should be used by Debot Browser as name of
     /// menu item.
     #[serde(deserialize_with = "from_hex_to_utf8_str")]
     pub desc: String,
@@ -48,11 +48,11 @@ pub struct DAction {
     /// (for Print Action).
     #[serde(deserialize_with = "from_hex_to_utf8_str")]
     pub name: String,
-    /// Action type. See structure AcType.
+    /// Action type.
     #[serde(deserialize_with = "str_to_actype")]
     #[serde(serialize_with = "actype_to_str")]
     pub action_type: AcType,
-    /// Id of debot context to switch after action execution. 
+    /// ID of debot context to switch after action execution. 
     #[serde(deserialize_with = "from_abi_num")]
     pub to: u8,
     /// Action attributes. In the form of "param=value,flag".

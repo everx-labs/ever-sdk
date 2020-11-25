@@ -83,6 +83,8 @@
 
 [signing_box_sign](mod_crypto.md#signing_box_sign) – Returns signed user data.
 
+[remove_signing_box](mod_crypto.md#remove_signing_box) – Removes signing box from SDK.
+
 ## [abi](mod_abi.md) – Provides message encoding and decoding according to the ABI specification.
 
 [encode_message_body](mod_abi.md#encode_message_body) – Encodes message body according to ABI function call.
@@ -144,4 +146,14 @@
 [unsubscribe](mod_net.md#unsubscribe) – Cancels a subscription
 
 [subscribe_collection](mod_net.md#subscribe_collection) – Creates a subscription
+
+## [debot](mod_debot.md) – Module for working with debot.
+
+[start](mod_debot.md#start) – Starts an instance of debot.
+
+[fetch](mod_debot.md#fetch) – Fetches debot from blockchain.
+
+[execute](mod_debot.md#execute) – Executes debot action.
+
+[remove](mod_debot.md#remove) – Destroys debot handle.
 

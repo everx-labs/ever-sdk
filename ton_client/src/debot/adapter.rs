@@ -29,9 +29,9 @@ impl BrowserCallbacks for DebotBrowserAdapter {
         self.app_object.notify(ParamsOfAppDebotBrowser::ShowAction { action: act });
     }
 
-    async fn input(&self, prefix: &str, value: &mut String) {
+    async fn input(&self, prompt: &str, value: &mut String) {
         let response = self.app_object.call(ParamsOfAppDebotBrowser::Input {
-                prefix: prefix.to_owned(),
+                prompt: prompt.to_owned(),
             })
             .await;
         match response {

@@ -12,7 +12,7 @@ pub trait BrowserCallbacks {
     /// Called after `switch` callback for every action in context.
     async fn show_action(&self, act: DAction);
     /// Requests input from user.
-    async fn input(&self, prefix: &str, value: &mut String);
+    async fn input(&self, prompt: &str, value: &mut String);
     /// Requests keys from user.
     async fn load_key(&self, keys: &mut KeyPair);
     /// Executes action of another debot.

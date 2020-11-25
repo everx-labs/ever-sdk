@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.2.0",
   "modules": [
     {
       "name": "client",
@@ -1592,7 +1592,7 @@
           "description": null
         },
         {
-          "name": "ResultOfRegisterSigningBox",
+          "name": "RegisteredSigningBox",
           "type": "Struct",
           "struct_fields": [
             {
@@ -1666,36 +1666,6 @@
               ],
               "summary": null,
               "description": null
-            }
-          ],
-          "summary": null,
-          "description": null
-        },
-        {
-          "name": "ResultOfGetSigningBox",
-          "type": "Struct",
-          "struct_fields": [
-            {
-              "name": "handle",
-              "type": "Ref",
-              "ref_name": "crypto.SigningBoxHandle",
-              "summary": " Handle of the signing box.",
-              "description": " Handle of the signing box."
-            }
-          ],
-          "summary": null,
-          "description": null
-        },
-        {
-          "name": "ParamsOfSigningBoxGetPublicKey",
-          "type": "Struct",
-          "struct_fields": [
-            {
-              "name": "signing_box",
-              "type": "Ref",
-              "ref_name": "crypto.SigningBoxHandle",
-              "summary": " Signing Box handle.",
-              "description": " Signing Box handle."
             }
           ],
           "summary": null,
@@ -2996,7 +2966,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "crypto.ResultOfRegisterSigningBox"
+                "ref_name": "crypto.RegisteredSigningBox"
               }
             ]
           },
@@ -3034,7 +3004,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "crypto.ResultOfGetSigningBox"
+                "ref_name": "crypto.RegisteredSigningBox"
               }
             ]
           },
@@ -3061,7 +3031,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "crypto.ParamsOfSigningBoxGetPublicKey",
+              "ref_name": "crypto.RegisteredSigningBox",
               "summary": null,
               "description": null
             }
@@ -3111,6 +3081,43 @@
               {
                 "type": "Ref",
                 "ref_name": "crypto.ResultOfSigningBoxSign"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "remove_signing_box",
+          "summary": " Removes signing box from SDK.",
+          "description": " Removes signing box from SDK.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "crypto.RegisteredSigningBox",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
               }
             ]
           },
@@ -3602,9 +3609,7 @@
               "optional_inner": {
                 "type": "Optional",
                 "optional_inner": {
-                  "type": "Number",
-                  "number_type": "UInt",
-                  "number_size": 32
+                  "type": "String"
                 }
               },
               "summary": null,
@@ -3691,9 +3696,7 @@
               "optional_inner": {
                 "type": "Optional",
                 "optional_inner": {
-                  "type": "Number",
-                  "number_type": "UInt",
-                  "number_size": 32
+                  "type": "String"
                 }
               },
               "summary": null,
@@ -6411,6 +6414,451 @@
               {
                 "type": "Ref",
                 "ref_name": "net.ResultOfSubscribeCollection"
+              }
+            ]
+          },
+          "errors": null
+        }
+      ]
+    },
+    {
+      "name": "debot",
+      "summary": " Module for working with debot.",
+      "description": " Module for working with debot.",
+      "types": [
+        {
+          "name": "DebotAction",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "description",
+              "type": "String",
+              "summary": " A short action description. Should be used by Debot Browser as name of",
+              "description": " A short action description. Should be used by Debot Browser as name of\n menu item."
+            },
+            {
+              "name": "name",
+              "type": "String",
+              "summary": " Depends on action type. Can be a debot function name or a print string ",
+              "description": " Depends on action type. Can be a debot function name or a print string \n (for Print Action)."
+            },
+            {
+              "name": "action_type",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 8,
+              "summary": " Action type.",
+              "description": " Action type."
+            },
+            {
+              "name": "to",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 8,
+              "summary": " ID of debot context to switch after action execution. ",
+              "description": " ID of debot context to switch after action execution. "
+            },
+            {
+              "name": "attributes",
+              "type": "String",
+              "summary": " Action attributes. In the form of \"param=value,flag\".",
+              "description": " Action attributes. In the form of \"param=value,flag\".\n attribute example: instant, args, fargs, sign."
+            },
+            {
+              "name": "misc",
+              "type": "String",
+              "summary": " Some internal action data. Used by debot only.",
+              "description": " Some internal action data. Used by debot only."
+            }
+          ],
+          "summary": " Describes a debot action in a Debot Context.",
+          "description": " Describes a debot action in a Debot Context."
+        },
+        {
+          "name": "ParamsOfStart",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "address",
+              "type": "String",
+              "summary": " Debot smart contract address ",
+              "description": " Debot smart contract address "
+            }
+          ],
+          "summary": " Parameters to start debot.",
+          "description": " Parameters to start debot."
+        },
+        {
+          "name": "RegisteredDebot",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "debot_handle",
+              "type": "Ref",
+              "ref_name": "DebotHandle",
+              "summary": " Debot handle which references an instance of debot engine.",
+              "description": " Debot handle which references an instance of debot engine."
+            }
+          ],
+          "summary": " Structure for storing debot handle returned from `start` and `fetch` functions.",
+          "description": " Structure for storing debot handle returned from `start` and `fetch` functions."
+        },
+        {
+          "name": "ParamsOfAppDebotBrowser",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "Log",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "msg",
+                  "type": "String",
+                  "summary": " A string that must be printed to user.",
+                  "description": " A string that must be printed to user."
+                }
+              ],
+              "summary": " Print message to user. ",
+              "description": " Print message to user. "
+            },
+            {
+              "name": "Switch",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "context_id",
+                  "type": "Number",
+                  "number_type": "UInt",
+                  "number_size": 8,
+                  "summary": " Debot context ID to which debot is switched.",
+                  "description": " Debot context ID to which debot is switched."
+                }
+              ],
+              "summary": " Switch debot to another context (menu).",
+              "description": " Switch debot to another context (menu)."
+            },
+            {
+              "name": "ShowAction",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "action",
+                  "type": "Ref",
+                  "ref_name": "debot.DebotAction",
+                  "summary": " Debot action that must be shown to user as menu item.",
+                  "description": " Debot action that must be shown to user as menu item.\n At least `description` property must be shown from [DebotAction] structure."
+                }
+              ],
+              "summary": " Show action to the user.",
+              "description": " Show action to the user.\n Called after `switch` for each action in context."
+            },
+            {
+              "name": "Input",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "prompt",
+                  "type": "String",
+                  "summary": " A prompt string that must be printed to user before input request.",
+                  "description": " A prompt string that must be printed to user before input request."
+                }
+              ],
+              "summary": " Request user input. ",
+              "description": " Request user input. "
+            },
+            {
+              "name": "LoadKey",
+              "type": "Struct",
+              "struct_fields": [],
+              "summary": " Load debot key pair.",
+              "description": " Load debot key pair."
+            },
+            {
+              "name": "InvokeDebot",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "debot_addr",
+                  "type": "String",
+                  "summary": " Address of debot in blockchain.",
+                  "description": " Address of debot in blockchain."
+                },
+                {
+                  "name": "action",
+                  "type": "Ref",
+                  "ref_name": "debot.DebotAction",
+                  "summary": " Debot action to execute.",
+                  "description": " Debot action to execute."
+                }
+              ],
+              "summary": " Execute action of another debot.",
+              "description": " Execute action of another debot."
+            }
+          ],
+          "summary": " Debot Browser callbacks",
+          "description": " Debot Browser callbacks\n \n Called by debot engine to communicate with debot browser."
+        },
+        {
+          "name": "ResultOfAppDebotBrowser",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "Input",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "value",
+                  "type": "String",
+                  "summary": " String entered by user.",
+                  "description": " String entered by user."
+                }
+              ],
+              "summary": " Result of user input.",
+              "description": " Result of user input."
+            },
+            {
+              "name": "LoadKey",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "keys",
+                  "type": "Ref",
+                  "ref_name": "crypto.KeyPair",
+                  "summary": " Key pair that browser asked from user.",
+                  "description": " Key pair that browser asked from user."
+                }
+              ],
+              "summary": " Result of key loading.",
+              "description": " Result of key loading."
+            },
+            {
+              "name": "InvokeDebot",
+              "type": "Struct",
+              "struct_fields": [],
+              "summary": " Result of debot invoking.",
+              "description": " Result of debot invoking."
+            }
+          ],
+          "summary": " Returning values from Debot Browser callbacks.",
+          "description": " Returning values from Debot Browser callbacks."
+        },
+        {
+          "name": "ParamsOfFetch",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "address",
+              "type": "String",
+              "summary": " Debot smart contract address",
+              "description": " Debot smart contract address"
+            }
+          ],
+          "summary": " Parameters to fetch debot.",
+          "description": " Parameters to fetch debot."
+        },
+        {
+          "name": "ParamsOfExecute",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "debot_handle",
+              "type": "Ref",
+              "ref_name": "DebotHandle",
+              "summary": " Debot handle which references an instance of debot engine.",
+              "description": " Debot handle which references an instance of debot engine."
+            },
+            {
+              "name": "action",
+              "type": "Ref",
+              "ref_name": "debot.DebotAction",
+              "summary": " Debot Action that must be executed.",
+              "description": " Debot Action that must be executed."
+            }
+          ],
+          "summary": " Parameters for executing debot action.",
+          "description": " Parameters for executing debot action."
+        }
+      ],
+      "functions": [
+        {
+          "name": "start",
+          "summary": " Starts an instance of debot.",
+          "description": " Starts an instance of debot.\n \n Downloads debot smart contract from blockchain and switches it to\n context zero.\n Returns a debot handle which can be used later in `execute` function.\n This function must be used by Debot Browser to start a dialog with debot.\n While the function is executing, several Browser Callbacks can be called,\n since the debot tries to display all actions from the context 0 to the user.\n \n # Remarks\n `start` is equivalent to `fetch` + switch to context 0.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "debot.ParamsOfStart",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "app_object",
+              "type": "Generic",
+              "generic_name": "AppObject",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "debot.ParamsOfAppDebotBrowser"
+                },
+                {
+                  "type": "Ref",
+                  "ref_name": "debot.ResultOfAppDebotBrowser"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "debot.RegisteredDebot"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "fetch",
+          "summary": " Fetches debot from blockchain.",
+          "description": " Fetches debot from blockchain.\n \n Downloads debot smart contract (code and data) from blockchain and creates \n an instance of Debot Engine for it.\n \n # Remarks\n It does not switch debot to context 0. Browser Callbacks are not called.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "debot.ParamsOfFetch",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "app_object",
+              "type": "Generic",
+              "generic_name": "AppObject",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "debot.ParamsOfAppDebotBrowser"
+                },
+                {
+                  "type": "Ref",
+                  "ref_name": "debot.ResultOfAppDebotBrowser"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "debot.RegisteredDebot"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "execute",
+          "summary": " Executes debot action.",
+          "description": " Executes debot action.\n \n Calls debot engine referenced by debot handle to execute input action.\n Calls Debot Browser Callbacks if needed.\n \n # Remarks\n Chain of actions can be executed if input action generates a list of subactions.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "debot.ParamsOfExecute",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "remove",
+          "summary": " Destroys debot handle.",
+          "description": " Destroys debot handle.\n \n Removes handle from Client Context and drops debot engine referenced by that handle.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "debot.RegisteredDebot",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
               }
             ]
           },

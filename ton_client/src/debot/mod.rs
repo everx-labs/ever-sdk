@@ -38,15 +38,15 @@ pub struct DebotHandle(u32);
 /// Describes a debot action in a Debot Context.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 pub struct DebotAction {
-    /// a short action description. Should be used by Debot Browser as name of
+    /// A short action description. Should be used by Debot Browser as name of
     /// menu item.
     pub description: String,
     /// Depends on action type. Can be a debot function name or a print string 
     /// (for Print Action).
     pub name: String,
-    /// Action type. See structure AcType.
+    /// Action type.
     pub action_type: u8,
-    /// Id of debot context to switch after action execution. 
+    /// ID of debot context to switch after action execution. 
     pub to: u8,
     /// Action attributes. In the form of "param=value,flag".
     /// attribute example: instant, args, fargs, sign.
@@ -88,7 +88,7 @@ pub struct ParamsOfStart {
     address: String,
 }
 
-/// Structure for storing debot handle returned from [start] and [fetch] functions.
+/// Structure for storing debot handle returned from `start` and `fetch` functions.
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct RegisteredDebot {
     /// Debot handle which references an instance of debot engine.
@@ -99,7 +99,7 @@ pub struct RegisteredDebot {
 /// 
 /// Downloads debot smart contract from blockchain and switches it to
 /// context zero.
-/// Returns a debot handle which can be used later in [execute] function.
+/// Returns a debot handle which can be used later in `execute` function.
 /// This function must be used by Debot Browser to start a dialog with debot.
 /// While the function is executing, several Browser Callbacks can be called,
 /// since the debot tries to display all actions from the context 0 to the user.
@@ -206,7 +206,6 @@ pub fn remove(
     context: Arc<ClientContext>,
     params: RegisteredDebot,
 ) -> ClientResult<()> {
-    context.debots.remove(&params.debot_handle.0)
-        .ok_or(Error::invalid_handle(params.debot_handle.0))?;
+    context.debots.remove(&params.debot_handle.0);
     Ok(())
 }

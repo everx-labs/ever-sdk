@@ -20,12 +20,17 @@
 /// Returning values from Debot Browser callbacks.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 pub enum ResultOfAppDebotBrowser {
-    /// Result of `input` callback.
-    /// `value` - string entered by user.
-    Input { value: String },
-    /// Result of `load_key` callback.
-    /// `keys` - keypair that browser asked from user.
-    LoadKey { keys: KeyPair },
+    /// Result of user input.
+    Input {
+        /// String entered by user.
+        value: String
+    },
+    /// Result of key loading.
+    LoadKey { 
+        /// Key pair that browser asked from user.
+        keys: KeyPair
+    },
+    /// Result of debot invoking.
     InvokeDebot,
 }
 
@@ -34,26 +39,37 @@ pub enum ResultOfAppDebotBrowser {
 /// Called by debot engine to communicate with debot browser.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 pub enum ParamsOfAppDebotBrowser {
-    /// `log` callback. Prints message to user. 
-    /// `msg` is a string that must be printed to user.
-    Log { msg: String },
-    /// `switch` callback. Switch debot to another context (menu). 
-    /// `context_id` - debot context id to which debot is switched.
-    Switch { context_id: u8 },
-    /// `show_action` callback. Called after `switch` for each action in context.
-    /// Shows action to the user.
-    /// `action` - debot action that must be shown to user as menu item.
-    /// At least `desc` property must be shown from [DebotAction] structure.
-    ShowAction { action: DebotAction },
-    /// `input` callback. Request from debot to input data. 
-    /// `prefix` - a promt string that must be printed to user before input.  
-    Input { prefix: String },
-    /// `load_key` callback. Request from debot to load keypair.
+    /// Print message to user. 
+    Log {
+        /// A string that must be printed to user.
+        msg: String
+    },
+    /// Switch debot to another context (menu).
+    Switch {
+        /// Debot context ID to which debot is switched.
+        context_id: u8
+    },
+    /// Show action to the user.
+    /// Called after `switch` for each action in context.
+    ShowAction {
+        /// Debot action that must be shown to user as menu item.
+        /// At least `description` property must be shown from [DebotAction] structure.
+        action: DebotAction
+    },
+    /// Request user input. 
+    Input {
+        /// A prompt string that must be printed to user before input request.
+        prompt: String
+    },
+    /// Load debot key pair.
     LoadKey,
-    /// `invoke_debot` callback. Requests to execute action of another debot.
-    /// `debot_addr` - address of debot in blockchain.
-    /// `action` - debot action to execute.
-    InvokeDebot { debot_addr: String, action: DebotAction },
+    /// Execute action of another debot.
+    InvokeDebot {
+        /// Address of debot in blockchain.
+        debot_addr: String,
+        /// Debot action to execute.
+        action: DebotAction
+    },
 }
  
 /// Wrapper for native Debot Browser callbacks.
@@ -84,9 +100,9 @@ impl DebotBrowserAdapter {
          self.app_object.notify(ParamsOfAppDebotBrowser::ShowAction { action: act.into() });
      }
  
-     async fn input(&self, prefix: &str, value: &mut String) {
+     async fn input(&self, prompt: &str, value: &mut String) {
          let response = self.app_object.call(ParamsOfAppDebotBrowser::Input {
-                 prefix: prefix.to_owned(),
+                 prompt: prompt.to_owned(),
              })
              .await;
          match response {
@@ -136,13 +152,13 @@ impl DebotBrowserAdapter {
 /// 
 /// Downloads debot smart contract from blockchain and switches it to
 /// context zero.
-/// Returns a debot handle which can be used later in [execute] function.
+/// Returns a debot handle which can be used later in `execute` function.
 /// This function must be used by Debot Browser to start a dialog with debot.
 /// While the function is executing, several Browser Callbacks can be called,
 /// since the debot tries to display all actions from the context 0 to the user.
 /// 
 /// # Remarks
-/// [start] is equivalent to [fetch] + switch to context 0.
+/// `start` is equivalent to `fetch` + switch to context 0.
 #[api_function]
 pub(crate) async fn start(
     context: std::sync::Arc<ClientContext>,

@@ -74,6 +74,8 @@
 
 [signing_box_sign](#signing_box_sign) – Returns signed user data.
 
+[remove_signing_box](#remove_signing_box) – Removes signing box from SDK.
+
 ## Types
 [SigningBoxHandle](#SigningBoxHandle)
 
@@ -183,15 +185,11 @@
 
 [ResultOfChaCha20](#ResultOfChaCha20)
 
-[ResultOfRegisterSigningBox](#ResultOfRegisterSigningBox)
+[RegisteredSigningBox](#RegisteredSigningBox)
 
 [ParamsOfAppSigningBox](#ParamsOfAppSigningBox)
 
 [ResultOfAppSigningBox](#ResultOfAppSigningBox)
-
-[ResultOfGetSigningBox](#ResultOfGetSigningBox)
-
-[ParamsOfSigningBoxGetPublicKey](#ParamsOfSigningBoxGetPublicKey)
 
 [ResultOfSigningBoxGetPublicKey](#ResultOfSigningBoxGetPublicKey)
 
@@ -1054,11 +1052,13 @@ function chacha20(
 Register an application implemented signing box.
 
 ```ts
-type ResultOfRegisterSigningBox = {
+type RegisteredSigningBox = {
     handle: SigningBoxHandle
 };
 
-function register_signing_box(): Promise<ResultOfRegisterSigningBox>;
+function register_signing_box(
+    obj: AppSigningBox,
+): Promise<RegisteredSigningBox>;
 ```
 ### Result
 
@@ -1075,13 +1075,13 @@ type KeyPair = {
     secret: string
 };
 
-type ResultOfGetSigningBox = {
+type RegisteredSigningBox = {
     handle: SigningBoxHandle
 };
 
 function get_signing_box(
     params: KeyPair,
-): Promise<ResultOfGetSigningBox>;
+): Promise<RegisteredSigningBox>;
 ```
 ### Parameters
 - `public`: _string_ – Public key - 64 symbols hex string
@@ -1096,8 +1096,8 @@ function get_signing_box(
 Returns public key of signing key pair.
 
 ```ts
-type ParamsOfSigningBoxGetPublicKey = {
-    signing_box: SigningBoxHandle
+type RegisteredSigningBox = {
+    handle: SigningBoxHandle
 };
 
 type ResultOfSigningBoxGetPublicKey = {
@@ -1105,11 +1105,11 @@ type ResultOfSigningBoxGetPublicKey = {
 };
 
 function signing_box_get_public_key(
-    params: ParamsOfSigningBoxGetPublicKey,
+    params: RegisteredSigningBox,
 ): Promise<ResultOfSigningBoxGetPublicKey>;
 ```
 ### Parameters
-- `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing Box handle.
+- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
 ### Result
 
 - `pubkey`: _string_ – Public key of signing box. Encoded with hex
@@ -1139,6 +1139,25 @@ function signing_box_sign(
 ### Result
 
 - `signature`: _string_ – Data signature. Encoded with `base64`.
+
+
+## remove_signing_box
+
+Removes signing box from SDK.
+
+```ts
+type RegisteredSigningBox = {
+    handle: SigningBoxHandle
+};
+
+function remove_signing_box(
+    params: RegisteredSigningBox,
+): Promise<void>;
+```
+### Parameters
+- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
+### Result
+
 
 
 # Types
@@ -1701,9 +1720,9 @@ type ResultOfChaCha20 = {
 - `data`: _string_ – Encrypted/decrypted data. Encoded with `base64`.
 
 
-## ResultOfRegisterSigningBox
+## RegisteredSigningBox
 ```ts
-type ResultOfRegisterSigningBox = {
+type RegisteredSigningBox = {
     handle: SigningBoxHandle
 };
 ```
@@ -1751,24 +1770,6 @@ When _type_ is _'Sign'_
 
 
 - `signature`: _string_
-
-
-## ResultOfGetSigningBox
-```ts
-type ResultOfGetSigningBox = {
-    handle: SigningBoxHandle
-};
-```
-- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
-
-
-## ParamsOfSigningBoxGetPublicKey
-```ts
-type ParamsOfSigningBoxGetPublicKey = {
-    signing_box: SigningBoxHandle
-};
-```
-- `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing Box handle.
 
 
 ## ResultOfSigningBoxGetPublicKey
