@@ -337,6 +337,12 @@ async fn test_error_resolving() {
         }),
     };
 
+    let original_code = if TestClient::abi_version() == 1 {
+        ErrorCode::TransactionWaitTimeout
+    } else {
+        ErrorCode::MessageExpired
+    } as u32;
+
     // deploy to non-exesting account
     let result = client
         .net_process_message(
@@ -349,7 +355,9 @@ async fn test_error_resolving() {
         .await
         .unwrap_err();
 
-    assert_eq!(result.code, TvmErrorCode::AccountMissing as u32);
+    log::debug!("{:#}", json!(result));
+    assert_eq!(result.code, original_code);
+    assert_eq!(result.data["local_error"]["code"], TvmErrorCode::AccountMissing as u32);
 
     // deploy with low balance
     default_client
@@ -367,14 +375,9 @@ async fn test_error_resolving() {
         .await
         .unwrap_err();
 
-    let original_code = if TestClient::abi_version() == 1 {
-        ErrorCode::TransactionWaitTimeout
-    } else {
-        ErrorCode::MessageExpired
-    } as isize;
-
-    assert_eq!(result.code, TvmErrorCode::LowBalance as u32);
-    assert_eq!(result.data["original_error"]["code"], original_code);
+    log::debug!("{:#}", json!(result));
+    assert_eq!(result.code, original_code);
+    assert_eq!(result.data["local_error"]["code"], TvmErrorCode::LowBalance as u32);
 
     // ABI version 1 messages don't expire so previous deploy message can be processed after
     // increasing balance. Need to wait until message will be rejected by all validators
@@ -397,9 +400,10 @@ async fn test_error_resolving() {
         )
         .await
         .unwrap_err();
-
-    assert_eq!(result.code, TvmErrorCode::AccountCodeMissing as u32);
-    assert_eq!(result.data["original_error"]["code"], original_code);
+    
+    log::debug!("{:#}", json!(result));
+    assert_eq!(result.code, original_code);
+    assert_eq!(result.data["local_error"]["code"], TvmErrorCode::AccountCodeMissing as u32);
 
     // normal deploy
     client
@@ -426,6 +430,7 @@ async fn test_error_resolving() {
         .await
         .unwrap_err();
 
-    assert_eq!(result.code, TvmErrorCode::ContractExecutionError as u32);
-    assert_eq!(result.data["original_error"]["code"], original_code);
+    log::debug!("{:#}", json!(result));
+    assert_eq!(result.code, original_code);
+    assert_eq!(result.data["local_error"]["code"], TvmErrorCode::ContractExecutionError as u32);
 }
