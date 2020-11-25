@@ -9,6 +9,7 @@ pub const STATE_CURRENT: u8 = 253;
 pub const STATE_PREV: u8 = 254; 	
 pub const STATE_EXIT: u8 = 255;
 
+/// Debot Context. Consists of several actions.
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[derive(Clone)]

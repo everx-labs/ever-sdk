@@ -157,7 +157,7 @@ impl TestBrowser {
 
     async fn process_call(client: Arc<TestClient>, state: &BrowserData, params: ParamsOfAppDebotBrowser) -> ResultOfAppDebotBrowser {
         match params {
-            ParamsOfAppDebotBrowser::Input { prefix: _ } => {
+            ParamsOfAppDebotBrowser::Input { prompt: _ } => {
                 let value = state.current.lock().await.step.inputs.remove(0);
                 ResultOfAppDebotBrowser::Input { value: value.to_owned() }
             },

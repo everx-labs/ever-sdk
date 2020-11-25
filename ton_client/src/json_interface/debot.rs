@@ -16,38 +16,80 @@
  use crate::error::ClientResult;
  use crate::debot::{DAction, DebotAction, BrowserCallbacks, ParamsOfFetch, ParamsOfStart, RegisteredDebot};
  use crate::crypto::KeyPair;
- 
+
+/// Returning values from Debot Browser callbacks.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 #[serde(tag="type")]
 pub enum ResultOfAppDebotBrowser {
-    Input { value: String },
-    LoadKey { keys: KeyPair },
+    /// Result of user input.
+    Input {
+        /// String entered by user.
+        value: String
+    },
+    /// Result of key loading.
+    LoadKey { 
+        /// Key pair that browser asked from user.
+        keys: KeyPair
+    },
+    /// Result of debot invoking.
     InvokeDebot,
 }
 
+/// Debot Browser callbacks
+/// 
+/// Called by debot engine to communicate with debot browser.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 #[serde(tag="type")]
 pub enum ParamsOfAppDebotBrowser {
-    Log { msg: String },
-    Switch { context_id: u8 },
-    ShowAction { action: DebotAction },
-    Input { prefix: String },
+    /// Print message to user. 
+    Log {
+        /// A string that must be printed to user.
+        msg: String
+    },
+    /// Switch debot to another context (menu).
+    Switch {
+        /// Debot context ID to which debot is switched.
+        context_id: u8
+    },
+    /// Show action to the user.
+    /// Called after `switch` for each action in context.
+    ShowAction {
+        /// Debot action that must be shown to user as menu item.
+        /// At least `description` property must be shown from [DebotAction] structure.
+        action: DebotAction
+    },
+    /// Request user input. 
+    Input {
+        /// A prompt string that must be printed to user before input request.
+        prompt: String
+    },
+    /// Load debot key pair.
     LoadKey,
-    InvokeDebot { debot_addr: String, action: DebotAction },
+    /// Execute action of another debot.
+    InvokeDebot {
+        /// Address of debot in blockchain.
+        debot_addr: String,
+        /// Debot action to execute.
+        action: DebotAction
+    },
 }
  
- pub(crate) struct DebotBrowserAdapter {
-     app_object: AppObject<ParamsOfAppDebotBrowser, ResultOfAppDebotBrowser>,
- }
+/// Wrapper for native Debot Browser callbacks.
+/// 
+/// Adapter between SDK application and low level debot interface.
+pub(crate) struct DebotBrowserAdapter {
+    app_object: AppObject<ParamsOfAppDebotBrowser, ResultOfAppDebotBrowser>,
+}
  
- impl DebotBrowserAdapter {
-     pub fn new(app_object: AppObject<ParamsOfAppDebotBrowser, ResultOfAppDebotBrowser>) -> Self {
-         Self { app_object }
-     }
- }
+impl DebotBrowserAdapter {
+    pub fn new(app_object: AppObject<ParamsOfAppDebotBrowser, ResultOfAppDebotBrowser>) -> Self {
+        Self { app_object }
+    }
+}
  
  #[async_trait::async_trait]
  impl BrowserCallbacks for DebotBrowserAdapter {
+     
      async fn log(&self, msg: String) {
          self.app_object.notify(ParamsOfAppDebotBrowser::Log { msg });
      }
@@ -60,9 +102,9 @@ pub enum ParamsOfAppDebotBrowser {
          self.app_object.notify(ParamsOfAppDebotBrowser::ShowAction { action: act.into() });
      }
  
-     async fn input(&self, prefix: &str, value: &mut String) {
+     async fn input(&self, prompt: &str, value: &mut String) {
          let response = self.app_object.call(ParamsOfAppDebotBrowser::Input {
-                 prefix: prefix.to_owned(),
+                 prompt: prompt.to_owned(),
              })
              .await;
          match response {
@@ -108,6 +150,17 @@ pub enum ParamsOfAppDebotBrowser {
      }
  }
 
+/// Starts an instance of debot.
+/// 
+/// Downloads debot smart contract from blockchain and switches it to
+/// context zero.
+/// Returns a debot handle which can be used later in `execute` function.
+/// This function must be used by Debot Browser to start a dialog with debot.
+/// While the function is executing, several Browser Callbacks can be called,
+/// since the debot tries to display all actions from the context 0 to the user.
+/// 
+/// # Remarks
+/// `start` is equivalent to `fetch` + switch to context 0.
 #[api_function]
 pub(crate) async fn start(
     context: std::sync::Arc<ClientContext>,
@@ -118,6 +171,13 @@ pub(crate) async fn start(
     crate::debot::start(context, params, browser_callbacks).await
 }
 
+/// Fetches debot from blockchain.
+/// 
+/// Downloads debot smart contract (code and data) from blockchain and creates 
+/// an instance of Debot Engine for it.
+/// 
+/// # Remarks
+/// It does not switch debot to context 0. Browser Callbacks are not called.
 #[api_function]
 pub(crate) async fn fetch(
     context: std::sync::Arc<ClientContext>,

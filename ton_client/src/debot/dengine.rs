@@ -68,6 +68,9 @@ const OPTION_ABI: u8 = 1;
 const OPTION_TARGET_ABI: u8 = 2;
 const OPTION_TARGET_ADDR: u8 = 4;
 
+/// Debot Engine.
+/// Downloads and stores debot, executes its actions and calls 
+/// Debot Browser callbacks.
 pub struct DEngine {
     abi: Abi,
     addr: String,
@@ -552,9 +555,9 @@ impl DEngine {
             let mut args_json = json!({});
             for arg in arguments {
                 let arg_name = arg["name"].as_str().unwrap();
-                let prefix = "".to_owned();
+                let prompt = "".to_owned();
                 let mut value = String::new();
-                self.browser.input(&prefix, &mut value).await;
+                self.browser.input(&prompt, &mut value).await;
                 if arg["type"].as_str().unwrap() == "bytes" {
                     value = hex::encode(value.as_bytes());
                 }
