@@ -18,6 +18,7 @@
  use crate::crypto::KeyPair;
  
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+#[serde(tag="type")]
 pub enum ResultOfAppDebotBrowser {
     Input { value: String },
     LoadKey { keys: KeyPair },
@@ -25,6 +26,7 @@ pub enum ResultOfAppDebotBrowser {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+#[serde(tag="type")]
 pub enum ParamsOfAppDebotBrowser {
     Log { msg: String },
     Switch { context_id: u8 },
