@@ -68,7 +68,7 @@
 
 [register_signing_box](#register_signing_box) – Register an application implemented signing box.
 
-[get_signing_box](#get_signing_box) – Gets a default signing box implementation.
+[get_signing_box](#get_signing_box) – Creates a default signing box implementation.
 
 [signing_box_get_public_key](#signing_box_get_public_key) – Returns public key of signing key pair.
 
@@ -187,9 +187,9 @@
 
 [RegisteredSigningBox](#RegisteredSigningBox)
 
-[ParamsOfAppSigningBox](#ParamsOfAppSigningBox)
+[ParamsOfAppSigningBox](#ParamsOfAppSigningBox) – Signing box callbacks.
 
-[ResultOfAppSigningBox](#ResultOfAppSigningBox)
+[ResultOfAppSigningBox](#ResultOfAppSigningBox) – Returning values from signing box callbacks.
 
 [ResultOfSigningBoxGetPublicKey](#ResultOfSigningBoxGetPublicKey)
 
@@ -1067,7 +1067,7 @@ function register_signing_box(
 
 ## get_signing_box
 
-Gets a default signing box implementation.
+Creates a default signing box implementation.
 
 ```ts
 type KeyPair = {
@@ -1730,6 +1730,8 @@ type RegisteredSigningBox = {
 
 
 ## ParamsOfAppSigningBox
+Signing box callbacks.
+
 ```ts
 type ParamsOfAppSigningBox = {
     type: 'GetPublicKey'
@@ -1742,14 +1744,20 @@ Depends on value of the  `type` field.
 
 When _type_ is _'GetPublicKey'_
 
+Get signing box public key
+
 
 When _type_ is _'Sign'_
 
+Sign data
 
-- `unsigned`: _string_
+
+- `unsigned`: _string_ – Data to sign encoded as base64
 
 
 ## ResultOfAppSigningBox
+Returning values from signing box callbacks.
+
 ```ts
 type ResultOfAppSigningBox = {
     type: 'GetPublicKey'
@@ -1763,13 +1771,17 @@ Depends on value of the  `type` field.
 
 When _type_ is _'GetPublicKey'_
 
+Result of getting public key
 
-- `public_key`: _string_
+
+- `public_key`: _string_ – Signing box public key
 
 When _type_ is _'Sign'_
 
+Result of signing data
 
-- `signature`: _string_
+
+- `signature`: _string_ – Data signature encoded as hex
 
 
 ## ResultOfSigningBoxGetPublicKey

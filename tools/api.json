@@ -1605,8 +1605,8 @@
               "name": "GetPublicKey",
               "type": "Struct",
               "struct_fields": [],
-              "summary": null,
-              "description": null
+              "summary": " Get signing box public key",
+              "description": " Get signing box public key"
             },
             {
               "name": "Sign",
@@ -1615,16 +1615,16 @@
                 {
                   "name": "unsigned",
                   "type": "String",
-                  "summary": null,
-                  "description": null
+                  "summary": " Data to sign encoded as base64",
+                  "description": " Data to sign encoded as base64"
                 }
               ],
-              "summary": null,
-              "description": null
+              "summary": " Sign data",
+              "description": " Sign data"
             }
           ],
-          "summary": null,
-          "description": null
+          "summary": " Signing box callbacks.",
+          "description": " Signing box callbacks."
         },
         {
           "name": "ResultOfAppSigningBox",
@@ -1637,12 +1637,12 @@
                 {
                   "name": "public_key",
                   "type": "String",
-                  "summary": null,
-                  "description": null
+                  "summary": " Signing box public key",
+                  "description": " Signing box public key"
                 }
               ],
-              "summary": null,
-              "description": null
+              "summary": " Result of getting public key",
+              "description": " Result of getting public key"
             },
             {
               "name": "Sign",
@@ -1651,16 +1651,16 @@
                 {
                   "name": "signature",
                   "type": "String",
-                  "summary": null,
-                  "description": null
+                  "summary": " Data signature encoded as hex",
+                  "description": " Data signature encoded as hex"
                 }
               ],
-              "summary": null,
-              "description": null
+              "summary": " Result of signing data",
+              "description": " Result of signing data"
             }
           ],
-          "summary": null,
-          "description": null
+          "summary": " Returning values from signing box callbacks.",
+          "description": " Returning values from signing box callbacks."
         },
         {
           "name": "ResultOfSigningBoxGetPublicKey",
@@ -2965,8 +2965,8 @@
         },
         {
           "name": "get_signing_box",
-          "summary": " Gets a default signing box implementation.",
-          "description": " Gets a default signing box implementation.",
+          "summary": " Creates a default signing box implementation.",
+          "description": " Creates a default signing box implementation.",
           "params": [
             {
               "name": "context",
@@ -6405,6 +6405,459 @@
               {
                 "type": "Ref",
                 "ref_name": "net.ResultOfSubscribeCollection"
+              }
+            ]
+          },
+          "errors": null
+        }
+      ]
+    },
+    {
+      "name": "debot",
+      "summary": " Module for working with debot.",
+      "description": " Module for working with debot.",
+      "types": [
+        {
+          "name": "DebotHandle",
+          "type": "Number",
+          "number_type": "UInt",
+          "number_size": 32,
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "DebotAction",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "description",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "name",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "action_type",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 8,
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "to",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 8,
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "attributes",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "misc",
+              "type": "String",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfStart",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "address",
+              "type": "String",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "RegisteredDebot",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "debot_handle",
+              "type": "Ref",
+              "ref_name": "debot.DebotHandle",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfAppDebotBrowser",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "Log",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "msg",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Switch",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "context_id",
+                  "type": "Number",
+                  "number_type": "UInt",
+                  "number_size": 8,
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "ShowAction",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "action",
+                  "type": "Ref",
+                  "ref_name": "debot.DebotAction",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Input",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "prefix",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "LoadKey",
+              "type": "Struct",
+              "struct_fields": [],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvokeDebot",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "debot_addr",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "action",
+                  "type": "Ref",
+                  "ref_name": "debot.DebotAction",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfAppDebotBrowser",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "Input",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "value",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "LoadKey",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "keys",
+                  "type": "Ref",
+                  "ref_name": "crypto.KeyPair",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvokeDebot",
+              "type": "Struct",
+              "struct_fields": [],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfFetch",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "address",
+              "type": "String",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfExecute",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "debot_handle",
+              "type": "Ref",
+              "ref_name": "debot.DebotHandle",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "action",
+              "type": "Ref",
+              "ref_name": "debot.DebotAction",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        }
+      ],
+      "functions": [
+        {
+          "name": "start",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "debot.ParamsOfStart",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "app_object",
+              "type": "Generic",
+              "generic_name": "AppObject",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "debot.ParamsOfAppDebotBrowser"
+                },
+                {
+                  "type": "Ref",
+                  "ref_name": "debot.ResultOfAppDebotBrowser"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "debot.RegisteredDebot"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "fetch",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "debot.ParamsOfFetch",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "app_object",
+              "type": "Generic",
+              "generic_name": "AppObject",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "debot.ParamsOfAppDebotBrowser"
+                },
+                {
+                  "type": "Ref",
+                  "ref_name": "debot.ResultOfAppDebotBrowser"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "debot.RegisteredDebot"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "execute",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "debot.ParamsOfExecute",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "remove",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "debot.RegisteredDebot",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
               }
             ]
           },
