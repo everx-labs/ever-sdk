@@ -116,7 +116,7 @@ pub async fn start(
         params.address,
         None,
         context.clone(),
-        Box::new(callbacks),
+        Arc::new(callbacks),
     );
     dengine
         .start()
@@ -154,7 +154,7 @@ pub async fn fetch(
         params.address,
         None,
         context.clone(),
-        Box::new(callbacks),
+        Arc::new(callbacks),
     );
     dengine
         .fetch()
