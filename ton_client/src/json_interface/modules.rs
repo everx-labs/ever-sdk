@@ -396,6 +396,7 @@ pub struct DebotModule;
 fn register_debot(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<DebotModule>(handlers);
     module.register_type::<crate::debot::DebotAction>();
+    module.register_type::<crate::debot::DebotHandle>();
     module.register_async_fn_with_app_object(
         crate::json_interface::debot::start,
         crate::json_interface::debot::start_api,

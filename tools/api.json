@@ -6475,6 +6475,14 @@
           "description": " Describes a debot action in a Debot Context."
         },
         {
+          "name": "DebotHandle",
+          "type": "Number",
+          "number_type": "UInt",
+          "number_size": 32,
+          "summary": " Handle of registered in SDK debot",
+          "description": " Handle of registered in SDK debot"
+        },
+        {
           "name": "ParamsOfStart",
           "type": "Struct",
           "struct_fields": [
@@ -6495,7 +6503,7 @@
             {
               "name": "debot_handle",
               "type": "Ref",
-              "ref_name": "DebotHandle",
+              "ref_name": "debot.DebotHandle",
               "summary": " Debot handle which references an instance of debot engine.",
               "description": " Debot handle which references an instance of debot engine."
             }
@@ -6663,7 +6671,7 @@
             {
               "name": "debot_handle",
               "type": "Ref",
-              "ref_name": "DebotHandle",
+              "ref_name": "debot.DebotHandle",
               "summary": " Debot handle which references an instance of debot engine.",
               "description": " Debot handle which references an instance of debot engine."
             },

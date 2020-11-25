@@ -13,6 +13,8 @@
 ## Types
 [DebotAction](#DebotAction) – Describes a debot action in a Debot Context.
 
+[DebotHandle](#DebotHandle) – Handle of registered in SDK debot
+
 [ParamsOfStart](#ParamsOfStart) – Parameters to start debot.
 
 [RegisteredDebot](#RegisteredDebot) – Structure for storing debot handle returned from `start` and `fetch` functions.
@@ -59,7 +61,7 @@ function start(
 - `address`: _string_ – Debot smart contract address
 ### Result
 
-- `debot_handle`: _DebotHandle_ – Debot handle which references an instance of debot engine.
+- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
 
 
 ## fetch
@@ -90,7 +92,7 @@ function fetch(
 - `address`: _string_ – Debot smart contract address
 ### Result
 
-- `debot_handle`: _DebotHandle_ – Debot handle which references an instance of debot engine.
+- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
 
 
 ## execute
@@ -114,7 +116,7 @@ function execute(
 ): Promise<void>;
 ```
 ### Parameters
-- `debot_handle`: _DebotHandle_ – Debot handle which references an instance of debot engine.
+- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
 - `action`: _[DebotAction](mod_debot.md#DebotAction)_ – Debot Action that must be executed.
 ### Result
 
@@ -136,7 +138,7 @@ function remove(
 ): Promise<void>;
 ```
 ### Parameters
-- `debot_handle`: _DebotHandle_ – Debot handle which references an instance of debot engine.
+- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
 ### Result
 
 
@@ -163,6 +165,14 @@ type DebotAction = {
 - `misc`: _string_ – Some internal action data. Used by debot only.
 
 
+## DebotHandle
+Handle of registered in SDK debot
+
+```ts
+type DebotHandle = number;
+```
+
+
 ## ParamsOfStart
 Parameters to start debot.
 
@@ -182,7 +192,7 @@ type RegisteredDebot = {
     debot_handle: DebotHandle
 };
 ```
-- `debot_handle`: _DebotHandle_ – Debot handle which references an instance of debot engine.
+- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
 
 
 ## ParamsOfAppDebotBrowser
@@ -311,7 +321,7 @@ type ParamsOfExecute = {
     action: DebotAction
 };
 ```
-- `debot_handle`: _DebotHandle_ – Debot handle which references an instance of debot engine.
+- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
 - `action`: _[DebotAction](mod_debot.md#DebotAction)_ – Debot Action that must be executed.
 
 

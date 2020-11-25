@@ -32,6 +32,7 @@ use crate::ClientContext;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+/// Handle of registered in SDK debot
 #[derive(Serialize, Deserialize, Default, ApiType, Clone)]
 pub struct DebotHandle(u32);
 
