@@ -17,7 +17,7 @@ pub struct ParamsOfProcessMessage {
     pub send_events: bool,
 }
 
-pub async fn process_message<F: futures::Future<Output = ()> + Send + Sync>(
+pub async fn process_message<F: futures::Future<Output = ()> + Send>(
     context: Arc<ClientContext>,
     params: ParamsOfProcessMessage,
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync + 'static,

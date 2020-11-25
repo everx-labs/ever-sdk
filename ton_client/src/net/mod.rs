@@ -268,7 +268,7 @@ pub async fn wait_for_collection(
     Ok(ResultOfWaitForCollection { result })
 }
 
-pub async fn subscribe_collection<F: Future<Output = ()> + Send + Sync>(
+pub async fn subscribe_collection<F: Future<Output = ()> + Send>(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfSubscribeCollection,
     callback: impl Fn(ClientResult<ResultOfSubscription>) -> F + Send + Sync + 'static,

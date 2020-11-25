@@ -17,7 +17,7 @@ use std::sync::Arc;
 use ton_block::MsgAddressInt;
 use ton_sdk::Block;
 
-pub async fn fetch_next_shard_block<F: futures::Future<Output = ()> + Send + Sync>(
+pub async fn fetch_next_shard_block<F: futures::Future<Output = ()> + Send>(
     context: &Arc<ClientContext>,
     params: &ParamsOfWaitForTransaction,
     address: &MsgAddressInt,

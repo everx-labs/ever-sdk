@@ -32,7 +32,7 @@ pub struct ParamsOfWaitForTransaction {
     pub send_events: bool,
 }
 
-pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send + Sync>(
+pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
     context: Arc<ClientContext>,
     params: ParamsOfWaitForTransaction,
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync,
