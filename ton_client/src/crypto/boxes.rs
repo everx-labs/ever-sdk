@@ -48,7 +48,7 @@ impl SigningBox for KeysSigningBox {
     }
 }
 
-/// Gets a default signing box implementation.
+/// Creates a default signing box implementation.
 #[api_function]
 pub async fn get_signing_box(
     context: std::sync::Arc<ClientContext>,
@@ -69,7 +69,7 @@ pub struct RegisteredSigningBox {
     pub handle: SigningBoxHandle,
 }
 
-/// Register an application implemented signing box.
+/// Registers an application implemented signing box.
 pub async fn register_signing_box(
     context: std::sync::Arc<ClientContext>,
     signing_box: impl SigningBox + Send + Sync + 'static,

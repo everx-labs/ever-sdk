@@ -16,22 +16,31 @@
  use crate::error::ClientResult;
  use crate::crypto::{RegisteredSigningBox, SigningBox};
 
+/// Signing box callbacks.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 #[serde(tag="type")]
 pub enum ParamsOfAppSigningBox {
+    /// Get signing box public key
     GetPublicKey,
+    /// Sign data
     Sign {
+        /// Data to sign encoded as base64
         unsigned: String,
     },
 }
 
+/// Returning values from signing box callbacks.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 #[serde(tag="type")]
 pub enum ResultOfAppSigningBox {
+    /// Result of getting public key
     GetPublicKey {
+        /// Signing box public key
         public_key: String,
     },
+    /// Result of signing data
     Sign {
+        /// Data signature encoded as hex
         signature: String,
     },
 }
