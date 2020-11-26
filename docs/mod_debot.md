@@ -2,36 +2,36 @@
 
  Module for working with debot.
 ## Functions
-[start](#start) – Starts an instance of debot.
+[start](#start) – **UNSTABLE API.** Starts an instance of debot.
 
-[fetch](#fetch) – Fetches debot from blockchain.
+[fetch](#fetch) – **UNSTABLE API.** Fetches debot from blockchain.
 
-[execute](#execute) – Executes debot action.
+[execute](#execute) – **UNSTABLE API.** Executes debot action.
 
-[remove](#remove) – Destroys debot handle.
+[remove](#remove) – **UNSTABLE API.** Destroys debot handle.
 
 ## Types
-[DebotHandle](#DebotHandle) – Handle of registered in SDK debot
+[DebotHandle](#DebotHandle) – **UNSTABLE API.** Handle of registered in SDK debot
 
-[DebotAction](#DebotAction) – Describes a debot action in a Debot Context.
+[DebotAction](#DebotAction) – **UNSTABLE API.** Describes a debot action in a Debot Context.
 
-[ParamsOfStart](#ParamsOfStart) – Parameters to start debot.
+[ParamsOfStart](#ParamsOfStart) – **UNSTABLE API.** Parameters to start debot.
 
-[RegisteredDebot](#RegisteredDebot) – Structure for storing debot handle returned from `start` and `fetch` functions.
+[RegisteredDebot](#RegisteredDebot) – **UNSTABLE API.** Structure for storing debot handle returned from `start` and `fetch` functions.
 
-[ParamsOfAppDebotBrowser](#ParamsOfAppDebotBrowser) – Debot Browser callbacks
+[ParamsOfAppDebotBrowser](#ParamsOfAppDebotBrowser) – **UNSTABLE API.** Debot Browser callbacks
 
-[ResultOfAppDebotBrowser](#ResultOfAppDebotBrowser) – Returning values from Debot Browser callbacks.
+[ResultOfAppDebotBrowser](#ResultOfAppDebotBrowser) – **UNSTABLE API.** Returning values from Debot Browser callbacks.
 
-[ParamsOfFetch](#ParamsOfFetch) – Parameters to fetch debot.
+[ParamsOfFetch](#ParamsOfFetch) – **UNSTABLE API.** Parameters to fetch debot.
 
-[ParamsOfExecute](#ParamsOfExecute) – Parameters for executing debot action.
+[ParamsOfExecute](#ParamsOfExecute) – **UNSTABLE API.** Parameters for executing debot action.
 
 
 # Functions
 ## start
 
-Starts an instance of debot.
+**UNSTABLE API.** Starts an instance of debot.
 
 Downloads debot smart contract from blockchain and switches it to
 context zero.
@@ -66,7 +66,7 @@ function start(
 
 ## fetch
 
-Fetches debot from blockchain.
+**UNSTABLE API.** Fetches debot from blockchain.
 
 Downloads debot smart contract (code and data) from blockchain and creates
 an instance of Debot Engine for it.
@@ -97,7 +97,7 @@ function fetch(
 
 ## execute
 
-Executes debot action.
+**UNSTABLE API.** Executes debot action.
 
 Calls debot engine referenced by debot handle to execute input action.
 Calls Debot Browser Callbacks if needed.
@@ -124,7 +124,7 @@ function execute(
 
 ## remove
 
-Destroys debot handle.
+**UNSTABLE API.** Destroys debot handle.
 
 Removes handle from Client Context and drops debot engine referenced by that handle.
 
@@ -145,7 +145,7 @@ function remove(
 
 # Types
 ## DebotHandle
-Handle of registered in SDK debot
+**UNSTABLE API.** Handle of registered in SDK debot
 
 ```ts
 type DebotHandle = number;
@@ -153,7 +153,7 @@ type DebotHandle = number;
 
 
 ## DebotAction
-Describes a debot action in a Debot Context.
+**UNSTABLE API.** Describes a debot action in a Debot Context.
 
 ```ts
 type DebotAction = {
@@ -174,7 +174,7 @@ type DebotAction = {
 
 
 ## ParamsOfStart
-Parameters to start debot.
+**UNSTABLE API.** Parameters to start debot.
 
 ```ts
 type ParamsOfStart = {
@@ -185,7 +185,7 @@ type ParamsOfStart = {
 
 
 ## RegisteredDebot
-Structure for storing debot handle returned from `start` and `fetch` functions.
+**UNSTABLE API.** Structure for storing debot handle returned from `start` and `fetch` functions.
 
 ```ts
 type RegisteredDebot = {
@@ -196,7 +196,7 @@ type RegisteredDebot = {
 
 
 ## ParamsOfAppDebotBrowser
-Debot Browser callbacks
+**UNSTABLE API.** Debot Browser callbacks
 
 Called by debot engine to communicate with debot browser.
 
@@ -266,7 +266,7 @@ Execute action of another debot.
 
 
 ## ResultOfAppDebotBrowser
-Returning values from Debot Browser callbacks.
+**UNSTABLE API.** Returning values from Debot Browser callbacks.
 
 ```ts
 type ResultOfAppDebotBrowser = {
@@ -302,7 +302,7 @@ Result of debot invoking.
 
 
 ## ParamsOfFetch
-Parameters to fetch debot.
+**UNSTABLE API.** Parameters to fetch debot.
 
 ```ts
 type ParamsOfFetch = {
@@ -313,7 +313,7 @@ type ParamsOfFetch = {
 
 
 ## ParamsOfExecute
-Parameters for executing debot action.
+**UNSTABLE API.** Parameters for executing debot action.
 
 ```ts
 type ParamsOfExecute = {
