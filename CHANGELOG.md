@@ -18,7 +18,7 @@ Check our tests for code examples.
 ### Fixed
 - panic after `tc_destroy_context` call. Now all contexts use global async runtime
 - field `mnemonic_hdkey_compliant` was removed from `CryptoConfig` (unused by the library)
-- original and resolved errors are exchanged in result. Now `error.code` contains original error code
+- original and resolved errors are swapped in result. Now `error.code` contains original error code
 
 ## 1.1.2 Nov 15, 2020
 ### Fixed
