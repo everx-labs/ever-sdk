@@ -214,7 +214,7 @@ type ParamsOfAppDebotBrowser = {
     type: 'Input'
     prompt: string
 } | {
-    type: 'LoadKey'
+    type: 'GetSigningBox'
 } | {
     type: 'InvokeDebot'
     debot_addr: string,
@@ -251,9 +251,9 @@ Request user input.
 
 - `prompt`: _string_ – A prompt string that must be printed to user before input request.
 
-When _type_ is _'LoadKey'_
+When _type_ is _'GetSigningBox'_
 
-Load debot key pair.
+Get signing box to sign data. Signing box returned is owned and disposed by debot engine
 
 
 When _type_ is _'InvokeDebot'_
@@ -273,8 +273,8 @@ type ResultOfAppDebotBrowser = {
     type: 'Input'
     value: string
 } | {
-    type: 'LoadKey'
-    keys: KeyPair
+    type: 'GetSigningBox'
+    signing_box: SigningBoxHandle
 } | {
     type: 'InvokeDebot'
 };
@@ -288,12 +288,12 @@ Result of user input.
 
 - `value`: _string_ – String entered by user.
 
-When _type_ is _'LoadKey'_
+When _type_ is _'GetSigningBox'_
 
-Result of key loading.
+Result of getting signing box.
 
 
-- `keys`: _[KeyPair](mod_crypto.md#KeyPair)_ – Key pair that browser asked from user.
+- `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing box for signing data requested by debot engine. Signing box is owned and disposed by debot engine
 
 When _type_ is _'InvokeDebot'_
 

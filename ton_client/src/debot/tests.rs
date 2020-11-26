@@ -171,9 +171,13 @@ impl TestBrowser {
                 let value = state.current.lock().await.step.inputs.remove(0);
                 ResultOfAppDebotBrowser::Input { value: value.to_owned() }
             },
-            ParamsOfAppDebotBrowser::LoadKey => {
-                let keys = state.keys.clone();
-                ResultOfAppDebotBrowser::LoadKey { keys }
+            ParamsOfAppDebotBrowser::GetSigningBox => {
+                let signing_box: crate::crypto::RegisteredSigningBox = client.request_async(
+                    "crypto.get_signing_box",
+                    state.keys.clone()
+                ).await.unwrap();
+
+                ResultOfAppDebotBrowser::GetSigningBox { signing_box: signing_box.handle }
             },
             ParamsOfAppDebotBrowser::InvokeDebot { action, debot_addr } => {
                 let mut steps = state.current.lock().await.step.invokes.remove(0);

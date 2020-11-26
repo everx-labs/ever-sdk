@@ -15,7 +15,7 @@
  use crate::client::{AppObject, ClientContext};
  use crate::error::ClientResult;
  use crate::debot::{DAction, DebotAction, BrowserCallbacks, ParamsOfFetch, ParamsOfStart, RegisteredDebot};
- use crate::crypto::KeyPair;
+ use crate::crypto::SigningBoxHandle;
 
 /// Returning values from Debot Browser callbacks.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
@@ -26,10 +26,10 @@ pub enum ResultOfAppDebotBrowser {
         /// String entered by user.
         value: String
     },
-    /// Result of key loading.
-    LoadKey { 
-        /// Key pair that browser asked from user.
-        keys: KeyPair
+    /// Result of getting signing box.
+    GetSigningBox { 
+        /// Signing box for signing data requested by debot engine. Signing box is owned and disposed by debot engine
+        signing_box: SigningBoxHandle
     },
     /// Result of debot invoking.
     InvokeDebot,
@@ -63,8 +63,8 @@ pub enum ParamsOfAppDebotBrowser {
         /// A prompt string that must be printed to user before input request.
         prompt: String
     },
-    /// Load debot key pair.
-    LoadKey,
+    /// Get signing box to sign data. Signing box returned is owned and disposed by debot engine
+    GetSigningBox,
     /// Execute action of another debot.
     InvokeDebot {
         /// Address of debot in blockchain.
@@ -116,17 +116,16 @@ impl DebotBrowserAdapter {
          }
      }
  
-     async fn load_key(&self, keys: &mut KeyPair) {
-         let response = self.app_object.call(ParamsOfAppDebotBrowser::LoadKey)
-             .await;
+     async fn get_signing_box(&self) -> Result<SigningBoxHandle, String> {
+         let response = self.app_object.call(ParamsOfAppDebotBrowser::GetSigningBox)
+             .await
+             .map_err(|err| format!("debot browser failed to load keys: {}", err))?;
  
-         match response {
-             Ok(r) => match r {
-                 ResultOfAppDebotBrowser::LoadKey { keys: k } => *keys = k,
-                 _ => error!("unexpected debot browser response: {:?}", r),
-             },
-             Err(e) => error!("debot browser failed to load keys: {}", e),
-         }
+        match response {
+            ResultOfAppDebotBrowser::GetSigningBox { signing_box } => Ok(signing_box),
+            _ => Err(crate::client::Error::unexpected_callback_response(
+                "GetSigningBox", response).to_string()),
+        }
      }
  
      async fn invoke_debot(&self, debot: String, action: DAction) -> Result<(), String> {

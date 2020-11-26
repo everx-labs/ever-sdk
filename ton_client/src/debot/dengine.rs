@@ -9,7 +9,7 @@ use crate::abi::{
     decode_message_body, encode_message, Abi, AbiConfig, CallSet, DeploySet,
     ParamsOfDecodeMessageBody, ParamsOfEncodeMessage, Signer,
 };
-use crate::crypto::{CryptoConfig, KeyPair};
+use crate::crypto::{remove_signing_box, CryptoConfig, RegisteredSigningBox, SigningBoxHandle};
 use crate::encoding::decode_abi_number;
 use crate::error::ClientError;
 use crate::net::{query_collection, NetworkConfig, ParamsOfQueryCollection};
@@ -191,10 +191,8 @@ impl DEngine {
             }
             AcType::SendMsg => {
                 debug!("sendmsg: {}", a.name);
-                let keys = if a.sign_by_user() {
-                    let mut keys = KeyPair::new(String::new(), String::new());
-                    self.browser.load_key(&mut keys).await;
-                    Some(keys)
+                let signer = if a.sign_by_user() {
+                    Some(self.browser.get_signing_box().await?)
                 } else {
                     None
                 };
@@ -203,7 +201,14 @@ impl DEngine {
                 } else {
                     None
                 };
-                let result = self.run_sendmsg(&a.name, args, keys).await?;
+                let result = self.run_sendmsg(&a.name, args, signer.clone()).await?;
+                if let Some(signing_box) = signer {
+                    let _ = remove_signing_box(
+                        self.ton.clone(),
+                        RegisteredSigningBox {
+                            handle: signing_box
+                    });
+                }
                 self.browser.log(format!("Transaction succeeded.")).await;
                 result.map(|r| self.browser.log(format!("Result: {}", r)));
                 Ok(None)
@@ -256,15 +261,19 @@ impl DEngine {
                 } else {
                     a.desc.clone()
                 };
-                let keys = if a.sign_by_user() {
-                    // TODO: dont' use KeyPair here - send buffer for signing to browser
-                    let mut keys = KeyPair::new(String::new(), String::new());
-                    self.browser.load_key(&mut keys).await;
-                    Some(keys)
+                let signer = if a.sign_by_user() {
+                    Some(self.browser.get_signing_box().await?)
                 } else {
                     None
                 };
-                let res = self.call_routine(&a.name, &args, keys).await?;
+                let res = self.call_routine(&a.name, &args, signer.clone()).await?;
+                if let Some(signing_box) = signer {
+                    let _ = remove_signing_box(
+                        self.ton.clone(),
+                        RegisteredSigningBox {
+                            handle: signing_box
+                    });
+                }
                 let setter = a
                     .func_attr()
                     .ok_or("routine callback is not specified".to_owned())?;
@@ -440,7 +449,7 @@ impl DEngine {
         &mut self,
         name: &str,
         args: Option<JsonValue>,
-        keys: Option<KeyPair>,
+        signer: Option<SigningBoxHandle>,
     ) -> Result<Option<JsonValue>, String> {
         let result = self.run_debot(name, args).await?;
         if result.is_none() {
@@ -474,7 +483,7 @@ impl DEngine {
 
         debug!("calling {} at address {}", res.name, dest);
         debug!("args: {}", res.value.as_ref().unwrap_or(&json!({})));
-        self.call_target(dest, abi, &res.name, res.value.clone(), keys, state)
+        self.call_target(dest, abi, &res.name, res.value.clone(), signer, state)
             .await
     }
 
@@ -635,7 +644,7 @@ impl DEngine {
         abi: Abi,
         func: &str,
         args: Option<JsonValue>,
-        keys: Option<KeyPair>,
+        signer: Option<SigningBoxHandle>,
         state: Option<&str>,
     ) -> Result<Option<JsonValue>, String> {
         let addr = load_ton_address(dest)?;
@@ -649,8 +658,8 @@ impl DEngine {
             } else {
                 CallSet::some_with_function_and_input(func, args.unwrap())
             },
-            signer: match keys {
-                Some(k) => Signer::Keys { keys: k },
+            signer: match signer {
+                Some(signing_box) => Signer::SigningBox { handle: signing_box },
                 None => Signer::None,
             },
             processing_try_index: None,
@@ -693,9 +702,9 @@ impl DEngine {
         &self,
         name: &str,
         args: &str,
-        keypair: Option<KeyPair>,
+        signer: Option<SigningBoxHandle>,
     ) -> Result<String, String> {
-        routines::call_routine(self.ton.clone(), name, args, keypair).await
+        routines::call_routine(self.ton.clone(), name, args, signer).await
     }
 
     async fn handle_sdk_err(&self, err: ClientError) -> String {
