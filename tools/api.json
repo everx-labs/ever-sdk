@@ -6414,16 +6414,16 @@
     },
     {
       "name": "debot",
-      "summary": " Module for working with debot.",
-      "description": " Module for working with debot.",
+      "summary": " [UNSTABLE](UNSTABLE.md) Module for working with debot.",
+      "description": " [UNSTABLE](UNSTABLE.md) Module for working with debot.",
       "types": [
         {
           "name": "DebotHandle",
           "type": "Number",
           "number_type": "UInt",
           "number_size": 32,
-          "summary": " **UNSTABLE API.** Handle of registered in SDK debot",
-          "description": " **UNSTABLE API.** Handle of registered in SDK debot"
+          "summary": " [UNSTABLE](UNSTABLE.md) Handle of registered in SDK debot",
+          "description": " [UNSTABLE](UNSTABLE.md) Handle of registered in SDK debot"
         },
         {
           "name": "DebotAction",
@@ -6470,8 +6470,8 @@
               "description": " Some internal action data. Used by debot only."
             }
           ],
-          "summary": " **UNSTABLE API.** Describes a debot action in a Debot Context.",
-          "description": " **UNSTABLE API.** Describes a debot action in a Debot Context."
+          "summary": " [UNSTABLE](UNSTABLE.md) Describes a debot action in a Debot Context.",
+          "description": " [UNSTABLE](UNSTABLE.md) Describes a debot action in a Debot Context."
         },
         {
           "name": "ParamsOfStart",
@@ -6484,8 +6484,8 @@
               "description": " Debot smart contract address "
             }
           ],
-          "summary": " **UNSTABLE API.** Parameters to start debot.",
-          "description": " **UNSTABLE API.** Parameters to start debot."
+          "summary": " [UNSTABLE](UNSTABLE.md) Parameters to start debot.",
+          "description": " [UNSTABLE](UNSTABLE.md) Parameters to start debot."
         },
         {
           "name": "RegisteredDebot",
@@ -6499,8 +6499,8 @@
               "description": " Debot handle which references an instance of debot engine."
             }
           ],
-          "summary": " **UNSTABLE API.** Structure for storing debot handle returned from `start` and `fetch` functions.",
-          "description": " **UNSTABLE API.** Structure for storing debot handle returned from `start` and `fetch` functions."
+          "summary": " [UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `start` and `fetch` functions.",
+          "description": " [UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `start` and `fetch` functions."
         },
         {
           "name": "ParamsOfAppDebotBrowser",
@@ -6594,8 +6594,8 @@
               "description": " Execute action of another debot."
             }
           ],
-          "summary": " **UNSTABLE API.** Debot Browser callbacks",
-          "description": " **UNSTABLE API.** Debot Browser callbacks\n \n Called by debot engine to communicate with debot browser."
+          "summary": " [UNSTABLE](UNSTABLE.md) Debot Browser callbacks",
+          "description": " [UNSTABLE](UNSTABLE.md) Debot Browser callbacks\n \n Called by debot engine to communicate with debot browser."
         },
         {
           "name": "ResultOfAppDebotBrowser",
@@ -6638,8 +6638,8 @@
               "description": " Result of debot invoking."
             }
           ],
-          "summary": " **UNSTABLE API.** Returning values from Debot Browser callbacks.",
-          "description": " **UNSTABLE API.** Returning values from Debot Browser callbacks."
+          "summary": " [UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.",
+          "description": " [UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks."
         },
         {
           "name": "ParamsOfFetch",
@@ -6652,8 +6652,8 @@
               "description": " Debot smart contract address"
             }
           ],
-          "summary": " **UNSTABLE API.** Parameters to fetch debot.",
-          "description": " **UNSTABLE API.** Parameters to fetch debot."
+          "summary": " [UNSTABLE](UNSTABLE.md) Parameters to fetch debot.",
+          "description": " [UNSTABLE](UNSTABLE.md) Parameters to fetch debot."
         },
         {
           "name": "ParamsOfExecute",
@@ -6674,15 +6674,15 @@
               "description": " Debot Action that must be executed."
             }
           ],
-          "summary": " **UNSTABLE API.** Parameters for executing debot action.",
-          "description": " **UNSTABLE API.** Parameters for executing debot action."
+          "summary": " [UNSTABLE](UNSTABLE.md) Parameters for executing debot action.",
+          "description": " [UNSTABLE](UNSTABLE.md) Parameters for executing debot action."
         }
       ],
       "functions": [
         {
           "name": "start",
-          "summary": " **UNSTABLE API.** Starts an instance of debot.",
-          "description": " **UNSTABLE API.** Starts an instance of debot.\n \n Downloads debot smart contract from blockchain and switches it to\n context zero.\n Returns a debot handle which can be used later in `execute` function.\n This function must be used by Debot Browser to start a dialog with debot.\n While the function is executing, several Browser Callbacks can be called,\n since the debot tries to display all actions from the context 0 to the user.\n \n # Remarks\n `start` is equivalent to `fetch` + switch to context 0.",
+          "summary": " [UNSTABLE](UNSTABLE.md) Starts an instance of debot.",
+          "description": " [UNSTABLE](UNSTABLE.md) Starts an instance of debot.\n \n Downloads debot smart contract from blockchain and switches it to\n context zero.\n Returns a debot handle which can be used later in `execute` function.\n This function must be used by Debot Browser to start a dialog with debot.\n While the function is executing, several Browser Callbacks can be called,\n since the debot tries to display all actions from the context 0 to the user.\n \n # Remarks\n `start` is equivalent to `fetch` + switch to context 0.",
           "params": [
             {
               "name": "context",
@@ -6736,8 +6736,8 @@
         },
         {
           "name": "fetch",
-          "summary": " **UNSTABLE API.** Fetches debot from blockchain.",
-          "description": " **UNSTABLE API.** Fetches debot from blockchain.\n \n Downloads debot smart contract (code and data) from blockchain and creates \n an instance of Debot Engine for it.\n \n # Remarks\n It does not switch debot to context 0. Browser Callbacks are not called.",
+          "summary": " [UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.",
+          "description": " [UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.\n \n Downloads debot smart contract (code and data) from blockchain and creates \n an instance of Debot Engine for it.\n \n # Remarks\n It does not switch debot to context 0. Browser Callbacks are not called.",
           "params": [
             {
               "name": "context",
@@ -6791,8 +6791,8 @@
         },
         {
           "name": "execute",
-          "summary": " **UNSTABLE API.** Executes debot action.",
-          "description": " **UNSTABLE API.** Executes debot action.\n \n Calls debot engine referenced by debot handle to execute input action.\n Calls Debot Browser Callbacks if needed.\n \n # Remarks\n Chain of actions can be executed if input action generates a list of subactions.",
+          "summary": " [UNSTABLE](UNSTABLE.md) Executes debot action.",
+          "description": " [UNSTABLE](UNSTABLE.md) Executes debot action.\n \n Calls debot engine referenced by debot handle to execute input action.\n Calls Debot Browser Callbacks if needed.\n \n # Remarks\n Chain of actions can be executed if input action generates a list of subactions.",
           "params": [
             {
               "name": "context",
@@ -6828,8 +6828,8 @@
         },
         {
           "name": "remove",
-          "summary": " **UNSTABLE API.** Destroys debot handle.",
-          "description": " **UNSTABLE API.** Destroys debot handle.\n \n Removes handle from Client Context and drops debot engine referenced by that handle.",
+          "summary": " [UNSTABLE](UNSTABLE.md) Destroys debot handle.",
+          "description": " [UNSTABLE](UNSTABLE.md) Destroys debot handle.\n \n Removes handle from Client Context and drops debot engine referenced by that handle.",
           "params": [
             {
               "name": "context",

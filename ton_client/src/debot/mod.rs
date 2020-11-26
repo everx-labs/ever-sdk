@@ -32,11 +32,11 @@ use crate::ClientContext;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-/// **UNSTABLE API.** Handle of registered in SDK debot
+/// [UNSTABLE](UNSTABLE.md) Handle of registered in SDK debot
 #[derive(Serialize, Deserialize, Default, ApiType, Clone)]
 pub struct DebotHandle(u32);
 
-/// **UNSTABLE API.** Describes a debot action in a Debot Context.
+/// [UNSTABLE](UNSTABLE.md) Describes a debot action in a Debot Context.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 pub struct DebotAction {
     /// A short action description. Should be used by Debot Browser as name of
@@ -82,21 +82,21 @@ impl Into<DAction> for DebotAction {
     }
 }
 
-/// **UNSTABLE API.** Parameters to start debot.
+/// [UNSTABLE](UNSTABLE.md) Parameters to start debot.
 #[derive(Serialize, Deserialize, Default, ApiType)]
 pub struct ParamsOfStart {
     /// Debot smart contract address 
     address: String,
 }
 
-/// **UNSTABLE API.** Structure for storing debot handle returned from `start` and `fetch` functions.
+/// [UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `start` and `fetch` functions.
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct RegisteredDebot {
     /// Debot handle which references an instance of debot engine.
     pub debot_handle: DebotHandle,
 }
 
-/// **UNSTABLE API.** Starts an instance of debot.
+/// [UNSTABLE](UNSTABLE.md) Starts an instance of debot.
 /// 
 /// Downloads debot smart contract from blockchain and switches it to
 /// context zero.
@@ -131,14 +131,14 @@ pub async fn start(
     })
 }
 
-/// **UNSTABLE API.** Parameters to fetch debot.
+/// [UNSTABLE](UNSTABLE.md) Parameters to fetch debot.
 #[derive(Serialize, Deserialize, Default, ApiType)]
 pub struct ParamsOfFetch {
     /// Debot smart contract address
     pub address: String,
 }
 
-/// **UNSTABLE API.** Fetches debot from blockchain.
+/// [UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.
 /// 
 /// Downloads debot smart contract (code and data) from blockchain and creates 
 /// an instance of Debot Engine for it.
@@ -169,7 +169,7 @@ pub async fn fetch(
     })
 }
 
-/// **UNSTABLE API.** Parameters for executing debot action.
+/// [UNSTABLE](UNSTABLE.md) Parameters for executing debot action.
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfExecute {
     /// Debot handle which references an instance of debot engine.
@@ -178,7 +178,7 @@ pub struct ParamsOfExecute {
     pub action: DebotAction,
 }
 
-/// **UNSTABLE API.** Executes debot action.
+/// [UNSTABLE](UNSTABLE.md) Executes debot action.
 /// 
 /// Calls debot engine referenced by debot handle to execute input action.
 /// Calls Debot Browser Callbacks if needed.
@@ -199,7 +199,7 @@ pub async fn execute(
         .map_err(Error::execute_failed)
 }
 
-/// **UNSTABLE API.** Destroys debot handle.
+/// [UNSTABLE](UNSTABLE.md) Destroys debot handle.
 /// 
 /// Removes handle from Client Context and drops debot engine referenced by that handle.
 #[api_function]

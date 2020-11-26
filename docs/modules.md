@@ -147,13 +147,13 @@
 
 [subscribe_collection](mod_net.md#subscribe_collection) – Creates a subscription
 
-## [debot](mod_debot.md) – Module for working with debot.
+## [debot](mod_debot.md) – [UNSTABLE](UNSTABLE.md) Module for working with debot.
 
-[start](mod_debot.md#start) – **UNSTABLE API.** Starts an instance of debot.
+[start](mod_debot.md#start) – [UNSTABLE](UNSTABLE.md) Starts an instance of debot.
 
-[fetch](mod_debot.md#fetch) – **UNSTABLE API.** Fetches debot from blockchain.
+[fetch](mod_debot.md#fetch) – [UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.
 
-[execute](mod_debot.md#execute) – **UNSTABLE API.** Executes debot action.
+[execute](mod_debot.md#execute) – [UNSTABLE](UNSTABLE.md) Executes debot action.
 
-[remove](mod_debot.md#remove) – **UNSTABLE API.** Destroys debot handle.
+[remove](mod_debot.md#remove) – [UNSTABLE](UNSTABLE.md) Destroys debot handle.
 
