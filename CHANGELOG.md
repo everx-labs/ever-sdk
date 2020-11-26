@@ -1,10 +1,11 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
-## 1.2.0 Nov 24, 2020
+## 1.2.0 Nov 26, 2020
 
 ### Featured
-- `debot` module was added with debot engine functions, such as : `start`, `fetch`, `execute`, `remove`. See the `debot` module documentation for more info.  
+- **UNSTABLE API. This API is experimental. It can be changed in the next releases**.  
+`debot` module was added with debot engine functions, such as : `start`, `fetch`, `execute`, `remove`. See the `debot` module documentation for more info.  
 Check our tests for code examples.  
 
 - External signing was supported for message encoding: `SigningBox` type for `Signer` enum was supported.   
