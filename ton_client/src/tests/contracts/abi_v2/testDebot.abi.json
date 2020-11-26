@@ -1,0 +1,176 @@
+{
+	"ABI version": 2,
+	"header": ["pubkey", "time", "expire"],
+	"functions": [
+		{
+			"name": "constructor",
+			"inputs": [
+				{"name":"debotAbi","type":"bytes"},
+				{"name":"targetAbi","type":"bytes"},
+				{"name":"targetAddr","type":"address"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "fetch",
+			"inputs": [
+			],
+			"outputs": [
+				{"components":[{"name":"id","type":"uint8"},{"name":"desc","type":"bytes"},{"components":[{"name":"desc","type":"bytes"},{"name":"name","type":"bytes"},{"name":"actionType","type":"uint8"},{"name":"attrs","type":"bytes"},{"name":"to","type":"uint8"},{"name":"misc","type":"cell"}],"name":"actions","type":"tuple[]"}],"name":"contexts","type":"tuple[]"}
+			]
+		},
+		{
+			"name": "quit",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getVersion",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"name","type":"bytes"},
+				{"name":"semver","type":"uint24"}
+			]
+		},
+		{
+			"name": "getErrorDescription",
+			"inputs": [
+				{"name":"error","type":"uint32"}
+			],
+			"outputs": [
+				{"name":"desc","type":"bytes"}
+			]
+		},
+		{
+			"name": "testThrowException",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testThrowUnknownException",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testThrowTvmException",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setInteger",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "enterAddress",
+			"inputs": [
+				{"name":"addr","type":"address"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "enterDebotAddress",
+			"inputs": [
+				{"name":"debot","type":"address"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "enterString",
+			"inputs": [
+				{"name":"str","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getPrintArgs",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"number0","type":"int256"},
+				{"name":"param1","type":"address"},
+				{"name":"str2","type":"bytes"}
+			]
+		},
+		{
+			"name": "getDataArgs",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"number0","type":"uint256"}
+			]
+		},
+		{
+			"name": "setData",
+			"inputs": [
+				{"name":"num","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setData2",
+			"inputs": [
+				{"name":"num","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getKey",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"key","type":"uint32"}
+			]
+		},
+		{
+			"name": "invokeDebot",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"debot","type":"address"},
+				{"components":[{"name":"desc","type":"bytes"},{"name":"name","type":"bytes"},{"name":"actionType","type":"uint8"},{"name":"attrs","type":"bytes"},{"name":"to","type":"uint8"},{"name":"misc","type":"cell"}],"name":"action","type":"tuple"}
+			]
+		},
+		{
+			"name": "sendSetDataMsg",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"dest","type":"address"},
+				{"name":"body","type":"cell"}
+			]
+		},
+		{
+			"name": "getDebotOptions",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"options","type":"uint8"},
+				{"name":"debotAbi","type":"bytes"},
+				{"name":"targetAbi","type":"bytes"},
+				{"name":"targetAddr","type":"address"}
+			]
+		}
+	],
+	"data": [
+	],
+	"events": [
+	]
+}

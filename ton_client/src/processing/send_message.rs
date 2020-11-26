@@ -56,7 +56,7 @@ pub struct ResultOfSendMessage {
     pub shard_block_id: String,
 }
 
-pub async fn send_message<F: futures::Future<Output = ()> + Send + Sync>(
+pub async fn send_message<F: futures::Future<Output = ()> + Send>(
     context: Arc<ClientContext>,
     params: ParamsOfSendMessage,
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync,

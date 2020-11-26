@@ -17,7 +17,7 @@ pub struct ParamsOfProcessMessage {
     pub send_events: bool,
 }
 
-pub async fn process_message<F: futures::Future<Output = ()> + Send + Sync>(
+pub async fn process_message<F: futures::Future<Output = ()> + Send>(
     context: Arc<ClientContext>,
     params: ParamsOfProcessMessage,
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync + 'static,
@@ -65,6 +65,7 @@ pub async fn process_message<F: futures::Future<Output = ()> + Send + Sync>(
             }
             Err(err) => {
                 let can_retry = err.code == ErrorCode::MessageExpired as u32
+                    && !err.data["local_error"].is_null()
                     && can_retry_expired_message(&context, try_index);
                 if !can_retry {
                     // Waiting error is unrecoverable, return it

@@ -27,6 +27,7 @@ pub mod abi;
 pub mod boc;
 pub mod client;
 pub mod crypto;
+pub mod debot;
 pub mod encoding;
 pub mod error;
 pub mod json_interface;

@@ -77,7 +77,7 @@
 
 [register_signing_box](mod_crypto.md#register_signing_box) – Register an application implemented signing box.
 
-[get_signing_box](mod_crypto.md#get_signing_box) – Gets a default signing box implementation.
+[get_signing_box](mod_crypto.md#get_signing_box) – Creates a default signing box implementation.
 
 [signing_box_get_public_key](mod_crypto.md#signing_box_get_public_key) – Returns public key of signing key pair.
 
@@ -146,4 +146,14 @@
 [unsubscribe](mod_net.md#unsubscribe) – Cancels a subscription
 
 [subscribe_collection](mod_net.md#subscribe_collection) – Creates a subscription
+
+## [debot](mod_debot.md) – Module for working with debot.
+
+[start](mod_debot.md#start) – **UNSTABLE API.** Starts an instance of debot.
+
+[fetch](mod_debot.md#fetch) – **UNSTABLE API.** Fetches debot from blockchain.
+
+[execute](mod_debot.md#execute) – **UNSTABLE API.** Executes debot action.
+
+[remove](mod_debot.md#remove) – **UNSTABLE API.** Destroys debot handle.
 

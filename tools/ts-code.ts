@@ -81,9 +81,11 @@ export class TSCode extends Code {
             }
         }
 
+        const generatedAppObjects = new Set<string>();
         for (const func of module.functions) {
             const functionInfo = this.getFunctionInfo(func);
-            if (functionInfo.appObject) {
+            if (functionInfo.appObject && !generatedAppObjects.has(functionInfo.appObject.name)) {
+                generatedAppObjects.add(functionInfo.appObject.name);
                 ts += this.appObjectInterface(functionInfo.appObject);
                 ts += '\n';
                 ts += this.appObjectDispatchImpl(functionInfo.appObject);
@@ -233,7 +235,7 @@ export class TSCode extends Code {
             const paramsInfo = this.getFunctionInfo(f);
             const paramsDecls = this.paramsDecls(paramsInfo);
             const paramsDecl = paramsDecls.length > 0 ? `${paramsDecls.join(', ')}` : '';
-            const resultDecl = !isNotify ? `: Promise<${this.type(f.result, '')}>` : '';
+            const resultDecl = !isNotify ? `: Promise<${this.type(f.result, '')}>` : ': void';
             ts += `\n    ${f.name}(${paramsDecl})${resultDecl},`;
         }
         ts += '\n}';

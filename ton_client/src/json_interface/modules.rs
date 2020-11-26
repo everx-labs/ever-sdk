@@ -388,6 +388,29 @@ fn register_utils(handlers: &mut RuntimeHandlers) {
     module.register();
 }
 
+/// Module for working with debot.
+#[derive(ApiModule)]
+#[api_module(name = "debot")]
+pub struct DebotModule;
+
+fn register_debot(handlers: &mut RuntimeHandlers) {
+    let mut module = ModuleReg::new::<DebotModule>(handlers);
+    module.register_type::<crate::debot::DebotHandle>();
+    module.register_type::<crate::debot::DebotAction>();
+    module.register_type::<crate::debot::DebotHandle>();
+    module.register_async_fn_with_app_object(
+        crate::json_interface::debot::start,
+        crate::json_interface::debot::start_api,
+    );
+    module.register_async_fn_with_app_object(
+        crate::json_interface::debot::fetch,
+        crate::json_interface::debot::fetch_api,
+    );
+    module.register_async_fn(crate::debot::execute, crate::debot::execute_api);
+    module.register_sync_fn(crate::debot::remove, crate::debot::remove_api);
+    module.register();
+}
+
 pub(crate) fn register_modules(handlers: &mut RuntimeHandlers) {
     register_client(handlers);
     register_crypto(handlers);
@@ -397,4 +420,5 @@ pub(crate) fn register_modules(handlers: &mut RuntimeHandlers) {
     register_utils(handlers);
     register_tvm(handlers);
     register_net(handlers);
+    register_debot(handlers);
 }

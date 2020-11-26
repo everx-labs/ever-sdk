@@ -16,7 +16,7 @@ use crate::abi::{
     encode_message, Abi, CallSet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
 use crate::boc::{ParamsOfParse, ResultOfParse};
-use crate::client::{ClientContext, Error};
+use crate::client::*;
 use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
@@ -39,7 +39,7 @@ use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::Arc;
 use tokio::sync::{
-    mpsc::{channel, Sender},
+    oneshot::{channel, Sender},
     Mutex,
 };
 
@@ -83,9 +83,11 @@ pub const GIVER: &str = "Giver";
 pub const GIVER_WALLET: &str = "GiverWallet";
 pub const HELLO: &str = "Hello";
 pub const EVENTS: &str = "Events";
+pub const TEST_DEBOT: &str = "testDebot";
+pub const TEST_DEBOT_TARGET: &str = "testDebotTarget";
 
 struct RequestData {
-    sender: Sender<ClientResult<Value>>,
+    sender: Option<Sender<ClientResult<Value>>>,
     callback:
         Box<dyn Fn(String, u32) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>> + Send + Sync>,
 }
@@ -398,18 +400,20 @@ impl TestClient {
         if response_type == ResponseType::Success as u32 {
             request
                 .sender
+                .take()
+                .unwrap()
                 .send(Ok(serde_json::from_str::<Value>(&params_json).unwrap()))
-                .await
                 .unwrap();
         } else if response_type == ResponseType::Error as u32 {
             let err = match serde_json::from_str::<ClientError>(&params_json) {
                 Ok(err) => err,
                 Err(err) => Error::callback_params_cant_be_converted_to_json(err),
             };
-            request.sender.send(Err(err)).await.unwrap();
+            request.sender.take().unwrap().send(Err(err)).unwrap();
         } else if response_type == ResponseType::Nop as u32 {
         } else if response_type >= ResponseType::Custom as u32
             || response_type == ResponseType::AppRequest as u32
+            || response_type == ResponseType::AppNotify as u32
         {
             (request.callback)(params_json, response_type).await
         } else {
@@ -439,14 +443,14 @@ impl TestClient {
                 as Pin<Box<dyn Future<Output = ()> + Send + Sync>>
         };
         //let callback = Box::new(callback);
-        let (request_id, mut receiver) = {
+        let (request_id, receiver) = {
             let mut runtime = TEST_RUNTIME.lock().await;
             let id = runtime.gen_request_id();
-            let (sender, receiver) = channel(10);
+            let (sender, receiver) = channel();
             runtime.requests.insert(
                 id,
                 RequestData {
-                    sender,
+                    sender: Some(sender),
                     callback: Box::new(callback), // as Box<dyn Fn(String, u32) -> Pin<Box<dyn Future<Output = ()> + Send + Sync>> + Send + Sync>
                 },
             );
@@ -466,7 +470,7 @@ impl TestClient {
                 on_result,
             );
         };
-        let response = receiver.recv().await.unwrap();
+        let response = receiver.await.unwrap();
         response
     }
 
@@ -704,6 +708,19 @@ impl TestClient {
             Self::wallet_address()
         }
         .into()
+    }
+
+    pub async fn resolve_app_request(&self, app_request_id: u32, result: impl Serialize) {
+        self
+            .request_async::<_, ()>(
+                "client.resolve_app_request",
+                ParamsOfResolveAppRequest {
+                    app_request_id,
+                    result: AppRequestResult::Ok { 
+                        result: json!(result)
+                    }
+                },
+            ).await.unwrap();
     }
 }
 

@@ -31,6 +31,7 @@ impl ClientError {
     pub const PROCESSING: isize = 500;
     pub const NET: isize = 600;
     pub const UTILS: isize = 700;
+    pub const DEBOT: isize = 800;
 
     pub fn new(code: u32, message: String, data: Value) -> Self {
         let mut data = data;

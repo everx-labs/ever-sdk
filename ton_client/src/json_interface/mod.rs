@@ -13,6 +13,7 @@
  */
 
 pub(crate) mod crypto;
+pub(crate) mod debot;
 pub(crate) mod handlers;
 pub(crate) mod interop;
 pub(crate) mod net;

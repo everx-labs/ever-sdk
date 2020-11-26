@@ -16,6 +16,8 @@
 use crate::client;
 use crate::error::ClientResult;
 use std::str::FromStr;
+use num_bigint::BigInt;
+use num_traits::cast::NumCast;
 use ton_block::MsgAddressInt;
 
 //------------------------------------------------------------------------------------------------------
@@ -129,4 +131,23 @@ pub(crate) fn base64_decode(base64: &str) -> ClientResult<Vec<u8>> {
 
 pub(crate) fn long_num_to_json_string(num: u64) -> String {
     format!("0x{:x}", num)
+}
+
+pub fn decode_abi_bigint(string: &str) -> ClientResult<BigInt> {
+    let result = if string.starts_with("-0x") || string.starts_with("-0X") {
+        BigInt::parse_bytes(&string[3..].as_bytes(), 16)
+        .map(|number| -number)
+    } else if string.starts_with("0x") || string.starts_with("0X") {
+        BigInt::parse_bytes(&string[2..].as_bytes(), 16)
+    } else {
+        BigInt::parse_bytes(string.as_bytes(), 10)
+    };
+
+    result.ok_or(client::Error::can_not_parse_number(string))
+}
+
+pub fn decode_abi_number<N: NumCast>(string: &str) -> ClientResult<N> {
+    let bigint = decode_abi_bigint(string)?;
+    NumCast::from(bigint)
+        .ok_or(client::Error::can_not_parse_number(string))
 }

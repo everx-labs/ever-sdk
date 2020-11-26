@@ -758,16 +758,10 @@ async fn test_signing_box() {
                                 handle: keys_box_handle.into()
                             },
                         ).await.unwrap();
-                    client
-                        .request_async::<_, ()>(
-                            "client.resolve_app_request",
-                            crate::client::ParamsOfResolveAppRequest {
-                                app_request_id: request.app_request_id,
-                                result: crate::client::AppRequestResult::Ok { 
-                                    result: json!(ResultOfAppSigningBox::GetPublicKey { public_key: result.pubkey })
-                                }
-                            },
-                        ).await.unwrap();
+                    client.resolve_app_request(
+                        request.app_request_id,
+                        ResultOfAppSigningBox::GetPublicKey { public_key: result.pubkey }
+                    ).await;
                 },
                 ParamsOfAppSigningBox::Sign { unsigned } => {
                     let result: boxes::ResultOfSigningBoxSign = client
@@ -778,16 +772,10 @@ async fn test_signing_box() {
                                 unsigned,
                             },
                         ).await.unwrap();
-                    client
-                        .request_async::<_, ()>(
-                            "client.resolve_app_request",
-                            crate::client::ParamsOfResolveAppRequest {
-                                app_request_id: request.app_request_id,
-                                result: crate::client::AppRequestResult::Ok { 
-                                    result: json!(ResultOfAppSigningBox::Sign { signature: result.signature })
-                                }
-                            },
-                        ).await.unwrap();
+                    client.resolve_app_request(
+                        request.app_request_id,
+                        ResultOfAppSigningBox::Sign { signature: result.signature }
+                    ).await;
                 }
             }
         });

@@ -267,9 +267,13 @@ export abstract class Code {
                 module: obj,
                 name: Code.pascalToSnake(params.name),
                 params: functionParams,
-                result: {
-                    type: ApiTypeIs.Ref, module: obj, ref_name: result ? resultTypeName : ''
-                },
+                result: (result && result.type === ApiTypeIs.Struct && result.struct_fields.length == 0)
+                    ? {
+                        type: ApiTypeIs.None, module: obj,
+                    }
+                    : {
+                        type: ApiTypeIs.Ref, module: obj, ref_name: result ? resultTypeName : ''
+                    },
             });
         }
         return obj;

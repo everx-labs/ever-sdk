@@ -1,5 +1,5 @@
 use crate::error::ClientError;
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 const CLIENT: isize = ClientError::CLIENT; // 0
 
 pub enum ErrorCode {
@@ -33,6 +33,8 @@ pub enum ErrorCode {
     CanNotSendRequestResult = CLIENT + 28,
     CanNotReceiveRequestResult = CLIENT + 29,
     CanNotParseRequestResult = CLIENT + 30,
+    UnexpectedCallbackResponse = CLIENT + 31,
+    CanNotParseNumber = CLIENT + 32,
 }
 pub struct Error;
 
@@ -223,6 +225,20 @@ impl Error {
         error(
             ErrorCode::CanNotParseRequestResult,
             format!("Can not parse request result: {}", err),
+        )
+    }
+
+    pub fn unexpected_callback_response(expected: &str, received: impl Debug) -> ClientError {
+        error(
+            ErrorCode::UnexpectedCallbackResponse,
+            format!("Unexpected callback response. Expected {}, received {:#?}", expected, received),
+        )
+    }
+
+    pub fn can_not_parse_number(string: &str) -> ClientError {
+        error(
+            ErrorCode::CanNotParseNumber,
+            format!("Can not parse integer from string `{}`", string),
         )
     }
 }
