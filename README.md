@@ -112,10 +112,9 @@ Binding is a thin client library written on the specific language that acts like
 a client library and an application code written on that language.
 
 List of known bindings:
-- [Web binding](https://github.com/tonlabs/ton-client-web-js)  
-- [Node.js binding](https://github.com/tonlabs/ton-client-node-js)  
-- [React-native binding](https://github.com/tonlabs/ton-client-react-native-js)  
-- [Rust binding](https://github.com/tonlabs/ton-client-rs)  
+- [Web binding](https://github.com/tonlabs/ton-client-js)  
+- [Node.js binding](https://github.com/tonlabs/ton-client-js)  
+- [React-native binding](https://github.com/tonlabs/ton-client-js)  
 
 # Build client library
 
@@ -129,17 +128,7 @@ run `node build.js`.
 
 The resulting binaries are placed to `bin` folder in the gz-compressed format.
 
-The list defines all build targets (paths are relative and determined to the location where 
-you clone this repo):
-
-- `ton_client/platforms/ton-client-node-js` – Node.js add-on (and an optional dylib for Mac OS)  used in Node.js-based JavaScript binding.
-
-    Note that the build script generates binaries compatible with the platform used to run the script. For example, if you run it on Mac OS, you get binaries targeted at Darwin (macOS) platform.
-
-- `ton_client/platforms/ton-client-react-native` –  iOS and Android native libraries for react-native mobile applications.
-- `ton_client/platforms/ton-client-web` – WASM and JavaScript wrapper for browser-based applications.
-- `ton_client/client` – general purpose dynamic link library. Currently, it is used in rust binding. It is a good starting place for creating a new bindings.
-
+Note that the build script generates binaries compatible with the platform used to run the script. For example, if you run it on Mac OS, you get binaries targeted at Darwin (macOS) platform.
 
 # Download precompiled binaries
 
@@ -148,16 +137,12 @@ TON Labs SDK Binaries Store.
 
 Platform | Major | Download links
 -------- | ----- | --------------
-Win32    | 0     | [`ton_client.lib`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_win32_lib.gz), [`ton_client.dll`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_win32_dll.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_nodejs_addon_win32.gz)
-&nbsp;   | 1     | [`ton_client.lib`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_win32_lib.gz), [`ton_client.dll`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_win32_dll.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_nodejs_addon_win32.gz)
-macOS    | 0     | [`libton_client.dylib`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_darwin.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_nodejs_addon_darwin.gz), [`libtonclientnodejs.dylib`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_nodejs_dylib_darwin.gz)
-&nbsp;   | 1     | [`libton_client.dylib`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_darwin.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_nodejs_addon_darwin.gz)
-Linux    | 0     | [`libton_client.so`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_linux.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_nodejs_addon_linux.gz)
-&nbsp;   | 1     | [`libton_client.so`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_linux.gz), [`tonclient.node`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_nodejs_addon_linux.gz)
-WASM     | 0     | [`tonclient.wasm`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_wasm.gz), [`tonclient.js`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_wasm_js.gz)
-&nbsp;   | 1     | [`tonclient.wasm`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_wasm.gz), [`tonclient.js`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_wasm_js.gz)
-iOS      | 0     | [`libtonclient.a`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_react_native_ios.gz)
-Android  | 0     | [`armeabi-v7a/libtonclient.so`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_react_native_armv7-linux-androideabi.gz), [`arm64-v8a/libtonclient.so`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_react_native_aarch64-linux-android.gz), [`x86/libtonclient.so`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_react_native_i686-linux-android.gz)
+Win32    | 0     | [`ton_client.lib`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_win32_lib.gz), [`ton_client.dll`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_win32_dll.gz)
+&nbsp;   | 1     | [`ton_client.lib`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_win32_lib.gz), [`ton_client.dll`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_win32_dll.gz)
+macOS    | 0     | [`libton_client.dylib`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_darwin.gz)
+&nbsp;   | 1     | [`libton_client.dylib`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_darwin.gz)
+Linux    | 0     | [`libton_client.so`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_linux.gz)
+&nbsp;   | 1     | [`libton_client.so`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_linux.gz)
 
 If you want an older version of library (e.g. `0.25.0` for macOS), you need to choose a link to your platform from the list above and replace `0` with a version:
 [http://sdkbinaries.tonlabs.io/tonclient_<b>0_25_0</b>_darwin.gz](http://sdkbinaries.tonlabs.io/tonclient_0_25_0_darwin.gz)

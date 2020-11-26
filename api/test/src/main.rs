@@ -3,8 +3,8 @@ extern crate api_derive;
 
 use api_info;
 
+use api_info::{ApiModule, ApiType};
 use serde_derive::{Deserialize, Serialize};
-use api_info::{ApiType, ApiModule};
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq)]
 pub struct StringId(String);
@@ -53,7 +53,7 @@ struct Bar {
 struct FooHandle(u32);
 
 #[derive(ApiModule)]
-#[api_module(name="module")]
+#[api_module(name = "module")]
 struct Module;
 
 /// This is baz function

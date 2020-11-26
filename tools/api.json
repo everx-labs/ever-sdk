@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.2.0",
   "modules": [
     {
       "name": "client",
@@ -185,15 +185,6 @@
               },
               "summary": null,
               "description": null
-            },
-            {
-              "name": "hdkey_compliant",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Boolean"
-              },
-              "summary": null,
-              "description": null
             }
           ],
           "summary": null,
@@ -261,6 +252,66 @@
           "description": null
         },
         {
+          "name": "ParamsOfAppRequest",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "app_request_id",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "request_data",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "AppRequestResult",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "Error",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "text",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Ok",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "result",
+                  "type": "Ref",
+                  "ref_name": "Value",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ResultOfGetApiReference",
           "type": "Struct",
           "struct_fields": [
@@ -310,6 +361,29 @@
               },
               "summary": " Fingerprint of the most important dependencies.",
               "description": " Fingerprint of the most important dependencies."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfResolveAppRequest",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "app_request_id",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "result",
+              "type": "Ref",
+              "ref_name": "client.AppRequestResult",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -405,6 +479,43 @@
               {
                 "type": "Ref",
                 "ref_name": "client.ResultOfBuildInfo"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "resolve_app_request",
+          "summary": null,
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "client.ParamsOfResolveAppRequest",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
               }
             ]
           },
@@ -577,8 +688,8 @@
             {
               "name": "ton_public_key",
               "type": "String",
-              "summary": " Public key represented in TON safe format. ",
-              "description": " Public key represented in TON safe format. "
+              "summary": " Public key represented in TON safe format.",
+              "description": " Public key represented in TON safe format."
             }
           ],
           "summary": null,
@@ -780,8 +891,8 @@
             {
               "name": "secret",
               "type": "String",
-              "summary": " Secret key - unprefixed 0-padded to 64 symbols hex string ",
-              "description": " Secret key - unprefixed 0-padded to 64 symbols hex string "
+              "summary": " Secret key - unprefixed 0-padded to 64 symbols hex string",
+              "description": " Secret key - unprefixed 0-padded to 64 symbols hex string"
             }
           ],
           "summary": null,
@@ -800,8 +911,8 @@
             {
               "name": "secret",
               "type": "String",
-              "summary": " Signer's secret key - unprefixed 0-padded to 64 symbols hex string ",
-              "description": " Signer's secret key - unprefixed 0-padded to 64 symbols hex string "
+              "summary": " Signer's secret key - unprefixed 0-padded to 64 symbols hex string",
+              "description": " Signer's secret key - unprefixed 0-padded to 64 symbols hex string"
             }
           ],
           "summary": null,
@@ -834,8 +945,8 @@
             {
               "name": "public",
               "type": "String",
-              "summary": " Signer's public key - unprefixed 0-padded to 64 symbols hex string ",
-              "description": " Signer's public key - unprefixed 0-padded to 64 symbols hex string "
+              "summary": " Signer's public key - unprefixed 0-padded to 64 symbols hex string",
+              "description": " Signer's public key - unprefixed 0-padded to 64 symbols hex string"
             }
           ],
           "summary": null,
@@ -876,8 +987,8 @@
             {
               "name": "secret",
               "type": "String",
-              "summary": " Secret key - unprefixed 0-padded to 64 symbols hex string ",
-              "description": " Secret key - unprefixed 0-padded to 64 symbols hex string "
+              "summary": " Secret key - unprefixed 0-padded to 64 symbols hex string",
+              "description": " Secret key - unprefixed 0-padded to 64 symbols hex string"
             }
           ],
           "summary": null,
@@ -902,14 +1013,14 @@
             {
               "name": "their_public",
               "type": "String",
-              "summary": " Receiver's public key - unprefixed 0-padded to 64 symbols hex string ",
-              "description": " Receiver's public key - unprefixed 0-padded to 64 symbols hex string "
+              "summary": " Receiver's public key - unprefixed 0-padded to 64 symbols hex string",
+              "description": " Receiver's public key - unprefixed 0-padded to 64 symbols hex string"
             },
             {
               "name": "secret",
               "type": "String",
-              "summary": " Sender's private key - unprefixed 0-padded to 64 symbols hex string ",
-              "description": " Sender's private key - unprefixed 0-padded to 64 symbols hex string "
+              "summary": " Sender's private key - unprefixed 0-padded to 64 symbols hex string",
+              "description": " Sender's private key - unprefixed 0-padded to 64 symbols hex string"
             }
           ],
           "summary": null,
@@ -948,14 +1059,14 @@
             {
               "name": "their_public",
               "type": "String",
-              "summary": " Sender's public key - unprefixed 0-padded to 64 symbols hex string ",
-              "description": " Sender's public key - unprefixed 0-padded to 64 symbols hex string "
+              "summary": " Sender's public key - unprefixed 0-padded to 64 symbols hex string",
+              "description": " Sender's public key - unprefixed 0-padded to 64 symbols hex string"
             },
             {
               "name": "secret",
               "type": "String",
-              "summary": " Receiver's private key - unprefixed 0-padded to 64 symbols hex string ",
-              "description": " Receiver's private key - unprefixed 0-padded to 64 symbols hex string "
+              "summary": " Receiver's private key - unprefixed 0-padded to 64 symbols hex string",
+              "description": " Receiver's private key - unprefixed 0-padded to 64 symbols hex string"
             }
           ],
           "summary": null,
@@ -994,8 +1105,8 @@
             {
               "name": "key",
               "type": "String",
-              "summary": " Secret key - unprefixed 0-padded to 64 symbols hex string ",
-              "description": " Secret key - unprefixed 0-padded to 64 symbols hex string "
+              "summary": " Secret key - unprefixed 0-padded to 64 symbols hex string",
+              "description": " Secret key - unprefixed 0-padded to 64 symbols hex string"
             }
           ],
           "summary": null,
@@ -1020,8 +1131,8 @@
             {
               "name": "key",
               "type": "String",
-              "summary": " Public key - unprefixed 0-padded to 64 symbols hex string ",
-              "description": " Public key - unprefixed 0-padded to 64 symbols hex string "
+              "summary": " Public key - unprefixed 0-padded to 64 symbols hex string",
+              "description": " Public key - unprefixed 0-padded to 64 symbols hex string"
             }
           ],
           "summary": null,
@@ -1466,6 +1577,135 @@
               "type": "String",
               "summary": " Encrypted/decrypted data. Encoded with `base64`.",
               "description": " Encrypted/decrypted data. Encoded with `base64`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "RegisteredSigningBox",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "handle",
+              "type": "Ref",
+              "ref_name": "crypto.SigningBoxHandle",
+              "summary": " Handle of the signing box.",
+              "description": " Handle of the signing box."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfAppSigningBox",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "GetPublicKey",
+              "type": "Struct",
+              "struct_fields": [],
+              "summary": " Get signing box public key",
+              "description": " Get signing box public key"
+            },
+            {
+              "name": "Sign",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "unsigned",
+                  "type": "String",
+                  "summary": " Data to sign encoded as base64",
+                  "description": " Data to sign encoded as base64"
+                }
+              ],
+              "summary": " Sign data",
+              "description": " Sign data"
+            }
+          ],
+          "summary": " Signing box callbacks.",
+          "description": " Signing box callbacks."
+        },
+        {
+          "name": "ResultOfAppSigningBox",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "GetPublicKey",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "public_key",
+                  "type": "String",
+                  "summary": " Signing box public key",
+                  "description": " Signing box public key"
+                }
+              ],
+              "summary": " Result of getting public key",
+              "description": " Result of getting public key"
+            },
+            {
+              "name": "Sign",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "signature",
+                  "type": "String",
+                  "summary": " Data signature encoded as hex",
+                  "description": " Data signature encoded as hex"
+                }
+              ],
+              "summary": " Result of signing data",
+              "description": " Result of signing data"
+            }
+          ],
+          "summary": " Returning values from signing box callbacks.",
+          "description": " Returning values from signing box callbacks."
+        },
+        {
+          "name": "ResultOfSigningBoxGetPublicKey",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "pubkey",
+              "type": "String",
+              "summary": " Public key of signing box. Encoded with hex",
+              "description": " Public key of signing box. Encoded with hex"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfSigningBoxSign",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "signing_box",
+              "type": "Ref",
+              "ref_name": "crypto.SigningBoxHandle",
+              "summary": " Signing Box handle.",
+              "description": " Signing Box handle."
+            },
+            {
+              "name": "unsigned",
+              "type": "String",
+              "summary": " Unsigned user data. Must be encoded with `base64`.",
+              "description": " Unsigned user data. Must be encoded with `base64`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfSigningBoxSign",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "signature",
+              "type": "String",
+              "summary": " Data signature. Encoded with `base64`.",
+              "description": " Data signature. Encoded with `base64`."
             }
           ],
           "summary": null,
@@ -2108,7 +2348,7 @@
         {
           "name": "nacl_box",
           "summary": " Public key authenticated encryption",
-          "description": " Public key authenticated encryption\n\n Encrypt and authenticate a message using the senders secret key, the recievers public\n key, and a nonce. ",
+          "description": " Public key authenticated encryption\n\n Encrypt and authenticate a message using the senders secret key, the recievers public\n key, and a nonce.",
           "params": [
             {
               "name": "_context",
@@ -2491,7 +2731,7 @@
           "description": " Returns extended private key derived from the specified extended private key and child index",
           "params": [
             {
-              "name": "context",
+              "name": "_context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -2525,11 +2765,11 @@
         },
         {
           "name": "hdkey_derive_from_xprv_path",
-          "summary": " Derives the exented private key from the specified key and path",
-          "description": " Derives the exented private key from the specified key and path",
+          "summary": " Derives the extended private key from the specified key and path",
+          "description": " Derives the extended private key from the specified key and path",
           "params": [
             {
-              "name": "context",
+              "name": "_context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -2670,6 +2910,205 @@
               {
                 "type": "Ref",
                 "ref_name": "crypto.ResultOfChaCha20"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "register_signing_box",
+          "summary": " Register an application implemented signing box.",
+          "description": " Register an application implemented signing box.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "app_object",
+              "type": "Generic",
+              "generic_name": "AppObject",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "crypto.ParamsOfAppSigningBox"
+                },
+                {
+                  "type": "Ref",
+                  "ref_name": "crypto.ResultOfAppSigningBox"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "crypto.RegisteredSigningBox"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "get_signing_box",
+          "summary": " Creates a default signing box implementation.",
+          "description": " Creates a default signing box implementation.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "crypto.KeyPair",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "crypto.RegisteredSigningBox"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "signing_box_get_public_key",
+          "summary": " Returns public key of signing key pair.",
+          "description": " Returns public key of signing key pair.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "crypto.RegisteredSigningBox",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "crypto.ResultOfSigningBoxGetPublicKey"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "signing_box_sign",
+          "summary": " Returns signed user data.",
+          "description": " Returns signed user data.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "crypto.ParamsOfSigningBoxSign",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "crypto.ResultOfSigningBoxSign"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "remove_signing_box",
+          "summary": " Removes signing box from SDK.",
+          "description": " Removes signing box from SDK.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "crypto.RegisteredSigningBox",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
               }
             ]
           },
@@ -2873,8 +3312,8 @@
               "name": "None",
               "type": "Struct",
               "struct_fields": [],
-              "summary": " No keys are provided. Creates an unsigned message. ",
-              "description": " No keys are provided. Creates an unsigned message. "
+              "summary": " No keys are provided. Creates an unsigned message.",
+              "description": " No keys are provided. Creates an unsigned message."
             },
             {
               "name": "External",
@@ -2887,8 +3326,8 @@
                   "description": null
                 }
               ],
-              "summary": " Only public key is provided in unprefixed hex string format to generate unsigned message ",
-              "description": " Only public key is provided in unprefixed hex string format to generate unsigned message \n and `data_to_sign` which can be signed later.  "
+              "summary": " Only public key is provided in unprefixed hex string format to generate unsigned message",
+              "description": " Only public key is provided in unprefixed hex string format to generate unsigned message\n and `data_to_sign` which can be signed later.  "
             },
             {
               "name": "Keys",
@@ -3161,9 +3600,7 @@
               "optional_inner": {
                 "type": "Optional",
                 "optional_inner": {
-                  "type": "Number",
-                  "number_type": "UInt",
-                  "number_size": 32
+                  "type": "String"
                 }
               },
               "summary": null,
@@ -3250,9 +3687,7 @@
               "optional_inner": {
                 "type": "Optional",
                 "optional_inner": {
-                  "type": "Number",
-                  "number_type": "UInt",
-                  "number_size": 32
+                  "type": "String"
                 }
               },
               "summary": null,
@@ -3432,8 +3867,8 @@
             {
               "name": "message",
               "type": "String",
-              "summary": " Unsigned message BOC. Must be encoded with `base64`.",
-              "description": " Unsigned message BOC. Must be encoded with `base64`."
+              "summary": " Unsigned message body BOC. Must be encoded with `base64`.",
+              "description": " Unsigned message body BOC. Must be encoded with `base64`."
             },
             {
               "name": "signature",
@@ -3999,7 +4434,7 @@
         {
           "name": "encode_account",
           "summary": " Creates account state BOC",
-          "description": " Creates account state BOC\n \n Creates account state provided with one of these sets of data :\n 1. BOC of code, BOC of data, BOC of library\n 2. TVC (string in `base64`), keys, init params",
+          "description": " Creates account state BOC\n\n Creates account state provided with one of these sets of data :\n 1. BOC of code, BOC of data, BOC of library\n 2. TVC (string in `base64`), keys, init params",
           "params": [
             {
               "name": "context",
@@ -4091,8 +4526,8 @@
               "type": "Number",
               "number_type": "Int",
               "number_size": 32,
-              "summary": " Workchain shardstate belongs to ",
-              "description": " Workchain shardstate belongs to "
+              "summary": " Workchain shardstate belongs to",
+              "description": " Workchain shardstate belongs to"
             }
           ],
           "summary": null,
@@ -4158,8 +4593,8 @@
       "functions": [
         {
           "name": "parse_message",
-          "summary": " Parses message boc into a JSON ",
-          "description": " Parses message boc into a JSON \n \n JSON structure is compatible with GraphQL API message object",
+          "summary": " Parses message boc into a JSON",
+          "description": " Parses message boc into a JSON\n\n JSON structure is compatible with GraphQL API message object",
           "params": [
             {
               "name": "_context",
@@ -4196,8 +4631,8 @@
         },
         {
           "name": "parse_transaction",
-          "summary": " Parses transaction boc into a JSON ",
-          "description": " Parses transaction boc into a JSON \n \n JSON structure is compatible with GraphQL API transaction object",
+          "summary": " Parses transaction boc into a JSON",
+          "description": " Parses transaction boc into a JSON\n\n JSON structure is compatible with GraphQL API transaction object",
           "params": [
             {
               "name": "_context",
@@ -4234,8 +4669,8 @@
         },
         {
           "name": "parse_account",
-          "summary": " Parses account boc into a JSON ",
-          "description": " Parses account boc into a JSON \n \n JSON structure is compatible with GraphQL API account object",
+          "summary": " Parses account boc into a JSON",
+          "description": " Parses account boc into a JSON\n\n JSON structure is compatible with GraphQL API account object",
           "params": [
             {
               "name": "_context",
@@ -4272,8 +4707,8 @@
         },
         {
           "name": "parse_block",
-          "summary": " Parses block boc into a JSON ",
-          "description": " Parses block boc into a JSON \n \n JSON structure is compatible with GraphQL API block object",
+          "summary": " Parses block boc into a JSON",
+          "description": " Parses block boc into a JSON\n\n JSON structure is compatible with GraphQL API block object",
           "params": [
             {
               "name": "_context",
@@ -4310,8 +4745,8 @@
         },
         {
           "name": "parse_shardstate",
-          "summary": " Parses shardstate boc into a JSON ",
-          "description": " Parses shardstate boc into a JSON \n \n JSON structure is compatible with GraphQL API shardstate object",
+          "summary": " Parses shardstate boc into a JSON",
+          "description": " Parses shardstate boc into a JSON\n\n JSON structure is compatible with GraphQL API shardstate object",
           "params": [
             {
               "name": "_context",
@@ -4808,7 +5243,7 @@
         {
           "name": "send_message",
           "summary": " Sends message to the network",
-          "description": " Sends message to the network\n \n Sends message to the network and returns the last generated shard block of the destination account\n before the message was sent. It will be required later for message processing.",
+          "description": " Sends message to the network\n\n Sends message to the network and returns the last generated shard block of the destination account\n before the message was sent. It will be required later for message processing.",
           "params": [
             {
               "name": "context",
@@ -4859,7 +5294,7 @@
         {
           "name": "wait_for_transaction",
           "summary": " Performs monitoring of the network for the result transaction",
-          "description": " Performs monitoring of the network for the result transaction\n of the external inbound message processing.\n \n `send_events` enables intermediate events, such as `WillFetchNextBlock`,\n `FetchNextBlockFailed` that may be useful for logging of new shard blocks creation \n during message processing.\n\n Note, that presence of the `abi` parameter is critical for ABI\n compliant contracts. Message processing uses drastically\n different strategy for processing message for contracts which\n ABI includes \"expire\" header.\n\n When the ABI header `expire` is present, the processing uses\n `message expiration` strategy:\n - The maximum block gen time is set to\n   `message_expiration_timeout + transaction_wait_timeout`.\n - When maximum block gen time is reached, the processing will\n   be finished with `MessageExpired` error.\n\n When the ABI header `expire` isn't present or `abi` parameter\n isn't specified, the processing uses `transaction waiting`\n strategy:\n - The maximum block gen time is set to\n   `now() + transaction_wait_timeout`.\n \n - If maximum block gen time is reached and no result transaction is found, \n the processing will exit with an error.",
+          "description": " Performs monitoring of the network for the result transaction\n of the external inbound message processing.\n\n `send_events` enables intermediate events, such as `WillFetchNextBlock`,\n `FetchNextBlockFailed` that may be useful for logging of new shard blocks creation\n during message processing.\n\n Note, that presence of the `abi` parameter is critical for ABI\n compliant contracts. Message processing uses drastically\n different strategy for processing message for contracts which\n ABI includes \"expire\" header.\n\n When the ABI header `expire` is present, the processing uses\n `message expiration` strategy:\n - The maximum block gen time is set to\n   `message_expiration_timeout + transaction_wait_timeout`.\n - When maximum block gen time is reached, the processing will\n   be finished with `MessageExpired` error.\n\n When the ABI header `expire` isn't present or `abi` parameter\n isn't specified, the processing uses `transaction waiting`\n strategy:\n - The maximum block gen time is set to\n   `now() + transaction_wait_timeout`.\n\n - If maximum block gen time is reached and no result transaction is found,\n the processing will exit with an error.",
           "params": [
             {
               "name": "context",
@@ -4910,7 +5345,7 @@
         {
           "name": "process_message",
           "summary": " Creates message, sends it to the network and monitors its processing.",
-          "description": " Creates message, sends it to the network and monitors its processing.\n \n Creates ABI-compatible message,\n sends it to the network and monitors for the result transaction.\n Decodes the output messages' bodies.\n \n If contract's ABI includes \"expire\" header, then\n SDK implements retries in case of unsuccessful message delivery within the expiration\n timeout: SDK recreates the message, sends it and processes it again. \n \n The intermediate events, such as `WillFetchFirstBlock`, `WillSend`, `DidSend`,\n `WillFetchNextBlock`, etc - are switched on/off by `send_events` flag \n and logged into the supplied callback function.\n The retry configuration parameters are defined in config:\n <add correct config params here>\n pub const DEFAULT_EXPIRATION_RETRIES_LIMIT: i8 = 3; - max number of retries\n pub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 40000;  - message expiration timeout in ms.\n pub const DEFAULT_....expiration_timeout_grow_factor... = 1.5 - factor that increases the expiration timeout for each retry\n \n If contract's ABI does not include \"expire\" header\n then, if no transaction is found within the network timeout (see config parameter ), exits with error.",
+          "description": " Creates message, sends it to the network and monitors its processing.\n\n Creates ABI-compatible message,\n sends it to the network and monitors for the result transaction.\n Decodes the output messages' bodies.\n\n If contract's ABI includes \"expire\" header, then\n SDK implements retries in case of unsuccessful message delivery within the expiration\n timeout: SDK recreates the message, sends it and processes it again.\n\n The intermediate events, such as `WillFetchFirstBlock`, `WillSend`, `DidSend`,\n `WillFetchNextBlock`, etc - are switched on/off by `send_events` flag\n and logged into the supplied callback function.\n The retry configuration parameters are defined in config:\n <add correct config params here>\n pub const DEFAULT_EXPIRATION_RETRIES_LIMIT: i8 = 3; - max number of retries\n pub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 40000;  - message expiration timeout in ms.\n pub const DEFAULT_....expiration_timeout_grow_factor... = 1.5 - factor that increases the expiration timeout for each retry\n\n If contract's ABI does not include \"expire\" header\n then, if no transaction is found within the network timeout (see config parameter ), exits with error.",
           "params": [
             {
               "name": "context",
@@ -5780,12 +6215,6 @@
           "description": null
         },
         {
-          "name": "unit",
-          "type": "None",
-          "summary": null,
-          "description": null
-        },
-        {
           "name": "ParamsOfSubscribeCollection",
           "type": "Struct",
           "struct_fields": [
@@ -5933,7 +6362,7 @@
         {
           "name": "subscribe_collection",
           "summary": " Creates a subscription",
-          "description": " Creates a subscription\n \n Triggers for each insert/update of data\n that satisfies the `filter` conditions.\n The projection fields are limited to `result` fields.",
+          "description": " Creates a subscription\n\n Triggers for each insert/update of data\n that satisfies the `filter` conditions.\n The projection fields are limited to `result` fields.",
           "params": [
             {
               "name": "context",
@@ -5976,6 +6405,459 @@
               {
                 "type": "Ref",
                 "ref_name": "net.ResultOfSubscribeCollection"
+              }
+            ]
+          },
+          "errors": null
+        }
+      ]
+    },
+    {
+      "name": "debot",
+      "summary": " [UNSTABLE](UNSTABLE.md) Module for working with debot.",
+      "description": " [UNSTABLE](UNSTABLE.md) Module for working with debot.",
+      "types": [
+        {
+          "name": "DebotHandle",
+          "type": "Number",
+          "number_type": "UInt",
+          "number_size": 32,
+          "summary": " [UNSTABLE](UNSTABLE.md) Handle of registered in SDK debot",
+          "description": " [UNSTABLE](UNSTABLE.md) Handle of registered in SDK debot"
+        },
+        {
+          "name": "DebotAction",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "description",
+              "type": "String",
+              "summary": " A short action description. Should be used by Debot Browser as name of",
+              "description": " A short action description. Should be used by Debot Browser as name of\n menu item."
+            },
+            {
+              "name": "name",
+              "type": "String",
+              "summary": " Depends on action type. Can be a debot function name or a print string ",
+              "description": " Depends on action type. Can be a debot function name or a print string \n (for Print Action)."
+            },
+            {
+              "name": "action_type",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 8,
+              "summary": " Action type.",
+              "description": " Action type."
+            },
+            {
+              "name": "to",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 8,
+              "summary": " ID of debot context to switch after action execution. ",
+              "description": " ID of debot context to switch after action execution. "
+            },
+            {
+              "name": "attributes",
+              "type": "String",
+              "summary": " Action attributes. In the form of \"param=value,flag\".",
+              "description": " Action attributes. In the form of \"param=value,flag\".\n attribute example: instant, args, fargs, sign."
+            },
+            {
+              "name": "misc",
+              "type": "String",
+              "summary": " Some internal action data. Used by debot only.",
+              "description": " Some internal action data. Used by debot only."
+            }
+          ],
+          "summary": " [UNSTABLE](UNSTABLE.md) Describes a debot action in a Debot Context.",
+          "description": " [UNSTABLE](UNSTABLE.md) Describes a debot action in a Debot Context."
+        },
+        {
+          "name": "ParamsOfStart",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "address",
+              "type": "String",
+              "summary": " Debot smart contract address ",
+              "description": " Debot smart contract address "
+            }
+          ],
+          "summary": " [UNSTABLE](UNSTABLE.md) Parameters to start debot.",
+          "description": " [UNSTABLE](UNSTABLE.md) Parameters to start debot."
+        },
+        {
+          "name": "RegisteredDebot",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "debot_handle",
+              "type": "Ref",
+              "ref_name": "debot.DebotHandle",
+              "summary": " Debot handle which references an instance of debot engine.",
+              "description": " Debot handle which references an instance of debot engine."
+            }
+          ],
+          "summary": " [UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `start` and `fetch` functions.",
+          "description": " [UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `start` and `fetch` functions."
+        },
+        {
+          "name": "ParamsOfAppDebotBrowser",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "Log",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "msg",
+                  "type": "String",
+                  "summary": " A string that must be printed to user.",
+                  "description": " A string that must be printed to user."
+                }
+              ],
+              "summary": " Print message to user. ",
+              "description": " Print message to user. "
+            },
+            {
+              "name": "Switch",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "context_id",
+                  "type": "Number",
+                  "number_type": "UInt",
+                  "number_size": 8,
+                  "summary": " Debot context ID to which debot is switched.",
+                  "description": " Debot context ID to which debot is switched."
+                }
+              ],
+              "summary": " Switch debot to another context (menu).",
+              "description": " Switch debot to another context (menu)."
+            },
+            {
+              "name": "ShowAction",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "action",
+                  "type": "Ref",
+                  "ref_name": "debot.DebotAction",
+                  "summary": " Debot action that must be shown to user as menu item.",
+                  "description": " Debot action that must be shown to user as menu item.\n At least `description` property must be shown from [DebotAction] structure."
+                }
+              ],
+              "summary": " Show action to the user.",
+              "description": " Show action to the user.\n Called after `switch` for each action in context."
+            },
+            {
+              "name": "Input",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "prompt",
+                  "type": "String",
+                  "summary": " A prompt string that must be printed to user before input request.",
+                  "description": " A prompt string that must be printed to user before input request."
+                }
+              ],
+              "summary": " Request user input. ",
+              "description": " Request user input. "
+            },
+            {
+              "name": "GetSigningBox",
+              "type": "Struct",
+              "struct_fields": [],
+              "summary": " Get signing box to sign data. Signing box returned is owned and disposed by debot engine",
+              "description": " Get signing box to sign data. Signing box returned is owned and disposed by debot engine"
+            },
+            {
+              "name": "InvokeDebot",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "debot_addr",
+                  "type": "String",
+                  "summary": " Address of debot in blockchain.",
+                  "description": " Address of debot in blockchain."
+                },
+                {
+                  "name": "action",
+                  "type": "Ref",
+                  "ref_name": "debot.DebotAction",
+                  "summary": " Debot action to execute.",
+                  "description": " Debot action to execute."
+                }
+              ],
+              "summary": " Execute action of another debot.",
+              "description": " Execute action of another debot."
+            }
+          ],
+          "summary": " [UNSTABLE](UNSTABLE.md) Debot Browser callbacks",
+          "description": " [UNSTABLE](UNSTABLE.md) Debot Browser callbacks\n \n Called by debot engine to communicate with debot browser."
+        },
+        {
+          "name": "ResultOfAppDebotBrowser",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "Input",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "value",
+                  "type": "String",
+                  "summary": " String entered by user.",
+                  "description": " String entered by user."
+                }
+              ],
+              "summary": " Result of user input.",
+              "description": " Result of user input."
+            },
+            {
+              "name": "GetSigningBox",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "signing_box",
+                  "type": "Ref",
+                  "ref_name": "crypto.SigningBoxHandle",
+                  "summary": " Signing box for signing data requested by debot engine. Signing box is owned and disposed by debot engine",
+                  "description": " Signing box for signing data requested by debot engine. Signing box is owned and disposed by debot engine"
+                }
+              ],
+              "summary": " Result of getting signing box.",
+              "description": " Result of getting signing box."
+            },
+            {
+              "name": "InvokeDebot",
+              "type": "Struct",
+              "struct_fields": [],
+              "summary": " Result of debot invoking.",
+              "description": " Result of debot invoking."
+            }
+          ],
+          "summary": " [UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.",
+          "description": " [UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks."
+        },
+        {
+          "name": "ParamsOfFetch",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "address",
+              "type": "String",
+              "summary": " Debot smart contract address",
+              "description": " Debot smart contract address"
+            }
+          ],
+          "summary": " [UNSTABLE](UNSTABLE.md) Parameters to fetch debot.",
+          "description": " [UNSTABLE](UNSTABLE.md) Parameters to fetch debot."
+        },
+        {
+          "name": "ParamsOfExecute",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "debot_handle",
+              "type": "Ref",
+              "ref_name": "debot.DebotHandle",
+              "summary": " Debot handle which references an instance of debot engine.",
+              "description": " Debot handle which references an instance of debot engine."
+            },
+            {
+              "name": "action",
+              "type": "Ref",
+              "ref_name": "debot.DebotAction",
+              "summary": " Debot Action that must be executed.",
+              "description": " Debot Action that must be executed."
+            }
+          ],
+          "summary": " [UNSTABLE](UNSTABLE.md) Parameters for executing debot action.",
+          "description": " [UNSTABLE](UNSTABLE.md) Parameters for executing debot action."
+        }
+      ],
+      "functions": [
+        {
+          "name": "start",
+          "summary": " [UNSTABLE](UNSTABLE.md) Starts an instance of debot.",
+          "description": " [UNSTABLE](UNSTABLE.md) Starts an instance of debot.\n \n Downloads debot smart contract from blockchain and switches it to\n context zero.\n Returns a debot handle which can be used later in `execute` function.\n This function must be used by Debot Browser to start a dialog with debot.\n While the function is executing, several Browser Callbacks can be called,\n since the debot tries to display all actions from the context 0 to the user.\n \n # Remarks\n `start` is equivalent to `fetch` + switch to context 0.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "debot.ParamsOfStart",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "app_object",
+              "type": "Generic",
+              "generic_name": "AppObject",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "debot.ParamsOfAppDebotBrowser"
+                },
+                {
+                  "type": "Ref",
+                  "ref_name": "debot.ResultOfAppDebotBrowser"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "debot.RegisteredDebot"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "fetch",
+          "summary": " [UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.",
+          "description": " [UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.\n \n Downloads debot smart contract (code and data) from blockchain and creates \n an instance of Debot Engine for it.\n \n # Remarks\n It does not switch debot to context 0. Browser Callbacks are not called.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "debot.ParamsOfFetch",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "app_object",
+              "type": "Generic",
+              "generic_name": "AppObject",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "debot.ParamsOfAppDebotBrowser"
+                },
+                {
+                  "type": "Ref",
+                  "ref_name": "debot.ResultOfAppDebotBrowser"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "debot.RegisteredDebot"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "execute",
+          "summary": " [UNSTABLE](UNSTABLE.md) Executes debot action.",
+          "description": " [UNSTABLE](UNSTABLE.md) Executes debot action.\n \n Calls debot engine referenced by debot handle to execute input action.\n Calls Debot Browser Callbacks if needed.\n \n # Remarks\n Chain of actions can be executed if input action generates a list of subactions.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "debot.ParamsOfExecute",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "remove",
+          "summary": " [UNSTABLE](UNSTABLE.md) Destroys debot handle.",
+          "description": " [UNSTABLE](UNSTABLE.md) Destroys debot handle.\n \n Removes handle from Client Context and drops debot engine referenced by that handle.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "debot.RegisteredDebot",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
               }
             ]
           },

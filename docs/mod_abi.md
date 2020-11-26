@@ -134,7 +134,7 @@ function attach_signature_to_message_body(
 ### Parameters
 - `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI
 - `public_key`: _string_ – Public key. Must be encoded with `hex`.
-- `message`: _string_ – Unsigned message BOC. Must be encoded with `base64`.
+- `message`: _string_ – Unsigned message body BOC. Must be encoded with `base64`.
 - `signature`: _string_ – Signature. Must be encoded with `hex`.
 ### Result
 
@@ -600,12 +600,12 @@ type AbiParam = {
 type AbiEvent = {
     name: string,
     inputs: AbiParam[],
-    id?: number | null
+    id?: string | null
 };
 ```
 - `name`: _string_
 - `inputs`: _[AbiParam](mod_abi.md#AbiParam)[]_
-- `id`?: _number?_
+- `id`?: _string?_
 
 
 ## AbiData
@@ -629,13 +629,13 @@ type AbiFunction = {
     name: string,
     inputs: AbiParam[],
     outputs: AbiParam[],
-    id?: number | null
+    id?: string | null
 };
 ```
 - `name`: _string_
 - `inputs`: _[AbiParam](mod_abi.md#AbiParam)[]_
 - `outputs`: _[AbiParam](mod_abi.md#AbiParam)[]_
-- `id`?: _number?_
+- `id`?: _string?_
 
 
 ## AbiContract
@@ -699,7 +699,7 @@ type ParamsOfAttachSignatureToMessageBody = {
 ```
 - `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI
 - `public_key`: _string_ – Public key. Must be encoded with `hex`.
-- `message`: _string_ – Unsigned message BOC. Must be encoded with `base64`.
+- `message`: _string_ – Unsigned message body BOC. Must be encoded with `base64`.
 - `signature`: _string_ – Signature. Must be encoded with `hex`.
 
 

@@ -7,6 +7,8 @@
 
 [build_info](mod_client.md#build_info) – Returns detailed information about this build.
 
+[resolve_app_request](mod_client.md#resolve_app_request)
+
 ## [crypto](mod_crypto.md) – Crypto functions.
 
 [factorize](mod_crypto.md#factorize) – Performs prime factorization – decomposition of a composite number into a product of smaller prime integers (factors). See [https://en.wikipedia.org/wiki/Integer_factorization]
@@ -65,13 +67,23 @@
 
 [hdkey_derive_from_xprv](mod_crypto.md#hdkey_derive_from_xprv) – Returns extended private key derived from the specified extended private key and child index
 
-[hdkey_derive_from_xprv_path](mod_crypto.md#hdkey_derive_from_xprv_path) – Derives the exented private key from the specified key and path
+[hdkey_derive_from_xprv_path](mod_crypto.md#hdkey_derive_from_xprv_path) – Derives the extended private key from the specified key and path
 
 [hdkey_secret_from_xprv](mod_crypto.md#hdkey_secret_from_xprv) – Extracts the private key from the serialized extended private key
 
 [hdkey_public_from_xprv](mod_crypto.md#hdkey_public_from_xprv) – Extracts the public key from the serialized extended private key
 
 [chacha20](mod_crypto.md#chacha20) – Performs symmetric `chacha20` encryption.
+
+[register_signing_box](mod_crypto.md#register_signing_box) – Register an application implemented signing box.
+
+[get_signing_box](mod_crypto.md#get_signing_box) – Creates a default signing box implementation.
+
+[signing_box_get_public_key](mod_crypto.md#signing_box_get_public_key) – Returns public key of signing key pair.
+
+[signing_box_sign](mod_crypto.md#signing_box_sign) – Returns signed user data.
+
+[remove_signing_box](mod_crypto.md#remove_signing_box) – Removes signing box from SDK.
 
 ## [abi](mod_abi.md) – Provides message encoding and decoding according to the ABI specification.
 
@@ -134,4 +146,14 @@
 [unsubscribe](mod_net.md#unsubscribe) – Cancels a subscription
 
 [subscribe_collection](mod_net.md#subscribe_collection) – Creates a subscription
+
+## [debot](mod_debot.md) – [UNSTABLE](UNSTABLE.md) Module for working with debot.
+
+[start](mod_debot.md#start) – [UNSTABLE](UNSTABLE.md) Starts an instance of debot.
+
+[fetch](mod_debot.md#fetch) – [UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.
+
+[execute](mod_debot.md#execute) – [UNSTABLE](UNSTABLE.md) Executes debot action.
+
+[remove](mod_debot.md#remove) – [UNSTABLE](UNSTABLE.md) Destroys debot handle.
 

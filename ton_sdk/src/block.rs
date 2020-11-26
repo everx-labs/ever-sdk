@@ -11,14 +11,14 @@
 * limitations under the License.
 */
 
-use crate::{MessageId, TransactionId};
 use crate::contract::ShardDescr;
 use crate::types::BlockId;
+use crate::{MessageId, TransactionId};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct MsgDescr {
     pub msg_id: Option<MessageId>,
-    pub transaction_id: Option<TransactionId>
+    pub transaction_id: Option<TransactionId>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -28,6 +28,5 @@ pub struct Block {
     pub after_split: bool,
     #[serde(flatten)]
     pub shard_descr: ShardDescr,
-    pub in_msg_descr: Vec<MsgDescr>
+    pub in_msg_descr: Vec<MsgDescr>,
 }
-

@@ -58,13 +58,23 @@
 
 [hdkey_derive_from_xprv](#hdkey_derive_from_xprv) – Returns extended private key derived from the specified extended private key and child index
 
-[hdkey_derive_from_xprv_path](#hdkey_derive_from_xprv_path) – Derives the exented private key from the specified key and path
+[hdkey_derive_from_xprv_path](#hdkey_derive_from_xprv_path) – Derives the extended private key from the specified key and path
 
 [hdkey_secret_from_xprv](#hdkey_secret_from_xprv) – Extracts the private key from the serialized extended private key
 
 [hdkey_public_from_xprv](#hdkey_public_from_xprv) – Extracts the public key from the serialized extended private key
 
 [chacha20](#chacha20) – Performs symmetric `chacha20` encryption.
+
+[register_signing_box](#register_signing_box) – Register an application implemented signing box.
+
+[get_signing_box](#get_signing_box) – Creates a default signing box implementation.
+
+[signing_box_get_public_key](#signing_box_get_public_key) – Returns public key of signing key pair.
+
+[signing_box_sign](#signing_box_sign) – Returns signed user data.
+
+[remove_signing_box](#remove_signing_box) – Removes signing box from SDK.
 
 ## Types
 [SigningBoxHandle](#SigningBoxHandle)
@@ -174,6 +184,18 @@
 [ParamsOfChaCha20](#ParamsOfChaCha20)
 
 [ResultOfChaCha20](#ResultOfChaCha20)
+
+[RegisteredSigningBox](#RegisteredSigningBox)
+
+[ParamsOfAppSigningBox](#ParamsOfAppSigningBox) – Signing box callbacks.
+
+[ResultOfAppSigningBox](#ResultOfAppSigningBox) – Returning values from signing box callbacks.
+
+[ResultOfSigningBoxGetPublicKey](#ResultOfSigningBoxGetPublicKey)
+
+[ParamsOfSigningBoxSign](#ParamsOfSigningBoxSign)
+
+[ResultOfSigningBoxSign](#ResultOfSigningBoxSign)
 
 
 # Functions
@@ -925,7 +947,7 @@ function hdkey_derive_from_xprv(
 
 ## hdkey_derive_from_xprv_path
 
-Derives the exented private key from the specified key and path
+Derives the extended private key from the specified key and path
 
 ```ts
 type ParamsOfHDKeyDeriveFromXPrvPath = {
@@ -1023,6 +1045,119 @@ function chacha20(
 ### Result
 
 - `data`: _string_ – Encrypted/decrypted data. Encoded with `base64`.
+
+
+## register_signing_box
+
+Register an application implemented signing box.
+
+```ts
+type RegisteredSigningBox = {
+    handle: SigningBoxHandle
+};
+
+function register_signing_box(
+    obj: AppSigningBox,
+): Promise<RegisteredSigningBox>;
+```
+### Result
+
+- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
+
+
+## get_signing_box
+
+Creates a default signing box implementation.
+
+```ts
+type KeyPair = {
+    public: string,
+    secret: string
+};
+
+type RegisteredSigningBox = {
+    handle: SigningBoxHandle
+};
+
+function get_signing_box(
+    params: KeyPair,
+): Promise<RegisteredSigningBox>;
+```
+### Parameters
+- `public`: _string_ – Public key - 64 symbols hex string
+- `secret`: _string_ – Private key - u64 symbols hex string
+### Result
+
+- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
+
+
+## signing_box_get_public_key
+
+Returns public key of signing key pair.
+
+```ts
+type RegisteredSigningBox = {
+    handle: SigningBoxHandle
+};
+
+type ResultOfSigningBoxGetPublicKey = {
+    pubkey: string
+};
+
+function signing_box_get_public_key(
+    params: RegisteredSigningBox,
+): Promise<ResultOfSigningBoxGetPublicKey>;
+```
+### Parameters
+- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
+### Result
+
+- `pubkey`: _string_ – Public key of signing box. Encoded with hex
+
+
+## signing_box_sign
+
+Returns signed user data.
+
+```ts
+type ParamsOfSigningBoxSign = {
+    signing_box: SigningBoxHandle,
+    unsigned: string
+};
+
+type ResultOfSigningBoxSign = {
+    signature: string
+};
+
+function signing_box_sign(
+    params: ParamsOfSigningBoxSign,
+): Promise<ResultOfSigningBoxSign>;
+```
+### Parameters
+- `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing Box handle.
+- `unsigned`: _string_ – Unsigned user data. Must be encoded with `base64`.
+### Result
+
+- `signature`: _string_ – Data signature. Encoded with `base64`.
+
+
+## remove_signing_box
+
+Removes signing box from SDK.
+
+```ts
+type RegisteredSigningBox = {
+    handle: SigningBoxHandle
+};
+
+function remove_signing_box(
+    params: RegisteredSigningBox,
+): Promise<void>;
+```
+### Parameters
+- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
+### Result
+
 
 
 # Types
@@ -1583,5 +1718,98 @@ type ResultOfChaCha20 = {
 };
 ```
 - `data`: _string_ – Encrypted/decrypted data. Encoded with `base64`.
+
+
+## RegisteredSigningBox
+```ts
+type RegisteredSigningBox = {
+    handle: SigningBoxHandle
+};
+```
+- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
+
+
+## ParamsOfAppSigningBox
+Signing box callbacks.
+
+```ts
+type ParamsOfAppSigningBox = {
+    type: 'GetPublicKey'
+} | {
+    type: 'Sign'
+    unsigned: string
+};
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'GetPublicKey'_
+
+Get signing box public key
+
+
+When _type_ is _'Sign'_
+
+Sign data
+
+
+- `unsigned`: _string_ – Data to sign encoded as base64
+
+
+## ResultOfAppSigningBox
+Returning values from signing box callbacks.
+
+```ts
+type ResultOfAppSigningBox = {
+    type: 'GetPublicKey'
+    public_key: string
+} | {
+    type: 'Sign'
+    signature: string
+};
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'GetPublicKey'_
+
+Result of getting public key
+
+
+- `public_key`: _string_ – Signing box public key
+
+When _type_ is _'Sign'_
+
+Result of signing data
+
+
+- `signature`: _string_ – Data signature encoded as hex
+
+
+## ResultOfSigningBoxGetPublicKey
+```ts
+type ResultOfSigningBoxGetPublicKey = {
+    pubkey: string
+};
+```
+- `pubkey`: _string_ – Public key of signing box. Encoded with hex
+
+
+## ParamsOfSigningBoxSign
+```ts
+type ParamsOfSigningBoxSign = {
+    signing_box: SigningBoxHandle,
+    unsigned: string
+};
+```
+- `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing Box handle.
+- `unsigned`: _string_ – Unsigned user data. Must be encoded with `base64`.
+
+
+## ResultOfSigningBoxSign
+```ts
+type ResultOfSigningBoxSign = {
+    signature: string
+};
+```
+- `signature`: _string_ – Data signature. Encoded with `base64`.
 
 

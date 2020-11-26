@@ -13,13 +13,15 @@
 
 use crate::error::SdkError;
 use crate::json_helper;
-use crate::{Message, MessageId};
-use crate::types::StringId;
 use crate::types::grams_to_u64;
+use crate::types::StringId;
+use crate::{Message, MessageId};
 
+use ton_block::{
+    AccStatusChange, ComputeSkipReason, Serializable, TrComputePhase, TransactionDescr,
+    TransactionProcessingStatus,
+};
 use ton_types::{Cell, Result};
-use ton_block::{TransactionProcessingStatus, AccStatusChange, ComputeSkipReason, TransactionDescr,
-    TrComputePhase, Serializable};
 
 use std::convert::TryFrom;
 
@@ -83,37 +85,36 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
         let descr = if let TransactionDescr::Ordinary(descr) = transaction.read_description()? {
             descr
         } else {
-            return Err(SdkError::InvalidData{ msg: "Invalid transaction type".to_owned() }.into())
+            return Err(SdkError::InvalidData {
+                msg: "Invalid transaction type".to_owned(),
+            }
+            .into());
         };
 
         let storage_phase = if let Some(phase) = descr.storage_ph {
             Some(StoragePhase {
                 status_change: phase.status_change,
-                storage_fees_collected: grams_to_u64(&phase.storage_fees_collected)?
+                storage_fees_collected: grams_to_u64(&phase.storage_fees_collected)?,
             })
         } else {
             None
         };
 
         let compute_phase = match descr.compute_ph {
-            TrComputePhase::Skipped(ph) => {
-                ComputePhase {
-                    skipped_reason: Some(ph.reason),
-                    exit_code: None,
-                    exit_arg: None,
-                    success: None,
-                    gas_fees: 0
-                }
+            TrComputePhase::Skipped(ph) => ComputePhase {
+                skipped_reason: Some(ph.reason),
+                exit_code: None,
+                exit_arg: None,
+                success: None,
+                gas_fees: 0,
             },
-            TrComputePhase::Vm(ph) => {
-                ComputePhase {
-                    skipped_reason: None,
-                    exit_code: Some(ph.exit_code),
-                    exit_arg: ph.exit_arg,
-                    success: Some(ph.success),
-                    gas_fees: grams_to_u64(&ph.gas_fees)?
-                }
-            }
+            TrComputePhase::Vm(ph) => ComputePhase {
+                skipped_reason: None,
+                exit_code: Some(ph.exit_code),
+                exit_arg: ph.exit_arg,
+                success: Some(ph.success),
+                gas_fees: grams_to_u64(&ph.gas_fees)?,
+            },
         };
 
         let action_phase = if let Some(phase) = descr.action {
@@ -129,7 +130,10 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
             None
         };
 
-        let in_msg = transaction.in_msg.as_ref().map(|msg| msg.hash().to_hex_string().into());
+        let in_msg = transaction
+            .in_msg
+            .as_ref()
+            .map(|msg| msg.hash().to_hex_string().into());
         let mut out_msgs = vec![];
         transaction.out_msgs.iterate_slices(|slice| {
             if let Ok(cell) = slice.reference(0) {
@@ -143,8 +147,11 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
             Ok(true)
         })?;
 
-        Ok(Transaction{
-            id: Cell::from(transaction.write_to_new_cell()?).repr_hash().to_hex_string().into(),
+        Ok(Transaction {
+            id: Cell::from(transaction.write_to_new_cell()?)
+                .repr_hash()
+                .to_hex_string()
+                .into(),
             status: TransactionProcessingStatus::Finalized,
             now: transaction.now(),
             in_msg,
@@ -154,7 +161,7 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
             total_fees: grams_to_u64(&transaction.total_fees.grams)?,
             storage: storage_phase,
             compute: compute_phase,
-            action: action_phase
+            action: action_phase,
         })
     }
 }
@@ -171,7 +178,6 @@ pub struct TransactionFees {
 
 // The struct represents performed transaction and allows to access their properties.
 impl Transaction {
-
     // Returns transaction's processing status
     pub fn status(&self) -> TransactionProcessingStatus {
         self.status
@@ -220,17 +226,31 @@ impl Transaction {
         // to get all fees paid by account we need exchange `total_action_fees part` to `out_msgs_fwd_fee`
         let total_account_fees =
             self.total_fees as i128 - total_action_fees as i128 + fees.out_msgs_fwd_fee as i128;
-        fees.total_account_fees = if total_account_fees > 0 { total_account_fees as u64 } else { 0 };
+        fees.total_account_fees = if total_account_fees > 0 {
+            total_account_fees as u64
+        } else {
+            0
+        };
         // inbound_fwd_fees is not represented in transaction fields so need to calculate it
-        let in_msg_fwd_fee =
-            fees.total_account_fees as i128
+        let in_msg_fwd_fee = fees.total_account_fees as i128
             - fees.storage_fee as i128
             - fees.gas_fee as i128
             - fees.out_msgs_fwd_fee as i128;
-        fees.in_msg_fwd_fee = if in_msg_fwd_fee > 0 { in_msg_fwd_fee as u64 } else { 0 };
+        fees.in_msg_fwd_fee = if in_msg_fwd_fee > 0 {
+            in_msg_fwd_fee as u64
+        } else {
+            0
+        };
 
-        let total_output = self.out_messages.iter().fold(0u128, |acc, msg| acc + msg.value as u128);
-        fees.total_output = if total_output <= std::u64::MAX as u128 { total_output as u64 } else { 0 };
+        let total_output = self
+            .out_messages
+            .iter()
+            .fold(0u128, |acc, msg| acc + msg.value as u128);
+        fees.total_output = if total_output <= std::u64::MAX as u128 {
+            total_output as u64
+        } else {
+            0
+        };
 
         fees
     }

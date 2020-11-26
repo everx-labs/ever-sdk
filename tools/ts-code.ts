@@ -35,6 +35,8 @@ interface IClient {
         functionParams?: any,
         responseHandler?: ResponseHandler
     ): Promise<any>;
+    resolve_app_request(app_request_id: number | null, result: any): Promise<void>;
+    reject_app_request(app_request_id: number | null, error: any): Promise<void>;
 }
 `;
 
@@ -79,8 +81,19 @@ export class TSCode extends Code {
             }
         }
 
+        const generatedAppObjects = new Set<string>();
+        for (const func of module.functions) {
+            const functionInfo = this.getFunctionInfo(func);
+            if (functionInfo.appObject && !generatedAppObjects.has(functionInfo.appObject.name)) {
+                generatedAppObjects.add(functionInfo.appObject.name);
+                ts += this.appObjectInterface(functionInfo.appObject);
+                ts += '\n';
+                ts += this.appObjectDispatchImpl(functionInfo.appObject);
+            }
+        }
+
         ts += `
-export class ${Code.upperFirst(module.name)}Module {
+\nexport class ${Code.upperFirst(module.name)}Module {
     client: IClient;
 
     constructor(client: IClient) {
@@ -136,51 +149,51 @@ export class ${Code.upperFirst(module.name)}Module {
 
     constVariant(variant: ApiConst): string {
         switch (variant.type) {
-        case ApiConstValueIs.String:
-            return `'${variant.value}'`;
-        case ApiConstValueIs.None:
-            return `'${variant.name}'`;
-        case ApiConstValueIs.Bool:
-            return variant.value;
-        case ApiConstValueIs.Number:
-            return variant.value;
-        default:
-            return '';
+            case ApiConstValueIs.String:
+                return `'${variant.value}'`;
+            case ApiConstValueIs.None:
+                return `'${variant.name}'`;
+            case ApiConstValueIs.Bool:
+                return variant.value;
+            case ApiConstValueIs.Number:
+                return variant.value;
+            default:
+                return '';
         }
     }
 
     type(type: ApiType, indent: string): string {
         switch (type.type) {
-        case ApiTypeIs.None:
-            return 'void';
-        case ApiTypeIs.Ref:
-            if (type.ref_name === 'Value' || type.ref_name === 'API') {
+            case ApiTypeIs.None:
+                return 'void';
+            case ApiTypeIs.Ref:
+                if (type.ref_name === 'Value' || type.ref_name === 'API') {
+                    return 'any';
+                }
+                return typeName(type.ref_name);
+            case ApiTypeIs.Optional:
+                return `${this.type(type.optional_inner, indent)} | null`;
+            case ApiTypeIs.Struct:
+                const fields = type.struct_fields;
+                return `{\n${this.fields(fields, `${indent}    `)}\n${indent}}`;
+            case ApiTypeIs.EnumOfTypes:
+                return type.enum_types.map(x => this.typeVariant(x, indent)).join(' | ');
+            case ApiTypeIs.Array:
+                return `${this.type(type.array_item, indent)}[]`;
+            case ApiTypeIs.EnumOfConsts:
+                return type.enum_consts.map(c => this.constVariant(c)).join(' | ');
+            case ApiTypeIs.BigInt:
+                return 'bigint';
+            case ApiTypeIs.Any:
                 return 'any';
-            }
-            return typeName(type.ref_name);
-        case ApiTypeIs.Optional:
-            return `${this.type(type.optional_inner, indent)} | null`;
-        case ApiTypeIs.Struct:
-            const fields = type.struct_fields;
-            return `{\n${this.fields(fields, `${indent}    `)}\n${indent}}`;
-        case ApiTypeIs.EnumOfTypes:
-            return type.enum_types.map(x => this.typeVariant(x, indent)).join(' | ');
-        case ApiTypeIs.Array:
-            return `${this.type(type.array_item, indent)}[]`;
-        case ApiTypeIs.EnumOfConsts:
-            return type.enum_consts.map(c => this.constVariant(c)).join(' | ');
-        case ApiTypeIs.BigInt:
-            return 'bigint';
-        case ApiTypeIs.Any:
-            return 'any';
-        case ApiTypeIs.String:
-            return 'string';
-        case ApiTypeIs.Number:
-            return 'number';
-        case ApiTypeIs.Boolean:
-            return 'boolean';
-        default:
-            return type.type;
+            case ApiTypeIs.String:
+                return 'string';
+            case ApiTypeIs.Number:
+                return 'number';
+            case ApiTypeIs.Boolean:
+                return 'boolean';
+            default:
+                return type.type;
         }
     }
 
@@ -193,7 +206,9 @@ export class ${Code.upperFirst(module.name)}Module {
         if (paramsInfo.params) {
             decls.push(`${paramsInfo.params.name}: ${this.type(paramsInfo.params, '')}`);
         }
-        if (paramsInfo.hasResponseHandler) {
+        if (paramsInfo.appObject) {
+            decls.push(`obj: ${paramsInfo.appObject.name}`);
+        } else if (paramsInfo.hasResponseHandler) {
             decls.push('responseHandler?: ResponseHandler');
         }
         return decls;
@@ -208,6 +223,57 @@ export class ${Code.upperFirst(module.name)}Module {
         return `function ${func.name}(${paramsDecl}): Promise<${resultDecl}>;`;
     }
 
+    appObjectInterface(obj: ApiModule): string {
+        let ts = '';
+        for (const type of obj.types) {
+            ts += '\n';
+            ts += this.typeDef(type);
+        }
+        ts += `\nexport interface ${obj.name} {`;
+        for (const f of obj.functions) {
+            const isNotify = (f.result.type === ApiTypeIs.Ref) && f.result.ref_name === '';
+            const paramsInfo = this.getFunctionInfo(f);
+            const paramsDecls = this.paramsDecls(paramsInfo);
+            const paramsDecl = paramsDecls.length > 0 ? `${paramsDecls.join(', ')}` : '';
+            const resultDecl = !isNotify ? `: Promise<${this.type(f.result, '')}>` : ': void';
+            ts += `\n    ${f.name}(${paramsDecl})${resultDecl},`;
+        }
+        ts += '\n}';
+        return ts;
+    }
+
+    appObjectDispatchImpl(obj: ApiModule): string {
+        let ts = `
+async function dispatch${obj.name}(obj: ${obj.name}, params: ParamsOf${obj.name}, app_request_id: number | null, client: IClient) {
+    try {
+        let result = {};
+        switch (params.type) {`;
+        for (const f of obj.functions) {
+            const isNotify = (f.result.type === ApiTypeIs.Ref) && f.result.ref_name === '';
+            let assignment = '';
+            if (!isNotify) {
+                if (f.result.type !== ApiTypeIs.None) {
+                    assignment = 'result = await ';
+                } else {
+                    assignment = 'await ';
+                }
+            }
+            ts += `
+            case '${TSCode.pascal(f.name.split('_'))}':
+                ${assignment}obj.${f.name}(${f.params.length > 0 ? 'params' : ''});
+                break;`
+        }
+        ts += `
+        }
+        client.resolve_app_request(app_request_id, { type: params.type, ...result });
+    }
+    catch (error) {
+        client.reject_app_request(app_request_id, error);
+    }
+}`;
+        return ts;
+    }
+
     functionImpl(func: ApiFunction): string {
         const paramsInfo = this.getFunctionInfo(func);
         const paramsDecl = this.paramsDecls(paramsInfo).map(p => `${p}`).join(', ');
@@ -215,7 +281,18 @@ export class ${Code.upperFirst(module.name)}Module {
         if (paramsInfo.params) {
             calls.push(`${paramsInfo.params.name}`);
         }
-        if (paramsInfo.hasResponseHandler) {
+        if (paramsInfo.appObject) {
+            if (!paramsInfo.params) {
+                calls.push('undefined');
+            }
+            calls.push(`(params: any, responseType: number) => {
+            if (responseType === 3) {
+                dispatch${paramsInfo.appObject.name}(obj, params.request_data, params.app_request_id, this.client);
+            } else if (responseType === 4) {
+                dispatch${paramsInfo.appObject.name}(obj, params, null, this.client);
+            }
+        }`);
+        } else if (paramsInfo.hasResponseHandler) {
             if (!paramsInfo.params) {
                 calls.push('undefined');
             }
@@ -240,21 +317,21 @@ ${this.api.modules.map(m => this.module(m)).join('')}
             let params = '';
             let properties = '';
             switch (variant.type) {
-            case ApiTypeIs.Ref:
-                params = `params: ${typeName(variant.ref_name)}`;
-                properties = `        ...params,\n`;
-                break;
-            case ApiTypeIs.Struct:
-                const fields = variant.struct_fields;
-                for (const field of fields) {
-                    if (params !== '') {
-                        params += ', ';
-                    }
-                    params += `${this.field(field, '')}`;
-                    properties += `        ${fixFieldName(field.name)},\n`;
+                case ApiTypeIs.Ref:
+                    params = `params: ${typeName(variant.ref_name)}`;
+                    properties = `        ...params,\n`;
+                    break;
+                case ApiTypeIs.Struct:
+                    const fields = variant.struct_fields;
+                    for (const field of fields) {
+                        if (params !== '') {
+                            params += ', ';
+                        }
+                        params += `${this.field(field, '')}`;
+                        properties += `        ${fixFieldName(field.name)},\n`;
 
-                }
-                break;
+                    }
+                    break;
             }
             ts +=
                 `\nexport function ${TSCode.lowerFirst(enumName)}${variant.name}(${params}): ${enumName} {\n`;

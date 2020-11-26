@@ -1,6 +1,6 @@
 [package]
 name = "toncli"
-version = "1.1.2"
+version = "1.2.0"
 description = "TON CLient Command Line Tool"
 authors = ["TON DEV SOLUTIONS LTD <support@tonlabs.io>"]
 repository = "https://github.com/tonlabs/TON-SDK"
@@ -20,7 +20,7 @@ serde_json = "1.0.58"
 serde_derive = "1.0.116"
 serde = "1.0.116"
 
-ton_client = { path = '../ton_client/client' }
+ton_client = { path = '../ton_client' }
 api_info = { path = '../api/info' }
 
 [dev-dependencies]

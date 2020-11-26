@@ -15,8 +15,8 @@ extern crate serde_json;
 extern crate serde_derive;
 
 mod api;
-mod errors;
 mod command_line;
+mod errors;
 mod request;
 
 const USAGE: &str = r#"
