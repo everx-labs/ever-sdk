@@ -202,11 +202,13 @@ impl DEngine {
                     None
                 };
                 let result = self.run_sendmsg(&a.name, args, signer.clone()).await?;
-                let _ = remove_signing_box(
-                    self.ton.clone(),
-                    RegisteredSigningBox {
-                        handle: signer
-                }).await;
+                if let Some(signing_box) = signer {
+                    let _ = remove_signing_box(
+                        self.ton.clone(),
+                        RegisteredSigningBox {
+                            handle: signing_box
+                    });
+                }
                 self.browser.log(format!("Transaction succeeded.")).await;
                 result.map(|r| self.browser.log(format!("Result: {}", r)));
                 Ok(None)
@@ -265,11 +267,13 @@ impl DEngine {
                     None
                 };
                 let res = self.call_routine(&a.name, &args, signer.clone()).await?;
-                let _ = remove_signing_box(
-                    self.ton.clone(),
-                    RegisteredSigningBox {
-                        handle: signer
-                }).await;
+                if let Some(signing_box) = signer {
+                    let _ = remove_signing_box(
+                        self.ton.clone(),
+                        RegisteredSigningBox {
+                            handle: signing_box
+                    });
+                }
                 let setter = a
                     .func_attr()
                     .ok_or("routine callback is not specified".to_owned())?;
