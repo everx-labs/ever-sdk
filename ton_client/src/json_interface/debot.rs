@@ -26,7 +26,7 @@ pub enum ResultOfAppDebotBrowser {
         /// String entered by user.
         value: String
     },
-    /// Result of signing box getting.
+    /// Result of getting signing box.
     GetSigningBox { 
         /// Signing box for signing data requested by debot engine. Signing box is owned and disposed by debot engine
         signing_box: SigningBoxHandle

@@ -6566,11 +6566,11 @@
               "description": " Request user input. "
             },
             {
-              "name": "LoadKey",
+              "name": "GetSigningBox",
               "type": "Struct",
               "struct_fields": [],
-              "summary": " Load debot key pair.",
-              "description": " Load debot key pair."
+              "summary": " Get signing box to sign data. Signing box returned is owned and disposed by debot engine",
+              "description": " Get signing box to sign data. Signing box returned is owned and disposed by debot engine"
             },
             {
               "name": "InvokeDebot",
@@ -6616,19 +6616,19 @@
               "description": " Result of user input."
             },
             {
-              "name": "LoadKey",
+              "name": "GetSigningBox",
               "type": "Struct",
               "struct_fields": [
                 {
-                  "name": "keys",
+                  "name": "signing_box",
                   "type": "Ref",
-                  "ref_name": "crypto.KeyPair",
-                  "summary": " Key pair that browser asked from user.",
-                  "description": " Key pair that browser asked from user."
+                  "ref_name": "crypto.SigningBoxHandle",
+                  "summary": " Signing box for signing data requested by debot engine. Signing box is owned and disposed by debot engine",
+                  "description": " Signing box for signing data requested by debot engine. Signing box is owned and disposed by debot engine"
                 }
               ],
-              "summary": " Result of key loading.",
-              "description": " Result of key loading."
+              "summary": " Result of getting signing box.",
+              "description": " Result of getting signing box."
             },
             {
               "name": "InvokeDebot",
