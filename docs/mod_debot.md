@@ -1,37 +1,37 @@
 # Module debot
 
- Module for working with debot.
+ [UNSTABLE](UNSTABLE.md) Module for working with debot.
 ## Functions
-[start](#start) – **UNSTABLE API.** Starts an instance of debot.
+[start](#start) – [UNSTABLE](UNSTABLE.md) Starts an instance of debot.
 
-[fetch](#fetch) – **UNSTABLE API.** Fetches debot from blockchain.
+[fetch](#fetch) – [UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.
 
-[execute](#execute) – **UNSTABLE API.** Executes debot action.
+[execute](#execute) – [UNSTABLE](UNSTABLE.md) Executes debot action.
 
-[remove](#remove) – **UNSTABLE API.** Destroys debot handle.
+[remove](#remove) – [UNSTABLE](UNSTABLE.md) Destroys debot handle.
 
 ## Types
-[DebotHandle](#DebotHandle) – **UNSTABLE API.** Handle of registered in SDK debot
+[DebotHandle](#DebotHandle) – [UNSTABLE](UNSTABLE.md) Handle of registered in SDK debot
 
-[DebotAction](#DebotAction) – **UNSTABLE API.** Describes a debot action in a Debot Context.
+[DebotAction](#DebotAction) – [UNSTABLE](UNSTABLE.md) Describes a debot action in a Debot Context.
 
-[ParamsOfStart](#ParamsOfStart) – **UNSTABLE API.** Parameters to start debot.
+[ParamsOfStart](#ParamsOfStart) – [UNSTABLE](UNSTABLE.md) Parameters to start debot.
 
-[RegisteredDebot](#RegisteredDebot) – **UNSTABLE API.** Structure for storing debot handle returned from `start` and `fetch` functions.
+[RegisteredDebot](#RegisteredDebot) – [UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `start` and `fetch` functions.
 
-[ParamsOfAppDebotBrowser](#ParamsOfAppDebotBrowser) – **UNSTABLE API.** Debot Browser callbacks
+[ParamsOfAppDebotBrowser](#ParamsOfAppDebotBrowser) – [UNSTABLE](UNSTABLE.md) Debot Browser callbacks
 
-[ResultOfAppDebotBrowser](#ResultOfAppDebotBrowser) – **UNSTABLE API.** Returning values from Debot Browser callbacks.
+[ResultOfAppDebotBrowser](#ResultOfAppDebotBrowser) – [UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.
 
-[ParamsOfFetch](#ParamsOfFetch) – **UNSTABLE API.** Parameters to fetch debot.
+[ParamsOfFetch](#ParamsOfFetch) – [UNSTABLE](UNSTABLE.md) Parameters to fetch debot.
 
-[ParamsOfExecute](#ParamsOfExecute) – **UNSTABLE API.** Parameters for executing debot action.
+[ParamsOfExecute](#ParamsOfExecute) – [UNSTABLE](UNSTABLE.md) Parameters for executing debot action.
 
 
 # Functions
 ## start
 
-**UNSTABLE API.** Starts an instance of debot.
+[UNSTABLE](UNSTABLE.md) Starts an instance of debot.
 
 Downloads debot smart contract from blockchain and switches it to
 context zero.
@@ -66,7 +66,7 @@ function start(
 
 ## fetch
 
-**UNSTABLE API.** Fetches debot from blockchain.
+[UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.
 
 Downloads debot smart contract (code and data) from blockchain and creates
 an instance of Debot Engine for it.
@@ -97,7 +97,7 @@ function fetch(
 
 ## execute
 
-**UNSTABLE API.** Executes debot action.
+[UNSTABLE](UNSTABLE.md) Executes debot action.
 
 Calls debot engine referenced by debot handle to execute input action.
 Calls Debot Browser Callbacks if needed.
@@ -124,7 +124,7 @@ function execute(
 
 ## remove
 
-**UNSTABLE API.** Destroys debot handle.
+[UNSTABLE](UNSTABLE.md) Destroys debot handle.
 
 Removes handle from Client Context and drops debot engine referenced by that handle.
 
@@ -145,7 +145,7 @@ function remove(
 
 # Types
 ## DebotHandle
-**UNSTABLE API.** Handle of registered in SDK debot
+[UNSTABLE](UNSTABLE.md) Handle of registered in SDK debot
 
 ```ts
 type DebotHandle = number;
@@ -153,7 +153,7 @@ type DebotHandle = number;
 
 
 ## DebotAction
-**UNSTABLE API.** Describes a debot action in a Debot Context.
+[UNSTABLE](UNSTABLE.md) Describes a debot action in a Debot Context.
 
 ```ts
 type DebotAction = {
@@ -174,7 +174,7 @@ type DebotAction = {
 
 
 ## ParamsOfStart
-**UNSTABLE API.** Parameters to start debot.
+[UNSTABLE](UNSTABLE.md) Parameters to start debot.
 
 ```ts
 type ParamsOfStart = {
@@ -185,7 +185,7 @@ type ParamsOfStart = {
 
 
 ## RegisteredDebot
-**UNSTABLE API.** Structure for storing debot handle returned from `start` and `fetch` functions.
+[UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `start` and `fetch` functions.
 
 ```ts
 type RegisteredDebot = {
@@ -196,7 +196,7 @@ type RegisteredDebot = {
 
 
 ## ParamsOfAppDebotBrowser
-**UNSTABLE API.** Debot Browser callbacks
+[UNSTABLE](UNSTABLE.md) Debot Browser callbacks
 
 Called by debot engine to communicate with debot browser.
 
@@ -266,7 +266,7 @@ Execute action of another debot.
 
 
 ## ResultOfAppDebotBrowser
-**UNSTABLE API.** Returning values from Debot Browser callbacks.
+[UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.
 
 ```ts
 type ResultOfAppDebotBrowser = {
@@ -302,7 +302,7 @@ Result of debot invoking.
 
 
 ## ParamsOfFetch
-**UNSTABLE API.** Parameters to fetch debot.
+[UNSTABLE](UNSTABLE.md) Parameters to fetch debot.
 
 ```ts
 type ParamsOfFetch = {
@@ -313,7 +313,7 @@ type ParamsOfFetch = {
 
 
 ## ParamsOfExecute
-**UNSTABLE API.** Parameters for executing debot action.
+[UNSTABLE](UNSTABLE.md) Parameters for executing debot action.
 
 ```ts
 type ParamsOfExecute = {

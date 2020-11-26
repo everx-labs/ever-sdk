@@ -388,7 +388,7 @@ fn register_utils(handlers: &mut RuntimeHandlers) {
     module.register();
 }
 
-/// Module for working with debot.
+/// [UNSTABLE](UNSTABLE.md) Module for working with debot.
 #[derive(ApiModule)]
 #[api_module(name = "debot")]
 pub struct DebotModule;
