@@ -1,20 +1,23 @@
 use super::dengine::TonClient;
-use crate::crypto::{sign, KeyPair, ParamsOfSign};
+use crate::crypto::{signing_box_sign, ParamsOfSigningBoxSign, SigningBoxHandle};
 use crate::net::{query_collection, ParamsOfQueryCollection};
-use crate::encoding::decode_abi_number;
+use crate::encoding::{decode_abi_bigint, decode_abi_number};
 use chrono::{Local, TimeZone};
 
 pub async fn call_routine(
     ton: TonClient,
     name: &str,
     arg: &str,
-    keypair: Option<KeyPair>,
+    signer: Option<SigningBoxHandle>,
 ) -> Result<String, String> {
     match name {
         "convertTokens" => convert_string_to_tokens(ton, arg),
         "getBalance" => get_balance(ton, arg).await,
         "loadBocFromFile" => load_boc_from_file(ton, arg),
-        "signHash" => sign_hash(ton, arg, keypair.unwrap()),
+        "signHash" => {
+            sign_hash(ton, arg, signer.ok_or("Signing box is needed to sign hash".to_owned())?)
+                .await
+        },
         _ => Err(format!("unknown engine routine: {}", name))?,
     }
 }
@@ -107,23 +110,23 @@ pub(super) fn load_boc_from_file(_ton: TonClient, arg: &str) -> Result<String, S
     Ok(base64::encode(&boc))
 }
 
-pub(super) fn sign_hash(ton: TonClient, arg: &str, keypair: KeyPair) -> Result<String, String> {
+pub(super) async fn sign_hash(ton: TonClient, arg: &str, signer: SigningBoxHandle) -> Result<String, String> {
     debug!("sign hash {}", arg);
     let arg_json: serde_json::Value =
         serde_json::from_str(arg).map_err(|e| format!("argument is invalid json: {}", e))?;
     let hash_str = arg_json["hash"]
         .as_str()
         .ok_or(format!(r#""hash" argument not found"#))?;
-    let hash_str = hash_str
-        .get(2..)
-        .ok_or("hash is not an uint256 number".to_owned())?;
-    let result = sign(
+    let hash_as_bigint = decode_abi_bigint(hash_str)
+        .map_err(|err| err.to_string())?;
+    let result = signing_box_sign(
         ton,
-        ParamsOfSign {
-            unsigned: hash_str.to_owned(),
-            keys: keypair,
+        ParamsOfSigningBoxSign {
+            unsigned: base64::encode(&hash_as_bigint.to_bytes_be().1),
+            signing_box: signer,
         },
     )
-    .unwrap();
-    Ok(result.signed)
+    .await
+    .map_err(|err| format!("Can not sign hash: {}", err))?;
+    Ok(result.signature)
 }

@@ -1,5 +1,5 @@
 use super::action::DAction;
-use crate::crypto::KeyPair;
+use crate::crypto::SigningBoxHandle;
 
 /// Callbacks that are called by debot engine to communicate with Debot Browser.
 #[async_trait::async_trait]
@@ -14,7 +14,7 @@ pub trait BrowserCallbacks {
     /// Requests input from user.
     async fn input(&self, prompt: &str, value: &mut String);
     /// Requests keys from user.
-    async fn load_key(&self, keys: &mut KeyPair);
+    async fn get_signing_box(&self) -> Result<SigningBoxHandle, String>;
     /// Executes action of another debot.
     async fn invoke_debot(&self, debot: String, action: DAction) -> Result<(), String>;
 }
