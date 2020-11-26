@@ -9,7 +9,7 @@ use crate::abi::{
     decode_message_body, encode_message, Abi, AbiConfig, CallSet, DeploySet,
     ParamsOfDecodeMessageBody, ParamsOfEncodeMessage, Signer,
 };
-use crate::crypto::{CryptoConfig, SigningBoxHandle};
+use crate::crypto::{remove_signing_box, CryptoConfig, RegisteredSigningBox, SigningBoxHandle};
 use crate::encoding::decode_abi_number;
 use crate::error::ClientError;
 use crate::net::{query_collection, NetworkConfig, ParamsOfQueryCollection};
@@ -201,7 +201,12 @@ impl DEngine {
                 } else {
                     None
                 };
-                let result = self.run_sendmsg(&a.name, args, signer).await?;
+                let result = self.run_sendmsg(&a.name, args, signer.clone()).await?;
+                let _ = remove_signing_box(
+                    self.ton.clone(),
+                    RegisteredSigningBox {
+                        handle: signer
+                }).await;
                 self.browser.log(format!("Transaction succeeded.")).await;
                 result.map(|r| self.browser.log(format!("Result: {}", r)));
                 Ok(None)
@@ -259,7 +264,12 @@ impl DEngine {
                 } else {
                     None
                 };
-                let res = self.call_routine(&a.name, &args, signer).await?;
+                let res = self.call_routine(&a.name, &args, signer.clone()).await?;
+                let _ = remove_signing_box(
+                    self.ton.clone(),
+                    RegisteredSigningBox {
+                        handle: signer
+                }).await;
                 let setter = a
                     .func_attr()
                     .ok_or("routine callback is not specified".to_owned())?;
