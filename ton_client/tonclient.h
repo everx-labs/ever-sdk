@@ -13,6 +13,8 @@ typedef enum tc_response_types {
     tc_response_success = 0,
     tc_response_error = 1,
     tc_response_nop = 2,
+    tc_response_app_request = 3,
+    tc_response_app_notify = 4,
     tc_response_custom = 100,
 } tc_response_types_t;
 
