@@ -146,6 +146,8 @@ enum tc_response_types_t {
     tc_response_success = 0,
     tc_response_error = 1,
     tc_response_nop = 2,
+    tc_response_app_request = 3,
+    tc_response_app_notify = 4,
     tc_response_custom = 100,
 };
 
@@ -170,9 +172,11 @@ can receive an unlimited count of responses related to single request. Parameter
     - `RESULT = 0`, function result.
     - `ERROR = 1`, function execution error.
     - `NOP = 2`, no operation. In combination with `finished = true` signals that the request handling was finished.
-    - `RESERVED = 3..99` – reserved for protocol internal purposes. Application (or binding) must ignore this response. 
+    - `APP_REQUEST = 3`, request some data from application. See [Application objects](#Application-objects)
+    - `APP_NOTIFY = 4`, notify application with some data. See [Application objects](#Application-objects)
+    - `RESERVED = 5..99` – reserved for protocol internal purposes. Application (or binding) must ignore this response. 
       Nevertheless the binding must check the `finished` flag to release data, associated with request.
-    - `STREAM = 100..` - additional function data related to request handling. Depends on the function.
+    - `CUSTOM = 100..` - additional function data related to request handling. Depends on the function.
 - `finished` – is a signal to release all additional data associated with the request. It is last response for specified 
   request_id.
 
@@ -272,3 +276,20 @@ async function getVersion(context: number): Promise<string> {
     return response.version;
 }
 ```
+
+## Application objects
+
+SDK has some features that require interaction with client applications. Such features are for example, external signing interface - so-called "signing box", and debot. We call them `Application objects`. Such an object can be represented as a set of functions which either return execution result (requests) or not (notifications).
+
+Application object is implemented using a callback passed into `tc_request`. For such case two response types are used: `APP_REQUEST = 3` for requests that require some response from application and `APP_NOTIFY = 4` for notifications with no response needed. When response type is `3`, `params_json` parameter contains serialized structure `ParamsOfAppRequest` 
+
+```tsx
+type ParamsOfAppRequest {
+		app_request_id: number,
+		request_data: any,
+}
+```
+
+Here `request_data` is some data describing the request and `app_request_id` is ID of the request, which should be used for request result resolving. After  the request is processed application should call `client.resolve_app_request` function passing `app_request_id` used in the request and result of processing.
+
+In case if response type is `4`, `params_json` contains serialized notification data without any wrappers. Application processes notification in the way it needs. No response is needed for SDK.

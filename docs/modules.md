@@ -7,7 +7,7 @@
 
 [build_info](mod_client.md#build_info) – Returns detailed information about this build.
 
-[resolve_app_request](mod_client.md#resolve_app_request)
+[resolve_app_request](mod_client.md#resolve_app_request) – Resolves application request processing result
 
 ## [crypto](mod_crypto.md) – Crypto functions.
 

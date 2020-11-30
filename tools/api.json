@@ -260,15 +260,15 @@
               "type": "Number",
               "number_type": "UInt",
               "number_size": 32,
-              "summary": null,
-              "description": null
+              "summary": " Request ID. Should be used in `resolve_app_request` call",
+              "description": " Request ID. Should be used in `resolve_app_request` call"
             },
             {
               "name": "request_data",
               "type": "Ref",
               "ref_name": "Value",
-              "summary": null,
-              "description": null
+              "summary": " Request describing data",
+              "description": " Request describing data"
             }
           ],
           "summary": null,
@@ -285,12 +285,12 @@
                 {
                   "name": "text",
                   "type": "String",
-                  "summary": null,
-                  "description": null
+                  "summary": " Error description",
+                  "description": " Error description"
                 }
               ],
-              "summary": null,
-              "description": null
+              "summary": " Error occured during request processing",
+              "description": " Error occured during request processing"
             },
             {
               "name": "Ok",
@@ -300,12 +300,12 @@
                   "name": "result",
                   "type": "Ref",
                   "ref_name": "Value",
-                  "summary": null,
-                  "description": null
+                  "summary": " Request processing result",
+                  "description": " Request processing result"
                 }
               ],
-              "summary": null,
-              "description": null
+              "summary": " Request processed successfully",
+              "description": " Request processed successfully"
             }
           ],
           "summary": null,
@@ -375,15 +375,15 @@
               "type": "Number",
               "number_type": "UInt",
               "number_size": 32,
-              "summary": null,
-              "description": null
+              "summary": " Request ID received from SDK",
+              "description": " Request ID received from SDK"
             },
             {
               "name": "result",
               "type": "Ref",
               "ref_name": "client.AppRequestResult",
-              "summary": null,
-              "description": null
+              "summary": " Result of request processing",
+              "description": " Result of request processing"
             }
           ],
           "summary": null,
@@ -486,8 +486,8 @@
         },
         {
           "name": "resolve_app_request",
-          "summary": null,
-          "description": null,
+          "summary": " Resolves application request processing result",
+          "description": " Resolves application request processing result",
           "params": [
             {
               "name": "context",

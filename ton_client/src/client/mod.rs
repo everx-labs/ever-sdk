@@ -93,23 +93,36 @@ pub fn build_info(_context: Arc<ClientContext>) -> ClientResult<ResultOfBuildInf
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfAppRequest {
+    /// Request ID. Should be used in `resolve_app_request` call
     pub app_request_id: u32,
+    /// Request describing data
     pub request_data: serde_json::Value,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 #[serde(tag="type")]
 pub enum AppRequestResult {
-    Error { text: String },
-    Ok { result: serde_json::Value }
+    /// Error occured during request processing
+    Error {
+        /// Error description
+        text: String
+    },
+    /// Request processed successfully
+    Ok {
+        /// Request processing result
+        result: serde_json::Value
+    }
 }
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfResolveAppRequest {
+    /// Request ID received from SDK
     pub app_request_id: u32,
+    /// Result of request processing
     pub result: AppRequestResult,
 }
 
+/// Resolves application request processing result
 #[api_function]
 pub async fn resolve_app_request(
     context: std::sync::Arc<ClientContext>,

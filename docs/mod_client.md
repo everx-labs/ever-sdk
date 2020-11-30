@@ -8,7 +8,7 @@
 
 [build_info](#build_info) – Returns detailed information about this build.
 
-[resolve_app_request](#resolve_app_request)
+[resolve_app_request](#resolve_app_request) – Resolves application request processing result
 
 ## Types
 [ClientError](#ClientError)
@@ -89,6 +89,8 @@ function build_info(): Promise<ResultOfBuildInfo>;
 
 ## resolve_app_request
 
+Resolves application request processing result
+
 ```ts
 type ParamsOfResolveAppRequest = {
     app_request_id: number,
@@ -100,8 +102,8 @@ function resolve_app_request(
 ): Promise<void>;
 ```
 ### Parameters
-- `app_request_id`: _number_
-- `result`: _[AppRequestResult](mod_client.md#AppRequestResult)_
+- `app_request_id`: _number_ – Request ID received from SDK
+- `result`: _[AppRequestResult](mod_client.md#AppRequestResult)_ – Result of request processing
 ### Result
 
 
@@ -198,8 +200,8 @@ type ParamsOfAppRequest = {
     request_data: any
 };
 ```
-- `app_request_id`: _number_
-- `request_data`: _any_
+- `app_request_id`: _number_ – Request ID. Should be used in `resolve_app_request` call
+- `request_data`: _any_ – Request describing data
 
 
 ## AppRequestResult
@@ -216,13 +218,17 @@ Depends on value of the  `type` field.
 
 When _type_ is _'Error'_
 
+Error occured during request processing
 
-- `text`: _string_
+
+- `text`: _string_ – Error description
 
 When _type_ is _'Ok'_
 
+Request processed successfully
 
-- `result`: _any_
+
+- `result`: _any_ – Request processing result
 
 
 ## ResultOfGetApiReference
@@ -261,7 +267,7 @@ type ParamsOfResolveAppRequest = {
     result: AppRequestResult
 };
 ```
-- `app_request_id`: _number_
-- `result`: _[AppRequestResult](mod_client.md#AppRequestResult)_
+- `app_request_id`: _number_ – Request ID received from SDK
+- `result`: _[AppRequestResult](mod_client.md#AppRequestResult)_ – Result of request processing
 
 
