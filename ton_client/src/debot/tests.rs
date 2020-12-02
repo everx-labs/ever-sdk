@@ -126,6 +126,10 @@ impl TestBrowser {
         }
 
         assert_eq!(state.next.lock().await.len(), 0);
+
+        let _: () = client.request_async(
+            "debot.remove",
+            handle).await.unwrap();
     }
 
     pub async fn execute(client: Arc<TestClient>, address: String, keys: KeyPair, steps: Vec<DebotStep>) {
