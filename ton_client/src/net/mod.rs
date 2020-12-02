@@ -28,6 +28,7 @@ mod node_client;
 pub(crate) use node_client::{NodeClient, MAX_TIMEOUT};
 pub use node_client::{OrderBy, SortDirection};
 use serde::{Deserialize, Deserializer};
+use serde_json::Value;
 
 #[cfg(test)]
 mod tests;
@@ -133,6 +134,22 @@ impl Default for NetworkConfig {
 }
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
+pub struct ParamsOfQuery {
+    /// GraphQL query text.
+    pub query: String,
+    /// Variables used in query.
+    pub variables: Option<serde_json::Value>,
+    /// Query timeout in ms.
+    pub timeout: Option<u32>,
+}
+
+#[derive(Serialize, Deserialize, ApiType, Clone)]
+pub struct ResultOfQuery {
+    /// Result provided by DAppServer.
+    pub result: Value,
+}
+
+#[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ParamsOfQueryCollection {
     /// Collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
@@ -210,6 +227,30 @@ async fn extract_subscription_handle(handle: &u32) -> Option<Sender<bool>> {
     SUBSCRIPTIONS.lock().await.remove(handle)
 }
 
+/// Performs DAppServer GraphQL query.
+#[api_function]
+pub async fn query(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfQuery,
+) -> ClientResult<ResultOfQuery> {
+    let client = context.get_client()?;
+    let result = client
+        .query(
+            &params.query,
+            params.variables,
+            params.timeout,
+        )
+        .await
+        .map_err(|err| Error::queries_query_failed(err).add_network_url(client))?;
+
+    let result = serde_json::from_value(result).map_err(|err| {
+        Error::queries_query_failed(format!("Can not parse result: {}", err))
+            .add_network_url(client)
+    })?;
+
+    Ok(ResultOfQuery { result })
+}
+
 /// Queries collection data
 ///
 /// Queries data that satisfies the `filter` conditions,
@@ -222,7 +263,7 @@ pub async fn query_collection(
 ) -> ClientResult<ResultOfQueryCollection> {
     let client = context.get_client()?;
     let result = client
-        .query(
+        .query_collection(
             &params.collection,
             &params.filter.unwrap_or(json!({})),
             &params.result,
@@ -324,3 +365,5 @@ pub async fn unsubscribe(
 
     Ok(())
 }
+
+

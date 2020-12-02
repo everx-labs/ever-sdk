@@ -311,6 +311,10 @@ fn register_net(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::net::SortDirection>();
 
     module.register_async_fn(
+        crate::net::query,
+        crate::net::query_api,
+    );
+    module.register_async_fn(
         crate::net::query_collection,
         crate::net::query_collection_api,
     );

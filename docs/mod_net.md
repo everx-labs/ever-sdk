@@ -2,6 +2,8 @@
 
  Network access.
 ## Functions
+[query](#query) – Performs DAppServer GraphQL query.
+
 [query_collection](#query_collection) – Queries collection data
 
 [wait_for_collection](#wait_for_collection) – Returns an object that fulfills the conditions or waits for its appearance
@@ -14,6 +16,10 @@
 [OrderBy](#OrderBy)
 
 [SortDirection](#SortDirection)
+
+[ParamsOfQuery](#ParamsOfQuery)
+
+[ResultOfQuery](#ResultOfQuery)
 
 [ParamsOfQueryCollection](#ParamsOfQueryCollection)
 
@@ -29,6 +35,34 @@
 
 
 # Functions
+## query
+
+Performs DAppServer GraphQL query.
+
+```ts
+type ParamsOfQuery = {
+    query: string,
+    variables?: any,
+    timeout?: number
+};
+
+type ResultOfQuery = {
+    result: any
+};
+
+function query(
+    params: ParamsOfQuery,
+): Promise<ResultOfQuery>;
+```
+### Parameters
+- `query`: _string_ – GraphQL query text.
+- `variables`?: _any_ – Variables used in query.
+- `timeout`?: _number_ – Query timeout in ms.
+### Result
+
+- `result`: _any_ – Result provided by DAppServer.
+
+
 ## query_collection
 
 Queries collection data
@@ -176,6 +210,28 @@ One of the following value:
 
 - `ASC`
 - `DESC`
+
+
+## ParamsOfQuery
+```ts
+type ParamsOfQuery = {
+    query: string,
+    variables?: any,
+    timeout?: number
+};
+```
+- `query`: _string_ – GraphQL query text.
+- `variables`?: _any_ – Variables used in query.
+- `timeout`?: _number_ – Query timeout in ms.
+
+
+## ResultOfQuery
+```ts
+type ResultOfQuery = {
+    result: any
+};
+```
+- `result`: _any_ – Result provided by DAppServer.
 
 
 ## ParamsOfQueryCollection

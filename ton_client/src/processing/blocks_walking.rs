@@ -41,7 +41,7 @@ pub async fn find_last_shard_block(
     // if account resides in masterchain, then starting point is last masterchain block
     // generated before message was sent
     let blocks = client
-        .query(
+        .query_collection(
             BLOCKS_TABLE_NAME,
             &json!({
                 "workchain_id": { "eq": MASTERCHAIN_ID }
@@ -71,7 +71,7 @@ pub async fn find_last_shard_block(
         if blocks[0].is_null() {
             // Node SE case - no masterchain, no sharding. Check that only one shard
             let blocks = client
-                .query(
+                .query_collection(
                     BLOCKS_TABLE_NAME,
                     &json!({
                         "workchain_id": { "eq": workchain },
@@ -101,7 +101,7 @@ pub async fn find_last_shard_block(
 
             // Take last block by seq_no
             let blocks = client
-                .query(
+                .query_collection(
                     BLOCKS_TABLE_NAME,
                     &json!({
                         "workchain_id": { "eq": workchain },
