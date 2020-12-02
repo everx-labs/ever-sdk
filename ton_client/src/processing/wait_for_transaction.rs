@@ -110,7 +110,13 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
                 )
             };
 
-            resolve_error(context.clone(), &address, params.message.clone(), error).await?;
+            resolve_error(
+                context.clone(),
+                &address,
+                params.message.clone(),
+                error,
+                waiting_expiration_time - 1,
+            ).await?;
         }
 
         // We have successfully walked through the block.
