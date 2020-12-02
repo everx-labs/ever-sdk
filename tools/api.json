@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "modules": [
     {
       "name": "client",
@@ -6071,6 +6071,45 @@
           "description": null
         },
         {
+          "name": "ParamsOfQuery",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "query",
+              "type": "String",
+              "summary": " GraphQL query text.",
+              "description": " GraphQL query text."
+            },
+            {
+              "name": "variables",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": " Variables used in query. Must be a map with named values that",
+              "description": " Variables used in query. Must be a map with named values that\n can be used in query."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfQuery",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "result",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": " Result provided by DAppServer.",
+              "description": " Result provided by DAppServer."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfQueryCollection",
           "type": "Struct",
           "struct_fields": [
@@ -6246,6 +6285,44 @@
         }
       ],
       "functions": [
+        {
+          "name": "query",
+          "summary": " Performs DAppServer GraphQL query.",
+          "description": " Performs DAppServer GraphQL query.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfQuery",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "net.ResultOfQuery"
+              }
+            ]
+          },
+          "errors": null
+        },
         {
           "name": "query_collection",
           "summary": " Queries collection data",

@@ -9,6 +9,26 @@ use crate::net::{
 use crate::tests::{TestClient, HELLO};
 
 #[tokio::test(core_threads = 2)]
+async fn query() {
+    let client = TestClient::new();
+
+    let info: ResultOfQuery = client
+        .request_async(
+            "net.query",
+            ParamsOfQuery {
+                query: "query{info{version}}".to_owned(),
+                variables: None,
+            },
+        )
+        .await
+        .unwrap();
+
+    let version = info.result["data"]["info"]["version"].as_str().unwrap();
+    assert_eq!(version.split(".").count(), 3);
+}
+
+
+#[tokio::test(core_threads = 2)]
 async fn block_signatures() {
     let client = TestClient::new();
 
