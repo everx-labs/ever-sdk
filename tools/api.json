@@ -6087,19 +6087,8 @@
                 "type": "Ref",
                 "ref_name": "Value"
               },
-              "summary": " Variables used in query.",
-              "description": " Variables used in query."
-            },
-            {
-              "name": "timeout",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Number",
-                "number_type": "UInt",
-                "number_size": 32
-              },
-              "summary": " Query timeout in ms.",
-              "description": " Query timeout in ms."
+              "summary": " Variables used in query. Must be a map with named values that",
+              "description": " Variables used in query. Must be a map with named values that\n can be used in query."
             }
           ],
           "summary": null,
