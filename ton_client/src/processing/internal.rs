@@ -3,7 +3,7 @@ use crate::abi::{Abi, ParamsOfDecodeMessage};
 use crate::client::ClientContext;
 use crate::error::{ClientError, ClientResult};
 use crate::processing::Error;
-use crate::tvm::{AccountForExecutor, ParamsOfRunExecutor};
+use crate::tvm::{AccountForExecutor, ParamsOfRunExecutor, ExecutionOptions};
 use std::sync::Arc;
 use ton_block::{MsgAddressInt, Serializable};
 use ton_sdk::{Block, MessageId};
@@ -82,6 +82,7 @@ async fn get_local_error(
     context: Arc<ClientContext>,
     address: &MsgAddressInt,
     message: String,
+    time: u32,
 ) -> ClientResult<()> {
     let account = fetch_account(context.clone(), address, "boc").await?;
 
@@ -98,7 +99,10 @@ async fn get_local_error(
                 boc,
                 unlimited_balance: None,
             },
-            execution_options: None,
+            execution_options: Some(ExecutionOptions {
+                block_time: Some(time),
+                ..Default::default()
+            }),
             message,
             skip_transaction_check: None,
         },
@@ -112,8 +116,9 @@ pub(crate) async fn resolve_error(
     address: &MsgAddressInt,
     message: String,
     mut original_error: ClientError,
+    time: u32,
 ) -> ClientResult<()> {
-    let result = get_local_error(context, address, message).await;
+    let result = get_local_error(context, address, message, time).await;
 
     match result {
         Err(err) => {
