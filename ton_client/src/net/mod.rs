@@ -137,10 +137,9 @@ impl Default for NetworkConfig {
 pub struct ParamsOfQuery {
     /// GraphQL query text.
     pub query: String,
-    /// Variables used in query.
+    /// Variables used in query. Must be a map with named values that
+    /// can be used in query.
     pub variables: Option<serde_json::Value>,
-    /// Query timeout in ms.
-    pub timeout: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
@@ -238,7 +237,7 @@ pub async fn query(
         .query(
             &params.query,
             params.variables,
-            params.timeout,
+            None,
         )
         .await
         .map_err(|err| Error::queries_query_failed(err).add_network_url(client))?;

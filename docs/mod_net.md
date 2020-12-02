@@ -42,8 +42,7 @@ Performs DAppServer GraphQL query.
 ```ts
 type ParamsOfQuery = {
     query: string,
-    variables?: any,
-    timeout?: number
+    variables?: any
 };
 
 type ResultOfQuery = {
@@ -56,8 +55,7 @@ function query(
 ```
 ### Parameters
 - `query`: _string_ – GraphQL query text.
-- `variables`?: _any_ – Variables used in query.
-- `timeout`?: _number_ – Query timeout in ms.
+- `variables`?: _any_ – Variables used in query. Must be a map with named values that can be used in query.
 ### Result
 
 - `result`: _any_ – Result provided by DAppServer.
@@ -216,13 +214,11 @@ One of the following value:
 ```ts
 type ParamsOfQuery = {
     query: string,
-    variables?: any,
-    timeout?: number
+    variables?: any
 };
 ```
 - `query`: _string_ – GraphQL query text.
-- `variables`?: _any_ – Variables used in query.
-- `timeout`?: _number_ – Query timeout in ms.
+- `variables`?: _any_ – Variables used in query. Must be a map with named values that can be used in query.
 
 
 ## ResultOfQuery

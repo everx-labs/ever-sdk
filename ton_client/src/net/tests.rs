@@ -18,7 +18,6 @@ async fn query() {
             ParamsOfQuery {
                 query: "query{info{version}}".to_owned(),
                 variables: None,
-                timeout: None,
             },
         )
         .await
