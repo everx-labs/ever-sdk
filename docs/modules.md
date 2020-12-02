@@ -139,6 +139,8 @@
 
 ## [net](mod_net.md) – Network access.
 
+[query](mod_net.md#query) – Performs DAppServer GraphQL query.
+
 [query_collection](mod_net.md#query_collection) – Queries collection data
 
 [wait_for_collection](mod_net.md#wait_for_collection) – Returns an object that fulfills the conditions or waits for its appearance
