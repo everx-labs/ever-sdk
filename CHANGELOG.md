@@ -1,6 +1,11 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## 1.3.0 Dec 8, 2020
+
+### New
+- `query` method in the `net` module. Performs custom graphql query.
+
 ## 1.2.0 Nov 26, 2020
 
 ### Featured
