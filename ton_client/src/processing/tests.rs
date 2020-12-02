@@ -286,6 +286,11 @@ async fn test_process_message() {
 
 #[tokio::test(core_threads = 2)]
 async fn test_error_resolving() {
+    // skip on Node SE since it behaves different to real node
+    if TestClient::node_se() {
+        return;
+    }
+    
     let default_client = TestClient::new();
     let client = TestClient::new_with_config(json!({
         "network": {
@@ -352,7 +357,7 @@ async fn test_error_resolving() {
 
     log::debug!("{:#}", json!(result));
     if TestClient::node_se() {
-        assert_eq!(result.code, TvmErrorCode::AccountCodeMissing as u32);
+        assert_eq!(result.code, TvmErrorCode::AccountMissing as u32);
     } else {
         assert_eq!(result.code, original_code);
         assert_eq!(result.data["local_error"]["code"], TvmErrorCode::AccountMissing as u32);
