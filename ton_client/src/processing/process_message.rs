@@ -72,7 +72,6 @@ pub async fn process_message<F: futures::Future<Output = ()> + Send>(
                     return Err(err);
                 }
                 // Waiting is failed but we can retry
-                try_index
             }
         };
         try_index = try_index.checked_add(1).unwrap_or(try_index);

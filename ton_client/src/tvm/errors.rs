@@ -117,17 +117,21 @@ impl Error {
         if let Some(error_code) = ExceptionCode::from_usize(exit_code as usize)
             .or(ExceptionCode::from_usize(!exit_code as usize))
         {
+            error.message.push_str(&format!(" ({})", error_code));
+            error.data["description"] = error_code.to_string().into();
             if error_code == ExceptionCode::OutOfGas {
                 error.message.push_str(". Check account balance");
             }
-            error.data["description"] = error_code.to_string().into();
         } else if let Some(code) = StdContractError::from_usize(exit_code as usize) {
+            error.message.push_str(&format!(" ({})", code));
+            error.data["description"] = code.to_string().into();
             if let Some(tip) = code.tip() {
                 error.message.push_str(". ");
                 error.message.push_str(tip);
             }
-            error.data["description"] = code.to_string().into();
         }
+
+        error.message.push_str(". For more information about exit code check the contract source code or ask the contract developer");
 
         error
     }
