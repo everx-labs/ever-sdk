@@ -87,6 +87,30 @@ impl<'h> ModuleReg<'h> {
         );
     }
 
+    pub fn register_async_fn_no_args<R, F>(
+        &mut self,
+        handler: fn(context: std::sync::Arc<ClientContext>) -> F,
+        api: fn() -> api_info::Function,
+    ) where
+        R: ApiType + Send + Serialize + 'static,
+        F: Send + Future<Output=ClientResult<R>> + 'static,
+    {
+        self.register_type::<R>();
+        let function = api();
+        let name = format!("{}.{}", self.module.name, function.name);
+        self.module.functions.push(function);
+
+        self.handlers
+            .register_async(name.clone(), Box::new(SpawnNoArgsHandler::new(handler)));
+        #[cfg(not(feature = "wasm"))]
+        self.handlers.register_sync(
+            name,
+            Box::new(CallNoArgsHandler::new(move |context| {
+                context.clone().env.block_on(handler(context))
+            })),
+        );
+    }
+
     pub fn register_async_fn_with_callback<P, R, F>(
         &mut self,
         handler: fn(context: std::sync::Arc<ClientContext>, params: P, callback: Arc<Request>) -> F,
