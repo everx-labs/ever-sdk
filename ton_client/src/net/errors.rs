@@ -11,6 +11,7 @@ pub enum ErrorCode {
     ClockOutOfSync = NET + 6,
     WaitForTimeout = NET + 7,
     GraphqlError = NET + 8,
+    NetworkModuleSuspended = NET + 9,
 }
 pub struct Error;
 
@@ -72,6 +73,13 @@ impl Error {
         error(
             ErrorCode::GraphqlError,
             format!("Graphql server returned error: {}", err),
+        )
+    }
+
+    pub fn network_module_suspended() -> ClientError {
+        error(
+            ErrorCode::NetworkModuleSuspended,
+            "Can not use network module since it is suspended".to_owned(),
         )
     }
 }
