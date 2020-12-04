@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ### New
 - `query` method in the `net` module. Performs custom graphql query.
+- `suspend` and `resume` methods in the `net` module for disabling and enabling network activity
 
 ## 1.2.0 Nov 26, 2020
 
