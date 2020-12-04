@@ -6405,7 +6405,7 @@
           "description": " Cancels a subscription\n\n Cancels a subscription specified by its handle.",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -6482,6 +6482,66 @@
               {
                 "type": "Ref",
                 "ref_name": "net.ResultOfSubscribeCollection"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "suspend",
+          "summary": " Suspends network module to stop any network activity",
+          "description": " Suspends network module to stop any network activity",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "resume",
+          "summary": " Resumes network module to enable network activity",
+          "description": " Resumes network module to enable network activity",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
               }
             ]
           },

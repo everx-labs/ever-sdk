@@ -15,11 +15,7 @@ use crate::client::ClientContext;
 use crate::error::ClientResult;
 use futures::{Future, FutureExt, StreamExt};
 use rand::RngCore;
-use std::collections::HashMap;
-use tokio::sync::{
-    mpsc::{channel, Sender},
-    Mutex,
-};
+use tokio::sync::mpsc::{channel, Sender};
 
 mod errors;
 pub use errors::{Error, ErrorCode};
@@ -214,16 +210,19 @@ pub struct ResultOfSubscription {
     pub result: serde_json::Value,
 }
 
-lazy_static! {
-    static ref SUBSCRIPTIONS: Mutex<HashMap<u32, Sender<bool>>> = Mutex::new(HashMap::new());
+#[derive(PartialEq)]
+pub(crate) enum SubscriptionAction {
+    Suspend,
+    Resume,
+    Finish,
 }
 
-async fn add_subscription_handle(handle: u32, aborter: Sender<bool>) {
-    SUBSCRIPTIONS.lock().await.insert(handle, aborter);
+async fn add_subscription_handle(context: &ClientContext, handle: u32, sender: Sender<SubscriptionAction>) {
+    context.net.subscriptions.lock().await.insert(handle, sender);
 }
 
-async fn extract_subscription_handle(handle: &u32) -> Option<Sender<bool>> {
-    SUBSCRIPTIONS.lock().await.remove(handle)
+async fn extract_subscription_handle(context: &ClientContext, handle: &u32) -> Option<Sender<SubscriptionAction>> {
+    context.net.subscriptions.lock().await.remove(handle)
 }
 
 /// Performs DAppServer GraphQL query.
@@ -308,6 +307,20 @@ pub async fn wait_for_collection(
     Ok(ResultOfWaitForCollection { result })
 }
 
+async fn create_subscription(
+    context: std::sync::Arc<ClientContext>, params: &ParamsOfSubscribeCollection
+) -> ClientResult<node_client::Subscription> {
+    let client = context.get_client()?;
+    client
+        .subscribe(
+            &params.collection,
+            params.filter.as_ref().unwrap_or(&json!({})),
+            &params.result,
+        )
+        .await
+        .map_err(|err| Error::queries_subscribe_failed(err).add_network_url(client))
+}
+
 pub async fn subscribe_collection<F: Future<Output = ()> + Send>(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfSubscribeCollection,
@@ -315,36 +328,65 @@ pub async fn subscribe_collection<F: Future<Output = ()> + Send>(
 ) -> ClientResult<ResultOfSubscribeCollection> {
     let handle = rand::thread_rng().next_u32();
 
-    let client = context.get_client()?;
-    let subscription = client
-        .subscribe(
-            &params.collection,
-            &params.filter.unwrap_or(json!({})),
-            &params.result,
-        )
-        .await
-        .map_err(|err| Error::queries_subscribe_failed(err).add_network_url(client))?;
+    let mut subscription = Some(create_subscription(context.clone(), &params).await?);
 
     let (sender, mut receiver) = channel(1);
 
-    add_subscription_handle(handle, sender).await;
+    add_subscription_handle(&context, handle, sender).await;
 
     // spawn thread which reads subscription stream and calls callback with data
-    context.env.spawn(Box::pin(async move {
-        let wait_abortion = receiver.recv().fuse();
-        futures::pin_mut!(wait_abortion);
-        let mut data_stream = subscription.data_stream.fuse();
-        loop {
-            futures::select!(
-                // waiting next subscription data
-                data = data_stream.select_next_some() => {
-                    callback(data.map(|data| ResultOfSubscription { result: data })).await
-                },
-                // waiting for unsubscribe
-                _ = wait_abortion => break
-            );
+    context.clone().env.spawn(Box::pin(async move {
+        let mut last_action = None;
+        while last_action != Some(SubscriptionAction::Finish) {
+            if last_action != Some(SubscriptionAction::Suspend) {
+                let subscription = subscription.take().unwrap();
+                let mut data_stream = subscription.data_stream.fuse();
+                let wait_action = receiver.recv().fuse();
+                futures::pin_mut!(wait_action);
+                loop {
+                    futures::select!(
+                        // waiting next subscription data
+                        data = data_stream.select_next_some() => {
+                            callback(data.map(|data| ResultOfSubscription { result: data })).await
+                        },
+                        // waiting for some action with subscription
+                        action = wait_action => match action {
+                            None => {
+                                last_action = Some(SubscriptionAction::Finish);
+                                break;
+                            },
+                            Some(SubscriptionAction::Resume) => {},
+                            _ => {
+                                last_action = action;
+                                break;
+                            }
+                        }
+                    );
+                }
+                subscription.unsubscribe.await;
+            }
+            loop {
+                match last_action {
+                    Some(SubscriptionAction::Suspend) => last_action = receiver.recv().await,
+                    Some(SubscriptionAction::Finish) | None => {
+                        last_action = Some(SubscriptionAction::Finish);
+                        break;
+                    }
+                    Some(SubscriptionAction::Resume) => {
+                        let result = create_subscription(context.clone(), &params).await;
+                        match result {
+                            Ok(resumed) => subscription = Some(resumed),
+                            Err(err) => {
+                                callback(Err(err)).await;
+                                last_action = Some(SubscriptionAction::Suspend);
+                            }
+                        }
+                        break;
+                    },
+                }
+            }
         }
-        subscription.unsubscribe.await;
+        
     }));
 
     Ok(ResultOfSubscribeCollection { handle })
@@ -355,14 +397,44 @@ pub async fn subscribe_collection<F: Future<Output = ()> + Send>(
 /// Cancels a subscription specified by its handle.
 #[api_function]
 pub async fn unsubscribe(
-    _context: std::sync::Arc<ClientContext>,
+    context: std::sync::Arc<ClientContext>,
     params: ResultOfSubscribeCollection,
 ) -> ClientResult<()> {
-    if let Some(mut sender) = extract_subscription_handle(&params.handle).await {
-        let _ = sender.send(true);
+    if let Some(mut sender) = extract_subscription_handle(&context, &params.handle).await {
+        let _ = sender.send(SubscriptionAction::Finish);
     }
 
     Ok(())
 }
 
+/// Suspends network module to stop any network activity
+#[api_function]
+pub async fn suspend(
+    context: std::sync::Arc<ClientContext>,
+) -> ClientResult<()> {
+    context.get_client()?.suspend();
 
+    let mut subscriptions = context.net.subscriptions.lock().await;
+
+    for sender in subscriptions.values_mut() {
+        let _ = sender.send(SubscriptionAction::Suspend).await;
+    }
+
+    Ok(())
+}
+
+/// Resumes network module to enable network activity
+#[api_function]
+pub async fn resume(
+    context: std::sync::Arc<ClientContext>,
+) -> ClientResult<()> {
+    context.get_client()?.resume();
+
+    let mut subscriptions = context.net.subscriptions.lock().await;
+
+    for sender in subscriptions.values_mut() {
+        let _ = sender.send(SubscriptionAction::Resume).await;
+    }
+
+    Ok(())
+}

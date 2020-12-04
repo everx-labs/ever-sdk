@@ -21,6 +21,7 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::pin::Pin;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
 
@@ -81,6 +82,7 @@ pub(crate) struct Subscription {
 pub(crate) struct NodeClient {
     config: NetworkConfig,
     client_env: Arc<ClientEnv>,
+    suspended: AtomicBool,
     server_info: tokio::sync::RwLock<Option<ServerInfo>>,
     // TODO: use tokio::sync:RwLock when SDK core is fully async
     query_url: std::sync::RwLock<Option<String>>,
@@ -91,6 +93,7 @@ impl NodeClient {
         NodeClient {
             config,
             client_env,
+            suspended: AtomicBool::new(false),
             query_url: std::sync::RwLock::new(None),
             server_info: tokio::sync::RwLock::new(None),
         }
@@ -196,6 +199,10 @@ impl NodeClient {
     }
 
     async fn ensure_client(&self) -> ClientResult<()> {
+        if self.suspended.load(Ordering::Relaxed) {
+            return Err(Error::network_module_suspended());
+        }
+        
         if self.server_info.read().await.is_some() {
             return Ok(());
         }
@@ -551,5 +558,13 @@ impl NodeClient {
         }
 
         Ok(())
+    }
+
+    pub fn suspend(&self) {
+        self.suspended.store(true, Ordering::Relaxed);
+    }
+
+    pub fn resume(&self) {
+        self.suspended.store(false, Ordering::Relaxed);
     }
 }

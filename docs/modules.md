@@ -149,6 +149,10 @@
 
 [subscribe_collection](mod_net.md#subscribe_collection) – Creates a subscription
 
+[suspend](mod_net.md#suspend) – Suspends network module to stop any network activity
+
+[resume](mod_net.md#resume) – Resumes network module to enable network activity
+
 ## [debot](mod_debot.md) – [UNSTABLE](UNSTABLE.md) Module for working with debot.
 
 [start](mod_debot.md#start) – [UNSTABLE](UNSTABLE.md) Starts an instance of debot.
