@@ -6,7 +6,8 @@
 
 **Documentation**  
 
-[GraphQL API and SDK documentation](https://docs.ton.dev/86757ecb2/p/92b041-overview)
+[API Reference](https://github.com/tonlabs/TON-SDK/blob/master/docs/modules.md)  
+[GraphQL API documentation](https://docs.ton.dev/86757ecb2/p/70a850-introduction)
 
 # What is TONOS Client Library
 
@@ -21,7 +22,7 @@ We ended up with very slow work of pure JavaScript and decided to move all this 
 library and link it to Javascript as a compiled binary including a wasm module for browser 
 applications. 
 
-Also this approach provides an opportunity to easily create bindings for any programming 
+Also this approach provided an opportunity to easily create bindings for any programming 
 language and platform, thus, to make it possible to develop distributed applications (DApps) 
 for any possible use-cases, such as: mobile DApps, web DApps, server-side DApps, enterprise 
 DApp etc.
