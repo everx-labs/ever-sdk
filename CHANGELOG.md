@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 ## 1.3.0 Dec 8, 2020
 
-### New
+### Featured
 - `net.query` method . Performs custom graphql query that can be copied directly from the playground. 
 - `net.suspend` and `net.resume` methods for disabling and enabling network activity. One of the possible use-cases is to manage subscriptions when a mobile application is brought to the background and into the foreground again.
 
