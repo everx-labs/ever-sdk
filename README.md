@@ -30,11 +30,10 @@ DApp etc.
 Client Library exposes all the functionality through a few of exported functions. All 
 interaction with library is performed using JSON-RPC like protocol.
 
-Library works over GraphQL API of [TON OS DApp Server](https://github.com/tonlabs/TON-OS-DApp-Server). 
+Library works over [GraphQL API](https://docs.ton.dev/86757ecb2/p/70a850-introduction) of [TON OS DApp Server](https://github.com/tonlabs/TON-OS-DApp-Server). 
 So, it can be used to interact directly with TON OS Clouds: 
 - [Freeton](https://main.ton.dev/graphql)
 - [Devnet](https://net.ton.dev/graphql)
-- [Testnet](https://testnet.ton.dev/graphql)
 
 # How to use library
 
