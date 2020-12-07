@@ -1,7 +1,6 @@
 # Module abi
 
- Provides message encoding and decoding according to the ABI
- specification.
+null
 ## Functions
 [encode_message_body](#encode_message_body) – Encodes message body according to ABI function call.
 
@@ -109,8 +108,8 @@ function encode_message_body(
 ### Result
 
 - `body`: _string_ – Message body BOC encoded with `base64`.
-- `data_to_sign`?: _string_ – Optional data to sign. Encoded with `base64`.
-<br>Presents when `message` is unsigned. Can be used for external<br>message signing. Is this case you need to sing this data and<br>produce signed message using `abi.attach_signature`.
+- `data_to_sign`?: _string_ – Optional data to sign.
+<br>Encoded with `base64`.<br>Presents when `message` is unsigned. Can be used for external<br>message signing. Is this case you need to sing this data and<br>produce signed message using `abi.attach_signature`.
 
 
 ## attach_signature_to_message_body
@@ -133,9 +132,12 @@ function attach_signature_to_message_body(
 ```
 ### Parameters
 - `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI
-- `public_key`: _string_ – Public key. Must be encoded with `hex`.
-- `message`: _string_ – Unsigned message body BOC. Must be encoded with `base64`.
-- `signature`: _string_ – Signature. Must be encoded with `hex`.
+- `public_key`: _string_ – Public key.
+<br>Must be encoded with `hex`.
+- `message`: _string_ – Unsigned message body BOC.
+<br>Must be encoded with `base64`.
+- `signature`: _string_ – Signature.
+<br>Must be encoded with `hex`.
 ### Result
 
 - `body`: _string_
@@ -406,8 +408,10 @@ type FunctionHeader = {
 };
 ```
 - `expire`?: _number_ – Message expiration time in seconds. If not specified - calculated automatically from message_expiration_timeout(), try_index and message_expiration_timeout_grow_factor() (if ABI includes `expire` header).
-- `time`?: _bigint_ – Message creation time in milliseconds. If not specified, `now` is used (if ABI includes `time` header).
-- `pubkey`?: _string_ – Public key is used by the contract to check the signature. Encoded in `hex`. If not specified, method fails with exception (if ABI includes `pubkey` header)..
+- `time`?: _bigint_ – Message creation time in milliseconds.
+<br>If not specified, `now` is used(if ABI includes `time` header).
+- `pubkey`?: _string_ – Public key is used by the contract to check the signature.
+<br>Encoded in `hex`.If not specified, method fails with exception (if ABI includes `pubkey` header)..
 
 
 ## CallSet
@@ -433,7 +437,8 @@ type DeploySet = {
 };
 ```
 - `tvc`: _string_ – Content of TVC file encoded in `base64`.
-- `workchain_id`?: _number_ – Target workchain for destination address. Default is `0`.
+- `workchain_id`?: _number_ – Target workchain for destination address.
+<br>Default is `0`.
 - `initial_data`?: _any_ – List of initial values for contract's public variables.
 
 
@@ -456,7 +461,9 @@ Depends on value of the  `type` field.
 
 When _type_ is _'None'_
 
-No keys are provided. Creates an unsigned message.
+No keys are provided.
+
+Creates an unsigned message.
 
 
 When _type_ is _'External'_
@@ -525,13 +532,18 @@ When _type_ is _'StateInit'_
 State init data.
 
 
-- `code`: _string_ – Code BOC. Encoded in `base64`.
-- `data`: _string_ – Data BOC. Encoded in `base64`.
-- `library`?: _string_ – Library BOC. Encoded in `base64`.
+- `code`: _string_ – Code BOC.
+<br>Encoded in `base64`.
+- `data`: _string_ – Data BOC.
+<br>Encoded in `base64`.
+- `library`?: _string_ – Library BOC.
+<br>Encoded in `base64`.
 
 When _type_ is _'Tvc'_
 
-Content of the TVC file. Encoded in `base64`.
+Content of the TVC file.
+
+Encoded in `base64`.
 
 
 - `tvc`: _string_
@@ -684,8 +696,8 @@ type ResultOfEncodeMessageBody = {
 };
 ```
 - `body`: _string_ – Message body BOC encoded with `base64`.
-- `data_to_sign`?: _string_ – Optional data to sign. Encoded with `base64`.
-<br>Presents when `message` is unsigned. Can be used for external<br>message signing. Is this case you need to sing this data and<br>produce signed message using `abi.attach_signature`.
+- `data_to_sign`?: _string_ – Optional data to sign.
+<br>Encoded with `base64`.<br>Presents when `message` is unsigned. Can be used for external<br>message signing. Is this case you need to sing this data and<br>produce signed message using `abi.attach_signature`.
 
 
 ## ParamsOfAttachSignatureToMessageBody
@@ -698,9 +710,12 @@ type ParamsOfAttachSignatureToMessageBody = {
 };
 ```
 - `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI
-- `public_key`: _string_ – Public key. Must be encoded with `hex`.
-- `message`: _string_ – Unsigned message body BOC. Must be encoded with `base64`.
-- `signature`: _string_ – Signature. Must be encoded with `hex`.
+- `public_key`: _string_ – Public key.
+<br>Must be encoded with `hex`.
+- `message`: _string_ – Unsigned message body BOC.
+<br>Must be encoded with `base64`.
+- `signature`: _string_ – Signature.
+<br>Must be encoded with `hex`.
 
 
 ## ResultOfAttachSignatureToMessageBody

@@ -1,6 +1,6 @@
 # Module net
 
- Network access.
+null
 ## Functions
 [query](#query) – Performs DAppServer GraphQL query.
 
@@ -55,7 +55,8 @@ function query(
 ```
 ### Parameters
 - `query`: _string_ – GraphQL query text.
-- `variables`?: _any_ – Variables used in query. Must be a map with named values that can be used in query.
+- `variables`?: _any_ – Variables used in query.
+<br>Must be a map with named values thatcan be used in query.
 ### Result
 
 - `result`: _any_ – Result provided by DAppServer.
@@ -150,7 +151,8 @@ function unsubscribe(
 ): Promise<void>;
 ```
 ### Parameters
-- `handle`: _number_ – Subscription handle. Must be closed with `unsubscribe`
+- `handle`: _number_ – Subscription handle.
+<br>Must be closed with `unsubscribe`
 ### Result
 
 
@@ -185,7 +187,8 @@ function subscribe_collection(
 - `result`: _string_ – Projection (result) string
 - `responseHandler`?: _ResponseHandler_ – additional responses handler.### Result
 
-- `handle`: _number_ – Subscription handle. Must be closed with `unsubscribe`
+- `handle`: _number_ – Subscription handle.
+<br>Must be closed with `unsubscribe`
 
 
 # Types
@@ -218,7 +221,8 @@ type ParamsOfQuery = {
 };
 ```
 - `query`: _string_ – GraphQL query text.
-- `variables`?: _any_ – Variables used in query. Must be a map with named values that can be used in query.
+- `variables`?: _any_ – Variables used in query.
+<br>Must be a map with named values thatcan be used in query.
 
 
 ## ResultOfQuery
@@ -286,7 +290,8 @@ type ResultOfSubscribeCollection = {
     handle: number
 };
 ```
-- `handle`: _number_ – Subscription handle. Must be closed with `unsubscribe`
+- `handle`: _number_ – Subscription handle.
+<br>Must be closed with `unsubscribe`
 
 
 ## ParamsOfSubscribeCollection
