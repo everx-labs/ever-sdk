@@ -8,7 +8,7 @@ build = "build.rs"
 
 [lib]
 name = "ton_client"
-crate-type = ["cdylib", "rlib"]
+crate-type = ["cdylib", "rlib", "staticlib"]
 
 [build-dependencies]
 serde = "1.0.117"

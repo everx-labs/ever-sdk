@@ -130,6 +130,8 @@ The resulting binaries are placed to `bin` folder in the gz-compressed format.
 
 Note that the build script generates binaries compatible with the platform used to run the script. For example, if you run it on Mac OS, you get binaries targeted at Darwin (macOS) platform.
 
+**Note**: You need latest version of rust. Upgrade it with `rustup update` command. Check version with `rustc --version`, it should be above or equal to `1.47.0`.
+
 # Download precompiled binaries
 
 Instead of building library yourself, you can download the __latest__ precompiled binaries from 
