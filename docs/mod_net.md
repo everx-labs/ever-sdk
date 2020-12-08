@@ -12,6 +12,10 @@ null
 
 [subscribe_collection](#subscribe_collection) – Creates a subscription
 
+[suspend](#suspend) – Suspends network module to stop any network activity
+
+[resume](#resume) – Resumes network module to enable network activity
+
 ## Types
 [OrderBy](#OrderBy)
 
@@ -189,6 +193,28 @@ function subscribe_collection(
 
 - `handle`: _number_ – Subscription handle.
 <br>Must be closed with `unsubscribe`
+
+
+## suspend
+
+Suspends network module to stop any network activity
+
+```ts
+function suspend(): Promise<void>;
+```
+### Result
+
+
+
+## resume
+
+Resumes network module to enable network activity
+
+```ts
+function resume(): Promise<void>;
+```
+### Result
+
 
 
 # Types
