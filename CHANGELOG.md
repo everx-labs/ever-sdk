@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 ### Featured
 - `net.query` method . Performs custom graphql query that can be copied directly from the playground. 
 - `net.suspend` and `net.resume` methods for disabling and enabling network activity. One of the possible use-cases is to manage subscriptions when a mobile application is brought to the background and into the foreground again.
+- Smart summary and description doc separation.
+- ts-generator includes doc comments in JSDoc format.
 
 ## 1.2.0 Nov 26, 2020
 
