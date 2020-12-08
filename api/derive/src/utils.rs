@@ -295,6 +295,80 @@ fn generic_type_from(
     }
 }
 
+fn replace_tabs(s: &str) -> String {
+    s.split("\t").collect::<Vec<&str>>().join("    ").trim_end().into()
+}
+
+fn get_leading_spaces(s: &str) -> usize {
+    let mut count = 0;
+    while count < s.len() && &s[count..=count] == " " {
+        count += 1;
+    }
+    count
+}
+
+fn reduce_lines(lines: Vec<String>) -> Vec<String> {
+    if lines.is_empty() {
+        return lines;
+    }
+    let mut min_leading_spaces = None;
+    let mut reduced = Vec::new();
+    for line in &lines {
+        let line = replace_tabs(&line);
+        if !line.is_empty() {
+            let leading_spaces = get_leading_spaces(&line);
+            if min_leading_spaces.is_none() || leading_spaces < min_leading_spaces.unwrap() {
+                min_leading_spaces = Some(leading_spaces);
+            }
+        }
+        reduced.push(line);
+    }
+    if min_leading_spaces.is_some() && min_leading_spaces.unwrap() > 0 {
+        for line in &mut reduced {
+            if !line.is_empty() {
+                *line = line[min_leading_spaces.unwrap()..].into();
+            }
+        }
+    }
+    reduced
+}
+
+
+fn get_doc(element_summary: String, element_description: String) -> (String, String) {
+    if element_description.trim().is_empty() {
+        return (element_summary, String::new());
+    }
+    let lines = reduce_lines(element_description.split("\n").map(|s| s.into()).collect());
+    let mut summary = String::new();
+    let mut summary_complete = false;
+    let mut description = String::new();
+    for line in &lines {
+        if summary_complete {
+            if !line.is_empty() || !description.is_empty() {
+                description.push_str(line);
+                description.push_str("\n");
+            }
+        } else if !line.is_empty() {
+            if !summary.is_empty() {
+                summary.push_str(" ");
+            }
+            if let Some(dot_pos) = line.find(". ").or(line.find(".\n")) {
+                summary.push_str(&line[0..(dot_pos + 1)]);
+                summary_complete = true;
+                description.push_str(&line[(dot_pos + 1)..].trim_start());
+            } else {
+                summary.push_str(line);
+            }
+        } else {
+            if !summary.is_empty() {
+                summary_complete = true;
+            }
+        }
+    }
+    (summary, description.trim().into())
+}
+
+
 pub(crate) fn doc_from(attrs: &Vec<Attribute>) -> (Option<String>, Option<String>) {
     let mut summary = String::new();
     let mut description = String::new();
@@ -326,6 +400,7 @@ pub(crate) fn doc_from(attrs: &Vec<Attribute>) -> (Option<String>, Option<String
             Some(s)
         }
     }
+    let (summary, description) = get_doc(summary, description);
     (non_empty(summary), non_empty(description))
 }
 

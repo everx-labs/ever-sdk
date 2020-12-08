@@ -1,6 +1,6 @@
 # Module utils
 
- Misc utility Functions.
+null
 ## Functions
 [convert_address](#convert_address) – Converts address from any TON format to any TON format
 

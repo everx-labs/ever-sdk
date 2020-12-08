@@ -1,6 +1,6 @@
 # Module boc
 
- BOC manipulation module.
+null
 ## Functions
 [parse_message](#parse_message) – Parses message boc into a JSON
 
