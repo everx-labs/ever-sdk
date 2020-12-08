@@ -16,7 +16,7 @@ use serde::{Deserialize, Deserializer, Serialize, de::DeserializeOwned};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::collections::HashMap;
-use tokio::sync::{oneshot, Mutex};
+use tokio::sync::{oneshot, mpsc, Mutex};
 
 use super::{ParamsOfAppRequest, Error, AppRequestResult};
 use crate::error::ClientResult;
@@ -26,7 +26,7 @@ use crate::crypto::boxes::SigningBox;
 use crate::debot::DEngine;
 use crate::json_interface::request::Request;
 use crate::json_interface::interop::ResponseType;
-use crate::net::{NetworkConfig, NodeClient};
+use crate::net::{NetworkConfig, NodeClient, SubscriptionAction};
 
 #[cfg(not(feature = "wasm"))]
 use super::std_client_env::ClientEnv;
@@ -38,8 +38,13 @@ pub struct Boxes {
     pub(crate) signing_boxes: LockfreeMap<u32, Box<dyn SigningBox + Send + Sync>>,
 }
 
-pub struct ClientContext {
+pub struct NetworkContext {
     pub(crate) client: Option<NodeClient>,
+    pub(crate) subscriptions: Mutex<HashMap<u32, mpsc::Sender<SubscriptionAction>>>,
+}
+
+pub struct ClientContext {
+    pub(crate) net: NetworkContext,
     pub(crate) config: ClientConfig,
     pub(crate) env: Arc<ClientEnv>,
     pub(crate) debots: LockfreeMap<u32, Mutex<DEngine>>,
@@ -51,7 +56,7 @@ pub struct ClientContext {
 
 impl ClientContext {
     pub(crate) fn get_client(&self) -> ClientResult<&NodeClient> {
-        self.client.as_ref().ok_or(Error::net_module_not_init())
+        self.net.client.as_ref().ok_or(Error::net_module_not_init())
     }
 
     pub async fn set_timer(&self, ms: u64) -> ClientResult<()> {
@@ -76,7 +81,10 @@ Note that default values are used if parameters are omitted in config"#,
         };
 
         Ok(Self {
-            client,
+            net: NetworkContext {
+                client,
+                subscriptions: Default::default(),
+            },
             config,
             env,
             debots: LockfreeMap::new(),

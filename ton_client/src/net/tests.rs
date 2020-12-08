@@ -6,7 +6,29 @@ use crate::net::{
     ResultOfQueryCollection, ResultOfSubscribeCollection, ResultOfSubscription,
     ResultOfWaitForCollection,
 };
+use crate::processing::ParamsOfProcessMessage;
 use crate::tests::{TestClient, HELLO};
+use tokio::sync::Mutex;
+
+#[tokio::test(core_threads = 2)]
+async fn query() {
+    let client = TestClient::new();
+
+    let info: ResultOfQuery = client
+        .request_async(
+            "net.query",
+            ParamsOfQuery {
+                query: "query{info{version}}".to_owned(),
+                variables: None,
+            },
+        )
+        .await
+        .unwrap();
+
+    let version = info.result["data"]["info"]["version"].as_str().unwrap();
+    assert_eq!(version.split(".").count(), 3);
+}
+
 
 #[tokio::test(core_threads = 2)]
 async fn block_signatures() {
@@ -105,6 +127,7 @@ async fn wait_for() {
 #[tokio::test(core_threads = 2)]
 async fn subscribe_for_transactions_with_addresses() {
     let client = TestClient::new();
+    let subscription_client = TestClient::new();
     let keys = client.generate_sign_keys();
     let deploy_params = ParamsOfEncodeMessage {
         abi: TestClient::abi(HELLO, None),
@@ -113,7 +136,7 @@ async fn subscribe_for_transactions_with_addresses() {
             tvc: TestClient::tvc(HELLO, None),
             workchain_id: None,
         }),
-        signer: Signer::Keys { keys },
+        signer: Signer::Keys { keys: keys.clone() },
         processing_try_index: None,
         address: None,
         call_set: CallSet::some_with_function("constructor"),
@@ -140,7 +163,7 @@ async fn subscribe_for_transactions_with_addresses() {
         }
     };
 
-    let handle: ResultOfSubscribeCollection = client.request_async_callback(
+    let handle: ResultOfSubscribeCollection = subscription_client.request_async_callback(
             "net.subscribe_collection",
             ParamsOfSubscribeCollection {
                 collection: "transactions".to_owned(),
@@ -152,16 +175,59 @@ async fn subscribe_for_transactions_with_addresses() {
             },
             callback
         ).await.unwrap();
-    client.deploy_with_giver_async(deploy_params, None).await;
+    
+    // send grams to create first transaction
+    client.get_grams_from_giver_async(&msg.address, None).await;
 
     // give some time for subscription to receive all data
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
+    // suspend subscription
+    let _: () = subscription_client.request_async("net.suspend", ()).await.unwrap();
+
+    // deploy to create second transaction
+    client.net_process_message(
+        ParamsOfProcessMessage {
+            message_encode_params: deploy_params,
+            send_events: false,
+        },
+        TestClient::default_callback
+    ).await.unwrap();
+
+    // check that second transaction is not received when subscription suspended
+    {
+        let transactions = transactions.lock().await;
+        assert_eq!(transactions.len(), 1);
+    }
+
+    // resume subscription
+    let _: () = subscription_client.request_async("net.resume", ()).await.unwrap();
+
+    // run contract function to create third transaction
+    client.net_process_message(
+        ParamsOfProcessMessage {
+            message_encode_params: ParamsOfEncodeMessage {
+                abi: TestClient::abi(HELLO, None),
+                deploy_set: None,
+                signer: Signer::Keys { keys },
+                processing_try_index: None,
+                address: Some(msg.address),
+                call_set: CallSet::some_with_function("touch"),
+            },
+            send_events: false,
+        },
+        TestClient::default_callback
+    ).await.unwrap();
+
+    // give some time for subscription to receive all data
+    std::thread::sleep(std::time::Duration::from_millis(1000));
+
+    // check that third transaction is now received after resume
     let transactions = transactions.lock().await;
     assert_eq!(transactions.len(), 2);
     assert_ne!(transactions[0]["id"], transactions[1]["id"]);
 
-    let _: () = client
+    let _: () = subscription_client
         .request_async("net.unsubscribe", handle)
         .await
         .unwrap();

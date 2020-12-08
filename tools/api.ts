@@ -143,6 +143,11 @@ export type ApiError = {
     data?: any,
 }
 
+export type Documented = {
+    summary?: string,
+    description?: string,
+}
+
 export function parseApi(json: any): Api {
     const api: Api = json;
     const types = new Map<string, ApiField>();
@@ -305,15 +310,15 @@ export abstract class Code {
 
     abstract module(module: ApiModule): string;
 
-    abstract field(field: ApiField, indent: string): string;
+    abstract field(field: ApiField, indent: string, includeDoc?: boolean): string;
 
-    abstract typeVariant(variant: ApiField, indent: string): string;
+    abstract typeVariant(variant: ApiField, indent: string, includeDoc?: boolean): string;
 
-    abstract constVariant(variant: ApiConst): string;
+    abstract constVariant(variant: ApiConst, includeDoc?: boolean): string;
 
-    abstract type(type: ApiType, indent: string): string;
+    abstract type(type: ApiType, indent: string, includeDoc?: boolean): string;
 
-    abstract typeDef(type: ApiField): string;
+    abstract typeDef(type: ApiField, includeDoc?: boolean): string;
 
     abstract functionImpl(func: ApiFunction): string;
 

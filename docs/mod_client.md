@@ -1,6 +1,6 @@
 # Module client
 
- Provides information about library.
+null
 ## Functions
 [get_api_reference](#get_api_reference) – Returns Core Library API reference
 
@@ -189,7 +189,8 @@ type BuildInfoDependency = {
     git_commit: string
 };
 ```
-- `name`: _string_ – Dependency name. Usually it is a crate name.
+- `name`: _string_ – Dependency name.
+<br>Usually it is a crate name.
 - `git_commit`: _string_ – Git commit hash of the related repository.
 
 
@@ -200,7 +201,8 @@ type ParamsOfAppRequest = {
     request_data: any
 };
 ```
-- `app_request_id`: _number_ – Request ID. Should be used in `resolve_app_request` call
+- `app_request_id`: _number_ – Request ID.
+<br>Should be used in `resolve_app_request` call
 - `request_data`: _any_ – Request describing data
 
 

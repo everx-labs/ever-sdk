@@ -139,6 +139,8 @@
 
 ## [net](mod_net.md) – Network access.
 
+[query](mod_net.md#query) – Performs DAppServer GraphQL query.
+
 [query_collection](mod_net.md#query_collection) – Queries collection data
 
 [wait_for_collection](mod_net.md#wait_for_collection) – Returns an object that fulfills the conditions or waits for its appearance
@@ -146,6 +148,10 @@
 [unsubscribe](mod_net.md#unsubscribe) – Cancels a subscription
 
 [subscribe_collection](mod_net.md#subscribe_collection) – Creates a subscription
+
+[suspend](mod_net.md#suspend) – Suspends network module to stop any network activity
+
+[resume](mod_net.md#resume) – Resumes network module to enable network activity
 
 ## [debot](mod_debot.md) – [UNSTABLE](UNSTABLE.md) Module for working with debot.
 

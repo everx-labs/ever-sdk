@@ -311,6 +311,10 @@ fn register_net(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::net::SortDirection>();
 
     module.register_async_fn(
+        crate::net::query,
+        crate::net::query_api,
+    );
+    module.register_async_fn(
         crate::net::query_collection,
         crate::net::query_collection_api,
     );
@@ -323,6 +327,8 @@ fn register_net(handlers: &mut RuntimeHandlers) {
         super::net::subscribe_collection,
         super::net::subscribe_collection_api,
     );
+    module.register_async_fn_no_args(crate::net::suspend, crate::net::suspend_api);
+    module.register_async_fn_no_args(crate::net::resume, crate::net::resume_api);
     module.register();
 }
 

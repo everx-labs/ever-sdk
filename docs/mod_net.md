@@ -1,7 +1,9 @@
 # Module net
 
- Network access.
+null
 ## Functions
+[query](#query) – Performs DAppServer GraphQL query.
+
 [query_collection](#query_collection) – Queries collection data
 
 [wait_for_collection](#wait_for_collection) – Returns an object that fulfills the conditions or waits for its appearance
@@ -10,10 +12,18 @@
 
 [subscribe_collection](#subscribe_collection) – Creates a subscription
 
+[suspend](#suspend) – Suspends network module to stop any network activity
+
+[resume](#resume) – Resumes network module to enable network activity
+
 ## Types
 [OrderBy](#OrderBy)
 
 [SortDirection](#SortDirection)
+
+[ParamsOfQuery](#ParamsOfQuery)
+
+[ResultOfQuery](#ResultOfQuery)
 
 [ParamsOfQueryCollection](#ParamsOfQueryCollection)
 
@@ -29,6 +39,33 @@
 
 
 # Functions
+## query
+
+Performs DAppServer GraphQL query.
+
+```ts
+type ParamsOfQuery = {
+    query: string,
+    variables?: any
+};
+
+type ResultOfQuery = {
+    result: any
+};
+
+function query(
+    params: ParamsOfQuery,
+): Promise<ResultOfQuery>;
+```
+### Parameters
+- `query`: _string_ – GraphQL query text.
+- `variables`?: _any_ – Variables used in query.
+<br>Must be a map with named values thatcan be used in query.
+### Result
+
+- `result`: _any_ – Result provided by DAppServer.
+
+
 ## query_collection
 
 Queries collection data
@@ -118,7 +155,8 @@ function unsubscribe(
 ): Promise<void>;
 ```
 ### Parameters
-- `handle`: _number_ – Subscription handle. Must be closed with `unsubscribe`
+- `handle`: _number_ – Subscription handle.
+<br>Must be closed with `unsubscribe`
 ### Result
 
 
@@ -153,7 +191,30 @@ function subscribe_collection(
 - `result`: _string_ – Projection (result) string
 - `responseHandler`?: _ResponseHandler_ – additional responses handler.### Result
 
-- `handle`: _number_ – Subscription handle. Must be closed with `unsubscribe`
+- `handle`: _number_ – Subscription handle.
+<br>Must be closed with `unsubscribe`
+
+
+## suspend
+
+Suspends network module to stop any network activity
+
+```ts
+function suspend(): Promise<void>;
+```
+### Result
+
+
+
+## resume
+
+Resumes network module to enable network activity
+
+```ts
+function resume(): Promise<void>;
+```
+### Result
+
 
 
 # Types
@@ -176,6 +237,27 @@ One of the following value:
 
 - `ASC`
 - `DESC`
+
+
+## ParamsOfQuery
+```ts
+type ParamsOfQuery = {
+    query: string,
+    variables?: any
+};
+```
+- `query`: _string_ – GraphQL query text.
+- `variables`?: _any_ – Variables used in query.
+<br>Must be a map with named values thatcan be used in query.
+
+
+## ResultOfQuery
+```ts
+type ResultOfQuery = {
+    result: any
+};
+```
+- `result`: _any_ – Result provided by DAppServer.
 
 
 ## ParamsOfQueryCollection
@@ -234,7 +316,8 @@ type ResultOfSubscribeCollection = {
     handle: number
 };
 ```
-- `handle`: _number_ – Subscription handle. Must be closed with `unsubscribe`
+- `handle`: _number_ – Subscription handle.
+<br>Must be closed with `unsubscribe`
 
 
 ## ParamsOfSubscribeCollection

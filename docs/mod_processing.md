@@ -1,9 +1,7 @@
 # Module processing
 
- Message processing module.
-
- This module incorporates functions related to complex message
- processing scenarios.
+This module incorporates functions related to complex message
+processing scenarios.
 ## Functions
 [send_message](#send_message) – Sends message to the network
 
@@ -114,7 +112,8 @@ function wait_for_transaction(
 ### Parameters
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Optional ABI for decoding the transaction result.
 <br>If it is specified, then the output messages' bodies will be<br>decoded according to this ABI.<br><br>The `abi_decoded` result field will be filled out.
-- `message`: _string_ – Message BOC. Encoded with `base64`.
+- `message`: _string_ – Message BOC.
+<br>Encoded with `base64`.
 - `shard_block_id`: _string_ – The last generated block id of the destination account shard before the message was sent.
 <br>You must provide the same value as the `send_message` has returned.
 - `send_events`: _boolean_ – Flag that enables/disables intermediate events
@@ -122,7 +121,8 @@ function wait_for_transaction(
 
 - `transaction`: _any_ – Parsed transaction.
 <br>In addition to the regular transaction fields there is a<br>`boc` field encoded with `base64` which contains source<br>transaction BOC.
-- `out_messages`: _string[]_ – List of output messages' BOCs. Encoded as `base64`
+- `out_messages`: _string[]_ – List of output messages' BOCs.
+<br>Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
 - `fees`: _[TransactionFees](mod_tvm.md#TransactionFees)_ – Transaction fees
 
@@ -176,7 +176,8 @@ function process_message(
 
 - `transaction`: _any_ – Parsed transaction.
 <br>In addition to the regular transaction fields there is a<br>`boc` field encoded with `base64` which contains source<br>transaction BOC.
-- `out_messages`: _string[]_ – List of output messages' BOCs. Encoded as `base64`
+- `out_messages`: _string[]_ – List of output messages' BOCs.
+<br>Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
 - `fees`: _[TransactionFees](mod_tvm.md#TransactionFees)_ – Transaction fees
 
@@ -323,7 +324,8 @@ type ResultOfProcessMessage = {
 ```
 - `transaction`: _any_ – Parsed transaction.
 <br>In addition to the regular transaction fields there is a<br>`boc` field encoded with `base64` which contains source<br>transaction BOC.
-- `out_messages`: _string[]_ – List of output messages' BOCs. Encoded as `base64`
+- `out_messages`: _string[]_ – List of output messages' BOCs.
+<br>Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
 - `fees`: _[TransactionFees](mod_tvm.md#TransactionFees)_ – Transaction fees
 
@@ -375,7 +377,8 @@ type ParamsOfWaitForTransaction = {
 ```
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Optional ABI for decoding the transaction result.
 <br>If it is specified, then the output messages' bodies will be<br>decoded according to this ABI.<br><br>The `abi_decoded` result field will be filled out.
-- `message`: _string_ – Message BOC. Encoded with `base64`.
+- `message`: _string_ – Message BOC.
+<br>Encoded with `base64`.
 - `shard_block_id`: _string_ – The last generated block id of the destination account shard before the message was sent.
 <br>You must provide the same value as the `send_message` has returned.
 - `send_events`: _boolean_ – Flag that enables/disables intermediate events

@@ -21,6 +21,7 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::pin::Pin;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
 
@@ -74,13 +75,14 @@ struct ServerInfo {
 }
 
 pub(crate) struct Subscription {
-    pub unsubscribe: Pin<Box<dyn Future<Output = ()> + Send>>,
-    pub data_stream: Pin<Box<dyn Stream<Item = ClientResult<Value>> + Send>>,
+    pub unsubscribe: Pin<Box<dyn Future<Output=()> + Send>>,
+    pub data_stream: Pin<Box<dyn Stream<Item=ClientResult<Value>> + Send>>,
 }
 
 pub(crate) struct NodeClient {
     config: NetworkConfig,
     client_env: Arc<ClientEnv>,
+    suspended: AtomicBool,
     server_info: tokio::sync::RwLock<Option<ServerInfo>>,
     // TODO: use tokio::sync:RwLock when SDK core is fully async
     query_url: std::sync::RwLock<Option<String>>,
@@ -91,6 +93,7 @@ impl NodeClient {
         NodeClient {
             config,
             client_env,
+            suspended: AtomicBool::new(false),
             query_url: std::sync::RwLock::new(None),
             server_info: tokio::sync::RwLock::new(None),
         }
@@ -196,6 +199,10 @@ impl NodeClient {
     }
 
     async fn ensure_client(&self) -> ClientResult<()> {
+        if self.suspended.load(Ordering::Relaxed) {
+            return Err(Error::network_module_suspended());
+        }
+        
         if self.server_info.read().await.is_some() {
             return Ok(());
         }
@@ -262,7 +269,7 @@ impl NodeClient {
                                 return Some(Err(Error::invalid_server_response(format!(
                                     "Subscription answer is not a valid JSON: {}\n{}",
                                     err, value
-                                ))))
+                                ))));
                             }
                             Ok(value) => value,
                         };
@@ -307,7 +314,7 @@ impl NodeClient {
                 "variables": request.variables,
             }
         })
-        .to_string();
+            .to_string();
         websocket.sender.send(request).await?;
 
         let mut sender = websocket.sender;
@@ -319,7 +326,7 @@ impl NodeClient {
                         "type": "stop",
                         "payload": {}
                     })
-                    .to_string(),
+                        .to_string(),
                 )
                 .await;
         };
@@ -364,7 +371,7 @@ impl NodeClient {
             "query": request.query,
             "variables": request.variables,
         })
-        .to_string();
+            .to_string();
 
         let mut headers = HashMap::new();
         headers.insert("content-type".to_owned(), "application/json".to_owned());
@@ -390,7 +397,7 @@ impl NodeClient {
     }
 
     // Returns Stream with GraphQL query answer
-    pub async fn query(
+    pub async fn query_collection(
         &self,
         table: &str,
         filter: &Value,
@@ -419,6 +426,23 @@ impl NodeClient {
         }
     }
 
+    // Returns GraphQL query answer
+    pub async fn query(
+        &self,
+        query: &str,
+        variables: Option<Value>,
+        timeout: Option<u32>,
+    ) -> ClientResult<Value> {
+        let query = VariableRequest {
+            query: query.into(),
+            variables: variables.unwrap_or(json!({})),
+        };
+        self.ensure_client().await?;
+        let client_lock = self.server_info.read().await;
+        let address = &client_lock.as_ref().unwrap().query_url;
+        Ok(self.query_vars(address, query, timeout).await?)
+    }
+
     // Executes GraphQL query, waits for result and returns recieved value
     pub async fn wait_for(
         &self,
@@ -428,7 +452,7 @@ impl NodeClient {
         timeout: Option<u32>,
     ) -> ClientResult<Value> {
         let value = self
-            .query(
+            .query_collection(
                 table,
                 filter,
                 fields,
@@ -534,5 +558,13 @@ impl NodeClient {
         }
 
         Ok(())
+    }
+
+    pub fn suspend(&self) {
+        self.suspended.store(true, Ordering::Relaxed);
+    }
+
+    pub fn resume(&self) {
+        self.suspended.store(false, Ordering::Relaxed);
     }
 }
