@@ -1,6 +1,11 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## 1.4.0 Dec 11, 2020
+
+### New
+- GraphQL optimization: use single web socket to serve all subscriptions. 
+
 ## 1.3.0 Dec 8, 2020
 
 ### Featured
