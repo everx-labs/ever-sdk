@@ -41,7 +41,10 @@ pub struct ResultOfRunGet {
     pub output: Value,
 }
 
-/// Executes getmethod and returns data from TVM stack
+/// Executes a getmethod of FIFT contract 
+/// 
+/// Executes a getmethod of FIFT contract that fulfills the smc-guidelines https://test.ton.org/smc-guidelines.txt
+/// and returns the result data from TVM's stack
 
 #[api_function]
 pub async fn run_get(
