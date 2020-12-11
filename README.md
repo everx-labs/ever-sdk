@@ -55,22 +55,24 @@ List of known bindings:
 - [ton-actions/ton-client-dotnet](https://github.com/ton-actions/ton-client-dotnet)
 - [vcvetkovs/TonSdk](https://github.com/vcvetkovs/TonSdk)
 - [staszx/Ton.Sdk](https://github.com/staszx/Ton.Sdk)
-
 ### PHP
 - [extraton/php-ton-client](https://github.com/extraton/php-ton-client)
 - [radianceteam/ton-client-php](https://github.com/radianceteam/ton-client-php)
-
 ### Ruby
 - [radianceteam/ton-client-ruby](https://github.com/radianceteam/ton-client-ruby)
 - [nerzh/ton-client-ruby](https://github.com/nerzh/ton-client-ruby)
-
 ### Java
 - [radianceteam/ton-client-java](https://github.com/radianceteam/ton-client-java)
-
 ### Dart
 - [freetonsurfer/ton_client_dart](https://github.com/freetonsurfer/ton_client_dart)
-
-### 
+### Golang
+- [radianceteam/ton-client-go](https://github.com/radianceteam/ton-client-go)
+- [move-ton/ton-client-go](https://github.com/move-ton/ton-client-go)
+### Swift
+- [nerzh/ton-client-swift](https://github.com/nerzh/ton-client-swift)
+### Scala
+- [slavaschmidt/ton-sdk-client-scala-binding/](https://github.com/slavaschmidt/ton-sdk-client-scala-binding/)
+- [radianceteam/ton-client-scala](https://github.com/radianceteam/ton-client-scala)
 
 # How to use library
 
