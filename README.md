@@ -35,6 +35,29 @@ So, it can be used to interact directly with TON OS Clouds:
 - [Freeton](https://main.ton.dev/graphql)
 - [Devnet](https://net.ton.dev/graphql)
 
+# Bindings
+
+Binding is a thin client library written on the specific language that acts like a bridge between 
+a client library and an application code written on that language.
+
+List of known bindings:
+- [Web binding](https://github.com/tonlabs/ton-client-js)  
+- [Node.js binding](https://github.com/tonlabs/ton-client-js)  
+- [React-native binding](https://github.com/tonlabs/ton-client-js)  
+
+## Communinty bindings
+### Typescript 
+- [RSquad/ton-client-ts](https://github.com/RSquad/ton-client-ts)
+### Python
+- [move-ton/ton-client-py](https://github.com/move-ton/ton-client-py)
+### .NET
+- [radianceteam/ton-client-dotnet](https://github.com/radianceteam/ton-client-dotnet)
+- [ton-actions/ton-client-dotnet](https://github.com/ton-actions/ton-client-dotnet)
+- [vcvetkovs/TonSdk](https://github.com/vcvetkovs/TonSdk)
+- [staszx/Ton.Sdk](https://github.com/staszx/Ton.Sdk)
+
+### PHP
+
 # How to use library
 
 The simplest way is to use library in then Rust applications because of the native Rust library 
@@ -106,15 +129,7 @@ oo(ParamsOfFoo {
 For all Ton Client API structures `Default` trait is implemented.
 
 
-# Bindings
 
-Binding is a thin client library written on the specific language that acts like a bridge between 
-a client library and an application code written on that language.
-
-List of known bindings:
-- [Web binding](https://github.com/tonlabs/ton-client-js)  
-- [Node.js binding](https://github.com/tonlabs/ton-client-js)  
-- [React-native binding](https://github.com/tonlabs/ton-client-js)  
 
 # Build client library
 
