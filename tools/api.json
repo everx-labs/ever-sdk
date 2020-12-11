@@ -6489,8 +6489,8 @@
         },
         {
           "name": "suspend",
-          "summary": " Suspends network module to stop any network activity",
-          "description": " Suspends network module to stop any network activity",
+          "summary": "Suspends network module to stop any network activity",
+          "description": null,
           "params": [
             {
               "name": "context",
@@ -6519,8 +6519,8 @@
         },
         {
           "name": "resume",
-          "summary": " Resumes network module to enable network activity",
-          "description": " Resumes network module to enable network activity",
+          "summary": "Resumes network module to enable network activity",
+          "description": null,
           "params": [
             {
               "name": "context",

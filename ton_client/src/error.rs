@@ -53,7 +53,7 @@ impl ClientError {
         }
     }
 
-    pub(crate) fn add_network_url(mut self, client: &crate::net::NodeClient) -> ClientError {
+    pub(crate) fn add_network_url(mut self, client: &crate::net::ServerLink) -> ClientError {
         self.data["config_server"] = client.config_server().into();
 
         if let Some(url) = client.query_url() {
