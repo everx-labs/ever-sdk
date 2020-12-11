@@ -57,6 +57,20 @@ List of known bindings:
 - [staszx/Ton.Sdk](https://github.com/staszx/Ton.Sdk)
 
 ### PHP
+- [extraton/php-ton-client](https://github.com/extraton/php-ton-client)
+- [radianceteam/ton-client-php](https://github.com/radianceteam/ton-client-php)
+
+### Ruby
+- [radianceteam/ton-client-ruby](https://github.com/radianceteam/ton-client-ruby)
+- [nerzh/ton-client-ruby](https://github.com/nerzh/ton-client-ruby)
+
+### Java
+- [radianceteam/ton-client-java](https://github.com/radianceteam/ton-client-java)
+
+### Dart
+- [freetonsurfer/ton_client_dart](https://github.com/freetonsurfer/ton_client_dart)
+
+### 
 
 # How to use library
 
