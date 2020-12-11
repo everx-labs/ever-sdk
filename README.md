@@ -40,39 +40,27 @@ So, it can be used to interact directly with TON OS Clouds:
 Binding is a thin client library written on the specific language that acts like a bridge between 
 a client library and an application code written on that language.
 
-List of known bindings:
-- [Web binding](https://github.com/tonlabs/ton-client-js)  
-- [Node.js binding](https://github.com/tonlabs/ton-client-js)  
-- [React-native binding](https://github.com/tonlabs/ton-client-js)  
+## Official Typescript binding
+Platforms: Node.js, Web, React-Native for IOS/Android
+- [ton-client-js](https://github.com/tonlabs/ton-client-js)  
 
 ## Communinty bindings
-### Typescript 
-- [RSquad/ton-client-ts](https://github.com/RSquad/ton-client-ts)
-### Python
-- [move-ton/ton-client-py](https://github.com/move-ton/ton-client-py)
-### .NET
-- [radianceteam/ton-client-dotnet](https://github.com/radianceteam/ton-client-dotnet)
-- [ton-actions/ton-client-dotnet](https://github.com/ton-actions/ton-client-dotnet)
-- [vcvetkovs/TonSdk](https://github.com/vcvetkovs/TonSdk)
-- [staszx/Ton.Sdk](https://github.com/staszx/Ton.Sdk)
-### PHP
-- [extraton/php-ton-client](https://github.com/extraton/php-ton-client)
-- [radianceteam/ton-client-php](https://github.com/radianceteam/ton-client-php)
-### Ruby
-- [radianceteam/ton-client-ruby](https://github.com/radianceteam/ton-client-ruby)
-- [nerzh/ton-client-ruby](https://github.com/nerzh/ton-client-ruby)
-### Java
-- [radianceteam/ton-client-java](https://github.com/radianceteam/ton-client-java)
-### Dart
-- [freetonsurfer/ton_client_dart](https://github.com/freetonsurfer/ton_client_dart)
-### Golang
-- [radianceteam/ton-client-go](https://github.com/radianceteam/ton-client-go)
-- [move-ton/ton-client-go](https://github.com/move-ton/ton-client-go)
-### Swift
-- [nerzh/ton-client-swift](https://github.com/nerzh/ton-client-swift)
-### Scala
-- [slavaschmidt/ton-sdk-client-scala-binding/](https://github.com/slavaschmidt/ton-sdk-client-scala-binding/)
-- [radianceteam/ton-client-scala](https://github.com/radianceteam/ton-client-scala)
+
+Language | Repo
+-------- | --------------
+Closure | [serge-medvedev/tonos-client-clojure](https://github.com/serge-medvedev/tonos-client-clojure)
+Dart | [freetonsurfer/ton_client_dart](https://github.com/freetonsurfer/ton_client_dart)
+Golang | [radianceteam/ton-client-go](https://github.com/radianceteam/ton-client-go) <br> [move-ton/ton-client-go](https://github.com/move-ton/ton-client-go)
+Java | [radianceteam/ton-client-java](https://github.com/radianceteam/ton-client-java)
+Kotlin | [mdorofeev/ton-client-kotlin](https://github.com/mdorofeev/ton-client-kotlin)
+Lua | [serge-medvedev/tonos-client-lua](https://github.com/serge-medvedev/tonos-client-lua)
+.NET |  [radianceteam/ton-client-dotnet](https://github.com/radianceteam/ton-client-dotnet) <br>  [ton-actions/ton-client-dotnet](https://github.com/ton-actions/ton-client-dotnet) <br> [vcvetkovs/TonSdk](https://github.com/vcvetkovs/TonSdk) <br> [staszx/Ton.Sdk](https://github.com/staszx/Ton.Sdk)
+PHP | [extraton/php-ton-client](https://github.com/extraton/php-ton-client) <br> [radianceteam/ton-client-php](https://github.com/radianceteam/ton-client-php)
+Python | [move-ton/ton-client-py](https://github.com/move-ton/ton-client-py)
+Ruby | [radianceteam/ton-client-ruby](https://github.com/radianceteam/ton-client-ruby) <br> [nerzh/ton-client-ruby](https://github.com/nerzh/ton-client-ruby)
+Scala | [slavaschmidt/ton-sdk-client-scala-binding/](https://github.com/slavaschmidt/ton-sdk-client-scala-binding/) <br> [radianceteam/ton-client-scala](https://github.com/radianceteam/ton-client-scala)
+Swift | [nerzh/ton-client-swift](https://github.com/nerzh/ton-client-swift)
+Typescript | [RSquad/ton-client-ts](https://github.com/RSquad/ton-client-ts)
 
 # How to use library
 
