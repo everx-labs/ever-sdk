@@ -438,3 +438,31 @@ pub async fn resume(
 
     Ok(())
 }
+
+#[derive(Serialize, Deserialize, ApiType, Clone)]
+pub struct ParamsOfFindLastShardBlock {
+    /// Account address
+    pub address: String,
+}
+
+#[derive(Serialize, Deserialize, ApiType, Clone)]
+pub struct ResultOfFindLastShardBlock {
+    /// Account shard last block ID
+    pub block_id: String,
+}
+
+/// Returns ID of the last block in a specified account shard
+#[api_function]
+pub async fn find_last_shard_block(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfFindLastShardBlock,
+) -> ClientResult<ResultOfFindLastShardBlock> {
+    let address = crate::encoding::account_decode(&params.address)?;
+
+    let block_id = crate::processing::blocks_walking::find_last_shard_block(&context, &address)
+        .await?;
+
+    Ok(ResultOfFindLastShardBlock {
+        block_id: block_id.to_string()
+    })
+}
