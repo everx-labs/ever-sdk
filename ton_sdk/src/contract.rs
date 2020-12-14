@@ -22,8 +22,9 @@ use std::convert::Into;
 use std::io::{Cursor, Read, Seek};
 use ton_abi::json_abi::DecodedMessage;
 use ton_block::{
-    AccountIdPrefixFull, Deserializable, ExternalInboundMessageHeader, GetRepresentationHash,
-    Message as TvmMessage, MsgAddressInt, Serializable, ShardIdent, StateInit,
+    AccountIdPrefixFull, Deserializable, ExternalInboundMessageHeader, InternalMessageHeader,
+    GetRepresentationHash, Message as TvmMessage, MsgAddressInt, Serializable, ShardIdent, StateInit,
+    CurrencyCollection
 };
 use ton_types::cells_serialization::deserialize_cells_tree;
 use ton_types::{error, AccountId, Result, SliceData};
@@ -500,11 +501,21 @@ impl Contract {
         })
     }
 
-    fn create_message(address: MsgAddressInt, msg_body: SliceData) -> Result<TvmMessage> {
+    pub fn create_message(address: MsgAddressInt, msg_body: SliceData) -> Result<TvmMessage> {
         let mut msg_header = ExternalInboundMessageHeader::default();
         msg_header.dst = address;
 
         let mut msg = TvmMessage::with_ext_in_header(msg_header);
+        msg.set_body(msg_body);
+
+        Ok(msg)
+    }
+
+    pub fn create_internal_message(src: MsgAddressInt, dst: MsgAddressInt,
+                                   msg_body: SliceData, grams: u64) -> Result<TvmMessage> {
+        let msg_header =
+            InternalMessageHeader::with_addresses(src, dst, CurrencyCollection::with_grams(grams));
+        let mut msg = TvmMessage::with_int_header(msg_header);
         msg.set_body(msg_body);
 
         Ok(msg)

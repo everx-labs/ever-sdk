@@ -15,7 +15,13 @@ mod action;
 mod browser;
 mod context;
 mod debot_abi;
+mod cpp_debot_abi;
 mod dengine;
+mod cpprun;
+mod cpp_browser;
+mod cpp_console;
+mod console_abi;
+mod multisig_abi;
 mod errors;
 mod routines;
 mod run_output;
@@ -24,8 +30,10 @@ mod run_output;
 
 pub use action::DAction;
 pub use browser::BrowserCallbacks;
+pub use cpp_browser::CppBrowserCallbacks;
 pub use context::{DContext, STATE_EXIT, STATE_ZERO};
 pub use dengine::DEngine;
+pub use cpprun::cpprun_exec;
 pub use errors::{Error, ErrorCode};
 
 use crate::error::ClientResult;

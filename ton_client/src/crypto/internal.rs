@@ -22,7 +22,7 @@ pub(crate) fn ton_crc16(data: &[u8]) -> u16 {
     crc.get_crc() as u16
 }
 
-pub(crate) fn decode_public_key(string: &String) -> ClientResult<PublicKey> {
+pub fn decode_public_key(string: &String) -> ClientResult<PublicKey> {
     PublicKey::from_bytes(parse_key(string)?.as_slice())
         .map_err(|err| crypto::Error::invalid_public_key(err, string))
 }

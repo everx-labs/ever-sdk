@@ -124,7 +124,7 @@ fn prepare_decode(
     Ok((abi, message))
 }
 
-fn decode_body(
+pub fn decode_body(
     abi: AbiContract,
     body: SliceData,
     is_internal: bool,

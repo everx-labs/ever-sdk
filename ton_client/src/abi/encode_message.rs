@@ -79,7 +79,7 @@ impl CallSet {
     }
 }
 
-fn calc_timeout(timeout: u32, grow_rate: f32, processing_try_index: u8) -> u32 {
+pub(crate) fn calc_timeout(timeout: u32, grow_rate: f32, processing_try_index: u8) -> u32 {
     (timeout as f64 * grow_rate.powi(processing_try_index as i32) as f64) as u32
 }
 

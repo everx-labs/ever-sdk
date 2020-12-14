@@ -24,7 +24,7 @@ mod types;
 use serde::{Deserialize, Deserializer};
 
 pub use decode_message::{
-    decode_message, decode_message_body, DecodedMessageBody, MessageBodyType,
+    decode_message, decode_message_body, decode_body, DecodedMessageBody, MessageBodyType,
     ParamsOfDecodeMessage, ParamsOfDecodeMessageBody,
 };
 pub use encode_account::{

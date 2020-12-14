@@ -22,6 +22,7 @@ pub(crate) mod math;
 pub(crate) mod mnemonic;
 pub(crate) mod nacl;
 
+pub use internal::decode_public_key;
 pub use errors::{Error, ErrorCode};
 pub(crate) mod encryption;
 #[cfg(test)]
