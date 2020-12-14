@@ -4,7 +4,8 @@ All notable changes to this project will be documented in this file.
 ## 1.4.0 Dec 11, 2020
 
 ### New
-- GraphQL optimization: use single web socket to serve all subscriptions. 
+- GraphQL optimization: use single web socket to serve all subscriptions.
+- `net.find_last_shard_block` function returning account shard last block ID.
 
 ## 1.3.0 Dec 8, 2020
 
