@@ -194,6 +194,7 @@ function subscribe_collection(
 - `handle`: _number_ – Subscription handle.
 <br>Must be closed with `unsubscribe`
 
+
 ## suspend
 
 Suspends network module to stop any network activity
