@@ -1,8 +1,11 @@
 use super::dengine::TonClient;
-use crate::crypto::{signing_box_sign, ParamsOfSigningBoxSign, SigningBoxHandle,
-generate_random_bytes, ParamsOfGenerateRandomBytes, ParamsOfNaclBox, nacl_box_keypair_from_secret_key, ParamsOfNaclBoxKeyPairFromSecret, KeyPair };
-use crate::net::{query_collection, ParamsOfQueryCollection};
+use crate::crypto::{
+    generate_random_bytes, nacl_box_keypair_from_secret_key, signing_box_sign, KeyPair,
+    ParamsOfGenerateRandomBytes, ParamsOfNaclBox, ParamsOfNaclBoxKeyPairFromSecret,
+    ParamsOfSigningBoxSign, SigningBoxHandle,
+};
 use crate::encoding::{decode_abi_bigint, decode_abi_number};
+use crate::net::{query_collection, ParamsOfQueryCollection};
 use chrono::{Local, TimeZone};
 
 pub async fn call_routine(
@@ -11,8 +14,8 @@ pub async fn call_routine(
     arg: &str,
     signer: Option<SigningBoxHandle>,
 ) -> Result<serde_json::Value, String> {
-    let arg_json: Result<serde_json::Value, String> = serde_json::from_str(arg)
-        .map_err(|e| format!("argument is invalid json: {}", e));
+    let arg_json: Result<serde_json::Value, String> =
+        serde_json::from_str(arg).map_err(|e| format!("argument is invalid json: {}", e));
     match name {
         "convertTokens" => {
             debug!("convertTokens({})", arg);
@@ -27,47 +30,49 @@ pub async fn call_routine(
         "getAccountState" => {
             debug!("getAccountState({})", arg);
             get_account_state(ton, json!({ "addr": arg })).await
-        },
+        }
         "loadBocFromFile" => {
             debug!("loadBocFromFile({})", arg);
             let loaded_cell = load_boc_from_file(ton, arg)?;
             Ok(json!({ "arg1": loaded_cell }))
-        },
+        }
         "signHash" => {
             let arg_json = arg_json?;
             debug!("signHash({})", arg_json);
-            let sign = sign_hash(ton, arg_json, signer.ok_or("Signing box is needed to sign hash".to_owned())?)
-                .await?;
+            let sign = sign_hash(
+                ton,
+                arg_json,
+                signer.ok_or("Signing box is needed to sign hash".to_owned())?,
+            )
+            .await?;
             Ok(json!({ "arg1": sign }))
-        },
+        }
         "encryptAuth" => {
             let arg_json = arg_json?;
             debug!("encryptAuth({})", arg_json);
             let encrypted = nacl_box(ton, arg_json)?;
-            Ok(json!({ 
-                "encrypted": hex::encode(base64::decode(&encrypted).unwrap()) 
+            Ok(json!({
+                "encrypted": hex::encode(base64::decode(&encrypted).unwrap())
             }))
-        },
+        }
         "genKeypairFromSecret" => {
             let arg_json = arg_json?;
             debug!("genKeypairFromSecret({})", arg_json);
             nacl_box_gen_keypair(ton, arg_json).map(|keypair| {
-                json!({ 
-                    "publicKey" : format!("0x{}", keypair.public), 
-                    "secretKey": format!("0x{}", keypair.secret) 
+                json!({
+                    "publicKey" : format!("0x{}", keypair.public),
+                    "secretKey": format!("0x{}", keypair.secret)
                 })
             })
-        },
+        }
         "genRandom" => {
             let arg_json = arg_json?;
             debug!("genRandom({})", arg_json);
             let rnd = generate_random(ton, arg_json)?;
             let buf = base64::decode(&rnd)
                 .map_err(|e| format!("failed to decode random buffer to byte array: {}", e))?;
-            Ok(json!({
-                "buffer": hex::encode(buf)
-            }))
-        },
+            Ok(json!({ "buffer": hex::encode(buf) }))
+        }
         _ => Err(format!("unknown engine routine: {}({})", name, arg_json?))?,
     }
 }
@@ -141,12 +146,15 @@ pub(super) fn load_boc_from_file(_ton: TonClient, arg: &str) -> Result<String, S
     Ok(base64::encode(&boc))
 }
 
-pub(super) async fn sign_hash(ton: TonClient, arg_json: serde_json::Value, signer: SigningBoxHandle) -> Result<String, String> {
+pub(super) async fn sign_hash(
+    ton: TonClient,
+    arg_json: serde_json::Value,
+    signer: SigningBoxHandle,
+) -> Result<String, String> {
     let hash_str = arg_json["hash"]
         .as_str()
         .ok_or(format!(r#""hash" argument not found"#))?;
-    let hash_as_bigint = decode_abi_bigint(hash_str)
-        .map_err(|err| err.to_string())?;
+    let hash_as_bigint = decode_abi_bigint(hash_str).map_err(|err| err.to_string())?;
     let result = signing_box_sign(
         ton,
         ParamsOfSigningBoxSign {
@@ -160,32 +168,26 @@ pub(super) async fn sign_hash(ton: TonClient, arg_json: serde_json::Value, signe
 }
 
 pub(super) fn generate_random(ton: TonClient, args: serde_json::Value) -> Result<String, String> {
-    let len_str = args["length"].as_str()
+    let len_str = args["length"]
+        .as_str()
         .ok_or(format!(r#""len" not found"#))?;
-    let len = u32::from_str_radix(len_str, 10)
-        .map_err(|e| {
-            format!("failed to parse length: {}", e)
-        })?;
-    let result = generate_random_bytes(
-        ton,
-        ParamsOfGenerateRandomBytes {
-            length: len,
-        }
-    ).map_err(|e| format!(" failed to generate random: {}", e))?;
+    let len =
+        u32::from_str_radix(len_str, 10).map_err(|e| format!("failed to parse length: {}", e))?;
+    let result = generate_random_bytes(ton, ParamsOfGenerateRandomBytes { length: len })
+        .map_err(|e| format!(" failed to generate random: {}", e))?;
     Ok(result.bytes)
 }
 
 fn get_arg(args: &serde_json::Value, name: &str) -> Result<String, String> {
-    args[name].as_str()
+    args[name]
+        .as_str()
         .ok_or(format!("\"{}\" not found", name))
         .map(|v| v.to_string())
 }
 
 pub(super) fn nacl_box(ton: TonClient, args: serde_json::Value) -> Result<String, String> {
-    let public = decode_abi_bigint(&get_arg(&args, "publicKey")?)
-        .map_err(|e| e.to_string())?;
-    let secret = decode_abi_bigint(&get_arg(&args, "secretKey")?)
-        .map_err(|e| e.to_string())?;
+    let public = decode_abi_bigint(&get_arg(&args, "publicKey")?).map_err(|e| e.to_string())?;
+    let secret = decode_abi_bigint(&get_arg(&args, "secretKey")?).map_err(|e| e.to_string())?;
     let result = crate::crypto::nacl_box(
         ton,
         ParamsOfNaclBox {
@@ -194,25 +196,29 @@ pub(super) fn nacl_box(ton: TonClient, args: serde_json::Value) -> Result<String
             their_public: hex::encode(public.to_bytes_be().1),
             secret: hex::encode(secret.to_bytes_be().1),
         },
-    ).map_err(|e| format!(" failed to encrypt with nacl box: {}", e))?;
+    )
+    .map_err(|e| format!(" failed to encrypt with nacl box: {}", e))?;
     Ok(result.encrypted)
 }
 
-pub(super) fn nacl_box_gen_keypair(ton: TonClient, args: serde_json::Value) -> Result<KeyPair, String> {
-    let secret = decode_abi_bigint(&get_arg(&args, "secret")?)
-        .map_err(|e| e.to_string())?;
+pub(super) fn nacl_box_gen_keypair(
+    ton: TonClient,
+    args: serde_json::Value,
+) -> Result<KeyPair, String> {
+    let secret = decode_abi_bigint(&get_arg(&args, "secret")?).map_err(|e| e.to_string())?;
     let result = nacl_box_keypair_from_secret_key(
         ton,
         ParamsOfNaclBoxKeyPairFromSecret {
             secret: hex::encode(secret.to_bytes_be().1),
         },
-    ).map_err(|e| format!(" failed to generate keypair from secret: {}", e))?;
+    )
+    .map_err(|e| format!(" failed to generate keypair from secret: {}", e))?;
     Ok(result)
 }
 
 pub(super) async fn get_account_state(
     ton: TonClient,
-    args: serde_json::Value
+    args: serde_json::Value,
 ) -> Result<serde_json::Value, String> {
     let addr = get_arg(&args, "addr")?.to_lowercase();
     let mut accounts = query_collection(
@@ -234,10 +240,17 @@ pub(super) async fn get_account_state(
         return Err(format!("account not found"));
     }
     let mut acc = accounts.swap_remove(0);
-    let library_cell = acc.as_object_mut().ok_or("invalid account json".to_string())?
-        .remove("library").unwrap();
-    
-    acc["lib"] = if library_cell.is_null() { json!("") } else { library_cell };
+    let library_cell = acc
+        .as_object_mut()
+        .ok_or("invalid account json".to_string())?
+        .remove("library")
+        .unwrap();
+
+    acc["lib"] = if library_cell.is_null() {
+        json!("")
+    } else {
+        library_cell
+    };
     if acc["code"].is_null() {
         acc["code"] = json!("");
     }
