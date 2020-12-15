@@ -24,7 +24,8 @@ pub async fn call_routine(
         }
         "getBalance" => {
             debug!("getBalance({})", arg);
-            let balance = get_balance(ton, json!({ "addr": arg })).await?;
+            let args = if arg_json.is_err() { json!({ "addr": arg }) } else { arg_json? };
+            let balance = get_balance(ton, args).await?;
             Ok(json!({ "arg1": balance }))
         }
         "getAccountState" => {

@@ -425,7 +425,8 @@ async fn test_debot_engine_calls() {
         { "choice": 2, "inputs": [], "outputs": [] },
         { "choice": 3, "inputs": [], "outputs": [] },
         { "choice": 4, "inputs": [], "outputs": [] },
-        { "choice": 5, "inputs": [], "outputs": ["Debot Tests"] },
+        { "choice": 5, "inputs": [], "outputs": [] },
+        { "choice": 6, "inputs": [], "outputs": ["Debot Tests"] },
         { "choice": 8, "inputs": [], "outputs": [] }
     ]);
     TestBrowser::execute(

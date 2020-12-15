@@ -255,6 +255,30 @@
 			]
 		},
 		{
+			"name": "testgetBalance",
+			"inputs": [
+			],
+			"outputs": [
+				{"components":[{"name":"desc","type":"bytes"},{"name":"name","type":"bytes"},{"name":"actionType","type":"uint8"},{"name":"attrs","type":"bytes"},{"name":"to","type":"uint8"},{"name":"misc","type":"cell"}],"name":"actions","type":"tuple[]"}
+			]
+		},
+		{
+			"name": "getAddr",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"addr","type":"address"}
+			]
+		},
+		{
+			"name": "setBalance",
+			"inputs": [
+				{"name":"arg1","type":"uint128"}
+			],
+			"outputs": [
+			]
+		},
+		{
 			"name": "getDebotOptions",
 			"inputs": [
 			],
