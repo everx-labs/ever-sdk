@@ -29,7 +29,6 @@ async fn query() {
     assert_eq!(version.split(".").count(), 3);
 }
 
-
 #[tokio::test(core_threads = 2)]
 async fn block_signatures() {
     let client = TestClient::new();
@@ -281,4 +280,21 @@ async fn subscribe_for_messages() {
         .request_async("net.unsubscribe", handle)
         .await
         .unwrap();
+}
+
+#[tokio::test(core_threads = 2)]
+async fn find_last_shard_block() {
+    let client = TestClient::new();
+
+    let block: ResultOfFindLastShardBlock = client
+        .request_async(
+            "net.find_last_shard_block",
+            ParamsOfFindLastShardBlock {
+                address: TestClient::get_giver_address(),
+            },
+        )
+        .await
+        .unwrap();
+
+    println!("{}", block.block_id);
 }

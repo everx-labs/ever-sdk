@@ -1,6 +1,6 @@
 # Module crypto
 
- Crypto functions.
+null
 ## Functions
 [factorize](#factorize) – Performs prime factorization – decomposition of a composite number into a product of smaller prime integers (factors). See [https://en.wikipedia.org/wiki/Integer_factorization]
 
@@ -269,7 +269,8 @@ function ton_crc16(
 ): Promise<ResultOfTonCrc16>;
 ```
 ### Parameters
-- `data`: _string_ – Input data for CRC calculation. Encoded with `base64`.
+- `data`: _string_ – Input data for CRC calculation.
+<br>Encoded with `base64`.
 ### Result
 
 - `crc`: _number_ – Calculated CRC for input data.
@@ -413,10 +414,12 @@ function sha256(
 ): Promise<ResultOfHash>;
 ```
 ### Parameters
-- `data`: _string_ – Input data for hash calculation. Encoded with `base64`.
+- `data`: _string_ – Input data for hash calculation.
+<br>Encoded with `base64`.
 ### Result
 
-- `hash`: _string_ – Hash of input `data`. Encoded with 'hex'.
+- `hash`: _string_ – Hash of input `data`.
+<br>Encoded with 'hex'.
 
 
 ## sha512
@@ -437,10 +440,12 @@ function sha512(
 ): Promise<ResultOfHash>;
 ```
 ### Parameters
-- `data`: _string_ – Input data for hash calculation. Encoded with `base64`.
+- `data`: _string_ – Input data for hash calculation.
+<br>Encoded with `base64`.
 ### Result
 
-- `hash`: _string_ – Hash of input `data`. Encoded with 'hex'.
+- `hash`: _string_ – Hash of input `data`.
+<br>Encoded with 'hex'.
 
 
 ## scrypt
@@ -487,7 +492,8 @@ function scrypt(
 - `dk_len`: _number_ – Intended output length in octets of the derived key.
 ### Result
 
-- `key`: _string_ – Derived key. Encoded with `hex`.
+- `key`: _string_ – Derived key.
+<br>Encoded with `hex`.
 
 
 ## nacl_sign_keypair_from_secret_key
@@ -559,7 +565,8 @@ function nacl_sign_open(
 ): Promise<ResultOfNaclSignOpen>;
 ```
 ### Parameters
-- `signed`: _string_ – Signed data that must be unsigned. Encoded with `base64`.
+- `signed`: _string_ – Signed data that must be unsigned.
+<br>Encoded with `base64`.
 - `public`: _string_ – Signer's public key - unprefixed 0-padded to 64 symbols hex string
 ### Result
 
@@ -686,7 +693,8 @@ function nacl_box_open(
 ): Promise<ResultOfNaclBoxOpen>;
 ```
 ### Parameters
-- `encrypted`: _string_ – Data that must be decrypted. Encoded with `base64`.
+- `encrypted`: _string_ – Data that must be decrypted.
+<br>Encoded with `base64`.
 - `nonce`: _string_
 - `their_public`: _string_ – Sender's public key - unprefixed 0-padded to 64 symbols hex string
 - `secret`: _string_ – Receiver's private key - unprefixed 0-padded to 64 symbols hex string
@@ -715,7 +723,8 @@ function nacl_secret_box(
 ): Promise<ResultOfNaclBox>;
 ```
 ### Parameters
-- `decrypted`: _string_ – Data that must be encrypted. Encoded with `base64`.
+- `decrypted`: _string_ – Data that must be encrypted.
+<br>Encoded with `base64`.
 - `nonce`: _string_ – Nonce in `hex`
 - `key`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
 ### Result
@@ -743,7 +752,8 @@ function nacl_secret_box_open(
 ): Promise<ResultOfNaclBoxOpen>;
 ```
 ### Parameters
-- `encrypted`: _string_ – Data that must be decrypted. Encoded with `base64`.
+- `encrypted`: _string_ – Data that must be decrypted.
+<br>Encoded with `base64`.
 - `nonce`: _string_ – Nonce in `hex`
 - `key`: _string_ – Public key - unprefixed 0-padded to 64 symbols hex string
 ### Result
@@ -821,7 +831,8 @@ function mnemonic_from_entropy(
 ): Promise<ResultOfMnemonicFromEntropy>;
 ```
 ### Parameters
-- `entropy`: _string_ – Entropy bytes. Hex encoded.
+- `entropy`: _string_ – Entropy bytes.
+<br>Hex encoded.
 - `dictionary`?: _number_ – Dictionary identifier
 - `word_count`?: _number_ – Mnemonic word count
 ### Result
@@ -1039,12 +1050,16 @@ function chacha20(
 ): Promise<ResultOfChaCha20>;
 ```
 ### Parameters
-- `data`: _string_ – Source data to be encrypted or decrypted. Must be encoded with `base64`.
-- `key`: _string_ – 256-bit key. Must be encoded with `hex`.
-- `nonce`: _string_ – 96-bit nonce. Must be encoded with `hex`.
+- `data`: _string_ – Source data to be encrypted or decrypted.
+<br>Must be encoded with `base64`.
+- `key`: _string_ – 256-bit key.
+<br>Must be encoded with `hex`.
+- `nonce`: _string_ – 96-bit nonce.
+<br>Must be encoded with `hex`.
 ### Result
 
-- `data`: _string_ – Encrypted/decrypted data. Encoded with `base64`.
+- `data`: _string_ – Encrypted/decrypted data.
+<br>Encoded with `base64`.
 
 
 ## register_signing_box
@@ -1112,7 +1127,8 @@ function signing_box_get_public_key(
 - `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
 ### Result
 
-- `pubkey`: _string_ – Public key of signing box. Encoded with hex
+- `pubkey`: _string_ – Public key of signing box.
+<br>Encoded with hex
 
 
 ## signing_box_sign
@@ -1135,10 +1151,12 @@ function signing_box_sign(
 ```
 ### Parameters
 - `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing Box handle.
-- `unsigned`: _string_ – Unsigned user data. Must be encoded with `base64`.
+- `unsigned`: _string_ – Unsigned user data.
+<br>Must be encoded with `base64`.
 ### Result
 
-- `signature`: _string_ – Data signature. Encoded with `base64`.
+- `signature`: _string_ – Data signature.
+<br>Encoded with `base64`.
 
 
 ## remove_signing_box
@@ -1213,7 +1231,8 @@ type ParamsOfTonCrc16 = {
     data: string
 };
 ```
-- `data`: _string_ – Input data for CRC calculation. Encoded with `base64`.
+- `data`: _string_ – Input data for CRC calculation.
+<br>Encoded with `base64`.
 
 
 ## ResultOfTonCrc16
@@ -1320,7 +1339,8 @@ type ParamsOfHash = {
     data: string
 };
 ```
-- `data`: _string_ – Input data for hash calculation. Encoded with `base64`.
+- `data`: _string_ – Input data for hash calculation.
+<br>Encoded with `base64`.
 
 
 ## ResultOfHash
@@ -1329,7 +1349,8 @@ type ResultOfHash = {
     hash: string
 };
 ```
-- `hash`: _string_ – Hash of input `data`. Encoded with 'hex'.
+- `hash`: _string_ – Hash of input `data`.
+<br>Encoded with 'hex'.
 
 
 ## ParamsOfScrypt
@@ -1357,7 +1378,8 @@ type ResultOfScrypt = {
     key: string
 };
 ```
-- `key`: _string_ – Derived key. Encoded with `hex`.
+- `key`: _string_ – Derived key.
+<br>Encoded with `hex`.
 
 
 ## ParamsOfNaclSignKeyPairFromSecret
@@ -1396,7 +1418,8 @@ type ParamsOfNaclSignOpen = {
     public: string
 };
 ```
-- `signed`: _string_ – Signed data that must be unsigned. Encoded with `base64`.
+- `signed`: _string_ – Signed data that must be unsigned.
+<br>Encoded with `base64`.
 - `public`: _string_ – Signer's public key - unprefixed 0-padded to 64 symbols hex string
 
 
@@ -1460,7 +1483,8 @@ type ParamsOfNaclBoxOpen = {
     secret: string
 };
 ```
-- `encrypted`: _string_ – Data that must be decrypted. Encoded with `base64`.
+- `encrypted`: _string_ – Data that must be decrypted.
+<br>Encoded with `base64`.
 - `nonce`: _string_
 - `their_public`: _string_ – Sender's public key - unprefixed 0-padded to 64 symbols hex string
 - `secret`: _string_ – Receiver's private key - unprefixed 0-padded to 64 symbols hex string
@@ -1483,7 +1507,8 @@ type ParamsOfNaclSecretBox = {
     key: string
 };
 ```
-- `decrypted`: _string_ – Data that must be encrypted. Encoded with `base64`.
+- `decrypted`: _string_ – Data that must be encrypted.
+<br>Encoded with `base64`.
 - `nonce`: _string_ – Nonce in `hex`
 - `key`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
 
@@ -1496,7 +1521,8 @@ type ParamsOfNaclSecretBoxOpen = {
     key: string
 };
 ```
-- `encrypted`: _string_ – Data that must be decrypted. Encoded with `base64`.
+- `encrypted`: _string_ – Data that must be decrypted.
+<br>Encoded with `base64`.
 - `nonce`: _string_ – Nonce in `hex`
 - `key`: _string_ – Public key - unprefixed 0-padded to 64 symbols hex string
 
@@ -1547,7 +1573,8 @@ type ParamsOfMnemonicFromEntropy = {
     word_count?: number
 };
 ```
-- `entropy`: _string_ – Entropy bytes. Hex encoded.
+- `entropy`: _string_ – Entropy bytes.
+<br>Hex encoded.
 - `dictionary`?: _number_ – Dictionary identifier
 - `word_count`?: _number_ – Mnemonic word count
 
@@ -1706,9 +1733,12 @@ type ParamsOfChaCha20 = {
     nonce: string
 };
 ```
-- `data`: _string_ – Source data to be encrypted or decrypted. Must be encoded with `base64`.
-- `key`: _string_ – 256-bit key. Must be encoded with `hex`.
-- `nonce`: _string_ – 96-bit nonce. Must be encoded with `hex`.
+- `data`: _string_ – Source data to be encrypted or decrypted.
+<br>Must be encoded with `base64`.
+- `key`: _string_ – 256-bit key.
+<br>Must be encoded with `hex`.
+- `nonce`: _string_ – 96-bit nonce.
+<br>Must be encoded with `hex`.
 
 
 ## ResultOfChaCha20
@@ -1717,7 +1747,8 @@ type ResultOfChaCha20 = {
     data: string
 };
 ```
-- `data`: _string_ – Encrypted/decrypted data. Encoded with `base64`.
+- `data`: _string_ – Encrypted/decrypted data.
+<br>Encoded with `base64`.
 
 
 ## RegisteredSigningBox
@@ -1790,7 +1821,8 @@ type ResultOfSigningBoxGetPublicKey = {
     pubkey: string
 };
 ```
-- `pubkey`: _string_ – Public key of signing box. Encoded with hex
+- `pubkey`: _string_ – Public key of signing box.
+<br>Encoded with hex
 
 
 ## ParamsOfSigningBoxSign
@@ -1801,7 +1833,8 @@ type ParamsOfSigningBoxSign = {
 };
 ```
 - `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing Box handle.
-- `unsigned`: _string_ – Unsigned user data. Must be encoded with `base64`.
+- `unsigned`: _string_ – Unsigned user data.
+<br>Must be encoded with `base64`.
 
 
 ## ResultOfSigningBoxSign
@@ -1810,6 +1843,7 @@ type ResultOfSigningBoxSign = {
     signature: string
 };
 ```
-- `signature`: _string_ – Data signature. Encoded with `base64`.
+- `signature`: _string_ – Data signature.
+<br>Encoded with `base64`.
 
 

@@ -1,6 +1,6 @@
 # Module debot
 
- [UNSTABLE](UNSTABLE.md) Module for working with debot.
+null
 ## Functions
 [start](#start) – [UNSTABLE](UNSTABLE.md) Starts an instance of debot.
 
@@ -165,12 +165,16 @@ type DebotAction = {
     misc: string
 };
 ```
-- `description`: _string_ – A short action description. Should be used by Debot Browser as name of menu item.
-- `name`: _string_ – Depends on action type. Can be a debot function name or a print string (for Print Action).
+- `description`: _string_ – A short action description.
+<br>Should be used by Debot Browser as name ofmenu item.
+- `name`: _string_ – Depends on action type.
+<br>Can be a debot function name or a print string(for Print Action).
 - `action_type`: _number_ – Action type.
 - `to`: _number_ – ID of debot context to switch after action execution.
-- `attributes`: _string_ – Action attributes. In the form of "param=value,flag". attribute example: instant, args, fargs, sign.
-- `misc`: _string_ – Some internal action data. Used by debot only.
+- `attributes`: _string_ – Action attributes.
+<br>In the form of "param=value,flag".attribute example: instant, args, fargs, sign.
+- `misc`: _string_ – Some internal action data.
+<br>Used by debot only.
 
 
 ## ParamsOfStart
@@ -253,7 +257,9 @@ Request user input.
 
 When _type_ is _'GetSigningBox'_
 
-Get signing box to sign data. Signing box returned is owned and disposed by debot engine
+Get signing box to sign data.
+
+Signing box returned is owned and disposed by debot engine
 
 
 When _type_ is _'InvokeDebot'_
@@ -293,7 +299,8 @@ When _type_ is _'GetSigningBox'_
 Result of getting signing box.
 
 
-- `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing box for signing data requested by debot engine. Signing box is owned and disposed by debot engine
+- `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing box for signing data requested by debot engine.
+<br>Signing box is owned and disposed by debot engine
 
 When _type_ is _'InvokeDebot'_
 

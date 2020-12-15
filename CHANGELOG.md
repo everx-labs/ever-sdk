@@ -1,11 +1,19 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## 1.4.0 Dec 11, 2020
+
+### New
+- GraphQL optimization: use single web socket to serve all subscriptions.
+- `net.find_last_shard_block` function returning account shard last block ID.
+
 ## 1.3.0 Dec 8, 2020
 
 ### Featured
 - `net.query` method . Performs custom graphql query that can be copied directly from the playground. 
 - `net.suspend` and `net.resume` methods for disabling and enabling network activity. One of the possible use-cases is to manage subscriptions when a mobile application is brought to the background and into the foreground again.
+- Smart summary and description doc separation.
+- ts-generator includes doc comments in JSDoc format.
 
 ## 1.2.0 Nov 26, 2020
 

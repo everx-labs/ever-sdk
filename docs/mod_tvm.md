@@ -53,7 +53,8 @@ function run_executor(
 ): Promise<ResultOfRunExecutor>;
 ```
 ### Parameters
-- `message`: _string_ – Input message BOC. Must be encoded as base64.
+- `message`: _string_ – Input message BOC.
+<br>Must be encoded as base64.
 - `account`: _[AccountForExecutor](mod_tvm.md#AccountForExecutor)_ – Account to run on executor
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for decoding output messages
@@ -62,9 +63,11 @@ function run_executor(
 
 - `transaction`: _any_ – Parsed transaction.
 <br>In addition to the regular transaction fields there is a<br>`boc` field encoded with `base64` which contains source<br>transaction BOC.
-- `out_messages`: _string[]_ – List of output messages' BOCs. Encoded as `base64`
+- `out_messages`: _string[]_ – List of output messages' BOCs.
+<br>Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
-- `account`: _string_ – Updated account state BOC. Encoded as `base64`
+- `account`: _string_ – Updated account state BOC.
+<br>Encoded as `base64`
 - `fees`: _[TransactionFees](mod_tvm.md#TransactionFees)_ – Transaction fees
 
 
@@ -89,15 +92,19 @@ function run_tvm(
 ): Promise<ResultOfRunTvm>;
 ```
 ### Parameters
-- `message`: _string_ – Input message BOC. Must be encoded as base64.
-- `account`: _string_ – Account BOC. Must be encoded as base64.
+- `message`: _string_ – Input message BOC.
+<br>Must be encoded as base64.
+- `account`: _string_ – Account BOC.
+<br>Must be encoded as base64.
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for dedcoding output messages
 ### Result
 
-- `out_messages`: _string[]_ – List of output messages' BOCs. Encoded as `base64`
+- `out_messages`: _string[]_ – List of output messages' BOCs.
+<br>Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
-- `account`: _string_ – Updated account state BOC. Encoded as `base64`. Attention! Only data in account state is updated.
+- `account`: _string_ – Updated account state BOC.
+<br>Encoded as `base64`.Attention! Only data in account state is updated.
 
 
 ## run_get
@@ -175,8 +182,10 @@ When _type_ is _'Account'_
 Account state to run message
 
 
-- `boc`: _string_ – Account BOC. Encoded as base64.
-- `unlimited_balance`?: _boolean_ – Flag for running account with the unlimited balance. Can be used to calculate transaction fees without balance check
+- `boc`: _string_ – Account BOC.
+<br>Encoded as base64.
+- `unlimited_balance`?: _boolean_ – Flag for running account with the unlimited balance.
+<br>Can be used to calculatetransaction fees without balance check
 
 
 ## TransactionFees
@@ -208,7 +217,8 @@ type ParamsOfRunExecutor = {
     skip_transaction_check?: boolean
 };
 ```
-- `message`: _string_ – Input message BOC. Must be encoded as base64.
+- `message`: _string_ – Input message BOC.
+<br>Must be encoded as base64.
 - `account`: _[AccountForExecutor](mod_tvm.md#AccountForExecutor)_ – Account to run on executor
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for decoding output messages
@@ -227,9 +237,11 @@ type ResultOfRunExecutor = {
 ```
 - `transaction`: _any_ – Parsed transaction.
 <br>In addition to the regular transaction fields there is a<br>`boc` field encoded with `base64` which contains source<br>transaction BOC.
-- `out_messages`: _string[]_ – List of output messages' BOCs. Encoded as `base64`
+- `out_messages`: _string[]_ – List of output messages' BOCs.
+<br>Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
-- `account`: _string_ – Updated account state BOC. Encoded as `base64`
+- `account`: _string_ – Updated account state BOC.
+<br>Encoded as `base64`
 - `fees`: _[TransactionFees](mod_tvm.md#TransactionFees)_ – Transaction fees
 
 
@@ -242,8 +254,10 @@ type ParamsOfRunTvm = {
     abi?: Abi
 };
 ```
-- `message`: _string_ – Input message BOC. Must be encoded as base64.
-- `account`: _string_ – Account BOC. Must be encoded as base64.
+- `message`: _string_ – Input message BOC.
+<br>Must be encoded as base64.
+- `account`: _string_ – Account BOC.
+<br>Must be encoded as base64.
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for dedcoding output messages
 
@@ -256,9 +270,11 @@ type ResultOfRunTvm = {
     account: string
 };
 ```
-- `out_messages`: _string[]_ – List of output messages' BOCs. Encoded as `base64`
+- `out_messages`: _string[]_ – List of output messages' BOCs.
+<br>Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
-- `account`: _string_ – Updated account state BOC. Encoded as `base64`. Attention! Only data in account state is updated.
+- `account`: _string_ – Updated account state BOC.
+<br>Encoded as `base64`.Attention! Only data in account state is updated.
 
 
 ## ParamsOfRunGet
