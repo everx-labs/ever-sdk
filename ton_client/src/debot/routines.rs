@@ -30,8 +30,8 @@ pub async fn call_routine(
         }
         "getAccountState" => {
             let args = if arg_json.is_err() { json!({ "addr": arg }) } else { arg_json? };
-            debug!("getAccountState({})", arg);
-            get_account_state(ton, json!({ "addr": arg })).await
+            debug!("getAccountState({})", args);
+            get_account_state(ton, args).await
         }
         "loadBocFromFile" => {
             debug!("loadBocFromFile({})", arg);
