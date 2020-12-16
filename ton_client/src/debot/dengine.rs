@@ -478,8 +478,10 @@ impl DEngine {
         let abi = if call_itself {
             self.abi.clone()
         } else {
-            let (_, abi) = self.get_target()?;
-            abi
+            load_abi(
+                self.target_abi.as_ref()
+                    .ok_or(format!("target abi is undefined"))?
+            )?
         };
 
         let res = decode_message_body(
