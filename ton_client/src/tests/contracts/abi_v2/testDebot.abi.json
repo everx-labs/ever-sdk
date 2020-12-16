@@ -158,6 +158,22 @@
 			]
 		},
 		{
+			"name": "sendTestMsg",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"dest","type":"address"},
+				{"name":"body","type":"cell"}
+			]
+		},
+		{
+			"name": "setTargetAddr",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
 			"name": "testgenKeypairFromSecret",
 			"inputs": [
 			],

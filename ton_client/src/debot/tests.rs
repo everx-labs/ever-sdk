@@ -398,9 +398,12 @@ async fn test_debot_invoke_debot() {
 
     let steps = json!([
         { "choice": 6, "inputs": [debot_addr.clone()], "outputs": ["Test Invoke Debot Action", "enter debot address:"] },
-        { "choice": 1, "inputs": [debot_addr],         "outputs": ["Test Invoke Debot Action", "enter debot address:"], 
+        { "choice": 1, "inputs": [debot_addr.clone()], "outputs": ["Test Invoke Debot Action", "enter debot address:"], 
             "invokes": [
-                [{ "choice": 1, "inputs": [], "outputs": ["Print test string", "Debot is invoked"] }],
+                [
+                    { "choice": 1, "inputs": [], "outputs": ["Print test string", "Debot is invoked"] },
+                    { "choice": 1, "inputs": [], "outputs": ["Sending message {}", "Transaction succeeded."] }
+                ],
             ] 
         },
         { "choice": 2, "inputs": [], "outputs": ["Debot Tests"] },
