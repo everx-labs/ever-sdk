@@ -299,6 +299,7 @@ impl DEngine {
         }
         if state_to == STATE_EXIT {
             self.browser.switch(STATE_EXIT).await;
+            self.browser.switch_completed().await;
         } else if state_to != self.curr_state {
             let mut instant_switch = true;
             self.prev_state = self.curr_state;
@@ -315,8 +316,10 @@ impl DEngine {
                     self.browser.log(ctx.desc.clone()).await;
                     instant_switch = self.enumerate_actions(ctx).await?;
                     state_to = self.curr_state;
+                    self.browser.switch_completed().await;
                 } else if state_to == STATE_EXIT {
                     self.browser.switch(STATE_EXIT).await;
+                    self.browser.switch_completed().await;
                     instant_switch = false;
                 } else {
                     self.browser

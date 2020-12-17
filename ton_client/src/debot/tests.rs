@@ -52,6 +52,7 @@ struct BrowserData {
     pub address: String,
     pub client: Arc<TestClient>,
     pub finished: AtomicBool,
+    pub switch_started: AtomicBool,
 }
 
 impl TestBrowser {
@@ -140,6 +141,7 @@ impl TestBrowser {
             keys,
             address: address.clone(),
             finished: AtomicBool::new(false),
+            switch_started: AtomicBool::new(false),
         });
 
         Self::execute_from_state(client, state, "debot.start").await
@@ -151,10 +153,14 @@ impl TestBrowser {
                 state.current.lock().await.outputs.push(msg);
             },
             ParamsOfAppDebotBrowser::Switch { context_id } => {
+                assert_eq!(state.switch_started.swap(true, Ordering::Relaxed), false);
                 if context_id == STATE_EXIT {
                     state.finished.store(true, Ordering::Relaxed);
                 }
                 state.current.lock().await.available_actions.clear();
+            },
+            ParamsOfAppDebotBrowser::SwitchCompleted => {
+                assert_eq!(state.switch_started.swap(false, Ordering::Relaxed), true);
             },
             ParamsOfAppDebotBrowser::ShowAction { action } => {
                 state.current.lock().await.available_actions.push(action);
@@ -198,6 +204,7 @@ impl TestBrowser {
                     keys: state.keys.clone(),
                     address: debot_addr,
                     finished: AtomicBool::new(false),
+                    switch_started: AtomicBool::new(false),
                 });
                 Self::call_execute_boxed(client, state, "debot.fetch").await;
                 ResultOfAppDebotBrowser::InvokeDebot

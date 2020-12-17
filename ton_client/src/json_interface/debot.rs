@@ -51,6 +51,8 @@ pub enum ParamsOfAppDebotBrowser {
         /// Debot context ID to which debot is switched.
         context_id: u8
     },
+    /// Notify browser that all context actions are shown.
+    SwitchCompleted,
     /// Show action to the user.
     /// Called after `switch` for each action in context.
     ShowAction {
@@ -94,9 +96,13 @@ impl DebotBrowserAdapter {
          self.app_object.notify(ParamsOfAppDebotBrowser::Log { msg });
      }
  
-     async fn switch(&self, ctx_id: u8) {
+    async fn switch(&self, ctx_id: u8) {
          self.app_object.notify(ParamsOfAppDebotBrowser::Switch { context_id: ctx_id });
      }
+
+    async fn switch_completed(&self) {
+        self.app_object.notify(ParamsOfAppDebotBrowser::SwitchCompleted);
+    }
  
      async fn show_action(&self, act: DAction) {
          self.app_object.notify(ParamsOfAppDebotBrowser::ShowAction { action: act.into() });
