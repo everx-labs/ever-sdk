@@ -12,6 +12,7 @@ use crate::abi::{
 use crate::crypto::{remove_signing_box, CryptoConfig, RegisteredSigningBox, SigningBoxHandle};
 use crate::encoding::decode_abi_number;
 use crate::error::ClientError;
+use crate::abi::ErrorCode;
 use crate::net::{query_collection, NetworkConfig, ParamsOfQueryCollection};
 use crate::processing::{process_message, ParamsOfProcessMessage, ProcessingEvent};
 use crate::tvm::{run_tvm, ParamsOfRunTvm};
@@ -171,7 +172,7 @@ impl DEngine {
             },
             Err(e) => {
                 self.browser
-                    .log(format!("Action failed: {}. Return to previous state.\n", e))
+                    .log(format!("Error. {}. Return to previous state.\n", e))
                     .await;
                 self.switch_state(self.prev_state, false).await
             }
@@ -408,7 +409,10 @@ impl DEngine {
         let state = self.load_state(addr.clone()).await?;
         match self.run(state, addr, abi, name, params).await {
             Ok(res) => Ok(res.output.unwrap_or(json!({}))),
-            Err(e) => Err(self.handle_sdk_err(e).await),
+            Err(e) => {
+                error!("{:?}", e);
+                Err(self.handle_sdk_err(e).await)
+            },
         }
     }
 
@@ -440,7 +444,10 @@ impl DEngine {
                 self.state = res.account;
                 Ok(res.output)
             }
-            Err(e) => Err(self.handle_sdk_err(e).await),
+            Err(e) => {
+                error!("{:?}", e);
+                Err(self.handle_sdk_err(e).await)
+            },
         }
     }
 
@@ -645,7 +652,6 @@ impl DEngine {
                 res.decoded.unwrap().output,
             )),
             Err(e) => {
-                error!("{}", e);
                 Err(e)
             }
         }
@@ -705,7 +711,7 @@ impl DEngine {
         {
             Ok(res) => Ok(res.decoded.unwrap().output),
             Err(e) => {
-                error!("{}", e);
+                error!("{:?}", e);
                 Err(self.handle_sdk_err(e).await)
             }
         }
@@ -721,10 +727,12 @@ impl DEngine {
     }
 
     async fn handle_sdk_err(&self, err: ClientError) -> String {
-        if err.message.contains("Wrong data format") {
+        if err.code == ErrorCode::EncodeDeployMessageFailed as u32
+        || err.code == ErrorCode::EncodeRunMessageFailed as u32 {
             // when debot's function argument has invalid format
-            "invalid parameter".to_owned()
-        } else if err.code == 3025 {
+            format!("Invalid parameter")
+        } else if err.code >= (ClientError::TVM as u32) 
+        && err.code <  (ClientError::PROCESSING as u32) {
             // when debot function throws an exception
             if let Some(e) = err.data["exit_code"].as_i64() {
                 self.run_debot_get("getErrorDescription", Some(json!({ "error": e })))
