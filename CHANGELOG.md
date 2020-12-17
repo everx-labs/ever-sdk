@@ -8,7 +8,6 @@ All notable changes to this project will be documented in this file.
 - `net.find_last_shard_block` function returning account shard last block ID.
 - **Debot Module:**
   - Add new variant `ParamsOfAppDebotBrowser::SwitchCompleted` to notify browser when all context actions are shown.
-  - `adapter.rs` was removed.
 
 ## 1.3.0 Dec 8, 2020
 
