@@ -94,6 +94,13 @@ impl DAction {
         }
     }
 
+    pub fn is_invoke(&self) -> bool {
+        match self.action_type {
+            AcType::Invoke => true,
+            _ => false,
+        }
+    }
+
     pub fn is_instant(&self) -> bool {
         self.attrs
             .split(',')

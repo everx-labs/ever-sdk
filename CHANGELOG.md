@@ -8,6 +8,16 @@ All notable changes to this project will be documented in this file.
 - `net.find_last_shard_block` function returning account shard last block ID.
 - **Debot Module:**
   - Add new variant `ParamsOfAppDebotBrowser::SwitchCompleted` to notify browser when all context actions are shown.
+  - Added new 3 engine routines for crypto operations and 1 routine for querying account state (balance, state type, code, data) that can be used in debots.
+
+### Fixed
+- **Debot Module:**   
+  - Invoked debot terminated correctly after error occured during
+execution of one of its actions. Initial prev_state of invoked debot
+changed to STATE_EXIT.   
+  - Fixed double jumping to current context in invoker debot after
+returning control to it from invoked debot.
+  - Fixed conversation of exception codes thrown by debots to their user-friendly description.
 
 ## 1.3.0 Dec 8, 2020
 

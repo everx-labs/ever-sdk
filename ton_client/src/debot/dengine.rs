@@ -12,6 +12,7 @@ use crate::abi::{
 use crate::crypto::{remove_signing_box, CryptoConfig, RegisteredSigningBox, SigningBoxHandle};
 use crate::encoding::decode_abi_number;
 use crate::error::ClientError;
+use crate::abi::ErrorCode;
 use crate::net::{query_collection, NetworkConfig, ParamsOfQueryCollection};
 use crate::processing::{process_message, ParamsOfProcessMessage, ProcessingEvent};
 use crate::tvm::{run_tvm, ParamsOfRunTvm};
@@ -119,6 +120,7 @@ impl DEngine {
 
     pub async fn fetch(&mut self) -> Result<(), String> {
         self.state_machine = self.fetch_state().await?;
+        self.prev_state = STATE_EXIT;
         Ok(())
     }
 
@@ -146,7 +148,7 @@ impl DEngine {
 
     pub async fn start(&mut self) -> Result<(), String> {
         self.state_machine = self.fetch_state().await?;
-        self.switch_state(STATE_ZERO).await
+        self.switch_state(STATE_ZERO, true).await
     }
 
     #[allow(dead_code)]
@@ -158,12 +160,21 @@ impl DEngine {
 
     pub async fn execute_action(&mut self, act: &DAction) -> Result<(), String> {
         match self.handle_action(&act).await {
-            Ok(_) => self.switch_state(act.to).await,
+            Ok(acts) => {
+                if let Some(acts) = acts {
+                    for a in acts {
+                        if a.is_engine_call() {
+                            self.handle_action(&a).await?;
+                        }
+                    }
+                }
+                self.switch_state(act.to, act.is_invoke()).await
+            },
             Err(e) => {
                 self.browser
-                    .log(format!("Action failed: {}. Return to previous state.\n", e))
+                    .log(format!("Error. {}. Return to previous state.\n", e))
                     .await;
-                self.switch_state(self.prev_state).await
+                self.switch_state(self.prev_state, false).await
             }
         }
     }
@@ -229,6 +240,7 @@ impl DEngine {
                     &debot_addr, debot_action.name
                 );
                 self.browser.invoke_debot(debot_addr, debot_action).await?;
+                debug!("invoke completed");
                 Ok(None)
             }
             AcType::Print => {
@@ -266,7 +278,7 @@ impl DEngine {
                 } else {
                     None
                 };
-                let res = self.call_routine(&a.name, &args, signer.clone()).await?;
+                let args = self.call_routine(&a.name, &args, signer.clone()).await?;
                 if let Some(signing_box) = signer {
                     let _ = remove_signing_box(
                         self.ton.clone(),
@@ -277,7 +289,7 @@ impl DEngine {
                 let setter = a
                     .func_attr()
                     .ok_or("routine callback is not specified".to_owned())?;
-                self.run_debot(&setter, Some(json!({ "arg1": res }).into()))
+                self.run_debot(&setter, Some(args))
                     .await?;
                 Ok(None)
             }
@@ -289,7 +301,7 @@ impl DEngine {
         }
     }
 
-    async fn switch_state(&mut self, mut state_to: u8) -> Result<(), String> {
+    async fn switch_state(&mut self, mut state_to: u8, force: bool) -> Result<(), String> {
         debug!("switching to {}", state_to);
         if state_to == STATE_CURRENT {
             state_to = self.curr_state;
@@ -300,7 +312,7 @@ impl DEngine {
         if state_to == STATE_EXIT {
             self.browser.switch(STATE_EXIT).await;
             self.browser.switch_completed().await;
-        } else if state_to != self.curr_state {
+        } else if state_to != self.curr_state || force {
             let mut instant_switch = true;
             self.prev_state = self.curr_state;
             self.curr_state = state_to;
@@ -400,7 +412,10 @@ impl DEngine {
         let state = self.load_state(addr.clone()).await?;
         match self.run(state, addr, abi, name, params).await {
             Ok(res) => Ok(res.output.unwrap_or(json!({}))),
-            Err(e) => Err(self.handle_sdk_err(e).await),
+            Err(e) => {
+                error!("{:?}", e);
+                Err(self.handle_sdk_err(e).await)
+            },
         }
     }
 
@@ -432,7 +447,10 @@ impl DEngine {
                 self.state = res.account;
                 Ok(res.output)
             }
-            Err(e) => Err(self.handle_sdk_err(e).await),
+            Err(e) => {
+                error!("{:?}", e);
+                Err(self.handle_sdk_err(e).await)
+            },
         }
     }
 
@@ -470,8 +488,10 @@ impl DEngine {
         let abi = if call_itself {
             self.abi.clone()
         } else {
-            let (_, abi) = self.get_target()?;
-            abi
+            load_abi(
+                self.target_abi.as_ref()
+                    .ok_or(format!("target abi is undefined"))?
+            )?
         };
 
         let res = decode_message_body(
@@ -635,7 +655,6 @@ impl DEngine {
                 res.decoded.unwrap().output,
             )),
             Err(e) => {
-                error!("{}", e);
                 Err(e)
             }
         }
@@ -695,7 +714,7 @@ impl DEngine {
         {
             Ok(res) => Ok(res.decoded.unwrap().output),
             Err(e) => {
-                error!("{}", e);
+                error!("{:?}", e);
                 Err(self.handle_sdk_err(e).await)
             }
         }
@@ -706,15 +725,17 @@ impl DEngine {
         name: &str,
         args: &str,
         signer: Option<SigningBoxHandle>,
-    ) -> Result<String, String> {
+    ) -> Result<serde_json::Value, String> {
         routines::call_routine(self.ton.clone(), name, args, signer).await
     }
 
     async fn handle_sdk_err(&self, err: ClientError) -> String {
-        if err.message.contains("Wrong data format") {
+        if err.code == ErrorCode::EncodeDeployMessageFailed as u32
+        || err.code == ErrorCode::EncodeRunMessageFailed as u32 {
             // when debot's function argument has invalid format
-            "invalid parameter".to_owned()
-        } else if err.code == 3025 {
+            format!("Invalid parameter")
+        } else if err.code >= (ClientError::TVM as u32) 
+        && err.code <  (ClientError::PROCESSING as u32) {
             // when debot function throws an exception
             if let Some(e) = err.data["exit_code"].as_i64() {
                 self.run_debot_get("getErrorDescription", Some(json!({ "error": e })))
