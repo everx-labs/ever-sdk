@@ -6,7 +6,8 @@ All notable changes to this project will be documented in this file.
 ### New
 - GraphQL optimization: use single web socket to serve all subscriptions.
 - `net.find_last_shard_block` function returning account shard last block ID.
-- **Debot Module:**   
+- **Debot Module:**
+  - Add new variant `ParamsOfAppDebotBrowser::SwitchCompleted` to notify browser when all context actions are shown.
   - Added new 3 engine routines for crypto operations and 1 routine for querying account state (balance, state type, code, data) that can be used in debots.
 
 ### Fixed
