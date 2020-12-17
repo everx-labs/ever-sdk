@@ -119,6 +119,7 @@ impl DEngine {
 
     pub async fn fetch(&mut self) -> Result<(), String> {
         self.state_machine = self.fetch_state().await?;
+        self.prev_state = STATE_EXIT;
         Ok(())
     }
 
@@ -146,7 +147,7 @@ impl DEngine {
 
     pub async fn start(&mut self) -> Result<(), String> {
         self.state_machine = self.fetch_state().await?;
-        self.switch_state(STATE_ZERO).await
+        self.switch_state(STATE_ZERO, true).await
     }
 
     #[allow(dead_code)]
@@ -158,12 +159,21 @@ impl DEngine {
 
     pub async fn execute_action(&mut self, act: &DAction) -> Result<(), String> {
         match self.handle_action(&act).await {
-            Ok(_) => self.switch_state(act.to).await,
+            Ok(acts) => {
+                if let Some(acts) = acts {
+                    for a in acts {
+                        if a.is_engine_call() {
+                            self.handle_action(&a).await?;
+                        }
+                    }
+                }
+                self.switch_state(act.to, act.is_invoke()).await
+            },
             Err(e) => {
                 self.browser
                     .log(format!("Action failed: {}. Return to previous state.\n", e))
                     .await;
-                self.switch_state(self.prev_state).await
+                self.switch_state(self.prev_state, false).await
             }
         }
     }
@@ -229,6 +239,7 @@ impl DEngine {
                     &debot_addr, debot_action.name
                 );
                 self.browser.invoke_debot(debot_addr, debot_action).await?;
+                debug!("invoke completed");
                 Ok(None)
             }
             AcType::Print => {
@@ -266,7 +277,7 @@ impl DEngine {
                 } else {
                     None
                 };
-                let res = self.call_routine(&a.name, &args, signer.clone()).await?;
+                let args = self.call_routine(&a.name, &args, signer.clone()).await?;
                 if let Some(signing_box) = signer {
                     let _ = remove_signing_box(
                         self.ton.clone(),
@@ -277,7 +288,7 @@ impl DEngine {
                 let setter = a
                     .func_attr()
                     .ok_or("routine callback is not specified".to_owned())?;
-                self.run_debot(&setter, Some(json!({ "arg1": res }).into()))
+                self.run_debot(&setter, Some(args))
                     .await?;
                 Ok(None)
             }
@@ -289,7 +300,7 @@ impl DEngine {
         }
     }
 
-    async fn switch_state(&mut self, mut state_to: u8) -> Result<(), String> {
+    async fn switch_state(&mut self, mut state_to: u8, force: bool) -> Result<(), String> {
         debug!("switching to {}", state_to);
         if state_to == STATE_CURRENT {
             state_to = self.curr_state;
@@ -299,7 +310,7 @@ impl DEngine {
         }
         if state_to == STATE_EXIT {
             self.browser.switch(STATE_EXIT).await;
-        } else if state_to != self.curr_state {
+        } else if state_to != self.curr_state || force {
             let mut instant_switch = true;
             self.prev_state = self.curr_state;
             self.curr_state = state_to;
@@ -467,8 +478,10 @@ impl DEngine {
         let abi = if call_itself {
             self.abi.clone()
         } else {
-            let (_, abi) = self.get_target()?;
-            abi
+            load_abi(
+                self.target_abi.as_ref()
+                    .ok_or(format!("target abi is undefined"))?
+            )?
         };
 
         let res = decode_message_body(
@@ -703,7 +716,7 @@ impl DEngine {
         name: &str,
         args: &str,
         signer: Option<SigningBoxHandle>,
-    ) -> Result<String, String> {
+    ) -> Result<serde_json::Value, String> {
         routines::call_routine(self.ton.clone(), name, args, signer).await
     }
 
