@@ -18,11 +18,16 @@ use rand::RngCore;
 use tokio::sync::mpsc::{channel, Sender};
 
 mod errors;
+
 pub use errors::{Error, ErrorCode};
 
-mod node_client;
-pub(crate) use node_client::{NodeClient, MAX_TIMEOUT};
-pub use node_client::{OrderBy, SortDirection};
+mod gql;
+mod websocket_link;
+mod server_link;
+mod server_info;
+
+pub use gql::{OrderBy, SortDirection};
+pub(crate) use server_link::{ServerLink, MAX_TIMEOUT};
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 
@@ -87,30 +92,20 @@ fn deserialize_out_of_sync_threshold<'de, D: Deserializer<'de>>(
 #[derive(Serialize, Deserialize, Debug, Clone, ApiType)]
 pub struct NetworkConfig {
     pub server_address: String,
-    #[serde(
-        default = "default_network_retries_count",
-        deserialize_with = "deserialize_network_retries_count"
-    )]
+    #[serde(default = "default_network_retries_count",
+    deserialize_with = "deserialize_network_retries_count")]
     pub network_retries_count: i8,
-    #[serde(
-        default = "default_message_retries_count",
-        deserialize_with = "deserialize_message_retries_count"
-    )]
+    #[serde(default = "default_message_retries_count",
+    deserialize_with = "deserialize_message_retries_count")]
     pub message_retries_count: i8,
-    #[serde(
-        default = "default_message_processing_timeout",
-        deserialize_with = "deserialize_message_processing_timeout"
-    )]
+    #[serde(default = "default_message_processing_timeout",
+    deserialize_with = "deserialize_message_processing_timeout")]
     pub message_processing_timeout: u32,
-    #[serde(
-        default = "default_wait_for_timeout",
-        deserialize_with = "deserialize_wait_for_timeout"
-    )]
+    #[serde(default = "default_wait_for_timeout",
+    deserialize_with = "deserialize_wait_for_timeout")]
     pub wait_for_timeout: u32,
-    #[serde(
-        default = "default_out_of_sync_threshold",
-        deserialize_with = "deserialize_out_of_sync_threshold"
-    )]
+    #[serde(default = "default_out_of_sync_threshold",
+    deserialize_with = "deserialize_out_of_sync_threshold")]
     pub out_of_sync_threshold: u32,
     pub access_key: Option<String>,
 }
@@ -204,16 +199,14 @@ pub struct ResultOfSubscribeCollection {
     pub handle: u32,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Clone, Debug)]
 pub struct ResultOfSubscription {
     /// First appeared object that matches the provided criteria
     pub result: serde_json::Value,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub(crate) enum SubscriptionAction {
-    Suspend,
-    Resume,
     Finish,
 }
 
@@ -231,19 +224,15 @@ pub async fn query(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfQuery,
 ) -> ClientResult<ResultOfQuery> {
-    let client = context.get_client()?;
-    let result = client
-        .query(
-            &params.query,
-            params.variables,
-            None,
-        )
-        .await
-        .map_err(|err| Error::queries_query_failed(err).add_network_url(client))?;
+    let client = context.get_server_link()?;
+    let result = client.query(
+        &params.query,
+        params.variables,
+        None,
+    ).await.map_err(|err| Error::queries_query_failed(err).add_network_url(client))?;
 
     let result = serde_json::from_value(result).map_err(|err| {
-        Error::queries_query_failed(format!("Can not parse result: {}", err))
-            .add_network_url(client)
+        Error::queries_query_failed(format!("Can not parse result: {}", err)).add_network_url(client)
     })?;
 
     Ok(ResultOfQuery { result })
@@ -259,22 +248,18 @@ pub async fn query_collection(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfQueryCollection,
 ) -> ClientResult<ResultOfQueryCollection> {
-    let client = context.get_client()?;
-    let result = client
-        .query_collection(
-            &params.collection,
-            &params.filter.unwrap_or(json!({})),
-            &params.result,
-            params.order,
-            params.limit,
-            None,
-        )
-        .await
-        .map_err(|err| Error::queries_query_failed(err).add_network_url(client))?;
+    let client = context.get_server_link()?;
+    let result = client.query_collection(
+        &params.collection,
+        &params.filter.unwrap_or(json!({})),
+        &params.result,
+        params.order,
+        params.limit,
+        None,
+    ).await.map_err(|err| Error::queries_query_failed(err).add_network_url(client))?;
 
     let result = serde_json::from_value(result).map_err(|err| {
-        Error::queries_query_failed(format!("Can not parse result: {}", err))
-            .add_network_url(client)
+        Error::queries_query_failed(format!("Can not parse result: {}", err)).add_network_url(client)
     })?;
 
     Ok(ResultOfQueryCollection { result })
@@ -293,35 +278,29 @@ pub async fn wait_for_collection(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfWaitForCollection,
 ) -> ClientResult<ResultOfWaitForCollection> {
-    let client = context.get_client()?;
-    let result = client
-        .wait_for(
-            &params.collection,
-            &params.filter.unwrap_or(json!({})),
-            &params.result,
-            params.timeout,
-        )
-        .await
-        .map_err(|err| Error::queries_wait_for_failed(err).add_network_url(client))?;
+    let client = context.get_server_link()?;
+    let result = client.wait_for(
+        &params.collection,
+        &params.filter.unwrap_or(json!({})),
+        &params.result,
+        params.timeout,
+    ).await.map_err(|err| Error::queries_wait_for_failed(err).add_network_url(client))?;
 
     Ok(ResultOfWaitForCollection { result })
 }
 
 async fn create_subscription(
-    context: std::sync::Arc<ClientContext>, params: &ParamsOfSubscribeCollection
-) -> ClientResult<node_client::Subscription> {
-    let client = context.get_client()?;
-    client
-        .subscribe(
-            &params.collection,
-            params.filter.as_ref().unwrap_or(&json!({})),
-            &params.result,
-        )
-        .await
-        .map_err(|err| Error::queries_subscribe_failed(err).add_network_url(client))
+    context: std::sync::Arc<ClientContext>, params: &ParamsOfSubscribeCollection,
+) -> ClientResult<server_link::Subscription> {
+    let client = context.get_server_link()?;
+    client.subscribe(
+        &params.collection,
+        params.filter.as_ref().unwrap_or(&json!({})),
+        &params.result,
+    ).await.map_err(|err| Error::queries_subscribe_failed(err).add_network_url(client))
 }
 
-pub async fn subscribe_collection<F: Future<Output = ()> + Send>(
+pub async fn subscribe_collection<F: Future<Output=()> + Send>(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfSubscribeCollection,
     callback: impl Fn(ClientResult<ResultOfSubscription>) -> F + Send + Sync + 'static,
@@ -331,62 +310,27 @@ pub async fn subscribe_collection<F: Future<Output = ()> + Send>(
     let mut subscription = Some(create_subscription(context.clone(), &params).await?);
 
     let (sender, mut receiver) = channel(1);
-
     add_subscription_handle(&context, handle, sender).await;
 
     // spawn thread which reads subscription stream and calls callback with data
     context.clone().env.spawn(Box::pin(async move {
-        let mut last_action = None;
-        while last_action != Some(SubscriptionAction::Finish) {
-            if last_action != Some(SubscriptionAction::Suspend) {
-                let subscription = subscription.take().unwrap();
-                let mut data_stream = subscription.data_stream.fuse();
-                let wait_action = receiver.recv().fuse();
-                futures::pin_mut!(wait_action);
-                loop {
-                    futures::select!(
-                        // waiting next subscription data
-                        data = data_stream.select_next_some() => {
-                            callback(data.map(|data| ResultOfSubscription { result: data })).await
-                        },
-                        // waiting for some action with subscription
-                        action = wait_action => match action {
-                            None => {
-                                last_action = Some(SubscriptionAction::Finish);
-                                break;
-                            },
-                            Some(SubscriptionAction::Resume) => {},
-                            _ => {
-                                last_action = action;
-                                break;
-                            }
-                        }
-                    );
+        let subscription = subscription.take().unwrap();
+        let mut data_stream = subscription.data_stream.fuse();
+        let wait_action = receiver.recv().fuse();
+        futures::pin_mut!(wait_action);
+        loop {
+            futures::select!(
+                // waiting next subscription data
+                data = data_stream.select_next_some() => {
+                    callback(data.map(|data| ResultOfSubscription { result: data })).await
+                },
+                // waiting for some action with subscription (the only action is Finish)
+                _action = wait_action => {
+                    break;
                 }
-                subscription.unsubscribe.await;
-            }
-            loop {
-                match last_action {
-                    Some(SubscriptionAction::Suspend) => last_action = receiver.recv().await,
-                    Some(SubscriptionAction::Finish) | None => {
-                        last_action = Some(SubscriptionAction::Finish);
-                        break;
-                    }
-                    Some(SubscriptionAction::Resume) => {
-                        let result = create_subscription(context.clone(), &params).await;
-                        match result {
-                            Ok(resumed) => subscription = Some(resumed),
-                            Err(err) => {
-                                callback(Err(err)).await;
-                                last_action = Some(SubscriptionAction::Suspend);
-                            }
-                        }
-                        break;
-                    },
-                }
-            }
+            );
         }
-        
+        subscription.unsubscribe.await;
     }));
 
     Ok(ResultOfSubscribeCollection { handle })
@@ -401,9 +345,8 @@ pub async fn unsubscribe(
     params: ResultOfSubscribeCollection,
 ) -> ClientResult<()> {
     if let Some(mut sender) = extract_subscription_handle(&context, &params.handle).await {
-        let _ = sender.send(SubscriptionAction::Finish);
+        let _ = sender.send(SubscriptionAction::Finish).await;
     }
-
     Ok(())
 }
 
@@ -412,14 +355,7 @@ pub async fn unsubscribe(
 pub async fn suspend(
     context: std::sync::Arc<ClientContext>,
 ) -> ClientResult<()> {
-    context.get_client()?.suspend();
-
-    let mut subscriptions = context.net.subscriptions.lock().await;
-
-    for sender in subscriptions.values_mut() {
-        let _ = sender.send(SubscriptionAction::Suspend).await;
-    }
-
+    context.get_server_link()?.suspend().await;
     Ok(())
 }
 
@@ -428,14 +364,7 @@ pub async fn suspend(
 pub async fn resume(
     context: std::sync::Arc<ClientContext>,
 ) -> ClientResult<()> {
-    context.get_client()?.resume();
-
-    let mut subscriptions = context.net.subscriptions.lock().await;
-
-    for sender in subscriptions.values_mut() {
-        let _ = sender.send(SubscriptionAction::Resume).await;
-    }
-
+    context.get_server_link()?.resume().await;
     Ok(())
 }
 

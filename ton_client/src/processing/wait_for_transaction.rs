@@ -37,7 +37,7 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
     params: ParamsOfWaitForTransaction,
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync,
 ) -> ClientResult<ResultOfProcessMessage> {
-    let net = context.get_client()?;
+    let net = context.get_server_link()?;
 
     // Prepare to wait
     let message = Contract::deserialize_message(&base64_decode(&params.message)?)

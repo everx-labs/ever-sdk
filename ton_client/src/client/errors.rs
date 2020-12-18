@@ -35,6 +35,7 @@ pub enum ErrorCode {
     CanNotParseRequestResult = CLIENT + 30,
     UnexpectedCallbackResponse = CLIENT + 31,
     CanNotParseNumber = CLIENT + 32,
+    InternalError = CLIENT + 33,
 }
 pub struct Error;
 
@@ -50,6 +51,10 @@ impl Error {
             || error.code == ErrorCode::WebsocketReceiveError as u32
             || error.code == ErrorCode::WebsocketSendError as u32
             || error.code == ErrorCode::HttpRequestSendError as u32
+    }
+
+    pub fn internal_error(message: &str) -> ClientError {
+        error(ErrorCode::InternalError, message.into())
     }
 
     pub fn not_implemented(message: &str) -> ClientError {

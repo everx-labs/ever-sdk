@@ -1,5 +1,7 @@
 use crate::error::ClientError;
 use std::fmt::Display;
+use serde_json::Value;
+
 const NET: isize = ClientError::NET; // 600
 
 pub enum ErrorCode {
@@ -13,6 +15,7 @@ pub enum ErrorCode {
     GraphqlError = NET + 8,
     NetworkModuleSuspended = NET + 9,
 }
+
 pub struct Error;
 
 fn error(code: ErrorCode, message: String) -> ClientError {
@@ -74,6 +77,25 @@ impl Error {
             ErrorCode::GraphqlError,
             format!("Graphql server returned error: {}", err),
         )
+    }
+
+    fn try_get_message(server_errors: &Vec<Value>) -> Option<String> {
+        for error in server_errors.iter() {
+            if let Some(message) = error["message"].as_str() {
+                return Some(message.to_string());
+            }
+        }
+        None
+    }
+
+    pub fn graphql_server_error(operation: &str, errors: &Vec<Value>) -> ClientError {
+        error(
+            ErrorCode::GraphqlError,
+            if let Some(message) = Self::try_get_message(errors) {
+                format!("Graphql {} error: {}.", operation, message)
+            } else {
+                format!("Graphql {} error.", operation)
+            })
     }
 
     pub fn network_module_suspended() -> ClientError {
