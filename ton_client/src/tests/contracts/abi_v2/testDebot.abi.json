@@ -158,6 +158,143 @@
 			]
 		},
 		{
+			"name": "sendTestMsg",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"dest","type":"address"},
+				{"name":"body","type":"cell"}
+			]
+		},
+		{
+			"name": "setTargetAddr",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testgenKeypairFromSecret",
+			"inputs": [
+			],
+			"outputs": [
+				{"components":[{"name":"desc","type":"bytes"},{"name":"name","type":"bytes"},{"name":"actionType","type":"uint8"},{"name":"attrs","type":"bytes"},{"name":"to","type":"uint8"},{"name":"misc","type":"cell"}],"name":"actions","type":"tuple[]"}
+			]
+		},
+		{
+			"name": "testgenRandom",
+			"inputs": [
+			],
+			"outputs": [
+				{"components":[{"name":"desc","type":"bytes"},{"name":"name","type":"bytes"},{"name":"actionType","type":"uint8"},{"name":"attrs","type":"bytes"},{"name":"to","type":"uint8"},{"name":"misc","type":"cell"}],"name":"actions","type":"tuple[]"}
+			]
+		},
+		{
+			"name": "testencryptAuth",
+			"inputs": [
+			],
+			"outputs": [
+				{"components":[{"name":"desc","type":"bytes"},{"name":"name","type":"bytes"},{"name":"actionType","type":"uint8"},{"name":"attrs","type":"bytes"},{"name":"to","type":"uint8"},{"name":"misc","type":"cell"}],"name":"actions","type":"tuple[]"}
+			]
+		},
+		{
+			"name": "testgetAccountState",
+			"inputs": [
+			],
+			"outputs": [
+				{"components":[{"name":"desc","type":"bytes"},{"name":"name","type":"bytes"},{"name":"actionType","type":"uint8"},{"name":"attrs","type":"bytes"},{"name":"to","type":"uint8"},{"name":"misc","type":"cell"}],"name":"actions","type":"tuple[]"}
+			]
+		},
+		{
+			"name": "setKeypair",
+			"inputs": [
+				{"name":"publicKey","type":"uint256"},
+				{"name":"secretKey","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setEncrypted",
+			"inputs": [
+				{"name":"encrypted","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getSecret",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"secret","type":"uint256"}
+			]
+		},
+		{
+			"name": "getLength",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"length","type":"uint32"}
+			]
+		},
+		{
+			"name": "setRandom",
+			"inputs": [
+				{"name":"buffer","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getEncryptParams",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"decrypted","type":"bytes"},
+				{"name":"nonce","type":"bytes"},
+				{"name":"publicKey","type":"uint256"},
+				{"name":"secretKey","type":"uint256"}
+			]
+		},
+		{
+			"name": "setState",
+			"inputs": [
+				{"name":"balance","type":"uint256"},
+				{"name":"acc_type","type":"int8"},
+				{"name":"last_trans_lt","type":"uint64"},
+				{"name":"code","type":"cell"},
+				{"name":"data","type":"cell"},
+				{"name":"lib","type":"cell"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testgetBalance",
+			"inputs": [
+			],
+			"outputs": [
+				{"components":[{"name":"desc","type":"bytes"},{"name":"name","type":"bytes"},{"name":"actionType","type":"uint8"},{"name":"attrs","type":"bytes"},{"name":"to","type":"uint8"},{"name":"misc","type":"cell"}],"name":"actions","type":"tuple[]"}
+			]
+		},
+		{
+			"name": "getAddr",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"addr","type":"address"}
+			]
+		},
+		{
+			"name": "setBalance",
+			"inputs": [
+				{"name":"arg1","type":"uint128"}
+			],
+			"outputs": [
+			]
+		},
+		{
 			"name": "getDebotOptions",
 			"inputs": [
 			],

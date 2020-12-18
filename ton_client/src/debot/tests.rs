@@ -52,6 +52,7 @@ struct BrowserData {
     pub address: String,
     pub client: Arc<TestClient>,
     pub finished: AtomicBool,
+    pub switch_started: AtomicBool,
 }
 
 impl TestBrowser {
@@ -140,6 +141,7 @@ impl TestBrowser {
             keys,
             address: address.clone(),
             finished: AtomicBool::new(false),
+            switch_started: AtomicBool::new(false),
         });
 
         Self::execute_from_state(client, state, "debot.start").await
@@ -151,10 +153,14 @@ impl TestBrowser {
                 state.current.lock().await.outputs.push(msg);
             },
             ParamsOfAppDebotBrowser::Switch { context_id } => {
+                assert_eq!(state.switch_started.swap(true, Ordering::Relaxed), false);
                 if context_id == STATE_EXIT {
                     state.finished.store(true, Ordering::Relaxed);
                 }
                 state.current.lock().await.available_actions.clear();
+            },
+            ParamsOfAppDebotBrowser::SwitchCompleted => {
+                assert_eq!(state.switch_started.swap(false, Ordering::Relaxed), true);
             },
             ParamsOfAppDebotBrowser::ShowAction { action } => {
                 state.current.lock().await.available_actions.push(action);
@@ -198,6 +204,7 @@ impl TestBrowser {
                     keys: state.keys.clone(),
                     address: debot_addr,
                     finished: AtomicBool::new(false),
+                    switch_started: AtomicBool::new(false),
                 });
                 Self::call_execute_boxed(client, state, "debot.fetch").await;
                 ResultOfAppDebotBrowser::InvokeDebot
@@ -329,15 +336,17 @@ async fn test_debot_print() {
 }
 
 #[tokio::test(core_threads = 2)]
-async fn test_debot_run() {
+async fn test_debot_runact() {
     let client = std::sync::Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys } = init_debot(client.clone()).await;
 
     let steps = json!([
-        { "choice": 3, "inputs": ["-1:1111111111111111111111111111111111111111111111111111111111111111"], "outputs": ["Test Run Action", "test1: instant run 1", "test2: instant run 2"] },
-        { "choice": 1, "inputs": ["hello"], "outputs": [] },
-        { "choice": 2, "inputs": [], "outputs": [ "integer=2,addr=-1:1111111111111111111111111111111111111111111111111111111111111111,string=hello"] },
-        { "choice": 3, "inputs": [], "outputs": ["Debot Tests"] },
+        { "choice": 3, "inputs": [], "outputs": ["Test Run Action"] },
+        { "choice": 1, "inputs": ["-1:1111111111111111111111111111111111111111111111111111111111111111"], "outputs": ["Test Instant Run", "test1: instant run 1", "test2: instant run 2"] },
+        { "choice": 1, "inputs": [], "outputs": ["Test Run Action"] },
+        { "choice": 2, "inputs": ["hello"], "outputs": [] },
+        { "choice": 3, "inputs": [], "outputs": ["integer=2,addr=-1:1111111111111111111111111111111111111111111111111111111111111111,string=hello"] },
+        { "choice": 4, "inputs": [], "outputs": ["Debot Tests"] },
         { "choice": 8, "inputs": [], "outputs": [] },
     ]);
     TestBrowser::execute(
@@ -395,13 +404,40 @@ async fn test_debot_invoke_debot() {
     let DebotData { debot_addr, target_addr: _, keys } = init_debot(client.clone()).await;
 
     let steps = json!([
-        { "choice": 6, "inputs": [debot_addr], "outputs": ["Test Invoke Debot Action", "enter debot address:"] },
-        { "choice": 1, "inputs": [], "outputs": [], "invokes": [
-                [{ "choice": 1, "inputs": [], "outputs": ["Print test string", "Debot is invoked"] }],
+        { "choice": 6, "inputs": [debot_addr.clone()], "outputs": ["Test Invoke Debot Action", "enter debot address:"] },
+        { "choice": 1, "inputs": [debot_addr.clone()], "outputs": ["Test Invoke Debot Action", "enter debot address:"], 
+            "invokes": [
+                [
+                    { "choice": 1, "inputs": [], "outputs": ["Print test string", "Debot is invoked"] },
+                    { "choice": 1, "inputs": [], "outputs": ["Sending message {}", "Transaction succeeded."] }
+                ],
             ] 
         },
         { "choice": 2, "inputs": [], "outputs": ["Debot Tests"] },
         { "choice": 8, "inputs": [], "outputs": [] },
+    ]);
+    TestBrowser::execute(
+        client.clone(),
+        debot_addr.clone(),
+        keys.clone(),
+        serde_json::from_value(steps).unwrap()
+    ).await;
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_debot_engine_calls() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys } = init_debot(client.clone()).await;
+
+    let steps = json!([
+        { "choice": 7, "inputs": [], "outputs": ["Test Engine Calls"] },
+        { "choice": 1, "inputs": [], "outputs": [] },
+        { "choice": 2, "inputs": [], "outputs": [] },
+        { "choice": 3, "inputs": [], "outputs": [] },
+        { "choice": 4, "inputs": [], "outputs": [] },
+        { "choice": 5, "inputs": [], "outputs": [] },
+        { "choice": 6, "inputs": [], "outputs": ["Debot Tests"] },
+        { "choice": 8, "inputs": [], "outputs": [] }
     ]);
     TestBrowser::execute(
         client.clone(),

@@ -335,3 +335,20 @@ async fn subscribe_for_messages() {
         .await
         .unwrap();
 }
+
+#[tokio::test(core_threads = 2)]
+async fn find_last_shard_block() {
+    let client = TestClient::new();
+
+    let block: ResultOfFindLastShardBlock = client
+        .request_async(
+            "net.find_last_shard_block",
+            ParamsOfFindLastShardBlock {
+                address: TestClient::get_giver_address(),
+            },
+        )
+        .await
+        .unwrap();
+
+    println!("{}", block.block_id);
+}
