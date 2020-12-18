@@ -134,8 +134,8 @@ pub struct ResultOfNaclSignOpen {
 /// 
 /// Verifies the signature in `signed` using the signer's public key `public` 
 /// and returns the message `unsigned`.
-
-If the signature fails verification, crypto_sign_open raises an exception.
+///
+/// If the signature fails verification, crypto_sign_open raises an exception.
 #[api_function]
 pub fn nacl_sign_open(
     _context: std::sync::Arc<ClientContext>,
