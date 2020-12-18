@@ -79,7 +79,7 @@ pub fn nacl_sign(
 
 //------------------------------------------------------------------------------ nacl_sign_detached
 #[doc(summary = "")]
-///
+
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfNaclSignDetached {
     /// Data that must be signed encoded in `base64`.
@@ -93,6 +93,11 @@ pub struct ResultOfNaclSignDetached {
     /// Signature encoded in `hex`.
     pub signature: String,
 }
+
+/// Signs the message using the secret key and returns a signature.
+/// 
+/// Signs the message `unsigned` using the secret key `secret`
+/// and returns a signature `signature`.
 
 #[api_function]
 pub fn nacl_sign_detached(
@@ -125,6 +130,12 @@ pub struct ResultOfNaclSignOpen {
     pub unsigned: String,
 }
 
+/// Verifies the signature and returns the unsigned message
+/// 
+/// Verifies the signature in `signed` using the signer's public key `public` 
+/// and returns the message `unsigned`.
+
+If the signature fails verification, crypto_sign_open raises an exception.
 #[api_function]
 pub fn nacl_sign_open(
     _context: std::sync::Arc<ClientContext>,
@@ -163,6 +174,7 @@ fn prepare_to_convert(
 
 //-------------------------------------------------------------------------------- nacl_box_keypair
 
+/// Generates a random NaCl key pair
 #[api_function]
 pub fn nacl_box_keypair(_context: std::sync::Arc<ClientContext>) -> ClientResult<KeyPair> {
     let mut sk = [0u8; 32];

@@ -170,7 +170,7 @@ pub struct ResultOfRunTvm {
     pub decoded: Option<DecodedOutput>,
 
     /// Updated account state BOC. Encoded as `base64`.
-    /// Attention! only `account_state.storage.state.data` part of the boc is updated. 
+    /// Attention! Only `account_state.storage.state.data` part of the boc is updated. 
     pub account: String,
 }
 
