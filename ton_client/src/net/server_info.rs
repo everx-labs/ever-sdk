@@ -12,10 +12,10 @@
  *
  */
 
-use std::sync::Arc;
-use crate::client::{ClientEnv, FetchMethod};
+use crate::client::{core_version, ClientEnv, FetchMethod};
 use crate::error::ClientResult;
 use crate::net::Error;
+use std::sync::Arc;
 
 pub(crate) struct ServerVersion {
     pub version: u64,
@@ -44,6 +44,10 @@ pub(crate) struct ServerInfo {
 }
 
 impl ServerInfo {
+    pub fn http_headers() -> Vec<(String, String)> {
+        vec![("tonclient-core-version".to_string(), core_version())]
+    }
+
     pub fn expand_address(base_url: &str) -> String {
         let base_url = if base_url.starts_with("http://") || base_url.starts_with("https://") {
             base_url.to_owned()
@@ -89,4 +93,3 @@ impl ServerInfo {
         })
     }
 }
-
