@@ -19,8 +19,9 @@ use crate::net::gql::{
 };
 use crate::net::server_info::ServerInfo;
 use crate::net::{Error, NetworkConfig};
+use futures::stream::{Fuse, FusedStream};
 use futures::Sink;
-use futures::{FutureExt, SinkExt, StreamExt};
+use futures::{SinkExt, StreamExt};
 use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -37,8 +38,6 @@ enum HandlerAction {
     Resume,
 
     CheckKeepAlivePassed,
-
-    Drop,
 }
 
 impl HandlerAction {
@@ -104,8 +103,8 @@ impl RunningOperation {
 }
 
 enum KeepAlive {
-    None,
-    WaitFirst { since: u64 },
+    WaitFirst,
+    WaitSecond { since_first_time: u64 },
     WaitNext { timeout: u64 },
     Passed { timeout: u64 },
 }
@@ -115,15 +114,14 @@ enum Phase {
     Idle,
     Connecting,
     Connected,
-    Finished,
 }
 
 pub(crate) struct LinkHandler {
     config: NetworkConfig,
     client_env: Arc<ClientEnv>,
-    action_receiver: Receiver<HandlerAction>,
+    action_receiver: Fuse<Receiver<HandlerAction>>,
     internal_action_sender: Sender<HandlerAction>,
-    internal_action_receiver: Receiver<HandlerAction>,
+    internal_action_receiver: Fuse<Receiver<HandlerAction>>,
     last_operation_id: u32,
     operations: HashMap<u32, RunningOperation>,
     keep_alive: KeepAlive,
@@ -141,12 +139,12 @@ impl LinkHandler {
             LinkHandler {
                 config,
                 client_env,
-                action_receiver,
+                action_receiver: action_receiver.fuse(),
                 internal_action_sender,
-                internal_action_receiver,
+                internal_action_receiver: internal_action_receiver.fuse(),
                 last_operation_id: 0,
                 operations: HashMap::new(),
-                keep_alive: KeepAlive::None,
+                keep_alive: KeepAlive::WaitFirst,
             }
             .run_loop()
             .await;
@@ -156,21 +154,13 @@ impl LinkHandler {
 
     async fn run_loop(&mut self) {
         let mut phase = Phase::Idle;
-        while phase == Phase::Idle {
-            let (internal_action, action) = {
-                let wait_internal_action = self.internal_action_receiver.recv().fuse();
-                let wait_action = self.action_receiver.recv().fuse();
-                futures::pin_mut!(wait_internal_action);
-                futures::pin_mut!(wait_action);
-                futures::select!(
-                    internal_action = wait_internal_action => (Some(internal_action), None),
-                    action = wait_action => (None, Some(action)),
-                )
-            };
+        while !self.action_receiver.is_terminated() && phase == Phase::Idle {
+            let (internal_action, action) = futures::select!(
+                internal_action = self.internal_action_receiver.select_next_some() => (Some(internal_action), None),
+                action = self.action_receiver.select_next_some() => (None, Some(action)),
+            );
             if let Some(action) = internal_action.or(action) {
-                phase = self
-                    .handle_idle_action(action.unwrap_or(HandlerAction::Drop))
-                    .await;
+                phase = self.handle_idle_action(action).await;
             }
             if phase == Phase::Connecting {
                 phase = self.run_ws().await;
@@ -189,25 +179,19 @@ impl LinkHandler {
         let mut phase = Phase::Connecting;
         let mut ws_receiver = ws.receiver.fuse();
         let mut ws_sender = ws.sender;
-        while phase == Phase::Connecting || phase == Phase::Connected {
-            let (message, internal_action, action) = {
-                let wait_internal_action = self.internal_action_receiver.recv().fuse();
-                let wait_action = self.action_receiver.recv().fuse();
-                futures::pin_mut!(wait_internal_action);
-                futures::pin_mut!(wait_action);
-                futures::select!(
-                    message = ws_receiver.select_next_some() => (Some(message), None, None),
-                    internal_action = wait_internal_action => (None, Some(internal_action), None),
-                    action = wait_action => (None, None, Some(action)),
-                )
-            };
+        while !self.action_receiver.is_terminated()
+            && (phase == Phase::Connecting || phase == Phase::Connected)
+        {
+            let (message, internal_action, action) = futures::select!(
+                message = ws_receiver.select_next_some() => (Some(message), None, None),
+                internal_action = self.internal_action_receiver.select_next_some() => (None, Some(internal_action), None),
+                action = self.action_receiver.select_next_some() => (None, None, Some(action)),
+            );
             if let Some(message) = message {
                 phase = self.handle_ws_message(message, &mut ws_sender, phase).await
             }
             if let Some(action) = internal_action.or(action) {
-                phase = self
-                    .handle_ws_action(action.unwrap_or(HandlerAction::Drop), &mut ws_sender, phase)
-                    .await
+                phase = self.handle_ws_action(action, &mut ws_sender, phase).await
             }
         }
         phase
@@ -225,13 +209,12 @@ impl LinkHandler {
             }
             HandlerAction::Suspend => Phase::Idle,
             HandlerAction::Resume => Phase::Connecting,
-            HandlerAction::Drop => Phase::Finished,
             HandlerAction::CheckKeepAlivePassed => Phase::Idle,
         }
     }
 
     async fn connect(&mut self) -> ClientResult<WebSocket> {
-        self.keep_alive = KeepAlive::None;
+        self.keep_alive = KeepAlive::WaitFirst;
         let server_info = ServerInfo::fetch(
             self.client_env.clone(),
             &ServerInfo::expand_address(&self.config.server_address),
@@ -285,10 +268,10 @@ impl LinkHandler {
             }
             HandlerAction::Resume => {}
             HandlerAction::CheckKeepAlivePassed => match self.keep_alive {
-                KeepAlive::None => {}
-                KeepAlive::WaitFirst { .. } => {}
+                KeepAlive::WaitFirst => {}
+                KeepAlive::WaitSecond { .. } => {}
                 KeepAlive::WaitNext { .. } => {
-                    self.keep_alive = KeepAlive::None;
+                    self.keep_alive = KeepAlive::WaitFirst;
                     self.send_error_to_running_operations(Error::websocket_disconnected(
                         "keep alive message wasn't received",
                     ))
@@ -299,7 +282,6 @@ impl LinkHandler {
                     self.start_keep_alive_timer(timeout);
                 }
             },
-            HandlerAction::Drop => next_phase = Phase::Finished,
         }
         next_phase
     }
@@ -333,11 +315,13 @@ impl LinkHandler {
                 next_phase = Phase::Connected;
             }
             GraphQLMessageFromServer::ConnectionKeepAlive => match self.keep_alive {
-                KeepAlive::None => {
-                    self.keep_alive = KeepAlive::WaitFirst {since:self.client_env.now_ms()};
+                KeepAlive::WaitFirst => {
+                    self.keep_alive = KeepAlive::WaitSecond {
+                        since_first_time: self.client_env.now_ms(),
+                    };
                 }
-                KeepAlive::WaitFirst { since } => {
-                    self.start_keep_alive_timer((self.client_env.now_ms() - since) * 2);
+                KeepAlive::WaitSecond { since_first_time } => {
+                    self.start_keep_alive_timer((self.client_env.now_ms() - since_first_time) * 2);
                 }
                 KeepAlive::WaitNext { timeout } => self.keep_alive = KeepAlive::Passed { timeout },
                 KeepAlive::Passed { .. } => {}
