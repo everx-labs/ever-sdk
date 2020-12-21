@@ -1,3 +1,4 @@
+use crate::client::core_version;
 use serde_json::Value;
 use std::fmt::Display;
 
@@ -35,7 +36,7 @@ impl ClientError {
 
     pub fn new(code: u32, message: String, data: Value) -> Self {
         let mut data = data;
-        data["core_version"] = Value::String(env!("CARGO_PKG_VERSION").to_owned());
+        data["core_version"] = Value::String(core_version());
         Self {
             code,
             message,
@@ -48,7 +49,7 @@ impl ClientError {
             code,
             message,
             data: json!({
-                "core_version": env!("CARGO_PKG_VERSION").to_owned(),
+                "core_version": core_version(),
             }),
         }
     }

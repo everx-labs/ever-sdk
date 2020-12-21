@@ -224,6 +224,9 @@ impl ServerLink {
 
         let mut headers = HashMap::new();
         headers.insert("content-type".to_owned(), "application/json".to_owned());
+        for (name, value) in ServerInfo::http_headers() {
+            headers.insert(name, value);
+        }
 
         let response = self
             .client_env
