@@ -16,6 +16,7 @@ mod errors;
 pub(crate) mod hash;
 pub(crate) mod internal;
 pub(crate) mod parse;
+pub(crate) mod tvc;
 
 #[cfg(test)]
 mod tests;
@@ -29,3 +30,4 @@ pub use blockchain_config::{
 };
 pub use errors::{Error, ErrorCode};
 pub use hash::{get_boc_hash, ParamsOfGetBocHash, ResultOfGetBocHash};
+pub use tvc::{get_code_from_tvc, ParamsOfGetCodeFromTvc, ResultOfGetCodeFromTvc};
