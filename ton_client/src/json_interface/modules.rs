@@ -297,6 +297,7 @@ fn register_boc(handlers: &mut RuntimeHandlers) {
         crate::boc::blockchain_config::get_blockchain_config_api,
     );
     module.register_sync_fn(crate::boc::get_boc_hash, crate::boc::hash::get_boc_hash_api);
+    module.register_sync_fn(crate::boc::get_code_from_tvc, crate::boc::tvc::get_code_from_tvc_api);
     module.register();
 }
 
