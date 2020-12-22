@@ -37,6 +37,10 @@ use crate::json_interface::runtime::Runtime;
 use api_info::API;
 use std::sync::Arc;
 
+pub fn core_version() -> String {
+    env!("CARGO_PKG_VERSION").into()
+}
+
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 pub struct ResultOfVersion {
     /// Core Library version
@@ -47,7 +51,7 @@ pub struct ResultOfVersion {
 #[api_function]
 pub fn version(_context: Arc<ClientContext>) -> ClientResult<ResultOfVersion> {
     Ok(ResultOfVersion {
-        version: env!("CARGO_PKG_VERSION").to_owned(),
+        version: core_version(),
     })
 }
 

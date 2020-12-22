@@ -15,7 +15,7 @@
 #[cfg(test)]
 mod tests;
 
-mod blocks_walking;
+pub(crate) mod blocks_walking;
 mod errors;
 mod fetching;
 mod internal;

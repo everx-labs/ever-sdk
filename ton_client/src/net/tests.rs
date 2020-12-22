@@ -29,7 +29,6 @@ async fn query() {
     assert_eq!(version.split(".").count(), 3);
 }
 
-
 #[tokio::test(core_threads = 2)]
 async fn block_signatures() {
     let client = TestClient::new();
@@ -141,12 +140,14 @@ async fn subscribe_for_transactions_with_addresses() {
         address: None,
         call_set: CallSet::some_with_function("constructor"),
     };
-
     let msg = client.encode_message(deploy_params.clone()).await.unwrap();
     let transactions = std::sync::Arc::new(Mutex::new(vec![]));
-    let transactions_copy = transactions.clone();
-    let address = msg.address.clone();
-    let callback = move |result: serde_json::Value, response_type: SubscriptionResponseType| {
+    let transactions_copy1 = transactions.clone();
+    let transactions_copy2 = transactions.clone();
+    let address1 = msg.address.clone();
+    let address2 = msg.address.clone();
+
+    let callback1 = move |result: serde_json::Value, response_type: SubscriptionResponseType| {
         let result = match response_type {
             SubscriptionResponseType::Ok => {
                 Ok(serde_json::from_value::<ResultOfSubscription>(result).unwrap())
@@ -156,14 +157,14 @@ async fn subscribe_for_transactions_with_addresses() {
             }
         }
         .unwrap();
-        assert_eq!(result.result["account_addr"], address);
-        let transactions_copy = transactions_copy.clone();
+        assert_eq!(result.result["account_addr"], address1);
+        let transactions_copy = transactions_copy1.clone();
         async move {
             transactions_copy.lock().await.push(result.result);
         }
     };
 
-    let handle: ResultOfSubscribeCollection = subscription_client.request_async_callback(
+    let handle1: ResultOfSubscribeCollection = subscription_client.request_async_callback(
             "net.subscribe_collection",
             ParamsOfSubscribeCollection {
                 collection: "transactions".to_owned(),
@@ -173,62 +174,114 @@ async fn subscribe_for_transactions_with_addresses() {
                 })),
                 result: "id account_addr".to_owned(),
             },
-            callback
+            callback1
         ).await.unwrap();
-    
+
+    let callback2 = move |result: serde_json::Value, response_type: SubscriptionResponseType| {
+        let result = match response_type {
+            SubscriptionResponseType::Ok => {
+                Ok(serde_json::from_value::<ResultOfSubscription>(result).unwrap())
+            }
+            SubscriptionResponseType::Error => {
+                Err(serde_json::from_value::<ClientError>(result).unwrap())
+            }
+        }
+        .unwrap();
+        assert_eq!(result.result["account_addr"], address2);
+        let transactions_copy = transactions_copy2.clone();
+        async move {
+            transactions_copy.lock().await.push(result.result);
+        }
+    };
+
+    let handle2: ResultOfSubscribeCollection = subscription_client.request_async_callback(
+            "net.subscribe_collection",
+            ParamsOfSubscribeCollection {
+                collection: "transactions".to_owned(),
+                filter: Some(json!({
+                    "account_addr": { "eq": msg.address.clone() },
+                    "status": { "eq": ton_sdk::json_helper::transaction_status_to_u8(ton_block::TransactionProcessingStatus::Finalized) }
+                })),
+                result: "id account_addr".to_owned(),
+            },
+            callback2
+        ).await.unwrap();
+
     // send grams to create first transaction
     client.get_grams_from_giver_async(&msg.address, None).await;
 
     // give some time for subscription to receive all data
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
+    // check that second transaction is not received when subscription suspended
+    {
+        let transactions = transactions.lock().await;
+        assert_eq!(transactions.len(), 2);
+    }
+
     // suspend subscription
-    let _: () = subscription_client.request_async("net.suspend", ()).await.unwrap();
+    let _: () = subscription_client
+        .request_async("net.suspend", ())
+        .await
+        .unwrap();
 
     // deploy to create second transaction
-    client.net_process_message(
-        ParamsOfProcessMessage {
-            message_encode_params: deploy_params,
-            send_events: false,
-        },
-        TestClient::default_callback
-    ).await.unwrap();
+    client
+        .net_process_message(
+            ParamsOfProcessMessage {
+                message_encode_params: deploy_params,
+                send_events: false,
+            },
+            TestClient::default_callback,
+        )
+        .await
+        .unwrap();
 
     // check that second transaction is not received when subscription suspended
     {
         let transactions = transactions.lock().await;
-        assert_eq!(transactions.len(), 1);
+        assert_eq!(transactions.len(), 2);
     }
 
     // resume subscription
-    let _: () = subscription_client.request_async("net.resume", ()).await.unwrap();
+    let _: () = subscription_client
+        .request_async("net.resume", ())
+        .await
+        .unwrap();
 
     // run contract function to create third transaction
-    client.net_process_message(
-        ParamsOfProcessMessage {
-            message_encode_params: ParamsOfEncodeMessage {
-                abi: TestClient::abi(HELLO, None),
-                deploy_set: None,
-                signer: Signer::Keys { keys },
-                processing_try_index: None,
-                address: Some(msg.address),
-                call_set: CallSet::some_with_function("touch"),
+    client
+        .net_process_message(
+            ParamsOfProcessMessage {
+                message_encode_params: ParamsOfEncodeMessage {
+                    abi: TestClient::abi(HELLO, None),
+                    deploy_set: None,
+                    signer: Signer::Keys { keys },
+                    processing_try_index: None,
+                    address: Some(msg.address),
+                    call_set: CallSet::some_with_function("touch"),
+                },
+                send_events: false,
             },
-            send_events: false,
-        },
-        TestClient::default_callback
-    ).await.unwrap();
+            TestClient::default_callback,
+        )
+        .await
+        .unwrap();
 
     // give some time for subscription to receive all data
-    std::thread::sleep(std::time::Duration::from_millis(1000));
+    std::thread::sleep(std::time::Duration::from_millis(5000));
 
     // check that third transaction is now received after resume
     let transactions = transactions.lock().await;
-    assert_eq!(transactions.len(), 2);
-    assert_ne!(transactions[0]["id"], transactions[1]["id"]);
+    assert_eq!(transactions.len(), 4);
+    assert_ne!(transactions[0]["id"], transactions[2]["id"]);
 
     let _: () = subscription_client
-        .request_async("net.unsubscribe", handle)
+        .request_async("net.unsubscribe", handle1)
+        .await
+        .unwrap();
+    let _: () = subscription_client
+        .request_async("net.unsubscribe", handle2)
         .await
         .unwrap();
 }
@@ -281,4 +334,21 @@ async fn subscribe_for_messages() {
         .request_async("net.unsubscribe", handle)
         .await
         .unwrap();
+}
+
+#[tokio::test(core_threads = 2)]
+async fn find_last_shard_block() {
+    let client = TestClient::new();
+
+    let block: ResultOfFindLastShardBlock = client
+        .request_async(
+            "net.find_last_shard_block",
+            ParamsOfFindLastShardBlock {
+                address: TestClient::get_giver_address(),
+            },
+        )
+        .await
+        .unwrap();
+
+    println!("{}", block.block_id);
 }

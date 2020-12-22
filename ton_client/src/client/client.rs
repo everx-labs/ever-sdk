@@ -26,7 +26,7 @@ use crate::crypto::boxes::SigningBox;
 use crate::debot::DEngine;
 use crate::json_interface::request::Request;
 use crate::json_interface::interop::ResponseType;
-use crate::net::{NetworkConfig, NodeClient, SubscriptionAction};
+use crate::net::{NetworkConfig, ServerLink, SubscriptionAction};
 
 #[cfg(not(feature = "wasm"))]
 use super::std_client_env::ClientEnv;
@@ -39,7 +39,7 @@ pub struct Boxes {
 }
 
 pub struct NetworkContext {
-    pub(crate) client: Option<NodeClient>,
+    pub(crate) server_link: Option<ServerLink>,
     pub(crate) subscriptions: Mutex<HashMap<u32, mpsc::Sender<SubscriptionAction>>>,
 }
 
@@ -55,8 +55,8 @@ pub struct ClientContext {
 }
 
 impl ClientContext {
-    pub(crate) fn get_client(&self) -> ClientResult<&NodeClient> {
-        self.net.client.as_ref().ok_or(Error::net_module_not_init())
+    pub(crate) fn get_server_link(&self) -> ClientResult<&ServerLink> {
+        self.net.server_link.as_ref().ok_or(Error::net_module_not_init())
     }
 
     pub async fn set_timer(&self, ms: u64) -> ClientResult<()> {
@@ -66,7 +66,7 @@ impl ClientContext {
     pub fn new(config: ClientConfig) -> ClientResult<ClientContext> {
         let env = Arc::new(ClientEnv::new()?);
 
-        let client = if !config.network.server_address.is_empty() {
+        let server_link = if !config.network.server_address.is_empty() {
             if config.network.out_of_sync_threshold > config.abi.message_expiration_timeout / 2 {
                 return Err(Error::invalid_config(format!(
                     r#"`out_of_sync_threshold` can not be more then `message_expiration_timeout / 2`.
@@ -75,14 +75,14 @@ Note that default values are used if parameters are omitted in config"#,
                     config.network.out_of_sync_threshold, config.abi.message_expiration_timeout
                 )));
             }
-            Some(NodeClient::new(config.network.clone(), env.clone()))
+            Some(ServerLink::new(config.network.clone(), env.clone()))
         } else {
             None
         };
 
         Ok(Self {
             net: NetworkContext {
-                client,
+                server_link,
                 subscriptions: Default::default(),
             },
             config,
@@ -112,7 +112,7 @@ Note that default values are used if parameters are omitted in config"#,
 
         let params = serde_json::to_value(params)
             .map_err(Error::cannot_serialize_result)?;
-        
+
         callback.response(
             ParamsOfAppRequest {
                 app_request_id: id,

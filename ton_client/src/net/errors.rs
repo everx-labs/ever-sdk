@@ -1,5 +1,7 @@
 use crate::error::ClientError;
+use serde_json::Value;
 use std::fmt::Display;
+
 const NET: isize = ClientError::NET; // 600
 
 pub enum ErrorCode {
@@ -12,7 +14,9 @@ pub enum ErrorCode {
     WaitForTimeout = NET + 7,
     GraphqlError = NET + 8,
     NetworkModuleSuspended = NET + 9,
+    WebsocketDisconnected = NET + 10,
 }
+
 pub struct Error;
 
 fn error(code: ErrorCode, message: String) -> ClientError {
@@ -73,6 +77,33 @@ impl Error {
         error(
             ErrorCode::GraphqlError,
             format!("Graphql server returned error: {}", err),
+        )
+    }
+
+    fn try_get_message(server_errors: &Vec<Value>) -> Option<String> {
+        for error in server_errors.iter() {
+            if let Some(message) = error["message"].as_str() {
+                return Some(message.to_string());
+            }
+        }
+        None
+    }
+
+    pub fn graphql_server_error(operation: &str, errors: &Vec<Value>) -> ClientError {
+        error(
+            ErrorCode::GraphqlError,
+            if let Some(message) = Self::try_get_message(errors) {
+                format!("Graphql {} error: {}.", operation, message)
+            } else {
+                format!("Graphql {} error.", operation)
+            },
+        )
+    }
+
+    pub fn websocket_disconnected<E: Display>(err: E) -> ClientError {
+        error(
+            ErrorCode::WebsocketDisconnected,
+            format!("Websocket unexpectedly disconnected: {}", err),
         )
     }
 

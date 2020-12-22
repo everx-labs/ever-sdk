@@ -8,6 +8,8 @@ pub trait BrowserCallbacks {
     async fn log(&self, msg: String);
     /// Notify that debot is switched to another context.
     async fn switch(&self, ctx_id: u8);
+    /// Notify that all actions are shown to user and switch to conetxt is completed.
+    async fn switch_completed(&self);
     /// Show action to the user as menu item.
     /// Called after `switch` callback for every action in context.
     async fn show_action(&self, act: DAction);

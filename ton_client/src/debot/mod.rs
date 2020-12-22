@@ -18,8 +18,8 @@ mod debot_abi;
 mod dengine;
 mod errors;
 mod routines;
-#[cfg(test)]
-mod tests;
+// #[cfg(test)]
+// mod tests;
 
 pub use action::DAction;
 pub use browser::BrowserCallbacks;
@@ -107,6 +107,10 @@ pub struct RegisteredDebot {
 /// 
 /// # Remarks
 /// `start` is equivalent to `fetch` + switch to context 0.
+/// 
+/// When the debot starts SDK registers `BrowserCallbacks` AppObject.
+/// Therefore when `debote.remove` is called the debot is being deleted and the callback is called 
+/// with `finish`=`true` which indicates that it will never be used again. 
 pub async fn start(
     context: Arc<ClientContext>,
     params: ParamsOfStart,

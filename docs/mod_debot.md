@@ -212,6 +212,8 @@ type ParamsOfAppDebotBrowser = {
     type: 'Switch'
     context_id: number
 } | {
+    type: 'SwitchCompleted'
+} | {
     type: 'ShowAction'
     action: DebotAction
 } | {
@@ -240,6 +242,11 @@ Switch debot to another context (menu).
 
 
 - `context_id`: _number_ – Debot context ID to which debot is switched.
+
+When _type_ is _'SwitchCompleted'_
+
+Notify browser that all context actions are shown.
+
 
 When _type_ is _'ShowAction'_
 

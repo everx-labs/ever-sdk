@@ -108,7 +108,7 @@ pub async fn send_message<F: futures::Future<Output = ()> + Send>(
         .await;
     }
     let send_result = context
-        .get_client()?
+        .get_server_link()?
         .send_message(&hex_decode(&message_id)?, &message_boc)
         .await;
     if params.send_events {

@@ -28,11 +28,11 @@ null
 
 [nacl_sign](#nacl_sign) – Signs data using the signer's secret key.
 
-[nacl_sign_open](#nacl_sign_open)
+[nacl_sign_open](#nacl_sign_open) – Verifies the signature and returns the unsigned message
 
-[nacl_sign_detached](#nacl_sign_detached)
+[nacl_sign_detached](#nacl_sign_detached) – Signs the message using the secret key and returns a signature.
 
-[nacl_box_keypair](#nacl_box_keypair)
+[nacl_box_keypair](#nacl_box_keypair) – Generates a random NaCl key pair
 
 [nacl_box_keypair_from_secret_key](#nacl_box_keypair_from_secret_key) – Generates key pair from a secret key
 
@@ -550,6 +550,13 @@ function nacl_sign(
 
 ## nacl_sign_open
 
+Verifies the signature and returns the unsigned message
+
+Verifies the signature in `signed` using the signer's public key `public`
+and returns the message `unsigned`.
+
+If the signature fails verification, crypto_sign_open raises an exception.
+
 ```ts
 type ParamsOfNaclSignOpen = {
     signed: string,
@@ -575,6 +582,11 @@ function nacl_sign_open(
 
 ## nacl_sign_detached
 
+Signs the message using the secret key and returns a signature.
+
+Signs the message `unsigned` using the secret key `secret`
+and returns a signature `signature`.
+
 ```ts
 type ParamsOfNaclSign = {
     unsigned: string,
@@ -598,6 +610,8 @@ function nacl_sign_detached(
 
 
 ## nacl_box_keypair
+
+Generates a random NaCl key pair
 
 ```ts
 type KeyPair = {

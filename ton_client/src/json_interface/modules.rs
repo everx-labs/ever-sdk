@@ -297,6 +297,7 @@ fn register_boc(handlers: &mut RuntimeHandlers) {
         crate::boc::blockchain_config::get_blockchain_config_api,
     );
     module.register_sync_fn(crate::boc::get_boc_hash, crate::boc::hash::get_boc_hash_api);
+    module.register_sync_fn(crate::boc::get_code_from_tvc, crate::boc::tvc::get_code_from_tvc_api);
     module.register();
 }
 
@@ -329,6 +330,10 @@ fn register_net(handlers: &mut RuntimeHandlers) {
     );
     module.register_async_fn_no_args(crate::net::suspend, crate::net::suspend_api);
     module.register_async_fn_no_args(crate::net::resume, crate::net::resume_api);
+    module.register_async_fn(
+        crate::net::find_last_shard_block,
+        crate::net::find_last_shard_block_api,
+    );
     module.register();
 }
 
