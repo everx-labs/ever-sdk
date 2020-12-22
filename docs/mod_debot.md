@@ -48,11 +48,11 @@ since the debot tries to display all actions from the context 0 to the user.
 ```ts
 type ParamsOfStart = {
     address: string
-};
+}
 
 type RegisteredDebot = {
     debot_handle: DebotHandle
-};
+}
 
 function start(
     params: ParamsOfStart,
@@ -79,11 +79,11 @@ It does not switch debot to context 0. Browser Callbacks are not called.
 ```ts
 type ParamsOfFetch = {
     address: string
-};
+}
 
 type RegisteredDebot = {
     debot_handle: DebotHandle
-};
+}
 
 function fetch(
     params: ParamsOfFetch,
@@ -111,7 +111,7 @@ Chain of actions can be executed if input action generates a list of subactions.
 type ParamsOfExecute = {
     debot_handle: DebotHandle,
     action: DebotAction
-};
+}
 
 function execute(
     params: ParamsOfExecute,
@@ -133,7 +133,7 @@ Removes handle from Client Context and drops debot engine referenced by that han
 ```ts
 type RegisteredDebot = {
     debot_handle: DebotHandle
-};
+}
 
 function remove(
     params: RegisteredDebot,
@@ -148,21 +148,26 @@ function remove(
 # Types
 ## DebotErrorCode
 ```ts
-type DebotErrorCode = 801 | 802 | 803 | 804;
+enum DebotErrorCode {
+    DebotStartFailed = 801,
+    DebotFetchFailed = 802,
+    DebotExecutionFailed = 803,
+    DebotInvalidHandle = 804
+}
 ```
 One of the following value:
 
-- `801`
-- `802`
-- `803`
-- `804`
+- `DebotStartFailed = 801`
+- `DebotFetchFailed = 802`
+- `DebotExecutionFailed = 803`
+- `DebotInvalidHandle = 804`
 
 
 ## DebotHandle
 [UNSTABLE](UNSTABLE.md) Handle of registered in SDK debot
 
 ```ts
-type DebotHandle = number;
+type DebotHandle = number
 ```
 
 
@@ -177,7 +182,7 @@ type DebotAction = {
     to: number,
     attributes: string,
     misc: string
-};
+}
 ```
 - `description`: _string_ – A short action description.
 <br>Should be used by Debot Browser as name ofmenu item.
@@ -197,7 +202,7 @@ type DebotAction = {
 ```ts
 type ParamsOfStart = {
     address: string
-};
+}
 ```
 - `address`: _string_ – Debot smart contract address
 
@@ -208,7 +213,7 @@ type ParamsOfStart = {
 ```ts
 type RegisteredDebot = {
     debot_handle: DebotHandle
-};
+}
 ```
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
 
@@ -239,7 +244,7 @@ type ParamsOfAppDebotBrowser = {
     type: 'InvokeDebot'
     debot_addr: string,
     action: DebotAction
-};
+}
 ```
 Depends on value of the  `type` field.
 
@@ -304,7 +309,7 @@ type ResultOfAppDebotBrowser = {
     signing_box: SigningBoxHandle
 } | {
     type: 'InvokeDebot'
-};
+}
 ```
 Depends on value of the  `type` field.
 
@@ -335,7 +340,7 @@ Result of debot invoking.
 ```ts
 type ParamsOfFetch = {
     address: string
-};
+}
 ```
 - `address`: _string_ – Debot smart contract address
 
@@ -347,7 +352,7 @@ type ParamsOfFetch = {
 type ParamsOfExecute = {
     debot_handle: DebotHandle,
     action: DebotAction
-};
+}
 ```
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
 - `action`: _[DebotAction](mod_debot.md#DebotAction)_ – Debot Action that must be executed.

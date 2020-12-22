@@ -62,7 +62,7 @@ type ParamsOfRunExecutor = {
     execution_options?: ExecutionOptions,
     abi?: Abi,
     skip_transaction_check?: boolean
-};
+}
 
 type ResultOfRunExecutor = {
     transaction: any,
@@ -70,7 +70,7 @@ type ResultOfRunExecutor = {
     decoded?: DecodedOutput,
     account: string,
     fees: TransactionFees
-};
+}
 
 function run_executor(
     params: ParamsOfRunExecutor,
@@ -118,13 +118,13 @@ type ParamsOfRunTvm = {
     account: string,
     execution_options?: ExecutionOptions,
     abi?: Abi
-};
+}
 
 type ResultOfRunTvm = {
     out_messages: string[],
     decoded?: DecodedOutput,
     account: string
-};
+}
 
 function run_tvm(
     params: ParamsOfRunTvm,
@@ -159,11 +159,11 @@ type ParamsOfRunGet = {
     function_name: string,
     input?: any,
     execution_options?: ExecutionOptions
-};
+}
 
 type ResultOfRunGet = {
     output: any
-};
+}
 
 function run_get(
     params: ParamsOfRunGet,
@@ -182,24 +182,39 @@ function run_get(
 # Types
 ## TvmErrorCode
 ```ts
-type TvmErrorCode = 401 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 410 | 411 | 412 | 413 | 414;
+enum TvmErrorCode {
+    CanNotReadTransaction = 401,
+    CanNotReadBlockchainConfig = 402,
+    TransactionAborted = 403,
+    InternalError = 404,
+    ActionPhaseFailed = 405,
+    AccountCodeMissing = 406,
+    LowBalance = 407,
+    AccountFrozenOrDeleted = 408,
+    AccountMissing = 409,
+    UnknownExecutionError = 410,
+    InvalidInputStack = 411,
+    InvalidAccountBoc = 412,
+    InvalidMessageType = 413,
+    ContractExecutionError = 414
+}
 ```
 One of the following value:
 
-- `401`
-- `402`
-- `403`
-- `404`
-- `405`
-- `406`
-- `407`
-- `408`
-- `409`
-- `410`
-- `411`
-- `412`
-- `413`
-- `414`
+- `CanNotReadTransaction = 401`
+- `CanNotReadBlockchainConfig = 402`
+- `TransactionAborted = 403`
+- `InternalError = 404`
+- `ActionPhaseFailed = 405`
+- `AccountCodeMissing = 406`
+- `LowBalance = 407`
+- `AccountFrozenOrDeleted = 408`
+- `AccountMissing = 409`
+- `UnknownExecutionError = 410`
+- `InvalidInputStack = 411`
+- `InvalidAccountBoc = 412`
+- `InvalidMessageType = 413`
+- `ContractExecutionError = 414`
 
 
 ## ExecutionOptions
@@ -209,7 +224,7 @@ type ExecutionOptions = {
     block_time?: number,
     block_lt?: bigint,
     transaction_lt?: bigint
-};
+}
 ```
 - `blockchain_config`?: _string_ – boc with config
 - `block_time`?: _number_ – time that is used as transaction time
@@ -227,7 +242,7 @@ type AccountForExecutor = {
     type: 'Account'
     boc: string,
     unlimited_balance?: boolean
-};
+}
 ```
 Depends on value of the  `type` field.
 
@@ -261,7 +276,7 @@ type TransactionFees = {
     out_msgs_fwd_fee: bigint,
     total_account_fees: bigint,
     total_output: bigint
-};
+}
 ```
 - `in_msg_fwd_fee`: _bigint_
 - `storage_fee`: _bigint_
@@ -279,7 +294,7 @@ type ParamsOfRunExecutor = {
     execution_options?: ExecutionOptions,
     abi?: Abi,
     skip_transaction_check?: boolean
-};
+}
 ```
 - `message`: _string_ – Input message BOC.
 <br>Must be encoded as base64.
@@ -297,7 +312,7 @@ type ResultOfRunExecutor = {
     decoded?: DecodedOutput,
     account: string,
     fees: TransactionFees
-};
+}
 ```
 - `transaction`: _any_ – Parsed transaction.
 <br>In addition to the regular transaction fields there is a<br>`boc` field encoded with `base64` which contains source<br>transaction BOC.
@@ -316,7 +331,7 @@ type ParamsOfRunTvm = {
     account: string,
     execution_options?: ExecutionOptions,
     abi?: Abi
-};
+}
 ```
 - `message`: _string_ – Input message BOC.
 <br>Must be encoded as base64.
@@ -332,7 +347,7 @@ type ResultOfRunTvm = {
     out_messages: string[],
     decoded?: DecodedOutput,
     account: string
-};
+}
 ```
 - `out_messages`: _string[]_ – List of output messages' BOCs.
 <br>Encoded as `base64`
@@ -348,7 +363,7 @@ type ParamsOfRunGet = {
     function_name: string,
     input?: any,
     execution_options?: ExecutionOptions
-};
+}
 ```
 - `account`: _string_ – Account BOC in `base64`
 - `function_name`: _string_ – Function name
@@ -360,7 +375,7 @@ type ParamsOfRunGet = {
 ```ts
 type ResultOfRunGet = {
     output: any
-};
+}
 ```
 - `output`: _any_ – Values returned by getmethod on stack
 

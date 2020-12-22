@@ -22,7 +22,7 @@ pub(crate) struct ClientModule;
 
 fn register_client(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<ClientModule>(handlers);
-    module.register_type::<crate::client::errors::ErrorCode>();
+    module.register_error_code::<crate::client::errors::ErrorCode>();
     module.register_type::<crate::error::ClientError>();
     module.register_type::<crate::client::ClientConfig>();
     module.register_type::<crate::net::NetworkConfig>();
