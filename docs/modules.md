@@ -37,11 +37,11 @@
 
 [nacl_sign](mod_crypto.md#nacl_sign) – Signs data using the signer's secret key.
 
-[nacl_sign_open](mod_crypto.md#nacl_sign_open)
+[nacl_sign_open](mod_crypto.md#nacl_sign_open) – Verifies the signature and returns the unsigned message
 
-[nacl_sign_detached](mod_crypto.md#nacl_sign_detached)
+[nacl_sign_detached](mod_crypto.md#nacl_sign_detached) – Signs the message using the secret key and returns a signature.
 
-[nacl_box_keypair](mod_crypto.md#nacl_box_keypair)
+[nacl_box_keypair](mod_crypto.md#nacl_box_keypair) – Generates a random NaCl key pair
 
 [nacl_box_keypair_from_secret_key](mod_crypto.md#nacl_box_keypair_from_secret_key) – Generates key pair from a secret key
 
@@ -117,6 +117,8 @@
 
 [get_boc_hash](mod_boc.md#get_boc_hash) – Calculates BOC root hash
 
+[get_code_from_tvc](mod_boc.md#get_code_from_tvc) – Extracts code from TVC contract image
+
 ## [processing](mod_processing.md) – Message processing module.
 
 [send_message](mod_processing.md#send_message) – Sends message to the network
@@ -131,11 +133,11 @@
 
 ## [tvm](mod_tvm.md)
 
-[run_executor](mod_tvm.md#run_executor)
+[run_executor](mod_tvm.md#run_executor) – Emulates all the phases of contract execution locally
 
-[run_tvm](mod_tvm.md#run_tvm)
+[run_tvm](mod_tvm.md#run_tvm) – Executes get methods of ABI-compatible contracts
 
-[run_get](mod_tvm.md#run_get) – Executes getmethod and returns data from TVM stack
+[run_get](mod_tvm.md#run_get) – Executes a getmethod of FIFT contract
 
 ## [net](mod_net.md) – Network access.
 
@@ -152,6 +154,8 @@
 [suspend](mod_net.md#suspend) – Suspends network module to stop any network activity
 
 [resume](mod_net.md#resume) – Resumes network module to enable network activity
+
+[find_last_shard_block](mod_net.md#find_last_shard_block) – Returns ID of the last block in a specified account shard
 
 ## [debot](mod_debot.md) – [UNSTABLE](UNSTABLE.md) Module for working with debot.
 
