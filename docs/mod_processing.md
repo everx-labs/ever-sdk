@@ -10,6 +10,8 @@ processing scenarios.
 [process_message](#process_message) – Creates message, sends it to the network and monitors its processing.
 
 ## Types
+[ErrorCode](#ErrorCode)
+
 [ProcessingEvent](#ProcessingEvent)
 
 [ResultOfProcessMessage](#ResultOfProcessMessage)
@@ -183,6 +185,27 @@ function process_message(
 
 
 # Types
+## ErrorCode
+```ts
+type ErrorCode = 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 509 | 510 | 511 | 512 | 513;
+```
+One of the following value:
+
+- `501`
+- `502`
+- `503`
+- `504`
+- `505`
+- `506`
+- `507`
+- `508`
+- `509`
+- `510`
+- `511`
+- `512`
+- `513`
+
+
 ## ProcessingEvent
 ```ts
 type ProcessingEvent = {

@@ -16,7 +16,11 @@ null
 
 [get_boc_hash](#get_boc_hash) – Calculates BOC root hash
 
+[get_code_from_tvc](#get_code_from_tvc) – Extracts code from TVC contract image
+
 ## Types
+[ErrorCode](#ErrorCode)
+
 [ParamsOfParse](#ParamsOfParse)
 
 [ResultOfParse](#ResultOfParse)
@@ -30,6 +34,10 @@ null
 [ParamsOfGetBocHash](#ParamsOfGetBocHash)
 
 [ResultOfGetBocHash](#ResultOfGetBocHash)
+
+[ParamsOfGetCodeFromTvc](#ParamsOfGetCodeFromTvc)
+
+[ResultOfGetCodeFromTvc](#ResultOfGetCodeFromTvc)
 
 
 # Functions
@@ -213,7 +221,43 @@ function get_boc_hash(
 - `hash`: _string_ – BOC root hash encoded with hex
 
 
+## get_code_from_tvc
+
+Extracts code from TVC contract image
+
+```ts
+type ParamsOfGetCodeFromTvc = {
+    tvc: string
+};
+
+type ResultOfGetCodeFromTvc = {
+    code: string
+};
+
+function get_code_from_tvc(
+    params: ParamsOfGetCodeFromTvc,
+): Promise<ResultOfGetCodeFromTvc>;
+```
+### Parameters
+- `tvc`: _string_ – Contract TVC image encoded as base64
+### Result
+
+- `code`: _string_ – Contract code encoded as base64
+
+
 # Types
+## ErrorCode
+```ts
+type ErrorCode = 201 | 202 | 203 | 204;
+```
+One of the following value:
+
+- `201`
+- `202`
+- `203`
+- `204`
+
+
 ## ParamsOfParse
 ```ts
 type ParamsOfParse = {
@@ -279,5 +323,23 @@ type ResultOfGetBocHash = {
 };
 ```
 - `hash`: _string_ – BOC root hash encoded with hex
+
+
+## ParamsOfGetCodeFromTvc
+```ts
+type ParamsOfGetCodeFromTvc = {
+    tvc: string
+};
+```
+- `tvc`: _string_ – Contract TVC image encoded as base64
+
+
+## ResultOfGetCodeFromTvc
+```ts
+type ResultOfGetCodeFromTvc = {
+    code: string
+};
+```
+- `code`: _string_ – Contract code encoded as base64
 
 

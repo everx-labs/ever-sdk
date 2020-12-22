@@ -16,7 +16,11 @@ null
 
 [resume](#resume) – Resumes network module to enable network activity
 
+[find_last_shard_block](#find_last_shard_block) – Returns ID of the last block in a specified account shard
+
 ## Types
+[ErrorCode](#ErrorCode)
+
 [OrderBy](#OrderBy)
 
 [SortDirection](#SortDirection)
@@ -36,6 +40,10 @@ null
 [ResultOfSubscribeCollection](#ResultOfSubscribeCollection)
 
 [ParamsOfSubscribeCollection](#ParamsOfSubscribeCollection)
+
+[ParamsOfFindLastShardBlock](#ParamsOfFindLastShardBlock)
+
+[ResultOfFindLastShardBlock](#ResultOfFindLastShardBlock)
 
 
 # Functions
@@ -217,7 +225,49 @@ function resume(): Promise<void>;
 
 
 
+## find_last_shard_block
+
+Returns ID of the last block in a specified account shard
+
+```ts
+type ParamsOfFindLastShardBlock = {
+    address: string
+};
+
+type ResultOfFindLastShardBlock = {
+    block_id: string
+};
+
+function find_last_shard_block(
+    params: ParamsOfFindLastShardBlock,
+): Promise<ResultOfFindLastShardBlock>;
+```
+### Parameters
+- `address`: _string_ – Account address
+### Result
+
+- `block_id`: _string_ – Account shard last block ID
+
+
 # Types
+## ErrorCode
+```ts
+type ErrorCode = 601 | 602 | 603 | 604 | 605 | 606 | 607 | 608 | 609 | 610;
+```
+One of the following value:
+
+- `601`
+- `602`
+- `603`
+- `604`
+- `605`
+- `606`
+- `607`
+- `608`
+- `609`
+- `610`
+
+
 ## OrderBy
 ```ts
 type OrderBy = {
@@ -331,5 +381,23 @@ type ParamsOfSubscribeCollection = {
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
 - `result`: _string_ – Projection (result) string
+
+
+## ParamsOfFindLastShardBlock
+```ts
+type ParamsOfFindLastShardBlock = {
+    address: string
+};
+```
+- `address`: _string_ – Account address
+
+
+## ResultOfFindLastShardBlock
+```ts
+type ResultOfFindLastShardBlock = {
+    block_id: string
+};
+```
+- `block_id`: _string_ – Account shard last block ID
 
 

@@ -11,6 +11,8 @@ null
 [resolve_app_request](#resolve_app_request) – Resolves application request processing result
 
 ## Types
+[ErrorCode](#ErrorCode)
+
 [ClientError](#ClientError)
 
 [ClientConfig](#ClientConfig)
@@ -109,6 +111,47 @@ function resolve_app_request(
 
 
 # Types
+## ErrorCode
+```ts
+type ErrorCode = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28 | 29 | 30 | 31 | 32 | 33;
+```
+One of the following value:
+
+- `1`
+- `2`
+- `3`
+- `4`
+- `5`
+- `6`
+- `7`
+- `8`
+- `9`
+- `10`
+- `11`
+- `12`
+- `13`
+- `14`
+- `15`
+- `16`
+- `17`
+- `18`
+- `19`
+- `20`
+- `21`
+- `22`
+- `23`
+- `24`
+- `25`
+- `26`
+- `27`
+- `28`
+- `29`
+- `30`
+- `31`
+- `32`
+- `33`
+
+
 ## ClientError
 ```ts
 type ClientError = {

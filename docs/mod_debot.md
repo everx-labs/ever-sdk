@@ -11,6 +11,8 @@ null
 [remove](#remove) – [UNSTABLE](UNSTABLE.md) Destroys debot handle.
 
 ## Types
+[ErrorCode](#ErrorCode)
+
 [DebotHandle](#DebotHandle) – [UNSTABLE](UNSTABLE.md) Handle of registered in SDK debot
 
 [DebotAction](#DebotAction) – [UNSTABLE](UNSTABLE.md) Describes a debot action in a Debot Context.
@@ -144,6 +146,18 @@ function remove(
 
 
 # Types
+## ErrorCode
+```ts
+type ErrorCode = 801 | 802 | 803 | 804;
+```
+One of the following value:
+
+- `801`
+- `802`
+- `803`
+- `804`
+
+
 ## DebotHandle
 [UNSTABLE](UNSTABLE.md) Handle of registered in SDK debot
 
@@ -212,6 +226,8 @@ type ParamsOfAppDebotBrowser = {
     type: 'Switch'
     context_id: number
 } | {
+    type: 'SwitchCompleted'
+} | {
     type: 'ShowAction'
     action: DebotAction
 } | {
@@ -240,6 +256,11 @@ Switch debot to another context (menu).
 
 
 - `context_id`: _number_ – Debot context ID to which debot is switched.
+
+When _type_ is _'SwitchCompleted'_
+
+Notify browser that all context actions are shown.
+
 
 When _type_ is _'ShowAction'_
 
