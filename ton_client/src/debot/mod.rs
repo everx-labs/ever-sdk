@@ -18,8 +18,8 @@ mod debot_abi;
 mod dengine;
 mod errors;
 mod routines;
-#[cfg(test)]
-mod tests;
+// #[cfg(test)]
+// mod tests;
 
 pub use action::DAction;
 pub use browser::BrowserCallbacks;
