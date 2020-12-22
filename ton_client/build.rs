@@ -102,7 +102,8 @@ fn main() -> Result<(), String> {
     /* FIXME: failed with `the lock file Cargo.lock needs to be updated but
         --locked was passed to prevent this. If you want to try to generate
         the lock file without accessing the network, use the --offline flag.`
-    if std::env::var("NO_BUILD_INFO").is_err() {
+    */
+    if false {
         let build_info = BuildInfo::load()?;
         let build_info_json = serde_json::to_string_pretty(&build_info).unwrap();
         std::fs::write(
@@ -111,6 +112,5 @@ fn main() -> Result<(), String> {
         )
         .map_err(|err| format!("{}", err))?;
     }
-    */
     Ok(())
 }
