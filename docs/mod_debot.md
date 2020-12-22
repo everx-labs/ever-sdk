@@ -11,7 +11,7 @@ null
 [remove](#remove) – [UNSTABLE](UNSTABLE.md) Destroys debot handle.
 
 ## Types
-[ErrorCode](#ErrorCode)
+[DebotErrorCode](#DebotErrorCode)
 
 [DebotHandle](#DebotHandle) – [UNSTABLE](UNSTABLE.md) Handle of registered in SDK debot
 
@@ -146,9 +146,9 @@ function remove(
 
 
 # Types
-## ErrorCode
+## DebotErrorCode
 ```ts
-type ErrorCode = 801 | 802 | 803 | 804;
+type DebotErrorCode = 801 | 802 | 803 | 804;
 ```
 One of the following value:
 

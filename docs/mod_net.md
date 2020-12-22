@@ -19,7 +19,7 @@ null
 [find_last_shard_block](#find_last_shard_block) – Returns ID of the last block in a specified account shard
 
 ## Types
-[ErrorCode](#ErrorCode)
+[NetErrorCode](#NetErrorCode)
 
 [OrderBy](#OrderBy)
 
@@ -250,9 +250,9 @@ function find_last_shard_block(
 
 
 # Types
-## ErrorCode
+## NetErrorCode
 ```ts
-type ErrorCode = 601 | 602 | 603 | 604 | 605 | 606 | 607 | 608 | 609 | 610;
+type NetErrorCode = 601 | 602 | 603 | 604 | 605 | 606 | 607 | 608 | 609 | 610;
 ```
 One of the following value:
 

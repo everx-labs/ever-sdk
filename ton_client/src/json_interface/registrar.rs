@@ -13,8 +13,8 @@
  */
 
 use super::handlers::{
-    CallHandler, CallNoArgsHandler, SpawnHandler, SpawnHandlerCallback, SpawnHandlerAppObject,
-    SpawnHandlerAppObjectNoArgs, SpawnNoArgsHandler,
+    CallHandler, CallNoArgsHandler, SpawnHandler, SpawnHandlerAppObject,
+    SpawnHandlerAppObjectNoArgs, SpawnHandlerCallback, SpawnNoArgsHandler,
 };
 use super::request::Request;
 use super::runtime::RuntimeHandlers;
@@ -43,6 +43,17 @@ impl<'h> ModuleReg<'h> {
         self.handlers.add_module(self.module);
     }
 
+    pub fn register_error_code<T: ApiType>(&mut self) {
+        let mut ty = T::api();
+        ty.name = format!(
+            "{}{}{}",
+            self.module.name[0..1].to_uppercase(),
+            self.module.name[1..].to_lowercase(),
+            ty.name
+        );
+        self.module.types.push(ty);
+    }
+
     pub fn register_type<T: ApiType>(&mut self) {
         let ty = T::api();
         if let api_info::Type::None = ty.value {
@@ -68,7 +79,7 @@ impl<'h> ModuleReg<'h> {
     ) where
         P: ApiType + Send + DeserializeOwned + 'static,
         R: ApiType + Send + Serialize + 'static,
-        F: Send + Future<Output=ClientResult<R>> + 'static,
+        F: Send + Future<Output = ClientResult<R>> + 'static,
     {
         self.register_type::<P>();
         self.register_type::<R>();
@@ -79,7 +90,7 @@ impl<'h> ModuleReg<'h> {
         self.handlers
             .register_async(name.clone(), Box::new(SpawnHandler::new(handler)));
         #[cfg(not(feature = "wasm"))]
-            self.handlers.register_sync(
+        self.handlers.register_sync(
             name,
             Box::new(CallHandler::new(move |context, params| {
                 context.clone().env.block_on(handler(context, params))
@@ -93,7 +104,7 @@ impl<'h> ModuleReg<'h> {
         api: fn() -> api_info::Function,
     ) where
         R: ApiType + Send + Serialize + 'static,
-        F: Send + Future<Output=ClientResult<R>> + 'static,
+        F: Send + Future<Output = ClientResult<R>> + 'static,
     {
         self.register_type::<R>();
         let function = api();
@@ -118,7 +129,7 @@ impl<'h> ModuleReg<'h> {
     ) where
         P: ApiType + Send + DeserializeOwned + 'static,
         R: ApiType + Send + Serialize + 'static,
-        F: Send + Future<Output=ClientResult<R>> + 'static,
+        F: Send + Future<Output = ClientResult<R>> + 'static,
     {
         self.register_type::<P>();
         self.register_type::<R>();
@@ -132,14 +143,18 @@ impl<'h> ModuleReg<'h> {
     #[allow(dead_code)]
     pub fn register_async_fn_with_app_object<P, R, F, AP, AR>(
         &mut self,
-        handler: fn(context: std::sync::Arc<ClientContext>, params: P, app_object: AppObject<AP, AR>) -> F,
+        handler: fn(
+            context: std::sync::Arc<ClientContext>,
+            params: P,
+            app_object: AppObject<AP, AR>,
+        ) -> F,
         api: fn() -> api_info::Function,
     ) where
         P: ApiType + Send + DeserializeOwned + 'static,
         R: ApiType + Send + Serialize + 'static,
         AP: ApiType + Send + Serialize + 'static,
         AR: ApiType + Send + DeserializeOwned + 'static,
-        F: Send + Future<Output=ClientResult<R>> + 'static,
+        F: Send + Future<Output = ClientResult<R>> + 'static,
     {
         self.register_type::<P>();
         self.register_type::<R>();
@@ -160,7 +175,7 @@ impl<'h> ModuleReg<'h> {
         R: ApiType + Send + Serialize + 'static,
         AP: ApiType + Send + Serialize + 'static,
         AR: ApiType + Send + DeserializeOwned + 'static,
-        F: Send + Future<Output=ClientResult<R>> + 'static,
+        F: Send + Future<Output = ClientResult<R>> + 'static,
     {
         self.register_type::<R>();
         self.register_type::<AP>();
@@ -168,8 +183,10 @@ impl<'h> ModuleReg<'h> {
         let function = api();
         let name = format!("{}.{}", self.module.name, function.name);
         self.module.functions.push(function);
-        self.handlers
-            .register_async(name.clone(), Box::new(SpawnHandlerAppObjectNoArgs::new(handler)));
+        self.handlers.register_async(
+            name.clone(),
+            Box::new(SpawnHandlerAppObjectNoArgs::new(handler)),
+        );
     }
 
     pub fn register_sync_fn<P, R>(

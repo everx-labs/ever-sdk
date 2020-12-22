@@ -17,7 +17,7 @@ null
 [encode_account](#encode_account) – Creates account state BOC
 
 ## Types
-[ErrorCode](#ErrorCode)
+[AbiErrorCode](#AbiErrorCode)
 
 [Abi](#Abi)
 
@@ -348,9 +348,9 @@ function encode_account(
 
 
 # Types
-## ErrorCode
+## AbiErrorCode
 ```ts
-type ErrorCode = 301 | 302 | 303 | 304 | 305 | 306 | 307 | 308 | 309 | 310 | 311;
+type AbiErrorCode = 301 | 302 | 303 | 304 | 305 | 306 | 307 | 308 | 309 | 310 | 311;
 ```
 One of the following value:
 

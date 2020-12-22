@@ -768,7 +768,7 @@
       "description": null,
       "types": [
         {
-          "name": "ErrorCode",
+          "name": "CryptoErrorCode",
           "type": "EnumOfConsts",
           "enum_consts": [
             {
@@ -3502,7 +3502,7 @@
       "description": null,
       "types": [
         {
-          "name": "ErrorCode",
+          "name": "AbiErrorCode",
           "type": "EnumOfConsts",
           "enum_consts": [
             {
@@ -4942,7 +4942,7 @@
       "description": null,
       "types": [
         {
-          "name": "ErrorCode",
+          "name": "BocErrorCode",
           "type": "EnumOfConsts",
           "enum_consts": [
             {
@@ -5432,7 +5432,7 @@
       "description": "This module incorporates functions related to complex message\nprocessing scenarios.",
       "types": [
         {
-          "name": "ErrorCode",
+          "name": "ProcessingErrorCode",
           "type": "EnumOfConsts",
           "enum_consts": [
             {
@@ -6197,7 +6197,7 @@
       "description": null,
       "types": [
         {
-          "name": "ErrorCode",
+          "name": "TvmErrorCode",
           "type": "EnumOfConsts",
           "enum_consts": [
             {
@@ -6802,7 +6802,7 @@
       "description": null,
       "types": [
         {
-          "name": "ErrorCode",
+          "name": "NetErrorCode",
           "type": "EnumOfConsts",
           "enum_consts": [
             {
@@ -7471,7 +7471,7 @@
       "description": null,
       "types": [
         {
-          "name": "ErrorCode",
+          "name": "DebotErrorCode",
           "type": "EnumOfConsts",
           "enum_consts": [
             {

@@ -53,7 +53,7 @@ pub(crate) struct CryptoModule;
 fn register_crypto(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<CryptoModule>(handlers);
 
-    module.register_type::<crate::crypto::ErrorCode>();
+    module.register_error_code::<crate::crypto::ErrorCode>();
     module.register_type::<crate::crypto::SigningBoxHandle>();
 
     // Math
@@ -223,7 +223,7 @@ pub(crate) struct AbiModule;
 
 fn register_abi(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<AbiModule>(handlers);
-    module.register_type::<crate::abi::ErrorCode>();
+    module.register_error_code::<crate::abi::ErrorCode>();
     module.register_type::<crate::abi::Abi>();
     module.register_type::<crate::abi::AbiHandle>();
     module.register_type::<crate::abi::FunctionHeader>();
@@ -278,7 +278,7 @@ pub(crate) struct BocModule;
 
 fn register_boc(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<BocModule>(handlers);
-    module.register_type::<crate::boc::ErrorCode>();
+    module.register_error_code::<crate::boc::ErrorCode>();
     module.register_sync_fn(
         crate::boc::parse_message,
         crate::boc::parse::parse_message_api,
@@ -312,7 +312,7 @@ pub(crate) struct NetModule;
 
 fn register_net(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<NetModule>(handlers);
-    module.register_type::<crate::net::ErrorCode>();
+    module.register_error_code::<crate::net::ErrorCode>();
 
     module.register_type::<crate::net::OrderBy>();
     module.register_type::<crate::net::SortDirection>();
@@ -353,7 +353,7 @@ pub struct ProcessingModule;
 
 fn register_processing(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<ProcessingModule>(handlers);
-    module.register_type::<crate::processing::ErrorCode>();
+    module.register_error_code::<crate::processing::ErrorCode>();
 
     module.register_type::<crate::processing::ProcessingEvent>();
     module.register_type::<crate::processing::ResultOfProcessMessage>();
@@ -380,7 +380,7 @@ pub struct TvmModule;
 
 fn register_tvm(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<TvmModule>(handlers);
-    module.register_type::<crate::tvm::ErrorCode>();
+    module.register_error_code::<crate::tvm::ErrorCode>();
 
     module.register_type::<crate::tvm::types::ExecutionOptions>();
     module.register_type::<crate::tvm::AccountForExecutor>();
@@ -416,7 +416,7 @@ pub struct DebotModule;
 
 fn register_debot(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<DebotModule>(handlers);
-    module.register_type::<crate::debot::ErrorCode>();
+    module.register_error_code::<crate::debot::ErrorCode>();
 
     module.register_type::<crate::debot::DebotHandle>();
     module.register_type::<crate::debot::DebotAction>();

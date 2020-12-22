@@ -19,7 +19,7 @@ null
 [get_code_from_tvc](#get_code_from_tvc) – Extracts code from TVC contract image
 
 ## Types
-[ErrorCode](#ErrorCode)
+[BocErrorCode](#BocErrorCode)
 
 [ParamsOfParse](#ParamsOfParse)
 
@@ -246,9 +246,9 @@ function get_code_from_tvc(
 
 
 # Types
-## ErrorCode
+## BocErrorCode
 ```ts
-type ErrorCode = 201 | 202 | 203 | 204;
+type BocErrorCode = 201 | 202 | 203 | 204;
 ```
 One of the following value:
 

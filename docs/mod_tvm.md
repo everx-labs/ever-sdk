@@ -9,7 +9,7 @@ null
 [run_get](#run_get) – Executes a getmethod of FIFT contract
 
 ## Types
-[ErrorCode](#ErrorCode)
+[TvmErrorCode](#TvmErrorCode)
 
 [ExecutionOptions](#ExecutionOptions)
 
@@ -180,9 +180,9 @@ function run_get(
 
 
 # Types
-## ErrorCode
+## TvmErrorCode
 ```ts
-type ErrorCode = 401 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 410 | 411 | 412 | 413 | 414;
+type TvmErrorCode = 401 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 410 | 411 | 412 | 413 | 414;
 ```
 One of the following value:
 

@@ -77,7 +77,7 @@ null
 [remove_signing_box](#remove_signing_box) – Removes signing box from SDK.
 
 ## Types
-[ErrorCode](#ErrorCode)
+[CryptoErrorCode](#CryptoErrorCode)
 
 [SigningBoxHandle](#SigningBoxHandle)
 
@@ -1195,9 +1195,9 @@ function remove_signing_box(
 
 
 # Types
-## ErrorCode
+## CryptoErrorCode
 ```ts
-type ErrorCode = 100 | 101 | 102 | 106 | 107 | 108 | 109 | 110 | 111 | 112 | 113 | 114 | 115 | 116 | 117 | 118 | 119 | 120 | 121;
+type CryptoErrorCode = 100 | 101 | 102 | 106 | 107 | 108 | 109 | 110 | 111 | 112 | 113 | 114 | 115 | 116 | 117 | 118 | 119 | 120 | 121;
 ```
 One of the following value:
 
