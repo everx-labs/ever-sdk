@@ -15,6 +15,8 @@ pub enum ErrorCode {
     GraphqlError = NET + 8,
     NetworkModuleSuspended = NET + 9,
     WebsocketDisconnected = NET + 10,
+    NotSupported = NET + 11,
+    NoEndpointsProvided = NET + 12,
 }
 
 pub struct Error;
@@ -111,6 +113,20 @@ impl Error {
         error(
             ErrorCode::NetworkModuleSuspended,
             "Can not use network module since it is suspended".to_owned(),
+        )
+    }
+
+    pub fn not_suppported(request: &str) -> ClientError {
+        error(
+            ErrorCode::NotSupported,
+            format!("Server does not support the following request: {}", request),
+        )
+    }
+
+    pub fn no_endpoints_provided() -> ClientError {
+        error(
+            ErrorCode::NoEndpointsProvided,
+            "No endpoints provided".to_owned(),
         )
     }
 }

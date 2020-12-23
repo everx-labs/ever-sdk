@@ -20,6 +20,7 @@ use std::sync::Arc;
 pub(crate) struct ServerVersion {
     pub version: u64,
     pub supports_time: bool,
+    pub supports_endpoints: bool,
 }
 
 impl ServerVersion {
@@ -33,6 +34,7 @@ impl ServerVersion {
         Ok(ServerVersion {
             version,
             supports_time: version >= 26003,
+            supports_endpoints: version >= 30000,
         })
     }
 }

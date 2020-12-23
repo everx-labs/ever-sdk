@@ -352,3 +352,25 @@ async fn find_last_shard_block() {
 
     println!("{}", block.block_id);
 }
+
+#[tokio::test(core_threads = 2)]
+async fn test_endpoints() {
+    return;
+    let client = TestClient::new();
+
+    let endpoints: EndpointsSet = client
+        .request_async(
+            "net.fetch_endpoints",
+            (),
+        )
+        .await
+        .unwrap();
+
+    let _: () = client
+        .request_async(
+            "net.set_endpoints",
+            endpoints,
+        )
+        .await
+        .unwrap();
+}

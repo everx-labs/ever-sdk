@@ -12,7 +12,7 @@
 */
 
 use crate::client::ClientContext;
-use crate::error::ClientResult;
+use crate::error::{AddNetworkUrl, ClientResult};
 use super::{Error, OrderBy};
 use serde_json::Value;
 
@@ -81,11 +81,17 @@ pub async fn query(
         &params.query,
         params.variables,
         None,
-    ).await.map_err(|err| Error::queries_query_failed(err).add_network_url(client))?;
+    )
+        .await
+        .map_err(|err| Error::queries_query_failed(err))
+        .add_network_url(client)
+        .await?;
 
     let result = serde_json::from_value(result).map_err(|err| {
-        Error::queries_query_failed(format!("Can not parse result: {}", err)).add_network_url(client)
-    })?;
+        Error::queries_query_failed(format!("Can not parse result: {}", err))
+    })
+        .add_network_url(client)
+        .await?;
 
     Ok(ResultOfQuery { result })
 }
@@ -108,11 +114,17 @@ pub async fn query_collection(
         params.order,
         params.limit,
         None,
-    ).await.map_err(|err| Error::queries_query_failed(err).add_network_url(client))?;
+    )
+        .await
+        .map_err(|err| Error::queries_query_failed(err))
+        .add_network_url(client)
+        .await?;
 
     let result = serde_json::from_value(result).map_err(|err| {
-        Error::queries_query_failed(format!("Can not parse result: {}", err)).add_network_url(client)
-    })?;
+        Error::queries_query_failed(format!("Can not parse result: {}", err))
+    })
+        .add_network_url(client)
+        .await?;
 
     Ok(ResultOfQueryCollection { result })
 }
@@ -136,7 +148,11 @@ pub async fn wait_for_collection(
         &params.filter.unwrap_or(json!({})),
         &params.result,
         params.timeout,
-    ).await.map_err(|err| Error::queries_wait_for_failed(err).add_network_url(client))?;
+    )
+        .await
+        .map_err(|err| Error::queries_wait_for_failed(err))
+        .add_network_url(client)
+        .await?;
 
     Ok(ResultOfWaitForCollection { result })
 }

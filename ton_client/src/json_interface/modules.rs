@@ -334,6 +334,8 @@ fn register_net(handlers: &mut RuntimeHandlers) {
         crate::net::find_last_shard_block,
         crate::net::find_last_shard_block_api,
     );
+    module.register_async_fn_no_args(crate::net::fetch_endpoints, crate::net::fetch_endpoints_api);
+    module.register_async_fn(crate::net::set_endpoints, crate::net::set_endpoints_api);
     module.register();
 }
 

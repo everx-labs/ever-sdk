@@ -90,3 +90,39 @@ pub async fn find_last_shard_block(
         block_id: block_id.to_string()
     })
 }
+
+#[derive(Serialize, Deserialize, ApiType, Clone)]
+pub struct EndpointsSet {
+    /// List of endpoints provided by server
+    pub endpoints: Vec<String>,
+}
+
+/// Requests the list of alternative endpoints from server
+#[api_function]
+pub async fn fetch_endpoints(
+    context: std::sync::Arc<ClientContext>,
+) -> ClientResult<EndpointsSet> {
+    let client = context.get_server_link()?;
+    
+    Ok(EndpointsSet {
+        endpoints: client.fetch_endpoints().await?
+    })
+}
+
+/// Sets the list of endpoints to use on reinit
+#[api_function]
+pub async fn set_endpoints(
+    context: std::sync::Arc<ClientContext>,
+    params: EndpointsSet
+) -> ClientResult<()> {
+    if params.endpoints.len() == 0 {
+        return Err(Error::no_endpoints_provided());
+    }
+    
+    context
+        .get_server_link()?
+        .set_endpoints(params.endpoints)
+        .await;
+    
+    Ok(())
+}

@@ -12,7 +12,7 @@
 */
 
 use crate::client::ClientContext;
-use crate::error::ClientResult;
+use crate::error::{AddNetworkUrl, ClientResult};
 use super::Error;
 use futures::{Future, FutureExt, StreamExt};
 use rand::RngCore;
@@ -69,7 +69,11 @@ async fn create_subscription(
         &params.collection,
         params.filter.as_ref().unwrap_or(&json!({})),
         &params.result,
-    ).await.map_err(|err| Error::queries_subscribe_failed(err).add_network_url(client))
+    )
+        .await
+        .map_err(|err| Error::queries_subscribe_failed(err))
+        .add_network_url(client)
+        .await
 }
 
 pub async fn subscribe_collection<F: Future<Output=()> + Send>(
