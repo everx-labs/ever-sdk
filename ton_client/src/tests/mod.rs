@@ -545,7 +545,7 @@ impl TestClient {
         let wait_for = self.wrap_async(
             crate::net::wait_for_collection,
             NetModule::api(),
-            crate::net::wait_for_collection_api(),
+            crate::net::queries::wait_for_collection_api(),
         );
         let result = wait_for
             .call(ParamsOfWaitForCollection {

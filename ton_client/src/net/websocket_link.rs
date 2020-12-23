@@ -18,7 +18,7 @@ use crate::net::gql::{
     GraphQLMessageFromClient, GraphQLMessageFromServer, GraphQLOperation, GraphQLOperationEvent,
 };
 use crate::net::server_info::ServerInfo;
-use crate::net::{Error, NetworkConfig};
+use crate::net::Error;
 use futures::stream::{Fuse, FusedStream};
 use futures::Sink;
 use futures::{SinkExt, StreamExt};
@@ -29,6 +29,12 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 type WSSender = Pin<Box<dyn Sink<String, Error = ClientError> + Send>>;
 
+#[derive(Clone, Debug)]
+pub(crate) struct WsConfig {
+    pub url: String,
+    pub access_key: Option<String>,
+}
+
 #[derive(Debug)]
 enum HandlerAction {
     StartOperation(GraphQLOperation, Sender<GraphQLOperationEvent>),
@@ -38,6 +44,8 @@ enum HandlerAction {
     Resume,
 
     CheckKeepAlivePassed,
+
+    SetConfig(WsConfig),
 }
 
 impl HandlerAction {
@@ -56,9 +64,9 @@ pub(crate) struct WebsocketLink {
 }
 
 impl WebsocketLink {
-    pub fn new(config: NetworkConfig, client_env: Arc<ClientEnv>) -> Self {
+    pub fn new(client_env: Arc<ClientEnv>) -> Self {
         Self {
-            handler_action_sender: LinkHandler::run(config, client_env),
+            handler_action_sender: LinkHandler::run(client_env),
         }
     }
 
@@ -83,6 +91,10 @@ impl WebsocketLink {
 
     pub async fn resume(&self) {
         self.send_action_to_handler(HandlerAction::Resume).await;
+    }
+
+    pub async fn set_config(&self, config: WsConfig) {
+        self.send_action_to_handler(HandlerAction::SetConfig(config)).await;
     }
 
     async fn send_action_to_handler(&self, action: HandlerAction) {
@@ -117,7 +129,7 @@ enum Phase {
 }
 
 pub(crate) struct LinkHandler {
-    config: NetworkConfig,
+    config: Option<WsConfig>,
     client_env: Arc<ClientEnv>,
     action_receiver: Fuse<Receiver<HandlerAction>>,
     internal_action_sender: Sender<HandlerAction>,
@@ -132,12 +144,12 @@ async fn ws_send(ws: &mut WSSender, message: GraphQLMessageFromClient) {
 }
 
 impl LinkHandler {
-    fn run(config: NetworkConfig, client_env: Arc<ClientEnv>) -> Sender<HandlerAction> {
+    fn run(client_env: Arc<ClientEnv>) -> Sender<HandlerAction> {
         let (action_sender, action_receiver) = channel(1);
         let (internal_action_sender, internal_action_receiver) = channel(1);
         client_env.clone().spawn(Box::pin(async move {
             LinkHandler {
-                config,
+                config: None,
                 client_env,
                 action_receiver: action_receiver.fuse(),
                 internal_action_sender,
@@ -210,17 +222,18 @@ impl LinkHandler {
             HandlerAction::Suspend => Phase::Idle,
             HandlerAction::Resume => Phase::Connecting,
             HandlerAction::CheckKeepAlivePassed => Phase::Idle,
+            HandlerAction::SetConfig(config) => {
+                self.config = Some(config);
+                Phase::Idle
+            }
         }
     }
 
     async fn connect(&mut self) -> ClientResult<WebSocket> {
         self.keep_alive = KeepAlive::WaitFirst;
-        let server_info = ServerInfo::fetch(
-            self.client_env.clone(),
-            &ServerInfo::expand_address(&self.config.server_address),
-        )
-        .await?;
-        let address = server_info.subscription_url;
+        let config = self.config
+            .clone()
+            .ok_or(crate::client::Error::invalid_config("No websocket config".to_owned()))?;
         let mut headers = HashMap::new();
         headers.insert("Sec-WebSocket-Protocol".into(), "graphql-ws".into());
         for (name, value) in ServerInfo::http_headers() {
@@ -228,11 +241,11 @@ impl LinkHandler {
         }
         let mut ws = self
             .client_env
-            .websocket_connect(&address, Some(headers))
+            .websocket_connect(&config.url, Some(headers))
             .await;
         if let Ok(ref mut ws) = ws {
             let mut connection_params = json!({});
-            if let Some(access_key) = &self.config.access_key {
+            if let Some(access_key) = &config.access_key {
                 connection_params["accessKey"] = access_key.as_str().into();
             }
             let init_message = GraphQLMessageFromClient::ConnectionInit { connection_params };
@@ -282,6 +295,7 @@ impl LinkHandler {
                     self.start_keep_alive_timer(timeout);
                 }
             },
+            HandlerAction::SetConfig(config) => self.config = Some(config),
         }
         next_phase
     }

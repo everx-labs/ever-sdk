@@ -313,17 +313,17 @@ fn register_net(handlers: &mut RuntimeHandlers) {
 
     module.register_async_fn(
         crate::net::query,
-        crate::net::query_api,
+        crate::net::queries::query_api,
     );
     module.register_async_fn(
         crate::net::query_collection,
-        crate::net::query_collection_api,
+        crate::net::queries::query_collection_api,
     );
     module.register_async_fn(
         crate::net::wait_for_collection,
-        crate::net::wait_for_collection_api,
+        crate::net::queries::wait_for_collection_api,
     );
-    module.register_async_fn(crate::net::unsubscribe, crate::net::unsubscribe_api);
+    module.register_async_fn(crate::net::unsubscribe, crate::net::subscriptions::unsubscribe_api);
     module.register_async_fn_with_callback(
         super::net::subscribe_collection,
         super::net::subscribe_collection_api,

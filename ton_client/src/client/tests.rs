@@ -14,7 +14,6 @@ fn test_config_fields() {
             "message_expiration_timeout": null
         },
         "network": {
-            "server_address": "mandatory",
             "network_retries_count": 100
         }
     }
@@ -26,7 +25,6 @@ fn test_config_fields() {
         default_mnemonic_word_count()
     );
     assert_eq!(config.network.network_retries_count, 100);
-    assert_eq!(config.network.server_address, "mandatory");
 }
 
 #[test]

@@ -26,7 +26,7 @@ use crate::crypto::boxes::SigningBox;
 use crate::debot::DEngine;
 use crate::json_interface::request::Request;
 use crate::json_interface::interop::ResponseType;
-use crate::net::{NetworkConfig, ServerLink, SubscriptionAction};
+use crate::net::{NetworkConfig, ServerLink, subscriptions::SubscriptionAction};
 
 #[cfg(not(feature = "wasm"))]
 use super::std_client_env::ClientEnv;
@@ -66,7 +66,9 @@ impl ClientContext {
     pub fn new(config: ClientConfig) -> ClientResult<ClientContext> {
         let env = Arc::new(ClientEnv::new()?);
 
-        let server_link = if !config.network.server_address.is_empty() {
+        let server_link = if config.network.server_address.is_some()
+            || config.network.endpoints.is_some()
+        {
             if config.network.out_of_sync_threshold > config.abi.message_expiration_timeout / 2 {
                 return Err(Error::invalid_config(format!(
                     r#"`out_of_sync_threshold` can not be more then `message_expiration_timeout / 2`.
@@ -75,7 +77,7 @@ Note that default values are used if parameters are omitted in config"#,
                     config.network.out_of_sync_threshold, config.abi.message_expiration_timeout
                 )));
             }
-            Some(ServerLink::new(config.network.clone(), env.clone()))
+            Some(ServerLink::new(config.network.clone(), env.clone())?)
         } else {
             None
         };
