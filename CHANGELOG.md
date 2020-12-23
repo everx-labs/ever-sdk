@@ -1,6 +1,11 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## 1.4.1 Dec 23, 2020
+
+### Fixed
+- send `GQL_TERMINATE_CONNECTION` and close websocket on leaving ws loop.
+
 ## 1.4.0 Dec 18, 2020
 
 ### New
