@@ -19,6 +19,8 @@ null
 [get_code_from_tvc](#get_code_from_tvc) – Extracts code from TVC contract image
 
 ## Types
+[BocErrorCode](#BocErrorCode)
+
 [ParamsOfParse](#ParamsOfParse)
 
 [ResultOfParse](#ResultOfParse)
@@ -48,11 +50,11 @@ JSON structure is compatible with GraphQL API message object
 ```ts
 type ParamsOfParse = {
     boc: string
-};
+}
 
 type ResultOfParse = {
     parsed: any
-};
+}
 
 function parse_message(
     params: ParamsOfParse,
@@ -74,11 +76,11 @@ JSON structure is compatible with GraphQL API transaction object
 ```ts
 type ParamsOfParse = {
     boc: string
-};
+}
 
 type ResultOfParse = {
     parsed: any
-};
+}
 
 function parse_transaction(
     params: ParamsOfParse,
@@ -100,11 +102,11 @@ JSON structure is compatible with GraphQL API account object
 ```ts
 type ParamsOfParse = {
     boc: string
-};
+}
 
 type ResultOfParse = {
     parsed: any
-};
+}
 
 function parse_account(
     params: ParamsOfParse,
@@ -126,11 +128,11 @@ JSON structure is compatible with GraphQL API block object
 ```ts
 type ParamsOfParse = {
     boc: string
-};
+}
 
 type ResultOfParse = {
     parsed: any
-};
+}
 
 function parse_block(
     params: ParamsOfParse,
@@ -154,11 +156,11 @@ type ParamsOfParseShardstate = {
     boc: string,
     id: string,
     workchain_id: number
-};
+}
 
 type ResultOfParse = {
     parsed: any
-};
+}
 
 function parse_shardstate(
     params: ParamsOfParseShardstate,
@@ -178,11 +180,11 @@ function parse_shardstate(
 ```ts
 type ParamsOfGetBlockchainConfig = {
     block_boc: string
-};
+}
 
 type ResultOfGetBlockchainConfig = {
     config_boc: string
-};
+}
 
 function get_blockchain_config(
     params: ParamsOfGetBlockchainConfig,
@@ -202,11 +204,11 @@ Calculates BOC root hash
 ```ts
 type ParamsOfGetBocHash = {
     boc: string
-};
+}
 
 type ResultOfGetBocHash = {
     hash: string
-};
+}
 
 function get_boc_hash(
     params: ParamsOfGetBocHash,
@@ -226,11 +228,11 @@ Extracts code from TVC contract image
 ```ts
 type ParamsOfGetCodeFromTvc = {
     tvc: string
-};
+}
 
 type ResultOfGetCodeFromTvc = {
     code: string
-};
+}
 
 function get_code_from_tvc(
     params: ParamsOfGetCodeFromTvc,
@@ -244,11 +246,28 @@ function get_code_from_tvc(
 
 
 # Types
+## BocErrorCode
+```ts
+enum BocErrorCode {
+    InvalidBoc = 201,
+    SerializationError = 202,
+    InappropriateBlock = 203,
+    MissingSourceBoc = 204
+}
+```
+One of the following value:
+
+- `InvalidBoc = 201`
+- `SerializationError = 202`
+- `InappropriateBlock = 203`
+- `MissingSourceBoc = 204`
+
+
 ## ParamsOfParse
 ```ts
 type ParamsOfParse = {
     boc: string
-};
+}
 ```
 - `boc`: _string_ – BOC encoded as base64
 
@@ -257,7 +276,7 @@ type ParamsOfParse = {
 ```ts
 type ResultOfParse = {
     parsed: any
-};
+}
 ```
 - `parsed`: _any_ – JSON containing parsed BOC
 
@@ -268,7 +287,7 @@ type ParamsOfParseShardstate = {
     boc: string,
     id: string,
     workchain_id: number
-};
+}
 ```
 - `boc`: _string_ – BOC encoded as base64
 - `id`: _string_ – Shardstate identificator
@@ -279,7 +298,7 @@ type ParamsOfParseShardstate = {
 ```ts
 type ParamsOfGetBlockchainConfig = {
     block_boc: string
-};
+}
 ```
 - `block_boc`: _string_ – Key block BOC encoded as base64
 
@@ -288,7 +307,7 @@ type ParamsOfGetBlockchainConfig = {
 ```ts
 type ResultOfGetBlockchainConfig = {
     config_boc: string
-};
+}
 ```
 - `config_boc`: _string_ – Blockchain config BOC encoded as base64
 
@@ -297,7 +316,7 @@ type ResultOfGetBlockchainConfig = {
 ```ts
 type ParamsOfGetBocHash = {
     boc: string
-};
+}
 ```
 - `boc`: _string_ – BOC encoded as base64
 
@@ -306,7 +325,7 @@ type ParamsOfGetBocHash = {
 ```ts
 type ResultOfGetBocHash = {
     hash: string
-};
+}
 ```
 - `hash`: _string_ – BOC root hash encoded with hex
 
@@ -315,7 +334,7 @@ type ResultOfGetBocHash = {
 ```ts
 type ParamsOfGetCodeFromTvc = {
     tvc: string
-};
+}
 ```
 - `tvc`: _string_ – Contract TVC image encoded as base64
 
@@ -324,7 +343,7 @@ type ParamsOfGetCodeFromTvc = {
 ```ts
 type ResultOfGetCodeFromTvc = {
     code: string
-};
+}
 ```
 - `code`: _string_ – Contract code encoded as base64
 

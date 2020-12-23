@@ -13,13 +13,13 @@
 
 use crate::error::ClientError;
 use std::fmt::Display;
-const BOC: isize = ClientError::BOC; // 200
 
+#[derive(ApiType)]
 pub enum ErrorCode {
-    InvalidBoc = BOC + 1,
-    SerializationError = BOC + 2,
-    InappropriateBlock = BOC + 3,
-    MissingSourceBoc = BOC + 4,
+    InvalidBoc = 201,
+    SerializationError = 202,
+    InappropriateBlock = 203,
+    MissingSourceBoc = 204,
 }
 pub struct Error;
 
