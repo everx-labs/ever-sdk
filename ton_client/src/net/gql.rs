@@ -20,7 +20,7 @@ const GQL_CONNECTION_INIT: &str = "connection_init";
 const GQL_CONNECTION_ACK: &str = "connection_ack";
 const GQL_CONNECTION_ERROR: &str = "connection_error";
 const GQL_CONNECTION_KEEP_ALIVE: &str = "ka";
-// const GQL_CONNECTION_TERMINATE: &str = "connection_terminate";
+const GQL_CONNECTION_TERMINATE: &str = "connection_terminate";
 const GQL_START: &str = "start";
 const GQL_DATA: &str = "data";
 const GQL_ERROR: &str = "error";
@@ -50,7 +50,7 @@ pub(crate) enum GraphQLMessageFromClient {
     ConnectionInit {
         connection_params: Value,
     },
-    // ConnectionTerminate,
+    ConnectionTerminate,
     Start {
         id: String,
         query: String,
@@ -69,9 +69,9 @@ impl GraphQLMessageFromClient {
                 "type": GQL_CONNECTION_INIT,
                 "payload": connection_params.clone(),
             }),
-            // GraphQLMessageFromClient::ConnectionTerminate => json!({
-            //     "type": GQL_CONNECTION_TERMINATE,
-            // }),
+            GraphQLMessageFromClient::ConnectionTerminate => json!({
+                "type": GQL_CONNECTION_TERMINATE,
+            }),
             GraphQLMessageFromClient::Start {
                 id,
                 query,
@@ -97,7 +97,8 @@ impl GraphQLMessageFromClient {
                 "type": GQL_STOP,
                 "id": id,
             }),
-        }.to_string()
+        }
+        .to_string()
     }
 }
 
@@ -124,7 +125,8 @@ pub(crate) enum GraphQLMessageFromServer {
 
 impl GraphQLMessageFromServer {
     pub fn parse(message: &str) -> ClientResult<Self> {
-        let value = serde_json::from_str::<Value>(message).map_err(|_| Error::invalid_server_response(message))?;
+        let value = serde_json::from_str::<Value>(message)
+            .map_err(|_| Error::invalid_server_response(message))?;
         Ok(match value["type"].as_str().unwrap_or("") {
             GQL_CONNECTION_ERROR => GraphQLMessageFromServer::ConnectionError {
                 error: value["payload"].clone(),
@@ -173,11 +175,14 @@ impl GraphQLOperation {
         limit: Option<u32>,
         timeout: Option<u32>,
     ) -> Self {
-        let mut scheme_type: Vec<String> = table.split_terminator("_").map(|word| {
-            let mut word = word.to_owned();
-            word[..1].make_ascii_uppercase();
-            word
-        }).collect();
+        let mut scheme_type: Vec<String> = table
+            .split_terminator("_")
+            .map(|word| {
+                let mut word = word.to_owned();
+                word[..1].make_ascii_uppercase();
+                word
+            })
+            .collect();
         scheme_type[0] = scheme_type[0].trim_end_matches("s").to_owned();
         let scheme_type: String = scheme_type.join("") + "Filter";
 
@@ -208,11 +213,7 @@ impl GraphQLOperation {
         }
     }
 
-    pub fn subscription(
-        table: &str,
-        filter: &Value,
-        fields: &str,
-    ) -> Self {
+    pub fn subscription(table: &str, filter: &Value, fields: &str) -> Self {
         let mut scheme_type = (&table[0..table.len() - 1]).to_owned() + "Filter";
         scheme_type[..1].make_ascii_uppercase();
 
@@ -232,7 +233,8 @@ impl GraphQLOperation {
     }
 
     pub fn post_requests(requests: &[PostRequest]) -> Self {
-        let query = "mutation postRequests($requests:[Request]){postRequests(requests:$requests)}".to_owned();
+        let query = "mutation postRequests($requests:[Request]){postRequests(requests:$requests)}"
+            .to_owned();
         let variables = Some(json!({ "requests": serde_json::json!(requests) }));
         Self {
             query,

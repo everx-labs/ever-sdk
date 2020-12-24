@@ -16,22 +16,21 @@ use crate::error::ClientError;
 use chrono::TimeZone;
 use serde_json::Value;
 
-const PROCESSING: isize = ClientError::PROCESSING; // 500
-
+#[derive(ApiType)]
 pub enum ErrorCode {
-    MessageAlreadyExpired = PROCESSING + 1,
-    MessageHasNotDestinationAddress = PROCESSING + 2,
-    CanNotBuildMessageCell = PROCESSING + 3,
-    FetchBlockFailed = PROCESSING + 4,
-    SendMessageFailed = PROCESSING + 5,
-    InvalidMessageBoc = PROCESSING + 6,
-    MessageExpired = PROCESSING + 7,
-    TransactionWaitTimeout = PROCESSING + 8,
-    InvalidBlockReceived = PROCESSING + 9,
-    CanNotCheckBlockShard = PROCESSING + 10,
-    BlockNotFound = PROCESSING + 11,
-    InvalidData = PROCESSING + 12,
-    ExternalSignerMustNotBeUsed = PROCESSING + 13,
+    MessageAlreadyExpired = 501,
+    MessageHasNotDestinationAddress = 502,
+    CanNotBuildMessageCell = 503,
+    FetchBlockFailed = 504,
+    SendMessageFailed = 505,
+    InvalidMessageBoc = 506,
+    MessageExpired = 507,
+    TransactionWaitTimeout = 508,
+    InvalidBlockReceived = 509,
+    CanNotCheckBlockShard = 510,
+    BlockNotFound = 511,
+    InvalidData = 512,
+    ExternalSignerMustNotBeUsed = 513,
 }
 
 pub struct Error;
