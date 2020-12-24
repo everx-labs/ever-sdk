@@ -393,6 +393,17 @@
               "description": null
             },
             {
+              "name": "reconnect_timeout",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": null,
+              "description": null
+            },
+            {
               "name": "access_key",
               "type": "Optional",
               "optional_inner": {

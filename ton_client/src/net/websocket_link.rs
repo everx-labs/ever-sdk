@@ -33,6 +33,7 @@ type WSSender = Pin<Box<dyn Sink<String, Error = ClientError> + Send>>;
 pub(crate) struct WsConfig {
     pub url: String,
     pub access_key: Option<String>,
+    pub reconnect_timeout: u32,
 }
 
 #[derive(Debug)]
@@ -44,6 +45,7 @@ enum HandlerAction {
     Resume,
 
     CheckKeepAlivePassed,
+    Reconnect,
 
     SetConfig(WsConfig),
 }
@@ -94,7 +96,8 @@ impl WebsocketLink {
     }
 
     pub async fn set_config(&self, config: WsConfig) {
-        self.send_action_to_handler(HandlerAction::SetConfig(config)).await;
+        self.send_action_to_handler(HandlerAction::SetConfig(config))
+            .await;
     }
 
     async fn send_action_to_handler(&self, action: HandlerAction) {
@@ -185,6 +188,7 @@ impl LinkHandler {
             Ok(w) => w,
             Err(err) => {
                 self.send_error_to_running_operations(err).await;
+                self.start_reconnect_timer();
                 return Phase::Idle;
             }
         };
@@ -206,8 +210,10 @@ impl LinkHandler {
                 phase = self.handle_ws_action(action, &mut ws_sender, phase).await
             }
         }
-        let _ = ws_sender.send(GraphQLMessageFromClient::ConnectionTerminate.get_message()).await;
-        let _ = ws_sender.send(String::new()).await;
+        let _ = ws_sender
+            .send(GraphQLMessageFromClient::ConnectionTerminate.get_message())
+            .await;
+        let _ = ws_sender.send(String::new());
         phase
     }
 
@@ -224,6 +230,7 @@ impl LinkHandler {
             HandlerAction::Suspend => Phase::Idle,
             HandlerAction::Resume => Phase::Connecting,
             HandlerAction::CheckKeepAlivePassed => Phase::Idle,
+            HandlerAction::Reconnect => Phase::Connecting,
             HandlerAction::SetConfig(config) => {
                 self.config = Some(config);
                 Phase::Idle
@@ -233,9 +240,12 @@ impl LinkHandler {
 
     async fn connect(&mut self) -> ClientResult<WebSocket> {
         self.keep_alive = KeepAlive::WaitFirst;
-        let config = self.config
+        let config = self
+            .config
             .clone()
-            .ok_or(crate::client::Error::invalid_config("No websocket config".to_owned()))?;
+            .ok_or(crate::client::Error::invalid_config(
+                "No websocket config".to_owned(),
+            ))?;
         let mut headers = HashMap::new();
         headers.insert("Sec-WebSocket-Protocol".into(), "graphql-ws".into());
         for (name, value) in ServerInfo::http_headers() {
@@ -291,12 +301,17 @@ impl LinkHandler {
                         "keep alive message wasn't received",
                     ))
                     .await;
+                    let _ = self
+                        .internal_action_sender
+                        .send(HandlerAction::Reconnect)
+                        .await;
                     next_phase = Phase::Idle;
                 }
                 KeepAlive::Passed { timeout } => {
                     self.start_keep_alive_timer(timeout);
                 }
             },
+            HandlerAction::Reconnect => {}
             HandlerAction::SetConfig(config) => self.config = Some(config),
         }
         next_phase
@@ -319,6 +334,10 @@ impl LinkHandler {
             },
             Err(err) => {
                 self.send_error_to_running_operations(Error::websocket_disconnected(err))
+                    .await;
+                let _ = self
+                    .internal_action_sender
+                    .send(HandlerAction::Reconnect)
                     .await;
                 return Phase::Idle;
             }
@@ -348,6 +367,10 @@ impl LinkHandler {
                     &vec![error],
                 ))
                 .await;
+                let _ = self
+                    .internal_action_sender
+                    .send(HandlerAction::Reconnect)
+                    .await;
                 next_phase = Phase::Idle;
             }
             GraphQLMessageFromServer::Data { id, data, errors } => {
@@ -382,6 +405,17 @@ impl LinkHandler {
             let _ = env.set_timer(timeout).await;
             let _ = sender.send(HandlerAction::CheckKeepAlivePassed).await;
         }));
+    }
+
+    fn start_reconnect_timer(&mut self) {
+        let mut sender = self.internal_action_sender.clone();
+        let env = self.client_env.clone();
+        if let Some(timeout) = self.config.as_ref().map(|x| x.reconnect_timeout) {
+            env.clone().spawn(Box::pin(async move {
+                let _ = env.set_timer(timeout as u64).await;
+                let _ = sender.send(HandlerAction::Reconnect).await;
+            }));
+        }
     }
 
     async fn notify_with_remove(

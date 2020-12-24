@@ -105,17 +105,26 @@ fn deserialize_hdkey_derivation_path<'de, D: Deserializer<'de>>(
 }
 
 #[derive(Deserialize, Debug, Clone, ApiType)]
+/// Crypto config.
 pub struct CryptoConfig {
+    /// Mnemonic dictionary that will be used by default in crypto funcions. 
+    /// If not specified, 1 dictionary will be used.
     #[serde(
         default = "default_mnemonic_dictionary",
         deserialize_with = "deserialize_mnemonic_dictionary"
     )]
     pub mnemonic_dictionary: u8,
+
+    /// Mnemonic word count that will be used by default in crypto functions.
+    /// If not specified the default value will be 12.
     #[serde(
         default = "default_mnemonic_word_count",
         deserialize_with = "deserialize_mnemonic_word_count"
     )]
     pub mnemonic_word_count: u8,
+
+    /// Derivation path that will be used by default in crypto functions. 
+    /// If not specified `m/44'/396'/0'/0/0` will be used.
     #[serde(
         default = "default_hdkey_derivation_path",
         deserialize_with = "deserialize_hdkey_derivation_path"

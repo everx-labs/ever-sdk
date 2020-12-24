@@ -11,13 +11,13 @@
 * limitations under the License.
 */
 
+use super::websocket_link::WsConfig;
 use crate::client::{ClientEnv, FetchMethod};
 use crate::error::{AddNetworkUrl, ClientError, ClientResult};
 use crate::net::gql::{GraphQLOperation, GraphQLOperationEvent, OrderBy, PostRequest};
 use crate::net::server_info::ServerInfo;
 use crate::net::websocket_link::WebsocketLink;
 use crate::net::{Error, NetworkConfig};
-use super::websocket_link::WsConfig;
 use futures::{Future, Stream, StreamExt};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -45,7 +45,9 @@ pub(crate) struct ServerLink {
 
 impl ServerLink {
     pub fn new(config: NetworkConfig, client_env: Arc<ClientEnv>) -> ClientResult<Self> {
-        let endpoints = config.endpoints.clone()
+        let endpoints = config
+            .endpoints
+            .clone()
             .or(config.server_address.clone().map(|address| vec![address]))
             .ok_or(crate::client::Error::net_module_not_init())?;
         if endpoints.len() == 0 {
@@ -109,11 +111,11 @@ impl ServerLink {
         let mut futures = vec![];
         for address in self.endpoints.read().await.iter() {
             let queries_server = ServerInfo::expand_address(&address);
-            futures.push(Box::pin(async move { 
+            futures.push(Box::pin(async move {
                 ServerInfo::fetch(self.client_env.clone(), &queries_server).await
             }));
         }
-        
+
         let mut server_info = Err(crate::client::Error::net_module_not_init());
         while futures.len() != 0 {
             let (result, _, remain_futures) = futures::future::select_all(futures).await;
@@ -126,7 +128,8 @@ impl ServerLink {
         let server_info = server_info?;
 
         if server_info.server_version.supports_time {
-            self.check_time_delta(&server_info.query_url, config).await?;
+            self.check_time_delta(&server_info.query_url, config)
+                .await?;
         }
 
         Ok(server_info)
@@ -148,10 +151,13 @@ impl ServerLink {
 
         let inited_data = self.init(&self.config).await?;
 
-        self.websocket_link.set_config(WsConfig {
-            url: inited_data.subscription_url.clone(),
-            access_key: self.config.access_key.clone()
-        }).await;
+        self.websocket_link
+            .set_config(WsConfig {
+                url: inited_data.subscription_url.clone(),
+                access_key: self.config.access_key.clone(),
+                reconnect_timeout: self.config.reconnect_timeout,
+            })
+            .await;
 
         *self.query_url.write().unwrap() = Some(inited_data.query_url.clone());
         *data = Some(inited_data);
@@ -168,7 +174,11 @@ impl ServerLink {
     }
 
     pub async fn query_url(&self) -> Option<String> {
-        self.server_info.read().await.as_ref().map(|info| info.query_url.clone())
+        self.server_info
+            .read()
+            .await
+            .as_ref()
+            .map(|info| info.query_url.clone())
     }
 
     // Returns Stream with updates database fields by provided filter
@@ -394,23 +404,30 @@ impl ServerLink {
         self.ensure_info().await?;
         let client_lock = self.server_info.read().await;
 
-        if !client_lock.as_ref().unwrap().server_version.supports_endpoints {
+        if !client_lock
+            .as_ref()
+            .unwrap()
+            .server_version
+            .supports_endpoints
+        {
             return Err(Error::not_suppported("endpoints"));
         }
 
-        let result = self.query_by_url(
-            &client_lock.as_ref().unwrap().query_url,
-            "%7Binfo%7Bendpoints%7D%7D"
-        )
+        let result = self
+            .query_by_url(
+                &client_lock.as_ref().unwrap().query_url,
+                "%7Binfo%7Bendpoints%7D%7D",
+            )
             .await
             .add_network_url(&self)
             .await?;
-    
-        serde_json::from_value(result["data"]["info"]["endpoints"].clone())
-            .map_err(|_| Error::invalid_server_response(format!(
+
+        serde_json::from_value(result["data"]["info"]["endpoints"].clone()).map_err(|_| {
+            Error::invalid_server_response(format!(
                 "Can not parse endpoints from response: {}",
                 result
-            )))
+            ))
+        })
     }
 
     pub async fn set_endpoints(&self, endpoints: Vec<String>) {
