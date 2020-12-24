@@ -314,7 +314,7 @@ export abstract class Code {
 
     abstract typeVariant(variant: ApiField, indent: string, includeDoc?: boolean): string;
 
-    abstract constVariant(variant: ApiConst, includeDoc?: boolean): string;
+    abstract constVariant(variant: ApiConst, indent: string, includeDoc?: boolean): string;
 
     abstract type(type: ApiType, indent: string, includeDoc?: boolean): string;
 

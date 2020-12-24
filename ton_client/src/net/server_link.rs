@@ -11,8 +11,9 @@
 * limitations under the License.
 */
 
+use super::websocket_link::WsConfig;
 use crate::client::{ClientEnv, FetchMethod};
-use crate::error::{ClientError, ClientResult};
+use crate::error::{AddNetworkUrl, ClientError, ClientResult};
 use crate::net::gql::{GraphQLOperation, GraphQLOperationEvent, OrderBy, PostRequest};
 use crate::net::server_info::ServerInfo;
 use crate::net::websocket_link::WebsocketLink;
@@ -33,6 +34,7 @@ pub(crate) struct Subscription {
 
 pub(crate) struct ServerLink {
     config: NetworkConfig,
+    endpoints: tokio::sync::RwLock<Vec<String>>,
     client_env: Arc<ClientEnv>,
     suspended: AtomicBool,
     server_info: tokio::sync::RwLock<Option<ServerInfo>>,
@@ -42,15 +44,25 @@ pub(crate) struct ServerLink {
 }
 
 impl ServerLink {
-    pub fn new(config: NetworkConfig, client_env: Arc<ClientEnv>) -> Self {
-        ServerLink {
+    pub fn new(config: NetworkConfig, client_env: Arc<ClientEnv>) -> ClientResult<Self> {
+        let endpoints = config
+            .endpoints
+            .clone()
+            .or(config.server_address.clone().map(|address| vec![address]))
+            .ok_or(crate::client::Error::net_module_not_init())?;
+        if endpoints.len() == 0 {
+            return Err(crate::client::Error::net_module_not_init());
+        }
+
+        Ok(ServerLink {
             config: config.clone(),
+            endpoints: tokio::sync::RwLock::new(endpoints),
             client_env: client_env.clone(),
             suspended: AtomicBool::new(false),
             query_url: std::sync::RwLock::new(None),
             server_info: tokio::sync::RwLock::new(None),
-            websocket_link: WebsocketLink::new(config, client_env.clone()),
-        }
+            websocket_link: WebsocketLink::new(client_env.clone()),
+        })
     }
 
     async fn query_by_url(&self, address: &str, query: &str) -> ClientResult<Value> {
@@ -96,11 +108,28 @@ impl ServerLink {
     }
 
     async fn init(&self, config: &NetworkConfig) -> ClientResult<ServerInfo> {
-        let queries_server = ServerInfo::expand_address(&config.server_address);
-        let server_info = ServerInfo::fetch(self.client_env.clone(), &queries_server).await?;
+        let mut futures = vec![];
+        for address in self.endpoints.read().await.iter() {
+            let queries_server = ServerInfo::expand_address(&address);
+            futures.push(Box::pin(async move {
+                ServerInfo::fetch(self.client_env.clone(), &queries_server).await
+            }));
+        }
+
+        let mut server_info = Err(crate::client::Error::net_module_not_init());
+        while futures.len() != 0 {
+            let (result, _, remain_futures) = futures::future::select_all(futures).await;
+            futures = remain_futures;
+            server_info = result;
+            if server_info.is_ok() {
+                break;
+            }
+        }
+        let server_info = server_info?;
 
         if server_info.server_version.supports_time {
-            self.check_time_delta(&queries_server, config).await?;
+            self.check_time_delta(&server_info.query_url, config)
+                .await?;
         }
 
         Ok(server_info)
@@ -121,6 +150,15 @@ impl ServerLink {
         }
 
         let inited_data = self.init(&self.config).await?;
+
+        self.websocket_link
+            .set_config(WsConfig {
+                url: inited_data.subscription_url.clone(),
+                access_key: self.config.access_key.clone(),
+                reconnect_timeout: self.config.reconnect_timeout,
+            })
+            .await;
+
         *self.query_url.write().unwrap() = Some(inited_data.query_url.clone());
         *data = Some(inited_data);
 
@@ -131,12 +169,16 @@ impl ServerLink {
         &self.config
     }
 
-    pub fn config_server(&self) -> &str {
-        &self.config.server_address
+    pub async fn config_servers(&self) -> Vec<String> {
+        self.endpoints.read().await.clone()
     }
 
-    pub fn query_url(&self) -> Option<String> {
-        self.query_url.read().unwrap().clone()
+    pub async fn query_url(&self) -> Option<String> {
+        self.server_info
+            .read()
+            .await
+            .as_ref()
+            .map(|info| info.query_url.clone())
     }
 
     // Returns Stream with updates database fields by provided filter
@@ -146,6 +188,8 @@ impl ServerLink {
         filter: &Value,
         fields: &str,
     ) -> ClientResult<Subscription> {
+        self.ensure_info().await?;
+
         let event_receiver = self
             .websocket_link
             .start_operation(GraphQLOperation::subscription(table, filter, fields))
@@ -354,5 +398,39 @@ impl ServerLink {
     pub async fn resume(&self) {
         self.suspended.store(false, Ordering::Relaxed);
         self.websocket_link.resume().await;
+    }
+
+    pub async fn fetch_endpoints(&self) -> ClientResult<Vec<String>> {
+        self.ensure_info().await?;
+        let client_lock = self.server_info.read().await;
+
+        if !client_lock
+            .as_ref()
+            .unwrap()
+            .server_version
+            .supports_endpoints
+        {
+            return Err(Error::not_suppported("endpoints"));
+        }
+
+        let result = self
+            .query_by_url(
+                &client_lock.as_ref().unwrap().query_url,
+                "%7Binfo%7Bendpoints%7D%7D",
+            )
+            .await
+            .add_network_url(&self)
+            .await?;
+
+        serde_json::from_value(result["data"]["info"]["endpoints"].clone()).map_err(|_| {
+            Error::invalid_server_response(format!(
+                "Can not parse endpoints from response: {}",
+                result
+            ))
+        })
+    }
+
+    pub async fn set_endpoints(&self, endpoints: Vec<String>) {
+        *self.endpoints.write().await = endpoints;
     }
 }

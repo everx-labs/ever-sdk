@@ -2,19 +2,20 @@ use crate::error::ClientError;
 use serde_json::Value;
 use std::fmt::Display;
 
-const NET: isize = ClientError::NET; // 600
-
+#[derive(ApiType)]
 pub enum ErrorCode {
-    QueryFailed = NET + 1,
-    SubscribeFailed = NET + 2,
-    WaitForFailed = NET + 3,
-    GetSubscriptionResultFailed = NET + 4,
-    InvalidServerResponse = NET + 5,
-    ClockOutOfSync = NET + 6,
-    WaitForTimeout = NET + 7,
-    GraphqlError = NET + 8,
-    NetworkModuleSuspended = NET + 9,
-    WebsocketDisconnected = NET + 10,
+    QueryFailed = 601,
+    SubscribeFailed = 602,
+    WaitForFailed = 603,
+    GetSubscriptionResultFailed = 604,
+    InvalidServerResponse = 605,
+    ClockOutOfSync = 606,
+    WaitForTimeout = 607,
+    GraphqlError = 608,
+    NetworkModuleSuspended = 609,
+    WebsocketDisconnected = 610,
+    NotSupported = 611,
+    NoEndpointsProvided = 612,
 }
 
 pub struct Error;
@@ -111,6 +112,20 @@ impl Error {
         error(
             ErrorCode::NetworkModuleSuspended,
             "Can not use network module since it is suspended".to_owned(),
+        )
+    }
+
+    pub fn not_suppported(request: &str) -> ClientError {
+        error(
+            ErrorCode::NotSupported,
+            format!("Server does not support the following request: {}", request),
+        )
+    }
+
+    pub fn no_endpoints_provided() -> ClientError {
+        error(
+            ErrorCode::NoEndpointsProvided,
+            "No endpoints provided".to_owned(),
         )
     }
 }

@@ -85,7 +85,7 @@ fn test_deferred_init() {
 fn test_clock_sync() {
     let client = TestClient::new_with_config(json!({
         "network": {
-            "server_address": TestClient::network_address(),
+            "endpoints": [TestClient::network_address()],
             "out_of_sync_threshold": 0,
         }
     }));

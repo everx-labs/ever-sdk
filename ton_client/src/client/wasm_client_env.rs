@@ -177,6 +177,9 @@ impl ClientEnv {
         wasm_bindgen_futures::spawn_local(async move {
             log::trace!("Start websocket sending loop");
             while let Some((string, sender)) = send_stream.next().await {
+                if string.is_empty() {
+                    break;
+                }
                 log::trace!("Websocket send: {}", string);
                 let result = ws
                     .send_with_str(&string)

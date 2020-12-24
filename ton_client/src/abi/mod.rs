@@ -74,16 +74,23 @@ fn deserialize_message_expiration_timeout_grow_factor<'de, D: Deserializer<'de>>
 
 #[derive(Deserialize, Debug, Clone, ApiType)]
 pub struct AbiConfig {
+    /// Workchain id that is used by default in DeploySet
     #[serde(
         default = "default_workchain",
         deserialize_with = "deserialize_workchain"
     )]
     pub workchain: i32,
+
+    /// Message lifetime for contracts which ABI includes "expire" header.
+    /// The default value is 40 sec.
     #[serde(
         default = "default_message_expiration_timeout",
         deserialize_with = "deserialize_message_expiration_timeout"
     )]
     pub message_expiration_timeout: u32,
+
+    /// Factor that increases the expiration timeout for each retry
+    /// The default value is 1.5
     #[serde(
         default = "default_message_expiration_timeout_grow_factor",
         deserialize_with = "deserialize_message_expiration_timeout_grow_factor"

@@ -18,7 +18,13 @@ null
 
 [find_last_shard_block](#find_last_shard_block) – Returns ID of the last block in a specified account shard
 
+[fetch_endpoints](#fetch_endpoints) – Requests the list of alternative endpoints from server
+
+[set_endpoints](#set_endpoints) – Sets the list of endpoints to use on reinit
+
 ## Types
+[NetErrorCode](#NetErrorCode)
+
 [OrderBy](#OrderBy)
 
 [SortDirection](#SortDirection)
@@ -43,6 +49,8 @@ null
 
 [ResultOfFindLastShardBlock](#ResultOfFindLastShardBlock)
 
+[EndpointsSet](#EndpointsSet)
+
 
 # Functions
 ## query
@@ -53,11 +61,11 @@ Performs DAppServer GraphQL query.
 type ParamsOfQuery = {
     query: string,
     variables?: any
-};
+}
 
 type ResultOfQuery = {
     result: any
-};
+}
 
 function query(
     params: ParamsOfQuery,
@@ -87,11 +95,11 @@ type ParamsOfQueryCollection = {
     result: string,
     order?: OrderBy[],
     limit?: number
-};
+}
 
 type ResultOfQueryCollection = {
     result: any[]
-};
+}
 
 function query_collection(
     params: ParamsOfQueryCollection,
@@ -125,11 +133,11 @@ type ParamsOfWaitForCollection = {
     filter?: any,
     result: string,
     timeout?: number
-};
+}
 
 type ResultOfWaitForCollection = {
     result: any
-};
+}
 
 function wait_for_collection(
     params: ParamsOfWaitForCollection,
@@ -154,7 +162,7 @@ Cancels a subscription specified by its handle.
 ```ts
 type ResultOfSubscribeCollection = {
     handle: number
-};
+}
 
 function unsubscribe(
     params: ResultOfSubscribeCollection,
@@ -180,11 +188,11 @@ type ParamsOfSubscribeCollection = {
     collection: string,
     filter?: any,
     result: string
-};
+}
 
 type ResultOfSubscribeCollection = {
     handle: number
-};
+}
 
 function subscribe_collection(
     params: ParamsOfSubscribeCollection,
@@ -230,11 +238,11 @@ Returns ID of the last block in a specified account shard
 ```ts
 type ParamsOfFindLastShardBlock = {
     address: string
-};
+}
 
 type ResultOfFindLastShardBlock = {
     block_id: string
-};
+}
 
 function find_last_shard_block(
     params: ParamsOfFindLastShardBlock,
@@ -247,13 +255,81 @@ function find_last_shard_block(
 - `block_id`: _string_ – Account shard last block ID
 
 
+## fetch_endpoints
+
+Requests the list of alternative endpoints from server
+
+```ts
+type EndpointsSet = {
+    endpoints: string[]
+}
+
+function fetch_endpoints(): Promise<EndpointsSet>;
+```
+### Result
+
+- `endpoints`: _string[]_ – List of endpoints provided by server
+
+
+## set_endpoints
+
+Sets the list of endpoints to use on reinit
+
+```ts
+type EndpointsSet = {
+    endpoints: string[]
+}
+
+function set_endpoints(
+    params: EndpointsSet,
+): Promise<void>;
+```
+### Parameters
+- `endpoints`: _string[]_ – List of endpoints provided by server
+### Result
+
+
+
 # Types
+## NetErrorCode
+```ts
+enum NetErrorCode {
+    QueryFailed = 601,
+    SubscribeFailed = 602,
+    WaitForFailed = 603,
+    GetSubscriptionResultFailed = 604,
+    InvalidServerResponse = 605,
+    ClockOutOfSync = 606,
+    WaitForTimeout = 607,
+    GraphqlError = 608,
+    NetworkModuleSuspended = 609,
+    WebsocketDisconnected = 610,
+    NotSupported = 611,
+    NoEndpointsProvided = 612
+}
+```
+One of the following value:
+
+- `QueryFailed = 601`
+- `SubscribeFailed = 602`
+- `WaitForFailed = 603`
+- `GetSubscriptionResultFailed = 604`
+- `InvalidServerResponse = 605`
+- `ClockOutOfSync = 606`
+- `WaitForTimeout = 607`
+- `GraphqlError = 608`
+- `NetworkModuleSuspended = 609`
+- `WebsocketDisconnected = 610`
+- `NotSupported = 611`
+- `NoEndpointsProvided = 612`
+
+
 ## OrderBy
 ```ts
 type OrderBy = {
     path: string,
     direction: SortDirection
-};
+}
 ```
 - `path`: _string_
 - `direction`: _[SortDirection](mod_net.md#SortDirection)_
@@ -261,12 +337,15 @@ type OrderBy = {
 
 ## SortDirection
 ```ts
-type SortDirection = 'ASC' | 'DESC';
+enum SortDirection {
+    ASC = "ASC",
+    DESC = "DESC"
+}
 ```
 One of the following value:
 
-- `ASC`
-- `DESC`
+- `ASC = "ASC"`
+- `DESC = "DESC"`
 
 
 ## ParamsOfQuery
@@ -274,7 +353,7 @@ One of the following value:
 type ParamsOfQuery = {
     query: string,
     variables?: any
-};
+}
 ```
 - `query`: _string_ – GraphQL query text.
 - `variables`?: _any_ – Variables used in query.
@@ -285,7 +364,7 @@ type ParamsOfQuery = {
 ```ts
 type ResultOfQuery = {
     result: any
-};
+}
 ```
 - `result`: _any_ – Result provided by DAppServer.
 
@@ -298,7 +377,7 @@ type ParamsOfQueryCollection = {
     result: string,
     order?: OrderBy[],
     limit?: number
-};
+}
 ```
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
@@ -311,7 +390,7 @@ type ParamsOfQueryCollection = {
 ```ts
 type ResultOfQueryCollection = {
     result: any[]
-};
+}
 ```
 - `result`: _any[]_ – Objects that match the provided criteria
 
@@ -323,7 +402,7 @@ type ParamsOfWaitForCollection = {
     filter?: any,
     result: string,
     timeout?: number
-};
+}
 ```
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
@@ -335,7 +414,7 @@ type ParamsOfWaitForCollection = {
 ```ts
 type ResultOfWaitForCollection = {
     result: any
-};
+}
 ```
 - `result`: _any_ – First found object that matches the provided criteria
 
@@ -344,7 +423,7 @@ type ResultOfWaitForCollection = {
 ```ts
 type ResultOfSubscribeCollection = {
     handle: number
-};
+}
 ```
 - `handle`: _number_ – Subscription handle.
 <br>Must be closed with `unsubscribe`
@@ -356,7 +435,7 @@ type ParamsOfSubscribeCollection = {
     collection: string,
     filter?: any,
     result: string
-};
+}
 ```
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
@@ -367,7 +446,7 @@ type ParamsOfSubscribeCollection = {
 ```ts
 type ParamsOfFindLastShardBlock = {
     address: string
-};
+}
 ```
 - `address`: _string_ – Account address
 
@@ -376,8 +455,17 @@ type ParamsOfFindLastShardBlock = {
 ```ts
 type ResultOfFindLastShardBlock = {
     block_id: string
-};
+}
 ```
 - `block_id`: _string_ – Account shard last block ID
+
+
+## EndpointsSet
+```ts
+type EndpointsSet = {
+    endpoints: string[]
+}
+```
+- `endpoints`: _string[]_ – List of endpoints provided by server
 
 

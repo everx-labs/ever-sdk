@@ -25,7 +25,7 @@ pub use action::DAction;
 pub use browser::BrowserCallbacks;
 pub use context::{DContext, STATE_EXIT, STATE_ZERO};
 pub use dengine::DEngine;
-pub use errors::Error;
+pub use errors::{Error, ErrorCode};
 
 use crate::error::ClientResult;
 use crate::ClientContext;
@@ -42,12 +42,12 @@ pub struct DebotAction {
     /// A short action description. Should be used by Debot Browser as name of
     /// menu item.
     pub description: String,
-    /// Depends on action type. Can be a debot function name or a print string 
+    /// Depends on action type. Can be a debot function name or a print string
     /// (for Print Action).
     pub name: String,
     /// Action type.
     pub action_type: u8,
-    /// ID of debot context to switch after action execution. 
+    /// ID of debot context to switch after action execution.
     pub to: u8,
     /// Action attributes. In the form of "param=value,flag".
     /// attribute example: instant, args, fargs, sign.
@@ -85,7 +85,7 @@ impl Into<DAction> for DebotAction {
 /// [UNSTABLE](UNSTABLE.md) Parameters to start debot.
 #[derive(Serialize, Deserialize, Default, ApiType)]
 pub struct ParamsOfStart {
-    /// Debot smart contract address 
+    /// Debot smart contract address
     address: String,
 }
 
@@ -97,20 +97,20 @@ pub struct RegisteredDebot {
 }
 
 /// [UNSTABLE](UNSTABLE.md) Starts an instance of debot.
-/// 
+///
 /// Downloads debot smart contract from blockchain and switches it to
 /// context zero.
 /// Returns a debot handle which can be used later in `execute` function.
 /// This function must be used by Debot Browser to start a dialog with debot.
 /// While the function is executing, several Browser Callbacks can be called,
 /// since the debot tries to display all actions from the context 0 to the user.
-/// 
+///
 /// # Remarks
 /// `start` is equivalent to `fetch` + switch to context 0.
-/// 
+///
 /// When the debot starts SDK registers `BrowserCallbacks` AppObject.
-/// Therefore when `debote.remove` is called the debot is being deleted and the callback is called 
-/// with `finish`=`true` which indicates that it will never be used again. 
+/// Therefore when `debote.remove` is called the debot is being deleted and the callback is called
+/// with `finish`=`true` which indicates that it will never be used again.
 pub async fn start(
     context: Arc<ClientContext>,
     params: ParamsOfStart,
@@ -143,10 +143,10 @@ pub struct ParamsOfFetch {
 }
 
 /// [UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.
-/// 
-/// Downloads debot smart contract (code and data) from blockchain and creates 
+///
+/// Downloads debot smart contract (code and data) from blockchain and creates
 /// an instance of Debot Engine for it.
-/// 
+///
 /// # Remarks
 /// It does not switch debot to context 0. Browser Callbacks are not called.
 pub async fn fetch(
@@ -183,10 +183,10 @@ pub struct ParamsOfExecute {
 }
 
 /// [UNSTABLE](UNSTABLE.md) Executes debot action.
-/// 
+///
 /// Calls debot engine referenced by debot handle to execute input action.
 /// Calls Debot Browser Callbacks if needed.
-/// 
+///
 /// # Remarks
 /// Chain of actions can be executed if input action generates a list of subactions.
 #[api_function]
@@ -204,7 +204,7 @@ pub async fn execute(
 }
 
 /// [UNSTABLE](UNSTABLE.md) Destroys debot handle.
-/// 
+///
 /// Removes handle from Client Context and drops debot engine referenced by that handle.
 #[api_function]
 pub fn remove(

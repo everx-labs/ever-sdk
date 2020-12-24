@@ -1,6 +1,20 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## 1.5.0 Dec 25, 2020
+
+### New
+- `reconnect_timeout` parameter in `NetworkConfig`.
+- `endpoints` parameter in `NetworkConfig`. It contains the list of available server addresses to connect.
+SDK will use one them with the least connect time. `server_address` parameter is still supported but 
+`endpoints` is prevailing.
+- `net.fetch_endpoints` function to receieve available endpoints from server.
+- `net.set_endpoints` function to set endpoints list for using on next reconnect.
+- `ErrorCode` type in each module spec in `api.json`.
+
+### Fixed
+- send `GQL_TERMINATE_CONNECTION` and close websocket on leaving ws loop.
+
 ## 1.4.0 Dec 18, 2020
 
 ### New
