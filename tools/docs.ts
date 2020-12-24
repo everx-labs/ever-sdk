@@ -1,6 +1,5 @@
 import {
     ApiConst,
-    ApiConstValueIs,
     ApiEnumOfConsts,
     ApiEnumOfTypes,
     ApiField,
@@ -134,16 +133,7 @@ export class Docs extends Code {
     }
 
     constVariant(variant: ApiConst): string {
-        let md = "- \`";
-        switch (variant.type) {
-        case ApiConstValueIs.None:
-            md += variant.name;
-            break;
-        default:
-            md += variant.value;
-            break;
-        }
-        md += `\`${summaryOf(variant)}\n`;
+        let md = `- \`${this.code.constVariant(variant, "", false)}\`${summaryOf(variant)}\n`;
         md += descriptionOf(variant);
         return md;
     }

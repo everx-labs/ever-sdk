@@ -11,6 +11,29 @@ pub struct ClientError {
 
 pub type ClientResult<T> = Result<T, ClientError>;
 
+#[async_trait::async_trait]
+pub(crate) trait AddNetworkUrl {
+    async fn add_network_url(self, client: &crate::net::ServerLink) -> Self;
+}
+
+#[async_trait::async_trait]
+impl<T: Send> AddNetworkUrl for ClientResult<T> {
+    async fn add_network_url(self, client: &crate::net::ServerLink) -> Self {
+        match self {
+            Err(mut err) => {
+                err.data["config_servers"] = client.config_servers().await.into();
+    
+                if let Some(url) = client.query_url().await {
+                    err.data["query_url"] = url.into();
+                }
+    
+                Err(err)
+            },
+            _ => self
+        }
+    }
+}
+
 impl Display for ClientError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if f.alternate() {
@@ -52,16 +75,6 @@ impl ClientError {
                 "core_version": core_version(),
             }),
         }
-    }
-
-    pub(crate) fn add_network_url(mut self, client: &crate::net::ServerLink) -> ClientError {
-        self.data["config_server"] = client.config_server().into();
-
-        if let Some(url) = client.query_url() {
-            self.data["query_url"] = url.into();
-        }
-
-        self
     }
 
     pub fn add_function(mut self, function: Option<&str>) -> ClientError {

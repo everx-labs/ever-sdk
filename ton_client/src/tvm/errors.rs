@@ -17,23 +17,22 @@ use std::fmt::Display;
 use ton_block::{AccStatusChange, ComputeSkipReason, MsgAddressInt};
 use ton_types::ExceptionCode;
 
-const TVM: isize = ClientError::TVM; // 400
-
+#[derive(ApiType)]
 pub enum ErrorCode {
-    CanNotReadTransaction = TVM + 1,
-    CanNotReadBlockchainConfig = TVM + 2,
-    TransactionAborted = TVM + 3,
-    InternalError = TVM + 4,
-    ActionPhaseFailed = TVM + 5,
-    AccountCodeMissing = TVM + 6,
-    LowBalance = TVM + 7,
-    AccountFrozenOrDeleted = TVM + 8,
-    AccountMissing = TVM + 9,
-    UnknownExecutionError = TVM + 10,
-    InvalidInputStack = TVM + 11,
-    InvalidAccountBoc = TVM + 12,
-    InvalidMessageType = TVM + 13,
-    ContractExecutionError = TVM + 14,
+    CanNotReadTransaction = 401,
+    CanNotReadBlockchainConfig = 402,
+    TransactionAborted = 403,
+    InternalError = 404,
+    ActionPhaseFailed = 405,
+    AccountCodeMissing = 406,
+    LowBalance = 407,
+    AccountFrozenOrDeleted = 408,
+    AccountMissing = 409,
+    UnknownExecutionError = 410,
+    InvalidInputStack = 411,
+    InvalidAccountBoc = 412,
+    InvalidMessageType = 413,
+    ContractExecutionError = 414,
 }
 pub struct Error;
 

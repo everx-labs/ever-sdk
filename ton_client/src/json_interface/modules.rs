@@ -22,6 +22,7 @@ pub(crate) struct ClientModule;
 
 fn register_client(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<ClientModule>(handlers);
+    module.register_error_code::<crate::client::errors::ErrorCode>();
     module.register_type::<crate::error::ClientError>();
     module.register_type::<crate::client::ClientConfig>();
     module.register_type::<crate::net::NetworkConfig>();
@@ -52,6 +53,7 @@ pub(crate) struct CryptoModule;
 fn register_crypto(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<CryptoModule>(handlers);
 
+    module.register_error_code::<crate::crypto::ErrorCode>();
     module.register_type::<crate::crypto::SigningBoxHandle>();
 
     // Math
@@ -221,6 +223,7 @@ pub(crate) struct AbiModule;
 
 fn register_abi(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<AbiModule>(handlers);
+    module.register_error_code::<crate::abi::ErrorCode>();
     module.register_type::<crate::abi::Abi>();
     module.register_type::<crate::abi::AbiHandle>();
     module.register_type::<crate::abi::FunctionHeader>();
@@ -275,6 +278,7 @@ pub(crate) struct BocModule;
 
 fn register_boc(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<BocModule>(handlers);
+    module.register_error_code::<crate::boc::ErrorCode>();
     module.register_sync_fn(
         crate::boc::parse_message,
         crate::boc::parse::parse_message_api,
@@ -308,22 +312,24 @@ pub(crate) struct NetModule;
 
 fn register_net(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<NetModule>(handlers);
+    module.register_error_code::<crate::net::ErrorCode>();
+
     module.register_type::<crate::net::OrderBy>();
     module.register_type::<crate::net::SortDirection>();
 
     module.register_async_fn(
         crate::net::query,
-        crate::net::query_api,
+        crate::net::queries::query_api,
     );
     module.register_async_fn(
         crate::net::query_collection,
-        crate::net::query_collection_api,
+        crate::net::queries::query_collection_api,
     );
     module.register_async_fn(
         crate::net::wait_for_collection,
-        crate::net::wait_for_collection_api,
+        crate::net::queries::wait_for_collection_api,
     );
-    module.register_async_fn(crate::net::unsubscribe, crate::net::unsubscribe_api);
+    module.register_async_fn(crate::net::unsubscribe, crate::net::subscriptions::unsubscribe_api);
     module.register_async_fn_with_callback(
         super::net::subscribe_collection,
         super::net::subscribe_collection_api,
@@ -334,6 +340,8 @@ fn register_net(handlers: &mut RuntimeHandlers) {
         crate::net::find_last_shard_block,
         crate::net::find_last_shard_block_api,
     );
+    module.register_async_fn_no_args(crate::net::fetch_endpoints, crate::net::fetch_endpoints_api);
+    module.register_async_fn(crate::net::set_endpoints, crate::net::set_endpoints_api);
     module.register();
 }
 
@@ -347,6 +355,8 @@ pub struct ProcessingModule;
 
 fn register_processing(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<ProcessingModule>(handlers);
+    module.register_error_code::<crate::processing::ErrorCode>();
+
     module.register_type::<crate::processing::ProcessingEvent>();
     module.register_type::<crate::processing::ResultOfProcessMessage>();
     module.register_type::<crate::processing::DecodedOutput>();
@@ -372,6 +382,8 @@ pub struct TvmModule;
 
 fn register_tvm(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<TvmModule>(handlers);
+    module.register_error_code::<crate::tvm::ErrorCode>();
+
     module.register_type::<crate::tvm::types::ExecutionOptions>();
     module.register_type::<crate::tvm::AccountForExecutor>();
     module.register_type::<crate::tvm::TransactionFees>();
@@ -406,6 +418,8 @@ pub struct DebotModule;
 
 fn register_debot(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<DebotModule>(handlers);
+    module.register_error_code::<crate::debot::ErrorCode>();
+
     module.register_type::<crate::debot::DebotHandle>();
     module.register_type::<crate::debot::DebotAction>();
     module.register_type::<crate::debot::DebotHandle>();

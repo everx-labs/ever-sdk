@@ -77,6 +77,8 @@ null
 [remove_signing_box](#remove_signing_box) – Removes signing box from SDK.
 
 ## Types
+[CryptoErrorCode](#CryptoErrorCode)
+
 [SigningBoxHandle](#SigningBoxHandle)
 
 [ParamsOfFactorize](#ParamsOfFactorize)
@@ -206,11 +208,11 @@ Performs prime factorization – decomposition of a composite number into a prod
 ```ts
 type ParamsOfFactorize = {
     composite: string
-};
+}
 
 type ResultOfFactorize = {
     factors: string[]
-};
+}
 
 function factorize(
     params: ParamsOfFactorize,
@@ -232,11 +234,11 @@ type ParamsOfModularPower = {
     base: string,
     exponent: string,
     modulus: string
-};
+}
 
 type ResultOfModularPower = {
     modular_power: string
-};
+}
 
 function modular_power(
     params: ParamsOfModularPower,
@@ -258,11 +260,11 @@ Calculates CRC16 using TON algorithm.
 ```ts
 type ParamsOfTonCrc16 = {
     data: string
-};
+}
 
 type ResultOfTonCrc16 = {
     crc: number
-};
+}
 
 function ton_crc16(
     params: ParamsOfTonCrc16,
@@ -283,11 +285,11 @@ Generates random byte array of the specified length and returns it in `base64` f
 ```ts
 type ParamsOfGenerateRandomBytes = {
     length: number
-};
+}
 
 type ResultOfGenerateRandomBytes = {
     bytes: string
-};
+}
 
 function generate_random_bytes(
     params: ParamsOfGenerateRandomBytes,
@@ -307,11 +309,11 @@ Converts public key to ton safe_format
 ```ts
 type ParamsOfConvertPublicKeyToTonSafeFormat = {
     public_key: string
-};
+}
 
 type ResultOfConvertPublicKeyToTonSafeFormat = {
     ton_public_key: string
-};
+}
 
 function convert_public_key_to_ton_safe_format(
     params: ParamsOfConvertPublicKeyToTonSafeFormat,
@@ -332,7 +334,7 @@ Generates random ed25519 key pair.
 type KeyPair = {
     public: string,
     secret: string
-};
+}
 
 function generate_random_sign_keys(): Promise<KeyPair>;
 ```
@@ -350,12 +352,12 @@ Signs a data using the provided keys.
 type ParamsOfSign = {
     unsigned: string,
     keys: KeyPair
-};
+}
 
 type ResultOfSign = {
     signed: string,
     signature: string
-};
+}
 
 function sign(
     params: ParamsOfSign,
@@ -378,11 +380,11 @@ Verifies signed data using the provided public key. Raises error if verification
 type ParamsOfVerifySignature = {
     signed: string,
     public: string
-};
+}
 
 type ResultOfVerifySignature = {
     unsigned: string
-};
+}
 
 function verify_signature(
     params: ParamsOfVerifySignature,
@@ -403,11 +405,11 @@ Calculates SHA256 hash of the specified data.
 ```ts
 type ParamsOfHash = {
     data: string
-};
+}
 
 type ResultOfHash = {
     hash: string
-};
+}
 
 function sha256(
     params: ParamsOfHash,
@@ -429,11 +431,11 @@ Calculates SHA512 hash of the specified data.
 ```ts
 type ParamsOfHash = {
     data: string
-};
+}
 
 type ResultOfHash = {
     hash: string
-};
+}
 
 function sha512(
     params: ParamsOfHash,
@@ -473,11 +475,11 @@ type ParamsOfScrypt = {
     r: number,
     p: number,
     dk_len: number
-};
+}
 
 type ResultOfScrypt = {
     key: string
-};
+}
 
 function scrypt(
     params: ParamsOfScrypt,
@@ -503,12 +505,12 @@ Generates a key pair for signing from the secret key
 ```ts
 type ParamsOfNaclSignKeyPairFromSecret = {
     secret: string
-};
+}
 
 type KeyPair = {
     public: string,
     secret: string
-};
+}
 
 function nacl_sign_keypair_from_secret_key(
     params: ParamsOfNaclSignKeyPairFromSecret,
@@ -530,11 +532,11 @@ Signs data using the signer's secret key.
 type ParamsOfNaclSign = {
     unsigned: string,
     secret: string
-};
+}
 
 type ResultOfNaclSign = {
     signed: string
-};
+}
 
 function nacl_sign(
     params: ParamsOfNaclSign,
@@ -561,11 +563,11 @@ If the signature fails verification, crypto_sign_open raises an exception.
 type ParamsOfNaclSignOpen = {
     signed: string,
     public: string
-};
+}
 
 type ResultOfNaclSignOpen = {
     unsigned: string
-};
+}
 
 function nacl_sign_open(
     params: ParamsOfNaclSignOpen,
@@ -591,11 +593,11 @@ and returns a signature `signature`.
 type ParamsOfNaclSign = {
     unsigned: string,
     secret: string
-};
+}
 
 type ResultOfNaclSignDetached = {
     signature: string
-};
+}
 
 function nacl_sign_detached(
     params: ParamsOfNaclSign,
@@ -617,7 +619,7 @@ Generates a random NaCl key pair
 type KeyPair = {
     public: string,
     secret: string
-};
+}
 
 function nacl_box_keypair(): Promise<KeyPair>;
 ```
@@ -634,12 +636,12 @@ Generates key pair from a secret key
 ```ts
 type ParamsOfNaclBoxKeyPairFromSecret = {
     secret: string
-};
+}
 
 type KeyPair = {
     public: string,
     secret: string
-};
+}
 
 function nacl_box_keypair_from_secret_key(
     params: ParamsOfNaclBoxKeyPairFromSecret,
@@ -666,11 +668,11 @@ type ParamsOfNaclBox = {
     nonce: string,
     their_public: string,
     secret: string
-};
+}
 
 type ResultOfNaclBox = {
     encrypted: string
-};
+}
 
 function nacl_box(
     params: ParamsOfNaclBox,
@@ -696,11 +698,11 @@ type ParamsOfNaclBoxOpen = {
     nonce: string,
     their_public: string,
     secret: string
-};
+}
 
 type ResultOfNaclBoxOpen = {
     decrypted: string
-};
+}
 
 function nacl_box_open(
     params: ParamsOfNaclBoxOpen,
@@ -726,11 +728,11 @@ type ParamsOfNaclSecretBox = {
     decrypted: string,
     nonce: string,
     key: string
-};
+}
 
 type ResultOfNaclBox = {
     encrypted: string
-};
+}
 
 function nacl_secret_box(
     params: ParamsOfNaclSecretBox,
@@ -755,11 +757,11 @@ type ParamsOfNaclSecretBoxOpen = {
     encrypted: string,
     nonce: string,
     key: string
-};
+}
 
 type ResultOfNaclBoxOpen = {
     decrypted: string
-};
+}
 
 function nacl_secret_box_open(
     params: ParamsOfNaclSecretBoxOpen,
@@ -782,11 +784,11 @@ Prints the list of words from the specified dictionary
 ```ts
 type ParamsOfMnemonicWords = {
     dictionary?: number
-};
+}
 
 type ResultOfMnemonicWords = {
     words: string
-};
+}
 
 function mnemonic_words(
     params: ParamsOfMnemonicWords,
@@ -807,11 +809,11 @@ Generates a random mnemonic from the specified dictionary and word count
 type ParamsOfMnemonicFromRandom = {
     dictionary?: number,
     word_count?: number
-};
+}
 
 type ResultOfMnemonicFromRandom = {
     phrase: string
-};
+}
 
 function mnemonic_from_random(
     params: ParamsOfMnemonicFromRandom,
@@ -834,11 +836,11 @@ type ParamsOfMnemonicFromEntropy = {
     entropy: string,
     dictionary?: number,
     word_count?: number
-};
+}
 
 type ResultOfMnemonicFromEntropy = {
     phrase: string
-};
+}
 
 function mnemonic_from_entropy(
     params: ParamsOfMnemonicFromEntropy,
@@ -863,11 +865,11 @@ type ParamsOfMnemonicVerify = {
     phrase: string,
     dictionary?: number,
     word_count?: number
-};
+}
 
 type ResultOfMnemonicVerify = {
     valid: boolean
-};
+}
 
 function mnemonic_verify(
     params: ParamsOfMnemonicVerify,
@@ -892,12 +894,12 @@ type ParamsOfMnemonicDeriveSignKeys = {
     path?: string,
     dictionary?: number,
     word_count?: number
-};
+}
 
 type KeyPair = {
     public: string,
     secret: string
-};
+}
 
 function mnemonic_derive_sign_keys(
     params: ParamsOfMnemonicDeriveSignKeys,
@@ -923,11 +925,11 @@ type ParamsOfHDKeyXPrvFromMnemonic = {
     phrase: string,
     dictionary?: number,
     word_count?: number
-};
+}
 
 type ResultOfHDKeyXPrvFromMnemonic = {
     xprv: string
-};
+}
 
 function hdkey_xprv_from_mnemonic(
     params: ParamsOfHDKeyXPrvFromMnemonic,
@@ -951,11 +953,11 @@ type ParamsOfHDKeyDeriveFromXPrv = {
     xprv: string,
     child_index: number,
     hardened: boolean
-};
+}
 
 type ResultOfHDKeyDeriveFromXPrv = {
     xprv: string
-};
+}
 
 function hdkey_derive_from_xprv(
     params: ParamsOfHDKeyDeriveFromXPrv,
@@ -978,11 +980,11 @@ Derives the extended private key from the specified key and path
 type ParamsOfHDKeyDeriveFromXPrvPath = {
     xprv: string,
     path: string
-};
+}
 
 type ResultOfHDKeyDeriveFromXPrvPath = {
     xprv: string
-};
+}
 
 function hdkey_derive_from_xprv_path(
     params: ParamsOfHDKeyDeriveFromXPrvPath,
@@ -1003,11 +1005,11 @@ Extracts the private key from the serialized extended private key
 ```ts
 type ParamsOfHDKeySecretFromXPrv = {
     xprv: string
-};
+}
 
 type ResultOfHDKeySecretFromXPrv = {
     secret: string
-};
+}
 
 function hdkey_secret_from_xprv(
     params: ParamsOfHDKeySecretFromXPrv,
@@ -1027,11 +1029,11 @@ Extracts the public key from the serialized extended private key
 ```ts
 type ParamsOfHDKeyPublicFromXPrv = {
     xprv: string
-};
+}
 
 type ResultOfHDKeyPublicFromXPrv = {
     public: string
-};
+}
 
 function hdkey_public_from_xprv(
     params: ParamsOfHDKeyPublicFromXPrv,
@@ -1053,11 +1055,11 @@ type ParamsOfChaCha20 = {
     data: string,
     key: string,
     nonce: string
-};
+}
 
 type ResultOfChaCha20 = {
     data: string
-};
+}
 
 function chacha20(
     params: ParamsOfChaCha20,
@@ -1083,7 +1085,7 @@ Register an application implemented signing box.
 ```ts
 type RegisteredSigningBox = {
     handle: SigningBoxHandle
-};
+}
 
 function register_signing_box(
     obj: AppSigningBox,
@@ -1102,11 +1104,11 @@ Creates a default signing box implementation.
 type KeyPair = {
     public: string,
     secret: string
-};
+}
 
 type RegisteredSigningBox = {
     handle: SigningBoxHandle
-};
+}
 
 function get_signing_box(
     params: KeyPair,
@@ -1127,11 +1129,11 @@ Returns public key of signing key pair.
 ```ts
 type RegisteredSigningBox = {
     handle: SigningBoxHandle
-};
+}
 
 type ResultOfSigningBoxGetPublicKey = {
     pubkey: string
-};
+}
 
 function signing_box_get_public_key(
     params: RegisteredSigningBox,
@@ -1153,11 +1155,11 @@ Returns signed user data.
 type ParamsOfSigningBoxSign = {
     signing_box: SigningBoxHandle,
     unsigned: string
-};
+}
 
 type ResultOfSigningBoxSign = {
     signature: string
-};
+}
 
 function signing_box_sign(
     params: ParamsOfSigningBoxSign,
@@ -1180,7 +1182,7 @@ Removes signing box from SDK.
 ```ts
 type RegisteredSigningBox = {
     handle: SigningBoxHandle
-};
+}
 
 function remove_signing_box(
     params: RegisteredSigningBox,
@@ -1193,9 +1195,56 @@ function remove_signing_box(
 
 
 # Types
+## CryptoErrorCode
+```ts
+enum CryptoErrorCode {
+    InvalidPublicKey = 100,
+    InvalidSecretKey = 101,
+    InvalidKey = 102,
+    InvalidFactorizeChallenge = 106,
+    InvalidBigInt = 107,
+    ScryptFailed = 108,
+    InvalidKeySize = 109,
+    NaclSecretBoxFailed = 110,
+    NaclBoxFailed = 111,
+    NaclSignFailed = 112,
+    Bip39InvalidEntropy = 113,
+    Bip39InvalidPhrase = 114,
+    Bip32InvalidKey = 115,
+    Bip32InvalidDerivePath = 116,
+    Bip39InvalidDictionary = 117,
+    Bip39InvalidWordCount = 118,
+    MnemonicGenerationFailed = 119,
+    MnemonicFromEntropyFailed = 120,
+    SigningBoxNotRegistered = 121
+}
+```
+One of the following value:
+
+- `InvalidPublicKey = 100`
+- `InvalidSecretKey = 101`
+- `InvalidKey = 102`
+- `InvalidFactorizeChallenge = 106`
+- `InvalidBigInt = 107`
+- `ScryptFailed = 108`
+- `InvalidKeySize = 109`
+- `NaclSecretBoxFailed = 110`
+- `NaclBoxFailed = 111`
+- `NaclSignFailed = 112`
+- `Bip39InvalidEntropy = 113`
+- `Bip39InvalidPhrase = 114`
+- `Bip32InvalidKey = 115`
+- `Bip32InvalidDerivePath = 116`
+- `Bip39InvalidDictionary = 117`
+- `Bip39InvalidWordCount = 118`
+- `MnemonicGenerationFailed = 119`
+- `MnemonicFromEntropyFailed = 120`
+- `SigningBoxNotRegistered = 121`
+
+
 ## SigningBoxHandle
 ```ts
-type SigningBoxHandle = number;
+type SigningBoxHandle = number
 ```
 
 
@@ -1203,7 +1252,7 @@ type SigningBoxHandle = number;
 ```ts
 type ParamsOfFactorize = {
     composite: string
-};
+}
 ```
 - `composite`: _string_ – Hexadecimal representation of u64 composite number.
 
@@ -1212,7 +1261,7 @@ type ParamsOfFactorize = {
 ```ts
 type ResultOfFactorize = {
     factors: string[]
-};
+}
 ```
 - `factors`: _string[]_ – Two factors of composite or empty if composite can't be factorized.
 
@@ -1223,7 +1272,7 @@ type ParamsOfModularPower = {
     base: string,
     exponent: string,
     modulus: string
-};
+}
 ```
 - `base`: _string_ – `base` argument of calculation.
 - `exponent`: _string_ – `exponent` argument of calculation.
@@ -1234,7 +1283,7 @@ type ParamsOfModularPower = {
 ```ts
 type ResultOfModularPower = {
     modular_power: string
-};
+}
 ```
 - `modular_power`: _string_ – Result of modular exponentiation
 
@@ -1243,7 +1292,7 @@ type ResultOfModularPower = {
 ```ts
 type ParamsOfTonCrc16 = {
     data: string
-};
+}
 ```
 - `data`: _string_ – Input data for CRC calculation.
 <br>Encoded with `base64`.
@@ -1253,7 +1302,7 @@ type ParamsOfTonCrc16 = {
 ```ts
 type ResultOfTonCrc16 = {
     crc: number
-};
+}
 ```
 - `crc`: _number_ – Calculated CRC for input data.
 
@@ -1262,7 +1311,7 @@ type ResultOfTonCrc16 = {
 ```ts
 type ParamsOfGenerateRandomBytes = {
     length: number
-};
+}
 ```
 - `length`: _number_ – Size of random byte array.
 
@@ -1271,7 +1320,7 @@ type ParamsOfGenerateRandomBytes = {
 ```ts
 type ResultOfGenerateRandomBytes = {
     bytes: string
-};
+}
 ```
 - `bytes`: _string_ – Generated bytes encoded in `base64`.
 
@@ -1280,7 +1329,7 @@ type ResultOfGenerateRandomBytes = {
 ```ts
 type ParamsOfConvertPublicKeyToTonSafeFormat = {
     public_key: string
-};
+}
 ```
 - `public_key`: _string_ – Public key - 64 symbols hex string
 
@@ -1289,7 +1338,7 @@ type ParamsOfConvertPublicKeyToTonSafeFormat = {
 ```ts
 type ResultOfConvertPublicKeyToTonSafeFormat = {
     ton_public_key: string
-};
+}
 ```
 - `ton_public_key`: _string_ – Public key represented in TON safe format.
 
@@ -1299,7 +1348,7 @@ type ResultOfConvertPublicKeyToTonSafeFormat = {
 type KeyPair = {
     public: string,
     secret: string
-};
+}
 ```
 - `public`: _string_ – Public key - 64 symbols hex string
 - `secret`: _string_ – Private key - u64 symbols hex string
@@ -1310,7 +1359,7 @@ type KeyPair = {
 type ParamsOfSign = {
     unsigned: string,
     keys: KeyPair
-};
+}
 ```
 - `unsigned`: _string_ – Data that must be signed encoded in `base64`.
 - `keys`: _[KeyPair](mod_crypto.md#KeyPair)_ – Sign keys.
@@ -1321,7 +1370,7 @@ type ParamsOfSign = {
 type ResultOfSign = {
     signed: string,
     signature: string
-};
+}
 ```
 - `signed`: _string_ – Signed data combined with signature encoded in `base64`.
 - `signature`: _string_ – Signature encoded in `hex`.
@@ -1332,7 +1381,7 @@ type ResultOfSign = {
 type ParamsOfVerifySignature = {
     signed: string,
     public: string
-};
+}
 ```
 - `signed`: _string_ – Signed data that must be verified encoded in `base64`.
 - `public`: _string_ – Signer's public key - 64 symbols hex string
@@ -1342,7 +1391,7 @@ type ParamsOfVerifySignature = {
 ```ts
 type ResultOfVerifySignature = {
     unsigned: string
-};
+}
 ```
 - `unsigned`: _string_ – Unsigned data encoded in `base64`.
 
@@ -1351,7 +1400,7 @@ type ResultOfVerifySignature = {
 ```ts
 type ParamsOfHash = {
     data: string
-};
+}
 ```
 - `data`: _string_ – Input data for hash calculation.
 <br>Encoded with `base64`.
@@ -1361,7 +1410,7 @@ type ParamsOfHash = {
 ```ts
 type ResultOfHash = {
     hash: string
-};
+}
 ```
 - `hash`: _string_ – Hash of input `data`.
 <br>Encoded with 'hex'.
@@ -1376,7 +1425,7 @@ type ParamsOfScrypt = {
     r: number,
     p: number,
     dk_len: number
-};
+}
 ```
 - `password`: _string_ – The password bytes to be hashed. Must be encoded with `base64`.
 - `salt`: _string_ – Salt bytes that modify the hash to protect against Rainbow table attacks. Must be encoded with `base64`.
@@ -1390,7 +1439,7 @@ type ParamsOfScrypt = {
 ```ts
 type ResultOfScrypt = {
     key: string
-};
+}
 ```
 - `key`: _string_ – Derived key.
 <br>Encoded with `hex`.
@@ -1400,7 +1449,7 @@ type ResultOfScrypt = {
 ```ts
 type ParamsOfNaclSignKeyPairFromSecret = {
     secret: string
-};
+}
 ```
 - `secret`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
 
@@ -1410,7 +1459,7 @@ type ParamsOfNaclSignKeyPairFromSecret = {
 type ParamsOfNaclSign = {
     unsigned: string,
     secret: string
-};
+}
 ```
 - `unsigned`: _string_ – Data that must be signed encoded in `base64`.
 - `secret`: _string_ – Signer's secret key - unprefixed 0-padded to 64 symbols hex string
@@ -1420,7 +1469,7 @@ type ParamsOfNaclSign = {
 ```ts
 type ResultOfNaclSign = {
     signed: string
-};
+}
 ```
 - `signed`: _string_ – Signed data, encoded in `base64`.
 
@@ -1430,7 +1479,7 @@ type ResultOfNaclSign = {
 type ParamsOfNaclSignOpen = {
     signed: string,
     public: string
-};
+}
 ```
 - `signed`: _string_ – Signed data that must be unsigned.
 <br>Encoded with `base64`.
@@ -1441,7 +1490,7 @@ type ParamsOfNaclSignOpen = {
 ```ts
 type ResultOfNaclSignOpen = {
     unsigned: string
-};
+}
 ```
 - `unsigned`: _string_ – Unsigned data, encoded in `base64`.
 
@@ -1450,7 +1499,7 @@ type ResultOfNaclSignOpen = {
 ```ts
 type ResultOfNaclSignDetached = {
     signature: string
-};
+}
 ```
 - `signature`: _string_ – Signature encoded in `hex`.
 
@@ -1459,7 +1508,7 @@ type ResultOfNaclSignDetached = {
 ```ts
 type ParamsOfNaclBoxKeyPairFromSecret = {
     secret: string
-};
+}
 ```
 - `secret`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
 
@@ -1471,7 +1520,7 @@ type ParamsOfNaclBox = {
     nonce: string,
     their_public: string,
     secret: string
-};
+}
 ```
 - `decrypted`: _string_ – Data that must be encrypted encoded in `base64`.
 - `nonce`: _string_ – Nonce, encoded in `hex`
@@ -1483,7 +1532,7 @@ type ParamsOfNaclBox = {
 ```ts
 type ResultOfNaclBox = {
     encrypted: string
-};
+}
 ```
 - `encrypted`: _string_ – Encrypted data encoded in `base64`.
 
@@ -1495,7 +1544,7 @@ type ParamsOfNaclBoxOpen = {
     nonce: string,
     their_public: string,
     secret: string
-};
+}
 ```
 - `encrypted`: _string_ – Data that must be decrypted.
 <br>Encoded with `base64`.
@@ -1508,7 +1557,7 @@ type ParamsOfNaclBoxOpen = {
 ```ts
 type ResultOfNaclBoxOpen = {
     decrypted: string
-};
+}
 ```
 - `decrypted`: _string_ – Decrypted data encoded in `base64`.
 
@@ -1519,7 +1568,7 @@ type ParamsOfNaclSecretBox = {
     decrypted: string,
     nonce: string,
     key: string
-};
+}
 ```
 - `decrypted`: _string_ – Data that must be encrypted.
 <br>Encoded with `base64`.
@@ -1533,7 +1582,7 @@ type ParamsOfNaclSecretBoxOpen = {
     encrypted: string,
     nonce: string,
     key: string
-};
+}
 ```
 - `encrypted`: _string_ – Data that must be decrypted.
 <br>Encoded with `base64`.
@@ -1545,7 +1594,7 @@ type ParamsOfNaclSecretBoxOpen = {
 ```ts
 type ParamsOfMnemonicWords = {
     dictionary?: number
-};
+}
 ```
 - `dictionary`?: _number_ – Dictionary identifier
 
@@ -1554,7 +1603,7 @@ type ParamsOfMnemonicWords = {
 ```ts
 type ResultOfMnemonicWords = {
     words: string
-};
+}
 ```
 - `words`: _string_ – The list of mnemonic words
 
@@ -1564,7 +1613,7 @@ type ResultOfMnemonicWords = {
 type ParamsOfMnemonicFromRandom = {
     dictionary?: number,
     word_count?: number
-};
+}
 ```
 - `dictionary`?: _number_ – Dictionary identifier
 - `word_count`?: _number_ – Mnemonic word count
@@ -1574,7 +1623,7 @@ type ParamsOfMnemonicFromRandom = {
 ```ts
 type ResultOfMnemonicFromRandom = {
     phrase: string
-};
+}
 ```
 - `phrase`: _string_ – String of mnemonic words
 
@@ -1585,7 +1634,7 @@ type ParamsOfMnemonicFromEntropy = {
     entropy: string,
     dictionary?: number,
     word_count?: number
-};
+}
 ```
 - `entropy`: _string_ – Entropy bytes.
 <br>Hex encoded.
@@ -1597,7 +1646,7 @@ type ParamsOfMnemonicFromEntropy = {
 ```ts
 type ResultOfMnemonicFromEntropy = {
     phrase: string
-};
+}
 ```
 - `phrase`: _string_ – Phrase
 
@@ -1608,7 +1657,7 @@ type ParamsOfMnemonicVerify = {
     phrase: string,
     dictionary?: number,
     word_count?: number
-};
+}
 ```
 - `phrase`: _string_ – Phrase
 - `dictionary`?: _number_ – Dictionary identifier
@@ -1619,7 +1668,7 @@ type ParamsOfMnemonicVerify = {
 ```ts
 type ResultOfMnemonicVerify = {
     valid: boolean
-};
+}
 ```
 - `valid`: _boolean_ – Flag indicating if the mnemonic is valid or not
 
@@ -1631,7 +1680,7 @@ type ParamsOfMnemonicDeriveSignKeys = {
     path?: string,
     dictionary?: number,
     word_count?: number
-};
+}
 ```
 - `phrase`: _string_ – Phrase
 - `path`?: _string_ – Derivation path, for instance "m/44'/396'/0'/0/0"
@@ -1645,7 +1694,7 @@ type ParamsOfHDKeyXPrvFromMnemonic = {
     phrase: string,
     dictionary?: number,
     word_count?: number
-};
+}
 ```
 - `phrase`: _string_ – String with seed phrase
 - `dictionary`?: _number_ – Dictionary identifier
@@ -1656,7 +1705,7 @@ type ParamsOfHDKeyXPrvFromMnemonic = {
 ```ts
 type ResultOfHDKeyXPrvFromMnemonic = {
     xprv: string
-};
+}
 ```
 - `xprv`: _string_ – Serialized extended master private key
 
@@ -1667,7 +1716,7 @@ type ParamsOfHDKeyDeriveFromXPrv = {
     xprv: string,
     child_index: number,
     hardened: boolean
-};
+}
 ```
 - `xprv`: _string_ – Serialized extended private key
 - `child_index`: _number_ – Child index (see BIP-0032)
@@ -1678,7 +1727,7 @@ type ParamsOfHDKeyDeriveFromXPrv = {
 ```ts
 type ResultOfHDKeyDeriveFromXPrv = {
     xprv: string
-};
+}
 ```
 - `xprv`: _string_ – Serialized extended private key
 
@@ -1688,7 +1737,7 @@ type ResultOfHDKeyDeriveFromXPrv = {
 type ParamsOfHDKeyDeriveFromXPrvPath = {
     xprv: string,
     path: string
-};
+}
 ```
 - `xprv`: _string_ – Serialized extended private key
 - `path`: _string_ – Derivation path, for instance "m/44'/396'/0'/0/0"
@@ -1698,7 +1747,7 @@ type ParamsOfHDKeyDeriveFromXPrvPath = {
 ```ts
 type ResultOfHDKeyDeriveFromXPrvPath = {
     xprv: string
-};
+}
 ```
 - `xprv`: _string_ – Derived serialized extended private key
 
@@ -1707,7 +1756,7 @@ type ResultOfHDKeyDeriveFromXPrvPath = {
 ```ts
 type ParamsOfHDKeySecretFromXPrv = {
     xprv: string
-};
+}
 ```
 - `xprv`: _string_ – Serialized extended private key
 
@@ -1716,7 +1765,7 @@ type ParamsOfHDKeySecretFromXPrv = {
 ```ts
 type ResultOfHDKeySecretFromXPrv = {
     secret: string
-};
+}
 ```
 - `secret`: _string_ – Private key - 64 symbols hex string
 
@@ -1725,7 +1774,7 @@ type ResultOfHDKeySecretFromXPrv = {
 ```ts
 type ParamsOfHDKeyPublicFromXPrv = {
     xprv: string
-};
+}
 ```
 - `xprv`: _string_ – Serialized extended private key
 
@@ -1734,7 +1783,7 @@ type ParamsOfHDKeyPublicFromXPrv = {
 ```ts
 type ResultOfHDKeyPublicFromXPrv = {
     public: string
-};
+}
 ```
 - `public`: _string_ – Public key - 64 symbols hex string
 
@@ -1745,7 +1794,7 @@ type ParamsOfChaCha20 = {
     data: string,
     key: string,
     nonce: string
-};
+}
 ```
 - `data`: _string_ – Source data to be encrypted or decrypted.
 <br>Must be encoded with `base64`.
@@ -1759,7 +1808,7 @@ type ParamsOfChaCha20 = {
 ```ts
 type ResultOfChaCha20 = {
     data: string
-};
+}
 ```
 - `data`: _string_ – Encrypted/decrypted data.
 <br>Encoded with `base64`.
@@ -1769,7 +1818,7 @@ type ResultOfChaCha20 = {
 ```ts
 type RegisteredSigningBox = {
     handle: SigningBoxHandle
-};
+}
 ```
 - `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
 
@@ -1783,7 +1832,7 @@ type ParamsOfAppSigningBox = {
 } | {
     type: 'Sign'
     unsigned: string
-};
+}
 ```
 Depends on value of the  `type` field.
 
@@ -1810,7 +1859,7 @@ type ResultOfAppSigningBox = {
 } | {
     type: 'Sign'
     signature: string
-};
+}
 ```
 Depends on value of the  `type` field.
 
@@ -1833,7 +1882,7 @@ Result of signing data
 ```ts
 type ResultOfSigningBoxGetPublicKey = {
     pubkey: string
-};
+}
 ```
 - `pubkey`: _string_ – Public key of signing box.
 <br>Encoded with hex
@@ -1844,7 +1893,7 @@ type ResultOfSigningBoxGetPublicKey = {
 type ParamsOfSigningBoxSign = {
     signing_box: SigningBoxHandle,
     unsigned: string
-};
+}
 ```
 - `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing Box handle.
 - `unsigned`: _string_ – Unsigned user data.
@@ -1855,7 +1904,7 @@ type ParamsOfSigningBoxSign = {
 ```ts
 type ResultOfSigningBoxSign = {
     signature: string
-};
+}
 ```
 - `signature`: _string_ – Data signature.
 <br>Encoded with `base64`.

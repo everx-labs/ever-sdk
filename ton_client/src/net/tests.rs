@@ -155,12 +155,19 @@ async fn subscribe_for_transactions_with_addresses() {
             SubscriptionResponseType::Error => {
                 Err(serde_json::from_value::<ClientError>(result).unwrap())
             }
-        }
-        .unwrap();
-        assert_eq!(result.result["account_addr"], address1);
+        };
+        let address1 = address1.clone();
         let transactions_copy = transactions_copy1.clone();
         async move {
-            transactions_copy.lock().await.push(result.result);
+            match result {
+                Ok(result) => {
+                    assert_eq!(result.result["account_addr"], address1);
+                    transactions_copy.lock().await.push(result.result);
+                }
+                Err(err) => {
+                    println!(">>> {}", err);
+                }
+            }
         }
     };
 
@@ -185,12 +192,19 @@ async fn subscribe_for_transactions_with_addresses() {
             SubscriptionResponseType::Error => {
                 Err(serde_json::from_value::<ClientError>(result).unwrap())
             }
-        }
-        .unwrap();
-        assert_eq!(result.result["account_addr"], address2);
+        };
         let transactions_copy = transactions_copy2.clone();
+        let address2 = address2.clone();
         async move {
-            transactions_copy.lock().await.push(result.result);
+            match result {
+                Ok(result) => {
+                    assert_eq!(result.result["account_addr"], address2);
+                    transactions_copy.lock().await.push(result.result);
+                }
+                Err(err) => {
+                    println!(">>> {}", err);
+                }
+            }
         }
     };
 
@@ -351,4 +365,25 @@ async fn find_last_shard_block() {
         .unwrap();
 
     println!("{}", block.block_id);
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_endpoints() {
+    return;
+
+    let client = TestClient::new_with_config(json!({
+        "network": {
+            "endpoints": ["cinet.tonlabs.io", "cinet2.tonlabs.io/"],
+        }
+    }));
+
+    let endpoints: EndpointsSet = client
+        .request_async("net.fetch_endpoints", ())
+        .await
+        .unwrap();
+
+    let _: () = client
+        .request_async("net.set_endpoints", endpoints)
+        .await
+        .unwrap();
 }

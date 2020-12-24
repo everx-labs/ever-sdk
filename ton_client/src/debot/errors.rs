@@ -13,13 +13,13 @@
 
 use crate::error::ClientError;
 use std::fmt::Display;
-const DEBOT: isize = ClientError::DEBOT; // 800
 
+#[derive(ApiType)]
 pub enum ErrorCode {
-    DebotStartFailed = DEBOT + 1,
-    DebotFetchFailed,
-    DebotExecutionFailed,
-    DebotInvalidHandle,
+    DebotStartFailed = 801,
+    DebotFetchFailed = 802,
+    DebotExecutionFailed = 803,
+    DebotInvalidHandle = 804,
 }
 pub struct Error;
 

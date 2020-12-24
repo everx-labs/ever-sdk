@@ -1,19 +1,19 @@
 use crate::error::ClientError;
 use std::fmt::Display;
-const ABI: isize = ClientError::ABI; // 200
 
+#[derive(ApiType)]
 pub enum ErrorCode {
-    RequiredAddressMissingForEncodeMessage = ABI + 1,
-    RequiredCallSetMissingForEncodeMessage = ABI + 2,
-    InvalidJson = ABI + 3,
-    InvalidMessage = ABI + 4,
-    EncodeDeployMessageFailed = ABI + 5,
-    EncodeRunMessageFailed = ABI + 6,
-    AttachSignatureFailed = ABI + 7,
-    InvalidTvcImage = ABI + 8,
-    RequiredPublicKeyMissingForFunctionHeader = ABI + 9,
-    InvalidSigner = ABI + 10,
-    InvalidAbi = ABI + 11,
+    RequiredAddressMissingForEncodeMessage = 301,
+    RequiredCallSetMissingForEncodeMessage = 302,
+    InvalidJson = 303,
+    InvalidMessage = 304,
+    EncodeDeployMessageFailed = 305,
+    EncodeRunMessageFailed = 306,
+    AttachSignatureFailed = 307,
+    InvalidTvcImage = 308,
+    RequiredPublicKeyMissingForFunctionHeader = 309,
+    InvalidSigner = 310,
+    InvalidAbi = 311,
 }
 
 pub struct Error;

@@ -193,19 +193,24 @@ export class ${Code.upperFirst(module.name)}Module {
         }
     }
 
-    constVariant(variant: ApiConst, _includeDoc?: boolean): string {
+    constVariant(variant: ApiConst, indent: string, _includeDoc?: boolean): string {
+        let value = "";
         switch (variant.type) {
         case ApiConstValueIs.String:
-            return `'${variant.value}'`;
+            value = `"${variant.value}"`;
+            break;
         case ApiConstValueIs.None:
-            return `'${variant.name}'`;
+            value = `"${variant.name}"`;
+            break;
         case ApiConstValueIs.Bool:
-            return variant.value;
+            value = variant.value;
+            break;
         case ApiConstValueIs.Number:
-            return variant.value;
-        default:
-            return "";
+            value = variant.value;
+            break;
         }
+        return `${indent}${variant.name} = ${value}`;
+
     }
 
     type(type: ApiType, indent: string, includeDoc?: boolean): string {
@@ -227,7 +232,8 @@ export class ${Code.upperFirst(module.name)}Module {
         case ApiTypeIs.Array:
             return `${this.type(type.array_item, indent)}[]`;
         case ApiTypeIs.EnumOfConsts:
-            return type.enum_consts.map(c => this.constVariant(c, includeDoc)).join(" | ");
+            const variants = type.enum_consts.map(c => this.constVariant(c, `${indent}    `, includeDoc));
+            return `{\n${variants.join(",\n")}\n${indent}}`;
         case ApiTypeIs.BigInt:
             return "bigint";
         case ApiTypeIs.Any:
@@ -244,7 +250,8 @@ export class ${Code.upperFirst(module.name)}Module {
     }
 
     typeDef(type: ApiField, includeDoc?: boolean): string {
-        return `type ${type.name} = ${this.type(type, "", includeDoc)};\n`;
+        const decl = type.type === ApiTypeIs.EnumOfConsts ? `enum ${type.name}` : `type ${type.name} =`;
+        return `${decl} ${this.type(type, "", includeDoc)}\n`;
     }
 
     paramsDecls(paramsInfo: ApiFunctionInfo): string[] {

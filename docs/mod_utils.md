@@ -21,11 +21,11 @@ Converts address from any TON format to any TON format
 type ParamsOfConvertAddress = {
     address: string,
     output_format: AddressStringFormat
-};
+}
 
 type ResultOfConvertAddress = {
     address: string
-};
+}
 
 function convert_address(
     params: ParamsOfConvertAddress,
@@ -51,7 +51,7 @@ type AddressStringFormat = {
     url: boolean,
     test: boolean,
     bounce: boolean
-};
+}
 ```
 Depends on value of the  `type` field.
 
@@ -74,7 +74,7 @@ When _type_ is _'Base64'_
 type ParamsOfConvertAddress = {
     address: string,
     output_format: AddressStringFormat
-};
+}
 ```
 - `address`: _string_ – Account address in any TON format.
 - `output_format`: _[AddressStringFormat](mod_utils.md#AddressStringFormat)_ – Specify the format to convert to.
@@ -84,7 +84,7 @@ type ParamsOfConvertAddress = {
 ```ts
 type ResultOfConvertAddress = {
     address: string
-};
+}
 ```
 - `address`: _string_ – Address in the specified format
 

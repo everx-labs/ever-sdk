@@ -28,7 +28,7 @@ fn create_client(url: &str) -> Result<TonClient, String> {
         abi: AbiConfig::default(),
         crypto: CryptoConfig::default(),
         network: NetworkConfig {
-            server_address: url.to_owned(),
+            server_address: Some(url.to_owned()),
             ..Default::default()
         },
     };

@@ -1,11 +1,250 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "modules": [
     {
       "name": "client",
       "summary": "Provides information about library.",
       "description": null,
       "types": [
+        {
+          "name": "ClientErrorCode",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "NotImplemented",
+              "type": "Number",
+              "value": "1",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidHex",
+              "type": "Number",
+              "value": "2",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidBase64",
+              "type": "Number",
+              "value": "3",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidAddress",
+              "type": "Number",
+              "value": "4",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CallbackParamsCantBeConvertedToJson",
+              "type": "Number",
+              "value": "5",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "WebsocketConnectError",
+              "type": "Number",
+              "value": "6",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "WebsocketReceiveError",
+              "type": "Number",
+              "value": "7",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "WebsocketSendError",
+              "type": "Number",
+              "value": "8",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "HttpClientCreateError",
+              "type": "Number",
+              "value": "9",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "HttpRequestCreateError",
+              "type": "Number",
+              "value": "10",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "HttpRequestSendError",
+              "type": "Number",
+              "value": "11",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "HttpRequestParseError",
+              "type": "Number",
+              "value": "12",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CallbackNotRegistered",
+              "type": "Number",
+              "value": "13",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NetModuleNotInit",
+              "type": "Number",
+              "value": "14",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidConfig",
+              "type": "Number",
+              "value": "15",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CannotCreateRuntime",
+              "type": "Number",
+              "value": "16",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidContextHandle",
+              "type": "Number",
+              "value": "17",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CannotSerializeResult",
+              "type": "Number",
+              "value": "18",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CannotSerializeError",
+              "type": "Number",
+              "value": "19",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CannotConvertJsValueToJson",
+              "type": "Number",
+              "value": "20",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CannotReceiveSpawnedResult",
+              "type": "Number",
+              "value": "21",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "SetTimerError",
+              "type": "Number",
+              "value": "22",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidParams",
+              "type": "Number",
+              "value": "23",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "ContractsAddressConversionFailed",
+              "type": "Number",
+              "value": "24",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "UnknownFunction",
+              "type": "Number",
+              "value": "25",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "AppRequestError",
+              "type": "Number",
+              "value": "26",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NoSuchRequest",
+              "type": "Number",
+              "value": "27",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CanNotSendRequestResult",
+              "type": "Number",
+              "value": "28",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CanNotReceiveRequestResult",
+              "type": "Number",
+              "value": "29",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CanNotParseRequestResult",
+              "type": "Number",
+              "value": "30",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "UnexpectedCallbackResponse",
+              "type": "Number",
+              "value": "31",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CanNotParseNumber",
+              "type": "Number",
+              "value": "32",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InternalError",
+              "type": "Number",
+              "value": "33",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
         {
           "name": "ClientError",
           "type": "Struct",
@@ -79,9 +318,24 @@
           "struct_fields": [
             {
               "name": "server_address",
-              "type": "String",
-              "summary": null,
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "DApp Server public address. For instance, for `net.ton.dev/graphql` GraphQL endpoint the server address will be net.ton.dev",
               "description": null
+            },
+            {
+              "name": "endpoints",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "String"
+                }
+              },
+              "summary": "List of DApp Server addresses.",
+              "description": "Any correct URL format can be specified, including IP addresses"
             },
             {
               "name": "network_retries_count",
@@ -91,7 +345,7 @@
                 "number_type": "Int",
                 "number_size": 8
               },
-              "summary": null,
+              "summary": "The number of automatic network retries that SDK performs in case of connection problems The default value is 5.",
               "description": null
             },
             {
@@ -102,7 +356,7 @@
                 "number_type": "Int",
                 "number_size": 8
               },
-              "summary": null,
+              "summary": "The number of automatic message processing retries that SDK performs in case of `Message Expired (507)` error - but only for those messages which local emulation was successfull or failed with replay protection error. The default value is 5.",
               "description": null
             },
             {
@@ -113,7 +367,7 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": null,
+              "summary": "Timeout that is used to process message delivery for the contracts which ABI does not include \"expire\" header. If the message is not delivered within the speficied timeout the appropriate error occurs.",
               "description": null
             },
             {
@@ -124,7 +378,7 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": null,
+              "summary": "Maximum timeout that is used for query response. The default value is 40 sec.",
               "description": null
             },
             {
@@ -135,7 +389,18 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": null,
+              "summary": "Maximum time difference between server and client.",
+              "description": "If client's device time is out of sink and difference is more thanthe threshhold then error will occur. Also the error will occur if the specified threshhold is more than\n`message_processing_timeout/2`.\nThe default value is 15 sec."
+            },
+            {
+              "name": "reconnect_timeout",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Timeout between reconnect attempts",
               "description": null
             },
             {
@@ -144,8 +409,8 @@
               "optional_inner": {
                 "type": "String"
               },
-              "summary": null,
-              "description": null
+              "summary": "Access key to GraphQL API.",
+              "description": "At the moment is not used in production"
             }
           ],
           "summary": null,
@@ -163,7 +428,7 @@
                 "number_type": "UInt",
                 "number_size": 8
               },
-              "summary": null,
+              "summary": "Mnemonic dictionary that will be used by default in crypto funcions. If not specified, 1 dictionary will be used.",
               "description": null
             },
             {
@@ -174,7 +439,7 @@
                 "number_type": "UInt",
                 "number_size": 8
               },
-              "summary": null,
+              "summary": "Mnemonic word count that will be used by default in crypto functions. If not specified the default value will be 12.",
               "description": null
             },
             {
@@ -183,11 +448,11 @@
               "optional_inner": {
                 "type": "String"
               },
-              "summary": null,
+              "summary": "Derivation path that will be used by default in crypto functions. If not specified `m/44'/396'/0'/0/0` will be used.",
               "description": null
             }
           ],
-          "summary": null,
+          "summary": "Crypto config.",
           "description": null
         },
         {
@@ -202,7 +467,7 @@
                 "number_type": "Int",
                 "number_size": 32
               },
-              "summary": null,
+              "summary": "Workchain id that is used by default in DeploySet",
               "description": null
             },
             {
@@ -213,7 +478,7 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": null,
+              "summary": "Message lifetime for contracts which ABI includes \"expire\" header. The default value is 40 sec.",
               "description": null
             },
             {
@@ -224,7 +489,7 @@
                 "number_type": "Float",
                 "number_size": 32
               },
-              "summary": null,
+              "summary": "Factor that increases the expiration timeout for each retry The default value is 1.5",
               "description": null
             }
           ],
@@ -528,6 +793,147 @@
       "summary": "Crypto functions.",
       "description": null,
       "types": [
+        {
+          "name": "CryptoErrorCode",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "InvalidPublicKey",
+              "type": "Number",
+              "value": "100",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidSecretKey",
+              "type": "Number",
+              "value": "101",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidKey",
+              "type": "Number",
+              "value": "102",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidFactorizeChallenge",
+              "type": "Number",
+              "value": "106",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidBigInt",
+              "type": "Number",
+              "value": "107",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "ScryptFailed",
+              "type": "Number",
+              "value": "108",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidKeySize",
+              "type": "Number",
+              "value": "109",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NaclSecretBoxFailed",
+              "type": "Number",
+              "value": "110",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NaclBoxFailed",
+              "type": "Number",
+              "value": "111",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NaclSignFailed",
+              "type": "Number",
+              "value": "112",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Bip39InvalidEntropy",
+              "type": "Number",
+              "value": "113",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Bip39InvalidPhrase",
+              "type": "Number",
+              "value": "114",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Bip32InvalidKey",
+              "type": "Number",
+              "value": "115",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Bip32InvalidDerivePath",
+              "type": "Number",
+              "value": "116",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Bip39InvalidDictionary",
+              "type": "Number",
+              "value": "117",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Bip39InvalidWordCount",
+              "type": "Number",
+              "value": "118",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "MnemonicGenerationFailed",
+              "type": "Number",
+              "value": "119",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "MnemonicFromEntropyFailed",
+              "type": "Number",
+              "value": "120",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "SigningBoxNotRegistered",
+              "type": "Number",
+              "value": "121",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
         {
           "name": "SigningBoxHandle",
           "type": "Number",
@@ -3122,6 +3528,91 @@
       "description": null,
       "types": [
         {
+          "name": "AbiErrorCode",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "RequiredAddressMissingForEncodeMessage",
+              "type": "Number",
+              "value": "301",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "RequiredCallSetMissingForEncodeMessage",
+              "type": "Number",
+              "value": "302",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidJson",
+              "type": "Number",
+              "value": "303",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidMessage",
+              "type": "Number",
+              "value": "304",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "EncodeDeployMessageFailed",
+              "type": "Number",
+              "value": "305",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "EncodeRunMessageFailed",
+              "type": "Number",
+              "value": "306",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "AttachSignatureFailed",
+              "type": "Number",
+              "value": "307",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidTvcImage",
+              "type": "Number",
+              "value": "308",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "RequiredPublicKeyMissingForFunctionHeader",
+              "type": "Number",
+              "value": "309",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidSigner",
+              "type": "Number",
+              "value": "310",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidAbi",
+              "type": "Number",
+              "value": "311",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "Abi",
           "type": "EnumOfTypes",
           "enum_types": [
@@ -4477,6 +4968,42 @@
       "description": null,
       "types": [
         {
+          "name": "BocErrorCode",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "InvalidBoc",
+              "type": "Number",
+              "value": "201",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "SerializationError",
+              "type": "Number",
+              "value": "202",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InappropriateBlock",
+              "type": "Number",
+              "value": "203",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "MissingSourceBoc",
+              "type": "Number",
+              "value": "204",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfParse",
           "type": "Struct",
           "struct_fields": [
@@ -4930,6 +5457,105 @@
       "summary": "Message processing module.",
       "description": "This module incorporates functions related to complex message\nprocessing scenarios.",
       "types": [
+        {
+          "name": "ProcessingErrorCode",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "MessageAlreadyExpired",
+              "type": "Number",
+              "value": "501",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "MessageHasNotDestinationAddress",
+              "type": "Number",
+              "value": "502",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CanNotBuildMessageCell",
+              "type": "Number",
+              "value": "503",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "FetchBlockFailed",
+              "type": "Number",
+              "value": "504",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "SendMessageFailed",
+              "type": "Number",
+              "value": "505",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidMessageBoc",
+              "type": "Number",
+              "value": "506",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "MessageExpired",
+              "type": "Number",
+              "value": "507",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "TransactionWaitTimeout",
+              "type": "Number",
+              "value": "508",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidBlockReceived",
+              "type": "Number",
+              "value": "509",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CanNotCheckBlockShard",
+              "type": "Number",
+              "value": "510",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "BlockNotFound",
+              "type": "Number",
+              "value": "511",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidData",
+              "type": "Number",
+              "value": "512",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "ExternalSignerMustNotBeUsed",
+              "type": "Number",
+              "value": "513",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
         {
           "name": "ProcessingEvent",
           "type": "EnumOfTypes",
@@ -5411,7 +6037,7 @@
         {
           "name": "process_message",
           "summary": "Creates message, sends it to the network and monitors its processing.",
-          "description": "Creates ABI-compatible message,\nsends it to the network and monitors for the result transaction.\nDecodes the output messages' bodies.\n\nIf contract's ABI includes \"expire\" header, then\nSDK implements retries in case of unsuccessful message delivery within the expiration\ntimeout: SDK recreates the message, sends it and processes it again.\n\nThe intermediate events, such as `WillFetchFirstBlock`, `WillSend`, `DidSend`,\n`WillFetchNextBlock`, etc - are switched on/off by `send_events` flag\nand logged into the supplied callback function.\nThe retry configuration parameters are defined in config:\n<add correct config params here>\npub const DEFAULT_EXPIRATION_RETRIES_LIMIT: i8 = 3; - max number of retries\npub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 40000;  - message expiration timeout in ms.\npub const DEFAULT_....expiration_timeout_grow_factor... = 1.5 - factor that increases the expiration timeout for each retry\n\nIf contract's ABI does not include \"expire\" header\nthen, if no transaction is found within the network timeout (see config parameter ), exits with error.",
+          "description": "Creates ABI-compatible message,\nsends it to the network and monitors for the result transaction.\nDecodes the output messages' bodies.\n\nIf contract's ABI includes \"expire\" header, then\nSDK implements retries in case of unsuccessful message delivery within the expiration\ntimeout: SDK recreates the message, sends it and processes it again.\n\nThe intermediate events, such as `WillFetchFirstBlock`, `WillSend`, `DidSend`,\n`WillFetchNextBlock`, etc - are switched on/off by `send_events` flag\nand logged into the supplied callback function.\nThe retry configuration parameters are defined in client's `NetworkConfig`.\n\nIf contract's ABI does not include \"expire\" header\nthen, if no transaction is found within the network timeout (see config parameter ), exits with error.",
           "params": [
             {
               "name": "context",
@@ -5596,6 +6222,112 @@
       "summary": null,
       "description": null,
       "types": [
+        {
+          "name": "TvmErrorCode",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "CanNotReadTransaction",
+              "type": "Number",
+              "value": "401",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CanNotReadBlockchainConfig",
+              "type": "Number",
+              "value": "402",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "TransactionAborted",
+              "type": "Number",
+              "value": "403",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InternalError",
+              "type": "Number",
+              "value": "404",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "ActionPhaseFailed",
+              "type": "Number",
+              "value": "405",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "AccountCodeMissing",
+              "type": "Number",
+              "value": "406",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "LowBalance",
+              "type": "Number",
+              "value": "407",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "AccountFrozenOrDeleted",
+              "type": "Number",
+              "value": "408",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "AccountMissing",
+              "type": "Number",
+              "value": "409",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "UnknownExecutionError",
+              "type": "Number",
+              "value": "410",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidInputStack",
+              "type": "Number",
+              "value": "411",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidAccountBoc",
+              "type": "Number",
+              "value": "412",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidMessageType",
+              "type": "Number",
+              "value": "413",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "ContractExecutionError",
+              "type": "Number",
+              "value": "414",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
         {
           "name": "ExecutionOptions",
           "type": "Struct",
@@ -6096,6 +6828,98 @@
       "description": null,
       "types": [
         {
+          "name": "NetErrorCode",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "QueryFailed",
+              "type": "Number",
+              "value": "601",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "SubscribeFailed",
+              "type": "Number",
+              "value": "602",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "WaitForFailed",
+              "type": "Number",
+              "value": "603",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "GetSubscriptionResultFailed",
+              "type": "Number",
+              "value": "604",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidServerResponse",
+              "type": "Number",
+              "value": "605",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "ClockOutOfSync",
+              "type": "Number",
+              "value": "606",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "WaitForTimeout",
+              "type": "Number",
+              "value": "607",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "GraphqlError",
+              "type": "Number",
+              "value": "608",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NetworkModuleSuspended",
+              "type": "Number",
+              "value": "609",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "WebsocketDisconnected",
+              "type": "Number",
+              "value": "610",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NotSupported",
+              "type": "Number",
+              "value": "611",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NoEndpointsProvided",
+              "type": "Number",
+              "value": "612",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "OrderBy",
           "type": "Struct",
           "struct_fields": [
@@ -6371,6 +7195,23 @@
               "name": "block_id",
               "type": "String",
               "summary": "Account shard last block ID",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "EndpointsSet",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "endpoints",
+              "type": "Array",
+              "array_item": {
+                "type": "String"
+              },
+              "summary": "List of endpoints provided by server",
               "description": null
             }
           ],
@@ -6678,6 +7519,74 @@
             ]
           },
           "errors": null
+        },
+        {
+          "name": "fetch_endpoints",
+          "summary": "Requests the list of alternative endpoints from server",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "net.EndpointsSet"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "set_endpoints",
+          "summary": "Sets the list of endpoints to use on reinit",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "net.EndpointsSet",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
+              }
+            ]
+          },
+          "errors": null
         }
       ]
     },
@@ -6686,6 +7595,42 @@
       "summary": "[UNSTABLE](UNSTABLE.md) Module for working with debot.",
       "description": null,
       "types": [
+        {
+          "name": "DebotErrorCode",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "DebotStartFailed",
+              "type": "Number",
+              "value": "801",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "DebotFetchFailed",
+              "type": "Number",
+              "value": "802",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "DebotExecutionFailed",
+              "type": "Number",
+              "value": "803",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "DebotInvalidHandle",
+              "type": "Number",
+              "value": "804",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
         {
           "name": "DebotHandle",
           "type": "Number",

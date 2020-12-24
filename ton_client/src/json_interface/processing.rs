@@ -34,11 +34,8 @@ use std::sync::Arc;
 /// The intermediate events, such as `WillFetchFirstBlock`, `WillSend`, `DidSend`,
 /// `WillFetchNextBlock`, etc - are switched on/off by `send_events` flag
 /// and logged into the supplied callback function.
-/// The retry configuration parameters are defined in config:
-/// <add correct config params here>
-/// pub const DEFAULT_EXPIRATION_RETRIES_LIMIT: i8 = 3; - max number of retries
-/// pub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 40000;  - message expiration timeout in ms.
-/// pub const DEFAULT_....expiration_timeout_grow_factor... = 1.5 - factor that increases the expiration timeout for each retry
+/// 
+/// The retry configuration parameters are defined in the client's `NetworkConfig` and `AbiConfig`.
 ///
 /// If contract's ABI does not include "expire" header
 /// then, if no transaction is found within the network timeout (see config parameter ), exits with error.

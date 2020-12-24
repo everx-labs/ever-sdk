@@ -10,6 +10,8 @@ processing scenarios.
 [process_message](#process_message) – Creates message, sends it to the network and monitors its processing.
 
 ## Types
+[ProcessingErrorCode](#ProcessingErrorCode)
+
 [ProcessingEvent](#ProcessingEvent)
 
 [ResultOfProcessMessage](#ResultOfProcessMessage)
@@ -38,11 +40,11 @@ type ParamsOfSendMessage = {
     message: string,
     abi?: Abi,
     send_events: boolean
-};
+}
 
 type ResultOfSendMessage = {
     shard_block_id: string
-};
+}
 
 function send_message(
     params: ParamsOfSendMessage,
@@ -95,14 +97,14 @@ type ParamsOfWaitForTransaction = {
     message: string,
     shard_block_id: string,
     send_events: boolean
-};
+}
 
 type ResultOfProcessMessage = {
     transaction: any,
     out_messages: string[],
     decoded?: DecodedOutput,
     fees: TransactionFees
-};
+}
 
 function wait_for_transaction(
     params: ParamsOfWaitForTransaction,
@@ -142,11 +144,7 @@ timeout: SDK recreates the message, sends it and processes it again.
 The intermediate events, such as `WillFetchFirstBlock`, `WillSend`, `DidSend`,
 `WillFetchNextBlock`, etc - are switched on/off by `send_events` flag
 and logged into the supplied callback function.
-The retry configuration parameters are defined in config:
-<add correct config params here>
-pub const DEFAULT_EXPIRATION_RETRIES_LIMIT: i8 = 3; - max number of retries
-pub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 40000;  - message expiration timeout in ms.
-pub const DEFAULT_....expiration_timeout_grow_factor... = 1.5 - factor that increases the expiration timeout for each retry
+The retry configuration parameters are defined in client's `NetworkConfig`.
 
 If contract's ABI does not include "expire" header
 then, if no transaction is found within the network timeout (see config parameter ), exits with error.
@@ -155,14 +153,14 @@ then, if no transaction is found within the network timeout (see config paramete
 type ParamsOfProcessMessage = {
     message_encode_params: ParamsOfEncodeMessage,
     send_events: boolean
-};
+}
 
 type ResultOfProcessMessage = {
     transaction: any,
     out_messages: string[],
     decoded?: DecodedOutput,
     fees: TransactionFees
-};
+}
 
 function process_message(
     params: ParamsOfProcessMessage,
@@ -183,6 +181,41 @@ function process_message(
 
 
 # Types
+## ProcessingErrorCode
+```ts
+enum ProcessingErrorCode {
+    MessageAlreadyExpired = 501,
+    MessageHasNotDestinationAddress = 502,
+    CanNotBuildMessageCell = 503,
+    FetchBlockFailed = 504,
+    SendMessageFailed = 505,
+    InvalidMessageBoc = 506,
+    MessageExpired = 507,
+    TransactionWaitTimeout = 508,
+    InvalidBlockReceived = 509,
+    CanNotCheckBlockShard = 510,
+    BlockNotFound = 511,
+    InvalidData = 512,
+    ExternalSignerMustNotBeUsed = 513
+}
+```
+One of the following value:
+
+- `MessageAlreadyExpired = 501`
+- `MessageHasNotDestinationAddress = 502`
+- `CanNotBuildMessageCell = 503`
+- `FetchBlockFailed = 504`
+- `SendMessageFailed = 505`
+- `InvalidMessageBoc = 506`
+- `MessageExpired = 507`
+- `TransactionWaitTimeout = 508`
+- `InvalidBlockReceived = 509`
+- `CanNotCheckBlockShard = 510`
+- `BlockNotFound = 511`
+- `InvalidData = 512`
+- `ExternalSignerMustNotBeUsed = 513`
+
+
 ## ProcessingEvent
 ```ts
 type ProcessingEvent = {
@@ -222,7 +255,7 @@ type ProcessingEvent = {
     message_id: string,
     message: string,
     error: ClientError
-};
+}
 ```
 Depends on value of the  `type` field.
 
@@ -320,7 +353,7 @@ type ResultOfProcessMessage = {
     out_messages: string[],
     decoded?: DecodedOutput,
     fees: TransactionFees
-};
+}
 ```
 - `transaction`: _any_ – Parsed transaction.
 <br>In addition to the regular transaction fields there is a<br>`boc` field encoded with `base64` which contains source<br>transaction BOC.
@@ -335,7 +368,7 @@ type ResultOfProcessMessage = {
 type DecodedOutput = {
     out_messages: DecodedMessageBody | null[],
     output?: any
-};
+}
 ```
 - `out_messages`: _[DecodedMessageBody](mod_abi.md#DecodedMessageBody)?[]_ – Decoded bodies of the out messages.
 <br>If the message can't be decoded, then `None` will be stored in<br>the appropriate position.
@@ -348,7 +381,7 @@ type ParamsOfSendMessage = {
     message: string,
     abi?: Abi,
     send_events: boolean
-};
+}
 ```
 - `message`: _string_ – Message BOC.
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Optional message ABI.
@@ -360,7 +393,7 @@ type ParamsOfSendMessage = {
 ```ts
 type ResultOfSendMessage = {
     shard_block_id: string
-};
+}
 ```
 - `shard_block_id`: _string_ – The last generated shard block of the message destination account before the message was sent.
 <br>This block id must be used as a parameter of the<br>`wait_for_transaction`.
@@ -373,7 +406,7 @@ type ParamsOfWaitForTransaction = {
     message: string,
     shard_block_id: string,
     send_events: boolean
-};
+}
 ```
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Optional ABI for decoding the transaction result.
 <br>If it is specified, then the output messages' bodies will be<br>decoded according to this ABI.<br><br>The `abi_decoded` result field will be filled out.
@@ -389,7 +422,7 @@ type ParamsOfWaitForTransaction = {
 type ParamsOfProcessMessage = {
     message_encode_params: ParamsOfEncodeMessage,
     send_events: boolean
-};
+}
 ```
 - `message_encode_params`: _[ParamsOfEncodeMessage](mod_abi.md#ParamsOfEncodeMessage)_ – Message encode parameters.
 - `send_events`: _boolean_ – Flag for requesting events sending
