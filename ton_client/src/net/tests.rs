@@ -370,7 +370,12 @@ async fn find_last_shard_block() {
 #[tokio::test(core_threads = 2)]
 async fn test_endpoints() {
     return;
-    let client = TestClient::new();
+
+    let client = TestClient::new_with_config(json!({
+        "network": {
+            "endpoints": ["cinet.tonlabs.io", "cinet2.tonlabs.io/"],
+        }
+    }));
 
     let endpoints: EndpointsSet = client
         .request_async("net.fetch_endpoints", ())

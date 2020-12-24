@@ -57,7 +57,7 @@ impl ServerInfo {
             format!("https://{}", base_url)
         };
 
-        format!("{}/graphql", base_url)
+        format!("{}/graphql", base_url.trim_end_matches("/"))
     }
 
     pub async fn fetch(client_env: Arc<ClientEnv>, address: &str) -> ClientResult<Self> {
