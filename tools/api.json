@@ -322,7 +322,7 @@
               "optional_inner": {
                 "type": "String"
               },
-              "summary": null,
+              "summary": "DApp Server public address. For instance, for `net.ton.dev/graphql` GraphQL endpoint the server address will be net.ton.dev",
               "description": null
             },
             {
@@ -334,8 +334,8 @@
                   "type": "String"
                 }
               },
-              "summary": null,
-              "description": null
+              "summary": "List of DApp Server addresses.",
+              "description": "Any correct URL format can be specified, including IP addresses"
             },
             {
               "name": "network_retries_count",
@@ -345,7 +345,7 @@
                 "number_type": "Int",
                 "number_size": 8
               },
-              "summary": null,
+              "summary": "The number of automatic network retries that SDK performs in case of connection problems The default value is 5.",
               "description": null
             },
             {
@@ -356,7 +356,7 @@
                 "number_type": "Int",
                 "number_size": 8
               },
-              "summary": null,
+              "summary": "The number of automatic message processing retries that SDK performs in case of `Message Expired (507)` error - but only for those messages which local emulation was successfull or failed with replay protection error. The default value is 5.",
               "description": null
             },
             {
@@ -367,7 +367,7 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": null,
+              "summary": "Timeout that is used to process message delivery for the contracts which ABI does not include \"expire\" header. If the message is not delivered within the speficied timeout the appropriate error occurs.",
               "description": null
             },
             {
@@ -378,7 +378,7 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": null,
+              "summary": "Maximum timeout that is used for query response. The default value is 40 sec.",
               "description": null
             },
             {
@@ -389,8 +389,8 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": null,
-              "description": null
+              "summary": "Maximum time difference between server and client.",
+              "description": "If client's device time is out of sink and difference is more thanthe threshhold then error will occur. Also the error will occur if the specified threshhold is more than\n`message_processing_timeout/2`.\nThe default value is 15 sec."
             },
             {
               "name": "reconnect_timeout",
@@ -400,7 +400,7 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": null,
+              "summary": "Timeout between reconnect attempts",
               "description": null
             },
             {
@@ -409,8 +409,8 @@
               "optional_inner": {
                 "type": "String"
               },
-              "summary": null,
-              "description": null
+              "summary": "Access key to GraphQL API.",
+              "description": "At the moment is not used in production"
             }
           ],
           "summary": null,
@@ -428,7 +428,7 @@
                 "number_type": "UInt",
                 "number_size": 8
               },
-              "summary": null,
+              "summary": "Mnemonic dictionary that will be used by default in crypto funcions. If not specified, 1 dictionary will be used.",
               "description": null
             },
             {
@@ -439,7 +439,7 @@
                 "number_type": "UInt",
                 "number_size": 8
               },
-              "summary": null,
+              "summary": "Mnemonic word count that will be used by default in crypto functions. If not specified the default value will be 12.",
               "description": null
             },
             {
@@ -448,11 +448,11 @@
               "optional_inner": {
                 "type": "String"
               },
-              "summary": null,
+              "summary": "Derivation path that will be used by default in crypto functions. If not specified `m/44'/396'/0'/0/0` will be used.",
               "description": null
             }
           ],
-          "summary": null,
+          "summary": "Crypto config.",
           "description": null
         },
         {
@@ -467,7 +467,7 @@
                 "number_type": "Int",
                 "number_size": 32
               },
-              "summary": null,
+              "summary": "Workchain id that is used by default in DeploySet",
               "description": null
             },
             {
@@ -478,7 +478,7 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": null,
+              "summary": "Message lifetime for contracts which ABI includes \"expire\" header. The default value is 40 sec.",
               "description": null
             },
             {
@@ -489,7 +489,7 @@
                 "number_type": "Float",
                 "number_size": 32
               },
-              "summary": null,
+              "summary": "Factor that increases the expiration timeout for each retry The default value is 1.5",
               "description": null
             }
           ],
@@ -6037,7 +6037,7 @@
         {
           "name": "process_message",
           "summary": "Creates message, sends it to the network and monitors its processing.",
-          "description": "Creates ABI-compatible message,\nsends it to the network and monitors for the result transaction.\nDecodes the output messages' bodies.\n\nIf contract's ABI includes \"expire\" header, then\nSDK implements retries in case of unsuccessful message delivery within the expiration\ntimeout: SDK recreates the message, sends it and processes it again.\n\nThe intermediate events, such as `WillFetchFirstBlock`, `WillSend`, `DidSend`,\n`WillFetchNextBlock`, etc - are switched on/off by `send_events` flag\nand logged into the supplied callback function.\nThe retry configuration parameters are defined in config:\n<add correct config params here>\npub const DEFAULT_EXPIRATION_RETRIES_LIMIT: i8 = 3; - max number of retries\npub const DEFAULT_EXPIRATION_TIMEOUT: u32 = 40000;  - message expiration timeout in ms.\npub const DEFAULT_....expiration_timeout_grow_factor... = 1.5 - factor that increases the expiration timeout for each retry\n\nIf contract's ABI does not include \"expire\" header\nthen, if no transaction is found within the network timeout (see config parameter ), exits with error.",
+          "description": "Creates ABI-compatible message,\nsends it to the network and monitors for the result transaction.\nDecodes the output messages' bodies.\n\nIf contract's ABI includes \"expire\" header, then\nSDK implements retries in case of unsuccessful message delivery within the expiration\ntimeout: SDK recreates the message, sends it and processes it again.\n\nThe intermediate events, such as `WillFetchFirstBlock`, `WillSend`, `DidSend`,\n`WillFetchNextBlock`, etc - are switched on/off by `send_events` flag\nand logged into the supplied callback function.\nThe retry configuration parameters are defined in client's `NetworkConfig`.\n\nIf contract's ABI does not include \"expire\" header\nthen, if no transaction is found within the network timeout (see config parameter ), exits with error.",
           "params": [
             {
               "name": "context",

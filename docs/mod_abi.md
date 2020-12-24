@@ -532,11 +532,11 @@ enum MessageBodyType {
 ```
 One of the following value:
 
-- `Input = "Input"` – Message contains the input of the ABI function.
-- `Output = "Output"` – Message contains the output of the ABI function.
-- `InternalOutput = "InternalOutput"` – Message contains the input of the imported ABI function.
+- `Input` – Message contains the input of the ABI function.
+- `Output` – Message contains the output of the ABI function.
+- `InternalOutput` – Message contains the input of the imported ABI function.
 <br>Occurs when contract sends an internal message to other<br>contract.
-- `Event = "Event"` – Message contains the input of the ABI event.
+- `Event` – Message contains the input of the ABI event.
 
 
 ## StateInitSource

@@ -1,6 +1,6 @@
 [package]
 name = "api_test"
-version = "1.3.0"
+version = "1.5.0"
 authors = ["Michael Vlasov <melsomino@gmail.com>"]
 edition = "2018"
 

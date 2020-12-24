@@ -19,7 +19,7 @@ null
 
 [NetworkConfig](#NetworkConfig)
 
-[CryptoConfig](#CryptoConfig)
+[CryptoConfig](#CryptoConfig) – Crypto config.
 
 [AbiConfig](#AbiConfig)
 
@@ -226,18 +226,23 @@ type NetworkConfig = {
     access_key?: string
 }
 ```
-- `server_address`?: _string_
-- `endpoints`?: _string[]_
-- `network_retries_count`?: _number_
-- `message_retries_count`?: _number_
-- `message_processing_timeout`?: _number_
-- `wait_for_timeout`?: _number_
-- `out_of_sync_threshold`?: _number_
-- `reconnect_timeout`?: _number_
-- `access_key`?: _string_
+- `server_address`?: _string_ – DApp Server public address. For instance, for `net.ton.dev/graphql` GraphQL endpoint the server address will be net.ton.dev
+- `endpoints`?: _string[]_ – List of DApp Server addresses.
+<br>Any correct URL format can be specified, including IP addresses
+- `network_retries_count`?: _number_ – The number of automatic network retries that SDK performs in case of connection problems The default value is 5.
+- `message_retries_count`?: _number_ – The number of automatic message processing retries that SDK performs in case of `Message Expired (507)` error - but only for those messages which local emulation was successfull or failed with replay protection error. The default value is 5.
+- `message_processing_timeout`?: _number_ – Timeout that is used to process message delivery for the contracts which ABI does not include "expire" header. If the message is not delivered within the speficied timeout the appropriate error occurs.
+- `wait_for_timeout`?: _number_ – Maximum timeout that is used for query response. The default value is 40 sec.
+- `out_of_sync_threshold`?: _number_ – Maximum time difference between server and client.
+<br>If client's device time is out of sink and difference is more thanthe threshhold then error will occur. Also the error will occur if the specified threshhold is more than<br>`message_processing_timeout/2`.<br>The default value is 15 sec.
+- `reconnect_timeout`?: _number_ – Timeout between reconnect attempts
+- `access_key`?: _string_ – Access key to GraphQL API.
+<br>At the moment is not used in production
 
 
 ## CryptoConfig
+Crypto config.
+
 ```ts
 type CryptoConfig = {
     mnemonic_dictionary?: number,
@@ -245,9 +250,9 @@ type CryptoConfig = {
     hdkey_derivation_path?: string
 }
 ```
-- `mnemonic_dictionary`?: _number_
-- `mnemonic_word_count`?: _number_
-- `hdkey_derivation_path`?: _string_
+- `mnemonic_dictionary`?: _number_ – Mnemonic dictionary that will be used by default in crypto funcions. If not specified, 1 dictionary will be used.
+- `mnemonic_word_count`?: _number_ – Mnemonic word count that will be used by default in crypto functions. If not specified the default value will be 12.
+- `hdkey_derivation_path`?: _string_ – Derivation path that will be used by default in crypto functions. If not specified `m/44'/396'/0'/0/0` will be used.
 
 
 ## AbiConfig
@@ -256,11 +261,11 @@ type AbiConfig = {
     workchain?: number,
     message_expiration_timeout?: number,
     message_expiration_timeout_grow_factor?: number
-}
+};
 ```
-- `workchain`?: _number_
-- `message_expiration_timeout`?: _number_
-- `message_expiration_timeout_grow_factor`?: _number_
+- `workchain`?: _number_ – Workchain id that is used by default in DeploySet
+- `message_expiration_timeout`?: _number_ – Message lifetime for contracts which ABI includes "expire" header. The default value is 40 sec.
+- `message_expiration_timeout_grow_factor`?: _number_ – Factor that increases the expiration timeout for each retry The default value is 1.5
 
 
 ## BuildInfoDependency
