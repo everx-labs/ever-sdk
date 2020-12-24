@@ -1,10 +1,10 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
-## 1.4.1 Dec 23, 2020
+## 1.5.0 Dec 25, 2020
 
 ### New
-- `ErrorCode` types in every module in `api.json`.
+- `reconnect_timeout` parameter in `NetworkConfig`.
 
 ### Fixed
 - send `GQL_TERMINATE_CONNECTION` and close websocket on leaving ws loop.

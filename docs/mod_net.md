@@ -18,6 +18,10 @@ null
 
 [find_last_shard_block](#find_last_shard_block) – Returns ID of the last block in a specified account shard
 
+[fetch_endpoints](#fetch_endpoints) – Requests the list of alternative endpoints from server
+
+[set_endpoints](#set_endpoints) – Sets the list of endpoints to use on reinit
+
 ## Types
 [NetErrorCode](#NetErrorCode)
 
@@ -44,6 +48,8 @@ null
 [ParamsOfFindLastShardBlock](#ParamsOfFindLastShardBlock)
 
 [ResultOfFindLastShardBlock](#ResultOfFindLastShardBlock)
+
+[EndpointsSet](#EndpointsSet)
 
 
 # Functions
@@ -249,6 +255,41 @@ function find_last_shard_block(
 - `block_id`: _string_ – Account shard last block ID
 
 
+## fetch_endpoints
+
+Requests the list of alternative endpoints from server
+
+```ts
+type EndpointsSet = {
+    endpoints: string[]
+}
+
+function fetch_endpoints(): Promise<EndpointsSet>;
+```
+### Result
+
+- `endpoints`: _string[]_ – List of endpoints provided by server
+
+
+## set_endpoints
+
+Sets the list of endpoints to use on reinit
+
+```ts
+type EndpointsSet = {
+    endpoints: string[]
+}
+
+function set_endpoints(
+    params: EndpointsSet,
+): Promise<void>;
+```
+### Parameters
+- `endpoints`: _string[]_ – List of endpoints provided by server
+### Result
+
+
+
 # Types
 ## NetErrorCode
 ```ts
@@ -262,7 +303,9 @@ enum NetErrorCode {
     WaitForTimeout = 607,
     GraphqlError = 608,
     NetworkModuleSuspended = 609,
-    WebsocketDisconnected = 610
+    WebsocketDisconnected = 610,
+    NotSupported = 611,
+    NoEndpointsProvided = 612
 }
 ```
 One of the following value:
@@ -277,6 +320,8 @@ One of the following value:
 - `GraphqlError = 608`
 - `NetworkModuleSuspended = 609`
 - `WebsocketDisconnected = 610`
+- `NotSupported = 611`
+- `NoEndpointsProvided = 612`
 
 
 ## OrderBy
@@ -413,5 +458,14 @@ type ResultOfFindLastShardBlock = {
 }
 ```
 - `block_id`: _string_ – Account shard last block ID
+
+
+## EndpointsSet
+```ts
+type EndpointsSet = {
+    endpoints: string[]
+}
+```
+- `endpoints`: _string[]_ – List of endpoints provided by server
 
 

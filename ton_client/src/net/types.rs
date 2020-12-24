@@ -38,6 +38,10 @@ pub fn default_out_of_sync_threshold() -> u32 {
     15000
 }
 
+pub fn default_reconnect_timeout() -> u32 {
+    1000
+}
+
 fn deserialize_network_retries_count<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<i8, D::Error> {
@@ -68,6 +72,12 @@ fn deserialize_out_of_sync_threshold<'de, D: Deserializer<'de>>(
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_out_of_sync_threshold()))
 }
 
+fn deserialize_reconnect_timeout<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<u32, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_reconnect_timeout()))
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, ApiType)]
 pub struct NetworkConfig {
     pub server_address: Option<String>,
@@ -87,6 +97,9 @@ pub struct NetworkConfig {
     #[serde(default = "default_out_of_sync_threshold",
     deserialize_with = "deserialize_out_of_sync_threshold")]
     pub out_of_sync_threshold: u32,
+    #[serde(default = "default_reconnect_timeout",
+    deserialize_with = "deserialize_reconnect_timeout")]
+    pub reconnect_timeout: u32,
     pub access_key: Option<String>,
 }
 
@@ -100,6 +113,7 @@ impl Default for NetworkConfig {
             message_processing_timeout: default_message_processing_timeout(),
             wait_for_timeout: default_wait_for_timeout(),
             out_of_sync_threshold: default_out_of_sync_threshold(),
+            reconnect_timeout: default_reconnect_timeout(),
             access_key: None,
         }
     }
