@@ -215,7 +215,8 @@ type ClientConfig = {
 ## NetworkConfig
 ```ts
 type NetworkConfig = {
-    server_address: string,
+    server_address?: string,
+    endpoints?: string[],
     network_retries_count?: number,
     message_retries_count?: number,
     message_processing_timeout?: number,
@@ -224,7 +225,8 @@ type NetworkConfig = {
     access_key?: string
 }
 ```
-- `server_address`: _string_
+- `server_address`?: _string_
+- `endpoints`?: _string[]_
 - `network_retries_count`?: _number_
 - `message_retries_count`?: _number_
 - `message_processing_timeout`?: _number_

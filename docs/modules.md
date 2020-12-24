@@ -157,6 +157,10 @@
 
 [find_last_shard_block](mod_net.md#find_last_shard_block) – Returns ID of the last block in a specified account shard
 
+[fetch_endpoints](mod_net.md#fetch_endpoints) – Requests the list of alternative endpoints from server
+
+[set_endpoints](mod_net.md#set_endpoints) – Sets the list of endpoints to use on reinit
+
 ## [debot](mod_debot.md) – [UNSTABLE](UNSTABLE.md) Module for working with debot.
 
 [start](mod_debot.md#start) – [UNSTABLE](UNSTABLE.md) Starts an instance of debot.
