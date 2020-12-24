@@ -11,6 +11,8 @@ null
 [resolve_app_request](#resolve_app_request) – Resolves application request processing result
 
 ## Types
+[ClientErrorCode](#ClientErrorCode)
+
 [ClientError](#ClientError)
 
 [ClientConfig](#ClientConfig)
@@ -44,7 +46,7 @@ Returns Core Library API reference
 ```ts
 type ResultOfGetApiReference = {
     api: any
-};
+}
 
 function get_api_reference(): Promise<ResultOfGetApiReference>;
 ```
@@ -60,7 +62,7 @@ Returns Core Library version
 ```ts
 type ResultOfVersion = {
     version: string
-};
+}
 
 function version(): Promise<ResultOfVersion>;
 ```
@@ -77,7 +79,7 @@ Returns detailed information about this build.
 type ResultOfBuildInfo = {
     build_number: number,
     dependencies: BuildInfoDependency[]
-};
+}
 
 function build_info(): Promise<ResultOfBuildInfo>;
 ```
@@ -95,7 +97,7 @@ Resolves application request processing result
 type ParamsOfResolveAppRequest = {
     app_request_id: number,
     result: AppRequestResult
-};
+}
 
 function resolve_app_request(
     params: ParamsOfResolveAppRequest,
@@ -109,13 +111,88 @@ function resolve_app_request(
 
 
 # Types
+## ClientErrorCode
+```ts
+enum ClientErrorCode {
+    NotImplemented = 1,
+    InvalidHex = 2,
+    InvalidBase64 = 3,
+    InvalidAddress = 4,
+    CallbackParamsCantBeConvertedToJson = 5,
+    WebsocketConnectError = 6,
+    WebsocketReceiveError = 7,
+    WebsocketSendError = 8,
+    HttpClientCreateError = 9,
+    HttpRequestCreateError = 10,
+    HttpRequestSendError = 11,
+    HttpRequestParseError = 12,
+    CallbackNotRegistered = 13,
+    NetModuleNotInit = 14,
+    InvalidConfig = 15,
+    CannotCreateRuntime = 16,
+    InvalidContextHandle = 17,
+    CannotSerializeResult = 18,
+    CannotSerializeError = 19,
+    CannotConvertJsValueToJson = 20,
+    CannotReceiveSpawnedResult = 21,
+    SetTimerError = 22,
+    InvalidParams = 23,
+    ContractsAddressConversionFailed = 24,
+    UnknownFunction = 25,
+    AppRequestError = 26,
+    NoSuchRequest = 27,
+    CanNotSendRequestResult = 28,
+    CanNotReceiveRequestResult = 29,
+    CanNotParseRequestResult = 30,
+    UnexpectedCallbackResponse = 31,
+    CanNotParseNumber = 32,
+    InternalError = 33
+}
+```
+One of the following value:
+
+- `NotImplemented = 1`
+- `InvalidHex = 2`
+- `InvalidBase64 = 3`
+- `InvalidAddress = 4`
+- `CallbackParamsCantBeConvertedToJson = 5`
+- `WebsocketConnectError = 6`
+- `WebsocketReceiveError = 7`
+- `WebsocketSendError = 8`
+- `HttpClientCreateError = 9`
+- `HttpRequestCreateError = 10`
+- `HttpRequestSendError = 11`
+- `HttpRequestParseError = 12`
+- `CallbackNotRegistered = 13`
+- `NetModuleNotInit = 14`
+- `InvalidConfig = 15`
+- `CannotCreateRuntime = 16`
+- `InvalidContextHandle = 17`
+- `CannotSerializeResult = 18`
+- `CannotSerializeError = 19`
+- `CannotConvertJsValueToJson = 20`
+- `CannotReceiveSpawnedResult = 21`
+- `SetTimerError = 22`
+- `InvalidParams = 23`
+- `ContractsAddressConversionFailed = 24`
+- `UnknownFunction = 25`
+- `AppRequestError = 26`
+- `NoSuchRequest = 27`
+- `CanNotSendRequestResult = 28`
+- `CanNotReceiveRequestResult = 29`
+- `CanNotParseRequestResult = 30`
+- `UnexpectedCallbackResponse = 31`
+- `CanNotParseNumber = 32`
+- `InternalError = 33`
+
+
 ## ClientError
 ```ts
 type ClientError = {
     code: number,
     message: string,
     data: any
-};
+}
 ```
 - `code`: _number_
 - `message`: _string_
@@ -128,7 +205,7 @@ type ClientConfig = {
     network?: NetworkConfig,
     crypto?: CryptoConfig,
     abi?: AbiConfig
-};
+}
 ```
 - `network`?: _[NetworkConfig](mod_client.md#NetworkConfig)_
 - `crypto`?: _[CryptoConfig](mod_client.md#CryptoConfig)_
@@ -145,7 +222,7 @@ type NetworkConfig = {
     wait_for_timeout?: number,
     out_of_sync_threshold?: number,
     access_key?: string
-};
+}
 ```
 - `server_address`: _string_
 - `network_retries_count`?: _number_
@@ -162,7 +239,7 @@ type CryptoConfig = {
     mnemonic_dictionary?: number,
     mnemonic_word_count?: number,
     hdkey_derivation_path?: string
-};
+}
 ```
 - `mnemonic_dictionary`?: _number_
 - `mnemonic_word_count`?: _number_
@@ -175,7 +252,7 @@ type AbiConfig = {
     workchain?: number,
     message_expiration_timeout?: number,
     message_expiration_timeout_grow_factor?: number
-};
+}
 ```
 - `workchain`?: _number_
 - `message_expiration_timeout`?: _number_
@@ -187,7 +264,7 @@ type AbiConfig = {
 type BuildInfoDependency = {
     name: string,
     git_commit: string
-};
+}
 ```
 - `name`: _string_ – Dependency name.
 <br>Usually it is a crate name.
@@ -199,7 +276,7 @@ type BuildInfoDependency = {
 type ParamsOfAppRequest = {
     app_request_id: number,
     request_data: any
-};
+}
 ```
 - `app_request_id`: _number_ – Request ID.
 <br>Should be used in `resolve_app_request` call
@@ -214,7 +291,7 @@ type AppRequestResult = {
 } | {
     type: 'Ok'
     result: any
-};
+}
 ```
 Depends on value of the  `type` field.
 
@@ -237,7 +314,7 @@ Request processed successfully
 ```ts
 type ResultOfGetApiReference = {
     api: any
-};
+}
 ```
 - `api`: _API_
 
@@ -246,7 +323,7 @@ type ResultOfGetApiReference = {
 ```ts
 type ResultOfVersion = {
     version: string
-};
+}
 ```
 - `version`: _string_ – Core Library version
 
@@ -256,7 +333,7 @@ type ResultOfVersion = {
 type ResultOfBuildInfo = {
     build_number: number,
     dependencies: BuildInfoDependency[]
-};
+}
 ```
 - `build_number`: _number_ – Build number assigned to this build by the CI.
 - `dependencies`: _[BuildInfoDependency](mod_client.md#BuildInfoDependency)[]_ – Fingerprint of the most important dependencies.
@@ -267,7 +344,7 @@ type ResultOfBuildInfo = {
 type ParamsOfResolveAppRequest = {
     app_request_id: number,
     result: AppRequestResult
-};
+}
 ```
 - `app_request_id`: _number_ – Request ID received from SDK
 - `result`: _[AppRequestResult](mod_client.md#AppRequestResult)_ – Result of request processing

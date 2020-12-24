@@ -2,8 +2,7 @@ use crate::error::ClientError;
 use serde_json::Value;
 use std::fmt::Display;
 
-const NET: isize = ClientError::NET; // 600
-
+#[derive(ApiType)]
 pub enum ErrorCode {
     QueryFailed = NET + 1,
     SubscribeFailed = NET + 2,

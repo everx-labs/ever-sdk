@@ -206,6 +206,8 @@ impl LinkHandler {
                 phase = self.handle_ws_action(action, &mut ws_sender, phase).await
             }
         }
+        let _ = ws_sender.send(GraphQLMessageFromClient::ConnectionTerminate.get_message()).await;
+        let _ = ws_sender.send(String::new()).await;
         phase
     }
 

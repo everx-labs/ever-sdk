@@ -1,11 +1,250 @@
 {
-  "version": "1.4.0",
+  "version": "1.4.1",
   "modules": [
     {
       "name": "client",
       "summary": "Provides information about library.",
       "description": null,
       "types": [
+        {
+          "name": "ClientErrorCode",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "NotImplemented",
+              "type": "Number",
+              "value": "1",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidHex",
+              "type": "Number",
+              "value": "2",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidBase64",
+              "type": "Number",
+              "value": "3",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidAddress",
+              "type": "Number",
+              "value": "4",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CallbackParamsCantBeConvertedToJson",
+              "type": "Number",
+              "value": "5",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "WebsocketConnectError",
+              "type": "Number",
+              "value": "6",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "WebsocketReceiveError",
+              "type": "Number",
+              "value": "7",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "WebsocketSendError",
+              "type": "Number",
+              "value": "8",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "HttpClientCreateError",
+              "type": "Number",
+              "value": "9",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "HttpRequestCreateError",
+              "type": "Number",
+              "value": "10",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "HttpRequestSendError",
+              "type": "Number",
+              "value": "11",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "HttpRequestParseError",
+              "type": "Number",
+              "value": "12",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CallbackNotRegistered",
+              "type": "Number",
+              "value": "13",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NetModuleNotInit",
+              "type": "Number",
+              "value": "14",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidConfig",
+              "type": "Number",
+              "value": "15",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CannotCreateRuntime",
+              "type": "Number",
+              "value": "16",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidContextHandle",
+              "type": "Number",
+              "value": "17",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CannotSerializeResult",
+              "type": "Number",
+              "value": "18",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CannotSerializeError",
+              "type": "Number",
+              "value": "19",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CannotConvertJsValueToJson",
+              "type": "Number",
+              "value": "20",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CannotReceiveSpawnedResult",
+              "type": "Number",
+              "value": "21",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "SetTimerError",
+              "type": "Number",
+              "value": "22",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidParams",
+              "type": "Number",
+              "value": "23",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "ContractsAddressConversionFailed",
+              "type": "Number",
+              "value": "24",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "UnknownFunction",
+              "type": "Number",
+              "value": "25",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "AppRequestError",
+              "type": "Number",
+              "value": "26",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NoSuchRequest",
+              "type": "Number",
+              "value": "27",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CanNotSendRequestResult",
+              "type": "Number",
+              "value": "28",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CanNotReceiveRequestResult",
+              "type": "Number",
+              "value": "29",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CanNotParseRequestResult",
+              "type": "Number",
+              "value": "30",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "UnexpectedCallbackResponse",
+              "type": "Number",
+              "value": "31",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CanNotParseNumber",
+              "type": "Number",
+              "value": "32",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InternalError",
+              "type": "Number",
+              "value": "33",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
         {
           "name": "ClientError",
           "type": "Struct",
@@ -528,6 +767,147 @@
       "summary": "Crypto functions.",
       "description": null,
       "types": [
+        {
+          "name": "CryptoErrorCode",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "InvalidPublicKey",
+              "type": "Number",
+              "value": "100",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidSecretKey",
+              "type": "Number",
+              "value": "101",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidKey",
+              "type": "Number",
+              "value": "102",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidFactorizeChallenge",
+              "type": "Number",
+              "value": "106",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidBigInt",
+              "type": "Number",
+              "value": "107",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "ScryptFailed",
+              "type": "Number",
+              "value": "108",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidKeySize",
+              "type": "Number",
+              "value": "109",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NaclSecretBoxFailed",
+              "type": "Number",
+              "value": "110",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NaclBoxFailed",
+              "type": "Number",
+              "value": "111",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NaclSignFailed",
+              "type": "Number",
+              "value": "112",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Bip39InvalidEntropy",
+              "type": "Number",
+              "value": "113",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Bip39InvalidPhrase",
+              "type": "Number",
+              "value": "114",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Bip32InvalidKey",
+              "type": "Number",
+              "value": "115",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Bip32InvalidDerivePath",
+              "type": "Number",
+              "value": "116",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Bip39InvalidDictionary",
+              "type": "Number",
+              "value": "117",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Bip39InvalidWordCount",
+              "type": "Number",
+              "value": "118",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "MnemonicGenerationFailed",
+              "type": "Number",
+              "value": "119",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "MnemonicFromEntropyFailed",
+              "type": "Number",
+              "value": "120",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "SigningBoxNotRegistered",
+              "type": "Number",
+              "value": "121",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
         {
           "name": "SigningBoxHandle",
           "type": "Number",
@@ -3122,6 +3502,91 @@
       "description": null,
       "types": [
         {
+          "name": "AbiErrorCode",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "RequiredAddressMissingForEncodeMessage",
+              "type": "Number",
+              "value": "301",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "RequiredCallSetMissingForEncodeMessage",
+              "type": "Number",
+              "value": "302",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidJson",
+              "type": "Number",
+              "value": "303",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidMessage",
+              "type": "Number",
+              "value": "304",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "EncodeDeployMessageFailed",
+              "type": "Number",
+              "value": "305",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "EncodeRunMessageFailed",
+              "type": "Number",
+              "value": "306",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "AttachSignatureFailed",
+              "type": "Number",
+              "value": "307",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidTvcImage",
+              "type": "Number",
+              "value": "308",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "RequiredPublicKeyMissingForFunctionHeader",
+              "type": "Number",
+              "value": "309",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidSigner",
+              "type": "Number",
+              "value": "310",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidAbi",
+              "type": "Number",
+              "value": "311",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "Abi",
           "type": "EnumOfTypes",
           "enum_types": [
@@ -4477,6 +4942,42 @@
       "description": null,
       "types": [
         {
+          "name": "BocErrorCode",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "InvalidBoc",
+              "type": "Number",
+              "value": "201",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "SerializationError",
+              "type": "Number",
+              "value": "202",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InappropriateBlock",
+              "type": "Number",
+              "value": "203",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "MissingSourceBoc",
+              "type": "Number",
+              "value": "204",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfParse",
           "type": "Struct",
           "struct_fields": [
@@ -4930,6 +5431,105 @@
       "summary": "Message processing module.",
       "description": "This module incorporates functions related to complex message\nprocessing scenarios.",
       "types": [
+        {
+          "name": "ProcessingErrorCode",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "MessageAlreadyExpired",
+              "type": "Number",
+              "value": "501",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "MessageHasNotDestinationAddress",
+              "type": "Number",
+              "value": "502",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CanNotBuildMessageCell",
+              "type": "Number",
+              "value": "503",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "FetchBlockFailed",
+              "type": "Number",
+              "value": "504",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "SendMessageFailed",
+              "type": "Number",
+              "value": "505",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidMessageBoc",
+              "type": "Number",
+              "value": "506",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "MessageExpired",
+              "type": "Number",
+              "value": "507",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "TransactionWaitTimeout",
+              "type": "Number",
+              "value": "508",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidBlockReceived",
+              "type": "Number",
+              "value": "509",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CanNotCheckBlockShard",
+              "type": "Number",
+              "value": "510",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "BlockNotFound",
+              "type": "Number",
+              "value": "511",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidData",
+              "type": "Number",
+              "value": "512",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "ExternalSignerMustNotBeUsed",
+              "type": "Number",
+              "value": "513",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
         {
           "name": "ProcessingEvent",
           "type": "EnumOfTypes",
@@ -5597,6 +6197,112 @@
       "description": null,
       "types": [
         {
+          "name": "TvmErrorCode",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "CanNotReadTransaction",
+              "type": "Number",
+              "value": "401",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CanNotReadBlockchainConfig",
+              "type": "Number",
+              "value": "402",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "TransactionAborted",
+              "type": "Number",
+              "value": "403",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InternalError",
+              "type": "Number",
+              "value": "404",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "ActionPhaseFailed",
+              "type": "Number",
+              "value": "405",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "AccountCodeMissing",
+              "type": "Number",
+              "value": "406",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "LowBalance",
+              "type": "Number",
+              "value": "407",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "AccountFrozenOrDeleted",
+              "type": "Number",
+              "value": "408",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "AccountMissing",
+              "type": "Number",
+              "value": "409",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "UnknownExecutionError",
+              "type": "Number",
+              "value": "410",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidInputStack",
+              "type": "Number",
+              "value": "411",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidAccountBoc",
+              "type": "Number",
+              "value": "412",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidMessageType",
+              "type": "Number",
+              "value": "413",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "ContractExecutionError",
+              "type": "Number",
+              "value": "414",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ExecutionOptions",
           "type": "Struct",
           "struct_fields": [
@@ -6095,6 +6801,84 @@
       "summary": "Network access.",
       "description": null,
       "types": [
+        {
+          "name": "NetErrorCode",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "QueryFailed",
+              "type": "Number",
+              "value": "601",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "SubscribeFailed",
+              "type": "Number",
+              "value": "602",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "WaitForFailed",
+              "type": "Number",
+              "value": "603",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "GetSubscriptionResultFailed",
+              "type": "Number",
+              "value": "604",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidServerResponse",
+              "type": "Number",
+              "value": "605",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "ClockOutOfSync",
+              "type": "Number",
+              "value": "606",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "WaitForTimeout",
+              "type": "Number",
+              "value": "607",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "GraphqlError",
+              "type": "Number",
+              "value": "608",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NetworkModuleSuspended",
+              "type": "Number",
+              "value": "609",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "WebsocketDisconnected",
+              "type": "Number",
+              "value": "610",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
         {
           "name": "OrderBy",
           "type": "Struct",
@@ -6686,6 +7470,42 @@
       "summary": "[UNSTABLE](UNSTABLE.md) Module for working with debot.",
       "description": null,
       "types": [
+        {
+          "name": "DebotErrorCode",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "DebotStartFailed",
+              "type": "Number",
+              "value": "801",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "DebotFetchFailed",
+              "type": "Number",
+              "value": "802",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "DebotExecutionFailed",
+              "type": "Number",
+              "value": "803",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "DebotInvalidHandle",
+              "type": "Number",
+              "value": "804",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
         {
           "name": "DebotHandle",
           "type": "Number",

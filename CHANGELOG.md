@@ -1,6 +1,14 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## 1.4.1 Dec 23, 2020
+
+### New
+- `ErrorCode` types in every module in `api.json`.
+
+### Fixed
+- send `GQL_TERMINATE_CONNECTION` and close websocket on leaving ws loop.
+
 ## 1.4.0 Dec 18, 2020
 
 ### New
@@ -9,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - `tonclient-core-version` http header.
 - `net.find_last_shard_block` function returning account shard last block ID.
 - `boc.get_code_from_tvc` function extracting contract code from TVC image.
+- `ErrorCode` type in each module spec in `api.json`.
 - **Debot Module:**
   - Add new variant `ParamsOfAppDebotBrowser::SwitchCompleted` to notify browser when all context actions are shown.
   - Added new 3 engine routines for crypto operations and 1 routine for querying account state (balance, state type, code, data) that can be used in debots.
