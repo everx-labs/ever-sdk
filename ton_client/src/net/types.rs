@@ -127,6 +127,8 @@ pub struct NetworkConfig {
     #[serde(default = "default_reconnect_timeout",
     deserialize_with = "deserialize_reconnect_timeout")]
     pub reconnect_timeout: u32,
+
+    /// Access key to GraphQL API. At the moment is not used in production
     pub access_key: Option<String>,
 }
 
