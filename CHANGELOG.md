@@ -1,6 +1,11 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## 1.5.1 Dec 28, 2020
+
+### Fixed
+- updated the dependence on `ton-labs-abi`
+
 ## 1.5.0 Dec 25, 2020
 
 ### New
