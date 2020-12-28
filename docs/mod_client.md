@@ -261,7 +261,7 @@ type AbiConfig = {
     workchain?: number,
     message_expiration_timeout?: number,
     message_expiration_timeout_grow_factor?: number
-};
+}
 ```
 - `workchain`?: _number_ – Workchain id that is used by default in DeploySet
 - `message_expiration_timeout`?: _number_ – Message lifetime for contracts which ABI includes "expire" header. The default value is 40 sec.
