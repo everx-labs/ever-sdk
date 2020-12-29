@@ -18,7 +18,8 @@ use crate::net::gql::{
     GraphQLMessageFromClient, GraphQLMessageFromServer, GraphQLOperation, GraphQLOperationEvent,
 };
 use crate::net::server_info::ServerInfo;
-use crate::net::Error;
+use crate::net::{Error, NetworkConfig};
+use crate::net::server_link::NetworkState;
 use futures::stream::{Fuse, FusedStream};
 use futures::Sink;
 use futures::{SinkExt, StreamExt};
@@ -29,13 +30,6 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 type WSSender = Pin<Box<dyn Sink<String, Error = ClientError> + Send>>;
 
-#[derive(Clone, Debug)]
-pub(crate) struct WsConfig {
-    pub url: String,
-    pub access_key: Option<String>,
-    pub reconnect_timeout: u32,
-}
-
 #[derive(Debug)]
 enum HandlerAction {
     StartOperation(GraphQLOperation, Sender<GraphQLOperationEvent>),
@@ -45,15 +39,12 @@ enum HandlerAction {
     Resume,
 
     CheckKeepAlivePassed,
-    Reconnect,
-
-    SetConfig(WsConfig),
 }
 
 impl HandlerAction {
     async fn send(self, sender: &mut Sender<Self>) {
         if let Err(err) = sender.send(self).await {
-            println!("LinkAction.send failed {}", err);
+            log::error!("HandlerAction.send failed {}", err);
         }
     }
 }
@@ -66,9 +57,9 @@ pub(crate) struct WebsocketLink {
 }
 
 impl WebsocketLink {
-    pub fn new(client_env: Arc<ClientEnv>) -> Self {
+    pub fn new(client_env: Arc<ClientEnv>, state: Arc<NetworkState>, config: NetworkConfig) -> Self {
         Self {
-            handler_action_sender: LinkHandler::run(client_env),
+            handler_action_sender: LinkHandler::run(client_env, state, config),
         }
     }
 
@@ -93,11 +84,6 @@ impl WebsocketLink {
 
     pub async fn resume(&self) {
         self.send_action_to_handler(HandlerAction::Resume).await;
-    }
-
-    pub async fn set_config(&self, config: WsConfig) {
-        self.send_action_to_handler(HandlerAction::SetConfig(config))
-            .await;
     }
 
     async fn send_action_to_handler(&self, action: HandlerAction) {
@@ -132,7 +118,6 @@ enum Phase {
 }
 
 pub(crate) struct LinkHandler {
-    config: Option<WsConfig>,
     client_env: Arc<ClientEnv>,
     action_receiver: Fuse<Receiver<HandlerAction>>,
     internal_action_sender: Sender<HandlerAction>,
@@ -140,6 +125,8 @@ pub(crate) struct LinkHandler {
     last_operation_id: u32,
     operations: HashMap<u32, RunningOperation>,
     keep_alive: KeepAlive,
+    state: Arc<NetworkState>,
+    config: NetworkConfig,
 }
 
 async fn ws_send(ws: &mut WSSender, message: GraphQLMessageFromClient) {
@@ -147,12 +134,11 @@ async fn ws_send(ws: &mut WSSender, message: GraphQLMessageFromClient) {
 }
 
 impl LinkHandler {
-    fn run(client_env: Arc<ClientEnv>) -> Sender<HandlerAction> {
+    fn run(client_env: Arc<ClientEnv>, state: Arc<NetworkState>, config: NetworkConfig) -> Sender<HandlerAction> {
         let (action_sender, action_receiver) = channel(1);
         let (internal_action_sender, internal_action_receiver) = channel(1);
         client_env.clone().spawn(Box::pin(async move {
             LinkHandler {
-                config: None,
                 client_env,
                 action_receiver: action_receiver.fuse(),
                 internal_action_sender,
@@ -160,6 +146,8 @@ impl LinkHandler {
                 last_operation_id: 0,
                 operations: HashMap::new(),
                 keep_alive: KeepAlive::WaitFirst,
+                state,
+                config,
             }
             .run_loop()
             .await;
@@ -187,8 +175,7 @@ impl LinkHandler {
         let ws = match self.connect().await {
             Ok(w) => w,
             Err(err) => {
-                self.send_error_to_running_operations(err).await;
-                self.start_reconnect_timer();
+                self.handle_network_error(err).await;
                 return Phase::Idle;
             }
         };
@@ -230,22 +217,12 @@ impl LinkHandler {
             HandlerAction::Suspend => Phase::Idle,
             HandlerAction::Resume => Phase::Connecting,
             HandlerAction::CheckKeepAlivePassed => Phase::Idle,
-            HandlerAction::Reconnect => Phase::Connecting,
-            HandlerAction::SetConfig(config) => {
-                self.config = Some(config);
-                Phase::Idle
-            }
         }
     }
 
     async fn connect(&mut self) -> ClientResult<WebSocket> {
         self.keep_alive = KeepAlive::WaitFirst;
-        let config = self
-            .config
-            .clone()
-            .ok_or(crate::client::Error::invalid_config(
-                "No websocket config".to_owned(),
-            ))?;
+        let info = self.state.get_info().await?;
         let mut headers = HashMap::new();
         headers.insert("Sec-WebSocket-Protocol".into(), "graphql-ws".into());
         for (name, value) in ServerInfo::http_headers() {
@@ -253,11 +230,11 @@ impl LinkHandler {
         }
         let mut ws = self
             .client_env
-            .websocket_connect(&config.url, Some(headers))
+            .websocket_connect(&info.subscription_url, Some(headers))
             .await;
         if let Ok(ref mut ws) = ws {
             let mut connection_params = json!({});
-            if let Some(access_key) = &config.access_key {
+            if let Some(access_key) = &self.config.access_key {
                 connection_params["accessKey"] = access_key.as_str().into();
             }
             let init_message = GraphQLMessageFromClient::ConnectionInit { connection_params };
@@ -297,22 +274,16 @@ impl LinkHandler {
                 KeepAlive::WaitSecond { .. } => {}
                 KeepAlive::WaitNext { .. } => {
                     self.keep_alive = KeepAlive::WaitFirst;
-                    self.send_error_to_running_operations(Error::websocket_disconnected(
+                    self.handle_network_error(Error::websocket_disconnected(
                         "keep alive message wasn't received",
                     ))
                     .await;
-                    let _ = self
-                        .internal_action_sender
-                        .send(HandlerAction::Reconnect)
-                        .await;
                     next_phase = Phase::Idle;
                 }
                 KeepAlive::Passed { timeout } => {
                     self.start_keep_alive_timer(timeout);
                 }
             },
-            HandlerAction::Reconnect => {}
-            HandlerAction::SetConfig(config) => self.config = Some(config),
         }
         next_phase
     }
@@ -333,11 +304,7 @@ impl LinkHandler {
                 }
             },
             Err(err) => {
-                self.send_error_to_running_operations(Error::websocket_disconnected(err))
-                    .await;
-                let _ = self
-                    .internal_action_sender
-                    .send(HandlerAction::Reconnect)
+                self.handle_network_error(Error::websocket_disconnected(err))
                     .await;
                 return Phase::Idle;
             }
@@ -362,15 +329,11 @@ impl LinkHandler {
                 KeepAlive::Passed { .. } => {}
             },
             GraphQLMessageFromServer::ConnectionError { error } => {
-                self.send_error_to_running_operations(Error::graphql_server_error(
+                self.handle_network_error(Error::graphql_server_error(
                     "connection",
                     &vec![error],
                 ))
                 .await;
-                let _ = self
-                    .internal_action_sender
-                    .send(HandlerAction::Reconnect)
-                    .await;
                 next_phase = Phase::Idle;
             }
             GraphQLMessageFromServer::Data { id, data, errors } => {
@@ -407,17 +370,6 @@ impl LinkHandler {
         }));
     }
 
-    fn start_reconnect_timer(&mut self) {
-        let mut sender = self.internal_action_sender.clone();
-        let env = self.client_env.clone();
-        if let Some(timeout) = self.config.as_ref().map(|x| x.reconnect_timeout) {
-            env.clone().spawn(Box::pin(async move {
-                let _ = env.set_timer(timeout as u64).await;
-                let _ = sender.send(HandlerAction::Reconnect).await;
-            }));
-        }
-    }
-
     async fn notify_with_remove(
         &mut self,
         remove: bool,
@@ -433,6 +385,19 @@ impl LinkHandler {
                 operation.notify(operation_event).await;
             }
         }
+    }
+
+    async fn handle_network_error(&mut self, err: ClientError) {
+        self.send_error_to_running_operations(err).await;
+
+        self.state.suspend().await;
+        HandlerAction::Suspend.send(&mut self.internal_action_sender.clone()).await;
+
+        // no problem if reconnect without timeout
+        let _ = self.client_env.set_timer(self.config.reconnect_timeout as u64).await;
+
+        self.state.resume().await;
+        HandlerAction::Resume.send(&mut self.internal_action_sender.clone()).await;
     }
 
     async fn send_error_to_running_operations(&mut self, err: ClientError) {
