@@ -367,23 +367,52 @@ async fn find_last_shard_block() {
     println!("{}", block.block_id);
 }
 
+// #[tokio::test(core_threads = 2)]
+// async fn test_endpoints() {
+//     let client = TestClient::new_with_config(json!({
+//         "network": {
+//             "endpoints": ["cinet.tonlabs.io", "cinet2.tonlabs.io/"],
+//         }
+//     }));
+
+//     let endpoints: EndpointsSet = client
+//         .request_async("net.fetch_endpoints", ())
+//         .await
+//         .unwrap();
+
+//     let _: () = client
+//         .request_async("net.set_endpoints", endpoints)
+//         .await
+//         .unwrap();
+// }
+
 #[tokio::test(core_threads = 2)]
-async fn test_endpoints() {
-    return;
-
-    let client = TestClient::new_with_config(json!({
-        "network": {
-            "endpoints": ["cinet.tonlabs.io", "cinet2.tonlabs.io/"],
-        }
-    }));
-
-    let endpoints: EndpointsSet = client
-        .request_async("net.fetch_endpoints", ())
-        .await
-        .unwrap();
+async fn test_wait_resume() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let client_copy = client.clone();
 
     let _: () = client
-        .request_async("net.set_endpoints", endpoints)
+        .request_async("net.suspend", ())
         .await
         .unwrap();
+
+    let start = std::time::Instant::now();
+
+    let duration = tokio::spawn(async move {
+        client_copy
+            .fetch_account(&TestClient::network_giver())
+            .await;
+
+        start.elapsed().as_millis()
+    });
+
+    let timeout = 5000;
+    tokio::time::delay_for(tokio::time::Duration::from_millis(timeout)).await;
+
+    let _: () = client
+        .request_async("net.resume", ())
+        .await
+        .unwrap();
+
+    assert!(duration.await.unwrap() > timeout as u128);
 }
