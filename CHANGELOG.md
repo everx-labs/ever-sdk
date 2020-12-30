@@ -1,6 +1,15 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+
+## 1.5.2 Dec 30, 2020
+
+### Fixed
+- `net` module functions wait for `net.resume` call instead of returning error if called while the module is suspended
+
+### Documentation
+- How to work with `Application Objects` [specification](docs/app_objects.md) added 
+
 ## 1.5.1 Dec 28, 2020
 
 ### Fixed

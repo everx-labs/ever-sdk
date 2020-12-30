@@ -20,9 +20,9 @@ use crate::net::websocket_link::WebsocketLink;
 use crate::net::{Error, NetworkConfig};
 use futures::{Future, Stream, StreamExt};
 use serde_json::Value;
+use tokio::sync::watch;
 use std::collections::HashMap;
 use std::pin::Pin;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
@@ -36,10 +36,8 @@ pub(crate) struct ServerLink {
     config: NetworkConfig,
     endpoints: tokio::sync::RwLock<Vec<String>>,
     client_env: Arc<ClientEnv>,
-    suspended: AtomicBool,
+    suspended: (watch::Sender<bool>, watch::Receiver<bool>),
     server_info: tokio::sync::RwLock<Option<ServerInfo>>,
-    // TODO: use tokio::sync:RwLock when SDK core is fully async
-    query_url: std::sync::RwLock<Option<String>>,
     websocket_link: WebsocketLink,
 }
 
@@ -58,8 +56,7 @@ impl ServerLink {
             config: config.clone(),
             endpoints: tokio::sync::RwLock::new(endpoints),
             client_env: client_env.clone(),
-            suspended: AtomicBool::new(false),
-            query_url: std::sync::RwLock::new(None),
+            suspended: watch::channel(false),
             server_info: tokio::sync::RwLock::new(None),
             websocket_link: WebsocketLink::new(client_env.clone()),
         })
@@ -136,9 +133,9 @@ impl ServerLink {
     }
 
     async fn ensure_info(&self) -> ClientResult<()> {
-        if self.suspended.load(Ordering::Relaxed) {
-            return Err(Error::network_module_suspended());
-        }
+        // wait for resume
+        let mut suspended = self.suspended.1.clone();
+        while Some(true) == suspended.recv().await {}
 
         if self.server_info.read().await.is_some() {
             return Ok(());
@@ -159,7 +156,6 @@ impl ServerLink {
             })
             .await;
 
-        *self.query_url.write().unwrap() = Some(inited_data.query_url.clone());
         *data = Some(inited_data);
 
         Ok(())
@@ -308,7 +304,7 @@ impl ServerLink {
         let client_lock = self.server_info.read().await;
         let address = &client_lock.as_ref().unwrap().query_url;
 
-        let result = self.fetch_operation(address, query, timeout).await?;
+        let result = self.fetch_operation(address, query, None).await?;
 
         // try to extract the record value from the answer
         let records_array = &result["data"][&table];
@@ -391,12 +387,12 @@ impl ServerLink {
     }
 
     pub async fn suspend(&self) {
-        self.suspended.store(true, Ordering::Relaxed);
+        let _ = self.suspended.0.broadcast(true);
         self.websocket_link.suspend().await;
     }
 
     pub async fn resume(&self) {
-        self.suspended.store(false, Ordering::Relaxed);
+        let _ = self.suspended.0.broadcast(false);
         self.websocket_link.resume().await;
     }
 
