@@ -1,4 +1,4 @@
-# Notes for binding generators
+# How to work with Application Objects in binding generators
 
 Binding generator must detect functions that accept application objects.
 
