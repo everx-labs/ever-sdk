@@ -293,4 +293,7 @@ type ParamsOfAppRequest {
 Here `request_data` is some data describing the request and `app_request_id` is ID of the request, which should be used for request result resolving. After  the request is processed application should call `client.resolve_app_request` function passing `app_request_id` used in the request and result of processing.
 
 In case if response type is `4`, `params_json` contains serialized notification data without any wrappers. Application processes notification in the way it needs. No response is needed for SDK. 
-Find out how to work with Application Objects in binding generators in this [specification](https://github.com/tonlabs/TON-SDK/blob/master/docs/app_objects.md).
+
+### How to work with Application Objects in binding generators
+
+Find out how to work with Application Objects in binding generators in this [specification](app_objects.md).
