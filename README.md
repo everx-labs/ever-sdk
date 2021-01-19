@@ -48,7 +48,7 @@ Platforms: Node.js, Web, React-Native for IOS/Android
 
 Language | Repo
 -------- | --------------
-Closure | [serge-medvedev/tonos-client-clojure](https://github.com/serge-medvedev/tonos-client-clojure)
+Clojure | [serge-medvedev/tonos-client-clojure](https://github.com/serge-medvedev/tonos-client-clojure)
 Dart | [freetonsurfer/ton_client_dart](https://github.com/freetonsurfer/ton_client_dart)
 Golang | [radianceteam/ton-client-go](https://github.com/radianceteam/ton-client-go) <br> [move-ton/ton-client-go](https://github.com/move-ton/ton-client-go)
 Java | [radianceteam/ton-client-java](https://github.com/radianceteam/ton-client-java)

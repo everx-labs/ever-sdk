@@ -1,5 +1,5 @@
 {
-  "version": "1.5.0",
+  "version": "1.5.2",
   "modules": [
     {
       "name": "client",
@@ -6037,7 +6037,7 @@
         {
           "name": "process_message",
           "summary": "Creates message, sends it to the network and monitors its processing.",
-          "description": "Creates ABI-compatible message,\nsends it to the network and monitors for the result transaction.\nDecodes the output messages' bodies.\n\nIf contract's ABI includes \"expire\" header, then\nSDK implements retries in case of unsuccessful message delivery within the expiration\ntimeout: SDK recreates the message, sends it and processes it again.\n\nThe intermediate events, such as `WillFetchFirstBlock`, `WillSend`, `DidSend`,\n`WillFetchNextBlock`, etc - are switched on/off by `send_events` flag\nand logged into the supplied callback function.\nThe retry configuration parameters are defined in client's `NetworkConfig`.\n\nIf contract's ABI does not include \"expire\" header\nthen, if no transaction is found within the network timeout (see config parameter ), exits with error.",
+          "description": "Creates ABI-compatible message,\nsends it to the network and monitors for the result transaction.\nDecodes the output messages' bodies.\n\nIf contract's ABI includes \"expire\" header, then\nSDK implements retries in case of unsuccessful message delivery within the expiration\ntimeout: SDK recreates the message, sends it and processes it again.\n\nThe intermediate events, such as `WillFetchFirstBlock`, `WillSend`, `DidSend`,\n`WillFetchNextBlock`, etc - are switched on/off by `send_events` flag\nand logged into the supplied callback function.\n\nThe retry configuration parameters are defined in the client's `NetworkConfig` and `AbiConfig`.\n\nIf contract's ABI does not include \"expire\" header\nthen, if no transaction is found within the network timeout (see config parameter ), exits with error.",
           "params": [
             {
               "name": "context",

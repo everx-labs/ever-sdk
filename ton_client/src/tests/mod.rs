@@ -263,6 +263,14 @@ impl TestClient {
         "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13".into()
     }
 
+    pub fn network_giver() -> String {
+        if Self::node_se() {
+            Self::giver_address()
+        } else {
+            Self::wallet_address()
+        }
+    }
+
     pub fn wallet_keys() -> Option<KeyPair> {
         if Self::node_se() {
             return None;

@@ -144,7 +144,8 @@ timeout: SDK recreates the message, sends it and processes it again.
 The intermediate events, such as `WillFetchFirstBlock`, `WillSend`, `DidSend`,
 `WillFetchNextBlock`, etc - are switched on/off by `send_events` flag
 and logged into the supplied callback function.
-The retry configuration parameters are defined in client's `NetworkConfig`.
+
+The retry configuration parameters are defined in the client's `NetworkConfig` and `AbiConfig`.
 
 If contract's ABI does not include "expire" header
 then, if no transaction is found within the network timeout (see config parameter ), exits with error.

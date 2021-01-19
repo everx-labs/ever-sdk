@@ -337,12 +337,15 @@ type OrderBy = {
 
 ## SortDirection
 ```ts
-type SortDirection = 'ASC' | 'DESC';
+enum SortDirection {
+    ASC = "ASC",
+    DESC = "DESC"
+}
 ```
 One of the following value:
 
-- `ASC`
-- `DESC`
+- `ASC = "ASC"`
+- `DESC = "DESC"`
 
 
 ## ParamsOfQuery
