@@ -335,7 +335,7 @@
                 }
               },
               "summary": "List of DApp Server addresses.",
-              "description": "Any correct URL format can be specified, including IP addresses"
+              "description": "Any correct URL format can be specified, including IP addressesThis parameter is prevailing over `server_address`."
             },
             {
               "name": "network_retries_count",
@@ -390,7 +390,7 @@
                 "number_size": 32
               },
               "summary": "Maximum time difference between server and client.",
-              "description": "If client's device time is out of sink and difference is more thanthe threshhold then error will occur. Also the error will occur if the specified threshhold is more than\n`message_processing_timeout/2`.\nThe default value is 15 sec."
+              "description": "If client's device time is out of sinc and difference is more thanthe threshold then error will occur. Also an error will occur if the specified threshold is more than\n`message_processing_timeout/2`.\nThe default value is 15 sec."
             },
             {
               "name": "reconnect_timeout",
@@ -428,7 +428,7 @@
                 "number_type": "UInt",
                 "number_size": 8
               },
-              "summary": "Mnemonic dictionary that will be used by default in crypto funcions. If not specified, 1 dictionary will be used.",
+              "summary": "Mnemonic dictionary that will be used by default in crypto functions. If not specified, 1 dictionary will be used.",
               "description": null
             },
             {
@@ -2111,7 +2111,7 @@
               "name": "signature",
               "type": "String",
               "summary": "Data signature.",
-              "description": "Encoded with `base64`."
+              "description": "Encoded with `hex`."
             }
           ],
           "summary": null,
