@@ -24,6 +24,7 @@ use tokio::sync::watch;
 use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
 
@@ -39,6 +40,7 @@ pub(crate) struct ServerLink {
     suspended: (watch::Sender<bool>, watch::Receiver<bool>),
     server_info: tokio::sync::RwLock<Option<ServerInfo>>,
     websocket_link: WebsocketLink,
+    time_checked: AtomicBool,
 }
 
 impl ServerLink {
@@ -59,6 +61,7 @@ impl ServerLink {
             suspended: watch::channel(false),
             server_info: tokio::sync::RwLock::new(None),
             websocket_link: WebsocketLink::new(client_env.clone()),
+            time_checked: AtomicBool::new(false),
         })
     }
 
@@ -104,7 +107,24 @@ impl ServerLink {
         }
     }
 
-    async fn init(&self, config: &NetworkConfig) -> ClientResult<ServerInfo> {
+    async fn check_sync(&self) -> ClientResult<()> {
+        if self.time_checked.load(Ordering::Relaxed) {
+            return Ok(());
+        }
+
+        let client_lock = self.server_info.read().await;
+        let info = client_lock.as_ref().unwrap();
+        if info.server_version.supports_time {
+            self.check_time_delta(&info.query_url, &self.config)
+                .await?;
+        }
+
+        self.time_checked.store(true, Ordering::Relaxed);
+
+        Ok(())
+    }
+
+    async fn init(&self) -> ClientResult<ServerInfo> {
         let mut futures = vec![];
         for address in self.endpoints.read().await.iter() {
             let queries_server = ServerInfo::expand_address(&address);
@@ -123,12 +143,6 @@ impl ServerLink {
             }
         }
         let server_info = server_info?;
-
-        if server_info.server_version.supports_time {
-            self.check_time_delta(&server_info.query_url, config)
-                .await?;
-        }
-
         Ok(server_info)
     }
 
@@ -146,7 +160,7 @@ impl ServerLink {
             return Ok(());
         }
 
-        let inited_data = self.init(&self.config).await?;
+        let inited_data = self.init().await?;
 
         self.websocket_link
             .set_config(WsConfig {
@@ -363,13 +377,14 @@ impl ServerLink {
     }
 
     // Sends message to node
-    pub async fn send_message(&self, key: &[u8], value: &[u8]) -> ClientResult<()> {
+    pub async fn send_message(&self, key: &[u8], value: &[u8]) -> ClientResult<Option<ClientError>> {
         let request = PostRequest {
             id: base64::encode(key),
             body: base64::encode(value),
         };
 
         self.ensure_info().await?;
+        self.check_sync().await?;
         let client_lock = self.server_info.read().await;
         let address = &client_lock.as_ref().unwrap().query_url;
 
@@ -379,11 +394,11 @@ impl ServerLink {
 
         // send message is always successful in order to process case when server received message
         // but client didn't receive response
-        if let Err(err) = result {
+        if let Err(err) = &result {
             log::warn!("Post message error: {}", err.message);
         }
 
-        Ok(())
+        Ok(result.err())
     }
 
     pub async fn suspend(&self) {

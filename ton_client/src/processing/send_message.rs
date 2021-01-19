@@ -110,15 +110,15 @@ pub async fn send_message<F: futures::Future<Output = ()> + Send>(
     let send_result = context
         .get_server_link()?
         .send_message(&hex_decode(&message_id)?, &message_boc)
-        .await;
+        .await?;
     if params.send_events {
         let event = match send_result {
-            Ok(_) => ProcessingEvent::DidSend {
+            None => ProcessingEvent::DidSend {
                 shard_block_id: shard_block_id.clone(),
                 message_id: message_id.clone(),
                 message: params.message.clone(),
             },
-            Err(error) => ProcessingEvent::SendFailed {
+            Some(error) => ProcessingEvent::SendFailed {
                 shard_block_id: shard_block_id.clone(),
                 message_id: message_id.clone(),
                 message: params.message.clone(),
