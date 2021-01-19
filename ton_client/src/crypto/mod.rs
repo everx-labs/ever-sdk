@@ -107,7 +107,7 @@ fn deserialize_hdkey_derivation_path<'de, D: Deserializer<'de>>(
 #[derive(Deserialize, Debug, Clone, ApiType)]
 /// Crypto config.
 pub struct CryptoConfig {
-    /// Mnemonic dictionary that will be used by default in crypto funcions. 
+    /// Mnemonic dictionary that will be used by default in crypto functions. 
     /// If not specified, 1 dictionary will be used.
     #[serde(
         default = "default_mnemonic_dictionary",
