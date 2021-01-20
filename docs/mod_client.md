@@ -228,13 +228,13 @@ type NetworkConfig = {
 ```
 - `server_address`?: _string_ – DApp Server public address. For instance, for `net.ton.dev/graphql` GraphQL endpoint the server address will be net.ton.dev
 - `endpoints`?: _string[]_ – List of DApp Server addresses.
-<br>Any correct URL format can be specified, including IP addressesThis parameter is prevailing over `server_address`.
+<br>Any correct URL format can be specified, including IP addresses This parameter is prevailing over `server_address`.
 - `network_retries_count`?: _number_ – The number of automatic network retries that SDK performs in case of connection problems The default value is 5.
 - `message_retries_count`?: _number_ – The number of automatic message processing retries that SDK performs in case of `Message Expired (507)` error - but only for those messages which local emulation was successfull or failed with replay protection error. The default value is 5.
 - `message_processing_timeout`?: _number_ – Timeout that is used to process message delivery for the contracts which ABI does not include "expire" header. If the message is not delivered within the speficied timeout the appropriate error occurs.
 - `wait_for_timeout`?: _number_ – Maximum timeout that is used for query response. The default value is 40 sec.
 - `out_of_sync_threshold`?: _number_ – Maximum time difference between server and client.
-<br>If client's device time is out of sinc and difference is more thanthe threshold then error will occur. Also an error will occur if the specified threshold is more than<br>`message_processing_timeout/2`.<br>The default value is 15 sec.
+<br>If client's device time is out of sinc and difference is more than the threshold then error will occur. Also an error will occur if the specified threshold is more than<br>`message_processing_timeout/2`.<br>The default value is 15 sec.
 - `reconnect_timeout`?: _number_ – Timeout between reconnect attempts
 - `access_key`?: _string_ – Access key to GraphQL API.
 <br>At the moment is not used in production
