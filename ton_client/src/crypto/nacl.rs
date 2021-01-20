@@ -95,7 +95,7 @@ pub struct ResultOfNaclSignDetached {
 }
 
 /// Signs the message using the secret key and returns a signature.
-/// 
+///
 /// Signs the message `unsigned` using the secret key `secret`
 /// and returns a signature `signature`.
 
@@ -131,8 +131,8 @@ pub struct ResultOfNaclSignOpen {
 }
 
 /// Verifies the signature and returns the unsigned message
-/// 
-/// Verifies the signature in `signed` using the signer's public key `public` 
+///
+/// Verifies the signature in `signed` using the signer's public key `public`
 /// and returns the message `unsigned`.
 ///
 /// If the signature fails verification, crypto_sign_open raises an exception.
@@ -153,6 +153,46 @@ pub fn nacl_sign_open(
     unsigned.resize(len, 0);
     Ok(ResultOfNaclSignOpen {
         unsigned: base64::encode(&unsigned),
+    })
+}
+
+//----------------------------------------------------------------------- nacl_sign_detached_verify
+
+///
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct ParamsOfNaclSignDetachedVerify {
+    /// Unsigned data that must be verified. Encoded with `base64`.
+    pub unsigned: String,
+    /// Signature that must be verified. Encoded with `hex`.
+    pub signature: String,
+    /// Signer's public key - unprefixed 0-padded to 64 symbols hex string.
+    pub public: String,
+}
+
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct ResultOfNaclSignDetachedVerify {
+    /// `true` if verification succeeded or `false` if it failed
+    pub(crate) succeeded: bool
+}
+
+/// Verifies the signature for the message.
+#[api_function]
+pub fn nacl_sign_detached_verify(
+    _context: std::sync::Arc<ClientContext>,
+    params: ParamsOfNaclSignDetachedVerify,
+) -> ClientResult<ResultOfNaclSignDetachedVerify> {
+    let mut signed = Vec::new();
+    signed.append(&mut hex_decode(&params.signature)?);
+    signed.append(&mut base64_decode(&params.unsigned)?);
+    let mut unsigned= Vec::new();
+    unsigned.resize(signed.len(), 0);
+    let succeeded = sodalite::sign_attached_open(
+        &mut unsigned,
+        &signed,
+        &key256(&hex_decode(&params.public)?)?,
+    ).is_ok();
+    Ok(ResultOfNaclSignDetachedVerify {
+        succeeded,
     })
 }
 
