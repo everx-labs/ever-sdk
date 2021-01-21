@@ -33,6 +33,8 @@ use crate::ClientContext;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+pub const DEBOT_WC: i8 = -31; // 0xDB
+
 type TonClient = Arc<ClientContext>;
 type JsonValue = serde_json::Value;
 

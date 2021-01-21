@@ -1,10 +1,8 @@
 use super::action::DAction;
-use super::JsonValue;
+use super::{DEBOT_WC, JsonValue};
 use crate::boc::internal::deserialize_object_from_base64;
 use crate::error::ClientError;
 use ton_block::Message;
-
-pub const DEBOT_WC: i8 = -31; // 0xDB
 
 #[derive(Default)]
 pub(super) struct RunOutput {

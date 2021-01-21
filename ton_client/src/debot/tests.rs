@@ -16,16 +16,36 @@ use crate::json_interface::interop::ResponseType;
 use crate::tests::{TEST_DEBOT, TEST_DEBOT_TARGET, TestClient};
 use crate::crypto::KeyPair;
 use crate::json_interface::debot::*;
-use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer};
+use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer, Abi, ParamsOfDecodeMessageBody, DecodedMessageBody};
+use crate::boc::{ParamsOfParse, ResultOfParse};
 use futures::future::{BoxFuture, FutureExt};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::sync::Mutex;
+use std::collections::VecDeque;
 use super::*;
 
 lazy_static!(
     static ref DEBOT: Mutex<Option<DebotData>> = Mutex::new(None);
 );
+
+const SUPPORTED_INTERFACES: &[&str] = &["f6927c0d4bdb69e1b52d27f018d156ff04152f00558042ff674f0fec32e4369d"];
+const INTERFACE_ABI: &str = "
+";
+
+struct Echo {}
+impl Echo {
+    fn echo(request: &str) -> JsonValue {
+        json!({ "response": request })
+    }
+
+    fn call(func: &str, args: &JsonValue) -> JsonValue {
+        match func {
+            "echo" => Self::echo(args["request"].as_str().unwrap()),
+            _ => json!({}),
+        }
+    }
+}
 
 struct TestBrowser {}
 
@@ -53,6 +73,7 @@ struct BrowserData {
     pub client: Arc<TestClient>,
     pub finished: AtomicBool,
     pub switch_started: AtomicBool,
+    pub msg_queue: Mutex<VecDeque<String>>,
 }
 
 impl TestBrowser {
@@ -94,6 +115,8 @@ impl TestBrowser {
         ).await.unwrap();
 
         while !state.finished.load(Ordering::Relaxed) {
+            Self::execute_interface_calls(&handle, client.clone(), state.clone()).await;
+
             let action = {
                 let mut step = state.current.lock().await;
                 step.step = state.next.lock().await.remove(0);
@@ -142,6 +165,7 @@ impl TestBrowser {
             address: address.clone(),
             finished: AtomicBool::new(false),
             switch_started: AtomicBool::new(false),
+            msg_queue: Mutex::new(Default::default()),
         });
 
         Self::execute_from_state(client, state, "debot.start").await
@@ -164,6 +188,9 @@ impl TestBrowser {
             },
             ParamsOfAppDebotBrowser::ShowAction { action } => {
                 state.current.lock().await.available_actions.push(action);
+            },
+            ParamsOfAppDebotBrowser::Send { message } => {
+                state.msg_queue.lock().await.push_back(message);
             },
             _ => panic!("invalid notification {:#?}", params)
         }
@@ -205,11 +232,63 @@ impl TestBrowser {
                     address: debot_addr,
                     finished: AtomicBool::new(false),
                     switch_started: AtomicBool::new(false),
+                    msg_queue: Mutex::new(Default::default()),
                 });
                 Self::call_execute_boxed(client, state, "debot.fetch").await;
                 ResultOfAppDebotBrowser::InvokeDebot
             },
             _ => panic!("invalid call {:#?}", params)
+        }
+    }
+
+    async fn execute_interface_calls(
+        handle: &RegisteredDebot,
+        client: Arc<TestClient>,
+        state: Arc<BrowserData>
+    ) {
+        let mut msg_queue = state.msg_queue.lock().await;
+        for msg in msg_queue.drain(0..) {
+            let parsed: ResultOfParse = client.request_async(
+                "boc.parse_message",
+                ParamsOfParse { boc: msg.clone() },
+            ).await.unwrap();
+            let body = parsed.parsed["body"].as_str().unwrap().to_owned();
+            let wc_and_addr: Vec<_> = parsed.parsed["dst"]
+                .as_str()
+                .unwrap()
+                .split(':')
+                .collect();
+            let interface_id = wc_and_addr[1];
+            let wc = i8::from_str_radix(wc_and_addr[0], 10).unwrap();
+            assert_eq!(wc, DEBOT_WC);
+            assert_eq!(SUPPORTED_INTERFACES.contains(&interface_id), true);
+            let decoded: DecodedMessageBody = client.request_async(
+                "abi.decode_message_body",
+                ParamsOfDecodeMessageBody {
+                    abi: Abi::Json(INTERFACE_ABI.to_owned()),
+                    body,
+                    is_internal: true,
+                },
+            ).await.unwrap();
+            println!("call for interface id {}", interface_id);
+            println!("function {} ({})", decoded.name, decoded.value.as_ref().unwrap());
+            let return_args = Echo::call(&decoded.name, &decoded.value.unwrap());
+            let params = ParamsOfEncodeMessage {
+                abi: Abi::Json(INTERFACE_ABI.to_owned()),
+                deploy_set: None,
+                signer: Signer::None,
+                processing_try_index: None,
+                address: None,
+                call_set: CallSet::some_with_function_and_input("echo", return_args),
+            };
+            let response_msg = client.encode_message(params).await.unwrap().message;
+            let _result: () = client.request_async(
+                "debot.send",
+                ParamsOfSend {
+                    debot_handle: handle.debot_handle.clone(),
+                    message: response_msg,
+                }
+            ).await.unwrap();
         }
     }
 }
