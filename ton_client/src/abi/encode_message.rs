@@ -257,6 +257,25 @@ fn encode_deploy(
     Ok((unsigned.message, Some(unsigned.data_to_sign), address))
 }
 
+fn encode_int_deploy(
+    context: std::sync::Arc<ClientContext>,
+    abi: &str,
+    image: ContractImage,
+    workchain: i32,
+    call_set: &CallSet,
+    pubkey: Option<&str>,
+) -> ClientResult<(Vec<u8>, MsgAddressInt)> {
+    let address = image.msg_address(workchain);
+    let message = ton_sdk::Contract::get_int_deploy_message_bytes(
+        call_set.to_function_call_set(pubkey, None, &context, &abi)?,
+        image,
+        workchain,
+    ).map_err(|err| abi::Error::encode_deploy_message_failed(err))?;
+
+    Ok((message, address))
+}
+
+
 fn encode_empty_deploy(
     image: ContractImage,
     workchain: i32,
@@ -270,6 +289,22 @@ fn encode_empty_deploy(
             .map_err(|x| abi::Error::encode_deploy_message_failed(x))?
             .0,
         None,
+        address,
+    ))
+}
+
+fn encode_empty_int_deploy(
+    image: ContractImage,
+    workchain: i32,
+) -> ClientResult<(Vec<u8>, MsgAddressInt)> {
+    let address = image.msg_address(workchain);
+    let message = ton_sdk::Contract::construct_int_deploy_message_no_constructor(image, workchain)
+        .map_err(|x| abi::Error::encode_deploy_message_failed(x))?;
+
+    Ok((
+        ton_sdk::Contract::serialize_message(&message)
+            .map_err(|x| abi::Error::encode_deploy_message_failed(x))?
+            .0,
         address,
     ))
 }
@@ -400,6 +435,122 @@ pub async fn encode_message(
     Ok(ResultOfEncodeMessage {
         message: base64::encode(&message),
         data_to_sign: data_to_sign.map(|data| base64::encode(&data)),
+        address: account_encode(&address),
+        message_id: get_boc_hash(&message)?,
+    })
+}
+
+//------------------------------------------------------------------------ encode_internal_message
+
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+pub struct ParamsOfEncodeInternalMessage {
+    /// Contract ABI.
+    pub abi: Abi,
+
+    /// Target address the message will be sent to.
+    ///
+    /// Must be specified in case of non-deploy message.
+    pub address: Option<String>,
+
+    /// Deploy parameters.
+    ///
+    /// Must be specified in case of deploy message.
+    pub deploy_set: Option<DeploySet>,
+
+    /// Function call parameters.
+    ///
+    /// Must be specified in case of non-deploy message.
+    ///
+    /// In case of deploy message it is optional and contains parameters
+    /// of the functions that will to be called upon deploy transaction.
+    pub call_set: Option<CallSet>,
+
+    /// Value in nanograms to be sent with message.
+    pub value: String,
+
+    /// Flag of bounceable message. Default is true.
+    pub bounce: Option<bool>,
+
+    /// Enable Instant Hypercube Routing for the message. Default is false.
+    pub enable_ihr: Option<bool>,
+}
+
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct ResultOfEncodeInternalMessage {
+    /// Message BOC encoded with `base64`.
+    pub message: String,
+
+    /// Destination address.
+    pub address: String,
+
+    /// Message id.
+    pub message_id: String,
+}
+
+/// Encodes an internal ABI-compatible message
+///
+/// Allows to encode deploy and function call messages.
+#[api_function]
+pub async fn encode_internal_message(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfEncodeInternalMessage,
+) -> ClientResult<ResultOfEncodeInternalMessage> {
+    let abi = params.abi.json_string()?;
+
+    let (message, address) = if let Some(deploy_set) = params.deploy_set {
+        let workchain = deploy_set
+            .workchain_id
+            .unwrap_or(context.config.abi.workchain);
+        let mut image = create_tvc_image(
+            &abi,
+            deploy_set.initial_data.as_ref(),
+            &deploy_set.tvc,
+        )?;
+
+        let public = if let Some(tvc_public) = resolve_pubkey(&deploy_set, &image, &None)? {
+            image.set_public_key(&decode_public_key(&tvc_public)?)
+                .map_err(|err| Error::invalid_tvc_image(err))?;
+            Some(tvc_public)
+        } else {
+            image.get_public_key()
+                .map_err(|err| Error::invalid_tvc_image(err))?
+                .map(|public| hex::encode(&public))
+        };
+
+        let public = required_public_key(public)?;
+        if let Some(call_set) = &params.call_set {
+            encode_int_deploy(
+                Arc::clone(&context),
+                &abi,
+                image,
+                workchain,
+                call_set,
+                Some(&public),
+            )?
+        } else {
+            encode_empty_int_deploy(image, workchain)?
+        }
+    } else if let Some(call_set) = &params.call_set {
+        let address = params
+            .address
+            .as_ref()
+            .ok_or(abi::Error::required_address_missing_for_encode_message())?;
+        let address = account_decode(address)?;
+
+        let message = ton_sdk::Contract::construct_call_message_json(
+            address.clone(),
+            call_set.to_function_call_set(None, None, &context, &abi)?,
+            true,
+            None,
+        )
+        .map_err(|err| abi::Error::encode_run_message_failed(err, &call_set.function_name))?;
+        (message.serialized_message, address)
+    } else {
+        return Err(abi::Error::missing_required_call_set_for_encode_message());
+    };
+
+    Ok(ResultOfEncodeInternalMessage {
+        message: base64::encode(&message),
         address: account_encode(&address),
         message_id: get_boc_hash(&message)?,
     })
