@@ -19,8 +19,8 @@ mod dengine;
 mod errors;
 mod routines;
 mod run_output;
-// #[cfg(test)]
-// mod tests;
+#[cfg(test)]
+mod tests;
 
 pub use action::DAction;
 pub use browser::BrowserCallbacks;
