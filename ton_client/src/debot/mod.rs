@@ -218,3 +218,29 @@ pub fn remove(
     context.debots.remove(&params.debot_handle.0);
     Ok(())
 }
+
+/// [UNSTABLE](UNSTABLE.md) Parameters of `send` function.
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct ParamsOfSend {
+    /// Debot handle which references an instance of debot engine.
+    pub debot_handle: DebotHandle,
+    /// Message BoC to Debot encoded as base64.
+    pub message: String,
+}
+
+/// [UNSTABLE](UNSTABLE.md) Sends message to Debot.
+///
+/// Used by Debot Browser to send response on Dinterface call or from other Debots.
+/// Message parameter is a BoC encoded as Base64.
+pub async fn send(
+    context: Arc<ClientContext>,
+    mut params: ParamsOfSend,
+) -> ClientResult<()> {
+    let mutex = context.debots.get(&params.debot_handle.0)
+        .ok_or(Error::invalid_handle(params.debot_handle.0))?;
+    let mut dengine = mutex.1.lock().await;
+    dengine
+        .send(std::mem::take(&mut params.message))
+        .await
+        .map_err(Error::execute_failed)
+}
