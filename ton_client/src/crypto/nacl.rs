@@ -13,11 +13,12 @@
 
 use crate::client::ClientContext;
 use crate::crypto;
-use crate::crypto::internal;
 use crate::crypto::internal::{key192, key256, key512};
 use crate::crypto::keys::KeyPair;
+use crate::crypto::{internal, Error};
 use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ClientResult;
+use ed25519_dalek::Verifier;
 
 // Signing
 
@@ -79,7 +80,6 @@ pub fn nacl_sign(
 
 //------------------------------------------------------------------------------ nacl_sign_detached
 #[doc(summary = "")]
-
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfNaclSignDetached {
     /// Data that must be signed encoded in `base64`.
@@ -172,7 +172,7 @@ pub struct ParamsOfNaclSignDetachedVerify {
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ResultOfNaclSignDetachedVerify {
     /// `true` if verification succeeded or `false` if it failed
-    pub(crate) succeeded: bool
+    pub(crate) succeeded: bool,
 }
 
 /// Verifies the signature for the message.
@@ -181,19 +181,12 @@ pub fn nacl_sign_detached_verify(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfNaclSignDetachedVerify,
 ) -> ClientResult<ResultOfNaclSignDetachedVerify> {
-    let mut signed = Vec::new();
-    signed.append(&mut hex_decode(&params.signature)?);
-    signed.append(&mut base64_decode(&params.unsigned)?);
-    let mut unsigned= Vec::new();
-    unsigned.resize(signed.len(), 0);
-    let succeeded = sodalite::sign_attached_open(
-        &mut unsigned,
-        &signed,
-        &key256(&hex_decode(&params.public)?)?,
-    ).is_ok();
-    Ok(ResultOfNaclSignDetachedVerify {
-        succeeded,
-    })
+    let public = ed25519_dalek::PublicKey::from_bytes(&hex_decode(&params.public)?)
+        .map_err(|err| Error::invalid_public_key(err, &params.public))?;
+    let message = base64_decode(&params.unsigned)?;
+    let signature = ed25519_dalek::Signature::new(key512(&hex_decode(&params.signature)?)?);
+    let succeeded = public.verify(&message, &signature).is_ok();
+    Ok(ResultOfNaclSignDetachedVerify { succeeded })
 }
 
 // Box
