@@ -3,7 +3,8 @@ use crate::abi::{
     ParamsOfDecodeMessageBody, ParamsOfEncodeMessage, Signer, ErrorCode
 };
 use crate::encoding::decode_abi_number;
-use crate::error::ClientError;
+use crate::error::{ClientError, ClientResult};
+use crate::abi::ErrorCode;
 use crate::net::{query_collection, NetworkConfig, ParamsOfQueryCollection};
 use crate::crypto::{remove_signing_box, CryptoConfig, RegisteredSigningBox, SigningBoxHandle};
 use crate::processing::{process_message, ParamsOfProcessMessage, ProcessingEvent};
@@ -174,6 +175,28 @@ impl DEngine {
         }
     }
 
+    pub async fn send(&mut self, message: String) -> ClientResult<()> {
+        debug!("send");
+        let run_result = run_tvm(
+            self.ton.clone(),
+            ParamsOfRunTvm {
+                account: std::mem::take(&mut self.state),
+                message: message,
+                abi: Some(self.abi.clone()),
+                execution_options: None,
+            },
+        ).await?;
+
+        let mut run_output = RunOutput::new(
+            run_result.account,
+            run_result.decoded.unwrap().output,
+            run_result.out_messages,
+        )?;
+        self.state = std::mem::take(&mut run_output.account);
+
+        self.handle_output(run_output).await
+    }
+
     async fn handle_action(&mut self, a: &DAction) -> Result<Option<Vec<DAction>>, String> {
         match a.action_type {
             AcType::Empty => {
@@ -182,14 +205,10 @@ impl DEngine {
             }
             AcType::RunAction => {
                 debug!("run_action: {}", a.name);
-                let mut result = self.run_action(&a).await?;
-                for msg in std::mem::take(&mut result.interface_calls) {
-                    //self.browser.send(msg);
-                }
-                // TODO: 
-                // result.send_msgs();
-                // result.run_get_methods();
-                result.decode_actions()
+                let result = self.run_action(&a).await?;
+                let actions = result.decode_actions();
+                self.handle_output(result).await;
+                actions
             }
             AcType::RunMethod => {
                 debug!("run_getmethod: {}", a.func_attr().unwrap());
@@ -718,6 +737,22 @@ impl DEngine {
         signer: Option<SigningBoxHandle>,
     ) -> Result<serde_json::Value, String> {
         routines::call_routine(self.ton.clone(), name, args, signer).await
+    }
+
+    async fn handle_output(&mut self, mut output: RunOutput) -> ClientResult<()> {
+        for msg in std::mem::take(&mut output.interface_calls) {
+            // TODO: check if there are builtin interfaces
+            // BuiltinInterfaces::try_execute(&msg)
+            self.browser.send(msg.0).await;
+        }
+
+        // TODO: 
+        // result.send_msgs();
+
+        for _msg in std::mem::take(&mut output.get_method_calls) {
+            // TODO: call run_tvm
+        }
+        Ok(())
     }
 
     async fn handle_sdk_err(&self, err: ClientError) -> String {

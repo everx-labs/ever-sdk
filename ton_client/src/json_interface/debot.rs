@@ -14,7 +14,8 @@
 
  use crate::client::{AppObject, ClientContext};
  use crate::error::ClientResult;
- use crate::debot::{DAction, DebotAction, BrowserCallbacks, ParamsOfFetch, ParamsOfStart, RegisteredDebot};
+ use crate::debot::{DAction, DebotAction, BrowserCallbacks, ParamsOfFetch, 
+    ParamsOfStart, RegisteredDebot, ParamsOfSend};
  use crate::crypto::SigningBoxHandle;
 
 /// [UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.
@@ -74,6 +75,10 @@ pub enum ParamsOfAppDebotBrowser {
         /// Debot action to execute.
         action: DebotAction
     },
+
+    Send {
+        message: String,
+    }
 }
  
 /// Wrapper for native Debot Browser callbacks.
@@ -153,6 +158,10 @@ impl DebotBrowserAdapter {
              },
          }
      }
+
+    async fn send(&self, message: String) {
+        self.app_object.notify(ParamsOfAppDebotBrowser::Send { message });
+    }
  }
 
 /// [UNSTABLE](UNSTABLE.md) Starts an instance of debot.
@@ -191,5 +200,14 @@ pub(crate) async fn fetch(
 ) -> ClientResult<RegisteredDebot> {
     let browser_callbacks = DebotBrowserAdapter::new(app_object);
     crate::debot::fetch(context, params, browser_callbacks).await
+}
+
+
+#[api_function]
+pub(crate) async fn send(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfSend,
+) -> ClientResult<()> {
+    crate::debot::send(context, params).await
 }
 
