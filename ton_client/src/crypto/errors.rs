@@ -22,7 +22,9 @@ pub enum ErrorCode {
     MnemonicGenerationFailed = 119,
     MnemonicFromEntropyFailed = 120,
     SigningBoxNotRegistered = 121,
+    InvalidSignature = 122,
 }
+
 pub struct Error;
 
 fn error(code: ErrorCode, message: String) -> ClientError {
@@ -121,21 +123,28 @@ impl Error {
     pub fn invalid_secret_key<E: Display>(err: E, key: &String) -> ClientError {
         error(
             ErrorCode::InvalidSecretKey,
-            format!("Invalid secret key [{}]: {}", err, key),
+            format!("Invalid secret key [{}]: {}", key, err),
         )
     }
 
     pub fn invalid_public_key<E: Display>(err: E, key: &String) -> ClientError {
         error(
             ErrorCode::InvalidPublicKey,
-            format!("Invalid public key [{}]: {}", err, key),
+            format!("Invalid public key [{}]: {}", key, err),
+        )
+    }
+
+    pub fn invalid_signature<E: Display>(err: E, signature: &String) -> ClientError {
+        error(
+            ErrorCode::InvalidSignature,
+            format!("Invalid signature [{}]: {}", signature, err),
         )
     }
 
     pub fn invalid_key<E: Display>(err: E, key: &String) -> ClientError {
         error(
             ErrorCode::InvalidKey,
-            format!("Invalid key [{}]: {}", err, key),
+            format!("Invalid key [{}]: {}", key, err),
         )
     }
 

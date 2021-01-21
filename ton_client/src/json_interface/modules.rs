@@ -113,6 +113,10 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
         crate::crypto::nacl_sign_detached,
         crate::crypto::nacl::nacl_sign_detached_api,
     );
+    module.register_sync_fn(
+        crate::crypto::nacl_sign_detached_verify,
+        crate::crypto::nacl::nacl_sign_detached_verify_api,
+    );
 
     module.register_sync_fn_without_args(
         crate::crypto::nacl_box_keypair,
