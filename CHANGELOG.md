@@ -2,6 +2,8 @@
 All notable changes to this project will be documented in this file.
 
 ## 1.6.0 Jan 20, 2020
+### New
+- `aggregate_collection` function as a wrapper for GraphQL aggregation queries.
 
 ### Fixed
 - device time synchronization is checked only in `send_message`. Data quering does not require proper time

@@ -70,6 +70,29 @@ async fn all_accounts() {
 }
 
 #[tokio::test(core_threads = 2)]
+async fn aggregates() {
+    let client = TestClient::new();
+
+    let result: ResultOfAggregateCollection = client
+        .request_async(
+            "net.aggregate_collection",
+            ParamsOfAggregateCollection {
+                collection: "accounts".to_owned(),
+                filter: Some(json!({})),
+                fields: Some(vec![FieldAggregation {
+                    field: "".into(),
+                    aggregation_fn: AggregationFn::COUNT,
+                }]),
+            },
+        )
+        .await
+        .unwrap();
+
+    let count = u32::from_str_radix(result.values[0].as_str().unwrap(), 10).unwrap();
+    assert!(count > 0);
+}
+
+#[tokio::test(core_threads = 2)]
 async fn ranges() {
     let client = TestClient::new();
 
@@ -391,10 +414,7 @@ async fn test_wait_resume() {
     let client = std::sync::Arc::new(TestClient::new());
     let client_copy = client.clone();
 
-    let _: () = client
-        .request_async("net.suspend", ())
-        .await
-        .unwrap();
+    let _: () = client.request_async("net.suspend", ()).await.unwrap();
 
     let start = std::time::Instant::now();
 
@@ -409,10 +429,7 @@ async fn test_wait_resume() {
     let timeout = 5000;
     tokio::time::delay_for(tokio::time::Duration::from_millis(timeout)).await;
 
-    let _: () = client
-        .request_async("net.resume", ())
-        .await
-        .unwrap();
+    let _: () = client.request_async("net.resume", ()).await.unwrap();
 
     assert!(duration.await.unwrap() > timeout as u128);
 }

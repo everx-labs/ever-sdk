@@ -14,7 +14,7 @@
 use super::websocket_link::WsConfig;
 use crate::client::{ClientEnv, FetchMethod};
 use crate::error::{AddNetworkUrl, ClientError, ClientResult};
-use crate::net::gql::{GraphQLOperation, GraphQLOperationEvent, OrderBy, PostRequest};
+use crate::net::gql::{GraphQLOperation, GraphQLOperationEvent, OrderBy, PostRequest, FieldAggregation};
 use crate::net::server_info::ServerInfo;
 use crate::net::websocket_link::WebsocketLink;
 use crate::net::{Error, NetworkConfig};
@@ -312,16 +312,17 @@ impl ServerLink {
         limit: Option<u32>,
         timeout: Option<u32>,
     ) -> ClientResult<Value> {
-        let query = GraphQLOperation::query(table, filter, fields, order_by, limit, timeout);
+        let op = GraphQLOperation::query(table, filter, fields, order_by, limit, timeout);
 
         self.ensure_info().await?;
         let client_lock = self.server_info.read().await;
         let address = &client_lock.as_ref().unwrap().query_url;
 
-        let result = self.fetch_operation(address, query, None).await?;
+        let result_name = op.result_name.clone().unwrap();
+        let result = self.fetch_operation(address, op, None).await?;
 
         // try to extract the record value from the answer
-        let records_array = &result["data"][&table];
+        let records_array = &result["data"][result_name.as_str()];
         if records_array.is_null() {
             Err(Error::invalid_server_response(format!(
                 "Invalid query answer: {}",
@@ -329,6 +330,33 @@ impl ServerLink {
             )))
         } else {
             Ok(records_array.clone())
+        }
+    }
+
+    // Returns Stream with GraphQL aggregate answer
+    pub async fn aggregate_collection(
+        &self,
+        collection: &str,
+        filter: &Value,
+        fields: &Vec<FieldAggregation>,
+    ) -> ClientResult<Value> {
+        let op = GraphQLOperation::aggregate(collection, filter, fields);
+
+        self.ensure_info().await?;
+        let client_lock = self.server_info.read().await;
+        let address = &client_lock.as_ref().unwrap().query_url;
+        let result_name = op.result_name.clone().unwrap();
+        let result = self.fetch_operation(address, op, None).await?;
+
+        // try to extract the record value from the answer
+        let values = &result["data"][result_name.as_str()];
+        if values.is_null() {
+            Err(Error::invalid_server_response(format!(
+                "Invalid query answer: {}",
+                result
+            )))
+        } else {
+            Ok(values.clone())
         }
     }
 
@@ -343,6 +371,7 @@ impl ServerLink {
             query: query.into(),
             variables,
             operation_name: None,
+            result_name: None,
         };
         self.ensure_info().await?;
         let client_lock = self.server_info.read().await;
