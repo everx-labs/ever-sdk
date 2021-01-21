@@ -330,6 +330,10 @@ fn register_net(handlers: &mut RuntimeHandlers) {
         crate::net::queries::query_collection_api,
     );
     module.register_async_fn(
+        crate::net::aggregate_collection,
+        crate::net::aggregates::aggregate_collection_api,
+    );
+    module.register_async_fn(
         crate::net::wait_for_collection,
         crate::net::queries::wait_for_collection_api,
     );
