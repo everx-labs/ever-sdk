@@ -11,6 +11,13 @@ pub const DEBOT_ABI: &'static str = r#"{
 			]
 		},
 		{
+			"name": "start",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
 			"name": "quit",
 			"inputs": [
 			],
