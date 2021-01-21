@@ -5,9 +5,16 @@
 		{
 			"name": "constructor",
 			"inputs": [
-				{"name":"debotAbi","type":"bytes"},
 				{"name":"targetAbi","type":"bytes"},
 				{"name":"targetAddr","type":"address"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setAbi",
+			"inputs": [
+				{"name":"debotAbi","type":"bytes"}
 			],
 			"outputs": [
 			]
@@ -18,6 +25,13 @@
 			],
 			"outputs": [
 				{"components":[{"name":"id","type":"uint8"},{"name":"desc","type":"bytes"},{"components":[{"name":"desc","type":"bytes"},{"name":"name","type":"bytes"},{"name":"actionType","type":"uint8"},{"name":"attrs","type":"bytes"},{"name":"to","type":"uint8"},{"name":"misc","type":"cell"}],"name":"actions","type":"tuple[]"}],"name":"contexts","type":"tuple[]"}
+			]
+		},
+		{
+			"name": "start",
+			"inputs": [
+			],
+			"outputs": [
 			]
 		},
 		{
@@ -290,6 +304,21 @@
 			"name": "setBalance",
 			"inputs": [
 				{"name":"arg1","type":"uint128"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "callInterface",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "echo",
+			"inputs": [
+				{"name":"response","type":"bytes"}
 			],
 			"outputs": [
 			]

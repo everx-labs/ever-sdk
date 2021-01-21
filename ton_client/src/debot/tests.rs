@@ -21,8 +21,9 @@ use crate::boc::{ParamsOfParse, ResultOfParse};
 use futures::future::{BoxFuture, FutureExt};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use tokio::sync::Mutex;
 use std::collections::VecDeque;
+use tokio::sync::Mutex;
+use ton_abi::Contract;
 use super::*;
 
 lazy_static!(
@@ -30,19 +31,53 @@ lazy_static!(
 );
 
 const SUPPORTED_INTERFACES: &[&str] = &["f6927c0d4bdb69e1b52d27f018d156ff04152f00558042ff674f0fec32e4369d"];
-const INTERFACE_ABI: &str = "
-";
+const INTERFACE_ABI: &str = r#"
+{
+	"ABI version": 2,
+	"header": ["time"],
+	"functions": [
+		{
+			"name": "echo",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"request","type":"bytes"}
+			],
+			"outputs": [
+				{"name":"response","type":"bytes"}
+			]
+		},
+		{
+			"name": "constructor",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		}
+	],
+	"data": [
+	],
+	"events": [
+	]
+}
+"#;
 
 struct Echo {}
 impl Echo {
-    fn echo(request: &str) -> JsonValue {
-        json!({ "response": request })
+    fn echo(answer_id: u32, request: &str) -> (String, JsonValue) {
+        let abi = Contract::load(INTERFACE_ABI.to_string().as_bytes()).unwrap();
+        let func_name = abi.function_by_id(answer_id, true).unwrap().name.clone();
+        (func_name, json!({ "response": request.as_bytes() }))
     }
 
-    fn call(func: &str, args: &JsonValue) -> JsonValue {
+    fn call(func: &str, args: &JsonValue) -> (String, JsonValue) {
         match func {
-            "echo" => Self::echo(args["request"].as_str().unwrap()),
-            _ => json!({}),
+            "echo" => {
+                let answer_id = u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
+                let request_vec = hex::decode(args["request"].as_str().unwrap()).unwrap();
+                let request = std::str::from_utf8(&request_vec).unwrap();
+                Self::echo(answer_id, request)
+            },
+            _ => (String::new(), json!({})),
         }
     }
 }
@@ -272,14 +307,14 @@ impl TestBrowser {
             ).await.unwrap();
             println!("call for interface id {}", interface_id);
             println!("function {} ({})", decoded.name, decoded.value.as_ref().unwrap());
-            let return_args = Echo::call(&decoded.name, &decoded.value.unwrap());
+            let (func_name, return_args) = Echo::call(&decoded.name, &decoded.value.unwrap());
             let params = ParamsOfEncodeMessage {
                 abi: Abi::Json(INTERFACE_ABI.to_owned()),
                 deploy_set: None,
                 signer: Signer::None,
                 processing_try_index: None,
                 address: None,
-                call_set: CallSet::some_with_function_and_input("echo", return_args),
+                call_set: CallSet::some_with_function_and_input(&func_name, return_args),
             };
             let response_msg = client.encode_message(params).await.unwrap().message;
             let _result: () = client.request_async(
@@ -356,7 +391,6 @@ async fn init_debot(client: Arc<TestClient>) -> DebotData {
                 function_name: "constructor".to_owned(),
                 header: None,
                 input: Some(json!({
-                    "debotAbi": hex::encode(&debot_abi.json_string().unwrap().as_bytes()),
                     "targetAbi": hex::encode(&target_abi.json_string().unwrap().as_bytes()),
                     "targetAddr": target_addr,
                 }))
@@ -367,6 +401,16 @@ async fn init_debot(client: Arc<TestClient>) -> DebotData {
 
     let (_, debot_addr) = futures::join!(target_future, debot_future);
 
+    let _ = client.net_process_function(
+        debot_addr.clone(),
+        debot_abi.clone(),
+        "setAbi",
+        json!({
+            "debotAbi": hex::encode(&debot_abi.json_string().unwrap().as_bytes())
+        }),
+        Signer::None,
+    ).await.unwrap();
+
     let data = DebotData {
         debot_addr,
         target_addr,
@@ -376,6 +420,8 @@ async fn init_debot(client: Arc<TestClient>) -> DebotData {
     data
 }
 
+const EXIT_CHOICE: u8 = 9;
+
 #[tokio::test(core_threads = 2)]
 async fn test_debot_goto() {
     let client = std::sync::Arc::new(TestClient::new());
@@ -384,7 +430,7 @@ async fn test_debot_goto() {
     let steps = json!([
         { "choice": 1, "inputs": [], "outputs": ["Test Goto Action"] },
         { "choice": 1, "inputs": [], "outputs": ["Debot Tests"] },
-        { "choice": 8, "inputs": [], "outputs": [] }
+        { "choice": EXIT_CHOICE, "inputs": [], "outputs": [] }
     ]);
     TestBrowser::execute(
         client.clone(),
@@ -404,7 +450,7 @@ async fn test_debot_print() {
         { "choice": 1, "inputs": [], "outputs": ["test simple print"] },
         { "choice": 2, "inputs": [], "outputs": [ format!("integer=1,addr={},string=test_string_1", target_addr)] },
         { "choice": 3, "inputs": [], "outputs": ["Debot Tests"] },
-        { "choice": 8, "inputs": [], "outputs": [] },
+        { "choice": EXIT_CHOICE, "inputs": [], "outputs": [] },
     ]);
     TestBrowser::execute(
         client.clone(),
@@ -426,7 +472,7 @@ async fn test_debot_runact() {
         { "choice": 2, "inputs": ["hello"], "outputs": [] },
         { "choice": 3, "inputs": [], "outputs": ["integer=2,addr=-1:1111111111111111111111111111111111111111111111111111111111111111,string=hello"] },
         { "choice": 4, "inputs": [], "outputs": ["Debot Tests"] },
-        { "choice": 8, "inputs": [], "outputs": [] },
+        { "choice": EXIT_CHOICE, "inputs": [], "outputs": [] },
     ]);
     TestBrowser::execute(
         client.clone(),
@@ -446,7 +492,7 @@ async fn test_debot_run_method() {
         { "choice": 1, "inputs": [], "outputs": [] },
         { "choice": 2, "inputs": [], "outputs": ["data=64"] },
         { "choice": 3, "inputs": [], "outputs": ["Debot Tests"] },
-        { "choice": 8, "inputs": [], "outputs": [] },
+        { "choice": EXIT_CHOICE, "inputs": [], "outputs": [] },
     ]);
     TestBrowser::execute(
         client.clone(),
@@ -467,7 +513,7 @@ async fn test_debot_send_msg() {
         { "choice": 2, "inputs": [], "outputs": [] },
         { "choice": 3, "inputs": [], "outputs": ["data=100"] },
         { "choice": 4, "inputs": [], "outputs": ["Debot Tests"] },
-        { "choice": 8, "inputs": [], "outputs": [] },
+        { "choice": EXIT_CHOICE, "inputs": [], "outputs": [] },
     ]);
     TestBrowser::execute(
         client.clone(),
@@ -493,7 +539,7 @@ async fn test_debot_invoke_debot() {
             ] 
         },
         { "choice": 2, "inputs": [], "outputs": ["Debot Tests"] },
-        { "choice": 8, "inputs": [], "outputs": [] },
+        { "choice": EXIT_CHOICE, "inputs": [], "outputs": [] },
     ]);
     TestBrowser::execute(
         client.clone(),
@@ -516,7 +562,7 @@ async fn test_debot_engine_calls() {
         { "choice": 4, "inputs": [], "outputs": [] },
         { "choice": 5, "inputs": [], "outputs": [] },
         { "choice": 6, "inputs": [], "outputs": ["Debot Tests"] },
-        { "choice": 8, "inputs": [], "outputs": [] }
+        { "choice": EXIT_CHOICE, "inputs": [], "outputs": [] }
     ]);
     TestBrowser::execute(
         client.clone(),
