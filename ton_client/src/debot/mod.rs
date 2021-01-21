@@ -18,6 +18,7 @@ mod debot_abi;
 mod dengine;
 mod errors;
 mod routines;
+mod run_output;
 // #[cfg(test)]
 // mod tests;
 
@@ -31,6 +32,9 @@ use crate::error::ClientResult;
 use crate::ClientContext;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+
+type TonClient = Arc<ClientContext>;
+type JsonValue = serde_json::Value;
 
 /// [UNSTABLE](UNSTABLE.md) Handle of registered in SDK debot
 #[derive(Serialize, Deserialize, Default, ApiType, Clone)]
