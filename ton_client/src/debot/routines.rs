@@ -1,4 +1,4 @@
-use super::dengine::TonClient;
+use super::TonClient;
 use crate::boc::{parse_account, ParamsOfParse};
 use crate::crypto::{
     generate_random_bytes, nacl_box_keypair_from_secret_key, signing_box_sign, KeyPair,
