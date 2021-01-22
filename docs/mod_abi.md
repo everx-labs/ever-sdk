@@ -111,7 +111,7 @@ function encode_message_body(
 
 - `body`: _string_ – Message body BOC encoded with `base64`.
 - `data_to_sign`?: _string_ – Optional data to sign.
-<br>Encoded with `base64`.<br>Presents when `message` is unsigned. Can be used for external<br>message signing. Is this case you need to sing this data and<br>produce signed message using `abi.attach_signature`.
+<br>Encoded with `base64`. <br>Presents when `message` is unsigned. Can be used for external<br>message signing. Is this case you need to sing this data and<br>produce signed message using `abi.attach_signature`.
 
 
 ## attach_signature_to_message_body
@@ -442,9 +442,9 @@ type FunctionHeader = {
 ```
 - `expire`?: _number_ – Message expiration time in seconds. If not specified - calculated automatically from message_expiration_timeout(), try_index and message_expiration_timeout_grow_factor() (if ABI includes `expire` header).
 - `time`?: _bigint_ – Message creation time in milliseconds.
-<br>If not specified, `now` is used(if ABI includes `time` header).
+<br>If not specified, `now` is used (if ABI includes `time` header).
 - `pubkey`?: _string_ – Public key is used by the contract to check the signature.
-<br>Encoded in `hex`.If not specified, method fails with exception (if ABI includes `pubkey` header)..
+<br>Encoded in `hex`. If not specified, method fails with exception (if ABI includes `pubkey` header)..
 
 
 ## CallSet
@@ -735,7 +735,7 @@ type ResultOfEncodeMessageBody = {
 ```
 - `body`: _string_ – Message body BOC encoded with `base64`.
 - `data_to_sign`?: _string_ – Optional data to sign.
-<br>Encoded with `base64`.<br>Presents when `message` is unsigned. Can be used for external<br>message signing. Is this case you need to sing this data and<br>produce signed message using `abi.attach_signature`.
+<br>Encoded with `base64`. <br>Presents when `message` is unsigned. Can be used for external<br>message signing. Is this case you need to sing this data and<br>produce signed message using `abi.attach_signature`.
 
 
 ## ParamsOfAttachSignatureToMessageBody
