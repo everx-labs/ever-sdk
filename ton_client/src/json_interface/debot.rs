@@ -15,7 +15,7 @@
  use crate::client::{AppObject, ClientContext};
  use crate::error::ClientResult;
  use crate::debot::{DAction, DebotAction, BrowserCallbacks, ParamsOfFetch, 
-    ParamsOfStart, RegisteredDebot, ParamsOfSend};
+    ParamsOfStart, RegisteredDebot};
  use crate::crypto::SigningBoxHandle;
 
 /// [UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.
@@ -201,13 +201,3 @@ pub(crate) async fn fetch(
     let browser_callbacks = DebotBrowserAdapter::new(app_object);
     crate::debot::fetch(context, params, browser_callbacks).await
 }
-
-
-#[api_function]
-pub(crate) async fn send(
-    context: std::sync::Arc<ClientContext>,
-    params: ParamsOfSend,
-) -> ClientResult<()> {
-    crate::debot::send(context, params).await
-}
-
