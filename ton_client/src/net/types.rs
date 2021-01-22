@@ -116,7 +116,7 @@ pub struct NetworkConfig {
     deserialize_with = "deserialize_wait_for_timeout")]
     pub wait_for_timeout: u32,
 
-    /// Maximum time difference between server and client. If client's device time is out of sinc and difference is more than 
+    /// Maximum time difference between server and client. If client's device time is out of sync and difference is more than 
     /// the threshold then error will occur. Also an error will occur if the specified threshold is more than 
     /// `message_processing_timeout/2`. 
     /// The default value is 15 sec.

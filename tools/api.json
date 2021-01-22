@@ -1,5 +1,5 @@
 {
-  "version": "1.5.2",
+  "version": "1.6.0",
   "modules": [
     {
       "name": "client",
@@ -390,7 +390,7 @@
                 "number_size": 32
               },
               "summary": "Maximum time difference between server and client.",
-              "description": "If client's device time is out of sinc and difference is more than the threshold then error will occur. Also an error will occur if the specified threshold is more than\n`message_processing_timeout/2`.\nThe default value is 15 sec."
+              "description": "If client's device time is out of sync and difference is more than the threshold then error will occur. Also an error will occur if the specified threshold is more than\n`message_processing_timeout/2`.\nThe default value is 15 sec."
             },
             {
               "name": "reconnect_timeout",
@@ -929,6 +929,13 @@
               "value": "121",
               "summary": null,
               "description": null
+            },
+            {
+              "name": "InvalidSignature",
+              "type": "Number",
+              "value": "122",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -1380,6 +1387,46 @@
               "name": "signature",
               "type": "String",
               "summary": "Signature encoded in `hex`.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfNaclSignDetachedVerify",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "unsigned",
+              "type": "String",
+              "summary": "Unsigned data that must be verified.",
+              "description": "Encoded with `base64`."
+            },
+            {
+              "name": "signature",
+              "type": "String",
+              "summary": "Signature that must be verified.",
+              "description": "Encoded with `hex`."
+            },
+            {
+              "name": "public",
+              "type": "String",
+              "summary": "Signer's public key - unprefixed 0-padded to 64 symbols hex string.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfNaclSignDetachedVerify",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "succeeded",
+              "type": "Boolean",
+              "summary": "`true` if verification succeeded or `false` if it failed",
               "description": null
             }
           ],
@@ -2677,6 +2724,44 @@
               {
                 "type": "Ref",
                 "ref_name": "crypto.ResultOfNaclSignDetached"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "nacl_sign_detached_verify",
+          "summary": "Verifies the signature for the message.",
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "crypto.ParamsOfNaclSignDetachedVerify",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "crypto.ResultOfNaclSignDetachedVerify"
               }
             ]
           },
@@ -7072,6 +7157,58 @@
           "description": null
         },
         {
+          "name": "ParamsOfAggregateCollection",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "collection",
+              "type": "String",
+              "summary": "Collection name (accounts, blocks, transactions, messages, block_signatures)",
+              "description": null
+            },
+            {
+              "name": "filter",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": "Collection filter.",
+              "description": null
+            },
+            {
+              "name": "fields",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "Ref",
+                  "ref_name": "FieldAggregation"
+                }
+              },
+              "summary": "Projection (result) string",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfAggregateCollection",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "values",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": "Values for requested fields.",
+              "description": "Returns an array of strings. Each string refers to the corresponding `fields` item.\nNumeric values is returned as a decimal string representations."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfWaitForCollection",
           "type": "Struct",
           "struct_fields": [
@@ -7291,6 +7428,44 @@
               {
                 "type": "Ref",
                 "ref_name": "net.ResultOfQueryCollection"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "aggregate_collection",
+          "summary": "Aggregates collection data.",
+          "description": "Aggregates values from the specified `fields` for records\nthat satisfies the `filter` conditions,",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfAggregateCollection",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "net.ResultOfAggregateCollection"
               }
             ]
           },
