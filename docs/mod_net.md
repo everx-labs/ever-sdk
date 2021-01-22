@@ -74,7 +74,7 @@ function query(
 ### Parameters
 - `query`: _string_ – GraphQL query text.
 - `variables`?: _any_ – Variables used in query.
-<br>Must be a map with named values thatcan be used in query.
+<br>Must be a map with named values that can be used in query.
 ### Result
 
 - `result`: _any_ – Result provided by DAppServer.
@@ -357,7 +357,7 @@ type ParamsOfQuery = {
 ```
 - `query`: _string_ – GraphQL query text.
 - `variables`?: _any_ – Variables used in query.
-<br>Must be a map with named values thatcan be used in query.
+<br>Must be a map with named values that can be used in query.
 
 
 ## ResultOfQuery

@@ -185,13 +185,13 @@ type DebotAction = {
 }
 ```
 - `description`: _string_ – A short action description.
-<br>Should be used by Debot Browser as name ofmenu item.
+<br>Should be used by Debot Browser as name of menu item.
 - `name`: _string_ – Depends on action type.
-<br>Can be a debot function name or a print string(for Print Action).
+<br>Can be a debot function name or a print string (for Print Action).
 - `action_type`: _number_ – Action type.
 - `to`: _number_ – ID of debot context to switch after action execution.
 - `attributes`: _string_ – Action attributes.
-<br>In the form of "param=value,flag".attribute example: instant, args, fargs, sign.
+<br>In the form of "param=value,flag". attribute example: instant, args, fargs, sign.
 - `misc`: _string_ – Some internal action data.
 <br>Used by debot only.
 

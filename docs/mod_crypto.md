@@ -1172,7 +1172,7 @@ function signing_box_sign(
 ### Result
 
 - `signature`: _string_ – Data signature.
-<br>Encoded with `base64`.
+<br>Encoded with `hex`.
 
 
 ## remove_signing_box
@@ -1907,6 +1907,6 @@ type ResultOfSigningBoxSign = {
 }
 ```
 - `signature`: _string_ – Data signature.
-<br>Encoded with `base64`.
+<br>Encoded with `hex`.
 
 
