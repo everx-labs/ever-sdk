@@ -237,7 +237,6 @@ pub struct ParamsOfSend {
 /// [UNSTABLE](UNSTABLE.md) Sends message to Debot.
 ///
 /// Used by Debot Browser to send response on Dinterface call or from other Debots.
-/// Message parameter is a BoC encoded as Base64.
 #[api_function]
 pub async fn send(
     context: Arc<ClientContext>,
