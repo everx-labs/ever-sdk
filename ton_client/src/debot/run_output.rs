@@ -19,13 +19,13 @@ impl RunOutput {
     pub fn new(
         account: String,
         return_value: Option<JsonValue>,
-        msgs: Vec<String>,
+        mut msgs: Vec<String>,
     ) -> Result<Self, ClientError> {
         let mut output = RunOutput::default();
         output.account = account;
         output.return_value = return_value;
 
-        for msg_base64 in msgs {
+        while let Some(msg_base64) = msgs.pop() {
             let msg: Message = deserialize_object_from_base64(&msg_base64, "message")?.object;
             output.filter_msg(msg, msg_base64);
         }

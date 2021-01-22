@@ -144,7 +144,8 @@ impl DEngine {
                 STATE_CURRENT,
             );
             start_act.attrs = "instant".to_owned();
-            context_vec.push(DContext::new("".to_owned(), vec![start_act], STATE_ZERO));
+            start_act.misc = EMPTY_CELL.to_owned();
+            context_vec.push(DContext::new(String::new(), vec![start_act], STATE_ZERO));
         }
         Ok(context_vec)
     }
