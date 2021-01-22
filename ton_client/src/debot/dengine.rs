@@ -183,7 +183,7 @@ impl DEngine {
     }
 
     pub async fn send(&mut self, source: String, func_id: u32, params: String) -> ClientResult<()> {
-        debug!("send");
+        debug!("send from {} id = {} params = {}", source, func_id, params);
         let params = serde_json::from_str(&params)
             .map_err(|e| Error::invalid_json_params(e) )?;
         let abi = Contract::load(self.raw_abi.as_bytes()).unwrap();
@@ -218,7 +218,6 @@ impl DEngine {
                 execution_options: None,
             },
         ).await?;
-
         let mut run_output = RunOutput::new(
             run_result.account,
             run_result.decoded.unwrap().output,

@@ -155,7 +155,7 @@ impl TestBrowser {
                 step.outputs.clear();
                 step.available_actions[step.step.choice as usize - 1].clone()
             };
-            println!("Executing action: {:#?}", action);
+            log::info!("Executing action: {:#?}", action);
             let _: () = client.request_async(
                 "debot.execute",
                 ParamsOfExecute {
