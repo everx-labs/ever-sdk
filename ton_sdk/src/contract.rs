@@ -134,6 +134,20 @@ impl ContractImage {
         Ok(result)
     }
 
+    pub fn get_public_key(&self) -> Result<Option<PublicKey>> {
+        Ok(AbiContract::get_pubkey(
+            &self.state_init.data.as_ref().ok_or_else(
+                || SdkError::InvalidData {
+                    msg: "State init has no data".to_owned()
+                }
+            )?.into()
+        ).map(|opt|
+            opt.map(|pub_key|
+                PublicKey::from_bytes(&pub_key)
+            ).transpose()
+        )??)
+    }
+
     pub fn set_public_key(&mut self, pub_key: &PublicKey) -> Result<()> {
         let state_init = &mut self.state_init;
 

@@ -1,6 +1,5 @@
 use crate::ClientContext;
 use crate::abi::{Error, Signer};
-use crate::crypto::internal::decode_public_key;
 use crate::encoding::hex_decode;
 use crate::error::ClientResult;
 use std::sync::Arc;
@@ -71,11 +70,9 @@ pub(crate) fn create_tvc_image(
     abi: &str,
     init_params: Option<&Value>,
     tvc: &String,
-    public_key: &String,
 ) -> ClientResult<ContractImage> {
     let tvc = base64::decode(tvc).map_err(|err| Error::invalid_tvc_image(err))?;
-    let public = decode_public_key(&public_key)?;
-    let mut image = ContractImage::from_state_init_and_key(&mut tvc.as_slice(), &public)
+    let mut image = ContractImage::from_state_init(&mut tvc.as_slice())
         .map_err(|err| Error::invalid_tvc_image(err))?;
 
     if let Some(params) = init_params {

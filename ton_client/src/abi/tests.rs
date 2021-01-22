@@ -50,9 +50,8 @@ fn encode_v2() {
         abi: abi.clone(),
         address: None,
         deploy_set: Some(DeploySet {
-            workchain_id: None,
             tvc: events_tvc.clone(),
-            initial_data: None,
+            ..Default::default()
         }),
         call_set: Some(CallSet {
             function_name: "constructor".into(),
