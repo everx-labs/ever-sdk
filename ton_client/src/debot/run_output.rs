@@ -1,5 +1,5 @@
 use super::action::DAction;
-use super::{DEBOT_WC, JsonValue};
+use super::{JsonValue, DEBOT_WC};
 use crate::boc::internal::deserialize_object_from_base64;
 use crate::error::ClientError;
 use ton_block::Message;
@@ -106,5 +106,3 @@ impl RunOutput {
         Some(msg)
     }
 }
-
-impl RunOutput {}

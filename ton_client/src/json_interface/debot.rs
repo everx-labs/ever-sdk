@@ -75,8 +75,10 @@ pub enum ParamsOfAppDebotBrowser {
         /// Debot action to execute.
         action: DebotAction
     },
-
+    /// Used by Debot to call DInterface implemented by Debot Browser.
     Send {
+        /// Internal message to DInterface address. Message body contains 
+        /// interface function and parameters.
         message: String,
     }
 }
