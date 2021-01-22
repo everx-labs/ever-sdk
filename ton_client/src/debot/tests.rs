@@ -23,7 +23,6 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::collections::VecDeque;
 use tokio::sync::Mutex;
-use ton_abi::Contract;
 use super::*;
 
 lazy_static!(
@@ -63,13 +62,11 @@ const INTERFACE_ABI: &str = r#"
 
 struct Echo {}
 impl Echo {
-    fn echo(answer_id: u32, request: &str) -> (String, JsonValue) {
-        let abi = Contract::load(INTERFACE_ABI.to_string().as_bytes()).unwrap();
-        let func_name = abi.function_by_id(answer_id, true).unwrap().name.clone();
-        (func_name, json!({ "response": request.as_bytes() }))
+    fn echo(answer_id: u32, request: &str) -> (u32, JsonValue) {
+        ( answer_id, json!({ "response": hex::encode(request.as_bytes()) }) )
     }
 
-    fn call(func: &str, args: &JsonValue) -> (String, JsonValue) {
+    fn call(func: &str, args: &JsonValue) -> (u32, JsonValue) {
         match func {
             "echo" => {
                 let answer_id = u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
@@ -77,7 +74,7 @@ impl Echo {
                 let request = std::str::from_utf8(&request_vec).unwrap();
                 Self::echo(answer_id, request)
             },
-            _ => (String::new(), json!({})),
+            _ => panic!("interface function not found"),
         }
     }
 }
@@ -158,7 +155,7 @@ impl TestBrowser {
                 step.outputs.clear();
                 step.available_actions[step.step.choice as usize - 1].clone()
             };
-            log::info!("Executing action: {:#?}", action);
+            println!("Executing action: {:#?}", action);
             let _: () = client.request_async(
                 "debot.execute",
                 ParamsOfExecute {
@@ -288,11 +285,8 @@ impl TestBrowser {
                 ParamsOfParse { boc: msg.clone() },
             ).await.unwrap();
             let body = parsed.parsed["body"].as_str().unwrap().to_owned();
-            let wc_and_addr: Vec<_> = parsed.parsed["dst"]
-                .as_str()
-                .unwrap()
-                .split(':')
-                .collect();
+            let iface_addr = parsed.parsed["dst"].as_str().unwrap();
+            let wc_and_addr: Vec<_> = iface_addr.split(':').collect();
             let interface_id = wc_and_addr[1];
             let wc = i8::from_str_radix(wc_and_addr[0], 10).unwrap();
             assert_eq!(wc, DEBOT_WC);
@@ -306,22 +300,16 @@ impl TestBrowser {
                 },
             ).await.unwrap();
             println!("call for interface id {}", interface_id);
-            println!("function {} ({})", decoded.name, decoded.value.as_ref().unwrap());
-            let (func_name, return_args) = Echo::call(&decoded.name, &decoded.value.unwrap());
-            let params = ParamsOfEncodeMessage {
-                abi: Abi::Json(INTERFACE_ABI.to_owned()),
-                deploy_set: None,
-                signer: Signer::None,
-                processing_try_index: None,
-                address: None,
-                call_set: CallSet::some_with_function_and_input(&func_name, return_args),
-            };
-            let response_msg = client.encode_message(params).await.unwrap().message;
+            println!("request: {} ({})", decoded.name, decoded.value.as_ref().unwrap());
+            let (func_id, return_args) = Echo::call(&decoded.name, &decoded.value.unwrap());
+            println!("response: {} ({})", func_id, return_args);
             let _result: () = client.request_async(
                 "debot.send",
                 ParamsOfSend {
                     debot_handle: handle.debot_handle.clone(),
-                    message: response_msg,
+                    source: iface_addr.to_owned(),
+                    func_id,
+                    params: return_args.to_string(),
                 }
             ).await.unwrap();
         }
@@ -562,6 +550,24 @@ async fn test_debot_engine_calls() {
         { "choice": 4, "inputs": [], "outputs": [] },
         { "choice": 5, "inputs": [], "outputs": [] },
         { "choice": 6, "inputs": [], "outputs": ["Debot Tests"] },
+        { "choice": EXIT_CHOICE, "inputs": [], "outputs": [] }
+    ]);
+    TestBrowser::execute(
+        client.clone(),
+        debot_addr.clone(),
+        keys.clone(),
+        serde_json::from_value(steps).unwrap()
+    ).await;
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_debot_interface_call() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys } = init_debot(client.clone()).await;
+
+    let steps = json!([
+        { "choice": 8, "inputs": [], "outputs": ["", "test1 - call interface"] },
+        { "choice": 1, "inputs": [], "outputs": ["Debot Tests"] },
         { "choice": EXIT_CHOICE, "inputs": [], "outputs": [] }
     ]);
     TestBrowser::execute(

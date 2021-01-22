@@ -2,9 +2,10 @@ use crate::abi::{
     decode_message_body, encode_message, Abi, AbiConfig, CallSet, DeploySet,
     ParamsOfDecodeMessageBody, ParamsOfEncodeMessage, Signer, ErrorCode
 };
-use crate::encoding::decode_abi_number;
+use crate::crypto::{remove_signing_box, CryptoConfig, RegisteredSigningBox, SigningBoxHandle};
+use crate::encoding::{decode_abi_number, account_decode};
 use crate::error::{ClientError, ClientResult};
-use crate::abi::ErrorCode;
+use crate::abi::{ErrorCode, ParamsOfEncodeMessageBody, encode_message_body};
 use crate::net::{query_collection, NetworkConfig, ParamsOfQueryCollection};
 use crate::crypto::{remove_signing_box, CryptoConfig, RegisteredSigningBox, SigningBoxHandle};
 use crate::processing::{process_message, ParamsOfProcessMessage, ProcessingEvent};
@@ -19,8 +20,12 @@ use super::context::{
 };
 use super::debot_abi::DEBOT_ABI;
 use super::routines;
+use ton_abi::Contract;
 use super::run_output::RunOutput;
 use super::{JsonValue, TonClient};
+use super::errors::Error;
+use ton_block::{ Message, InternalMessageHeader };
+use crate::boc::internal::{ serialize_object_to_base64, deserialize_cell_from_base64 };
 
 const EMPTY_CELL: &'static str = "te6ccgEBAQEAAgAAAA==";
 
@@ -57,6 +62,7 @@ const OPTION_TARGET_ADDR: u8 = 4;
 /// Downloads and stores debot, executes its actions and calls
 /// Debot Browser callbacks.
 pub struct DEngine {
+    raw_abi: String,
     abi: Abi,
     addr: String,
     ton: TonClient,
@@ -86,6 +92,7 @@ impl DEngine {
         browser: Arc<dyn BrowserCallbacks + Send + Sync>,
     ) -> Self {
         DEngine {
+            raw_abi: String::new(),
             abi: abi
                 .map(|s| load_abi(&s))
                 .unwrap_or(load_abi(DEBOT_ABI))
@@ -175,13 +182,38 @@ impl DEngine {
         }
     }
 
-    pub async fn send(&mut self, message: String) -> ClientResult<()> {
+    pub async fn send(&mut self, source: String, func_id: u32, params: String) -> ClientResult<()> {
         debug!("send");
+        let params = serde_json::from_str(&params)
+            .map_err(|e| Error::invalid_json_params(e) )?;
+        let abi = Contract::load(self.raw_abi.as_bytes()).unwrap();
+        let func_name = &abi.function_by_id(func_id, true)
+            .map_err(|e| Error::invalid_function_id(e) )?
+            .name;
+        
+        let msg_params = ParamsOfEncodeMessageBody {
+            abi: self.abi.clone(),
+            signer: Signer::None,
+            processing_try_index: None,
+            is_internal: true,
+            call_set: CallSet::some_with_function_and_input(func_name, params).unwrap(),
+        };
+        let body = encode_message_body(self.ton.clone(), msg_params).await?.body;
+
+        let src_addr = account_decode(&source)?;
+        let dst_addr = account_decode(&self.addr)?;
+        let mut msg = Message::with_int_header(
+            InternalMessageHeader::with_addresses(src_addr, dst_addr, Default::default())
+        );
+        let (_, body_cell) = deserialize_cell_from_base64(&body, "message body")?;
+        msg.set_body(body_cell.into());
+        let msg_base64 = serialize_object_to_base64(&msg, "message")?;
+        
         let run_result = run_tvm(
             self.ton.clone(),
             ParamsOfRunTvm {
                 account: std::mem::take(&mut self.state),
-                message: message,
+                message: msg_base64,
                 abi: Some(self.abi.clone()),
                 execution_options: None,
             },
@@ -193,7 +225,6 @@ impl DEngine {
             run_result.out_messages,
         )?;
         self.state = std::mem::take(&mut run_output.account);
-
         self.handle_output(run_output).await
     }
 
@@ -207,7 +238,8 @@ impl DEngine {
                 debug!("run_action: {}", a.name);
                 let result = self.run_action(&a).await?;
                 let actions = result.decode_actions();
-                self.handle_output(result).await;
+                self.handle_output(result).await
+                    .map_err(|e| format!("invalid debot output: {}", e))?;
                 actions
             }
             AcType::RunMethod => {
@@ -573,6 +605,7 @@ impl DEngine {
             let abi_str = str_hex_to_utf8(params["debotAbi"].as_str().unwrap())
                 .ok_or("cannot convert hex string to debot abi")?;
             self.abi = load_abi(&abi_str)?;
+            self.raw_abi = abi_str;
         }
         if options & OPTION_TARGET_ABI != 0 {
             self.target_abi = str_hex_to_utf8(params["targetAbi"].as_str().unwrap());

@@ -447,6 +447,7 @@ fn register_debot(handlers: &mut RuntimeHandlers) {
         crate::json_interface::debot::fetch_api,
     );
     module.register_async_fn(crate::debot::execute, crate::debot::execute_api);
+    module.register_async_fn(crate::debot::send, crate::debot::send_api);
     module.register_sync_fn(crate::debot::remove, crate::debot::remove_api);
     module.register();
 }
