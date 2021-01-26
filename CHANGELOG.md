@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ### New
 - `nacl_sign_detached_verify` function to verify detached signature.
 - `aggregate_collection` function as a wrapper for GraphQL aggregation queries.
+- Active endpoint invalidation in case of network error occuring.
+- `network.network_retries_count` config parameter is deprecated. It is superseded by `network.max_reconnect_timeout`
 
 ### Fixed
 - device time synchronization is checked only in `send_message`. Data quering does not require proper time
