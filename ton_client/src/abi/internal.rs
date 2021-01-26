@@ -1,13 +1,10 @@
-use std::sync::Arc;
-
-use serde_json::Value;
-
-use ton_sdk::ContractImage;
-
-use crate::abi::{DeploySet, Error, Signer};
 use crate::ClientContext;
+use crate::abi::{Error, Signer, DeploySet};
 use crate::encoding::hex_decode;
 use crate::error::ClientResult;
+use std::sync::Arc;
+use serde_json::Value;
+use ton_sdk::ContractImage;
 
 /// Combines `hex` encoded `signature` with `base64` encoded `unsigned_message`.
 /// Returns signed message encoded with `base64`.
