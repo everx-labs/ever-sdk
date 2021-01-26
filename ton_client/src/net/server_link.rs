@@ -20,21 +20,34 @@ use crate::net::{Error, NetworkConfig};
 use futures::{Future, Stream, StreamExt};
 use serde_json::Value;
 use tokio::sync::{Mutex, RwLock, watch};
+use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
 
 pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
+pub const MIN_RESUME_TIMEOUT: u32 = 500;
+pub const MAX_RESUME_TIMEOUT: u32 = 3000;
+pub const FETCH_ADDITIONAL_TIMEOUT: u32 = 5000;
 
 pub(crate) struct Subscription {
     pub unsubscribe: Pin<Box<dyn Future<Output = ()> + Send>>,
     pub data_stream: Pin<Box<dyn Stream<Item = ClientResult<Value>> + Send>>,
 }
 
+struct SuspendRegulation {
+    sender: watch::Sender<bool>,
+    internal_suspend: bool,
+    external_suspend: bool,
+}
+
 pub(crate) struct NetworkState {
     client_env: Arc<ClientEnv>,
     endpoints: RwLock<Vec<String>>,
-    suspended: (watch::Sender<bool>, watch::Receiver<bool>),
+    suspended: watch::Receiver<bool>,
+    suspend_regulation: Arc<Mutex<SuspendRegulation>>,
+    resume_timeout: AtomicU32,
     server_info: RwLock<Option<Arc<ServerInfo>>>,
     out_of_sync_threshold: u32,
 }
@@ -55,24 +68,73 @@ async fn query_by_url(client_env: &ClientEnv, address: &str, query: &str) -> Cli
 
 impl NetworkState {
     pub fn new(client_env: Arc<ClientEnv>, endpoints: Vec<String>, out_of_sync_threshold: u32) -> Self {
+        let (sender, receiver) = watch::channel(false);
+        let regulation = SuspendRegulation {
+            sender,
+            internal_suspend: false,
+            external_suspend: false,
+        };
         Self {
             client_env,
             endpoints: RwLock::new(endpoints),
-            suspended: watch::channel(false),
+            suspended: receiver,
+            suspend_regulation: Arc::new(Mutex::new(regulation)),
+            resume_timeout: AtomicU32::new(0),
             server_info: RwLock::new(None),
             out_of_sync_threshold,
         }
     }
 
-    pub async fn suspend(&self) {
-        if !*self.suspended.1.borrow() {
-            let _ = self.suspended.0.broadcast(true);
+    async fn suspend(&self, sender: &watch::Sender<bool>) {
+        if !*self.suspended.borrow() {
+            let _ = sender.broadcast(true);
             *self.server_info.write().await = None;
         }
     }
 
-    pub async fn resume(&self) {
-        let _ = self.suspended.0.broadcast(false);
+    async fn resume(sender: &watch::Sender<bool>) {
+        let _ = sender.broadcast(false);
+    }
+
+    pub async fn external_suspend(&self) {
+        let mut regulation = self.suspend_regulation.lock().await;
+        regulation.external_suspend = true;
+        self.suspend(&regulation.sender).await;
+    }
+
+    pub async fn external_resume(&self) {
+        let mut regulation = self.suspend_regulation.lock().await;
+        regulation.external_suspend = false;
+        if !regulation.internal_suspend {
+            Self::resume(&regulation.sender).await;
+        }
+    }
+
+    pub async fn internal_suspend(&self) {
+        let mut regulation = self.suspend_regulation.lock().await;
+        if regulation.internal_suspend {
+            return;
+        }
+
+        regulation.internal_suspend = true;
+        self.suspend(&regulation.sender).await;
+
+        let timeout = self.resume_timeout.load(Ordering::Relaxed);
+        let next_timeout = min(max(timeout * 2, MIN_RESUME_TIMEOUT), MAX_RESUME_TIMEOUT); // 0, 0.5, 1, 2, 3, 3, 3...
+        self.resume_timeout.store(next_timeout, Ordering::Relaxed);
+        log::debug!("Internal resume timeout {}", timeout);
+
+        let env = self.client_env.clone();
+        let regulation = self.suspend_regulation.clone();
+
+        self.client_env.spawn(async move {
+            let _ = env.set_timer(timeout as u64).await;
+            let mut regulation = regulation.lock().await;
+            regulation.internal_suspend = false;
+            if !regulation.external_suspend {
+                Self::resume(&regulation.sender).await;
+            }
+        });
     }
 
     pub async fn set_endpoints(&self, endpoints: Vec<String>) {
@@ -148,7 +210,7 @@ impl NetworkState {
 
     pub async fn get_info(&self) -> ClientResult<Arc<ServerInfo>> {
         // wait for resume
-        let mut suspended = self.suspended.1.clone();
+        let mut suspended = self.suspended.clone();
         while Some(true) == suspended.recv().await {}
 
         if let Some(info) = &*self.server_info.read().await {
@@ -219,8 +281,6 @@ impl ServerLink {
         filter: &Value,
         fields: &str,
     ) -> ClientResult<Subscription> {
-        let _ = self.state.get_info().await?;
-
         let event_receiver = self
             .websocket_link
             .start_operation(GraphQLOperation::subscription(table, filter, fields))
@@ -286,43 +346,37 @@ impl ServerLink {
         operation: GraphQLOperation,
         timeout: Option<u32>,
     ) -> ClientResult<Value> {
-        let mut result = Err(Error::network_module_suspended());
-        for _ in 0..2u8 {
-            let info = self.state.get_info().await?;
+        let info = self.state.get_info().await?;
 
-            let request = json!({
-                "query": operation.query,
-                "variables": operation.variables,
-            })
-            .to_string();
+        let request = json!({
+            "query": operation.query,
+            "variables": operation.variables,
+        })
+        .to_string();
 
-            let mut headers = HashMap::new();
-            headers.insert("content-type".to_owned(), "application/json".to_owned());
-            for (name, value) in ServerInfo::http_headers() {
-                headers.insert(name, value);
+        let mut headers = HashMap::new();
+        headers.insert("content-type".to_owned(), "application/json".to_owned());
+        for (name, value) in ServerInfo::http_headers() {
+            headers.insert(name, value);
+        }
+
+        let result = self
+            .client_env
+            .fetch(
+                &info.query_url,
+                FetchMethod::Post,
+                Some(headers),
+                Some(request),
+                timeout,
+            )
+            .await;
+
+        if let Err(err) = &result {
+            if crate::client::Error::is_network_error(err) {
+                self.state.internal_suspend().await;
+                self.websocket_link.suspend().await;
+                self.websocket_link.resume().await;
             }
-
-            result = self
-                .client_env
-                .fetch(
-                    &info.query_url,
-                    FetchMethod::Post,
-                    Some(headers),
-                    Some(request),
-                    timeout,
-                )
-                .await;
-
-            if let Err(err) = &result {
-                if crate::client::Error::is_network_error(err) {
-                    self.suspend().await;
-                    self.client_env.set_timer(self.config.reconnect_timeout as u64).await?;
-                    self.resume().await;
-                    continue;
-                }
-            }
-
-            break;
         }
 
         let response = result?.body_as_json()?;
@@ -346,7 +400,10 @@ impl ServerLink {
     ) -> ClientResult<Value> {
         let query = GraphQLOperation::query(table, filter, fields, order_by, limit, timeout);
 
-        let result = self.fetch_operation(query, timeout).await?;
+        let result = self.fetch_operation(
+            query,
+            timeout.map(|value| value + FETCH_ADDITIONAL_TIMEOUT)
+        ).await?;
 
         // try to extract the record value from the answer
         let records_array = &result["data"][&table];
@@ -372,7 +429,10 @@ impl ServerLink {
             variables,
             operation_name: None,
         };
-        Ok(self.fetch_operation( query, timeout).await?)
+        Ok(self.fetch_operation(
+            query,
+            timeout.map(|value| value + FETCH_ADDITIONAL_TIMEOUT)
+        ).await?)
     }
 
     // Executes GraphQL query, waits for result and returns recieved value
@@ -422,12 +482,12 @@ impl ServerLink {
     }
 
     pub async fn suspend(&self) {
-        self.state.suspend().await;
+        self.state.external_suspend().await;
         self.websocket_link.suspend().await;
     }
 
     pub async fn resume(&self) {
-        self.state.resume().await;
+        self.state.external_resume().await;
         self.websocket_link.resume().await;
     }
 

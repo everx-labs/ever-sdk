@@ -115,6 +115,7 @@ enum Phase {
     Idle,
     Connecting,
     Connected,
+    Suspended,
 }
 
 pub(crate) struct LinkHandler {
@@ -130,13 +131,14 @@ pub(crate) struct LinkHandler {
 }
 
 async fn ws_send(ws: &mut WSSender, message: GraphQLMessageFromClient) {
+    log::debug!("Send WS message\n{}", message.get_message());
     let _ = ws.send(message.get_message()).await;
 }
 
 impl LinkHandler {
     fn run(client_env: Arc<ClientEnv>, state: Arc<NetworkState>, config: NetworkConfig) -> Sender<HandlerAction> {
-        let (action_sender, action_receiver) = channel(1);
-        let (internal_action_sender, internal_action_receiver) = channel(1);
+        let (action_sender, action_receiver) = channel(10);
+        let (internal_action_sender, internal_action_receiver) = channel(10);
         client_env.clone().spawn(Box::pin(async move {
             LinkHandler {
                 client_env,
@@ -157,26 +159,36 @@ impl LinkHandler {
 
     async fn run_loop(&mut self) {
         let mut phase = Phase::Idle;
-        while !self.action_receiver.is_terminated() && phase == Phase::Idle {
+        while !self.action_receiver.is_terminated() && 
+            (phase == Phase::Idle || phase == Phase::Suspended)
+        {
             let (internal_action, action) = futures::select!(
                 internal_action = self.internal_action_receiver.select_next_some() => (Some(internal_action), None),
                 action = self.action_receiver.select_next_some() => (None, Some(action)),
             );
+            let suspended = phase == Phase::Suspended;
             if let Some(action) = internal_action.or(action) {
-                phase = self.handle_idle_action(action).await;
+                phase = self.handle_idle_action(action, phase).await;
             }
             if phase == Phase::Connecting {
-                phase = self.run_ws().await;
+                phase = self.run_ws(suspended).await;
             }
         }
     }
 
-    async fn run_ws(&mut self) -> Phase {
+    async fn run_ws(&mut self, suspended: bool) -> Phase {
         let ws = match self.connect().await {
-            Ok(w) => w,
+            Ok(ws) => {
+                if suspended {
+                    self.send_error_to_running_operations(Error::network_module_resumed()).await;
+                }
+                ws
+            },
             Err(err) => {
-                self.handle_network_error(err).await;
-                return Phase::Idle;
+                return self.handle_network_error(
+                    Error::graphql_websocket_init_error(err),
+                    suspended,
+                ).await;
             }
         };
         let mut phase = Phase::Connecting;
@@ -204,19 +216,23 @@ impl LinkHandler {
         phase
     }
 
-    async fn handle_idle_action(&mut self, action: HandlerAction) -> Phase {
+    async fn handle_idle_action(&mut self, action: HandlerAction, phase: Phase) -> Phase {
         match action {
             HandlerAction::StartOperation(payload, event_sender) => {
-                self.start_operation(payload, event_sender, None).await;
-                Phase::Connecting
+                self.start_operation(payload, event_sender, None, phase == Phase::Suspended).await;
+                if phase == Phase::Suspended {
+                    Phase::Suspended
+                } else {
+                    Phase::Connecting
+                }
             }
             HandlerAction::StopOperation(id) => {
                 let _ = self.operations.remove(&id);
-                Phase::Idle
+                phase
             }
-            HandlerAction::Suspend => Phase::Idle,
+            HandlerAction::Suspend => Phase::Suspended,
             HandlerAction::Resume => Phase::Connecting,
-            HandlerAction::CheckKeepAlivePassed => Phase::Idle,
+            HandlerAction::CheckKeepAlivePassed => phase,
         }
     }
 
@@ -257,7 +273,7 @@ impl LinkHandler {
         let mut next_phase = phase;
         match action {
             HandlerAction::StartOperation(operation, event_sender) => {
-                self.start_operation(operation, event_sender, ws).await;
+                self.start_operation(operation, event_sender, ws, false).await;
             }
             HandlerAction::StopOperation(id) => {
                 self.stop_operation(id, ws).await;
@@ -265,8 +281,9 @@ impl LinkHandler {
             HandlerAction::Suspend => {
                 if let Some(ws) = ws {
                     self.stop_running_operations(ws).await;
+                    self.send_error_to_running_operations(Error::network_module_suspended()).await;
                 }
-                next_phase = Phase::Idle
+                next_phase = Phase::Suspended;
             }
             HandlerAction::Resume => {}
             HandlerAction::CheckKeepAlivePassed => match self.keep_alive {
@@ -274,11 +291,10 @@ impl LinkHandler {
                 KeepAlive::WaitSecond { .. } => {}
                 KeepAlive::WaitNext { .. } => {
                     self.keep_alive = KeepAlive::WaitFirst;
-                    self.handle_network_error(Error::websocket_disconnected(
-                        "keep alive message wasn't received",
-                    ))
-                    .await;
-                    next_phase = Phase::Idle;
+                    next_phase = self.handle_network_error(
+                        Error::websocket_disconnected("keep alive message wasn't received"),
+                        false,
+                    ).await;
                 }
                 KeepAlive::Passed { timeout } => {
                     self.start_keep_alive_timer(timeout);
@@ -304,9 +320,9 @@ impl LinkHandler {
                 }
             },
             Err(err) => {
-                self.handle_network_error(Error::websocket_disconnected(err))
+                log::debug!("Error received from websocket");
+                return self.handle_network_error(Error::websocket_disconnected(err), false)
                     .await;
-                return Phase::Idle;
             }
         };
 
@@ -329,12 +345,13 @@ impl LinkHandler {
                 KeepAlive::Passed { .. } => {}
             },
             GraphQLMessageFromServer::ConnectionError { error } => {
-                self.handle_network_error(Error::graphql_server_error(
-                    "connection",
-                    &vec![error],
-                ))
+                next_phase = self.handle_network_error(
+                    Error::graphql_server_error(
+                        "connection",
+                        &vec![error]),
+                        false,
+                    )
                 .await;
-                next_phase = Phase::Idle;
             }
             GraphQLMessageFromServer::Data { id, data, errors } => {
                 let event = if let Some(errors) = errors {
@@ -361,6 +378,7 @@ impl LinkHandler {
     }
 
     fn start_keep_alive_timer(&mut self, timeout: u64) {
+        log::debug!("WS keep alive timer {}", timeout);
         let mut sender = self.internal_action_sender.clone();
         self.keep_alive = KeepAlive::WaitNext { timeout };
         let env = self.client_env.clone();
@@ -387,17 +405,17 @@ impl LinkHandler {
         }
     }
 
-    async fn handle_network_error(&mut self, err: ClientError) {
+    async fn handle_network_error(&mut self, err: ClientError, suspended: bool) -> Phase {
         self.send_error_to_running_operations(err).await;
-
-        self.state.suspend().await;
-        HandlerAction::Suspend.send(&mut self.internal_action_sender.clone()).await;
-
-        // no problem if reconnect without timeout
-        let _ = self.client_env.set_timer(self.config.reconnect_timeout as u64).await;
-
-        self.state.resume().await;
+        if !suspended {
+            self.send_error_to_running_operations(Error::network_module_suspended()).await;            
+        }
+        self.state.internal_suspend().await;
+        
+        // send resume - it will try to reconnect after internal suspend timer in NetworkState ends
         HandlerAction::Resume.send(&mut self.internal_action_sender.clone()).await;
+        // switch to Suspended phase
+        Phase::Suspended
     }
 
     async fn send_error_to_running_operations(&mut self, err: ClientError) {
@@ -408,14 +426,14 @@ impl LinkHandler {
         }
     }
 
-    async fn stop_running_operations(&mut self, ws: &mut WSSender) {
-        for (id, _) in self.operations.clone() {
+    async fn stop_running_operations(&self, ws: &mut WSSender) {
+        for (id, _) in &self.operations {
             ws_send(ws, GraphQLMessageFromClient::Stop { id: id.to_string() }).await;
         }
     }
 
-    async fn start_running_operations(&mut self, ws: &mut WSSender) {
-        for (id, operation) in self.operations.clone() {
+    async fn start_running_operations(&self, ws: &mut WSSender) {
+        for (id, operation) in &self.operations {
             ws_send(ws, operation.operation.get_start_message(id.to_string())).await;
         }
     }
@@ -425,6 +443,7 @@ impl LinkHandler {
         operation: GraphQLOperation,
         event_sender: Sender<GraphQLOperationEvent>,
         ws: Option<&mut WSSender>,
+        suspended: bool,
     ) {
         let mut id = self.last_operation_id.wrapping_add(1);
         while id == 0 || self.operations.contains_key(&id) {
@@ -437,6 +456,9 @@ impl LinkHandler {
         };
 
         operation.notify(GraphQLOperationEvent::Id(id)).await;
+        if suspended {
+            operation.notify(GraphQLOperationEvent::Error(Error::network_module_suspended())).await;
+        }
 
         if let Some(ws) = ws {
             ws_send(ws, operation.operation.get_start_message(id.to_string())).await;

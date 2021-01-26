@@ -16,6 +16,8 @@ pub enum ErrorCode {
     WebsocketDisconnected = 610,
     NotSupported = 611,
     NoEndpointsProvided = 612,
+    GraphqlWebsocketInitError = 613,
+    NetworkModuleResumed = 614,
 }
 
 pub struct Error;
@@ -111,7 +113,7 @@ impl Error {
     pub fn network_module_suspended() -> ClientError {
         error(
             ErrorCode::NetworkModuleSuspended,
-            "Can not use network module since it is suspended".to_owned(),
+            "Network module is suspended".to_owned(),
         )
     }
 
@@ -126,6 +128,19 @@ impl Error {
         error(
             ErrorCode::NoEndpointsProvided,
             "No endpoints provided".to_owned(),
+        )
+    }
+
+    pub fn graphql_websocket_init_error(mut err: ClientError) -> ClientError {
+        err.code = ErrorCode::GraphqlWebsocketInitError as u32;
+        err.message = format!("GraphQL websocket init failed: {}", err);
+        err
+    }
+
+    pub fn network_module_resumed() -> ClientError {
+        error(
+            ErrorCode::NetworkModuleResumed,
+            "Network module has been resumed".to_owned(),
         )
     }
 }
