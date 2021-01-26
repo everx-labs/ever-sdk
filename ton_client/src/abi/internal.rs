@@ -1,10 +1,13 @@
+use std::sync::Arc;
+
+use serde_json::Value;
+
+use ton_sdk::ContractImage;
+
+use crate::abi::{DeploySet, Error, Signer};
 use crate::ClientContext;
-use crate::abi::{Error, Signer};
 use crate::encoding::hex_decode;
 use crate::error::ClientResult;
-use std::sync::Arc;
-use serde_json::Value;
-use ton_sdk::ContractImage;
 
 /// Combines `hex` encoded `signature` with `base64` encoded `unsigned_message`.
 /// Returns signed message encoded with `base64`.
@@ -83,3 +86,51 @@ pub(crate) fn create_tvc_image(
 
     Ok(image)
 }
+
+/// Determines, if public key consists only zeroes, i.e. is empty.
+pub(crate) fn is_empty_pubkey(pubkey: &ed25519_dalek::PublicKey) -> bool {
+    for b in pubkey.as_bytes() {
+        if *b != 0 {
+            return false;
+        }
+    }
+    true
+}
+
+/// Resolves public key from deploy set, tvc or signer, using this priority:
+/// 1. Initial public key from the deploy set
+/// 2. Public key from TVC image
+/// 3. Signer
+/// Returns None, if no public key was resolved.
+pub(crate) async fn resolve_pubkey(
+    context: &Arc<ClientContext>,
+    deploy_set: &Option<(&DeploySet, ContractImage)>,
+    signer: &Signer,
+) -> ClientResult<Option<String>> {
+    if let Some((deploy_set, image)) = deploy_set {
+        if deploy_set.initial_pubkey.is_some() {
+            return Ok(deploy_set.initial_pubkey.clone());
+        }
+
+        let pubkey = match image.get_public_key().map_err(|err| Error::invalid_tvc_image(err))? {
+            Some(pub_key) => {
+                if is_empty_pubkey(&pub_key) {
+                    None
+                } else {
+                    Some(pub_key)
+                }
+            },
+            None => None,
+        };
+
+        if let Some(pubkey) = pubkey {
+            return Ok(Some(hex::encode(pubkey.as_ref())));
+        }
+    }
+
+    signer.resolve_public_key(Arc::clone(context)).await
+}
+
+#[cfg(test)]
+#[path = "tests/internal.rs"]
+mod tests_internal;

@@ -8,7 +8,7 @@ use ton_sdk::{ContractImage, FunctionCallSet};
 
 use crate::abi;
 use crate::abi::{Abi, Error, FunctionHeader, Signer};
-use crate::abi::internal::{add_sign_to_message, add_sign_to_message_body, create_tvc_image, result_of_encode_message};
+use crate::abi::internal::{add_sign_to_message, add_sign_to_message_body, create_tvc_image, result_of_encode_message, resolve_pubkey};
 use crate::boc::internal::get_boc_hash;
 use crate::client::ClientContext;
 use crate::crypto::internal::decode_public_key;
@@ -328,7 +328,7 @@ fn encode_run(
 ///
 /// `Signer::Keys` creates a signed message with provided key pair.
 ///
-/// [SOON] `Signer::SigningBox` Allows using a special interface to imlepement signing
+/// [SOON] `Signer::SigningBox` Allows using a special interface to implement signing
 /// without private key disclosure to SDK. For instance, in case of using a cold wallet or HSM,
 /// when application calls some API to sign data.
 
@@ -337,44 +337,6 @@ pub async fn encode_message(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfEncodeMessage,
 ) -> ClientResult<ResultOfEncodeMessage> {
-    fn is_empty_pubkey(pubkey: &ed25519_dalek::PublicKey) -> bool {
-        for b in pubkey.as_bytes() {
-            if *b != 0 {
-                return false;
-            }
-        }
-        true
-    }
-
-    async fn get_pubkey(
-        context: &Arc<ClientContext>,
-        deploy_set: &Option<(&DeploySet, ContractImage)>,
-        signer: &Signer,
-    ) -> ClientResult<Option<String>> {
-        if let Some((deploy_set, image)) = deploy_set {
-            if deploy_set.initial_pubkey.is_some() {
-                return Ok(deploy_set.initial_pubkey.clone());
-            }
-
-            let pubkey = match image.get_public_key().map_err(|err| Error::invalid_tvc_image(err))? {
-                Some(pub_key) => {
-                    if is_empty_pubkey(&pub_key) {
-                        None
-                    } else {
-                        Some(pub_key)
-                    }
-                },
-                None => None,
-            };
-
-            if let Some(pubkey) = pubkey {
-                return Ok(Some(hex::encode(pubkey.as_ref())));
-            }
-        }
-
-        signer.resolve_public_key(Arc::clone(context)).await
-    }
-
     let abi = params.abi.json_string()?;
 
     let deploy_set = params.deploy_set.as_ref().map(
@@ -386,7 +348,7 @@ pub async fn encode_message(
             ).map(|image| (deploy_set, image))
     ).transpose()?;
 
-    let public = get_pubkey(&context, &deploy_set, &params.signer).await?;
+    let public = resolve_pubkey(&context, &deploy_set, &params.signer).await?;
 
     let (message, data_to_sign, address) = if let Some((deploy_set, mut image)) = deploy_set {
         let public = required_public_key(public)?;
