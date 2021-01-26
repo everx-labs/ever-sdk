@@ -11,38 +11,41 @@
 * limitations under the License.
 */
 
-use crate::client::ClientContext;
-use crate::error::ClientResult;
-
-pub(crate) mod aggregates;
-mod errors;
-mod gql;
-pub(crate) mod queries;
-mod server_info;
-mod server_link;
-pub(crate) mod subscriptions;
-mod types;
-mod websocket_link;
-
-pub use aggregates::{
-    aggregate_collection, ParamsOfAggregateCollection, ResultOfAggregateCollection,
-};
+pub use batch::{batch_query, ParamsOfBatchQuery, ResultOfBatchQuery};
 pub use errors::{Error, ErrorCode};
-pub use gql::{AggregationFn, FieldAggregation, OrderBy, SortDirection};
 pub use queries::{
-    query, query_collection, wait_for_collection, ParamsOfQuery, ParamsOfQueryCollection,
-    ParamsOfWaitForCollection, ResultOfQuery, ResultOfQueryCollection, ResultOfWaitForCollection,
+    aggregate_collection, query, query_collection, wait_for_collection, ParamsOfQuery,
+    ParamsOfWaitForCollection, ResultOfAggregateCollection, ResultOfQuery, ResultOfQueryCollection,
+    ResultOfWaitForCollection,
 };
+pub(crate) use server_link::{ServerLink, MAX_TIMEOUT};
 pub use subscriptions::{
     subscribe_collection, unsubscribe, ParamsOfSubscribeCollection, ResultOfSubscribeCollection,
     ResultOfSubscription, SubscriptionResponseType,
+};
+pub use ton_gql::{
+    AggregationFn, FieldAggregation, GraphQLOperationEvent, OrderBy,
+    ParamsOfAggregateCollection, ParamsOfQueryCollection, ParamsOfQueryOperation, PostRequest,
+    SortDirection,
 };
 pub use types::{
     NetworkConfig, BLOCKS_TABLE_NAME, CONTRACTS_TABLE_NAME, MESSAGES_TABLE_NAME,
     TRANSACTIONS_TABLE_NAME,
 };
 
-pub(crate) use server_link::{ServerLink, MAX_TIMEOUT};
+use crate::client::ClientContext;
+use crate::error::ClientResult;
+
+pub(crate) mod batch;
+mod errors;
+mod gql;
+pub(crate) mod queries;
+mod server_info;
+mod server_link;
+pub(crate) mod subscriptions;
+mod ton_gql;
+mod types;
+mod websocket_link;
 
 #[cfg(test)]
 mod tests;

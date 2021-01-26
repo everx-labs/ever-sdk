@@ -1,14 +1,57 @@
-use super::*;
+use tokio::sync::Mutex;
+
 use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer};
 use crate::error::ClientError;
 use crate::net::{
-    ParamsOfQueryCollection, ParamsOfSubscribeCollection, ParamsOfWaitForCollection,
-    ResultOfQueryCollection, ResultOfSubscribeCollection, ResultOfSubscription,
-    ResultOfWaitForCollection,
+    ParamsOfQueryCollection,
+    ParamsOfSubscribeCollection, ParamsOfWaitForCollection, ResultOfQueryCollection,
+    ResultOfSubscribeCollection, ResultOfSubscription, ResultOfWaitForCollection,
 };
 use crate::processing::ParamsOfProcessMessage;
 use crate::tests::{TestClient, HELLO};
-use tokio::sync::Mutex;
+
+use super::*;
+
+#[tokio::test(core_threads = 2)]
+async fn batch_query() {
+    let client = TestClient::new();
+
+    let batch: ResultOfBatchQuery = client
+        .request_async(
+            "net.batch_query",
+            ParamsOfBatchQuery {
+                operations: vec![
+                    ParamsOfQueryOperation::QueryCollection(ParamsOfQueryCollection {
+                        collection: "blocks_signatures".to_owned(),
+                        filter: None,
+                        result: "id".to_owned(),
+                        limit: Some(1),
+                        order: None,
+                    }),
+                    ParamsOfQueryOperation::AggregateCollection(ParamsOfAggregateCollection {
+                        collection: "accounts".to_owned(),
+                        filter: None,
+                        fields: Some(vec![FieldAggregation {
+                            field: "".into(),
+                            aggregation_fn: AggregationFn::COUNT,
+                        }]),
+                    }),
+                    ParamsOfQueryOperation::WaitForCollection(ParamsOfWaitForCollection {
+                        collection: "transactions".to_owned(),
+                        filter: Some(json!({
+                            "now": { "gt": 20 }
+                        })),
+                        result: "id now".to_owned(),
+                        timeout: None,
+                    }),
+                ],
+            },
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(batch.results.len(), 3);
+}
 
 #[tokio::test(core_threads = 2)]
 async fn query() {

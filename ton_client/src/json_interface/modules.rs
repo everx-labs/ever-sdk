@@ -326,12 +326,16 @@ fn register_net(handlers: &mut RuntimeHandlers) {
 
     module.register_async_fn(crate::net::query, crate::net::queries::query_api);
     module.register_async_fn(
+        crate::net::batch_query,
+        crate::net::batch::batch_query_api,
+    );
+    module.register_async_fn(
         crate::net::query_collection,
         crate::net::queries::query_collection_api,
     );
     module.register_async_fn(
         crate::net::aggregate_collection,
-        crate::net::aggregates::aggregate_collection_api,
+        crate::net::queries::aggregate_collection_api,
     );
     module.register_async_fn(
         crate::net::wait_for_collection,
