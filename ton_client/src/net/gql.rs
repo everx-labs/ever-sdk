@@ -39,6 +39,29 @@ pub struct OrderBy {
     pub direction: SortDirection,
 }
 
+#[derive(Serialize, Deserialize, ApiType, Clone)]
+pub enum AggregationFn {
+    /// Returns count of filtered record
+    COUNT,
+    /// Returns the minimal value for a field in filtered records
+    MIN,
+    /// Returns the maximal value for a field in filtered records
+    MAX,
+    /// Returns a sum of values for a field in filtered records
+    SUM,
+    /// Returns an average value for a field in filtered records
+    AVERAGE,
+}
+
+#[derive(Serialize, Deserialize, ApiType, Clone)]
+pub struct FieldAggregation {
+    /// Dot separated path to the field
+    pub field: String,
+    /// Aggregation function that must be applied to field values
+    #[serde(rename = "fn")]
+    pub aggregation_fn: AggregationFn,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct PostRequest {
     pub id: String,
@@ -155,6 +178,7 @@ pub(crate) struct GraphQLOperation {
     pub query: String,
     pub variables: Option<Value>,
     pub operation_name: Option<String>,
+    pub result_name: Option<String>,
 }
 
 impl GraphQLOperation {
@@ -167,15 +191,8 @@ impl GraphQLOperation {
         }
     }
 
-    pub fn query(
-        table: &str,
-        filter: &Value,
-        fields: &str,
-        order_by: Option<Vec<OrderBy>>,
-        limit: Option<u32>,
-        timeout: Option<u32>,
-    ) -> Self {
-        let mut scheme_type: Vec<String> = table
+    fn collection_doc_type(collection: &str) -> String {
+        let mut type_words: Vec<String> = collection
             .split_terminator("_")
             .map(|word| {
                 let mut word = word.to_owned();
@@ -183,18 +200,29 @@ impl GraphQLOperation {
                 word
             })
             .collect();
-        scheme_type[0] = scheme_type[0].trim_end_matches("s").to_owned();
-        let scheme_type: String = scheme_type.join("") + "Filter";
+        type_words[0] = type_words[0].trim_end_matches("s").to_owned();
+        type_words.join("")
+    }
+
+    pub fn query(
+        collection: &str,
+        filter: &Value,
+        fields: &str,
+        order_by: Option<Vec<OrderBy>>,
+        limit: Option<u32>,
+        timeout: Option<u32>,
+    ) -> Self {
+        let doc_type = Self::collection_doc_type(collection);
 
         let mut query = format!(
-            r#"query {table}
-            ($filter: {scheme_type}, $orderBy: [QueryOrderBy], $limit: Int, $timeout: Float)
+            r#"query {collection}
+            ($filter: {doc_type}Filter, $orderBy: [QueryOrderBy], $limit: Int, $timeout: Float)
             {{
-                {table}(filter: $filter, orderBy: $orderBy, limit: $limit, timeout: $timeout)
+                {collection}(filter: $filter, orderBy: $orderBy, limit: $limit, timeout: $timeout)
                 {{ {fields} }}
             }}"#,
-            table = table,
-            scheme_type = scheme_type,
+            collection = collection,
+            doc_type = doc_type,
             fields = fields
         );
         query = query.split_whitespace().collect::<Vec<&str>>().join(" ");
@@ -210,6 +238,37 @@ impl GraphQLOperation {
             query,
             variables: Some(variables),
             operation_name: None,
+            result_name: Some(collection.into()),
+        }
+    }
+
+    pub fn aggregate(collection: &str, filter: &Value, fields: &Vec<FieldAggregation>) -> Self {
+        let doc_type = Self::collection_doc_type(collection);
+        let query_name = format!(
+            "aggregate{}{}",
+            doc_type,
+            if doc_type.ends_with("s") { "" } else { "s" }
+        );
+        let mut query = format!(
+            r#"query {query_name}($filter: {doc_type}Filter, $fields: [FieldAggregation])
+            {{
+                {query_name}(filter: $filter, fields: $fields)
+            }}"#,
+            query_name = query_name,
+            doc_type = doc_type,
+        );
+        query = query.split_whitespace().collect::<Vec<&str>>().join(" ");
+
+        let variables = json!({
+            "filter" : filter,
+            "fields": fields,
+        });
+
+        Self {
+            query,
+            variables: Some(variables),
+            operation_name: None,
+            result_name: Some(query_name),
         }
     }
 
@@ -229,6 +288,7 @@ impl GraphQLOperation {
             query,
             variables,
             operation_name: None,
+            result_name: None,
         }
     }
 
@@ -240,6 +300,7 @@ impl GraphQLOperation {
             query,
             variables,
             operation_name: None,
+            result_name: None,
         }
     }
 }

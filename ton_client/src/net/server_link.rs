@@ -13,7 +13,7 @@
 
 use crate::client::{ClientEnv, FetchMethod};
 use crate::error::{AddNetworkUrl, ClientError, ClientResult};
-use crate::net::gql::{GraphQLOperation, GraphQLOperationEvent, OrderBy, PostRequest};
+use crate::net::gql::{GraphQLOperation, GraphQLOperationEvent, OrderBy, PostRequest, FieldAggregation};
 use crate::net::server_info::ServerInfo;
 use crate::net::websocket_link::WebsocketLink;
 use crate::net::{Error, NetworkConfig};
@@ -24,7 +24,7 @@ use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
 pub const MIN_RESUME_TIMEOUT: u32 = 500;
@@ -50,6 +50,7 @@ pub(crate) struct NetworkState {
     resume_timeout: AtomicU32,
     server_info: RwLock<Option<Arc<ServerInfo>>>,
     out_of_sync_threshold: u32,
+    time_checked: AtomicBool,
 }
 
 async fn query_by_url(client_env: &ClientEnv, address: &str, query: &str) -> ClientResult<Value> {
@@ -82,6 +83,7 @@ impl NetworkState {
             resume_timeout: AtomicU32::new(0),
             server_info: RwLock::new(None),
             out_of_sync_threshold,
+            time_checked: AtomicBool::new(false),
         }
     }
 
@@ -180,6 +182,22 @@ impl NetworkState {
         }
     }
 
+    async fn check_sync(&self) -> ClientResult<()> {
+        if self.time_checked.load(Ordering::Relaxed) {
+            return Ok(());
+        }
+
+        let info = self.get_info().await?;
+        if info.server_version.supports_time {
+            self.check_time_delta(&info.query_url, self.out_of_sync_threshold)
+                .await?;
+        }
+
+        self.time_checked.store(true, Ordering::Relaxed);
+
+        Ok(())
+    }
+
     async fn init(&self) -> ClientResult<ServerInfo> {
         let mut futures = vec![];
         for address in self.endpoints.read().await.iter() {
@@ -198,14 +216,7 @@ impl NetworkState {
                 break;
             }
         }
-        let server_info = server_info?;
-
-        if server_info.server_version.supports_time {
-            self.check_time_delta(&server_info.query_url, self.out_of_sync_threshold)
-                .await?;
-        }
-
-        Ok(server_info)
+        server_info
     }
 
     pub async fn get_info(&self) -> ClientResult<Arc<ServerInfo>> {
@@ -398,15 +409,16 @@ impl ServerLink {
         limit: Option<u32>,
         timeout: Option<u32>,
     ) -> ClientResult<Value> {
-        let query = GraphQLOperation::query(table, filter, fields, order_by, limit, timeout);
-
+        let op = GraphQLOperation::query(table, filter, fields, order_by, limit, timeout);
+        let result_name = op.result_name.clone().unwrap();
+        
         let result = self.fetch_operation(
-            query,
+            op,
             timeout.map(|value| value + FETCH_ADDITIONAL_TIMEOUT)
         ).await?;
 
         // try to extract the record value from the answer
-        let records_array = &result["data"][&table];
+        let records_array = &result["data"][result_name.as_str()];
         if records_array.is_null() {
             Err(Error::invalid_server_response(format!(
                 "Invalid query answer: {}",
@@ -414,6 +426,30 @@ impl ServerLink {
             )))
         } else {
             Ok(records_array.clone())
+        }
+    }
+
+    // Returns Stream with GraphQL aggregate answer
+    pub async fn aggregate_collection(
+        &self,
+        collection: &str,
+        filter: &Value,
+        fields: &Vec<FieldAggregation>,
+    ) -> ClientResult<Value> {
+        let op = GraphQLOperation::aggregate(collection, filter, fields);
+
+        let result_name = op.result_name.clone().unwrap();
+        let result = self.fetch_operation(op, None).await?;
+
+        // try to extract the record value from the answer
+        let values = &result["data"][result_name.as_str()];
+        if values.is_null() {
+            Err(Error::invalid_server_response(format!(
+                "Invalid query answer: {}",
+                result
+            )))
+        } else {
+            Ok(values.clone())
         }
     }
 
@@ -428,6 +464,7 @@ impl ServerLink {
             query: query.into(),
             variables,
             operation_name: None,
+            result_name: None,
         };
         Ok(self.fetch_operation(
             query,
@@ -462,11 +499,13 @@ impl ServerLink {
     }
 
     // Sends message to node
-    pub async fn send_message(&self, key: &[u8], value: &[u8]) -> ClientResult<()> {
+    pub async fn send_message(&self, key: &[u8], value: &[u8]) -> ClientResult<Option<ClientError>> {
         let request = PostRequest {
             id: base64::encode(key),
             body: base64::encode(value),
         };
+
+        self.state.check_sync().await?;
 
         let result = self
             .fetch_operation(GraphQLOperation::post_requests(&[request]), None)
@@ -474,11 +513,11 @@ impl ServerLink {
 
         // send message is always successful in order to process case when server received message
         // but client didn't receive response
-        if let Err(err) = result {
+        if let Err(err) = &result {
             log::warn!("Post message error: {}", err.message);
         }
 
-        Ok(())
+        Ok(result.err())
     }
 
     pub async fn suspend(&self) {

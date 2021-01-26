@@ -143,7 +143,7 @@ function run_tvm(
 <br>Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
 - `account`: _string_ – Updated account state BOC.
-<br>Encoded as `base64`.Attention! Only `account_state.storage.state.data` part of the boc is updated.
+<br>Encoded as `base64`. Attention! Only `account_state.storage.state.data` part of the boc is updated.
 
 
 ## run_get
@@ -264,7 +264,7 @@ Account state to run message
 - `boc`: _string_ – Account BOC.
 <br>Encoded as base64.
 - `unlimited_balance`?: _boolean_ – Flag for running account with the unlimited balance.
-<br>Can be used to calculatetransaction fees without balance check
+<br>Can be used to calculate transaction fees without balance check
 
 
 ## TransactionFees
@@ -353,7 +353,7 @@ type ResultOfRunTvm = {
 <br>Encoded as `base64`
 - `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
 - `account`: _string_ – Updated account state BOC.
-<br>Encoded as `base64`.Attention! Only `account_state.storage.state.data` part of the boc is updated.
+<br>Encoded as `base64`. Attention! Only `account_state.storage.state.data` part of the boc is updated.
 
 
 ## ParamsOfRunGet

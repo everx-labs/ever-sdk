@@ -75,6 +75,7 @@ pub struct NetworkConfig {
     pub server_address: Option<String>,
 
     /// List of DApp Server addresses. Any correct URL format can be specified, including IP addresses
+    /// This parameter is prevailing over `server_address`.
     pub endpoints: Option<Vec<String>>,
 
     /// Maximum time for sequential reconnections in ms. Default value is 120000 (2 min)
@@ -104,8 +105,8 @@ pub struct NetworkConfig {
     deserialize_with = "deserialize_wait_for_timeout")]
     pub wait_for_timeout: u32,
 
-    /// Maximum time difference between server and client. If client's device time is out of sink and difference is more than
-    /// the threshhold then error will occur. Also the error will occur if the specified threshhold is more than 
+    /// Maximum time difference between server and client. If client's device time is out of sync and difference is more than 
+    /// the threshold then error will occur. Also an error will occur if the specified threshold is more than 
     /// `message_processing_timeout/2`. 
     /// The default value is 15 sec.
     #[serde(default = "default_out_of_sync_threshold",

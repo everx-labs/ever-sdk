@@ -115,7 +115,7 @@ pub struct ParamsOfSigningBoxSign {
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 pub struct ResultOfSigningBoxSign {
-    /// Data signature. Encoded with `base64`.
+    /// Data signature. Encoded with `hex`.
     pub signature: String,
 }
 

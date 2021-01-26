@@ -6,6 +6,8 @@ null
 
 [query_collection](#query_collection) – Queries collection data
 
+[aggregate_collection](#aggregate_collection) – Aggregates collection data.
+
 [wait_for_collection](#wait_for_collection) – Returns an object that fulfills the conditions or waits for its appearance
 
 [unsubscribe](#unsubscribe) – Cancels a subscription
@@ -36,6 +38,10 @@ null
 [ParamsOfQueryCollection](#ParamsOfQueryCollection)
 
 [ResultOfQueryCollection](#ResultOfQueryCollection)
+
+[ParamsOfAggregateCollection](#ParamsOfAggregateCollection)
+
+[ResultOfAggregateCollection](#ResultOfAggregateCollection)
 
 [ParamsOfWaitForCollection](#ParamsOfWaitForCollection)
 
@@ -74,7 +80,7 @@ function query(
 ### Parameters
 - `query`: _string_ – GraphQL query text.
 - `variables`?: _any_ – Variables used in query.
-<br>Must be a map with named values thatcan be used in query.
+<br>Must be a map with named values that can be used in query.
 ### Result
 
 - `result`: _any_ – Result provided by DAppServer.
@@ -114,6 +120,38 @@ function query_collection(
 ### Result
 
 - `result`: _any[]_ – Objects that match the provided criteria
+
+
+## aggregate_collection
+
+Aggregates collection data.
+
+Aggregates values from the specified `fields` for records
+that satisfies the `filter` conditions,
+
+```ts
+type ParamsOfAggregateCollection = {
+    collection: string,
+    filter?: any,
+    fields?: FieldAggregation[]
+}
+
+type ResultOfAggregateCollection = {
+    values: any
+}
+
+function aggregate_collection(
+    params: ParamsOfAggregateCollection,
+): Promise<ResultOfAggregateCollection>;
+```
+### Parameters
+- `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
+- `filter`?: _any_ – Collection filter.
+- `fields`?: _FieldAggregation[]_ – Projection (result) string
+### Result
+
+- `values`: _any_ – Values for requested fields.
+<br>Returns an array of strings. Each string refers to the corresponding `fields` item.<br>Numeric values is returned as a decimal string representations.
 
 
 ## wait_for_collection
@@ -357,7 +395,7 @@ type ParamsOfQuery = {
 ```
 - `query`: _string_ – GraphQL query text.
 - `variables`?: _any_ – Variables used in query.
-<br>Must be a map with named values thatcan be used in query.
+<br>Must be a map with named values that can be used in query.
 
 
 ## ResultOfQuery
@@ -393,6 +431,29 @@ type ResultOfQueryCollection = {
 }
 ```
 - `result`: _any[]_ – Objects that match the provided criteria
+
+
+## ParamsOfAggregateCollection
+```ts
+type ParamsOfAggregateCollection = {
+    collection: string,
+    filter?: any,
+    fields?: FieldAggregation[]
+}
+```
+- `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
+- `filter`?: _any_ – Collection filter.
+- `fields`?: _FieldAggregation[]_ – Projection (result) string
+
+
+## ResultOfAggregateCollection
+```ts
+type ResultOfAggregateCollection = {
+    values: any
+}
+```
+- `values`: _any_ – Values for requested fields.
+<br>Returns an array of strings. Each string refers to the corresponding `fields` item.<br>Numeric values is returned as a decimal string representations.
 
 
 ## ParamsOfWaitForCollection

@@ -356,6 +356,7 @@ fn get_doc(element_summary: String, element_description: String) -> (String, Str
                 summary.push_str(&line[0..(dot_pos + 1)]);
                 summary_complete = true;
                 description.push_str(&line[(dot_pos + 1)..].trim_start());
+                description.push_str(" ");
             } else {
                 summary.push_str(line);
             }
