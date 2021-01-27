@@ -585,10 +585,10 @@ impl DEngine {
             },
         )
         .await;
-        let acc = account_request.map_err(|e| format!("failed to query debot account: {}", e))?;
+        let acc = account_request.map_err(|e| format!("failed to query account: {}", e))?;
         if acc.result.is_empty() {
             return Err(format!(
-                "Cannot find debot with this address {} in blockchain",
+                "Cannot find smart contract with this address {} in blockchain",
                 addr
             ));
         }
