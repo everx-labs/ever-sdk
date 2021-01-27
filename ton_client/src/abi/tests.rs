@@ -3,10 +3,19 @@ use crate::abi::encode_message::{
     CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfEncodeMessage, ResultOfAttachSignature,
     ResultOfEncodeMessage,
 };
+use crate::abi::internal::{is_empty_pubkey, resolve_pubkey, create_tvc_image};
 use crate::abi::{FunctionHeader, ParamsOfDecodeMessageBody, Signer};
 use crate::crypto::KeyPair;
-use crate::tests::{TestClient, EVENTS};
+use crate::error::ClientError;
+use crate::tests::{TestClient, EVENTS, HELLO};
 use crate::utils::conversion::abi_uint;
+
+use std::io::Cursor;
+
+use ton_block::{Message, Deserializable, Serializable};
+use ton_sdk::ContractImage;
+use ton_types::Result;
+
 use super::*;
 
 #[test]
@@ -50,9 +59,8 @@ fn encode_v2() {
         abi: abi.clone(),
         address: None,
         deploy_set: Some(DeploySet {
-            workchain_id: None,
             tvc: events_tvc.clone(),
-            initial_data: None,
+            ..Default::default()
         }),
         call_set: Some(CallSet {
             function_name: "constructor".into(),
@@ -342,4 +350,184 @@ fn decode_v2() {
         header: None,
     };
     assert_eq!(expected, decode_events("te6ccgEBAQEAVQAApeACvg5/pmQpY4m61HmJ0ne+zjHJu3MNG8rJxUDLbHKBu/AAAAAAAAAMKr6z6rxK3xYJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA"));
+}
+
+#[test]
+fn test_is_empty_pubkey() -> Result<()> {
+    let pubkey = ed25519_dalek::PublicKey::from_bytes(&[0; 32])?;
+
+    assert!(is_empty_pubkey(&pubkey));
+
+    let pubkey = ed25519_dalek::PublicKey::from_bytes(&[1; 32])?;
+    assert!(!is_empty_pubkey(&pubkey));
+
+    let mut array = [0; 32];
+    array[0] = 1;
+    let pubkey = ed25519_dalek::PublicKey::from_bytes(&array)?;
+    assert!(!is_empty_pubkey(&pubkey));
+
+    Ok(())
+}
+
+#[test]
+fn test_resolve_pubkey() -> Result<()> {
+    let tvc = base64::encode(include_bytes!("../tests/contracts/abi_v2/Hello.tvc"));
+    let mut deploy_set = DeploySet {
+        tvc: tvc.clone(),
+        ..Default::default()
+    };
+    let mut image = create_tvc_image("", None, &tvc)?;
+    assert!(resolve_pubkey(&deploy_set, &image, &None )?.is_none());
+
+    let external_pub_key = Some("1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF".to_owned());
+    let resolved = resolve_pubkey(&deploy_set, &image, &external_pub_key)?;
+    assert_eq!(resolved, external_pub_key);
+
+    let resolved = resolve_pubkey(&deploy_set, &image, &external_pub_key)?;
+
+    assert_eq!(resolved, external_pub_key);
+
+    let tvc_pubkey_empty = ed25519_dalek::PublicKey::from_bytes(&[0; 32])?;
+    image.set_public_key(&tvc_pubkey_empty)?;
+
+    let resolved = resolve_pubkey(&deploy_set, &image, &external_pub_key)?;
+
+    assert_eq!(resolved, external_pub_key);
+
+    let tvc_pubkey_1 = ed25519_dalek::PublicKey::from_bytes(&[1; 32])?;
+    image.set_public_key(&tvc_pubkey_1)?;
+
+    let resolved = resolve_pubkey(&deploy_set, &image, &external_pub_key)?;
+
+    assert_eq!(resolved, Some(hex::encode(tvc_pubkey_1.as_bytes())));
+
+    let initial_pub_key = Some("1234567890123456789012345678901234567890123456789012345678901234".to_owned());
+    deploy_set.initial_pubkey = initial_pub_key.clone();
+
+    let resolved = resolve_pubkey(&deploy_set, &image, &external_pub_key)?;
+
+    assert_eq!(resolved, initial_pub_key);
+
+    Ok(())
+}
+
+#[test]
+fn test_encode_message_pubkey() -> Result<()> {
+    let client = TestClient::new();
+    let (abi, tvc) = TestClient::package(HELLO, None);
+
+    let initial_pubkey = Some(gen_pubkey());
+    let tvc_pubkey = Some(gen_pubkey());
+    let signer_pubkey = Some(gen_pubkey());
+
+    test_encode_message_pubkey_internal(
+        &client,
+        &abi,
+        &tvc,
+        &None,
+        &None,
+        &signer_pubkey,
+        &signer_pubkey,
+    )?;
+
+    test_encode_message_pubkey_internal(
+        &client,
+        &abi,
+        &tvc,
+        &None,
+        &tvc_pubkey,
+        &signer_pubkey,
+        &tvc_pubkey,
+    )?;
+
+    test_encode_message_pubkey_internal(
+        &client,
+        &abi,
+        &tvc,
+        &initial_pubkey,
+        &None,
+        &signer_pubkey,
+        &initial_pubkey,
+    )?;
+
+    test_encode_message_pubkey_internal(
+        &client,
+        &abi,
+        &tvc,
+        &initial_pubkey,
+        &tvc_pubkey,
+        &signer_pubkey,
+        &initial_pubkey,
+    )?;
+
+    // Expected error, if signer's public key is not provided:
+    let error = test_encode_message_pubkey_internal(
+        &client,
+        &abi,
+        &tvc,
+        &initial_pubkey,
+        &tvc_pubkey,
+        &None,
+        &None,
+    )
+        .unwrap_err()
+        .downcast::<ClientError>()?;
+
+    assert_eq!(error.code, 305);
+
+    Ok(())
+}
+
+fn test_encode_message_pubkey_internal(
+    client: &TestClient,
+    abi: &Abi,
+    tvc: &String,
+    initial_pubkey: &Option<ed25519_dalek::PublicKey>,
+    tvc_pubkey: &Option<ed25519_dalek::PublicKey>,
+    signer_pubkey: &Option<ed25519_dalek::PublicKey>,
+    expected_pubkey: &Option<ed25519_dalek::PublicKey>,
+) -> Result<()> {
+    let mut image = create_tvc_image(&abi.json_string()?, None, &tvc)?;
+    if let Some(tvc_pubkey) = tvc_pubkey {
+        image.set_public_key(tvc_pubkey)?;
+    }
+
+    let tvc = base64::encode(&image.serialize()?);
+
+    let deploy_params = ParamsOfEncodeMessage {
+        abi: abi.clone(),
+        deploy_set: Some(DeploySet {
+            tvc,
+            workchain_id: None,
+            initial_data: None,
+            initial_pubkey: initial_pubkey.map(|key| hex::encode(key.as_bytes())),
+        }),
+        signer: if let Some(key) = signer_pubkey {
+            Signer::External {
+                public_key: hex::encode(key.as_bytes())
+            }
+        } else {
+            Signer::None
+        },
+        processing_try_index: None,
+        address: None,
+        call_set: CallSet::some_with_function("constructor"),
+    };
+
+    let result: ResultOfEncodeMessage = client.request("abi.encode_message", deploy_params)?;
+
+    let message = Message::construct_from_base64(&result.message)?;
+    let state_init = message.state_init()
+        .expect("Expected State Init")
+        .write_to_bytes()?;
+    let image = ContractImage::from_state_init(&mut Cursor::new(state_init))?;
+    let public_key = image.get_public_key()?;
+
+    assert_eq!(&public_key, expected_pubkey);
+
+    Ok(())
+}
+
+fn gen_pubkey() -> ed25519_dalek::PublicKey {
+    ed25519_dalek::Keypair::generate(&mut rand::thread_rng()).public
 }
