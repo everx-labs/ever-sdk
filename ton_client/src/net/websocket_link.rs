@@ -14,12 +14,11 @@
 
 use crate::client::{ClientEnv, WebSocket};
 use crate::error::{ClientError, ClientResult};
-use crate::net::gql::{
-    GraphQLMessageFromClient, GraphQLMessageFromServer, GraphQLOperation, GraphQLOperationEvent,
-};
+use crate::net::gql::{GraphQLMessageFromClient, GraphQLMessageFromServer};
 use crate::net::server_info::ServerInfo;
-use crate::net::{Error, NetworkConfig};
 use crate::net::server_link::NetworkState;
+use crate::net::ton_gql::{GraphQLOperation, GraphQLOperationEvent};
+use crate::net::{Error, NetworkConfig};
 use futures::stream::{Fuse, FusedStream};
 use futures::Sink;
 use futures::{SinkExt, StreamExt};

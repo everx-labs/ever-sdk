@@ -13,18 +13,21 @@
 
 use crate::client::{ClientEnv, FetchMethod};
 use crate::error::{AddNetworkUrl, ClientError, ClientResult};
-use crate::net::gql::{GraphQLOperation, GraphQLOperationEvent, OrderBy, PostRequest, FieldAggregation};
 use crate::net::server_info::ServerInfo;
+use crate::net::ton_gql::GraphQLOperation;
 use crate::net::websocket_link::WebsocketLink;
-use crate::net::{Error, NetworkConfig};
+use crate::net::{
+    Error, GraphQLOperationEvent, NetworkConfig, ParamsOfAggregateCollection,
+    ParamsOfQueryCollection, ParamsOfQueryOperation, ParamsOfWaitForCollection, PostRequest,
+};
 use futures::{Future, Stream, StreamExt};
 use serde_json::Value;
-use tokio::sync::{Mutex, RwLock, watch};
 use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use tokio::sync::{Mutex, RwLock, watch};
 
 pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
 pub const MIN_RESUME_TIMEOUT: u32 = 500;
@@ -189,8 +192,7 @@ impl NetworkState {
 
         let info = self.get_info().await?;
         if info.server_version.supports_time {
-            self.check_time_delta(&info.query_url, self.out_of_sync_threshold)
-                .await?;
+            self.check_time_delta(&info.query_url, self.out_of_sync_threshold).await?;
         }
 
         self.time_checked.store(true, Ordering::Relaxed);
@@ -294,7 +296,7 @@ impl ServerLink {
     ) -> ClientResult<Subscription> {
         let event_receiver = self
             .websocket_link
-            .start_operation(GraphQLOperation::subscription(table, filter, fields))
+            .start_operation(GraphQLOperation::with_subscription(table, filter, fields))
             .await?;
 
         let operation_id = Arc::new(Mutex::new(0u32));
@@ -399,58 +401,60 @@ impl ServerLink {
         }
     }
 
-    // Returns Stream with GraphQL query answer
-    pub async fn query_collection(
-        &self,
-        table: &str,
-        filter: &Value,
-        fields: &str,
-        order_by: Option<Vec<OrderBy>>,
-        limit: Option<u32>,
-        timeout: Option<u32>,
-    ) -> ClientResult<Value> {
-        let op = GraphQLOperation::query(table, filter, fields, order_by, limit, timeout);
-        let result_name = op.result_name.clone().unwrap();
-        
-        let result = self.fetch_operation(
-            op,
-            timeout.map(|value| value + FETCH_ADDITIONAL_TIMEOUT)
-        ).await?;
-
-        // try to extract the record value from the answer
-        let records_array = &result["data"][result_name.as_str()];
-        if records_array.is_null() {
-            Err(Error::invalid_server_response(format!(
-                "Invalid query answer: {}",
-                result
-            )))
-        } else {
-            Ok(records_array.clone())
+    pub async fn batch_query(&self, params: &[ParamsOfQueryOperation]) -> ClientResult<Vec<Value>> {
+        let op = GraphQLOperation::build(params, self.config.wait_for_timeout);
+        let result = self.fetch_operation(op, None).await?;
+        let data = &result["data"];
+        let mut results = Vec::new();
+        for i in 0..params.len() {
+            let result_name = if params.len() > 1 {
+                format!("q{}", i + 1)
+            } else {
+                params[0].query_name()
+            };
+            let mut result_data = &data[result_name.as_str()];
+            if result_data.is_null() {
+                return Err(Error::invalid_server_response(format!(
+                    "Invalid query answer: {}",
+                    result
+                )));
+            }
+            if let ParamsOfQueryOperation::WaitForCollection(_) = params[i] {
+                result_data = &result_data[0];
+                if result_data.is_null() {
+                    return Err(Error::wait_for_timeout());
+                }
+            }
+            results.push(result_data.clone());
         }
+        Ok(results)
     }
 
-    // Returns Stream with GraphQL aggregate answer
+    pub async fn query_collection(&self, params: ParamsOfQueryCollection) -> ClientResult<Value> {
+        Ok(self
+            .batch_query(&[ParamsOfQueryOperation::QueryCollection(params)])
+            .await?
+            .remove(0))
+    }
+
+    pub async fn wait_for_collection(
+        &self,
+        params: ParamsOfWaitForCollection,
+    ) -> ClientResult<Value> {
+        Ok(self
+            .batch_query(&[ParamsOfQueryOperation::WaitForCollection(params)])
+            .await?
+            .remove(0))
+    }
+
     pub async fn aggregate_collection(
         &self,
-        collection: &str,
-        filter: &Value,
-        fields: &Vec<FieldAggregation>,
+        params: ParamsOfAggregateCollection,
     ) -> ClientResult<Value> {
-        let op = GraphQLOperation::aggregate(collection, filter, fields);
-
-        let result_name = op.result_name.clone().unwrap();
-        let result = self.fetch_operation(op, None).await?;
-
-        // try to extract the record value from the answer
-        let values = &result["data"][result_name.as_str()];
-        if values.is_null() {
-            Err(Error::invalid_server_response(format!(
-                "Invalid query answer: {}",
-                result
-            )))
-        } else {
-            Ok(values.clone())
-        }
+        Ok(self
+            .batch_query(&[ParamsOfQueryOperation::AggregateCollection(params)])
+            .await?
+            .remove(0))
     }
 
     // Returns GraphQL query answer
@@ -463,8 +467,6 @@ impl ServerLink {
         let query = GraphQLOperation {
             query: query.into(),
             variables,
-            operation_name: None,
-            result_name: None,
         };
         Ok(self.fetch_operation(
             query,
@@ -472,34 +474,12 @@ impl ServerLink {
         ).await?)
     }
 
-    // Executes GraphQL query, waits for result and returns recieved value
-    pub async fn wait_for(
-        &self,
-        table: &str,
-        filter: &Value,
-        fields: &str,
-        timeout: Option<u32>,
-    ) -> ClientResult<Value> {
-        let value = self
-            .query_collection(
-                table,
-                filter,
-                fields,
-                None,
-                None,
-                timeout.or(Some(self.config.wait_for_timeout)),
-            )
-            .await?;
-
-        if !value[0].is_null() {
-            Ok(value[0].clone())
-        } else {
-            Err(Error::wait_for_timeout())
-        }
-    }
-
     // Sends message to node
-    pub async fn send_message(&self, key: &[u8], value: &[u8]) -> ClientResult<Option<ClientError>> {
+    pub async fn send_message(
+        &self,
+        key: &[u8],
+        value: &[u8],
+    ) -> ClientResult<Option<ClientError>> {
         let request = PostRequest {
             id: base64::encode(key),
             body: base64::encode(value),
@@ -508,7 +488,10 @@ impl ServerLink {
         self.state.check_sync().await?;
 
         let result = self
-            .fetch_operation(GraphQLOperation::post_requests(&[request]), None)
+            .fetch_operation(
+                GraphQLOperation::with_post_requests(&[request]),
+                None,
+            )
             .await;
 
         // send message is always successful in order to process case when server received message

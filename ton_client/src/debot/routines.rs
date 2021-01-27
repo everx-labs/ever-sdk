@@ -1,4 +1,5 @@
-use super::dengine::TonClient;
+use chrono::{Local, TimeZone};
+
 use crate::boc::{parse_account, ParamsOfParse};
 use crate::crypto::{
     generate_random_bytes, nacl_box_keypair_from_secret_key, signing_box_sign, KeyPair,
@@ -7,7 +8,8 @@ use crate::crypto::{
 };
 use crate::encoding::{decode_abi_bigint, decode_abi_number};
 use crate::net::{query_collection, ParamsOfQueryCollection};
-use chrono::{Local, TimeZone};
+
+use super::dengine::TonClient;
 
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub(super) struct ResultOfGetAccountState {
@@ -39,12 +41,20 @@ pub async fn call_routine(
         }
         "getBalance" => {
             debug!("getBalance({})", arg);
-            let args = if arg_json.is_err() { json!({ "addr": arg }) } else { arg_json? };
+            let args = if arg_json.is_err() {
+                json!({ "addr": arg })
+            } else {
+                arg_json?
+            };
             let balance = get_balance(ton, args).await?;
             Ok(json!({ "arg1": balance }))
         }
         "getAccountState" => {
-            let args = if arg_json.is_err() { json!({ "addr": arg }) } else { arg_json? };
+            let args = if arg_json.is_err() {
+                json!({ "addr": arg })
+            } else {
+                arg_json?
+            };
             debug!("getAccountState({})", args);
             let res = get_account_state(ton, args).await?;
             serde_json::to_value(res)
