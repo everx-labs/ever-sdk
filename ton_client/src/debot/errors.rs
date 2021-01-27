@@ -20,6 +20,9 @@ pub enum ErrorCode {
     DebotFetchFailed = 802,
     DebotExecutionFailed = 803,
     DebotInvalidHandle = 804,
+    DebotInvalidJsonParams = 805,
+    DebotInvalidFunctionId = 806,
+    DebotInvalidAbi = 807,
 }
 pub struct Error;
 
@@ -53,6 +56,27 @@ impl Error {
         error(
             ErrorCode::DebotInvalidHandle,
             format!("Invalid debot handle: {}", handle),
+        )
+    }
+
+    pub fn invalid_json_params(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::DebotInvalidJsonParams,
+            format!("Invalid json parameters: {}", err),
+        )
+    }
+
+    pub fn invalid_function_id(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::DebotInvalidFunctionId,
+            format!("Invalid function id: {}", err),
+        )
+    }
+
+    pub fn invalid_debot_abi(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::DebotInvalidAbi,
+            format!("Invalid debot ABI: {}", err),
         )
     }
 }
