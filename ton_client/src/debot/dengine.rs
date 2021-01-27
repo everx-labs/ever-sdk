@@ -187,7 +187,8 @@ impl DEngine {
         debug!("send from {} id = {} params = {}", source, func_id, params);
         let params = serde_json::from_str(&params)
             .map_err(|e| Error::invalid_json_params(e) )?;
-        let abi = Contract::load(self.raw_abi.as_bytes()).unwrap();
+        let abi = Contract::load(self.raw_abi.as_bytes())
+            .map_err(|e| Error::invalid_debot_abi(e.to_string()))?;
         let func_name = &abi.function_by_id(func_id, true)
             .map_err(|e| Error::invalid_function_id(e) )?
             .name;
@@ -221,7 +222,7 @@ impl DEngine {
         ).await?;
         let mut run_output = RunOutput::new(
             run_result.account,
-            run_result.decoded.unwrap().output,
+            run_result.decoded.and_then(|x| x.output),
             run_result.out_messages,
         )?;
         self.state = std::mem::take(&mut run_output.account);
@@ -772,8 +773,8 @@ impl DEngine {
         routines::call_routine(self.ton.clone(), name, args, signer).await
     }
 
-    async fn handle_output(&mut self, mut output: RunOutput) -> ClientResult<()> {
-        for msg in std::mem::take(&mut output.interface_calls) {
+    async fn handle_output(&mut self, output: RunOutput) -> ClientResult<()> {
+        for msg in output.interface_calls {
             // TODO: check if there are builtin interfaces
             // BuiltinInterfaces::try_execute(&msg)
             self.browser.send(msg.0).await;
@@ -782,7 +783,7 @@ impl DEngine {
         // TODO: 
         // result.send_msgs();
 
-        for _msg in std::mem::take(&mut output.get_method_calls) {
+        for _msg in output.get_method_calls {
             // TODO: call run_tvm
         }
         Ok(())

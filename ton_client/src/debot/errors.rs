@@ -22,6 +22,7 @@ pub enum ErrorCode {
     DebotInvalidHandle = 804,
     DebotInvalidJsonParams = 805,
     DebotInvalidFunctionId = 806,
+    DebotInvalidAbi = 807,
 }
 pub struct Error;
 
@@ -69,6 +70,13 @@ impl Error {
         error(
             ErrorCode::DebotInvalidFunctionId,
             format!("Invalid function id: {}", err),
+        )
+    }
+
+    pub fn invalid_debot_abi(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::DebotInvalidAbi,
+            format!("Invalid debot ABI: {}", err),
         )
     }
 }
