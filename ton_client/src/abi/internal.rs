@@ -44,13 +44,13 @@ pub(crate) fn add_sign_to_message_body(
     .map_err(|err| Error::attach_signature_failed(err))?)
 }
 
-pub(crate) async fn result_of_encode_message(
+pub(crate) async fn try_to_sign_message(
     context: Arc<ClientContext>,
     abi: &str,
     message: Vec<u8>,
     data_to_sign: Option<Vec<u8>>,
     signer: &Signer,
-) -> ClientResult<(Vec<u8>, Option<String>)> {
+) -> ClientResult<(Vec<u8>, Option<Vec<u8>>)> {
     if let Some(unsigned) = &data_to_sign {
         if let Some(signature) = signer.sign(context.clone(), unsigned).await? {
             let pubkey = signer.resolve_public_key(context)
@@ -63,7 +63,7 @@ pub(crate) async fn result_of_encode_message(
             return Ok((message, None));
         }
     }
-    Ok((message, data_to_sign.map(|x| base64::encode(&x))))
+    Ok((message, data_to_sign))
 }
 
 pub(crate) fn create_tvc_image(
@@ -86,12 +86,7 @@ pub(crate) fn create_tvc_image(
 
 /// Determines, if public key consists only zeroes, i.e. is empty.
 pub(crate) fn is_empty_pubkey(pubkey: &ed25519_dalek::PublicKey) -> bool {
-    for b in pubkey.as_bytes() {
-        if *b != 0 {
-            return false;
-        }
-    }
-    true
+    pubkey.as_bytes() == &[0; ed25519_dalek::PUBLIC_KEY_LENGTH]
 }
 
 /// Resolves public key from deploy set, tvc or signer, using this priority:
@@ -99,35 +94,22 @@ pub(crate) fn is_empty_pubkey(pubkey: &ed25519_dalek::PublicKey) -> bool {
 /// 2. Public key from TVC image
 /// 3. Signer
 /// Returns None, if no public key was resolved.
-pub(crate) async fn resolve_pubkey(
-    context: &Arc<ClientContext>,
-    deploy_set: &Option<(&DeploySet, ContractImage)>,
-    signer: &Signer,
+pub(crate) fn resolve_pubkey(
+    deploy_set: &DeploySet,
+    image: &ContractImage,
+    signer_pubkey: &Option<String>,
 ) -> ClientResult<Option<String>> {
-    if let Some((deploy_set, image)) = deploy_set {
-        if deploy_set.initial_pubkey.is_some() {
-            return Ok(deploy_set.initial_pubkey.clone());
-        }
-
-        let pubkey = match image.get_public_key().map_err(|err| Error::invalid_tvc_image(err))? {
-            Some(pub_key) => {
-                if is_empty_pubkey(&pub_key) {
-                    None
-                } else {
-                    Some(pub_key)
-                }
-            },
-            None => None,
-        };
-
-        if let Some(pubkey) = pubkey {
-            return Ok(Some(hex::encode(pubkey.as_ref())));
-        }
+    if deploy_set.initial_pubkey.is_some() {
+        return Ok(deploy_set.initial_pubkey.clone());
     }
 
-    signer.resolve_public_key(Arc::clone(context)).await
-}
+    if let Some(pubkey) = image.get_public_key()
+        .map_err(|err| Error::invalid_tvc_image(err))?
+    {
+        if !is_empty_pubkey(&pubkey) {
+            return Ok(Some(hex::encode(pubkey.as_ref())))
+        }
+    };
 
-#[cfg(test)]
-#[path = "tests/internal.rs"]
-mod tests_internal;
+    Ok(signer_pubkey.clone())
+}
