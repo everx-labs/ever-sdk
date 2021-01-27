@@ -5,14 +5,12 @@ use crate::abi::encode_message::{
 };
 use crate::abi::internal::{is_empty_pubkey, resolve_pubkey, create_tvc_image};
 use crate::abi::{FunctionHeader, ParamsOfDecodeMessageBody, Signer};
-use crate::ClientContext;
 use crate::crypto::KeyPair;
 use crate::error::ClientError;
 use crate::tests::{TestClient, EVENTS, HELLO};
 use crate::utils::conversion::abi_uint;
 
 use std::io::Cursor;
-use std::sync::Arc;
 
 use ton_block::{Message, Deserializable, Serializable};
 use ton_sdk::ContractImage;
@@ -413,66 +411,65 @@ fn test_resolve_pubkey() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
-async fn test_encode_message_pubkey() -> Result<()> {
-    let context = Arc::new(ClientContext::new(Default::default())?);
-    let abi = TestClient::abi(HELLO, None);
-    let tvc = TestClient::tvc(HELLO, None);
+#[test]
+fn test_encode_message_pubkey() -> Result<()> {
+    let client = TestClient::new();
+    let (abi, tvc) = TestClient::package(HELLO, None);
 
     let initial_pubkey = Some(gen_pubkey());
     let tvc_pubkey = Some(gen_pubkey());
     let signer_pubkey = Some(gen_pubkey());
 
     test_encode_message_pubkey_internal(
-        &context,
+        &client,
         &abi,
         &tvc,
         &None,
         &None,
         &signer_pubkey,
         &signer_pubkey,
-    ).await?;
+    )?;
 
     test_encode_message_pubkey_internal(
-        &context,
+        &client,
         &abi,
         &tvc,
         &None,
         &tvc_pubkey,
         &signer_pubkey,
         &tvc_pubkey,
-    ).await?;
+    )?;
 
     test_encode_message_pubkey_internal(
-        &context,
+        &client,
         &abi,
         &tvc,
         &initial_pubkey,
         &None,
         &signer_pubkey,
         &initial_pubkey,
-    ).await?;
+    )?;
 
     test_encode_message_pubkey_internal(
-        &context,
+        &client,
         &abi,
         &tvc,
         &initial_pubkey,
         &tvc_pubkey,
         &signer_pubkey,
         &initial_pubkey,
-    ).await?;
+    )?;
 
     // Expected error, if signer's public key is not provided:
     let error = test_encode_message_pubkey_internal(
-        &context,
+        &client,
         &abi,
         &tvc,
         &initial_pubkey,
         &tvc_pubkey,
         &None,
         &None,
-    ).await
+    )
         .unwrap_err()
         .downcast::<ClientError>()?;
 
@@ -481,8 +478,8 @@ async fn test_encode_message_pubkey() -> Result<()> {
     Ok(())
 }
 
-async fn test_encode_message_pubkey_internal(
-    context: &Arc<ClientContext>,
+fn test_encode_message_pubkey_internal(
+    client: &TestClient,
     abi: &Abi,
     tvc: &String,
     initial_pubkey: &Option<ed25519_dalek::PublicKey>,
@@ -517,7 +514,7 @@ async fn test_encode_message_pubkey_internal(
         call_set: CallSet::some_with_function("constructor"),
     };
 
-    let result = encode_message(Arc::clone(context), deploy_params).await?;
+    let result: ResultOfEncodeMessage = client.request("abi.encode_message", deploy_params)?;
 
     let message = Message::construct_from_base64(&result.message)?;
     let state_init = message.state_init()
