@@ -12,9 +12,10 @@
  *
  */
 
-use crate::error::{ClientError, ClientResult};
-use crate::net::Error;
 use serde_json::Value;
+
+use crate::error::{ClientResult};
+use crate::net::Error;
 
 const GQL_CONNECTION_INIT: &str = "connection_init";
 const GQL_CONNECTION_ACK: &str = "connection_ack";
@@ -26,47 +27,6 @@ const GQL_DATA: &str = "data";
 const GQL_ERROR: &str = "error";
 const GQL_COMPLETE: &str = "complete";
 const GQL_STOP: &str = "stop";
-
-#[derive(Serialize, Deserialize, Clone, ApiType)]
-pub enum SortDirection {
-    ASC,
-    DESC,
-}
-
-#[derive(Serialize, Deserialize, Clone, ApiType)]
-pub struct OrderBy {
-    pub path: String,
-    pub direction: SortDirection,
-}
-
-#[derive(Serialize, Deserialize, ApiType, Clone)]
-pub enum AggregationFn {
-    /// Returns count of filtered record
-    COUNT,
-    /// Returns the minimal value for a field in filtered records
-    MIN,
-    /// Returns the maximal value for a field in filtered records
-    MAX,
-    /// Returns a sum of values for a field in filtered records
-    SUM,
-    /// Returns an average value for a field in filtered records
-    AVERAGE,
-}
-
-#[derive(Serialize, Deserialize, ApiType, Clone)]
-pub struct FieldAggregation {
-    /// Dot separated path to the field
-    pub field: String,
-    /// Aggregation function that must be applied to field values
-    #[serde(rename = "fn")]
-    pub aggregation_fn: AggregationFn,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct PostRequest {
-    pub id: String,
-    pub body: String,
-}
 
 #[derive(Debug)]
 pub(crate) enum GraphQLMessageFromClient {
@@ -173,142 +133,3 @@ impl GraphQLMessageFromServer {
     }
 }
 
-#[derive(Debug, Clone)]
-pub(crate) struct GraphQLOperation {
-    pub query: String,
-    pub variables: Option<Value>,
-    pub operation_name: Option<String>,
-    pub result_name: Option<String>,
-}
-
-impl GraphQLOperation {
-    pub fn get_start_message(&self, id: String) -> GraphQLMessageFromClient {
-        GraphQLMessageFromClient::Start {
-            id,
-            query: self.query.clone(),
-            variables: self.variables.clone(),
-            operation_name: self.operation_name.clone(),
-        }
-    }
-
-    fn collection_doc_type(collection: &str) -> String {
-        let mut type_words: Vec<String> = collection
-            .split_terminator("_")
-            .map(|word| {
-                let mut word = word.to_owned();
-                word[..1].make_ascii_uppercase();
-                word
-            })
-            .collect();
-        type_words[0] = type_words[0].trim_end_matches("s").to_owned();
-        type_words.join("")
-    }
-
-    pub fn query(
-        collection: &str,
-        filter: &Value,
-        fields: &str,
-        order_by: Option<Vec<OrderBy>>,
-        limit: Option<u32>,
-        timeout: Option<u32>,
-    ) -> Self {
-        let doc_type = Self::collection_doc_type(collection);
-
-        let mut query = format!(
-            r#"query {collection}
-            ($filter: {doc_type}Filter, $orderBy: [QueryOrderBy], $limit: Int, $timeout: Float)
-            {{
-                {collection}(filter: $filter, orderBy: $orderBy, limit: $limit, timeout: $timeout)
-                {{ {fields} }}
-            }}"#,
-            collection = collection,
-            doc_type = doc_type,
-            fields = fields
-        );
-        query = query.split_whitespace().collect::<Vec<&str>>().join(" ");
-
-        let variables = json!({
-            "filter" : filter,
-            "orderBy": order_by,
-            "limit": limit,
-            "timeout": timeout
-        });
-
-        Self {
-            query,
-            variables: Some(variables),
-            operation_name: None,
-            result_name: Some(collection.into()),
-        }
-    }
-
-    pub fn aggregate(collection: &str, filter: &Value, fields: &Vec<FieldAggregation>) -> Self {
-        let doc_type = Self::collection_doc_type(collection);
-        let query_name = format!(
-            "aggregate{}{}",
-            doc_type,
-            if doc_type.ends_with("s") { "" } else { "s" }
-        );
-        let mut query = format!(
-            r#"query {query_name}($filter: {doc_type}Filter, $fields: [FieldAggregation])
-            {{
-                {query_name}(filter: $filter, fields: $fields)
-            }}"#,
-            query_name = query_name,
-            doc_type = doc_type,
-        );
-        query = query.split_whitespace().collect::<Vec<&str>>().join(" ");
-
-        let variables = json!({
-            "filter" : filter,
-            "fields": fields,
-        });
-
-        Self {
-            query,
-            variables: Some(variables),
-            operation_name: None,
-            result_name: Some(query_name),
-        }
-    }
-
-    pub fn subscription(table: &str, filter: &Value, fields: &str) -> Self {
-        let mut scheme_type = (&table[0..table.len() - 1]).to_owned() + "Filter";
-        scheme_type[..1].make_ascii_uppercase();
-
-        let query = format!("subscription {table}($filter: {type}) {{ {table}(filter: $filter) {{ {fields} }} }}",
-            type=scheme_type,
-            table=table,
-            fields=fields);
-        let query = query.split_whitespace().collect::<Vec<&str>>().join(" ");
-        let variables = Some(json!({
-            "filter" : filter,
-        }));
-        Self {
-            query,
-            variables,
-            operation_name: None,
-            result_name: None,
-        }
-    }
-
-    pub fn post_requests(requests: &[PostRequest]) -> Self {
-        let query = "mutation postRequests($requests:[Request]){postRequests(requests:$requests)}"
-            .to_owned();
-        let variables = Some(json!({ "requests": serde_json::json!(requests) }));
-        Self {
-            query,
-            variables,
-            operation_name: None,
-            result_name: None,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum GraphQLOperationEvent {
-    Id(u32),
-    Data(Value),
-    Error(ClientError),
-    Complete,
-}

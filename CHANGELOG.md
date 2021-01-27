@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ### New
 - `nacl_sign_detached_verify` function to verify detached signature.
 - `aggregate_collection` function as a wrapper for GraphQL aggregation queries.
+- `batch_query` function performs multiple queries per single fetch.
 
 ### Fixed
 - device time synchronization is checked only in `send_message`. Data quering does not require proper time

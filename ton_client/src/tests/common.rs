@@ -1,5 +1,10 @@
+use crate::{
+    abi::ParamsOfEncodeMessage,
+    net::{ParamsOfQueryCollection, ResultOfQueryCollection},
+    processing::{ParamsOfSendMessage, ResultOfSendMessage},
+};
+
 use super::*;
-use crate::{abi::ParamsOfEncodeMessage, net::{ParamsOfQueryCollection, ResultOfQueryCollection}, processing::{ParamsOfSendMessage, ResultOfSendMessage}};
 
 #[test]
 fn test_parallel_requests() {
@@ -101,26 +106,31 @@ async fn test_clock_sync() {
                 filter: None,
                 order: None,
             },
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
-    let msg = client.encode_message(
-        ParamsOfEncodeMessage {
+    let msg = client
+        .encode_message(ParamsOfEncodeMessage {
             abi: TestClient::abi(HELLO, None),
             address: Some(TestClient::get_giver_address()),
             call_set: CallSet::some_with_function("touch"),
             deploy_set: None,
             processing_try_index: None,
             signer: Signer::None,
-        }
-    ).await.unwrap();
-
-    let result = client.request_async::<_, ResultOfSendMessage>(
-        "processing.send_message",
-        ParamsOfSendMessage {
-            abi: None,
-            message: msg.message,
-            send_events: false
         })
+        .await
+        .unwrap();
+
+    let result = client
+        .request_async::<_, ResultOfSendMessage>(
+            "processing.send_message",
+            ParamsOfSendMessage {
+                abi: None,
+                message: msg.message,
+                send_events: false,
+            },
+        )
         .await
         .unwrap_err();
 

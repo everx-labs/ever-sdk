@@ -1,24 +1,26 @@
+use std::collections::VecDeque;
+use std::sync::Arc;
+
+use crate::{ClientConfig, ClientContext};
+use crate::abi::{
+    Abi, AbiConfig, CallSet, decode_message_body, DeploySet, encode_message,
+    ParamsOfDecodeMessageBody, ParamsOfEncodeMessage, Signer,
+};
+use crate::abi::ErrorCode;
+use crate::crypto::{CryptoConfig, RegisteredSigningBox, remove_signing_box, SigningBoxHandle};
+use crate::encoding::decode_abi_number;
+use crate::error::ClientError;
+use crate::net::{NetworkConfig, query_collection, ParamsOfQueryCollection};
+use crate::processing::{ParamsOfProcessMessage, process_message, ProcessingEvent};
+use crate::tvm::{ParamsOfRunTvm, run_tvm};
+
 use super::action::{AcType, DAction};
 use super::browser::BrowserCallbacks;
 use super::context::{
-    str_hex_to_utf8, DContext, STATE_CURRENT, STATE_EXIT, STATE_PREV, STATE_ZERO,
+    DContext, STATE_CURRENT, STATE_EXIT, STATE_PREV, STATE_ZERO, str_hex_to_utf8,
 };
 use super::debot_abi::DEBOT_ABI;
 use super::routines;
-use crate::abi::{
-    decode_message_body, encode_message, Abi, AbiConfig, CallSet, DeploySet,
-    ParamsOfDecodeMessageBody, ParamsOfEncodeMessage, Signer,
-};
-use crate::crypto::{remove_signing_box, CryptoConfig, RegisteredSigningBox, SigningBoxHandle};
-use crate::encoding::decode_abi_number;
-use crate::error::ClientError;
-use crate::abi::ErrorCode;
-use crate::net::{query_collection, NetworkConfig, ParamsOfQueryCollection};
-use crate::processing::{process_message, ParamsOfProcessMessage, ProcessingEvent};
-use crate::tvm::{run_tvm, ParamsOfRunTvm};
-use crate::{ClientConfig, ClientContext};
-use std::collections::VecDeque;
-use std::sync::Arc;
 
 pub type TonClient = Arc<ClientContext>;
 type JsonValue = serde_json::Value;
@@ -70,7 +72,7 @@ const OPTION_TARGET_ABI: u8 = 2;
 const OPTION_TARGET_ADDR: u8 = 4;
 
 /// Debot Engine.
-/// Downloads and stores debot, executes its actions and calls 
+/// Downloads and stores debot, executes its actions and calls
 /// Debot Browser callbacks.
 pub struct DEngine {
     abi: Abi,
@@ -698,10 +700,10 @@ impl DEngine {
                         browser.log(format!("Sending message {}", message_id)).await;
                     },
                     _ => (),
-                }; 
+                };
             }
         };
-        
+
         match process_message(
             self.ton.clone(),
             ParamsOfProcessMessage {
@@ -734,7 +736,7 @@ impl DEngine {
         || err.code == ErrorCode::EncodeRunMessageFailed as u32 {
             // when debot's function argument has invalid format
             format!("Invalid parameter")
-        } else if err.code >= (ClientError::TVM as u32) 
+        } else if err.code >= (ClientError::TVM as u32)
         && err.code <  (ClientError::PROCESSING as u32) {
             // when debot function throws an exception
             if let Some(e) = err.data["exit_code"].as_i64() {
