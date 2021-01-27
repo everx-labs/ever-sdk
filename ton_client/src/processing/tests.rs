@@ -314,9 +314,8 @@ async fn test_error_resolving() {
     let deploy_params = ParamsOfEncodeMessage {
         abi: TestClient::abi(HELLO, None),
         deploy_set: Some(DeploySet {
-            initial_data: None,
             tvc: TestClient::tvc(HELLO, None),
-            workchain_id: None,
+            ..Default::default()
         }),
         signer: Signer::Keys { keys: keys.clone() },
         processing_try_index: None,
