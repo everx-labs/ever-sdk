@@ -26,8 +26,8 @@ pub async fn fetch_next_shard_block<F: futures::Future<Output = ()> + Send>(
     timeout: u32,
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync,
 ) -> ClientResult<Block> {
-    let mut retries: u8 = 0;
-    let network_retries_timeout = context.config.network.network_retries_count;
+    let start = context.env.now_ms();
+
     // Network retries loop
     loop {
         // Notify app about fetching next block
@@ -44,6 +44,8 @@ pub async fn fetch_next_shard_block<F: futures::Future<Output = ()> + Send>(
         match wait_next_block(context, block_id.into(), &address, Some(timeout)).await {
             Ok(block) => return Ok(block),
             Err(err) => {
+                let is_retryable_error = crate::client::Error::is_network_error(&err) ||
+                    err.code == crate::net::ErrorCode::WaitForTimeout as u32;
                 let error = Error::fetch_block_failed(err, &message_id, &block_id.to_string());
 
                 // Notify app about error
@@ -57,19 +59,13 @@ pub async fn fetch_next_shard_block<F: futures::Future<Output = ()> + Send>(
                     .await;
                 }
 
-                // If network retries limit has reached, return error
-                if !can_retry_network_error(context, retries) {
+                // If network retries timeout has reached, return error
+                if !is_retryable_error || !can_retry_network_error(context, start)
+                {
                     return Err(error);
                 }
             }
         }
-
-        // Perform delay before retry
-        context
-            .env
-            .set_timer(network_retries_timeout as u64)
-            .await?;
-        retries = retries.checked_add(1).unwrap_or(retries);
     }
 }
 
@@ -212,8 +208,7 @@ async fn fetch_transaction_boc(
     message_id: &str,
     shard_block_id: &String,
 ) -> ClientResult<TransactionBoc> {
-    let mut retries: u8 = 0;
-    let network_retries_timeout = context.config.network.network_retries_count;
+    let start = context.env.now_ms();
 
     // Network retries loop
     loop {
@@ -222,18 +217,13 @@ async fn fetch_transaction_boc(
                 return Ok(TransactionBoc::from(value, message_id, shard_block_id)?);
             }
             Err(error) => {
-                // If network retries limit has reached, return error
-                if !can_retry_network_error(context, retries) {
+                // If network retries timeout has reached, return error
+                if !crate::client::Error::is_network_error(&error) ||
+                    !can_retry_network_error(context, start)
+                {
                     return Err(error);
                 }
             }
         }
-
-        // Perform delay before retry
-        context
-            .env
-            .set_timer(network_retries_timeout as u64)
-            .await?;
-        retries = retries.checked_add(1).unwrap_or(retries);
     }
 }

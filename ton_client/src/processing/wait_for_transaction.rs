@@ -49,8 +49,8 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
     let message_expiration_time =
         get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message)?;
     let processing_timeout = net.config().message_processing_timeout;
-    let now = context.env.now_ms();
-    let max_block_time = message_expiration_time.unwrap_or(now + processing_timeout as u64);
+    let max_block_time = message_expiration_time
+        .unwrap_or(context.env.now_ms() + processing_timeout as u64);
     log::debug!(
         "message_expiration_time {}",
         message_expiration_time.unwrap_or_default() / 1000
@@ -59,8 +59,10 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
 
     // Block walking loop
     loop {
+        let now = context.env.now_ms();
         let fetch_block_timeout =
             (std::cmp::max(max_block_time, now) - now) as u32 + processing_timeout;
+        log::debug!("fetch_block_timeout {}", fetch_block_timeout);
 
         let block = fetching::fetch_next_shard_block(
             &context,

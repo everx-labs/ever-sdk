@@ -11,7 +11,6 @@
 * limitations under the License.
 */
 
-use super::websocket_link::WsConfig;
 use crate::client::{ClientEnv, FetchMethod};
 use crate::error::{AddNetworkUrl, ClientError, ClientResult};
 use crate::net::server_info::ServerInfo;
@@ -23,69 +22,145 @@ use crate::net::{
 };
 use futures::{Future, Stream, StreamExt};
 use serde_json::Value;
+use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::pin::Pin;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
-use tokio::sync::watch;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use tokio::sync::{Mutex, RwLock, watch};
 
 pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
+pub const MIN_RESUME_TIMEOUT: u32 = 500;
+pub const MAX_RESUME_TIMEOUT: u32 = 3000;
+pub const FETCH_ADDITIONAL_TIMEOUT: u32 = 5000;
 
 pub(crate) struct Subscription {
     pub unsubscribe: Pin<Box<dyn Future<Output = ()> + Send>>,
     pub data_stream: Pin<Box<dyn Stream<Item = ClientResult<Value>> + Send>>,
 }
 
-pub(crate) struct ServerLink {
-    config: NetworkConfig,
-    endpoints: tokio::sync::RwLock<Vec<String>>,
+struct SuspendRegulation {
+    sender: watch::Sender<bool>,
+    internal_suspend: bool,
+    external_suspend: bool,
+}
+
+pub(crate) struct NetworkState {
     client_env: Arc<ClientEnv>,
-    suspended: (watch::Sender<bool>, watch::Receiver<bool>),
-    server_info: tokio::sync::RwLock<Option<ServerInfo>>,
-    websocket_link: WebsocketLink,
+    endpoints: RwLock<Vec<String>>,
+    suspended: watch::Receiver<bool>,
+    suspend_regulation: Arc<Mutex<SuspendRegulation>>,
+    resume_timeout: AtomicU32,
+    server_info: RwLock<Option<Arc<ServerInfo>>>,
+    out_of_sync_threshold: u32,
     time_checked: AtomicBool,
 }
 
-impl ServerLink {
-    pub fn new(config: NetworkConfig, client_env: Arc<ClientEnv>) -> ClientResult<Self> {
-        let endpoints = config
-            .endpoints
-            .clone()
-            .or(config.server_address.clone().map(|address| vec![address]))
-            .ok_or(crate::client::Error::net_module_not_init())?;
-        if endpoints.len() == 0 {
-            return Err(crate::client::Error::net_module_not_init());
-        }
+async fn query_by_url(client_env: &ClientEnv, address: &str, query: &str) -> ClientResult<Value> {
+    let response = client_env
+        .fetch(
+            &format!("{}?query={}", address, query),
+            FetchMethod::Get,
+            None,
+            None,
+            None,
+        )
+        .await?;
 
-        Ok(ServerLink {
-            config: config.clone(),
-            endpoints: tokio::sync::RwLock::new(endpoints),
-            client_env: client_env.clone(),
-            suspended: watch::channel(false),
-            server_info: tokio::sync::RwLock::new(None),
-            websocket_link: WebsocketLink::new(client_env.clone()),
+    response.body_as_json()
+}
+
+impl NetworkState {
+    pub fn new(client_env: Arc<ClientEnv>, endpoints: Vec<String>, out_of_sync_threshold: u32) -> Self {
+        let (sender, receiver) = watch::channel(false);
+        let regulation = SuspendRegulation {
+            sender,
+            internal_suspend: false,
+            external_suspend: false,
+        };
+        Self {
+            client_env,
+            endpoints: RwLock::new(endpoints),
+            suspended: receiver,
+            suspend_regulation: Arc::new(Mutex::new(regulation)),
+            resume_timeout: AtomicU32::new(0),
+            server_info: RwLock::new(None),
+            out_of_sync_threshold,
             time_checked: AtomicBool::new(false),
-        })
+        }
     }
 
-    async fn query_by_url(&self, address: &str, query: &str) -> ClientResult<Value> {
-        let response = self
-            .client_env
-            .fetch(
-                &format!("{}?query={}", address, query),
-                FetchMethod::Get,
-                None,
-                None,
-                None,
-            )
-            .await?;
+    async fn suspend(&self, sender: &watch::Sender<bool>) {
+        if !*self.suspended.borrow() {
+            let _ = sender.broadcast(true);
+            *self.server_info.write().await = None;
+        }
+    }
 
-        response.body_as_json()
+    async fn resume(sender: &watch::Sender<bool>) {
+        let _ = sender.broadcast(false);
+    }
+
+    pub async fn external_suspend(&self) {
+        let mut regulation = self.suspend_regulation.lock().await;
+        regulation.external_suspend = true;
+        self.suspend(&regulation.sender).await;
+    }
+
+    pub async fn external_resume(&self) {
+        let mut regulation = self.suspend_regulation.lock().await;
+        regulation.external_suspend = false;
+        if !regulation.internal_suspend {
+            Self::resume(&regulation.sender).await;
+        }
+    }
+
+    pub async fn internal_suspend(&self) {
+        let mut regulation = self.suspend_regulation.lock().await;
+        if regulation.internal_suspend {
+            return;
+        }
+
+        regulation.internal_suspend = true;
+        self.suspend(&regulation.sender).await;
+
+        let timeout = self.resume_timeout.load(Ordering::Relaxed);
+        let next_timeout = min(max(timeout * 2, MIN_RESUME_TIMEOUT), MAX_RESUME_TIMEOUT); // 0, 0.5, 1, 2, 3, 3, 3...
+        self.resume_timeout.store(next_timeout, Ordering::Relaxed);
+        log::debug!("Internal resume timeout {}", timeout);
+
+        let env = self.client_env.clone();
+        let regulation = self.suspend_regulation.clone();
+
+        self.client_env.spawn(async move {
+            let _ = env.set_timer(timeout as u64).await;
+            let mut regulation = regulation.lock().await;
+            regulation.internal_suspend = false;
+            if !regulation.external_suspend {
+                Self::resume(&regulation.sender).await;
+            }
+        });
+    }
+
+    pub async fn set_endpoints(&self, endpoints: Vec<String>) {
+        *self.endpoints.write().await = endpoints;
+    }
+
+    pub async fn config_servers(&self) -> Vec<String> {
+        self.endpoints.read().await.clone()
+    }
+
+    pub async fn query_url(&self) -> Option<String> {
+        self.server_info
+            .read()
+            .await
+            .as_ref()
+            .map(|info| info.query_url.clone())
     }
 
     async fn get_time_delta(&self, address: &str) -> ClientResult<i64> {
         let start = self.client_env.now_ms() as i64;
-        let response = self.query_by_url(address, "%7Binfo%7Btime%7D%7D").await?;
+        let response = query_by_url(&self.client_env, address, "%7Binfo%7Btime%7D%7D").await?;
         let end = self.client_env.now_ms() as i64;
         let server_time =
             response["data"]["info"]["time"]
@@ -98,12 +173,12 @@ impl ServerLink {
         Ok(server_time - (start + (end - start) / 2))
     }
 
-    async fn check_time_delta(&self, address: &str, config: &NetworkConfig) -> ClientResult<()> {
+    async fn check_time_delta(&self, address: &str, out_of_sync_threshold: u32) -> ClientResult<()> {
         let delta = self.get_time_delta(address).await?;
-        if delta.abs() as u32 >= config.out_of_sync_threshold {
+        if delta.abs() as u32 >= out_of_sync_threshold {
             Err(Error::clock_out_of_sync(
                 delta,
-                config.out_of_sync_threshold,
+                out_of_sync_threshold,
             ))
         } else {
             Ok(())
@@ -115,10 +190,9 @@ impl ServerLink {
             return Ok(());
         }
 
-        let client_lock = self.server_info.read().await;
-        let info = client_lock.as_ref().unwrap();
+        let info = self.get_info().await?;
         if info.server_version.supports_time {
-            self.check_time_delta(&info.query_url, &self.config).await?;
+            self.check_time_delta(&info.query_url, self.out_of_sync_threshold).await?;
         }
 
         self.time_checked.store(true, Ordering::Relaxed);
@@ -144,37 +218,61 @@ impl ServerLink {
                 break;
             }
         }
-        let server_info = server_info?;
-        Ok(server_info)
+        server_info
     }
 
-    async fn ensure_info(&self) -> ClientResult<()> {
+    pub async fn get_info(&self) -> ClientResult<Arc<ServerInfo>> {
         // wait for resume
-        let mut suspended = self.suspended.1.clone();
+        let mut suspended = self.suspended.clone();
         while Some(true) == suspended.recv().await {}
 
-        if self.server_info.read().await.is_some() {
-            return Ok(());
+        if let Some(info) = &*self.server_info.read().await {
+            return Ok(info.clone());
         }
 
         let mut data = self.server_info.write().await;
-        if data.is_some() {
-            return Ok(());
+        if let Some(info) = &*data {
+            return Ok(info.clone());
         }
 
-        let inited_data = self.init().await?;
+        let inited_data = Arc::new(self.init().await?);
 
-        self.websocket_link
-            .set_config(WsConfig {
-                url: inited_data.subscription_url.clone(),
-                access_key: self.config.access_key.clone(),
-                reconnect_timeout: self.config.reconnect_timeout,
-            })
-            .await;
+        *data = Some(inited_data.clone());
 
-        *data = Some(inited_data);
+        Ok(inited_data)
+    }
+}
 
-        Ok(())
+pub(crate) struct ServerLink {
+    config: NetworkConfig,
+    client_env: Arc<ClientEnv>,
+    websocket_link: WebsocketLink,
+    state: Arc<NetworkState>,
+}
+
+impl ServerLink {
+    pub fn new(config: NetworkConfig, client_env: Arc<ClientEnv>) -> ClientResult<Self> {
+        let endpoints = config
+            .endpoints
+            .clone()
+            .or(config.server_address.clone().map(|address| vec![address]))
+            .ok_or(crate::client::Error::net_module_not_init())?;
+        if endpoints.len() == 0 {
+            return Err(crate::client::Error::net_module_not_init());
+        }
+
+        let state = Arc::new(NetworkState::new(
+            client_env.clone(),
+            endpoints,
+            config.out_of_sync_threshold
+        ));
+
+        Ok(ServerLink {
+            config: config.clone(),
+            client_env: client_env.clone(),
+            state: state.clone(),
+            websocket_link: WebsocketLink::new(client_env, state, config),
+        })
     }
 
     pub fn config(&self) -> &NetworkConfig {
@@ -182,15 +280,11 @@ impl ServerLink {
     }
 
     pub async fn config_servers(&self) -> Vec<String> {
-        self.endpoints.read().await.clone()
+        self.state.config_servers().await
     }
 
     pub async fn query_url(&self) -> Option<String> {
-        self.server_info
-            .read()
-            .await
-            .as_ref()
-            .map(|info| info.query_url.clone())
+        self.state.query_url().await
     }
 
     // Returns Stream with updates database fields by provided filter
@@ -200,8 +294,6 @@ impl ServerLink {
         filter: &Value,
         fields: &str,
     ) -> ClientResult<Subscription> {
-        self.ensure_info().await?;
-
         let event_receiver = self
             .websocket_link
             .start_operation(GraphQLOperation::with_subscription(table, filter, fields))
@@ -212,10 +304,8 @@ impl ServerLink {
 
         let link = self.websocket_link.clone();
         let unsubscribe = async move {
-            let id = unsubscribe_operation_id.lock().ok().map(|g| *g);
-            if let Some(id) = id {
-                link.stop_operation(id).await;
-            }
+            let id = *unsubscribe_operation_id.lock().await;
+            link.stop_operation(id).await;
         };
 
         let collection_name = table.to_string();
@@ -225,9 +315,7 @@ impl ServerLink {
             async move {
                 match event {
                     GraphQLOperationEvent::Id(id) => {
-                        if let Ok(mut guard) = operation_id.lock() {
-                            *guard = id;
-                        }
+                        *operation_id.lock().await = id;
                         None
                     }
                     GraphQLOperationEvent::Data(value) => Some(Ok(value[&collection_name].clone())),
@@ -268,10 +356,11 @@ impl ServerLink {
 
     async fn fetch_operation(
         &self,
-        address: &str,
         operation: GraphQLOperation,
         timeout: Option<u32>,
     ) -> ClientResult<Value> {
+        let info = self.state.get_info().await?;
+
         let request = json!({
             "query": operation.query,
             "variables": operation.variables,
@@ -284,18 +373,26 @@ impl ServerLink {
             headers.insert(name, value);
         }
 
-        let response = self
+        let result = self
             .client_env
             .fetch(
-                address,
+                &info.query_url,
                 FetchMethod::Post,
                 Some(headers),
                 Some(request),
                 timeout,
             )
-            .await?;
+            .await;
 
-        let response = response.body_as_json()?;
+        if let Err(err) = &result {
+            if crate::client::Error::is_network_error(err) {
+                self.state.internal_suspend().await;
+                self.websocket_link.suspend().await;
+                self.websocket_link.resume().await;
+            }
+        }
+
+        let response = result?.body_as_json()?;
 
         if let Some(error) = Self::try_extract_error(&response) {
             Err(error)
@@ -304,13 +401,9 @@ impl ServerLink {
         }
     }
 
-    // Returns Stream with GraphQL query answer
     pub async fn batch_query(&self, params: &[ParamsOfQueryOperation]) -> ClientResult<Vec<Value>> {
-        self.ensure_info().await?;
-        let client_lock = self.server_info.read().await;
-        let address = &client_lock.as_ref().unwrap().query_url;
         let op = GraphQLOperation::build(params, self.config.wait_for_timeout);
-        let result = self.fetch_operation(address, op, None).await?;
+        let result = self.fetch_operation(op, None).await?;
         let data = &result["data"];
         let mut results = Vec::new();
         for i in 0..params.len() {
@@ -375,10 +468,10 @@ impl ServerLink {
             query: query.into(),
             variables,
         };
-        self.ensure_info().await?;
-        let client_lock = self.server_info.read().await;
-        let address = &client_lock.as_ref().unwrap().query_url;
-        Ok(self.fetch_operation(address, query, timeout).await?)
+        Ok(self.fetch_operation(
+            query,
+            timeout.map(|value| value + FETCH_ADDITIONAL_TIMEOUT)
+        ).await?)
     }
 
     // Sends message to node
@@ -392,14 +485,10 @@ impl ServerLink {
             body: base64::encode(value),
         };
 
-        self.ensure_info().await?;
-        self.check_sync().await?;
-        let client_lock = self.server_info.read().await;
-        let address = &client_lock.as_ref().unwrap().query_url;
+        self.state.check_sync().await?;
 
         let result = self
             .fetch_operation(
-                address,
                 GraphQLOperation::with_post_requests(&[request]),
                 None,
             )
@@ -415,31 +504,25 @@ impl ServerLink {
     }
 
     pub async fn suspend(&self) {
-        let _ = self.suspended.0.broadcast(true);
+        self.state.external_suspend().await;
         self.websocket_link.suspend().await;
     }
 
     pub async fn resume(&self) {
-        let _ = self.suspended.0.broadcast(false);
+        self.state.external_resume().await;
         self.websocket_link.resume().await;
     }
 
     pub async fn fetch_endpoints(&self) -> ClientResult<Vec<String>> {
-        self.ensure_info().await?;
-        let client_lock = self.server_info.read().await;
+        let info = self.state.get_info().await?;
 
-        if !client_lock
-            .as_ref()
-            .unwrap()
-            .server_version
-            .supports_endpoints
-        {
+        if !info.server_version.supports_endpoints {
             return Err(Error::not_suppported("endpoints"));
         }
 
-        let result = self
-            .query_by_url(
-                &client_lock.as_ref().unwrap().query_url,
+        let result = query_by_url(
+                &self.client_env,
+                &info.query_url,
                 "%7Binfo%7Bendpoints%7D%7D",
             )
             .await
@@ -455,6 +538,6 @@ impl ServerLink {
     }
 
     pub async fn set_endpoints(&self, endpoints: Vec<String>) {
-        *self.endpoints.write().await = endpoints;
+        self.state.set_endpoints(endpoints).await;
     }
 }
