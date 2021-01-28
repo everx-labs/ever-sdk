@@ -7,7 +7,7 @@ const ABI: &str = r#"
 
 "#;
 
-pub const BASE64_ID: &str = "";
+pub const BASE64_ID: &str = "8913b27b45267aad3ee08437e64029ac38fb59274f19adca0b23c4f957c8cfa1";
 
 pub struct Base64Interface {
     methods: HashMap<String, InterfaceMethod>,

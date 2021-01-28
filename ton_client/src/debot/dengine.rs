@@ -6,7 +6,7 @@ use super::context::{
 use super::debot_abi::DEBOT_ABI;
 use super::errors::Error;
 use super::routines;
-use super::run_output::RunOutput;
+use super::run_output::{RunOutput, DebotCallType};
 use super::{JsonValue, TonClient};
 use crate::abi::{
     decode_message_body, encode_message, encode_message_body, Abi, AbiConfig, CallSet, DeploySet,
@@ -185,9 +185,19 @@ impl DEngine {
     }
 
     pub async fn send(&mut self, source: String, func_id: u32, params: String) -> ClientResult<()> {
-        debug!("send from {} id = {} params = {}", source, func_id, params);
         let params = serde_json::from_str(&params)
             .map_err(|e| Error::invalid_json_params(e) )?;
+        let output = self.call_debot(source, func_id, params).await?;
+        self.handle_output(output).await
+    }
+
+    async fn call_debot(
+        &mut self,
+        source: String,
+        func_id: u32,
+        params: JsonValue,
+    ) -> ClientResult<RunOutput> {
+        debug!("send from {} id = {} params = {}", source, func_id, params);
         let abi = Contract::load(self.raw_abi.as_bytes())
             .map_err(|e| Error::invalid_debot_abi(e.to_string()))?;
         let func_name = &abi.function_by_id(func_id, true)
@@ -227,7 +237,7 @@ impl DEngine {
             run_result.out_messages,
         )?;
         self.state = std::mem::take(&mut run_output.account);
-        self.handle_output(run_output).await
+        Ok(run_output)
     }
 
     async fn handle_action(&mut self, a: &DAction) -> Result<Option<Vec<DAction>>, String> {
@@ -774,22 +784,33 @@ impl DEngine {
         routines::call_routine(self.ton.clone(), name, args, signer).await
     }
 
-    async fn handle_output(&mut self, output: RunOutput) -> ClientResult<()> {
-        for msg in output.interface_calls {
-            let res = self.builtin_interfaces.try_execute(&msg.0);
-            if res.is_none() {
-                self.browser.send(msg.0).await;
-            } else {
-                let _return_args = res.unwrap().map_err(|e| Error::execute_failed(e))?;
-                //self.send(String::new(), return_args.0, return_args.1).await?;
+    async fn handle_output(&mut self, mut output: RunOutput) -> ClientResult<()> {
+        while let Some(call) = output.calls.pop_front() {
+            match call {
+                DebotCallType::Interface{msg, id} => {
+                    let res = self.builtin_interfaces.try_execute(&msg, &id);
+                    if res.is_none() {
+                        self.browser.send(msg).await;
+                    } else {
+                        let (funcname, args) = res.unwrap().map_err(|e| Error::execute_failed(e))?;
+                        let new_outputs = self.call_debot(
+                            String::new(),
+                            funcname,
+                            args,
+                        ).await?;
+                        output.append(new_outputs);
+                    }
+                },
+                DebotCallType::GetMethod{msg: _} => {
+                    // TODO: call run_tvm
+                },
+                DebotCallType::External{msg: _} => {
+                    // TODO: 
+                    // result.send_msgs();
+                },
+                // TODO: support later
+                // DebotCallType::Invoke{msg} => { },
             }
-        }
-
-        // TODO: 
-        // result.send_msgs();
-
-        for _msg in output.get_method_calls {
-            // TODO: call run_tvm
         }
         Ok(())
     }

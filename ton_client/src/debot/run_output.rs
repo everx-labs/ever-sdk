@@ -3,15 +3,21 @@ use super::{JsonValue, DEBOT_WC};
 use crate::boc::internal::deserialize_object_from_base64;
 use crate::error::ClientError;
 use ton_block::Message;
+use std::collections::VecDeque;
+
+pub(super) enum DebotCallType {
+    Interface { msg: String, id: String },
+    GetMethod { msg: String },
+    External { msg: String },
+    // TODO: support later
+    // Invoke { msg: String },
+}
 
 #[derive(Default)]
 pub(super) struct RunOutput {
     pub account: String,
     pub return_value: Option<JsonValue>,
-    pub interface_calls: Vec<(String, String)>,
-    pub external_calls: Vec<String>,
-    pub get_method_calls: Vec<String>,
-    pub debot_invokes: Vec<String>,
+    pub calls: VecDeque<DebotCallType>,
     pub actions: Vec<DAction>,
 }
 
@@ -35,12 +41,6 @@ impl RunOutput {
 }
 
 impl RunOutput {
-    fn filter_msg(&mut self, msg: Message, msg_base64: String) {
-        let msg = (&msg, msg_base64);
-        self.filter_interface_call(msg)
-            .and_then(|msg| self.filter_external_call(msg))
-            .and_then(|msg| self.filter_getmethod_call(msg));
-    }
 
     pub fn decode_actions(&self) -> Result<Option<Vec<DAction>>, String> {
         match self.return_value.as_ref() {
@@ -51,6 +51,19 @@ impl RunOutput {
         }
     }
 
+    pub fn append(&mut self, mut output: RunOutput) {
+        self.calls.append(&mut output.calls);
+        self.actions.append(&mut output.actions);
+        self.return_value = output.return_value;
+    }
+
+    fn filter_msg(&mut self, msg: Message, msg_base64: String) {
+        let msg = (&msg, msg_base64);
+        self.filter_interface_call(msg)
+            .and_then(|msg| self.filter_external_call(msg))
+            .and_then(|msg| self.filter_getmethod_call(msg));
+    }
+
     fn filter_interface_call<'a>(
         &mut self,
         msg: (&'a Message, String),
@@ -59,8 +72,10 @@ impl RunOutput {
             let wc_id = msg.0.workchain_id().unwrap();
             if DEBOT_WC as i32 == wc_id {
                 let account_id = msg.0.int_dst_account_id().unwrap();
-                self.interface_calls
-                    .push((msg.1.clone(), account_id.to_string()));
+                self.calls.push_back(DebotCallType::Interface {
+                    msg: msg.1.clone(),
+                    id: account_id.to_string(),
+                });
                 return None;
             }
         }
@@ -94,10 +109,10 @@ impl RunOutput {
                 let mut body_slice = body_slice.clone();
                 if let Ok(bit) = body_slice.get_next_bit() {
                     if call_or_get && bit {
-                        self.external_calls.push(msg.1);
+                        self.calls.push_back(DebotCallType::External { msg: msg.1 });
                         return None;
                     } else if !call_or_get && !bit {
-                        self.get_method_calls.push(msg.1);
+                        self.calls.push_back(DebotCallType::GetMethod { msg: msg.1 });
                         return None;
                     }
                 }
