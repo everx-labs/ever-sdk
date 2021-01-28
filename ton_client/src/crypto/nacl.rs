@@ -175,7 +175,7 @@ pub struct ResultOfNaclSignDetachedVerify {
     pub(crate) succeeded: bool,
 }
 
-/// Verifies the signature for the message.
+/// Verifies the signature with public key and `unsigned` data.
 #[api_function]
 pub fn nacl_sign_detached_verify(
     _context: std::sync::Arc<ClientContext>,

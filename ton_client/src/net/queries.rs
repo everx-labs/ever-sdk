@@ -146,7 +146,7 @@ pub struct ResultOfAggregateCollection {
     /// Values for requested fields.
     ///
     /// Returns an array of strings. Each string refers to the corresponding `fields` item.
-    /// Numeric values is returned as a decimal string representations.
+    /// Numeric value is returned as a decimal string representations.
     pub values: Value,
 }
 
