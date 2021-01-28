@@ -18,6 +18,10 @@ pub const CONTRACTS_TABLE_NAME: &str = "accounts";
 pub const BLOCKS_TABLE_NAME: &str = "blocks";
 pub const TRANSACTIONS_TABLE_NAME: &str = "transactions";
 
+pub fn default_network_retries_count() -> i8 {
+    5
+}
+
 pub fn default_message_retries_count() -> i8 {
     5
 }
@@ -36,6 +40,12 @@ pub fn default_out_of_sync_threshold() -> u32 {
 
 pub fn default_max_reconnect_timeout() -> u32 {
     120000
+}
+
+fn deserialize_network_retries_count<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<i8, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_network_retries_count()))
 }
 
 fn deserialize_message_retries_count<'de, D: Deserializer<'de>>(
@@ -77,6 +87,11 @@ pub struct NetworkConfig {
     /// List of DApp Server addresses. Any correct URL format can be specified, including IP addresses
     /// This parameter is prevailing over `server_address`.
     pub endpoints: Option<Vec<String>>,
+
+    /// Deprecated. You must use `network.max_reconnect_timeout` that allows to specify maximum network resolving timeout.
+    #[serde(default = "default_network_retries_count",
+    deserialize_with = "deserialize_network_retries_count")]
+    pub network_retries_count: i8,
 
     /// Maximum time for sequential reconnections in ms. Default value is 120000 (2 min)
     #[serde(default = "default_max_reconnect_timeout",
@@ -122,6 +137,7 @@ impl Default for NetworkConfig {
         Self {
             server_address: None,
             endpoints: None,
+            network_retries_count: default_network_retries_count(),
             max_reconnect_timeout: default_max_reconnect_timeout(),
             message_retries_count: default_message_retries_count(),
             message_processing_timeout: default_message_processing_timeout(),
