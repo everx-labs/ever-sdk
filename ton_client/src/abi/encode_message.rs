@@ -25,7 +25,13 @@ pub struct DeploySet {
     /// List of initial values for contract's public variables.
     pub initial_data: Option<Value>,
 
-    /// Initial value for contract's public key. Encoded with `hex`.
+    /// Optional public key that can be provided in deploy set in order to substitute one
+    /// in TVM file or provided by Signer. 
+    /// 
+    /// Public key resolving priority:
+    /// 1. Public key from deploy set.
+    /// 2. Public key, specified in TVM file.
+    /// 3. Public key, provided by Signer.
     pub initial_pubkey: Option<String>,
 }
 
