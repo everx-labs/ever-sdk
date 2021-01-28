@@ -41,7 +41,7 @@
 
 [nacl_sign_detached](mod_crypto.md#nacl_sign_detached) – Signs the message using the secret key and returns a signature.
 
-[nacl_sign_detached_verify](mod_crypto.md#nacl_sign_detached_verify) – Verifies the signature for the message.
+[nacl_sign_detached_verify](mod_crypto.md#nacl_sign_detached_verify) – Verifies the signature with public key and `unsigned` data.
 
 [nacl_box_keypair](mod_crypto.md#nacl_box_keypair) – Generates a random NaCl key pair
 

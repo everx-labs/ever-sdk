@@ -182,7 +182,7 @@ function aggregate_collection(
 ### Result
 
 - `values`: _any_ – Values for requested fields.
-<br>Returns an array of strings. Each string refers to the corresponding `fields` item.<br>Numeric values is returned as a decimal string representations.
+<br>Returns an array of strings. Each string refers to the corresponding `fields` item.<br>Numeric value is returned as a decimal string representations.
 
 
 ## wait_for_collection
@@ -507,7 +507,7 @@ type ResultOfAggregateCollection = {
 }
 ```
 - `values`: _any_ – Values for requested fields.
-<br>Returns an array of strings. Each string refers to the corresponding `fields` item.<br>Numeric values is returned as a decimal string representations.
+<br>Returns an array of strings. Each string refers to the corresponding `fields` item.<br>Numeric value is returned as a decimal string representations.
 
 
 ## ParamsOfWaitForCollection

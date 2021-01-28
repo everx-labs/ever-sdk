@@ -32,7 +32,7 @@ null
 
 [nacl_sign_detached](#nacl_sign_detached) – Signs the message using the secret key and returns a signature.
 
-[nacl_sign_detached_verify](#nacl_sign_detached_verify) – Verifies the signature for the message.
+[nacl_sign_detached_verify](#nacl_sign_detached_verify) – Verifies the signature with public key and `unsigned` data.
 
 [nacl_box_keypair](#nacl_box_keypair) – Generates a random NaCl key pair
 
@@ -619,7 +619,7 @@ function nacl_sign_detached(
 
 ## nacl_sign_detached_verify
 
-Verifies the signature for the message.
+Verifies the signature with public key and `unsigned` data.
 
 ```ts
 type ParamsOfNaclSignDetachedVerify = {

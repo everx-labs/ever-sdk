@@ -2720,7 +2720,7 @@
         },
         {
           "name": "nacl_sign_detached_verify",
-          "summary": "Verifies the signature for the message.",
+          "summary": "Verifies the signature with public key and `unsigned` data.",
           "description": null,
           "params": [
             {
@@ -7241,7 +7241,7 @@
               "type": "Ref",
               "ref_name": "Value",
               "summary": "Values for requested fields.",
-              "description": "Returns an array of strings. Each string refers to the corresponding `fields` item.\nNumeric values is returned as a decimal string representations."
+              "description": "Returns an array of strings. Each string refers to the corresponding `fields` item.\nNumeric value is returned as a decimal string representations."
             }
           ],
           "summary": null,
