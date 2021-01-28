@@ -83,8 +83,8 @@ pub const GIVER: &str = "Giver";
 pub const GIVER_WALLET: &str = "GiverWallet";
 pub const HELLO: &str = "Hello";
 pub const EVENTS: &str = "Events";
-pub const TEST_DEBOT: &str = "testDebot";
-pub const TEST_DEBOT_TARGET: &str = "testDebotTarget";
+// pub const TEST_DEBOT: &str = "testDebot";
+// pub const TEST_DEBOT_TARGET: &str = "testDebotTarget";
 
 struct RequestData {
     sender: Option<Sender<ClientResult<Value>>>,
