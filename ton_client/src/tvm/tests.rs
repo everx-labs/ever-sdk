@@ -357,8 +357,9 @@ async fn test_run_account_uninit() {
                 input: None,
             }),
             deploy_set: Some(DeploySet {
+                initial_data: None,
                 tvc,
-                ..Default::default()
+                workchain_id: None,
             }),
             processing_try_index: None,
             signer: Signer::Keys { keys: keys.clone() },
