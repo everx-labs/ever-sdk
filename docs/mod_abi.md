@@ -466,14 +466,15 @@ type CallSet = {
 type DeploySet = {
     tvc: string,
     workchain_id?: number,
-    initial_data?: any
+    initial_data?: any,
+    initial_pubkey?: string
 }
 ```
 - `tvc`: _string_ – Content of TVC file encoded in `base64`.
 - `workchain_id`?: _number_ – Target workchain for destination address.
 <br>Default is `0`.
 - `initial_data`?: _any_ – List of initial values for contract's public variables.
-
+- `initial_pubkey`?: _string_ - Public key for substitution of one, stored in TVC file or provided by signer.
 
 ## Signer
 ```ts

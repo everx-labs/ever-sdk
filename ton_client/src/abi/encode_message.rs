@@ -328,6 +328,14 @@ fn encode_run(
 /// [SOON] `Signer::SigningBox` Allows using a special interface to implement signing
 /// without private key disclosure to SDK. For instance, in case of using a cold wallet or HSM,
 /// when application calls some API to sign data.
+///
+/// There is an optional public key can be provided in deploy set in order to substitute one
+/// in TVM file.
+///
+/// Public key resolving priority:
+/// 1. Public key from deploy set.
+/// 2. Public key, specified in TVM file.
+/// 3. Public key, provided by signer.
 
 #[api_function]
 pub async fn encode_message(

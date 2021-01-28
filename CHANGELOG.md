@@ -1,6 +1,7 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+- `initial_pubkey` field in `DeploySet` to specify public key instead of one from TVC file or provided by signer.
 
 ## 1.5.2 Dec 30, 2020
 
