@@ -338,6 +338,17 @@
               "description": "Any correct URL format can be specified, including IP addresses This parameter is prevailing over `server_address`."
             },
             {
+              "name": "network_retries_count",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "Int",
+                "number_size": 8
+              },
+              "summary": "Deprecated.",
+              "description": "You must use `network.max_reconnect_timeout` that allows to specify maximum network resolving timeout."
+            },
+            {
               "name": "max_reconnect_timeout",
               "type": "Optional",
               "optional_inner": {
