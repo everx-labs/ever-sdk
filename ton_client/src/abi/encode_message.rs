@@ -1,10 +1,9 @@
 use crate::abi;
-use crate::abi::internal::{
-    add_sign_to_message, add_sign_to_message_body, create_tvc_image, result_of_encode_message,
-};
+use crate::abi::internal::{add_sign_to_message, add_sign_to_message_body, create_tvc_image, try_to_sign_message, resolve_pubkey};
 use crate::abi::{Abi, Error, FunctionHeader, Signer};
 use crate::boc::internal::get_boc_hash;
 use crate::client::ClientContext;
+use crate::crypto::internal::decode_public_key;
 use crate::encoding::{account_decode, account_encode, base64_decode, hex_decode};
 use crate::error::ClientResult;
 use serde_json::Value;
@@ -25,6 +24,9 @@ pub struct DeploySet {
 
     /// List of initial values for contract's public variables.
     pub initial_data: Option<Value>,
+
+    /// Initial value for contract's public key. Encoded with `hex`.
+    pub initial_pubkey: Option<String>,
 }
 
 impl DeploySet {
@@ -33,6 +35,7 @@ impl DeploySet {
             tvc,
             workchain_id: None,
             initial_data: None,
+            initial_pubkey: None,
         })
     }
 }
@@ -322,7 +325,7 @@ fn encode_run(
 ///
 /// `Signer::Keys` creates a signed message with provided key pair.
 ///
-/// [SOON] `Signer::SigningBox` Allows using a special interface to imlepement signing
+/// [SOON] `Signer::SigningBox` Allows using a special interface to implement signing
 /// without private key disclosure to SDK. For instance, in case of using a cold wallet or HSM,
 /// when application calls some API to sign data.
 
@@ -338,13 +341,18 @@ pub async fn encode_message(
         let workchain = deploy_set
             .workchain_id
             .unwrap_or(context.config.abi.workchain);
-        let public = required_public_key(public)?;
-        let image = create_tvc_image(
+        let mut image = create_tvc_image(
             &abi,
             deploy_set.initial_data.as_ref(),
             &deploy_set.tvc,
-            &public,
         )?;
+
+        if let Some(tvc_public) = resolve_pubkey(&deploy_set, &image, &public)? {
+            image.set_public_key(&decode_public_key(&tvc_public)?)
+                .map_err(|err| Error::invalid_tvc_image(err))?;
+        }
+
+        let public = required_public_key(public)?;
         if let Some(call_set) = &params.call_set {
             encode_deploy(
                 context.clone(),
@@ -371,12 +379,13 @@ pub async fn encode_message(
         return Err(abi::Error::missing_required_call_set_for_encode_message());
     };
 
-    let (message, data_to_sign) = result_of_encode_message(
+    let (message, data_to_sign) = try_to_sign_message(
         context, &abi, message, data_to_sign, &params.signer
     ).await?;
+
     Ok(ResultOfEncodeMessage {
         message: base64::encode(&message),
-        data_to_sign,
+        data_to_sign: data_to_sign.map(|data| base64::encode(&data)),
         address: account_encode(&address),
         message_id: get_boc_hash(&message)?,
     })
