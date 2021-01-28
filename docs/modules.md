@@ -145,6 +145,8 @@
 
 [query](mod_net.md#query) – Performs DAppServer GraphQL query.
 
+[batch_query](mod_net.md#batch_query) – Performs multiple queries per single fetch.
+
 [query_collection](mod_net.md#query_collection) – Queries collection data
 
 [aggregate_collection](mod_net.md#aggregate_collection) – Aggregates collection data.
@@ -172,6 +174,8 @@
 [fetch](mod_debot.md#fetch) – [UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.
 
 [execute](mod_debot.md#execute) – [UNSTABLE](UNSTABLE.md) Executes debot action.
+
+[send](mod_debot.md#send) – [UNSTABLE](UNSTABLE.md) Sends message to Debot.
 
 [remove](mod_debot.md#remove) – [UNSTABLE](UNSTABLE.md) Destroys debot handle.
 

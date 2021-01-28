@@ -4,6 +4,8 @@ null
 ## Functions
 [query](#query) – Performs DAppServer GraphQL query.
 
+[batch_query](#batch_query) – Performs multiple queries per single fetch.
+
 [query_collection](#query_collection) – Queries collection data
 
 [aggregate_collection](#aggregate_collection) – Aggregates collection data.
@@ -34,6 +36,10 @@ null
 [ParamsOfQuery](#ParamsOfQuery)
 
 [ResultOfQuery](#ResultOfQuery)
+
+[ParamsOfBatchQuery](#ParamsOfBatchQuery)
+
+[ResultOfBatchQuery](#ResultOfBatchQuery)
 
 [ParamsOfQueryCollection](#ParamsOfQueryCollection)
 
@@ -84,6 +90,31 @@ function query(
 ### Result
 
 - `result`: _any_ – Result provided by DAppServer.
+
+
+## batch_query
+
+Performs multiple queries per single fetch.
+
+```ts
+type ParamsOfBatchQuery = {
+    operations: ParamsOfQueryOperation[]
+}
+
+type ResultOfBatchQuery = {
+    results: any[]
+}
+
+function batch_query(
+    params: ParamsOfBatchQuery,
+): Promise<ResultOfBatchQuery>;
+```
+### Parameters
+- `operations`: _ParamsOfQueryOperation[]_ – List of query operations that must be performed per single fetch.
+### Result
+
+- `results`: _any[]_ – Result values for batched queries.
+<br>Returns an array of values. Each value corresponds to `queries` item.
 
 
 ## query_collection
@@ -343,7 +374,9 @@ enum NetErrorCode {
     NetworkModuleSuspended = 609,
     WebsocketDisconnected = 610,
     NotSupported = 611,
-    NoEndpointsProvided = 612
+    NoEndpointsProvided = 612,
+    GraphqlWebsocketInitError = 613,
+    NetworkModuleResumed = 614
 }
 ```
 One of the following value:
@@ -360,6 +393,8 @@ One of the following value:
 - `WebsocketDisconnected = 610`
 - `NotSupported = 611`
 - `NoEndpointsProvided = 612`
+- `GraphqlWebsocketInitError = 613`
+- `NetworkModuleResumed = 614`
 
 
 ## OrderBy
@@ -405,6 +440,25 @@ type ResultOfQuery = {
 }
 ```
 - `result`: _any_ – Result provided by DAppServer.
+
+
+## ParamsOfBatchQuery
+```ts
+type ParamsOfBatchQuery = {
+    operations: ParamsOfQueryOperation[]
+}
+```
+- `operations`: _ParamsOfQueryOperation[]_ – List of query operations that must be performed per single fetch.
+
+
+## ResultOfBatchQuery
+```ts
+type ResultOfBatchQuery = {
+    results: any[]
+}
+```
+- `results`: _any[]_ – Result values for batched queries.
+<br>Returns an array of values. Each value corresponds to `queries` item.
 
 
 ## ParamsOfQueryCollection

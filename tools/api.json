@@ -338,15 +338,15 @@
               "description": "Any correct URL format can be specified, including IP addresses This parameter is prevailing over `server_address`."
             },
             {
-              "name": "network_retries_count",
+              "name": "max_reconnect_timeout",
               "type": "Optional",
               "optional_inner": {
                 "type": "Number",
-                "number_type": "Int",
-                "number_size": 8
+                "number_type": "UInt",
+                "number_size": 32
               },
-              "summary": "The number of automatic network retries that SDK performs in case of connection problems The default value is 5.",
-              "description": null
+              "summary": "Maximum time for sequential reconnections in ms.",
+              "description": "Default value is 120000 (2 min)"
             },
             {
               "name": "message_retries_count",
@@ -391,17 +391,6 @@
               },
               "summary": "Maximum time difference between server and client.",
               "description": "If client's device time is out of sync and difference is more than the threshold then error will occur. Also an error will occur if the specified threshold is more than\n`message_processing_timeout/2`.\nThe default value is 15 sec."
-            },
-            {
-              "name": "reconnect_timeout",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Number",
-                "number_type": "UInt",
-                "number_size": 32
-              },
-              "summary": "Timeout between reconnect attempts",
-              "description": null
             },
             {
               "name": "access_key",
@@ -6999,6 +6988,20 @@
               "value": "612",
               "summary": null,
               "description": null
+            },
+            {
+              "name": "GraphqlWebsocketInitError",
+              "type": "Number",
+              "value": "613",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NetworkModuleResumed",
+              "type": "Number",
+              "value": "614",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -7079,6 +7082,42 @@
               "ref_name": "Value",
               "summary": "Result provided by DAppServer.",
               "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfBatchQuery",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "operations",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "ParamsOfQueryOperation"
+              },
+              "summary": "List of query operations that must be performed per single fetch.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfBatchQuery",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "results",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": "Result values for batched queries.",
+              "description": "Returns an array of values. Each value corresponds to `queries` item."
             }
           ],
           "summary": null,
@@ -7390,6 +7429,44 @@
               {
                 "type": "Ref",
                 "ref_name": "net.ResultOfQuery"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "batch_query",
+          "summary": "Performs multiple queries per single fetch.",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfBatchQuery",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "net.ResultOfBatchQuery"
               }
             ]
           },
@@ -7801,6 +7878,27 @@
               "value": "804",
               "summary": null,
               "description": null
+            },
+            {
+              "name": "DebotInvalidJsonParams",
+              "type": "Number",
+              "value": "805",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "DebotInvalidFunctionId",
+              "type": "Number",
+              "value": "806",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "DebotInvalidAbi",
+              "type": "Number",
+              "value": "807",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -7988,6 +8086,20 @@
               ],
               "summary": "Execute action of another debot.",
               "description": null
+            },
+            {
+              "name": "Send",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "message",
+                  "type": "String",
+                  "summary": "Internal message to DInterface address.",
+                  "description": "Message body contains interface function and parameters."
+                }
+              ],
+              "summary": "Used by Debot to call DInterface implemented by Debot Browser.",
+              "description": null
             }
           ],
           "summary": "[UNSTABLE](UNSTABLE.md) Debot Browser callbacks",
@@ -8071,6 +8183,41 @@
             }
           ],
           "summary": "[UNSTABLE](UNSTABLE.md) Parameters for executing debot action.",
+          "description": null
+        },
+        {
+          "name": "ParamsOfSend",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "debot_handle",
+              "type": "Ref",
+              "ref_name": "debot.DebotHandle",
+              "summary": "Debot handle which references an instance of debot engine.",
+              "description": null
+            },
+            {
+              "name": "source",
+              "type": "String",
+              "summary": "Std address of interface or debot.",
+              "description": null
+            },
+            {
+              "name": "func_id",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
+              "summary": "Function Id to call",
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "String",
+              "summary": "Json string with parameters",
+              "description": null
+            }
+          ],
+          "summary": "[UNSTABLE](UNSTABLE.md) Parameters of `send` function.",
           "description": null
         }
       ],
@@ -8207,6 +8354,43 @@
               "name": "params",
               "type": "Ref",
               "ref_name": "debot.ParamsOfExecute",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "send",
+          "summary": "[UNSTABLE](UNSTABLE.md) Sends message to Debot.",
+          "description": "Used by Debot Browser to send response on Dinterface call or from other Debots.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "debot.ParamsOfSend",
               "summary": null,
               "description": null
             }
