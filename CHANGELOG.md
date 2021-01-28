@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - `batch_query` function performs multiple queries per single fetch.
 - Active endpoint invalidation in case of network error occuring.
 - `network.network_retries_count` config parameter is deprecated. `network.max_reconnect_timeout` is introduced that allows to specify maximum network resolving timeout. Default value is 2 mins. 
+- `initial_pubkey` field in `DeploySet` to specify public key instead of one from TVC file or provided by signer.
 - Support for debot interfaces:
   - `send` Browser Callback to send messages with interface calls to Browser.
   - new variant `ParamsOfAppDebotBrowser::Send`.
