@@ -3,14 +3,16 @@ use crate::debot::TonClient;
 use std::collections::HashMap;
 use crate::boc::{parse_message, ParamsOfParse};
 use crate::abi::{Abi, ParamsOfDecodeMessageBody, decode_message_body};
+use std::sync::Arc;
+use super::base64_interface::{BASE64_ID, Base64Interface};
 
 const DEBOT_WC: i8 = -31;
-pub type InterfaceResult = Result<(u32, String), String>;
-pub type InterfaceMethod<'a> = Box<(dyn Fn(&'a Value) -> InterfaceResult + 'static)>;
+pub type InterfaceResult = Result<(u32, Value), String>;
+pub type InterfaceMethod = Arc<dyn Fn(&Value) -> InterfaceResult + Send + Sync + 'static>;
 
-pub(crate) fn boxed<'a, F>(f: F) -> InterfaceMethod<'a>
-    where F: Fn(&'a Value) -> InterfaceResult + 'static {
-        Box::new(f) as InterfaceMethod
+pub(crate) fn boxed<F>(f: F) -> InterfaceMethod
+    where F: Fn(&Value) -> InterfaceResult + Send + Sync + 'static {
+        Arc::new(f) as InterfaceMethod
 }
 
 pub trait DebotInterface {
@@ -36,13 +38,14 @@ pub trait DebotInterface {
 
 pub struct BuiltinInterfaces {
     client: TonClient,
-    interfaces: HashMap<String, Box<dyn DebotInterface>>
+    interfaces: HashMap<String, Arc<dyn DebotInterface + Send + Sync>>
 }
 
 impl BuiltinInterfaces {
     pub fn new(client: TonClient) -> Self {
         let mut interfaces = HashMap::new();
-//        interfaces.insert();
+        let iface: Arc<dyn DebotInterface + Send + Sync> = Arc::new(Base64Interface::new());
+        interfaces.insert(BASE64_ID.to_string(), iface);
         Self {client, interfaces}
     }
 
@@ -84,8 +87,8 @@ impl BuiltinInterfaces {
 
         debug!("call for interface id {}", interface_id);
         
-        match self.interfaces.get(&interface_id) {
-            Some(object) => object.call(self.client, body),
+        match self.interfaces.get(interface_id) {
+            Some(object) => object.call(self.client.clone(), body),
             None => Ok((0, json!({}))),
         }
     }
@@ -97,4 +100,22 @@ pub fn decode_answer_id(args: &Value) -> Result<u32, String> {
             .ok_or(format!("answer id not found in argument list"))?, 
         10
     ).map_err(|e| format!("{}", e))
+}
+
+pub fn get_arg(args: &Value, name: &str) -> Result<String, String> {
+    args[name]
+        .as_str()
+        .ok_or(format!("\"{}\" not found", name))
+        .map(|v| v.to_string())
+}
+
+pub fn get_string_arg(args: &Value, name: &str) -> Result<String, String> {
+    let hex_str = args[name]
+        .as_str()
+        .ok_or(format!("\"{}\" not found", name))?;
+    let bytes = hex::decode(hex_str)
+        .map_err(|e| format!("{}", e))?;
+    std::str::from_utf8(&bytes)
+        .map_err(|e| format!("{}", e))
+        .map(|x| x.to_string())
 }

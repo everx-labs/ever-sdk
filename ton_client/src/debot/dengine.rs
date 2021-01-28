@@ -98,7 +98,7 @@ impl DEngine {
                 .unwrap_or(load_abi(DEBOT_ABI))
                 .unwrap(),
             addr,
-            ton.clone(),
+            ton: ton.clone(),
             state: String::new(),
             state_machine: vec![],
             curr_state: STATE_EXIT,
@@ -780,8 +780,8 @@ impl DEngine {
             if res.is_none() {
                 self.browser.send(msg.0).await;
             } else {
-                let return_args = res.unwrap().map_err(|e| error::execute_failed(e))?;
-                self.send(String::new(), return_args.0, return_args.1)?;
+                let _return_args = res.unwrap().map_err(|e| Error::execute_failed(e))?;
+                //self.send(String::new(), return_args.0, return_args.1).await?;
             }
         }
 
