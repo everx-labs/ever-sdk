@@ -1,5 +1,6 @@
 use crate::ClientContext;
-use crate::abi::{Error, Signer, DeploySet};
+use crate::abi::{Error, Signer};
+use crate::crypto::internal::decode_public_key;
 use crate::encoding::hex_decode;
 use crate::error::ClientResult;
 use std::sync::Arc;
@@ -44,13 +45,13 @@ pub(crate) fn add_sign_to_message_body(
     .map_err(|err| Error::attach_signature_failed(err))?)
 }
 
-pub(crate) async fn try_to_sign_message(
+pub(crate) async fn result_of_encode_message(
     context: Arc<ClientContext>,
     abi: &str,
     message: Vec<u8>,
     data_to_sign: Option<Vec<u8>>,
     signer: &Signer,
-) -> ClientResult<(Vec<u8>, Option<Vec<u8>>)> {
+) -> ClientResult<(Vec<u8>, Option<String>)> {
     if let Some(unsigned) = &data_to_sign {
         if let Some(signature) = signer.sign(context.clone(), unsigned).await? {
             let pubkey = signer.resolve_public_key(context)
@@ -63,16 +64,18 @@ pub(crate) async fn try_to_sign_message(
             return Ok((message, None));
         }
     }
-    Ok((message, data_to_sign))
+    Ok((message, data_to_sign.map(|x| base64::encode(&x))))
 }
 
 pub(crate) fn create_tvc_image(
     abi: &str,
     init_params: Option<&Value>,
     tvc: &String,
+    public_key: &String,
 ) -> ClientResult<ContractImage> {
     let tvc = base64::decode(tvc).map_err(|err| Error::invalid_tvc_image(err))?;
-    let mut image = ContractImage::from_state_init(&mut tvc.as_slice())
+    let public = decode_public_key(&public_key)?;
+    let mut image = ContractImage::from_state_init_and_key(&mut tvc.as_slice(), &public)
         .map_err(|err| Error::invalid_tvc_image(err))?;
 
     if let Some(params) = init_params {
@@ -82,34 +85,4 @@ pub(crate) fn create_tvc_image(
     }
 
     Ok(image)
-}
-
-/// Determines, if public key consists only zeroes, i.e. is empty.
-pub(crate) fn is_empty_pubkey(pubkey: &ed25519_dalek::PublicKey) -> bool {
-    pubkey.as_bytes() == &[0; ed25519_dalek::PUBLIC_KEY_LENGTH]
-}
-
-/// Resolves public key from deploy set, tvc or signer, using this priority:
-/// 1. Initial public key from the deploy set
-/// 2. Public key from TVC image
-/// 3. Signer
-/// Returns None, if no public key was resolved.
-pub(crate) fn resolve_pubkey(
-    deploy_set: &DeploySet,
-    image: &ContractImage,
-    signer_pubkey: &Option<String>,
-) -> ClientResult<Option<String>> {
-    if deploy_set.initial_pubkey.is_some() {
-        return Ok(deploy_set.initial_pubkey.clone());
-    }
-
-    if let Some(pubkey) = image.get_public_key()
-        .map_err(|err| Error::invalid_tvc_image(err))?
-    {
-        if !is_empty_pubkey(&pubkey) {
-            return Ok(Some(hex::encode(pubkey.as_ref())))
-        }
-    };
-
-    Ok(signer_pubkey.clone())
 }

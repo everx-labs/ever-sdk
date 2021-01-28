@@ -201,8 +201,9 @@ async fn subscribe_for_transactions_with_addresses() {
     let deploy_params = ParamsOfEncodeMessage {
         abi: TestClient::abi(HELLO, None),
         deploy_set: Some(DeploySet {
+            initial_data: None,
             tvc: TestClient::tvc(HELLO, None),
-            ..Default::default()
+            workchain_id: None,
         }),
         signer: Signer::Keys { keys: keys.clone() },
         processing_try_index: None,
