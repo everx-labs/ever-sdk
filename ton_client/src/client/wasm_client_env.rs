@@ -227,7 +227,7 @@ impl ClientEnv {
         method: FetchMethod,
         headers: Option<HashMap<String, String>>,
         body: Option<String>,
-        _timeout_ms: Option<u32>,
+        timeout_ms: Option<u32>,
     ) -> ClientResult<FetchResult> {
         let mut opts = RequestInit::new();
         opts.method(method.as_str());
@@ -251,14 +251,27 @@ impl ClientEnv {
         let window = web_sys::window()
             .ok_or_else(|| Error::http_request_create_error("Can not get `window`"))?;
 
-        let resp_value = JsFuture::from(window.fetch_with_request(&request))
+        let mut resp_future = JsFuture::from(window.fetch_with_request(&request))
             .map(|result| match result {
                 Ok(result) => Ok(result),
                 Err(err) => Err(Error::http_request_send_error(js_value_to_string(err))),
-            })
-            .await?;
+            });
 
-        let response: Response = resp_value.dyn_into().map_err(|_| {
+        let resp_result = match timeout_ms {
+            Some(timeout) => {
+                futures::select!(
+                    result = resp_future => result,
+                    timer = Self::set_timer_internal(timeout as u64).fuse() => {
+                        Err(timer
+                            .err()
+                            .unwrap_or(Error::http_request_send_error("fetch operation timeout")))
+                    }
+                )
+            }
+            None => resp_future.await
+        };
+
+        let response: Response = resp_result?.dyn_into().map_err(|_| {
             Error::http_request_parse_error("Can not cast response to `Response` struct")
         })?;
 

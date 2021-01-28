@@ -113,6 +113,10 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
         crate::crypto::nacl_sign_detached,
         crate::crypto::nacl::nacl_sign_detached_api,
     );
+    module.register_sync_fn(
+        crate::crypto::nacl_sign_detached_verify,
+        crate::crypto::nacl::nacl_sign_detached_verify_api,
+    );
 
     module.register_sync_fn_without_args(
         crate::crypto::nacl_box_keypair,
@@ -301,7 +305,10 @@ fn register_boc(handlers: &mut RuntimeHandlers) {
         crate::boc::blockchain_config::get_blockchain_config_api,
     );
     module.register_sync_fn(crate::boc::get_boc_hash, crate::boc::hash::get_boc_hash_api);
-    module.register_sync_fn(crate::boc::get_code_from_tvc, crate::boc::tvc::get_code_from_tvc_api);
+    module.register_sync_fn(
+        crate::boc::get_code_from_tvc,
+        crate::boc::tvc::get_code_from_tvc_api,
+    );
     module.register();
 }
 
@@ -317,19 +324,27 @@ fn register_net(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::net::OrderBy>();
     module.register_type::<crate::net::SortDirection>();
 
+    module.register_async_fn(crate::net::query, crate::net::queries::query_api);
     module.register_async_fn(
-        crate::net::query,
-        crate::net::queries::query_api,
+        crate::net::batch_query,
+        crate::net::batch::batch_query_api,
     );
     module.register_async_fn(
         crate::net::query_collection,
         crate::net::queries::query_collection_api,
     );
     module.register_async_fn(
+        crate::net::aggregate_collection,
+        crate::net::queries::aggregate_collection_api,
+    );
+    module.register_async_fn(
         crate::net::wait_for_collection,
         crate::net::queries::wait_for_collection_api,
     );
-    module.register_async_fn(crate::net::unsubscribe, crate::net::subscriptions::unsubscribe_api);
+    module.register_async_fn(
+        crate::net::unsubscribe,
+        crate::net::subscriptions::unsubscribe_api,
+    );
     module.register_async_fn_with_callback(
         super::net::subscribe_collection,
         super::net::subscribe_collection_api,
@@ -432,6 +447,7 @@ fn register_debot(handlers: &mut RuntimeHandlers) {
         crate::json_interface::debot::fetch_api,
     );
     module.register_async_fn(crate::debot::execute, crate::debot::execute_api);
+    module.register_async_fn(crate::debot::send, crate::debot::send_api);
     module.register_sync_fn(crate::debot::remove, crate::debot::remove_api);
     module.register();
 }

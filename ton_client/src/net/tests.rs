@@ -1,14 +1,57 @@
-use super::*;
+use tokio::sync::Mutex;
+
 use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer};
 use crate::error::ClientError;
 use crate::net::{
-    ParamsOfQueryCollection, ParamsOfSubscribeCollection, ParamsOfWaitForCollection,
-    ResultOfQueryCollection, ResultOfSubscribeCollection, ResultOfSubscription,
-    ResultOfWaitForCollection,
+    Error, ParamsOfQueryCollection,
+    ParamsOfSubscribeCollection, ParamsOfWaitForCollection, ResultOfQueryCollection,
+    ResultOfSubscribeCollection, ResultOfSubscription, ResultOfWaitForCollection,
 };
 use crate::processing::ParamsOfProcessMessage;
 use crate::tests::{TestClient, HELLO};
-use tokio::sync::Mutex;
+
+use super::*;
+
+#[tokio::test(core_threads = 2)]
+async fn batch_query() {
+    let client = TestClient::new();
+
+    let batch: ResultOfBatchQuery = client
+        .request_async(
+            "net.batch_query",
+            ParamsOfBatchQuery {
+                operations: vec![
+                    ParamsOfQueryOperation::QueryCollection(ParamsOfQueryCollection {
+                        collection: "blocks_signatures".to_owned(),
+                        filter: None,
+                        result: "id".to_owned(),
+                        limit: Some(1),
+                        order: None,
+                    }),
+                    ParamsOfQueryOperation::AggregateCollection(ParamsOfAggregateCollection {
+                        collection: "accounts".to_owned(),
+                        filter: None,
+                        fields: Some(vec![FieldAggregation {
+                            field: "".into(),
+                            aggregation_fn: AggregationFn::COUNT,
+                        }]),
+                    }),
+                    ParamsOfQueryOperation::WaitForCollection(ParamsOfWaitForCollection {
+                        collection: "transactions".to_owned(),
+                        filter: Some(json!({
+                            "now": { "gt": 20 }
+                        })),
+                        result: "id now".to_owned(),
+                        timeout: None,
+                    }),
+                ],
+            },
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(batch.results.len(), 3);
+}
 
 #[tokio::test(core_threads = 2)]
 async fn query() {
@@ -70,6 +113,29 @@ async fn all_accounts() {
 }
 
 #[tokio::test(core_threads = 2)]
+async fn aggregates() {
+    let client = TestClient::new();
+
+    let result: ResultOfAggregateCollection = client
+        .request_async(
+            "net.aggregate_collection",
+            ParamsOfAggregateCollection {
+                collection: "accounts".to_owned(),
+                filter: Some(json!({})),
+                fields: Some(vec![FieldAggregation {
+                    field: "".into(),
+                    aggregation_fn: AggregationFn::COUNT,
+                }]),
+            },
+        )
+        .await
+        .unwrap();
+
+    let count = u32::from_str_radix(result.values[0].as_str().unwrap(), 10).unwrap();
+    assert!(count > 0);
+}
+
+#[tokio::test(core_threads = 2)]
 async fn ranges() {
     let client = TestClient::new();
 
@@ -125,9 +191,13 @@ async fn wait_for() {
 
 #[tokio::test(core_threads = 2)]
 async fn subscribe_for_transactions_with_addresses() {
-    let client = TestClient::new();
+    let client = TestClient::new_with_config(json!({
+        "network": {
+            "server_address": TestClient::network_address(),
+        }
+    }));
     let subscription_client = TestClient::new();
-    let keys = client.generate_sign_keys();
+    let keys = subscription_client.generate_sign_keys();
     let deploy_params = ParamsOfEncodeMessage {
         abi: TestClient::abi(HELLO, None),
         deploy_set: Some(DeploySet {
@@ -139,10 +209,13 @@ async fn subscribe_for_transactions_with_addresses() {
         address: None,
         call_set: CallSet::some_with_function("constructor"),
     };
-    let msg = client.encode_message(deploy_params.clone()).await.unwrap();
+    let msg = subscription_client.encode_message(deploy_params.clone()).await.unwrap();
     let transactions = std::sync::Arc::new(Mutex::new(vec![]));
     let transactions_copy1 = transactions.clone();
     let transactions_copy2 = transactions.clone();
+    let notifications = std::sync::Arc::new(Mutex::new(vec![]));
+    let notifications_copy1 = notifications.clone();
+    let notifications_copy2 = notifications.clone();
     let address1 = msg.address.clone();
     let address2 = msg.address.clone();
 
@@ -157,6 +230,7 @@ async fn subscribe_for_transactions_with_addresses() {
         };
         let address1 = address1.clone();
         let transactions_copy = transactions_copy1.clone();
+        let notifications_copy = notifications_copy1.clone();
         async move {
             match result {
                 Ok(result) => {
@@ -165,6 +239,7 @@ async fn subscribe_for_transactions_with_addresses() {
                 }
                 Err(err) => {
                     println!(">>> {}", err);
+                    notifications_copy.lock().await.push(err);
                 }
             }
         }
@@ -183,53 +258,19 @@ async fn subscribe_for_transactions_with_addresses() {
             callback1
         ).await.unwrap();
 
-    let callback2 = move |result: serde_json::Value, response_type: SubscriptionResponseType| {
-        let result = match response_type {
-            SubscriptionResponseType::Ok => {
-                Ok(serde_json::from_value::<ResultOfSubscription>(result).unwrap())
-            }
-            SubscriptionResponseType::Error => {
-                Err(serde_json::from_value::<ClientError>(result).unwrap())
-            }
-        };
-        let transactions_copy = transactions_copy2.clone();
-        let address2 = address2.clone();
-        async move {
-            match result {
-                Ok(result) => {
-                    assert_eq!(result.result["account_addr"], address2);
-                    transactions_copy.lock().await.push(result.result);
-                }
-                Err(err) => {
-                    println!(">>> {}", err);
-                }
-            }
-        }
-    };
-
-    let handle2: ResultOfSubscribeCollection = subscription_client.request_async_callback(
-            "net.subscribe_collection",
-            ParamsOfSubscribeCollection {
-                collection: "transactions".to_owned(),
-                filter: Some(json!({
-                    "account_addr": { "eq": msg.address.clone() },
-                    "status": { "eq": ton_sdk::json_helper::transaction_status_to_u8(ton_block::TransactionProcessingStatus::Finalized) }
-                })),
-                result: "id account_addr".to_owned(),
-            },
-            callback2
-        ).await.unwrap();
-
     // send grams to create first transaction
     client.get_grams_from_giver_async(&msg.address, None).await;
 
     // give some time for subscription to receive all data
     std::thread::sleep(std::time::Duration::from_millis(1000));
 
-    // check that second transaction is not received when subscription suspended
     {
+        // check that transaction is received
         let transactions = transactions.lock().await;
-        assert_eq!(transactions.len(), 2);
+        assert_eq!(transactions.len(), 1);
+        // and no error notifications
+        let notifications = notifications.lock().await;
+        assert_eq!(notifications.len(), 0);
     }
 
     // suspend subscription
@@ -250,10 +291,57 @@ async fn subscribe_for_transactions_with_addresses() {
         .await
         .unwrap();
 
-    // check that second transaction is not received when subscription suspended
+    // create second subscription while network is suspended
+    let callback2 = move |result: serde_json::Value, response_type: SubscriptionResponseType| {
+        let result = match response_type {
+            SubscriptionResponseType::Ok => {
+                Ok(serde_json::from_value::<ResultOfSubscription>(result).unwrap())
+            }
+            SubscriptionResponseType::Error => {
+                Err(serde_json::from_value::<ClientError>(result).unwrap())
+            }
+        };
+        let transactions_copy = transactions_copy2.clone();
+        let notifications_copy = notifications_copy2.clone();
+        let address2 = address2.clone();
+        async move {
+            match result {
+                Ok(result) => {
+                    assert_eq!(result.result["account_addr"], address2);
+                    transactions_copy.lock().await.push(result.result);
+                }
+                Err(err) => {
+                    println!(">>> {}", err);
+                    notifications_copy.lock().await.push(err);
+                }
+            }
+        }
+    };
+
+    let handle2: ResultOfSubscribeCollection = subscription_client.request_async_callback(
+            "net.subscribe_collection",
+            ParamsOfSubscribeCollection {
+                collection: "transactions".to_owned(),
+                filter: Some(json!({
+                    "account_addr": { "eq": msg.address.clone() },
+                    "status": { "eq": ton_sdk::json_helper::transaction_status_to_u8(ton_block::TransactionProcessingStatus::Finalized) }
+                })),
+                result: "id account_addr".to_owned(),
+            },
+            callback2
+        ).await.unwrap();
+
+    // give some time for subscription to receive all data
+    std::thread::sleep(std::time::Duration::from_millis(500));
     {
+        // check that second transaction is not received when subscription suspended
         let transactions = transactions.lock().await;
-        assert_eq!(transactions.len(), 2);
+        assert_eq!(transactions.len(), 1);
+        // and both subscriptions received notification about suspend
+        let notifications = notifications.lock().await;
+        assert_eq!(notifications.len(), 2);
+        assert_eq!(notifications[0], Error::network_module_suspended());
+        assert_eq!(notifications[1], Error::network_module_suspended());
     }
 
     // resume subscription
@@ -263,7 +351,7 @@ async fn subscribe_for_transactions_with_addresses() {
         .unwrap();
 
     // run contract function to create third transaction
-    client
+    subscription_client
         .net_process_message(
             ParamsOfProcessMessage {
                 message_encode_params: ParamsOfEncodeMessage {
@@ -286,8 +374,13 @@ async fn subscribe_for_transactions_with_addresses() {
 
     // check that third transaction is now received after resume
     let transactions = transactions.lock().await;
-    assert_eq!(transactions.len(), 4);
+    assert_eq!(transactions.len(), 3);
     assert_ne!(transactions[0]["id"], transactions[2]["id"]);
+    // and both subscriptions received notification about resume
+    let notifications = notifications.lock().await;
+    assert_eq!(notifications.len(), 4);
+    assert_eq!(notifications[2], Error::network_module_resumed());
+    assert_eq!(notifications[3], Error::network_module_resumed());
 
     let _: () = subscription_client
         .request_async("net.unsubscribe", handle1)
@@ -390,10 +483,7 @@ async fn test_wait_resume() {
     let client = std::sync::Arc::new(TestClient::new());
     let client_copy = client.clone();
 
-    let _: () = client
-        .request_async("net.suspend", ())
-        .await
-        .unwrap();
+    let _: () = client.request_async("net.suspend", ()).await.unwrap();
 
     let start = std::time::Instant::now();
 
@@ -408,10 +498,7 @@ async fn test_wait_resume() {
     let timeout = 5000;
     tokio::time::delay_for(tokio::time::Duration::from_millis(timeout)).await;
 
-    let _: () = client
-        .request_async("net.resume", ())
-        .await
-        .unwrap();
+    let _: () = client.request_async("net.resume", ()).await.unwrap();
 
     assert!(duration.await.unwrap() > timeout as u128);
 }

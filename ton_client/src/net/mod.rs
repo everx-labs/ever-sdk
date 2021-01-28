@@ -11,54 +11,55 @@
 * limitations under the License.
 */
 
+pub use batch::{batch_query, ParamsOfBatchQuery, ResultOfBatchQuery};
+pub use errors::{Error, ErrorCode};
+pub use queries::{
+    aggregate_collection, query, query_collection, wait_for_collection, ParamsOfQuery,
+    ParamsOfWaitForCollection, ResultOfAggregateCollection, ResultOfQuery, ResultOfQueryCollection,
+    ResultOfWaitForCollection,
+};
+pub(crate) use server_link::{ServerLink, MAX_TIMEOUT};
+pub use subscriptions::{
+    subscribe_collection, unsubscribe, ParamsOfSubscribeCollection, ResultOfSubscribeCollection,
+    ResultOfSubscription, SubscriptionResponseType,
+};
+pub use ton_gql::{
+    AggregationFn, FieldAggregation, GraphQLOperationEvent, OrderBy,
+    ParamsOfAggregateCollection, ParamsOfQueryCollection, ParamsOfQueryOperation, PostRequest,
+    SortDirection,
+};
+pub use types::{
+    NetworkConfig, BLOCKS_TABLE_NAME, CONTRACTS_TABLE_NAME, MESSAGES_TABLE_NAME,
+    TRANSACTIONS_TABLE_NAME,
+};
+
 use crate::client::ClientContext;
 use crate::error::ClientResult;
 
+pub(crate) mod batch;
 mod errors;
 mod gql;
 pub(crate) mod queries;
-mod websocket_link;
-mod server_link;
 mod server_info;
+mod server_link;
 pub(crate) mod subscriptions;
+mod ton_gql;
 mod types;
-
-pub use errors::{Error, ErrorCode};
-pub use gql::{OrderBy, SortDirection};
-pub use queries::{
-    query, query_collection, wait_for_collection,
-    ParamsOfQuery, ParamsOfQueryCollection, ParamsOfWaitForCollection, ResultOfQuery,
-    ResultOfQueryCollection, ResultOfWaitForCollection,
-};
-pub use subscriptions::{
-    subscribe_collection, unsubscribe,
-    ParamsOfSubscribeCollection, ResultOfSubscribeCollection, ResultOfSubscription,
-    SubscriptionResponseType
-};
-pub use types::{
-    NetworkConfig,
-    MESSAGES_TABLE_NAME, CONTRACTS_TABLE_NAME, BLOCKS_TABLE_NAME, TRANSACTIONS_TABLE_NAME
-};
-
-pub(crate) use server_link::{ServerLink, MAX_TIMEOUT};
+mod websocket_link;
 
 #[cfg(test)]
 mod tests;
 
 /// Suspends network module to stop any network activity
 #[api_function]
-pub async fn suspend(
-    context: std::sync::Arc<ClientContext>,
-) -> ClientResult<()> {
+pub async fn suspend(context: std::sync::Arc<ClientContext>) -> ClientResult<()> {
     context.get_server_link()?.suspend().await;
     Ok(())
 }
 
 /// Resumes network module to enable network activity
 #[api_function]
-pub async fn resume(
-    context: std::sync::Arc<ClientContext>,
-) -> ClientResult<()> {
+pub async fn resume(context: std::sync::Arc<ClientContext>) -> ClientResult<()> {
     context.get_server_link()?.resume().await;
     Ok(())
 }
@@ -83,11 +84,11 @@ pub async fn find_last_shard_block(
 ) -> ClientResult<ResultOfFindLastShardBlock> {
     let address = crate::encoding::account_decode(&params.address)?;
 
-    let block_id = crate::processing::blocks_walking::find_last_shard_block(&context, &address)
-        .await?;
+    let block_id =
+        crate::processing::blocks_walking::find_last_shard_block(&context, &address).await?;
 
     Ok(ResultOfFindLastShardBlock {
-        block_id: block_id.to_string()
+        block_id: block_id.to_string(),
     })
 }
 
@@ -99,13 +100,11 @@ pub struct EndpointsSet {
 
 /// Requests the list of alternative endpoints from server
 #[api_function]
-pub async fn fetch_endpoints(
-    context: std::sync::Arc<ClientContext>,
-) -> ClientResult<EndpointsSet> {
+pub async fn fetch_endpoints(context: std::sync::Arc<ClientContext>) -> ClientResult<EndpointsSet> {
     let client = context.get_server_link()?;
-    
+
     Ok(EndpointsSet {
-        endpoints: client.fetch_endpoints().await?
+        endpoints: client.fetch_endpoints().await?,
     })
 }
 
@@ -113,16 +112,16 @@ pub async fn fetch_endpoints(
 #[api_function]
 pub async fn set_endpoints(
     context: std::sync::Arc<ClientContext>,
-    params: EndpointsSet
+    params: EndpointsSet,
 ) -> ClientResult<()> {
     if params.endpoints.len() == 0 {
         return Err(Error::no_endpoints_provided());
     }
-    
+
     context
         .get_server_link()?
         .set_endpoints(params.endpoints)
         .await;
-    
+
     Ok(())
 }

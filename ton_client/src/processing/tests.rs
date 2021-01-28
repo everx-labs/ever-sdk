@@ -42,30 +42,36 @@ async fn test_wait_message() {
         crate::json_interface::processing::wait_for_transaction_api(),
     );
 
-    let encoded = client
-        .encode_message(ParamsOfEncodeMessage {
-            abi: abi.clone(),
-            address: None,
-            deploy_set: DeploySet::some_with_tvc(events_tvc.clone()),
-            call_set: Some(CallSet {
-                function_name: "constructor".into(),
-                header: Some(FunctionHeader {
-                    expire: None,
-                    time: None,
-                    pubkey: Some(keys.public.clone()),
-                }),
-                input: None,
+    let encode_params = ParamsOfEncodeMessage {
+        abi: abi.clone(),
+        address: None,
+        deploy_set: DeploySet::some_with_tvc(events_tvc.clone()),
+        call_set: Some(CallSet {
+            function_name: "constructor".into(),
+            header: Some(FunctionHeader {
+                expire: None,
+                time: None,
+                pubkey: Some(keys.public.clone()),
             }),
-            signer: Signer::Keys { keys: keys.clone() },
-            processing_try_index: None,
-        })
+            input: None,
+        }),
+        signer: Signer::Keys { keys: keys.clone() },
+        processing_try_index: None,
+    };
+
+    let encoded = client
+        .encode_message(encode_params.clone())
         .await
         .unwrap();
 
     client
         .get_grams_from_giver_async(&encoded.address, None)
         .await;
-
+    
+    let encoded = client
+        .encode_message(encode_params)
+        .await
+        .unwrap();
     let result = send_message
         .call_with_callback(
             ParamsOfSendMessage {

@@ -18,10 +18,6 @@ pub const CONTRACTS_TABLE_NAME: &str = "accounts";
 pub const BLOCKS_TABLE_NAME: &str = "blocks";
 pub const TRANSACTIONS_TABLE_NAME: &str = "transactions";
 
-pub fn default_network_retries_count() -> i8 {
-    5
-}
-
 pub fn default_message_retries_count() -> i8 {
     5
 }
@@ -38,14 +34,8 @@ pub fn default_out_of_sync_threshold() -> u32 {
     15000
 }
 
-pub fn default_reconnect_timeout() -> u32 {
-    1000
-}
-
-fn deserialize_network_retries_count<'de, D: Deserializer<'de>>(
-    deserializer: D,
-) -> Result<i8, D::Error> {
-    Ok(Option::deserialize(deserializer)?.unwrap_or(default_network_retries_count()))
+pub fn default_max_reconnect_timeout() -> u32 {
+    120000
 }
 
 fn deserialize_message_retries_count<'de, D: Deserializer<'de>>(
@@ -72,10 +62,10 @@ fn deserialize_out_of_sync_threshold<'de, D: Deserializer<'de>>(
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_out_of_sync_threshold()))
 }
 
-fn deserialize_reconnect_timeout<'de, D: Deserializer<'de>>(
+fn deserialize_max_reconnect_timeout<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<u32, D::Error> {
-    Ok(Option::deserialize(deserializer)?.unwrap_or(default_reconnect_timeout()))
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_max_reconnect_timeout()))
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ApiType)]
@@ -85,13 +75,13 @@ pub struct NetworkConfig {
     pub server_address: Option<String>,
 
     /// List of DApp Server addresses. Any correct URL format can be specified, including IP addresses
+    /// This parameter is prevailing over `server_address`.
     pub endpoints: Option<Vec<String>>,
 
-    /// The number of automatic network retries that SDK performs in case of connection problems
-    /// The default value is 5.
-    #[serde(default = "default_network_retries_count",
-    deserialize_with = "deserialize_network_retries_count")]
-    pub network_retries_count: i8,
+    /// Maximum time for sequential reconnections in ms. Default value is 120000 (2 min)
+    #[serde(default = "default_max_reconnect_timeout",
+    deserialize_with = "deserialize_max_reconnect_timeout")]
+    pub max_reconnect_timeout: u32,
 
     /// The number of automatic message processing retries that SDK performs
     /// in case of `Message Expired (507)` error - but only for those messages which 
@@ -115,18 +105,13 @@ pub struct NetworkConfig {
     deserialize_with = "deserialize_wait_for_timeout")]
     pub wait_for_timeout: u32,
 
-    /// Maximum time difference between server and client. If client's device time is out of sink and difference is more than
-    /// the threshhold then error will occur. Also the error will occur if the specified threshhold is more than 
+    /// Maximum time difference between server and client. If client's device time is out of sync and difference is more than 
+    /// the threshold then error will occur. Also an error will occur if the specified threshold is more than 
     /// `message_processing_timeout/2`. 
     /// The default value is 15 sec.
     #[serde(default = "default_out_of_sync_threshold",
     deserialize_with = "deserialize_out_of_sync_threshold")]
     pub out_of_sync_threshold: u32,
-
-    /// Timeout between reconnect attempts
-    #[serde(default = "default_reconnect_timeout",
-    deserialize_with = "deserialize_reconnect_timeout")]
-    pub reconnect_timeout: u32,
 
     /// Access key to GraphQL API. At the moment is not used in production
     pub access_key: Option<String>,
@@ -137,12 +122,11 @@ impl Default for NetworkConfig {
         Self {
             server_address: None,
             endpoints: None,
-            network_retries_count: default_network_retries_count(),
+            max_reconnect_timeout: default_max_reconnect_timeout(),
             message_retries_count: default_message_retries_count(),
             message_processing_timeout: default_message_processing_timeout(),
             wait_for_timeout: default_wait_for_timeout(),
             out_of_sync_threshold: default_out_of_sync_threshold(),
-            reconnect_timeout: default_reconnect_timeout(),
             access_key: None,
         }
     }
