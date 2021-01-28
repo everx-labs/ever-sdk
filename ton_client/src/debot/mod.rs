@@ -16,6 +16,7 @@ mod browser;
 mod context;
 mod debot_abi;
 mod dengine;
+mod dinterface;
 mod errors;
 mod routines;
 mod run_output;

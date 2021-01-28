@@ -24,6 +24,7 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use ton_abi::Contract;
 use ton_block::{InternalMessageHeader, Message};
+use super::dinterface::BuiltinInterfaces;
 
 const EMPTY_CELL: &'static str = "te6ccgEBAQEAAgAAAA==";
 
@@ -71,6 +72,7 @@ pub struct DEngine {
     target_addr: Option<String>,
     target_abi: Option<String>,
     browser: Arc<dyn BrowserCallbacks + Send + Sync>,
+    builtin_interfaces: BuiltinInterfaces,
 }
 
 impl DEngine {
@@ -96,7 +98,7 @@ impl DEngine {
                 .unwrap_or(load_abi(DEBOT_ABI))
                 .unwrap(),
             addr,
-            ton,
+            ton.clone(),
             state: String::new(),
             state_machine: vec![],
             curr_state: STATE_EXIT,
@@ -104,6 +106,7 @@ impl DEngine {
             target_addr: None,
             target_abi: None,
             browser: browser,
+            builtin_interfaces: BuiltinInterfaces::new(ton.clone()),
         }
     }
 
@@ -773,9 +776,13 @@ impl DEngine {
 
     async fn handle_output(&mut self, output: RunOutput) -> ClientResult<()> {
         for msg in output.interface_calls {
-            // TODO: check if there are builtin interfaces
-            // BuiltinInterfaces::try_execute(&msg)
-            self.browser.send(msg.0).await;
+            let res = self.builtin_interfaces.try_execute(&msg.0);
+            if res.is_none() {
+                self.browser.send(msg.0).await;
+            } else {
+                let return_args = res.unwrap().map_err(|e| error::execute_failed(e))?;
+                self.send(String::new(), return_args.0, return_args.1)?;
+            }
         }
 
         // TODO: 
