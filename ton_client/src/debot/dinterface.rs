@@ -73,7 +73,6 @@ pub trait DebotInterfaceExecutor {
         debug!("call for interface {}", interface_id);
         match interfaces.get(interface_id) {
             Some(object) => {
-                debug!("builtin interface");
                 let (func, args) = object.decode_msg(client.clone(), body)?;
                 object.call(&func, &args).await
             },
