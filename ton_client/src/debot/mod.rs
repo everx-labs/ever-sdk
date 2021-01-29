@@ -18,6 +18,7 @@ mod debot_abi;
 mod dengine;
 mod dinterface;
 mod base64_interface;
+mod sdk_interface;
 mod errors;
 mod routines;
 mod run_output;

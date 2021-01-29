@@ -788,7 +788,7 @@ impl DEngine {
         while let Some(call) = output.calls.pop_front() {
             match call {
                 DebotCallType::Interface{msg, id} => {
-                    let res = self.builtin_interfaces.try_execute(&msg, &id);
+                    let res = self.builtin_interfaces.try_execute(&msg, &id).await;
                     if res.is_none() {
                         self.browser.send(msg).await;
                     } else {

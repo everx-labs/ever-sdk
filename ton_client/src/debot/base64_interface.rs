@@ -1,5 +1,4 @@
-use super::dinterface::{InterfaceResult, DebotInterface, InterfaceMethod, boxed, decode_answer_id, get_string_arg};
-use std::collections::HashMap;
+use super::dinterface::{InterfaceResult, DebotInterface, decode_answer_id, get_string_arg};
 use serde_json::Value;
 use crate::abi::{Abi};
 
@@ -9,26 +8,21 @@ const ABI: &str = r#"
 
 pub const BASE64_ID: &str = "8913b27b45267aad3ee08437e64029ac38fb59274f19adca0b23c4f957c8cfa1";
 
-pub struct Base64Interface {
-    methods: HashMap<String, InterfaceMethod>,
-}
+pub struct Base64Interface {}
 
 impl Base64Interface {
     pub fn new() -> Self {
-        let mut methods = HashMap::new();
-        methods.insert("encode".to_owned(), boxed(Self::encode));
-        methods.insert("decode".to_owned(), boxed(Self::decode));
-        Self { methods: methods }
+        Self { }
     }
 
-    fn encode(args: &Value) -> InterfaceResult {
+    fn encode(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
         let str_to_encode = get_string_arg(args, "str")?;
         let encoded = base64::encode(&str_to_encode);
         Ok((answer_id, json!({ "base64": hex::encode(encoded.as_bytes()) })))
     }
 
-    fn decode(args: &Value) -> InterfaceResult {
+    fn decode(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
         let str_to_decode = get_string_arg(args, "str")?;
         let decoded = base64::decode(&str_to_decode).unwrap();
@@ -36,6 +30,7 @@ impl Base64Interface {
     }
 }
 
+#[async_trait::async_trait]
 impl DebotInterface for Base64Interface {
     fn get_id(&self) -> String {
         BASE64_ID.to_string()
@@ -45,10 +40,11 @@ impl DebotInterface for Base64Interface {
         Abi::Json(ABI.to_owned())
     }
 
-    fn call_function(&self, func: &str, args: &Value) -> InterfaceResult {
-        match self.methods.get(func) {
-            Some(fun) => fun(args),
-            None => Err(format!("function \"{}\" is not implemented", func)),
+    async fn call(&self, func: &str, args: &Value) -> InterfaceResult {
+        match func {
+            "encode" => self.encode(args),
+            "decode"  => self.decode(args),
+            _ => Err(format!("function \"{}\" is not implemented", func)),
         }
     }
 

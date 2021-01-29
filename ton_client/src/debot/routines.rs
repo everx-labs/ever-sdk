@@ -12,7 +12,7 @@ use super::TonClient;
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub(super) struct ResultOfGetAccountState {
     balance: String,
-    acc_type: u8,
+    pub acc_type: u8,
     last_trans_lt: String,
     #[serde(default)]
     code: String,
@@ -44,7 +44,7 @@ pub async fn call_routine(
             } else {
                 arg_json?
             };
-            let balance = get_balance(ton, args).await?;
+            let balance = get_balance(ton, &args).await?;
             Ok(json!({ "arg1": balance }))
         }
         "getAccountState" => {
@@ -54,7 +54,7 @@ pub async fn call_routine(
                 arg_json?
             };
             debug!("getAccountState({})", args);
-            let res = get_account_state(ton, args).await?;
+            let res = get_account_state(ton, &args).await?;
             serde_json::to_value(res)
                 .map_err(|e| format!("failed to serialize account state: {}", e))
         }
@@ -95,7 +95,7 @@ pub async fn call_routine(
         "genRandom" => {
             let arg_json = arg_json?;
             debug!("genRandom({})", arg_json);
-            let rnd = generate_random(ton, arg_json)?;
+            let rnd = generate_random(ton, &arg_json)?;
             let buf = base64::decode(&rnd)
                 .map_err(|e| format!("failed to decode random buffer to byte array: {}", e))?;
             Ok(json!({ "buffer": hex::encode(buf) }))
@@ -124,7 +124,7 @@ pub fn convert_string_to_tokens(_ton: TonClient, arg: &str) -> Result<String, St
     Err("Invalid amout value".to_string())
 }
 
-pub async fn get_balance(ton: TonClient, arg_json: serde_json::Value) -> Result<String, String> {
+pub async fn get_balance(ton: TonClient, arg_json: &serde_json::Value) -> Result<String, String> {
     let acc = get_account_state(ton, arg_json).await?;
     Ok(acc.balance.to_string())
 }
@@ -194,7 +194,7 @@ pub(super) async fn sign_hash(
     Ok(result.signature)
 }
 
-pub(super) fn generate_random(ton: TonClient, args: serde_json::Value) -> Result<String, String> {
+pub(super) fn generate_random(ton: TonClient, args: &serde_json::Value) -> Result<String, String> {
     let len_str = get_arg(&args, "length")?;
     let len =
         u32::from_str_radix(&len_str, 10).map_err(|e| format!("failed to parse length: {}", e))?;
@@ -243,7 +243,7 @@ pub(super) fn nacl_box_gen_keypair(
 
 pub(super) async fn get_account_state(
     ton: TonClient,
-    args: serde_json::Value,
+    args: &serde_json::Value,
 ) -> Result<ResultOfGetAccountState, String> {
     let addr = get_arg(&args, "addr")?.to_lowercase();
     let mut accounts = query_collection(

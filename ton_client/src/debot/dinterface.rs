@@ -1,27 +1,22 @@
 use super::base64_interface::{Base64Interface, BASE64_ID};
+use super::sdk_interface::{SdkInterface, SDK_ID};
 use crate::abi::{decode_message_body, Abi, ParamsOfDecodeMessageBody};
 use crate::boc::{parse_message, ParamsOfParse};
 use crate::debot::TonClient;
+use crate::encoding::{account_decode};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
 
 pub type InterfaceResult = Result<(u32, Value), String>;
-pub type InterfaceMethod = Arc<dyn Fn(&Value) -> InterfaceResult + Send + Sync + 'static>;
 
-pub(crate) fn boxed<F>(f: F) -> InterfaceMethod
-where
-    F: Fn(&Value) -> InterfaceResult + Send + Sync + 'static,
-{
-    Arc::new(f) as InterfaceMethod
-}
-
+#[async_trait::async_trait]
 pub trait DebotInterface {
     fn get_id(&self) -> String;
     fn get_abi(&self) -> Abi;
-    fn call_function(&self, func: &str, args: &Value) -> InterfaceResult;
+    async fn call(&self, func: &str, args: &Value) -> InterfaceResult;
 
-    fn call(&self, client: TonClient, msg_body: String) -> InterfaceResult {
+    fn decode_msg(&self, client: TonClient, msg_body: String) -> Result<(String, Value), String> {
         let decoded = decode_message_body(
             client.clone(),
             ParamsOfDecodeMessageBody {
@@ -38,7 +33,7 @@ pub trait DebotInterface {
             decoded.value.as_ref().unwrap()
         );
 
-        self.call_function(&decoded.name, decoded.value.as_ref().unwrap())
+        Ok((decoded.name, decoded.value.unwrap()))
     }
 }
 
@@ -50,13 +45,20 @@ pub struct BuiltinInterfaces {
 impl BuiltinInterfaces {
     pub fn new(client: TonClient) -> Self {
         let mut interfaces = HashMap::new();
-        let iface: Arc<dyn DebotInterface + Send + Sync> = Arc::new(Base64Interface::new());
+
+        let iface: Arc<dyn DebotInterface + Send + Sync> =
+            Arc::new(Base64Interface::new());
         interfaces.insert(BASE64_ID.to_string(), iface);
+
+        let iface: Arc<dyn DebotInterface + Send + Sync> =
+            Arc::new(SdkInterface::new(client.clone()));
+        interfaces.insert(SDK_ID.to_string(), iface);
+
         Self { client, interfaces }
     }
 
-    pub fn try_execute(&self, msg: &String, interface_id: &String) -> Option<InterfaceResult> {
-        let res = self.execute(msg, interface_id);
+    pub async fn try_execute(&self, msg: &String, interface_id: &String) -> Option<InterfaceResult> {
+        let res = self.execute(msg, interface_id).await;
         match res.as_ref() {
             Err(_) => Some(res),
             Ok(val) => {
@@ -69,7 +71,7 @@ impl BuiltinInterfaces {
         }
     }
 
-    fn execute(&self, msg: &String, interface_id: &String) -> InterfaceResult {
+    async fn execute(&self, msg: &String, interface_id: &String) -> InterfaceResult {
         let parsed = parse_message(self.client.clone(), ParamsOfParse { boc: msg.clone() })
             .map_err(|e| format!("{}", e))?;
 
@@ -79,7 +81,10 @@ impl BuiltinInterfaces {
             .to_owned();
         debug!("call for interface id {}", interface_id);
         match self.interfaces.get(interface_id) {
-            Some(object) => object.call(self.client.clone(), body),
+            Some(object) => {
+                let (func, args) = object.decode_msg(self.client.clone(), body)?;
+                object.call(&func, &args).await
+            },
             None => Ok((0, json!({}))),
         }
     }
@@ -110,4 +115,13 @@ pub fn get_string_arg(args: &Value, name: &str) -> Result<String, String> {
     std::str::from_utf8(&bytes)
         .map_err(|e| format!("{}", e))
         .map(|x| x.to_string())
+}
+
+pub fn get_address_arg(args: &Value, name: &str) -> Result<String, String> {
+    let addr_str = args[name]
+        .as_str()
+        .ok_or(format!("\"{}\" not found", name))?
+        .to_lowercase();
+    account_decode(&addr_str).map_err(|e| format!("invalid address: {}", e))?;
+    Ok(addr_str)
 }
