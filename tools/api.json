@@ -360,6 +360,17 @@
               "description": "Default value is 120000 (2 min)"
             },
             {
+              "name": "reconnect_timeout",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Deprecated",
+              "description": null
+            },
+            {
               "name": "message_retries_count",
               "type": "Optional",
               "optional_inner": {
