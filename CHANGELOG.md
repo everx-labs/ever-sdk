@@ -1,7 +1,7 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
-## 1.6.0 Jan 20, 2020
+## 1.6.0 Jan 29, 2021
 ### New
 - `nacl_sign_detached_verify` function to verify detached signature.
 - `aggregate_collection` function as a wrapper for GraphQL aggregation queries.
