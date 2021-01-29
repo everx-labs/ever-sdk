@@ -1,5 +1,5 @@
-use super::base64_interface::{Base64Interface, BASE64_ID};
-use super::sdk_interface::{SdkInterface, SDK_ID};
+use super::base64_interface::{Base64Interface};
+use super::sdk_interface::{SdkInterface};
 use crate::abi::{decode_message_body, Abi, ParamsOfDecodeMessageBody};
 use crate::boc::{parse_message, ParamsOfParse};
 use crate::debot::TonClient;
@@ -37,28 +37,14 @@ pub trait DebotInterface {
     }
 }
 
-pub struct BuiltinInterfaces {
-    client: TonClient,
-    interfaces: HashMap<String, Arc<dyn DebotInterface + Send + Sync>>,
-}
+#[async_trait::async_trait]
+pub trait DebotInterfaceExecutor {
+    fn get_interfaces<'a>(&'a self) -> &'a HashMap<String, Arc<dyn DebotInterface + Send + Sync>>;
+    
+    fn get_client(&self) -> TonClient;
 
-impl BuiltinInterfaces {
-    pub fn new(client: TonClient) -> Self {
-        let mut interfaces = HashMap::new();
-
-        let iface: Arc<dyn DebotInterface + Send + Sync> =
-            Arc::new(Base64Interface::new());
-        interfaces.insert(BASE64_ID.to_string(), iface);
-
-        let iface: Arc<dyn DebotInterface + Send + Sync> =
-            Arc::new(SdkInterface::new(client.clone()));
-        interfaces.insert(SDK_ID.to_string(), iface);
-
-        Self { client, interfaces }
-    }
-
-    pub async fn try_execute(&self, msg: &String, interface_id: &String) -> Option<InterfaceResult> {
-        let res = self.execute(msg, interface_id).await;
+    async fn try_execute(&self, msg: &String, interface_id: &String) -> Option<InterfaceResult> {
+        let res = Self::execute(self.get_client(), msg, interface_id, self.get_interfaces()).await;
         match res.as_ref() {
             Err(_) => Some(res),
             Ok(val) => {
@@ -71,8 +57,13 @@ impl BuiltinInterfaces {
         }
     }
 
-    async fn execute(&self, msg: &String, interface_id: &String) -> InterfaceResult {
-        let parsed = parse_message(self.client.clone(), ParamsOfParse { boc: msg.clone() })
+    async fn execute(
+        client: TonClient,
+        msg: &String,
+        interface_id: &String,
+        interfaces: &HashMap<String, Arc<dyn DebotInterface + Send + Sync>>,
+    ) -> InterfaceResult {
+        let parsed = parse_message(client.clone(), ParamsOfParse { boc: msg.clone() })
             .map_err(|e| format!("{}", e))?;
 
         let body = parsed.parsed["body"]
@@ -80,14 +71,46 @@ impl BuiltinInterfaces {
             .ok_or(format!("parsed message has no body"))?
             .to_owned();
         debug!("call for interface {}", interface_id);
-        match self.interfaces.get(interface_id) {
+        match interfaces.get(interface_id) {
             Some(object) => {
                 debug!("builtin interface");
-                let (func, args) = object.decode_msg(self.client.clone(), body)?;
+                let (func, args) = object.decode_msg(client.clone(), body)?;
                 object.call(&func, &args).await
             },
             None => Ok((0, json!({}))),
         }
+    }
+}
+
+pub struct BuiltinInterfaces {
+    client: TonClient,
+    interfaces: HashMap<String, Arc<dyn DebotInterface + Send + Sync>>,
+}
+
+#[async_trait::async_trait]
+impl DebotInterfaceExecutor for BuiltinInterfaces {
+    fn get_interfaces<'a>(&'a self) -> &'a HashMap<String, Arc<dyn DebotInterface + Send + Sync>> {
+        &self.interfaces
+    }
+    
+    fn get_client(&self) -> TonClient {
+        self.client.clone()
+    }
+}
+
+impl BuiltinInterfaces {
+    pub fn new(client: TonClient) -> Self {
+        let mut interfaces = HashMap::new();
+
+        let iface: Arc<dyn DebotInterface + Send + Sync> =
+            Arc::new(Base64Interface::new());
+        interfaces.insert(iface.get_id(), iface);
+
+        let iface: Arc<dyn DebotInterface + Send + Sync> =
+            Arc::new(SdkInterface::new(client.clone()));
+        interfaces.insert(iface.get_id(), iface);
+
+        Self { client, interfaces }
     }
 }
 

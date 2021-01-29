@@ -30,6 +30,7 @@ pub use browser::BrowserCallbacks;
 pub use context::{DContext, STATE_EXIT, STATE_ZERO};
 pub use dengine::DEngine;
 pub use errors::{Error, ErrorCode};
+pub use dinterface::{DebotInterfaceExecutor, DebotInterface, InterfaceResult};
 
 use crate::error::ClientResult;
 use crate::ClientContext;

@@ -24,7 +24,7 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use ton_abi::Contract;
 use ton_block::{InternalMessageHeader, Message};
-use super::dinterface::BuiltinInterfaces;
+use super::dinterface::{BuiltinInterfaces, DebotInterfaceExecutor};
 use super::DEBOT_WC;
 
 const EMPTY_CELL: &'static str = "te6ccgEBAQEAAgAAAA==";
