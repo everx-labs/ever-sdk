@@ -25,6 +25,7 @@ use std::sync::Arc;
 use ton_abi::Contract;
 use ton_block::{InternalMessageHeader, Message};
 use super::dinterface::BuiltinInterfaces;
+use super::DEBOT_WC;
 
 const EMPTY_CELL: &'static str = "te6ccgEBAQEAAgAAAA==";
 
@@ -794,7 +795,7 @@ impl DEngine {
                     } else {
                         let (funcname, args) = res.unwrap().map_err(|e| Error::execute_failed(e))?;
                         let new_outputs = self.call_debot(
-                            String::new(),
+                            format!("{}:{}", DEBOT_WC, id),
                             funcname,
                             args,
                         ).await?;

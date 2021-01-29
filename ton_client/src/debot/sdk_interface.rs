@@ -6,7 +6,105 @@ use crate::crypto::{chacha20, ParamsOfChaCha20};
 use serde_json::Value;
 
 const ABI: &str = r#"
-
+{
+	"ABI version": 2,
+	"header": ["time"],
+	"functions": [
+		{
+			"name": "getBalance",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"addr","type":"address"}
+			],
+			"outputs": [
+				{"name":"nanotokens","type":"uint128"}
+			]
+		},
+		{
+			"name": "getAccountType",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"addr","type":"address"}
+			],
+			"outputs": [
+				{"name":"acc_type","type":"int8"}
+			]
+		},
+		{
+			"name": "getAccountCodeHash",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"addr","type":"address"}
+			],
+			"outputs": [
+				{"name":"code_hash","type":"uint256"}
+			]
+		},
+		{
+			"name": "chacha20",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"data","type":"bytes"},
+				{"name":"nonce","type":"bytes"},
+				{"name":"key","type":"uint256"}
+			],
+			"outputs": [
+				{"name":"output","type":"bytes"}
+			]
+		},
+		{
+			"name": "signHash",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"hash","type":"uint256"}
+			],
+			"outputs": [
+				{"name":"arg1","type":"bytes"}
+			]
+		},
+		{
+			"name": "genRandom",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"length","type":"uint32"}
+			],
+			"outputs": [
+				{"name":"buffer","type":"bytes"}
+			]
+		},
+		{
+			"name": "compress7z",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"uncompressed","type":"bytes"}
+			],
+			"outputs": [
+				{"name":"comp","type":"bytes"}
+			]
+		},
+		{
+			"name": "uncompress7z",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"compressed","type":"bytes"}
+			],
+			"outputs": [
+				{"name":"uncomp","type":"bytes"}
+			]
+		},
+		{
+			"name": "constructor",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		}
+	],
+	"data": [
+	],
+	"events": [
+	]
+}
 "#;
 
 pub const SDK_ID: &str = "8fc6454f90072c9f1f6d3313ae1608f64f4a0660c6ae9f42c68b6a79e2a1bc4b";
@@ -71,7 +169,7 @@ impl DebotInterface for SdkInterface {
             //"getAccountHash", boxed(Self::decode)),
             "chacha20" => self.chacha20(args),
             //"signHash", self.signHash(),
-            "getRandom" => self.get_random(args),
+            "genRandom" => self.get_random(args),
             _ => Err(format!("function \"{}\" is not implemented", func)),
         }
     }

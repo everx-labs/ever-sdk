@@ -3,7 +3,43 @@ use serde_json::Value;
 use crate::abi::{Abi};
 
 const ABI: &str = r#"
-
+{
+	"ABI version": 2,
+	"header": ["time"],
+	"functions": [
+		{
+			"name": "encode",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"str","type":"bytes"}
+			],
+			"outputs": [
+				{"name":"base64","type":"bytes"}
+			]
+		},
+		{
+			"name": "decode",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"base64","type":"bytes"}
+			],
+			"outputs": [
+				{"name":"str","type":"bytes"}
+			]
+		},
+		{
+			"name": "constructor",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		}
+	],
+	"data": [
+	],
+	"events": [
+	]
+}
 "#;
 
 pub const BASE64_ID: &str = "8913b27b45267aad3ee08437e64029ac38fb59274f19adca0b23c4f957c8cfa1";
@@ -24,7 +60,7 @@ impl Base64Interface {
 
     fn decode(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let str_to_decode = get_string_arg(args, "str")?;
+        let str_to_decode = get_string_arg(args, "base64")?;
         let decoded = base64::decode(&str_to_decode).unwrap();
         Ok((answer_id, json!({ "str": hex::encode(&decoded) })))
     }

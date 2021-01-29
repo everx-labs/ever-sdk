@@ -2,8 +2,8 @@ use super::action::DAction;
 use super::{JsonValue, DEBOT_WC};
 use crate::boc::internal::deserialize_object_from_base64;
 use crate::error::ClientError;
-use ton_block::Message;
 use std::collections::VecDeque;
+use ton_block::Message;
 
 pub(super) enum DebotCallType {
     Interface { msg: String, id: String },
@@ -41,7 +41,6 @@ impl RunOutput {
 }
 
 impl RunOutput {
-
     pub fn decode_actions(&self) -> Result<Option<Vec<DAction>>, String> {
         match self.return_value.as_ref() {
             Some(val) => serde_json::from_value(val["actions"].clone())
@@ -71,10 +70,16 @@ impl RunOutput {
         if msg.0.is_internal() {
             let wc_id = msg.0.workchain_id().unwrap();
             if DEBOT_WC as i32 == wc_id {
-                let account_id = msg.0.int_dst_account_id().unwrap();
+                let std_addr = msg.0.dst().unwrap();
+                let addr = std_addr.to_string();
+                let wc_and_addr: Vec<&str> = addr.split(':').collect();
                 self.calls.push_back(DebotCallType::Interface {
                     msg: msg.1.clone(),
-                    id: account_id.to_string(),
+                    id: wc_and_addr
+                        .get(1)
+                        .map(|x| x.to_owned())
+                        .unwrap_or("0")
+                        .to_string(),
                 });
                 return None;
             }
@@ -112,7 +117,8 @@ impl RunOutput {
                         self.calls.push_back(DebotCallType::External { msg: msg.1 });
                         return None;
                     } else if !call_or_get && !bit {
-                        self.calls.push_back(DebotCallType::GetMethod { msg: msg.1 });
+                        self.calls
+                            .push_back(DebotCallType::GetMethod { msg: msg.1 });
                         return None;
                     }
                 }

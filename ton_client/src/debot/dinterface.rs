@@ -28,7 +28,7 @@ pub trait DebotInterface {
         .map_err(|e| format!(" failed to decode message body: {}", e))?;
 
         debug!(
-            "request: {} ({})",
+            "{} ({})",
             decoded.name,
             decoded.value.as_ref().unwrap()
         );
@@ -79,9 +79,10 @@ impl BuiltinInterfaces {
             .as_str()
             .ok_or(format!("parsed message has no body"))?
             .to_owned();
-        debug!("call for interface id {}", interface_id);
+        debug!("call for interface {}", interface_id);
         match self.interfaces.get(interface_id) {
             Some(object) => {
+                debug!("builtin interface");
                 let (func, args) = object.decode_msg(self.client.clone(), body)?;
                 object.call(&func, &args).await
             },
