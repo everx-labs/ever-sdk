@@ -42,6 +42,10 @@ pub fn default_max_reconnect_timeout() -> u32 {
     120000
 }
 
+pub fn default_reconnect_timeout() -> u32 {
+    1000
+}
+
 fn deserialize_network_retries_count<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<i8, D::Error> {
@@ -78,6 +82,12 @@ fn deserialize_max_reconnect_timeout<'de, D: Deserializer<'de>>(
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_max_reconnect_timeout()))
 }
 
+fn deserialize_reconnect_timeout<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<u32, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_reconnect_timeout()))
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, ApiType)]
 pub struct NetworkConfig {
     /// DApp Server public address. 
@@ -97,6 +107,11 @@ pub struct NetworkConfig {
     #[serde(default = "default_max_reconnect_timeout",
     deserialize_with = "deserialize_max_reconnect_timeout")]
     pub max_reconnect_timeout: u32,
+
+    /// Deprecated
+    #[serde(default = "default_reconnect_timeout",
+    deserialize_with = "deserialize_reconnect_timeout")]
+    pub reconnect_timeout: u32,
 
     /// The number of automatic message processing retries that SDK performs
     /// in case of `Message Expired (507)` error - but only for those messages which 
@@ -139,6 +154,7 @@ impl Default for NetworkConfig {
             endpoints: None,
             network_retries_count: default_network_retries_count(),
             max_reconnect_timeout: default_max_reconnect_timeout(),
+            reconnect_timeout: default_reconnect_timeout(),
             message_retries_count: default_message_retries_count(),
             message_processing_timeout: default_message_processing_timeout(),
             wait_for_timeout: default_wait_for_timeout(),

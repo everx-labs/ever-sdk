@@ -217,7 +217,9 @@ type ClientConfig = {
 type NetworkConfig = {
     server_address?: string,
     endpoints?: string[],
+    network_retries_count?: number,
     max_reconnect_timeout?: number,
+    reconnect_timeout?: number,
     message_retries_count?: number,
     message_processing_timeout?: number,
     wait_for_timeout?: number,
@@ -228,8 +230,11 @@ type NetworkConfig = {
 - `server_address`?: _string_ – DApp Server public address. For instance, for `net.ton.dev/graphql` GraphQL endpoint the server address will be net.ton.dev
 - `endpoints`?: _string[]_ – List of DApp Server addresses.
 <br>Any correct URL format can be specified, including IP addresses This parameter is prevailing over `server_address`.
+- `network_retries_count`?: _number_ – Deprecated.
+<br>You must use `network.max_reconnect_timeout` that allows to specify maximum network resolving timeout.
 - `max_reconnect_timeout`?: _number_ – Maximum time for sequential reconnections in ms.
 <br>Default value is 120000 (2 min)
+- `reconnect_timeout`?: _number_ – Deprecated
 - `message_retries_count`?: _number_ – The number of automatic message processing retries that SDK performs in case of `Message Expired (507)` error - but only for those messages which local emulation was successfull or failed with replay protection error. The default value is 5.
 - `message_processing_timeout`?: _number_ – Timeout that is used to process message delivery for the contracts which ABI does not include "expire" header. If the message is not delivered within the speficied timeout the appropriate error occurs.
 - `wait_for_timeout`?: _number_ – Maximum timeout that is used for query response. The default value is 40 sec.
