@@ -28,9 +28,9 @@ pub(crate) mod encryption;
 mod tests;
 
 pub use crate::crypto::boxes::{
-    get_signing_box, register_signing_box, remove_signing_box, signing_box_get_public_key, signing_box_sign,
-    ParamsOfSigningBoxSign, RegisteredSigningBox, ResultOfSigningBoxGetPublicKey,
-    ResultOfSigningBoxSign, SigningBox, SigningBoxHandle
+    get_signing_box, register_signing_box, remove_signing_box, signing_box_get_public_key,
+    signing_box_sign, ParamsOfSigningBoxSign, RegisteredSigningBox, ResultOfSigningBoxGetPublicKey,
+    ResultOfSigningBoxSign, SigningBox, SigningBoxHandle,
 };
 pub use crate::crypto::encscrypt::{scrypt, ParamsOfScrypt, ResultOfScrypt};
 pub use crate::crypto::hash::{sha256, sha512, ParamsOfHash, ResultOfHash};
@@ -60,11 +60,13 @@ pub use crate::crypto::mnemonic::{
 };
 pub use crate::crypto::nacl::{
     nacl_box, nacl_box_keypair, nacl_box_keypair_from_secret_key, nacl_box_open, nacl_secret_box,
-    nacl_secret_box_open, nacl_sign, nacl_sign_detached, nacl_sign_keypair_from_secret_key,
-    nacl_sign_open, ParamsOfNaclBox, ParamsOfNaclBoxKeyPairFromSecret, ParamsOfNaclBoxOpen,
-    ParamsOfNaclSecretBox, ParamsOfNaclSecretBoxOpen, ParamsOfNaclSign, ParamsOfNaclSignDetached,
-    ParamsOfNaclSignKeyPairFromSecret, ParamsOfNaclSignOpen, ResultOfNaclBox, ResultOfNaclBoxOpen,
-    ResultOfNaclSign, ResultOfNaclSignDetached, ResultOfNaclSignOpen,
+    nacl_secret_box_open, nacl_sign, nacl_sign_detached, nacl_sign_detached_verify,
+    nacl_sign_keypair_from_secret_key, nacl_sign_open, ParamsOfNaclBox,
+    ParamsOfNaclBoxKeyPairFromSecret, ParamsOfNaclBoxOpen, ParamsOfNaclSecretBox,
+    ParamsOfNaclSecretBoxOpen, ParamsOfNaclSign, ParamsOfNaclSignDetached,
+    ParamsOfNaclSignDetachedVerify, ParamsOfNaclSignKeyPairFromSecret, ParamsOfNaclSignOpen,
+    ResultOfNaclBox, ResultOfNaclBoxOpen, ResultOfNaclSign, ResultOfNaclSignDetached,
+    ResultOfNaclSignDetachedVerify, ResultOfNaclSignOpen,
 };
 pub use encryption::{chacha20, ParamsOfChaCha20, ResultOfChaCha20};
 
@@ -123,7 +125,7 @@ pub struct CryptoConfig {
     )]
     pub mnemonic_word_count: u8,
 
-    /// Derivation path that will be used by default in crypto functions. 
+    /// Derivation path that will be used by default in crypto functions.
     /// If not specified `m/44'/396'/0'/0/0` will be used.
     #[serde(
         default = "default_hdkey_derivation_path",

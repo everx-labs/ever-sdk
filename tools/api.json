@@ -1,5 +1,5 @@
 {
-  "version": "1.5.2",
+  "version": "1.6.0",
   "modules": [
     {
       "name": "client",
@@ -345,8 +345,19 @@
                 "number_type": "Int",
                 "number_size": 8
               },
-              "summary": "The number of automatic network retries that SDK performs in case of connection problems The default value is 5.",
-              "description": null
+              "summary": "Deprecated.",
+              "description": "You must use `network.max_reconnect_timeout` that allows to specify maximum network resolving timeout."
+            },
+            {
+              "name": "max_reconnect_timeout",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Maximum time for sequential reconnections in ms.",
+              "description": "Default value is 120000 (2 min)"
             },
             {
               "name": "message_retries_count",
@@ -390,18 +401,7 @@
                 "number_size": 32
               },
               "summary": "Maximum time difference between server and client.",
-              "description": "If client's device time is out of sinc and difference is more than the threshold then error will occur. Also an error will occur if the specified threshold is more than\n`message_processing_timeout/2`.\nThe default value is 15 sec."
-            },
-            {
-              "name": "reconnect_timeout",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Number",
-                "number_type": "UInt",
-                "number_size": 32
-              },
-              "summary": "Timeout between reconnect attempts",
-              "description": null
+              "description": "If client's device time is out of sync and difference is more than the threshold then error will occur. Also an error will occur if the specified threshold is more than\n`message_processing_timeout/2`.\nThe default value is 15 sec."
             },
             {
               "name": "access_key",
@@ -929,6 +929,13 @@
               "value": "121",
               "summary": null,
               "description": null
+            },
+            {
+              "name": "InvalidSignature",
+              "type": "Number",
+              "value": "122",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -1380,6 +1387,46 @@
               "name": "signature",
               "type": "String",
               "summary": "Signature encoded in `hex`.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfNaclSignDetachedVerify",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "unsigned",
+              "type": "String",
+              "summary": "Unsigned data that must be verified.",
+              "description": "Encoded with `base64`."
+            },
+            {
+              "name": "signature",
+              "type": "String",
+              "summary": "Signature that must be verified.",
+              "description": "Encoded with `hex`."
+            },
+            {
+              "name": "public",
+              "type": "String",
+              "summary": "Signer's public key - unprefixed 0-padded to 64 symbols hex string.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfNaclSignDetachedVerify",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "succeeded",
+              "type": "Boolean",
+              "summary": "`true` if verification succeeded or `false` if it failed",
               "description": null
             }
           ],
@@ -2683,6 +2730,44 @@
           "errors": null
         },
         {
+          "name": "nacl_sign_detached_verify",
+          "summary": "Verifies the signature with public key and `unsigned` data.",
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "crypto.ParamsOfNaclSignDetachedVerify",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "crypto.ResultOfNaclSignDetachedVerify"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
           "name": "nacl_box_keypair",
           "summary": "Generates a random NaCl key pair",
           "description": null,
@@ -3790,6 +3875,15 @@
               },
               "summary": "List of initial values for contract's public variables.",
               "description": null
+            },
+            {
+              "name": "initial_pubkey",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Optional public key that can be provided in deploy set in order to substitute one in TVM file or provided by Signer.",
+              "description": "Public key resolving priority:\n1. Public key from deploy set.\n2. Public key, specified in TVM file.\n3. Public key, provided by Signer."
             }
           ],
           "summary": null,
@@ -4773,7 +4867,7 @@
         {
           "name": "encode_message",
           "summary": "Encodes an ABI-compatible message",
-          "description": "Allows to encode deploy and function call messages,\nboth signed and unsigned.\n\nUse cases include messages of any possible type:\n- deploy with initial function call (i.e. `constructor` or any other function that is used for some kind\nof initialization);\n- deploy without initial function call;\n- signed/unsigned + data for signing.\n\n`Signer` defines how the message should or shouldn't be signed:\n\n`Signer::None` creates an unsigned message. This may be needed in case of some public methods,\nthat do not require authorization by pubkey.\n\n`Signer::External` takes public key and returns `data_to_sign` for later signing.\nUse `attach_signature` method with the result signature to get the signed message.\n\n`Signer::Keys` creates a signed message with provided key pair.\n\n[SOON] `Signer::SigningBox` Allows using a special interface to imlepement signing\nwithout private key disclosure to SDK. For instance, in case of using a cold wallet or HSM,\nwhen application calls some API to sign data.",
+          "description": "Allows to encode deploy and function call messages,\nboth signed and unsigned.\n\nUse cases include messages of any possible type:\n- deploy with initial function call (i.e. `constructor` or any other function that is used for some kind\nof initialization);\n- deploy without initial function call;\n- signed/unsigned + data for signing.\n\n`Signer` defines how the message should or shouldn't be signed:\n\n`Signer::None` creates an unsigned message. This may be needed in case of some public methods,\nthat do not require authorization by pubkey.\n\n`Signer::External` takes public key and returns `data_to_sign` for later signing.\nUse `attach_signature` method with the result signature to get the signed message.\n\n`Signer::Keys` creates a signed message with provided key pair.\n\n[SOON] `Signer::SigningBox` Allows using a special interface to implement signing\nwithout private key disclosure to SDK. For instance, in case of using a cold wallet or HSM,\nwhen application calls some API to sign data.\n\nThere is an optional public key can be provided in deploy set in order to substitute one\nin TVM file.\n\nPublic key resolving priority:\n1. Public key from deploy set.\n2. Public key, specified in TVM file.\n3. Public key, provided by signer.",
           "params": [
             {
               "name": "context",
@@ -6914,6 +7008,20 @@
               "value": "612",
               "summary": null,
               "description": null
+            },
+            {
+              "name": "GraphqlWebsocketInitError",
+              "type": "Number",
+              "value": "613",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NetworkModuleResumed",
+              "type": "Number",
+              "value": "614",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -7000,6 +7108,42 @@
           "description": null
         },
         {
+          "name": "ParamsOfBatchQuery",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "operations",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "ParamsOfQueryOperation"
+              },
+              "summary": "List of query operations that must be performed per single fetch.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfBatchQuery",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "results",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": "Result values for batched queries.",
+              "description": "Returns an array of values. Each value corresponds to `queries` item."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfQueryCollection",
           "type": "Struct",
           "struct_fields": [
@@ -7066,6 +7210,58 @@
               },
               "summary": "Objects that match the provided criteria",
               "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfAggregateCollection",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "collection",
+              "type": "String",
+              "summary": "Collection name (accounts, blocks, transactions, messages, block_signatures)",
+              "description": null
+            },
+            {
+              "name": "filter",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": "Collection filter.",
+              "description": null
+            },
+            {
+              "name": "fields",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "Ref",
+                  "ref_name": "FieldAggregation"
+                }
+              },
+              "summary": "Projection (result) string",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfAggregateCollection",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "values",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": "Values for requested fields.",
+              "description": "Returns an array of strings. Each string refers to the corresponding `fields` item.\nNumeric value is returned as a decimal string representations."
             }
           ],
           "summary": null,
@@ -7259,6 +7455,44 @@
           "errors": null
         },
         {
+          "name": "batch_query",
+          "summary": "Performs multiple queries per single fetch.",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfBatchQuery",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "net.ResultOfBatchQuery"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
           "name": "query_collection",
           "summary": "Queries collection data",
           "description": "Queries data that satisfies the `filter` conditions,\nlimits the number of returned records and orders them.\nThe projection fields are limited to `result` fields",
@@ -7291,6 +7525,44 @@
               {
                 "type": "Ref",
                 "ref_name": "net.ResultOfQueryCollection"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "aggregate_collection",
+          "summary": "Aggregates collection data.",
+          "description": "Aggregates values from the specified `fields` for records\nthat satisfies the `filter` conditions,",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfAggregateCollection",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "net.ResultOfAggregateCollection"
               }
             ]
           },
@@ -7626,6 +7898,27 @@
               "value": "804",
               "summary": null,
               "description": null
+            },
+            {
+              "name": "DebotInvalidJsonParams",
+              "type": "Number",
+              "value": "805",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "DebotInvalidFunctionId",
+              "type": "Number",
+              "value": "806",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "DebotInvalidAbi",
+              "type": "Number",
+              "value": "807",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -7813,6 +8106,20 @@
               ],
               "summary": "Execute action of another debot.",
               "description": null
+            },
+            {
+              "name": "Send",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "message",
+                  "type": "String",
+                  "summary": "Internal message to DInterface address.",
+                  "description": "Message body contains interface function and parameters."
+                }
+              ],
+              "summary": "Used by Debot to call DInterface implemented by Debot Browser.",
+              "description": null
             }
           ],
           "summary": "[UNSTABLE](UNSTABLE.md) Debot Browser callbacks",
@@ -7896,6 +8203,41 @@
             }
           ],
           "summary": "[UNSTABLE](UNSTABLE.md) Parameters for executing debot action.",
+          "description": null
+        },
+        {
+          "name": "ParamsOfSend",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "debot_handle",
+              "type": "Ref",
+              "ref_name": "debot.DebotHandle",
+              "summary": "Debot handle which references an instance of debot engine.",
+              "description": null
+            },
+            {
+              "name": "source",
+              "type": "String",
+              "summary": "Std address of interface or debot.",
+              "description": null
+            },
+            {
+              "name": "func_id",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
+              "summary": "Function Id to call",
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "String",
+              "summary": "Json string with parameters",
+              "description": null
+            }
+          ],
+          "summary": "[UNSTABLE](UNSTABLE.md) Parameters of `send` function.",
           "description": null
         }
       ],
@@ -8032,6 +8374,43 @@
               "name": "params",
               "type": "Ref",
               "ref_name": "debot.ParamsOfExecute",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "send",
+          "summary": "[UNSTABLE](UNSTABLE.md) Sends message to Debot.",
+          "description": "Used by Debot Browser to send response on Dinterface call or from other Debots.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "debot.ParamsOfSend",
               "summary": null,
               "description": null
             }

@@ -168,9 +168,17 @@ Use `attach_signature` method with the result signature to get the signed messag
 
 `Signer::Keys` creates a signed message with provided key pair.
 
-[SOON] `Signer::SigningBox` Allows using a special interface to imlepement signing
+[SOON] `Signer::SigningBox` Allows using a special interface to implement signing
 without private key disclosure to SDK. For instance, in case of using a cold wallet or HSM,
 when application calls some API to sign data.
+
+There is an optional public key can be provided in deploy set in order to substitute one
+in TVM file.
+
+Public key resolving priority:
+1. Public key from deploy set.
+2. Public key, specified in TVM file.
+3. Public key, provided by signer.
 
 ```ts
 type ParamsOfEncodeMessage = {
@@ -466,13 +474,16 @@ type CallSet = {
 type DeploySet = {
     tvc: string,
     workchain_id?: number,
-    initial_data?: any
+    initial_data?: any,
+    initial_pubkey?: string
 }
 ```
 - `tvc`: _string_ – Content of TVC file encoded in `base64`.
 - `workchain_id`?: _number_ – Target workchain for destination address.
 <br>Default is `0`.
 - `initial_data`?: _any_ – List of initial values for contract's public variables.
+- `initial_pubkey`?: _string_ – Optional public key that can be provided in deploy set in order to substitute one in TVM file or provided by Signer.
+<br>Public key resolving priority:<br>1. Public key from deploy set.<br>2. Public key, specified in TVM file.<br>3. Public key, provided by Signer.
 
 
 ## Signer

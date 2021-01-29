@@ -32,6 +32,8 @@ null
 
 [nacl_sign_detached](#nacl_sign_detached) – Signs the message using the secret key and returns a signature.
 
+[nacl_sign_detached_verify](#nacl_sign_detached_verify) – Verifies the signature with public key and `unsigned` data.
+
 [nacl_box_keypair](#nacl_box_keypair) – Generates a random NaCl key pair
 
 [nacl_box_keypair_from_secret_key](#nacl_box_keypair_from_secret_key) – Generates key pair from a secret key
@@ -130,6 +132,10 @@ null
 [ResultOfNaclSignOpen](#ResultOfNaclSignOpen)
 
 [ResultOfNaclSignDetached](#ResultOfNaclSignDetached)
+
+[ParamsOfNaclSignDetachedVerify](#ParamsOfNaclSignDetachedVerify)
+
+[ResultOfNaclSignDetachedVerify](#ResultOfNaclSignDetachedVerify)
 
 [ParamsOfNaclBoxKeyPairFromSecret](#ParamsOfNaclBoxKeyPairFromSecret)
 
@@ -609,6 +615,36 @@ function nacl_sign_detached(
 ### Result
 
 - `signature`: _string_ – Signature encoded in `hex`.
+
+
+## nacl_sign_detached_verify
+
+Verifies the signature with public key and `unsigned` data.
+
+```ts
+type ParamsOfNaclSignDetachedVerify = {
+    unsigned: string,
+    signature: string,
+    public: string
+}
+
+type ResultOfNaclSignDetachedVerify = {
+    succeeded: boolean
+}
+
+function nacl_sign_detached_verify(
+    params: ParamsOfNaclSignDetachedVerify,
+): Promise<ResultOfNaclSignDetachedVerify>;
+```
+### Parameters
+- `unsigned`: _string_ – Unsigned data that must be verified.
+<br>Encoded with `base64`.
+- `signature`: _string_ – Signature that must be verified.
+<br>Encoded with `hex`.
+- `public`: _string_ – Signer's public key - unprefixed 0-padded to 64 symbols hex string.
+### Result
+
+- `succeeded`: _boolean_ – `true` if verification succeeded or `false` if it failed
 
 
 ## nacl_box_keypair
@@ -1216,7 +1252,8 @@ enum CryptoErrorCode {
     Bip39InvalidWordCount = 118,
     MnemonicGenerationFailed = 119,
     MnemonicFromEntropyFailed = 120,
-    SigningBoxNotRegistered = 121
+    SigningBoxNotRegistered = 121,
+    InvalidSignature = 122
 }
 ```
 One of the following value:
@@ -1240,6 +1277,7 @@ One of the following value:
 - `MnemonicGenerationFailed = 119`
 - `MnemonicFromEntropyFailed = 120`
 - `SigningBoxNotRegistered = 121`
+- `InvalidSignature = 122`
 
 
 ## SigningBoxHandle
@@ -1502,6 +1540,30 @@ type ResultOfNaclSignDetached = {
 }
 ```
 - `signature`: _string_ – Signature encoded in `hex`.
+
+
+## ParamsOfNaclSignDetachedVerify
+```ts
+type ParamsOfNaclSignDetachedVerify = {
+    unsigned: string,
+    signature: string,
+    public: string
+}
+```
+- `unsigned`: _string_ – Unsigned data that must be verified.
+<br>Encoded with `base64`.
+- `signature`: _string_ – Signature that must be verified.
+<br>Encoded with `hex`.
+- `public`: _string_ – Signer's public key - unprefixed 0-padded to 64 symbols hex string.
+
+
+## ResultOfNaclSignDetachedVerify
+```ts
+type ResultOfNaclSignDetachedVerify = {
+    succeeded: boolean
+}
+```
+- `succeeded`: _boolean_ – `true` if verification succeeded or `false` if it failed
 
 
 ## ParamsOfNaclBoxKeyPairFromSecret

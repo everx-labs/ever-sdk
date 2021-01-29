@@ -8,6 +8,8 @@ null
 
 [execute](#execute) – [UNSTABLE](UNSTABLE.md) Executes debot action.
 
+[send](#send) – [UNSTABLE](UNSTABLE.md) Sends message to Debot.
+
 [remove](#remove) – [UNSTABLE](UNSTABLE.md) Destroys debot handle.
 
 ## Types
@@ -28,6 +30,8 @@ null
 [ParamsOfFetch](#ParamsOfFetch) – [UNSTABLE](UNSTABLE.md) Parameters to fetch debot.
 
 [ParamsOfExecute](#ParamsOfExecute) – [UNSTABLE](UNSTABLE.md) Parameters for executing debot action.
+
+[ParamsOfSend](#ParamsOfSend) – [UNSTABLE](UNSTABLE.md) Parameters of `send` function.
 
 
 # Functions
@@ -124,6 +128,33 @@ function execute(
 
 
 
+## send
+
+[UNSTABLE](UNSTABLE.md) Sends message to Debot.
+
+Used by Debot Browser to send response on Dinterface call or from other Debots.
+
+```ts
+type ParamsOfSend = {
+    debot_handle: DebotHandle,
+    source: string,
+    func_id: number,
+    params: string
+}
+
+function send(
+    params: ParamsOfSend,
+): Promise<void>;
+```
+### Parameters
+- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+- `source`: _string_ – Std address of interface or debot.
+- `func_id`: _number_ – Function Id to call
+- `params`: _string_ – Json string with parameters
+### Result
+
+
+
 ## remove
 
 [UNSTABLE](UNSTABLE.md) Destroys debot handle.
@@ -152,7 +183,10 @@ enum DebotErrorCode {
     DebotStartFailed = 801,
     DebotFetchFailed = 802,
     DebotExecutionFailed = 803,
-    DebotInvalidHandle = 804
+    DebotInvalidHandle = 804,
+    DebotInvalidJsonParams = 805,
+    DebotInvalidFunctionId = 806,
+    DebotInvalidAbi = 807
 }
 ```
 One of the following value:
@@ -161,6 +195,9 @@ One of the following value:
 - `DebotFetchFailed = 802`
 - `DebotExecutionFailed = 803`
 - `DebotInvalidHandle = 804`
+- `DebotInvalidJsonParams = 805`
+- `DebotInvalidFunctionId = 806`
+- `DebotInvalidAbi = 807`
 
 
 ## DebotHandle
@@ -244,6 +281,9 @@ type ParamsOfAppDebotBrowser = {
     type: 'InvokeDebot'
     debot_addr: string,
     action: DebotAction
+} | {
+    type: 'Send'
+    message: string
 }
 ```
 Depends on value of the  `type` field.
@@ -295,6 +335,14 @@ Execute action of another debot.
 
 - `debot_addr`: _string_ – Address of debot in blockchain.
 - `action`: _[DebotAction](mod_debot.md#DebotAction)_ – Debot action to execute.
+
+When _type_ is _'Send'_
+
+Used by Debot to call DInterface implemented by Debot Browser.
+
+
+- `message`: _string_ – Internal message to DInterface address.
+<br>Message body contains interface function and parameters.
 
 
 ## ResultOfAppDebotBrowser
@@ -356,5 +404,22 @@ type ParamsOfExecute = {
 ```
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
 - `action`: _[DebotAction](mod_debot.md#DebotAction)_ – Debot Action that must be executed.
+
+
+## ParamsOfSend
+[UNSTABLE](UNSTABLE.md) Parameters of `send` function.
+
+```ts
+type ParamsOfSend = {
+    debot_handle: DebotHandle,
+    source: string,
+    func_id: number,
+    params: string
+}
+```
+- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+- `source`: _string_ – Std address of interface or debot.
+- `func_id`: _number_ – Function Id to call
+- `params`: _string_ – Json string with parameters
 
 

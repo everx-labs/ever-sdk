@@ -4,7 +4,11 @@ null
 ## Functions
 [query](#query) – Performs DAppServer GraphQL query.
 
+[batch_query](#batch_query) – Performs multiple queries per single fetch.
+
 [query_collection](#query_collection) – Queries collection data
+
+[aggregate_collection](#aggregate_collection) – Aggregates collection data.
 
 [wait_for_collection](#wait_for_collection) – Returns an object that fulfills the conditions or waits for its appearance
 
@@ -33,9 +37,17 @@ null
 
 [ResultOfQuery](#ResultOfQuery)
 
+[ParamsOfBatchQuery](#ParamsOfBatchQuery)
+
+[ResultOfBatchQuery](#ResultOfBatchQuery)
+
 [ParamsOfQueryCollection](#ParamsOfQueryCollection)
 
 [ResultOfQueryCollection](#ResultOfQueryCollection)
+
+[ParamsOfAggregateCollection](#ParamsOfAggregateCollection)
+
+[ResultOfAggregateCollection](#ResultOfAggregateCollection)
 
 [ParamsOfWaitForCollection](#ParamsOfWaitForCollection)
 
@@ -80,6 +92,31 @@ function query(
 - `result`: _any_ – Result provided by DAppServer.
 
 
+## batch_query
+
+Performs multiple queries per single fetch.
+
+```ts
+type ParamsOfBatchQuery = {
+    operations: ParamsOfQueryOperation[]
+}
+
+type ResultOfBatchQuery = {
+    results: any[]
+}
+
+function batch_query(
+    params: ParamsOfBatchQuery,
+): Promise<ResultOfBatchQuery>;
+```
+### Parameters
+- `operations`: _ParamsOfQueryOperation[]_ – List of query operations that must be performed per single fetch.
+### Result
+
+- `results`: _any[]_ – Result values for batched queries.
+<br>Returns an array of values. Each value corresponds to `queries` item.
+
+
 ## query_collection
 
 Queries collection data
@@ -114,6 +151,38 @@ function query_collection(
 ### Result
 
 - `result`: _any[]_ – Objects that match the provided criteria
+
+
+## aggregate_collection
+
+Aggregates collection data.
+
+Aggregates values from the specified `fields` for records
+that satisfies the `filter` conditions,
+
+```ts
+type ParamsOfAggregateCollection = {
+    collection: string,
+    filter?: any,
+    fields?: FieldAggregation[]
+}
+
+type ResultOfAggregateCollection = {
+    values: any
+}
+
+function aggregate_collection(
+    params: ParamsOfAggregateCollection,
+): Promise<ResultOfAggregateCollection>;
+```
+### Parameters
+- `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
+- `filter`?: _any_ – Collection filter.
+- `fields`?: _FieldAggregation[]_ – Projection (result) string
+### Result
+
+- `values`: _any_ – Values for requested fields.
+<br>Returns an array of strings. Each string refers to the corresponding `fields` item.<br>Numeric value is returned as a decimal string representations.
 
 
 ## wait_for_collection
@@ -305,7 +374,9 @@ enum NetErrorCode {
     NetworkModuleSuspended = 609,
     WebsocketDisconnected = 610,
     NotSupported = 611,
-    NoEndpointsProvided = 612
+    NoEndpointsProvided = 612,
+    GraphqlWebsocketInitError = 613,
+    NetworkModuleResumed = 614
 }
 ```
 One of the following value:
@@ -322,6 +393,8 @@ One of the following value:
 - `WebsocketDisconnected = 610`
 - `NotSupported = 611`
 - `NoEndpointsProvided = 612`
+- `GraphqlWebsocketInitError = 613`
+- `NetworkModuleResumed = 614`
 
 
 ## OrderBy
@@ -369,6 +442,25 @@ type ResultOfQuery = {
 - `result`: _any_ – Result provided by DAppServer.
 
 
+## ParamsOfBatchQuery
+```ts
+type ParamsOfBatchQuery = {
+    operations: ParamsOfQueryOperation[]
+}
+```
+- `operations`: _ParamsOfQueryOperation[]_ – List of query operations that must be performed per single fetch.
+
+
+## ResultOfBatchQuery
+```ts
+type ResultOfBatchQuery = {
+    results: any[]
+}
+```
+- `results`: _any[]_ – Result values for batched queries.
+<br>Returns an array of values. Each value corresponds to `queries` item.
+
+
 ## ParamsOfQueryCollection
 ```ts
 type ParamsOfQueryCollection = {
@@ -393,6 +485,29 @@ type ResultOfQueryCollection = {
 }
 ```
 - `result`: _any[]_ – Objects that match the provided criteria
+
+
+## ParamsOfAggregateCollection
+```ts
+type ParamsOfAggregateCollection = {
+    collection: string,
+    filter?: any,
+    fields?: FieldAggregation[]
+}
+```
+- `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
+- `filter`?: _any_ – Collection filter.
+- `fields`?: _FieldAggregation[]_ – Projection (result) string
+
+
+## ResultOfAggregateCollection
+```ts
+type ResultOfAggregateCollection = {
+    values: any
+}
+```
+- `values`: _any_ – Values for requested fields.
+<br>Returns an array of strings. Each string refers to the corresponding `fields` item.<br>Numeric value is returned as a decimal string representations.
 
 
 ## ParamsOfWaitForCollection

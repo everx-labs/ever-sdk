@@ -13,11 +13,12 @@
 
 use crate::client::ClientContext;
 use crate::crypto;
-use crate::crypto::internal;
 use crate::crypto::internal::{key192, key256, key512};
 use crate::crypto::keys::KeyPair;
+use crate::crypto::{internal, Error};
 use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ClientResult;
+use ed25519_dalek::Verifier;
 
 // Signing
 
@@ -79,7 +80,6 @@ pub fn nacl_sign(
 
 //------------------------------------------------------------------------------ nacl_sign_detached
 #[doc(summary = "")]
-
 #[derive(Serialize, Deserialize, ApiType)]
 pub struct ParamsOfNaclSignDetached {
     /// Data that must be signed encoded in `base64`.
@@ -95,7 +95,7 @@ pub struct ResultOfNaclSignDetached {
 }
 
 /// Signs the message using the secret key and returns a signature.
-/// 
+///
 /// Signs the message `unsigned` using the secret key `secret`
 /// and returns a signature `signature`.
 
@@ -131,8 +131,8 @@ pub struct ResultOfNaclSignOpen {
 }
 
 /// Verifies the signature and returns the unsigned message
-/// 
-/// Verifies the signature in `signed` using the signer's public key `public` 
+///
+/// Verifies the signature in `signed` using the signer's public key `public`
 /// and returns the message `unsigned`.
 ///
 /// If the signature fails verification, crypto_sign_open raises an exception.
@@ -154,6 +154,39 @@ pub fn nacl_sign_open(
     Ok(ResultOfNaclSignOpen {
         unsigned: base64::encode(&unsigned),
     })
+}
+
+//----------------------------------------------------------------------- nacl_sign_detached_verify
+
+///
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct ParamsOfNaclSignDetachedVerify {
+    /// Unsigned data that must be verified. Encoded with `base64`.
+    pub unsigned: String,
+    /// Signature that must be verified. Encoded with `hex`.
+    pub signature: String,
+    /// Signer's public key - unprefixed 0-padded to 64 symbols hex string.
+    pub public: String,
+}
+
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct ResultOfNaclSignDetachedVerify {
+    /// `true` if verification succeeded or `false` if it failed
+    pub(crate) succeeded: bool,
+}
+
+/// Verifies the signature with public key and `unsigned` data.
+#[api_function]
+pub fn nacl_sign_detached_verify(
+    _context: std::sync::Arc<ClientContext>,
+    params: ParamsOfNaclSignDetachedVerify,
+) -> ClientResult<ResultOfNaclSignDetachedVerify> {
+    let public = ed25519_dalek::PublicKey::from_bytes(&hex_decode(&params.public)?)
+        .map_err(|err| Error::invalid_public_key(err, &params.public))?;
+    let message = base64_decode(&params.unsigned)?;
+    let signature = ed25519_dalek::Signature::new(key512(&hex_decode(&params.signature)?)?);
+    let succeeded = public.verify(&message, &signature).is_ok();
+    Ok(ResultOfNaclSignDetachedVerify { succeeded })
 }
 
 // Box

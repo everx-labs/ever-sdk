@@ -18,6 +18,7 @@ mod debot_abi;
 mod dengine;
 mod errors;
 mod routines;
+mod run_output;
 // #[cfg(test)]
 // mod tests;
 
@@ -31,6 +32,11 @@ use crate::error::ClientResult;
 use crate::ClientContext;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+
+pub const DEBOT_WC: i8 = -31; // 0xDB
+
+type TonClient = Arc<ClientContext>;
+type JsonValue = serde_json::Value;
 
 /// [UNSTABLE](UNSTABLE.md) Handle of registered in SDK debot
 #[derive(Serialize, Deserialize, Default, ApiType, Clone)]
@@ -213,4 +219,33 @@ pub fn remove(
 ) -> ClientResult<()> {
     context.debots.remove(&params.debot_handle.0);
     Ok(())
+}
+
+/// [UNSTABLE](UNSTABLE.md) Parameters of `send` function.
+#[derive(Serialize, Deserialize, ApiType)]
+pub struct ParamsOfSend {
+    /// Debot handle which references an instance of debot engine.
+    pub debot_handle: DebotHandle,
+    /// Std address of interface or debot.
+    pub source: String,
+    /// Function Id to call
+    pub func_id: u32,
+    /// Json string with parameters
+    pub params: String,
+}
+
+/// [UNSTABLE](UNSTABLE.md) Sends message to Debot.
+///
+/// Used by Debot Browser to send response on Dinterface call or from other Debots.
+#[api_function]
+pub async fn send(
+    context: Arc<ClientContext>,
+    params: ParamsOfSend,
+) -> ClientResult<()> {
+    let mutex = context.debots.get(&params.debot_handle.0)
+        .ok_or(Error::invalid_handle(params.debot_handle.0))?;
+    let mut dengine = mutex.1.lock().await;
+    dengine
+        .send(params.source, params.func_id, params.params)
+        .await
 }

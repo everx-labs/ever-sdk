@@ -1,5 +1,10 @@
+use crate::{
+    abi::ParamsOfEncodeMessage,
+    net::{ParamsOfQueryCollection, ResultOfQueryCollection},
+    processing::{ParamsOfSendMessage, ResultOfSendMessage},
+};
+
 use super::*;
-use crate::net::{ParamsOfQueryCollection, ResultOfQueryCollection};
 
 #[test]
 fn test_parallel_requests() {
@@ -81,8 +86,8 @@ fn test_deferred_init() {
     assert_eq!(result.code, crate::net::ErrorCode::QueryFailed as u32);
 }
 
-#[test]
-fn test_clock_sync() {
+#[tokio::test(core_threads = 2)]
+async fn test_clock_sync() {
     let client = TestClient::new_with_config(json!({
         "network": {
             "endpoints": [TestClient::network_address()],
@@ -90,15 +95,43 @@ fn test_clock_sync() {
         }
     }));
 
-    // deferred network init should fail due to wrong server address
-    let result = client
-        .request_json(
+    // queries should not fail even when not synchronized
+    let _: ResultOfQueryCollection = client
+        .request_async(
             "net.query_collection",
-            json!({
-                "collection": "accounts",
-                "result": "id".to_owned(),
-            }),
+            ParamsOfQueryCollection {
+                collection: "accounts".to_owned(),
+                result: "id".to_owned(),
+                limit: Some(1),
+                filter: None,
+                order: None,
+            },
         )
+        .await
+        .unwrap();
+
+    let msg = client
+        .encode_message(ParamsOfEncodeMessage {
+            abi: TestClient::abi(HELLO, None),
+            address: Some(TestClient::get_giver_address()),
+            call_set: CallSet::some_with_function("touch"),
+            deploy_set: None,
+            processing_try_index: None,
+            signer: Signer::None,
+        })
+        .await
+        .unwrap();
+
+    let result = client
+        .request_async::<_, ResultOfSendMessage>(
+            "processing.send_message",
+            ParamsOfSendMessage {
+                abi: None,
+                message: msg.message,
+                send_events: false,
+            },
+        )
+        .await
         .unwrap_err();
 
     assert!(result

@@ -19,4 +19,8 @@ pub trait BrowserCallbacks {
     async fn get_signing_box(&self) -> Result<SigningBoxHandle, String>;
     /// Executes action of another debot.
     async fn invoke_debot(&self, debot: String, action: DAction) -> Result<(), String>;
+
+    /// Sends message with debot interface call to Browser.
+    /// Message parameter is a BoC encoded as Base64.
+    async fn send(&self, message: String);
 }

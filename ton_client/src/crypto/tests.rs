@@ -291,6 +291,20 @@ fn nacl() {
         secret: "56b6a77093d6fdf14e593f36275d872d75de5b341942376b2a08759f3cbae78f1869b7ef29d58026217e9cf163cbfbd0de889bdf1bf4daebf5433a312f5b8d6e".into(),
     }).unwrap();
     assert_eq!(result.signature, "fb0cfe40eea5d6c960652e6ceb904da8a72ee2fcf6e05089cf835203179ff65bb48c57ecf31dcfcd26510bea67e64f3e6898b7c58300dc14338254268cade103");
+    let signature = result.signature;
+    let result: ResultOfNaclSignDetachedVerify = client.request("crypto.nacl_sign_detached_verify", ParamsOfNaclSignDetachedVerify {
+        unsigned: base64::encode("Test Message"),
+        signature: signature.clone(),
+        public: "1869b7ef29d58026217e9cf163cbfbd0de889bdf1bf4daebf5433a312f5b8d6e".into(),
+    }).unwrap();
+    assert_eq!(result.succeeded, true);
+
+    let result: ResultOfNaclSignDetachedVerify = client.request("crypto.nacl_sign_detached_verify", ParamsOfNaclSignDetachedVerify {
+        unsigned: base64::encode("Test Message 1"),
+        signature: signature.clone(),
+        public: "1869b7ef29d58026217e9cf163cbfbd0de889bdf1bf4daebf5433a312f5b8d6e".into(),
+    }).unwrap();
+    assert_eq!(result.succeeded, false);
 
     // Box
 
@@ -788,7 +802,7 @@ async fn test_signing_box() {
         callback
     ).await.unwrap();
 
-    
+
     let box_pubkey: super::boxes::ResultOfSigningBoxGetPublicKey = client
         .request_async(
             "crypto.signing_box_get_public_key",
@@ -817,7 +831,7 @@ async fn test_signing_box() {
                 keys,
             },
         ).unwrap();
-    
+
     assert_eq!(box_sign.signature, keys_sign.signature);
 
     let _: () = client
