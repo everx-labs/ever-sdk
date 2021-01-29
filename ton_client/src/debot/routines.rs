@@ -12,7 +12,7 @@ use super::TonClient;
 #[derive(Serialize, Deserialize, Clone, Default)]
 pub(super) struct ResultOfGetAccountState {
     balance: String,
-    pub acc_type: u8,
+    pub acc_type: i8,
     last_trans_lt: String,
     #[serde(default)]
     code: String,
@@ -263,7 +263,9 @@ pub(super) async fn get_account_state(
     .result;
 
     if accounts.len() == 0 {
-        return Err(format!("account doesn't exist"));
+        let mut state = ResultOfGetAccountState::default();
+        state.acc_type = -1;
+        return Ok(state);
     }
 
     let acc = parse_account(
