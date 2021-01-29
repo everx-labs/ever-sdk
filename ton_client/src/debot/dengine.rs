@@ -226,7 +226,7 @@ impl DEngine {
         let run_result = run_tvm(
             self.ton.clone(),
             ParamsOfRunTvm {
-                account: std::mem::take(&mut self.state),
+                account: self.state.clone(),
                 message: msg_base64,
                 abi: Some(self.abi.clone()),
                 execution_options: None,
