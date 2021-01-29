@@ -23,7 +23,7 @@ pub(crate) fn can_retry_more(retries: u8, limit: i8) -> bool {
 }
 
 pub fn can_retry_network_error(context: &Arc<ClientContext>, start: u64) -> bool {
-    context.env.now_ms() < start + context.config.network.max_reconnect_timeout as u64
+    context.env.now_ms() < start + context.config.network.reconnect_timeout as u64
 }
 
 pub(crate) fn can_retry_expired_message(context: &Arc<ClientContext>, retries: u8) -> bool {

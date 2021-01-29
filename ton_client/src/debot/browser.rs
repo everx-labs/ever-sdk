@@ -22,5 +22,7 @@ pub trait BrowserCallbacks {
 
     /// Sends message with debot interface call to Browser.
     /// Message parameter is a BoC encoded as Base64.
-    async fn send(&self, message: String);
+    async fn send(&self, _message: String) {
+        unimplemented!()
+    }
 }

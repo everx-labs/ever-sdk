@@ -14,7 +14,7 @@ fn test_config_fields() {
             "message_expiration_timeout": null
         },
         "network": {
-            "max_reconnect_timeout": 100
+            "reconnect_timeout": 100
         }
     }
     "#,
@@ -24,7 +24,7 @@ fn test_config_fields() {
         config.crypto.mnemonic_word_count,
         default_mnemonic_word_count()
     );
-    assert_eq!(config.network.max_reconnect_timeout, 100);
+    assert_eq!(config.network.reconnect_timeout, 100);
 }
 
 #[test]
