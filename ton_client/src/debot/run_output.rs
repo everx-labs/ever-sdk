@@ -7,7 +7,7 @@ use ton_block::Message;
 
 pub(super) enum DebotCallType {
     Interface { msg: String, id: String },
-    GetMethod { msg: String },
+    GetMethod { msg: String, dest: String },
     External { msg: String },
     // TODO: support later
     // Invoke { msg: String },
@@ -117,8 +117,14 @@ impl RunOutput {
                         self.calls.push_back(DebotCallType::External { msg: msg.1 });
                         return None;
                     } else if !call_or_get && !bit {
+                        let dest = msg
+                            .0
+                            .header()
+                            .get_dst_address()
+                            .map(|x| x.to_string())
+                            .unwrap_or_default();
                         self.calls
-                            .push_back(DebotCallType::GetMethod { msg: msg.1 });
+                            .push_back(DebotCallType::GetMethod { msg: msg.1, dest });
                         return None;
                     }
                 }

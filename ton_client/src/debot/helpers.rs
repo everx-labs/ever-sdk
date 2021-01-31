@@ -1,8 +1,8 @@
 use crate::encoding::{account_decode};
 use ton_block::{InternalMessageHeader, Message};
-use crate::boc::internal::{deserialize_cell_from_base64, serialize_object_to_base64};
+use crate::boc::internal::{serialize_object_to_base64};
 use ton_types::SliceData;
-use crate::error::{ClientError, ClientResult};
+use crate::error::ClientResult;
 
 pub(super) fn build_internal_message(src: &String, dst: &String, body: SliceData) -> ClientResult<String> {
     let src_addr = account_decode(src)?;

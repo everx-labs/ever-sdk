@@ -3,7 +3,6 @@ use super::sdk_interface::{SdkInterface};
 use crate::abi::{decode_message_body, Abi, ParamsOfDecodeMessageBody};
 use crate::boc::{parse_message, ParamsOfParse};
 use crate::debot::TonClient;
-use crate::encoding::{account_decode};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -138,13 +137,4 @@ pub fn get_string_arg(args: &Value, name: &str) -> Result<String, String> {
     std::str::from_utf8(&bytes)
         .map_err(|e| format!("{}", e))
         .map(|x| x.to_string())
-}
-
-pub fn get_address_arg(args: &Value, name: &str) -> Result<String, String> {
-    let addr_str = args[name]
-        .as_str()
-        .ok_or(format!("\"{}\" not found", name))?
-        .to_lowercase();
-    account_decode(&addr_str).map_err(|e| format!("invalid address: {}", e))?;
-    Ok(addr_str)
 }

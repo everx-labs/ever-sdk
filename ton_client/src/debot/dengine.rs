@@ -24,7 +24,6 @@ use crate::{ClientConfig, ClientContext};
 use std::collections::VecDeque;
 use std::sync::Arc;
 use ton_abi::Contract;
-use ton_block::{InternalMessageHeader, Message};
 use super::dinterface::{BuiltinInterfaces, DebotInterfaceExecutor};
 use super::DEBOT_WC;
 use super::helpers::build_internal_message;
@@ -190,11 +189,11 @@ impl DEngine {
     pub async fn send(&mut self, source: String, func_id: u32, params: String) -> ClientResult<()> {
         let params = serde_json::from_str(&params)
             .map_err(|e| Error::invalid_json_params(e) )?;
-        let output = self.call_debot(source, func_id, params).await?;
+        let output = self.run_debot_internal(source, func_id, params).await?;
         self.handle_output(output).await
     }
 
-    async fn call_debot(
+    async fn run_debot_internal(
         &mut self,
         source: String,
         func_id: u32,
@@ -216,10 +215,8 @@ impl DEngine {
         };
         let body = encode_message_body(self.ton.clone(), msg_params).await?.body;
         let (_, body_cell) = deserialize_cell_from_base64(&body, "message body")?;
-
         let msg_base64 = build_internal_message(&source, &self.addr, body_cell.into())?;
-        let output = self.send_to_debot(msg_base64).await?;
-        self.handle_output(output).await
+        self.send_to_debot(msg_base64).await
     }
 
     async fn send_to_debot(&mut self, msg: String) -> ClientResult<RunOutput> {
@@ -258,7 +255,7 @@ impl DEngine {
             AcType::RunMethod => {
                 debug!("run_getmethod: {}", a.func_attr().unwrap());
                 let args: Option<JsonValue> = if let Some(getter) = a.args_attr() {
-                    self.run_debot(&getter, None).await?.return_value
+                    self.run_debot_external(&getter, None).await?.return_value
                 } else {
                     None
                 };
@@ -292,7 +289,7 @@ impl DEngine {
             }
             AcType::Invoke => {
                 debug!("invoke debot: run {}", a.name);
-                let result = self.run_debot(&a.name, None).await?.return_value;
+                let result = self.run_debot_external(&a.name, None).await?.return_value;
                 let invoke_args = result.ok_or(format!(
                     r#"invalid invoke action "{}": it must return "debot" and "action" arguments"#,
                     a.name
@@ -317,7 +314,7 @@ impl DEngine {
                     } else {
                         None
                     };
-                    self.run_debot(&args_getter, args)
+                    self.run_debot_external(&args_getter, args)
                         .await?.return_value
                         .map(|p| routines::format_string(&a.name, &p))
                         .unwrap_or_default()
@@ -334,7 +331,7 @@ impl DEngine {
             AcType::CallEngine => {
                 debug!("call engine action: {}", a.name);
                 let args = if let Some(args_getter) = a.args_attr() {
-                    let args = self.run_debot(&args_getter, None).await?.return_value;
+                    let args = self.run_debot_external(&args_getter, None).await?.return_value;
                     args.map(|v| v.to_string()).unwrap_or_default()
                 } else {
                     a.desc.clone()
@@ -355,7 +352,7 @@ impl DEngine {
                 let setter = a
                     .func_attr()
                     .ok_or("routine callback is not specified".to_owned())?;
-                self.run_debot(&setter, Some(args))
+                self.run_debot_external(&setter, Some(args))
                     .await?;
                 Ok(None)
             }
@@ -485,30 +482,14 @@ impl DEngine {
         }
     }
 
-    async fn run_debot(
+    async fn run_debot_external(
         &mut self,
         name: &str,
         args: Option<JsonValue>,
     ) -> Result<RunOutput, String> {
-        debug!(
-            "run_debot {}, args: {}",
-            name,
-            if args.is_some() {
-                args.clone().unwrap()
-            } else {
-                json!({}).into()
-            }
-        );
-        match self
-            .run(
-                self.state.clone(),
-                self.addr.clone(),
-                self.abi.clone(),
-                name,
-                args,
-            )
-            .await
-        {
+        debug!("run_debot_external {}, args: {}", name, args.as_ref().unwrap_or(&json!({})));
+        let res = self.run(self.state.clone(), self.addr.clone(), self.abi.clone(), name, args).await;
+        match res {
             Ok(res) => {
                 self.state = res.account.clone();
                 Ok(res)
@@ -522,7 +503,7 @@ impl DEngine {
 
     async fn run_action(&mut self, action: &DAction) -> Result<RunOutput, String> {
         let args = self.query_action_args(action).await?;
-        self.run_debot(&action.name, args).await
+        self.run_debot_external(&action.name, args).await
     }
 
     async fn run_sendmsg(
@@ -531,7 +512,7 @@ impl DEngine {
         args: Option<JsonValue>,
         signer: Option<SigningBoxHandle>,
     ) -> Result<Option<JsonValue>, String> {
-        let result = self.run_debot(name, args).await?.return_value;
+        let result = self.run_debot_external(name, args).await?.return_value;
         if result.is_none() {
             return Err(format!(
                 r#"action "{}" is invalid: it must return "dest" and "body" arguments"#,
@@ -581,7 +562,7 @@ impl DEngine {
         }
         let (addr, abi) = self.get_target()?;
         let result = self.run_get(addr, abi, getmethod, args).await?;
-        let result = self.run_debot(result_handler, Some(result)).await?;
+        let result = self.run_debot_external(result_handler, Some(result)).await?;
         Ok(result.return_value)
     }
 
@@ -789,35 +770,31 @@ impl DEngine {
         while let Some(call) = output.calls.pop_front() {
             match call {
                 DebotCallType::Interface{msg, id} => {
-                    let res = self.builtin_interfaces.try_execute(&msg, &id).await;
-                    if res.is_none() {
-                        self.browser.send(msg).await;
-                    } else {
-                        let (funcname, args) = res.unwrap().map_err(|e| Error::execute_failed(e))?;
-                        let new_outputs = self.call_debot(
-                            format!("{}:{}", DEBOT_WC, id),
-                            funcname,
-                            args,
-                        ).await?;
-                        output.append(new_outputs);
+                    match self.builtin_interfaces.try_execute(&msg, &id).await {
+                        None => self.browser.send(msg).await,
+                        Some(res) => {
+                            let (fname, args) = res.map_err(|e| Error::execute_failed(e))?;
+                            let new_outputs = self.run_debot_internal(
+                                format!("{}:{}", DEBOT_WC, id),
+                                fname,
+                                args,
+                            ).await?;
+                            output.append(new_outputs);
+                        },
                     }
                 },
-                DebotCallType::GetMethod{msg: _} => {
-                    let method = GetMethod::new(self.ton.clone(), msg)?;
-            
-                    let state = match self.smc_cache.iter().find(|smc| smc.0 == method.dest().as_str() ) {
-                        Some(smc) => smc.1.clone(),
-                        None => {
-                            let smc = self.load_state(method.dest().clone()).await
-                                .map_err(|e| Error::execute_failed(e))?;
-                            self.smc_cache.push((method.dest().clone(), smc.clone()));
-                            smc
-                        },
-                    };
-
-                    let result_body_slice = method.run(state).await?;
-                    let msg_base64 = build_internal_message(method.dest(), &self.addr, result_body_slice)?;
-                    let output = self.send_to_debot(msg_base64).await?;
+                DebotCallType::GetMethod{msg, dest} => {
+                    let target_state = self.load_state(dest).await
+                        .map_err(|e| Error::execute_failed(e))?;
+                    let answer_msg = GetMethod::run(
+                        self.ton.clone(),
+                        msg,
+                        target_state,
+                        &self.raw_abi,
+                        &self.addr
+                    ).await?;
+                    let new_outputs = self.send_to_debot(answer_msg).await?;
+                    output.append(new_outputs);
                 },
                 DebotCallType::External{msg: _} => {
                     // TODO: 
