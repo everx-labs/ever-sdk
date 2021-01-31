@@ -5,6 +5,7 @@ use super::context::{
 };
 use super::debot_abi::DEBOT_ABI;
 use super::errors::Error;
+use super::getmethod::GetMethod;
 use super::routines;
 use super::run_output::{RunOutput, DebotCallType};
 use super::{JsonValue, TonClient};
@@ -12,9 +13,9 @@ use crate::abi::{
     decode_message_body, encode_message, encode_message_body, Abi, AbiConfig, CallSet, DeploySet,
     ErrorCode, ParamsOfDecodeMessageBody, ParamsOfEncodeMessage, ParamsOfEncodeMessageBody, Signer,
 };
-use crate::boc::internal::{deserialize_cell_from_base64, serialize_object_to_base64};
+use crate::boc::internal::{deserialize_cell_from_base64};
 use crate::crypto::{remove_signing_box, CryptoConfig, RegisteredSigningBox, SigningBoxHandle};
-use crate::encoding::{account_decode, decode_abi_number};
+use crate::encoding::{decode_abi_number};
 use crate::error::{ClientError, ClientResult};
 use crate::net::{query_collection, NetworkConfig, ParamsOfQueryCollection};
 use crate::processing::{process_message, ParamsOfProcessMessage, ProcessingEvent};
@@ -26,6 +27,7 @@ use ton_abi::Contract;
 use ton_block::{InternalMessageHeader, Message};
 use super::dinterface::{BuiltinInterfaces, DebotInterfaceExecutor};
 use super::DEBOT_WC;
+use super::helpers::build_internal_message;
 
 const EMPTY_CELL: &'static str = "te6ccgEBAQEAAgAAAA==";
 
@@ -213,21 +215,19 @@ impl DEngine {
             call_set: CallSet::some_with_function_and_input(func_name, params).unwrap(),
         };
         let body = encode_message_body(self.ton.clone(), msg_params).await?.body;
-
-        let src_addr = account_decode(&source)?;
-        let dst_addr = account_decode(&self.addr)?;
-        let mut msg = Message::with_int_header(
-            InternalMessageHeader::with_addresses(src_addr, dst_addr, Default::default())
-        );
         let (_, body_cell) = deserialize_cell_from_base64(&body, "message body")?;
-        msg.set_body(body_cell.into());
-        let msg_base64 = serialize_object_to_base64(&msg, "message")?;
-        
+
+        let msg_base64 = build_internal_message(&source, &self.addr, body_cell.into())?;
+        let output = self.send_to_debot(msg_base64).await?;
+        self.handle_output(output).await
+    }
+
+    async fn send_to_debot(&mut self, msg: String) -> ClientResult<RunOutput> {
         let run_result = run_tvm(
             self.ton.clone(),
             ParamsOfRunTvm {
                 account: self.state.clone(),
-                message: msg_base64,
+                message: msg,
                 abi: Some(self.abi.clone()),
                 execution_options: None,
             },
@@ -711,7 +711,7 @@ impl DEngine {
 
         RunOutput::new(
             result.account,
-            result.decoded.unwrap().output,
+            result.decoded.and_then(|x| x.output),
             result.out_messages,
         )
     }
@@ -803,7 +803,21 @@ impl DEngine {
                     }
                 },
                 DebotCallType::GetMethod{msg: _} => {
-                    // TODO: call run_tvm
+                    let method = GetMethod::new(self.ton.clone(), msg)?;
+            
+                    let state = match self.smc_cache.iter().find(|smc| smc.0 == method.dest().as_str() ) {
+                        Some(smc) => smc.1.clone(),
+                        None => {
+                            let smc = self.load_state(method.dest().clone()).await
+                                .map_err(|e| Error::execute_failed(e))?;
+                            self.smc_cache.push((method.dest().clone(), smc.clone()));
+                            smc
+                        },
+                    };
+
+                    let result_body_slice = method.run(state).await?;
+                    let msg_base64 = build_internal_message(method.dest(), &self.addr, result_body_slice)?;
+                    let output = self.send_to_debot(msg_base64).await?;
                 },
                 DebotCallType::External{msg: _} => {
                     // TODO: 
