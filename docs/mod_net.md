@@ -37,6 +37,8 @@ null
 
 [FieldAggregation](#FieldAggregation)
 
+[AggregationFn](#AggregationFn)
+
 [ParamsOfQuery](#ParamsOfQuery)
 
 [ResultOfQuery](#ResultOfQuery)
@@ -467,7 +469,26 @@ type FieldAggregation = {
 }
 ```
 - `field`: _string_ – Dot separated path to the field
-- `fn`: _AggregationFn_ – Aggregation function that must be applied to field values
+- `fn`: _[AggregationFn](mod_net.md#AggregationFn)_ – Aggregation function that must be applied to field values
+
+
+## AggregationFn
+```ts
+enum AggregationFn {
+    COUNT = "COUNT",
+    MIN = "MIN",
+    MAX = "MAX",
+    SUM = "SUM",
+    AVERAGE = "AVERAGE"
+}
+```
+One of the following value:
+
+- `COUNT = "COUNT"` – Returns count of filtered record
+- `MIN = "MIN"` – Returns the minimal value for a field in filtered records
+- `MAX = "MAX"` – Returns the maximal value for a field in filtered records
+- `SUM = "SUM"` – Returns a sum of values for a field in filtered records
+- `AVERAGE = "AVERAGE"` – Returns an average value for a field in filtered records
 
 
 ## ParamsOfQuery

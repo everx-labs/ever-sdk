@@ -7121,8 +7121,46 @@
             {
               "name": "fn",
               "type": "Ref",
-              "ref_name": "AggregationFn",
+              "ref_name": "net.AggregationFn",
               "summary": "Aggregation function that must be applied to field values",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "AggregationFn",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "COUNT",
+              "type": "None",
+              "summary": "Returns count of filtered record",
+              "description": null
+            },
+            {
+              "name": "MIN",
+              "type": "None",
+              "summary": "Returns the minimal value for a field in filtered records",
+              "description": null
+            },
+            {
+              "name": "MAX",
+              "type": "None",
+              "summary": "Returns the maximal value for a field in filtered records",
+              "description": null
+            },
+            {
+              "name": "SUM",
+              "type": "None",
+              "summary": "Returns a sum of values for a field in filtered records",
+              "description": null
+            },
+            {
+              "name": "AVERAGE",
+              "type": "None",
+              "summary": "Returns an average value for a field in filtered records",
               "description": null
             }
           ],
