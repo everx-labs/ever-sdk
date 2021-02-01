@@ -19,41 +19,45 @@ impl GetMethod {
         debot_addr: &String,
     ) -> ClientResult<String> {
         let debot_abi = Contract::load(debot_abi.as_bytes())
-            .map_err(|e| Error::invalid_debot_abi(e.to_string()))?;
+            .map_err(|e| Error::get_method_failed(e.to_string()))?;
         let mut message: Message = deserialize_object_from_base64(&msg, "message")?.object;
         let dest = message
             .header()
             .get_dst_address()
             .map(|x| x.to_string())
             .unwrap_or_default();
-        let mut in_body_slice = message.body().ok_or(Error::invalid_msg("empty body"))?;
+        let mut in_body_slice = message.body().ok_or(Error::get_method_failed("empty body"))?;
         let mut pubkey_bit_present = false;
         // skip signature bit (must be 0)
-        in_body_slice.get_next_bit().unwrap();
+        let sign_bit = in_body_slice.get_next_bit().unwrap();
+        if sign_bit {
+            return Err(Error::get_method_failed("signature bit must be zero"));
+        }
         let slice_clone = in_body_slice.clone();
+        
         // skip timestamp in miliseconds
-        let mut timestamp = in_body_slice.get_next_u64().unwrap();
-        // `expire` is a function id
+        in_body_slice.get_next_u64().unwrap();
+        // `expire` is a callback id of debot
         let mut answer_id = in_body_slice.get_next_u32().unwrap();
         // remember function id
         let mut func_id = in_body_slice.get_next_u32().unwrap();
 
         let result = debot_abi
-            .function_by_id(func_id, true)
-            .map_err(|e| Error::invalid_function_id(e));
+            .function_by_id(answer_id, true)
+            .map_err(|e| Error::get_method_failed(e));
         if result.is_err() {
-            println!("WARNING function with answer id not found. 2nd try.");
+            debug!("function with answer id not found in debot ABI, second try.");
             in_body_slice = slice_clone;
             // skip pubkey bit (must be 0)
             in_body_slice.get_next_bit().unwrap();
             pubkey_bit_present = true;
-            timestamp = in_body_slice.get_next_u64().unwrap();
+            in_body_slice.get_next_u64().unwrap();
             answer_id = in_body_slice.get_next_u32().unwrap();
             func_id = in_body_slice.get_next_u32().unwrap();
 
-            debot_abi.function_by_id(func_id, true).map_err(|e| {
-                println!("FAIL func_id not found");
-                Error::invalid_function_id(e)
+            debot_abi.function_by_id(answer_id, true).map_err(|e| {
+                error!("answer id not found");
+                Error::get_method_failed(e)
             })?;
         }
 
@@ -65,9 +69,11 @@ impl GetMethod {
             // pubkey bit = 0
             new_body.append_bit_zero().unwrap();
         }
+        let now = ton.env.now_ms();
+        let expired_at = ((now / 1000) as u32) + ton.config.abi.message_expiration_timeout;
         new_body
-            .append_u64(timestamp).unwrap()
-            .append_u32(((timestamp >> 32) as u32) + 100).unwrap()
+            .append_u64(now).unwrap()
+            .append_u32(expired_at).unwrap()
             .append_u32(func_id).unwrap()
             .append_builder(&BuilderData::from_slice(&in_body_slice))
             .unwrap();
@@ -83,10 +89,11 @@ impl GetMethod {
                 execution_options: None,
             },
         )
-        .await?;
+        .await
+        .map_err(|e| Error::get_method_failed(e))?;
 
         if result.out_messages.len() != 1 {
-            return Err(Error::execute_failed(
+            return Err(Error::get_method_failed(
                 "get-metod returns more than 1 message",
             ));
         }
@@ -100,8 +107,8 @@ impl GetMethod {
             let response_id = body_slice.get_next_u32().unwrap();
             let request_id = response_id & !(1u32 << 31);
             if func_id != request_id {
-                return Err(Error::invalid_msg(
-                    "get-method returns msg with incorrect response id",
+                return Err(Error::get_method_failed(
+                    "returned message has incorrect response id",
                 ));
             }
             new_body

@@ -249,7 +249,7 @@ impl DEngine {
                 let result = self.run_action(&a).await?;
                 let actions = result.decode_actions();
                 self.handle_output(result).await
-                    .map_err(|e| format!("invalid debot output: {}", e))?;
+                    .map_err(|e| e.to_string())?;
                 actions
             }
             AcType::RunMethod => {
@@ -767,13 +767,14 @@ impl DEngine {
     }
 
     async fn handle_output(&mut self, mut output: RunOutput) -> ClientResult<()> {
-        while let Some(call) = output.calls.pop_front() {
+        while let Some(call) = output.pop() {
             match call {
                 DebotCallType::Interface{msg, id} => {
+                    debug!("Interface call");
                     match self.builtin_interfaces.try_execute(&msg, &id).await {
                         None => self.browser.send(msg).await,
-                        Some(res) => {
-                            let (fname, args) = res.map_err(|e| Error::execute_failed(e))?;
+                        Some(result) => {
+                            let (fname, args) = result.map_err(|e| Error::execute_failed(e))?;
                             let new_outputs = self.run_debot_internal(
                                 format!("{}:{}", DEBOT_WC, id),
                                 fname,
@@ -784,6 +785,7 @@ impl DEngine {
                     }
                 },
                 DebotCallType::GetMethod{msg, dest} => {
+                    debug!("GetMethod call");
                     let target_state = self.load_state(dest).await
                         .map_err(|e| Error::execute_failed(e))?;
                     let answer_msg = GetMethod::run(
@@ -792,9 +794,9 @@ impl DEngine {
                         target_state,
                         &self.raw_abi,
                         &self.addr
-                    ).await?;
-                    let new_outputs = self.send_to_debot(answer_msg).await?;
-                    output.append(new_outputs);
+                    )
+                    .await?;
+                    output.append(self.send_to_debot(answer_msg).await?);
                 },
                 DebotCallType::External{msg: _} => {
                     // TODO: 

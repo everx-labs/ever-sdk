@@ -56,6 +56,10 @@ impl RunOutput {
         self.return_value = output.return_value;
     }
 
+    pub fn pop(&mut self) -> Option<DebotCallType> {
+        self.calls.pop_front()
+    }
+
     fn filter_msg(&mut self, msg: Message, msg_base64: String) {
         let msg = (&msg, msg_base64);
         self.filter_interface_call(msg)
