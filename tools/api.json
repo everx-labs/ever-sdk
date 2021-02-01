@@ -7080,6 +7080,56 @@
           "description": null
         },
         {
+          "name": "ParamsOfQueryOperation",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "QueryCollection",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfQueryCollection",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "WaitForCollection",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfWaitForCollection",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "AggregateCollection",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfAggregateCollection",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "FieldAggregation",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "field",
+              "type": "String",
+              "summary": "Dot separated path to the field",
+              "description": null
+            },
+            {
+              "name": "fn",
+              "type": "Ref",
+              "ref_name": "AggregationFn",
+              "summary": "Aggregation function that must be applied to field values",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfQuery",
           "type": "Struct",
           "struct_fields": [
@@ -7127,7 +7177,7 @@
               "type": "Array",
               "array_item": {
                 "type": "Ref",
-                "ref_name": "ParamsOfQueryOperation"
+                "ref_name": "net.ParamsOfQueryOperation"
               },
               "summary": "List of query operations that must be performed per single fetch.",
               "description": null
@@ -7253,7 +7303,7 @@
                 "type": "Array",
                 "array_item": {
                   "type": "Ref",
-                  "ref_name": "FieldAggregation"
+                  "ref_name": "net.FieldAggregation"
                 }
               },
               "summary": "Projection (result) string",

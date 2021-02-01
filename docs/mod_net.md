@@ -33,6 +33,10 @@ null
 
 [SortDirection](#SortDirection)
 
+[ParamsOfQueryOperation](#ParamsOfQueryOperation)
+
+[FieldAggregation](#FieldAggregation)
+
 [ParamsOfQuery](#ParamsOfQuery)
 
 [ResultOfQuery](#ResultOfQuery)
@@ -110,7 +114,7 @@ function batch_query(
 ): Promise<ResultOfBatchQuery>;
 ```
 ### Parameters
-- `operations`: _ParamsOfQueryOperation[]_ – List of query operations that must be performed per single fetch.
+- `operations`: _[ParamsOfQueryOperation](mod_net.md#ParamsOfQueryOperation)[]_ – List of query operations that must be performed per single fetch.
 ### Result
 
 - `results`: _any[]_ – Result values for batched queries.
@@ -178,7 +182,7 @@ function aggregate_collection(
 ### Parameters
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter.
-- `fields`?: _FieldAggregation[]_ – Projection (result) string
+- `fields`?: _[FieldAggregation](mod_net.md#FieldAggregation)[]_ – Projection (result) string
 ### Result
 
 - `values`: _any_ – Values for requested fields.
@@ -421,6 +425,51 @@ One of the following value:
 - `DESC = "DESC"`
 
 
+## ParamsOfQueryOperation
+```ts
+type ParamsOfQueryOperation = ({
+    type: 'QueryCollection'
+} & ParamsOfQueryCollection) | ({
+    type: 'WaitForCollection'
+} & ParamsOfWaitForCollection) | ({
+    type: 'AggregateCollection'
+} & ParamsOfAggregateCollection)
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'QueryCollection'_
+
+- `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
+- `filter`?: _any_ – Collection filter
+- `result`: _string_ – Projection (result) string
+- `order`?: _[OrderBy](mod_net.md#OrderBy)[]_ – Sorting order
+- `limit`?: _number_ – Number of documents to return
+
+When _type_ is _'WaitForCollection'_
+
+- `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
+- `filter`?: _any_ – Collection filter
+- `result`: _string_ – Projection (result) string
+- `timeout`?: _number_ – Query timeout
+
+When _type_ is _'AggregateCollection'_
+
+- `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
+- `filter`?: _any_ – Collection filter.
+- `fields`?: _[FieldAggregation](mod_net.md#FieldAggregation)[]_ – Projection (result) string
+
+
+## FieldAggregation
+```ts
+type FieldAggregation = {
+    field: string,
+    fn: AggregationFn
+}
+```
+- `field`: _string_ – Dot separated path to the field
+- `fn`: _AggregationFn_ – Aggregation function that must be applied to field values
+
+
 ## ParamsOfQuery
 ```ts
 type ParamsOfQuery = {
@@ -448,7 +497,7 @@ type ParamsOfBatchQuery = {
     operations: ParamsOfQueryOperation[]
 }
 ```
-- `operations`: _ParamsOfQueryOperation[]_ – List of query operations that must be performed per single fetch.
+- `operations`: _[ParamsOfQueryOperation](mod_net.md#ParamsOfQueryOperation)[]_ – List of query operations that must be performed per single fetch.
 
 
 ## ResultOfBatchQuery
@@ -497,7 +546,7 @@ type ParamsOfAggregateCollection = {
 ```
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter.
-- `fields`?: _FieldAggregation[]_ – Projection (result) string
+- `fields`?: _[FieldAggregation](mod_net.md#FieldAggregation)[]_ – Projection (result) string
 
 
 ## ResultOfAggregateCollection
