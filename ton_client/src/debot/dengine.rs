@@ -797,6 +797,7 @@ impl DEngine {
                         &dest
                     )
                     .await?;
+                    debug!("GetMethod succeeded");
                     output.append(self.send_to_debot(answer_msg).await?);
                 },
                 DebotCallType::External{msg, dest} => {
@@ -816,6 +817,7 @@ impl DEngine {
                         &dest
                     )
                     .await?;
+                    debug!("External call succeeded");
                     output.append(self.send_to_debot(answer_msg).await?);
                 },
                 // TODO: support later
