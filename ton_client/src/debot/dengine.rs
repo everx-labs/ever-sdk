@@ -5,9 +5,10 @@ use super::context::{
 };
 use super::debot_abi::DEBOT_ABI;
 use super::errors::Error;
-use super::getmethod::GetMethod;
+use super::calltype;
+use super::calltype::DebotCallType;
 use super::routines;
-use super::run_output::{RunOutput, DebotCallType};
+use super::run_output::RunOutput;
 use super::{JsonValue, TonClient};
 use crate::abi::{
     decode_message_body, encode_message, encode_message_body, Abi, AbiConfig, CallSet, DeploySet,
@@ -724,7 +725,6 @@ impl DEngine {
             processing_try_index: None,
         };
 
-        //let msg = pack_state(msg, state)?;
         let browser = self.browser.clone();
         let callback = move |event| {
             debug!("{:?}", event);
@@ -786,21 +786,37 @@ impl DEngine {
                 },
                 DebotCallType::GetMethod{msg, dest} => {
                     debug!("GetMethod call");
-                    let target_state = self.load_state(dest).await
+                    let target_state = self.load_state(dest.clone()).await
                         .map_err(|e| Error::execute_failed(e))?;
-                    let answer_msg = GetMethod::run(
+                    let answer_msg = calltype::run_get_method(
                         self.ton.clone(),
                         msg,
                         target_state,
                         &self.raw_abi,
-                        &self.addr
+                        &self.addr,
+                        &dest
                     )
                     .await?;
                     output.append(self.send_to_debot(answer_msg).await?);
                 },
-                DebotCallType::External{msg: _} => {
-                    // TODO: 
-                    // result.send_msgs();
+                DebotCallType::External{msg, dest} => {
+                    debug!("External call");
+                    let target_state = self.load_state(dest.clone()).await
+                        .map_err(|e| Error::execute_failed(e))?;
+                    let signing_box = self.browser.get_signing_box().await
+                        .map_err(|e| Error::external_call_failed(e))?;
+                    let answer_msg = calltype::send_ext_msg(
+                        self.browser.clone(),
+                        self.ton.clone(),
+                        msg,
+                        signing_box,
+                        target_state,
+                        &self.raw_abi,
+                        &self.addr,
+                        &dest
+                    )
+                    .await?;
+                    output.append(self.send_to_debot(answer_msg).await?);
                 },
                 // TODO: support later
                 // DebotCallType::Invoke{msg} => { },

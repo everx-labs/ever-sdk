@@ -1,17 +1,10 @@
 use super::action::DAction;
+use super::calltype::DebotCallType;
 use super::{JsonValue, DEBOT_WC};
 use crate::boc::internal::deserialize_object_from_base64;
 use crate::error::ClientError;
 use std::collections::VecDeque;
 use ton_block::Message;
-
-pub(super) enum DebotCallType {
-    Interface { msg: String, id: String },
-    GetMethod { msg: String, dest: String },
-    External { msg: String },
-    // TODO: support later
-    // Invoke { msg: String },
-}
 
 #[derive(Default)]
 pub(super) struct RunOutput {
@@ -116,17 +109,18 @@ impl RunOutput {
                 // distinguish a get method call from external call.
                 // Most accurate method - to check flags in src address.
                 let mut body_slice = body_slice.clone();
+                let dest = msg
+                    .0
+                    .header()
+                    .get_dst_address()
+                    .map(|x| x.to_string())
+                    .unwrap_or_default();
                 if let Ok(bit) = body_slice.get_next_bit() {
                     if call_or_get && bit {
-                        self.calls.push_back(DebotCallType::External { msg: msg.1 });
+                        self.calls
+                            .push_back(DebotCallType::External { msg: msg.1, dest });
                         return None;
                     } else if !call_or_get && !bit {
-                        let dest = msg
-                            .0
-                            .header()
-                            .get_dst_address()
-                            .map(|x| x.to_string())
-                            .unwrap_or_default();
                         self.calls
                             .push_back(DebotCallType::GetMethod { msg: msg.1, dest });
                         return None;

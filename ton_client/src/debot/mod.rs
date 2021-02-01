@@ -19,7 +19,7 @@ mod debot_abi;
 mod dengine;
 mod dinterface;
 mod errors;
-mod getmethod;
+mod calltype;
 mod helpers;
 mod routines;
 mod run_output;
