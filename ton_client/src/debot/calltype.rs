@@ -116,12 +116,14 @@ pub async fn send_ext_msg<'a>(
     .await?;
 
     for out_msg in &result.out_messages {
-        if let Ok(answer_msg) =
-            build_answer_msg(out_msg, answer_id, func_id, dest_addr, debot_addr)
-        {
+        let res = build_answer_msg(out_msg, answer_id, func_id, dest_addr, debot_addr);
+        if let Ok(answer_msg) = res {
             return Ok(answer_msg);
+        } else {
+            debug!("{}", res.unwrap_err());
         }
     }
+    debug!("Build empty body");
     // answer message not found, build empty answer.
     let mut new_body = BuilderData::new();
     new_body.append_u32(answer_id).unwrap();
@@ -161,9 +163,12 @@ async fn decode_and_fix_ext_msg(
     if result.is_err() {
         debug!("function with answer id not found in debot ABI, second try.");
         in_body_slice = slice_clone;
-        // skip pubkey bit (must be 0)
-        in_body_slice.get_next_bit().unwrap();
+        
+        let pubkey_bit = in_body_slice.get_next_bit().unwrap();
         pubkey_bit_present = true;
+        if pubkey_bit {
+            in_body_slice.get_next_bits(256).unwrap();
+        }
         in_body_slice.get_next_u64().unwrap();
         answer_id = in_body_slice.get_next_u32().unwrap();
         func_id = in_body_slice.get_next_u32().unwrap();
