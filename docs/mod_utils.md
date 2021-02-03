@@ -1,6 +1,8 @@
 # Module utils
 
-null
+Misc utility Functions.
+
+
 ## Functions
 [convert_address](#convert_address) – Converts address from any TON format to any TON format
 
@@ -34,6 +36,8 @@ function convert_address(
 ### Parameters
 - `address`: _string_ – Account address in any TON format.
 - `output_format`: _[AddressStringFormat](mod_utils.md#AddressStringFormat)_ – Specify the format to convert to.
+
+
 ### Result
 
 - `address`: _string_ – Address in the specified format

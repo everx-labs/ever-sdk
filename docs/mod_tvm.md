@@ -1,6 +1,6 @@
 # Module tvm
 
-null
+
 ## Functions
 [run_executor](#run_executor) – Emulates all the phases of contract execution locally
 
@@ -83,6 +83,8 @@ function run_executor(
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for decoding output messages
 - `skip_transaction_check`?: _boolean_ – Skip transaction check flag
+
+
 ### Result
 
 - `transaction`: _any_ – Parsed transaction.
@@ -137,6 +139,8 @@ function run_tvm(
 <br>Must be encoded as base64.
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for dedcoding output messages
+
+
 ### Result
 
 - `out_messages`: _string[]_ – List of output messages' BOCs.
@@ -174,6 +178,8 @@ function run_get(
 - `function_name`: _string_ – Function name
 - `input`?: _any_ – Input parameters
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_
+
+
 ### Result
 
 - `output`: _any_ – Values returned by getmethod on stack

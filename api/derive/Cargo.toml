@@ -1,7 +1,7 @@
 [package]
 name = "api_derive"
-version = "1.6.1"
-authors = ["Michael Vlasov <melsomino@gmail.com>"]
+version = "1.6.2"
+authors = ["TON DEV SOLUTIONS LTD <support@tonlabs.io>"]
 edition = "2018"
 
 [lib]

@@ -1,6 +1,8 @@
 # Module client
 
-null
+Provides information about library.
+
+
 ## Functions
 [get_api_reference](#get_api_reference) – Returns Core Library API reference
 
@@ -50,6 +52,8 @@ type ResultOfGetApiReference = {
 
 function get_api_reference(): Promise<ResultOfGetApiReference>;
 ```
+
+
 ### Result
 
 - `api`: _API_
@@ -66,6 +70,8 @@ type ResultOfVersion = {
 
 function version(): Promise<ResultOfVersion>;
 ```
+
+
 ### Result
 
 - `version`: _string_ – Core Library version
@@ -83,6 +89,8 @@ type ResultOfBuildInfo = {
 
 function build_info(): Promise<ResultOfBuildInfo>;
 ```
+
+
 ### Result
 
 - `build_number`: _number_ – Build number assigned to this build by the CI.
@@ -106,6 +114,8 @@ function resolve_app_request(
 ### Parameters
 - `app_request_id`: _number_ – Request ID received from SDK
 - `result`: _[AppRequestResult](mod_client.md#AppRequestResult)_ – Result of request processing
+
+
 ### Result
 
 
@@ -235,8 +245,8 @@ type NetworkConfig = {
 - `max_reconnect_timeout`?: _number_ – Maximum time for sequential reconnections in ms.
 <br>Default value is 120000 (2 min)
 - `reconnect_timeout`?: _number_ – Deprecated
-- `message_retries_count`?: _number_ – The number of automatic message processing retries that SDK performs in case of `Message Expired (507)` error - but only for those messages which local emulation was successfull or failed with replay protection error. The default value is 5.
-- `message_processing_timeout`?: _number_ – Timeout that is used to process message delivery for the contracts which ABI does not include "expire" header. If the message is not delivered within the speficied timeout the appropriate error occurs.
+- `message_retries_count`?: _number_ – The number of automatic message processing retries that SDK performs in case of `Message Expired (507)` error - but only for those messages which local emulation was successful or failed with replay protection error. The default value is 5.
+- `message_processing_timeout`?: _number_ – Timeout that is used to process message delivery for the contracts which ABI does not include "expire" header. If the message is not delivered within the specified timeout the appropriate error occurs.
 - `wait_for_timeout`?: _number_ – Maximum timeout that is used for query response. The default value is 40 sec.
 - `out_of_sync_threshold`?: _number_ – Maximum time difference between server and client.
 <br>If client's device time is out of sync and difference is more than the threshold then error will occur. Also an error will occur if the specified threshold is more than<br>`message_processing_timeout/2`.<br>The default value is 15 sec.
@@ -310,7 +320,7 @@ Depends on value of the  `type` field.
 
 When _type_ is _'Error'_
 
-Error occured during request processing
+Error occurred during request processing
 
 
 - `text`: _string_ – Error description

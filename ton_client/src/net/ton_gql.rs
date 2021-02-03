@@ -84,6 +84,7 @@ pub struct ParamsOfQueryCollection {
 }
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
+#[serde(tag = "type")]
 pub enum ParamsOfQueryOperation {
     QueryCollection(ParamsOfQueryCollection),
     WaitForCollection(ParamsOfWaitForCollection),
