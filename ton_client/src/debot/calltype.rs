@@ -104,7 +104,10 @@ pub async fn send_ext_msg<'a>(
         callback.clone(),
     )
     .await
-    .map(|e| { error!("{:?}", e); e })?;
+    .map(|e| {
+        error!("{:?}", e);
+        e
+    })?;
     let result = wait_for_transaction(
         ton.clone(),
         ParamsOfWaitForTransaction {
@@ -130,7 +133,7 @@ pub async fn send_ext_msg<'a>(
             let mut new_body = BuilderData::new();
             new_body.append_u32(answer_id).map_err(msg_err)?;
             build_internal_message(dest_addr, debot_addr, new_body.into())
-        },
+        }
         Err(e) => {
             debug!("Transaction failed: {}", e);
             let mut new_body = BuilderData::new();
@@ -139,7 +142,7 @@ pub async fn send_ext_msg<'a>(
             let error_code = e.data["exit_code"].as_u64().unwrap_or(0) as u32;
             new_body.append_u32(error_code).map_err(msg_err)?;
             build_internal_message(dest_addr, debot_addr, new_body.into())
-        },
+        }
     }
 }
 
@@ -159,79 +162,72 @@ async fn decode_and_fix_ext_msg(
         .object;
 
     let src = std::mem::replace(
-        &mut message.ext_in_header_mut().ok_or(msg_err("not an external inbound message"))?.src,
-        MsgAddressExt::AddrNone
+        &mut message
+            .ext_in_header_mut()
+            .ok_or(msg_err("not an external inbound message"))?
+            .src,
+        MsgAddressExt::AddrNone,
     );
-    let (answer_id, onerror_id) = match src {
+    let (answer_id, onerror_id, pubkey_flag, expire_flag, timestamp_flag);
+    match src {
         MsgAddressExt::AddrNone => return Err(msg_err("src address is empty")),
         MsgAddressExt::AddrExtern(extern_addr) => {
+            // src address contains several metafields describing
+            // structure of message body.
             let mut slice = extern_addr.external_address.clone();
+            answer_id = slice.get_next_u32().map_err(msg_err)?;
+            onerror_id = slice.get_next_u32().map_err(msg_err)?;
             let abi_ver = slice.get_next_byte().map_err(msg_err)?;
             if abi_ver != 2 {
-                return Err(msg_err("invalid ABI version in src address"));
+                return Err(msg_err(
+                    "unsupported ABI version in src address (must be 2)",
+                ));
             }
-            (
-                slice.get_next_u32().map_err(msg_err)?,
-                slice.get_next_u32().map_err(msg_err)?
-            )
-        },
-    };
-
+            timestamp_flag = slice.get_next_bit().map_err(msg_err)?;
+            expire_flag = slice.get_next_bit().map_err(msg_err)?;
+            pubkey_flag = slice.get_next_bit().map_err(msg_err)?;
+        }
+    }
     debot_abi.function_by_id(answer_id, true).map_err(msg_err)?;
 
-    // need to rebuild message body:
-    // set correct timestamp (now) and expiration time (default value),
-    //
+    // find function id in message body: parse signature, pubkey and abi headers
+
     let mut in_body_slice = message.body().ok_or(msg_err("empty body"))?;
-    let mut pubkey_bit_present = false;
     // skip signature bit and signature if present
     let sign_bit = in_body_slice.get_next_bit().map_err(msg_err)?;
     if let Signer::SigningBox { handle: _ } = signer {
         if !sign_bit {
             return Err(msg_err("signature bit is zero"));
         }
-        in_body_slice
-            .get_next_bits(512)
-            .map_err(msg_err)?;
+        in_body_slice.get_next_bits(512).map_err(msg_err)?;
     }
-    let slice_clone = in_body_slice.clone();
-    // skip timestamp in miliseconds
-    in_body_slice.get_next_u64().map_err(msg_err)?;
-    // `expire` header is an check id.
-    // it must be equal to answer_id from src address.
-    // It is used to undestand if body contains pubkey bit (and pubkey itself) or not.
-    let mut check_id = in_body_slice.get_next_u32().map_err(msg_err)?;
-    // remember function id
-    let mut func_id = in_body_slice.get_next_u32().map_err(msg_err)?;
-
-    if answer_id != check_id {
-        in_body_slice = slice_clone;
+    if pubkey_flag {
         let pubkey_bit = in_body_slice.get_next_bit().map_err(msg_err)?;
-        pubkey_bit_present = true;
         if pubkey_bit {
-            in_body_slice
-                .get_next_bits(256)
-                .map_err(msg_err)?;
-        }
-        in_body_slice.get_next_u64().map_err(msg_err)?;
-        check_id = in_body_slice.get_next_u32().map_err(msg_err)?;
-        func_id = in_body_slice.get_next_u32().map_err(msg_err)?;
-
-        if answer_id != check_id {
-            let err = "answer id not equal to check id";
-            error!("{}", err);
-            return Err(msg_err(err));
+            in_body_slice.get_next_bits(256).map_err(msg_err)?;
         }
     }
+    if timestamp_flag {
+        // skip `timestamp` header
+        in_body_slice.get_next_u64().map_err(msg_err)?;
+    }
+    if expire_flag {
+        // skip `expire` header
+        in_body_slice.get_next_u32().map_err(msg_err)?;
+    }
+    // remember function id
+    let func_id = in_body_slice.get_next_u32().map_err(msg_err)?;
 
-    // rebuild msg body - insert correct `expire` header instead of answerId
+    // rebuild msg body - insert correct `timestamp` and `expire` headers if they are present,
+    // then sign body with signing box
+
     let mut new_body = BuilderData::new();
     let pubkey = signer.resolve_public_key(ton.clone()).await?;
-    if pubkey_bit_present {
+    if pubkey_flag {
         if let Some(key) = pubkey {
-            new_body.append_bit_one().map_err(msg_err)?;
             new_body
-                .append_raw(&hex::decode(&key).unwrap(), 256)
+                .append_bit_one()
+                .and_then(|b| b.append_raw(&hex::decode(&key).unwrap(), 256))
                 .map_err(msg_err)?;
         } else {
             // pubkey bit = 0
@@ -240,10 +236,14 @@ async fn decode_and_fix_ext_msg(
     }
     let now = ton.env.now_ms();
     let expired_at = ((now / 1000) as u32) + ton.config.abi.message_expiration_timeout;
+    if timestamp_flag {
+        new_body.append_u64(now).map_err(msg_err)?;
+    }
+    if expire_flag {
+        new_body.append_u32(expired_at).map_err(msg_err)?;
+    }
     new_body
-        .append_u64(now)
-        .and_then(|b| b.append_u32(expired_at))
-        .and_then(|b| b.append_u32(func_id))
+        .append_u32(func_id)
         .and_then(|b| b.append_builder(&BuilderData::from_slice(&in_body_slice)))
         .map_err(msg_err)?;
 
@@ -265,10 +265,7 @@ async fn decode_and_fix_ext_msg(
             signed_body.append_bit_zero().map_err(msg_err)?;
         }
     }
-
-    signed_body
-        .append_builder(&new_body)
-        .map_err(msg_err)?;
+    signed_body.append_builder(&new_body).map_err(msg_err)?;
 
     message.set_body(signed_body.into());
     let msg = serialize_object_to_base64(&message, "message").map_err(|e| Error::invalid_msg(e))?;
@@ -284,11 +281,10 @@ fn build_answer_msg(
     debot_addr: &String,
 ) -> ClientResult<String> {
     let out_message: Message = deserialize_object_from_base64(out_msg, "message")?.object;
-    let mut out_body = out_message.body();
     let mut new_body = BuilderData::new();
     new_body.append_u32(answer_id).map_err(msg_err)?;
 
-    if let Some(body_slice) = out_body.as_mut() {
+    if let Some(body_slice) = out_message.body().as_mut() {
         let response_id = body_slice.get_next_u32().map_err(msg_err)?;
         let request_id = response_id & !(1u32 << 31);
         if func_id != request_id {
