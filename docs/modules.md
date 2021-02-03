@@ -8,9 +8,7 @@ Handles additional function responses.
 
 Where:
 - `params`: _any_ – Response parameters. Actual type depends on API function. 
-- `responseType`: _number_ – Response type:
-    - `100` – Data.
-    - `101` – Error.
+- `responseType`: _number_ – Function specific response type.
 
 # Modules
 ## [client](mod_client.md) – Provides information about library.
