@@ -107,7 +107,7 @@ const ABI: &str = r#"
 }
 "#;
 
-pub const SDK_ID: &str = "8fc6454f90072c9f1f6d3313ae1608f64f4a0660c6ae9f42c68b6a79e2a1bc4b";
+const SDK_ID: &str = "8fc6454f90072c9f1f6d3313ae1608f64f4a0660c6ae9f42c68b6a79e2a1bc4b";
 
 pub struct SdkInterface {
     ton: TonClient,
@@ -166,9 +166,7 @@ impl DebotInterface for SdkInterface {
         match func {
             "getBalance" => self.get_balance(args).await,
             "getAccountType" => self.get_account_type(args).await,
-            //"getAccountHash", boxed(Self::decode)),
             "chacha20" => self.chacha20(args),
-            //"signHash", self.signHash(),
             "genRandom" => self.get_random(args),
             _ => Err(format!("function \"{}\" is not implemented", func)),
         }

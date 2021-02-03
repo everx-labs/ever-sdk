@@ -65,9 +65,9 @@ impl RunOutput {
         msg: (&'a Message, String),
     ) -> Option<(&'a Message, String)> {
         if msg.0.is_internal() {
-            let wc_id = msg.0.workchain_id().unwrap();
+            let wc_id = msg.0.workchain_id().unwrap_or(0);
             if DEBOT_WC as i32 == wc_id {
-                let std_addr = msg.0.dst().unwrap();
+                let std_addr = msg.0.dst().unwrap_or_default();
                 let addr = std_addr.to_string();
                 let wc_and_addr: Vec<&str> = addr.split(':').collect();
                 self.calls.push_back(DebotCallType::Interface {

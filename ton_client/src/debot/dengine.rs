@@ -206,7 +206,7 @@ impl DEngine {
         let func_name = &abi.function_by_id(func_id, true)
             .map_err(|e| Error::invalid_function_id(e) )?
             .name;
-        
+
         let msg_params = ParamsOfEncodeMessageBody {
             abi: self.abi.clone(),
             signer: Signer::None,

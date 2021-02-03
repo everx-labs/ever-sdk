@@ -14,12 +14,12 @@
 mod action;
 mod base64_interface;
 mod browser;
+mod calltype;
 mod context;
 mod debot_abi;
 mod dengine;
 mod dinterface;
 mod errors;
-mod calltype;
 mod helpers;
 mod routines;
 mod run_output;

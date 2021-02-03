@@ -1,5 +1,5 @@
-use super::base64_interface::{Base64Interface};
-use super::sdk_interface::{SdkInterface};
+use super::base64_interface::Base64Interface;
+use super::sdk_interface::SdkInterface;
 use crate::abi::{decode_message_body, Abi, ParamsOfDecodeMessageBody};
 use crate::boc::{parse_message, ParamsOfParse};
 use crate::debot::TonClient;
@@ -25,21 +25,15 @@ pub trait DebotInterface {
             },
         )
         .map_err(|e| format!(" failed to decode message body: {}", e))?;
-
-        debug!(
-            "{} ({})",
-            decoded.name,
-            decoded.value.as_ref().unwrap()
-        );
-
-        Ok((decoded.name, decoded.value.unwrap()))
+        let (func, args) = (decoded.name, decoded.value.unwrap_or(json!({})));
+        debug!("{} ({})", func, args);
+        Ok((func, args))
     }
 }
 
 #[async_trait::async_trait]
 pub trait DebotInterfaceExecutor {
     fn get_interfaces<'a>(&'a self) -> &'a HashMap<String, Arc<dyn DebotInterface + Send + Sync>>;
-    
     fn get_client(&self) -> TonClient;
 
     async fn try_execute(&self, msg: &String, interface_id: &String) -> Option<InterfaceResult> {
@@ -74,7 +68,7 @@ pub trait DebotInterfaceExecutor {
             Some(object) => {
                 let (func, args) = object.decode_msg(client.clone(), body)?;
                 object.call(&func, &args).await
-            },
+            }
             None => Ok((0, json!({}))),
         }
     }
@@ -90,7 +84,6 @@ impl DebotInterfaceExecutor for BuiltinInterfaces {
     fn get_interfaces<'a>(&'a self) -> &'a HashMap<String, Arc<dyn DebotInterface + Send + Sync>> {
         &self.interfaces
     }
-    
     fn get_client(&self) -> TonClient {
         self.client.clone()
     }
@@ -100,8 +93,7 @@ impl BuiltinInterfaces {
     pub fn new(client: TonClient) -> Self {
         let mut interfaces = HashMap::new();
 
-        let iface: Arc<dyn DebotInterface + Send + Sync> =
-            Arc::new(Base64Interface::new());
+        let iface: Arc<dyn DebotInterface + Send + Sync> = Arc::new(Base64Interface::new());
         interfaces.insert(iface.get_id(), iface);
 
         let iface: Arc<dyn DebotInterface + Send + Sync> =
