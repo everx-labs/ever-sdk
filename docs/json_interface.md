@@ -148,7 +148,7 @@ enum tc_response_types_t {
     tc_response_nop = 2,
     tc_response_app_request = 3,
     tc_response_app_notify = 4,
-    tc_response_custom = 100,
+    tc_response_custom >= 100,
 };
 
 typedef void (*tc_response_handler_t)(
@@ -176,7 +176,7 @@ can receive an unlimited count of responses related to single request. Parameter
     - `APP_NOTIFY = 4`, notify application with some data. See [Application objects](#Application-objects)
     - `RESERVED = 5..99` – reserved for protocol internal purposes. Application (or binding) must ignore this response. 
       Nevertheless the binding must check the `finished` flag to release data, associated with request.
-    - `CUSTOM = 100..` - additional function data related to request handling. Depends on the function.
+    - `CUSTOM >= 100` - additional function data related to request handling. Depends on the function.
 - `finished` – is a signal to release all additional data associated with the request. It is last response for specified 
   request_id.
 
