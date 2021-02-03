@@ -1,6 +1,8 @@
 # Module debot
 
-null
+[UNSTABLE](UNSTABLE.md) Module for working with debot.
+
+
 ## Functions
 [start](#start) – [UNSTABLE](UNSTABLE.md) Starts an instance of debot.
 
@@ -65,6 +67,8 @@ function start(
 ```
 ### Parameters
 - `address`: _string_ – Debot smart contract address
+
+
 ### Result
 
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
@@ -96,6 +100,8 @@ function fetch(
 ```
 ### Parameters
 - `address`: _string_ – Debot smart contract address
+
+
 ### Result
 
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
@@ -124,6 +130,8 @@ function execute(
 ### Parameters
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
 - `action`: _[DebotAction](mod_debot.md#DebotAction)_ – Debot Action that must be executed.
+
+
 ### Result
 
 
@@ -151,6 +159,8 @@ function send(
 - `source`: _string_ – Std address of interface or debot.
 - `func_id`: _number_ – Function Id to call
 - `params`: _string_ – Json string with parameters
+
+
 ### Result
 
 
@@ -172,6 +182,8 @@ function remove(
 ```
 ### Parameters
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+
+
 ### Result
 
 

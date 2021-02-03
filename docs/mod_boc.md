@@ -1,6 +1,8 @@
 # Module boc
 
-null
+BOC manipulation module.
+
+
 ## Functions
 [parse_message](#parse_message) – Parses message boc into a JSON
 
@@ -62,6 +64,8 @@ function parse_message(
 ```
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64
+
+
 ### Result
 
 - `parsed`: _any_ – JSON containing parsed BOC
@@ -88,6 +92,8 @@ function parse_transaction(
 ```
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64
+
+
 ### Result
 
 - `parsed`: _any_ – JSON containing parsed BOC
@@ -114,6 +120,8 @@ function parse_account(
 ```
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64
+
+
 ### Result
 
 - `parsed`: _any_ – JSON containing parsed BOC
@@ -140,6 +148,8 @@ function parse_block(
 ```
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64
+
+
 ### Result
 
 - `parsed`: _any_ – JSON containing parsed BOC
@@ -170,6 +180,8 @@ function parse_shardstate(
 - `boc`: _string_ – BOC encoded as base64
 - `id`: _string_ – Shardstate identificator
 - `workchain_id`: _number_ – Workchain shardstate belongs to
+
+
 ### Result
 
 - `parsed`: _any_ – JSON containing parsed BOC
@@ -192,6 +204,8 @@ function get_blockchain_config(
 ```
 ### Parameters
 - `block_boc`: _string_ – Key block BOC encoded as base64
+
+
 ### Result
 
 - `config_boc`: _string_ – Blockchain config BOC encoded as base64
@@ -216,6 +230,8 @@ function get_boc_hash(
 ```
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64
+
+
 ### Result
 
 - `hash`: _string_ – BOC root hash encoded with hex
@@ -240,6 +256,8 @@ function get_code_from_tvc(
 ```
 ### Parameters
 - `tvc`: _string_ – Contract TVC image encoded as base64
+
+
 ### Result
 
 - `code`: _string_ – Contract code encoded as base64

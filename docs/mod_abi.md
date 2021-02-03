@@ -1,6 +1,8 @@
 # Module abi
 
-null
+Provides message encoding and decoding according to the ABI specification.
+
+
 ## Functions
 [encode_message_body](#encode_message_body) – Encodes message body according to ABI function call.
 
@@ -107,6 +109,8 @@ function encode_message_body(
 - `signer`: _[Signer](mod_abi.md#Signer)_ – Signing parameters.
 - `processing_try_index`?: _number_ – Processing try index.
 <br>Used in message processing with retries.<br><br>Encoder uses the provided try index to calculate message<br>expiration time.<br><br>Expiration timeouts will grow with every retry.<br><br>Default value is 0.
+
+
 ### Result
 
 - `body`: _string_ – Message body BOC encoded with `base64`.
@@ -140,6 +144,8 @@ function attach_signature_to_message_body(
 <br>Must be encoded with `base64`.
 - `signature`: _string_ – Signature.
 <br>Must be encoded with `hex`.
+
+
 ### Result
 
 - `body`: _string_
@@ -212,6 +218,8 @@ function encode_message(
 - `signer`: _[Signer](mod_abi.md#Signer)_ – Signing parameters.
 - `processing_try_index`?: _number_ – Processing try index.
 <br>Used in message processing with retries (if contract's ABI includes "expire" header).<br><br>Encoder uses the provided try index to calculate message<br>expiration time. The 1st message expiration time is specified in<br>Client config.<br><br>Expiration timeouts will grow with every retry.<br>Retry grow factor is set in Client config:<br><.....add config parameter with default value here><br><br>Default value is 0.
+
+
 ### Result
 
 - `message`: _string_ – Message BOC encoded with `base64`.
@@ -247,6 +255,8 @@ function attach_signature(
 - `public_key`: _string_ – Public key encoded in `hex`.
 - `message`: _string_ – Unsigned message BOC encoded in `base64`.
 - `signature`: _string_ – Signature encoded in `hex`.
+
+
 ### Result
 
 - `message`: _string_ – Signed message BOC
@@ -277,6 +287,8 @@ function decode_message(
 ### Parameters
 - `abi`: _[Abi](mod_abi.md#Abi)_ – contract ABI
 - `message`: _string_ – Message BOC
+
+
 ### Result
 
 - `body_type`: _[MessageBodyType](mod_abi.md#MessageBodyType)_ – Type of the message body content.
@@ -311,6 +323,8 @@ function decode_message_body(
 - `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI used to decode.
 - `body`: _string_ – Message body BOC encoded in `base64`.
 - `is_internal`: _boolean_ – True if the body belongs to the internal message.
+
+
 ### Result
 
 - `body_type`: _[MessageBodyType](mod_abi.md#MessageBodyType)_ – Type of the message body content.
@@ -349,6 +363,8 @@ function encode_account(
 - `balance`?: _bigint_ – Initial balance.
 - `last_trans_lt`?: _bigint_ – Initial value for the `last_trans_lt`.
 - `last_paid`?: _number_ – Initial value for the `last_paid`.
+
+
 ### Result
 
 - `account`: _string_ – Account BOC encoded in `base64`.

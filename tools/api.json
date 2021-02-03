@@ -1,5 +1,5 @@
 {
-  "version": "1.6.0",
+  "version": "1.6.2",
   "modules": [
     {
       "name": "client",
@@ -378,7 +378,7 @@
                 "number_type": "Int",
                 "number_size": 8
               },
-              "summary": "The number of automatic message processing retries that SDK performs in case of `Message Expired (507)` error - but only for those messages which local emulation was successfull or failed with replay protection error. The default value is 5.",
+              "summary": "The number of automatic message processing retries that SDK performs in case of `Message Expired (507)` error - but only for those messages which local emulation was successful or failed with replay protection error. The default value is 5.",
               "description": null
             },
             {
@@ -389,7 +389,7 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": "Timeout that is used to process message delivery for the contracts which ABI does not include \"expire\" header. If the message is not delivered within the speficied timeout the appropriate error occurs.",
+              "summary": "Timeout that is used to process message delivery for the contracts which ABI does not include \"expire\" header. If the message is not delivered within the specified timeout the appropriate error occurs.",
               "description": null
             },
             {
@@ -565,7 +565,7 @@
                   "description": null
                 }
               ],
-              "summary": "Error occured during request processing",
+              "summary": "Error occurred during request processing",
               "description": null
             },
             {
