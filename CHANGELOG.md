@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 - `ResponseHandler` type description into `modules.md`.
 
 ### Fixed
-- `net.batch_query` parameters serialization wasn't matched to docs.
+- `net.batch_query` parameters serialization did't match to docs.
 - Module description in docs generator contains `null` instead of summary.
 - Function result section header hadn't the line separator before.
 
