@@ -3,7 +3,7 @@ All notable changes to this project will be documented in this file.
 
 ## 1.6.3 Feb 4, 2021
 ### Fixed
-- Expired message wasn't retried if local execution was succeeded.
+- Expired message wasn't retried if local execution succeeded.
 
 ## 1.6.2 Feb 3, 2021
 ### Added
