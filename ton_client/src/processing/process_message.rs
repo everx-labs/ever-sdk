@@ -6,6 +6,7 @@ use crate::processing::{
     send_message, wait_for_transaction, ErrorCode, ParamsOfSendMessage, ParamsOfWaitForTransaction,
     ProcessingEvent, ResultOfProcessMessage,
 };
+use crate::tvm::StdContractError;
 use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, ApiType, Debug)]
@@ -64,9 +65,11 @@ pub async fn process_message<F: futures::Future<Output = ()> + Send>(
                 return Ok(output);
             }
             Err(err) => {
+                let local_exit_code = &err.data["local_error"]["data"]["exit_code"];
                 let can_retry = err.code == ErrorCode::MessageExpired as u32
                     && (err.data["local_error"].is_null()
-                        || err.data["local_error"]["data"]["exit_code"].as_i64().unwrap_or(0) == 57)
+                        || local_exit_code == StdContractError::ReplayProtection as i32
+                        || local_exit_code == StdContractError::ExtMessageExpired as i32)
                     && can_retry_expired_message(&context, try_index);
                 if !can_retry {
                     // Waiting error is unrecoverable, return it
