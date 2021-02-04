@@ -1,5 +1,5 @@
 use crate::abi;
-use crate::abi::internal::{add_sign_to_message, add_sign_to_message_body, create_tvc_image, try_to_sign_message, resolve_pubkey};
+use crate::abi::internal::{add_sign_to_message, add_sign_to_message_body, create_tvc_image, try_to_sign_message, resolve_pubkey, update_pubkey};
 use crate::abi::{Abi, Error, FunctionHeader, Signer};
 use crate::boc::internal::get_boc_hash;
 use crate::client::ClientContext;
@@ -490,8 +490,22 @@ pub struct ResultOfEncodeInternalMessage {
 /// Encodes an internal ABI-compatible message
 ///
 /// Allows to encode deploy and function call messages.
+///
+/// Use cases include messages of any possible type:
+/// - deploy with initial function call (i.e. `constructor` or any other function that is used for some kind
+/// of initialization);
+/// - deploy without initial function call;
+///
+/// There is an optional public key can be provided in deploy set in order to substitute one
+/// in TVM file.
+///
+/// Public key resolving priority:
+/// 1. Public key from deploy set.
+/// 2. Public key, specified in TVM file.
+///
+
 #[api_function]
-pub async fn encode_internal_message(
+pub fn encode_internal_message(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfEncodeInternalMessage,
 ) -> ClientResult<ResultOfEncodeInternalMessage> {
@@ -507,16 +521,7 @@ pub async fn encode_internal_message(
             &deploy_set.tvc,
         )?;
 
-        let public = if let Some(tvc_public) = resolve_pubkey(&deploy_set, &image, &None)? {
-            image.set_public_key(&decode_public_key(&tvc_public)?)
-                .map_err(|err| Error::invalid_tvc_image(err))?;
-            Some(tvc_public)
-        } else {
-            image.get_public_key()
-                .map_err(|err| Error::invalid_tvc_image(err))?
-                .map(|public| hex::encode(&public))
-        };
-
+        let public = update_pubkey(&deploy_set, &mut image, &None)?;
         let public = required_public_key(public)?;
         if let Some(call_set) = &params.call_set {
             encode_int_deploy(
@@ -544,6 +549,7 @@ pub async fn encode_internal_message(
             None,
         )
         .map_err(|err| abi::Error::encode_run_message_failed(err, &call_set.function_name))?;
+
         (message.serialized_message, address)
     } else {
         return Err(abi::Error::missing_required_call_set_for_encode_message());

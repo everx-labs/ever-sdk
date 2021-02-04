@@ -1,16 +1,20 @@
 use crate::abi::decode_message::{DecodedMessageBody, MessageBodyType, ParamsOfDecodeMessage};
 use crate::abi::encode_message::{
-    CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfEncodeMessage, ResultOfAttachSignature,
-    ResultOfEncodeMessage,
+    CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfEncodeMessage, ResultOfAttachSignature, 
+    ResultOfEncodeMessage, ParamsOfEncodeInternalMessage, ResultOfEncodeInternalMessage
 };
 use crate::abi::internal::{is_empty_pubkey, resolve_pubkey, create_tvc_image};
 use crate::abi::{FunctionHeader, ParamsOfDecodeMessageBody, Signer};
+use crate::boc::internal::get_boc_hash;
+use crate::boc::{parse_message, ParamsOfParse, ResultOfGetCodeFromTvc, ParamsOfGetCodeFromTvc};
+use crate::ClientContext;
 use crate::crypto::KeyPair;
 use crate::error::ClientError;
 use crate::tests::{TestClient, EVENTS, HELLO};
 use crate::utils::conversion::abi_uint;
 
 use std::io::Cursor;
+use std::sync::Arc;
 
 use ton_block::{Message, Deserializable, Serializable};
 use ton_sdk::ContractImage;
@@ -530,4 +534,172 @@ fn test_encode_message_pubkey_internal(
 
 fn gen_pubkey() -> ed25519_dalek::PublicKey {
     ed25519_dalek::Keypair::generate(&mut rand::thread_rng()).public
+}
+
+#[test]
+fn test_encode_internal_message() -> Result<()> {
+    let client = TestClient::new();
+    let (abi, tvc) = TestClient::package(HELLO, None);
+    let image = create_tvc_image(&abi.json_string()?, None, &tvc)?;
+
+    test_encode_internal_message_deploy(
+        &client,
+        &image,
+        &abi,
+        &tvc,
+        None,
+        Some(
+            "te6ccgECHAEABGkAAmECADYO5IoxskLmUfURre2fOB04OmP32VjPwA/lDM/Cpvh8AAAAAAAAAAAAAAAAAAIyBgEBAc\
+            ACAgPPIAUDAQHeBAAD0CAAQdgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAIm/wD0pCAiwAGS9KDhiu1TW\
+            DD0oQkHAQr0pCD0oQgAAAIBIAwKAej/fyHTAAGOJoECANcYIPkBAXDtRND0BYBA9A7yitcL/wHtRyJvde1XAwH5EPKo\
+            3u1E0CDXScIBjhb0BNM/0wDtRwFvcQFvdgFvcwFvcu1Xjhj0Be1HAW9ycG9zcG92yIAgz0DJ0G9x7Vfi0z8B7UdvEyG\
+            5IAsAYJ8wIPgjgQPoqIIIG3dAoLneme1HIW9TIO1XMJSANPLw4jDTHwH4I7zyudMfAfFAAQIBIBgNAgEgEQ4BCbqLVf\
+            P4DwH67UdvYW6OO+1E0CDXScIBjhb0BNM/0wDtRwFvcQFvdgFvcwFvcu1Xjhj0Be1HAW9ycG9zcG92yIAgz0DJ0G9x7\
+            Vfi3u1HbxaS8jOX7Udxb1btV+IA+ADR+CO1H+1HIG8RMAHIyx/J0G9R7VftR28SyPQA7UdvE88LP+1HbxYQABzPCwDt\
+            R28RzxbJ7VRwagIBahUSAQm0ABrWwBMB/O1Hb2FujjvtRNAg10nCAY4W9ATTP9MA7UcBb3EBb3YBb3MBb3LtV44Y9AX\
+            tRwFvcnBvc3BvdsiAIM9AydBvce1X4t7tR29lIG6SMHDecO1HbxKAQPQO8orXC/+68uBk+AD6QNEgyMn7BIED6HCBAI\
+            DIcc8LASLPCgBxz0D4KBQAjs8WJM8WI/oCcc9AcPoCcPoCgEDPQPgjzwsfcs9AIMki+wBfBTDtR28SyPQA7UdvE88LP\
+            +1HbxbPCwDtR28RzxbJ7VRwatswAQm0ZfaLwBYB+O1Hb2FujjvtRNAg10nCAY4W9ATTP9MA7UcBb3EBb3YBb3MBb3Lt\
+            V44Y9AXtRwFvcnBvc3BvdsiAIM9AydBvce1X4t7R7UdvEdcLH8iCEFDL7ReCEIAAAACxzwsfIc8LH8hzzwsB+CjPFnL\
+            PQPglzws/gCHPQCDPNSLPMbwXAHiWcc9AIc8XlXHPQSHN4iDJcfsAWyHA/44e7UdvEsj0AO1HbxPPCz/tR28WzwsA7U\
+            dvEc8Wye1U3nFq2zACASAbGQEJu3MS5FgaAPjtR29hbo477UTQINdJwgGOFvQE0z/TAO1HAW9xAW92AW9zAW9y7VeOG\
+            PQF7UcBb3Jwb3Nwb3bIgCDPQMnQb3HtV+Le+ADR+CO1H+1HIG8RMAHIyx/J0G9R7VftR28SyPQA7UdvE88LP+1HbxbP\
+            CwDtR28RzxbJ7VRwatswAMrdcCHXSSDBII4rIMAAjhwj0HPXIdcLACDAAZbbMF8H2zCW2zBfB9sw4wTZltswXwbbMOM\
+            E2eAi0x80IHS7II4VMCCCEP////+6IJkwIIIQ/////rrf35bbMF8H2zDgIyHxQAFfBw=="
+        )
+    )?;
+
+    test_encode_internal_message_deploy(
+        &client,
+        &image,
+        &abi,
+        &tvc,
+        Some(CallSet {
+            function_name: "constructor".into(),
+            header: None,
+            input: None,
+        }),
+        None,
+    )?;
+
+    test_encode_internal_message_run(
+        &client,
+        &abi,
+        Some(CallSet {
+            function_name: "sayHello".into(),
+            header: None,
+            input: None,
+        }),
+        Some("te6ccgEBAQEANgAAaAIACRorPEhV5veJGis8SFXm94kaKzxIVeb3iRorPEhV5veAAAAAAAAAAAAAAAAAAFDL7Rc="),
+    )
+}
+
+fn test_encode_internal_message_run(
+    client: &TestClient,
+    abi: &Abi,
+    call_set: Option<CallSet>,
+    expected_boc: Option<&str>,
+) -> Result<()> {
+    fn check_str_field(map: &serde_json::Map<String, serde_json::Value>, field_name: &str, expected: &str) {
+        let value = map.get(field_name)
+            .expect(&format!("Expected `{}` field", field_name));
+        let value = value.as_str()
+            .expect(&format!("Expected `{}` to have `String` type", field_name));
+        assert_eq!(value, expected, "Check failed: {}", field_name);
+    }
+
+    let address = String::from("0:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
+    let result: ResultOfEncodeInternalMessage = client.request(
+        "abi.encode_internal_message",
+        ParamsOfEncodeInternalMessage {
+            abi: abi.clone(),
+            address: Some(address.clone()),
+            deploy_set: None,
+            call_set,
+            value: "1000000000".to_string(),
+            bounce: Some(true),
+            enable_ihr: None
+        },
+    )?;
+
+    assert_eq!(result.address, address);
+    assert_eq!(result.message_id, get_boc_hash(&base64::decode(&result.message)?)?);
+    if let Some(expected_boc) = expected_boc {
+        assert_eq!(&result.message, expected_boc);
+    }
+
+    let parsed = parse_message(
+        Arc::new(ClientContext::new(Default::default())?),
+        ParamsOfParse {
+            boc: result.message
+        }
+    )?;
+
+    let json_obj = parsed.parsed.as_object()
+        .expect("Expected JSON Object");
+
+    check_str_field(json_obj, "msg_type_name", "internal");
+    check_str_field(json_obj, "src", "");
+    check_str_field(json_obj, "dst", &address);
+
+    Ok(())
+}
+
+
+fn test_encode_internal_message_deploy(
+    client: &TestClient,
+    image: &ContractImage,
+    abi: &Abi,
+    tvc: &String,
+    call_set: Option<CallSet>,
+    expected_boc: Option<&str>,
+) -> Result<()> {
+    let result: ResultOfEncodeInternalMessage = client.request(
+        "abi.encode_internal_message",
+        ParamsOfEncodeInternalMessage {
+            abi: abi.clone(),
+            address: None,
+            deploy_set: Some(DeploySet {
+                tvc: tvc.clone(),
+                workchain_id: None,
+                initial_data: None,
+                initial_pubkey: None,
+            }),
+            call_set,
+            value: "0".to_string(),
+            bounce: None,
+            enable_ihr: None
+        },
+    )?;
+
+    assert_eq!(result.address, image.msg_address(0).to_string());
+    assert_eq!(result.message_id, get_boc_hash(&base64::decode(&result.message)?)?);
+    if let Some(expected_boc) = expected_boc {
+        assert_eq!(&result.message, expected_boc);
+    }
+
+    let parsed = parse_message(
+        Arc::new(ClientContext::new(Default::default())?),
+        ParamsOfParse {
+            boc: result.message
+        }
+    )?;
+
+    let parsed = parsed.parsed.as_object()
+        .expect("Expected JSON Object");
+    let code = parsed.get("code")
+        .expect("Expected `code` field");
+    let code_str = code.as_str()
+        .expect("Expected `code` to have `String` type");
+
+    let code_from_tvc: ResultOfGetCodeFromTvc = client.request(
+        "boc.get_code_from_tvc",
+        ParamsOfGetCodeFromTvc {
+            tvc: tvc.clone(),
+        }
+    )?;
+
+    assert_eq!(code_str, code_from_tvc.code);
+
+    Ok(())
 }
