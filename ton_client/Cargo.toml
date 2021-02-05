@@ -55,6 +55,7 @@ num-derive = "0.3"
 async-trait = "0.1.40"
 futures = "0.3.4"
 tokio = { version = "0.2.13", features = ["sync", "stream"], default-features = false }
+lru = "0.6.3"
 lockfree = { git = "https://github.com/tonlabs/lockfree.git", package = "lockfree" }
 
 # optional for std

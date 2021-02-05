@@ -1,8 +1,21 @@
-use crate::boc::internal::deserialize_object_from_base64;
+/*
+* Copyright 2018-2020 TON DEV SOLUTIONS LTD.
+*
+* Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
+* this file except in compliance with the License.
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific TON DEV software governing permissions and
+* limitations under the License.
+*/
+
 use crate::boc::Error;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
 use ton_block::Serializable;
+use super::internal::deserialize_object_from_boc;
 
 #[derive(Serialize, Deserialize, Clone, ApiType)]
 pub struct ParamsOfGetBlockchainConfig {
@@ -17,11 +30,11 @@ pub struct ResultOfGetBlockchainConfig {
 }
 
 #[api_function]
-pub fn get_blockchain_config(
-    _context: std::sync::Arc<ClientContext>,
+pub async fn get_blockchain_config(
+    context: std::sync::Arc<ClientContext>,
     params: ParamsOfGetBlockchainConfig,
 ) -> ClientResult<ResultOfGetBlockchainConfig> {
-    let object = deserialize_object_from_base64::<ton_block::Block>(&params.block_boc, "block")?;
+    let object = deserialize_object_from_boc::<ton_block::Block>(&context, &params.block_boc, "block").await?;
 
     let extra = object
         .object

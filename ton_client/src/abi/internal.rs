@@ -1,4 +1,4 @@
-use crate::ClientContext;
+use crate::{ClientContext, boc::internal::deserialize_cell_from_boc};
 use crate::abi::{Error, Signer};
 use crate::crypto::internal::decode_public_key;
 use crate::encoding::hex_decode;
@@ -67,15 +67,20 @@ pub(crate) async fn result_of_encode_message(
     Ok((message, data_to_sign.map(|x| base64::encode(&x))))
 }
 
-pub(crate) fn create_tvc_image(
+pub(crate) async fn create_tvc_image(
+    context: &ClientContext,
     abi: &str,
     init_params: Option<&Value>,
     tvc: &String,
     public_key: &String,
 ) -> ClientResult<ContractImage> {
-    let tvc = base64::decode(tvc).map_err(|err| Error::invalid_tvc_image(err))?;
+    let (_, tvc_cell) = deserialize_cell_from_boc(context, tvc, "")
+        .await
+        .map_err(|err| Error::invalid_tvc_image(err))?;
     let public = decode_public_key(&public_key)?;
-    let mut image = ContractImage::from_state_init_and_key(&mut tvc.as_slice(), &public)
+    let mut image = ContractImage::from_cell(tvc_cell)
+        .map_err(|err| Error::invalid_tvc_image(err))?;
+    image.set_public_key(&public)
         .map_err(|err| Error::invalid_tvc_image(err))?;
 
     if let Some(params) = init_params {

@@ -134,6 +134,13 @@ impl ContractImage {
         Ok(result)
     }
 
+    pub fn from_cell(cell: ton_types::Cell) -> Result<Self> {
+        let id = cell.repr_hash().into();
+        let state_init = StateInit::construct_from_cell(cell)?;
+
+        Ok(Self { state_init, id })
+    }
+
     pub fn set_public_key(&mut self, pub_key: &PublicKey) -> Result<()> {
         let state_init = &mut self.state_init;
 

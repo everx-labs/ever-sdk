@@ -13,7 +13,7 @@
  */
 
 use super::*;
-use crate::abi::encode_account::{ParamsOfEncodeAccount, StateInitSource};
+use crate::{abi::encode_account::{ParamsOfEncodeAccount, StateInitSource}, boc::BocCacheType};
 use crate::abi::{Abi, CallSet, DeploySet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer};
 use crate::json_interface::modules::{AbiModule, TvmModule};
 use crate::tests::{TestClient, HELLO, SUBSCRIBE};
@@ -50,6 +50,7 @@ async fn test_execute_get() {
             last_paid: None,
             last_trans_lt: None,
             balance: None,
+            boc_cache: None,
         })
         .await
         .unwrap()
@@ -114,41 +115,6 @@ async fn test_run_executor() {
             run_message::run_executor_api(),
         );
 
-        // check that run with unlimited balance doesn't affect the contract balance
-        let parsed: crate::boc::ResultOfParse = client
-            .request(
-                "boc.parse_account",
-                crate::boc::ParamsOfParse {
-                    boc: account.clone(),
-                },
-            )
-            .unwrap();
-        let original_balance = parsed.parsed["balance"].as_str().unwrap();
-
-        let result = run_executor
-            .call(ParamsOfRunExecutor {
-                message: message.message.clone(),
-                abi: Some(abi.clone()),
-                account: AccountForExecutor::Account {
-                    boc: account.clone(),
-                    unlimited_balance: Some(true),
-                },
-                execution_options: None,
-                skip_transaction_check: None,
-            })
-            .await
-            .unwrap();
-
-        let parsed: crate::boc::ResultOfParse = client
-            .request(
-                "boc.parse_account",
-                crate::boc::ParamsOfParse {
-                    boc: result.account,
-                },
-            )
-            .unwrap();
-        assert_eq!(parsed.parsed["balance"], original_balance);
-
         // check standard run
         let result = run_executor
             .call(ParamsOfRunExecutor {
@@ -160,6 +126,8 @@ async fn test_run_executor() {
                 },
                 execution_options: None,
                 skip_transaction_check: None,
+                return_updated_account: Some(true),
+                boc_cache: None,
             })
             .await
             .unwrap();
@@ -186,6 +154,8 @@ async fn test_run_tvm() {
                 abi: Some(abi.clone()),
                 account: account.clone(),
                 execution_options: None,
+                boc_cache: None,
+                return_updated_account: Some(true),
             })
             .await
             .unwrap();
@@ -282,6 +252,8 @@ async fn test_run_message<F>(
             account,
             message: message.message,
             execution_options: None,
+            boc_cache: None,
+            return_updated_account: None,
         })
         .await
         .unwrap();
@@ -315,18 +287,19 @@ async fn test_run_account_none() {
             account: AccountForExecutor::None,
             execution_options: None,
             skip_transaction_check: Some(true),
+            return_updated_account: Some(true),
+            boc_cache: None,
         })
         .await
         .unwrap();
 
     let parsed: crate::boc::ResultOfParse = client
-        .request(
+        .request_async(
             "boc.parse_account",
             crate::boc::ParamsOfParse {
                 boc: result.account,
             },
-        )
-        .unwrap();
+        ).await.unwrap();
     assert_eq!(
         parsed.parsed["id"],
         "0:f18d106c11586689b11e946269ec1550b69654a8d5964de668149c28877fb65a"
@@ -374,18 +347,108 @@ async fn test_run_account_uninit() {
             account: AccountForExecutor::Uninit,
             execution_options: None,
             skip_transaction_check: None,
+            return_updated_account: Some(true),
+            boc_cache: None,
         })
         .await
         .unwrap();
 
     let parsed: crate::boc::ResultOfParse = client
-        .request(
+        .request_async(
             "boc.parse_account",
             crate::boc::ParamsOfParse {
                 boc: result.account,
             },
-        )
-        .unwrap();
+        ).await.unwrap();
     assert_eq!(parsed.parsed["id"], message.address);
     assert_eq!(parsed.parsed["acc_type_name"], "Active");
+}
+
+#[allow(dead_code)]
+//#[tokio::test(core_threads = 2)]
+async fn profile_tvm() {
+    let very_start = chrono::prelude::Utc::now().timestamp_millis();
+    let client = TestClient::new();
+    let run_tvm = client.wrap_async(run_tvm, TvmModule::api(), run_message::run_tvm_api());
+
+    let account = std::fs::read_to_string("src/tests/contracts/boc").unwrap();
+    let abi = TestClient::read_abi("src/tests/contracts/boc_abi.json".to_owned());
+    let address = "0:8ecb78f3be4bd981ea182079c76519520008d56991d16da40a868170e2efb3a2".to_owned();
+
+    let message = client
+        .encode_message(ParamsOfEncodeMessage {
+            abi: abi.clone(),
+            call_set: CallSet::some_with_function("listContenders"),
+            signer: Signer::None,
+            address: Some(address.clone()),
+            deploy_set: None,
+            processing_try_index: None,
+        })
+        .await
+        .unwrap();
+
+    let result = run_tvm
+        .call(ParamsOfRunTvm {
+            abi: Some(abi.clone()),
+            account,
+            message: message.message,
+            execution_options: None,
+            boc_cache: Some(BocCacheType::Unpinned),
+            return_updated_account: Some(true),
+        })
+        .await
+        .unwrap();
+
+    let start = chrono::prelude::Utc::now().timestamp_millis();
+    let mut messages = vec![];
+    for id in result.decoded.unwrap().output.unwrap()["ids"].as_array().unwrap() {
+        let mut contender_messages = vec![];
+        for func in &["getInfoFor", "getStatsFor", "getVotesFor", "getTotalRatingFor", "getVotesPerJuror"] {
+            let message = client
+                .encode_message(ParamsOfEncodeMessage {
+                    abi: abi.clone(),
+                    call_set: CallSet::some_with_function_and_input(
+                        func,
+                        json!({
+                            "id": id.as_str().unwrap(),
+                        })
+                    ),
+                    signer: Signer::None,
+                    address: Some(address.clone()),
+                    deploy_set: None,
+                    processing_try_index: None,
+                })
+                .await
+                .unwrap();
+            contender_messages.push(message.message);
+            break;
+        }
+        messages.push(contender_messages);
+        break;
+    }
+
+    let account = result.account;
+    println!("{} messages encoded in {}ms", messages.len() * 5, chrono::prelude::Utc::now().timestamp_millis() - start);
+    let start = chrono::prelude::Utc::now().timestamp_millis();
+
+    for contender_messages in messages {
+        for message in contender_messages {
+            run_tvm
+                .call(ParamsOfRunTvm {
+                    abi: Some(abi.clone()),
+                    account: account.clone(),
+                    message,
+                    execution_options: None,
+                    boc_cache: Some(BocCacheType::Unpinned),
+                    return_updated_account: None,
+                })
+                .await
+                .unwrap();
+            break;
+        }
+        break;
+    }
+
+    println!("Tvm called in {}ms", chrono::prelude::Utc::now().timestamp_millis() - start);
+    println!("Whole test in {}ms", chrono::prelude::Utc::now().timestamp_millis() - very_start);
 }

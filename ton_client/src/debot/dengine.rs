@@ -9,11 +9,11 @@ use super::routines;
 use super::run_output::RunOutput;
 use super::{JsonValue, TonClient};
 use crate::abi::{
-    decode_message_body, encode_message, encode_message_body, Abi, AbiConfig, CallSet, DeploySet,
+    decode_message_body, encode_message, encode_message_body, Abi, CallSet, DeploySet,
     ErrorCode, ParamsOfDecodeMessageBody, ParamsOfEncodeMessage, ParamsOfEncodeMessageBody, Signer,
 };
 use crate::boc::internal::{deserialize_cell_from_base64, serialize_object_to_base64};
-use crate::crypto::{remove_signing_box, CryptoConfig, RegisteredSigningBox, SigningBoxHandle};
+use crate::crypto::{remove_signing_box, RegisteredSigningBox, SigningBoxHandle};
 use crate::encoding::{account_decode, decode_abi_number};
 use crate::error::{ClientError, ClientResult};
 use crate::net::{query_collection, NetworkConfig, ParamsOfQueryCollection};
@@ -29,12 +29,11 @@ const EMPTY_CELL: &'static str = "te6ccgEBAQEAAgAAAA==";
 
 fn create_client(url: &str) -> Result<TonClient, String> {
     let cli_conf = ClientConfig {
-        abi: AbiConfig::default(),
-        crypto: CryptoConfig::default(),
         network: NetworkConfig {
             server_address: Some(url.to_owned()),
             ..Default::default()
         },
+        ..Default::default()
     };
     let cli =
         ClientContext::new(cli_conf).map_err(|e| format!("failed to create tonclient: {}", e))?;
@@ -215,7 +214,8 @@ impl DEngine {
                 account: std::mem::take(&mut self.state),
                 message: msg_base64,
                 abi: Some(self.abi.clone()),
-                execution_options: None,
+                return_updated_account: Some(true),
+                ..Default::default()
             },
         ).await?;
         let mut run_output = RunOutput::new(
@@ -547,6 +547,7 @@ impl DEngine {
                 is_internal: true,
             },
         )
+        .await
         .map_err(|e| format!("failed to decode msg body: {}", e))?;
 
         debug!("calling {} at address {}", res.name, dest);
@@ -691,7 +692,8 @@ impl DEngine {
                 account: state,
                 message: result.message,
                 abi: Some(abi),
-                execution_options: None,
+                return_updated_account: Some(true),
+                ..Default::default()
             },
         ).await?;
 
