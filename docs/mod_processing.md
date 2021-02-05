@@ -1,7 +1,11 @@
 # Module processing
 
+Message processing module.
+
 This module incorporates functions related to complex message
 processing scenarios.
+
+
 ## Functions
 [send_message](#send_message) – Sends message to the network
 
@@ -56,7 +60,9 @@ function send_message(
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Optional message ABI.
 <br>If this parameter is specified and the message has the<br>`expire` header then expiration time will be checked against<br>the current time to prevent unnecessary sending of already expired message.<br><br>The `message already expired` error will be returned in this<br>case.<br><br>Note, that specifying `abi` for ABI compliant contracts is<br>strongly recommended, so that proper processing strategy can be<br>chosen.
 - `send_events`: _boolean_ – Flag for requesting events sending
-- `responseHandler`?: _ResponseHandler_ – additional responses handler.### Result
+- `responseHandler`?: _[ResponseHandler](modules.md#ResponseHandler)_ – additional responses handler.
+
+### Result
 
 - `shard_block_id`: _string_ – The last generated shard block of the message destination account before the message was sent.
 <br>This block id must be used as a parameter of the<br>`wait_for_transaction`.
@@ -119,7 +125,9 @@ function wait_for_transaction(
 - `shard_block_id`: _string_ – The last generated block id of the destination account shard before the message was sent.
 <br>You must provide the same value as the `send_message` has returned.
 - `send_events`: _boolean_ – Flag that enables/disables intermediate events
-- `responseHandler`?: _ResponseHandler_ – additional responses handler.### Result
+- `responseHandler`?: _[ResponseHandler](modules.md#ResponseHandler)_ – additional responses handler.
+
+### Result
 
 - `transaction`: _any_ – Parsed transaction.
 <br>In addition to the regular transaction fields there is a<br>`boc` field encoded with `base64` which contains source<br>transaction BOC.
@@ -171,7 +179,9 @@ function process_message(
 ### Parameters
 - `message_encode_params`: _[ParamsOfEncodeMessage](mod_abi.md#ParamsOfEncodeMessage)_ – Message encode parameters.
 - `send_events`: _boolean_ – Flag for requesting events sending
-- `responseHandler`?: _ResponseHandler_ – additional responses handler.### Result
+- `responseHandler`?: _[ResponseHandler](modules.md#ResponseHandler)_ – additional responses handler.
+
+### Result
 
 - `transaction`: _any_ – Parsed transaction.
 <br>In addition to the regular transaction fields there is a<br>`boc` field encoded with `base64` which contains source<br>transaction BOC.

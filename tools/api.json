@@ -1,5 +1,5 @@
 {
-  "version": "1.6.0",
+  "version": "1.6.3",
   "modules": [
     {
       "name": "client",
@@ -360,6 +360,17 @@
               "description": "Default value is 120000 (2 min)"
             },
             {
+              "name": "reconnect_timeout",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Deprecated",
+              "description": null
+            },
+            {
               "name": "message_retries_count",
               "type": "Optional",
               "optional_inner": {
@@ -367,7 +378,7 @@
                 "number_type": "Int",
                 "number_size": 8
               },
-              "summary": "The number of automatic message processing retries that SDK performs in case of `Message Expired (507)` error - but only for those messages which local emulation was successfull or failed with replay protection error. The default value is 5.",
+              "summary": "The number of automatic message processing retries that SDK performs in case of `Message Expired (507)` error - but only for those messages which local emulation was successful or failed with replay protection error. The default value is 5.",
               "description": null
             },
             {
@@ -378,7 +389,7 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": "Timeout that is used to process message delivery for the contracts which ABI does not include \"expire\" header. If the message is not delivered within the speficied timeout the appropriate error occurs.",
+              "summary": "Timeout that is used to process message delivery for the contracts which ABI does not include \"expire\" header. If the message is not delivered within the specified timeout the appropriate error occurs.",
               "description": null
             },
             {
@@ -554,7 +565,7 @@
                   "description": null
                 }
               ],
-              "summary": "Error occured during request processing",
+              "summary": "Error occurred during request processing",
               "description": null
             },
             {
@@ -7069,6 +7080,94 @@
           "description": null
         },
         {
+          "name": "ParamsOfQueryOperation",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "QueryCollection",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfQueryCollection",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "WaitForCollection",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfWaitForCollection",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "AggregateCollection",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfAggregateCollection",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "FieldAggregation",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "field",
+              "type": "String",
+              "summary": "Dot separated path to the field",
+              "description": null
+            },
+            {
+              "name": "fn",
+              "type": "Ref",
+              "ref_name": "net.AggregationFn",
+              "summary": "Aggregation function that must be applied to field values",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "AggregationFn",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "COUNT",
+              "type": "None",
+              "summary": "Returns count of filtered record",
+              "description": null
+            },
+            {
+              "name": "MIN",
+              "type": "None",
+              "summary": "Returns the minimal value for a field in filtered records",
+              "description": null
+            },
+            {
+              "name": "MAX",
+              "type": "None",
+              "summary": "Returns the maximal value for a field in filtered records",
+              "description": null
+            },
+            {
+              "name": "SUM",
+              "type": "None",
+              "summary": "Returns a sum of values for a field in filtered records",
+              "description": null
+            },
+            {
+              "name": "AVERAGE",
+              "type": "None",
+              "summary": "Returns an average value for a field in filtered records",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfQuery",
           "type": "Struct",
           "struct_fields": [
@@ -7116,7 +7215,7 @@
               "type": "Array",
               "array_item": {
                 "type": "Ref",
-                "ref_name": "ParamsOfQueryOperation"
+                "ref_name": "net.ParamsOfQueryOperation"
               },
               "summary": "List of query operations that must be performed per single fetch.",
               "description": null
@@ -7242,7 +7341,7 @@
                 "type": "Array",
                 "array_item": {
                   "type": "Ref",
-                  "ref_name": "FieldAggregation"
+                  "ref_name": "net.FieldAggregation"
                 }
               },
               "summary": "Projection (result) string",

@@ -42,6 +42,10 @@ pub fn default_max_reconnect_timeout() -> u32 {
     120000
 }
 
+pub fn default_reconnect_timeout() -> u32 {
+    1000
+}
+
 fn deserialize_network_retries_count<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<i8, D::Error> {
@@ -78,10 +82,16 @@ fn deserialize_max_reconnect_timeout<'de, D: Deserializer<'de>>(
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_max_reconnect_timeout()))
 }
 
+fn deserialize_reconnect_timeout<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<u32, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_reconnect_timeout()))
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, ApiType)]
 pub struct NetworkConfig {
-    /// DApp Server public address. 
-    /// For instance, for `net.ton.dev/graphql` GraphQL endpoint the server address will be net.ton.dev 
+    /// DApp Server public address.
+    /// For instance, for `net.ton.dev/graphql` GraphQL endpoint the server address will be net.ton.dev
     pub server_address: Option<String>,
 
     /// List of DApp Server addresses. Any correct URL format can be specified, including IP addresses
@@ -98,9 +108,14 @@ pub struct NetworkConfig {
     deserialize_with = "deserialize_max_reconnect_timeout")]
     pub max_reconnect_timeout: u32,
 
+    /// Deprecated
+    #[serde(default = "default_reconnect_timeout",
+    deserialize_with = "deserialize_reconnect_timeout")]
+    pub reconnect_timeout: u32,
+
     /// The number of automatic message processing retries that SDK performs
-    /// in case of `Message Expired (507)` error - but only for those messages which 
-    /// local emulation was successfull or failed with replay protection error.
+    /// in case of `Message Expired (507)` error - but only for those messages which
+    /// local emulation was successful or failed with replay protection error.
     /// The default value is 5.
     #[serde(default = "default_message_retries_count",
     deserialize_with = "deserialize_message_retries_count")]
@@ -108,7 +123,7 @@ pub struct NetworkConfig {
 
     /// Timeout that is used to process message delivery for the contracts
     /// which ABI does not include "expire" header.
-    /// If the message is not delivered within the speficied timeout 
+    /// If the message is not delivered within the specified timeout
     /// the appropriate error occurs.
     #[serde(default = "default_message_processing_timeout",
     deserialize_with = "deserialize_message_processing_timeout")]
@@ -120,9 +135,9 @@ pub struct NetworkConfig {
     deserialize_with = "deserialize_wait_for_timeout")]
     pub wait_for_timeout: u32,
 
-    /// Maximum time difference between server and client. If client's device time is out of sync and difference is more than 
-    /// the threshold then error will occur. Also an error will occur if the specified threshold is more than 
-    /// `message_processing_timeout/2`. 
+    /// Maximum time difference between server and client. If client's device time is out of sync and difference is more than
+    /// the threshold then error will occur. Also an error will occur if the specified threshold is more than
+    /// `message_processing_timeout/2`.
     /// The default value is 15 sec.
     #[serde(default = "default_out_of_sync_threshold",
     deserialize_with = "deserialize_out_of_sync_threshold")]
@@ -139,6 +154,7 @@ impl Default for NetworkConfig {
             endpoints: None,
             network_retries_count: default_network_retries_count(),
             max_reconnect_timeout: default_max_reconnect_timeout(),
+            reconnect_timeout: default_reconnect_timeout(),
             message_retries_count: default_message_retries_count(),
             message_processing_timeout: default_message_processing_timeout(),
             wait_for_timeout: default_wait_for_timeout(),

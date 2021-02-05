@@ -1,13 +1,26 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
-## 1.6.0 Jan 20, 2020
+## 1.6.3 Feb 4, 2021
+### Fixed
+- Expired message wasn't retried if local execution succeeded.
+
+## 1.6.2 Feb 3, 2021
+### Added
+- `ResponseHandler` type description into `modules.md`.
+
+### Fixed
+- `net.batch_query` parameters serialization did't match to docs.
+- Module description in docs generator contains `null` instead of summary.
+- Function result section header hadn't the line separator before.
+
+## 1.6.0 Jan 29, 2021
 ### New
 - `nacl_sign_detached_verify` function to verify detached signature.
 - `aggregate_collection` function as a wrapper for GraphQL aggregation queries.
 - `batch_query` function performs multiple queries per single fetch.
-- Active endpoint invalidation in case of network error occuring.
-- `network.network_retries_count` config parameter is deprecated. `network.max_reconnect_timeout` is introduced that allows to specify maximum network resolving timeout. Default value is 2 mins. 
+- Active endpoint invalidation in case of network error occurring.
+- `network.network_retries_count` config parameter is deprecated. `network.max_reconnect_timeout` is introduced that allows to specify maximum network resolving timeout. Default value is 2 min. 
 - `initial_pubkey` field in `DeploySet` to specify public key instead of one from TVC file or provided by signer.
 - Support for debot interfaces:
   - `send` Browser Callback to send messages with interface calls to Browser.
@@ -38,7 +51,7 @@ All notable changes to this project will be documented in this file.
 - `endpoints` parameter in `NetworkConfig`. It contains the list of available server addresses to connect.
 SDK will use one them with the least connect time. `server_address` parameter is still supported but 
 `endpoints` is prevailing.
-- `net.fetch_endpoints` function to receieve available endpoints from server.
+- `net.fetch_endpoints` function to receive available endpoints from server.
 - `net.set_endpoints` function to set endpoints list for using on next reconnect.
 - `ErrorCode` type in each module spec in `api.json`.
 
@@ -60,7 +73,7 @@ SDK will use one them with the least connect time. `server_address` parameter is
 ### Fixed
 
 - **Debot Module:**
-  - Invoked debot terminated correctly after error occured during
+  - Invoked debot terminated correctly after error occurred during
 execution of one of its actions. Initial prev_state of invoked debot
 changed to STATE_EXIT.   
   - Fixed double jumping to current context in invoker debot after
@@ -167,8 +180,8 @@ This feature is **UNSTABLE** yet.
 - All the functions are asynchronous
 - All the functions that can be called via JSON-api are public, so that they can be used directly without JSON-api.
 - Inline documentation and api reference added.
-- [breaking] **interops.rs**, **tonclient.h**. `create_context` now takes `config` parameter - context creation and setup happen at the same time. Config structure has been changed.
-- [breaking] **crypto module.** default values for mnemonic-related functions have been changed:
+- [breaking] `interops.rs`, `tonclient.h`. `create_context` now takes `config` parameter - context creation and setup happen at the same time. Config structure has been changed.
+- [breaking] `crypto module.` default values for mnemonic-related functions have been changed:
 
     dictionary is 1, for word count is 12,  derivation path is 'm/44'/396'/0'/0/0
 
@@ -260,7 +273,7 @@ node transaction processing and calculate fees
 - Message processing functions added
 - Run get methods function added
 - `ed25519-dalek` version updated to `1.0.0-pre.3`
-- SDK is fully opensourced since open repo `ton-labs-executor` used
+- SDK is fully open sourced since open repo `ton-labs-executor` used
 
 ### Fixed
 - Panic in fee calculation under WASM

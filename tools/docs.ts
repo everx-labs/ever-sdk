@@ -43,7 +43,6 @@ function typeRef(t: ApiField, module?: ApiModule): string {
     return `[${t.name}](${module ? moduleFile(module) : ""}#${t.name})`;
 }
 
-
 export class Docs extends Code {
     readonly code: Code;
 
@@ -215,10 +214,10 @@ export class Docs extends Code {
                 md += this.type(funcInfo.params, "");
             }
             if (funcInfo.hasResponseHandler) {
-                md += `- \`responseHandler\`?: _ResponseHandler_ – additional responses handler.`;
+                md += `- \`responseHandler\`?: _[ResponseHandler](modules.md#ResponseHandler)_ – additional responses handler.`;
             }
         }
-        md += "### Result\n\n";
+        md += "\n\n### Result\n\n";
         md += this.type(func.result, "");
         return md;
     }
@@ -226,7 +225,7 @@ export class Docs extends Code {
     module(module: ApiModule) {
         let md = "";
         md += `# Module ${module.name}\n\n`;
-        md += module.description;
+        md += docOf(module);
         md += "\n## Functions\n";
         for (const func of module.functions) {
             md += `${funcRef(func)}${summaryOf(func)}\n\n`;
@@ -253,6 +252,19 @@ export class Docs extends Code {
 
     modules(): string {
         let md = "";
+        md += `# Common Types
+## ResponseHandler
+\`\`\`ts
+type ResponseHandler = (params: any, responseType: number) => void;
+\`\`\`
+
+Handles additional function responses.
+
+Where:
+- \`params\`: _any_ – Response parameters. Actual type depends on API function. 
+- \`responseType\`: _number_ – Function specific response type.
+
+`;
         md += "# Modules\n";
         for (const module of this.api.modules) {
             md += `## [${module.name}](${moduleFile(module)})${summaryOf(module)}\n\n`;

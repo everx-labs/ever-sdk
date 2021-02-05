@@ -1,6 +1,8 @@
 # Module net
 
-null
+Network access.
+
+
 ## Functions
 [query](#query) – Performs DAppServer GraphQL query.
 
@@ -32,6 +34,12 @@ null
 [OrderBy](#OrderBy)
 
 [SortDirection](#SortDirection)
+
+[ParamsOfQueryOperation](#ParamsOfQueryOperation)
+
+[FieldAggregation](#FieldAggregation)
+
+[AggregationFn](#AggregationFn)
 
 [ParamsOfQuery](#ParamsOfQuery)
 
@@ -87,6 +95,8 @@ function query(
 - `query`: _string_ – GraphQL query text.
 - `variables`?: _any_ – Variables used in query.
 <br>Must be a map with named values that can be used in query.
+
+
 ### Result
 
 - `result`: _any_ – Result provided by DAppServer.
@@ -110,7 +120,9 @@ function batch_query(
 ): Promise<ResultOfBatchQuery>;
 ```
 ### Parameters
-- `operations`: _ParamsOfQueryOperation[]_ – List of query operations that must be performed per single fetch.
+- `operations`: _[ParamsOfQueryOperation](mod_net.md#ParamsOfQueryOperation)[]_ – List of query operations that must be performed per single fetch.
+
+
 ### Result
 
 - `results`: _any[]_ – Result values for batched queries.
@@ -148,6 +160,8 @@ function query_collection(
 - `result`: _string_ – Projection (result) string
 - `order`?: _[OrderBy](mod_net.md#OrderBy)[]_ – Sorting order
 - `limit`?: _number_ – Number of documents to return
+
+
 ### Result
 
 - `result`: _any[]_ – Objects that match the provided criteria
@@ -178,7 +192,9 @@ function aggregate_collection(
 ### Parameters
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter.
-- `fields`?: _FieldAggregation[]_ – Projection (result) string
+- `fields`?: _[FieldAggregation](mod_net.md#FieldAggregation)[]_ – Projection (result) string
+
+
 ### Result
 
 - `values`: _any_ – Values for requested fields.
@@ -217,6 +233,8 @@ function wait_for_collection(
 - `filter`?: _any_ – Collection filter
 - `result`: _string_ – Projection (result) string
 - `timeout`?: _number_ – Query timeout
+
+
 ### Result
 
 - `result`: _any_ – First found object that matches the provided criteria
@@ -240,6 +258,8 @@ function unsubscribe(
 ### Parameters
 - `handle`: _number_ – Subscription handle.
 <br>Must be closed with `unsubscribe`
+
+
 ### Result
 
 
@@ -272,7 +292,9 @@ function subscribe_collection(
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
 - `result`: _string_ – Projection (result) string
-- `responseHandler`?: _ResponseHandler_ – additional responses handler.### Result
+- `responseHandler`?: _[ResponseHandler](modules.md#ResponseHandler)_ – additional responses handler.
+
+### Result
 
 - `handle`: _number_ – Subscription handle.
 <br>Must be closed with `unsubscribe`
@@ -285,6 +307,8 @@ Suspends network module to stop any network activity
 ```ts
 function suspend(): Promise<void>;
 ```
+
+
 ### Result
 
 
@@ -296,6 +320,8 @@ Resumes network module to enable network activity
 ```ts
 function resume(): Promise<void>;
 ```
+
+
 ### Result
 
 
@@ -319,6 +345,8 @@ function find_last_shard_block(
 ```
 ### Parameters
 - `address`: _string_ – Account address
+
+
 ### Result
 
 - `block_id`: _string_ – Account shard last block ID
@@ -335,6 +363,8 @@ type EndpointsSet = {
 
 function fetch_endpoints(): Promise<EndpointsSet>;
 ```
+
+
 ### Result
 
 - `endpoints`: _string[]_ – List of endpoints provided by server
@@ -355,6 +385,8 @@ function set_endpoints(
 ```
 ### Parameters
 - `endpoints`: _string[]_ – List of endpoints provided by server
+
+
 ### Result
 
 
@@ -421,6 +453,70 @@ One of the following value:
 - `DESC = "DESC"`
 
 
+## ParamsOfQueryOperation
+```ts
+type ParamsOfQueryOperation = ({
+    type: 'QueryCollection'
+} & ParamsOfQueryCollection) | ({
+    type: 'WaitForCollection'
+} & ParamsOfWaitForCollection) | ({
+    type: 'AggregateCollection'
+} & ParamsOfAggregateCollection)
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'QueryCollection'_
+
+- `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
+- `filter`?: _any_ – Collection filter
+- `result`: _string_ – Projection (result) string
+- `order`?: _[OrderBy](mod_net.md#OrderBy)[]_ – Sorting order
+- `limit`?: _number_ – Number of documents to return
+
+When _type_ is _'WaitForCollection'_
+
+- `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
+- `filter`?: _any_ – Collection filter
+- `result`: _string_ – Projection (result) string
+- `timeout`?: _number_ – Query timeout
+
+When _type_ is _'AggregateCollection'_
+
+- `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
+- `filter`?: _any_ – Collection filter.
+- `fields`?: _[FieldAggregation](mod_net.md#FieldAggregation)[]_ – Projection (result) string
+
+
+## FieldAggregation
+```ts
+type FieldAggregation = {
+    field: string,
+    fn: AggregationFn
+}
+```
+- `field`: _string_ – Dot separated path to the field
+- `fn`: _[AggregationFn](mod_net.md#AggregationFn)_ – Aggregation function that must be applied to field values
+
+
+## AggregationFn
+```ts
+enum AggregationFn {
+    COUNT = "COUNT",
+    MIN = "MIN",
+    MAX = "MAX",
+    SUM = "SUM",
+    AVERAGE = "AVERAGE"
+}
+```
+One of the following value:
+
+- `COUNT = "COUNT"` – Returns count of filtered record
+- `MIN = "MIN"` – Returns the minimal value for a field in filtered records
+- `MAX = "MAX"` – Returns the maximal value for a field in filtered records
+- `SUM = "SUM"` – Returns a sum of values for a field in filtered records
+- `AVERAGE = "AVERAGE"` – Returns an average value for a field in filtered records
+
+
 ## ParamsOfQuery
 ```ts
 type ParamsOfQuery = {
@@ -448,7 +544,7 @@ type ParamsOfBatchQuery = {
     operations: ParamsOfQueryOperation[]
 }
 ```
-- `operations`: _ParamsOfQueryOperation[]_ – List of query operations that must be performed per single fetch.
+- `operations`: _[ParamsOfQueryOperation](mod_net.md#ParamsOfQueryOperation)[]_ – List of query operations that must be performed per single fetch.
 
 
 ## ResultOfBatchQuery
@@ -497,7 +593,7 @@ type ParamsOfAggregateCollection = {
 ```
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter.
-- `fields`?: _FieldAggregation[]_ – Projection (result) string
+- `fields`?: _[FieldAggregation](mod_net.md#FieldAggregation)[]_ – Projection (result) string
 
 
 ## ResultOfAggregateCollection

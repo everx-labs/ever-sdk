@@ -1,3 +1,15 @@
+# Common Types
+## ResponseHandler
+```ts
+type ResponseHandler = (params: any, responseType: number) => void;
+```
+
+Handles additional function responses.
+
+Where:
+- `params`: _any_ – Response parameters. Actual type depends on API function. 
+- `responseType`: _number_ – Function specific response type.
+
 # Modules
 ## [client](mod_client.md) – Provides information about library.
 
