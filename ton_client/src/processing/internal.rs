@@ -125,7 +125,7 @@ pub(crate) async fn resolve_error(
         }
         Ok(_) => {
             original_error.message = format!(
-                "{}. Possible reason: Local contract call succeded. Can not suggest a possible reason.",
+                "{}. Local contract call emulation was successful. Possible reason: message has not been delivered.",
                 original_error.message.trim_end_matches("."),
             );
             Err(original_error)

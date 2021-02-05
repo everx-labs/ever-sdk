@@ -314,9 +314,8 @@ async fn test_error_resolving() {
     let deploy_params = ParamsOfEncodeMessage {
         abi: TestClient::abi(HELLO, None),
         deploy_set: Some(DeploySet {
-            initial_data: None,
             tvc: TestClient::tvc(HELLO, None),
-            workchain_id: None,
+            ..Default::default()
         }),
         signer: Signer::Keys { keys: keys.clone() },
         processing_try_index: None,
@@ -456,5 +455,62 @@ async fn test_error_resolving() {
         assert_eq!(result.code, original_code);
         assert_eq!(result.data["local_error"]["code"], TvmErrorCode::ContractExecutionError as u32);
         assert_eq!(result.data["local_error"]["data"]["exit_code"], 100)
+    }
+}
+
+#[tokio::test(core_threads = 10)]
+async fn test_retries() {
+    let client = TestClient::new_with_config(json!({
+        "network": {
+            "server_address": TestClient::network_address(),
+            "message_retries_count": 10,
+            "out_of_sync_threshold": 2500,
+        },
+        "abi": {
+            "message_expiration_timeout": 5000,
+        }
+    }));
+    let client = std::sync::Arc::new(client);
+    let (abi, tvc) = TestClient::package(HELLO, Some(2));
+    let keys = client.generate_sign_keys();
+
+    let address = client
+        .deploy_with_giver_async(
+            ParamsOfEncodeMessage {
+                abi: abi.clone(),
+                deploy_set: DeploySet::some_with_tvc(tvc.clone()),
+                call_set: CallSet::some_with_function("constructor"),
+                signer: Signer::Keys { keys: keys.clone() },
+                processing_try_index: None,
+                address: None,
+            },
+            None,
+        )
+        .await;
+
+    let mut tasks = vec![];
+    for _ in 0..10 {
+        let address = Some(address.clone());
+        let abi = abi.clone();
+        let keys = keys.clone();
+        let client = client.clone();
+        tasks.push(tokio::spawn(async move {
+                client.net_process_message(ParamsOfProcessMessage {
+                    message_encode_params: ParamsOfEncodeMessage {
+                        abi,
+                        address,
+                        call_set: CallSet::some_with_function("touch"),
+                        deploy_set: None,
+                        processing_try_index: None,
+                        signer: Signer::Keys { keys }
+                    },
+                    send_events: false,
+                },
+                TestClient::default_callback
+            ).await
+        }));
+    }
+    for result in futures::future::join_all(tasks).await {
+        result.unwrap().unwrap();
     }
 }

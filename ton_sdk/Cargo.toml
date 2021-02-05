@@ -1,8 +1,9 @@
 [package]
 name = "ton_sdk"
-version = "1.6.0"
+version = "1.6.3"
 edition = "2018"
 license = "Apache-2.0"
+authors = ["TON DEV SOLUTIONS LTD <support@tonlabs.io>"]
 
 [dependencies]
 ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git" }

@@ -335,6 +335,9 @@ fn register_net(handlers: &mut RuntimeHandlers) {
 
     module.register_type::<crate::net::OrderBy>();
     module.register_type::<crate::net::SortDirection>();
+    module.register_type::<crate::net::ParamsOfQueryOperation>();
+    module.register_type::<crate::net::FieldAggregation>();
+    module.register_type::<crate::net::AggregationFn>();
 
     module.register_async_fn(crate::net::query, crate::net::queries::query_api);
     module.register_async_fn(

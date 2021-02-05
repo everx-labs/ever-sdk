@@ -171,7 +171,7 @@ impl Error {
     ) -> ClientError {
         let mut error = Self::processing_error(
             ErrorCode::MessageExpired,
-            "Message expired".into(),
+            "Message expired. Contract was not executed on chain.".into(),
             message_id,
             Some(shard_block_id),
         );

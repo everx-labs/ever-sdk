@@ -338,9 +338,8 @@ async fn init_debot(client: Arc<TestClient>) -> DebotData {
     let target_deploy_params = ParamsOfEncodeMessage {
         abi: target_abi.clone(),
         deploy_set: Some(DeploySet {
-            initial_data: None,
             tvc: TestClient::tvc(TEST_DEBOT_TARGET, Some(2)),
-            workchain_id: None,
+            ..Default::default()
         }),
         signer: Signer::Keys { keys: keys.clone() },
         processing_try_index: None,
@@ -353,9 +352,8 @@ async fn init_debot(client: Arc<TestClient>) -> DebotData {
     let target_future = client.deploy_with_giver_async(ParamsOfEncodeMessage {
             abi: target_abi.clone(),
             deploy_set: Some(DeploySet {
-                initial_data: None,
                 tvc: TestClient::tvc(TEST_DEBOT_TARGET, Some(2)),
-                workchain_id: None,
+                ..Default::default()
             }),
             signer: Signer::Keys { keys: keys.clone() },
             processing_try_index: None,
@@ -368,9 +366,8 @@ async fn init_debot(client: Arc<TestClient>) -> DebotData {
     let debot_future = client.deploy_with_giver_async(ParamsOfEncodeMessage {
             abi: debot_abi.clone(),
             deploy_set: Some(DeploySet {
-                initial_data: None,
                 tvc: TestClient::tvc(TEST_DEBOT, Some(2)),
-                workchain_id: None,
+                ..Default::default()
             }),
             signer: Signer::Keys { keys: keys.clone() },
             processing_try_index: None,

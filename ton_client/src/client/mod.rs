@@ -106,7 +106,7 @@ pub struct ParamsOfAppRequest {
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 #[serde(tag="type")]
 pub enum AppRequestResult {
-    /// Error occured during request processing
+    /// Error occurred during request processing
     Error {
         /// Error description
         text: String

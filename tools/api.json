@@ -1,5 +1,5 @@
 {
-  "version": "1.6.0",
+  "version": "1.6.3",
   "modules": [
     {
       "name": "client",
@@ -338,6 +338,17 @@
               "description": "Any correct URL format can be specified, including IP addresses This parameter is prevailing over `server_address`."
             },
             {
+              "name": "network_retries_count",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "Int",
+                "number_size": 8
+              },
+              "summary": "Deprecated.",
+              "description": "You must use `network.max_reconnect_timeout` that allows to specify maximum network resolving timeout."
+            },
+            {
               "name": "max_reconnect_timeout",
               "type": "Optional",
               "optional_inner": {
@@ -349,6 +360,17 @@
               "description": "Default value is 120000 (2 min)"
             },
             {
+              "name": "reconnect_timeout",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Deprecated",
+              "description": null
+            },
+            {
               "name": "message_retries_count",
               "type": "Optional",
               "optional_inner": {
@@ -356,7 +378,7 @@
                 "number_type": "Int",
                 "number_size": 8
               },
-              "summary": "The number of automatic message processing retries that SDK performs in case of `Message Expired (507)` error - but only for those messages which local emulation was successfull or failed with replay protection error. The default value is 5.",
+              "summary": "The number of automatic message processing retries that SDK performs in case of `Message Expired (507)` error - but only for those messages which local emulation was successful or failed with replay protection error. The default value is 5.",
               "description": null
             },
             {
@@ -367,7 +389,7 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": "Timeout that is used to process message delivery for the contracts which ABI does not include \"expire\" header. If the message is not delivered within the speficied timeout the appropriate error occurs.",
+              "summary": "Timeout that is used to process message delivery for the contracts which ABI does not include \"expire\" header. If the message is not delivered within the specified timeout the appropriate error occurs.",
               "description": null
             },
             {
@@ -543,7 +565,7 @@
                   "description": null
                 }
               ],
-              "summary": "Error occured during request processing",
+              "summary": "Error occurred during request processing",
               "description": null
             },
             {
@@ -2720,7 +2742,7 @@
         },
         {
           "name": "nacl_sign_detached_verify",
-          "summary": "Verifies the signature for the message.",
+          "summary": "Verifies the signature with public key and `unsigned` data.",
           "description": null,
           "params": [
             {
@@ -3864,6 +3886,15 @@
               },
               "summary": "List of initial values for contract's public variables.",
               "description": null
+            },
+            {
+              "name": "initial_pubkey",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Optional public key that can be provided in deploy set in order to substitute one in TVM file or provided by Signer.",
+              "description": "Public key resolving priority:\n1. Public key from deploy set.\n2. Public key, specified in TVM file.\n3. Public key, provided by Signer."
             }
           ],
           "summary": null,
@@ -4847,7 +4878,7 @@
         {
           "name": "encode_message",
           "summary": "Encodes an ABI-compatible message",
-          "description": "Allows to encode deploy and function call messages,\nboth signed and unsigned.\n\nUse cases include messages of any possible type:\n- deploy with initial function call (i.e. `constructor` or any other function that is used for some kind\nof initialization);\n- deploy without initial function call;\n- signed/unsigned + data for signing.\n\n`Signer` defines how the message should or shouldn't be signed:\n\n`Signer::None` creates an unsigned message. This may be needed in case of some public methods,\nthat do not require authorization by pubkey.\n\n`Signer::External` takes public key and returns `data_to_sign` for later signing.\nUse `attach_signature` method with the result signature to get the signed message.\n\n`Signer::Keys` creates a signed message with provided key pair.\n\n[SOON] `Signer::SigningBox` Allows using a special interface to imlepement signing\nwithout private key disclosure to SDK. For instance, in case of using a cold wallet or HSM,\nwhen application calls some API to sign data.",
+          "description": "Allows to encode deploy and function call messages,\nboth signed and unsigned.\n\nUse cases include messages of any possible type:\n- deploy with initial function call (i.e. `constructor` or any other function that is used for some kind\nof initialization);\n- deploy without initial function call;\n- signed/unsigned + data for signing.\n\n`Signer` defines how the message should or shouldn't be signed:\n\n`Signer::None` creates an unsigned message. This may be needed in case of some public methods,\nthat do not require authorization by pubkey.\n\n`Signer::External` takes public key and returns `data_to_sign` for later signing.\nUse `attach_signature` method with the result signature to get the signed message.\n\n`Signer::Keys` creates a signed message with provided key pair.\n\n[SOON] `Signer::SigningBox` Allows using a special interface to implement signing\nwithout private key disclosure to SDK. For instance, in case of using a cold wallet or HSM,\nwhen application calls some API to sign data.\n\nThere is an optional public key can be provided in deploy set in order to substitute one\nin TVM file.\n\nPublic key resolving priority:\n1. Public key from deploy set.\n2. Public key, specified in TVM file.\n3. Public key, provided by signer.",
           "params": [
             {
               "name": "context",
@@ -7049,6 +7080,94 @@
           "description": null
         },
         {
+          "name": "ParamsOfQueryOperation",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "QueryCollection",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfQueryCollection",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "WaitForCollection",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfWaitForCollection",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "AggregateCollection",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfAggregateCollection",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "FieldAggregation",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "field",
+              "type": "String",
+              "summary": "Dot separated path to the field",
+              "description": null
+            },
+            {
+              "name": "fn",
+              "type": "Ref",
+              "ref_name": "net.AggregationFn",
+              "summary": "Aggregation function that must be applied to field values",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "AggregationFn",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "COUNT",
+              "type": "None",
+              "summary": "Returns count of filtered record",
+              "description": null
+            },
+            {
+              "name": "MIN",
+              "type": "None",
+              "summary": "Returns the minimal value for a field in filtered records",
+              "description": null
+            },
+            {
+              "name": "MAX",
+              "type": "None",
+              "summary": "Returns the maximal value for a field in filtered records",
+              "description": null
+            },
+            {
+              "name": "SUM",
+              "type": "None",
+              "summary": "Returns a sum of values for a field in filtered records",
+              "description": null
+            },
+            {
+              "name": "AVERAGE",
+              "type": "None",
+              "summary": "Returns an average value for a field in filtered records",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfQuery",
           "type": "Struct",
           "struct_fields": [
@@ -7096,7 +7215,7 @@
               "type": "Array",
               "array_item": {
                 "type": "Ref",
-                "ref_name": "ParamsOfQueryOperation"
+                "ref_name": "net.ParamsOfQueryOperation"
               },
               "summary": "List of query operations that must be performed per single fetch.",
               "description": null
@@ -7222,7 +7341,7 @@
                 "type": "Array",
                 "array_item": {
                   "type": "Ref",
-                  "ref_name": "FieldAggregation"
+                  "ref_name": "net.FieldAggregation"
                 }
               },
               "summary": "Projection (result) string",
@@ -7241,7 +7360,7 @@
               "type": "Ref",
               "ref_name": "Value",
               "summary": "Values for requested fields.",
-              "description": "Returns an array of strings. Each string refers to the corresponding `fields` item.\nNumeric values is returned as a decimal string representations."
+              "description": "Returns an array of strings. Each string refers to the corresponding `fields` item.\nNumeric value is returned as a decimal string representations."
             }
           ],
           "summary": null,
