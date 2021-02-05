@@ -21,7 +21,7 @@ use serde_json::Value;
 use std::convert::Into;
 use std::io::{Cursor, Read, Seek};
 use ton_abi::json_abi::DecodedMessage;
-use ton_block::{AccountIdPrefixFull, Deserializable, ExternalInboundMessageHeader, GetRepresentationHash, Message as TvmMessage, MsgAddressInt, Serializable, ShardIdent, StateInit, InternalMessageHeader};
+use ton_block::{AccountIdPrefixFull, Deserializable, ExternalInboundMessageHeader, GetRepresentationHash, Message as TvmMessage, MsgAddressInt, Serializable, ShardIdent, StateInit, InternalMessageHeader, CurrencyCollection};
 use ton_types::cells_serialization::deserialize_cells_tree;
 use ton_types::{error, AccountId, Result, SliceData};
 
@@ -289,13 +289,12 @@ impl Contract {
 
     // ------- Call constructing functions -------
 
-    // Packs given inputs by abi into Message struct.
+    // Packs given inputs by abi into an external inbound Message struct.
     // Works with json representation of input and abi.
     // Returns message's bag of cells and identifier.
-    pub fn construct_call_message_json(
+    pub fn construct_call_ext_in_message_json(
         address: MsgAddressInt,
         params: FunctionCallSet,
-        internal: bool,
         key_pair: Option<&Keypair>,
     ) -> Result<SdkMessage> {
         // pack params into bag of cells via ABI
@@ -304,15 +303,41 @@ impl Contract {
             params.func,
             params.header,
             params.input,
-            internal,
+            false,
             key_pair,
         )?;
 
-        let msg = if internal {
-            Self::create_int_message(address.clone(), msg_body.into())?
-        } else {
-            Self::create_ext_in_message(address.clone(), msg_body.into())?
-        };
+        let msg = Self::create_ext_in_message(address.clone(), msg_body.into())?;
+        let (body, id) = Self::serialize_message(&msg)?;
+        Ok(SdkMessage {
+            id,
+            serialized_message: body,
+            message: msg,
+            address,
+        })
+    }
+
+    // Packs given inputs by abi into an internal Message struct.
+    // Works with json representation of input and abi.
+    // Returns message's bag of cells and identifier.
+    pub fn construct_call_int_message_json(
+        address: MsgAddressInt,
+        ihr_disabled: bool,
+        bounce: bool,
+        value: CurrencyCollection,
+        params: FunctionCallSet,
+    ) -> Result<SdkMessage> {
+        // pack params into bag of cells via ABI
+        let msg_body = ton_abi::encode_function_call(
+            params.abi,
+            params.func,
+            None,
+            params.input,
+            true,
+            None,
+        )?;
+
+        let msg = Self::create_int_message(ihr_disabled, bounce, address.clone(), value, msg_body.into())?;
         let (body, id) = Self::serialize_message(&msg)?;
         Ok(SdkMessage {
             id,
@@ -412,8 +437,10 @@ impl Contract {
     pub fn construct_int_deploy_message_no_constructor(
         image: ContractImage,
         workchain_id: i32,
+        ihr_disabled: bool,
+        bounce: bool,
     ) -> Result<TvmMessage> {
-        Self::create_int_deploy_message(None, image, workchain_id)
+        Self::create_int_deploy_message(None, image, workchain_id, ihr_disabled, bounce)
     }
 
     // Packs given image and input into Message struct without signature and returns data to sign.
@@ -424,37 +451,6 @@ impl Contract {
         image: ContractImage,
         workchain_id: i32,
     ) -> Result<MessageToSign> {
-        Self::get_deploy_message_bytes(
-            params,
-            image,
-            workchain_id,
-            Self::create_ext_deploy_message
-        )
-    }
-
-    // Packs given image and input into Message struct with internal header and returns data.
-    // Works with json representation of input and abi.
-    pub fn get_int_deploy_message_bytes(
-        params: FunctionCallSet,
-        image: ContractImage,
-        workchain_id: i32,
-    ) -> Result<Vec<u8>> {
-        Self::get_deploy_message_bytes(
-            params,
-            image,
-            workchain_id,
-            Self::create_int_deploy_message
-        ).map(|msg| msg.message)
-    }
-
-    pub(crate) fn get_deploy_message_bytes<F>(
-        params: FunctionCallSet,
-        image: ContractImage,
-        workchain_id: i32,
-        factory: F
-    ) -> Result<MessageToSign>
-    where F: Fn(Option<SliceData>, ContractImage, i32) -> Result<TvmMessage>
-    {
         let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(
             params.abi,
             params.func,
@@ -463,12 +459,34 @@ impl Contract {
         )?;
 
         let cell = msg_body.into();
-        let msg = factory(Some(cell), image, workchain_id)?;
+        let msg = Self::create_ext_deploy_message(Some(cell), image, workchain_id)?;
 
         Self::serialize_message(&msg).map(|(msg_data, _id)| MessageToSign {
             message: msg_data,
             data_to_sign,
         })
+    }
+
+    // Packs given image and input into Message struct with internal header and returns data.
+    // Works with json representation of input and abi.
+    pub fn get_int_deploy_message_bytes(
+        params: FunctionCallSet,
+        image: ContractImage,
+        workchain_id: i32,
+        ihr_disabled: bool,
+        bounce: bool,
+    ) -> Result<Vec<u8>> {
+        let msg_body = ton_abi::prepare_function_call_int(
+            params.abi,
+            params.func,
+            params.input,
+        )?;
+
+        let cell = msg_body.into();
+        let msg = Self::create_int_deploy_message(Some(cell), image, workchain_id, ihr_disabled, bounce)?;
+
+        Self::serialize_message(&msg)
+            .map(|(msg_data, _id)| msg_data)
     }
 
     // Add sign to message, returned by `get_deploy_message_bytes_for_signing` or
@@ -551,9 +569,20 @@ impl Contract {
         Ok(msg)
     }
 
-    fn create_int_message(address: MsgAddressInt, msg_body: SliceData) -> Result<TvmMessage> {
-        let mut msg_header = InternalMessageHeader::default();
-        msg_header.dst = address;
+    fn create_int_message(
+        ihr_disabled: bool,
+        bounce: bool,
+        dst: MsgAddressInt,
+        value: CurrencyCollection,
+        msg_body: SliceData,
+    ) -> Result<TvmMessage> {
+        let msg_header = InternalMessageHeader {
+            ihr_disabled,
+            bounce,
+            dst,
+            value,
+            ..Default::default()
+        };
 
         let mut msg = TvmMessage::with_int_header(msg_header);
         msg.set_body(msg_body);
@@ -566,11 +595,15 @@ impl Contract {
         image: ContractImage,
         workchain_id: i32,
     ) -> Result<TvmMessage> {
-        let mut msg_header = ExternalInboundMessageHeader::default();
-        msg_header.dst = image.msg_address(workchain_id);
+        let msg_header = ExternalInboundMessageHeader {
+            dst: image.msg_address(workchain_id),
+            ..Default::default()
+        };
+
         let mut msg = TvmMessage::with_ext_in_header(msg_header);
         msg.set_state_init(image.state_init());
         msg_body.map(|body| msg.set_body(body));
+
         Ok(msg)
     }
 
@@ -578,12 +611,20 @@ impl Contract {
         msg_body: Option<SliceData>,
         image: ContractImage,
         workchain_id: i32,
+        ihr_disabled: bool,
+        bounce: bool,
     ) -> Result<TvmMessage> {
-        let mut msg_header = InternalMessageHeader::default();
-        msg_header.dst = image.msg_address(workchain_id);
+        let msg_header = InternalMessageHeader {
+            ihr_disabled,
+            bounce,
+            dst: image.msg_address(workchain_id),
+            ..Default::default()
+        };
+
         let mut msg = TvmMessage::with_int_header(msg_header);
         msg.set_state_init(image.state_init());
         msg_body.map(|body| msg.set_body(body));
+
         Ok(msg)
     }
 
