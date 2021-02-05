@@ -76,6 +76,9 @@ pub(crate) async fn create_tvc_image(
     let (_, tvc_cell) = deserialize_cell_from_boc(context, tvc, "")
         .await
         .map_err(|err| Error::invalid_tvc_image(err))?;
+    
+    let mut image = ContractImage::from_cell(tvc_cell)
+        .map_err(|err| Error::invalid_tvc_image(err))?;
 
     if let Some(params) = init_params {
         image.update_data(&params.to_string(), abi).map_err(|err| {
