@@ -104,7 +104,6 @@ impl Terminal {
             format!("Terminal.messages vector is empty but must contains \"{}\"", message)
         );
         assert_eq!(self.messages.remove(0), message, "Terminal.print assert");
-        println!("{}", message);
         ( answer_id, json!({ }) )
     }
 
@@ -193,6 +192,10 @@ impl TestBrowser {
         while !state.finished.load(Ordering::Relaxed) {
             Self::execute_interface_calls(&handle, client.clone(), state.clone()).await;
 
+            let available_steps_count = state.current.lock().await.available_actions.len();
+            if available_steps_count == 0 {
+                break;
+            }
             let action = {
                 let mut step = state.current.lock().await;
                 step.step = state.next.lock().await.remove(0);
@@ -357,14 +360,14 @@ impl TestBrowser {
                 ParamsOfDecodeMessageBody { abi, body, is_internal: true },
             ).await.unwrap();
             let (func, args) = (decoded.name, decoded.value.unwrap());
-            println!("request: {} ({})", func, args);
+            log::info!("request: {} ({})", func, args);
             let (func_id, return_args) =
                 if SUPPORTED_INTERFACES[0] == interface_id {
                     state.echo.call(&func, &args)
                 } else {
                     state.terminal.lock().await.call(&func, &args)
                 };
-            println!("response: {} ({})", func_id, return_args);
+            log::info!("response: {} ({})", func_id, return_args);
             let _result: () = client.request_async(
                 "debot.send",
                 ParamsOfSend {
@@ -722,6 +725,7 @@ async fn test_debot_4() {
             format!("setData(128)"),
             format!("Sign external message:"),
             format!("Transaction succeeded"),
+            format!("setData2(129)"),
         ],
     ).await;
 }
