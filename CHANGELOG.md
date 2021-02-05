@@ -1,7 +1,7 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
-## 1.7.0 Feb 5, 2021
+## 1.7.0 Feb 8, 2021
 ### Added
 - `abi.encode_internal_message` function encodes an internal ABI-compatible message.
 
