@@ -136,9 +136,15 @@ impl DEngine {
         )).await;
 
         self.update_options().await?;
-        let mut result = self.run_debot_get("fetch", None).await?;
-        let mut context_vec: Vec<DContext> = serde_json::from_value(result["contexts"].take())
-            .map_err(|e| format!("failed to parse \"contexts\" from \"fetch\" return value: {}", e))?;
+        let result = self.run_debot_get("fetch", None).await;
+        let mut context_vec: Vec<DContext> = if let Ok(mut res) = result {
+            serde_json::from_value(res["contexts"].take())
+                .map_err(|e| {
+                    format!("failed to parse \"contexts\" returned from \"fetch\": {}", e)
+                })?
+        } else {
+            vec![]
+        };
 
         if context_vec.len() == 0 {
             let mut start_act = DAction::new(
@@ -188,6 +194,8 @@ impl DEngine {
     }
 
     pub async fn send(&mut self, source: String, func_id: u32, params: String) -> ClientResult<()> {
+        // if no response
+        if func_id == 0 { return Ok(()); }
         let params = serde_json::from_str(&params)
             .map_err(|e| Error::invalid_json_params(e) )?;
         let output = self.run_debot_internal(source, func_id, params).await?;

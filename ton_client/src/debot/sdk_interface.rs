@@ -147,7 +147,7 @@ impl SdkInterface {
             .map_err(|e| format!("{}", e))?;
         Ok((
             answer_id,
-            json!({ "decrypted": hex::encode(&base64::decode(&result.data).unwrap()) }),
+            json!({ "output": hex::encode(&base64::decode(&result.data).unwrap()) }),
         ))
     }
 }
