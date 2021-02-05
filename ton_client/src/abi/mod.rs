@@ -31,7 +31,7 @@ pub use encode_account::{
     encode_account, ParamsOfEncodeAccount, ResultOfEncodeAccount, StateInitParams, StateInitSource,
 };
 pub use encode_message::{
-    attach_signature, attach_signature_to_message_body, encode_message, encode_message_body,
+    attach_signature, attach_signature_to_message_body, encode_message, encode_internal_message, encode_message_body,
     CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfAttachSignatureToMessageBody,
     ParamsOfEncodeMessage, ParamsOfEncodeMessageBody, ResultOfAttachSignature,
     ResultOfAttachSignatureToMessageBody, ResultOfEncodeMessage, ResultOfEncodeMessageBody,

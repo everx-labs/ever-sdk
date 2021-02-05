@@ -1,5 +1,6 @@
 use crate::ClientContext;
 use crate::abi::{Error, Signer, DeploySet};
+use crate::crypto::internal::decode_public_key;
 use crate::encoding::hex_decode;
 use crate::error::ClientResult;
 use std::sync::Arc;
@@ -112,4 +113,21 @@ pub(crate) fn resolve_pubkey(
     };
 
     Ok(signer_pubkey.clone())
+}
+
+pub(crate) fn update_pubkey(
+    deploy_set: &DeploySet,
+    image: &mut ContractImage,
+    signer_pubkey: &Option<String>,
+) -> ClientResult<Option<String>> {
+    let resolved = resolve_pubkey(deploy_set, image, signer_pubkey)?;
+    if let Some(ref public) = resolved {
+        image.set_public_key(&decode_public_key(public)?)
+            .map_err(|err| Error::invalid_tvc_image(err))?;
+        Ok(resolved)
+    } else {
+        Ok(image.get_public_key()
+            .map_err(|err| Error::invalid_tvc_image(err))?
+            .map(|public| hex::encode(&public)))
+    }
 }
