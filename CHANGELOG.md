@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 ### Added
 - `abi.encode_internal_message` function encodes an internal ABI-compatible message.
 
+## 1.6.3 Feb 4, 2021
+### Fixed
+- Expired message wasn't retried if local execution succeeded.
+
 ## 1.6.2 Feb 3, 2021
 ### Added
 - `ResponseHandler` type description into `modules.md`.
