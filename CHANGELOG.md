@@ -1,6 +1,14 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
+## 1.7.0 Feb 8, 2021
+### New
+- BOC cache for optimized function calls.
+- `boc.cache_set`, `boc.cache_get` and `boc.cache_unpin` functions for managing BOC cache.
+- `boc_cache` parameter in `tvm.run_tvm` and `tvm.run_executor` functions to save resulting messages and account BOCs into cache.
+- `return_updated_account` parameter in `tvm.run_tvm` and `tvm.run_executor` functions to request modified account state.
+Important: by default this flag is `false` and account data now is not returned.
+
 ## 1.6.3 Feb 4, 2021
 ### Fixed
 - Expired message wasn't retried if local execution succeeded.
