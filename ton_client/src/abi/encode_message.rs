@@ -665,10 +665,13 @@ pub async fn encode_message_body(
         }
         _ => {
             if params.is_internal {
-                ton_abi::prepare_function_call_int(
+                ton_abi::encode_function_call(
                     abi.clone(),
                     func.clone(),
+                    None,
                     call.input,
+                    true,
+                    None,
                 ).map(|body| (body, None))
             } else {
                 ton_abi::prepare_function_call_for_sign(
