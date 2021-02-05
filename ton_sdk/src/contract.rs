@@ -476,10 +476,13 @@ impl Contract {
         ihr_disabled: bool,
         bounce: bool,
     ) -> Result<Vec<u8>> {
-        let msg_body = ton_abi::prepare_function_call_int(
+        let msg_body = ton_abi::encode_function_call(
             params.abi,
             params.func,
+            None,
             params.input,
+            true,
+            None,
         )?;
 
         let cell = msg_body.into();
