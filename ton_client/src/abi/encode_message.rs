@@ -511,14 +511,14 @@ pub struct ResultOfEncodeInternalMessage {
 /// - deploy with initial function call (i.e. `constructor` or any other function that is used for some kind
 /// of initialization);
 /// - deploy without initial function call;
-///
+/// - simple function call
+/// 
 /// There is an optional public key can be provided in deploy set in order to substitute one
 /// in TVM file.
 ///
 /// Public key resolving priority:
 /// 1. Public key from deploy set.
 /// 2. Public key, specified in TVM file.
-///
 
 #[api_function]
 pub fn encode_internal_message(
