@@ -28,6 +28,7 @@ fn register_client(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::net::NetworkConfig>();
     module.register_type::<crate::crypto::CryptoConfig>();
     module.register_type::<crate::abi::AbiConfig>();
+    module.register_type::<crate::boc::BocConfig>();
     module.register_type::<crate::client::BuildInfoDependency>();
     module.register_type::<crate::client::ParamsOfAppRequest>();
     module.register_type::<crate::client::AppRequestResult>();
@@ -286,6 +287,7 @@ pub(crate) struct BocModule;
 
 fn register_boc(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<BocModule>(handlers);
+    module.register_type::<crate::boc::BocCacheType>();
     module.register_error_code::<crate::boc::ErrorCode>();
     module.register_async_fn(
         crate::boc::parse_message,

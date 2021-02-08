@@ -20,7 +20,15 @@ BOC manipulation module.
 
 [get_code_from_tvc](#get_code_from_tvc) – Extracts code from TVC contract image
 
+[cache_get](#cache_get) – Get BOC from cache
+
+[cache_set](#cache_set) – Save BOC into cache
+
+[cache_unpin](#cache_unpin) – Unpin BOCs with specified pin.
+
 ## Types
+[BocCacheType](#BocCacheType)
+
 [BocErrorCode](#BocErrorCode)
 
 [ParamsOfParse](#ParamsOfParse)
@@ -40,6 +48,16 @@ BOC manipulation module.
 [ParamsOfGetCodeFromTvc](#ParamsOfGetCodeFromTvc)
 
 [ResultOfGetCodeFromTvc](#ResultOfGetCodeFromTvc)
+
+[ParamsOfBocCacheGet](#ParamsOfBocCacheGet)
+
+[ResultOfBocCacheGet](#ResultOfBocCacheGet)
+
+[ParamsOfBocCacheSet](#ParamsOfBocCacheSet)
+
+[ResultOfBocCacheSet](#ResultOfBocCacheSet)
+
+[ParamsOfBocCacheUnpin](#ParamsOfBocCacheUnpin)
 
 
 # Functions
@@ -263,14 +281,123 @@ function get_code_from_tvc(
 - `code`: _string_ – Contract code encoded as base64
 
 
+## cache_get
+
+Get BOC from cache
+
+```ts
+type ParamsOfBocCacheGet = {
+    boc_ref: string
+}
+
+type ResultOfBocCacheGet = {
+    boc?: string
+}
+
+function cache_get(
+    params: ParamsOfBocCacheGet,
+): Promise<ResultOfBocCacheGet>;
+```
+### Parameters
+- `boc_ref`: _string_ – Reference to the cached BOC
+
+
+### Result
+
+- `boc`?: _string_ – BOC encoded as base64.
+
+
+## cache_set
+
+Save BOC into cache
+
+```ts
+type ParamsOfBocCacheSet = {
+    boc: string,
+    cache_type: BocCacheType
+}
+
+type ResultOfBocCacheSet = {
+    boc_ref: string
+}
+
+function cache_set(
+    params: ParamsOfBocCacheSet,
+): Promise<ResultOfBocCacheSet>;
+```
+### Parameters
+- `boc`: _string_ – BOC encoded as base64 or BOC reference
+- `cache_type`: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type
+
+
+### Result
+
+- `boc_ref`: _string_ – Reference to the cached BOC
+
+
+## cache_unpin
+
+Unpin BOCs with specified pin.
+
+BOCs which don't have another pins will be removed from cache
+
+```ts
+type ParamsOfBocCacheUnpin = {
+    pin: string,
+    boc_ref?: string
+}
+
+function cache_unpin(
+    params: ParamsOfBocCacheUnpin,
+): Promise<void>;
+```
+### Parameters
+- `pin`: _string_ – Pinned name
+- `boc_ref`?: _string_ – Reference to the cached BOC.
+<br>If it is provided then only referenced BOC is unpinned
+
+
+### Result
+
+
+
 # Types
+## BocCacheType
+```ts
+type BocCacheType = {
+    type: 'Pinned'
+    pin: string
+} | {
+    type: 'Unpinned'
+}
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'Pinned'_
+
+Pin the BOC with `pin` name.
+
+Such BOC will not be removed from cache until it is unpinned
+
+
+- `pin`: _string_
+
+When _type_ is _'Unpinned'_
+
+ 
+
+
+
 ## BocErrorCode
 ```ts
 enum BocErrorCode {
     InvalidBoc = 201,
     SerializationError = 202,
     InappropriateBlock = 203,
-    MissingSourceBoc = 204
+    MissingSourceBoc = 204,
+    InsufficientCacheSize = 205,
+    BocRefNotFound = 206,
+    InvalidBocRef = 207
 }
 ```
 One of the following value:
@@ -279,6 +406,9 @@ One of the following value:
 - `SerializationError = 202`
 - `InappropriateBlock = 203`
 - `MissingSourceBoc = 204`
+- `InsufficientCacheSize = 205`
+- `BocRefNotFound = 206`
+- `InvalidBocRef = 207`
 
 
 ## ParamsOfParse
@@ -364,5 +494,55 @@ type ResultOfGetCodeFromTvc = {
 }
 ```
 - `code`: _string_ – Contract code encoded as base64
+
+
+## ParamsOfBocCacheGet
+```ts
+type ParamsOfBocCacheGet = {
+    boc_ref: string
+}
+```
+- `boc_ref`: _string_ – Reference to the cached BOC
+
+
+## ResultOfBocCacheGet
+```ts
+type ResultOfBocCacheGet = {
+    boc?: string
+}
+```
+- `boc`?: _string_ – BOC encoded as base64.
+
+
+## ParamsOfBocCacheSet
+```ts
+type ParamsOfBocCacheSet = {
+    boc: string,
+    cache_type: BocCacheType
+}
+```
+- `boc`: _string_ – BOC encoded as base64 or BOC reference
+- `cache_type`: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type
+
+
+## ResultOfBocCacheSet
+```ts
+type ResultOfBocCacheSet = {
+    boc_ref: string
+}
+```
+- `boc_ref`: _string_ – Reference to the cached BOC
+
+
+## ParamsOfBocCacheUnpin
+```ts
+type ParamsOfBocCacheUnpin = {
+    pin: string,
+    boc_ref?: string
+}
+```
+- `pin`: _string_ – Pinned name
+- `boc_ref`?: _string_ – Reference to the cached BOC.
+<br>If it is provided then only referenced BOC is unpinned
 
 
