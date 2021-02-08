@@ -11,10 +11,11 @@
 * limitations under the License.
 */
 
-use crate::boc::Error;
+use crate::{ClientContext};
+use crate::boc::{BocCacheType, Error};
 use crate::error::ClientResult;
 use ton_block::{Deserializable, Serializable};
-use ton_types::deserialize_tree_of_cells;
+use ton_types::{UInt256, deserialize_tree_of_cells};
 
 pub(crate) fn get_boc_hash(boc: &[u8]) -> ClientResult<String> {
     let cells = deserialize_tree_of_cells(&mut boc.clone())
@@ -46,9 +47,23 @@ pub(crate) fn deserialize_object_from_cell<S: Deserializable>(
         .map_err(|err| Error::invalid_boc(format!("cannot deserialize {} from BOC: {}", name, err)))
 }
 
+pub(crate) enum DeserializedBoc {
+    Cell(ton_types::Cell),
+    Bytes(Vec<u8>),
+}
+
+impl DeserializedBoc {
+    pub fn bytes(self, name: &str) -> ClientResult<Vec<u8>> {
+        match self {
+            DeserializedBoc::Bytes(vec) => Ok(vec),
+            DeserializedBoc::Cell(cell) => serialize_cell_to_bytes(&cell, name)
+        }
+    }
+}
+
 pub(crate) struct DeserializedObject<S: Deserializable> {
-    pub boc: Vec<u8>,
-    pub cell_hash: ton_types::UInt256,
+    pub boc: DeserializedBoc,
+    pub cell: ton_types::Cell,
     pub object: S,
 }
 
@@ -57,12 +72,11 @@ pub(crate) fn deserialize_object_from_base64<S: Deserializable>(
     name: &str,
 ) -> ClientResult<DeserializedObject<S>> {
     let (bytes, cell) = deserialize_cell_from_base64(b64, name)?;
-
     let object = deserialize_object_from_cell(cell.clone(), name)?;
 
     Ok(DeserializedObject {
-        boc: bytes,
-        cell_hash: cell.repr_hash(),
+        boc: DeserializedBoc::Bytes(bytes),
+        cell,
         object,
     })
 }
@@ -76,11 +90,13 @@ pub(crate) fn serialize_object_to_cell<S: Serializable>(
         .map_err(|err| Error::serialization_error(err, name))?)
 }
 
+pub(crate) fn serialize_cell_to_bytes(cell: &ton_types::Cell, name: &str) -> ClientResult<Vec<u8>> {
+    ton_types::cells_serialization::serialize_toc(&cell)
+        .map_err(|err| Error::serialization_error(err, name))
+}
+
 pub(crate) fn serialize_cell_to_base64(cell: &ton_types::Cell, name: &str) -> ClientResult<String> {
-    Ok(base64::encode(
-        &ton_types::cells_serialization::serialize_toc(&cell)
-            .map_err(|err| Error::serialization_error(err, name))?,
-    ))
+    Ok(base64::encode(&serialize_cell_to_bytes(cell, name)?))
 }
 
 pub(crate) fn serialize_object_to_base64<S: Serializable>(
@@ -89,4 +105,57 @@ pub(crate) fn serialize_object_to_base64<S: Serializable>(
 ) -> ClientResult<String> {
     let cell = serialize_object_to_cell(object, name)?;
     Ok(serialize_cell_to_base64(&cell, name)?)
+}
+
+pub(crate) async fn deserialize_cell_from_boc(
+    context: &ClientContext, boc: &str, name: &str
+) -> ClientResult<(DeserializedBoc, ton_types::Cell)> {
+    if boc.starts_with("*") {
+        let hash = UInt256::from_str(&boc[1..])
+            .map_err(|err| Error::invalid_boc(
+                format!("BOC start with `*` but contains invalid hash: {}", err)
+            ))?;
+
+        let cell = context.bocs
+            .get(&hash)
+            .await
+            .ok_or(Error::boc_ref_not_found(boc))?;
+        Ok((DeserializedBoc::Cell(cell.clone()), cell))
+    } else {
+        deserialize_cell_from_base64(boc, name)
+            .map(|(bytes, cell)| (DeserializedBoc::Bytes(bytes), cell))
+    }
+}
+
+pub(crate) async fn deserialize_object_from_boc<S: Deserializable>(
+    context: &ClientContext, boc: &str, name: &str,
+) -> ClientResult<DeserializedObject<S>> {
+    let (boc, cell) = deserialize_cell_from_boc(context, boc, name).await?;
+
+    let object = deserialize_object_from_cell(cell.clone(), name)?;
+
+    Ok(DeserializedObject {
+        boc,
+        cell,
+        object,
+    })
+}
+
+pub(crate) async fn serialize_cell_to_boc(
+    context: &ClientContext, cell: ton_types::Cell, name: &str, boc_cache: Option<BocCacheType>,
+) -> ClientResult<String> {
+    if let Some(cache_type) = boc_cache {
+        context.bocs.add(cache_type, cell, None)
+            .await
+            .map(|hash| format!("*{}", hash.to_hex_string()))
+    } else {
+        serialize_cell_to_base64(&cell, name)
+    }
+}
+
+pub(crate) async fn serialize_object_to_boc<S: Serializable>(
+    context: &ClientContext, object: &S,name: &str, boc_cache: Option<BocCacheType>, 
+) -> ClientResult<String> {
+    let cell = serialize_object_to_cell(object, name)?;
+    serialize_cell_to_boc(context, cell, name, boc_cache).await
 }

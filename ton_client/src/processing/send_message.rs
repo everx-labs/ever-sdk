@@ -14,14 +14,14 @@
 
 use super::blocks_walking::find_last_shard_block;
 use crate::abi::Abi;
+use crate::boc::internal::deserialize_object_from_boc;
 use crate::client::ClientContext;
-use crate::encoding::{base64_decode, hex_decode};
+use crate::encoding::hex_decode;
 use crate::error::ClientResult;
-use crate::processing::internal::{get_message_expiration_time, get_message_id};
+use crate::processing::internal::get_message_expiration_time;
 use crate::processing::types::ProcessingEvent;
 use crate::processing::Error;
 use std::sync::Arc;
-use ton_sdk::Contract;
 
 #[derive(Serialize, Deserialize, ApiType, Debug)]
 pub struct ParamsOfSendMessage {
@@ -62,17 +62,16 @@ pub async fn send_message<F: futures::Future<Output = ()> + Send>(
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync,
 ) -> ClientResult<ResultOfSendMessage> {
     // Check message
-    let message_boc = base64_decode(&params.message)?;
-    let message = Contract::deserialize_message(&message_boc)
-        .map_err(|err| Error::invalid_message_boc(err))?;
-    let message_id = get_message_id(&message)?;
+    let message = deserialize_object_from_boc::<ton_block::Message>(&context, &params.message, "message").await?;
+    let message_id = message.cell.repr_hash().to_hex_string();
 
     let address = message
+        .object
         .dst()
         .ok_or(Error::message_has_not_destination_address())?;
 
     let message_expiration_time =
-        get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message)?;
+        get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message).await?;
 
     if let Some(message_expiration_time) = message_expiration_time {
         if message_expiration_time <= context.env.now_ms() {
@@ -109,7 +108,7 @@ pub async fn send_message<F: futures::Future<Output = ()> + Send>(
     }
     let send_result = context
         .get_server_link()?
-        .send_message(&hex_decode(&message_id)?, &message_boc)
+        .send_message(&hex_decode(&message_id)?, &message.boc.bytes("message")?)
         .await?;
     if params.send_events {
         let event = match send_result {

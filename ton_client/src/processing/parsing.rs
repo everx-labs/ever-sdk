@@ -7,7 +7,7 @@ use crate::processing::types::DecodedOutput;
 use serde_json::Value;
 use std::sync::Arc;
 
-pub(crate) fn parse_transaction_boc(
+pub(crate) async fn parse_transaction_boc(
     context: Arc<ClientContext>,
     transaction: TransactionBoc,
 ) -> ClientResult<(Value, Vec<String>)> {
@@ -21,13 +21,14 @@ pub(crate) fn parse_transaction_boc(
             ParamsOfParse {
                 boc: transaction.boc,
             },
-        )?
+        )
+        .await?
         .parsed,
         messages,
     ))
 }
 
-pub(crate) fn decode_output(
+pub(crate) async fn decode_output(
     context: &Arc<ClientContext>,
     abi: &Abi,
     messages: Vec<String>,
@@ -41,7 +42,7 @@ pub(crate) fn decode_output(
                 message,
                 abi: abi.clone(),
             },
-        );
+        ).await;
         let decoded = match decode_result {
             Ok(decoded) => {
                 if decoded.body_type == MessageBodyType::Output {
@@ -49,7 +50,7 @@ pub(crate) fn decode_output(
                 }
                 Some(decoded)
             }
-            _ => None,
+            Err(_) => None,
         };
         out_messages.push(decoded);
     }

@@ -20,6 +20,9 @@ pub enum ErrorCode {
     SerializationError = 202,
     InappropriateBlock = 203,
     MissingSourceBoc = 204,
+    InsufficientCacheSize = 205,
+    BocRefNotFound = 206,
+    InvalidBocRef = 207,
 }
 pub struct Error;
 
@@ -51,5 +54,33 @@ impl Error {
             ErrorCode::InappropriateBlock,
             format!("Inappropriate block: {}", err),
         )
+    }
+
+    pub fn insufficient_cache_size(max_cache_size: usize, boc_size: usize) -> ClientError {
+        let mut error = error(
+            ErrorCode::InsufficientCacheSize,
+            "Can not insert BOC into cache: insufficient cache size".to_owned(),
+        );
+        error.data["max_cache_size"] = max_cache_size.into();
+        error.data["boc_size"] = boc_size.into();
+        error
+    }
+
+    pub fn boc_ref_not_found(boc_ref: &str) -> ClientError {
+        let mut error = error(
+            ErrorCode::BocRefNotFound,
+            "BOC reference not found in cache".to_owned(),
+        );
+        error.data["boc_ref"] = boc_ref.into();
+        error
+    }
+
+    pub fn invalid_boc_ref<E: Display>(err: E, boc_ref: &str) -> ClientError {
+        let mut error = error(
+            ErrorCode::InvalidBocRef,
+            format!("Invalid BOC reference: {}", err),
+        );
+        error.data["boc_ref"] = boc_ref.into();
+        error
     }
 }

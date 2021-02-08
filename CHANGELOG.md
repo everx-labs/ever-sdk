@@ -1,8 +1,17 @@
 # Release Notes
 All notable changes to this project will be documented in this file.
 
-## 1.7.0
+## 1.7.0 Feb 8, 2021
 ### New
+- BOC cache management functions were introduced:
+  - `boc.cache_set`, 
+  - `boc.cache_get`  
+  - `boc.cache_unpin` 
+- Now functions that take boc as a parameter can also take a reference to boc cash instead so that it desreases the number of boc serialization 
+and decerializations which drastically improves performance of `run_tvm` and `run_executor` expecially in case of numerous calls on the same data. 
+- `boc_cache` parameter in `tvm.run_tvm` and `tvm.run_executor` functions to save resulting messages and account BOCs into cache.
+- `return_updated_account` flag parameter introduced in `tvm.run_tvm` and `tvm.run_executor` functions to return updated account state. Important: by default this flag is `false` and account data is not returned.
+- `abi.encode_internal_message` function to encode an internal ABI-compatible message.
 - **Debot Module**:
     - Support for get-methods and external calls in debots.
     Debots can send external inbound messages to destination contracts (signed - for external calls and unsigned - for get-methods) using native language syntax without actions.
@@ -10,6 +19,7 @@ All notable changes to this project will be documented in this file.
     Added two builtin inetraces: base64 and Sdk.
     - Added `DebotInterfaceExecutor` to automatically route messages to destination interfaces.
     - Debot's `fetch` function is optional now. New debots can implement only `start` function.
+
 ## 1.6.3 Feb 4, 2021
 ### Fixed
 - Expired message wasn't retried if local execution succeeded.

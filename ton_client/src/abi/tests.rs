@@ -1,10 +1,12 @@
-use crate::abi::decode_message::{DecodedMessageBody, MessageBodyType, ParamsOfDecodeMessage};
+use crate::{abi::decode_message::{DecodedMessageBody, MessageBodyType, ParamsOfDecodeMessage}, boc::ResultOfParse};
 use crate::abi::encode_message::{
-    CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfEncodeMessage, ResultOfAttachSignature,
-    ResultOfEncodeMessage,
+    CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfEncodeMessage, ResultOfAttachSignature, 
+    ResultOfEncodeMessage, ParamsOfEncodeInternalMessage, ResultOfEncodeInternalMessage
 };
 use crate::abi::internal::{is_empty_pubkey, resolve_pubkey, create_tvc_image};
 use crate::abi::{FunctionHeader, ParamsOfDecodeMessageBody, Signer};
+use crate::boc::internal::get_boc_hash;
+use crate::boc::{ParamsOfParse, ResultOfGetCodeFromTvc, ParamsOfGetCodeFromTvc};
 use crate::crypto::KeyPair;
 use crate::error::ClientError;
 use crate::tests::{TestClient, EVENTS, HELLO};
@@ -369,14 +371,15 @@ fn test_is_empty_pubkey() -> Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_resolve_pubkey() -> Result<()> {
+#[tokio::test(core_threads = 2)]
+async fn test_resolve_pubkey() -> Result<()> {
+    let context = crate::ClientContext::new(crate::ClientConfig::default()).unwrap();
     let tvc = base64::encode(include_bytes!("../tests/contracts/abi_v2/Hello.tvc"));
     let mut deploy_set = DeploySet {
         tvc: tvc.clone(),
         ..Default::default()
     };
-    let mut image = create_tvc_image("", None, &tvc)?;
+    let mut image = create_tvc_image(&context, "", None, &tvc).await?;
     assert!(resolve_pubkey(&deploy_set, &image, &None )?.is_none());
 
     let external_pub_key = Some("1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF".to_owned());
@@ -411,8 +414,8 @@ fn test_resolve_pubkey() -> Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_encode_message_pubkey() -> Result<()> {
+#[tokio::test(core_threads = 2)]
+async fn test_encode_message_pubkey() -> Result<()> {
     let client = TestClient::new();
     let (abi, tvc) = TestClient::package(HELLO, None);
 
@@ -428,7 +431,7 @@ fn test_encode_message_pubkey() -> Result<()> {
         &None,
         &signer_pubkey,
         &signer_pubkey,
-    )?;
+    ).await?;
 
     test_encode_message_pubkey_internal(
         &client,
@@ -438,7 +441,7 @@ fn test_encode_message_pubkey() -> Result<()> {
         &tvc_pubkey,
         &signer_pubkey,
         &tvc_pubkey,
-    )?;
+    ).await?;
 
     test_encode_message_pubkey_internal(
         &client,
@@ -448,7 +451,7 @@ fn test_encode_message_pubkey() -> Result<()> {
         &None,
         &signer_pubkey,
         &initial_pubkey,
-    )?;
+    ).await?;
 
     test_encode_message_pubkey_internal(
         &client,
@@ -458,7 +461,7 @@ fn test_encode_message_pubkey() -> Result<()> {
         &tvc_pubkey,
         &signer_pubkey,
         &initial_pubkey,
-    )?;
+    ).await?;
 
     // Expected error, if signer's public key is not provided:
     let error = test_encode_message_pubkey_internal(
@@ -470,6 +473,7 @@ fn test_encode_message_pubkey() -> Result<()> {
         &None,
         &None,
     )
+        .await
         .unwrap_err()
         .downcast::<ClientError>()?;
 
@@ -478,7 +482,7 @@ fn test_encode_message_pubkey() -> Result<()> {
     Ok(())
 }
 
-fn test_encode_message_pubkey_internal(
+async fn test_encode_message_pubkey_internal(
     client: &TestClient,
     abi: &Abi,
     tvc: &String,
@@ -487,7 +491,8 @@ fn test_encode_message_pubkey_internal(
     signer_pubkey: &Option<ed25519_dalek::PublicKey>,
     expected_pubkey: &Option<ed25519_dalek::PublicKey>,
 ) -> Result<()> {
-    let mut image = create_tvc_image(&abi.json_string()?, None, &tvc)?;
+    let context = crate::ClientContext::new(crate::ClientConfig::default()).unwrap();
+    let mut image = create_tvc_image(&context, &abi.json_string()?, None, &tvc).await?;
     if let Some(tvc_pubkey) = tvc_pubkey {
         image.set_public_key(tvc_pubkey)?;
     }
@@ -514,7 +519,7 @@ fn test_encode_message_pubkey_internal(
         call_set: CallSet::some_with_function("constructor"),
     };
 
-    let result: ResultOfEncodeMessage = client.request("abi.encode_message", deploy_params)?;
+    let result: ResultOfEncodeMessage = client.request_async("abi.encode_message", deploy_params).await?;
 
     let message = Message::construct_from_base64(&result.message)?;
     let state_init = message.state_init()
@@ -530,4 +535,180 @@ fn test_encode_message_pubkey_internal(
 
 fn gen_pubkey() -> ed25519_dalek::PublicKey {
     ed25519_dalek::Keypair::generate(&mut rand::thread_rng()).public
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_encode_internal_message() -> Result<()> {
+    let client = TestClient::new();
+    let (abi, tvc) = TestClient::package(HELLO, None);
+    let context = crate::ClientContext::new(crate::ClientConfig::default()).unwrap();
+    let image = create_tvc_image(&context, &abi.json_string()?, None, &tvc).await?;
+
+    test_encode_internal_message_deploy(
+        &client,
+        &image,
+        &abi,
+        &tvc,
+        None,
+        Some(
+            "te6ccgECHAEABGkAAmFiADYO5IoxskLmUfURre2fOB04OmP32VjPwA/lDM/Cpvh8AAAAAAAAAAAAAAAAAAIyBg\
+            EBAcACAgPPIAUDAQHeBAAD0CAAQdgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAIm/wD0pCAiwAGS9\
+            KDhiu1TWDD0oQkHAQr0pCD0oQgAAAIBIAwKAej/fyHTAAGOJoECANcYIPkBAXDtRND0BYBA9A7yitcL/wHtRyJv\
+            de1XAwH5EPKo3u1E0CDXScIBjhb0BNM/0wDtRwFvcQFvdgFvcwFvcu1Xjhj0Be1HAW9ycG9zcG92yIAgz0DJ0G9\
+            x7Vfi0z8B7UdvEyG5IAsAYJ8wIPgjgQPoqIIIG3dAoLneme1HIW9TIO1XMJSANPLw4jDTHwH4I7zyudMfAfFAAQ\
+            IBIBgNAgEgEQ4BCbqLVfP4DwH67UdvYW6OO+1E0CDXScIBjhb0BNM/0wDtRwFvcQFvdgFvcwFvcu1Xjhj0Be1HA\
+            W9ycG9zcG92yIAgz0DJ0G9x7Vfi3u1HbxaS8jOX7Udxb1btV+IA+ADR+CO1H+1HIG8RMAHIyx/J0G9R7VftR28S\
+            yPQA7UdvE88LP+1HbxYQABzPCwDtR28RzxbJ7VRwagIBahUSAQm0ABrWwBMB/O1Hb2FujjvtRNAg10nCAY4W9AT\
+            TP9MA7UcBb3EBb3YBb3MBb3LtV44Y9AXtRwFvcnBvc3BvdsiAIM9AydBvce1X4t7tR29lIG6SMHDecO1HbxKAQP\
+            QO8orXC/+68uBk+AD6QNEgyMn7BIED6HCBAIDIcc8LASLPCgBxz0D4KBQAjs8WJM8WI/oCcc9AcPoCcPoCgEDPQ\
+            Pgjzwsfcs9AIMki+wBfBTDtR28SyPQA7UdvE88LP+1HbxbPCwDtR28RzxbJ7VRwatswAQm0ZfaLwBYB+O1Hb2Fu\
+            jjvtRNAg10nCAY4W9ATTP9MA7UcBb3EBb3YBb3MBb3LtV44Y9AXtRwFvcnBvc3BvdsiAIM9AydBvce1X4t7R7Ud\
+            vEdcLH8iCEFDL7ReCEIAAAACxzwsfIc8LH8hzzwsB+CjPFnLPQPglzws/gCHPQCDPNSLPMbwXAHiWcc9AIc8XlX\
+            HPQSHN4iDJcfsAWyHA/44e7UdvEsj0AO1HbxPPCz/tR28WzwsA7UdvEc8Wye1U3nFq2zACASAbGQEJu3MS5FgaA\
+            PjtR29hbo477UTQINdJwgGOFvQE0z/TAO1HAW9xAW92AW9zAW9y7VeOGPQF7UcBb3Jwb3Nwb3bIgCDPQMnQb3Ht\
+            V+Le+ADR+CO1H+1HIG8RMAHIyx/J0G9R7VftR28SyPQA7UdvE88LP+1HbxbPCwDtR28RzxbJ7VRwatswAMrdcCH\
+            XSSDBII4rIMAAjhwj0HPXIdcLACDAAZbbMF8H2zCW2zBfB9sw4wTZltswXwbbMOME2eAi0x80IHS7II4VMCCCEP\
+            ////+6IJkwIIIQ/////rrf35bbMF8H2zDgIyHxQAFfBw=="
+        )
+    ).await?;
+
+    test_encode_internal_message_deploy(
+        &client,
+        &image,
+        &abi,
+        &tvc,
+        Some(CallSet {
+            function_name: "constructor".into(),
+            header: None,
+            input: None,
+        }),
+        Some(
+            "te6ccgECHAEABG0AAmliADYO5IoxskLmUfURre2fOB04OmP32VjPwA/lDM/Cpvh8AAAAAAAAAAAAAAAAAAIxot\
+            V8/gYBAQHAAgIDzyAFAwEB3gQAA9AgAEHYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQCJv8A9KQgI\
+            sABkvSg4YrtU1gw9KEJBwEK9KQg9KEIAAACASAMCgHo/38h0wABjiaBAgDXGCD5AQFw7UTQ9AWAQPQO8orXC/8B\
+            7Ucib3XtVwMB+RDyqN7tRNAg10nCAY4W9ATTP9MA7UcBb3EBb3YBb3MBb3LtV44Y9AXtRwFvcnBvc3BvdsiAIM9\
+            AydBvce1X4tM/Ae1HbxMhuSALAGCfMCD4I4ED6KiCCBt3QKC53pntRyFvUyDtVzCUgDTy8OIw0x8B+CO88rnTHw\
+            HxQAECASAYDQIBIBEOAQm6i1Xz+A8B+u1Hb2FujjvtRNAg10nCAY4W9ATTP9MA7UcBb3EBb3YBb3MBb3LtV44Y9\
+            AXtRwFvcnBvc3BvdsiAIM9AydBvce1X4t7tR28WkvIzl+1HcW9W7VfiAPgA0fgjtR/tRyBvETAByMsfydBvUe1X\
+            7UdvEsj0AO1HbxPPCz/tR28WEAAczwsA7UdvEc8Wye1UcGoCAWoVEgEJtAAa1sATAfztR29hbo477UTQINdJwgG\
+            OFvQE0z/TAO1HAW9xAW92AW9zAW9y7VeOGPQF7UcBb3Jwb3Nwb3bIgCDPQMnQb3HtV+Le7UdvZSBukjBw3nDtR2\
+            8SgED0DvKK1wv/uvLgZPgA+kDRIMjJ+wSBA+hwgQCAyHHPCwEizwoAcc9A+CgUAI7PFiTPFiP6AnHPQHD6AnD6A\
+            oBAz0D4I88LH3LPQCDJIvsAXwUw7UdvEsj0AO1HbxPPCz/tR28WzwsA7UdvEc8Wye1UcGrbMAEJtGX2i8AWAfjt\
+            R29hbo477UTQINdJwgGOFvQE0z/TAO1HAW9xAW92AW9zAW9y7VeOGPQF7UcBb3Jwb3Nwb3bIgCDPQMnQb3HtV+L\
+            e0e1HbxHXCx/IghBQy+0XghCAAAAAsc8LHyHPCx/Ic88LAfgozxZyz0D4Jc8LP4Ahz0AgzzUizzG8FwB4lnHPQC\
+            HPF5Vxz0EhzeIgyXH7AFshwP+OHu1HbxLI9ADtR28Tzws/7UdvFs8LAO1HbxHPFsntVN5xatswAgEgGxkBCbtzE\
+            uRYGgD47UdvYW6OO+1E0CDXScIBjhb0BNM/0wDtRwFvcQFvdgFvcwFvcu1Xjhj0Be1HAW9ycG9zcG92yIAgz0DJ\
+            0G9x7Vfi3vgA0fgjtR/tRyBvETAByMsfydBvUe1X7UdvEsj0AO1HbxPPCz/tR28WzwsA7UdvEc8Wye1UcGrbMAD\
+            K3XAh10kgwSCOKyDAAI4cI9Bz1yHXCwAgwAGW2zBfB9swltswXwfbMOME2ZbbMF8G2zDjBNngItMfNCB0uyCOFT\
+            AgghD/////uiCZMCCCEP////6639+W2zBfB9sw4CMh8UABXwc="
+        ),
+    ).await?;
+
+    test_encode_internal_message_run(
+        &client,
+        &abi,
+        Some(CallSet {
+            function_name: "sayHello".into(),
+            header: None,
+            input: None,
+        }),
+        Some(
+            "te6ccgEBAQEAOgAAcGIACRorPEhV5veJGis8SFXm94kaKzxIVeb3iRorPEhV5veh3NZQAAAAAAAAAAAAAAAAAABQy+0X"
+        ),
+    ).await
+}
+
+async fn test_encode_internal_message_run(
+    client: &TestClient,
+    abi: &Abi,
+    call_set: Option<CallSet>,
+    expected_boc: Option<&str>,
+) -> Result<()> {
+    let address = String::from("0:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
+    let result: ResultOfEncodeInternalMessage = client.request_async(
+        "abi.encode_internal_message",
+        ParamsOfEncodeInternalMessage {
+            abi: abi.clone(),
+            address: Some(address.clone()),
+            deploy_set: None,
+            call_set,
+            value: "1000000000".to_string(),
+            bounce: Some(true),
+            enable_ihr: None
+        },
+    ).await?;
+
+    assert_eq!(result.address, address);
+    assert_eq!(result.message_id, get_boc_hash(&base64::decode(&result.message)?)?);
+    if let Some(expected_boc) = expected_boc {
+        assert_eq!(&result.message, expected_boc);
+    }
+
+    let parsed: ResultOfParse = client.request_async(
+        "boc.parse_message",
+        ParamsOfParse {
+            boc: result.message
+        }
+    ).await?;
+
+    assert_eq!(parsed.parsed["msg_type_name"], "internal");
+    assert_eq!(parsed.parsed["src"], "");
+    assert_eq!(parsed.parsed["dst"], address);
+    assert_eq!(parsed.parsed["value"], "0x3b9aca00");
+    assert_eq!(parsed.parsed["bounce"], true);
+    assert_eq!(parsed.parsed["ihr_disabled"], true);
+
+    Ok(())
+}
+
+
+async fn test_encode_internal_message_deploy(
+    client: &TestClient,
+    image: &ContractImage,
+    abi: &Abi,
+    tvc: &String,
+    call_set: Option<CallSet>,
+    expected_boc: Option<&str>,
+) -> Result<()> {
+    let result: ResultOfEncodeInternalMessage = client.request_async(
+        "abi.encode_internal_message",
+        ParamsOfEncodeInternalMessage {
+            abi: abi.clone(),
+            address: None,
+            deploy_set: Some(DeploySet {
+                tvc: tvc.clone(),
+                workchain_id: None,
+                initial_data: None,
+                initial_pubkey: None,
+            }),
+            call_set,
+            value: "0".to_string(),
+            bounce: None,
+            enable_ihr: None
+        },
+    ).await?;
+
+    assert_eq!(result.address, image.msg_address(0).to_string());
+    assert_eq!(result.message_id, get_boc_hash(&base64::decode(&result.message)?)?);
+    if let Some(expected_boc) = expected_boc {
+        assert_eq!(&result.message, expected_boc);
+    }
+
+    let parsed: ResultOfParse = client.request_async(
+        "boc.parse_message",
+        ParamsOfParse {
+            boc: result.message
+        }
+    ).await?;
+
+    let code_from_tvc: ResultOfGetCodeFromTvc = client.request_async(
+        "boc.get_code_from_tvc",
+        ParamsOfGetCodeFromTvc {
+            tvc: tvc.clone(),
+        }
+    ).await?;
+
+    assert_eq!(parsed.parsed["code"], code_from_tvc.code);
+
+    Ok(())
 }

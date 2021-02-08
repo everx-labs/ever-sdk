@@ -107,6 +107,8 @@ Where:
 
 [encode_message](mod_abi.md#encode_message) – Encodes an ABI-compatible message
 
+[encode_internal_message](mod_abi.md#encode_internal_message) – Encodes an internal ABI-compatible message
+
 [attach_signature](mod_abi.md#attach_signature) – Combines `hex`-encoded `signature` with `base64`-encoded `unsigned_message`. Returns signed message encoded in `base64`.
 
 [decode_message](mod_abi.md#decode_message) – Decodes message body using provided message BOC and ABI.
@@ -132,6 +134,12 @@ Where:
 [get_boc_hash](mod_boc.md#get_boc_hash) – Calculates BOC root hash
 
 [get_code_from_tvc](mod_boc.md#get_code_from_tvc) – Extracts code from TVC contract image
+
+[cache_get](mod_boc.md#cache_get) – Get BOC from cache
+
+[cache_set](mod_boc.md#cache_set) – Save BOC into cache
+
+[cache_unpin](mod_boc.md#cache_unpin) – Unpin BOCs with specified pin.
 
 ## [processing](mod_processing.md) – Message processing module.
 

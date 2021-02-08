@@ -10,6 +10,8 @@ Provides message encoding and decoding according to the ABI specification.
 
 [encode_message](#encode_message) – Encodes an ABI-compatible message
 
+[encode_internal_message](#encode_internal_message) – Encodes an internal ABI-compatible message
+
 [attach_signature](#attach_signature) – Combines `hex`-encoded `signature` with `base64`-encoded `unsigned_message`. Returns signed message encoded in `base64`.
 
 [decode_message](#decode_message) – Decodes message body using provided message BOC and ABI.
@@ -62,6 +64,10 @@ Provides message encoding and decoding according to the ABI specification.
 [ParamsOfEncodeMessage](#ParamsOfEncodeMessage)
 
 [ResultOfEncodeMessage](#ResultOfEncodeMessage)
+
+[ParamsOfEncodeInternalMessage](#ParamsOfEncodeInternalMessage)
+
+[ResultOfEncodeInternalMessage](#ResultOfEncodeInternalMessage)
 
 [ParamsOfAttachSignature](#ParamsOfAttachSignature)
 
@@ -229,6 +235,68 @@ function encode_message(
 - `message_id`: _string_ – Message id.
 
 
+## encode_internal_message
+
+Encodes an internal ABI-compatible message
+
+Allows to encode deploy and function call messages.
+
+Use cases include messages of any possible type:
+- deploy with initial function call (i.e. `constructor` or any other function that is used for some kind
+of initialization);
+- deploy without initial function call;
+- simple function call
+
+There is an optional public key can be provided in deploy set in order to substitute one
+in TVM file.
+
+Public key resolving priority:
+1. Public key from deploy set.
+2. Public key, specified in TVM file.
+
+```ts
+type ParamsOfEncodeInternalMessage = {
+    abi: Abi,
+    address?: string,
+    deploy_set?: DeploySet,
+    call_set?: CallSet,
+    value: string,
+    bounce?: boolean,
+    enable_ihr?: boolean
+}
+
+type ResultOfEncodeInternalMessage = {
+    message: string,
+    address: string,
+    message_id: string
+}
+
+function encode_internal_message(
+    params: ParamsOfEncodeInternalMessage,
+): Promise<ResultOfEncodeInternalMessage>;
+```
+### Parameters
+- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
+- `address`?: _string_ – Target address the message will be sent to.
+<br>Must be specified in case of non-deploy message.
+- `deploy_set`?: _[DeploySet](mod_abi.md#DeploySet)_ – Deploy parameters.
+<br>Must be specified in case of deploy message.
+- `call_set`?: _[CallSet](mod_abi.md#CallSet)_ – Function call parameters.
+<br>Must be specified in case of non-deploy message.<br><br>In case of deploy message it is optional and contains parameters<br>of the functions that will to be called upon deploy transaction.
+- `value`: _string_ – Value in nanograms to be sent with message.
+- `bounce`?: _boolean_ – Flag of bounceable message.
+<br>Default is true.
+- `enable_ihr`?: _boolean_ – Enable Instant Hypercube Routing for the message.
+<br>Default is false.
+
+
+### Result
+
+- `message`: _string_ – Message BOC encoded with `base64`.
+- `address`: _string_ – Destination address.
+- `message_id`: _string_ – Message id.
+
+
 ## attach_signature
 
 Combines `hex`-encoded `signature` with `base64`-encoded `unsigned_message`. Returns signed message encoded in `base64`.
@@ -346,7 +414,8 @@ type ParamsOfEncodeAccount = {
     state_init: StateInitSource,
     balance?: bigint,
     last_trans_lt?: bigint,
-    last_paid?: number
+    last_paid?: number,
+    boc_cache?: BocCacheType
 }
 
 type ResultOfEncodeAccount = {
@@ -363,6 +432,8 @@ function encode_account(
 - `balance`?: _bigint_ – Initial balance.
 - `last_trans_lt`?: _bigint_ – Initial value for the `last_trans_lt`.
 - `last_paid`?: _number_ – Initial value for the `last_paid`.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
+<br>The BOC intself returned if no cache type provided
 
 
 ### Result
@@ -831,6 +902,45 @@ type ResultOfEncodeMessage = {
 - `message_id`: _string_ – Message id.
 
 
+## ParamsOfEncodeInternalMessage
+```ts
+type ParamsOfEncodeInternalMessage = {
+    abi: Abi,
+    address?: string,
+    deploy_set?: DeploySet,
+    call_set?: CallSet,
+    value: string,
+    bounce?: boolean,
+    enable_ihr?: boolean
+}
+```
+- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
+- `address`?: _string_ – Target address the message will be sent to.
+<br>Must be specified in case of non-deploy message.
+- `deploy_set`?: _[DeploySet](mod_abi.md#DeploySet)_ – Deploy parameters.
+<br>Must be specified in case of deploy message.
+- `call_set`?: _[CallSet](mod_abi.md#CallSet)_ – Function call parameters.
+<br>Must be specified in case of non-deploy message.<br><br>In case of deploy message it is optional and contains parameters<br>of the functions that will to be called upon deploy transaction.
+- `value`: _string_ – Value in nanograms to be sent with message.
+- `bounce`?: _boolean_ – Flag of bounceable message.
+<br>Default is true.
+- `enable_ihr`?: _boolean_ – Enable Instant Hypercube Routing for the message.
+<br>Default is false.
+
+
+## ResultOfEncodeInternalMessage
+```ts
+type ResultOfEncodeInternalMessage = {
+    message: string,
+    address: string,
+    message_id: string
+}
+```
+- `message`: _string_ – Message BOC encoded with `base64`.
+- `address`: _string_ – Destination address.
+- `message_id`: _string_ – Message id.
+
+
 ## ParamsOfAttachSignature
 ```ts
 type ParamsOfAttachSignature = {
@@ -902,13 +1012,16 @@ type ParamsOfEncodeAccount = {
     state_init: StateInitSource,
     balance?: bigint,
     last_trans_lt?: bigint,
-    last_paid?: number
+    last_paid?: number,
+    boc_cache?: BocCacheType
 }
 ```
 - `state_init`: _[StateInitSource](mod_abi.md#StateInitSource)_ – Source of the account state init.
 - `balance`?: _bigint_ – Initial balance.
 - `last_trans_lt`?: _bigint_ – Initial value for the `last_trans_lt`.
 - `last_paid`?: _number_ – Initial value for the `last_paid`.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
+<br>The BOC intself returned if no cache type provided
 
 
 ## ResultOfEncodeAccount

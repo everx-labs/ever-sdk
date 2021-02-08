@@ -61,7 +61,9 @@ type ParamsOfRunExecutor = {
     account: AccountForExecutor,
     execution_options?: ExecutionOptions,
     abi?: Abi,
-    skip_transaction_check?: boolean
+    skip_transaction_check?: boolean,
+    boc_cache?: BocCacheType,
+    return_updated_account?: boolean
 }
 
 type ResultOfRunExecutor = {
@@ -83,6 +85,10 @@ function run_executor(
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for decoding output messages
 - `skip_transaction_check`?: _boolean_ – Skip transaction check flag
+- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
+<br>The BOC intself returned if no cache type provided
+- `return_updated_account`?: _boolean_ – Return updated account flag.
+<br>Empty string is returned if the flag is `false`
 
 
 ### Result
@@ -119,7 +125,9 @@ type ParamsOfRunTvm = {
     message: string,
     account: string,
     execution_options?: ExecutionOptions,
-    abi?: Abi
+    abi?: Abi,
+    boc_cache?: BocCacheType,
+    return_updated_account?: boolean
 }
 
 type ResultOfRunTvm = {
@@ -139,6 +147,10 @@ function run_tvm(
 <br>Must be encoded as base64.
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for dedcoding output messages
+- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
+<br>The BOC intself returned if no cache type provided
+- `return_updated_account`?: _boolean_ – Return updated account flag.
+<br>Empty string is returned if the flag is `false`
 
 
 ### Result
@@ -299,7 +311,9 @@ type ParamsOfRunExecutor = {
     account: AccountForExecutor,
     execution_options?: ExecutionOptions,
     abi?: Abi,
-    skip_transaction_check?: boolean
+    skip_transaction_check?: boolean,
+    boc_cache?: BocCacheType,
+    return_updated_account?: boolean
 }
 ```
 - `message`: _string_ – Input message BOC.
@@ -308,6 +322,10 @@ type ParamsOfRunExecutor = {
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for decoding output messages
 - `skip_transaction_check`?: _boolean_ – Skip transaction check flag
+- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
+<br>The BOC intself returned if no cache type provided
+- `return_updated_account`?: _boolean_ – Return updated account flag.
+<br>Empty string is returned if the flag is `false`
 
 
 ## ResultOfRunExecutor
@@ -336,7 +354,9 @@ type ParamsOfRunTvm = {
     message: string,
     account: string,
     execution_options?: ExecutionOptions,
-    abi?: Abi
+    abi?: Abi,
+    boc_cache?: BocCacheType,
+    return_updated_account?: boolean
 }
 ```
 - `message`: _string_ – Input message BOC.
@@ -345,6 +365,10 @@ type ParamsOfRunTvm = {
 <br>Must be encoded as base64.
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for dedcoding output messages
+- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
+<br>The BOC intself returned if no cache type provided
+- `return_updated_account`?: _boolean_ – Return updated account flag.
+<br>Empty string is returned if the flag is `false`
 
 
 ## ResultOfRunTvm
