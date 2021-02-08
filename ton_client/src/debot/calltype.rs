@@ -10,11 +10,14 @@ use crate::processing::{
     ProcessingEvent,
 };
 use crate::tvm::{run_tvm, ParamsOfRunTvm};
+use std::convert::TryFrom;
 use std::fmt::Display;
 use std::sync::Arc;
 use ton_abi::Contract;
 use ton_block::{Message, MsgAddressExt};
 use ton_types::{BuilderData, Cell, IBitstring};
+
+const SUPPORTED_ABI_VERSION: u8 = 2;
 
 pub(super) enum DebotCallType {
     Interface { msg: String, id: String },
@@ -22,6 +25,53 @@ pub(super) enum DebotCallType {
     External { msg: String, dest: String },
     // TODO: support later
     // Invoke { msg: String },
+}
+
+fn msg_err(e: impl Display) -> ClientError {
+    Error::invalid_msg(e)
+}
+
+struct Metadata {
+    answer_id: u32,
+    onerror_id: u32,
+    is_timestamp: bool,
+    is_expire: bool,
+    is_pubkey: bool,
+}
+
+impl TryFrom<MsgAddressExt> for Metadata {
+    type Error = ClientError;
+
+    fn try_from(addr: MsgAddressExt) -> Result<Self, Self::Error> {
+        match addr {
+            MsgAddressExt::AddrNone => return Err(msg_err("src address is empty")),
+            MsgAddressExt::AddrExtern(extern_addr) => {
+                // src address contains several metafields describing
+                // structure of message body.
+                let mut slice = extern_addr.external_address;
+                let answer_id = slice.get_next_u32().map_err(msg_err)?;
+                let onerror_id = slice.get_next_u32().map_err(msg_err)?;
+                let abi_version = slice.get_next_byte().map_err(msg_err)?;
+                if abi_version != SUPPORTED_ABI_VERSION {
+                    return Err(msg_err(format!(
+                        "unsupported ABI version in src address (must be {})",
+                        SUPPORTED_ABI_VERSION
+                    )));
+                }
+                let is_timestamp = slice.get_next_bit().map_err(msg_err)?;
+                let is_expire = slice.get_next_bit().map_err(msg_err)?;
+                let is_pubkey = slice.get_next_bit().map_err(msg_err)?;
+
+                Ok(Self {
+                    answer_id,
+                    onerror_id,
+                    is_timestamp,
+                    is_expire,
+                    is_pubkey,
+                })
+            }
+        }
+    }
 }
 
 pub async fn run_get_method(
@@ -146,10 +196,6 @@ pub async fn send_ext_msg<'a>(
     }
 }
 
-fn msg_err(e: impl Display) -> ClientError {
-    Error::invalid_msg(e)
-}
-
 async fn decode_and_fix_ext_msg(
     ton: TonClient,
     msg: String,
@@ -168,27 +214,11 @@ async fn decode_and_fix_ext_msg(
             .src,
         MsgAddressExt::AddrNone,
     );
-    let (answer_id, onerror_id, pubkey_flag, expire_flag, timestamp_flag);
-    match src {
-        MsgAddressExt::AddrNone => return Err(msg_err("src address is empty")),
-        MsgAddressExt::AddrExtern(extern_addr) => {
-            // src address contains several metafields describing
-            // structure of message body.
-            let mut slice = extern_addr.external_address.clone();
-            answer_id = slice.get_next_u32().map_err(msg_err)?;
-            onerror_id = slice.get_next_u32().map_err(msg_err)?;
-            let abi_ver = slice.get_next_byte().map_err(msg_err)?;
-            if abi_ver != 2 {
-                return Err(msg_err(
-                    "unsupported ABI version in src address (must be 2)",
-                ));
-            }
-            timestamp_flag = slice.get_next_bit().map_err(msg_err)?;
-            expire_flag = slice.get_next_bit().map_err(msg_err)?;
-            pubkey_flag = slice.get_next_bit().map_err(msg_err)?;
-        }
-    }
-    debot_abi.function_by_id(answer_id, true).map_err(msg_err)?;
+    let meta = Metadata::try_from(src)?;
+
+    debot_abi
+        .function_by_id(meta.answer_id, true)
+        .map_err(msg_err)?;
 
     // find function id in message body: parse signature, pubkey and abi headers
 
@@ -201,17 +231,17 @@ async fn decode_and_fix_ext_msg(
         }
         in_body_slice.get_next_bits(512).map_err(msg_err)?;
     }
-    if pubkey_flag {
+    if meta.is_pubkey {
         let pubkey_bit = in_body_slice.get_next_bit().map_err(msg_err)?;
         if pubkey_bit {
             in_body_slice.get_next_bits(256).map_err(msg_err)?;
         }
     }
-    if timestamp_flag {
+    if meta.is_timestamp {
         // skip `timestamp` header
         in_body_slice.get_next_u64().map_err(msg_err)?;
     }
-    if expire_flag {
+    if meta.is_expire {
         // skip `expire` header
         in_body_slice.get_next_u32().map_err(msg_err)?;
     }
@@ -223,7 +253,7 @@ async fn decode_and_fix_ext_msg(
 
     let mut new_body = BuilderData::new();
     let pubkey = signer.resolve_public_key(ton.clone()).await?;
-    if pubkey_flag {
+    if meta.is_pubkey {
         if let Some(key) = pubkey {
             new_body
                 .append_bit_one()
@@ -236,10 +266,10 @@ async fn decode_and_fix_ext_msg(
     }
     let now = ton.env.now_ms();
     let expired_at = ((now / 1000) as u32) + ton.config.abi.message_expiration_timeout;
-    if timestamp_flag {
+    if meta.is_timestamp {
         new_body.append_u64(now).map_err(msg_err)?;
     }
-    if expire_flag {
+    if meta.is_expire {
         new_body.append_u32(expired_at).map_err(msg_err)?;
     }
     new_body
@@ -270,7 +300,7 @@ async fn decode_and_fix_ext_msg(
     message.set_body(signed_body.into());
     let msg = serialize_object_to_base64(&message, "message").map_err(|e| Error::invalid_msg(e))?;
 
-    Ok((answer_id, onerror_id, func_id, msg))
+    Ok((meta.answer_id, meta.onerror_id, func_id, msg))
 }
 
 fn build_answer_msg(

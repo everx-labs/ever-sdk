@@ -54,6 +54,7 @@
 		{
 			"name": "queryData",
 			"inputs": [
+				{"name":"value","type":"int256"}
 			],
 			"outputs": [
 			]

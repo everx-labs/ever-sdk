@@ -18,11 +18,15 @@ use crate::crypto::KeyPair;
 use crate::json_interface::debot::*;
 use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer, Abi, ParamsOfDecodeMessageBody, DecodedMessageBody};
 use crate::boc::{ParamsOfParse, ResultOfParse};
+use crate::tvm::{ParamsOfRunTvm, ResultOfRunTvm};
+use crate::net::ResultOfQueryCollection;
 use futures::future::{BoxFuture, FutureExt};
+use serde_json::Value;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::collections::VecDeque;
 use tokio::sync::Mutex;
+use crate::net::ParamsOfQueryCollection;
 use super::*;
 
 lazy_static!(
@@ -66,6 +70,16 @@ const TERMINAL_ABI: &str = r#"
 				{"name":"message","type":"bytes"}
 			],
 			"outputs": []
+        },
+        {
+			"name": "inputInt",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"prompt","type":"bytes"}
+			],
+			"outputs": [
+				{"name":"value","type":"int256"}
+			]
 		}
 	],
 	"data": [],
@@ -115,6 +129,14 @@ impl Terminal {
                 let message = std::str::from_utf8(&message).unwrap();
                 self.print(answer_id, message)
             },
+            "inputInt" => {
+                let answer_id = u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
+                let prompt = hex::decode(args["prompt"].as_str().unwrap()).unwrap();
+                let prompt = std::str::from_utf8(&prompt).unwrap();
+                let _ = self.print(answer_id, prompt);
+                // use test return value here.
+                (answer_id, json!({"value": 1}))
+            }
             _ => panic!("interface function not found"),
         }
     }
@@ -711,16 +733,27 @@ async fn test_debot_interface_call() {
 #[tokio::test(core_threads = 2)]
 async fn test_debot_4() {
     let client = std::sync::Arc::new(TestClient::new());
-    let DebotData { debot_addr, target_addr: _, keys } = init_debot4(client.clone()).await;
+    let DebotData { debot_addr, target_addr, keys } = init_debot4(client.clone()).await;
+    let target_abi = TestClient::abi(TEST_DEBOT_TARGET, Some(2));
+
+    let target_boc = download_account(&client, &target_addr).await.expect("account must exist");
+    let account: ResultOfParse = client.request(
+        "boc.parse_account",
+        ParamsOfParse {
+            boc: target_boc
+        },
+    ).unwrap();
+    assert_eq!(account.parsed["acc_type"].as_i64().unwrap(), 0);
 
     let steps = serde_json::from_value(json!([])).unwrap();
     TestBrowser::execute(
-        client,
+        client.clone(),
         debot_addr,
         keys,
         steps,
         vec![
             format!("Target contract deployed."),
+            format!("Enter 1"),
             format!("getData"),
             format!("setData(128)"),
             format!("Sign external message:"),
@@ -728,4 +761,73 @@ async fn test_debot_4() {
             format!("setData2(129)"),
         ],
     ).await;
+
+    let target_boc = download_account(&client, &target_addr).await.expect("account must exist");
+    let account: ResultOfParse = client.request(
+        "boc.parse_account",
+        ParamsOfParse {
+            boc: target_boc
+        },
+    ).unwrap();
+    assert_eq!(account.parsed["acc_type"].as_i64().unwrap(), 1);
+
+    assert_get_method(
+        &client,
+        &target_addr,
+        &target_abi,
+        "getData",
+        json!({"key": 1}),
+        json!({"num": format!("0x{:064x}", 129) })
+    ).await;
+
+}
+
+async fn download_account(client: &Arc<TestClient>, addr: &str) -> Option<String> {
+    let client = client.clone();
+    let accounts: ResultOfQueryCollection = client.request_async(
+        "net.query_collection",
+        ParamsOfQueryCollection {
+            collection: format!("accounts"),
+            filter: Some(json!({
+                "id": { "eq": addr }
+            })),
+            result: format!("boc"),
+            limit: Some(1),
+            order: None,
+        }
+    ).await.unwrap();
+
+    if accounts.result.len() == 1 {
+        Some(accounts.result[0]["boc"].as_str().unwrap().to_owned())
+    } else {
+        None
+    }
+}
+async fn assert_get_method(client: &Arc<TestClient>, addr: &String, abi: &Abi, func: &str, params: Value, returns: Value) {
+    let client = client.clone();
+    let acc_boc = download_account(&client, &addr).await.expect("Account not found");
+
+    let call_params = ParamsOfEncodeMessage {
+        abi: abi.clone(),
+        deploy_set: None,
+        signer: Signer::None,
+        processing_try_index: None,
+        address: Some(addr.clone()),
+        call_set: CallSet::some_with_function_and_input(func, params),
+    };
+
+    let message = client.encode_message(call_params).await.unwrap().message;
+
+    let result: ResultOfRunTvm = client.request_async(
+        "tvm.run_tvm",
+        ParamsOfRunTvm {
+            account: acc_boc,
+            message,
+            abi: Some(abi.clone()),
+            execution_options: None,
+        },
+    ).await.unwrap();
+
+    let output = result.decoded.unwrap().output.expect("output must exist");
+    assert_eq!(returns, output);
 }

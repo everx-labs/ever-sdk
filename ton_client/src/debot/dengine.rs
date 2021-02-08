@@ -148,7 +148,7 @@ impl DEngine {
 
         if context_vec.len() == 0 {
             let mut start_act = DAction::new(
-                "Start".to_owned(),
+                String::new(),
                 "start".to_owned(),
                 AcType::RunAction as u8,
                 STATE_CURRENT,
