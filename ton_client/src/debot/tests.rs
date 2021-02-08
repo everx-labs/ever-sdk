@@ -791,12 +791,12 @@ async fn test_debot_4() {
     let target_abi = TestClient::abi(TEST_DEBOT_TARGET, Some(2));
 
     let target_boc = download_account(&client, &target_addr).await.expect("account must exist");
-    let account: ResultOfParse = client.request(
+    let account: ResultOfParse = client.request_async(
         "boc.parse_account",
         ParamsOfParse {
             boc: target_boc
         },
-    ).unwrap();
+    ).await.unwrap();
     assert_eq!(account.parsed["acc_type"].as_i64().unwrap(), 0);
 
     let steps = serde_json::from_value(json!([])).unwrap();
@@ -817,12 +817,12 @@ async fn test_debot_4() {
     ).await;
 
     let target_boc = download_account(&client, &target_addr).await.expect("account must exist");
-    let account: ResultOfParse = client.request(
+    let account: ResultOfParse = client.request_async(
         "boc.parse_account",
         ParamsOfParse {
             boc: target_boc
         },
-    ).unwrap();
+    ).await.unwrap();
     assert_eq!(account.parsed["acc_type"].as_i64().unwrap(), 1);
 
     assert_get_method(
@@ -879,6 +879,8 @@ async fn assert_get_method(client: &Arc<TestClient>, addr: &String, abi: &Abi, f
             message,
             abi: Some(abi.clone()),
             execution_options: None,
+            boc_cache: None,
+            return_updated_account: Some(true),
         },
     ).await.unwrap();
 

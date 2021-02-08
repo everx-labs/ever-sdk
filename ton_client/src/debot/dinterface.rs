@@ -10,26 +10,27 @@ use std::collections::HashMap;
 use std::sync::Arc;
 pub type InterfaceResult = Result<(u32, Value), String>;
 
+async fn decode_msg(client: TonClient, msg_body: String, abi: Abi) -> Result<(String, Value), String> {
+    let decoded = decode_message_body(
+        client.clone(),
+        ParamsOfDecodeMessageBody {
+            abi,
+            body: msg_body,
+            is_internal: true,
+        },
+    )
+    .await
+    .map_err(|e| format!("invalid message body: {}", e))?;
+    let (func, args) = (decoded.name, decoded.value.unwrap_or(json!({})));
+    debug!("{} ({})", func, args);
+    Ok((func, args))
+}
+
 #[async_trait::async_trait]
 pub trait DebotInterface {
     fn get_id(&self) -> String;
     fn get_abi(&self) -> Abi;
     async fn call(&self, func: &str, args: &Value) -> InterfaceResult;
-
-    fn decode_msg(&self, client: TonClient, msg_body: String) -> Result<(String, Value), String> {
-        let decoded = decode_message_body(
-            client.clone(),
-            ParamsOfDecodeMessageBody {
-                abi: self.get_abi(),
-                body: msg_body,
-                is_internal: true,
-            },
-        )
-        .map_err(|e| format!("invalid message body: {}", e))?;
-        let (func, args) = (decoded.name, decoded.value.unwrap_or(json!({})));
-        debug!("{} ({})", func, args);
-        Ok((func, args))
-    }
 }
 
 #[async_trait::async_trait]
@@ -58,6 +59,7 @@ pub trait DebotInterfaceExecutor {
         interfaces: &HashMap<String, Arc<dyn DebotInterface + Send + Sync>>,
     ) -> InterfaceResult {
         let parsed = parse_message(client.clone(), ParamsOfParse { boc: msg.clone() })
+            .await
             .map_err(|e| format!("{}", e))?;
 
         let body = parsed.parsed["body"]
@@ -67,7 +69,8 @@ pub trait DebotInterfaceExecutor {
         debug!("call for interface {}", interface_id);
         match interfaces.get(interface_id) {
             Some(object) => {
-                let (func, args) = object.decode_msg(client.clone(), body)?;
+                let abi = object.get_abi();
+                let (func, args) = decode_msg(client.clone(), body, abi).await?;
                 object.call(&func, &args).await
             }
             None => Ok((0, json!({}))),

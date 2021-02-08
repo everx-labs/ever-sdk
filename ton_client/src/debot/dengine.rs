@@ -15,7 +15,7 @@ use crate::abi::{
     ErrorCode, ParamsOfDecodeMessageBody, ParamsOfEncodeMessage, ParamsOfEncodeMessageBody, Signer,
 };
 use crate::boc::internal::{deserialize_cell_from_base64};
-use crate::crypto::{remove_signing_box, CryptoConfig, RegisteredSigningBox, SigningBoxHandle};
+use crate::crypto::{remove_signing_box, RegisteredSigningBox, SigningBoxHandle};
 use crate::encoding::{decode_abi_number};
 use crate::error::{ClientError, ClientResult};
 use crate::net::{query_collection, NetworkConfig, ParamsOfQueryCollection};

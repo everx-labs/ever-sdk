@@ -94,6 +94,8 @@ pub async fn run_get_method(
             message: fixed_msg,
             abi: None,
             execution_options: None,
+            boc_cache: None,
+            return_updated_account: Some(true),
         },
     )
     .await
