@@ -1,4 +1,4 @@
-use crate::abi::decode_message::{DecodedMessageBody, MessageBodyType, ParamsOfDecodeMessage};
+use crate::{abi::decode_message::{DecodedMessageBody, MessageBodyType, ParamsOfDecodeMessage}, boc::ResultOfParse};
 use crate::abi::encode_message::{
     CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfEncodeMessage, ResultOfAttachSignature, 
     ResultOfEncodeMessage, ParamsOfEncodeInternalMessage, ResultOfEncodeInternalMessage
@@ -6,15 +6,13 @@ use crate::abi::encode_message::{
 use crate::abi::internal::{is_empty_pubkey, resolve_pubkey, create_tvc_image};
 use crate::abi::{FunctionHeader, ParamsOfDecodeMessageBody, Signer};
 use crate::boc::internal::get_boc_hash;
-use crate::boc::{parse_message, ParamsOfParse, ResultOfGetCodeFromTvc, ParamsOfGetCodeFromTvc};
-use crate::ClientContext;
+use crate::boc::{ParamsOfParse, ResultOfGetCodeFromTvc, ParamsOfGetCodeFromTvc};
 use crate::crypto::KeyPair;
 use crate::error::ClientError;
 use crate::tests::{TestClient, EVENTS, HELLO};
 use crate::utils::conversion::abi_uint;
 
 use std::io::Cursor;
-use std::sync::Arc;
 
 use ton_block::{Message, Deserializable, Serializable};
 use ton_sdk::ContractImage;
@@ -373,14 +371,15 @@ fn test_is_empty_pubkey() -> Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_resolve_pubkey() -> Result<()> {
+#[tokio::test(core_threads = 2)]
+async fn test_resolve_pubkey() -> Result<()> {
+    let context = crate::ClientContext::new(crate::ClientConfig::default()).unwrap();
     let tvc = base64::encode(include_bytes!("../tests/contracts/abi_v2/Hello.tvc"));
     let mut deploy_set = DeploySet {
         tvc: tvc.clone(),
         ..Default::default()
     };
-    let mut image = create_tvc_image("", None, &tvc)?;
+    let mut image = create_tvc_image(&context, "", None, &tvc).await?;
     assert!(resolve_pubkey(&deploy_set, &image, &None )?.is_none());
 
     let external_pub_key = Some("1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF".to_owned());
@@ -415,8 +414,8 @@ fn test_resolve_pubkey() -> Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_encode_message_pubkey() -> Result<()> {
+#[tokio::test(core_threads = 2)]
+async fn test_encode_message_pubkey() -> Result<()> {
     let client = TestClient::new();
     let (abi, tvc) = TestClient::package(HELLO, None);
 
@@ -432,7 +431,7 @@ fn test_encode_message_pubkey() -> Result<()> {
         &None,
         &signer_pubkey,
         &signer_pubkey,
-    )?;
+    ).await?;
 
     test_encode_message_pubkey_internal(
         &client,
@@ -442,7 +441,7 @@ fn test_encode_message_pubkey() -> Result<()> {
         &tvc_pubkey,
         &signer_pubkey,
         &tvc_pubkey,
-    )?;
+    ).await?;
 
     test_encode_message_pubkey_internal(
         &client,
@@ -452,7 +451,7 @@ fn test_encode_message_pubkey() -> Result<()> {
         &None,
         &signer_pubkey,
         &initial_pubkey,
-    )?;
+    ).await?;
 
     test_encode_message_pubkey_internal(
         &client,
@@ -462,7 +461,7 @@ fn test_encode_message_pubkey() -> Result<()> {
         &tvc_pubkey,
         &signer_pubkey,
         &initial_pubkey,
-    )?;
+    ).await?;
 
     // Expected error, if signer's public key is not provided:
     let error = test_encode_message_pubkey_internal(
@@ -474,6 +473,7 @@ fn test_encode_message_pubkey() -> Result<()> {
         &None,
         &None,
     )
+        .await
         .unwrap_err()
         .downcast::<ClientError>()?;
 
@@ -482,7 +482,7 @@ fn test_encode_message_pubkey() -> Result<()> {
     Ok(())
 }
 
-fn test_encode_message_pubkey_internal(
+async fn test_encode_message_pubkey_internal(
     client: &TestClient,
     abi: &Abi,
     tvc: &String,
@@ -491,7 +491,8 @@ fn test_encode_message_pubkey_internal(
     signer_pubkey: &Option<ed25519_dalek::PublicKey>,
     expected_pubkey: &Option<ed25519_dalek::PublicKey>,
 ) -> Result<()> {
-    let mut image = create_tvc_image(&abi.json_string()?, None, &tvc)?;
+    let context = crate::ClientContext::new(crate::ClientConfig::default()).unwrap();
+    let mut image = create_tvc_image(&context, &abi.json_string()?, None, &tvc).await?;
     if let Some(tvc_pubkey) = tvc_pubkey {
         image.set_public_key(tvc_pubkey)?;
     }
@@ -518,7 +519,7 @@ fn test_encode_message_pubkey_internal(
         call_set: CallSet::some_with_function("constructor"),
     };
 
-    let result: ResultOfEncodeMessage = client.request("abi.encode_message", deploy_params)?;
+    let result: ResultOfEncodeMessage = client.request_async("abi.encode_message", deploy_params).await?;
 
     let message = Message::construct_from_base64(&result.message)?;
     let state_init = message.state_init()
@@ -536,11 +537,12 @@ fn gen_pubkey() -> ed25519_dalek::PublicKey {
     ed25519_dalek::Keypair::generate(&mut rand::thread_rng()).public
 }
 
-#[test]
-fn test_encode_internal_message() -> Result<()> {
+#[tokio::test(core_threads = 2)]
+async fn test_encode_internal_message() -> Result<()> {
     let client = TestClient::new();
     let (abi, tvc) = TestClient::package(HELLO, None);
-    let image = create_tvc_image(&abi.json_string()?, None, &tvc)?;
+    let context = crate::ClientContext::new(crate::ClientConfig::default()).unwrap();
+    let image = create_tvc_image(&context, &abi.json_string()?, None, &tvc).await?;
 
     test_encode_internal_message_deploy(
         &client,
@@ -568,7 +570,7 @@ fn test_encode_internal_message() -> Result<()> {
             XSSDBII4rIMAAjhwj0HPXIdcLACDAAZbbMF8H2zCW2zBfB9sw4wTZltswXwbbMOME2eAi0x80IHS7II4VMCCCEP\
             ////+6IJkwIIIQ/////rrf35bbMF8H2zDgIyHxQAFfBw=="
         )
-    )?;
+    ).await?;
 
     test_encode_internal_message_deploy(
         &client,
@@ -600,7 +602,7 @@ fn test_encode_internal_message() -> Result<()> {
             K3XAh10kgwSCOKyDAAI4cI9Bz1yHXCwAgwAGW2zBfB9swltswXwfbMOME2ZbbMF8G2zDjBNngItMfNCB0uyCOFT\
             AgghD/////uiCZMCCCEP////6639+W2zBfB9sw4CMh8UABXwc="
         ),
-    )?;
+    ).await?;
 
     test_encode_internal_message_run(
         &client,
@@ -613,17 +615,17 @@ fn test_encode_internal_message() -> Result<()> {
         Some(
             "te6ccgEBAQEAOgAAcGIACRorPEhV5veJGis8SFXm94kaKzxIVeb3iRorPEhV5veh3NZQAAAAAAAAAAAAAAAAAABQy+0X"
         ),
-    )
+    ).await
 }
 
-fn test_encode_internal_message_run(
+async fn test_encode_internal_message_run(
     client: &TestClient,
     abi: &Abi,
     call_set: Option<CallSet>,
     expected_boc: Option<&str>,
 ) -> Result<()> {
     let address = String::from("0:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
-    let result: ResultOfEncodeInternalMessage = client.request(
+    let result: ResultOfEncodeInternalMessage = client.request_async(
         "abi.encode_internal_message",
         ParamsOfEncodeInternalMessage {
             abi: abi.clone(),
@@ -634,7 +636,7 @@ fn test_encode_internal_message_run(
             bounce: Some(true),
             enable_ihr: None
         },
-    )?;
+    ).await?;
 
     assert_eq!(result.address, address);
     assert_eq!(result.message_id, get_boc_hash(&base64::decode(&result.message)?)?);
@@ -642,12 +644,12 @@ fn test_encode_internal_message_run(
         assert_eq!(&result.message, expected_boc);
     }
 
-    let parsed = parse_message(
-        Arc::new(ClientContext::new(Default::default())?),
+    let parsed: ResultOfParse = client.request_async(
+        "boc.parse_message",
         ParamsOfParse {
             boc: result.message
         }
-    )?;
+    ).await?;
 
     assert_eq!(parsed.parsed["msg_type_name"], "internal");
     assert_eq!(parsed.parsed["src"], "");
@@ -660,7 +662,7 @@ fn test_encode_internal_message_run(
 }
 
 
-fn test_encode_internal_message_deploy(
+async fn test_encode_internal_message_deploy(
     client: &TestClient,
     image: &ContractImage,
     abi: &Abi,
@@ -668,7 +670,7 @@ fn test_encode_internal_message_deploy(
     call_set: Option<CallSet>,
     expected_boc: Option<&str>,
 ) -> Result<()> {
-    let result: ResultOfEncodeInternalMessage = client.request(
+    let result: ResultOfEncodeInternalMessage = client.request_async(
         "abi.encode_internal_message",
         ParamsOfEncodeInternalMessage {
             abi: abi.clone(),
@@ -684,7 +686,7 @@ fn test_encode_internal_message_deploy(
             bounce: None,
             enable_ihr: None
         },
-    )?;
+    ).await?;
 
     assert_eq!(result.address, image.msg_address(0).to_string());
     assert_eq!(result.message_id, get_boc_hash(&base64::decode(&result.message)?)?);
@@ -692,19 +694,19 @@ fn test_encode_internal_message_deploy(
         assert_eq!(&result.message, expected_boc);
     }
 
-    let parsed = parse_message(
-        Arc::new(ClientContext::new(Default::default())?),
+    let parsed: ResultOfParse = client.request_async(
+        "boc.parse_message",
         ParamsOfParse {
             boc: result.message
         }
-    )?;
+    ).await?;
 
-    let code_from_tvc: ResultOfGetCodeFromTvc = client.request(
+    let code_from_tvc: ResultOfGetCodeFromTvc = client.request_async(
         "boc.get_code_from_tvc",
         ParamsOfGetCodeFromTvc {
             tvc: tvc.clone(),
         }
-    )?;
+    ).await?;
 
     assert_eq!(parsed.parsed["code"], code_from_tvc.code);
 

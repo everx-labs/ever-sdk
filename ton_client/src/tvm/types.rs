@@ -13,7 +13,7 @@
  */
 
 use super::Error;
-use crate::boc::internal::deserialize_object_from_base64;
+use crate::boc::internal::deserialize_object_from_boc;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
 use ton_executor::BlockchainConfig;
@@ -37,21 +37,21 @@ pub(crate) struct ResolvedExecutionOptions {
     pub transaction_lt: u64,
 }
 
-pub(crate) fn blockchain_config_from_base64(b64: &str) -> ClientResult<BlockchainConfig> {
-    let config_params = deserialize_object_from_base64(b64, "blockchain config")?;
+pub(crate) async fn blockchain_config_from_boc(context: &ClientContext, b64: &str) -> ClientResult<BlockchainConfig> {
+    let config_params = deserialize_object_from_boc(context, b64, "blockchain config").await?;
     BlockchainConfig::with_config(config_params.object)
         .map_err(|err| Error::can_not_read_blockchain_config(err))
 }
 
 impl ResolvedExecutionOptions {
-    pub fn from_options(
+    pub async fn from_options(
         context: &std::sync::Arc<ClientContext>,
         options: Option<ExecutionOptions>,
     ) -> ClientResult<Self> {
         let options = options.unwrap_or_default();
 
         let config = if let Some(config) = options.blockchain_config {
-            blockchain_config_from_base64(&config)?
+            blockchain_config_from_boc(context, &config).await?
         } else {
             Default::default()
         };

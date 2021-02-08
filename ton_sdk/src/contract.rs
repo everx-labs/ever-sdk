@@ -131,6 +131,13 @@ impl ContractImage {
         Ok(result)
     }
 
+    pub fn from_cell(cell: ton_types::Cell) -> Result<Self> {
+        let id = cell.repr_hash().into();
+        let state_init = StateInit::construct_from_cell(cell)?;
+
+        Ok(Self { state_init, id })
+    }
+    
     pub fn get_public_key(&self) -> Result<Option<PublicKey>> {
         let data = &self.state_init.data.as_ref().ok_or_else(
             || SdkError::InvalidData {

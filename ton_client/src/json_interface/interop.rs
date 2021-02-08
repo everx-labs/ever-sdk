@@ -121,7 +121,7 @@ pub unsafe extern "C" fn tc_request(
         function_name.to_string(),
         params_json.to_string(),
         Request::new_with_c_handler(request_id, response_handler),
-    )
+    );
 }
 
 pub type CResponseHandlerPtr = extern "C" fn(

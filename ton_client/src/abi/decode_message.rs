@@ -1,8 +1,7 @@
-use crate::abi::types::Abi;
+use crate::{abi::types::Abi, boc::internal::deserialize_cell_from_boc};
 use crate::abi::{Error, FunctionHeader};
-use crate::boc::internal::deserialize_cell_from_base64;
+use crate::boc::internal::deserialize_object_from_boc;
 use crate::client::ClientContext;
-use crate::encoding::base64_decode;
 use crate::error::ClientResult;
 use serde_json::Value;
 use std::sync::Arc;
@@ -74,11 +73,11 @@ pub struct ParamsOfDecodeMessage {
 
 /// Decodes message body using provided message BOC and ABI.
 #[api_function]
-pub fn decode_message(
-    _context: Arc<ClientContext>,
+pub async fn decode_message(
+    context: Arc<ClientContext>,
     params: ParamsOfDecodeMessage,
 ) -> ClientResult<DecodedMessageBody> {
-    let (abi, message) = prepare_decode(&params)?;
+    let (abi, message) = prepare_decode(&context, &params).await?;
     if let Some(body) = message.body() {
         decode_body(abi, body, message.is_internal())
     } else {
@@ -104,24 +103,26 @@ pub struct ParamsOfDecodeMessageBody {
 
 /// Decodes message body using provided body BOC and ABI.
 #[api_function]
-pub fn decode_message_body(
-    _context: Arc<ClientContext>,
+pub async fn decode_message_body(
+    context: Arc<ClientContext>,
     params: ParamsOfDecodeMessageBody,
 ) -> ClientResult<DecodedMessageBody> {
     let abi = params.abi.json_string()?;
     let abi = AbiContract::load(abi.as_bytes()).map_err(|x| Error::invalid_json(x))?;
-    let (_, body) = deserialize_cell_from_base64(&params.body, "message body")?;
+    let (_, body) = deserialize_cell_from_boc(&context, &params.body, "message body").await?;
     decode_body(abi, body.into(), params.is_internal)
 }
 
-fn prepare_decode(
+async fn prepare_decode(
+    context: &ClientContext,
     params: &ParamsOfDecodeMessage,
 ) -> ClientResult<(AbiContract, ton_block::Message)> {
     let abi = params.abi.json_string()?;
     let abi = AbiContract::load(abi.as_bytes()).map_err(|x| Error::invalid_json(x))?;
-    let message = ton_sdk::Contract::deserialize_message(&base64_decode(&params.message)?)
+    let message = deserialize_object_from_boc(context, &params.message, "message")
+        .await
         .map_err(|x| Error::invalid_message_for_decode(x))?;
-    Ok((abi, message))
+    Ok((abi, message.object))
 }
 
 fn decode_body(

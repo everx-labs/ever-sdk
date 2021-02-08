@@ -1,10 +1,10 @@
 use crate::abi;
 use crate::abi::internal::{add_sign_to_message, add_sign_to_message_body, create_tvc_image, try_to_sign_message, resolve_pubkey, update_pubkey};
 use crate::abi::{Abi, Error, FunctionHeader, Signer};
-use crate::boc::internal::get_boc_hash;
+use crate::boc::internal::{get_boc_hash, deserialize_cell_from_boc};
 use crate::client::ClientContext;
 use crate::crypto::internal::decode_public_key;
-use crate::encoding::{account_decode, account_encode, base64_decode, hex_decode};
+use crate::encoding::{account_decode, account_encode, hex_decode};
 use crate::error::ClientResult;
 use serde_json::Value;
 use std::str::FromStr;
@@ -407,10 +407,11 @@ pub async fn encode_message(
             .workchain_id
             .unwrap_or(context.config.abi.workchain);
         let mut image = create_tvc_image(
+            &context,
             &abi,
             deploy_set.initial_data.as_ref(),
             &deploy_set.tvc,
-        )?;
+        ).await?;
 
         if let Some(tvc_public) = resolve_pubkey(&deploy_set, &image, &public)? {
             image.set_public_key(&decode_public_key(&tvc_public)?)
@@ -521,7 +522,7 @@ pub struct ResultOfEncodeInternalMessage {
 /// 2. Public key, specified in TVM file.
 
 #[api_function]
-pub fn encode_internal_message(
+pub async  fn encode_internal_message(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfEncodeInternalMessage,
 ) -> ClientResult<ResultOfEncodeInternalMessage> {
@@ -535,10 +536,11 @@ pub fn encode_internal_message(
             .workchain_id
             .unwrap_or(context.config.abi.workchain);
         let mut image = create_tvc_image(
+            &context,
             &abi,
             deploy_set.initial_data.as_ref(),
             &deploy_set.tvc,
-        )?;
+        ).await?;
 
         let public = update_pubkey(&deploy_set, &mut image, &None)?;
         let public = required_public_key(public)?;
@@ -741,15 +743,16 @@ pub struct ResultOfAttachSignature {
 /// Combines `hex`-encoded `signature` with `base64`-encoded `unsigned_message`.
 /// Returns signed message encoded in `base64`.
 #[api_function]
-pub fn attach_signature(
-    _context: std::sync::Arc<ClientContext>,
+pub async fn attach_signature(
+    context: std::sync::Arc<ClientContext>,
     params: ParamsOfAttachSignature,
 ) -> ClientResult<ResultOfAttachSignature> {
+    let (boc, _) = deserialize_cell_from_boc(&context, &params.message, "message").await?;
     let signed = add_sign_to_message(
         &params.abi.json_string()?,
         &hex_decode(&params.signature)?,
         Some(&hex_decode(&params.public_key)?),
-        &base64_decode(&params.message)?,
+        &boc.bytes("message")?,
     )?;
     Ok(ResultOfAttachSignature {
         message: base64::encode(&signed),
@@ -781,15 +784,16 @@ pub struct ResultOfAttachSignatureToMessageBody {
 
 ///
 #[api_function]
-pub fn attach_signature_to_message_body(
-    _context: std::sync::Arc<ClientContext>,
+pub async fn attach_signature_to_message_body(
+    context: std::sync::Arc<ClientContext>,
     params: ParamsOfAttachSignatureToMessageBody,
 ) -> ClientResult<ResultOfAttachSignatureToMessageBody> {
+    let (boc, _) = deserialize_cell_from_boc(&context, &params.message, "message body").await?;
     let signed = add_sign_to_message_body(
         &params.abi.json_string()?,
         &hex_decode(&params.signature)?,
         Some(&hex_decode(&params.public_key)?),
-        &base64_decode(&params.message)?,
+        &boc.bytes("message body")?,
     )?;
     Ok(ResultOfAttachSignatureToMessageBody {
         body: base64::encode(&signed),

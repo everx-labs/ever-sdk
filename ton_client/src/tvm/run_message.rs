@@ -14,17 +14,16 @@
 
 use super::stack::serialize_item;
 use super::types::{ExecutionOptions, ResolvedExecutionOptions};
-use crate::{
-    abi::Abi,
-    boc::internal::{
-        deserialize_cell_from_base64, deserialize_object_from_base64, deserialize_object_from_cell,
-        serialize_cell_to_base64, serialize_object_to_base64, serialize_object_to_cell,
-    },
-    client::ClientContext,
-    error::ClientResult,
-    processing::{parsing::decode_output, DecodedOutput},
-    tvm::{check_transaction::calc_transaction_fees, Error},
+use crate::{abi::Abi, boc::BocCacheType};
+use crate::boc::internal::{
+    deserialize_cell_from_boc, deserialize_object_from_boc, deserialize_object_from_cell,
+    serialize_cell_to_boc, serialize_object_to_base64, serialize_object_to_boc,
+    serialize_object_to_cell
 };
+use crate::client::ClientContext;
+use crate::error::ClientResult;
+use crate::processing::{parsing::decode_output, DecodedOutput};
+use crate::tvm::{check_transaction::calc_transaction_fees, Error};
 use num_traits::ToPrimitive;
 use serde_json::Value;
 use std::sync::{atomic::AtomicU64, Arc};
@@ -52,10 +51,16 @@ pub enum AccountForExecutor {
     },
 }
 
+impl Default for AccountForExecutor {
+    fn default() -> Self {
+        AccountForExecutor::None
+    }
+}
+
 const UNLIMITED_BALANCE: u64 = std::u64::MAX;
 
 impl AccountForExecutor {
-    pub fn get_account(
+    pub async fn get_account(
         &self,
         context: &Arc<ClientContext>,
         address: ton_block::MsgAddressInt,
@@ -77,7 +82,7 @@ impl AccountForExecutor {
             } => {
                 if unlimited_balance.unwrap_or_default() {
                     let mut account: Account =
-                        deserialize_object_from_base64(&boc, "account")?.object;
+                        deserialize_object_from_boc(context, &boc, "account").await?.object;
                     let original_balance = account
                         .get_balance()
                         .ok_or(Error::invalid_account_boc(
@@ -90,7 +95,7 @@ impl AccountForExecutor {
                     let account = serialize_object_to_cell(&account, "account")?;
                     Ok((account, Some(original_balance)))
                 } else {
-                    let (_, account) = deserialize_cell_from_base64(&boc, "account")?;
+                    let (_, account) = deserialize_cell_from_boc(context, &boc, "account").await?;
                     Ok((account, None))
                 }
             }
@@ -111,7 +116,7 @@ impl AccountForExecutor {
     }
 }
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Clone, Default)]
 pub struct ParamsOfRunExecutor {
     /// Input message BOC. Must be encoded as base64.
     pub message: String,
@@ -123,9 +128,13 @@ pub struct ParamsOfRunExecutor {
     pub abi: Option<Abi>,
     /// Skip transaction check flag
     pub skip_transaction_check: Option<bool>,
+    /// Cache type to put the result. The BOC intself returned if no cache type provided
+    pub boc_cache: Option<BocCacheType>,
+    /// Return updated account flag. Empty string is returned if the flag is `false`
+    pub return_updated_account: Option<bool>
 }
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Clone, Default)]
 pub struct ParamsOfRunTvm {
     /// Input message BOC. Must be encoded as base64.
     pub message: String,
@@ -135,6 +144,10 @@ pub struct ParamsOfRunTvm {
     pub execution_options: Option<ExecutionOptions>,
     /// Contract ABI for dedcoding output messages
     pub abi: Option<Abi>,
+    /// Cache type to put the result. The BOC intself returned if no cache type provided
+    pub boc_cache: Option<BocCacheType>,
+    /// Return updated account flag. Empty string is returned if the flag is `false`
+    pub return_updated_account: Option<bool>
 }
 
 #[derive(Serialize, Deserialize, ApiType, Debug, PartialEq, Clone)]
@@ -174,7 +187,7 @@ pub struct ResultOfRunTvm {
     pub account: String,
 }
 
-fn parse_transaction(
+async fn parse_transaction(
     context: &Arc<ClientContext>,
     transaction: &ton_block::Transaction,
 ) -> ClientResult<Value> {
@@ -183,7 +196,8 @@ fn parse_transaction(
         crate::boc::ParamsOfParse {
             boc: serialize_object_to_base64(transaction, "transaction")?,
         },
-    )?
+    )
+    .await?
     .parsed)
 }
 
@@ -214,10 +228,10 @@ pub async fn run_executor(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfRunExecutor,
 ) -> ClientResult<ResultOfRunExecutor> {
-    let message = deserialize_object_from_base64::<Message>(&params.message, "message")?.object;
+    let message = deserialize_object_from_boc::<Message>(&context, &params.message, "message").await?.object;
     let msg_address = message.dst().ok_or(Error::invalid_message_type())?;
-    let (account, original_balance) = params.account.get_account(&context, msg_address.clone())?;
-    let options = ResolvedExecutionOptions::from_options(&context, params.execution_options)?;
+    let (account, _) = params.account.get_account(&context, msg_address.clone()).await?;
+    let options = ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
 
     let account_copy = account.clone();
     let contract_info = move || async move {
@@ -238,8 +252,8 @@ pub async fn run_executor(
         }
     };
 
-    let (transaction, account) =
-        call_executor(account, message, options, contract_info.clone()).await?;
+    let (transaction, modified_account) =
+        call_executor(account.clone(), message, options, contract_info.clone()).await?;
 
     let fees = calc_transaction_fees(
         &transaction,
@@ -260,17 +274,21 @@ pub async fn run_executor(
 
     // TODO decode Message object without converting to string
     let decoded = if let Some(abi) = params.abi.as_ref() {
-        Some(decode_output(&context, abi, out_messages.clone())?)
+        Some(decode_output(&context, abi, out_messages.clone()).await?)
     } else {
         None
     };
 
-    let account = AccountForExecutor::restore_balance_if_needed(account, original_balance)?;
+    let account = if params.return_updated_account.unwrap_or_default() {
+        serialize_cell_to_boc(&context, modified_account, "account", params.boc_cache).await?
+    } else {
+        String::new()
+    };
 
     Ok(ResultOfRunExecutor {
         out_messages,
-        transaction: parse_transaction(&context, &transaction)?,
-        account: serialize_cell_to_base64(&account, "account")?,
+        transaction: parse_transaction(&context, &transaction).await?,
+        account,
         decoded,
         fees,
     })
@@ -296,11 +314,10 @@ pub async fn run_tvm(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfRunTvm,
 ) -> ClientResult<ResultOfRunTvm> {
-    let account = deserialize_object_from_base64(&params.account, "account")?.object;
-    let message = deserialize_object_from_base64::<Message>(&params.message, "message")?.object;
-    let options = ResolvedExecutionOptions::from_options(&context, params.execution_options)?;
-
-    let stuff = match account {
+    let account = deserialize_object_from_boc(&context, &params.account, "account").await?;
+    let message = deserialize_object_from_boc::<Message>(&context, &params.message, "message").await?.object;
+    let options = ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
+    let stuff = match account.object {
         ton_block::Account::AccountNone => Err(Error::invalid_account_boc("Acount is None")),
         ton_block::Account::Account(stuff) => Ok(stuff),
     }?;
@@ -309,19 +326,25 @@ pub async fn run_tvm(
 
     let mut out_messages = vec![];
     for message in messages {
-        out_messages.push(serialize_object_to_base64(&message, "message")?);
+        out_messages.push(serialize_object_to_boc(&context, &message, "message", params.boc_cache.clone()).await?);
     }
 
     // TODO decode Message object without converting to string
     let decoded = if let Some(abi) = params.abi.as_ref() {
-        Some(decode_output(&context, abi, out_messages.clone())?)
+        Some(decode_output(&context, abi, out_messages.clone()).await?)
     } else {
         None
     };
 
+    let account = if params.return_updated_account.unwrap_or_default() {
+        serialize_object_to_boc(&context, &ton_block::Account::Account(stuff), "account", params.boc_cache).await?
+    } else {
+        String::new()
+    };
+
     Ok(ResultOfRunTvm {
         out_messages,
-        account: serialize_object_to_base64(&ton_block::Account::Account(stuff), "account")?,
+        account,
         decoded,
     })
 }

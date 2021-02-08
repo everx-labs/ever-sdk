@@ -1,7 +1,7 @@
-use crate::abi::types::MessageSource;
+use crate::{abi::types::MessageSource, boc::{BocCacheType, internal::serialize_object_to_boc}};
 use crate::abi::{Abi, Error};
 use crate::boc::internal::{
-    deserialize_cell_from_base64, deserialize_object_from_base64, serialize_object_to_base64,
+    deserialize_cell_from_boc, deserialize_object_from_boc,
 };
 use crate::client::ClientContext;
 use crate::crypto::internal::decode_public_key;
@@ -55,6 +55,8 @@ pub struct ParamsOfEncodeAccount {
     pub last_trans_lt: Option<u64>,
     /// Initial value for the `last_paid`.
     pub last_paid: Option<u32>,
+    /// Cache type to put the result. The BOC intself returned if no cache type provided
+    pub boc_cache: Option<BocCacheType>,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
@@ -70,23 +72,28 @@ async fn state_init_from_message(
     message: &MessageSource,
 ) -> ClientResult<StateInit> {
     let (message, _) = message.encode(context).await?;
-    let message = deserialize_object_from_base64::<ton_block::Message>(&message, "message")?.object;
+    let message = deserialize_object_from_boc::<ton_block::Message>(
+        context, &message, "message"
+    ).await?.object;
     message
         .state_init()
         .map(|x| x.clone())
         .ok_or(Error::invalid_message_for_decode("missing `state_init`"))
 }
 
-fn state_init_from_bocs(
+async fn state_init_from_bocs(
+    context: &ClientContext,
     code: &String,
     data: &String,
     library: &Option<String>,
 ) -> ClientResult<StateInit> {
     Ok(StateInit {
-        code: Some(deserialize_cell_from_base64(code, "account code")?.1),
-        data: Some(deserialize_cell_from_base64(data, "account data")?.1),
+        code: Some(deserialize_cell_from_boc(context, code, "account code").await?.1),
+        data: Some(deserialize_cell_from_boc(context, data, "account data").await?.1),
         library: if let Some(library) = library {
-            StateInitLib::with_hashmap(Some(deserialize_cell_from_base64(library, "library")?.1))
+            StateInitLib::with_hashmap(
+                Some(deserialize_cell_from_boc(context, library, "library").await?.1)
+            )
         } else {
             StateInitLib::default()
         },
@@ -95,19 +102,20 @@ fn state_init_from_bocs(
     })
 }
 
-fn state_init_from_tvc(
+async fn state_init_from_tvc(
+    context: &ClientContext,
     tvc: &String,
     public_key: &Option<String>,
     init_params: &Option<StateInitParams>,
 ) -> ClientResult<StateInit> {
-    let tvc = base64::decode(tvc).map_err(|err| Error::invalid_tvc_image(err))?;
+    let (_, cell) = deserialize_cell_from_boc(context, tvc, "TVC image").await?;
     let public_key = public_key
         .as_ref()
         .map(|x| decode_public_key(x))
         .transpose()?;
 
-    let mut image = ContractImage::from_state_init(&mut tvc.as_slice())
-        .map_err(|err| Error::invalid_message_for_decode(err))?;
+    let mut image = ContractImage::from_cell(cell)
+        .map_err(|err| Error::invalid_tvc_image(err))?;
     if let Some(key) = public_key {
         image
             .set_public_key(&key)
@@ -142,12 +150,12 @@ pub async fn encode_account(
             code,
             data,
             library,
-        } => state_init_from_bocs(code, data, library),
+        } => state_init_from_bocs(&context, code, data, library).await,
         StateInitSource::Tvc {
             tvc,
             public_key,
             init_params,
-        } => state_init_from_tvc(tvc, public_key, init_params),
+        } => state_init_from_tvc(&context, tvc, public_key, init_params).await,
     }?;
     let id = state_init
         .hash()
@@ -167,7 +175,7 @@ pub async fn encode_account(
         },
     });
     Ok(ResultOfEncodeAccount {
-        account: serialize_object_to_base64(&account, "account")?,
+        account: serialize_object_to_boc(&context, &account, "account", params.boc_cache).await?,
         id,
     })
 }

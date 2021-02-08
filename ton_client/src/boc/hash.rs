@@ -11,7 +11,7 @@
 * limitations under the License.
 */
 
-use crate::boc::internal::deserialize_cell_from_base64;
+use crate::boc::internal::deserialize_cell_from_boc;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
 
@@ -29,11 +29,11 @@ pub struct ResultOfGetBocHash {
 
 /// Calculates BOC root hash
 #[api_function]
-pub fn get_boc_hash(
-    _context: std::sync::Arc<ClientContext>,
+pub async fn get_boc_hash(
+    context: std::sync::Arc<ClientContext>,
     params: ParamsOfGetBocHash,
 ) -> ClientResult<ResultOfGetBocHash> {
-    let (_, cell) = deserialize_cell_from_base64(&params.boc, "")?;
+    let (_, cell) = deserialize_cell_from_boc(&context, &params.boc, "").await?;
 
     Ok(ResultOfGetBocHash {
         hash: cell.repr_hash().to_hex_string(),
