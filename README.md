@@ -172,7 +172,7 @@ Rebuild `modules.ts`:
 cd tools
 npm i
 tsc
-node index binding -l ts -o ../ton-client-js/packages/core/src
+node index binding -l ts -o ../../ton-client-js/packages/core/src
 ```
 
 # Download precompiled binaries
