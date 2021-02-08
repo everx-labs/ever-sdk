@@ -522,7 +522,7 @@ pub struct ResultOfEncodeInternalMessage {
 /// 2. Public key, specified in TVM file.
 
 #[api_function]
-pub fn encode_internal_message(
+pub async  fn encode_internal_message(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfEncodeInternalMessage,
 ) -> ClientResult<ResultOfEncodeInternalMessage> {
@@ -536,10 +536,11 @@ pub fn encode_internal_message(
             .workchain_id
             .unwrap_or(context.config.abi.workchain);
         let mut image = create_tvc_image(
+            &context,
             &abi,
             deploy_set.initial_data.as_ref(),
             &deploy_set.tvc,
-        )?;
+        ).await?;
 
         let public = update_pubkey(&deploy_set, &mut image, &None)?;
         let public = required_public_key(public)?;
