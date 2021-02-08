@@ -3,10 +3,11 @@ use super::sdk_interface::SdkInterface;
 use crate::abi::{decode_message_body, Abi, ParamsOfDecodeMessageBody};
 use crate::boc::{parse_message, ParamsOfParse};
 use crate::debot::TonClient;
+use crate::encoding::decode_abi_number;
+use num_traits::cast::NumCast;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
-
 pub type InterfaceResult = Result<(u32, Value), String>;
 
 #[async_trait::async_trait]
@@ -24,7 +25,7 @@ pub trait DebotInterface {
                 is_internal: true,
             },
         )
-        .map_err(|e| format!(" failed to decode message body: {}", e))?;
+        .map_err(|e| format!("invalid message body: {}", e))?;
         let (func, args) = (decoded.name, decoded.value.unwrap_or(json!({})));
         debug!("{} ({})", func, args);
         Ok((func, args))
@@ -105,11 +106,10 @@ impl BuiltinInterfaces {
 }
 
 pub fn decode_answer_id(args: &Value) -> Result<u32, String> {
-    u32::from_str_radix(
+    decode_abi_number::<u32>(
         args["answerId"]
             .as_str()
             .ok_or(format!("answer id not found in argument list"))?,
-        10,
     )
     .map_err(|e| format!("{}", e))
 }
@@ -129,4 +129,19 @@ pub fn get_string_arg(args: &Value, name: &str) -> Result<String, String> {
     std::str::from_utf8(&bytes)
         .map_err(|e| format!("{}", e))
         .map(|x| x.to_string())
+}
+
+pub fn get_num_arg<T>(args: &Value, name: &str) -> Result<T, String>
+where
+    T: NumCast,
+{
+    let num_str = get_arg(args, name)?;
+    decode_abi_number::<T>(&num_str)
+        .map_err(|e| format!("failed to parse integer \"{}\": {}", num_str, e))
+}
+
+pub fn get_bool_arg(args: &Value, name: &str) -> Result<bool, String> {
+    args[name]
+        .as_bool()
+        .ok_or(format!("\"{}\" not found", name))
 }

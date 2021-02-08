@@ -11,15 +11,16 @@
 * limitations under the License.
 */
 
-use crate::client::ParamsOfAppRequest;
-use crate::json_interface::interop::ResponseType;
-use crate::tests::{TEST_DEBOT, TEST_DEBOT_TARGET, TestClient};
-use crate::crypto::KeyPair;
-use crate::json_interface::debot::*;
 use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer, Abi, ParamsOfDecodeMessageBody, DecodedMessageBody};
 use crate::boc::{ParamsOfParse, ResultOfParse};
-use crate::tvm::{ParamsOfRunTvm, ResultOfRunTvm};
+use crate::client::ParamsOfAppRequest;
+use crate::crypto::KeyPair;
+use crate::encoding::decode_abi_number;
+use crate::json_interface::debot::*;
+use crate::json_interface::interop::ResponseType;
 use crate::net::ResultOfQueryCollection;
+use crate::tests::{TEST_DEBOT, TEST_DEBOT_TARGET, TestClient};
+use crate::tvm::{ParamsOfRunTvm, ResultOfRunTvm};
 use futures::future::{BoxFuture, FutureExt};
 use serde_json::Value;
 use std::sync::Arc;
@@ -33,6 +34,8 @@ lazy_static!(
     static ref DEBOT: Mutex<Option<DebotData>> = Mutex::new(None);
 );
 const TEST_DEBOT4: &'static str = "testDebot4";
+const TEST_DEBOT3: &'static str = "testDebot3";
+
 const SUPPORTED_INTERFACES: &[&str] = &[
     "f6927c0d4bdb69e1b52d27f018d156ff04152f00558042ff674f0fec32e4369d", // echo
     "8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3", // terminal
@@ -124,13 +127,13 @@ impl Terminal {
     fn call(&mut self, func: &str, args: &JsonValue) -> (u32, JsonValue) {
         match func {
             "print" => {
-                let answer_id = u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
+                let answer_id = decode_abi_number::<u32>(args["answerId"].as_str().unwrap()).unwrap();
                 let message = hex::decode(args["message"].as_str().unwrap()).unwrap();
                 let message = std::str::from_utf8(&message).unwrap();
                 self.print(answer_id, message)
             },
             "inputInt" => {
-                let answer_id = u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
+                let answer_id = decode_abi_number::<u32>(args["answerId"].as_str().unwrap()).unwrap();
                 let prompt = hex::decode(args["prompt"].as_str().unwrap()).unwrap();
                 let prompt = std::str::from_utf8(&prompt).unwrap();
                 let _ = self.print(answer_id, prompt);
@@ -552,6 +555,34 @@ async fn init_debot4(client: Arc<TestClient>) -> DebotData {
     }
 }
 
+async fn init_debot3(client: Arc<TestClient>) -> DebotData {
+    let keys = client.generate_sign_keys();
+    let debot_abi = TestClient::abi(TEST_DEBOT3, Some(2));
+
+    let call_set = CallSet::some_with_function("constructor");
+    let deploy_debot_params = ParamsOfEncodeMessage {
+        abi: debot_abi.clone(),
+        deploy_set: DeploySet::some_with_tvc(TestClient::tvc(TEST_DEBOT3, Some(2))),
+        signer: Signer::Keys { keys: keys.clone() },
+        processing_try_index: None,
+        address: None,
+        call_set,
+    };
+    let debot_addr = client.deploy_with_giver_async(deploy_debot_params, Some(1_000_000_000u64)).await;
+    let _ = client.net_process_function(
+        debot_addr.clone(),
+        debot_abi.clone(),
+        "setABI",
+        json!({ "dabi": hex::encode(&debot_abi.json_string().unwrap().as_bytes()) }),
+        Signer::Keys { keys: keys.clone() },
+    ).await.unwrap();
+    DebotData {
+        debot_addr,
+        target_addr: String::new(),
+        keys,
+    }
+}
+
 const EXIT_CHOICE: u8 = 9;
 
 #[tokio::test(core_threads = 2)]
@@ -727,6 +758,29 @@ async fn test_debot_interface_call() {
         keys,
         serde_json::from_value(steps).unwrap(),
         vec![],
+    ).await;
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_debot_sdk_interface() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys } = init_debot3(client.clone()).await;
+
+    let steps = serde_json::from_value(json!([])).unwrap();
+    TestBrowser::execute(
+        client.clone(),
+        debot_addr,
+        keys,
+        steps,
+        vec![
+            format!("test substring1 passed"),
+            format!("test substring2 passed"),
+            format!("test mnemonicDeriveSignKeys passed"),
+            format!("test genRandom passed"),
+            format!("test mnemonic passed"),
+            format!("test account passed"),
+            format!("test hdkeyXprv passed"),
+        ],
     ).await;
 }
 
