@@ -189,8 +189,12 @@ pub async fn send_ext_msg<'a>(
             let mut new_body = BuilderData::new();
             new_body.append_u32(onerror_id).map_err(msg_err)?;
             new_body.append_u32(e.code).map_err(msg_err)?;
-            let error_code = e.data["exit_code"].as_u64().unwrap_or(0) as u32;
-            new_body.append_u32(error_code).map_err(msg_err)?;
+            let error_code = e.data
+                .pointer("/local_error/data/exit_code")
+                .or(e.data.pointer("/exit_code"))
+                .and_then(|val| val.as_i64())
+                .unwrap_or(0);
+            new_body.append_u32(error_code as u32).map_err(msg_err)?;
             build_internal_message(dest_addr, debot_addr, new_body.into())
         }
     }
