@@ -8479,6 +8479,27 @@
               "value": "807",
               "summary": null,
               "description": null
+            },
+            {
+              "name": "DebotGetMethodFailed",
+              "type": "Number",
+              "value": "808",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "DebotInvalidMsg",
+              "type": "Number",
+              "value": "809",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "DebotExternaCallFailed",
+              "type": "Number",
+              "value": "810",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
