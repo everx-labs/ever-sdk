@@ -12,6 +12,13 @@ and decerializations which drastically improves performance of `run_tvm` and `ru
 - `boc_cache` parameter in `tvm.run_tvm` and `tvm.run_executor` functions to save resulting messages and account BOCs into cache.
 - `return_updated_account` flag parameter introduced in `tvm.run_tvm` and `tvm.run_executor` functions to return updated account state. Important: by default this flag is `false` and account data is not returned.
 - `abi.encode_internal_message` function to encode an internal ABI-compatible message.
+- **Debot Module**:
+    - Support for get-methods and external calls in debots.
+    Debots can send external inbound messages to destination contracts (signed - for external calls and unsigned - for get-methods) using native language syntax without actions.
+    - Builtin debot interfaces (interfaces implemented by DEngine).
+    Added two builtin inetraces: base64 and Sdk.
+    - Added `DebotInterfaceExecutor` to automatically route messages to destination interfaces.
+    - Debot's `fetch` function is optional now. New debots can implement only `start` function.
 
 ## 1.6.3 Feb 4, 2021
 ### Fixed
@@ -32,7 +39,7 @@ and decerializations which drastically improves performance of `run_tvm` and `ru
 - `aggregate_collection` function as a wrapper for GraphQL aggregation queries.
 - `batch_query` function performs multiple queries per single fetch.
 - Active endpoint invalidation in case of network error occurring.
-- `network.network_retries_count` config parameter is deprecated. `network.max_reconnect_timeout` is introduced that allows to specify maximum network resolving timeout. Default value is 2 min. 
+- `network.network_retries_count` config parameter is deprecated. `network.max_reconnect_timeout` is introduced that allows to specify maximum network resolving timeout. Default value is 2 min.
 - `initial_pubkey` field in `DeploySet` to specify public key instead of one from TVC file or provided by signer.
 - Support for debot interfaces:
   - `send` Browser Callback to send messages with interface calls to Browser.
@@ -49,7 +56,7 @@ and decerializations which drastically improves performance of `run_tvm` and `ru
 - `net` module functions waits for `net.resume` call instead of returning error if called while the module is suspended
 
 ### Documentation
-- How to work with `Application Objects` [specification](docs/app_objects.md) added 
+- How to work with `Application Objects` [specification](docs/app_objects.md) added
 
 ## 1.5.1 Dec 28, 2020
 
@@ -61,7 +68,7 @@ and decerializations which drastically improves performance of `run_tvm` and `ru
 ### New
 - `reconnect_timeout` parameter in `NetworkConfig`.
 - `endpoints` parameter in `NetworkConfig`. It contains the list of available server addresses to connect.
-SDK will use one them with the least connect time. `server_address` parameter is still supported but 
+SDK will use one them with the least connect time. `server_address` parameter is still supported but
 `endpoints` is prevailing.
 - `net.fetch_endpoints` function to receive available endpoints from server.
 - `net.set_endpoints` function to set endpoints list for using on next reconnect.
@@ -87,7 +94,7 @@ SDK will use one them with the least connect time. `server_address` parameter is
 - **Debot Module:**
   - Invoked debot terminated correctly after error occurred during
 execution of one of its actions. Initial prev_state of invoked debot
-changed to STATE_EXIT.   
+changed to STATE_EXIT.
   - Fixed double jumping to current context in invoker debot after
 returning control to it from invoked debot.
   - Fixed conversation of exception codes thrown by debots to their user-friendly description.
@@ -95,7 +102,7 @@ returning control to it from invoked debot.
 ## 1.3.0 Dec 8, 2020
 
 ### Featured
-- `net.query` method . Performs custom graphql query that can be copied directly from the playground. 
+- `net.query` method . Performs custom graphql query that can be copied directly from the playground.
 - `net.suspend` and `net.resume` methods for disabling and enabling network activity. One of the possible use-cases is to manage subscriptions when a mobile application is brought to the background and into the foreground again.
 - Smart summary and description doc separation.
 - ts-generator includes doc comments in JSDoc format.
@@ -103,17 +110,17 @@ returning control to it from invoked debot.
 ## 1.2.0 Nov 26, 2020
 
 ### Featured
-- **UNSTABLE API. This API is experimental. It can be changed in the next releases**.  
-`debot` module was added with debot engine functions, such as : `start`, `fetch`, `execute`, `remove`. See the `debot` module documentation for more info.  
-Check our tests for code examples.  
+- **UNSTABLE API. This API is experimental. It can be changed in the next releases**.
+`debot` module was added with debot engine functions, such as : `start`, `fetch`, `execute`, `remove`. See the `debot` module documentation for more info.
+Check our tests for code examples.
 
-- External signing was supported for message encoding: `SigningBox` type for `Signer` enum was supported.   
-  Now it is possible to sign messages with externally implemented signing box interface without private key disclosure to the library. Can be used in case of signing via HSM API or via cold wallet - when there is no access to the private key.  
-  
-  It is also possible to create a Signing Box instance inside SDK - from a key pair passed into the library with `get_signing_box` method. It can be used for some test cases. Also it increases security - you need to pass your keys one time only.  
-  
-  Check the `crypto` module documentation for `SigningBoxHandle` type and  `register_signing_box`, `get_signing_box`, `signing_box_get_public_key`, `signing_box_sign`.   
-  Check our tests for code examples. 
+- External signing was supported for message encoding: `SigningBox` type for `Signer` enum was supported.
+  Now it is possible to sign messages with externally implemented signing box interface without private key disclosure to the library. Can be used in case of signing via HSM API or via cold wallet - when there is no access to the private key.
+
+  It is also possible to create a Signing Box instance inside SDK - from a key pair passed into the library with `get_signing_box` method. It can be used for some test cases. Also it increases security - you need to pass your keys one time only.
+
+  Check the `crypto` module documentation for `SigningBoxHandle` type and  `register_signing_box`, `get_signing_box`, `signing_box_get_public_key`, `signing_box_sign`.
+  Check our tests for code examples.
 
 ### Fixed
 - panic after `tc_destroy_context` call. Now all contexts use global async runtime
@@ -135,23 +142,23 @@ instead of prev `[].into()`
 ## 1.1.0 Nov 3, 2020
 
 ### New
-- ChaCha20 encryption support `crypto.chacha20`. 
+- ChaCha20 encryption support `crypto.chacha20`.
 - `boc.parse_shardstate` function for shardstates parsing.
 - `boc.get_boc_hash` function for calculating BOC root hash
 - `client.build_info` fully defined and documented.
-- `processing.wait_for_transaction` and `processing.process_message` functions execute contract 
+- `processing.wait_for_transaction` and `processing.process_message` functions execute contract
 locally in case if transaction waiting fails in order to resolve the contract execution error
-- `run_executor`, `run_tvm` now return `exit_arg` in case of TVM errors.  
+- `run_executor`, `run_tvm` now return `exit_arg` in case of TVM errors.
 - Create the `build_info.json` on the build stage.
 - `Abi::Contract` variant as an alias to deprecated `Abi::Serialized`
-- `Abi::Json` variant to specify an ABI as a raw JSON string. 
-- `api.json` now contains details about numeric types: Number and BigInt are now 
+- `Abi::Json` variant to specify an ABI as a raw JSON string.
+- `api.json` now contains details about numeric types: Number and BigInt are now
 have new fields `number_type` and `number_size`.
 - `api.json` ref type names are fully qualified now in form of `module.type`,
 for example `abi.Signer`.
 
 ### Fixed
-- TS generator fix some field names that is an invalid JS identifiers.   
+- TS generator fix some field names that is an invalid JS identifiers.
 - Use `install_name_tool` to fix loading library paths at `libton_client.dylib`.
 - `api.json` is reduced, so it can't contains tuple types, only structs.
 All types are exactly match to JSON.
@@ -229,18 +236,18 @@ produce the same result as node
 ## 0.25.4 Aug 5, 2020
 ### Fixed
 - `waitForTransaction` didn't use prev_alt_ref for block walking
- 
+
 ## 0.25.3 Jul 30, 2020
 ### New
-- All methods that require contract's code/data can use field `boc` 
-  in account document to extract code and data 
+- All methods that require contract's code/data can use field `boc`
+  in account document to extract code and data
   (instead of `code` and `data` fields).
-- Optional `bocBase64` parameter of method `tvm.get` that can be used 
-  instead of `codeBase64` and `dataBase64`.   
+- Optional `bocBase64` parameter of method `tvm.get` that can be used
+  instead of `codeBase64` and `dataBase64`.
 
 ## 0.25.2 Jul 29, 2020
 ### New
-- `error.data` object extended with fields `address`, `function_name`, `account_balance`, 
+- `error.data` object extended with fields `address`, `function_name`, `account_balance`,
 `account_address`, `query_url`, `config_server` for appropriate errors
 
 ## 0.25.0 Jul 8, 2020
@@ -250,7 +257,7 @@ produce the same result as node
 - time sync check while initializing
 - parallel requests on different contexts don't block each other. Requests on the same context
 remain sequential
-- new transaction wait mechanism. All account's shard blocks are checked for transaction to 
+- new transaction wait mechanism. All account's shard blocks are checked for transaction to
 guarantee message expiration
 - `contracts.wait.transaction` function for awaiting previously sent message processing
 - `contracts.send.message` returns message processing state for `contracts.wait.transaction` function

@@ -23,6 +23,9 @@ pub enum ErrorCode {
     DebotInvalidJsonParams = 805,
     DebotInvalidFunctionId = 806,
     DebotInvalidAbi = 807,
+    DebotGetMethodFailed = 808,
+    DebotInvalidMsg = 809,
+    DebotExternaCallFailed = 810,
 }
 pub struct Error;
 
@@ -77,6 +80,27 @@ impl Error {
         error(
             ErrorCode::DebotInvalidAbi,
             format!("Invalid debot ABI: {}", err),
+        )
+    }
+
+    pub fn get_method_failed(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::DebotGetMethodFailed,
+            format!("get-method call failed: {}", err),
+        )
+    }
+
+    pub fn invalid_msg(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::DebotInvalidMsg,
+            format!("invalid msg ({})", err),
+        )
+    }
+
+    pub fn external_call_failed(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::DebotExternaCallFailed,
+            format!("external call failed: ({})", err),
         )
     }
 }

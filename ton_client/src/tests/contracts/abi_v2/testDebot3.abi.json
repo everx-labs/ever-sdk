@@ -1,0 +1,227 @@
+{
+	"ABI version": 2,
+	"header": ["pubkey", "time", "expire"],
+	"functions": [
+		{
+			"name": "constructor",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setABI",
+			"inputs": [
+				{"name":"dabi","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "start",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "runAll",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testhdkeyXprv",
+			"inputs": [
+				{"name":"index","type":"uint32"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "hdkeyXprvFromMnemonicRes",
+			"inputs": [
+				{"name":"xprv","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "hdkeyDeriveFromXprvRes",
+			"inputs": [
+				{"name":"xprv","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "hdkeyDeriveFromXprvPathRes",
+			"inputs": [
+				{"name":"xprv","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "hdkeySecretFromXprvRes",
+			"inputs": [
+				{"name":"sec","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "naclSignKeypairFromSecretKeyRes",
+			"inputs": [
+				{"name":"sec","type":"uint256"},
+				{"name":"pub","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testMnemonicDeriveSignKeys",
+			"inputs": [
+				{"name":"index","type":"uint32"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "checkMnemonicDeriveSignKeys",
+			"inputs": [
+				{"name":"pub","type":"uint256"},
+				{"name":"sec","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testMnemonic",
+			"inputs": [
+				{"name":"index","type":"uint32"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "genMnemonic",
+			"inputs": [
+				{"name":"phrase","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "verifyPhrase",
+			"inputs": [
+				{"name":"valid","type":"bool"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testString",
+			"inputs": [
+				{"name":"index","type":"uint32"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testCut1",
+			"inputs": [
+				{"name":"substr","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testCut2",
+			"inputs": [
+				{"name":"substr","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testAccount",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setBalance",
+			"inputs": [
+				{"name":"nanotokens","type":"uint128"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setAccountType",
+			"inputs": [
+				{"name":"acc_type","type":"int8"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testRandom",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setRandom1",
+			"inputs": [
+				{"name":"buffer","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setRandom2",
+			"inputs": [
+				{"name":"buffer","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getVersion",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"name","type":"bytes"},
+				{"name":"semver","type":"uint24"}
+			]
+		},
+		{
+			"name": "fetch",
+			"inputs": [
+			],
+			"outputs": [
+				{"components":[{"name":"id","type":"uint8"},{"name":"desc","type":"bytes"},{"components":[{"name":"desc","type":"bytes"},{"name":"name","type":"bytes"},{"name":"actionType","type":"uint8"},{"name":"attrs","type":"bytes"},{"name":"to","type":"uint8"},{"name":"misc","type":"cell"}],"name":"actions","type":"tuple[]"}],"name":"contexts","type":"tuple[]"}
+			]
+		},
+		{
+			"name": "getDebotOptions",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"options","type":"uint8"},
+				{"name":"debotAbi","type":"bytes"},
+				{"name":"targetAbi","type":"bytes"},
+				{"name":"targetAddr","type":"address"}
+			]
+		}
+	],
+	"data": [
+	],
+	"events": [
+	]
+}

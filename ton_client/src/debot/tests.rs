@@ -11,26 +11,36 @@
 * limitations under the License.
 */
 
-use crate::client::ParamsOfAppRequest;
-use crate::json_interface::interop::ResponseType;
-use crate::tests::{TEST_DEBOT, TEST_DEBOT_TARGET, TestClient};
-use crate::crypto::KeyPair;
-use crate::json_interface::debot::*;
 use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer, Abi, ParamsOfDecodeMessageBody, DecodedMessageBody};
 use crate::boc::{ParamsOfParse, ResultOfParse};
+use crate::client::ParamsOfAppRequest;
+use crate::crypto::KeyPair;
+use crate::encoding::decode_abi_number;
+use crate::json_interface::debot::*;
+use crate::json_interface::interop::ResponseType;
+use crate::net::ResultOfQueryCollection;
+use crate::tests::{TEST_DEBOT, TEST_DEBOT_TARGET, TestClient};
+use crate::tvm::{ParamsOfRunTvm, ResultOfRunTvm};
 use futures::future::{BoxFuture, FutureExt};
+use serde_json::Value;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::collections::VecDeque;
 use tokio::sync::Mutex;
+use crate::net::ParamsOfQueryCollection;
 use super::*;
 
 lazy_static!(
     static ref DEBOT: Mutex<Option<DebotData>> = Mutex::new(None);
 );
+const TEST_DEBOT4: &'static str = "testDebot4";
+const TEST_DEBOT3: &'static str = "testDebot3";
 
-const SUPPORTED_INTERFACES: &[&str] = &["f6927c0d4bdb69e1b52d27f018d156ff04152f00558042ff674f0fec32e4369d"];
-const INTERFACE_ABI: &str = r#"
+const SUPPORTED_INTERFACES: &[&str] = &[
+    "f6927c0d4bdb69e1b52d27f018d156ff04152f00558042ff674f0fec32e4369d", // echo
+    "8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3", // terminal
+];
+const ECHO_ABI: &str = r#"
 {
 	"ABI version": 2,
 	"header": ["time"],
@@ -44,36 +54,92 @@ const INTERFACE_ABI: &str = r#"
 			"outputs": [
 				{"name":"response","type":"bytes"}
 			]
-		},
+		}
+	],
+	"data": [],
+	"events": []
+}
+"#;
+
+const TERMINAL_ABI: &str = r#"
+{
+	"ABI version": 2,
+	"header": ["time"],
+	"functions": [
 		{
-			"name": "constructor",
+			"name": "print",
 			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"message","type":"bytes"}
+			],
+			"outputs": []
+        },
+        {
+			"name": "inputInt",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"prompt","type":"bytes"}
 			],
 			"outputs": [
+				{"name":"value","type":"int256"}
 			]
 		}
 	],
-	"data": [
-	],
-	"events": [
-	]
+	"data": [],
+	"events": []
 }
 "#;
 
 struct Echo {}
 impl Echo {
-    fn echo(answer_id: u32, request: &str) -> (u32, JsonValue) {
-        ( answer_id, json!({ "response": hex::encode(request.as_bytes()) }) )
+    fn new() -> Self {
+        Self{}
     }
-
-    fn call(func: &str, args: &JsonValue) -> (u32, JsonValue) {
+    fn call(&self, func: &str, args: &JsonValue) -> (u32, JsonValue) {
         match func {
             "echo" => {
                 let answer_id = u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
                 let request_vec = hex::decode(args["request"].as_str().unwrap()).unwrap();
                 let request = std::str::from_utf8(&request_vec).unwrap();
-                Self::echo(answer_id, request)
+                ( answer_id, json!({ "response": hex::encode(request.as_bytes()) }) )
             },
+            _ => panic!("interface function not found"),
+        }
+    }
+}
+
+struct Terminal {
+    messages: Vec<String>,
+}
+impl Terminal {
+    fn new(messages: Vec<String>) -> Self {
+        Self { messages }
+    }
+    fn print(&mut self, answer_id: u32, message: &str) -> (u32, JsonValue) {
+        assert!(
+            self.messages.len() > 0,
+            format!("Terminal.messages vector is empty but must contains \"{}\"", message)
+        );
+        assert_eq!(self.messages.remove(0), message, "Terminal.print assert");
+        ( answer_id, json!({ }) )
+    }
+
+    fn call(&mut self, func: &str, args: &JsonValue) -> (u32, JsonValue) {
+        match func {
+            "print" => {
+                let answer_id = decode_abi_number::<u32>(args["answerId"].as_str().unwrap()).unwrap();
+                let message = hex::decode(args["message"].as_str().unwrap()).unwrap();
+                let message = std::str::from_utf8(&message).unwrap();
+                self.print(answer_id, message)
+            },
+            "inputInt" => {
+                let answer_id = decode_abi_number::<u32>(args["answerId"].as_str().unwrap()).unwrap();
+                let prompt = hex::decode(args["prompt"].as_str().unwrap()).unwrap();
+                let prompt = std::str::from_utf8(&prompt).unwrap();
+                let _ = self.print(answer_id, prompt);
+                // use test return value here.
+                (answer_id, json!({"value": 1}))
+            }
             _ => panic!("interface function not found"),
         }
     }
@@ -106,6 +172,8 @@ struct BrowserData {
     pub finished: AtomicBool,
     pub switch_started: AtomicBool,
     pub msg_queue: Mutex<VecDeque<String>>,
+    pub terminal: Mutex<Terminal>,
+    pub echo: Echo,
 }
 
 impl TestBrowser {
@@ -149,6 +217,10 @@ impl TestBrowser {
         while !state.finished.load(Ordering::Relaxed) {
             Self::execute_interface_calls(&handle, client.clone(), state.clone()).await;
 
+            let available_steps_count = state.current.lock().await.available_actions.len();
+            if available_steps_count == 0 {
+                break;
+            }
             let action = {
                 let mut step = state.current.lock().await;
                 step.step = state.next.lock().await.remove(0);
@@ -182,15 +254,21 @@ impl TestBrowser {
         }
 
         assert_eq!(state.next.lock().await.len(), 0);
-
+        assert_eq!(state.terminal.lock().await.messages.len(), 0);
         let _: () = client.request_async(
             "debot.remove",
             handle).await.unwrap();
     }
 
-    pub async fn execute(client: Arc<TestClient>, address: String, keys: KeyPair, steps: Vec<DebotStep>) {
+    pub async fn execute(
+        client: Arc<TestClient>,
+        address: String,
+        keys: KeyPair,
+        steps: Vec<DebotStep>,
+        terminal_outputs: Vec<String>,
+    ) {
         let state = Arc::new(BrowserData {
-            current: Mutex::new(Default::default()), 
+            current: Mutex::new(Default::default()),
             next: Mutex::new(steps),
             client: client.clone(),
             keys,
@@ -198,6 +276,8 @@ impl TestBrowser {
             finished: AtomicBool::new(false),
             switch_started: AtomicBool::new(false),
             msg_queue: Mutex::new(Default::default()),
+            terminal: Mutex::new(Terminal::new(terminal_outputs)),
+            echo: Echo::new(),
         });
 
         Self::execute_from_state(client, state, "debot.start").await
@@ -257,7 +337,7 @@ impl TestBrowser {
                 };
 
                 let state = Arc::new(BrowserData {
-                    current: Mutex::new(current), 
+                    current: Mutex::new(current),
                     next: Mutex::new(steps),
                     client: client.clone(),
                     keys: state.keys.clone(),
@@ -265,6 +345,8 @@ impl TestBrowser {
                     finished: AtomicBool::new(false),
                     switch_started: AtomicBool::new(false),
                     msg_queue: Mutex::new(Default::default()),
+                    terminal: Mutex::new(Terminal::new(vec![])),
+                    echo: Echo::new(),
                 });
                 Self::call_execute_boxed(client, state, "debot.fetch").await;
                 ResultOfAppDebotBrowser::InvokeDebot
@@ -276,10 +358,10 @@ impl TestBrowser {
     async fn execute_interface_calls(
         handle: &RegisteredDebot,
         client: Arc<TestClient>,
-        state: Arc<BrowserData>
+        state: Arc<BrowserData>,
     ) {
-        let mut msg_queue = state.msg_queue.lock().await;
-        for msg in msg_queue.drain(0..) {
+        let mut msg_opt = state.msg_queue.lock().await.pop_front();
+        while let Some(msg) = msg_opt {
             let parsed: ResultOfParse = client.request_async(
                 "boc.parse_message",
                 ParamsOfParse { boc: msg.clone() },
@@ -291,18 +373,26 @@ impl TestBrowser {
             let wc = i8::from_str_radix(wc_and_addr[0], 10).unwrap();
             assert_eq!(wc, DEBOT_WC);
             assert_eq!(SUPPORTED_INTERFACES.contains(&interface_id), true);
+            let abi = if SUPPORTED_INTERFACES[0] == interface_id {
+                Abi::Json(ECHO_ABI.to_owned())
+            } else if SUPPORTED_INTERFACES[1] == interface_id {
+                Abi::Json(TERMINAL_ABI.to_owned())
+            } else {
+                panic!("unsupported interface");
+            };
             let decoded: DecodedMessageBody = client.request_async(
                 "abi.decode_message_body",
-                ParamsOfDecodeMessageBody {
-                    abi: Abi::Json(INTERFACE_ABI.to_owned()),
-                    body,
-                    is_internal: true,
-                },
+                ParamsOfDecodeMessageBody { abi, body, is_internal: true },
             ).await.unwrap();
-            println!("call for interface id {}", interface_id);
-            println!("request: {} ({})", decoded.name, decoded.value.as_ref().unwrap());
-            let (func_id, return_args) = Echo::call(&decoded.name, &decoded.value.unwrap());
-            println!("response: {} ({})", func_id, return_args);
+            let (func, args) = (decoded.name, decoded.value.unwrap());
+            log::info!("request: {} ({})", func, args);
+            let (func_id, return_args) =
+                if SUPPORTED_INTERFACES[0] == interface_id {
+                    state.echo.call(&func, &args)
+                } else {
+                    state.terminal.lock().await.call(&func, &args)
+                };
+            log::info!("response: {} ({})", func_id, return_args);
             let _result: () = client.request_async(
                 "debot.send",
                 ParamsOfSend {
@@ -312,6 +402,7 @@ impl TestBrowser {
                     params: return_args.to_string(),
                 }
             ).await.unwrap();
+            msg_opt = state.msg_queue.lock().await.pop_front();
         }
     }
 }
@@ -349,7 +440,9 @@ async fn init_debot(client: Arc<TestClient>) -> DebotData {
 
     let target_addr = client.encode_message(target_deploy_params.clone()).await.unwrap().address;
 
-    let target_future = client.deploy_with_giver_async(ParamsOfEncodeMessage {
+
+    let target_future = client.deploy_with_giver_async(
+        ParamsOfEncodeMessage {
             abi: target_abi.clone(),
             deploy_set: Some(DeploySet {
                 tvc: TestClient::tvc(TEST_DEBOT_TARGET, Some(2)),
@@ -372,7 +465,7 @@ async fn init_debot(client: Arc<TestClient>) -> DebotData {
             signer: Signer::Keys { keys: keys.clone() },
             processing_try_index: None,
             address: None,
-            call_set: Some(CallSet { 
+            call_set: Some(CallSet {
                 function_name: "constructor".to_owned(),
                 header: None,
                 input: Some(json!({
@@ -405,6 +498,91 @@ async fn init_debot(client: Arc<TestClient>) -> DebotData {
     data
 }
 
+async fn init_debot4(client: Arc<TestClient>) -> DebotData {
+    let keys = client.generate_sign_keys();
+    let target_abi = TestClient::abi(TEST_DEBOT_TARGET, Some(2));
+    let debot_abi = TestClient::abi(TEST_DEBOT4, Some(2));
+    let target_deploy_params = ParamsOfEncodeMessage {
+        abi: target_abi.clone(),
+        deploy_set: DeploySet::some_with_tvc(TestClient::tvc(TEST_DEBOT_TARGET, Some(2))),
+        signer: Signer::Keys { keys: keys.clone() },
+        processing_try_index: None,
+        address: None,
+        call_set: CallSet::some_with_function("constructor"),
+    };
+    let target_addr = client.encode_message(target_deploy_params.clone()).await.unwrap().address;
+    client.get_grams_from_giver_async(&target_addr, None).await;
+    let call_set = CallSet::some_with_function_and_input(
+        "constructor",
+        json!({
+            "targetAbi": hex::encode(&target_abi.json_string().unwrap().as_bytes()),
+            "targetAddr": target_addr,
+        }),
+    );
+    let deploy_debot_params = ParamsOfEncodeMessage {
+        abi: debot_abi.clone(),
+        deploy_set: DeploySet::some_with_tvc(TestClient::tvc(TEST_DEBOT4, Some(2))),
+        signer: Signer::Keys { keys: keys.clone() },
+        processing_try_index: None,
+        address: None,
+        call_set,
+    };
+    let debot_addr = client.deploy_with_giver_async(deploy_debot_params, Some(1_000_000_000u64)).await;
+    let _ = client.net_process_function(
+        debot_addr.clone(),
+        debot_abi.clone(),
+        "setAbi",
+        json!({
+            "debotAbi": hex::encode(&debot_abi.json_string().unwrap().as_bytes())
+        }),
+        Signer::Keys { keys: keys.clone() },
+    ).await.unwrap();
+    let _ = client.net_process_function(
+        debot_addr.clone(),
+        debot_abi.clone(),
+        "setImage",
+        json!({
+            "image": TestClient::tvc(TEST_DEBOT_TARGET, Some(2)),
+            "pubkey": format!("0x{}", keys.public)
+        }),
+        Signer::Keys { keys: keys.clone() },
+    ).await.unwrap();
+
+    DebotData {
+        debot_addr,
+        target_addr,
+        keys
+    }
+}
+
+async fn init_debot3(client: Arc<TestClient>) -> DebotData {
+    let keys = client.generate_sign_keys();
+    let debot_abi = TestClient::abi(TEST_DEBOT3, Some(2));
+
+    let call_set = CallSet::some_with_function("constructor");
+    let deploy_debot_params = ParamsOfEncodeMessage {
+        abi: debot_abi.clone(),
+        deploy_set: DeploySet::some_with_tvc(TestClient::tvc(TEST_DEBOT3, Some(2))),
+        signer: Signer::Keys { keys: keys.clone() },
+        processing_try_index: None,
+        address: None,
+        call_set,
+    };
+    let debot_addr = client.deploy_with_giver_async(deploy_debot_params, Some(1_000_000_000u64)).await;
+    let _ = client.net_process_function(
+        debot_addr.clone(),
+        debot_abi.clone(),
+        "setABI",
+        json!({ "dabi": hex::encode(&debot_abi.json_string().unwrap().as_bytes()) }),
+        Signer::Keys { keys: keys.clone() },
+    ).await.unwrap();
+    DebotData {
+        debot_addr,
+        target_addr: String::new(),
+        keys,
+    }
+}
+
 const EXIT_CHOICE: u8 = 9;
 
 #[tokio::test(core_threads = 2)]
@@ -421,7 +599,8 @@ async fn test_debot_goto() {
         client.clone(),
         debot_addr.clone(),
         keys.clone(),
-        serde_json::from_value(steps).unwrap()
+        serde_json::from_value(steps).unwrap(),
+        vec![],
     ).await;
 }
 
@@ -441,7 +620,8 @@ async fn test_debot_print() {
         client.clone(),
         debot_addr.clone(),
         keys.clone(),
-        serde_json::from_value(steps).unwrap()
+        serde_json::from_value(steps).unwrap(),
+        vec![],
     ).await;
 }
 
@@ -460,10 +640,11 @@ async fn test_debot_runact() {
         { "choice": EXIT_CHOICE, "inputs": [], "outputs": [] },
     ]);
     TestBrowser::execute(
-        client.clone(),
-        debot_addr.clone(),
-        keys.clone(),
-        serde_json::from_value(steps).unwrap()
+        client,
+        debot_addr,
+        keys,
+        serde_json::from_value(steps).unwrap(),
+        vec![]
     ).await;
 }
 
@@ -480,10 +661,11 @@ async fn test_debot_run_method() {
         { "choice": EXIT_CHOICE, "inputs": [], "outputs": [] },
     ]);
     TestBrowser::execute(
-        client.clone(),
-        debot_addr.clone(),
-        keys.clone(),
-        serde_json::from_value(steps).unwrap()
+        client,
+        debot_addr,
+        keys,
+        serde_json::from_value(steps).unwrap(),
+        vec![]
     ).await;
 }
 
@@ -501,10 +683,11 @@ async fn test_debot_send_msg() {
         { "choice": EXIT_CHOICE, "inputs": [], "outputs": [] },
     ]);
     TestBrowser::execute(
-        client.clone(),
-        debot_addr.clone(),
-        keys.clone(),
-        serde_json::from_value(steps).unwrap()
+        client,
+        debot_addr,
+        keys,
+        serde_json::from_value(steps).unwrap(),
+        vec![],
     ).await;
 }
 
@@ -515,22 +698,23 @@ async fn test_debot_invoke_debot() {
 
     let steps = json!([
         { "choice": 6, "inputs": [debot_addr.clone()], "outputs": ["Test Invoke Debot Action", "enter debot address:"] },
-        { "choice": 1, "inputs": [debot_addr.clone()], "outputs": ["Test Invoke Debot Action", "enter debot address:"], 
+        { "choice": 1, "inputs": [debot_addr.clone()], "outputs": ["Test Invoke Debot Action", "enter debot address:"],
             "invokes": [
                 [
                     { "choice": 1, "inputs": [], "outputs": ["Print test string", "Debot is invoked"] },
                     { "choice": 1, "inputs": [], "outputs": ["Sending message {}", "Transaction succeeded."] }
                 ],
-            ] 
+            ]
         },
         { "choice": 2, "inputs": [], "outputs": ["Debot Tests"] },
         { "choice": EXIT_CHOICE, "inputs": [], "outputs": [] },
     ]);
     TestBrowser::execute(
-        client.clone(),
-        debot_addr.clone(),
-        keys.clone(),
-        serde_json::from_value(steps).unwrap()
+        client,
+        debot_addr,
+        keys,
+        serde_json::from_value(steps).unwrap(),
+        vec![]
     ).await;
 }
 
@@ -550,10 +734,11 @@ async fn test_debot_engine_calls() {
         { "choice": EXIT_CHOICE, "inputs": [], "outputs": [] }
     ]);
     TestBrowser::execute(
-        client.clone(),
-        debot_addr.clone(),
-        keys.clone(),
-        serde_json::from_value(steps).unwrap()
+        client,
+        debot_addr,
+        keys,
+        serde_json::from_value(steps).unwrap(),
+        vec![]
     ).await;
 }
 
@@ -568,9 +753,137 @@ async fn test_debot_interface_call() {
         { "choice": EXIT_CHOICE, "inputs": [], "outputs": [] }
     ]);
     TestBrowser::execute(
-        client.clone(),
-        debot_addr.clone(),
-        keys.clone(),
-        serde_json::from_value(steps).unwrap()
+        client,
+        debot_addr,
+        keys,
+        serde_json::from_value(steps).unwrap(),
+        vec![],
     ).await;
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_debot_sdk_interface() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys } = init_debot3(client.clone()).await;
+
+    let steps = serde_json::from_value(json!([])).unwrap();
+    TestBrowser::execute(
+        client.clone(),
+        debot_addr,
+        keys,
+        steps,
+        vec![
+            format!("test substring1 passed"),
+            format!("test substring2 passed"),
+            format!("test mnemonicDeriveSignKeys passed"),
+            format!("test genRandom passed"),
+            format!("test mnemonic passed"),
+            format!("test account passed"),
+            format!("test hdkeyXprv passed"),
+        ],
+    ).await;
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_debot_4() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr, keys } = init_debot4(client.clone()).await;
+    let target_abi = TestClient::abi(TEST_DEBOT_TARGET, Some(2));
+
+    let target_boc = download_account(&client, &target_addr).await.expect("account must exist");
+    let account: ResultOfParse = client.request_async(
+        "boc.parse_account",
+        ParamsOfParse {
+            boc: target_boc
+        },
+    ).await.unwrap();
+    assert_eq!(account.parsed["acc_type"].as_i64().unwrap(), 0);
+
+    let steps = serde_json::from_value(json!([])).unwrap();
+    TestBrowser::execute(
+        client.clone(),
+        debot_addr,
+        keys,
+        steps,
+        vec![
+            format!("Target contract deployed."),
+            format!("Enter 1"),
+            format!("getData"),
+            format!("setData(128)"),
+            format!("Sign external message:"),
+            format!("Transaction succeeded"),
+            format!("setData2(129)"),
+        ],
+    ).await;
+
+    let target_boc = download_account(&client, &target_addr).await.expect("account must exist");
+    let account: ResultOfParse = client.request_async(
+        "boc.parse_account",
+        ParamsOfParse {
+            boc: target_boc
+        },
+    ).await.unwrap();
+    assert_eq!(account.parsed["acc_type"].as_i64().unwrap(), 1);
+
+    assert_get_method(
+        &client,
+        &target_addr,
+        &target_abi,
+        "getData",
+        json!({"key": 1}),
+        json!({"num": format!("0x{:064x}", 129) })
+    ).await;
+
+}
+
+async fn download_account(client: &Arc<TestClient>, addr: &str) -> Option<String> {
+    let client = client.clone();
+    let accounts: ResultOfQueryCollection = client.request_async(
+        "net.query_collection",
+        ParamsOfQueryCollection {
+            collection: format!("accounts"),
+            filter: Some(json!({
+                "id": { "eq": addr }
+            })),
+            result: format!("boc"),
+            limit: Some(1),
+            order: None,
+        }
+    ).await.unwrap();
+
+    if accounts.result.len() == 1 {
+        Some(accounts.result[0]["boc"].as_str().unwrap().to_owned())
+    } else {
+        None
+    }
+}
+async fn assert_get_method(client: &Arc<TestClient>, addr: &String, abi: &Abi, func: &str, params: Value, returns: Value) {
+    let client = client.clone();
+    let acc_boc = download_account(&client, &addr).await.expect("Account not found");
+
+    let call_params = ParamsOfEncodeMessage {
+        abi: abi.clone(),
+        deploy_set: None,
+        signer: Signer::None,
+        processing_try_index: None,
+        address: Some(addr.clone()),
+        call_set: CallSet::some_with_function_and_input(func, params),
+    };
+
+    let message = client.encode_message(call_params).await.unwrap().message;
+
+    let result: ResultOfRunTvm = client.request_async(
+        "tvm.run_tvm",
+        ParamsOfRunTvm {
+            account: acc_boc,
+            message,
+            abi: Some(abi.clone()),
+            execution_options: None,
+            boc_cache: None,
+            return_updated_account: Some(true),
+        },
+    ).await.unwrap();
+
+    let output = result.decoded.unwrap().output.expect("output must exist");
+    assert_eq!(returns, output);
 }
