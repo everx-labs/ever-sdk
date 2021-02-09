@@ -1,5 +1,7 @@
 use crate::ClientContext;
+use crate::boc::internal::deserialize_cell_from_boc;
 use crate::abi::{Error, Signer, DeploySet};
+use crate::crypto::internal::decode_public_key;
 use crate::encoding::hex_decode;
 use crate::error::ClientResult;
 use std::sync::Arc;
@@ -66,13 +68,17 @@ pub(crate) async fn try_to_sign_message(
     Ok((message, data_to_sign))
 }
 
-pub(crate) fn create_tvc_image(
+pub(crate) async fn create_tvc_image(
+    context: &ClientContext,
     abi: &str,
     init_params: Option<&Value>,
     tvc: &String,
 ) -> ClientResult<ContractImage> {
-    let tvc = base64::decode(tvc).map_err(|err| Error::invalid_tvc_image(err))?;
-    let mut image = ContractImage::from_state_init(&mut tvc.as_slice())
+    let (_, tvc_cell) = deserialize_cell_from_boc(context, tvc, "")
+        .await
+        .map_err(|err| Error::invalid_tvc_image(err))?;
+    
+    let mut image = ContractImage::from_cell(tvc_cell)
         .map_err(|err| Error::invalid_tvc_image(err))?;
 
     if let Some(params) = init_params {
@@ -112,4 +118,21 @@ pub(crate) fn resolve_pubkey(
     };
 
     Ok(signer_pubkey.clone())
+}
+
+pub(crate) fn update_pubkey(
+    deploy_set: &DeploySet,
+    image: &mut ContractImage,
+    signer_pubkey: &Option<String>,
+) -> ClientResult<Option<String>> {
+    let resolved = resolve_pubkey(deploy_set, image, signer_pubkey)?;
+    if let Some(ref public) = resolved {
+        image.set_public_key(&decode_public_key(public)?)
+            .map_err(|err| Error::invalid_tvc_image(err))?;
+        Ok(resolved)
+    } else {
+        Ok(image.get_public_key()
+            .map_err(|err| Error::invalid_tvc_image(err))?
+            .map(|public| hex::encode(&public)))
+    }
 }

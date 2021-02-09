@@ -187,9 +187,9 @@ pub async fn fetch_transaction_result(
             }
         })?;
 
-    let (transaction, out_messages) = parse_transaction_boc(context.clone(), transaction_boc)?;
+    let (transaction, out_messages) = parse_transaction_boc(context.clone(), transaction_boc).await?;
     let abi_decoded = if let Some(abi) = abi {
-        Some(decode_output(context, abi, out_messages.clone())?)
+        Some(decode_output(context, abi, out_messages.clone()).await?)
     } else {
         None
     };

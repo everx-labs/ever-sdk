@@ -12,20 +12,26 @@
 */
 
 mod action;
+mod base64_interface;
 mod browser;
+mod calltype;
 mod context;
 mod debot_abi;
 mod dengine;
+mod dinterface;
 mod errors;
+mod helpers;
 mod routines;
 mod run_output;
-// #[cfg(test)]
-// mod tests;
+mod sdk_interface;
+#[cfg(test)]
+mod tests;
 
 pub use action::DAction;
 pub use browser::BrowserCallbacks;
 pub use context::{DContext, STATE_EXIT, STATE_ZERO};
 pub use dengine::DEngine;
+pub use dinterface::{DebotInterface, DebotInterfaceExecutor, InterfaceResult};
 pub use errors::{Error, ErrorCode};
 
 use crate::error::ClientResult;
@@ -122,16 +128,9 @@ pub async fn start(
     params: ParamsOfStart,
     callbacks: impl BrowserCallbacks + Send + Sync + 'static,
 ) -> ClientResult<RegisteredDebot> {
-    let mut dengine = DEngine::new_with_client(
-        params.address,
-        None,
-        context.clone(),
-        Arc::new(callbacks),
-    );
-    dengine
-        .start()
-        .await
-        .map_err(Error::start_failed)?;
+    let mut dengine =
+        DEngine::new_with_client(params.address, None, context.clone(), Arc::new(callbacks));
+    dengine.start().await.map_err(Error::start_failed)?;
 
     let handle = context.get_next_id();
     context.debots.insert(handle, Mutex::new(dengine));
@@ -160,16 +159,9 @@ pub async fn fetch(
     params: ParamsOfFetch,
     callbacks: impl BrowserCallbacks + Send + Sync + 'static,
 ) -> ClientResult<RegisteredDebot> {
-    let mut dengine = DEngine::new_with_client(
-        params.address,
-        None,
-        context.clone(),
-        Arc::new(callbacks),
-    );
-    dengine
-        .fetch()
-        .await
-        .map_err(Error::fetch_failed)?;
+    let mut dengine =
+        DEngine::new_with_client(params.address, None, context.clone(), Arc::new(callbacks));
+    dengine.fetch().await.map_err(Error::fetch_failed)?;
 
     let handle = context.get_next_id();
     context.debots.insert(handle, Mutex::new(dengine));
@@ -196,11 +188,10 @@ pub struct ParamsOfExecute {
 /// # Remarks
 /// Chain of actions can be executed if input action generates a list of subactions.
 #[api_function]
-pub async fn execute(
-    context: Arc<ClientContext>,
-    params: ParamsOfExecute,
-) -> ClientResult<()> {
-    let mutex = context.debots.get(&params.debot_handle.0)
+pub async fn execute(context: Arc<ClientContext>, params: ParamsOfExecute) -> ClientResult<()> {
+    let mutex = context
+        .debots
+        .get(&params.debot_handle.0)
         .ok_or(Error::invalid_handle(params.debot_handle.0))?;
     let mut dengine = mutex.1.lock().await;
     dengine
@@ -213,10 +204,7 @@ pub async fn execute(
 ///
 /// Removes handle from Client Context and drops debot engine referenced by that handle.
 #[api_function]
-pub fn remove(
-    context: Arc<ClientContext>,
-    params: RegisteredDebot,
-) -> ClientResult<()> {
+pub fn remove(context: Arc<ClientContext>, params: RegisteredDebot) -> ClientResult<()> {
     context.debots.remove(&params.debot_handle.0);
     Ok(())
 }
@@ -238,11 +226,10 @@ pub struct ParamsOfSend {
 ///
 /// Used by Debot Browser to send response on Dinterface call or from other Debots.
 #[api_function]
-pub async fn send(
-    context: Arc<ClientContext>,
-    params: ParamsOfSend,
-) -> ClientResult<()> {
-    let mutex = context.debots.get(&params.debot_handle.0)
+pub async fn send(context: Arc<ClientContext>, params: ParamsOfSend) -> ClientResult<()> {
+    let mutex = context
+        .debots
+        .get(&params.debot_handle.0)
         .ok_or(Error::invalid_handle(params.debot_handle.0))?;
     let mut dengine = mutex.1.lock().await;
     dengine

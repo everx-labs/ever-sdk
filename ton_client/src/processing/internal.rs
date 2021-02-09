@@ -5,17 +5,8 @@ use crate::error::{ClientError, ClientResult};
 use crate::processing::Error;
 use crate::tvm::{AccountForExecutor, ParamsOfRunExecutor, ExecutionOptions};
 use std::sync::Arc;
-use ton_block::{MsgAddressInt, Serializable};
+use ton_block::MsgAddressInt;
 use ton_sdk::{Block, MessageId};
-
-pub(crate) fn get_message_id(message: &ton_block::Message) -> ClientResult<String> {
-    let cells: ton_types::Cell = message
-        .write_to_new_cell()
-        .map_err(|err| Error::can_not_build_message_cell(err))?
-        .into();
-    let id: Vec<u8> = cells.repr_hash().as_slice()[..].into();
-    Ok(hex::encode(&id))
-}
 
 /// Increments `retries` and returns `true` if `retries` hasn't reached `limit`.
 pub(crate) fn can_retry_more(retries: u8, limit: i8) -> bool {
@@ -54,7 +45,7 @@ pub fn find_transaction(
     Ok(None)
 }
 
-pub(crate) fn get_message_expiration_time(
+pub(crate) async fn get_message_expiration_time(
     context: Arc<ClientContext>,
     abi: Option<&Abi>,
     message: &str,
@@ -67,6 +58,7 @@ pub(crate) fn get_message_expiration_time(
                 message: message.to_string(),
             },
         )
+        .await
         .map(|x| x.header)
         .unwrap_or_default(),
         None => None,
@@ -104,7 +96,7 @@ async fn get_local_error(
                 ..Default::default()
             }),
             message,
-            skip_transaction_check: None,
+            ..Default::default()
         },
     )
     .await

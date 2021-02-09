@@ -13,14 +13,15 @@
 
 use lockfree::map::Map as LockfreeMap;
 use serde::{Deserialize, Deserializer, Serialize, de::DeserializeOwned};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::Arc;
 use std::collections::HashMap;
-use tokio::sync::{oneshot, mpsc, Mutex};
+use tokio::sync::{Mutex, mpsc, oneshot};
 
 use super::{ParamsOfAppRequest, Error, AppRequestResult};
 use crate::error::ClientResult;
 use crate::abi::AbiConfig;
+use crate::boc::{BocConfig, cache::Bocs};
 use crate::crypto::CryptoConfig;
 use crate::crypto::boxes::SigningBox;
 use crate::debot::DEngine;
@@ -49,6 +50,8 @@ pub struct ClientContext {
     pub(crate) env: Arc<ClientEnv>,
     pub(crate) debots: LockfreeMap<u32, Mutex<DEngine>>,
     pub(crate) boxes: Boxes,
+    pub(crate) bocs: Bocs,
+
     pub(crate) app_requests: Mutex<HashMap<u32, oneshot::Sender<AppRequestResult>>>,
 
     next_id: AtomicU32,
@@ -87,12 +90,13 @@ Note that default values are used if parameters are omitted in config"#,
                 server_link,
                 subscriptions: Default::default(),
             },
-            config,
             env,
             debots: LockfreeMap::new(),
             boxes: Default::default(),
+            bocs: Bocs::new(config.boc.cache_max_size),
             app_requests: Mutex::new(HashMap::new()),
             next_id: AtomicU32::new(1),
+            config,
         })
     }
 
@@ -143,6 +147,8 @@ pub struct ClientConfig {
     pub crypto: CryptoConfig,
     #[serde(default, deserialize_with = "deserialize_abi_config")]
     pub abi: AbiConfig,
+    #[serde(default, deserialize_with = "deserialize_boc_config")]
+    pub boc: BocConfig,
 }
 
 fn deserialize_network_config<'de, D: Deserializer<'de>>(
@@ -163,12 +169,19 @@ fn deserialize_abi_config<'de, D: Deserializer<'de>>(
     Ok(Option::deserialize(deserializer)?.unwrap_or(Default::default()))
 }
 
+fn deserialize_boc_config<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<BocConfig, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(Default::default()))
+}
+
 impl Default for ClientConfig {
     fn default() -> Self {
         Self {
             network: Default::default(),
             crypto: Default::default(),
             abi: Default::default(),
+            boc: Default::default(),
         }
     }
 }

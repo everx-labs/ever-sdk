@@ -11,7 +11,7 @@
 * limitations under the License.
 */
 
-use crate::boc::internal::deserialize_object_from_base64;
+use crate::boc::internal::deserialize_object_from_boc;
 use crate::boc::Error;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
@@ -30,11 +30,11 @@ pub struct ResultOfGetCodeFromTvc {
 
 /// Extracts code from TVC contract image
 #[api_function]
-pub fn get_code_from_tvc(
-    _context: std::sync::Arc<ClientContext>,
+pub async fn get_code_from_tvc(
+    context: std::sync::Arc<ClientContext>,
     params: ParamsOfGetCodeFromTvc,
 ) -> ClientResult<ResultOfGetCodeFromTvc> {
-    let object = deserialize_object_from_base64::<ton_block::StateInit>(&params.tvc, "TVC")?;
+    let object = deserialize_object_from_boc::<ton_block::StateInit>(&context, &params.tvc, "TVC").await?;
     
     let code = object.object.code.ok_or(Error::invalid_boc("TVC image has no code"))?;
 

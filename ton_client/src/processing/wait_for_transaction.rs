@@ -1,12 +1,11 @@
 use crate::abi::Abi;
+use crate::boc::internal::deserialize_object_from_boc;
 use crate::client::ClientContext;
-use crate::encoding::base64_decode;
 use crate::error::ClientResult;
-use crate::processing::internal::{get_message_expiration_time, get_message_id, resolve_error};
+use crate::processing::internal::{get_message_expiration_time, resolve_error};
 use crate::processing::{fetching, internal, Error};
 use crate::processing::{ProcessingEvent, ResultOfProcessMessage};
 use std::sync::Arc;
-use ton_sdk::Contract;
 
 //--------------------------------------------------------------------------- wait_for_transaction
 
@@ -40,14 +39,14 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
     let net = context.get_server_link()?;
 
     // Prepare to wait
-    let message = Contract::deserialize_message(&base64_decode(&params.message)?)
-        .map_err(|err| Error::invalid_message_boc(err))?;
-    let message_id = get_message_id(&message)?;
+    let message = deserialize_object_from_boc::<ton_block::Message>(&context, &params.message, "message").await?;
+    let message_id = message.cell.repr_hash().to_hex_string();
     let address = message
+        .object
         .dst()
         .ok_or(Error::message_has_not_destination_address())?;
     let message_expiration_time =
-        get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message)?;
+        get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message).await?;
     let processing_timeout = net.config().message_processing_timeout;
     let max_block_time = message_expiration_time
         .unwrap_or(context.env.now_ms() + processing_timeout as u64);

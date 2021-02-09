@@ -62,14 +62,7 @@ impl log::Log for SimpleLogger {
     }
 
     fn log(&self, record: &log::Record) {
-        match record.level() {
-            log::Level::Error | log::Level::Warn => {
-                eprintln!("{}", record.args());
-            }
-            _ => {
-                println!("{}", record.args());
-            }
-        }
+        println!("{} {}", chrono::prelude::Utc::now().timestamp_millis(), record.args());
     }
 
     fn flush(&self) {}
@@ -83,8 +76,8 @@ pub const GIVER: &str = "Giver";
 pub const GIVER_WALLET: &str = "GiverWallet";
 pub const HELLO: &str = "Hello";
 pub const EVENTS: &str = "Events";
-// pub const TEST_DEBOT: &str = "testDebot";
-// pub const TEST_DEBOT_TARGET: &str = "testDebotTarget";
+pub const TEST_DEBOT: &str = "testDebot";
+pub const TEST_DEBOT_TARGET: &str = "testDebotTarget";
 
 struct RequestData {
     sender: Option<Sender<ClientResult<Value>>>,
@@ -243,7 +236,7 @@ impl TestClient {
         }
     }
 
-    fn read_abi(path: String) -> Abi {
+    pub fn read_abi(path: String) -> Abi {
         Abi::Contract(serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap())
     }
 
@@ -633,13 +626,12 @@ impl TestClient {
         // wait for tokens reception
         for message in run_result.out_messages.iter() {
             let parsed: ResultOfParse = self
-                .request(
+                .request_async(
                     "boc.parse_message",
                     ParamsOfParse {
                         boc: message.clone(),
                     },
-                )
-                .unwrap();
+                ).await.unwrap();
             let message: ton_sdk::Message = serde_json::from_value(parsed.parsed).unwrap();
             if ton_sdk::MessageType::Internal == message.msg_type() {
                 let _: ResultOfWaitForCollection = self

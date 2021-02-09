@@ -1,17 +1,16 @@
 use super::action::DAction;
+use super::calltype::DebotCallType;
 use super::{JsonValue, DEBOT_WC};
 use crate::boc::internal::deserialize_object_from_base64;
 use crate::error::ClientError;
+use std::collections::VecDeque;
 use ton_block::Message;
 
 #[derive(Default)]
 pub(super) struct RunOutput {
     pub account: String,
     pub return_value: Option<JsonValue>,
-    pub interface_calls: Vec<(String, String)>,
-    pub external_calls: Vec<String>,
-    pub get_method_calls: Vec<String>,
-    pub debot_invokes: Vec<String>,
+    pub calls: VecDeque<DebotCallType>,
     pub actions: Vec<DAction>,
 }
 
@@ -35,13 +34,6 @@ impl RunOutput {
 }
 
 impl RunOutput {
-    fn filter_msg(&mut self, msg: Message, msg_base64: String) {
-        let msg = (&msg, msg_base64);
-        self.filter_interface_call(msg)
-            .and_then(|msg| self.filter_external_call(msg))
-            .and_then(|msg| self.filter_getmethod_call(msg));
-    }
-
     pub fn decode_actions(&self) -> Result<Option<Vec<DAction>>, String> {
         match self.return_value.as_ref() {
             Some(val) => serde_json::from_value(val["actions"].clone())
@@ -51,16 +43,41 @@ impl RunOutput {
         }
     }
 
+    pub fn append(&mut self, mut output: RunOutput) {
+        self.calls.append(&mut output.calls);
+        self.actions.append(&mut output.actions);
+        self.return_value = output.return_value;
+    }
+
+    pub fn pop(&mut self) -> Option<DebotCallType> {
+        self.calls.pop_front()
+    }
+
+    fn filter_msg(&mut self, msg: Message, msg_base64: String) {
+        let msg = (&msg, msg_base64);
+        self.filter_interface_call(msg)
+            .and_then(|msg| self.filter_external_call(msg))
+            .and_then(|msg| self.filter_getmethod_call(msg));
+    }
+
     fn filter_interface_call<'a>(
         &mut self,
         msg: (&'a Message, String),
     ) -> Option<(&'a Message, String)> {
         if msg.0.is_internal() {
-            let wc_id = msg.0.workchain_id().unwrap();
+            let wc_id = msg.0.workchain_id().unwrap_or(0);
             if DEBOT_WC as i32 == wc_id {
-                let account_id = msg.0.int_dst_account_id().unwrap();
-                self.interface_calls
-                    .push((msg.1.clone(), account_id.to_string()));
+                let std_addr = msg.0.dst().unwrap_or_default();
+                let addr = std_addr.to_string();
+                let wc_and_addr: Vec<&str> = addr.split(':').collect();
+                self.calls.push_back(DebotCallType::Interface {
+                    msg: msg.1.clone(),
+                    id: wc_and_addr
+                        .get(1)
+                        .map(|x| x.to_owned())
+                        .unwrap_or("0")
+                        .to_string(),
+                });
                 return None;
             }
         }
@@ -92,12 +109,20 @@ impl RunOutput {
                 // distinguish a get method call from external call.
                 // Most accurate method - to check flags in src address.
                 let mut body_slice = body_slice.clone();
+                let dest = msg
+                    .0
+                    .header()
+                    .get_dst_address()
+                    .map(|x| x.to_string())
+                    .unwrap_or_default();
                 if let Ok(bit) = body_slice.get_next_bit() {
                     if call_or_get && bit {
-                        self.external_calls.push(msg.1);
+                        self.calls
+                            .push_back(DebotCallType::External { msg: msg.1, dest });
                         return None;
                     } else if !call_or_get && !bit {
-                        self.get_method_calls.push(msg.1);
+                        self.calls
+                            .push_back(DebotCallType::GetMethod { msg: msg.1, dest });
                         return None;
                     }
                 }

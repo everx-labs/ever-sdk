@@ -2,7 +2,7 @@
 
 **Community links:**
 
-[![Channel on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/freeton_sdk)  [![Gitter](https://badges.gitter.im/ton-sdk/community.svg)](https://gitter.im/ton-sdk/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![Channel on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/freeton_sdk) 
 
 **Documentation**  
 
@@ -44,7 +44,7 @@ a client library and an application code written on that language.
 Platforms: Node.js, Web, React-Native for IOS/Android
 - [ton-client-js](https://github.com/tonlabs/ton-client-js)  
 
-## Communinty bindings
+## Community bindings
 
 Language | Repo
 -------- | --------------
@@ -95,7 +95,7 @@ Look at the example below:
 ```rust
 #[derive(Default)]
 struct ParamsOfFoo {
-		pub foo: String,
+    pub foo: String,
 }
 
 pub fn foo(params: ParamsOfFoo)
@@ -105,7 +105,7 @@ pub fn foo(params: ParamsOfFoo)
 
 ```rust
 foo(ParamsOfFoo {
-		foo: "foo".into(),
+    foo: "foo".into(),
 });
 ```
 
@@ -114,8 +114,8 @@ foo(ParamsOfFoo {
 ```rust
 #[derive(Default)]
 struct ParamsOfFoo {
-		pub foo: String,
-		pub bar: Option<String>,
+    pub foo: String,
+    pub bar: Option<String>,
 }
 ```
 
@@ -124,16 +124,13 @@ From the perspective of JSON-interface it isn't breaking change because the new 
 4) To avoid such problems we recommend to use default implementation inside structure initialisation:
 
 ```rust
-oo(ParamsOfFoo {
-		foo: "foo".into(),
-		..Default::default(),
+foo(ParamsOfFoo {
+    foo: "foo".into(),
+    ..Default::default(),
 });
 ```
 
 For all Ton Client API structures `Default` trait is implemented.
-
-
-
 
 # Build client library
 
@@ -150,6 +147,33 @@ The resulting binaries are placed to `bin` folder in the gz-compressed format.
 Note that the build script generates binaries compatible with the platform used to run the script. For example, if you run it on Mac OS, you get binaries targeted at Darwin (macOS) platform.
 
 **Note**: You need latest version of rust. Upgrade it with `rustup update` command. Check version with `rustc --version`, it should be above or equal to `1.47.0`.
+
+# Build artifacts
+
+Rebuild `api.json`:
+
+```shell
+cd toncli
+cargo run api -o ../tools
+```
+
+Rebuild `docs`:
+
+```shell
+cd tools
+npm i
+tsc
+node index docs -o ../docs
+```
+
+Rebuild `modules.ts`:
+
+```shell
+cd tools
+npm i
+tsc
+node index binding -l ts -o ../../ton-client-js/packages/core/src
+```
 
 # Download precompiled binaries
 

@@ -15,7 +15,7 @@ use serde_json::Value;
 
 use super::stack;
 use super::types::{ExecutionOptions, ResolvedExecutionOptions};
-use crate::boc::internal::deserialize_object_from_base64;
+use crate::boc::internal::deserialize_object_from_boc;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
 use crate::tvm::Error;
@@ -52,8 +52,8 @@ pub async fn run_get(
     params: ParamsOfRunGet,
 ) -> ClientResult<ResultOfRunGet> {
     let account: ton_block::Account =
-        deserialize_object_from_base64(&params.account, "account")?.object;
-    let options = ResolvedExecutionOptions::from_options(&context, params.execution_options)?;
+        deserialize_object_from_boc(&context, &params.account, "account").await?.object;
+    let options = ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
 
     let stuff = match account {
         ton_block::Account::AccountNone => Err(Error::invalid_account_boc("Acount is None")),

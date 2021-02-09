@@ -1,5 +1,5 @@
 {
-  "version": "1.6.3",
+  "version": "1.7.0",
   "modules": [
     {
       "name": "client",
@@ -307,6 +307,16 @@
               },
               "summary": null,
               "description": null
+            },
+            {
+              "name": "boc",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "client.BocConfig"
+              },
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -502,6 +512,25 @@
               },
               "summary": "Factor that increases the expiration timeout for each retry The default value is 1.5",
               "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "BocConfig",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "cache_max_size",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Maximum BOC cache size in kilobytes.",
+              "description": "Default is 10 MB"
             }
           ],
           "summary": null,
@@ -4588,6 +4617,100 @@
           "description": null
         },
         {
+          "name": "ParamsOfEncodeInternalMessage",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "abi",
+              "type": "Ref",
+              "ref_name": "abi.Abi",
+              "summary": "Contract ABI.",
+              "description": null
+            },
+            {
+              "name": "address",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Target address the message will be sent to.",
+              "description": "Must be specified in case of non-deploy message."
+            },
+            {
+              "name": "deploy_set",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "abi.DeploySet"
+              },
+              "summary": "Deploy parameters.",
+              "description": "Must be specified in case of deploy message."
+            },
+            {
+              "name": "call_set",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "abi.CallSet"
+              },
+              "summary": "Function call parameters.",
+              "description": "Must be specified in case of non-deploy message.\n\nIn case of deploy message it is optional and contains parameters\nof the functions that will to be called upon deploy transaction."
+            },
+            {
+              "name": "value",
+              "type": "String",
+              "summary": "Value in nanograms to be sent with message.",
+              "description": null
+            },
+            {
+              "name": "bounce",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "Flag of bounceable message.",
+              "description": "Default is true."
+            },
+            {
+              "name": "enable_ihr",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "Enable Instant Hypercube Routing for the message.",
+              "description": "Default is false."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfEncodeInternalMessage",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "message",
+              "type": "String",
+              "summary": "Message BOC encoded with `base64`.",
+              "description": null
+            },
+            {
+              "name": "address",
+              "type": "String",
+              "summary": "Destination address.",
+              "description": null
+            },
+            {
+              "name": "message_id",
+              "type": "String",
+              "summary": "Message id.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfAttachSignature",
           "type": "Struct",
           "struct_fields": [
@@ -4772,6 +4895,16 @@
               },
               "summary": "Initial value for the `last_paid`.",
               "description": null
+            },
+            {
+              "name": "boc_cache",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "boc.BocCacheType"
+              },
+              "summary": "Cache type to put the result.",
+              "description": "The BOC intself returned if no cache type provided"
             }
           ],
           "summary": null,
@@ -4843,7 +4976,7 @@
           "description": null,
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -4914,12 +5047,50 @@
           "errors": null
         },
         {
+          "name": "encode_internal_message",
+          "summary": "Encodes an internal ABI-compatible message",
+          "description": "Allows to encode deploy and function call messages.\n\nUse cases include messages of any possible type:\n- deploy with initial function call (i.e. `constructor` or any other function that is used for some kind\nof initialization);\n- deploy without initial function call;\n- simple function call\n\nThere is an optional public key can be provided in deploy set in order to substitute one\nin TVM file.\n\nPublic key resolving priority:\n1. Public key from deploy set.\n2. Public key, specified in TVM file.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "abi.ParamsOfEncodeInternalMessage",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "abi.ResultOfEncodeInternalMessage"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
           "name": "attach_signature",
           "summary": "Combines `hex`-encoded `signature` with `base64`-encoded `unsigned_message`. Returns signed message encoded in `base64`.",
           "description": null,
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -4957,7 +5128,7 @@
           "description": null,
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -4995,7 +5166,7 @@
           "description": null,
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -5073,6 +5244,35 @@
       "description": null,
       "types": [
         {
+          "name": "BocCacheType",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "Pinned",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "pin",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": "Pin the BOC with `pin` name.",
+              "description": "Such BOC will not be removed from cache until it is unpinned"
+            },
+            {
+              "name": "Unpinned",
+              "type": "Struct",
+              "struct_fields": [],
+              "summary": " ",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "BocErrorCode",
           "type": "EnumOfConsts",
           "enum_consts": [
@@ -5101,6 +5301,27 @@
               "name": "MissingSourceBoc",
               "type": "Number",
               "value": "204",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InsufficientCacheSize",
+              "type": "Number",
+              "value": "205",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "BocRefNotFound",
+              "type": "Number",
+              "value": "206",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidBocRef",
+              "type": "Number",
+              "value": "207",
               "summary": null,
               "description": null
             }
@@ -5248,6 +5469,95 @@
           ],
           "summary": null,
           "description": null
+        },
+        {
+          "name": "ParamsOfBocCacheGet",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "boc_ref",
+              "type": "String",
+              "summary": "Reference to the cached BOC",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfBocCacheGet",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "boc",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "BOC encoded as base64.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfBocCacheSet",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "boc",
+              "type": "String",
+              "summary": "BOC encoded as base64 or BOC reference",
+              "description": null
+            },
+            {
+              "name": "cache_type",
+              "type": "Ref",
+              "ref_name": "boc.BocCacheType",
+              "summary": "Cache type",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfBocCacheSet",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "boc_ref",
+              "type": "String",
+              "summary": "Reference to the cached BOC",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfBocCacheUnpin",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "pin",
+              "type": "String",
+              "summary": "Pinned name",
+              "description": null
+            },
+            {
+              "name": "boc_ref",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Reference to the cached BOC.",
+              "description": "If it is provided then only referenced BOC is unpinned"
+            }
+          ],
+          "summary": null,
+          "description": null
         }
       ],
       "functions": [
@@ -5257,7 +5567,7 @@
           "description": "JSON structure is compatible with GraphQL API message object",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -5295,7 +5605,7 @@
           "description": "JSON structure is compatible with GraphQL API transaction object",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -5333,7 +5643,7 @@
           "description": "JSON structure is compatible with GraphQL API account object",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -5371,7 +5681,7 @@
           "description": "JSON structure is compatible with GraphQL API block object",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -5409,7 +5719,7 @@
           "description": "JSON structure is compatible with GraphQL API shardstate object",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -5447,7 +5757,7 @@
           "description": null,
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -5485,7 +5795,7 @@
           "description": null,
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -5523,7 +5833,7 @@
           "description": null,
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [
@@ -5550,6 +5860,119 @@
               {
                 "type": "Ref",
                 "ref_name": "boc.ResultOfGetCodeFromTvc"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "cache_get",
+          "summary": "Get BOC from cache",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "boc.ParamsOfBocCacheGet",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "boc.ResultOfBocCacheGet"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "cache_set",
+          "summary": "Save BOC into cache",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "boc.ParamsOfBocCacheSet",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "boc.ResultOfBocCacheSet"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "cache_unpin",
+          "summary": "Unpin BOCs with specified pin.",
+          "description": "BOCs which don't have another pins will be removed from cache",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "boc.ParamsOfBocCacheUnpin",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
               }
             ]
           },
@@ -6629,6 +7052,25 @@
               },
               "summary": "Skip transaction check flag",
               "description": null
+            },
+            {
+              "name": "boc_cache",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "boc.BocCacheType"
+              },
+              "summary": "Cache type to put the result.",
+              "description": "The BOC intself returned if no cache type provided"
+            },
+            {
+              "name": "return_updated_account",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "Return updated account flag.",
+              "description": "Empty string is returned if the flag is `false`"
             }
           ],
           "summary": null,
@@ -6716,6 +7158,25 @@
               },
               "summary": "Contract ABI for dedcoding output messages",
               "description": null
+            },
+            {
+              "name": "boc_cache",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "boc.BocCacheType"
+              },
+              "summary": "Cache type to put the result.",
+              "description": "The BOC intself returned if no cache type provided"
+            },
+            {
+              "name": "return_updated_account",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "Return updated account flag.",
+              "description": "Empty string is returned if the flag is `false`"
             }
           ],
           "summary": null,
@@ -8016,6 +8477,27 @@
               "name": "DebotInvalidAbi",
               "type": "Number",
               "value": "807",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "DebotGetMethodFailed",
+              "type": "Number",
+              "value": "808",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "DebotInvalidMsg",
+              "type": "Number",
+              "value": "809",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "DebotExternaCallFailed",
+              "type": "Number",
+              "value": "810",
               "summary": null,
               "description": null
             }

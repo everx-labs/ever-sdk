@@ -25,6 +25,8 @@ Provides information about library.
 
 [AbiConfig](#AbiConfig)
 
+[BocConfig](#BocConfig)
+
 [BuildInfoDependency](#BuildInfoDependency)
 
 [ParamsOfAppRequest](#ParamsOfAppRequest)
@@ -214,12 +216,14 @@ type ClientError = {
 type ClientConfig = {
     network?: NetworkConfig,
     crypto?: CryptoConfig,
-    abi?: AbiConfig
+    abi?: AbiConfig,
+    boc?: BocConfig
 }
 ```
 - `network`?: _[NetworkConfig](mod_client.md#NetworkConfig)_
 - `crypto`?: _[CryptoConfig](mod_client.md#CryptoConfig)_
 - `abi`?: _[AbiConfig](mod_client.md#AbiConfig)_
+- `boc`?: _[BocConfig](mod_client.md#BocConfig)_
 
 
 ## NetworkConfig
@@ -280,6 +284,16 @@ type AbiConfig = {
 - `workchain`?: _number_ – Workchain id that is used by default in DeploySet
 - `message_expiration_timeout`?: _number_ – Message lifetime for contracts which ABI includes "expire" header. The default value is 40 sec.
 - `message_expiration_timeout_grow_factor`?: _number_ – Factor that increases the expiration timeout for each retry The default value is 1.5
+
+
+## BocConfig
+```ts
+type BocConfig = {
+    cache_max_size?: number
+}
+```
+- `cache_max_size`?: _number_ – Maximum BOC cache size in kilobytes.
+<br>Default is 10 MB
 
 
 ## BuildInfoDependency
