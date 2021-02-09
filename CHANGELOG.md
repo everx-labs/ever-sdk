@@ -16,7 +16,7 @@ and deserializations which drastically improves performance of `run_tvm` and `ru
     - Support for get-methods and external calls in debots.
     Debots can send external inbound messages to destination contracts (signed - for external calls and unsigned - for get-methods) using native language syntax without actions.
     - Built-in debot interfaces (interfaces implemented by DEngine).
-    Added two built-in inetraces: base64 and Sdk.
+    Added two built-in interfaces: base64 and Sdk.
     - Added `DebotInterfaceExecutor` to automatically route messages to destination interfaces.
     - Debot's `fetch` function is optional now. New debots can implement only `start` function.
 
