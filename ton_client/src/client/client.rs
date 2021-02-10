@@ -59,7 +59,7 @@ pub struct ClientContext {
 
 impl ClientContext {
     pub(crate) fn get_server_link(&self) -> ClientResult<&ServerLink> {
-        self.net.server_link.as_ref().ok_or(Error::net_module_not_init())
+        self.net.server_link.as_ref().ok_or_else(|| Error::net_module_not_init())
     }
 
     pub async fn set_timer(&self, ms: u64) -> ClientResult<()> {
