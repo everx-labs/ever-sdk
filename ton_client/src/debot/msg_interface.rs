@@ -22,8 +22,9 @@ const ABI: &str = r#"
 				{"name":"pub","type":"uint256"},
 				{"name":"sec","type":"uint256"}
 			],
-			"outputs": []
-		},
+			"outputs": [
+            ]
+		}
 	],
 	"data": [
 	],

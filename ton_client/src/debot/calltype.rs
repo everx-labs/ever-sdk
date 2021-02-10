@@ -182,7 +182,7 @@ pub async fn send_ext_msg<'a>(
             build_internal_message(&dest_addr, debot_addr, new_body.into())
         }
         Err(e) => {
-            debug!("Transaction failed: {}", e);
+            debug!("Transaction failed: {:?}", e);
             let mut new_body = BuilderData::new();
             new_body.append_u32(onerror_id).map_err(msg_err)?;
             new_body.append_u32(e.code).map_err(msg_err)?;
