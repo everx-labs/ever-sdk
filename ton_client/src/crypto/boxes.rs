@@ -4,7 +4,7 @@ use crate::client::ClientContext;
 use crate::error::ClientResult;
 use std::sync::Arc;
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct SigningBoxHandle(pub u32);
 
 impl From<u32> for SigningBoxHandle {
@@ -63,7 +63,7 @@ pub async fn get_signing_box(
     })
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct RegisteredSigningBox {
     /// Handle of the signing box.
     pub handle: SigningBoxHandle,
@@ -82,7 +82,7 @@ pub async fn register_signing_box(
     })
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct ResultOfSigningBoxGetPublicKey {
     /// Public key of signing box. Encoded with hex
     pub pubkey: String,
@@ -105,7 +105,7 @@ pub async fn signing_box_get_public_key(
     })
 }
     
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct ParamsOfSigningBoxSign {
     /// Signing Box handle.
     pub signing_box: SigningBoxHandle,
@@ -113,7 +113,7 @@ pub struct ParamsOfSigningBoxSign {
     pub unsigned: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct ResultOfSigningBoxSign {
     /// Data signature. Encoded with `hex`.
     pub signature: String,

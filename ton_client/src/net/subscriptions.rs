@@ -25,7 +25,7 @@ pub enum SubscriptionResponseType {
     Error = 101,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ParamsOfSubscribeCollection {
     /// Collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
@@ -35,13 +35,13 @@ pub struct ParamsOfSubscribeCollection {
     pub result: String,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ResultOfSubscribeCollection {
     /// Subscription handle. Must be closed with `unsubscribe`
     pub handle: u32,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Clone, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Default, Clone, Debug)]
 pub struct ResultOfSubscription {
     /// First appeared object that matches the provided criteria
     pub result: serde_json::Value,

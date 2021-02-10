@@ -9,7 +9,7 @@ use crate::processing::{
 use crate::tvm::StdContractError;
 use std::sync::Arc;
 
-#[derive(Serialize, Deserialize, ApiType, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Default, Debug)]
 pub struct ParamsOfProcessMessage {
     /// Message encode parameters.
     pub message_encode_params: ParamsOfEncodeMessage,

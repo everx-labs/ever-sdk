@@ -26,7 +26,7 @@ use crate::crypto::default_hdkey_compliant;
 
 //----------------------------------------------------------------- crypto.hdkey_xprv_from_mnemonic
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfHDKeyXPrvFromMnemonic {
     /// String with seed phrase
     pub phrase: String,
@@ -36,7 +36,7 @@ pub struct ParamsOfHDKeyXPrvFromMnemonic {
     pub word_count: Option<u8>,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfHDKeyXPrvFromMnemonic {
     /// Serialized extended master private key
     pub xprv: String,
@@ -59,13 +59,13 @@ pub fn hdkey_xprv_from_mnemonic(
 
 //------------------------------------------------------------------- crypto.hdkey_secret_from_xprv
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfHDKeySecretFromXPrv {
     /// Serialized extended private key
     pub xprv: String,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfHDKeySecretFromXPrv {
     /// Private key - 64 symbols hex string
     pub secret: String,
@@ -84,13 +84,13 @@ pub fn hdkey_secret_from_xprv(
 
 //------------------------------------------------------------------- crypto.hdkey_public_from_xprv
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfHDKeyPublicFromXPrv {
     /// Serialized extended private key
     pub xprv: String,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfHDKeyPublicFromXPrv {
     /// Public key - 64 symbols hex string
     pub public: String,
@@ -110,7 +110,7 @@ pub fn hdkey_public_from_xprv(
 
 //------------------------------------------------------------ crypto.hdkey_derive_from_xprv
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfHDKeyDeriveFromXPrv {
     /// Serialized extended private key
     pub xprv: String,
@@ -120,7 +120,7 @@ pub struct ParamsOfHDKeyDeriveFromXPrv {
     pub hardened: bool,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfHDKeyDeriveFromXPrv {
     /// Serialized extended private key
     pub xprv: String,
@@ -145,7 +145,7 @@ pub fn hdkey_derive_from_xprv(
 
 //-------------------------------------------------------------- crypto.hdkey_derive_from_xprv_path
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfHDKeyDeriveFromXPrvPath {
     /// Serialized extended private key
     pub xprv: String,
@@ -153,7 +153,7 @@ pub struct ParamsOfHDKeyDeriveFromXPrvPath {
     pub path: String,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfHDKeyDeriveFromXPrvPath {
     /// Derived serialized extended private key
     pub xprv: String,

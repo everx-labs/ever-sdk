@@ -23,7 +23,7 @@ use std::sync::Arc;
 use ton_vm::stack::integer::IntegerData;
 use ton_vm::stack::{Stack, StackItem};
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ParamsOfRunGet {
     /// Account BOC in `base64`
     pub account: String,
@@ -35,7 +35,7 @@ pub struct ParamsOfRunGet {
 }
 
 #[allow(non_snake_case)]
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ResultOfRunGet {
     /// Values returned by getmethod on stack
     pub output: Value,
