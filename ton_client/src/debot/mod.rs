@@ -49,7 +49,7 @@ type JsonValue = serde_json::Value;
 pub struct DebotHandle(u32);
 
 /// [UNSTABLE](UNSTABLE.md) Describes a debot action in a Debot Context.
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct DebotAction {
     /// A short action description. Should be used by Debot Browser as name of
     /// menu item.
@@ -102,7 +102,7 @@ pub struct ParamsOfStart {
 }
 
 /// [UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `start` and `fetch` functions.
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct RegisteredDebot {
     /// Debot handle which references an instance of debot engine.
     pub debot_handle: DebotHandle,
@@ -172,7 +172,7 @@ pub async fn fetch(
 }
 
 /// [UNSTABLE](UNSTABLE.md) Parameters for executing debot action.
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfExecute {
     /// Debot handle which references an instance of debot engine.
     pub debot_handle: DebotHandle,
@@ -210,7 +210,7 @@ pub fn remove(context: Arc<ClientContext>, params: RegisteredDebot) -> ClientRes
 }
 
 /// [UNSTABLE](UNSTABLE.md) Parameters of `send` function.
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfSend {
     /// Debot handle which references an instance of debot engine.
     pub debot_handle: DebotHandle,

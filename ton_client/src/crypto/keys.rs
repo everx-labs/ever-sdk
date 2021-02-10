@@ -24,7 +24,7 @@ use ed25519_dalek::Keypair;
 //----------------------------------------------------------------------------------------- KeyPair
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct KeyPair {
     /// Public key - 64 symbols hex string
     pub public: String,
@@ -48,13 +48,13 @@ impl KeyPair {
 //----------------------------------------------------------- convert_public_key_to_ton_safe_format
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfConvertPublicKeyToTonSafeFormat {
     /// Public key - 64 symbols hex string
     pub public_key: String,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfConvertPublicKeyToTonSafeFormat {
     /// Public key represented in TON safe format.
     pub ton_public_key: String,
@@ -96,7 +96,7 @@ pub fn generate_random_sign_keys(_context: std::sync::Arc<ClientContext>) -> Cli
 
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfSign {
     /// Data that must be signed encoded in `base64`.
     pub unsigned: String,
@@ -104,7 +104,7 @@ pub struct ParamsOfSign {
     pub keys: KeyPair,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfSign {
     /// Signed data combined with signature encoded in `base64`.
     pub signed: String,
@@ -130,7 +130,7 @@ pub fn sign(
 
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfVerifySignature {
     /// Signed data that must be verified encoded in `base64`.
     pub signed: String,
@@ -138,7 +138,7 @@ pub struct ParamsOfVerifySignature {
     pub public: String,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfVerifySignature {
     /// Unsigned data encoded in `base64`.
     pub unsigned: String,

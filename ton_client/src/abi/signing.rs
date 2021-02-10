@@ -18,6 +18,12 @@ pub enum Signer {
     SigningBox { handle: SigningBoxHandle },
 }
 
+impl Default for Signer {
+    fn default() -> Self {
+        Signer::None
+    }
+}
+
 impl Signer {
     pub(crate) fn is_external(&self) -> bool {
         if let Signer::External { .. } = self {

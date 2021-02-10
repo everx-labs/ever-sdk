@@ -24,7 +24,13 @@ pub enum AddressStringFormat {
     Base64 { url: bool, test: bool, bounce: bool },
 }
 
-#[derive(Serialize, Deserialize, ApiType, Debug)]
+impl Default for AddressStringFormat {
+    fn default() -> Self {
+        AddressStringFormat::Hex
+    }
+}
+
+#[derive(Serialize, Deserialize, ApiType, Default, Debug)]
 pub struct ParamsOfConvertAddress {
     /// Account address in any TON format.
     pub address: String,
@@ -32,7 +38,7 @@ pub struct ParamsOfConvertAddress {
     pub output_format: AddressStringFormat,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Default, Debug)]
 pub struct ResultOfConvertAddress {
     /// Address in the specified format
     pub address: String,

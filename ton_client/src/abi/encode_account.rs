@@ -17,7 +17,7 @@ use ton_sdk::ContractImage;
 
 //--------------------------------------------------------------------------------- encode_account
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct StateInitParams {
     abi: Abi,
     value: Value,
@@ -45,7 +45,17 @@ pub enum StateInitSource {
     },
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+impl Default for StateInitSource {
+    fn default() -> Self {
+        StateInitSource::Tvc { 
+            tvc: Default::default(),
+            public_key: Default::default(),
+            init_params: Default::default(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct ParamsOfEncodeAccount {
     /// Source of the account state init.
     pub state_init: StateInitSource,
@@ -59,7 +69,7 @@ pub struct ParamsOfEncodeAccount {
     pub boc_cache: Option<BocCacheType>,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfEncodeAccount {
     /// Account BOC encoded in `base64`.
     pub account: String,

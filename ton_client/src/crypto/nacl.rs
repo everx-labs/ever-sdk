@@ -25,7 +25,7 @@ use ed25519_dalek::Verifier;
 //------------------------------------------------------------------------ sign_keypair_from_secret
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfNaclSignKeyPairFromSecret {
     /// Secret key - unprefixed 0-padded to 64 symbols hex string
     pub secret: String,
@@ -49,7 +49,7 @@ pub fn nacl_sign_keypair_from_secret_key(
 //--------------------------------------------------------------------------------------- nacl_sign
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfNaclSign {
     /// Data that must be signed encoded in `base64`.
     pub unsigned: String,
@@ -57,7 +57,7 @@ pub struct ParamsOfNaclSign {
     pub secret: String,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfNaclSign {
     /// Signed data, encoded in `base64`.
     pub signed: String,
@@ -80,7 +80,7 @@ pub fn nacl_sign(
 
 //------------------------------------------------------------------------------ nacl_sign_detached
 #[doc(summary = "")]
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfNaclSignDetached {
     /// Data that must be signed encoded in `base64`.
     pub unsigned: String,
@@ -88,7 +88,7 @@ pub struct ParamsOfNaclSignDetached {
     pub secret: String,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfNaclSignDetached {
     /// Signature encoded in `hex`.
     pub signature: String,
@@ -116,7 +116,7 @@ pub fn nacl_sign_detached(
 //---------------------------------------------------------------------------------- nacl_sign_open
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfNaclSignOpen {
     /// Signed data that must be unsigned. Encoded with `base64`.
     pub signed: String,
@@ -124,7 +124,7 @@ pub struct ParamsOfNaclSignOpen {
     pub public: String,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfNaclSignOpen {
     /// Unsigned data, encoded in `base64`.
     pub unsigned: String,
@@ -159,7 +159,7 @@ pub fn nacl_sign_open(
 //----------------------------------------------------------------------- nacl_sign_detached_verify
 
 ///
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfNaclSignDetachedVerify {
     /// Unsigned data that must be verified. Encoded with `base64`.
     pub unsigned: String,
@@ -169,7 +169,7 @@ pub struct ParamsOfNaclSignDetachedVerify {
     pub public: String,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfNaclSignDetachedVerify {
     /// `true` if verification succeeded or `false` if it failed
     pub(crate) succeeded: bool,
@@ -219,7 +219,7 @@ pub fn nacl_box_keypair(_context: std::sync::Arc<ClientContext>) -> ClientResult
 //-------------------------------------------------------------------- nacl_box_keypair_from_secret
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfNaclBoxKeyPairFromSecret {
     /// Secret key - unprefixed 0-padded to 64 symbols hex string
     pub secret: String,
@@ -243,7 +243,7 @@ pub fn nacl_box_keypair_from_secret_key(
 //---------------------------------------------------------------------------------------- nacl_box
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfNaclBox {
     /// Data that must be encrypted encoded in `base64`.
     pub decrypted: String,
@@ -255,7 +255,7 @@ pub struct ParamsOfNaclBox {
     pub secret: String,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfNaclBox {
     /// Encrypted data encoded in `base64`.
     pub encrypted: String,
@@ -294,7 +294,7 @@ pub fn nacl_box(
 //----------------------------------------------------------------------------------- nacl_box_open
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfNaclBoxOpen {
     /// Data that must be decrypted. Encoded with `base64`.
     pub encrypted: String,
@@ -306,7 +306,7 @@ pub struct ParamsOfNaclBoxOpen {
     pub secret: String,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfNaclBoxOpen {
     /// Decrypted data encoded in `base64`.
     pub decrypted: String,
@@ -344,7 +344,7 @@ pub fn nacl_box_open(
 //--------------------------------------------------------------------------------- nacl_secret_box
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfNaclSecretBox {
     /// Data that must be encrypted. Encoded with `base64`.
     pub decrypted: String,
@@ -378,7 +378,7 @@ pub fn nacl_secret_box(
 //---------------------------------------------------------------------------- nacl_secret_box_open
 #[doc(summary = "")]
 ///
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfNaclSecretBoxOpen {
     /// Data that must be decrypted. Encoded with `base64`.
     pub encrypted: String,

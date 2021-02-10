@@ -64,13 +64,13 @@ pub async fn resume(context: std::sync::Arc<ClientContext>) -> ClientResult<()> 
     Ok(())
 }
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ParamsOfFindLastShardBlock {
     /// Account address
     pub address: String,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ResultOfFindLastShardBlock {
     /// Account shard last block ID
     pub block_id: String,
@@ -92,7 +92,7 @@ pub async fn find_last_shard_block(
     })
 }
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct EndpointsSet {
     /// List of endpoints provided by server
     pub endpoints: Vec<String>,

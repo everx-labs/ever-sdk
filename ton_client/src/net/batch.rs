@@ -19,13 +19,13 @@ use crate::error::{AddNetworkUrl, ClientResult};
 use super::Error;
 use crate::net::ton_gql::ParamsOfQueryOperation;
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ParamsOfBatchQuery {
     /// List of query operations that must be performed per single fetch.
     pub(crate) operations: Vec<ParamsOfQueryOperation>,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ResultOfBatchQuery {
     /// Result values for batched queries.
     ///

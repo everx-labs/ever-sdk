@@ -16,13 +16,13 @@ use crate::boc::Error;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
 
-#[derive(Serialize, Deserialize, Clone, ApiType)]
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ParamsOfGetCodeFromTvc {
     /// Contract TVC image encoded as base64
     pub tvc: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, ApiType)]
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ResultOfGetCodeFromTvc {
     /// Contract code encoded as base64
     pub code: String,

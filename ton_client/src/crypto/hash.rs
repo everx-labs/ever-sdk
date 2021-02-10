@@ -18,13 +18,13 @@ use sha2::Digest;
 
 //--------------------------------------------------------------------------------------------- sha
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfHash {
     /// Input data for hash calculation. Encoded with `base64`.
     pub data: String,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfHash {
     /// Hash of input `data`. Encoded with 'hex'.
     pub hash: String,
