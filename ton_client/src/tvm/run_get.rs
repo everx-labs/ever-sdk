@@ -80,6 +80,6 @@ pub async fn run_get(
 
     let (engine, _) = super::call_tvm::call_tvm(stuff, options, stack_in)?;
     Ok(ResultOfRunGet {
-        output: stack::serialize_items(engine.stack().iter())?,
+        output: stack::serialize_items(Box::new(engine.stack().iter()))?,
     })
 }

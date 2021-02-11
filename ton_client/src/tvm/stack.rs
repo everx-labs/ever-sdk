@@ -23,12 +23,36 @@ use std::sync::Arc;
 use ton_vm::stack::integer::IntegerData;
 use ton_vm::stack::StackItem;
 
-pub fn serialize_items(items: Iter<StackItem>) -> ClientResult<Value> {
-    let mut values = Vec::<Value>::new();
-    for item in items {
-        values.push(serialize_item(item)?)
+enum ProcessingResult<'a> {
+    Serialized(Value),
+    Nested(Box<dyn Iterator<Item = &'a StackItem> + 'a>),
+    //LevelUp(Vec<Value>),
+}
+
+pub fn serialize_items<'a>(items: Box<dyn Iterator<Item = &'a StackItem> + 'a>) -> ClientResult<Value> {
+    let mut stack = vec![(vec![], items)];
+    loop {
+        if let Some((mut vec, mut iter)) = stack.pop() {
+            if let Some(item) = iter.next() {
+                match process_item(item)? {
+                    ProcessingResult::Serialized(value) => {
+                        vec.push(value);
+                        stack.push((vec, iter));
+                    },
+                    ProcessingResult::Nested(nested_iter) => {
+                        stack.push((vec, iter));
+                        stack.push((vec![], nested_iter));
+                    }
+                }
+            } else {
+                if let Some((parent_vec, _)) = stack.last_mut() {
+                    parent_vec.push(Value::Array(vec));
+                } else {
+                    return Ok(Value::Array(vec));
+                }
+            }
+        }
     }
-    Ok(Value::Array(values))
 }
 
 pub fn deserialize_items(values: Iter<Value>) -> ClientResult<Vec<StackItem>> {
@@ -41,7 +65,7 @@ pub fn deserialize_items(values: Iter<Value>) -> ClientResult<Vec<StackItem>> {
 
 fn serialize_integer_data(data: &ton_vm::stack::integer::IntegerData) -> String {
     let hex = data.to_str_radix(16);
-    // all negative nubers and positive numbers less than u128::MAX are encoded as decimal
+    // all negative numbers and positive numbers less than u128::MAX are encoded as decimal
     if hex.starts_with("-") || hex.len() <= 32 {
         data.to_str_radix(10)
     } else {
@@ -56,27 +80,32 @@ fn serialize_integer_data(data: &ton_vm::stack::integer::IntegerData) -> String 
     }
 }
 
-pub fn serialize_item(item: &StackItem) -> ClientResult<Value> {
+pub fn serialize_item<'a>(item: &'a StackItem) -> ClientResult<Value> {
+    Ok(serialize_items(Box::new(vec![item].into_iter()))?[0].take())
+}
+
+fn process_item(item: &StackItem) -> ClientResult<ProcessingResult> {
     Ok(match item {
-        StackItem::None => Value::Null,
-        StackItem::Integer(value) => Value::String(serialize_integer_data(value)),
-        StackItem::Tuple(items) => serialize_items(items.iter())?,
-        StackItem::Builder(value) => json!({
+        StackItem::None => ProcessingResult::Serialized(Value::Null),
+        StackItem::Integer(value) => 
+            ProcessingResult::Serialized(Value::String(serialize_integer_data(value))),
+        StackItem::Tuple(items) => ProcessingResult::Nested(Box::new(items.iter())),
+        StackItem::Builder(value) => ProcessingResult::Serialized(json!({
             "type": "Builder",
             "value": serialize_cell_to_base64(&value.deref().into(), "stack item `Builder`")
-        }),
-        StackItem::Slice(value) => json!({
+        })),
+        StackItem::Slice(value) => ProcessingResult::Serialized(json!({
             "type": "Slice",
             "value": serialize_cell_to_base64(&value.into_cell(), "stack item `Slice`")
-        }),
-        StackItem::Cell(value) => json!({
+        })),
+        StackItem::Cell(value) => ProcessingResult::Serialized(json!({
             "type": "Cell",
             "value": serialize_cell_to_base64(value, "stack item `Cell`")
-        }),
-        StackItem::Continuation(value) => json!({
+        })),
+        StackItem::Continuation(value) => ProcessingResult::Serialized(json!({
             "type": "Continuation",
             "value": serialize_cell_to_base64(&value.code().into_cell(), "stack item `Continuation`")
-        }),
+        })),
     })
 }
 
