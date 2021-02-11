@@ -19,7 +19,7 @@ use crate::error::ClientResult;
 
 //------------------------------------------------------------------------------------------ scrypt
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfScrypt {
     /// The password bytes to be hashed.
     /// Must be encoded with `base64`.
@@ -37,7 +37,7 @@ pub struct ParamsOfScrypt {
     pub dk_len: u32,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfScrypt {
     /// Derived key. Encoded with `hex`.
     pub key: String,

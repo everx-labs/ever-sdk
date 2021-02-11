@@ -77,6 +77,12 @@ pub enum BocCacheType {
     Unpinned
 }
 
+impl Default for BocCacheType {
+    fn default() -> Self {
+        BocCacheType::Unpinned
+    }
+}
+
 pub struct PinnedBoc {
     pins: HashSet<String>,
     cell: Cell,
@@ -231,7 +237,7 @@ fn parse_boc_ref(boc_ref: &str) -> ClientResult<UInt256> {
         ))
 }
 
-#[derive(Serialize, Deserialize, Clone, ApiType)]
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ParamsOfBocCacheSet {
     /// BOC encoded as base64 or BOC reference
     pub boc: String,
@@ -239,7 +245,7 @@ pub struct ParamsOfBocCacheSet {
     pub cache_type: BocCacheType,
 }
 
-#[derive(Serialize, Deserialize, Clone, ApiType)]
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ResultOfBocCacheSet {
     /// Reference to the cached BOC
     pub boc_ref: String,
@@ -261,13 +267,13 @@ pub async fn cache_set(
         .map(|hash| ResultOfBocCacheSet { boc_ref: format!("*{}", hash.to_hex_string()) })
 }
 
-#[derive(Serialize, Deserialize, Clone, ApiType)]
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ParamsOfBocCacheGet {
     /// Reference to the cached BOC
     pub boc_ref: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, ApiType)]
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ResultOfBocCacheGet {
     /// BOC encoded as base64.
     pub boc: Option<String>
@@ -290,7 +296,7 @@ pub async fn cache_get(
     Ok( ResultOfBocCacheGet { boc })
 }
 
-#[derive(Serialize, Deserialize, Clone, ApiType)]
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ParamsOfBocCacheUnpin {
     /// Pinned name
     pub pin: String,

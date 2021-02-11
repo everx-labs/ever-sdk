@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 //--------------------------------------------------------------------------- wait_for_transaction
 
-#[derive(Serialize, Deserialize, ApiType, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Default, Debug)]
 pub struct ParamsOfWaitForTransaction {
     /// Optional ABI for decoding the transaction result.
     ///

@@ -21,7 +21,7 @@ use super::Error;
 
 //------------------------------------------------------------------------------------------ query
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ParamsOfQuery {
     /// GraphQL query text.
     pub query: String,
@@ -30,7 +30,7 @@ pub struct ParamsOfQuery {
     pub variables: Option<serde_json::Value>,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ResultOfQuery {
     /// Result provided by DAppServer.
     pub result: Value,
@@ -60,7 +60,7 @@ pub async fn query(
 
 //------------------------------------------------------------------------------- query_collection
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ResultOfQueryCollection {
     /// Objects that match the provided criteria
     pub result: Vec<serde_json::Value>,
@@ -107,7 +107,7 @@ pub struct ParamsOfWaitForCollection {
     pub timeout: Option<u32>,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ResultOfWaitForCollection {
     /// First found object that matches the provided criteria
     pub result: serde_json::Value,
@@ -141,7 +141,7 @@ pub async fn wait_for_collection(
 
 use crate::net::ParamsOfAggregateCollection;
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ResultOfAggregateCollection {
     /// Values for requested fields.
     ///

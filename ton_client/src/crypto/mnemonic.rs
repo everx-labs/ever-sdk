@@ -38,13 +38,13 @@ const SPANISH_DICTIONARY: u8 = 8;
 
 //---------------------------------------------------------------------------------- mnemonic_words
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfMnemonicWords {
     /// Dictionary identifier
     pub dictionary: Option<u8>,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfMnemonicWords {
     /// The list of mnemonic words
     pub words: String,
@@ -68,7 +68,7 @@ pub fn mnemonic_words(
 
 //---------------------------------------------------------------------------- mnemonic_from_random
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfMnemonicFromRandom {
     /// Dictionary identifier
     pub dictionary: Option<u8>,
@@ -76,7 +76,7 @@ pub struct ParamsOfMnemonicFromRandom {
     pub word_count: Option<u8>,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfMnemonicFromRandom {
     /// String of mnemonic words
     pub phrase: String,
@@ -97,7 +97,7 @@ pub fn mnemonic_from_random(
 
 //--------------------------------------------------------------------------- mnemonic_from_entropy
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfMnemonicFromEntropy {
     /// Entropy bytes. Hex encoded.
     pub entropy: String,
@@ -107,7 +107,7 @@ pub struct ParamsOfMnemonicFromEntropy {
     pub word_count: Option<u8>,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfMnemonicFromEntropy {
     /// Phrase
     pub phrase: String,
@@ -128,7 +128,7 @@ pub fn mnemonic_from_entropy(
 
 //--------------------------------------------------------------------------------- mnemonic_verify
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfMnemonicVerify {
     /// Phrase
     pub phrase: String,
@@ -138,7 +138,7 @@ pub struct ParamsOfMnemonicVerify {
     pub word_count: Option<u8>,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfMnemonicVerify {
     /// Flag indicating if the mnemonic is valid or not
     pub valid: bool,
@@ -160,7 +160,7 @@ pub fn mnemonic_verify(
 
 //----------------------------------------------------------------------- mnemonic_derive_sign_keys
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfMnemonicDeriveSignKeys {
     /// Phrase
     pub phrase: String,

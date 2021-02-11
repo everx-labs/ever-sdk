@@ -15,13 +15,13 @@ use crate::boc::internal::deserialize_cell_from_boc;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
 
-#[derive(Serialize, Deserialize, Clone, ApiType)]
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ParamsOfGetBocHash {
     /// BOC encoded as base64
     pub boc: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, ApiType)]
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ResultOfGetBocHash {
     /// BOC root hash encoded with hex
     pub hash: String,

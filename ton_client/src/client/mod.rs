@@ -41,7 +41,7 @@ pub fn core_version() -> String {
     env!("CARGO_PKG_VERSION").into()
 }
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ResultOfVersion {
     /// Core Library version
     pub version: String,
@@ -55,7 +55,7 @@ pub fn version(_context: Arc<ClientContext>) -> ClientResult<ResultOfVersion> {
     })
 }
 
-#[derive(ApiType, Serialize, Deserialize)]
+#[derive(ApiType, Default, Serialize, Deserialize)]
 pub struct ResultOfGetApiReference {
     pub api: API,
 }
@@ -68,7 +68,7 @@ pub fn get_api_reference(_context: Arc<ClientContext>) -> ClientResult<ResultOfG
     })
 }
 
-#[derive(ApiType, Serialize, Deserialize, Clone)]
+#[derive(ApiType, Default, Serialize, Deserialize, Clone)]
 pub struct BuildInfoDependency {
     /// Dependency name. Usually it is a crate name.
     pub name: String,
@@ -76,7 +76,7 @@ pub struct BuildInfoDependency {
     pub git_commit: String,
 }
 
-#[derive(ApiType, Serialize, Deserialize, Clone)]
+#[derive(ApiType, Default, Serialize, Deserialize, Clone)]
 pub struct ResultOfBuildInfo {
     /// Build number assigned to this build by the CI.
     build_number: u32,
@@ -95,7 +95,7 @@ pub fn build_info(_context: Arc<ClientContext>) -> ClientResult<ResultOfBuildInf
     )
 }
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ParamsOfAppRequest {
     /// Request ID. Should be used in `resolve_app_request` call
     pub app_request_id: u32,
@@ -118,7 +118,13 @@ pub enum AppRequestResult {
     }
 }
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+impl Default for AppRequestResult {
+    fn default() -> Self {
+        AppRequestResult::Error{ text: Default::default() }
+    }
+}
+
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ParamsOfResolveAppRequest {
     /// Request ID received from SDK
     pub app_request_id: u32,

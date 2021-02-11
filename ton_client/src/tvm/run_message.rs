@@ -150,7 +150,7 @@ pub struct ParamsOfRunTvm {
     pub return_updated_account: Option<bool>
 }
 
-#[derive(Serialize, Deserialize, ApiType, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Debug, PartialEq, Clone)]
 pub struct ResultOfRunExecutor {
     /// Parsed transaction.
     ///
@@ -173,7 +173,7 @@ pub struct ResultOfRunExecutor {
     pub fees: TransactionFees,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Debug, PartialEq, Clone)]
 pub struct ResultOfRunTvm {
     /// List of output messages' BOCs. Encoded as `base64`
     pub out_messages: Vec<String>,

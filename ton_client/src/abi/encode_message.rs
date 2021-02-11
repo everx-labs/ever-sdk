@@ -174,7 +174,7 @@ impl CallSet {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct ParamsOfEncodeMessage {
     /// Contract ABI.
     pub abi: Abi,
@@ -216,7 +216,7 @@ pub struct ParamsOfEncodeMessage {
     pub processing_try_index: Option<u8>,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfEncodeMessage {
     /// Message BOC encoded with `base64`.
     pub message: String,
@@ -459,7 +459,7 @@ pub async fn encode_message(
 
 //------------------------------------------------------------------------ encode_internal_message
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct ParamsOfEncodeInternalMessage {
     /// Contract ABI.
     pub abi: Abi,
@@ -492,7 +492,7 @@ pub struct ParamsOfEncodeInternalMessage {
     pub enable_ihr: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfEncodeInternalMessage {
     /// Message BOC encoded with `base64`.
     pub message: String,
@@ -591,7 +591,7 @@ pub async  fn encode_internal_message(
 
 //---------------------------------------------------------------------------- encode_message_body
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct ParamsOfEncodeMessageBody {
     /// Contract ABI.
     pub abi: Abi,
@@ -622,7 +622,7 @@ pub struct ParamsOfEncodeMessageBody {
     pub processing_try_index: Option<u8>,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfEncodeMessageBody {
     /// Message body BOC encoded with `base64`.
     pub body: String,
@@ -717,7 +717,7 @@ pub async fn encode_message_body(
 
 //------------------------------------------------------------------------------- attach_signature
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfAttachSignature {
     /// Contract ABI
     pub abi: Abi,
@@ -732,7 +732,7 @@ pub struct ParamsOfAttachSignature {
     pub signature: String,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfAttachSignature {
     /// Signed message BOC
     pub message: String,
@@ -762,7 +762,7 @@ pub async fn attach_signature(
 
 //---------------------------------------------------------------- attach_signature_to_message_body
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfAttachSignatureToMessageBody {
     /// Contract ABI
     pub abi: Abi,
@@ -777,7 +777,7 @@ pub struct ParamsOfAttachSignatureToMessageBody {
     pub signature: String,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfAttachSignatureToMessageBody {
     pub body: String,
 }
