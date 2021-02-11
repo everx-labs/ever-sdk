@@ -10,7 +10,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 pub type InterfaceResult = Result<(u32, Value), String>;
 
-async fn decode_msg(client: TonClient, msg_body: String, abi: Abi) -> Result<(String, Value), String> {
+async fn decode_msg(
+    client: TonClient,
+    msg_body: String,
+    abi: Abi,
+) -> Result<(String, Value), String> {
     let decoded = decode_message_body(
         client.clone(),
         ParamsOfDecodeMessageBody {
@@ -105,6 +109,10 @@ impl BuiltinInterfaces {
         interfaces.insert(iface.get_id(), iface);
 
         Self { client, interfaces }
+    }
+
+    pub fn add(&mut self, iface: Arc<dyn DebotInterface + Send + Sync>) {
+        self.interfaces.insert(iface.get_id(), iface);
     }
 }
 

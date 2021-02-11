@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## 1.8.0 Feb 11, 2021
 
+### New
+
+- **Debot Module**:
+    - Added new built-in interface `Msg` which allows to send external message to blockchain and sign it with supplied keypair.
+    
 ### Fixed
 
 - `crypto.hdkey_public_from_xprv` used compressed 33-byte form instead of normal 32-byte.
@@ -13,11 +18,11 @@ All notable changes to this project will be documented in this file.
 ### New
 
 - BOC cache management functions were introduced:
-  - `boc.cache_set`, 
-  - `boc.cache_get`  
-  - `boc.cache_unpin` 
-- Now functions that take boc as a parameter can also take a reference to boc cash instead so that it deсreases the number of boc serialization 
-and deserializations which drastically improves performance of `run_tvm` and `run_executor` expecially in case of numerous calls on the same data. 
+  - `boc.cache_set`,
+  - `boc.cache_get`
+  - `boc.cache_unpin`
+- Now functions that take boc as a parameter can also take a reference to boc cash instead so that it deсreases the number of boc serialization
+and deserializations which drastically improves performance of `run_tvm` and `run_executor` expecially in case of numerous calls on the same data.
 - `boc_cache` parameter in `tvm.run_tvm` and `tvm.run_executor` functions to save resulting messages and account BOCs into cache.
 - `return_updated_account` flag parameter introduced in `tvm.run_tvm` and `tvm.run_executor` functions to return updated account state. Important: by default this flag is `false` and account data is not returned.
 - `abi.encode_internal_message` function to encode an internal ABI-compatible message.
