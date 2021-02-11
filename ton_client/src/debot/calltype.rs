@@ -13,7 +13,6 @@ use crate::tvm::{run_tvm, ParamsOfRunTvm};
 use std::convert::TryFrom;
 use std::fmt::Display;
 use std::sync::Arc;
-use ton_abi::Contract;
 use ton_block::{Message, MsgAddressExt};
 use ton_types::{BuilderData, Cell, IBitstring};
 
@@ -78,12 +77,10 @@ pub async fn run_get_method(
     ton: TonClient,
     msg: String,
     target_state: String,
-    debot_abi: &String,
     debot_addr: &String,
-    dest_addr: &String,
 ) -> ClientResult<String> {
-    let (answer_id, _onerror_id, func_id, fixed_msg) =
-        decode_and_fix_ext_msg(ton.clone(), msg, debot_abi, Signer::None)
+    let (answer_id, _onerror_id, func_id, dest_addr, fixed_msg) =
+        decode_and_fix_ext_msg(ton.clone(), msg, Signer::None)
             .await
             .map_err(|e| Error::get_method_failed(e))?;
 
@@ -107,7 +104,7 @@ pub async fn run_get_method(
         ));
     }
     let out_msg = result.out_messages.pop().unwrap();
-    build_answer_msg(&out_msg, answer_id, func_id, dest_addr, debot_addr)
+    build_answer_msg(&out_msg, answer_id, func_id, &dest_addr, debot_addr)
 }
 
 pub async fn send_ext_msg<'a>(
@@ -116,16 +113,14 @@ pub async fn send_ext_msg<'a>(
     msg: String,
     signing_box: SigningBoxHandle,
     _target_state: String,
-    debot_abi: &'a String,
     debot_addr: &'a String,
-    dest_addr: &'a String,
 ) -> ClientResult<String> {
     let signer = Signer::SigningBox {
         handle: signing_box,
     };
 
-    let (answer_id, onerror_id, func_id, fixed_msg) =
-        decode_and_fix_ext_msg(ton.clone(), msg, debot_abi, signer)
+    let (answer_id, onerror_id, func_id, dest_addr, fixed_msg) =
+        decode_and_fix_ext_msg(ton.clone(), msg, signer)
             .await
             .map_err(|e| Error::external_call_failed(e))?;
 
@@ -174,7 +169,7 @@ pub async fn send_ext_msg<'a>(
     match result {
         Ok(res) => {
             for out_msg in &res.out_messages {
-                let res = build_answer_msg(out_msg, answer_id, func_id, dest_addr, debot_addr);
+                let res = build_answer_msg(out_msg, answer_id, func_id, &dest_addr, debot_addr);
                 if let Ok(answer_msg) = res {
                     return Ok(answer_msg);
                 }
@@ -184,20 +179,21 @@ pub async fn send_ext_msg<'a>(
             // answer message not found, build empty answer.
             let mut new_body = BuilderData::new();
             new_body.append_u32(answer_id).map_err(msg_err)?;
-            build_internal_message(dest_addr, debot_addr, new_body.into())
+            build_internal_message(&dest_addr, debot_addr, new_body.into())
         }
         Err(e) => {
-            debug!("Transaction failed: {}", e);
+            debug!("Transaction failed: {:?}", e);
             let mut new_body = BuilderData::new();
             new_body.append_u32(onerror_id).map_err(msg_err)?;
             new_body.append_u32(e.code).map_err(msg_err)?;
-            let error_code = e.data
+            let error_code = e
+                .data
                 .pointer("/local_error/data/exit_code")
                 .or(e.data.pointer("/exit_code"))
                 .and_then(|val| val.as_i64())
                 .unwrap_or(0);
             new_body.append_u32(error_code as u32).map_err(msg_err)?;
-            build_internal_message(dest_addr, debot_addr, new_body.into())
+            build_internal_message(&dest_addr, debot_addr, new_body.into())
         }
     }
 }
@@ -205,10 +201,8 @@ pub async fn send_ext_msg<'a>(
 async fn decode_and_fix_ext_msg(
     ton: TonClient,
     msg: String,
-    debot_abi: &String,
     signer: Signer,
-) -> ClientResult<(u32, u32, u32, String)> {
-    let debot_abi = Contract::load(debot_abi.as_bytes()).map_err(msg_err)?;
+) -> ClientResult<(u32, u32, u32, String, String)> {
     let mut message: Message = deserialize_object_from_base64(&msg, "message")
         .map_err(msg_err)?
         .object;
@@ -221,10 +215,6 @@ async fn decode_and_fix_ext_msg(
         MsgAddressExt::AddrNone,
     );
     let meta = Metadata::try_from(src)?;
-
-    debot_abi
-        .function_by_id(meta.answer_id, true)
-        .map_err(msg_err)?;
 
     // find function id in message body: parse signature, pubkey and abi headers
 
@@ -305,8 +295,12 @@ async fn decode_and_fix_ext_msg(
 
     message.set_body(signed_body.into());
     let msg = serialize_object_to_base64(&message, "message").map_err(|e| Error::invalid_msg(e))?;
-
-    Ok((meta.answer_id, meta.onerror_id, func_id, msg))
+    let dst = message
+        .header()
+        .get_dst_address()
+        .map(|x| x.to_string())
+        .unwrap_or_default();
+    Ok((meta.answer_id, meta.onerror_id, func_id, dst, msg))
 }
 
 fn build_answer_msg(

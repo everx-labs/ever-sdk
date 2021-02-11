@@ -28,6 +28,7 @@ use ton_abi::Contract;
 use super::dinterface::{BuiltinInterfaces, DebotInterfaceExecutor};
 use super::DEBOT_WC;
 use super::helpers::build_internal_message;
+use super::msg_interface::MsgInterface;
 
 const EMPTY_CELL: &'static str = "te6ccgEBAQEAAgAAAA==";
 
@@ -93,12 +94,13 @@ impl DEngine {
         ton: TonClient,
         browser: Arc<dyn BrowserCallbacks + Send + Sync>,
     ) -> Self {
+        let abi = abi
+            .map(|s| load_abi(&s))
+            .unwrap_or(load_abi(DEBOT_ABI))
+            .unwrap();
         DEngine {
             raw_abi: String::new(),
-            abi: abi
-                .map(|s| load_abi(&s))
-                .unwrap_or(load_abi(DEBOT_ABI))
-                .unwrap(),
+            abi,
             addr,
             ton: ton.clone(),
             state: String::new(),
@@ -107,8 +109,8 @@ impl DEngine {
             prev_state: STATE_ZERO,
             target_addr: None,
             target_abi: None,
-            browser: browser,
-            builtin_interfaces: BuiltinInterfaces::new(ton.clone()),
+            browser: browser.clone(),
+            builtin_interfaces: BuiltinInterfaces::new(ton),
         }
     }
 
@@ -610,6 +612,14 @@ impl DEngine {
                 .ok_or("cannot convert hex string to debot abi")?;
             self.abi = load_abi(&abi_str)?;
             self.raw_abi = abi_str;
+            self.builtin_interfaces.add(
+                Arc::new(MsgInterface::new(
+                    self.ton.clone(),
+                    self.addr.clone(),
+                    self.abi.clone(),
+                    self.browser.clone(),
+                ))
+            );
         }
         if options & OPTION_TARGET_ABI != 0 {
             self.target_abi = str_hex_to_utf8(params["targetAbi"].as_str().unwrap());
@@ -802,9 +812,7 @@ impl DEngine {
                         self.ton.clone(),
                         msg,
                         target_state,
-                        &self.raw_abi,
                         &self.addr,
-                        &dest
                     )
                     .await?;
                     debug!("GetMethod succeeded");
@@ -822,9 +830,7 @@ impl DEngine {
                         msg,
                         signing_box,
                         target_state,
-                        &self.raw_abi,
                         &self.addr,
-                        &dest
                     )
                     .await?;
                     debug!("External call succeeded");

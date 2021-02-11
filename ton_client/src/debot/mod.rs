@@ -21,6 +21,7 @@ mod dengine;
 mod dinterface;
 mod errors;
 mod helpers;
+mod msg_interface;
 mod routines;
 mod run_output;
 mod sdk_interface;
