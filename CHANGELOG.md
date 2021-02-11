@@ -1,12 +1,22 @@
 # Release Notes
+
 All notable changes to this project will be documented in this file.
 
 ## 1.8.0 Feb 11, 2021
+
 ### New
+
 - **Debot Module**:
     - Added new built-in interface `Msg` which allows to send external message to blockchain and sign it with supplied keypair.
+    
+### Fixed
+
+- `crypto.hdkey_public_from_xprv` used compressed 33-byte form instead of normal 32-byte.
+
 ## 1.7.0 Feb 9, 2021
+
 ### New
+
 - BOC cache management functions were introduced:
   - `boc.cache_set`,
   - `boc.cache_get`

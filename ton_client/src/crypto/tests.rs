@@ -663,7 +663,7 @@ fn hdkey() {
         .unwrap();
     assert_eq!(
         result.public,
-        "02a8eb63085f73c33fa31b4d1134259406347284f8dab6fc68f4bf8c96f6c39b75"
+        "7b70008d0c40992283d488b1046739cf827afeabf647a5f07c4ad1e7e45a6f89"
     );
 
     let child: ResultOfHDKeyDeriveFromXPrv = client
@@ -701,7 +701,7 @@ fn hdkey() {
         .unwrap();
     assert_eq!(
         result.public,
-        "027a598c7572dbb4fbb9663a0c805576babf7faa173a4288a48a52f6f427e12be1"
+        "b45e1297a5e767341a6eaaac9e20f8ccd7556a0106298316f1272e461b6fbe98"
     );
 
     let second: ResultOfHDKeyDeriveFromXPrvPath = client
@@ -738,7 +738,7 @@ fn hdkey() {
         .unwrap();
     assert_eq!(
         result.public,
-        "02a87d9764eedaacee45b0f777b5a242939b05fa06873bf511ca9a59cb46a5f526"
+        "302a832bad9e5c9906422a82c28b39ae465dcd60178480f7309e183ee34b5e83"
     );
 }
 
