@@ -17,6 +17,12 @@ pub enum Abi {
     Serialized(AbiContract),
 }
 
+impl Default for Abi {
+    fn default() -> Self {
+        Abi::Json(Default::default())
+    }
+}
+
 impl Abi {
     pub(crate) fn json_string(&self) -> ClientResult<String> {
         match self {
@@ -31,7 +37,7 @@ impl Abi {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct AbiContract {
     #[serde(rename = "ABI version", default = "default_abi_version")]
     pub obsolete_abi_version: u32,
@@ -51,7 +57,7 @@ fn default_abi_version() -> u32 {
     2
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct AbiFunction {
     pub name: String,
     pub inputs: Vec<AbiParam>,
@@ -60,7 +66,7 @@ pub struct AbiFunction {
     pub id: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct AbiEvent {
     pub name: String,
     pub inputs: Vec<AbiParam>,
@@ -68,7 +74,7 @@ pub struct AbiEvent {
     pub id: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct AbiData {
     pub key: u64,
     pub name: String,
@@ -78,7 +84,7 @@ pub struct AbiData {
     pub components: Vec<AbiParam>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct AbiParam {
     pub name: String,
     #[serde(rename = "type")]

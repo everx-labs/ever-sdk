@@ -59,7 +59,7 @@ pub struct PostRequest {
     pub body: String,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ParamsOfAggregateCollection {
     /// Collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
@@ -69,7 +69,7 @@ pub struct ParamsOfAggregateCollection {
     pub fields: Option<Vec<FieldAggregation>>,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ParamsOfQueryCollection {
     /// Collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,

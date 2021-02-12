@@ -33,8 +33,10 @@ use super::*;
 lazy_static!(
     static ref DEBOT: Mutex<Option<DebotData>> = Mutex::new(None);
 );
-const TEST_DEBOT4: &'static str = "testDebot4";
+
+const TEST_DEBOT2: &'static str = "testDebot2";
 const TEST_DEBOT3: &'static str = "testDebot3";
+const TEST_DEBOT4: &'static str = "testDebot4";
 
 const SUPPORTED_INTERFACES: &[&str] = &[
     "f6927c0d4bdb69e1b52d27f018d156ff04152f00558042ff674f0fec32e4369d", // echo
@@ -498,6 +500,37 @@ async fn init_debot(client: Arc<TestClient>) -> DebotData {
     data
 }
 
+async fn init_debot2(client: Arc<TestClient>) -> DebotData {
+    let keys = client.generate_sign_keys();
+    let debot_abi = TestClient::abi(TEST_DEBOT2, Some(2));
+
+    let call_set = CallSet::some_with_function_and_input(
+        "constructor",
+        json!({
+            "pub": format!("0x{}", keys.public),
+            "sec": format!("0x{}", keys.secret),
+        }),
+    );
+    let deploy_debot_params = ParamsOfEncodeMessage {
+        abi: debot_abi.clone(),
+        deploy_set: DeploySet::some_with_tvc(TestClient::tvc(TEST_DEBOT2, Some(2))),
+        signer: Signer::Keys { keys: keys.clone() },
+        processing_try_index: None,
+        address: None,
+        call_set,
+    };
+    let debot_addr = client.deploy_with_giver_async(deploy_debot_params, Some(1_000_000_000u64)).await;
+    let _ = client.net_process_function(
+        debot_addr.clone(),
+        debot_abi.clone(),
+        "setAbi",
+        json!({ "debotAbi": hex::encode(&debot_abi.json_string().unwrap().as_bytes()) }),
+        Signer::Keys { keys: keys.clone() },
+    ).await.unwrap();
+    let target_addr = String::new();
+    DebotData { debot_addr, target_addr, keys }
+}
+
 async fn init_debot4(client: Arc<TestClient>) -> DebotData {
     let keys = client.generate_sign_keys();
     let target_abi = TestClient::abi(TEST_DEBOT_TARGET, Some(2));
@@ -834,6 +867,46 @@ async fn test_debot_4() {
         json!({"num": format!("0x{:064x}", 129) })
     ).await;
 
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_debot_msg_interface() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys } = init_debot2(client.clone()).await;
+    let debot_abi = TestClient::abi(TEST_DEBOT2, Some(2));
+    let counter = 10;
+    let counter_after = 15;
+
+    assert_get_method(
+        &client,
+        &debot_addr,
+        &debot_abi,
+        "counter",
+        json!({}),
+        json!({"counter": format!("{}", counter) })
+    ).await;
+
+    let steps = serde_json::from_value(json!([])).unwrap();
+    TestBrowser::execute(
+        client.clone(),
+        debot_addr.clone(),
+        keys,
+        steps,
+        vec![
+            format!("counter={}", counter),
+            format!("Increment succeeded"),
+            format!("counter={}", counter_after),
+        ],
+    ).await;
+
+    assert_get_method(
+        &client,
+        &debot_addr,
+        &debot_abi,
+        "counter",
+        json!({}),
+        json!({"counter": format!("{}", counter_after) })
+    ).await;
 }
 
 async fn download_account(client: &Arc<TestClient>, addr: &str) -> Option<String> {

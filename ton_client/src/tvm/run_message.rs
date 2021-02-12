@@ -84,8 +84,8 @@ impl AccountForExecutor {
                     let mut account: Account =
                         deserialize_object_from_boc(context, &boc, "account").await?.object;
                     let original_balance = account
-                        .get_balance()
-                        .ok_or(Error::invalid_account_boc(
+                        .balance()
+                        .ok_or_else(|| Error::invalid_account_boc(
                             "can not set unlimited balance for non existed account",
                         ))?
                         .clone();
@@ -150,7 +150,7 @@ pub struct ParamsOfRunTvm {
     pub return_updated_account: Option<bool>
 }
 
-#[derive(Serialize, Deserialize, ApiType, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Debug, PartialEq, Clone)]
 pub struct ResultOfRunExecutor {
     /// Parsed transaction.
     ///
@@ -173,7 +173,7 @@ pub struct ResultOfRunExecutor {
     pub fees: TransactionFees,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Debug, PartialEq, Clone)]
 pub struct ResultOfRunTvm {
     /// List of output messages' BOCs. Encoded as `base64`
     pub out_messages: Vec<String>,
@@ -229,7 +229,7 @@ pub async fn run_executor(
     params: ParamsOfRunExecutor,
 ) -> ClientResult<ResultOfRunExecutor> {
     let message = deserialize_object_from_boc::<Message>(&context, &params.message, "message").await?.object;
-    let msg_address = message.dst().ok_or(Error::invalid_message_type())?;
+    let msg_address = message.dst().ok_or_else(|| Error::invalid_message_type())?;
     let (account, _) = params.account.get_account(&context, msg_address.clone()).await?;
     let options = ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
 
@@ -268,7 +268,7 @@ pub async fn run_executor(
         let message = transaction
             .get_out_msg(i)
             .map_err(|err| Error::can_not_read_transaction(err))?
-            .ok_or(Error::can_not_read_transaction("message missing"))?;
+            .ok_or_else(|| Error::can_not_read_transaction("message missing"))?;
         out_messages.push(serialize_object_to_base64(&message, "message")?);
     }
 

@@ -17,13 +17,13 @@ use crate::error::ClientResult;
 use ton_block::Serializable;
 use super::internal::deserialize_object_from_boc;
 
-#[derive(Serialize, Deserialize, Clone, ApiType)]
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ParamsOfGetBlockchainConfig {
     /// Key block BOC encoded as base64
     pub block_boc: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, ApiType)]
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ResultOfGetBlockchainConfig {
     /// Blockchain config BOC encoded as base64
     pub config_boc: String,
