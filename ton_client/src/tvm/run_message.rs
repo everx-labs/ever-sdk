@@ -212,7 +212,7 @@ async fn parse_transaction(
 /// Another use case is to estimate fees for message execution. Set  `AccountForExecutor::Account.unlimited_balance`
 /// to `true` so that emulation will not depend on the actual balance.
 /// 
-/// One more use case - you can procude the sequence of operations,
+/// One more use case - you can produce the sequence of operations,
 /// thus emulating the multiple contract calls locally. 
 /// And so on. 
 /// 
