@@ -7156,7 +7156,7 @@
                 "type": "Ref",
                 "ref_name": "abi.Abi"
               },
-              "summary": "Contract ABI for dedcoding output messages",
+              "summary": "Contract ABI for decoding output messages",
               "description": null
             },
             {

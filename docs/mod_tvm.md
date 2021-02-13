@@ -146,7 +146,7 @@ function run_tvm(
 - `account`: _string_ – Account BOC.
 <br>Must be encoded as base64.
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
-- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for dedcoding output messages
+- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for decoding output messages
 - `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
 <br>The BOC itself returned if no cache type provided
 - `return_updated_account`?: _boolean_ – Return updated account flag.
@@ -364,7 +364,7 @@ type ParamsOfRunTvm = {
 - `account`: _string_ – Account BOC.
 <br>Must be encoded as base64.
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
-- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for dedcoding output messages
+- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for decoding output messages
 - `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
 <br>The BOC itself returned if no cache type provided
 - `return_updated_account`?: _boolean_ – Return updated account flag.

@@ -142,7 +142,7 @@ pub struct ParamsOfRunTvm {
     pub account: String,
     /// Execution options.
     pub execution_options: Option<ExecutionOptions>,
-    /// Contract ABI for dedcoding output messages
+    /// Contract ABI for decoding output messages
     pub abi: Option<Abi>,
     /// Cache type to put the result. The BOC itself returned if no cache type provided
     pub boc_cache: Option<BocCacheType>,
