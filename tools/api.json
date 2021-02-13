@@ -8495,7 +8495,7 @@
               "description": null
             },
             {
-              "name": "DebotExternaCallFailed",
+              "name": "DebotExternalCallFailed",
               "type": "Number",
               "value": "810",
               "summary": null,
