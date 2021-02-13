@@ -128,7 +128,7 @@ pub struct ParamsOfRunExecutor {
     pub abi: Option<Abi>,
     /// Skip transaction check flag
     pub skip_transaction_check: Option<bool>,
-    /// Cache type to put the result. The BOC intself returned if no cache type provided
+    /// Cache type to put the result. The BOC itself returned if no cache type provided
     pub boc_cache: Option<BocCacheType>,
     /// Return updated account flag. Empty string is returned if the flag is `false`
     pub return_updated_account: Option<bool>
@@ -144,7 +144,7 @@ pub struct ParamsOfRunTvm {
     pub execution_options: Option<ExecutionOptions>,
     /// Contract ABI for dedcoding output messages
     pub abi: Option<Abi>,
-    /// Cache type to put the result. The BOC intself returned if no cache type provided
+    /// Cache type to put the result. The BOC itself returned if no cache type provided
     pub boc_cache: Option<BocCacheType>,
     /// Return updated account flag. Empty string is returned if the flag is `false`
     pub return_updated_account: Option<bool>

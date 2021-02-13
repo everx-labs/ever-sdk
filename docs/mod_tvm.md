@@ -86,7 +86,7 @@ function run_executor(
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for decoding output messages
 - `skip_transaction_check`?: _boolean_ – Skip transaction check flag
 - `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
-<br>The BOC intself returned if no cache type provided
+<br>The BOC itself returned if no cache type provided
 - `return_updated_account`?: _boolean_ – Return updated account flag.
 <br>Empty string is returned if the flag is `false`
 
@@ -148,7 +148,7 @@ function run_tvm(
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for dedcoding output messages
 - `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
-<br>The BOC intself returned if no cache type provided
+<br>The BOC itself returned if no cache type provided
 - `return_updated_account`?: _boolean_ – Return updated account flag.
 <br>Empty string is returned if the flag is `false`
 
@@ -323,7 +323,7 @@ type ParamsOfRunExecutor = {
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for decoding output messages
 - `skip_transaction_check`?: _boolean_ – Skip transaction check flag
 - `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
-<br>The BOC intself returned if no cache type provided
+<br>The BOC itself returned if no cache type provided
 - `return_updated_account`?: _boolean_ – Return updated account flag.
 <br>Empty string is returned if the flag is `false`
 
@@ -366,7 +366,7 @@ type ParamsOfRunTvm = {
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for dedcoding output messages
 - `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
-<br>The BOC intself returned if no cache type provided
+<br>The BOC itself returned if no cache type provided
 - `return_updated_account`?: _boolean_ – Return updated account flag.
 <br>Empty string is returned if the flag is `false`
 

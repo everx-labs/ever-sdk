@@ -4904,7 +4904,7 @@
                 "ref_name": "boc.BocCacheType"
               },
               "summary": "Cache type to put the result.",
-              "description": "The BOC intself returned if no cache type provided"
+              "description": "The BOC itself returned if no cache type provided"
             }
           ],
           "summary": null,
@@ -7061,7 +7061,7 @@
                 "ref_name": "boc.BocCacheType"
               },
               "summary": "Cache type to put the result.",
-              "description": "The BOC intself returned if no cache type provided"
+              "description": "The BOC itself returned if no cache type provided"
             },
             {
               "name": "return_updated_account",
@@ -7167,7 +7167,7 @@
                 "ref_name": "boc.BocCacheType"
               },
               "summary": "Cache type to put the result.",
-              "description": "The BOC intself returned if no cache type provided"
+              "description": "The BOC itself returned if no cache type provided"
             },
             {
               "name": "return_updated_account",
