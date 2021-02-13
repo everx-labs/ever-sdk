@@ -2879,7 +2879,7 @@
         {
           "name": "nacl_box",
           "summary": "Public key authenticated encryption",
-          "description": "Encrypt and authenticate a message using the senders secret key, the recievers public\nkey, and a nonce.",
+          "description": "Encrypt and authenticate a message using the senders secret key, the receivers public\nkey, and a nonce.",
           "params": [
             {
               "name": "_context",
@@ -2916,7 +2916,7 @@
         },
         {
           "name": "nacl_box_open",
-          "summary": "Decrypt and verify the cipher text using the recievers secret key, the senders public key, and the nonce.",
+          "summary": "Decrypt and verify the cipher text using the receivers secret key, the senders public key, and the nonce.",
           "description": null,
           "params": [
             {
