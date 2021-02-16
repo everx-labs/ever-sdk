@@ -12,41 +12,81 @@
  *
  */
 
-use crate::boc::internal::serialize_cell_to_base64;
+use crate::boc::internal::{deserialize_cell_from_base64, serialize_cell_to_base64};
 use crate::error::ClientResult;
 use crate::tvm::Error;
 use core::result::Result::{Err, Ok};
 use serde_json::Value;
+use ton_types::BuilderData;
 use std::ops::Deref;
 use std::slice::Iter;
 use std::sync::Arc;
-use ton_vm::stack::integer::IntegerData;
+use ton_vm::stack::{continuation::ContinuationData, integer::IntegerData};
 use ton_vm::stack::StackItem;
 
 enum ProcessingResult<'a> {
     Serialized(Value),
     Nested(Box<dyn Iterator<Item = &'a StackItem> + 'a>),
-    //LevelUp(Vec<Value>),
+    LevelUp,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(tag="type", content = "value")]
+enum ComplexType {
+    List(Vec<Value>),
+    Cell(String),
+    Builder(String),
+    Slice(String),
+    Continuation(String),
+}
+
+fn is_equal_type(left: &Value, right: &Value) -> bool {
+    left["type"] == right["type"] &&
+    left.is_array() == right.is_array() &&
+    left.is_string() == right.is_string()
 }
 
 pub fn serialize_items<'a>(items: Box<dyn Iterator<Item = &'a StackItem> + 'a>) -> ClientResult<Value> {
     let mut stack = vec![(vec![], items)];
+    let mut list_items: Option<Vec<Value>> = None;
     loop {
-        if let Some((mut vec, mut iter)) = stack.pop() {
-            if let Some(item) = iter.next() {
-                match process_item(item)? {
-                    ProcessingResult::Serialized(value) => {
-                        vec.push(value);
-                        stack.push((vec, iter));
-                    },
-                    ProcessingResult::Nested(nested_iter) => {
-                        stack.push((vec, iter));
-                        stack.push((vec![], nested_iter));
-                    }
+        let result = {
+            let (vec, iter) = stack.last_mut().unwrap();
+            let next = iter.next();
+            if let Some(list) = list_items.take() {
+                // list is ended if current tuple has next element
+                // or it already contains more than one element
+                // or element type in current tuple is not equal to list items type
+                if next.is_some() || vec.len() != 1 || !is_equal_type(&vec[0], &list[0]) {
+                    vec.push(json!(ComplexType::List(list)));
+                } else {
+                    list_items = Some(list);
                 }
+            }
+            if let Some(item) = next {
+                process_item(item)?
             } else {
+                ProcessingResult::LevelUp
+            }
+        };
+
+        match result {
+            ProcessingResult::Serialized(value) => stack.last_mut().unwrap().0.push(value),
+            ProcessingResult::Nested(nested_iter) => stack.push((vec![], nested_iter)),
+            ProcessingResult::LevelUp => {
+                let mut vec = stack.pop().unwrap().0;
                 if let Some((parent_vec, _)) = stack.last_mut() {
-                    parent_vec.push(Value::Array(vec));
+                    // list starts from tuple with 2 elements: some value and null,
+                    // the value becomes the last list item
+                    if vec.len() == 2 && vec[1] == Value::Null {
+                        vec.resize(1, Value::Null);
+                        list_items = Some(vec);
+                    } else if let Some(list) = list_items.take() {
+                        vec.extend(list.into_iter());
+                        list_items = Some(vec);
+                    } else {
+                        parent_vec.push(Value::Array(vec));
+                    }
                 } else {
                     return Ok(Value::Array(vec));
                 }
@@ -90,22 +130,26 @@ fn process_item(item: &StackItem) -> ClientResult<ProcessingResult> {
         StackItem::Integer(value) => 
             ProcessingResult::Serialized(Value::String(serialize_integer_data(value))),
         StackItem::Tuple(items) => ProcessingResult::Nested(Box::new(items.iter())),
-        StackItem::Builder(value) => ProcessingResult::Serialized(json!({
-            "type": "Builder",
-            "value": serialize_cell_to_base64(&value.deref().into(), "stack item `Builder`")
-        })),
-        StackItem::Slice(value) => ProcessingResult::Serialized(json!({
-            "type": "Slice",
-            "value": serialize_cell_to_base64(&value.into_cell(), "stack item `Slice`")
-        })),
-        StackItem::Cell(value) => ProcessingResult::Serialized(json!({
-            "type": "Cell",
-            "value": serialize_cell_to_base64(value, "stack item `Cell`")
-        })),
-        StackItem::Continuation(value) => ProcessingResult::Serialized(json!({
-            "type": "Continuation",
-            "value": serialize_cell_to_base64(&value.code().into_cell(), "stack item `Continuation`")
-        })),
+        StackItem::Builder(value) => ProcessingResult::Serialized(json!(
+            ComplexType::Builder(
+                serialize_cell_to_base64(&value.deref().into(), "stack item `Builder`")?
+            )
+        )),
+        StackItem::Slice(value) => ProcessingResult::Serialized(json!(
+            ComplexType::Slice(
+                serialize_cell_to_base64(&value.into_cell(), "stack item `Slice`")?
+            )
+        )),
+        StackItem::Cell(value) => ProcessingResult::Serialized(json!(
+            ComplexType::Cell(
+                serialize_cell_to_base64(value, "stack item `Cell`")?
+            )
+        )),
+        StackItem::Continuation(value) => ProcessingResult::Serialized(json!(
+            ComplexType::Continuation(
+                serialize_cell_to_base64(&value.code().into_cell(), "stack item `Continuation`")?
+            )
+        )),
     })
 }
 
@@ -121,12 +165,41 @@ pub fn deserialize_item(value: &Value) -> ClientResult<StackItem> {
             if let Some(i) = n.as_i64() {
                 StackItem::Integer(Arc::new(IntegerData::from_i64(i)))
             } else {
-                return Err(Error::invalid_input_stack("Invalid number value", &value));
+                return Err(Error::invalid_input_stack("Invalid number value", value));
             }
         }
-        Value::String(s) => StackItem::Integer(Arc::new(parse_integer_data(s)?)),
+        Value::String(s) => StackItem::Integer(Arc::new(parse_integer_data(&s)?)),
         Value::Array(array) => StackItem::Tuple(deserialize_items(array.iter())?),
-        Value::Object(_) => return Err(Error::invalid_input_stack("Unexpected object", &value)),
+        Value::Object(_) => {
+            let object = serde_json::from_value(value.clone())
+                .map_err(|err| Error::invalid_input_stack(
+                    format!("Can not parse object: {}", err),value))?;
+            match object {
+                ComplexType::Builder(string) => {
+                    let cell = deserialize_cell_from_base64(&string, "Builder")?.1;
+                    StackItem::Builder(Arc::new(BuilderData::from(&cell)))
+                }
+                ComplexType::Cell(string) => {
+                    let cell = deserialize_cell_from_base64(&string, "Cell")?.1;
+                    StackItem::Cell(cell)
+                }
+                ComplexType::Continuation(string) => {
+                    let cell = deserialize_cell_from_base64(&string, "Continuation")?.1;
+                    StackItem::Continuation(Arc::new(ContinuationData::with_code(cell.into())))
+                }
+                ComplexType::Slice(string) => {
+                    let cell = deserialize_cell_from_base64(&string, "Slice")?.1;
+                    StackItem::Slice(cell.into())
+                }
+                ComplexType::List(mut vec) => {
+                    let mut list = StackItem::None;
+                    while let Some(item) = vec.pop() {
+                        list = StackItem::Tuple(vec![deserialize_item(&item)?, list]);
+                    }
+                    list
+                }
+            }
+        }
     })
 }
 

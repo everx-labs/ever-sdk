@@ -66,8 +66,8 @@ pub async fn run_get(
     let mut stack_in = Stack::new();
     if let Some(input) = params.input {
         if let Value::Array(array) = input {
-            for value in array.iter() {
-                stack_in.push(stack::deserialize_item(value)?);
+            for value in array {
+                stack_in.push(stack::deserialize_item(&value)?);
             }
         } else {
             stack_in.push(stack::deserialize_item(&input)?);
