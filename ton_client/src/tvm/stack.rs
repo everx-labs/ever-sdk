@@ -23,6 +23,7 @@ use std::slice::Iter;
 use std::sync::Arc;
 use ton_vm::stack::{continuation::ContinuationData, integer::IntegerData};
 use ton_vm::stack::StackItem;
+use ton_vm::{boolean, int};
 
 enum ProcessingResult<'a> {
     Serialized(Value),
@@ -156,14 +157,10 @@ fn process_item(item: &StackItem) -> ClientResult<ProcessingResult> {
 pub fn deserialize_item(value: &Value) -> ClientResult<StackItem> {
     Ok(match value {
         Value::Null => StackItem::None,
-        Value::Bool(v) => StackItem::Integer(Arc::new(if *v {
-            IntegerData::one()
-        } else {
-            IntegerData::zero()
-        })),
+        Value::Bool(v) => boolean!(*v),
         Value::Number(n) => {
             if let Some(i) = n.as_i64() {
-                StackItem::Integer(Arc::new(IntegerData::from_i64(i)))
+                int!(i)
             } else {
                 return Err(Error::invalid_input_stack("Invalid number value", value));
             }

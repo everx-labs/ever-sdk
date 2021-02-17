@@ -13,12 +13,15 @@
  */
 
 use super::*;
-use crate::{abi::encode_account::{ParamsOfEncodeAccount, StateInitSource}, boc::BocCacheType};
+use crate::{abi::encode_account::{ParamsOfEncodeAccount, StateInitSource}, boc::{BocCacheType, internal::serialize_cell_to_base64}};
 use crate::abi::{Abi, CallSet, DeploySet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer};
 use crate::json_interface::modules::{AbiModule, TvmModule};
 use crate::tests::{TestClient, HELLO, SUBSCRIBE};
 use api_info::ApiModule;
 use serde_json::Value;
+use ton_types::{BuilderData, Cell};
+use ton_vm::{boolean, stack::{StackItem, continuation::ContinuationData, integer::IntegerData}};
+use ton_vm::int;
 use std::sync::Arc;
 
 const ELECTOR_ADDRESS: &str = "-1:3333333333333333333333333333333333333333333333333333333333333333";
@@ -450,4 +453,177 @@ async fn profile_tvm() {
 
     println!("Tvm called in {}ms", chrono::prelude::Utc::now().timestamp_millis() - start);
     println!("Whole test in {}ms", chrono::prelude::Utc::now().timestamp_millis() - very_start);
+}
+
+#[test]
+fn test_stack_serialization() {
+    let empty_cell = Cell::default();
+    let empty_cell_boc = serialize_cell_to_base64(&empty_cell, "").unwrap();
+    let make_list = |values: Vec<Value>| {
+        json!({
+            "type": "List",
+            "value": values,
+        })
+    };
+    let input = serde_json::json!([
+        null,
+        "NaN",
+        "123",
+        "0x456",
+        true,
+        false,
+        {
+            "type": "Cell",
+            "value": &empty_cell_boc,
+        },
+        {
+            "type": "Builder",
+            "value": &empty_cell_boc,
+        },
+        {
+            "type": "Continuation",
+            "value": &empty_cell_boc,
+        },
+        {
+            "type": "Slice",
+            "value": &empty_cell_boc,
+        },
+        ["123", "456"],
+        ["123", ["456", ["789", null]]],
+        {
+            "type": "List",
+            "value": ["123", "456", "789"],
+        },
+        make_list(vec![
+            json!(vec![
+                json!(["123", "456"]),
+                make_list(vec![
+                    json!("123"),
+                ])
+            ]),
+            json!(vec![
+                json!(["123"]),
+                make_list(vec![
+                    json!("123"),
+                    json!("456"),
+                    json!("789"),
+                ])
+            ]),
+        ]),
+    ]);
+
+    let list = StackItem::Tuple(vec![
+        int!(123),
+        StackItem::Tuple(vec![
+            int!(456),
+            StackItem::Tuple(vec![
+                int!(789),
+                StackItem::None,
+            ])
+        ])
+    ]);
+
+    let extended_list = StackItem::Tuple(vec![
+        StackItem::Tuple(vec![
+            StackItem::Tuple(vec![int!(123), int!(456)]),
+            StackItem::Tuple(vec![
+                int!(123),
+                StackItem::None,
+            ])
+        ]),
+        StackItem::Tuple(vec![
+            StackItem::Tuple(vec![
+                StackItem::Tuple(vec![int!(123)]),
+                StackItem::Tuple(vec![
+                    int!(123),
+                    StackItem::Tuple(vec![
+                        int!(456),
+                        StackItem::Tuple(vec![
+                            int!(789),
+                            StackItem::None
+                        ])
+                    ])
+                ])
+            ]),
+            StackItem::None,
+        ])
+    ]);
+
+    let stack_items = stack::deserialize_items(input.as_array().unwrap().iter()).unwrap();
+
+    assert_eq!(
+        stack_items, 
+        vec![
+            StackItem::None,
+            int!(nan),
+            int!(123),
+            int!(parse_hex "456"),
+            boolean!(true),
+            boolean!(false),
+            StackItem::Cell(empty_cell.clone()),
+            StackItem::Builder(Arc::new(BuilderData::new())),
+            StackItem::Continuation(Arc::new(ContinuationData::with_code(empty_cell.clone().into()))),
+            StackItem::Slice(empty_cell.clone().into()),
+            StackItem::Tuple(vec![int!(123), int!(456)]),
+            list.clone(),
+            list.clone(),
+            extended_list.clone(),
+        ]
+    );
+
+    
+    let serialized = stack::serialize_items(Box::new(stack_items.iter())).unwrap();
+
+    assert_eq!(
+        serialized,
+        serde_json::json!([
+            null,
+            "NaN",
+            "123",
+            "1110",
+            "-1", // true
+            "0", // false
+            {
+                "type": "Cell",
+                "value": &empty_cell_boc,
+            },
+            {
+                "type": "Builder",
+                "value": &empty_cell_boc,
+            },
+            {
+                "type": "Continuation",
+                "value": &empty_cell_boc,
+            },
+            {
+                "type": "Slice",
+                "value": &empty_cell_boc,
+            },
+            ["123", "456"],
+            {
+                "type": "List",
+                "value": ["123", "456", "789"],
+            },
+            {
+                "type": "List",
+                "value": ["123", "456", "789"],
+            },
+            make_list(vec![
+                json!(vec![
+                    json!(["123", "456"]),
+                    make_list(vec![
+                        json!("123"),
+                    ])
+                ]),
+                json!(vec![
+                    json!(["123"]),
+                    make_list(vec![
+                        json!("123"),
+                        json!("456"),
+                        json!("789"),
+                    ])
+                ]),
+            ]),
+        ])
+    );
 }
