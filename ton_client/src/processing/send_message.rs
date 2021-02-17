@@ -23,7 +23,7 @@ use crate::processing::types::ProcessingEvent;
 use crate::processing::Error;
 use std::sync::Arc;
 
-#[derive(Serialize, Deserialize, ApiType, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Default, Debug)]
 pub struct ParamsOfSendMessage {
     /// Message BOC.
     pub message: String,
@@ -46,7 +46,7 @@ pub struct ParamsOfSendMessage {
     pub send_events: bool,
 }
 
-#[derive(Serialize, Deserialize, ApiType, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Default, PartialEq, Debug)]
 pub struct ResultOfSendMessage {
     /// The last generated shard block of the message destination account before the
     /// message was sent.

@@ -19,7 +19,7 @@ use chacha20::cipher::{NewStreamCipher, SyncStreamCipher};
 use chacha20::{Key, Nonce};
 use std::sync::Arc;
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfChaCha20 {
     /// Source data to be encrypted or decrypted. Must be encoded with `base64`.
     pub data: String,
@@ -29,7 +29,7 @@ pub struct ParamsOfChaCha20 {
     pub nonce: String,
 }
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfChaCha20 {
     /// Encrypted/decrypted data. Encoded with `base64`.
     pub data: String,

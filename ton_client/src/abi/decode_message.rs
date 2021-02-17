@@ -62,7 +62,7 @@ impl DecodedMessageBody {
 
 //---------------------------------------------------------------------------------- decode_message
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfDecodeMessage {
     /// contract ABI
     pub abi: Abi,
@@ -89,7 +89,7 @@ pub async fn decode_message(
 
 //----------------------------------------------------------------------------- decode_message_body
 
-#[derive(Serialize, Deserialize, ApiType)]
+#[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfDecodeMessageBody {
     /// Contract ABI used to decode.
     pub abi: Abi,

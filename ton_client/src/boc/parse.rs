@@ -17,13 +17,13 @@ use crate::client::ClientContext;
 use crate::error::ClientResult;
 use serde_json::Value;
 
-#[derive(Serialize, Deserialize, Clone, ApiType)]
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ParamsOfParse {
     /// BOC encoded as base64
     pub boc: String,
 }
 
-#[derive(Serialize, Deserialize, Clone, ApiType)]
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ParamsOfParseShardstate {
     /// BOC encoded as base64
     pub boc: String,
@@ -33,7 +33,7 @@ pub struct ParamsOfParseShardstate {
     pub workchain_id: i32,
 }
 
-#[derive(Serialize, Deserialize, Clone, ApiType)]
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ResultOfParse {
     /// JSON containing parsed BOC
     pub parsed: serde_json::Value,

@@ -3,7 +3,7 @@ use crate::error::ClientError;
 use serde_json::Value;
 use ton_sdk::TransactionFees;
 
-#[derive(Serialize, Deserialize, ApiType, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Debug, PartialEq, Clone)]
 pub struct DecodedOutput {
     /// Decoded bodies of the out messages.
     ///
@@ -15,7 +15,7 @@ pub struct DecodedOutput {
     pub output: Option<Value>,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Debug, PartialEq, Clone)]
 pub struct ResultOfProcessMessage {
     /// Parsed transaction.
     ///

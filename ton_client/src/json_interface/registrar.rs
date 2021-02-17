@@ -77,7 +77,7 @@ impl<'h> ModuleReg<'h> {
         handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> F,
         api: fn() -> api_info::Function,
     ) where
-        P: ApiType + Send + DeserializeOwned + 'static,
+        P: ApiType + Send + DeserializeOwned + Default + 'static,
         R: ApiType + Send + Serialize + 'static,
         F: Send + Future<Output = ClientResult<R>> + 'static,
     {
@@ -127,7 +127,7 @@ impl<'h> ModuleReg<'h> {
         handler: fn(context: std::sync::Arc<ClientContext>, params: P, callback: Arc<Request>) -> F,
         api: fn() -> api_info::Function,
     ) where
-        P: ApiType + Send + DeserializeOwned + 'static,
+        P: ApiType + Send + DeserializeOwned + Default + 'static,
         R: ApiType + Send + Serialize + 'static,
         F: Send + Future<Output = ClientResult<R>> + 'static,
     {
@@ -150,7 +150,7 @@ impl<'h> ModuleReg<'h> {
         ) -> F,
         api: fn() -> api_info::Function,
     ) where
-        P: ApiType + Send + DeserializeOwned + 'static,
+        P: ApiType + Send + DeserializeOwned + Default + 'static,
         R: ApiType + Send + Serialize + 'static,
         AP: ApiType + Send + Serialize + 'static,
         AR: ApiType + Send + DeserializeOwned + 'static,
@@ -194,7 +194,7 @@ impl<'h> ModuleReg<'h> {
         handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> ClientResult<R>,
         api: fn() -> api_info::Function,
     ) where
-        P: ApiType + Send + DeserializeOwned + 'static,
+        P: ApiType + Send + DeserializeOwned + Default + 'static,
         R: ApiType + Send + Serialize + 'static,
     {
         self.register_type::<P>();

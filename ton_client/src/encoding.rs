@@ -33,7 +33,7 @@ pub enum AccountAddressType {
     Base64,
 }
 
-#[derive(Serialize, Deserialize, Debug, ApiType, Clone)]
+#[derive(Serialize, Deserialize, Debug, ApiType, Default, Clone)]
 pub struct Base64AddressParams {
     pub url: bool,
     pub test: bool,
