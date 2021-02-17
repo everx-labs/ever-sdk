@@ -28,7 +28,7 @@ use ton_vm::{boolean, int};
 enum ProcessingResult<'a> {
     Serialized(Value),
     Nested(Box<dyn Iterator<Item = &'a StackItem> + 'a>),
-    LevelUp,
+    //LevelUp,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -51,46 +51,45 @@ pub fn serialize_items<'a>(items: Box<dyn Iterator<Item = &'a StackItem> + 'a>) 
     let mut stack = vec![(vec![], items)];
     let mut list_items: Option<Vec<Value>> = None;
     loop {
-        let result = {
-            let (vec, iter) = stack.last_mut().unwrap();
-            let next = iter.next();
-            if let Some(list) = list_items.take() {
-                // list is ended if current tuple has next element
-                // or it already contains more than one element
-                // or element type in current tuple is not equal to list items type
-                if next.is_some() || vec.len() != 1 || !is_equal_type(&vec[0], &list[0]) {
-                    vec.push(json!(ComplexType::List(list)));
-                } else {
-                    list_items = Some(list);
-                }
-            }
-            if let Some(item) = next {
-                process_item(item)?
+        let (mut vec, mut iter) = stack.pop().unwrap();
+        let next = iter.next();
+        if let Some(list) = list_items.take() {
+            // list is ended if current tuple has next element
+            // or it already contains more than one element
+            // or element type in current tuple is not equal to list items type
+            if next.is_some() || vec.len() != 1 || !is_equal_type(&vec[0], &list[0]) {
+                vec.push(json!(ComplexType::List(list)));
             } else {
-                ProcessingResult::LevelUp
+                list_items = Some(list);
             }
-        };
-
-        match result {
-            ProcessingResult::Serialized(value) => stack.last_mut().unwrap().0.push(value),
-            ProcessingResult::Nested(nested_iter) => stack.push((vec![], nested_iter)),
-            ProcessingResult::LevelUp => {
-                let mut vec = stack.pop().unwrap().0;
-                if let Some((parent_vec, _)) = stack.last_mut() {
-                    // list starts from tuple with 2 elements: some value and null,
-                    // the value becomes the last list item
-                    if vec.len() == 2 && vec[1] == Value::Null {
-                        vec.resize(1, Value::Null);
-                        list_items = Some(vec);
-                    } else if let Some(list) = list_items.take() {
-                        vec.extend(list.into_iter());
-                        list_items = Some(vec);
-                    } else {
-                        parent_vec.push(Value::Array(vec));
-                    }
-                } else {
-                    return Ok(Value::Array(vec));
+        }
+        
+        if let Some(item) = next {
+            match process_item(item)? {
+                ProcessingResult::Serialized(value) => {
+                    vec.push(value);
+                    stack.push((vec, iter));
+                },
+                ProcessingResult::Nested(nested_iter) => {
+                    stack.push((vec, iter));
+                    stack.push((vec![], nested_iter));
                 }
+            }
+        } else {
+            if let Some((parent_vec, _)) = stack.last_mut() {
+                // list starts from tuple with 2 elements: some value and null,
+                // the value becomes the last list item
+                if vec.len() == 2 && vec[1] == Value::Null {
+                    vec.resize(1, Value::Null);
+                    list_items = Some(vec);
+                } else if let Some(list) = list_items.take() {
+                    vec.extend(list.into_iter());
+                    list_items = Some(vec);
+                } else {
+                    parent_vec.push(Value::Array(vec));
+                }
+            } else {
+                return Ok(Value::Array(vec));
             }
         }
     }
