@@ -31,7 +31,11 @@ pub struct ParamsOfRunGet {
     pub function_name: String,
     /// Input parameters
     pub input: Option<Value>,
+    /// Execution options
     pub execution_options: Option<ExecutionOptions>,
+    /// Convert lists based on nested tuples in result into plain arrays. Default is `false`.
+    /// Input parameters may use any of lists representations
+    pub tuple_list_as_array: Option<bool>,
 }
 
 #[allow(non_snake_case)]
@@ -80,6 +84,9 @@ pub async fn run_get(
 
     let (engine, _) = super::call_tvm::call_tvm(stuff, options, stack_in)?;
     Ok(ResultOfRunGet {
-        output: stack::serialize_items(Box::new(engine.stack().iter()))?,
+        output: stack::serialize_items(
+            Box::new(engine.stack().iter()),
+            params.tuple_list_as_array.unwrap_or_default(),
+        )?,
     })
 }

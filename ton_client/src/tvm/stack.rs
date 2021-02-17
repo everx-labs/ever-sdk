@@ -47,7 +47,10 @@ fn is_equal_type(left: &Value, right: &Value) -> bool {
     left.is_string() == right.is_string()
 }
 
-pub fn serialize_items<'a>(items: Box<dyn Iterator<Item = &'a StackItem> + 'a>) -> ClientResult<Value> {
+pub fn serialize_items<'a>(
+    items: Box<dyn Iterator<Item = &'a StackItem> + 'a>,
+    flatten_lists: bool,
+) -> ClientResult<Value> {
     let mut stack = vec![(vec![], items)];
     let mut list_items: Option<Vec<Value>> = None;
     loop {
@@ -79,7 +82,7 @@ pub fn serialize_items<'a>(items: Box<dyn Iterator<Item = &'a StackItem> + 'a>) 
             if let Some((parent_vec, _)) = stack.last_mut() {
                 // list starts from tuple with 2 elements: some value and null,
                 // the value becomes the last list item
-                if vec.len() == 2 && vec[1] == Value::Null {
+                if vec.len() == 2 && vec[1] == Value::Null && flatten_lists {
                     vec.resize(1, Value::Null);
                     list_items = Some(vec);
                 } else if let Some(list) = list_items.take() {
@@ -121,7 +124,7 @@ fn serialize_integer_data(data: &ton_vm::stack::integer::IntegerData) -> String 
 }
 
 pub fn serialize_item<'a>(item: &'a StackItem) -> ClientResult<Value> {
-    Ok(serialize_items(Box::new(vec![item].into_iter()))?[0].take())
+    Ok(serialize_items(Box::new(vec![item].into_iter()), false)?[0].take())
 }
 
 fn process_item(item: &StackItem) -> ClientResult<ProcessingResult> {
