@@ -50,6 +50,7 @@ impl DeploySet {
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct CallSet {
     /// Function name that is being called.
+    /// Or function id encoded as string in hex (starting with 0x).
     pub function_name: String,
 
     /// Function header.
