@@ -433,7 +433,7 @@ function encode_account(
 - `last_trans_lt`?: _bigint_ – Initial value for the `last_trans_lt`.
 - `last_paid`?: _number_ – Initial value for the `last_paid`.
 - `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
-<br>The BOC intself returned if no cache type provided
+<br>The BOC itself returned if no cache type provided
 
 
 ### Result
@@ -1021,7 +1021,7 @@ type ParamsOfEncodeAccount = {
 - `last_trans_lt`?: _bigint_ – Initial value for the `last_trans_lt`.
 - `last_paid`?: _number_ – Initial value for the `last_paid`.
 - `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
-<br>The BOC intself returned if no cache type provided
+<br>The BOC itself returned if no cache type provided
 
 
 ## ResultOfEncodeAccount

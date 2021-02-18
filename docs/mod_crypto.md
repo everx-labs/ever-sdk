@@ -42,7 +42,7 @@ Crypto functions.
 
 [nacl_box](#nacl_box) – Public key authenticated encryption
 
-[nacl_box_open](#nacl_box_open) – Decrypt and verify the cipher text using the recievers secret key, the senders public key, and the nonce.
+[nacl_box_open](#nacl_box_open) – Decrypt and verify the cipher text using the receivers secret key, the senders public key, and the nonce.
 
 [nacl_secret_box](#nacl_secret_box) – Encrypt and authenticate message using nonce and secret key.
 
@@ -733,7 +733,7 @@ function nacl_box_keypair_from_secret_key(
 
 Public key authenticated encryption
 
-Encrypt and authenticate a message using the senders secret key, the recievers public
+Encrypt and authenticate a message using the senders secret key, the receivers public
 key, and a nonce.
 
 ```ts
@@ -766,7 +766,7 @@ function nacl_box(
 
 ## nacl_box_open
 
-Decrypt and verify the cipher text using the recievers secret key, the senders public key, and the nonce.
+Decrypt and verify the cipher text using the receivers secret key, the senders public key, and the nonce.
 
 ```ts
 type ParamsOfNaclBoxOpen = {

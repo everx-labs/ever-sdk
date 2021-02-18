@@ -128,7 +128,7 @@ pub struct ParamsOfRunExecutor {
     pub abi: Option<Abi>,
     /// Skip transaction check flag
     pub skip_transaction_check: Option<bool>,
-    /// Cache type to put the result. The BOC intself returned if no cache type provided
+    /// Cache type to put the result. The BOC itself returned if no cache type provided
     pub boc_cache: Option<BocCacheType>,
     /// Return updated account flag. Empty string is returned if the flag is `false`
     pub return_updated_account: Option<bool>
@@ -142,9 +142,9 @@ pub struct ParamsOfRunTvm {
     pub account: String,
     /// Execution options.
     pub execution_options: Option<ExecutionOptions>,
-    /// Contract ABI for dedcoding output messages
+    /// Contract ABI for decoding output messages
     pub abi: Option<Abi>,
-    /// Cache type to put the result. The BOC intself returned if no cache type provided
+    /// Cache type to put the result. The BOC itself returned if no cache type provided
     pub boc_cache: Option<BocCacheType>,
     /// Return updated account flag. Empty string is returned if the flag is `false`
     pub return_updated_account: Option<bool>
@@ -212,7 +212,7 @@ async fn parse_transaction(
 /// Another use case is to estimate fees for message execution. Set  `AccountForExecutor::Account.unlimited_balance`
 /// to `true` so that emulation will not depend on the actual balance.
 /// 
-/// One more use case - you can procude the sequence of operations,
+/// One more use case - you can produce the sequence of operations,
 /// thus emulating the multiple contract calls locally. 
 /// And so on. 
 /// 

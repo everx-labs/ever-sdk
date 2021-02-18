@@ -201,7 +201,7 @@ enum DebotErrorCode {
     DebotInvalidAbi = 807,
     DebotGetMethodFailed = 808,
     DebotInvalidMsg = 809,
-    DebotExternaCallFailed = 810
+    DebotExternalCallFailed = 810
 }
 ```
 One of the following value:
@@ -215,7 +215,7 @@ One of the following value:
 - `DebotInvalidAbi = 807`
 - `DebotGetMethodFailed = 808`
 - `DebotInvalidMsg = 809`
-- `DebotExternaCallFailed = 810`
+- `DebotExternalCallFailed = 810`
 
 
 ## DebotHandle
