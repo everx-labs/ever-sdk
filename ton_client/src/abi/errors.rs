@@ -14,6 +14,7 @@ pub enum ErrorCode {
     RequiredPublicKeyMissingForFunctionHeader = 309,
     InvalidSigner = 310,
     InvalidAbi = 311,
+    InvalidFunctionId = 312,
 }
 
 pub struct Error;
@@ -92,6 +93,13 @@ impl Error {
         error(
             ErrorCode::InvalidTvcImage,
             format!("Invalid TVC image: {}", err),
+        )
+    }
+
+    pub fn invalid_function_id<E: Display>(func_id: &str, err: E) -> ClientError {
+        error(
+            ErrorCode::InvalidFunctionId,
+            format!("Invalid function {}: {}", func_id, err),
         )
     }
 }

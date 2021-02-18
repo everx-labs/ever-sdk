@@ -1,6 +1,6 @@
 use crate::{abi::decode_message::{DecodedMessageBody, MessageBodyType, ParamsOfDecodeMessage}, boc::ResultOfParse};
 use crate::abi::encode_message::{
-    CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfEncodeMessage, ResultOfAttachSignature, 
+    CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfEncodeMessage, ResultOfAttachSignature,
     ResultOfEncodeMessage, ParamsOfEncodeInternalMessage, ResultOfEncodeInternalMessage
 };
 use crate::abi::internal::{is_empty_pubkey, resolve_pubkey, create_tvc_image};
@@ -13,7 +13,7 @@ use crate::tests::{TestClient, EVENTS, HELLO};
 use crate::utils::conversion::abi_uint;
 
 use std::io::Cursor;
-
+use ton_abi::Contract;
 use ton_block::{Message, Deserializable, Serializable};
 use ton_sdk::ContractImage;
 use ton_types::Result;
@@ -541,6 +541,8 @@ fn gen_pubkey() -> ed25519_dalek::PublicKey {
 async fn test_encode_internal_message() -> Result<()> {
     let client = TestClient::new();
     let (abi, tvc) = TestClient::package(HELLO, None);
+    let contract = Contract::load(abi.json_string().unwrap().as_bytes()).unwrap();
+    let func_id = contract.function("sayHello").unwrap().get_input_id();
     let context = crate::ClientContext::new(crate::ClientConfig::default()).unwrap();
     let image = create_tvc_image(&context, &abi.json_string()?, None, &tvc).await?;
 
@@ -604,6 +606,7 @@ async fn test_encode_internal_message() -> Result<()> {
         ),
     ).await?;
 
+    let expected_boc = "te6ccgEBAQEAOgAAcGIACRorPEhV5veJGis8SFXm94kaKzxIVeb3iRorPEhV5veh3NZQAAAAAAAAAAAAAAAAAABQy+0X";
     test_encode_internal_message_run(
         &client,
         &abi,
@@ -612,9 +615,18 @@ async fn test_encode_internal_message() -> Result<()> {
             header: None,
             input: None,
         }),
-        Some(
-            "te6ccgEBAQEAOgAAcGIACRorPEhV5veJGis8SFXm94kaKzxIVeb3iRorPEhV5veh3NZQAAAAAAAAAAAAAAAAAABQy+0X"
-        ),
+        Some(expected_boc),
+    ).await?;
+
+    test_encode_internal_message_run(
+        &client,
+        &abi,
+        Some(CallSet {
+            function_name: format!("{:x}", func_id),
+            header: None,
+            input: None,
+        }),
+        Some(expected_boc),
     ).await
 }
 
