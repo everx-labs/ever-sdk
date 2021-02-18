@@ -33,8 +33,9 @@ pub use encode_account::{
 pub use encode_message::{
     attach_signature, attach_signature_to_message_body, encode_message, encode_internal_message, encode_message_body,
     CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfAttachSignatureToMessageBody,
-    ParamsOfEncodeMessage, ParamsOfEncodeMessageBody, ResultOfAttachSignature,
-    ResultOfAttachSignatureToMessageBody, ResultOfEncodeMessage, ResultOfEncodeMessageBody,
+    ParamsOfEncodeInternalMessage, ParamsOfEncodeMessage, ParamsOfEncodeMessageBody,
+    ResultOfAttachSignature, ResultOfAttachSignatureToMessageBody, ResultOfEncodeInternalMessage,
+    ResultOfEncodeMessage, ResultOfEncodeMessageBody,
 };
 pub use errors::{Error, ErrorCode};
 pub use signing::Signer;
