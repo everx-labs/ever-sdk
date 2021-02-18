@@ -107,6 +107,8 @@ pub struct ParamsOfStart {
 pub struct RegisteredDebot {
     /// Debot handle which references an instance of debot engine.
     pub debot_handle: DebotHandle,
+    /// Debot abi as json string.
+    pub debot_abi: String,
 }
 
 /// [UNSTABLE](UNSTABLE.md) Starts an instance of debot.
@@ -131,14 +133,12 @@ pub async fn start(
 ) -> ClientResult<RegisteredDebot> {
     let mut dengine =
         DEngine::new_with_client(params.address, None, context.clone(), Arc::new(callbacks));
-    dengine.start().await.map_err(Error::start_failed)?;
+    let debot_abi = dengine.start().await.map_err(Error::start_failed)?;
 
     let handle = context.get_next_id();
     context.debots.insert(handle, Mutex::new(dengine));
 
-    Ok(RegisteredDebot {
-        debot_handle: DebotHandle(handle),
-    })
+    Ok(RegisteredDebot { debot_handle: DebotHandle(handle), debot_abi })
 }
 
 /// [UNSTABLE](UNSTABLE.md) Parameters to fetch debot.
@@ -162,14 +162,12 @@ pub async fn fetch(
 ) -> ClientResult<RegisteredDebot> {
     let mut dengine =
         DEngine::new_with_client(params.address, None, context.clone(), Arc::new(callbacks));
-    dengine.fetch().await.map_err(Error::fetch_failed)?;
+    let debot_abi = dengine.fetch().await.map_err(Error::fetch_failed)?;
 
     let handle = context.get_next_id();
     context.debots.insert(handle, Mutex::new(dengine));
 
-    Ok(RegisteredDebot {
-        debot_handle: DebotHandle(handle),
-    })
+    Ok(RegisteredDebot { debot_handle: DebotHandle(handle), debot_abi })
 }
 
 /// [UNSTABLE](UNSTABLE.md) Parameters for executing debot action.
@@ -215,12 +213,7 @@ pub fn remove(context: Arc<ClientContext>, params: RegisteredDebot) -> ClientRes
 pub struct ParamsOfSend {
     /// Debot handle which references an instance of debot engine.
     pub debot_handle: DebotHandle,
-    /// Std address of interface or debot.
-    pub source: String,
-    /// Function Id to call
-    pub func_id: u32,
-    /// Json string with parameters
-    pub params: String,
+    pub message: String,
 }
 
 /// [UNSTABLE](UNSTABLE.md) Sends message to Debot.
@@ -234,6 +227,6 @@ pub async fn send(context: Arc<ClientContext>, params: ParamsOfSend) -> ClientRe
         .ok_or(Error::invalid_handle(params.debot_handle.0))?;
     let mut dengine = mutex.1.lock().await;
     dengine
-        .send(params.source, params.func_id, params.params)
+        .send(params.message)
         .await
 }

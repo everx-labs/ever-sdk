@@ -6,6 +6,9 @@ use crate::error::ClientError;
 use std::collections::VecDeque;
 use ton_block::Message;
 
+const BASECHAIN_ID: i32 = 0;
+const MASTERCHAIN_ID: i32 = -1;
+
 #[derive(Default)]
 pub(super) struct RunOutput {
     pub account: String,
@@ -56,6 +59,7 @@ impl RunOutput {
     fn filter_msg(&mut self, msg: Message, msg_base64: String) {
         let msg = (&msg, msg_base64);
         self.filter_interface_call(msg)
+            .and_then(|msg| self.filter_invoke_call(msg))
             .and_then(|msg| self.filter_external_call(msg))
             .and_then(|msg| self.filter_getmethod_call(msg));
     }
@@ -77,6 +81,22 @@ impl RunOutput {
                         .map(|x| x.to_owned())
                         .unwrap_or("0")
                         .to_string(),
+                });
+                return None;
+            }
+        }
+        Some(msg)
+    }
+
+    fn filter_invoke_call<'a>(
+        &mut self,
+        msg: (&'a Message, String),
+    ) -> Option<(&'a Message, String)> {
+        if msg.0.is_internal() {
+            let wc_id = msg.0.workchain_id().unwrap_or(0);
+            if wc_id == BASECHAIN_ID || wc_id == MASTERCHAIN_ID {
+                self.calls.push_back(DebotCallType::Invoke {
+                    msg: msg.1.clone(),
                 });
                 return None;
             }
