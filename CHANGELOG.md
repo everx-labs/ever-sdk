@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## 1.8.1 Feb 11, 2021
+## 1.9.0 Feb 19, 2021
 
 ### New
 
