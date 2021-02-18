@@ -379,7 +379,7 @@ where
                             .as_ref()
                             .map(|item| serialize_item(item))
                             .transpose()?;
-                        Error::tvm_execution_failed(err_message, *code, exit_arg, &address)
+                        Error::tvm_execution_failed(err_message, *code, exit_arg, &address, None)
                     }
                     Some(ExecutorError::NoFundsToImportMsg) => {
                         Error::low_balance(&address, balance)

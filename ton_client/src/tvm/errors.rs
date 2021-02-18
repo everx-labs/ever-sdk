@@ -96,6 +96,7 @@ impl Error {
         exit_code: i32,
         exit_arg: Option<Value>,
         address: &MsgAddressInt,
+        gas_used: Option<u64>,
     ) -> ClientError {
         let mut error = error(
             ErrorCode::ContractExecutionError,
@@ -112,6 +113,9 @@ impl Error {
         error.data["exit_code"] = exit_code.into();
         error.data["exit_arg"] = serde_json::json!(exit_arg);
         error.data["account_address"] = address.to_string().into();
+        if let Some(gas_used) = gas_used {
+            error.data["gas_used"] = gas_used.into();
+        }
 
         if let Some(error_code) = ExceptionCode::from_usize(exit_code as usize)
             .or(ExceptionCode::from_usize(!exit_code as usize))
@@ -120,6 +124,9 @@ impl Error {
             error.data["description"] = error_code.to_string().into();
             if error_code == ExceptionCode::OutOfGas {
                 error.message.push_str(". Check account balance");
+                if gas_used.is_none() && exit_arg.is_some() {
+                    error.data["gas_used"] = exit_arg.unwrap();
+                }
             }
         } else if let Some(code) = StdContractError::from_usize(exit_code as usize) {
             error.message.push_str(&format!(" ({})", code));
