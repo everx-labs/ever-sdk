@@ -37,13 +37,13 @@ pub struct ParamsOfRunGet {
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ResultOfRunGet {
-    /// Values returned by getmethod on stack
+    /// Values returned by get-method on stack
     pub output: Value,
 }
 
-/// Executes a getmethod of FIFT contract 
+/// Executes a get-method of FIFT contract 
 /// 
-/// Executes a getmethod of FIFT contract that fulfills the smc-guidelines https://test.ton.org/smc-guidelines.txt
+/// Executes a get-method of FIFT contract that fulfills the smc-guidelines https://test.ton.org/smc-guidelines.txt
 /// and returns the result data from TVM's stack
 
 #[api_function]
