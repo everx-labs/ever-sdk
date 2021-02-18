@@ -163,9 +163,15 @@ impl CallSet {
         };
 
         let func = match u32::from_str_radix(&self.function_name, 16) {
-            Ok(id) => &contract.function_by_id(id, true).map_err(|e| Error::invalid_function_id(&self.function_name, e))?.name,
+            Ok(id) => {
+                &contract
+                    .function_by_id(id, true)
+                    .map_err(|e| Error::invalid_function_id(&self.function_name, e))?
+                    .name
+            }
             Err(_) => &self.function_name,
-        }.clone();
+        }
+        .clone();
 
         Ok(FunctionCallSet {
             abi: abi.to_string(),
