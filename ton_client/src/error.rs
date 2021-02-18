@@ -14,6 +14,7 @@ pub type ClientResult<T> = Result<T, ClientError>;
 #[async_trait::async_trait]
 pub(crate) trait AddNetworkUrl {
     async fn add_network_url(self, client: &crate::net::ServerLink) -> Self;
+    async fn add_network_url_from_context(self, client: &crate::ClientContext) -> Self;
 }
 
 #[async_trait::async_trait]
@@ -30,6 +31,14 @@ impl<T: Send> AddNetworkUrl for ClientResult<T> {
                 Err(err)
             },
             _ => self
+        }
+    }
+
+    async fn add_network_url_from_context(self, client: &crate::ClientContext) -> Self {
+        if let Some(client) = &client.net.server_link {
+            self.add_network_url(client).await
+        } else {
+            self
         }
     }
 }

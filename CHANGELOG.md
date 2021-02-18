@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - `tuple_list_as_array` parameter in `tvm.run_get` function which controls lists representation. 
 Default is stack-like based on nested tuples. If set to `true` then returned lists are encoded as plain arrays.
 This reduces stack size requirements for long lists.
+- Fields `config_servers`, `query_url`, `account_address`, `gas_used` in specific errors data
     
 ## 1.8.0 Feb 11, 2021
 

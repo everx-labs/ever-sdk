@@ -167,9 +167,10 @@ pub async fn fetch_transaction_result(
     let transaction_boc =
         fetch_transaction_boc(context, transaction_id, message_id, shard_block_id).await?;
     let context_copy = context.clone();
+    let address_copy = address.clone();
     let get_contract_info = || async move {
-        let balance = fetch_contract_balance(context_copy, &address).await?;
-        Ok((address, balance))
+        let balance = fetch_contract_balance(context_copy, &address_copy).await?;
+        Ok((address_copy, balance))
     };
     let transaction_object = deserialize_object_from_base64(&transaction_boc.boc, "transaction")?;
 
@@ -181,7 +182,7 @@ pub async fn fetch_transaction_result(
                     || err.data["exit_code"]
                         == crate::tvm::StdContractError::ExtMessageExpired as i32)
             {
-                Error::message_expired(&message_id, shard_block_id, expiration_time, block_time)
+                Error::message_expired(&message_id, shard_block_id, expiration_time, block_time, &address)
             } else {
                 err
             }

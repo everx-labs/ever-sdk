@@ -35,6 +35,8 @@ pub struct ComputePhase {
     pub success: Option<bool>,
     #[serde(with = "json_helper::uint")]
     pub gas_fees: u64,
+    #[serde(with = "json_helper::uint")]
+    pub gas_used: u64,
 }
 
 #[derive(Deserialize, Default, Debug)]
@@ -107,6 +109,7 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
                 exit_arg: None,
                 success: None,
                 gas_fees: 0,
+                gas_used: 0,
             },
             TrComputePhase::Vm(ph) => ComputePhase {
                 skipped_reason: None,
@@ -114,6 +117,7 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
                 exit_arg: ph.exit_arg,
                 success: Some(ph.success),
                 gas_fees: grams_to_u64(&ph.gas_fees)?,
+                gas_used: ph.gas_used.0,
             },
         };
 

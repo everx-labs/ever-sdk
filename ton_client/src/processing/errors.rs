@@ -15,6 +15,7 @@
 use crate::error::ClientError;
 use chrono::TimeZone;
 use serde_json::Value;
+use ton_block::MsgAddressInt;
 
 #[derive(ApiType)]
 pub enum ErrorCode {
@@ -168,6 +169,7 @@ impl Error {
         shard_block_id: &String,
         expiration_time: u32,
         block_time: u32,
+        address: &MsgAddressInt,
     ) -> ClientError {
         let mut error = Self::processing_error(
             ErrorCode::MessageExpired,
@@ -178,6 +180,7 @@ impl Error {
 
         error.data["waiting_expiration_time"] = format_time(expiration_time).into();
         error.data["block_time"] = format_time(block_time).into();
+        error.data["account_address"] = address.to_string().into();
 
         error
     }
@@ -188,6 +191,7 @@ impl Error {
         expiration_time: u32,
         timeout: u32,
         block_time: u32,
+        address: &MsgAddressInt,
     ) -> ClientError {
         let mut error = Self::processing_error(
             ErrorCode::TransactionWaitTimeout,
@@ -199,6 +203,7 @@ impl Error {
         error.data["waiting_expiration_time"] = format_time(expiration_time).into();
         error.data["timeout"] = timeout.into();
         error.data["block_time"] = format_time(block_time).into();
+        error.data["account_address"] = address.to_string().into();
 
         error
     }
