@@ -240,6 +240,7 @@ impl DEngine {
         ).await?;
         let mut run_output = RunOutput::new(
             run_result.account,
+            self.addr.clone(),
             run_result.decoded.and_then(|x| x.output),
             run_result.out_messages,
         )?;
@@ -711,6 +712,7 @@ impl DEngine {
 
         RunOutput::new(
             result.account,
+            self.addr.clone(),
             result.decoded.and_then(|x| x.output),
             result.out_messages,
         )
