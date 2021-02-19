@@ -7264,8 +7264,8 @@
               "optional_inner": {
                 "type": "Boolean"
               },
-              "summary": "Convert lists based on nested tuples in result into plain arrays.",
-              "description": "Default is `false`. Input parameters may use any of lists representations"
+              "summary": "Convert lists based on nested tuples in the **result** into plain arrays.",
+              "description": "Default is `false`. Input parameters may use any of lists representations\nIf you receive this error on Web: \"Runtime error. Unreachable code should not be executed...\",\nset this flag to true.\nThis may happen, for example, when elector contract contains too many participants"
             }
           ],
           "summary": null,

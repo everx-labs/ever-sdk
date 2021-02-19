@@ -191,8 +191,8 @@ function run_get(
 - `function_name`: _string_ – Function name
 - `input`?: _any_ – Input parameters
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options
-- `tuple_list_as_array`?: _boolean_ – Convert lists based on nested tuples in result into plain arrays.
-<br>Default is `false`. Input parameters may use any of lists representations
+- `tuple_list_as_array`?: _boolean_ – Convert lists based on nested tuples in the **result** into plain arrays.
+<br>Default is `false`. Input parameters may use any of lists representations<br>If you receive this error on Web: "Runtime error. Unreachable code should not be executed...",<br>set this flag to true.<br>This may happen, for example, when elector contract contains too many participants
 
 
 ### Result
@@ -403,8 +403,8 @@ type ParamsOfRunGet = {
 - `function_name`: _string_ – Function name
 - `input`?: _any_ – Input parameters
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options
-- `tuple_list_as_array`?: _boolean_ – Convert lists based on nested tuples in result into plain arrays.
-<br>Default is `false`. Input parameters may use any of lists representations
+- `tuple_list_as_array`?: _boolean_ – Convert lists based on nested tuples in the **result** into plain arrays.
+<br>Default is `false`. Input parameters may use any of lists representations<br>If you receive this error on Web: "Runtime error. Unreachable code should not be executed...",<br>set this flag to true.<br>This may happen, for example, when elector contract contains too many participants
 
 
 ## ResultOfRunGet
