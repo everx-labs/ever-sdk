@@ -128,7 +128,7 @@ pub struct ParamsOfRunExecutor {
     pub abi: Option<Abi>,
     /// Skip transaction check flag
     pub skip_transaction_check: Option<bool>,
-    /// Cache type to put the result. The BOC intself returned if no cache type provided
+    /// Cache type to put the result. The BOC itself returned if no cache type provided
     pub boc_cache: Option<BocCacheType>,
     /// Return updated account flag. Empty string is returned if the flag is `false`
     pub return_updated_account: Option<bool>
@@ -142,9 +142,9 @@ pub struct ParamsOfRunTvm {
     pub account: String,
     /// Execution options.
     pub execution_options: Option<ExecutionOptions>,
-    /// Contract ABI for dedcoding output messages
+    /// Contract ABI for decoding output messages
     pub abi: Option<Abi>,
-    /// Cache type to put the result. The BOC intself returned if no cache type provided
+    /// Cache type to put the result. The BOC itself returned if no cache type provided
     pub boc_cache: Option<BocCacheType>,
     /// Return updated account flag. Empty string is returned if the flag is `false`
     pub return_updated_account: Option<bool>
@@ -183,7 +183,7 @@ pub struct ResultOfRunTvm {
     pub decoded: Option<DecodedOutput>,
 
     /// Updated account state BOC. Encoded as `base64`.
-    /// Attention! Only `account_state.storage.state.data` part of the boc is updated. 
+    /// Attention! Only `account_state.storage.state.data` part of the BOC is updated. 
     pub account: String,
 }
 
@@ -206,19 +206,19 @@ async fn parse_transaction(
 /// Performs all the phases of contract execution on Transaction Executor - 
 /// the same component that is used on Validator Nodes. 
 /// 
-/// Can be used for contract debug, to find out the reason of message unsuccessful 
-/// delivery - as Validators just throw away failed transactions, here you can catch it. 
+/// Can be used for contract debugginh, to find out the reason why message was not delivered successfully 
+///  - because Validators just throw away the failed external inbound messages, here you can catch them. 
 /// 
 /// Another use case is to estimate fees for message execution. Set  `AccountForExecutor::Account.unlimited_balance`
 /// to `true` so that emulation will not depend on the actual balance.
 /// 
-/// One more use case - you can procude the sequence of operations,
+/// One more use case - you can produce the sequence of operations,
 /// thus emulating the multiple contract calls locally. 
 /// And so on. 
 /// 
-/// To get the account boc (bag of cells) - use `net.query` method to download it from graphql api
-/// (field `boc` of `account`) or generate it with `abi.encode_account method`. 
-/// To get the message boc - use `abi.encode_message` or prepare it any other way, for instance, with Fift script.
+/// To get the account BOC (bag of cells) - use `net.query` method to download it from GraphQL API
+/// (field `boc` of `account`) or generate it with `abi.encode_account` method. 
+/// To get the message BOC - use `abi.encode_message` or prepare it any other way, for instance, with FIFT script.
 /// 
 /// If you need this emulation to be as precise as possible then specify `ParamsOfRunExecutor` parameter.
 /// If you need to see the aborted transaction as a result, not as an error, set `skip_transaction_check` to `true`.
@@ -295,20 +295,20 @@ pub async fn run_executor(
 }
 
 
-/// Executes get methods of ABI-compatible contracts
+/// Executes get-methods of ABI-compatible contracts
 /// 
 /// Performs only a part of compute phase of transaction execution
 /// that is used to run get-methods of ABI-compatible contracts.
 ///  
-/// If you try to run get methods with `run_executor` you will get an error, because it checks ACCEPT and exits
-/// if there is none, which is actually true for get methods. 
+/// If you try to run get-methods with `run_executor` you will get an error, because it checks ACCEPT and exits
+/// if there is none, which is actually true for get-methods. 
 ///
-///  To get the account boc (bag of cells) - use `net.query` method to download it from graphql api
+///  To get the account BOC (bag of cells) - use `net.query` method to download it from GraphQL API
 /// (field `boc` of `account`) or generate it with `abi.encode_account method`. 
-/// To get the message boc - use `abi.encode_message` or prepare it any other way, for instance, with Fift script.
+/// To get the message BOC - use `abi.encode_message` or prepare it any other way, for instance, with FIFT script.
 /// 
 /// Attention! Updated account state is produces as well, but only 
-/// `account_state.storage.state.data`  part of the boc is updated. 
+/// `account_state.storage.state.data`  part of the BOC is updated. 
 #[api_function]
 pub async fn run_tvm(
     context: std::sync::Arc<ClientContext>,

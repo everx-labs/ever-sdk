@@ -61,7 +61,7 @@ Where:
 
 [nacl_box](mod_crypto.md#nacl_box) – Public key authenticated encryption
 
-[nacl_box_open](mod_crypto.md#nacl_box_open) – Decrypt and verify the cipher text using the recievers secret key, the senders public key, and the nonce.
+[nacl_box_open](mod_crypto.md#nacl_box_open) – Decrypt and verify the cipher text using the receivers secret key, the senders public key, and the nonce.
 
 [nacl_secret_box](mod_crypto.md#nacl_secret_box) – Encrypt and authenticate message using nonce and secret key.
 

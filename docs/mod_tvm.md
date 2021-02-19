@@ -44,7 +44,7 @@ delivery - as Validators just throw away failed transactions, here you can catch
 Another use case is to estimate fees for message execution. Set  `AccountForExecutor::Account.unlimited_balance`
 to `true` so that emulation will not depend on the actual balance.
 
-One more use case - you can procude the sequence of operations,
+One more use case - you can produce the sequence of operations,
 thus emulating the multiple contract calls locally.
 And so on.
 
@@ -86,7 +86,7 @@ function run_executor(
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for decoding output messages
 - `skip_transaction_check`?: _boolean_ – Skip transaction check flag
 - `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
-<br>The BOC intself returned if no cache type provided
+<br>The BOC itself returned if no cache type provided
 - `return_updated_account`?: _boolean_ – Return updated account flag.
 <br>Empty string is returned if the flag is `false`
 
@@ -146,9 +146,9 @@ function run_tvm(
 - `account`: _string_ – Account BOC.
 <br>Must be encoded as base64.
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
-- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for dedcoding output messages
+- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for decoding output messages
 - `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
-<br>The BOC intself returned if no cache type provided
+<br>The BOC itself returned if no cache type provided
 - `return_updated_account`?: _boolean_ – Return updated account flag.
 <br>Empty string is returned if the flag is `false`
 
@@ -323,7 +323,7 @@ type ParamsOfRunExecutor = {
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for decoding output messages
 - `skip_transaction_check`?: _boolean_ – Skip transaction check flag
 - `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
-<br>The BOC intself returned if no cache type provided
+<br>The BOC itself returned if no cache type provided
 - `return_updated_account`?: _boolean_ – Return updated account flag.
 <br>Empty string is returned if the flag is `false`
 
@@ -364,9 +364,9 @@ type ParamsOfRunTvm = {
 - `account`: _string_ – Account BOC.
 <br>Must be encoded as base64.
 - `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
-- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for dedcoding output messages
+- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for decoding output messages
 - `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
-<br>The BOC intself returned if no cache type provided
+<br>The BOC itself returned if no cache type provided
 - `return_updated_account`?: _boolean_ – Return updated account flag.
 <br>Empty string is returned if the flag is `false`
 
