@@ -2879,7 +2879,7 @@
         {
           "name": "nacl_box",
           "summary": "Public key authenticated encryption",
-          "description": "Encrypt and authenticate a message using the senders secret key, the recievers public\nkey, and a nonce.",
+          "description": "Encrypt and authenticate a message using the senders secret key, the receivers public\nkey, and a nonce.",
           "params": [
             {
               "name": "_context",
@@ -2916,7 +2916,7 @@
         },
         {
           "name": "nacl_box_open",
-          "summary": "Decrypt and verify the cipher text using the recievers secret key, the senders public key, and the nonce.",
+          "summary": "Decrypt and verify the cipher text using the receivers secret key, the senders public key, and the nonce.",
           "description": null,
           "params": [
             {
@@ -4904,7 +4904,7 @@
                 "ref_name": "boc.BocCacheType"
               },
               "summary": "Cache type to put the result.",
-              "description": "The BOC intself returned if no cache type provided"
+              "description": "The BOC itself returned if no cache type provided"
             }
           ],
           "summary": null,
@@ -7061,7 +7061,7 @@
                 "ref_name": "boc.BocCacheType"
               },
               "summary": "Cache type to put the result.",
-              "description": "The BOC intself returned if no cache type provided"
+              "description": "The BOC itself returned if no cache type provided"
             },
             {
               "name": "return_updated_account",
@@ -7156,7 +7156,7 @@
                 "type": "Ref",
                 "ref_name": "abi.Abi"
               },
-              "summary": "Contract ABI for dedcoding output messages",
+              "summary": "Contract ABI for decoding output messages",
               "description": null
             },
             {
@@ -7167,7 +7167,7 @@
                 "ref_name": "boc.BocCacheType"
               },
               "summary": "Cache type to put the result.",
-              "description": "The BOC intself returned if no cache type provided"
+              "description": "The BOC itself returned if no cache type provided"
             },
             {
               "name": "return_updated_account",
@@ -7275,7 +7275,7 @@
         {
           "name": "run_executor",
           "summary": "Emulates all the phases of contract execution locally",
-          "description": "Performs all the phases of contract execution on Transaction Executor -\nthe same component that is used on Validator Nodes.\n\nCan be used for contract debug, to find out the reason of message unsuccessful\ndelivery - as Validators just throw away failed transactions, here you can catch it.\n\nAnother use case is to estimate fees for message execution. Set  `AccountForExecutor::Account.unlimited_balance`\nto `true` so that emulation will not depend on the actual balance.\n\nOne more use case - you can procude the sequence of operations,\nthus emulating the multiple contract calls locally.\nAnd so on.\n\nTo get the account boc (bag of cells) - use `net.query` method to download it from graphql api\n(field `boc` of `account`) or generate it with `abi.encode_account method`.\nTo get the message boc - use `abi.encode_message` or prepare it any other way, for instance, with Fift script.\n\nIf you need this emulation to be as precise as possible then specify `ParamsOfRunExecutor` parameter.\nIf you need to see the aborted transaction as a result, not as an error, set `skip_transaction_check` to `true`.",
+          "description": "Performs all the phases of contract execution on Transaction Executor -\nthe same component that is used on Validator Nodes.\n\nCan be used for contract debug, to find out the reason of message unsuccessful\ndelivery - as Validators just throw away failed transactions, here you can catch it.\n\nAnother use case is to estimate fees for message execution. Set  `AccountForExecutor::Account.unlimited_balance`\nto `true` so that emulation will not depend on the actual balance.\n\nOne more use case - you can produce the sequence of operations,\nthus emulating the multiple contract calls locally.\nAnd so on.\n\nTo get the account boc (bag of cells) - use `net.query` method to download it from graphql api\n(field `boc` of `account`) or generate it with `abi.encode_account method`.\nTo get the message boc - use `abi.encode_message` or prepare it any other way, for instance, with Fift script.\n\nIf you need this emulation to be as precise as possible then specify `ParamsOfRunExecutor` parameter.\nIf you need to see the aborted transaction as a result, not as an error, set `skip_transaction_check` to `true`.",
           "params": [
             {
               "name": "context",
@@ -8495,7 +8495,7 @@
               "description": null
             },
             {
-              "name": "DebotExternaCallFailed",
+              "name": "DebotExternalCallFailed",
               "type": "Number",
               "value": "810",
               "summary": null,

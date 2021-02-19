@@ -106,7 +106,7 @@ impl RunOutput {
         if msg.0.is_inbound_external() {
             if let Some(body_slice) = msg.0.body() {
                 // TODO: currently using an unreliable way to
-                // distinguish a get method call from external call.
+                // distinguish a get-method call from external call.
                 // Most accurate method - to check flags in src address.
                 let mut body_slice = body_slice.clone();
                 let dest = msg

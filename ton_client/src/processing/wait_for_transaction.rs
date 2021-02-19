@@ -1,7 +1,7 @@
 use crate::abi::Abi;
 use crate::boc::internal::deserialize_object_from_boc;
 use crate::client::ClientContext;
-use crate::error::ClientResult;
+use crate::error::{AddNetworkUrl, ClientResult};
 use crate::processing::internal::{get_message_expiration_time, resolve_error};
 use crate::processing::{fetching, internal, Error};
 use crate::processing::{ProcessingEvent, ResultOfProcessMessage};
@@ -72,6 +72,8 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
             fetch_block_timeout,
             &callback,
         )
+        .await
+        .add_network_url_from_context(&context)
         .await?;
         if let Some(transaction_id) =
             internal::find_transaction(&block, &message_id, &shard_block_id)?
@@ -88,6 +90,8 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
                 (max_block_time / 1000) as u32,
                 block.gen_utime,
             )
+            .await
+            .add_network_url_from_context(&context)
             .await?);
         }
         // If we found a block with expired `gen_utime`,
@@ -100,6 +104,7 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
                     &shard_block_id,
                     waiting_expiration_time,
                     block.gen_utime,
+                    &address,
                 )
             } else {
                 Error::transaction_wait_timeout(
@@ -108,6 +113,7 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
                     waiting_expiration_time,
                     processing_timeout,
                     block.gen_utime,
+                    &address,
                 )
             };
 
@@ -117,7 +123,10 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
                 params.message.clone(),
                 error,
                 waiting_expiration_time - 1,
-            ).await?;
+            )
+            .await
+            .add_network_url_from_context(&context)
+            .await?;
         }
 
         // We have successfully walked through the block.
