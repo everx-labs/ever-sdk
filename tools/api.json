@@ -1,5 +1,5 @@
 {
-  "version": "1.8.0",
+  "version": "1.9.0",
   "modules": [
     {
       "name": "client",
@@ -3732,6 +3732,13 @@
               "value": "311",
               "summary": null,
               "description": null
+            },
+            {
+              "name": "InvalidFunctionId",
+              "type": "Number",
+              "value": "312",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -3858,7 +3865,7 @@
             {
               "name": "function_name",
               "type": "String",
-              "summary": "Function name that is being called.",
+              "summary": "Function name that is being called. Or function id encoded as string in hex (starting with 0x).",
               "description": null
             },
             {
@@ -7209,7 +7216,7 @@
               "name": "account",
               "type": "String",
               "summary": "Updated account state BOC.",
-              "description": "Encoded as `base64`. Attention! Only `account_state.storage.state.data` part of the boc is updated."
+              "description": "Encoded as `base64`. Attention! Only `account_state.storage.state.data` part of the BOC is updated."
             }
           ],
           "summary": null,
@@ -7248,8 +7255,17 @@
                 "type": "Ref",
                 "ref_name": "tvm.ExecutionOptions"
               },
-              "summary": null,
+              "summary": "Execution options",
               "description": null
+            },
+            {
+              "name": "tuple_list_as_array",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "Convert lists based on nested tuples in result into plain arrays.",
+              "description": "Default is `false`. Input parameters may use any of lists representations"
             }
           ],
           "summary": null,
@@ -7263,7 +7279,7 @@
               "name": "output",
               "type": "Ref",
               "ref_name": "Value",
-              "summary": "Values returned by getmethod on stack",
+              "summary": "Values returned by get-method on stack",
               "description": null
             }
           ],
@@ -7275,7 +7291,7 @@
         {
           "name": "run_executor",
           "summary": "Emulates all the phases of contract execution locally",
-          "description": "Performs all the phases of contract execution on Transaction Executor -\nthe same component that is used on Validator Nodes.\n\nCan be used for contract debug, to find out the reason of message unsuccessful\ndelivery - as Validators just throw away failed transactions, here you can catch it.\n\nAnother use case is to estimate fees for message execution. Set  `AccountForExecutor::Account.unlimited_balance`\nto `true` so that emulation will not depend on the actual balance.\n\nOne more use case - you can produce the sequence of operations,\nthus emulating the multiple contract calls locally.\nAnd so on.\n\nTo get the account boc (bag of cells) - use `net.query` method to download it from graphql api\n(field `boc` of `account`) or generate it with `abi.encode_account method`.\nTo get the message boc - use `abi.encode_message` or prepare it any other way, for instance, with Fift script.\n\nIf you need this emulation to be as precise as possible then specify `ParamsOfRunExecutor` parameter.\nIf you need to see the aborted transaction as a result, not as an error, set `skip_transaction_check` to `true`.",
+          "description": "Performs all the phases of contract execution on Transaction Executor -\nthe same component that is used on Validator Nodes.\n\nCan be used for contract debugginh, to find out the reason why message was not delivered successfully\n - because Validators just throw away the failed external inbound messages, here you can catch them.\n\nAnother use case is to estimate fees for message execution. Set  `AccountForExecutor::Account.unlimited_balance`\nto `true` so that emulation will not depend on the actual balance.\n\nOne more use case - you can produce the sequence of operations,\nthus emulating the multiple contract calls locally.\nAnd so on.\n\nTo get the account BOC (bag of cells) - use `net.query` method to download it from GraphQL API\n(field `boc` of `account`) or generate it with `abi.encode_account` method.\nTo get the message BOC - use `abi.encode_message` or prepare it any other way, for instance, with FIFT script.\n\nIf you need this emulation to be as precise as possible then specify `ParamsOfRunExecutor` parameter.\nIf you need to see the aborted transaction as a result, not as an error, set `skip_transaction_check` to `true`.",
           "params": [
             {
               "name": "context",
@@ -7312,8 +7328,8 @@
         },
         {
           "name": "run_tvm",
-          "summary": "Executes get methods of ABI-compatible contracts",
-          "description": "Performs only a part of compute phase of transaction execution\nthat is used to run get-methods of ABI-compatible contracts.\n\nIf you try to run get methods with `run_executor` you will get an error, because it checks ACCEPT and exits\nif there is none, which is actually true for get methods.\n\n To get the account boc (bag of cells) - use `net.query` method to download it from graphql api\n(field `boc` of `account`) or generate it with `abi.encode_account method`.\nTo get the message boc - use `abi.encode_message` or prepare it any other way, for instance, with Fift script.\n\nAttention! Updated account state is produces as well, but only\n`account_state.storage.state.data`  part of the boc is updated.",
+          "summary": "Executes get-methods of ABI-compatible contracts",
+          "description": "Performs only a part of compute phase of transaction execution\nthat is used to run get-methods of ABI-compatible contracts.\n\nIf you try to run get-methods with `run_executor` you will get an error, because it checks ACCEPT and exits\nif there is none, which is actually true for get-methods.\n\n To get the account BOC (bag of cells) - use `net.query` method to download it from GraphQL API\n(field `boc` of `account`) or generate it with `abi.encode_account method`.\nTo get the message BOC - use `abi.encode_message` or prepare it any other way, for instance, with FIFT script.\n\nAttention! Updated account state is produces as well, but only\n`account_state.storage.state.data`  part of the BOC is updated.",
           "params": [
             {
               "name": "context",
@@ -7350,8 +7366,8 @@
         },
         {
           "name": "run_get",
-          "summary": "Executes a getmethod of FIFT contract",
-          "description": "Executes a getmethod of FIFT contract that fulfills the smc-guidelines https://test.ton.org/smc-guidelines.txt\nand returns the result data from TVM's stack",
+          "summary": "Executes a get-method of FIFT contract",
+          "description": "Executes a get-method of FIFT contract that fulfills the smc-guidelines https://test.ton.org/smc-guidelines.txt\nand returns the result data from TVM's stack",
           "params": [
             {
               "name": "context",

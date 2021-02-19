@@ -157,9 +157,9 @@ Where:
 
 [run_executor](mod_tvm.md#run_executor) – Emulates all the phases of contract execution locally
 
-[run_tvm](mod_tvm.md#run_tvm) – Executes get methods of ABI-compatible contracts
+[run_tvm](mod_tvm.md#run_tvm) – Executes get-methods of ABI-compatible contracts
 
-[run_get](mod_tvm.md#run_get) – Executes a getmethod of FIFT contract
+[run_get](mod_tvm.md#run_get) – Executes a get-method of FIFT contract
 
 ## [net](mod_net.md) – Network access.
 
