@@ -11,7 +11,8 @@
 * limitations under the License.
 */
 
-use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer, Abi, ParamsOfDecodeMessageBody, DecodedMessageBody};
+use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer, Abi,
+    ParamsOfDecodeMessageBody, DecodedMessageBody, ResultOfEncodeInternalMessage, ParamsOfEncodeInternalMessage};
 use crate::boc::{ParamsOfParse, ResultOfParse};
 use crate::client::ParamsOfAppRequest;
 use crate::crypto::KeyPair;
@@ -176,6 +177,7 @@ struct BrowserData {
     pub msg_queue: Mutex<VecDeque<String>>,
     pub terminal: Mutex<Terminal>,
     pub echo: Echo,
+    pub debot_abi: Mutex<Abi>,
 }
 
 impl TestBrowser {
@@ -215,6 +217,8 @@ impl TestBrowser {
             },
             callback
         ).await.unwrap();
+
+        *state.debot_abi.lock().await = Abi::Contract(serde_json::from_str(&handle.debot_abi).unwrap());
 
         while !state.finished.load(Ordering::Relaxed) {
             Self::execute_interface_calls(&handle, client.clone(), state.clone()).await;
@@ -280,6 +284,7 @@ impl TestBrowser {
             msg_queue: Mutex::new(Default::default()),
             terminal: Mutex::new(Terminal::new(terminal_outputs)),
             echo: Echo::new(),
+            debot_abi: Mutex::new(Abi::default()),
         });
 
         Self::execute_from_state(client, state, "debot.start").await
@@ -349,6 +354,7 @@ impl TestBrowser {
                     msg_queue: Mutex::new(Default::default()),
                     terminal: Mutex::new(Terminal::new(vec![])),
                     echo: Echo::new(),
+                    debot_abi: Mutex::new(Abi::default()),
                 });
                 Self::call_execute_boxed(client, state, "debot.fetch").await;
                 ResultOfAppDebotBrowser::InvokeDebot
@@ -395,15 +401,33 @@ impl TestBrowser {
                     state.terminal.lock().await.call(&func, &args)
                 };
             log::info!("response: {} ({})", func_id, return_args);
+
+            let call_set = match func_id {
+                0 => None,
+                _ => CallSet::some_with_function_and_input(&format!("0x{:x}", func_id), return_args),
+            };
+            let r: ResultOfEncodeInternalMessage = client.request_async(
+                "abi.encode_internal_message",
+                ParamsOfEncodeInternalMessage {
+                    abi: state.debot_abi.lock().await.clone(),
+                    address: Some(state.address.clone()),
+                    deploy_set: None,
+                    call_set,
+                    value: "1000000000000000".to_owned(),
+                    bounce: None,
+                    enable_ihr: None,
+                }
+            ).await.unwrap();
+            let message = r.message;
+
             let _result: () = client.request_async(
                 "debot.send",
                 ParamsOfSend {
                     debot_handle: handle.debot_handle.clone(),
-                    source: iface_addr.to_owned(),
-                    func_id,
-                    params: return_args.to_string(),
+                    message,
                 }
             ).await.unwrap();
+
             msg_opt = state.msg_queue.lock().await.pop_front();
         }
     }
