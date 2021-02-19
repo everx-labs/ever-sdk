@@ -622,7 +622,18 @@ async fn test_encode_internal_message() -> Result<()> {
         &client,
         &abi,
         Some(CallSet {
-            function_name: format!("{:x}", func_id),
+            function_name: format!("0x{:x}", func_id),
+            header: None,
+            input: None,
+        }),
+        Some(expected_boc),
+    ).await?;
+
+    test_encode_internal_message_run(
+        &client,
+        &abi,
+        Some(CallSet {
+            function_name: format!("{}", func_id),
             header: None,
             input: None,
         }),

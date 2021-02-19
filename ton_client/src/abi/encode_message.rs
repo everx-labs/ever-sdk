@@ -4,7 +4,7 @@ use crate::abi::{Abi, Error, FunctionHeader, Signer};
 use crate::boc::internal::{get_boc_hash, deserialize_cell_from_boc};
 use crate::client::ClientContext;
 use crate::crypto::internal::decode_public_key;
-use crate::encoding::{account_decode, account_encode, hex_decode};
+use crate::encoding::{account_decode, account_encode, decode_abi_number, hex_decode};
 use crate::error::ClientResult;
 use serde_json::Value;
 use std::str::FromStr;
@@ -162,7 +162,7 @@ impl CallSet {
             )?
         };
 
-        let func = match u32::from_str_radix(&self.function_name, 16) {
+        let func = match decode_abi_number::<u32>(&self.function_name) {
             Ok(id) => {
                 &contract
                     .function_by_id(id, true)
