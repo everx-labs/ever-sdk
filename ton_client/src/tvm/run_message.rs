@@ -314,12 +314,12 @@ pub async fn run_tvm(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfRunTvm,
 ) -> ClientResult<ResultOfRunTvm> {
-    let account = deserialize_object_from_boc(&context, &params.account, "account").await?;
+    let account = deserialize_object_from_boc::<Account>(&context, &params.account, "account").await?;
     let message = deserialize_object_from_boc::<Message>(&context, &params.message, "message").await?.object;
     let options = ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
-    let stuff = match account.object.stuff().ok_or_else(|| Err(Error::invalid_account_boc("Acount is None")))?;
+    let stuff = account.object.stuff().ok_or_else(|| Error::invalid_account_boc("Acount is None"))?;
 
-    let (messages, stuff) = super::call_tvm::call_tvm_msg(stuff, options, &message)?;
+    let (messages, stuff) = super::call_tvm::call_tvm_msg(stuff.clone(), options, &message)?;
 
     let mut out_messages = vec![];
     for message in messages {

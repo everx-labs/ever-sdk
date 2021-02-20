@@ -55,7 +55,7 @@ pub async fn run_get(
         deserialize_object_from_boc(&context, &params.account, "account").await?.object;
     let options = ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
 
-    let stuff = account.stuff().ok_or_else(|| Err(Error::invalid_account_boc("Acount is None")))?;
+    let stuff = account.stuff().ok_or_else(|| Error::invalid_account_boc("Acount is None"))?;
 
     let mut crc = crc_any::CRC::crc16xmodem();
     crc.digest(params.function_name.as_bytes());
@@ -75,7 +75,7 @@ pub async fn run_get(
         function_id,
     ))));
 
-    let (engine, _) = super::call_tvm::call_tvm(stuff, options, stack_in)?;
+    let (engine, _) = super::call_tvm::call_tvm(stuff.clone(), options, stack_in)?;
     Ok(ResultOfRunGet {
         output: stack::serialize_items(engine.stack().iter())?,
     })
