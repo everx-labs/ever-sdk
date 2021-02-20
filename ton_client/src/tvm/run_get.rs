@@ -55,10 +55,7 @@ pub async fn run_get(
         deserialize_object_from_boc(&context, &params.account, "account").await?.object;
     let options = ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
 
-    let stuff = match account {
-        ton_block::Account::AccountNone => Err(Error::invalid_account_boc("Acount is None")),
-        ton_block::Account::Account(stuff) => Ok(stuff),
-    }?;
+    let stuff = account.stuff().ok_or_else(|| Err(Error::invalid_account_boc("Acount is None")))?;
 
     let mut crc = crc_any::CRC::crc16xmodem();
     crc.digest(params.function_name.as_bytes());

@@ -67,7 +67,7 @@ impl AccountForExecutor {
     ) -> ClientResult<(Cell, Option<ton_block::CurrencyCollection>)> {
         match self {
             AccountForExecutor::None => {
-                let account = Account::AccountNone.write_to_new_cell().unwrap().into();
+                let account = Account::default().serialize().unwrap();
                 Ok((account, None))
             }
             AccountForExecutor::Uninit => {
@@ -317,10 +317,7 @@ pub async fn run_tvm(
     let account = deserialize_object_from_boc(&context, &params.account, "account").await?;
     let message = deserialize_object_from_boc::<Message>(&context, &params.message, "message").await?.object;
     let options = ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
-    let stuff = match account.object {
-        ton_block::Account::AccountNone => Err(Error::invalid_account_boc("Acount is None")),
-        ton_block::Account::Account(stuff) => Ok(stuff),
-    }?;
+    let stuff = match account.object.stuff().ok_or_else(|| Err(Error::invalid_account_boc("Acount is None")))?;
 
     let (messages, stuff) = super::call_tvm::call_tvm_msg(stuff, options, &message)?;
 
