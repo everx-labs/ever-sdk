@@ -90,14 +90,14 @@ fn encode_base64(
     test: bool,
     as_url: bool,
 ) -> ClientResult<String> {
-    if let MsgAddressInt::AddrStd(_) = address {
+    if let MsgAddressInt::AddrStd(address) = address {
         let mut tag = if bounceable { 0x11 } else { 0x51 };
         if test {
             tag |= 0x80
         };
         let mut vec = vec![tag];
-        vec.extend_from_slice(&address.workchain_id().to_be_bytes());
-        vec.append(&mut address.get_address().get_bytestring(0));
+        vec.extend_from_slice(&address.workchain_id.to_be_bytes());
+        vec.extend_from_slice(ton_types::UInt256::from(address.address.clone()).as_slice());
 
         let mut crc = crc_any::CRC::crc16xmodem();
         crc.digest(&vec);
