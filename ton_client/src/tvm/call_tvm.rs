@@ -19,16 +19,17 @@ use std::sync::Arc;
 use ton_block;
 use ton_block::{Deserializable, Message, Serializable};
 use ton_types::dictionary::HashmapType;
-use ton_types::SliceData;
+use ton_types::{Cell, SliceData};
 use ton_vm::executor::gas::gas_state::Gas;
 use ton_vm::stack::{integer::IntegerData, savelist::SaveList, Stack, StackItem};
 
+// return TVM engine and new data of the account
 pub(crate) fn call_tvm(
-    mut account: ton_block::AccountStuff,
+    stuff: &ton_block::AccountStuff,
     options: ResolvedExecutionOptions,
     stack: Stack,
-) -> ClientResult<(ton_vm::executor::Engine, ton_block::AccountStuff)> {
-    let mut state = match &mut account.storage.state {
+) -> ClientResult<(ton_vm::executor::Engine, Cell)> {
+    let state = match &stuff.storage.state {
         ton_block::AccountState::AccountActive(state) => Ok(state),
         _ => Err(Error::invalid_account_boc("Account is not active")),
     }?;
@@ -43,8 +44,8 @@ pub(crate) fn call_tvm(
 
     let sci = build_contract_info(
         options.blockchain_config.raw_config(),
-        &account.addr,
-        &account.storage.balance,
+        &stuff.addr,
+        &stuff.storage.balance,
         options.block_time,
         options.block_lt,
         options.transaction_lt,
@@ -86,30 +87,30 @@ pub(crate) fn call_tvm(
                 exception.to_string(),
                 code,
                 Some(exit_arg),
-                &account.addr,
+                &stuff.addr,
             ))
         }
         Ok(_) => {
             match engine.get_committed_state().get_root() {
-                StackItem::Cell(cell) => state.data = Some(cell),
-                _ => return Err(Error::internal_error("invalid commited state")),
-            };
-            Ok((engine, account))
+                StackItem::Cell(cell) => Ok((engine, cell)),
+                _ => Err(Error::internal_error("invalid commited state"))
+            }
         }
     }
 }
 
+// return messages and new data of the account
 pub(crate) fn call_tvm_msg(
-    account: ton_block::AccountStuff,
+    stuff: &ton_block::AccountStuff,
     options: ResolvedExecutionOptions,
     msg: &Message,
-) -> ClientResult<(Vec<Message>, ton_block::AccountStuff)> {
+) -> ClientResult<(Vec<Message>, Cell)> {
     let msg_cell = msg
         .write_to_new_cell()
         .map_err(|err| Error::internal_error(format!("can not serialize message: {}", err)))?;
 
     let mut stack = Stack::new();
-    let balance = account.storage.balance.grams.value();
+    let balance = stuff.storage.balance.grams.value();
     let function_selector = match msg.header() {
         ton_block::CommonMsgInfo::IntMsgInfo(_) => ton_vm::int!(0),
         ton_block::CommonMsgInfo::ExtInMsgInfo(_) => ton_vm::int!(-1),
@@ -122,7 +123,7 @@ pub(crate) fn call_tvm_msg(
         .push(StackItem::Slice(msg.body().unwrap_or_default())) // message body
         .push(function_selector); // function selector
 
-    let (engine, account) = call_tvm(account, options, stack)?;
+    let (engine, new_data) = call_tvm(stuff, options, stack)?;
 
     // process out actions to get out messages
     let actions_cell = engine
@@ -144,7 +145,7 @@ pub(crate) fn call_tvm_msg(
     }
 
     msgs.reverse();
-    Ok((msgs, account))
+    Ok((msgs, new_data))
 }
 
 fn build_contract_info(

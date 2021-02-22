@@ -75,7 +75,7 @@ pub async fn run_get(
         function_id,
     ))));
 
-    let (engine, _) = super::call_tvm::call_tvm(stuff.clone(), options, stack_in)?;
+    let (engine, _) = super::call_tvm::call_tvm(stuff, options, stack_in)?;
     Ok(ResultOfRunGet {
         output: stack::serialize_items(engine.stack().iter())?,
     })

@@ -10,8 +10,8 @@ use serde_json::Value;
 use std::sync::Arc;
 use ton_block::GetRepresentationHash;
 use ton_block::{
-    Account, AccountState, AccountStorage, AccountStuff, CurrencyCollection, MsgAddressInt,
-    StateInit, StateInitLib, StorageInfo, StorageUsed,
+    Account, CurrencyCollection, MsgAddressInt,
+    StateInit, StateInitLib,
 };
 use ton_sdk::ContractImage;
 
@@ -171,19 +171,11 @@ pub async fn encode_account(
         .hash()
         .map_err(|err| Error::invalid_tvc_image(err))?
         .to_hex_string();
-    let account = Account::Account(AccountStuff {
-        addr: MsgAddressInt::default(),
-        storage: AccountStorage {
-            balance: CurrencyCollection::from(params.balance.unwrap_or(100000000000)),
-            last_trans_lt: params.last_trans_lt.unwrap_or(0),
-            state: AccountState::AccountActive(state_init),
-        },
-        storage_stat: StorageInfo {
-            due_payment: None,
-            last_paid: params.last_paid.unwrap_or(0),
-            used: StorageUsed::default(),
-        },
-    });
+    let balance = CurrencyCollection::from(params.balance.unwrap_or(100000000000));
+    let mut account = Account::with_address_and_ballance(MsgAddressInt::default(), balance);
+    account.set_last_paid(params.last_paid.unwrap_or(0)); // it cannot be zero
+    account.set_last_tr_time(params.last_trans_lt.unwrap_or(0));
+    account.activate(state_init);
     Ok(ResultOfEncodeAccount {
         account: serialize_object_to_boc(&context, &account, "account", params.boc_cache).await?,
         id,
