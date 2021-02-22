@@ -172,7 +172,7 @@ pub async fn encode_account(
         .map_err(|err| Error::invalid_tvc_image(err))?
         .to_hex_string();
     let balance = CurrencyCollection::from(params.balance.unwrap_or(100000000000));
-    let mut account = Account::with_address_and_ballance(MsgAddressInt::default(), balance);
+    let mut account = Account::with_address_and_ballance(&MsgAddressInt::default(), &balance);
     account.set_last_paid(params.last_paid.unwrap_or(0)); // it cannot be zero
     account.set_last_tr_time(params.last_trans_lt.unwrap_or(0));
     account.activate(state_init);
