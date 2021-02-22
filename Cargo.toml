@@ -1,0 +1,11 @@
+[workspace]
+members = [
+    "ton_sdk",
+    "ton_client",
+    "toncli",
+    "api/test",
+]
+
+exclude = [
+    "examples/rust"
+]
