@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.0] – 2021-02-28
+
+### Fixed
+
+- doc generator: app object interface description, constructor functions-helpers for enum type variable creation,
+add new line in the end if api.json
+
 ## 1.9.0 Feb 19, 2021
 
 ### New
