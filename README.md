@@ -39,12 +39,12 @@ So, it can be used to interact directly with TON OS Clouds:
 - [Freeton](https://main.ton.dev/graphql)
 - [Devnet](https://net.ton.dev/graphql)
 
-# Bindings
+# SDKs in other languages (bindings over TON-SDK)
 
 Binding is a thin client library written on the specific language that acts like a bridge between 
 a client library and an application code written on that language.
 
-## Official Typescript binding
+## Official Javascript(Typescript) SDK
 Platforms: Node.js, Web, React-Native for IOS/Android
 - [ton-client-js](https://github.com/tonlabs/ton-client-js)  
 
