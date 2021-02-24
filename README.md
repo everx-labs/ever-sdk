@@ -1,6 +1,8 @@
-# TONOS Client Library for TON DApp development
+<p align="center"><a href="assets/ton-sdk.png" height="60"/></a></p>
+<h1 align="center">TON-SDK</h1>
+<p align="center">TONOS Client Library for TON DApp development</p>
 
-**Community links:**
+**Have a question? Get quick help in our channel:**
 
 [![Channel on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/freeton_sdk) 
 
