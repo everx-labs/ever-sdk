@@ -1,15 +1,15 @@
-<p align="center"><a href="assets/ton-sdk.png" height="60"/></a></p>
+<p align="center"><a href="https://github.com/tonlabs/TON-SDK"><img src="assets/ton-sdk.png" height="60"/></a></p> 
 <h1 align="center">TON-SDK</h1>
-<p align="center">TONOS Client Library for TON DApp development</p>
+<h3 align="center">TONOS Client Library for TON DApp development</p>
 
 **Have a question? Get quick help in our channel:**
 
 [![Channel on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/freeton_sdk) 
 
-**Documentation**  
+# Documentation
+[Full API/SDK documentation](https://docs.ton.dev/86757ecb2/p/39fc5e-products)
 
-[API Reference](https://github.com/tonlabs/TON-SDK/blob/master/docs/modules.md)  
-[GraphQL API documentation](https://docs.ton.dev/86757ecb2/p/70a850-introduction)
+[Javascript SDK](https://github.com/tonlabs/ton-client-js)
 
 # What is TONOS Client Library
 
