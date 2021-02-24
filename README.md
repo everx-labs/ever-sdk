@@ -1,10 +1,12 @@
 <p align="center"><a href="https://github.com/tonlabs/TON-SDK"><img src="assets/ton-sdk.png" height="60"/></a></p> 
 <h1 align="center">TON-SDK</h1>
-<h3 align="center">TONOS Client Library for TON DApp development</p>
+<p align="center">TONOS Client Library for TON DApp development</p>
 
-**Have a question? Get quick help in our channel:**
 
-[![Channel on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/freeton_sdk) 
+
+**Get quick help in our telegram channel:**
+
+[![Channel on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/ton_sdk) 
 
 # Documentation
 [Full API/SDK documentation](https://docs.ton.dev/86757ecb2/p/39fc5e-products)
