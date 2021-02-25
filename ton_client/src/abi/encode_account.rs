@@ -65,7 +65,7 @@ pub struct ParamsOfEncodeAccount {
     pub last_trans_lt: Option<u64>,
     /// Initial value for the `last_paid`.
     pub last_paid: Option<u32>,
-    /// Cache type to put the result. The BOC intself returned if no cache type provided
+    /// Cache type to put the result. The BOC itself returned if no cache type provided
     pub boc_cache: Option<BocCacheType>,
 }
 

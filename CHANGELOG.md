@@ -2,13 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.9.0 Feb 19, 2021
+
+### New
+
+- `tuple_list_as_array` parameter in `tvm.run_get` function which controls lists representation.
+Default is stack-like based on nested tuples. If set to `true` then returned lists are encoded as plain arrays.  Use this option if you receive this error on Web: "Runtime error. Unreachable code should not be executed..."
+This reduces stack size requirements for long lists.
+- `function_name` field of `CallSet` structure can be the name or **id (as string in hex starting with 0x)** of the called function. 
+- Fields `config_servers`, `query_url`, `account_address`, `gas_used` added into specific errors' `ClientError.data` object.
+
+### Fixed
+
+- Binaries download links are now under https protocol
+- If you receive this error on Web: "Runtime error. Unreachable code should not be executed..." in `run_get`, use the new parameter `tuple_list_as_array = true`. [See the documentation](docs/mod_tvm.md#run_get). This may happen, for example, when elector contract contains too many participants
+ 
 ## 1.8.0 Feb 11, 2021
 
 ### New
 
 - **Debot Module**:
     - Added new built-in interface `Msg` which allows to send external message to blockchain and sign it with supplied keypair.
-    
+
 ### Fixed
 
 - `crypto.hdkey_public_from_xprv` used compressed 33-byte form instead of normal 32-byte.

@@ -4,7 +4,7 @@ use crate::abi::{Abi, Error, FunctionHeader, Signer};
 use crate::boc::internal::{get_boc_hash, deserialize_cell_from_boc};
 use crate::client::ClientContext;
 use crate::crypto::internal::decode_public_key;
-use crate::encoding::{account_decode, account_encode, hex_decode};
+use crate::encoding::{account_decode, account_encode, decode_abi_number, hex_decode};
 use crate::error::ClientResult;
 use serde_json::Value;
 use std::str::FromStr;
@@ -27,8 +27,8 @@ pub struct DeploySet {
     pub initial_data: Option<Value>,
 
     /// Optional public key that can be provided in deploy set in order to substitute one
-    /// in TVM file or provided by Signer. 
-    /// 
+    /// in TVM file or provided by Signer.
+    ///
     /// Public key resolving priority:
     /// 1. Public key from deploy set.
     /// 2. Public key, specified in TVM file.
@@ -50,6 +50,7 @@ impl DeploySet {
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct CallSet {
     /// Function name that is being called.
+    /// Or function id encoded as string in hex (starting with 0x).
     pub function_name: String,
 
     /// Function header.
@@ -148,10 +149,10 @@ impl CallSet {
         abi: &str,
         internal: bool,
     ) -> ClientResult<FunctionCallSet> {
+        let contract = Contract::load(abi.as_bytes()).map_err(|x| Error::invalid_json(x))?;
         let header = if internal {
             None
         } else {
-            let contract = Contract::load(abi.as_bytes()).map_err(|x| Error::invalid_json(x))?;
             resolve_header(
                 self.header.as_ref(),
                 pubkey,
@@ -161,9 +162,20 @@ impl CallSet {
             )?
         };
 
+        let func = match decode_abi_number::<u32>(&self.function_name) {
+            Ok(id) => {
+                &contract
+                    .function_by_id(id, true)
+                    .map_err(|e| Error::invalid_function_id(&self.function_name, e))?
+                    .name
+            }
+            Err(_) => &self.function_name,
+        }
+        .clone();
+
         Ok(FunctionCallSet {
             abi: abi.to_string(),
-            func: self.function_name.clone(),
+            func,
             header: header.as_ref().map(|x| header_to_string(x)),
             input: self
                 .input
@@ -513,7 +525,7 @@ pub struct ResultOfEncodeInternalMessage {
 /// of initialization);
 /// - deploy without initial function call;
 /// - simple function call
-/// 
+///
 /// There is an optional public key can be provided in deploy set in order to substitute one
 /// in TVM file.
 ///

@@ -12,23 +12,90 @@
  *
  */
 
-use crate::boc::internal::serialize_cell_to_base64;
+use crate::boc::internal::{deserialize_cell_from_base64, serialize_cell_to_base64};
 use crate::error::ClientResult;
 use crate::tvm::Error;
 use core::result::Result::{Err, Ok};
 use serde_json::Value;
+use ton_types::BuilderData;
 use std::ops::Deref;
 use std::slice::Iter;
 use std::sync::Arc;
-use ton_vm::stack::integer::IntegerData;
+use ton_vm::stack::{continuation::ContinuationData, integer::IntegerData};
 use ton_vm::stack::StackItem;
+use ton_vm::{boolean, int};
 
-pub fn serialize_items(items: Iter<StackItem>) -> ClientResult<Value> {
-    let mut values = Vec::<Value>::new();
-    for item in items {
-        values.push(serialize_item(item)?)
+enum ProcessingResult<'a> {
+    Serialized(Value),
+    Nested(Box<dyn Iterator<Item = &'a StackItem> + 'a>),
+    //LevelUp,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(tag="type", content = "value")]
+enum ComplexType {
+    List(Vec<Value>),
+    Cell(String),
+    Builder(String),
+    Slice(String),
+    Continuation(String),
+}
+
+fn is_equal_type(left: &Value, right: &Value) -> bool {
+    left["type"] == right["type"] &&
+    left.is_array() == right.is_array() &&
+    left.is_string() == right.is_string()
+}
+
+pub fn serialize_items<'a>(
+    items: Box<dyn Iterator<Item = &'a StackItem> + 'a>,
+    flatten_lists: bool,
+) -> ClientResult<Value> {
+    let mut stack = vec![(vec![], items)];
+    let mut list_items: Option<Vec<Value>> = None;
+    loop {
+        let (mut vec, mut iter) = stack.pop().unwrap();
+        let next = iter.next();
+        if let Some(list) = list_items.take() {
+            // list is ended if current tuple has next element
+            // or it already contains more than one element
+            // or element type in current tuple is not equal to list items type
+            if next.is_some() || vec.len() != 1 || !is_equal_type(&vec[0], &list[0]) {
+                vec.push(json!(ComplexType::List(list)));
+            } else {
+                list_items = Some(list);
+            }
+        }
+        
+        if let Some(item) = next {
+            match process_item(item)? {
+                ProcessingResult::Serialized(value) => {
+                    vec.push(value);
+                    stack.push((vec, iter));
+                },
+                ProcessingResult::Nested(nested_iter) => {
+                    stack.push((vec, iter));
+                    stack.push((vec![], nested_iter));
+                }
+            }
+        } else {
+            if let Some((parent_vec, _)) = stack.last_mut() {
+                // list starts from tuple with 2 elements: some value and null,
+                // the value becomes the last list item
+                if vec.len() == 2 && vec[1] == Value::Null && flatten_lists {
+                    vec.resize(1, Value::Null);
+                    list_items = Some(vec);
+                } else if let Some(list) = list_items.take() {
+                    vec.extend(list.into_iter());
+                    list_items = Some(vec);
+                } else {
+                    parent_vec.push(Value::Array(vec));
+                }
+            } else {
+                return Ok(Value::Array(vec));
+            }
+        }
     }
-    Ok(Value::Array(values))
 }
 
 pub fn deserialize_items(values: Iter<Value>) -> ClientResult<Vec<StackItem>> {
@@ -41,7 +108,7 @@ pub fn deserialize_items(values: Iter<Value>) -> ClientResult<Vec<StackItem>> {
 
 fn serialize_integer_data(data: &ton_vm::stack::integer::IntegerData) -> String {
     let hex = data.to_str_radix(16);
-    // all negative nubers and positive numbers less than u128::MAX are encoded as decimal
+    // all negative numbers and positive numbers less than u128::MAX are encoded as decimal
     if hex.starts_with("-") || hex.len() <= 32 {
         data.to_str_radix(10)
     } else {
@@ -56,48 +123,82 @@ fn serialize_integer_data(data: &ton_vm::stack::integer::IntegerData) -> String 
     }
 }
 
-pub fn serialize_item(item: &StackItem) -> ClientResult<Value> {
+pub fn serialize_item<'a>(item: &'a StackItem) -> ClientResult<Value> {
+    Ok(serialize_items(Box::new(vec![item].into_iter()), false)?[0].take())
+}
+
+fn process_item(item: &StackItem) -> ClientResult<ProcessingResult> {
     Ok(match item {
-        StackItem::None => Value::Null,
-        StackItem::Integer(value) => Value::String(serialize_integer_data(value)),
-        StackItem::Tuple(items) => serialize_items(items.iter())?,
-        StackItem::Builder(value) => json!({
-            "type": "Builder",
-            "value": serialize_cell_to_base64(&value.deref().into(), "stack item `Builder`")
-        }),
-        StackItem::Slice(value) => json!({
-            "type": "Slice",
-            "value": serialize_cell_to_base64(&value.into_cell(), "stack item `Slice`")
-        }),
-        StackItem::Cell(value) => json!({
-            "type": "Cell",
-            "value": serialize_cell_to_base64(value, "stack item `Cell`")
-        }),
-        StackItem::Continuation(value) => json!({
-            "type": "Continuation",
-            "value": serialize_cell_to_base64(&value.code().into_cell(), "stack item `Continuation`")
-        }),
+        StackItem::None => ProcessingResult::Serialized(Value::Null),
+        StackItem::Integer(value) => 
+            ProcessingResult::Serialized(Value::String(serialize_integer_data(value))),
+        StackItem::Tuple(items) => ProcessingResult::Nested(Box::new(items.iter())),
+        StackItem::Builder(value) => ProcessingResult::Serialized(json!(
+            ComplexType::Builder(
+                serialize_cell_to_base64(&value.deref().into(), "stack item `Builder`")?
+            )
+        )),
+        StackItem::Slice(value) => ProcessingResult::Serialized(json!(
+            ComplexType::Slice(
+                serialize_cell_to_base64(&value.into_cell(), "stack item `Slice`")?
+            )
+        )),
+        StackItem::Cell(value) => ProcessingResult::Serialized(json!(
+            ComplexType::Cell(
+                serialize_cell_to_base64(value, "stack item `Cell`")?
+            )
+        )),
+        StackItem::Continuation(value) => ProcessingResult::Serialized(json!(
+            ComplexType::Continuation(
+                serialize_cell_to_base64(&value.code().into_cell(), "stack item `Continuation`")?
+            )
+        )),
     })
 }
 
 pub fn deserialize_item(value: &Value) -> ClientResult<StackItem> {
     Ok(match value {
         Value::Null => StackItem::None,
-        Value::Bool(v) => StackItem::Integer(Arc::new(if *v {
-            IntegerData::one()
-        } else {
-            IntegerData::zero()
-        })),
+        Value::Bool(v) => boolean!(*v),
         Value::Number(n) => {
             if let Some(i) = n.as_i64() {
-                StackItem::Integer(Arc::new(IntegerData::from_i64(i)))
+                int!(i)
             } else {
-                return Err(Error::invalid_input_stack("Invalid number value", &value));
+                return Err(Error::invalid_input_stack("Invalid number value", value));
             }
         }
-        Value::String(s) => StackItem::Integer(Arc::new(parse_integer_data(s)?)),
+        Value::String(s) => StackItem::Integer(Arc::new(parse_integer_data(&s)?)),
         Value::Array(array) => StackItem::Tuple(deserialize_items(array.iter())?),
-        Value::Object(_) => return Err(Error::invalid_input_stack("Unexpected object", &value)),
+        Value::Object(_) => {
+            let object = serde_json::from_value(value.clone())
+                .map_err(|err| Error::invalid_input_stack(
+                    format!("Can not parse object: {}", err),value))?;
+            match object {
+                ComplexType::Builder(string) => {
+                    let cell = deserialize_cell_from_base64(&string, "Builder")?.1;
+                    StackItem::Builder(Arc::new(BuilderData::from(&cell)))
+                }
+                ComplexType::Cell(string) => {
+                    let cell = deserialize_cell_from_base64(&string, "Cell")?.1;
+                    StackItem::Cell(cell)
+                }
+                ComplexType::Continuation(string) => {
+                    let cell = deserialize_cell_from_base64(&string, "Continuation")?.1;
+                    StackItem::Continuation(Arc::new(ContinuationData::with_code(cell.into())))
+                }
+                ComplexType::Slice(string) => {
+                    let cell = deserialize_cell_from_base64(&string, "Slice")?.1;
+                    StackItem::Slice(cell.into())
+                }
+                ComplexType::List(mut vec) => {
+                    let mut list = StackItem::None;
+                    while let Some(item) = vec.pop() {
+                        list = StackItem::Tuple(vec![deserialize_item(&item)?, list]);
+                    }
+                    list
+                }
+            }
+        }
     })
 }
 

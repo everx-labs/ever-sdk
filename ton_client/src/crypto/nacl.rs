@@ -263,7 +263,7 @@ pub struct ResultOfNaclBox {
 
 /// Public key authenticated encryption
 ///
-/// Encrypt and authenticate a message using the senders secret key, the recievers public
+/// Encrypt and authenticate a message using the senders secret key, the receivers public
 /// key, and a nonce.
 #[api_function]
 pub fn nacl_box(
@@ -312,7 +312,7 @@ pub struct ResultOfNaclBoxOpen {
     pub decrypted: String,
 }
 
-/// Decrypt and verify the cipher text using the recievers secret key, the senders public
+/// Decrypt and verify the cipher text using the receivers secret key, the senders public
 /// key, and the nonce.
 #[api_function]
 pub fn nacl_box_open(

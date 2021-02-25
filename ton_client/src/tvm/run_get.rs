@@ -31,19 +31,26 @@ pub struct ParamsOfRunGet {
     pub function_name: String,
     /// Input parameters
     pub input: Option<Value>,
+    /// Execution options
     pub execution_options: Option<ExecutionOptions>,
+    /// Convert lists based on nested tuples in the **result** into plain arrays. Default is `false`.
+    /// Input parameters may use any of lists representations
+    /// If you receive this error on Web: "Runtime error. Unreachable code should not be executed...", 
+    /// set this flag to true.
+    /// This may happen, for example, when elector contract contains too many participants
+    pub tuple_list_as_array: Option<bool>,
 }
 
 #[allow(non_snake_case)]
 #[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ResultOfRunGet {
-    /// Values returned by getmethod on stack
+    /// Values returned by get-method on stack
     pub output: Value,
 }
 
-/// Executes a getmethod of FIFT contract 
+/// Executes a get-method of FIFT contract 
 /// 
-/// Executes a getmethod of FIFT contract that fulfills the smc-guidelines https://test.ton.org/smc-guidelines.txt
+/// Executes a get-method of FIFT contract that fulfills the smc-guidelines https://test.ton.org/smc-guidelines.txt
 /// and returns the result data from TVM's stack
 
 #[api_function]
@@ -66,8 +73,8 @@ pub async fn run_get(
     let mut stack_in = Stack::new();
     if let Some(input) = params.input {
         if let Value::Array(array) = input {
-            for value in array.iter() {
-                stack_in.push(stack::deserialize_item(value)?);
+            for value in array {
+                stack_in.push(stack::deserialize_item(&value)?);
             }
         } else {
             stack_in.push(stack::deserialize_item(&input)?);
@@ -80,6 +87,9 @@ pub async fn run_get(
 
     let (engine, _) = super::call_tvm::call_tvm(stuff, options, stack_in)?;
     Ok(ResultOfRunGet {
-        output: stack::serialize_items(engine.stack().iter())?,
+        output: stack::serialize_items(
+            Box::new(engine.stack().iter()),
+            params.tuple_list_as_array.unwrap_or_default(),
+        )?,
     })
 }

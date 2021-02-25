@@ -61,7 +61,7 @@ Where:
 
 [nacl_box](mod_crypto.md#nacl_box) – Public key authenticated encryption
 
-[nacl_box_open](mod_crypto.md#nacl_box_open) – Decrypt and verify the cipher text using the recievers secret key, the senders public key, and the nonce.
+[nacl_box_open](mod_crypto.md#nacl_box_open) – Decrypt and verify the cipher text using the receivers secret key, the senders public key, and the nonce.
 
 [nacl_secret_box](mod_crypto.md#nacl_secret_box) – Encrypt and authenticate message using nonce and secret key.
 
@@ -157,9 +157,9 @@ Where:
 
 [run_executor](mod_tvm.md#run_executor) – Emulates all the phases of contract execution locally
 
-[run_tvm](mod_tvm.md#run_tvm) – Executes get methods of ABI-compatible contracts
+[run_tvm](mod_tvm.md#run_tvm) – Executes get-methods of ABI-compatible contracts
 
-[run_get](mod_tvm.md#run_get) – Executes a getmethod of FIFT contract
+[run_get](mod_tvm.md#run_get) – Executes a get-method of FIFT contract
 
 ## [net](mod_net.md) – Network access.
 

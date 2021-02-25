@@ -17,7 +17,7 @@ use crate::abi::Abi;
 use crate::boc::internal::deserialize_object_from_boc;
 use crate::client::ClientContext;
 use crate::encoding::hex_decode;
-use crate::error::ClientResult;
+use crate::error::{AddNetworkUrl, ClientResult};
 use crate::processing::internal::get_message_expiration_time;
 use crate::processing::types::ProcessingEvent;
 use crate::processing::Error;
@@ -109,6 +109,8 @@ pub async fn send_message<F: futures::Future<Output = ()> + Send>(
     let send_result = context
         .get_server_link()?
         .send_message(&hex_decode(&message_id)?, &message.boc.bytes("message")?)
+        .await
+        .add_network_url_from_context(&context)
         .await?;
     if params.send_events {
         let event = match send_result {

@@ -433,7 +433,7 @@ function encode_account(
 - `last_trans_lt`?: _bigint_ – Initial value for the `last_trans_lt`.
 - `last_paid`?: _number_ – Initial value for the `last_paid`.
 - `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
-<br>The BOC intself returned if no cache type provided
+<br>The BOC itself returned if no cache type provided
 
 
 ### Result
@@ -456,7 +456,8 @@ enum AbiErrorCode {
     InvalidTvcImage = 308,
     RequiredPublicKeyMissingForFunctionHeader = 309,
     InvalidSigner = 310,
-    InvalidAbi = 311
+    InvalidAbi = 311,
+    InvalidFunctionId = 312
 }
 ```
 One of the following value:
@@ -472,6 +473,7 @@ One of the following value:
 - `RequiredPublicKeyMissingForFunctionHeader = 309`
 - `InvalidSigner = 310`
 - `InvalidAbi = 311`
+- `InvalidFunctionId = 312`
 
 
 ## Abi
@@ -550,7 +552,7 @@ type CallSet = {
     input?: any
 }
 ```
-- `function_name`: _string_ – Function name that is being called.
+- `function_name`: _string_ – Function name that is being called. Or function id encoded as string in hex (starting with 0x).
 - `header`?: _[FunctionHeader](mod_abi.md#FunctionHeader)_ – Function header.
 <br>If an application omits some header parameters required by the<br>contract's ABI, the library will set the default values for<br>them.
 - `input`?: _any_ – Function input parameters according to ABI.
@@ -1021,7 +1023,7 @@ type ParamsOfEncodeAccount = {
 - `last_trans_lt`?: _bigint_ – Initial value for the `last_trans_lt`.
 - `last_paid`?: _number_ – Initial value for the `last_paid`.
 - `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
-<br>The BOC intself returned if no cache type provided
+<br>The BOC itself returned if no cache type provided
 
 
 ## ResultOfEncodeAccount

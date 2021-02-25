@@ -1,6 +1,6 @@
 use crate::abi::ParamsOfEncodeMessage;
 use crate::client::ClientContext;
-use crate::error::ClientResult;
+use crate::error::{AddNetworkUrl, ClientResult};
 use crate::processing::internal::can_retry_expired_message;
 use crate::processing::{
     send_message, wait_for_transaction, ErrorCode, ParamsOfSendMessage, ParamsOfWaitForTransaction,
@@ -44,6 +44,8 @@ pub async fn process_message<F: futures::Future<Output = ()> + Send>(
             },
             &callback,
         )
+        .await
+        .add_network_url_from_context(&context)
         .await?
         .shard_block_id;
 
@@ -57,6 +59,8 @@ pub async fn process_message<F: futures::Future<Output = ()> + Send>(
             },
             &callback,
         )
+        .await
+        .add_network_url_from_context(&context)
         .await;
 
         match wait_for {

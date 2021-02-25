@@ -74,6 +74,7 @@ where
             transaction.compute.exit_code.unwrap_or(-1),
             transaction.compute.exit_arg.map(i32::into),
             &address,
+            Some(transaction.compute.gas_used),
         ));
     }
 

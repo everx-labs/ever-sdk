@@ -182,15 +182,15 @@ TON Labs SDK Binaries Store.
 
 Platform | Major | Download links
 -------- | ----- | --------------
-Win32    | 0     | [`ton_client.lib`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_win32_lib.gz), [`ton_client.dll`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_win32_dll.gz)
-&nbsp;   | 1     | [`ton_client.lib`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_win32_lib.gz), [`ton_client.dll`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_win32_dll.gz)
-macOS    | 0     | [`libton_client.dylib`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_darwin.gz)
-&nbsp;   | 1     | [`libton_client.dylib`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_darwin.gz)
-Linux    | 0     | [`libton_client.so`](http://sdkbinaries-ws.tonlabs.io/tonclient_0_linux.gz)
-&nbsp;   | 1     | [`libton_client.so`](http://sdkbinaries-ws.tonlabs.io/tonclient_1_linux.gz)
+Win32    | 0     | [`ton_client.lib`](https://binaries.tonlabs.io/tonclient_0_win32_lib.gz), [`ton_client.dll`](https://binaries.tonlabs.io/tonclient_0_win32_dll.gz)
+&nbsp;   | 1     | [`ton_client.lib`](https://binaries.tonlabs.io/tonclient_1_win32_lib.gz), [`ton_client.dll`](https://binaries.tonlabs.io/tonclient_1_win32_dll.gz)
+macOS    | 0     | [`libton_client.dylib`](https://binaries.tonlabs.io/tonclient_0_darwin.gz)
+&nbsp;   | 1     | [`libton_client.dylib`](https://binaries.tonlabs.io/tonclient_1_darwin.gz)
+Linux    | 0     | [`libton_client.so`](https://binaries.tonlabs.io/tonclient_0_linux.gz)
+&nbsp;   | 1     | [`libton_client.so`](https://binaries.tonlabs.io/tonclient_1_linux.gz)
 
 If you want an older version of library (e.g. `0.25.0` for macOS), you need to choose a link to your platform from the list above and replace `0` with a version:
-[http://sdkbinaries.tonlabs.io/tonclient_<b>0_25_0</b>_darwin.gz](http://sdkbinaries.tonlabs.io/tonclient_0_25_0_darwin.gz)
+[https://binaries.tonlabs.io/tonclient_<b>0_25_0</b>_darwin.gz](http://sdkbinaries.tonlabs.io/tonclient_0_25_0_darwin.gz)
 
 _Downloaded archive is gzipped file_
 
