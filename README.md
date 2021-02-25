@@ -1,17 +1,23 @@
-# TONOS Client Library for TON DApp development
+<p align="center"><a href="https://github.com/tonlabs/TON-SDK"><img src="assets/ton-sdk.png" height="60"/></a></p> 
+<h1 align="center">TON-SDK</h1>
+<p align="center">Core Client Library built on the TON OS GraphQL API</p>
+<p align="center">for Free TON DApp development</p>
 
-**Community links:**
 
-[![Channel on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/freeton_sdk) 
+**Get quick help in our telegram channel:**
 
-**Documentation**  
+[![Channel on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/ton_sdk) 
 
-[API Reference](https://github.com/tonlabs/TON-SDK/blob/master/docs/modules.md)  
-[GraphQL API documentation](https://docs.ton.dev/86757ecb2/p/70a850-introduction)
+# Documentation
+[Full API/SDK documentation](https://docs.ton.dev/86757ecb2/p/39fc5e-products)
 
-# What is TONOS Client Library
+[Javascript SDK](https://github.com/tonlabs/ton-client-js)
 
-TONOS Client Library is a library written in Rust that can be dynamically linked. It provides all 
+[Example Hello World](https://github.com/tonlabs/sdk-samples/tree/master/v1/node-js/core-api/hello)
+
+# What is Core Free TON Client Library
+
+Core Client Library is written in Rust that can be dynamically linked. It provides all 
 heavy-computation components and functions, such as TON Virtual Machine, TON Transaction 
 Executor, ABI-related functions, boc-related functions, crypto functions. 
 
@@ -35,12 +41,12 @@ So, it can be used to interact directly with TON OS Clouds:
 - [Freeton](https://main.ton.dev/graphql)
 - [Devnet](https://net.ton.dev/graphql)
 
-# Bindings
+# SDKs in other languages (bindings over TON-SDK)
 
 Binding is a thin client library written on the specific language that acts like a bridge between 
 a client library and an application code written on that language.
 
-## Official Typescript binding
+## Official Javascript(Typescript) SDK
 Platforms: Node.js, Web, React-Native for IOS/Android
 - [ton-client-js](https://github.com/tonlabs/ton-client-js)  
 
