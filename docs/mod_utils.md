@@ -73,6 +73,14 @@ When _type_ is _'Base64'_
 - `bounce`: _boolean_
 
 
+Variant constructors:
+
+```ts
+function addressStringFormatAccountId(): AddressStringFormat;
+function addressStringFormatHex(): AddressStringFormat;
+function addressStringFormatBase64(url: boolean, test: boolean, bounce: boolean): AddressStringFormat;
+```
+
 ## ParamsOfConvertAddress
 ```ts
 type ParamsOfConvertAddress = {

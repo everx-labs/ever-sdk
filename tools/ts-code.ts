@@ -50,7 +50,7 @@ function isValidIdentChar(c: string): boolean {
     return isValidIdentFirstChar(c) || (c >= "0" && c <= "9");
 }
 
-function fixFieldName(name: string): string {
+export function fixFieldName(name: string): string {
     let isValidIdent = name !== "" && isValidIdentFirstChar(name[0]);
     if (isValidIdent) {
         for (let i = 1; i < name.length; i += 1) {
@@ -63,7 +63,7 @@ function fixFieldName(name: string): string {
     return isValidIdent ? name : `'${name.split("'").join("\\'")}'`;
 }
 
-function typeName(fullName: string) {
+export function typeName(fullName: string) {
     const parts = fullName.split(".");
     return parts[parts.length - 1];
 }

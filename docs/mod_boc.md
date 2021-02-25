@@ -357,10 +357,6 @@ function cache_unpin(
 <br>If it is provided then only referenced BOC is unpinned
 
 
-### Result
-
-
-
 # Types
 ## BocCacheType
 ```ts
@@ -387,6 +383,13 @@ When _type_ is _'Unpinned'_
  
 
 
+
+Variant constructors:
+
+```ts
+function bocCacheTypePinned(pin: string): BocCacheType;
+function bocCacheTypeUnpinned(): BocCacheType;
+```
 
 ## BocErrorCode
 ```ts

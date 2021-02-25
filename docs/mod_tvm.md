@@ -288,6 +288,14 @@ Account state to run message
 <br>Can be used to calculate transaction fees without balance check
 
 
+Variant constructors:
+
+```ts
+function accountForExecutorNone(): AccountForExecutor;
+function accountForExecutorUninit(): AccountForExecutor;
+function accountForExecutorAccount(boc: string, unlimited_balance?: boolean): AccountForExecutor;
+```
+
 ## TransactionFees
 ```ts
 type TransactionFees = {

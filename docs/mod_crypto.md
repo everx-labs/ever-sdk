@@ -207,6 +207,8 @@ Crypto functions.
 
 [ResultOfSigningBoxSign](#ResultOfSigningBoxSign)
 
+[AppSigningBox](#AppSigningBox)
+
 
 # Functions
 ## factorize
@@ -1304,10 +1306,6 @@ function remove_signing_box(
 - `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
 
 
-### Result
-
-
-
 # Types
 ## CryptoErrorCode
 ```ts
@@ -1989,6 +1987,13 @@ Sign data
 - `unsigned`: _string_ – Data to sign encoded as base64
 
 
+Variant constructors:
+
+```ts
+function paramsOfAppSigningBoxGetPublicKey(): ParamsOfAppSigningBox;
+function paramsOfAppSigningBoxSign(unsigned: string): ParamsOfAppSigningBox;
+```
+
 ## ResultOfAppSigningBox
 Returning values from signing box callbacks.
 
@@ -2017,6 +2022,13 @@ Result of signing data
 
 - `signature`: _string_ – Data signature encoded as hex
 
+
+Variant constructors:
+
+```ts
+function resultOfAppSigningBoxGetPublicKey(public_key: string): ResultOfAppSigningBox;
+function resultOfAppSigningBoxSign(signature: string): ResultOfAppSigningBox;
+```
 
 ## ResultOfSigningBoxGetPublicKey
 ```ts
@@ -2048,5 +2060,71 @@ type ResultOfSigningBoxSign = {
 ```
 - `signature`: _string_ – Data signature.
 <br>Encoded with `hex`.
+
+
+## AppSigningBox
+
+```ts
+
+type ResultOfAppSigningBoxGetPublicKey = {
+    public_key: string
+}
+
+type ParamsOfAppSigningBoxSign = {
+    unsigned: string
+}
+
+type ResultOfAppSigningBoxSign = {
+    signature: string
+}
+
+export interface AppSigningBox {
+    get_public_key(): Promise<ResultOfAppSigningBoxGetPublicKey>,
+    sign(params: ParamsOfAppSigningBoxSign): Promise<ResultOfAppSigningBoxSign>,
+}
+```
+
+## get_public_key
+
+Get signing box public key
+
+```ts
+type ResultOfAppSigningBoxGetPublicKey = {
+    public_key: string
+}
+
+function get_public_key(): Promise<ResultOfAppSigningBoxGetPublicKey>;
+```
+
+
+### Result
+
+- `public_key`: _string_ – Signing box public key
+
+
+## sign
+
+Sign data
+
+```ts
+type ParamsOfAppSigningBoxSign = {
+    unsigned: string
+}
+
+type ResultOfAppSigningBoxSign = {
+    signature: string
+}
+
+function sign(
+    params: ParamsOfAppSigningBoxSign,
+): Promise<ResultOfAppSigningBoxSign>;
+```
+### Parameters
+- `unsigned`: _string_ – Data to sign encoded as base64
+
+
+### Result
+
+- `signature`: _string_ – Data signature encoded as hex
 
 
