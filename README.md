@@ -1,4 +1,4 @@
-<p align="center"><a href="https://github.com/tonlabs/TON-SDK"><img src="assets/ton-sdk.png" height="60"/></a></p> 
+<p align="center"><a href="https://github.com/tonlabs/TON-SDK"><img src="assets/ton-sdk-blue.png" height="60"/></a></p> 
 <h1 align="center">TON-SDK</h1>
 <p align="center">Core Client Library built on the TON OS GraphQL API</p>
 <p align="center">for Free TON DApp development</p>
