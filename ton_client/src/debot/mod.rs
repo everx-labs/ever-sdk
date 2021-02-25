@@ -13,6 +13,7 @@
 
 mod action;
 mod base64_interface;
+mod hex_interface;
 mod browser;
 mod calltype;
 mod context;
