@@ -1,7 +1,7 @@
 <p align="center"><a href="https://github.com/tonlabs/TON-SDK"><img src="assets/ton-sdk.png" height="60"/></a></p> 
 <h1 align="center">TON-SDK</h1>
-<p align="center">TONOS Client Library for TON DApp development</p>
-
+<p align="center">Core Client Library built on the TON OS GraphQL API</p>
+<p align="center">for Free TON DApp development</p>
 
 
 **Get quick help in our telegram channel:**
@@ -13,9 +13,11 @@
 
 [Javascript SDK](https://github.com/tonlabs/ton-client-js)
 
-# What is TONOS Client Library
+[Example Hello World](https://github.com/tonlabs/sdk-samples/tree/master/v1/node-js/core-api/hello)
 
-TONOS Client Library is a library written in Rust that can be dynamically linked. It provides all 
+# What is Core Free TON Client Library
+
+Core Client Library is written in Rust that can be dynamically linked. It provides all 
 heavy-computation components and functions, such as TON Virtual Machine, TON Transaction 
 Executor, ABI-related functions, boc-related functions, crypto functions. 
 
