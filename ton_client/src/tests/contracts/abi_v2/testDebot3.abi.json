@@ -231,6 +231,66 @@
 			]
 		},
 		{
+			"name": "testHexEncode",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "hexEnc",
+			"inputs": [
+				{"name":"hexstr","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testHexDecode",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "hexDec",
+			"inputs": [
+				{"name":"data","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testBase64Encode",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "base64Enc",
+			"inputs": [
+				{"name":"base64","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testBase64Decode",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "base64Dec",
+			"inputs": [
+				{"name":"data","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
 			"name": "getVersion",
 			"inputs": [
 			],

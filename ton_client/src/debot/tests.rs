@@ -795,7 +795,7 @@ async fn test_debot_interface_call() {
 }
 
 #[tokio::test(core_threads = 2)]
-async fn test_debot_sdk_interface() {
+async fn test_debot_inner_interfaces() {
     let client = std::sync::Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys } = init_debot3(client.clone()).await;
 
@@ -812,10 +812,14 @@ async fn test_debot_sdk_interface() {
             format!("test genRandom passed"),
             format!("test naclbox passed"),
             format!("test naclKeypairFromSecret passed"),
+            format!("test hex encode passed"),
+            format!("test base64 encode passed"),
             format!("test mnemonic passed"),
             format!("test account passed"),
             format!("test naclboxopen passed"),
             format!("test hdkeyXprv passed"),
+            format!("test hex decode passed"),
+            format!("test base64 decode passed"),
         ],
     ).await;
 }
