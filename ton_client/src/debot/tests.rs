@@ -26,7 +26,7 @@ use futures::future::{BoxFuture, FutureExt};
 use serde_json::Value;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use tokio::sync::Mutex;
 use crate::net::ParamsOfQueryCollection;
 use super::*;
@@ -177,12 +177,11 @@ struct BrowserData {
     pub msg_queue: Mutex<VecDeque<String>>,
     pub terminal: Mutex<Terminal>,
     pub echo: Echo,
-    pub debot_abi: Mutex<Abi>,
+    pub bots: Mutex<HashMap<String, RegisteredDebot>>,
 }
 
 impl TestBrowser {
-
-    pub async fn execute_from_state(client: Arc<TestClient>, state: Arc<BrowserData>, start_function: &str) {
+    async fn fetch_debot(client: Arc<TestClient>, state: Arc<BrowserData>, address: String, start_function: &str) -> RegisteredDebot {
         let state_copy = state.clone();
         let client_copy = client.clone();
         let callback = move |params, response_type| {
@@ -212,16 +211,23 @@ impl TestBrowser {
 
         let handle: RegisteredDebot = client.request_async_callback(
             start_function,
-            ParamsOfStart {
-                address: state.address.clone()
-            },
+            ParamsOfStart { address: address.clone() },
             callback
         ).await.unwrap();
 
-        *state.debot_abi.lock().await = Abi::Contract(serde_json::from_str(&handle.debot_abi).unwrap());
+        let handle_copy = RegisteredDebot {
+            debot_handle: handle.debot_handle.clone(),
+            debot_abi: handle.debot_abi.clone(),
+        };
+        state.bots.lock().await.insert(address.clone(), handle_copy);
+        handle
+    }
+
+    pub async fn execute_from_state(client: Arc<TestClient>, state: Arc<BrowserData>, start_function: &str) {
+        let handle = Self::fetch_debot(client.clone(), state.clone(), state.address.clone(), start_function).await;
 
         while !state.finished.load(Ordering::Relaxed) {
-            Self::execute_interface_calls(&handle, client.clone(), state.clone()).await;
+            Self::handle_message_queue(client.clone(), state.clone()).await;
 
             let available_steps_count = state.current.lock().await.available_actions.len();
             if available_steps_count == 0 {
@@ -261,9 +267,6 @@ impl TestBrowser {
 
         assert_eq!(state.next.lock().await.len(), 0);
         assert_eq!(state.terminal.lock().await.messages.len(), 0);
-        let _: () = client.request_async(
-            "debot.remove",
-            handle).await.unwrap();
     }
 
     pub async fn execute(
@@ -272,6 +275,17 @@ impl TestBrowser {
         keys: KeyPair,
         steps: Vec<DebotStep>,
         terminal_outputs: Vec<String>,
+    ) {
+        Self::execute_with_func(client, address, keys, steps, terminal_outputs, "debot.start").await;
+    }
+
+    pub async fn execute_with_func(
+        client: Arc<TestClient>,
+        address: String,
+        keys: KeyPair,
+        steps: Vec<DebotStep>,
+        terminal_outputs: Vec<String>,
+        entry_function: &str,
     ) {
         let state = Arc::new(BrowserData {
             current: Mutex::new(Default::default()),
@@ -284,10 +298,10 @@ impl TestBrowser {
             msg_queue: Mutex::new(Default::default()),
             terminal: Mutex::new(Terminal::new(terminal_outputs)),
             echo: Echo::new(),
-            debot_abi: Mutex::new(Abi::default()),
+            bots: Mutex::new(HashMap::new()),
         });
 
-        Self::execute_from_state(client, state, "debot.start").await
+        Self::execute_from_state(client, state, entry_function).await
     }
 
     async fn process_notification(state: &BrowserData, params: ParamsOfAppDebotBrowser) {
@@ -354,7 +368,7 @@ impl TestBrowser {
                     msg_queue: Mutex::new(Default::default()),
                     terminal: Mutex::new(Terminal::new(vec![])),
                     echo: Echo::new(),
-                    debot_abi: Mutex::new(Abi::default()),
+                    bots: Mutex::new(HashMap::new()),
                 });
                 Self::call_execute_boxed(client, state, "debot.fetch").await;
                 ResultOfAppDebotBrowser::InvokeDebot
@@ -363,8 +377,7 @@ impl TestBrowser {
         }
     }
 
-    async fn execute_interface_calls(
-        handle: &RegisteredDebot,
+    async fn handle_message_queue(
         client: Arc<TestClient>,
         state: Arc<BrowserData>,
     ) {
@@ -374,63 +387,90 @@ impl TestBrowser {
                 "boc.parse_message",
                 ParamsOfParse { boc: msg.clone() },
             ).await.unwrap();
+
             let body = parsed.parsed["body"].as_str().unwrap().to_owned();
-            let iface_addr = parsed.parsed["dst"].as_str().unwrap();
-            let wc_and_addr: Vec<_> = iface_addr.split(':').collect();
+            let dest_addr = parsed.parsed["dst"].as_str().unwrap();
+            let src_addr = parsed.parsed["src"].as_str().unwrap();
+            let wc_and_addr: Vec<_> = dest_addr.split(':').collect();
             let interface_id = wc_and_addr[1];
             let wc = i8::from_str_radix(wc_and_addr[0], 10).unwrap();
-            assert_eq!(wc, DEBOT_WC);
-            assert_eq!(SUPPORTED_INTERFACES.contains(&interface_id), true);
-            let abi = if SUPPORTED_INTERFACES[0] == interface_id {
-                Abi::Json(ECHO_ABI.to_owned())
-            } else if SUPPORTED_INTERFACES[1] == interface_id {
-                Abi::Json(TERMINAL_ABI.to_owned())
-            } else {
-                panic!("unsupported interface");
-            };
-            let decoded: DecodedMessageBody = client.request_async(
-                "abi.decode_message_body",
-                ParamsOfDecodeMessageBody { abi, body, is_internal: true },
-            ).await.unwrap();
-            let (func, args) = (decoded.name, decoded.value.unwrap());
-            log::info!("request: {} ({})", func, args);
-            let (func_id, return_args) =
+
+            if wc == DEBOT_WC {
+                assert_eq!(SUPPORTED_INTERFACES.contains(&interface_id), true);
+                let abi = if SUPPORTED_INTERFACES[0] == interface_id {
+                    Abi::Json(ECHO_ABI.to_owned())
+                } else if SUPPORTED_INTERFACES[1] == interface_id {
+                    Abi::Json(TERMINAL_ABI.to_owned())
+                } else {
+                    panic!("unsupported interface");
+                };
+                let decoded: DecodedMessageBody = client.request_async(
+                    "abi.decode_message_body",
+                    ParamsOfDecodeMessageBody { abi, body, is_internal: true },
+                ).await.unwrap();
+                let (func, args) = (decoded.name, decoded.value.unwrap());
+                log::info!("request: {} ({})", func, args);
+                let (func_id, return_args) =
                 if SUPPORTED_INTERFACES[0] == interface_id {
                     state.echo.call(&func, &args)
                 } else {
                     state.terminal.lock().await.call(&func, &args)
                 };
-            log::info!("response: {} ({})", func_id, return_args);
+                log::info!("response: {} ({})", func_id, return_args);
 
-            let call_set = match func_id {
-                0 => None,
-                _ => CallSet::some_with_function_and_input(&format!("0x{:x}", func_id), return_args),
-            };
-            let r: ResultOfEncodeInternalMessage = client.request_async(
-                "abi.encode_internal_message",
-                ParamsOfEncodeInternalMessage {
-                    abi: state.debot_abi.lock().await.clone(),
-                    address: Some(state.address.clone()),
-                    deploy_set: None,
-                    call_set,
-                    value: "1000000000000000".to_owned(),
-                    bounce: None,
-                    enable_ihr: None,
-                }
-            ).await.unwrap();
-            let message = r.message;
+                let call_set = match func_id {
+                    0 => None,
+                    _ => CallSet::some_with_function_and_input(&format!("0x{:x}", func_id), return_args),
+                };
+                let bots = state.bots.lock().await;
+                let handle = bots.get(src_addr).unwrap();
+                let message = encode_internal_message(client.clone(), &handle.debot_abi, src_addr.to_owned(), call_set).await;
+                debot_send(client.clone(), handle.debot_handle.clone(), message).await;
 
-            let _result: () = client.request_async(
-                "debot.send",
-                ParamsOfSend {
-                    debot_handle: handle.debot_handle.clone(),
-                    message,
+            } else {
+                let debot_fetched = state.bots.lock().await.get(dest_addr).is_some();
+                if !debot_fetched {
+                    TestBrowser::fetch_debot(
+                        client.clone(),
+                        state.clone(),
+                        dest_addr.to_owned(),
+                        "debot.fetch",
+                    ).await;
+
                 }
-            ).await.unwrap();
+                let debot_handle = state.bots.lock().await.get(dest_addr).unwrap().debot_handle.clone();
+                debot_send(client.clone(), debot_handle, msg).await;
+            }
 
             msg_opt = state.msg_queue.lock().await.pop_front();
         }
     }
+}
+
+async fn encode_internal_message(client: Arc<TestClient>, abi: &str, addr: String, call_set: Option<CallSet>) -> String {
+    let r: ResultOfEncodeInternalMessage = client.request_async(
+        "abi.encode_internal_message",
+        ParamsOfEncodeInternalMessage {
+            abi: Abi::Contract(serde_json::from_str(abi).unwrap()),
+            address: Some(addr),
+            deploy_set: None,
+            call_set,
+            value: "1000000000000000".to_owned(),
+            bounce: None,
+            enable_ihr: None,
+        }
+    ).await.unwrap();
+    r.message
+}
+
+async fn debot_send(client: Arc<TestClient>, debot_handle: DebotHandle, message: String) {
+    let _result: () = client.request_async(
+        "debot.send",
+        ParamsOfSend {
+            debot_handle,
+            message,
+        }
+    ).await.unwrap();
 }
 
 #[derive(Clone)]
