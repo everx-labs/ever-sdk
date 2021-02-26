@@ -38,6 +38,9 @@ lazy_static!(
 const TEST_DEBOT2: &'static str = "testDebot2";
 const TEST_DEBOT3: &'static str = "testDebot3";
 const TEST_DEBOT4: &'static str = "testDebot4";
+const TEST_DEBOTA: &'static str = "tda";
+const TEST_DEBOTB: &'static str = "tdb";
+
 
 const SUPPORTED_INTERFACES: &[&str] = &[
     "f6927c0d4bdb69e1b52d27f018d156ff04152f00558042ff674f0fec32e4369d", // echo
@@ -121,9 +124,13 @@ impl Terminal {
     fn print(&mut self, answer_id: u32, message: &str) -> (u32, JsonValue) {
         assert!(
             self.messages.len() > 0,
-            format!("Terminal.messages vector is empty but must contains \"{}\"", message)
+            format!("Unexpected terminal message received: \"{}\"", message)
         );
-        assert_eq!(self.messages.remove(0), message, "Terminal.print assert");
+        assert_eq!(
+            self.messages.remove(0),
+            message,
+            "Terminal message assert failed"
+        );
         ( answer_id, json!({ }) )
     }
 
@@ -680,6 +687,61 @@ async fn init_debot3(client: Arc<TestClient>) -> DebotData {
     }
 }
 
+async fn init_debot_pair(client: Arc<TestClient>, debot1: &str, debot2: &str) -> (String, String) {
+    let keys = client.generate_sign_keys();
+    let debot1_abi = TestClient::abi(debot1, Some(2));
+    let debot2_abi = TestClient::abi(debot2, Some(2));
+
+    let deploy_params2 = ParamsOfEncodeMessage {
+        abi: debot2_abi.clone(),
+        deploy_set: Some(DeploySet {
+            tvc: TestClient::tvc(debot2, Some(2)),
+            ..Default::default()
+        }),
+        signer: Signer::Keys { keys: keys.clone() },
+        processing_try_index: None,
+        address: None,
+        call_set: CallSet::some_with_function("constructor"),
+    };
+    let debot2_addr = client.encode_message(deploy_params2.clone()).await.unwrap().address;
+
+    let call_set = CallSet::some_with_function_and_input(
+        "constructor",
+        json!({ "targetAddr": debot2_addr })
+    );
+    let deploy_params1 = ParamsOfEncodeMessage {
+        abi: debot1_abi.clone(),
+        deploy_set: DeploySet::some_with_tvc(TestClient::tvc(debot1, Some(2))),
+        signer: Signer::Keys { keys: keys.clone() },
+        processing_try_index: None,
+        address: None,
+        call_set,
+    };
+    let debot1_addr = client.deploy_with_giver_async(deploy_params1, Some(1_000_000_000u64)).await;
+    let _ = client.deploy_with_giver_async(deploy_params2, Some(1_000_000_000u64)).await;
+
+    let future1 = client.net_process_function(
+        debot1_addr.clone(),
+        debot1_abi.clone(),
+        "setAbi",
+        json!({ "debotAbi": hex::encode(&debot1_abi.json_string().unwrap().as_bytes()) }),
+        Signer::Keys { keys: keys.clone() },
+    );
+
+    let future2 = client.net_process_function(
+        debot2_addr.clone(),
+        debot2_abi.clone(),
+        "setAbi",
+        json!({ "debotAbi": hex::encode(&debot2_abi.json_string().unwrap().as_bytes()) }),
+        Signer::Keys { keys: keys.clone() },
+    );
+
+    let (_, _) = futures::join!(future1, future2);
+
+    (debot1_addr, debot2_addr)
+
+}
+
 const EXIT_CHOICE: u8 = 9;
 
 #[tokio::test(core_threads = 2)]
@@ -970,6 +1032,26 @@ async fn test_debot_msg_interface() {
         "counter",
         json!({}),
         json!({"counter": format!("{}", counter_after) })
+    ).await;
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_debot_invoke_msgs() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let (debot1, _) = init_debot_pair(client.clone(), TEST_DEBOTA, TEST_DEBOTB).await;
+    let keys = client.generate_sign_keys();
+
+    let steps = serde_json::from_value(json!([])).unwrap();
+    TestBrowser::execute(
+        client.clone(),
+        debot1.clone(),
+        keys,
+        steps,
+        vec![
+            format!("Invoking Debot B"),
+            format!("DebotB receives question: What is your name?"),
+            format!("DebotA receives answer: My name is DebotB"),
+        ],
     ).await;
 }
 
