@@ -84,10 +84,10 @@ impl RunOutput {
                     self.calls.push_back(DebotCallType::Interface {
                         msg: msg_base64,
                         id: wc_and_addr
-                        .get(1)
-                        .map(|x| x.to_owned())
-                        .unwrap_or("0")
-                        .to_string(),
+                            .get(1)
+                            .map(|x| x.to_owned())
+                            .unwrap_or("0")
+                            .to_string(),
                     });
                 }
                 return None;
@@ -101,12 +101,13 @@ impl RunOutput {
         msg: (&'a Message, String),
     ) -> Option<(&'a Message, String)> {
         if msg.0.is_internal() {
-            let wc_id = msg.0.workchain_id().unwrap_or(0);
+            let wc_id = msg.0.workchain_id().unwrap_or(BASECHAIN_ID);
             if wc_id == BASECHAIN_ID || wc_id == MASTERCHAIN_ID {
                 let mut msg = msg.0.clone();
                 msg.set_src(self.std_addr.clone());
                 if let Ok(msg_base64) = serialize_object_to_base64(&msg, "message") {
-                    self.calls.push_back(DebotCallType::Invoke { msg: msg_base64 });
+                    self.calls
+                        .push_back(DebotCallType::Invoke { msg: msg_base64 });
                 }
                 return None;
             }
