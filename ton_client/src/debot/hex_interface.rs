@@ -55,8 +55,6 @@ impl HexInterface {
 
     fn encode(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        //let data_to_encode = hex::decode(&get_arg(args, "data")?).map_err(|e| format!("{}", e))?;
-		//let encoded = base64::encode(&data_to_encode);
 		let encoded = get_arg(args, "data")?;
         Ok((
             answer_id,
@@ -68,7 +66,7 @@ impl HexInterface {
         let answer_id = decode_answer_id(args)?;
         let str_to_decode = get_string_arg(args, "hexstr")?;
         let decoded =
-            hex::decode(&str_to_decode).map_err(|e| format!("invalid base64: {}", e))?;
+            hex::decode(&str_to_decode).map_err(|e| format!("invalid hex: {}", e))?;
         Ok((answer_id, json!({ "data": hex::encode(&decoded) })))
     }
 }

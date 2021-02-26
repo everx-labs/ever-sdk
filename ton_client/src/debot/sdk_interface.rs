@@ -479,40 +479,40 @@ impl SdkInterface {
 
     fn nacl_box(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let decrypted = base64::encode(&hex::decode(&get_arg(args, "decrypted")?).unwrap());
+        let decrypted = base64::encode(&hex::decode(&get_arg(args, "decrypted")?).map_err(|e| format!("{}", e))?);
         let nonce = get_arg(&args, "nonce")?;
         let public = decode_abi_bigint(&get_arg(&args, "publicKey")?).map_err(|e| e.to_string())?;
         let secret = decode_abi_bigint(&get_arg(&args, "secretKey")?).map_err(|e| e.to_string())?;
         let result = nacl_box(
             self.ton.clone(),
             ParamsOfNaclBox {                
-                decrypted:decrypted,
-                nonce:nonce,
+                decrypted,
+                nonce,
                 their_public: format!("{:064x}", public),
                 secret: format!("{:064x}", secret),
             },
         )
         .map_err(|e| format!("{}", e))?;
-        Ok((answer_id, json!({ "encrypted": hex::encode(&base64::decode(&result.encrypted).unwrap()) })))
+        Ok((answer_id, json!({ "encrypted": hex::encode(&base64::decode(&result.encrypted).map_err(|e| format!("{}", e))?) })))
     }
 
     fn nacl_box_open(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let encrypted = base64::encode(&hex::decode(&get_arg(args, "encrypted")?).unwrap());
+        let encrypted = base64::encode(&hex::decode(&get_arg(args, "encrypted")?).map_err(|e| format!("{}", e))?);
         let nonce = get_arg(&args, "nonce")?;
         let public = decode_abi_bigint(&get_arg(&args, "publicKey")?).map_err(|e| e.to_string())?;
         let secret = decode_abi_bigint(&get_arg(&args, "secretKey")?).map_err(|e| e.to_string())?;
         let result = nacl_box_open(
             self.ton.clone(),
             ParamsOfNaclBoxOpen {                
-                encrypted:encrypted,
-                nonce:nonce,
+                encrypted,
+                nonce,
                 their_public: format!("{:064x}", public),
                 secret: format!("{:064x}", secret),
             },
         )
         .map_err(|e| format!("{}", e))?;
-        Ok((answer_id, json!({ "decrypted": hex::encode(&base64::decode(&result.decrypted).unwrap()) })))
+        Ok((answer_id, json!({ "decrypted": hex::encode(&base64::decode(&result.decrypted).map_err(|e| format!("{}", e))?) })))
     }
 
     fn nacl_box_keypair_from_secret_key(&self, args: &Value) -> InterfaceResult {
