@@ -474,13 +474,16 @@ pub async fn encode_message(
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct ParamsOfEncodeInternalMessage {
-    /// Contract ABI.
-    pub abi: Abi,
+    /// Contract ABI. Can be None if both deploy_set and call_set are None.
+    pub abi: Option<Abi>,
 
     /// Target address the message will be sent to.
     ///
     /// Must be specified in case of non-deploy message.
     pub address: Option<String>,
+
+    /// Source address of the message.
+    pub src_address: Option<String>,
 
     /// Deploy parameters.
     ///
@@ -539,12 +542,14 @@ pub async  fn encode_internal_message(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfEncodeInternalMessage,
 ) -> ClientResult<ResultOfEncodeInternalMessage> {
-    let abi = params.abi.json_string()?;
-
     let ihr_disabled = !params.enable_ihr.unwrap_or(false);
     let bounce = params.bounce.unwrap_or(true);
 
     let (message, address) = if let Some(deploy_set) = params.deploy_set {
+        let abi = params.abi
+            .ok_or_else(|| Error::invalid_abi("abi is undefined"))?
+            .json_string()?;
+
         let workchain_id = deploy_set
             .workchain_id
             .unwrap_or(context.config.abi.workchain);
@@ -582,6 +587,9 @@ pub async  fn encode_internal_message(
                 .map_err(|err| abi::Error::encode_run_message_failed(err, ""))?
         );
         if let Some(call_set) = &params.call_set {
+            let abi = params.abi
+                .ok_or_else(|| Error::invalid_abi("abi is undefined"))?
+                .json_string()?;
             let message = ton_sdk::Contract::construct_call_int_message_json(
                 address.clone(),
                 ihr_disabled,
