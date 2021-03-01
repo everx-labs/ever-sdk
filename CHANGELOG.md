@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [1.10.0] – 2021-02-28
 
+### New
+
+- **Debot Module**:
+    - Added new built-in interface `Hex` which implements hexadecimal encoding and decoding.
+    - Added three unstable functions to `Sdk` interface: naclBox, naclBoxOpen, naclKeypairFromSecret.
+
 ### Fixed
 
 - doc generator: app object interface description, constructor functions-helpers for enum type variable creation,
