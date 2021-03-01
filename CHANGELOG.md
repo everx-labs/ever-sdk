@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - **Debot Module**:
     - Added new built-in interface `Hex` which implements hexadecimal encoding and decoding.
-    - Added three unstable functions to `Sdk` interface.
+    - Added three unstable functions to `Sdk` interface: naclBox, naclBoxOpen, naclKeypairFromSecret.
 
 ### Fixed
 
