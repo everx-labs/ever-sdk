@@ -137,7 +137,7 @@ impl ContractImage {
 
         Ok(Self { state_init, id })
     }
-    
+
     pub fn get_public_key(&self) -> Result<Option<PublicKey>> {
         let data = &self.state_init.data.as_ref().ok_or_else(
             || SdkError::InvalidData {
@@ -344,7 +344,23 @@ impl Contract {
             None,
         )?;
 
-        let msg = Self::create_int_message(ihr_disabled, bounce, address.clone(), value, msg_body.into())?;
+        Self::construct_int_message_with_body(
+            address,
+            ihr_disabled,
+            bounce,
+            value,
+            msg_body.into()
+        )
+    }
+
+    pub fn construct_int_message_with_body(
+        address: MsgAddressInt,
+        ihr_disabled: bool,
+        bounce: bool,
+        value: CurrencyCollection,
+        msg_body: SliceData,
+    ) -> Result<SdkMessage> {
+        let msg = Self::create_int_message(ihr_disabled, bounce, address.clone(), value, msg_body)?;
         let (body, id) = Self::serialize_message(&msg)?;
         Ok(SdkMessage {
             id,

@@ -12,6 +12,7 @@ use std::sync::Arc;
 use ton_abi::Contract;
 use ton_block::{MsgAddressInt, CurrencyCollection};
 use ton_sdk::{ContractImage, FunctionCallSet};
+use ton_types::BuilderData;
 
 //--------------------------------------------------------------------------- encode_deploy_message
 
@@ -570,28 +571,38 @@ pub async  fn encode_internal_message(
         } else {
             encode_empty_int_deploy(image, workchain_id, ihr_disabled, bounce)?
         }
-    } else if let Some(call_set) = &params.call_set {
+    } else {
         let address = params
             .address
             .as_ref()
             .ok_or(abi::Error::required_address_missing_for_encode_message())?;
         let address = account_decode(address)?;
+        let value = CurrencyCollection::with_grams(
+            u64::from_str(&params.value)
+                .map_err(|err| abi::Error::encode_run_message_failed(err, ""))?
+        );
+        if let Some(call_set) = &params.call_set {
+            let message = ton_sdk::Contract::construct_call_int_message_json(
+                address.clone(),
+                ihr_disabled,
+                bounce,
+                value,
+                call_set.to_function_call_set(None, None, &context, &abi, true)?,
+            )
+            .map_err(|err| abi::Error::encode_run_message_failed(err, &call_set.function_name))?;
 
-        let message = ton_sdk::Contract::construct_call_int_message_json(
-            address.clone(),
-            ihr_disabled,
-            bounce,
-            CurrencyCollection::with_grams(
-                u64::from_str(&params.value)
-                    .map_err(|err| abi::Error::encode_run_message_failed(err, ""))?
-            ),
-            call_set.to_function_call_set(None, None, &context, &abi, true)?,
-        )
-        .map_err(|err| abi::Error::encode_run_message_failed(err, &call_set.function_name))?;
-
-        (message.serialized_message, address)
-    } else {
-        return Err(abi::Error::missing_required_call_set_for_encode_message());
+            (message.serialized_message, address)
+        } else {
+            let message = ton_sdk::Contract::construct_int_message_with_body(
+                address.clone(),
+                ihr_disabled,
+                bounce,
+                value,
+                BuilderData::new().into()
+            )
+            .map_err(|err| abi::Error::encode_run_message_failed(err, ""))?;
+            (message.serialized_message, address)
+        }
     };
 
     Ok(ResultOfEncodeInternalMessage {
