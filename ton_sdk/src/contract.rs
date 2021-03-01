@@ -21,7 +21,9 @@ use serde_json::Value;
 use std::convert::Into;
 use std::io::{Cursor, Read, Seek};
 use ton_abi::json_abi::DecodedMessage;
-use ton_block::{AccountIdPrefixFull, Deserializable, ExternalInboundMessageHeader, GetRepresentationHash, Message as TvmMessage, MsgAddressInt, Serializable, ShardIdent, StateInit, InternalMessageHeader, CurrencyCollection};
+use ton_block::{AccountIdPrefixFull, Deserializable, ExternalInboundMessageHeader, GetRepresentationHash,
+    Message as TvmMessage, MsgAddressInt, MsgAddressIntOrNone, Serializable, ShardIdent, StateInit,
+    InternalMessageHeader, CurrencyCollection};
 use ton_types::cells_serialization::deserialize_cells_tree;
 use ton_types::{error, AccountId, Result, SliceData};
 
@@ -329,6 +331,7 @@ impl Contract {
     // Returns message's bag of cells and identifier.
     pub fn construct_call_int_message_json(
         address: MsgAddressInt,
+        src_address: MsgAddressIntOrNone,
         ihr_disabled: bool,
         bounce: bool,
         value: CurrencyCollection,
@@ -346,6 +349,7 @@ impl Contract {
 
         Self::construct_int_message_with_body(
             address,
+            src_address,
             ihr_disabled,
             bounce,
             value,
@@ -354,19 +358,20 @@ impl Contract {
     }
 
     pub fn construct_int_message_with_body(
-        address: MsgAddressInt,
+        dst_address: MsgAddressInt,
+        src_address: MsgAddressIntOrNone,
         ihr_disabled: bool,
         bounce: bool,
         value: CurrencyCollection,
         msg_body: SliceData,
     ) -> Result<SdkMessage> {
-        let msg = Self::create_int_message(ihr_disabled, bounce, address.clone(), value, msg_body)?;
+        let msg = Self::create_int_message(ihr_disabled, bounce, dst_address.clone(), src_address, value, msg_body)?;
         let (body, id) = Self::serialize_message(&msg)?;
         Ok(SdkMessage {
             id,
             serialized_message: body,
             message: msg,
-            address,
+            address: dst_address,
         })
     }
 
@@ -458,12 +463,13 @@ impl Contract {
     // Packs given image into an internal Message struct.
     // Returns message's bag of cells and identifier.
     pub fn construct_int_deploy_message_no_constructor(
+        src: MsgAddressIntOrNone,
         image: ContractImage,
         workchain_id: i32,
         ihr_disabled: bool,
         bounce: bool,
     ) -> Result<TvmMessage> {
-        Self::create_int_deploy_message(None, image, workchain_id, ihr_disabled, bounce)
+        Self::create_int_deploy_message(src, None, image, workchain_id, ihr_disabled, bounce)
     }
 
     // Packs given image and input into Message struct without signature and returns data to sign.
@@ -493,6 +499,7 @@ impl Contract {
     // Packs given image and input into Message struct with internal header and returns data.
     // Works with json representation of input and abi.
     pub fn get_int_deploy_message_bytes(
+        src: MsgAddressIntOrNone,
         params: FunctionCallSet,
         image: ContractImage,
         workchain_id: i32,
@@ -509,7 +516,7 @@ impl Contract {
         )?;
 
         let cell = msg_body.into();
-        let msg = Self::create_int_deploy_message(Some(cell), image, workchain_id, ihr_disabled, bounce)?;
+        let msg = Self::create_int_deploy_message(src, Some(cell), image, workchain_id, ihr_disabled, bounce)?;
 
         Self::serialize_message(&msg)
             .map(|(msg_data, _id)| msg_data)
@@ -599,6 +606,7 @@ impl Contract {
         ihr_disabled: bool,
         bounce: bool,
         dst: MsgAddressInt,
+        src: MsgAddressIntOrNone,
         value: CurrencyCollection,
         msg_body: SliceData,
     ) -> Result<TvmMessage> {
@@ -606,6 +614,7 @@ impl Contract {
             ihr_disabled,
             bounce,
             dst,
+            src,
             value,
             ..Default::default()
         };
@@ -634,6 +643,7 @@ impl Contract {
     }
 
     pub(crate) fn create_int_deploy_message(
+        src: MsgAddressIntOrNone,
         msg_body: Option<SliceData>,
         image: ContractImage,
         workchain_id: i32,
@@ -644,6 +654,7 @@ impl Contract {
             ihr_disabled,
             bounce,
             dst: image.msg_address(workchain_id),
+            src,
             ..Default::default()
         };
 
