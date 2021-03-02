@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- doc generator: app object interface description, constructor functions-helpers for enum type variable creation,
+- doc generator: app object interface description (added debot browser app object, signing box app object descriptions), constructor functions-helpers for enum type variable creation,
 add new line in the end if api.json
 
 ## 1.9.0 Feb 19, 2021
