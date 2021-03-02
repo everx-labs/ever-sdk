@@ -98,8 +98,8 @@ pub(crate) async fn get_default_config(context: &Arc<ClientContext>) -> ClientRe
 
     let config = if let Ok(link) = context.get_server_link() {
         get_network_config(link)
-            .await?
-            //.unwrap_or_default()
+            .await
+            .unwrap_or_default()
     } else {
         Default::default()
     };
