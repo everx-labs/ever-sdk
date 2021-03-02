@@ -111,7 +111,6 @@ pub(crate) async fn get_default_config(context: &Arc<ClientContext>) -> ClientRe
 }
 
 pub(crate) async fn get_network_config(link: &ServerLink) -> ClientResult<BlockchainConfig> {
-    //let key_block = serde_json::Value::Null;
     let key_block = link.query_collection(ParamsOfQueryCollection {
         collection: "blocks".to_owned(),
         filter: Some(serde_json::json!({
