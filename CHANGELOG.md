@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 
 - doc generator: app object interface description, constructor functions-helpers for enum type variable creation,
 add new line in the end if api.json
+- library libsecp256k1 upgraded to fix https://rustsec.org/advisories/RUSTSEC-2019-0027
 
 ## 1.9.0 Feb 19, 2021
 
