@@ -458,8 +458,9 @@ async fn encode_internal_message(client: Arc<TestClient>, abi: &str, addr: Strin
     let r: ResultOfEncodeInternalMessage = client.request_async(
         "abi.encode_internal_message",
         ParamsOfEncodeInternalMessage {
-            abi: Abi::Contract(serde_json::from_str(abi).unwrap()),
+            abi: Some(Abi::Contract(serde_json::from_str(abi).unwrap())),
             address: Some(addr),
+            src_address: None,
             deploy_set: None,
             call_set,
             value: "1000000000000000".to_owned(),
