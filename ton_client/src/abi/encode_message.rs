@@ -12,7 +12,6 @@ use std::sync::Arc;
 use ton_abi::Contract;
 use ton_block::{MsgAddressInt, MsgAddressIntOrNone, CurrencyCollection};
 use ton_sdk::{ContractImage, FunctionCallSet};
-use ton_types::BuilderData;
 
 //--------------------------------------------------------------------------- encode_deploy_message
 
