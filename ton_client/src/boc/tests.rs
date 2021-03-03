@@ -95,12 +95,13 @@ async fn test_encode_boc() {
         .append_bits(0x123, 12)
         .unwrap()
         .append_bits(0b00101101100, 11)
-        .unwrap()
-    ;
-    builder.append_reference_cell(inner_builder.into_cell().unwrap());
+        .unwrap();
+    let inner_cell = inner_builder.into_cell().unwrap();
+    builder.append_reference_cell(inner_cell.clone());
 
     let cell = builder.into_cell().unwrap();
     let boc = serialize_cell_to_base64(&cell, "cell").unwrap();
+
     let response = encode_boc
         .call(ParamsOfEncodeBoc {
             builder: vec![
@@ -125,6 +126,30 @@ async fn test_encode_boc() {
                     write_i(Value::from("0x123"), 16),
                     write_i(Value::from("-0x123"), 16),
                 ]),
+            ],
+            boc_cache: None,
+        })
+        .await
+        .unwrap();
+    assert_eq!(boc, response.boc);
+
+    let response = encode_boc
+        .call(ParamsOfEncodeBoc {
+            builder: vec![
+                write_b(1),
+                write_b(0),
+                write_u8(255),
+                write_i8(127),
+                write_i8(-127),
+                write_u128(123456789123456789u128),
+                write_bitstring("8A_"),
+                write_bitstring("x{8A0_}"),
+                write_bitstring("123"),
+                write_bitstring("x2d9_"),
+                write_bitstring("80_"),
+                BuilderOp::CellBoc {
+                    boc: serialize_cell_to_base64(&inner_cell, "cell").unwrap(),
+                },
             ],
             boc_cache: None,
         })
@@ -442,20 +467,20 @@ fn parse_block() {
     assert_eq!(result.parsed["gen_utime"], 1600234696);
 }
 
-
-
 #[test]
 fn parse_shardstate() {
     let client = TestClient::new();
 
-    let result: ResultOfParse = client.request(
-        "boc.parse_shardstate",
-        ParamsOfParseShardstate {
-            id: String::from("zerostate:-1"),
-            workchain_id: -1,
-            boc: String::from(ZEROSTATE)
-        }
-    ).unwrap();
+    let result: ResultOfParse = client
+        .request(
+            "boc.parse_shardstate",
+            ParamsOfParseShardstate {
+                id: String::from("zerostate:-1"),
+                workchain_id: -1,
+                boc: String::from(ZEROSTATE),
+            },
+        )
+        .unwrap();
 
     assert_eq!(result.parsed["id"], "zerostate:-1");
     assert_eq!(result.parsed["workchain_id"], -1);
@@ -466,22 +491,25 @@ fn parse_shardstate() {
 fn get_blockchain_config() {
     let client = TestClient::new();
 
-    let result: ResultOfGetBlockchainConfig = client.request(
-        "boc.get_blockchain_config",
-        ParamsOfGetBlockchainConfig {
-            block_boc: String::from(BLOCK)
-        }
-    ).unwrap();
+    let result: ResultOfGetBlockchainConfig = client
+        .request(
+            "boc.get_blockchain_config",
+            ParamsOfGetBlockchainConfig {
+                block_boc: String::from(BLOCK),
+            },
+        )
+        .unwrap();
 
     assert_eq!(result.config_boc, BLOCK_CONFIG);
 
-
-    let result: ResultOfGetBlockchainConfig = client.request(
-        "boc.get_blockchain_config",
-        ParamsOfGetBlockchainConfig {
-            block_boc: String::from(ZEROSTATE)
-        }
-    ).unwrap();
+    let result: ResultOfGetBlockchainConfig = client
+        .request(
+            "boc.get_blockchain_config",
+            ParamsOfGetBlockchainConfig {
+                block_boc: String::from(ZEROSTATE),
+            },
+        )
+        .unwrap();
 
     assert_eq!(result.config_boc, ZEROSTATE_CONFIG);
 }

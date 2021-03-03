@@ -146,7 +146,7 @@ impl<'a> Builder<'a> {
                 }
                 BuilderOp::CellBoc { boc } => {
                     self.result.append_reference_cell(
-                        deserialize_cell_from_boc(context, boc, "builder CellBoc operation")
+                        deserialize_cell_from_boc(context, boc, "CellBoc")
                             .await?
                             .1,
                     );
