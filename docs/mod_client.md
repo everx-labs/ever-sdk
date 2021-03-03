@@ -118,10 +118,6 @@ function resolve_app_request(
 - `result`: _[AppRequestResult](mod_client.md#AppRequestResult)_ – Result of request processing
 
 
-### Result
-
-
-
 # Types
 ## ClientErrorCode
 ```ts
@@ -346,6 +342,13 @@ Request processed successfully
 
 - `result`: _any_ – Request processing result
 
+
+Variant constructors:
+
+```ts
+function appRequestResultError(text: string): AppRequestResult;
+function appRequestResultOk(result: any): AppRequestResult;
+```
 
 ## ResultOfGetApiReference
 ```ts

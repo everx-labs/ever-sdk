@@ -515,6 +515,15 @@ When _type_ is _'Serialized'_
 - `value`: _[AbiContract](mod_abi.md#AbiContract)_
 
 
+Variant constructors:
+
+```ts
+function abiContract(value: AbiContract): Abi;
+function abiJson(value: string): Abi;
+function abiHandle(value: AbiHandle): Abi;
+function abiSerialized(value: AbiContract): Abi;
+```
+
 ## AbiHandle
 ```ts
 type AbiHandle = number
@@ -621,6 +630,15 @@ Signing Box interface is provided for signing, allows Dapps to sign messages usi
 - `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_
 
 
+Variant constructors:
+
+```ts
+function signerNone(): Signer;
+function signerExternal(public_key: string): Signer;
+function signerKeys(keys: KeyPair): Signer;
+function signerSigningBox(handle: SigningBoxHandle): Signer;
+```
+
 ## MessageBodyType
 ```ts
 enum MessageBodyType {
@@ -689,6 +707,14 @@ Encoded in `base64`.
 - `init_params`?: _[StateInitParams](mod_abi.md#StateInitParams)_
 
 
+Variant constructors:
+
+```ts
+function stateInitSourceMessage(source: MessageSource): StateInitSource;
+function stateInitSourceStateInit(code: string, data: string, library?: string): StateInitSource;
+function stateInitSourceTvc(tvc: string, public_key?: string, init_params?: StateInitParams): StateInitSource;
+```
+
 ## StateInitParams
 ```ts
 type StateInitParams = {
@@ -731,6 +757,13 @@ When _type_ is _'EncodingParams'_
 - `processing_try_index`?: _number_ – Processing try index.
 <br>Used in message processing with retries (if contract's ABI includes "expire" header).<br><br>Encoder uses the provided try index to calculate message<br>expiration time. The 1st message expiration time is specified in<br>Client config.<br><br>Expiration timeouts will grow with every retry.<br>Retry grow factor is set in Client config:<br><.....add config parameter with default value here><br><br>Default value is 0.
 
+
+Variant constructors:
+
+```ts
+function messageSourceEncoded(message: string, abi?: Abi): MessageSource;
+function messageSourceEncodingParams(params: ParamsOfEncodeMessage): MessageSource;
+```
 
 ## AbiParam
 ```ts

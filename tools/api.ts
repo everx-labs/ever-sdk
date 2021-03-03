@@ -122,19 +122,19 @@ export type ApiBigInt = {
 export type ApiType = {
     module: ApiModule,
 } & (
-    { type: ApiTypeIs.None } |
-    { type: ApiTypeIs.Any } |
-    { type: ApiTypeIs.Boolean } |
-    { type: ApiTypeIs.String } |
-    ApiNumber |
-    ApiBigInt |
-    ApiRef |
-    ApiOptional |
-    ApiArray |
-    ApiStruct |
-    ApiEnumOfConsts |
-    ApiEnumOfTypes |
-    ApiGeneric);
+        { type: ApiTypeIs.None } |
+        { type: ApiTypeIs.Any } |
+        { type: ApiTypeIs.Boolean } |
+        { type: ApiTypeIs.String } |
+        ApiNumber |
+        ApiBigInt |
+        ApiRef |
+        ApiOptional |
+        ApiArray |
+        ApiStruct |
+        ApiEnumOfConsts |
+        ApiEnumOfTypes |
+        ApiGeneric);
 
 
 export type ApiError = {
@@ -209,7 +209,7 @@ export abstract class Code {
         return this.lowerFirst(this.pascal(words));
     }
 
-    findType(name: string): ApiField | null {
+    findType(name: string): ApiField | undefined {
         for (const module of this.api.modules) {
             for (const type of module.types) {
                 if (name === `${module.name}.${type.name}`) {
@@ -217,7 +217,7 @@ export abstract class Code {
                 }
             }
         }
-        return null;
+        return undefined;
     }
 
 
@@ -279,6 +279,8 @@ export abstract class Code {
                     : {
                         type: ApiTypeIs.Ref, module: obj, ref_name: result ? resultTypeName : ''
                     },
+                summary: params.summary,
+                description: params.description,
             });
         }
         return obj;
@@ -323,6 +325,8 @@ export abstract class Code {
     abstract functionImpl(func: ApiFunction): string;
 
     abstract functionInterface(func: ApiFunction): string;
+
+    abstract appObjectInterface(obj: ApiModule): string;
 
     abstract modules(): string;
 }

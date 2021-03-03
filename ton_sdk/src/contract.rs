@@ -42,7 +42,7 @@ pub struct SdkMessage {
     pub address: MsgAddressInt,
 }
 
-// The struct represents conract's image
+// The struct represents contract's image
 #[derive(Clone)]
 pub struct ContractImage {
     state_init: StateInit,
@@ -74,7 +74,7 @@ impl ContractImage {
             let mut data_roots = deserialize_cells_tree(data_)?;
             if data_roots.len() != 1 {
                 bail!(SdkError::InvalidData {
-                    msg: "Invalid data's bag of cells".into()
+                    msg: "Invalid data bag of cells".into()
                 });
             }
             state_init.set_data(data_roots.remove(0));
@@ -109,7 +109,7 @@ impl ContractImage {
         let mut si_roots = deserialize_cells_tree(state_init_bag)?;
         if si_roots.len() != 1 {
             bail!(SdkError::InvalidData {
-                msg: "Invalid state init's bag of cells".into()
+                msg: "Invalid state init bag of cells".into()
             });
         }
 

@@ -16,7 +16,7 @@ DApp Server endpoints. Otherwise default configuration is used.
 
 ### Fixed
 
-- doc generator: app object interface description, constructor functions-helpers for enum type variable creation,
+- doc generator: app object interface description (added debot browser app object, signing box app object descriptions), constructor functions-helpers for enum type variable creation,
 add new line in the end if api.json
 - library libsecp256k1 upgraded to fix https://rustsec.org/advisories/RUSTSEC-2019-0027
 
