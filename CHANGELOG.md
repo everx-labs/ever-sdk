@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### New
 
+- `boc.get_blockchain_config` function can extract blockchain configuration from key block and also 
+from zerostate.
+- `tvm` module functions download current blockchain configuration if `net` is initialized with 
+DApp Server endpoints. Otherwise default configuration is used.
 - **Debot Module**:
     - Added new built-in interface `Hex` which implements hexadecimal encoding and decoding.
     - Added three unstable functions to `Sdk` interface: naclBox, naclBoxOpen, naclKeypairFromSecret.

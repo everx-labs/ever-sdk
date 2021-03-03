@@ -16,7 +16,7 @@ use serde::{Deserialize, Deserializer, Serialize, de::DeserializeOwned};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use std::collections::HashMap;
-use tokio::sync::{Mutex, mpsc, oneshot};
+use tokio::sync::{Mutex, mpsc, oneshot, RwLock};
 
 use super::{ParamsOfAppRequest, Error, AppRequestResult};
 use crate::error::ClientResult;
@@ -51,6 +51,7 @@ pub struct ClientContext {
     pub(crate) debots: LockfreeMap<u32, Mutex<DEngine>>,
     pub(crate) boxes: Boxes,
     pub(crate) bocs: Bocs,
+    pub(crate) blockchain_config: RwLock<Option<Arc<ton_executor::BlockchainConfig>>>,
 
     pub(crate) app_requests: Mutex<HashMap<u32, oneshot::Sender<AppRequestResult>>>,
 
@@ -97,6 +98,7 @@ Note that default values are used if parameters are omitted in config"#,
             app_requests: Mutex::new(HashMap::new()),
             next_id: AtomicU32::new(1),
             config,
+            blockchain_config: RwLock::new(None),
         })
     }
 
