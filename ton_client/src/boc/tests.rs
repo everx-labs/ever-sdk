@@ -23,24 +23,39 @@ use ton_types::{BuilderData, IBitstring};
 #[tokio::test(core_threads = 2)]
 async fn test_encode_boc() {
     fn write_b(value: u8) -> BuilderOp {
-        BuilderOp::Integer { size: 1, value: Value::from(value) }
+        BuilderOp::Integer {
+            size: 1,
+            value: Value::from(value),
+        }
     }
     fn write_u128(value: u128) -> BuilderOp {
-        BuilderOp::Integer { size: 128, value: Value::from(value.to_string()) }
+        BuilderOp::Integer {
+            size: 128,
+            value: Value::from(value.to_string()),
+        }
     }
     fn write_u8(value: u8) -> BuilderOp {
-        BuilderOp::Integer { size: 8, value: Value::from(value) }
+        BuilderOp::Integer {
+            size: 8,
+            value: Value::from(value),
+        }
     }
     fn write_i8(value: i8) -> BuilderOp {
-        BuilderOp::Integer { size: 8, value: Value::from(value) }
+        BuilderOp::Integer {
+            size: 8,
+            value: Value::from(value),
+        }
+    }
+    fn write_i(value: Value, size: u8) -> BuilderOp {
+        BuilderOp::Integer { size, value }
     }
     fn write_bitstring(value: &str) -> BuilderOp {
-        BuilderOp::BitString { value: value.into() }
+        BuilderOp::BitString {
+            value: value.into(),
+        }
     }
     fn write_cell(write: Vec<BuilderOp>) -> BuilderOp {
-        BuilderOp::Cell {
-            builder: write
-        }
+        BuilderOp::Cell { builder: write }
     }
 
     let client = TestClient::new();
@@ -51,6 +66,13 @@ async fn test_encode_boc() {
     );
     let mut inner_builder = BuilderData::new();
     inner_builder.append_bits(0b101100111000, 12).unwrap();
+    inner_builder.append_bits(0b100111000, 9).unwrap();
+    inner_builder.append_bits(0b111, 3).unwrap();
+    inner_builder.append_bits(2, 3).unwrap();
+    inner_builder.append_u16(0b100111000).unwrap();
+    inner_builder.append_u16(0x123).unwrap();
+    inner_builder.append_i16(0x123).unwrap();
+    inner_builder.append_i16(-0x123).unwrap();
 
     let mut builder = BuilderData::new();
     builder
@@ -65,23 +87,49 @@ async fn test_encode_boc() {
         .append_i8(-127)
         .unwrap()
         .append_u128(123456789123456789u128)
-        .unwrap();
+        .unwrap()
+        .append_bits(0b100010, 6)
+        .unwrap()
+        .append_bits(0b100010, 6)
+        .unwrap()
+        .append_bits(0x123, 12)
+        .unwrap()
+        .append_bits(0b00101101100, 11)
+        .unwrap()
+    ;
     builder.append_reference_cell(inner_builder.into_cell().unwrap());
 
     let cell = builder.into_cell().unwrap();
     let boc = serialize_cell_to_base64(&cell, "cell").unwrap();
-    let response = encode_boc.call(ParamsOfEncodeBoc {
-        builder: vec![
-            write_b(1),
-            write_b(0),
-            write_u8(255),
-            write_i8(127),
-            write_i8(-127),
-            write_u128(123456789123456789u128),
-            write_cell(vec![write_bitstring("n101100111000")])
-        ],
-        boc_cache: None,
-    }).await.unwrap();
+    let response = encode_boc
+        .call(ParamsOfEncodeBoc {
+            builder: vec![
+                write_b(1),
+                write_b(0),
+                write_u8(255),
+                write_i8(127),
+                write_i8(-127),
+                write_u128(123456789123456789u128),
+                write_bitstring("8A_"),
+                write_bitstring("x{8A0_}"),
+                write_bitstring("123"),
+                write_bitstring("x2d9_"),
+                write_bitstring("80_"),
+                write_cell(vec![
+                    write_bitstring("n101100111000"),
+                    write_bitstring("N100111000"),
+                    write_i(Value::from(-1), 3),
+                    write_i(Value::from(2), 3),
+                    write_i(Value::from(0b100111000), 16),
+                    write_i(Value::from("0x123"), 16),
+                    write_i(Value::from("0x123"), 16),
+                    write_i(Value::from("-0x123"), 16),
+                ]),
+            ],
+            boc_cache: None,
+        })
+        .await
+        .unwrap();
     assert_eq!(boc, response.boc);
 }
 
