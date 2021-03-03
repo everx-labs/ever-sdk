@@ -353,7 +353,7 @@ impl Contract {
             ihr_disabled,
             bounce,
             value,
-            msg_body.into()
+            Some(msg_body.into()),
         )
     }
 
@@ -363,7 +363,7 @@ impl Contract {
         ihr_disabled: bool,
         bounce: bool,
         value: CurrencyCollection,
-        msg_body: SliceData,
+        msg_body: Option<SliceData>,
     ) -> Result<SdkMessage> {
         let msg = Self::create_int_message(ihr_disabled, bounce, dst_address.clone(), src_address, value, msg_body)?;
         let (body, id) = Self::serialize_message(&msg)?;
@@ -608,7 +608,7 @@ impl Contract {
         dst: MsgAddressInt,
         src: MsgAddressIntOrNone,
         value: CurrencyCollection,
-        msg_body: SliceData,
+        msg_body: Option<SliceData>,
     ) -> Result<TvmMessage> {
         let msg_header = InternalMessageHeader {
             ihr_disabled,
@@ -620,7 +620,7 @@ impl Contract {
         };
 
         let mut msg = TvmMessage::with_int_header(msg_header);
-        msg.set_body(msg_body);
+        msg_body.map(|body| msg.set_body(body));
 
         Ok(msg)
     }

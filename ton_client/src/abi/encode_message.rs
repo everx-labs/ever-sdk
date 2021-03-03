@@ -12,7 +12,6 @@ use std::sync::Arc;
 use ton_abi::Contract;
 use ton_block::{MsgAddressInt, MsgAddressIntOrNone, CurrencyCollection};
 use ton_sdk::{ContractImage, FunctionCallSet};
-use ton_types::BuilderData;
 
 //--------------------------------------------------------------------------- encode_deploy_message
 
@@ -617,7 +616,7 @@ pub async  fn encode_internal_message(
                 ihr_disabled,
                 bounce,
                 value,
-                BuilderData::new().into()
+                None,
             )
             .map_err(|err| abi::Error::encode_run_message_failed(err, ""))?;
             (message.serialized_message, address)
