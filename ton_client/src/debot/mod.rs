@@ -214,6 +214,7 @@ pub fn remove(context: Arc<ClientContext>, params: RegisteredDebot) -> ClientRes
 pub struct ParamsOfSend {
     /// Debot handle which references an instance of debot engine.
     pub debot_handle: DebotHandle,
+    /// Boc of internal message to debot encoded in base64 format.
     pub message: String,
 }
 

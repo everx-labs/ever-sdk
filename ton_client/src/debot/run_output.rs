@@ -7,9 +7,6 @@ use crate::error::ClientError;
 use std::collections::VecDeque;
 use ton_block::{Message, MsgAddressIntOrNone};
 
-const BASECHAIN_ID: i32 = 0;
-const MASTERCHAIN_ID: i32 = -1;
-
 #[derive(Default)]
 pub(super) struct RunOutput {
     pub account: String,
@@ -101,8 +98,8 @@ impl RunOutput {
         msg: (&'a Message, String),
     ) -> Option<(&'a Message, String)> {
         if msg.0.is_internal() {
-            let wc_id = msg.0.workchain_id().unwrap_or(BASECHAIN_ID);
-            if wc_id == BASECHAIN_ID || wc_id == MASTERCHAIN_ID {
+            let wc_id = msg.0.workchain_id().unwrap_or(0);
+            if wc_id != DEBOT_WC as i32 {
                 let mut msg = msg.0.clone();
                 msg.set_src(self.std_addr.clone());
                 if let Ok(msg_base64) = serialize_object_to_base64(&msg, "message") {
