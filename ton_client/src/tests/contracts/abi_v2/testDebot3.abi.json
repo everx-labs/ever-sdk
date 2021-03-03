@@ -192,20 +192,111 @@
 			]
 		},
 		{
+			"name": "testNaclbox",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getEnc",
+			"inputs": [
+				{"name":"encrypted","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getDec",
+			"inputs": [
+				{"name":"decrypted","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testKeysFromSecret",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getPair",
+			"inputs": [
+				{"name":"publicKey","type":"uint256"},
+				{"name":"secretKey","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testHexEncode",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "hexEnc",
+			"inputs": [
+				{"name":"hexstr","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testHexDecode",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "hexDec",
+			"inputs": [
+				{"name":"data","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testBase64Encode",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "base64Enc",
+			"inputs": [
+				{"name":"base64","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testBase64Decode",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "base64Dec",
+			"inputs": [
+				{"name":"data","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
 			"name": "getVersion",
 			"inputs": [
 			],
 			"outputs": [
 				{"name":"name","type":"bytes"},
 				{"name":"semver","type":"uint24"}
-			]
-		},
-		{
-			"name": "fetch",
-			"inputs": [
-			],
-			"outputs": [
-				{"components":[{"name":"id","type":"uint8"},{"name":"desc","type":"bytes"},{"components":[{"name":"desc","type":"bytes"},{"name":"name","type":"bytes"},{"name":"actionType","type":"uint8"},{"name":"attrs","type":"bytes"},{"name":"to","type":"uint8"},{"name":"misc","type":"cell"}],"name":"actions","type":"tuple[]"}],"name":"contexts","type":"tuple[]"}
 			]
 		},
 		{

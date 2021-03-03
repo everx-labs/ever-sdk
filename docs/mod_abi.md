@@ -456,7 +456,8 @@ enum AbiErrorCode {
     InvalidTvcImage = 308,
     RequiredPublicKeyMissingForFunctionHeader = 309,
     InvalidSigner = 310,
-    InvalidAbi = 311
+    InvalidAbi = 311,
+    InvalidFunctionId = 312
 }
 ```
 One of the following value:
@@ -472,6 +473,7 @@ One of the following value:
 - `RequiredPublicKeyMissingForFunctionHeader = 309`
 - `InvalidSigner = 310`
 - `InvalidAbi = 311`
+- `InvalidFunctionId = 312`
 
 
 ## Abi
@@ -513,6 +515,15 @@ When _type_ is _'Serialized'_
 - `value`: _[AbiContract](mod_abi.md#AbiContract)_
 
 
+Variant constructors:
+
+```ts
+function abiContract(value: AbiContract): Abi;
+function abiJson(value: string): Abi;
+function abiHandle(value: AbiHandle): Abi;
+function abiSerialized(value: AbiContract): Abi;
+```
+
 ## AbiHandle
 ```ts
 type AbiHandle = number
@@ -550,7 +561,7 @@ type CallSet = {
     input?: any
 }
 ```
-- `function_name`: _string_ – Function name that is being called.
+- `function_name`: _string_ – Function name that is being called. Or function id encoded as string in hex (starting with 0x).
 - `header`?: _[FunctionHeader](mod_abi.md#FunctionHeader)_ – Function header.
 <br>If an application omits some header parameters required by the<br>contract's ABI, the library will set the default values for<br>them.
 - `input`?: _any_ – Function input parameters according to ABI.
@@ -618,6 +629,15 @@ Signing Box interface is provided for signing, allows Dapps to sign messages usi
 
 - `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_
 
+
+Variant constructors:
+
+```ts
+function signerNone(): Signer;
+function signerExternal(public_key: string): Signer;
+function signerKeys(keys: KeyPair): Signer;
+function signerSigningBox(handle: SigningBoxHandle): Signer;
+```
 
 ## MessageBodyType
 ```ts
@@ -687,6 +707,14 @@ Encoded in `base64`.
 - `init_params`?: _[StateInitParams](mod_abi.md#StateInitParams)_
 
 
+Variant constructors:
+
+```ts
+function stateInitSourceMessage(source: MessageSource): StateInitSource;
+function stateInitSourceStateInit(code: string, data: string, library?: string): StateInitSource;
+function stateInitSourceTvc(tvc: string, public_key?: string, init_params?: StateInitParams): StateInitSource;
+```
+
 ## StateInitParams
 ```ts
 type StateInitParams = {
@@ -729,6 +757,13 @@ When _type_ is _'EncodingParams'_
 - `processing_try_index`?: _number_ – Processing try index.
 <br>Used in message processing with retries (if contract's ABI includes "expire" header).<br><br>Encoder uses the provided try index to calculate message<br>expiration time. The 1st message expiration time is specified in<br>Client config.<br><br>Expiration timeouts will grow with every retry.<br>Retry grow factor is set in Client config:<br><.....add config parameter with default value here><br><br>Default value is 0.
 
+
+Variant constructors:
+
+```ts
+function messageSourceEncoded(message: string, abi?: Abi): MessageSource;
+function messageSourceEncodingParams(params: ParamsOfEncodeMessage): MessageSource;
+```
 
 ## AbiParam
 ```ts

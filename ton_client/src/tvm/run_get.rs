@@ -33,8 +33,11 @@ pub struct ParamsOfRunGet {
     pub input: Option<Value>,
     /// Execution options
     pub execution_options: Option<ExecutionOptions>,
-    /// Convert lists based on nested tuples in result into plain arrays. Default is `false`.
+    /// Convert lists based on nested tuples in the **result** into plain arrays. Default is `false`.
     /// Input parameters may use any of lists representations
+    /// If you receive this error on Web: "Runtime error. Unreachable code should not be executed...", 
+    /// set this flag to true.
+    /// This may happen, for example, when elector contract contains too many participants
     pub tuple_list_as_array: Option<bool>,
 }
 

@@ -358,7 +358,10 @@ async fn call_executor<F>(
 where
     F: futures::Future<Output = ClientResult<(ton_block::MsgAddressInt, u64)>>,
 {
-    let executor = OrdinaryTransactionExecutor::new(options.blockchain_config);
+    let executor = OrdinaryTransactionExecutor::new(
+        Arc::try_unwrap(options.blockchain_config)
+            .unwrap_or_else(|arc| arc.as_ref().clone())
+    );
     let result = executor.execute(
         Some(&msg),
         &mut account,

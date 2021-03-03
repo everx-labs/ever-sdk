@@ -260,10 +260,6 @@ function unsubscribe(
 <br>Must be closed with `unsubscribe`
 
 
-### Result
-
-
-
 ## subscribe_collection
 
 Creates a subscription
@@ -309,10 +305,6 @@ function suspend(): Promise<void>;
 ```
 
 
-### Result
-
-
-
 ## resume
 
 Resumes network module to enable network activity
@@ -320,10 +312,6 @@ Resumes network module to enable network activity
 ```ts
 function resume(): Promise<void>;
 ```
-
-
-### Result
-
 
 
 ## find_last_shard_block
@@ -385,10 +373,6 @@ function set_endpoints(
 ```
 ### Parameters
 - `endpoints`: _string[]_ – List of endpoints provided by server
-
-
-### Result
-
 
 
 # Types
@@ -486,6 +470,14 @@ When _type_ is _'AggregateCollection'_
 - `filter`?: _any_ – Collection filter.
 - `fields`?: _[FieldAggregation](mod_net.md#FieldAggregation)[]_ – Projection (result) string
 
+
+Variant constructors:
+
+```ts
+function paramsOfQueryOperationQueryCollection(params: ParamsOfQueryCollection): ParamsOfQueryOperation;
+function paramsOfQueryOperationWaitForCollection(params: ParamsOfWaitForCollection): ParamsOfQueryOperation;
+function paramsOfQueryOperationAggregateCollection(params: ParamsOfAggregateCollection): ParamsOfQueryOperation;
+```
 
 ## FieldAggregation
 ```ts

@@ -10,7 +10,7 @@ use serde_json::Value;
 use std::str::FromStr;
 use std::sync::Arc;
 use ton_abi::Contract;
-use ton_block::{MsgAddressInt, CurrencyCollection};
+use ton_block::{MsgAddressInt, MsgAddressIntOrNone, CurrencyCollection};
 use ton_sdk::{ContractImage, FunctionCallSet};
 use ton_types::BuilderData;
 
@@ -278,6 +278,7 @@ fn encode_deploy(
 }
 
 fn encode_int_deploy(
+    src: MsgAddressIntOrNone,
     context: std::sync::Arc<ClientContext>,
     abi: &str,
     image: ContractImage,
@@ -289,6 +290,7 @@ fn encode_int_deploy(
 ) -> ClientResult<(Vec<u8>, MsgAddressInt)> {
     let address = image.msg_address(workchain_id);
     let message = ton_sdk::Contract::get_int_deploy_message_bytes(
+        src,
         call_set.to_function_call_set(pubkey, None, &context, &abi, true)?,
         image,
         workchain_id,
@@ -318,6 +320,7 @@ fn encode_empty_deploy(
 }
 
 fn encode_empty_int_deploy(
+    src: MsgAddressIntOrNone,
     image: ContractImage,
     workchain_id: i32,
     ihr_disabled: bool,
@@ -325,6 +328,7 @@ fn encode_empty_int_deploy(
 ) -> ClientResult<(Vec<u8>, MsgAddressInt)> {
     let address = image.msg_address(workchain_id);
     let message = ton_sdk::Contract::construct_int_deploy_message_no_constructor(
+        src,
         image,
         workchain_id,
         ihr_disabled,
@@ -474,13 +478,16 @@ pub async fn encode_message(
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct ParamsOfEncodeInternalMessage {
-    /// Contract ABI.
-    pub abi: Abi,
+    /// Contract ABI. Can be None if both deploy_set and call_set are None.
+    pub abi: Option<Abi>,
 
     /// Target address the message will be sent to.
     ///
     /// Must be specified in case of non-deploy message.
     pub address: Option<String>,
+
+    /// Source address of the message.
+    pub src_address: Option<String>,
 
     /// Deploy parameters.
     ///
@@ -539,12 +546,18 @@ pub async  fn encode_internal_message(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfEncodeInternalMessage,
 ) -> ClientResult<ResultOfEncodeInternalMessage> {
-    let abi = params.abi.json_string()?;
-
+    let src_address = match params.src_address {
+        Some(addr) => MsgAddressIntOrNone::Some(account_decode(&addr)?),
+        None => MsgAddressIntOrNone::None,
+    };
     let ihr_disabled = !params.enable_ihr.unwrap_or(false);
     let bounce = params.bounce.unwrap_or(true);
 
     let (message, address) = if let Some(deploy_set) = params.deploy_set {
+        let abi = params.abi
+            .ok_or_else(|| Error::invalid_abi("abi is undefined"))?
+            .json_string()?;
+
         let workchain_id = deploy_set
             .workchain_id
             .unwrap_or(context.config.abi.workchain);
@@ -559,6 +572,7 @@ pub async  fn encode_internal_message(
         let public = required_public_key(public)?;
         if let Some(call_set) = &params.call_set {
             encode_int_deploy(
+                src_address,
                 Arc::clone(&context),
                 &abi,
                 image,
@@ -569,7 +583,7 @@ pub async  fn encode_internal_message(
                 bounce,
             )?
         } else {
-            encode_empty_int_deploy(image, workchain_id, ihr_disabled, bounce)?
+            encode_empty_int_deploy(src_address, image, workchain_id, ihr_disabled, bounce)?
         }
     } else {
         let address = params
@@ -582,8 +596,12 @@ pub async  fn encode_internal_message(
                 .map_err(|err| abi::Error::encode_run_message_failed(err, ""))?
         );
         if let Some(call_set) = &params.call_set {
+            let abi = params.abi
+                .ok_or_else(|| Error::invalid_abi("abi is undefined"))?
+                .json_string()?;
             let message = ton_sdk::Contract::construct_call_int_message_json(
                 address.clone(),
+                src_address,
                 ihr_disabled,
                 bounce,
                 value,
@@ -595,10 +613,11 @@ pub async  fn encode_internal_message(
         } else {
             let message = ton_sdk::Contract::construct_int_message_with_body(
                 address.clone(),
+                src_address,
                 ihr_disabled,
                 bounce,
                 value,
-                BuilderData::new().into()
+                None,
             )
             .map_err(|err| abi::Error::encode_run_message_failed(err, ""))?;
             (message.serialized_message, address)
