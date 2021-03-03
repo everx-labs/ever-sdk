@@ -216,7 +216,8 @@ fn write_text_to_out_dir(text: String, out_dir: String) -> CliResult<()> {
 pub fn command(args: &[String]) -> Result<(), CliError> {
     let command_line = CommandLine::parse(args)?;
     let json = serde_json::to_value(get_api()?)?;
-    let text = serde_json::to_string_pretty(&json).unwrap_or("".into());
+    let mut text = serde_json::to_string_pretty(&json).unwrap_or("".into());
+    text += "\n";
     let out_dir = command_line.get_opt("o|out-dir").map(|x| x.to_string());
     if let Some(out_dir) = out_dir {
         write_text_to_out_dir(text, out_dir)

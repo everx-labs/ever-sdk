@@ -23,7 +23,7 @@ pub(crate) mod tvc;
 pub(crate) mod encode;
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 
 pub use cache::{
     cache_get, cache_set, cache_unpin,

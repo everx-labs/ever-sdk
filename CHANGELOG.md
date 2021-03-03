@@ -4,10 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [1.10.0] – 2021-02-28
 
+### New
+
+- `boc.get_blockchain_config` function can extract blockchain configuration from key block and also 
+from zerostate.
+- `tvm` module functions download current blockchain configuration if `net` is initialized with 
+DApp Server endpoints. Otherwise default configuration is used.
+- **Debot Module**:
+    - Added new built-in interface `Hex` which implements hexadecimal encoding and decoding.
+    - Added three unstable functions to `Sdk` interface: naclBox, naclBoxOpen, naclKeypairFromSecret.
+
 ### Fixed
 
-- doc generator: app object interface description, constructor functions-helpers for enum type variable creation,
+- doc generator: app object interface description (added debot browser app object, signing box app object descriptions), constructor functions-helpers for enum type variable creation,
 add new line in the end if api.json
+- library libsecp256k1 upgraded to fix https://rustsec.org/advisories/RUSTSEC-2019-0027
 
 ## 1.9.0 Feb 19, 2021
 

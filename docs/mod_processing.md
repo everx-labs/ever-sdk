@@ -357,6 +357,19 @@ Processing will be continued from encoding phase after
 - `error`: _[ClientError](mod_client.md#ClientError)_
 
 
+Variant constructors:
+
+```ts
+function processingEventWillFetchFirstBlock(): ProcessingEvent;
+function processingEventFetchFirstBlockFailed(error: ClientError): ProcessingEvent;
+function processingEventWillSend(shard_block_id: string, message_id: string, message: string): ProcessingEvent;
+function processingEventDidSend(shard_block_id: string, message_id: string, message: string): ProcessingEvent;
+function processingEventSendFailed(shard_block_id: string, message_id: string, message: string, error: ClientError): ProcessingEvent;
+function processingEventWillFetchNextBlock(shard_block_id: string, message_id: string, message: string): ProcessingEvent;
+function processingEventFetchNextBlockFailed(shard_block_id: string, message_id: string, message: string, error: ClientError): ProcessingEvent;
+function processingEventMessageExpired(message_id: string, message: string, error: ClientError): ProcessingEvent;
+```
+
 ## ResultOfProcessMessage
 ```ts
 type ResultOfProcessMessage = {

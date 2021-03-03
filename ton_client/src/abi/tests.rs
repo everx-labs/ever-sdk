@@ -5,18 +5,20 @@ use crate::abi::encode_message::{
 };
 use crate::abi::internal::{is_empty_pubkey, resolve_pubkey, create_tvc_image};
 use crate::abi::{FunctionHeader, ParamsOfDecodeMessageBody, Signer};
-use crate::boc::internal::get_boc_hash;
+use crate::boc::internal::{get_boc_hash, serialize_object_to_base64};
 use crate::boc::{ParamsOfParse, ResultOfGetCodeFromTvc, ParamsOfGetCodeFromTvc};
 use crate::crypto::KeyPair;
+use crate::encoding::account_decode;
 use crate::error::ClientError;
 use crate::tests::{TestClient, EVENTS, HELLO};
 use crate::utils::conversion::abi_uint;
 
 use std::io::Cursor;
 use ton_abi::Contract;
-use ton_block::{Message, Deserializable, Serializable};
+use ton_block::{Message, InternalMessageHeader, MsgAddressIntOrNone, CurrencyCollection, Deserializable, Serializable};
 use ton_sdk::ContractImage;
 use ton_types::Result;
+
 
 use super::*;
 
@@ -545,6 +547,7 @@ async fn test_encode_internal_message() -> Result<()> {
     let func_id = contract.function("sayHello").unwrap().get_input_id();
     let context = crate::ClientContext::new(crate::ClientConfig::default()).unwrap();
     let image = create_tvc_image(&context, &abi.json_string()?, None, &tvc).await?;
+    let address = String::from("0:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
 
     test_encode_internal_message_deploy(
         &client,
@@ -609,50 +612,99 @@ async fn test_encode_internal_message() -> Result<()> {
     let expected_boc = "te6ccgEBAQEAOgAAcGIACRorPEhV5veJGis8SFXm94kaKzxIVeb3iRorPEhV5veh3NZQAAAAAAAAAAAAAAAAAABQy+0X";
     test_encode_internal_message_run(
         &client,
-        &abi,
+        Some(&abi),
         Some(CallSet {
             function_name: "sayHello".into(),
             header: None,
             input: None,
         }),
+        None,
+        Some(address.clone()),
         Some(expected_boc),
     ).await?;
 
     test_encode_internal_message_run(
         &client,
-        &abi,
+        Some(&abi),
         Some(CallSet {
             function_name: format!("0x{:x}", func_id),
             header: None,
             input: None,
         }),
+        None,
+        Some(address.clone()),
         Some(expected_boc),
     ).await?;
 
     test_encode_internal_message_run(
         &client,
-        &abi,
+        Some(&abi),
         Some(CallSet {
             function_name: format!("{}", func_id),
             header: None,
             input: None,
         }),
+        None,
+        Some(address.clone()),
         Some(expected_boc),
+    ).await
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_encode_internal_message_empty_body() -> Result<()> {
+    let client = TestClient::new();
+    let dst_address = String::from("0:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
+    let src_address = String::from("0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94");
+
+    let mut msg_header = InternalMessageHeader {
+        ihr_disabled: true,
+        bounce: true,
+        src: MsgAddressIntOrNone::None,
+        dst: account_decode(&dst_address)?,
+        value: CurrencyCollection::with_grams(1000000000),
+        ..Default::default()
+    };
+
+    let msg = Message::with_int_header(msg_header.clone());
+    let expected_boc = serialize_object_to_base64(&msg, "message")?;
+
+    test_encode_internal_message_run(
+        &client,
+        None,
+        None,
+        None,
+        Some(dst_address.clone()),
+        Some(&expected_boc),
+    ).await?;
+
+    msg_header.src = MsgAddressIntOrNone::Some(account_decode(&src_address)?);
+    let msg = Message::with_int_header(msg_header.clone());
+    let expected_boc = serialize_object_to_base64(&msg, "message")?;
+
+    test_encode_internal_message_run(
+        &client,
+        None,
+        None,
+        Some(src_address.clone()),
+        Some(dst_address.clone()),
+        Some(&expected_boc),
     ).await
 }
 
 async fn test_encode_internal_message_run(
     client: &TestClient,
-    abi: &Abi,
+    abi: Option<&Abi>,
     call_set: Option<CallSet>,
+    src: Option<String>,
+    dst: Option<String>,
     expected_boc: Option<&str>,
 ) -> Result<()> {
-    let address = String::from("0:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
     let result: ResultOfEncodeInternalMessage = client.request_async(
         "abi.encode_internal_message",
         ParamsOfEncodeInternalMessage {
-            abi: abi.clone(),
-            address: Some(address.clone()),
+            abi: abi.map(|x| x.clone()),
+            src_address: src.clone(),
+            address: dst.clone(),
             deploy_set: None,
             call_set,
             value: "1000000000".to_string(),
@@ -661,7 +713,9 @@ async fn test_encode_internal_message_run(
         },
     ).await?;
 
-    assert_eq!(result.address, address);
+    if dst.is_some() {
+        assert_eq!(&result.address, dst.as_ref().unwrap());
+    }
     assert_eq!(result.message_id, get_boc_hash(&base64::decode(&result.message)?)?);
     if let Some(expected_boc) = expected_boc {
         assert_eq!(&result.message, expected_boc);
@@ -675,8 +729,8 @@ async fn test_encode_internal_message_run(
     ).await?;
 
     assert_eq!(parsed.parsed["msg_type_name"], "internal");
-    assert_eq!(parsed.parsed["src"], "");
-    assert_eq!(parsed.parsed["dst"], address);
+    assert_eq!(parsed.parsed["src"], src.unwrap_or("".to_owned()).as_str());
+    assert_eq!(parsed.parsed["dst"], dst.unwrap_or(result.address.to_owned()).as_str());
     assert_eq!(parsed.parsed["value"], "0x3b9aca00");
     assert_eq!(parsed.parsed["bounce"], true);
     assert_eq!(parsed.parsed["ihr_disabled"], true);
@@ -696,7 +750,8 @@ async fn test_encode_internal_message_deploy(
     let result: ResultOfEncodeInternalMessage = client.request_async(
         "abi.encode_internal_message",
         ParamsOfEncodeInternalMessage {
-            abi: abi.clone(),
+            abi: Some(abi.clone()),
+            src_address: None,
             address: None,
             deploy_set: Some(DeploySet {
                 tvc: tvc.clone(),
