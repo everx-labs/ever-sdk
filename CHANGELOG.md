@@ -24,11 +24,13 @@ DApp Server endpoints. Otherwise [default configuration](https://github.com/tonl
 - Both `call_set` and `deploy_set` in `ParamsOfEncodeInternalMessage` can be omitted. In this case `encode_internal_message` generates internal message with empty body.
 - **Debot Module**:
     - `send` function accepts one argument - serialized internal message as string encoded into base64.
+### Documentation
+- [Debot browser app object](docs/mod_debot.md#AppDebotBrowser) and [signing box app object](docs/mod_crypto.md#appsigningbox) descriptions added
+- functions-helpers for enum type variable creation for [Signer](docs/mod_abi.md#signer), [Abi](docs/mod_abi.md#abi), [ParamsOfAppDebotBrowser](mod_debot.md#paramsofappdebotbrowser)
 
 ### Fixed
 
-- doc generator: app object interface description (added debot browser app object, signing box app object descriptions), constructor functions-helpers for enum type variable creation,
-add new line in the end if api.json
+-  doc generator: app object interface description (added debot browser app object, signing box app object descriptions), constructor functions-helpers for enum type variable creation, add new line in the end if api.json
 - library libsecp256k1 upgraded to fix https://rustsec.org/advisories/RUSTSEC-2019-0027
 
 ## 1.9.0 Feb 19, 2021
