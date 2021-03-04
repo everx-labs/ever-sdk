@@ -7,10 +7,10 @@ All notable changes to this project will be documented in this file.
 ### New
 - Add optional field `src_address` to [`ParamsOfEncodeInternalMessage`](docs/mod_abi.md#encode_internal_message).
 - Field `abi` in [`ParamsOfEncodeInternalMessage`](docs/mod_abi.md#encode_internal_message) is optional and can be `None` if `call_set` and `deploy_set` are  `None`.
-- `boc.encode_boc` function provides ability to build and serialize any custom tree of cells.
+- [`boc.encode_boc`](docs/mod_boc.md#encode_boc) function provides ability to build and serialize any custom tree of cells.
   Application can use several base Builder serialization primitives like integers, bitstrings
   and nested cells.
-- `boc.get_blockchain_config` function can extract blockchain configuration from key block and also
+- [`boc.get_blockchain_config`](docs/mod_boc.md#get_blockchain_config) function can extract blockchain configuration from key block and also
 from zerostate.
 - [`tvm` module](docs/mod_tvm.md) functions download current blockchain configuration if `net` is initialized with
 DApp Server endpoints. Otherwise [default configuration](https://github.com/tonlabs/ton-executor/blob/11f46c416ebf1f145eacfb996587891a0a3cb940/src/blockchain_config.rs#L214) is used.
