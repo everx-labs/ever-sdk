@@ -5,14 +5,14 @@ All notable changes to this project will be documented in this file.
 ## [1.10.0] – 2021-03-04
 
 ### New
-- Add optional field `src_address` to `ParamsOfEncodeInternalMessage`.
-- Field `abi` in `ParamsOfEncodeInternalMessage` is optional and can be `None` if `call_set` and `deploy_set` are  `None`.
+- Add optional field `src_address` to [`ParamsOfEncodeInternalMessage`](docs/mod_abi.md#encode_internal_message).
+- Field `abi` in [`ParamsOfEncodeInternalMessage`](docs/mod_abi.md#encode_internal_message) is optional and can be `None` if `call_set` and `deploy_set` are  `None`.
 - `boc.encode_boc` function provides ability to build and serialize any custom tree of cells.
   Application can use several base Builder serialization primitives like integers, bitstrings
   and nested cells.
 - `boc.get_blockchain_config` function can extract blockchain configuration from key block and also
 from zerostate.
-- `tvm` module functions download current blockchain configuration if `net` is initialized with
+- [`tvm` module](docs/mod_tvm.md) functions download current blockchain configuration if `net` is initialized with
 DApp Server endpoints. Otherwise [default configuration](https://github.com/tonlabs/ton-executor/blob/11f46c416ebf1f145eacfb996587891a0a3cb940/src/blockchain_config.rs#L214) is used.
 - **Debot Module**:
     - Support for debot invoking in Debot Engine. `send` browser callback is used not only for interface calls but to invoke debots.
@@ -21,7 +21,7 @@ DApp Server endpoints. Otherwise [default configuration](https://github.com/tonl
     - Added unstable functions to `Sdk` interface: naclBox, naclBoxOpen, naclKeypairFromSecret, getAccountCodeHash.
 
 ### Changed
-- Both `call_set` and `deploy_set` in `ParamsOfEncodeInternalMessage` can be omitted. In this case `encode_internal_message` generates internal message with empty body.
+- Both `call_set` and `deploy_set` in [`ParamsOfEncodeInternalMessage`](docs/mod_abi.md#encode_internal_message) can be omitted. In this case `encode_internal_message` generates internal message with empty body.
 - **Debot Module**:
     - `send` function accepts one argument - serialized internal message as string encoded into base64.
 ### Documentation
@@ -30,7 +30,7 @@ DApp Server endpoints. Otherwise [default configuration](https://github.com/tonl
 
 ### Fixed
 
--  doc generator: app object interface description (added debot browser app object, signing box app object descriptions), constructor functions-helpers for enum type variable creation, add new line in the end if api.json
+-  doc generator: app object interface description, constructor functions-helpers for enum type variable creation, added new line in the end if api.json
 - library libsecp256k1 upgraded to fix https://rustsec.org/advisories/RUSTSEC-2019-0027
 
 ## 1.9.0 Feb 19, 2021
