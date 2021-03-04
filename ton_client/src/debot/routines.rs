@@ -9,7 +9,7 @@ use crate::encoding::{decode_abi_bigint, decode_abi_number};
 use crate::net::{query_collection, ParamsOfQueryCollection};
 use super::TonClient;
 
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Serialize, Deserialize, Clone)]
 pub(super) struct ResultOfGetAccountState {
     balance: String,
     pub acc_type: i8,
@@ -21,6 +21,24 @@ pub(super) struct ResultOfGetAccountState {
     #[serde(rename(deserialize = "library"))]
     #[serde(default)]
     lib: String,
+}
+
+impl Default for ResultOfGetAccountState {
+    fn default() -> Self {
+        Self {
+            balance: string_with_zero(),
+            last_trans_lt: string_with_zero(),
+            acc_type: -1,
+            code: String::new(),
+            data: String::new(),
+            lib: String::new(),
+        }
+
+    }
+}
+
+fn string_with_zero() -> String {
+    format!("0")
 }
 
 pub async fn call_routine(
@@ -54,8 +72,8 @@ pub async fn call_routine(
                 arg_json?
             };
             debug!("getAccountState({})", args);
-            let res = get_account_state(ton, &args).await?;
-            serde_json::to_value(res)
+            let acc = get_account_state(ton, &args).await;
+            serde_json::to_value(acc)
                 .map_err(|e| format!("failed to serialize account state: {}", e))
         }
         "loadBocFromFile" => {
@@ -125,8 +143,8 @@ pub fn convert_string_to_tokens(_ton: TonClient, arg: &str) -> Result<String, St
 }
 
 pub async fn get_balance(ton: TonClient, arg_json: &serde_json::Value) -> Result<String, String> {
-    let acc = get_account_state(ton, arg_json).await?;
-    Ok(acc.balance.to_string())
+    let acc = get_account_state(ton, arg_json).await;
+    Ok(acc.balance)
 }
 
 pub(super) fn format_string(fstr: &str, params: &serde_json::Value) -> String {
@@ -244,7 +262,28 @@ pub(super) fn nacl_box_gen_keypair(
 pub(super) async fn get_account_state(
     ton: TonClient,
     args: &serde_json::Value,
-) -> Result<ResultOfGetAccountState, String> {
+) -> ResultOfGetAccountState {
+    match get_account(ton, args).await {
+        Ok(acc) => {
+            serde_json::from_value(acc)
+                .map_err(|e| {
+                    debug!("failed to deserialize account json: {}", e);
+                    e
+                })
+                .unwrap_or_default()
+        },
+        Err(e) => {
+            debug!("getAccountState failed: {}", e);
+            let def = ResultOfGetAccountState::default();
+            def
+        },
+    }
+}
+
+pub(super) async fn get_account(
+    ton: TonClient,
+    args: &serde_json::Value,
+) -> Result<serde_json::Value, String> {
     let addr = get_arg(&args, "addr")?.to_lowercase();
     let mut accounts = query_collection(
         ton.clone(),
@@ -263,9 +302,7 @@ pub(super) async fn get_account_state(
     .result;
 
     if accounts.len() == 0 {
-        let mut state = ResultOfGetAccountState::default();
-        state.acc_type = -1;
-        return Ok(state);
+        return Err(format!("account not found"));
     }
 
     let acc = parse_account(
@@ -278,8 +315,5 @@ pub(super) async fn get_account_state(
     .map_err(|e| format!("failed to parse account from boc: {}", e))?
     .parsed;
 
-    let result: ResultOfGetAccountState = serde_json::from_value(acc)
-        .map_err(|e| format!("failed to deserialize account json: {}", e))?;
-
-    Ok(result)
+    Ok(acc)
 }

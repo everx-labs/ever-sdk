@@ -18,7 +18,7 @@ DApp Server endpoints. Otherwise default configuration is used.
     - Support for debot invoking in Debot Engine. `send` browser callback is used not only for interface calls but to invoke debots.
     - `start` and `fetch` functions returns debot ABI.
     - Added new built-in interface `Hex` which implements hexadecimal encoding and decoding.
-    - Added three unstable functions to `Sdk` interface: naclBox, naclBoxOpen, naclKeypairFromSecret.
+    - Added unstable functions to `Sdk` interface: naclBox, naclBoxOpen, naclKeypairFromSecret, getAccountCodeHash.
 
 ### Changed
 - Both `call_set` and `deploy_set` in `ParamsOfEncodeInternalMessage` can be omitted. In this case `encode_internal_message` generates internal message with empty body.
