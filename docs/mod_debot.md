@@ -59,7 +59,8 @@ type ParamsOfStart = {
 }
 
 type RegisteredDebot = {
-    debot_handle: DebotHandle
+    debot_handle: DebotHandle,
+    debot_abi: string
 }
 
 function start(
@@ -74,6 +75,7 @@ function start(
 ### Result
 
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+- `debot_abi`: _string_ – Debot abi as json string.
 
 
 ## fetch
@@ -92,7 +94,8 @@ type ParamsOfFetch = {
 }
 
 type RegisteredDebot = {
-    debot_handle: DebotHandle
+    debot_handle: DebotHandle,
+    debot_abi: string
 }
 
 function fetch(
@@ -107,6 +110,7 @@ function fetch(
 ### Result
 
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+- `debot_abi`: _string_ – Debot abi as json string.
 
 
 ## execute
@@ -143,9 +147,7 @@ Used by Debot Browser to send response on Dinterface call or from other Debots.
 ```ts
 type ParamsOfSend = {
     debot_handle: DebotHandle,
-    source: string,
-    func_id: number,
-    params: string
+    message: string
 }
 
 function send(
@@ -154,9 +156,7 @@ function send(
 ```
 ### Parameters
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
-- `source`: _string_ – Std address of interface or debot.
-- `func_id`: _number_ – Function Id to call
-- `params`: _string_ – Json string with parameters
+- `message`: _string_ – BOC of internal message to debot encoded in base64 format.
 
 
 ## remove
@@ -167,7 +167,8 @@ Removes handle from Client Context and drops debot engine referenced by that han
 
 ```ts
 type RegisteredDebot = {
-    debot_handle: DebotHandle
+    debot_handle: DebotHandle,
+    debot_abi: string
 }
 
 function remove(
@@ -176,6 +177,7 @@ function remove(
 ```
 ### Parameters
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+- `debot_abi`: _string_ – Debot abi as json string.
 
 
 # Types
@@ -257,10 +259,12 @@ type ParamsOfStart = {
 
 ```ts
 type RegisteredDebot = {
-    debot_handle: DebotHandle
+    debot_handle: DebotHandle,
+    debot_abi: string
 }
 ```
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+- `debot_abi`: _string_ – Debot abi as json string.
 
 
 ## ParamsOfAppDebotBrowser
@@ -441,15 +445,11 @@ type ParamsOfExecute = {
 ```ts
 type ParamsOfSend = {
     debot_handle: DebotHandle,
-    source: string,
-    func_id: number,
-    params: string
+    message: string
 }
 ```
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
-- `source`: _string_ – Std address of interface or debot.
-- `func_id`: _number_ – Function Id to call
-- `params`: _string_ – Json string with parameters
+- `message`: _string_ – BOC of internal message to debot encoded in base64 format.
 
 
 ## AppDebotBrowser

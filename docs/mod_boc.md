@@ -14,7 +14,7 @@ BOC manipulation module.
 
 [parse_shardstate](#parse_shardstate) – Parses shardstate boc into a JSON
 
-[get_blockchain_config](#get_blockchain_config)
+[get_blockchain_config](#get_blockchain_config) – Extract blockchain configuration from key block and also from zerostate.
 
 [get_boc_hash](#get_boc_hash) – Calculates BOC root hash
 
@@ -25,6 +25,8 @@ BOC manipulation module.
 [cache_set](#cache_set) – Save BOC into cache
 
 [cache_unpin](#cache_unpin) – Unpin BOCs with specified pin.
+
+[encode_boc](#encode_boc) – Encodes BOC from builder operations.
 
 ## Types
 [BocCacheType](#BocCacheType)
@@ -58,6 +60,10 @@ BOC manipulation module.
 [ResultOfBocCacheSet](#ResultOfBocCacheSet)
 
 [ParamsOfBocCacheUnpin](#ParamsOfBocCacheUnpin)
+
+[ParamsOfEncodeBoc](#ParamsOfEncodeBoc)
+
+[ResultOfEncodeBoc](#ResultOfEncodeBoc)
 
 
 # Functions
@@ -207,6 +213,8 @@ function parse_shardstate(
 
 ## get_blockchain_config
 
+Extract blockchain configuration from key block and also from zerostate.
+
 ```ts
 type ParamsOfGetBlockchainConfig = {
     block_boc: string
@@ -221,7 +229,7 @@ function get_blockchain_config(
 ): Promise<ResultOfGetBlockchainConfig>;
 ```
 ### Parameters
-- `block_boc`: _string_ – Key block BOC encoded as base64
+- `block_boc`: _string_ – Key block BOC or zerostate BOC encoded as base64
 
 
 ### Result
@@ -357,6 +365,34 @@ function cache_unpin(
 <br>If it is provided then only referenced BOC is unpinned
 
 
+## encode_boc
+
+Encodes BOC from builder operations.
+
+```ts
+type ParamsOfEncodeBoc = {
+    builder: BuilderOp[],
+    boc_cache?: BocCacheType
+}
+
+type ResultOfEncodeBoc = {
+    boc: string
+}
+
+function encode_boc(
+    params: ParamsOfEncodeBoc,
+): Promise<ResultOfEncodeBoc>;
+```
+### Parameters
+- `builder`: _BuilderOp[]_ – Cell builder operations.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+
+
+### Result
+
+- `boc`: _string_ – Encoded cell BOC or BOC cache key.
+
+
 # Types
 ## BocCacheType
 ```ts
@@ -451,7 +487,7 @@ type ParamsOfGetBlockchainConfig = {
     block_boc: string
 }
 ```
-- `block_boc`: _string_ – Key block BOC encoded as base64
+- `block_boc`: _string_ – Key block BOC or zerostate BOC encoded as base64
 
 
 ## ResultOfGetBlockchainConfig
@@ -547,5 +583,25 @@ type ParamsOfBocCacheUnpin = {
 - `pin`: _string_ – Pinned name
 - `boc_ref`?: _string_ – Reference to the cached BOC.
 <br>If it is provided then only referenced BOC is unpinned
+
+
+## ParamsOfEncodeBoc
+```ts
+type ParamsOfEncodeBoc = {
+    builder: BuilderOp[],
+    boc_cache?: BocCacheType
+}
+```
+- `builder`: _BuilderOp[]_ – Cell builder operations.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+
+
+## ResultOfEncodeBoc
+```ts
+type ResultOfEncodeBoc = {
+    boc: string
+}
+```
+- `boc`: _string_ – Encoded cell BOC or BOC cache key.
 
 

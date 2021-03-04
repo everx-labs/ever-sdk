@@ -129,7 +129,7 @@ Where:
 
 [parse_shardstate](mod_boc.md#parse_shardstate) – Parses shardstate boc into a JSON
 
-[get_blockchain_config](mod_boc.md#get_blockchain_config)
+[get_blockchain_config](mod_boc.md#get_blockchain_config) – Extract blockchain configuration from key block and also from zerostate.
 
 [get_boc_hash](mod_boc.md#get_boc_hash) – Calculates BOC root hash
 
@@ -140,6 +140,8 @@ Where:
 [cache_set](mod_boc.md#cache_set) – Save BOC into cache
 
 [cache_unpin](mod_boc.md#cache_unpin) – Unpin BOCs with specified pin.
+
+[encode_boc](mod_boc.md#encode_boc) – Encodes BOC from builder operations.
 
 ## [processing](mod_processing.md) – Message processing module.
 

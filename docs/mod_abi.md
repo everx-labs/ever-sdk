@@ -256,8 +256,9 @@ Public key resolving priority:
 
 ```ts
 type ParamsOfEncodeInternalMessage = {
-    abi: Abi,
+    abi?: Abi,
     address?: string,
+    src_address?: string,
     deploy_set?: DeploySet,
     call_set?: CallSet,
     value: string,
@@ -276,14 +277,16 @@ function encode_internal_message(
 ): Promise<ResultOfEncodeInternalMessage>;
 ```
 ### Parameters
-- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
+- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
+<br>Can be None if both deploy_set and call_set are None.
 - `address`?: _string_ – Target address the message will be sent to.
 <br>Must be specified in case of non-deploy message.
+- `src_address`?: _string_ – Source address of the message.
 - `deploy_set`?: _[DeploySet](mod_abi.md#DeploySet)_ – Deploy parameters.
 <br>Must be specified in case of deploy message.
 - `call_set`?: _[CallSet](mod_abi.md#CallSet)_ – Function call parameters.
 <br>Must be specified in case of non-deploy message.<br><br>In case of deploy message it is optional and contains parameters<br>of the functions that will to be called upon deploy transaction.
-- `value`: _string_ – Value in nanograms to be sent with message.
+- `value`: _string_ – Value in nanotokens to be sent with message.
 - `bounce`?: _boolean_ – Flag of bounceable message.
 <br>Default is true.
 - `enable_ihr`?: _boolean_ – Enable Instant Hypercube Routing for the message.
@@ -940,8 +943,9 @@ type ResultOfEncodeMessage = {
 ## ParamsOfEncodeInternalMessage
 ```ts
 type ParamsOfEncodeInternalMessage = {
-    abi: Abi,
+    abi?: Abi,
     address?: string,
+    src_address?: string,
     deploy_set?: DeploySet,
     call_set?: CallSet,
     value: string,
@@ -949,14 +953,16 @@ type ParamsOfEncodeInternalMessage = {
     enable_ihr?: boolean
 }
 ```
-- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
+- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
+<br>Can be None if both deploy_set and call_set are None.
 - `address`?: _string_ – Target address the message will be sent to.
 <br>Must be specified in case of non-deploy message.
+- `src_address`?: _string_ – Source address of the message.
 - `deploy_set`?: _[DeploySet](mod_abi.md#DeploySet)_ – Deploy parameters.
 <br>Must be specified in case of deploy message.
 - `call_set`?: _[CallSet](mod_abi.md#CallSet)_ – Function call parameters.
 <br>Must be specified in case of non-deploy message.<br><br>In case of deploy message it is optional and contains parameters<br>of the functions that will to be called upon deploy transaction.
-- `value`: _string_ – Value in nanograms to be sent with message.
+- `value`: _string_ – Value in nanotokens to be sent with message.
 - `bounce`?: _boolean_ – Flag of bounceable message.
 <br>Default is true.
 - `enable_ihr`?: _boolean_ – Enable Instant Hypercube Routing for the message.
