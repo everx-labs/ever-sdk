@@ -6,13 +6,13 @@ All notable changes to this project will be documented in this file.
 
 ### New
 
-- `boc.get_blockchain_config` function can extract blockchain configuration from key block and also 
+- `boc.get_blockchain_config` function can extract blockchain configuration from key block and also
 from zerostate.
-- `tvm` module functions download current blockchain configuration if `net` is initialized with 
+- `tvm` module functions download current blockchain configuration if `net` is initialized with
 DApp Server endpoints. Otherwise default configuration is used.
 - **Debot Module**:
     - Added new built-in interface `Hex` which implements hexadecimal encoding and decoding.
-    - Added three unstable functions to `Sdk` interface: naclBox, naclBoxOpen, naclKeypairFromSecret.
+    - Added unstable functions to `Sdk` interface: naclBox, naclBoxOpen, naclKeypairFromSecret, getAccountCodeHash.
 
 ### Fixed
 
@@ -27,14 +27,14 @@ add new line in the end if api.json
 - `tuple_list_as_array` parameter in `tvm.run_get` function which controls lists representation.
 Default is stack-like based on nested tuples. If set to `true` then returned lists are encoded as plain arrays.  Use this option if you receive this error on Web: "Runtime error. Unreachable code should not be executed..."
 This reduces stack size requirements for long lists.
-- `function_name` field of `CallSet` structure can be the name or **id (as string in hex starting with 0x)** of the called function. 
+- `function_name` field of `CallSet` structure can be the name or **id (as string in hex starting with 0x)** of the called function.
 - Fields `config_servers`, `query_url`, `account_address`, `gas_used` added into specific errors' `ClientError.data` object.
 
 ### Fixed
 
 - Binaries download links are now under https protocol
 - If you receive this error on Web: "Runtime error. Unreachable code should not be executed..." in `run_get`, use the new parameter `tuple_list_as_array = true`. [See the documentation](docs/mod_tvm.md#run_get). This may happen, for example, when elector contract contains too many participants
- 
+
 ## 1.8.0 Feb 11, 2021
 
 ### New
