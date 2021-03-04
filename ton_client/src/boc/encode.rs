@@ -13,6 +13,7 @@ use std::ops::ShlAssign;
 
 /// Cell builder operation.
 #[derive(Serialize, Deserialize, Clone, ApiType)]
+#[serde(tag = "type")]
 pub enum BuilderOp {
     /// Append integer to cell data.
     Integer {
@@ -51,7 +52,7 @@ pub enum BuilderOp {
     },
     /// Append ref to nested cell
     CellBoc {
-        /// Nested cell BOC
+        /// Nested cell BOC encoded with `base64` or BOC cache key.
         boc: String,
     },
 }
@@ -76,7 +77,7 @@ pub struct ParamsOfEncodeBoc {
 
 #[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ResultOfEncodeBoc {
-    /// BOC root hash encoded with hex
+    /// Encoded cell BOC or BOC cache key.
     pub boc: String,
 }
 
@@ -100,7 +101,7 @@ pub async fn encode_boc(
                     builder.result.append_reference_cell(cell);
                 } else {
                     return Ok(ResultOfEncodeBoc {
-                        boc: serialize_cell_to_boc(&context, cell, "encode_bic", params.boc_cache)
+                        boc: serialize_cell_to_boc(&context, cell, "encoded cell", params.boc_cache)
                             .await?,
                     });
                 }
