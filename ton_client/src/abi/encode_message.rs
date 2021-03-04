@@ -501,7 +501,7 @@ pub struct ParamsOfEncodeInternalMessage {
     /// of the functions that will to be called upon deploy transaction.
     pub call_set: Option<CallSet>,
 
-    /// Value in nanograms to be sent with message.
+    /// Value in nanotokens to be sent with message.
     pub value: String,
 
     /// Flag of bounceable message. Default is true.

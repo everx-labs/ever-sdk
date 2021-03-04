@@ -13,7 +13,7 @@ All notable changes to this project will be documented in this file.
 - `boc.get_blockchain_config` function can extract blockchain configuration from key block and also
 from zerostate.
 - `tvm` module functions download current blockchain configuration if `net` is initialized with
-DApp Server endpoints. Otherwise default configuration is used.
+DApp Server endpoints. Otherwise [default configuration](https://github.com/tonlabs/ton-executor/blob/11f46c416ebf1f145eacfb996587891a0a3cb940/src/blockchain_config.rs#L214) is used.
 - **Debot Module**:
     - Support for debot invoking in Debot Engine. `send` browser callback is used not only for interface calls but to invoke debots.
     - `start` and `fetch` functions returns debot ABI.
