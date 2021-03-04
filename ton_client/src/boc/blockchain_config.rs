@@ -29,6 +29,7 @@ pub struct ResultOfGetBlockchainConfig {
     pub config_boc: String,
 }
 
+/// Extract blockchain configuration from key block and also from zerostate.
 #[api_function]
 pub async fn get_blockchain_config(
     context: std::sync::Arc<ClientContext>,
