@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.10.0] – 2021-02-28
+## [1.10.0] – 2021-03-04
 
 ### New
 - Add optional field `src_address` to `ParamsOfEncodeInternalMessage`.
