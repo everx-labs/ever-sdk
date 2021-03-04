@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### New
 - Add optional field `src_address` to `ParamsOfEncodeInternalMessage`.
+- Field `abi` in `ParamsOfEncodeInternalMessage` is optional and can be `None` if `call_set` and `deploy_set` are  `None`.
+- `boc.encode_boc` function provides ability to build and serialize any custom tree of cells.
+  Application can use several base Builder serialization primitives like integers, bitstrings
+  and nested cells.
 - `boc.get_blockchain_config` function can extract blockchain configuration from key block and also
 from zerostate.
 - `tvm` module functions download current blockchain configuration if `net` is initialized with
@@ -18,7 +22,6 @@ DApp Server endpoints. Otherwise default configuration is used.
 
 ### Changed
 - Both `call_set` and `deploy_set` in `ParamsOfEncodeInternalMessage` can be omitted. In this case `encode_internal_message` generates internal message with empty body.
-- Field `abi` in `ParamsOfEncodeInternalMessage` is optional and can be `None` if `call_set` and `deploy_set` are `None`.
 - **Debot Module**:
     - `send` function accepts one argument - serialized internal message as string encoded into base64.
 
