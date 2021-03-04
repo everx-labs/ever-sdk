@@ -15,19 +15,158 @@ use super::*;
 use crate::api_info::ApiModule;
 use crate::json_interface::modules::BocModule;
 use crate::tests::TestClient;
+use internal::serialize_cell_to_base64;
 use pretty_assertions::assert_eq;
+use serde_json::Value;
+use ton_types::{BuilderData, IBitstring};
+
+#[tokio::test(core_threads = 2)]
+async fn test_encode_boc() {
+    fn write_b(value: u8) -> BuilderOp {
+        BuilderOp::Integer {
+            size: 1,
+            value: Value::from(value),
+        }
+    }
+    fn write_u128(value: u128) -> BuilderOp {
+        BuilderOp::Integer {
+            size: 128,
+            value: Value::from(value.to_string()),
+        }
+    }
+    fn write_u8(value: u8) -> BuilderOp {
+        BuilderOp::Integer {
+            size: 8,
+            value: Value::from(value),
+        }
+    }
+    fn write_i8(value: i8) -> BuilderOp {
+        BuilderOp::Integer {
+            size: 8,
+            value: Value::from(value),
+        }
+    }
+    fn write_i(value: Value, size: u8) -> BuilderOp {
+        BuilderOp::Integer { size, value }
+    }
+    fn write_bitstring(value: &str) -> BuilderOp {
+        BuilderOp::BitString {
+            value: value.into(),
+        }
+    }
+    fn write_cell(write: Vec<BuilderOp>) -> BuilderOp {
+        BuilderOp::Cell { builder: write }
+    }
+
+    let client = TestClient::new();
+    let encode_boc = client.wrap_async(
+        encode_boc,
+        BocModule::api(),
+        super::encode::encode_boc_api(),
+    );
+    let mut inner_builder = BuilderData::new();
+    inner_builder.append_bits(0b101100111000, 12).unwrap();
+    inner_builder.append_bits(0b100111000, 9).unwrap();
+    inner_builder.append_bits(0b111, 3).unwrap();
+    inner_builder.append_bits(2, 3).unwrap();
+    inner_builder.append_u16(0b100111000).unwrap();
+    inner_builder.append_u16(0x123).unwrap();
+    inner_builder.append_i16(0x123).unwrap();
+    inner_builder.append_i16(-0x123).unwrap();
+
+    let mut builder = BuilderData::new();
+    builder
+        .append_bit_one()
+        .unwrap()
+        .append_bit_zero()
+        .unwrap()
+        .append_u8(255)
+        .unwrap()
+        .append_i8(127)
+        .unwrap()
+        .append_i8(-127)
+        .unwrap()
+        .append_u128(123456789123456789u128)
+        .unwrap()
+        .append_bits(0b100010, 6)
+        .unwrap()
+        .append_bits(0b100010, 6)
+        .unwrap()
+        .append_bits(0x123, 12)
+        .unwrap()
+        .append_bits(0b00101101100, 11)
+        .unwrap();
+    let inner_cell = inner_builder.into_cell().unwrap();
+    builder.append_reference_cell(inner_cell.clone());
+
+    let cell = builder.into_cell().unwrap();
+    let boc = serialize_cell_to_base64(&cell, "cell").unwrap();
+
+    let response = encode_boc
+        .call(ParamsOfEncodeBoc {
+            builder: vec![
+                write_b(1),
+                write_b(0),
+                write_u8(255),
+                write_i8(127),
+                write_i8(-127),
+                write_u128(123456789123456789u128),
+                write_bitstring("8A_"),
+                write_bitstring("x{8A0_}"),
+                write_bitstring("123"),
+                write_bitstring("x2d9_"),
+                write_bitstring("80_"),
+                write_cell(vec![
+                    write_bitstring("n101100111000"),
+                    write_bitstring("N100111000"),
+                    write_i(Value::from(-1), 3),
+                    write_i(Value::from(2), 3),
+                    write_i(Value::from(0b100111000), 16),
+                    write_i(Value::from("0x123"), 16),
+                    write_i(Value::from("0x123"), 16),
+                    write_i(Value::from("-0x123"), 16),
+                ]),
+            ],
+            boc_cache: None,
+        })
+        .await
+        .unwrap();
+    assert_eq!(boc, response.boc);
+
+    let response = encode_boc
+        .call(ParamsOfEncodeBoc {
+            builder: vec![
+                write_b(1),
+                write_b(0),
+                write_u8(255),
+                write_i8(127),
+                write_i8(-127),
+                write_u128(123456789123456789u128),
+                write_bitstring("8A_"),
+                write_bitstring("x{8A0_}"),
+                write_bitstring("123"),
+                write_bitstring("x2d9_"),
+                write_bitstring("80_"),
+                BuilderOp::CellBoc {
+                    boc: serialize_cell_to_base64(&inner_cell, "cell").unwrap(),
+                },
+            ],
+            boc_cache: None,
+        })
+        .await
+        .unwrap();
+    assert_eq!(boc, response.boc);
+}
 
 #[tokio::test(core_threads = 2)]
 async fn test_pinned_cache() {
     let client = TestClient::new();
-    let cache_set = client.wrap_async(
-        cache_set, BocModule::api(), super::cache::cache_set_api()
-    );
-    let cache_get = client.wrap_async(
-        cache_get, BocModule::api(), super::cache::cache_get_api()
-    );
+    let cache_set = client.wrap_async(cache_set, BocModule::api(), super::cache::cache_set_api());
+    let cache_get = client.wrap_async(cache_get, BocModule::api(), super::cache::cache_get_api());
     let cache_unpin = client.wrap_async(
-        cache_unpin, BocModule::api(), super::cache::cache_unpin_api()
+        cache_unpin,
+        BocModule::api(),
+        super::cache::cache_unpin_api(),
     );
 
     let boc1 = TestClient::tvc(crate::tests::HELLO, None);
@@ -36,97 +175,179 @@ async fn test_pinned_cache() {
     let pin1 = "pin1".to_owned();
     let pin2 = "pin2".to_owned();
 
-    let ref1 = cache_set.call(ParamsOfBocCacheSet {
-        boc: boc1.clone(),
-        cache_type: BocCacheType::Pinned { pin: pin1.clone() },
-    }).await.unwrap().boc_ref;
+    let ref1 = cache_set
+        .call(ParamsOfBocCacheSet {
+            boc: boc1.clone(),
+            cache_type: BocCacheType::Pinned { pin: pin1.clone() },
+        })
+        .await
+        .unwrap()
+        .boc_ref;
 
     assert!(ref1.starts_with("*"));
     assert_eq!(ref1.len(), 65);
 
-    let boc = cache_get.call(ParamsOfBocCacheGet { boc_ref: ref1.clone() }).await.unwrap();
+    let boc = cache_get
+        .call(ParamsOfBocCacheGet {
+            boc_ref: ref1.clone(),
+        })
+        .await
+        .unwrap();
     assert_eq!(boc.boc, Some(boc1.clone()));
 
-    let ref2 = cache_set.call(ParamsOfBocCacheSet {
-        boc: boc2.clone(),
-        cache_type: BocCacheType::Pinned { pin: pin1.clone() },
-    }).await.unwrap().boc_ref;
+    let ref2 = cache_set
+        .call(ParamsOfBocCacheSet {
+            boc: boc2.clone(),
+            cache_type: BocCacheType::Pinned { pin: pin1.clone() },
+        })
+        .await
+        .unwrap()
+        .boc_ref;
     assert_ne!(ref2, ref1);
 
-    let ref3 = cache_set.call(ParamsOfBocCacheSet {
-        boc: boc1.clone(),
-        cache_type: BocCacheType::Pinned { pin: pin2.clone() },
-    }).await.unwrap().boc_ref;
+    let ref3 = cache_set
+        .call(ParamsOfBocCacheSet {
+            boc: boc1.clone(),
+            cache_type: BocCacheType::Pinned { pin: pin2.clone() },
+        })
+        .await
+        .unwrap()
+        .boc_ref;
     assert_eq!(ref3, ref1);
 
     // unpin pin1 and check that boc2 which had only this pin is removed from cache but boc1 which
     // had both pins is still in cache
-    cache_unpin.call(ParamsOfBocCacheUnpin { boc_ref: None, pin: pin1.clone() }).await.unwrap();
+    cache_unpin
+        .call(ParamsOfBocCacheUnpin {
+            boc_ref: None,
+            pin: pin1.clone(),
+        })
+        .await
+        .unwrap();
 
-    let boc = cache_get.call(ParamsOfBocCacheGet { boc_ref: ref1.clone() }).await.unwrap();
+    let boc = cache_get
+        .call(ParamsOfBocCacheGet {
+            boc_ref: ref1.clone(),
+        })
+        .await
+        .unwrap();
     assert_eq!(boc.boc, Some(boc1.clone()));
 
-    let boc = cache_get.call(ParamsOfBocCacheGet { boc_ref: ref2.clone() }).await.unwrap();
+    let boc = cache_get
+        .call(ParamsOfBocCacheGet {
+            boc_ref: ref2.clone(),
+        })
+        .await
+        .unwrap();
     assert_eq!(boc.boc, None);
 
-
-    let ref4 = cache_set.call(ParamsOfBocCacheSet {
-        boc: boc2,
-        cache_type: BocCacheType::Pinned { pin: pin2.clone() },
-    }).await.unwrap().boc_ref;
+    let ref4 = cache_set
+        .call(ParamsOfBocCacheSet {
+            boc: boc2,
+            cache_type: BocCacheType::Pinned { pin: pin2.clone() },
+        })
+        .await
+        .unwrap()
+        .boc_ref;
 
     // unpin pin2 with particular ref and that only this ref is removed from cache
-    cache_unpin.call(ParamsOfBocCacheUnpin { boc_ref: Some(ref4.clone()), pin: pin2.clone() }).await.unwrap();
+    cache_unpin
+        .call(ParamsOfBocCacheUnpin {
+            boc_ref: Some(ref4.clone()),
+            pin: pin2.clone(),
+        })
+        .await
+        .unwrap();
 
-    let boc = cache_get.call(ParamsOfBocCacheGet { boc_ref: ref1.clone() }).await.unwrap();
+    let boc = cache_get
+        .call(ParamsOfBocCacheGet {
+            boc_ref: ref1.clone(),
+        })
+        .await
+        .unwrap();
     assert_eq!(boc.boc, Some(boc1.clone()));
 
-    let boc = cache_get.call(ParamsOfBocCacheGet { boc_ref: ref4.clone() }).await.unwrap();
+    let boc = cache_get
+        .call(ParamsOfBocCacheGet {
+            boc_ref: ref4.clone(),
+        })
+        .await
+        .unwrap();
     assert_eq!(boc.boc, None);
 
-
-    cache_unpin.call(ParamsOfBocCacheUnpin { boc_ref: None, pin: pin2.clone() }).await.unwrap();
-    let boc = cache_get.call(ParamsOfBocCacheGet { boc_ref: ref1.clone() }).await.unwrap();
+    cache_unpin
+        .call(ParamsOfBocCacheUnpin {
+            boc_ref: None,
+            pin: pin2.clone(),
+        })
+        .await
+        .unwrap();
+    let boc = cache_get
+        .call(ParamsOfBocCacheGet {
+            boc_ref: ref1.clone(),
+        })
+        .await
+        .unwrap();
     assert_eq!(boc.boc, None);
 }
-
 #[tokio::test(core_threads = 2)]
 async fn test_unpinned_cache() {
     let boc1 = TestClient::tvc(crate::tests::TEST_DEBOT, None);
     let boc2 = TestClient::tvc(crate::tests::SUBSCRIBE, None);
 
-    let boc_max_size = std::cmp::max(base64::decode(&boc1).unwrap().len(), base64::decode(&boc2).unwrap().len());
+    let boc_max_size = std::cmp::max(
+        base64::decode(&boc1).unwrap().len(),
+        base64::decode(&boc2).unwrap().len(),
+    );
     let client = TestClient::new_with_config(json!({
-            "boc": {
-                "cache_max_size": boc_max_size / 1024 + 1
-            }
-        }));
-    let cache_set = client.wrap_async(
-        cache_set, BocModule::api(), super::cache::cache_set_api()
-    );
-    let cache_get = client.wrap_async(
-        cache_get, BocModule::api(), super::cache::cache_get_api()
-    );
+        "boc": {
+            "cache_max_size": boc_max_size / 1024 + 1
+        }
+    }));
+    let cache_set = client.wrap_async(cache_set, BocModule::api(), super::cache::cache_set_api());
+    let cache_get = client.wrap_async(cache_get, BocModule::api(), super::cache::cache_get_api());
 
+    let ref1 = cache_set
+        .call(ParamsOfBocCacheSet {
+            boc: boc1.clone(),
+            cache_type: BocCacheType::Unpinned,
+        })
+        .await
+        .unwrap()
+        .boc_ref;
 
-    let ref1 = cache_set.call(ParamsOfBocCacheSet {
-        boc: boc1.clone(),
-        cache_type: BocCacheType::Unpinned,
-    }).await.unwrap().boc_ref;
-
-    let boc = cache_get.call(ParamsOfBocCacheGet { boc_ref: ref1.clone() }).await.unwrap();
+    let boc = cache_get
+        .call(ParamsOfBocCacheGet {
+            boc_ref: ref1.clone(),
+        })
+        .await
+        .unwrap();
     assert_eq!(boc.boc, Some(boc1.clone()));
 
     // add second BOC to remove first BOC by insufficient cache size
-    let ref2 = cache_set.call(ParamsOfBocCacheSet {
-        boc: boc2.clone(),
-        cache_type: BocCacheType::Unpinned,
-    }).await.unwrap().boc_ref;
+    let ref2 = cache_set
+        .call(ParamsOfBocCacheSet {
+            boc: boc2.clone(),
+            cache_type: BocCacheType::Unpinned,
+        })
+        .await
+        .unwrap()
+        .boc_ref;
 
-    let boc = cache_get.call(ParamsOfBocCacheGet { boc_ref: ref1.clone() }).await.unwrap();
+    let boc = cache_get
+        .call(ParamsOfBocCacheGet {
+            boc_ref: ref1.clone(),
+        })
+        .await
+        .unwrap();
     assert_eq!(boc.boc, None);
 
-    let boc = cache_get.call(ParamsOfBocCacheGet { boc_ref: ref2.clone() }).await.unwrap();
+    let boc = cache_get
+        .call(ParamsOfBocCacheGet {
+            boc_ref: ref2.clone(),
+        })
+        .await
+        .unwrap();
     assert_eq!(boc.boc, Some(boc2.clone()));
 }
 
@@ -246,20 +467,20 @@ fn parse_block() {
     assert_eq!(result.parsed["gen_utime"], 1600234696);
 }
 
-
-
 #[test]
 fn parse_shardstate() {
     let client = TestClient::new();
 
-    let result: ResultOfParse = client.request(
-        "boc.parse_shardstate",
-        ParamsOfParseShardstate {
-            id: String::from("zerostate:-1"),
-            workchain_id: -1,
-            boc: String::from(ZEROSTATE)
-        }
-    ).unwrap();
+    let result: ResultOfParse = client
+        .request(
+            "boc.parse_shardstate",
+            ParamsOfParseShardstate {
+                id: String::from("zerostate:-1"),
+                workchain_id: -1,
+                boc: String::from(ZEROSTATE),
+            },
+        )
+        .unwrap();
 
     assert_eq!(result.parsed["id"], "zerostate:-1");
     assert_eq!(result.parsed["workchain_id"], -1);
@@ -270,22 +491,25 @@ fn parse_shardstate() {
 fn get_blockchain_config() {
     let client = TestClient::new();
 
-    let result: ResultOfGetBlockchainConfig = client.request(
-        "boc.get_blockchain_config",
-        ParamsOfGetBlockchainConfig {
-            block_boc: String::from(BLOCK)
-        }
-    ).unwrap();
+    let result: ResultOfGetBlockchainConfig = client
+        .request(
+            "boc.get_blockchain_config",
+            ParamsOfGetBlockchainConfig {
+                block_boc: String::from(BLOCK),
+            },
+        )
+        .unwrap();
 
     assert_eq!(result.config_boc, BLOCK_CONFIG);
 
-
-    let result: ResultOfGetBlockchainConfig = client.request(
-        "boc.get_blockchain_config",
-        ParamsOfGetBlockchainConfig {
-            block_boc: String::from(ZEROSTATE)
-        }
-    ).unwrap();
+    let result: ResultOfGetBlockchainConfig = client
+        .request(
+            "boc.get_blockchain_config",
+            ParamsOfGetBlockchainConfig {
+                block_boc: String::from(ZEROSTATE),
+            },
+        )
+        .unwrap();
 
     assert_eq!(result.config_boc, ZEROSTATE_CONFIG);
 }
