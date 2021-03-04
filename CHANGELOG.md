@@ -5,14 +5,25 @@ All notable changes to this project will be documented in this file.
 ## [1.10.0] – 2021-02-28
 
 ### New
-
+- Add optional field `src_address` to `ParamsOfEncodeInternalMessage`.
+- Field `abi` in `ParamsOfEncodeInternalMessage` is optional and can be `None` if `call_set` and `deploy_set` are  `None`.
+- `boc.encode_boc` function provides ability to build and serialize any custom tree of cells.
+  Application can use several base Builder serialization primitives like integers, bitstrings
+  and nested cells.
 - `boc.get_blockchain_config` function can extract blockchain configuration from key block and also
 from zerostate.
 - `tvm` module functions download current blockchain configuration if `net` is initialized with
 DApp Server endpoints. Otherwise default configuration is used.
 - **Debot Module**:
+    - Support for debot invoking in Debot Engine. `send` browser callback is used not only for interface calls but to invoke debots.
+    - `start` and `fetch` functions returns debot ABI.
     - Added new built-in interface `Hex` which implements hexadecimal encoding and decoding.
     - Added unstable functions to `Sdk` interface: naclBox, naclBoxOpen, naclKeypairFromSecret, getAccountCodeHash.
+
+### Changed
+- Both `call_set` and `deploy_set` in `ParamsOfEncodeInternalMessage` can be omitted. In this case `encode_internal_message` generates internal message with empty body.
+- **Debot Module**:
+    - `send` function accepts one argument - serialized internal message as string encoded into base64.
 
 ### Fixed
 

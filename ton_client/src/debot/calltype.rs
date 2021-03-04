@@ -22,8 +22,7 @@ pub(super) enum DebotCallType {
     Interface { msg: String, id: String },
     GetMethod { msg: String, dest: String },
     External { msg: String, dest: String },
-    // TODO: support later
-    // Invoke { msg: String },
+    Invoke { msg: String },
 }
 
 fn msg_err(e: impl Display) -> ClientError {

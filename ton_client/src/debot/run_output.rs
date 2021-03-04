@@ -1,10 +1,11 @@
 use super::action::DAction;
 use super::calltype::DebotCallType;
 use super::{JsonValue, DEBOT_WC};
-use crate::boc::internal::deserialize_object_from_base64;
+use crate::boc::internal::{deserialize_object_from_base64, serialize_object_to_base64};
+use crate::encoding::account_decode;
 use crate::error::ClientError;
 use std::collections::VecDeque;
-use ton_block::Message;
+use ton_block::{Message, MsgAddressIntOrNone};
 
 #[derive(Default)]
 pub(super) struct RunOutput {
@@ -12,18 +13,20 @@ pub(super) struct RunOutput {
     pub return_value: Option<JsonValue>,
     pub calls: VecDeque<DebotCallType>,
     pub actions: Vec<DAction>,
+    pub std_addr: MsgAddressIntOrNone,
 }
 
 impl RunOutput {
     pub fn new(
         account: String,
+        debot_addr: String,
         return_value: Option<JsonValue>,
         mut msgs: Vec<String>,
     ) -> Result<Self, ClientError> {
         let mut output = RunOutput::default();
         output.account = account;
         output.return_value = return_value;
-
+        output.std_addr = MsgAddressIntOrNone::Some(account_decode(&debot_addr)?);
         while let Some(msg_base64) = msgs.pop() {
             let msg: Message = deserialize_object_from_base64(&msg_base64, "message")?.object;
             output.filter_msg(msg, msg_base64);
@@ -56,6 +59,7 @@ impl RunOutput {
     fn filter_msg(&mut self, msg: Message, msg_base64: String) {
         let msg = (&msg, msg_base64);
         self.filter_interface_call(msg)
+            .and_then(|msg| self.filter_invoke_call(msg))
             .and_then(|msg| self.filter_external_call(msg))
             .and_then(|msg| self.filter_getmethod_call(msg));
     }
@@ -70,14 +74,38 @@ impl RunOutput {
                 let std_addr = msg.0.dst().unwrap_or_default();
                 let addr = std_addr.to_string();
                 let wc_and_addr: Vec<&str> = addr.split(':').collect();
-                self.calls.push_back(DebotCallType::Interface {
-                    msg: msg.1.clone(),
-                    id: wc_and_addr
-                        .get(1)
-                        .map(|x| x.to_owned())
-                        .unwrap_or("0")
-                        .to_string(),
-                });
+
+                let mut msg = msg.0.clone();
+                msg.set_src(self.std_addr.clone());
+                if let Ok(msg_base64) = serialize_object_to_base64(&msg, "message") {
+                    self.calls.push_back(DebotCallType::Interface {
+                        msg: msg_base64,
+                        id: wc_and_addr
+                            .get(1)
+                            .map(|x| x.to_owned())
+                            .unwrap_or("0")
+                            .to_string(),
+                    });
+                }
+                return None;
+            }
+        }
+        Some(msg)
+    }
+
+    fn filter_invoke_call<'a>(
+        &mut self,
+        msg: (&'a Message, String),
+    ) -> Option<(&'a Message, String)> {
+        if msg.0.is_internal() {
+            let wc_id = msg.0.workchain_id().unwrap_or(0);
+            if wc_id != DEBOT_WC as i32 {
+                let mut msg = msg.0.clone();
+                msg.set_src(self.std_addr.clone());
+                if let Ok(msg_base64) = serialize_object_to_base64(&msg, "message") {
+                    self.calls
+                        .push_back(DebotCallType::Invoke { msg: msg_base64 });
+                }
                 return None;
             }
         }

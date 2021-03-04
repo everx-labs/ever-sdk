@@ -114,13 +114,13 @@ impl DEngine {
         }
     }
 
-    pub async fn fetch(&mut self) -> Result<(), String> {
-        self.state_machine = self.fetch_state().await?;
+    pub async fn fetch(&mut self) -> Result<String, String> {
+        self.fetch_state().await?;
         self.prev_state = STATE_EXIT;
-        Ok(())
+        Ok(self.raw_abi.clone())
     }
 
-    async fn fetch_state(&mut self) -> Result<Vec<DContext>, String> {
+    async fn fetch_state(&mut self) -> Result<(), String> {
         self.state = self.load_state(self.addr.clone()).await?;
         let result = self.run_debot_get("getVersion", None).await?;
 
@@ -158,12 +158,14 @@ impl DEngine {
             start_act.misc = EMPTY_CELL.to_owned();
             context_vec.push(DContext::new(String::new(), vec![start_act], STATE_ZERO));
         }
-        Ok(context_vec)
+        self.state_machine = context_vec;
+        Ok(())
     }
 
-    pub async fn start(&mut self) -> Result<(), String> {
-        self.state_machine = self.fetch_state().await?;
-        self.switch_state(STATE_ZERO, true).await
+    pub async fn start(&mut self) -> Result<String, String> {
+        self.fetch_state().await?;
+        self.switch_state(STATE_ZERO, true).await?;
+        Ok(self.raw_abi.clone())
     }
 
     #[allow(dead_code)]
@@ -194,12 +196,8 @@ impl DEngine {
         }
     }
 
-    pub async fn send(&mut self, source: String, func_id: u32, params: String) -> ClientResult<()> {
-        // if no response
-        if func_id == 0 { return Ok(()); }
-        let params = serde_json::from_str(&params)
-            .map_err(|e| Error::invalid_json_params(e) )?;
-        let output = self.run_debot_internal(source, func_id, params).await?;
+    pub async fn send(&mut self, message: String) -> ClientResult<()> {
+        let output = self.send_to_debot(message).await?;
         self.handle_output(output).await
     }
 
@@ -242,6 +240,7 @@ impl DEngine {
         ).await?;
         let mut run_output = RunOutput::new(
             run_result.account,
+            self.addr.clone(),
             run_result.decoded.and_then(|x| x.output),
             run_result.out_messages,
         )?;
@@ -713,6 +712,7 @@ impl DEngine {
 
         RunOutput::new(
             result.account,
+            self.addr.clone(),
             result.decoded.and_then(|x| x.output),
             result.out_messages,
         )
@@ -836,8 +836,10 @@ impl DEngine {
                     debug!("External call succeeded");
                     output.append(self.send_to_debot(answer_msg).await?);
                 },
-                // TODO: support later
-                // DebotCallType::Invoke{msg} => { },
+                DebotCallType::Invoke{msg} => {
+                    debug!("Invoke call");
+                    self.browser.send(msg).await;
+                },
             }
         }
         Ok(())
