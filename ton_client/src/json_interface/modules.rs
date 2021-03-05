@@ -14,6 +14,7 @@
 
 use super::registrar::ModuleReg;
 use super::runtime::RuntimeHandlers;
+use crate::boc::BuilderOp;
 
 /// Provides information about library.
 #[derive(ApiModule)]
@@ -327,6 +328,7 @@ fn register_boc(handlers: &mut RuntimeHandlers) {
         crate::boc::cache_unpin,
         crate::boc::cache::cache_unpin_api,
     );
+    module.register_type::<BuilderOp>();
     module.register_async_fn(
         crate::boc::encode_boc,
         crate::boc::encode::encode_boc_api,

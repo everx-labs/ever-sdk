@@ -5579,6 +5579,83 @@
           "description": null
         },
         {
+          "name": "BuilderOp",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "Integer",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "size",
+                  "type": "Number",
+                  "number_type": "UInt",
+                  "number_size": 8,
+                  "summary": "Bit size of the value.",
+                  "description": null
+                },
+                {
+                  "name": "value",
+                  "type": "Ref",
+                  "ref_name": "Value",
+                  "summary": "Value: - `Number` containing integer number.",
+                  "description": "e.g. `123`, `-123`. - Decimal string. e.g. `\"123\"`, `\"-123\"`.\n- `0x` prefixed hexadecimal string.\n  e.g `0x123`, `0X123`, `-0x123`."
+                }
+              ],
+              "summary": "Append integer to cell data.",
+              "description": null
+            },
+            {
+              "name": "BitString",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "value",
+                  "type": "String",
+                  "summary": "Bit string content using bitstring notation. See `TON VM specification` 1.0.",
+                  "description": "Contains hexadecimal string representation:\n- Can end with `_` tag.\n- Can be prefixed with `x` or `X`.\n- Can be prefixed with `x{` or `X{` and ended with `}`.\n\nContains binary string represented as a sequence\nof `0` and `1` prefixed with `n` or `N`.\n\nExamples:\n`1AB`, `x1ab`, `X1AB`, `x{1abc}`, `X{1ABC}`\n`2D9_`, `x2D9_`, `X2D9_`, `x{2D9_}`, `X{2D9_}`\n`n00101101100`, `N00101101100`"
+                }
+              ],
+              "summary": "Append bit string to cell data.",
+              "description": null
+            },
+            {
+              "name": "Cell",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "builder",
+                  "type": "Array",
+                  "array_item": {
+                    "type": "Ref",
+                    "ref_name": "boc.BuilderOp"
+                  },
+                  "summary": "Nested cell builder",
+                  "description": null
+                }
+              ],
+              "summary": "Append ref to nested cells",
+              "description": null
+            },
+            {
+              "name": "CellBoc",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "boc",
+                  "type": "String",
+                  "summary": "Nested cell BOC encoded with `base64` or BOC cache key.",
+                  "description": null
+                }
+              ],
+              "summary": "Append ref to nested cell",
+              "description": null
+            }
+          ],
+          "summary": "Cell builder operation.",
+          "description": null
+        },
+        {
           "name": "ParamsOfEncodeBoc",
           "type": "Struct",
           "struct_fields": [
@@ -5587,7 +5664,7 @@
               "type": "Array",
               "array_item": {
                 "type": "Ref",
-                "ref_name": "BuilderOp"
+                "ref_name": "boc.BuilderOp"
               },
               "summary": "Cell builder operations.",
               "description": null
