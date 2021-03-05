@@ -1,4 +1,5 @@
 use super::base64_interface::Base64Interface;
+use super::hex_interface::HexInterface;
 use super::sdk_interface::SdkInterface;
 use crate::abi::{decode_message_body, Abi, ParamsOfDecodeMessageBody};
 use crate::boc::{parse_message, ParamsOfParse};
@@ -102,6 +103,9 @@ impl BuiltinInterfaces {
         let mut interfaces = HashMap::new();
 
         let iface: Arc<dyn DebotInterface + Send + Sync> = Arc::new(Base64Interface::new());
+        interfaces.insert(iface.get_id(), iface);
+
+        let iface: Arc<dyn DebotInterface + Send + Sync> = Arc::new(HexInterface::new());
         interfaces.insert(iface.get_id(), iface);
 
         let iface: Arc<dyn DebotInterface + Send + Sync> =

@@ -20,9 +20,10 @@ pub(crate) mod hash;
 pub(crate) mod internal;
 pub(crate) mod parse;
 pub(crate) mod tvc;
+pub(crate) mod encode;
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 
 pub use cache::{
     cache_get, cache_set, cache_unpin,
@@ -35,6 +36,9 @@ pub use parse::{
 };
 pub use blockchain_config::{
     get_blockchain_config, ParamsOfGetBlockchainConfig, ResultOfGetBlockchainConfig,
+};
+pub use encode::{
+    encode_boc, ParamsOfEncodeBoc, ResultOfEncodeBoc, BuilderOp,
 };
 pub use errors::{Error, ErrorCode};
 pub use hash::{get_boc_hash, ParamsOfGetBocHash, ResultOfGetBocHash};

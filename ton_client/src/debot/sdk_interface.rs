@@ -8,10 +8,12 @@ use crate::abi::Abi;
 use crate::crypto::{
     chacha20, hdkey_derive_from_xprv, hdkey_derive_from_xprv_path, hdkey_public_from_xprv,
     hdkey_secret_from_xprv, hdkey_xprv_from_mnemonic, mnemonic_derive_sign_keys,
-    mnemonic_from_random, mnemonic_verify, nacl_sign_keypair_from_secret_key, ParamsOfChaCha20,
+    mnemonic_from_random, mnemonic_verify, nacl_sign_keypair_from_secret_key, nacl_box,
+    nacl_box_open, nacl_box_keypair_from_secret_key, ParamsOfChaCha20,
     ParamsOfHDKeyDeriveFromXPrv, ParamsOfHDKeyDeriveFromXPrvPath, ParamsOfHDKeyPublicFromXPrv,
     ParamsOfHDKeySecretFromXPrv, ParamsOfHDKeyXPrvFromMnemonic, ParamsOfMnemonicDeriveSignKeys,
     ParamsOfMnemonicFromRandom, ParamsOfMnemonicVerify, ParamsOfNaclSignKeyPairFromSecret,
+    ParamsOfNaclBox, ParamsOfNaclBoxOpen, ParamsOfNaclBoxKeyPairFromSecret,
 };
 use crate::encoding::decode_abi_bigint;
 use serde_json::Value;
@@ -211,6 +213,43 @@ const ABI: &str = r#"
 			"outputs": [
 				{"name":"substr","type":"bytes"}
 			]
+        },
+        {
+			"name": "naclBox",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"decrypted","type":"bytes"},
+				{"name":"nonce","type":"bytes"},
+				{"name":"publicKey","type":"uint256"},
+				{"name":"secretKey","type":"uint256"}
+			],
+			"outputs": [
+				{"name":"encrypted","type":"bytes"}
+			]
+        },
+        {
+			"name": "naclBoxOpen",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"encrypted","type":"bytes"},
+				{"name":"nonce","type":"bytes"},
+				{"name":"publicKey","type":"uint256"},
+				{"name":"secretKey","type":"uint256"}
+			],
+			"outputs": [
+				{"name":"decrypted","type":"bytes"}
+			]
+		},
+		{
+			"name": "naclKeypairFromSecret",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"secret","type":"uint256"}
+			],
+			"outputs": [
+				{"name":"publicKey","type":"uint256"},
+				{"name":"secretKey","type":"uint256"}
+			]
 		},
 		{
 			"name": "constructor",
@@ -246,8 +285,21 @@ impl SdkInterface {
 
     async fn get_account_type(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let value = routines::get_account_state(self.ton.clone(), args).await?;
+        let value = routines::get_account_state(self.ton.clone(), args).await;
         Ok((answer_id, json!({ "acc_type": value.acc_type })))
+    }
+
+    async fn get_account_code_hash(&self, args: &Value) -> InterfaceResult {
+        let answer_id = decode_answer_id(args)?;
+        let res = routines::get_account(self.ton.clone(), args).await;
+        let code_hash_str = match &res {
+            Ok(acc) => acc["code_hash"].as_str().unwrap_or("0"),
+            Err(e) => {
+                debug!("get_account_code_hash failed: {}", e);
+                "0"
+            }
+        };
+        Ok((answer_id, json!({ "code_hash": format!("0x{}", code_hash_str) })))
     }
 
     fn get_random(&self, args: &Value) -> InterfaceResult {
@@ -436,7 +488,63 @@ impl SdkInterface {
             answer_id,
             json!({ "substr": hex::encode(sub_str.as_bytes()) })
         ))
+    }
 
+    fn nacl_box(&self, args: &Value) -> InterfaceResult {
+        let answer_id = decode_answer_id(args)?;
+        let decrypted = base64::encode(&hex::decode(&get_arg(args, "decrypted")?).map_err(|e| format!("{}", e))?);
+        let nonce = get_arg(&args, "nonce")?;
+        let public = decode_abi_bigint(&get_arg(&args, "publicKey")?).map_err(|e| e.to_string())?;
+        let secret = decode_abi_bigint(&get_arg(&args, "secretKey")?).map_err(|e| e.to_string())?;
+        let result = nacl_box(
+            self.ton.clone(),
+            ParamsOfNaclBox {
+                decrypted,
+                nonce,
+                their_public: format!("{:064x}", public),
+                secret: format!("{:064x}", secret),
+            },
+        )
+        .map_err(|e| format!("{}", e))?;
+        Ok((answer_id, json!({ "encrypted": hex::encode(&base64::decode(&result.encrypted).map_err(|e| format!("{}", e))?) })))
+    }
+
+    fn nacl_box_open(&self, args: &Value) -> InterfaceResult {
+        let answer_id = decode_answer_id(args)?;
+        let encrypted = base64::encode(&hex::decode(&get_arg(args, "encrypted")?).map_err(|e| format!("{}", e))?);
+        let nonce = get_arg(&args, "nonce")?;
+        let public = decode_abi_bigint(&get_arg(&args, "publicKey")?).map_err(|e| e.to_string())?;
+        let secret = decode_abi_bigint(&get_arg(&args, "secretKey")?).map_err(|e| e.to_string())?;
+        let result = nacl_box_open(
+            self.ton.clone(),
+            ParamsOfNaclBoxOpen {
+                encrypted,
+                nonce,
+                their_public: format!("{:064x}", public),
+                secret: format!("{:064x}", secret),
+            },
+        )
+        .map_err(|e| format!("{}", e))?;
+        Ok((answer_id, json!({ "decrypted": hex::encode(&base64::decode(&result.decrypted).map_err(|e| format!("{}", e))?) })))
+    }
+
+    fn nacl_box_keypair_from_secret_key(&self, args: &Value) -> InterfaceResult {
+        let answer_id = decode_answer_id(args)?;
+        let secret = decode_abi_bigint(&get_arg(args, "secret")?).map_err(|e| format!("{}", e))?;
+        let result = nacl_box_keypair_from_secret_key(
+            self.ton.clone(),
+            ParamsOfNaclBoxKeyPairFromSecret {
+                secret: format!("{:064x}", secret),
+            },
+        )
+        .map_err(|e| format!("{}", e))?;
+        Ok((
+            answer_id,
+            json!({
+                "publicKey": format!("0x{}", result.public),
+                "secretKey": format!("0x{}", result.secret.get(0..64).ok_or(format!("secret key is invalid"))?)
+            }),
+        ))
     }
 }
 
@@ -454,6 +562,7 @@ impl DebotInterface for SdkInterface {
         match func {
             "getBalance" => self.get_balance(args).await,
             "getAccountType" => self.get_account_type(args).await,
+            "getAccountCodeHash" => self.get_account_code_hash(args).await,
             "chacha20" => self.chacha20(args),
             "genRandom" => self.get_random(args),
             "mnemonicFromRandom" => self.mnemonic_from_random(args),
@@ -466,6 +575,9 @@ impl DebotInterface for SdkInterface {
             "hdkeyPublicFromXprv" => self.hdkey_public_from_xprv(args),
             "naclSignKeypairFromSecretKey" => self.nacl_sign_keypair_from_secret_key(args),
             "substring" => self.substring(args),
+            "naclBox" => self.nacl_box(args),
+            "naclBoxOpen" => self.nacl_box_open(args),
+            "naclKeypairFromSecret" => self.nacl_box_keypair_from_secret_key(args),
             _ => Err(format!("function \"{}\" is not implemented", func)),
         }
     }

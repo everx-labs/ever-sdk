@@ -14,7 +14,7 @@ BOC manipulation module.
 
 [parse_shardstate](#parse_shardstate) – Parses shardstate boc into a JSON
 
-[get_blockchain_config](#get_blockchain_config)
+[get_blockchain_config](#get_blockchain_config) – Extract blockchain configuration from key block and also from zerostate.
 
 [get_boc_hash](#get_boc_hash) – Calculates BOC root hash
 
@@ -25,6 +25,8 @@ BOC manipulation module.
 [cache_set](#cache_set) – Save BOC into cache
 
 [cache_unpin](#cache_unpin) – Unpin BOCs with specified pin.
+
+[encode_boc](#encode_boc) – Encodes BOC from builder operations.
 
 ## Types
 [BocCacheType](#BocCacheType)
@@ -58,6 +60,12 @@ BOC manipulation module.
 [ResultOfBocCacheSet](#ResultOfBocCacheSet)
 
 [ParamsOfBocCacheUnpin](#ParamsOfBocCacheUnpin)
+
+[BuilderOp](#BuilderOp) – Cell builder operation.
+
+[ParamsOfEncodeBoc](#ParamsOfEncodeBoc)
+
+[ResultOfEncodeBoc](#ResultOfEncodeBoc)
 
 
 # Functions
@@ -207,6 +215,8 @@ function parse_shardstate(
 
 ## get_blockchain_config
 
+Extract blockchain configuration from key block and also from zerostate.
+
 ```ts
 type ParamsOfGetBlockchainConfig = {
     block_boc: string
@@ -221,7 +231,7 @@ function get_blockchain_config(
 ): Promise<ResultOfGetBlockchainConfig>;
 ```
 ### Parameters
-- `block_boc`: _string_ – Key block BOC encoded as base64
+- `block_boc`: _string_ – Key block BOC or zerostate BOC encoded as base64
 
 
 ### Result
@@ -357,8 +367,32 @@ function cache_unpin(
 <br>If it is provided then only referenced BOC is unpinned
 
 
+## encode_boc
+
+Encodes BOC from builder operations.
+
+```ts
+type ParamsOfEncodeBoc = {
+    builder: BuilderOp[],
+    boc_cache?: BocCacheType
+}
+
+type ResultOfEncodeBoc = {
+    boc: string
+}
+
+function encode_boc(
+    params: ParamsOfEncodeBoc,
+): Promise<ResultOfEncodeBoc>;
+```
+### Parameters
+- `builder`: _[BuilderOp](mod_boc.md#BuilderOp)[]_ – Cell builder operations.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+
+
 ### Result
 
+- `boc`: _string_ – Encoded cell BOC or BOC cache key.
 
 
 # Types
@@ -387,6 +421,13 @@ When _type_ is _'Unpinned'_
  
 
 
+
+Variant constructors:
+
+```ts
+function bocCacheTypePinned(pin: string): BocCacheType;
+function bocCacheTypeUnpinned(): BocCacheType;
+```
 
 ## BocErrorCode
 ```ts
@@ -448,7 +489,7 @@ type ParamsOfGetBlockchainConfig = {
     block_boc: string
 }
 ```
-- `block_boc`: _string_ – Key block BOC encoded as base64
+- `block_boc`: _string_ – Key block BOC or zerostate BOC encoded as base64
 
 
 ## ResultOfGetBlockchainConfig
@@ -544,5 +585,87 @@ type ParamsOfBocCacheUnpin = {
 - `pin`: _string_ – Pinned name
 - `boc_ref`?: _string_ – Reference to the cached BOC.
 <br>If it is provided then only referenced BOC is unpinned
+
+
+## BuilderOp
+Cell builder operation.
+
+```ts
+type BuilderOp = {
+    type: 'Integer'
+    size: number,
+    value: any
+} | {
+    type: 'BitString'
+    value: string
+} | {
+    type: 'Cell'
+    builder: BuilderOp[]
+} | {
+    type: 'CellBoc'
+    boc: string
+}
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'Integer'_
+
+Append integer to cell data.
+
+
+- `size`: _number_ – Bit size of the value.
+- `value`: _any_ – Value: - `Number` containing integer number.
+<br>e.g. `123`, `-123`. - Decimal string. e.g. `"123"`, `"-123"`.<br>- `0x` prefixed hexadecimal string.<br>  e.g `0x123`, `0X123`, `-0x123`.
+
+When _type_ is _'BitString'_
+
+Append bit string to cell data.
+
+
+- `value`: _string_ – Bit string content using bitstring notation. See `TON VM specification` 1.0.
+<br>Contains hexadecimal string representation:<br>- Can end with `_` tag.<br>- Can be prefixed with `x` or `X`.<br>- Can be prefixed with `x{` or `X{` and ended with `}`.<br><br>Contains binary string represented as a sequence<br>of `0` and `1` prefixed with `n` or `N`.<br><br>Examples:<br>`1AB`, `x1ab`, `X1AB`, `x{1abc}`, `X{1ABC}`<br>`2D9_`, `x2D9_`, `X2D9_`, `x{2D9_}`, `X{2D9_}`<br>`n00101101100`, `N00101101100`
+
+When _type_ is _'Cell'_
+
+Append ref to nested cells
+
+
+- `builder`: _[BuilderOp](mod_boc.md#BuilderOp)[]_ – Nested cell builder
+
+When _type_ is _'CellBoc'_
+
+Append ref to nested cell
+
+
+- `boc`: _string_ – Nested cell BOC encoded with `base64` or BOC cache key.
+
+
+Variant constructors:
+
+```ts
+function builderOpInteger(size: number, value: any): BuilderOp;
+function builderOpBitString(value: string): BuilderOp;
+function builderOpCell(builder: BuilderOp[]): BuilderOp;
+function builderOpCellBoc(boc: string): BuilderOp;
+```
+
+## ParamsOfEncodeBoc
+```ts
+type ParamsOfEncodeBoc = {
+    builder: BuilderOp[],
+    boc_cache?: BocCacheType
+}
+```
+- `builder`: _[BuilderOp](mod_boc.md#BuilderOp)[]_ – Cell builder operations.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+
+
+## ResultOfEncodeBoc
+```ts
+type ResultOfEncodeBoc = {
+    boc: string
+}
+```
+- `boc`: _string_ – Encoded cell BOC or BOC cache key.
 
 

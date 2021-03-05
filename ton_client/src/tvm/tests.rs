@@ -13,12 +13,21 @@
  */
 
 use super::*;
-use crate::{abi::encode_account::{ParamsOfEncodeAccount, StateInitSource}, boc::{BocCacheType, internal::serialize_cell_to_base64}};
-use crate::abi::{Abi, CallSet, DeploySet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer};
+use super::types::resolve_blockchain_config;
+use crate::abi::{
+    Abi, CallSet, DeploySet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
+    encode_account::{ParamsOfEncodeAccount, StateInitSource},
+};
+use crate::boc::{
+    BocCacheType,
+    internal::{deserialize_object_from_base64, serialize_cell_to_base64},
+};
+use crate::boc::tests::BLOCK_CONFIG;
 use crate::json_interface::modules::{AbiModule, TvmModule};
 use crate::tests::{TestClient, HELLO, SUBSCRIBE};
 use api_info::ApiModule;
 use serde_json::Value;
+use ton_executor::BlockchainConfig;
 use ton_types::{BuilderData, Cell};
 use ton_vm::{boolean, stack::{StackItem, continuation::ContinuationData, integer::IntegerData}};
 use ton_vm::int;
@@ -674,4 +683,29 @@ fn test_stack_serialization() {
             [[["123", "456"], ["123", null]], [[["123"], ["123", ["456", ["789", null]]]], null]],
         ])
     );
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_resolve_blockchain_config() {
+    if TestClient::node_se() {
+        return;
+    }
+
+    let mut config = crate::ClientConfig::default();
+    config.network.endpoints = Some(vec![TestClient::network_address()]);
+    let net_context = Arc::new(crate::ClientContext::new(config).unwrap());
+
+    let local_context = Arc::new(crate::ClientContext::new(crate::ClientConfig::default()).unwrap());
+
+    let custom_config_params = deserialize_object_from_base64(BLOCK_CONFIG, "config").unwrap();
+    let default_config = BlockchainConfig::default();
+
+    let config = resolve_blockchain_config(&local_context, Some(BLOCK_CONFIG.to_owned())).await.unwrap();
+    assert_eq!(config.raw_config(), &custom_config_params.object);
+
+    let config = resolve_blockchain_config(&local_context, None).await.unwrap();
+    assert_eq!(config.raw_config(), default_config.raw_config());
+
+    let config = resolve_blockchain_config(&net_context, None).await.unwrap();
+    assert_ne!(config.raw_config(), default_config.raw_config());
 }

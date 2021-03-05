@@ -256,8 +256,9 @@ Public key resolving priority:
 
 ```ts
 type ParamsOfEncodeInternalMessage = {
-    abi: Abi,
+    abi?: Abi,
     address?: string,
+    src_address?: string,
     deploy_set?: DeploySet,
     call_set?: CallSet,
     value: string,
@@ -276,14 +277,16 @@ function encode_internal_message(
 ): Promise<ResultOfEncodeInternalMessage>;
 ```
 ### Parameters
-- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
+- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
+<br>Can be None if both deploy_set and call_set are None.
 - `address`?: _string_ – Target address the message will be sent to.
 <br>Must be specified in case of non-deploy message.
+- `src_address`?: _string_ – Source address of the message.
 - `deploy_set`?: _[DeploySet](mod_abi.md#DeploySet)_ – Deploy parameters.
 <br>Must be specified in case of deploy message.
 - `call_set`?: _[CallSet](mod_abi.md#CallSet)_ – Function call parameters.
 <br>Must be specified in case of non-deploy message.<br><br>In case of deploy message it is optional and contains parameters<br>of the functions that will to be called upon deploy transaction.
-- `value`: _string_ – Value in nanograms to be sent with message.
+- `value`: _string_ – Value in nanotokens to be sent with message.
 - `bounce`?: _boolean_ – Flag of bounceable message.
 <br>Default is true.
 - `enable_ihr`?: _boolean_ – Enable Instant Hypercube Routing for the message.
@@ -515,6 +518,15 @@ When _type_ is _'Serialized'_
 - `value`: _[AbiContract](mod_abi.md#AbiContract)_
 
 
+Variant constructors:
+
+```ts
+function abiContract(value: AbiContract): Abi;
+function abiJson(value: string): Abi;
+function abiHandle(value: AbiHandle): Abi;
+function abiSerialized(value: AbiContract): Abi;
+```
+
 ## AbiHandle
 ```ts
 type AbiHandle = number
@@ -621,6 +633,15 @@ Signing Box interface is provided for signing, allows Dapps to sign messages usi
 - `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_
 
 
+Variant constructors:
+
+```ts
+function signerNone(): Signer;
+function signerExternal(public_key: string): Signer;
+function signerKeys(keys: KeyPair): Signer;
+function signerSigningBox(handle: SigningBoxHandle): Signer;
+```
+
 ## MessageBodyType
 ```ts
 enum MessageBodyType {
@@ -689,6 +710,14 @@ Encoded in `base64`.
 - `init_params`?: _[StateInitParams](mod_abi.md#StateInitParams)_
 
 
+Variant constructors:
+
+```ts
+function stateInitSourceMessage(source: MessageSource): StateInitSource;
+function stateInitSourceStateInit(code: string, data: string, library?: string): StateInitSource;
+function stateInitSourceTvc(tvc: string, public_key?: string, init_params?: StateInitParams): StateInitSource;
+```
+
 ## StateInitParams
 ```ts
 type StateInitParams = {
@@ -731,6 +760,13 @@ When _type_ is _'EncodingParams'_
 - `processing_try_index`?: _number_ – Processing try index.
 <br>Used in message processing with retries (if contract's ABI includes "expire" header).<br><br>Encoder uses the provided try index to calculate message<br>expiration time. The 1st message expiration time is specified in<br>Client config.<br><br>Expiration timeouts will grow with every retry.<br>Retry grow factor is set in Client config:<br><.....add config parameter with default value here><br><br>Default value is 0.
 
+
+Variant constructors:
+
+```ts
+function messageSourceEncoded(message: string, abi?: Abi): MessageSource;
+function messageSourceEncodingParams(params: ParamsOfEncodeMessage): MessageSource;
+```
 
 ## AbiParam
 ```ts
@@ -907,8 +943,9 @@ type ResultOfEncodeMessage = {
 ## ParamsOfEncodeInternalMessage
 ```ts
 type ParamsOfEncodeInternalMessage = {
-    abi: Abi,
+    abi?: Abi,
     address?: string,
+    src_address?: string,
     deploy_set?: DeploySet,
     call_set?: CallSet,
     value: string,
@@ -916,14 +953,16 @@ type ParamsOfEncodeInternalMessage = {
     enable_ihr?: boolean
 }
 ```
-- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
+- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
+<br>Can be None if both deploy_set and call_set are None.
 - `address`?: _string_ – Target address the message will be sent to.
 <br>Must be specified in case of non-deploy message.
+- `src_address`?: _string_ – Source address of the message.
 - `deploy_set`?: _[DeploySet](mod_abi.md#DeploySet)_ – Deploy parameters.
 <br>Must be specified in case of deploy message.
 - `call_set`?: _[CallSet](mod_abi.md#CallSet)_ – Function call parameters.
 <br>Must be specified in case of non-deploy message.<br><br>In case of deploy message it is optional and contains parameters<br>of the functions that will to be called upon deploy transaction.
-- `value`: _string_ – Value in nanograms to be sent with message.
+- `value`: _string_ – Value in nanotokens to be sent with message.
 - `bounce`?: _boolean_ – Flag of bounceable message.
 <br>Default is true.
 - `enable_ihr`?: _boolean_ – Enable Instant Hypercube Routing for the message.

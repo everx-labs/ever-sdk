@@ -19,7 +19,7 @@ use super::internal::deserialize_object_from_boc;
 
 #[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ParamsOfGetBlockchainConfig {
-    /// Key block BOC encoded as base64
+    /// Key block BOC or zerostate BOC encoded as base64
     pub block_boc: String,
 }
 
@@ -29,28 +29,22 @@ pub struct ResultOfGetBlockchainConfig {
     pub config_boc: String,
 }
 
+/// Extract blockchain configuration from key block and also from zerostate.
 #[api_function]
 pub async fn get_blockchain_config(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfGetBlockchainConfig,
 ) -> ClientResult<ResultOfGetBlockchainConfig> {
-    let object = deserialize_object_from_boc::<ton_block::Block>(&context, &params.block_boc, "block").await?;
-
-    let extra = object
-        .object
-        .read_extra()
-        .map_err(|err| Error::invalid_boc(format!("can not read `extra` from block: {}", err)))?;
-
-    let master = extra
-        .read_custom()
-        .map_err(|err| Error::invalid_boc(format!("can not read `master` from block: {}", err)))?
-        .ok_or(Error::inappropriate_block(
-            "not a masterchain block. Only key block contains blockchain configuration",
-        ))?;
-
-    let config = master.config().ok_or(Error::inappropriate_block(
-        "not a key block. Only key block contains blockchain configuration",
-    ))?;
+    let config = if let Ok(block) = 
+        deserialize_object_from_boc::<ton_block::Block>(&context, &params.block_boc, "block").await
+    {
+        extract_config_from_block(block.object)?
+    } else {
+        let zerostate = deserialize_object_from_boc::<ton_block::ShardStateUnsplit>(
+            &context, &params.block_boc, "zerostate"
+        ).await?;
+        extract_config_from_zerostate(zerostate.object)?
+    };
 
     let cell = config
         .write_to_new_cell()
@@ -62,4 +56,32 @@ pub async fn get_blockchain_config(
     Ok(ResultOfGetBlockchainConfig {
         config_boc: base64::encode(&bytes),
     })
+}
+
+pub(crate) fn extract_config_from_block(block: ton_block::Block) -> ClientResult<ton_block::ConfigParams> {
+    let extra = block
+        .read_extra()
+        .map_err(|err| Error::invalid_boc(format!("can not read `extra` from block: {}", err)))?;
+
+    let master = extra
+        .read_custom()
+        .map_err(|err| Error::invalid_boc(format!("can not read `master` from block: {}", err)))?
+        .ok_or(Error::inappropriate_block(
+            "not a masterchain block. Only key block contains blockchain configuration",
+        ))?;
+
+    Ok(master.config().ok_or(Error::inappropriate_block(
+        "not a key block. Only key block contains blockchain configuration",
+    ))?.clone())
+}
+
+pub(crate) fn extract_config_from_zerostate(zerostate: ton_block::ShardStateUnsplit) -> ClientResult<ton_block::ConfigParams> {
+    let master = zerostate
+        .read_custom()
+        .map_err(|err| Error::invalid_boc(format!("can not read `master` from zerostate: {}", err)))?
+        .ok_or(Error::inappropriate_block(
+            "not a masterchain state. Only masterchain states contain blockchain configuration",
+        ))?;
+
+    Ok(master.config().clone())
 }

@@ -1,5 +1,5 @@
 {
-  "version": "1.9.0",
+  "version": "1.10.0",
   "modules": [
     {
       "name": "client",
@@ -4629,10 +4629,13 @@
           "struct_fields": [
             {
               "name": "abi",
-              "type": "Ref",
-              "ref_name": "abi.Abi",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "abi.Abi"
+              },
               "summary": "Contract ABI.",
-              "description": null
+              "description": "Can be None if both deploy_set and call_set are None."
             },
             {
               "name": "address",
@@ -4642,6 +4645,15 @@
               },
               "summary": "Target address the message will be sent to.",
               "description": "Must be specified in case of non-deploy message."
+            },
+            {
+              "name": "src_address",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Source address of the message.",
+              "description": null
             },
             {
               "name": "deploy_set",
@@ -4666,7 +4678,7 @@
             {
               "name": "value",
               "type": "String",
-              "summary": "Value in nanograms to be sent with message.",
+              "summary": "Value in nanotokens to be sent with message.",
               "description": null
             },
             {
@@ -5400,7 +5412,7 @@
             {
               "name": "block_boc",
               "type": "String",
-              "summary": "Key block BOC encoded as base64",
+              "summary": "Key block BOC or zerostate BOC encoded as base64",
               "description": null
             }
           ],
@@ -5561,6 +5573,125 @@
               },
               "summary": "Reference to the cached BOC.",
               "description": "If it is provided then only referenced BOC is unpinned"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "BuilderOp",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "Integer",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "size",
+                  "type": "Number",
+                  "number_type": "UInt",
+                  "number_size": 8,
+                  "summary": "Bit size of the value.",
+                  "description": null
+                },
+                {
+                  "name": "value",
+                  "type": "Ref",
+                  "ref_name": "Value",
+                  "summary": "Value: - `Number` containing integer number.",
+                  "description": "e.g. `123`, `-123`. - Decimal string. e.g. `\"123\"`, `\"-123\"`.\n- `0x` prefixed hexadecimal string.\n  e.g `0x123`, `0X123`, `-0x123`."
+                }
+              ],
+              "summary": "Append integer to cell data.",
+              "description": null
+            },
+            {
+              "name": "BitString",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "value",
+                  "type": "String",
+                  "summary": "Bit string content using bitstring notation. See `TON VM specification` 1.0.",
+                  "description": "Contains hexadecimal string representation:\n- Can end with `_` tag.\n- Can be prefixed with `x` or `X`.\n- Can be prefixed with `x{` or `X{` and ended with `}`.\n\nContains binary string represented as a sequence\nof `0` and `1` prefixed with `n` or `N`.\n\nExamples:\n`1AB`, `x1ab`, `X1AB`, `x{1abc}`, `X{1ABC}`\n`2D9_`, `x2D9_`, `X2D9_`, `x{2D9_}`, `X{2D9_}`\n`n00101101100`, `N00101101100`"
+                }
+              ],
+              "summary": "Append bit string to cell data.",
+              "description": null
+            },
+            {
+              "name": "Cell",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "builder",
+                  "type": "Array",
+                  "array_item": {
+                    "type": "Ref",
+                    "ref_name": "boc.BuilderOp"
+                  },
+                  "summary": "Nested cell builder",
+                  "description": null
+                }
+              ],
+              "summary": "Append ref to nested cells",
+              "description": null
+            },
+            {
+              "name": "CellBoc",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "boc",
+                  "type": "String",
+                  "summary": "Nested cell BOC encoded with `base64` or BOC cache key.",
+                  "description": null
+                }
+              ],
+              "summary": "Append ref to nested cell",
+              "description": null
+            }
+          ],
+          "summary": "Cell builder operation.",
+          "description": null
+        },
+        {
+          "name": "ParamsOfEncodeBoc",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "builder",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "boc.BuilderOp"
+              },
+              "summary": "Cell builder operations.",
+              "description": null
+            },
+            {
+              "name": "boc_cache",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "boc.BocCacheType"
+              },
+              "summary": "Cache type to put the result. The BOC itself returned if no cache type provided.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfEncodeBoc",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "boc",
+              "type": "String",
+              "summary": "Encoded cell BOC or BOC cache key.",
+              "description": null
             }
           ],
           "summary": null,
@@ -5760,7 +5891,7 @@
         },
         {
           "name": "get_blockchain_config",
-          "summary": null,
+          "summary": "Extract blockchain configuration from key block and also from zerostate.",
           "description": null,
           "params": [
             {
@@ -5980,6 +6111,44 @@
             "generic_args": [
               {
                 "type": "None"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "encode_boc",
+          "summary": "Encodes BOC from builder operations.",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "boc.ParamsOfEncodeBoc",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "boc.ResultOfEncodeBoc"
               }
             ]
           },
@@ -8222,7 +8391,7 @@
         {
           "name": "subscribe_collection",
           "summary": "Creates a subscription",
-          "description": "Triggers for each insert/update of data\nthat satisfies the `filter` conditions.\nThe projection fields are limited to `result` fields.",
+          "description": "Triggers for each insert/update of data that satisfies\nthe `filter` conditions.\nThe projection fields are limited to `result` fields.\n\nThe subscription is a persistent communication channel between\nclient and Free TON Network.\nAll changes in the blockchain will be reflected in realtime.\nChanges means inserts and updates of the blockchain entities.\n\n### Important Notes on Subscriptions\n\nUnfortunately sometimes the connection with the network brakes down.\nIn this situation the library attempts to reconnect to the network.\nThis reconnection sequence can take significant time.\nAll of this time the client is disconnected from the network.\n\nBad news is that all blockchain changes that happened while\nthe client was disconnected are lost.\n\nGood news is that the client report errors to the callback when\nit loses and resumes connection.\n\nSo, if the lost changes are important to the application then\nthe application must handle these error reports.\n\nLibrary reports errors with `responseType` == 101\nand the error object passed via `params`.\n\nWhen the library has successfully reconnected\nthe application receives callback with\n`responseType` == 101 and `params.code` == 614 (NetworkModuleResumed).\n\nApplication can use several ways to handle this situation:\n- If application monitors changes for the single blockchain\nobject (for example specific account):  application\ncan perform a query for this object and handle actual data as a\nregular data from the subscription.\n- If application monitors sequence of some blockchain objects\n(for example transactions of the specific account): application must\nrefresh all cached (or visible to user) lists where this sequences presents.",
           "params": [
             {
               "name": "context",
@@ -8601,6 +8770,12 @@
               "ref_name": "debot.DebotHandle",
               "summary": "Debot handle which references an instance of debot engine.",
               "description": null
+            },
+            {
+              "name": "debot_abi",
+              "type": "String",
+              "summary": "Debot abi as json string.",
+              "description": null
             }
           ],
           "summary": "[UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `start` and `fetch` functions.",
@@ -8814,23 +8989,9 @@
               "description": null
             },
             {
-              "name": "source",
+              "name": "message",
               "type": "String",
-              "summary": "Std address of interface or debot.",
-              "description": null
-            },
-            {
-              "name": "func_id",
-              "type": "Number",
-              "number_type": "UInt",
-              "number_size": 32,
-              "summary": "Function Id to call",
-              "description": null
-            },
-            {
-              "name": "params",
-              "type": "String",
-              "summary": "Json string with parameters",
+              "summary": "BOC of internal message to debot encoded in base64 format.",
               "description": null
             }
           ],

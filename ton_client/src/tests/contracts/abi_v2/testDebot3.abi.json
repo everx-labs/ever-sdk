@@ -161,9 +161,41 @@
 			]
 		},
 		{
+			"name": "setBalance2",
+			"inputs": [
+				{"name":"nanotokens","type":"uint128"}
+			],
+			"outputs": [
+			]
+		},
+		{
 			"name": "setAccountType",
 			"inputs": [
 				{"name":"acc_type","type":"int8"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setAccountType2",
+			"inputs": [
+				{"name":"acc_type","type":"int8"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setCodeHash",
+			"inputs": [
+				{"name":"code_hash","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setCodeHash2",
+			"inputs": [
+				{"name":"code_hash","type":"uint256"}
 			],
 			"outputs": [
 			]
@@ -187,6 +219,105 @@
 			"name": "setRandom2",
 			"inputs": [
 				{"name":"buffer","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testNaclbox",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getEnc",
+			"inputs": [
+				{"name":"encrypted","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getDec",
+			"inputs": [
+				{"name":"decrypted","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testKeysFromSecret",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getPair",
+			"inputs": [
+				{"name":"publicKey","type":"uint256"},
+				{"name":"secretKey","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testHexEncode",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "hexEnc",
+			"inputs": [
+				{"name":"hexstr","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testHexDecode",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "hexDec",
+			"inputs": [
+				{"name":"data","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testBase64Encode",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "base64Enc",
+			"inputs": [
+				{"name":"base64","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "testBase64Decode",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "base64Dec",
+			"inputs": [
+				{"name":"data","type":"bytes"}
 			],
 			"outputs": [
 			]

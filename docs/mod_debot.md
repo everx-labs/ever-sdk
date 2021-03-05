@@ -35,6 +35,8 @@
 
 [ParamsOfSend](#ParamsOfSend) – [UNSTABLE](UNSTABLE.md) Parameters of `send` function.
 
+[AppDebotBrowser](#AppDebotBrowser)
+
 
 # Functions
 ## start
@@ -57,7 +59,8 @@ type ParamsOfStart = {
 }
 
 type RegisteredDebot = {
-    debot_handle: DebotHandle
+    debot_handle: DebotHandle,
+    debot_abi: string
 }
 
 function start(
@@ -72,6 +75,7 @@ function start(
 ### Result
 
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+- `debot_abi`: _string_ – Debot abi as json string.
 
 
 ## fetch
@@ -90,7 +94,8 @@ type ParamsOfFetch = {
 }
 
 type RegisteredDebot = {
-    debot_handle: DebotHandle
+    debot_handle: DebotHandle,
+    debot_abi: string
 }
 
 function fetch(
@@ -105,6 +110,7 @@ function fetch(
 ### Result
 
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+- `debot_abi`: _string_ – Debot abi as json string.
 
 
 ## execute
@@ -132,10 +138,6 @@ function execute(
 - `action`: _[DebotAction](mod_debot.md#DebotAction)_ – Debot Action that must be executed.
 
 
-### Result
-
-
-
 ## send
 
 [UNSTABLE](UNSTABLE.md) Sends message to Debot.
@@ -145,9 +147,7 @@ Used by Debot Browser to send response on Dinterface call or from other Debots.
 ```ts
 type ParamsOfSend = {
     debot_handle: DebotHandle,
-    source: string,
-    func_id: number,
-    params: string
+    message: string
 }
 
 function send(
@@ -156,13 +156,7 @@ function send(
 ```
 ### Parameters
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
-- `source`: _string_ – Std address of interface or debot.
-- `func_id`: _number_ – Function Id to call
-- `params`: _string_ – Json string with parameters
-
-
-### Result
-
+- `message`: _string_ – BOC of internal message to debot encoded in base64 format.
 
 
 ## remove
@@ -173,7 +167,8 @@ Removes handle from Client Context and drops debot engine referenced by that han
 
 ```ts
 type RegisteredDebot = {
-    debot_handle: DebotHandle
+    debot_handle: DebotHandle,
+    debot_abi: string
 }
 
 function remove(
@@ -182,10 +177,7 @@ function remove(
 ```
 ### Parameters
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
-
-
-### Result
-
+- `debot_abi`: _string_ – Debot abi as json string.
 
 
 # Types
@@ -267,10 +259,12 @@ type ParamsOfStart = {
 
 ```ts
 type RegisteredDebot = {
-    debot_handle: DebotHandle
+    debot_handle: DebotHandle,
+    debot_abi: string
 }
 ```
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+- `debot_abi`: _string_ – Debot abi as json string.
 
 
 ## ParamsOfAppDebotBrowser
@@ -363,6 +357,19 @@ Used by Debot to call DInterface implemented by Debot Browser.
 <br>Message body contains interface function and parameters.
 
 
+Variant constructors:
+
+```ts
+function paramsOfAppDebotBrowserLog(msg: string): ParamsOfAppDebotBrowser;
+function paramsOfAppDebotBrowserSwitch(context_id: number): ParamsOfAppDebotBrowser;
+function paramsOfAppDebotBrowserSwitchCompleted(): ParamsOfAppDebotBrowser;
+function paramsOfAppDebotBrowserShowAction(action: DebotAction): ParamsOfAppDebotBrowser;
+function paramsOfAppDebotBrowserInput(prompt: string): ParamsOfAppDebotBrowser;
+function paramsOfAppDebotBrowserGetSigningBox(): ParamsOfAppDebotBrowser;
+function paramsOfAppDebotBrowserInvokeDebot(debot_addr: string, action: DebotAction): ParamsOfAppDebotBrowser;
+function paramsOfAppDebotBrowserSend(message: string): ParamsOfAppDebotBrowser;
+```
+
 ## ResultOfAppDebotBrowser
 [UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.
 
@@ -400,6 +407,14 @@ Result of debot invoking.
 
 
 
+Variant constructors:
+
+```ts
+function resultOfAppDebotBrowserInput(value: string): ResultOfAppDebotBrowser;
+function resultOfAppDebotBrowserGetSigningBox(signing_box: SigningBoxHandle): ResultOfAppDebotBrowser;
+function resultOfAppDebotBrowserInvokeDebot(): ResultOfAppDebotBrowser;
+```
+
 ## ParamsOfFetch
 [UNSTABLE](UNSTABLE.md) Parameters to fetch debot.
 
@@ -430,14 +445,203 @@ type ParamsOfExecute = {
 ```ts
 type ParamsOfSend = {
     debot_handle: DebotHandle,
-    source: string,
-    func_id: number,
-    params: string
+    message: string
 }
 ```
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
-- `source`: _string_ – Std address of interface or debot.
-- `func_id`: _number_ – Function Id to call
-- `params`: _string_ – Json string with parameters
+- `message`: _string_ – BOC of internal message to debot encoded in base64 format.
+
+
+## AppDebotBrowser
+
+```ts
+
+type ParamsOfAppDebotBrowserLog = {
+    msg: string
+}
+
+type ParamsOfAppDebotBrowserSwitch = {
+    context_id: number
+}
+
+type ParamsOfAppDebotBrowserShowAction = {
+    action: DebotAction
+}
+
+type ParamsOfAppDebotBrowserInput = {
+    prompt: string
+}
+
+type ResultOfAppDebotBrowserInput = {
+    value: string
+}
+
+type ResultOfAppDebotBrowserGetSigningBox = {
+    signing_box: SigningBoxHandle
+}
+
+type ParamsOfAppDebotBrowserInvokeDebot = {
+    debot_addr: string,
+    action: DebotAction
+}
+
+type ParamsOfAppDebotBrowserSend = {
+    message: string
+}
+
+export interface AppDebotBrowser {
+    log(params: ParamsOfAppDebotBrowserLog): void,
+    switch(params: ParamsOfAppDebotBrowserSwitch): void,
+    switch_completed(): void,
+    show_action(params: ParamsOfAppDebotBrowserShowAction): void,
+    input(params: ParamsOfAppDebotBrowserInput): Promise<ResultOfAppDebotBrowserInput>,
+    get_signing_box(): Promise<ResultOfAppDebotBrowserGetSigningBox>,
+    invoke_debot(params: ParamsOfAppDebotBrowserInvokeDebot): Promise<void>,
+    send(params: ParamsOfAppDebotBrowserSend): void,
+}
+```
+
+## log
+
+Print message to user.
+
+```ts
+type ParamsOfAppDebotBrowserLog = {
+    msg: string
+}
+
+function log(
+    params: ParamsOfAppDebotBrowserLog,
+): Promise<>;
+```
+### Parameters
+- `msg`: _string_ – A string that must be printed to user.
+
+
+## switch
+
+Switch debot to another context (menu).
+
+```ts
+type ParamsOfAppDebotBrowserSwitch = {
+    context_id: number
+}
+
+function switch(
+    params: ParamsOfAppDebotBrowserSwitch,
+): Promise<>;
+```
+### Parameters
+- `context_id`: _number_ – Debot context ID to which debot is switched.
+
+
+## switch_completed
+
+Notify browser that all context actions are shown.
+
+```ts
+function switch_completed(): Promise<>;
+```
+
+
+## show_action
+
+Show action to the user. Called after `switch` for each action in context.
+
+```ts
+type ParamsOfAppDebotBrowserShowAction = {
+    action: DebotAction
+}
+
+function show_action(
+    params: ParamsOfAppDebotBrowserShowAction,
+): Promise<>;
+```
+### Parameters
+- `action`: _[DebotAction](mod_debot.md#DebotAction)_ – Debot action that must be shown to user as menu item. At least `description` property must be shown from [DebotAction] structure.
+
+
+## input
+
+Request user input.
+
+```ts
+type ParamsOfAppDebotBrowserInput = {
+    prompt: string
+}
+
+type ResultOfAppDebotBrowserInput = {
+    value: string
+}
+
+function input(
+    params: ParamsOfAppDebotBrowserInput,
+): Promise<ResultOfAppDebotBrowserInput>;
+```
+### Parameters
+- `prompt`: _string_ – A prompt string that must be printed to user before input request.
+
+
+### Result
+
+- `value`: _string_ – String entered by user.
+
+
+## get_signing_box
+
+Get signing box to sign data.
+
+Signing box returned is owned and disposed by debot engine
+
+```ts
+type ResultOfAppDebotBrowserGetSigningBox = {
+    signing_box: SigningBoxHandle
+}
+
+function get_signing_box(): Promise<ResultOfAppDebotBrowserGetSigningBox>;
+```
+
+
+### Result
+
+- `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing box for signing data requested by debot engine.
+<br>Signing box is owned and disposed by debot engine
+
+
+## invoke_debot
+
+Execute action of another debot.
+
+```ts
+type ParamsOfAppDebotBrowserInvokeDebot = {
+    debot_addr: string,
+    action: DebotAction
+}
+
+function invoke_debot(
+    params: ParamsOfAppDebotBrowserInvokeDebot,
+): Promise<void>;
+```
+### Parameters
+- `debot_addr`: _string_ – Address of debot in blockchain.
+- `action`: _[DebotAction](mod_debot.md#DebotAction)_ – Debot action to execute.
+
+
+## send
+
+Used by Debot to call DInterface implemented by Debot Browser.
+
+```ts
+type ParamsOfAppDebotBrowserSend = {
+    message: string
+}
+
+function send(
+    params: ParamsOfAppDebotBrowserSend,
+): Promise<>;
+```
+### Parameters
+- `message`: _string_ – Internal message to DInterface address.
+<br>Message body contains interface function and parameters.
 
 
