@@ -450,6 +450,10 @@ fn register_utils(handlers: &mut RuntimeHandlers) {
         crate::utils::convert_address,
         crate::utils::conversion::convert_address_api,
     );
+    module.register_async_fn(
+        crate::utils::calc_storage_fee,
+        crate::utils::calc_storage_fee::calc_storage_fee_api,
+    );
     module.register();
 }
 
