@@ -72,7 +72,6 @@ pub const SUBSCRIBE: &str = "Subscription";
 // pub const PIGGY_BANK: &str = "Piggy";
 // pub const WALLET: &str = "LimitWallet";
 // pub const SIMPLE_WALLET: &str = "Wallet";
-pub const GIVER: &str = "Giver";
 pub const GIVER_WALLET: &str = "GiverWallet";
 pub const HELLO: &str = "Hello";
 pub const EVENTS: &str = "Events";
@@ -240,40 +239,26 @@ impl TestClient {
         Abi::Contract(serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap())
     }
 
-    pub fn giver_address() -> String {
-        "0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94".into()
-    }
-
     pub fn giver_abi() -> Abi {
-        if Self::node_se() {
-            Self::abi(GIVER, Some(1))
-        } else {
-            Self::abi(GIVER_WALLET, Some(2))
-        }
+        Self::abi(GIVER_WALLET, Some(2))
     }
 
-    pub fn wallet_address() -> String {
-        "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13".into()
+    pub fn giver_address() -> String {
+        const GIVER_ADDRESS_VAR: &str = "TON_GIVER_ADDRESS";
+        std::env::var(GIVER_ADDRESS_VAR)
+            .expect(&format!("Please set giver's address in {} environment variable", GIVER_ADDRESS_VAR))
     }
 
-    pub fn network_giver() -> String {
-        if Self::node_se() {
-            Self::giver_address()
-        } else {
-            Self::wallet_address()
-        }
-    }
+    pub fn giver_keys() -> KeyPair {
+        const GIVER_KEYS_FILENAME: &str = "giverKeys.json";
+        let keys_file = dirs::home_dir()
+            .expect("Error obtaining user's home dir")
+            .join(GIVER_KEYS_FILENAME);
+        let keys = std::fs::read_to_string(&keys_file)
+            .expect(&format!("Error reading file: {:?}", &keys_file));
 
-    pub fn wallet_keys() -> Option<KeyPair> {
-        if Self::node_se() {
-            return None;
-        }
-
-        let mut keys_file = dirs::home_dir().unwrap();
-        keys_file.push("giverKeys.json");
-        let keys = std::fs::read_to_string(keys_file).unwrap();
-
-        Some(serde_json::from_str(&keys).unwrap())
+        serde_json::from_str(&keys)
+            .expect(&format!("Error parsing {:?} as JSON", &keys_file))
     }
 
     pub fn network_address() -> String {
@@ -591,37 +576,22 @@ impl TestClient {
         .await
     }
 
-    pub(crate) async fn get_grams_from_giver_async(&self, account: &str, value: Option<u64>) {
-        let run_result = if Self::node_se() {
-            self.net_process_function(
-                Self::giver_address(),
-                Self::giver_abi(),
-                "sendGrams",
-                json!({
-                    "dest": account,
-                    "amount": value.unwrap_or(500_000_000u64)
-                }),
-                Signer::None,
-            )
-            .await
-            .unwrap()
-        } else {
-            self.net_process_function(
-                Self::wallet_address(),
-                Self::giver_abi(),
-                "sendTransaction",
-                json!({
-                    "dest": account.to_string(),
-                    "value": value.unwrap_or(500_000_000u64),
-                    "bounce": false
-                }),
-                Signer::Keys {
-                    keys: Self::wallet_keys().unwrap(),
-                },
-            )
-            .await
-            .unwrap()
-        };
+    pub(crate) async fn get_tokens_from_giver_async(&self, account: &str, value: Option<u64>) {
+        let run_result = self.net_process_function(
+            Self::giver_address(),
+            Self::giver_abi(),
+            "sendTransaction",
+            json!({
+                "dest": account.to_string(),
+                "value": value.unwrap_or(500_000_000u64),
+                "bounce": false
+            }),
+            Signer::Keys {
+                keys: Self::giver_keys(),
+            },
+        )
+        .await
+        .unwrap();
 
         // wait for tokens reception
         for message in run_result.out_messages.iter() {
@@ -659,7 +629,7 @@ impl TestClient {
     ) -> String {
         let msg = self.encode_message(params.clone()).await.unwrap();
 
-        self.get_grams_from_giver_async(&msg.address, value).await;
+        self.get_tokens_from_giver_async(&msg.address, value).await;
 
         let _ = self
             .net_process_message(
@@ -699,15 +669,6 @@ impl TestClient {
             )
             .unwrap();
         result.signature
-    }
-
-    pub(crate) fn get_giver_address() -> String {
-        if Self::node_se() {
-            Self::giver_address()
-        } else {
-            Self::wallet_address()
-        }
-        .into()
     }
 
     pub async fn resolve_app_request(&self, app_request_id: u32, result: impl Serialize) {

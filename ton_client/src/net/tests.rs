@@ -183,7 +183,7 @@ async fn wait_for() {
     let client = TestClient::new();
 
     client
-        .get_grams_from_giver_async(&TestClient::get_giver_address(), None)
+        .get_tokens_from_giver_async(&TestClient::giver_address(), None)
         .await;
 
     request.await.unwrap();
@@ -259,7 +259,7 @@ async fn subscribe_for_transactions_with_addresses() {
         ).await.unwrap();
 
     // send grams to create first transaction
-    client.get_grams_from_giver_async(&msg.address, None).await;
+    client.get_tokens_from_giver_async(&msg.address, None).await;
 
     // give some time for subscription to receive all data
     std::thread::sleep(std::time::Duration::from_millis(1000));
@@ -431,7 +431,7 @@ async fn subscribe_for_messages() {
         .unwrap();
 
     client
-        .get_grams_from_giver_async(&TestClient::get_giver_address(), None)
+        .get_tokens_from_giver_async(&TestClient::giver_address(), None)
         .await;
 
     assert_eq!(messages.lock().await.len(), 0);
@@ -450,7 +450,7 @@ async fn find_last_shard_block() {
         .request_async(
             "net.find_last_shard_block",
             ParamsOfFindLastShardBlock {
-                address: TestClient::get_giver_address(),
+                address: TestClient::giver_address(),
             },
         )
         .await
@@ -489,7 +489,7 @@ async fn test_wait_resume() {
 
     let duration = tokio::spawn(async move {
         client_copy
-            .fetch_account(&TestClient::network_giver())
+            .fetch_account(&TestClient::giver_address())
             .await;
 
         start.elapsed().as_millis()
