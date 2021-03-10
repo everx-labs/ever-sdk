@@ -269,7 +269,7 @@ const ABI: &str = r#"
 				{"name":"codeHash","type":"bytes"}
 			],
 			"outputs": [
-				{"components":[{"name":"id","type":"address"},{"name":"data","type":"cell"}],"name":"accDatas","type":"tuple[]"}
+				{"components":[{"name":"id","type":"address"},{"name":"data","type":"cell"}],"name":"accounts","type":"tuple[]"}
 			]
 		},
 		{
@@ -568,7 +568,7 @@ impl SdkInterface {
         ))
     }
 
-    async fn get_accounts_by_hash(&self, args: &Value) -> InterfaceResult {
+    async fn query_accounts(&self, args: &Value, result: &str) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
         let code_hash = get_string_arg(args, "codeHash")?;
     
@@ -579,7 +579,7 @@ impl SdkInterface {
                 filter: Some(json!({
                     "code_hash": { "eq": code_hash }
                 })),
-                result: "id".to_owned(),
+                result: result.to_owned(),
                 order: Some(vec![OrderBy {
                     path: "id".to_owned(),
                     direction: SortDirection::ASC,
@@ -602,7 +602,7 @@ impl SdkInterface {
                         "code_hash": { "eq": code_hash },
                         "id": {"gt": accounts[accounts.len()-1]["id"].as_str().ok_or("\"id\" not found")?},
                     })),
-                    result: "id".to_owned(),
+                    result: result.to_owned(),
                     order: Some(vec![OrderBy {
                         path: "id".to_owned(),
                         direction: SortDirection::ASC,
@@ -624,60 +624,14 @@ impl SdkInterface {
         ))
     }
 
+    async fn get_accounts_by_hash(&self, args: &Value) -> InterfaceResult {   
+        let res = self.query_accounts(args,"id").await.map_err(|e| format!("query account failed: {}", e))?;        
+        Ok(res)
+    }
+
     async fn get_accounts_data_by_hash(&self, args: &Value) -> InterfaceResult {
-        let answer_id = decode_answer_id(args)?;
-        let code_hash = get_string_arg(args, "codeHash")?;
-    
-        let mut accounts = query_collection(
-            self.ton.clone(),
-            ParamsOfQueryCollection {
-                collection: "accounts".to_owned(),
-                filter: Some(json!({
-                    "code_hash": { "eq": code_hash }
-                })),
-                result: "id data".to_owned(),
-                order: Some(vec![OrderBy {
-                    path: "id".to_owned(),
-                    direction: SortDirection::ASC,
-                }]),
-                limit: None,
-            },
-        )
-        .await
-        .map_err(|e| format!("account query failed: {}", e))?
-        .result;
-
-        let mut len = accounts.len();
-
-        while len == 50 {
-            let acc = query_collection(
-                self.ton.clone(),
-                ParamsOfQueryCollection {
-                    collection: "accounts".to_owned(),
-                    filter: Some(json!({
-                        "code_hash": { "eq": code_hash },
-                        "id": {"gt": accounts[accounts.len()-1]["id"].as_str().ok_or("\"id\" not found")?}
-                    })),
-                    result: "id data".to_owned(),
-                    order: Some(vec![OrderBy {
-                        path: "id".to_owned(),
-                        direction: SortDirection::ASC,
-                    }]),
-                    limit: None,
-                },
-            )
-            .await
-            .map_err(|e| format!("account query failed: {}", e))?
-            .result;
-            
-            len = acc.len();
-            accounts.extend(acc);
-        }
-
-        Ok((
-            answer_id,
-            json!({ "accDatas": accounts })
-        ))
+        let res = self.query_accounts(args,"id data").await.map_err(|e| format!("query account failed: {}", e))?;        
+        Ok(res)
     }
 }
 
