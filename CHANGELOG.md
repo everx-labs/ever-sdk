@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [1.11.0] – 2021-03-05
 
 ### New
-- `utils.calc_storage_fee` function to calculate account storage fee over a some time period
+- `utils.calc_storage_fee` function to calculate account storage fee over a some time period.
 - **Debot Module**:
     - Added unstable functions to `Sdk` interface: getAccountsByHash, getAccountsDataByHash
 
