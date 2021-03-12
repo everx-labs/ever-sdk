@@ -13,7 +13,8 @@
 
 use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer, Abi,
     ParamsOfDecodeMessageBody, DecodedMessageBody, ResultOfEncodeInternalMessage, ParamsOfEncodeInternalMessage};
-use crate::boc::{ParamsOfParse, ResultOfParse};
+use crate::boc::{ParamsOfParse, ResultOfParse, ParamsOfGetCodeFromTvc, ResultOfGetCodeFromTvc,
+    ResultOfGetBocHash, ParamsOfGetBocHash};
 use crate::client::ParamsOfAppRequest;
 use crate::crypto::KeyPair;
 use crate::encoding::decode_abi_number;
@@ -38,6 +39,7 @@ lazy_static!(
 const TEST_DEBOT2: &'static str = "testDebot2";
 const TEST_DEBOT3: &'static str = "testDebot3";
 const TEST_DEBOT4: &'static str = "testDebot4";
+const TEST_DEBOT5: &'static str = "testDebot5";
 const TEST_DEBOTA: &'static str = "tda";
 const TEST_DEBOTB: &'static str = "tdb";
 
@@ -688,6 +690,50 @@ async fn init_debot3(client: Arc<TestClient>) -> DebotData {
     }
 }
 
+async fn init_debot5(client: Arc<TestClient>, count: u32) -> String {
+    let debot_abi = TestClient::abi(TEST_DEBOT5, Some(2));
+    let debot5_tvc = TestClient::tvc(TEST_DEBOT5, Some(2));
+
+    let result: ResultOfGetCodeFromTvc = client.request_async(
+        "boc.get_code_from_tvc",
+        ParamsOfGetCodeFromTvc { tvc: debot5_tvc }
+    ).await.unwrap();
+
+    let result: ResultOfGetBocHash = client.request_async(
+        "boc.get_boc_hash",
+        ParamsOfGetBocHash { boc: result.code }
+    ).await.unwrap();
+
+    let call_set = CallSet::some_with_function_and_input(
+        "constructor",
+        json!({ "codeHash": format!("0x{}", result.hash) }),
+    );
+    let mut deploy_debot_params = ParamsOfEncodeMessage {
+        abi: debot_abi.clone(),
+        deploy_set: DeploySet::some_with_tvc(TestClient::tvc(TEST_DEBOT5, Some(2))),
+        call_set,
+        ..Default::default()
+    };
+
+    let mut addrs = vec![];
+    for i in 0..count {
+        let keys = client.generate_sign_keys();
+        deploy_debot_params.signer = Signer::Keys { keys: keys.clone() };
+        let debot_addr = client.deploy_with_giver_async(deploy_debot_params.clone(), Some(1_000_000_000u64)).await;
+        addrs.push(debot_addr.clone());
+        if i == 0 {
+            let _ = client.net_process_function(
+                debot_addr.clone(),
+                debot_abi.clone(),
+                "setABI",
+                json!({ "dabi": hex::encode(&debot_abi.json_string().unwrap().as_bytes()) }),
+                Signer::Keys { keys: keys.clone() },
+            ).await.unwrap();
+        }
+    }
+    addrs[0].clone()
+}
+
 async fn init_debot_pair(client: Arc<TestClient>, debot1: &str, debot2: &str) -> (String, String) {
     let keys = client.generate_sign_keys();
     let debot1_abi = TestClient::abi(debot1, Some(2));
@@ -1060,6 +1106,22 @@ async fn test_debot_invoke_msgs() {
             format!("DebotB receives question: What is your name?"),
             format!("DebotA receives answer: My name is DebotB"),
         ],
+    ).await;
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_debot_sdk_get_accounts_by_hash() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let count = 6;
+    let debot = init_debot5(client.clone(), count).await;
+
+    let steps = serde_json::from_value(json!([])).unwrap();
+    TestBrowser::execute(
+        client.clone(),
+        debot.clone(),
+        KeyPair::default(),
+        steps,
+        vec![ format!("{} contracts.", count) ],
     ).await;
 }
 

@@ -15,6 +15,7 @@ use crate::crypto::{
     ParamsOfMnemonicFromRandom, ParamsOfMnemonicVerify, ParamsOfNaclSignKeyPairFromSecret,
     ParamsOfNaclBox, ParamsOfNaclBoxOpen, ParamsOfNaclBoxKeyPairFromSecret,
 };
+use crate::net::{query_collection, ParamsOfQueryCollection, OrderBy, SortDirection};
 use crate::encoding::decode_abi_bigint;
 use serde_json::Value;
 
@@ -249,6 +250,17 @@ const ABI: &str = r#"
 			"outputs": [
 				{"name":"publicKey","type":"uint256"},
 				{"name":"secretKey","type":"uint256"}
+			]
+        },
+        {
+			"name": "getAccountsDataByHash",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"codeHash","type":"uint256"},
+				{"name":"gt","type":"address"}
+			],
+			"outputs": [
+				{"components":[{"name":"id","type":"address"},{"name":"data","type":"cell"}],"name":"accounts","type":"tuple[]"}
 			]
 		},
 		{
@@ -546,6 +558,46 @@ impl SdkInterface {
             }),
         ))
     }
+
+    async fn query_accounts(&self, args: &Value, result: &str) -> InterfaceResult {
+        let answer_id = decode_answer_id(args)?;
+        let code_hash = get_arg(args, "codeHash")?;
+        let gt_addr = get_arg(args, "gt")?;
+        let code_hash = decode_abi_bigint(&code_hash)
+            .map_err(|e| format!("failed to parse integer \"{}\": {}", code_hash, e))?;
+
+        let accounts = query_collection(
+            self.ton.clone(),
+            ParamsOfQueryCollection {
+                collection: "accounts".to_owned(),
+                filter: Some(json!({
+                    "code_hash": { "eq": format!("{:x}", code_hash) },
+                    "id": {"gt": gt_addr }
+                })),
+                result: result.to_owned(),
+                order: Some(vec![
+                    OrderBy {
+                        path: "id".to_owned(),
+                        direction: SortDirection::ASC,
+                    }
+                ]),
+                limit: None,
+            },
+        )
+        .await
+        .map_err(|e| format!("account query failed: {}", e))?
+        .result;
+
+        Ok((
+            answer_id,
+            json!({ "accounts": accounts })
+        ))
+    }
+
+    async fn get_accounts_data_by_hash(&self, args: &Value) -> InterfaceResult {
+        let res = self.query_accounts(args,"id data").await.map_err(|e| format!("query account failed: {}", e))?;
+        Ok(res)
+    }
 }
 
 #[async_trait::async_trait]
@@ -578,6 +630,7 @@ impl DebotInterface for SdkInterface {
             "naclBox" => self.nacl_box(args),
             "naclBoxOpen" => self.nacl_box_open(args),
             "naclKeypairFromSecret" => self.nacl_box_keypair_from_secret_key(args),
+            "getAccountsDataByHash" => self.get_accounts_data_by_hash(args).await,
             _ => Err(format!("function \"{}\" is not implemented", func)),
         }
     }
