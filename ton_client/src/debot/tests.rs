@@ -616,7 +616,7 @@ async fn init_debot4(client: Arc<TestClient>) -> DebotData {
         call_set: CallSet::some_with_function("constructor"),
     };
     let target_addr = client.encode_message(target_deploy_params.clone()).await.unwrap().address;
-    client.get_grams_from_giver_async(&target_addr, None).await;
+    client.get_tokens_from_giver_async(&target_addr, None).await;
     let call_set = CallSet::some_with_function_and_input(
         "constructor",
         json!({
