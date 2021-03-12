@@ -253,20 +253,11 @@ const ABI: &str = r#"
 			]
         },
         {
-			"name": "getAccountsByHash",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"codeHash","type":"bytes"}
-			],
-			"outputs": [
-				{"components":[{"name":"id","type":"address"}],"name":"accounts","type":"tuple[]"}
-			]
-		},
-		{
 			"name": "getAccountsDataByHash",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
-				{"name":"codeHash","type":"bytes"}
+				{"name":"codeHash","type":"uint256"},
+				{"name":"gt","type":"address"}
 			],
 			"outputs": [
 				{"components":[{"name":"id","type":"address"},{"name":"data","type":"cell"}],"name":"accounts","type":"tuple[]"}
@@ -570,20 +561,26 @@ impl SdkInterface {
 
     async fn query_accounts(&self, args: &Value, result: &str) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let code_hash = get_string_arg(args, "codeHash")?;
-    
-        let mut accounts = query_collection(
+        let code_hash = get_arg(args, "codeHash")?;
+        let gt_addr = get_arg(args, "gt")?;
+        let code_hash = decode_abi_bigint(&code_hash)
+            .map_err(|e| format!("failed to parse integer \"{}\": {}", code_hash, e))?;
+
+        let accounts = query_collection(
             self.ton.clone(),
             ParamsOfQueryCollection {
                 collection: "accounts".to_owned(),
                 filter: Some(json!({
-                    "code_hash": { "eq": code_hash }
+                    "code_hash": { "eq": format!("{:x}", code_hash) },
+                    "id": {"gt": gt_addr }
                 })),
                 result: result.to_owned(),
-                order: Some(vec![OrderBy {
-                    path: "id".to_owned(),
-                    direction: SortDirection::ASC,
-                }]),
+                order: Some(vec![
+                    OrderBy {
+                        path: "id".to_owned(),
+                        direction: SortDirection::ASC,
+                    }
+                ]),
                 limit: None,
             },
         )
@@ -591,46 +588,14 @@ impl SdkInterface {
         .map_err(|e| format!("account query failed: {}", e))?
         .result;
 
-        let mut len = accounts.len();
-
-        while len == 50 {
-            let acc = query_collection(
-                self.ton.clone(),
-                ParamsOfQueryCollection {
-                    collection: "accounts".to_owned(),
-                    filter: Some(json!({
-                        "code_hash": { "eq": code_hash },
-                        "id": {"gt": accounts[accounts.len()-1]["id"].as_str().ok_or("\"id\" not found")?},
-                    })),
-                    result: result.to_owned(),
-                    order: Some(vec![OrderBy {
-                        path: "id".to_owned(),
-                        direction: SortDirection::ASC,
-                    }]),
-                    limit: None,
-                },
-            )
-            .await
-            .map_err(|e| format!("account query failed: {}", e))?
-            .result;
-            
-            len = acc.len();
-            accounts.extend(acc);
-        }
-
         Ok((
             answer_id,
             json!({ "accounts": accounts })
         ))
     }
 
-    async fn get_accounts_by_hash(&self, args: &Value) -> InterfaceResult {   
-        let res = self.query_accounts(args,"id").await.map_err(|e| format!("query account failed: {}", e))?;        
-        Ok(res)
-    }
-
     async fn get_accounts_data_by_hash(&self, args: &Value) -> InterfaceResult {
-        let res = self.query_accounts(args,"id data").await.map_err(|e| format!("query account failed: {}", e))?;        
+        let res = self.query_accounts(args,"id data").await.map_err(|e| format!("query account failed: {}", e))?;
         Ok(res)
     }
 }
@@ -665,7 +630,6 @@ impl DebotInterface for SdkInterface {
             "naclBox" => self.nacl_box(args),
             "naclBoxOpen" => self.nacl_box_open(args),
             "naclKeypairFromSecret" => self.nacl_box_keypair_from_secret_key(args),
-            "getAccountsByHash" => self.get_accounts_by_hash(args).await,
             "getAccountsDataByHash" => self.get_accounts_data_by_hash(args).await,
             _ => Err(format!("function \"{}\" is not implemented", func)),
         }
