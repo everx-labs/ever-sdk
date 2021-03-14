@@ -155,6 +155,8 @@ Where:
 
 [convert_address](mod_utils.md#convert_address) – Converts address from any TON format to any TON format
 
+[calc_storage_fee](mod_utils.md#calc_storage_fee) – Calculates storage fee for an account over a specified time period
+
 ## [tvm](mod_tvm.md)
 
 [run_executor](mod_tvm.md#run_executor) – Emulates all the phases of contract execution locally

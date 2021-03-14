@@ -1,5 +1,5 @@
 {
-  "version": "1.10.0",
+  "version": "1.11.0",
   "modules": [
     {
       "name": "client",
@@ -6878,6 +6878,42 @@
           ],
           "summary": null,
           "description": null
+        },
+        {
+          "name": "ParamsOfCalcStorageFee",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "account",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "period",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfCalcStorageFee",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "fee",
+              "type": "String",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
         }
       ],
       "functions": [
@@ -6914,6 +6950,44 @@
               {
                 "type": "Ref",
                 "ref_name": "utils.ResultOfConvertAddress"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "calc_storage_fee",
+          "summary": "Calculates storage fee for an account over a specified time period",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "utils.ParamsOfCalcStorageFee",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "utils.ResultOfCalcStorageFee"
               }
             ]
           },
