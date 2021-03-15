@@ -183,7 +183,7 @@ async fn wait_for() {
     let client = TestClient::new();
 
     client
-        .get_tokens_from_giver_async(&TestClient::giver_address(), None)
+        .get_tokens_from_giver_async(&client.giver_address().await, None)
         .await;
 
     request.await.unwrap();
@@ -431,7 +431,7 @@ async fn subscribe_for_messages() {
         .unwrap();
 
     client
-        .get_tokens_from_giver_async(&TestClient::giver_address(), None)
+        .get_tokens_from_giver_async(&client.giver_address().await, None)
         .await;
 
     assert_eq!(messages.lock().await.len(), 0);
@@ -450,7 +450,7 @@ async fn find_last_shard_block() {
         .request_async(
             "net.find_last_shard_block",
             ParamsOfFindLastShardBlock {
-                address: TestClient::giver_address(),
+                address: client.giver_address().await,
             },
         )
         .await
@@ -489,7 +489,7 @@ async fn test_wait_resume() {
 
     let duration = tokio::spawn(async move {
         client_copy
-            .fetch_account(&TestClient::giver_address())
+            .fetch_account(&client_copy.giver_address().await)
             .await;
 
         start.elapsed().as_millis()
