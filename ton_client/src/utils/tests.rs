@@ -1,6 +1,6 @@
-use crate::json_interface::modules::UtilsModule;
+use crate::{boc::tests::ACCOUNT, json_interface::modules::UtilsModule};
 use crate::tests::TestClient;
-use crate::utils::{convert_address, AddressStringFormat, ParamsOfConvertAddress};
+use super::*;
 use api_info::ApiModule;
 
 #[tokio::test(core_threads = 2)]
@@ -66,4 +66,19 @@ async fn test_utils() {
         })
         .unwrap();
     assert_eq!(converted.address, hex);
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_calc_storage_fee() {
+    let client = TestClient::new();
+
+    let result: ResultOfCalcStorageFee = client.request_async(
+        "utils.calc_storage_fee",
+        ParamsOfCalcStorageFee {
+            account: String::from(ACCOUNT),
+            period: 1000,
+        }
+    ).await.unwrap();
+
+    assert_eq!(result.fee, "330");
 }

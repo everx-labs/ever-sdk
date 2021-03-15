@@ -15,9 +15,13 @@
 #[cfg(test)]
 mod tests;
 
+pub(crate) mod calc_storage_fee;
 pub(crate) mod conversion;
 mod errors;
 
+pub use calc_storage_fee::{
+    calc_storage_fee, ParamsOfCalcStorageFee, ResultOfCalcStorageFee
+};
 pub use conversion::{
     convert_address, AddressStringFormat, ParamsOfConvertAddress, ResultOfConvertAddress,
 };

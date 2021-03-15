@@ -113,7 +113,7 @@ async fn test_clock_sync() {
     let msg = client
         .encode_message(ParamsOfEncodeMessage {
             abi: TestClient::abi(HELLO, None),
-            address: Some(TestClient::get_giver_address()),
+            address: Some(TestClient::giver_address()),
             call_set: CallSet::some_with_function("touch"),
             deploy_set: None,
             processing_try_index: None,

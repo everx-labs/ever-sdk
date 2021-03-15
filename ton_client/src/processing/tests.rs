@@ -65,7 +65,7 @@ async fn test_wait_message() {
         .unwrap();
 
     client
-        .get_grams_from_giver_async(&encoded.address, None)
+        .get_tokens_from_giver_async(&encoded.address, None)
         .await;
     
     let encoded = client
@@ -166,7 +166,7 @@ async fn test_process_message() {
     let encoded = client.encode_message(encode_params.clone()).await.unwrap();
 
     client
-        .get_grams_from_giver_async(&encoded.address, None)
+        .get_tokens_from_giver_async(&encoded.address, None)
         .await;
 
     let output = client
@@ -370,7 +370,7 @@ async fn test_error_resolving() {
 
     // deploy with low balance
     default_client
-        .get_grams_from_giver_async(&address, Some(1000))
+        .get_tokens_from_giver_async(&address, Some(1000))
         .await;
 
     let result = client
@@ -400,7 +400,7 @@ async fn test_error_resolving() {
 
     // run before deploy
     default_client
-        .get_grams_from_giver_async(&address, None)
+        .get_tokens_from_giver_async(&address, None)
         .await;
 
     let result = client
