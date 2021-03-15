@@ -8,14 +8,9 @@
 
 [![Channel on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/ton_sdk) 
 
-# Documentation
-[Full API/SDK documentation](https://docs.ton.dev/86757ecb2/p/39fc5e-products)
-
-[Javascript SDK](https://github.com/tonlabs/ton-client-js)
-
-[Example Hello World](https://github.com/tonlabs/sdk-samples/tree/master/v1/node-js/core-api/hello)
-
-- [Documentation](#documentation)
+# Content Table
+- [Content Table](#content-table)
+- [Useful links](#useful-links)
 - [What is Core Free TON Client Library](#what-is-core-free-ton-client-library)
 - [SDKs in other languages (bindings over TON-SDK)](#sdks-in-other-languages-bindings-over-ton-sdk)
   - [Official Javascript(Typescript) SDK](#official-javascripttypescript-sdk)
@@ -26,6 +21,11 @@
 - [Build artifacts](#build-artifacts)
 - [Run tests](#run-tests)
 - [Download precompiled binaries](#download-precompiled-binaries)
+  
+# Useful links
+
+[Quick Start](https://docs.ton.dev/86757ecb2/p/33b76d-quick-start)
+[Full API/SDK documentation](https://docs.ton.dev/86757ecb2/p/39fc5e-products)
 
 # What is Core Free TON Client Library
 
