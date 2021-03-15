@@ -43,6 +43,7 @@ use tokio::sync::{
 
 mod common;
 
+const DEFAULT_USE_NODE_SE: &str = "true";
 const DEFAULT_NETWORK_ADDRESS: &str = "http://localhost";
 //const DEFAULT_NETWORK_ADDRESS: &str = "cinet.tonlabs.io";
 //const DEFAULT_NETWORK_ADDRESS: &str = "net.ton.dev";
@@ -287,7 +288,7 @@ impl TestClient {
     }
 
     pub fn node_se() -> bool {
-        std::env::var("USE_NODE_SE").unwrap_or("true".to_owned()) == "true".to_owned()
+        std::env::var("USE_NODE_SE").unwrap_or(DEFAULT_USE_NODE_SE.to_owned()) == "true".to_owned()
     }
 
     pub fn abi_version() -> u8 {
