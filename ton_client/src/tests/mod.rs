@@ -12,9 +12,7 @@
 */
 
 use super::{tc_destroy_string, tc_read_string, tc_request, tc_request_sync};
-use crate::abi::{
-    encode_message, Abi, CallSet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
-};
+use crate::abi::{Abi, CallSet, DeploySet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer, encode_message};
 use crate::boc::{ParamsOfParse, ResultOfParse};
 use crate::client::*;
 use crate::crypto::{
@@ -54,7 +52,6 @@ const LOG_CGF_PATH: &str = "src/tests/log_cfg.yaml";
 
 const GIVER_ADDRESS_VAR: &str = "TON_GIVER_ADDRESS";
 const GIVER_SECRET_VAR: &str = "TON_GIVER_SECRET";
-const GIVER_KEYS_FILENAME: &str = "giverKeys.json";
 
 struct SimpleLogger;
 
@@ -76,7 +73,7 @@ pub const SUBSCRIBE: &str = "Subscription";
 // pub const PIGGY_BANK: &str = "Piggy";
 // pub const WALLET: &str = "LimitWallet";
 // pub const SIMPLE_WALLET: &str = "Wallet";
-pub const GIVER_WALLET: &str = "GiverWallet";
+pub const GIVER_V2: &str = "GiverV2";
 pub const HELLO: &str = "Hello";
 pub const EVENTS: &str = "Events";
 pub const TEST_DEBOT: &str = "testDebot";
@@ -244,44 +241,45 @@ impl TestClient {
     }
 
     pub fn giver_abi() -> Abi {
-        Self::abi(GIVER_WALLET, Some(2))
+        Self::abi(GIVER_V2, Some(2))
     }
 
-    pub fn giver_address() -> String {
-        if Self::node_se() {
-            "0:b5e9240fc2d2f1ff8cbb1d1dee7fb7cae155e5f6320e585fcc685698994a19a5".to_owned()
+    async fn calc_giver_address(&self, keys: KeyPair) -> String {
+        self.encode_message(
+            ParamsOfEncodeMessage {
+                abi: Self::giver_abi(),
+                deploy_set: DeploySet::some_with_tvc(Self::tvc(GIVER_V2, None)),
+                signer: Signer::Keys { keys },
+                ..Default::default()
+            }
+        )
+        .await
+        .unwrap()
+        .address
+    }
+
+    pub async fn giver_address(&self) -> String {
+        if let Ok(address) = std::env::var(GIVER_ADDRESS_VAR) {
+            address
         } else {
-            std::env::var(GIVER_ADDRESS_VAR)
-                .unwrap_or("0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13".to_owned())
+            self.calc_giver_address(Self::giver_keys()).await
         }
     }
 
     pub fn giver_keys() -> KeyPair {
-        if Self::node_se() {
+        if let Ok(secret) = std::env::var(GIVER_SECRET_VAR) {
+            let secret_key = ed25519_dalek::SecretKey::from_bytes(&hex::decode(&secret).unwrap()).unwrap();
+            let public_key = ed25519_dalek::PublicKey::from(&secret_key);
+            KeyPair {
+                public: hex::encode(public_key.to_bytes()),
+                secret,
+            }
+        } else {
             KeyPair {
                 public: "2ada2e65ab8eeab09490e3521415f45b6e42df9c760a639bcf53957550b25a16".to_owned(),
                 secret: "172af540e43a524763dd53b26a066d472a97c4de37d5498170564510608250c3".to_owned(),
             }
-        } else {
-            if let Ok(secret) = std::env::var(GIVER_SECRET_VAR) {
-                let secret_key = ed25519_dalek::SecretKey::from_bytes(&hex::decode(&secret).unwrap()).unwrap();
-                let public_key = ed25519_dalek::PublicKey::from(&secret_key);
-                KeyPair {
-                    public: hex::encode(public_key.to_bytes()),
-                    secret,
-                }
-            } else {
-                let keys_file = dirs::home_dir()
-                    .expect("Error obtaining user's home dir")
-                    .join(GIVER_KEYS_FILENAME);
-                let keys = std::fs::read_to_string(&keys_file)
-                    .expect(&format!("Error reading file: {:?}", &keys_file));
-
-                serde_json::from_str(&keys)
-                    .expect(&format!("Error parsing {:?} as JSON", &keys_file))
-                }
-            }
-
+        }
     }
 
     pub fn network_address() -> String {
@@ -601,7 +599,7 @@ impl TestClient {
 
     pub(crate) async fn get_tokens_from_giver_async(&self, account: &str, value: Option<u64>) {
         let run_result = self.net_process_function(
-            Self::giver_address(),
+            self.giver_address().await,
             Self::giver_abi(),
             "sendTransaction",
             json!({

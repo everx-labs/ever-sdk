@@ -338,7 +338,7 @@ async fn test_error_resolving() {
         call_set: Some(CallSet {
             function_name: "sendAllMoney".to_owned(),
             header: None,
-            input: Some(json!({ "dest_addr": TestClient::giver_address() })),
+            input: Some(json!({ "dest_addr": client.giver_address().await })),
         }),
     };
 
