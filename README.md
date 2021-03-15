@@ -181,6 +181,21 @@ tsc
 node index binding -l ts -o ../../ton-client-js/packages/core/src
 ```
 
+# Run tests
+To run test suite use standard Rust test command
+```
+cargo test
+```
+SDK tests need Dapp server endpoint to run. TONOS SE is used by default with address `http://localhost`.
+If you have TONOS SE running at another endpoint or you need to run tests on real TON network use following
+environment variables to override default parameters
+```
+USE_SE: true/false - flag defining is Dapp server endpoint TONOS SE or real network
+TON_NETWORK_ADDRESS - Dapp server endpoint
+TON_GIVER_SECRET - Giver secret key. If not defined, default TONOS SE giver keys are used
+TON_GIVER_ADDRESS - Address of the giver to use for prepaying accounts before deploying test contracts. If not defined, the address is calculated using `GiverV2.tvc` and configured public key
+```
+
 # Download precompiled binaries
 
 Instead of building library yourself, you can download the __latest__ precompiled binaries from 
