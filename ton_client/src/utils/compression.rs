@@ -5,18 +5,18 @@ const COMPRESSION_LEVEL: i32 = 21;
 
 #[derive(Serialize, Deserialize, ApiType, Default, Debug)]
 pub struct ParamsOfCompress {
-    // Uncompressed data encoded as BASE64
+    // Uncompressed data encoded in BASE64
     uncompressed: String,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default, Debug)]
 pub struct ResultOfCompress {
-    // Compressed data encoded as BASE64
+    // Compressed data encoded in BASE64
     compressed: String,
 }
 
 #[api_function]
-pub async fn compress(
+pub fn compress(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfCompress,
 ) -> ClientResult<ResultOfCompress> {
@@ -33,18 +33,18 @@ pub async fn compress(
 
 #[derive(Serialize, Deserialize, ApiType, Default, Debug)]
 pub struct ParamsOfDecompress {
-    // Compressed data encoded as BASE64
+    // Compressed data encoded in BASE64
     compressed: String,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default, Debug)]
 pub struct ResultOfDecompress {
-    // Decompressed data encoded as BASE64
+    // Decompressed data encoded in BASE64
     decompressed: String,
 }
 
 #[api_function]
-pub async fn decompress(
+pub fn decompress(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfDecompress,
 ) -> ClientResult<ResultOfDecompress> {
