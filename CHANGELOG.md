@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [1.11.1] – 2021-03-15
 
 ### New
-- Giver address in tests is calculated from secret key. Default values are provided for Node SE giver
+- Giver address in tests is calculated from secret key. Default values are provided for TON OS SE giver
 
 ## [1.11.0] – 2021-03-05
 
