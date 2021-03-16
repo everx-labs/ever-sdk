@@ -8,12 +8,25 @@
 
 [![Channel on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/ton_sdk) 
 
-# Documentation
+# Content Table
+- [Content Table](#content-table)
+- [Useful links](#useful-links)
+- [What is Core Free TON Client Library](#what-is-core-free-ton-client-library)
+- [SDKs in other languages (bindings over TON-SDK)](#sdks-in-other-languages-bindings-over-ton-sdk)
+  - [Official Javascript(Typescript) SDK](#official-javascripttypescript-sdk)
+  - [Community bindings](#community-bindings)
+- [How to use library](#how-to-use-library)
+- [How to avoid Soft Breaking Problems](#how-to-avoid-soft-breaking-problems)
+- [Build client library](#build-client-library)
+- [Build artifacts](#build-artifacts)
+- [Run tests](#run-tests)
+- [Download precompiled binaries](#download-precompiled-binaries)
+  
+# Useful links
+
+[Quick Start](https://docs.ton.dev/86757ecb2/p/33b76d-quick-start)
+
 [Full API/SDK documentation](https://docs.ton.dev/86757ecb2/p/39fc5e-products)
-
-[Javascript SDK](https://github.com/tonlabs/ton-client-js)
-
-[Example Hello World](https://github.com/tonlabs/sdk-samples/tree/master/v1/node-js/core-api/hello)
 
 # What is Core Free TON Client Library
 
@@ -179,6 +192,24 @@ cd tools
 npm i
 tsc
 node index binding -l ts -o ../../ton-client-js/packages/core/src
+```
+
+# Run tests
+To run test suite use standard Rust test command
+```
+cargo test
+```
+SDK tests need [TON OS API](https://docs.ton.dev/86757ecb2/p/793337-ton-os-api) endpoint to run on. 
+Such an API is exposed by a [DApp Server](https://github.com/tonlabs/TON-OS-DApp-Server) which runs in real networks and by local blockchain [TON OS SE](https://github.com/tonlabs/tonos-se).
+
+TON OS SE is used by default with address `http://localhost` and port 80. If you launch it on another port you need to specify it explicitly like this: `http://localhost:port`.
+If you have TON OS SE running on another address or you need to run tests on a real TON network use the following
+environment variables to override the default parameters
+```
+USE_SE: true/false - flag defining if tests run against TON OS SE or a real network (DApp Server)
+TON_NETWORK_ADDRESS - Dapp server or TON OS SE address
+TON_GIVER_SECRET - Giver secret key. If not defined, default TON OS SE giver keys are used
+TON_GIVER_ADDRESS - Address of the giver to use for prepaying accounts before deploying test contracts. If not defined, the address is calculated using `GiverV2.tvc` and configured public key
 ```
 
 # Download precompiled binaries
