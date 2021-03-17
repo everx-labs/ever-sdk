@@ -1109,6 +1109,8 @@ async fn test_debot_invoke_msgs() {
     ).await;
 }
 
+// TODO: make test runnable not only once
+#[ignore]
 #[tokio::test(core_threads = 2)]
 async fn test_debot_sdk_get_accounts_by_hash() {
     let client = std::sync::Arc::new(TestClient::new());

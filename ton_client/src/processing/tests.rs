@@ -292,7 +292,7 @@ async fn test_process_message() {
 
 #[tokio::test(core_threads = 2)]
 async fn test_error_resolving() {
-    // skip on Node SE since it behaves different to real node
+    // skip on TON OS SE since it behaves different to real node
     if TestClient::node_se() {
         return;
     }
@@ -338,7 +338,7 @@ async fn test_error_resolving() {
         call_set: Some(CallSet {
             function_name: "sendAllMoney".to_owned(),
             header: None,
-            input: Some(json!({ "dest_addr": TestClient::giver_address() })),
+            input: Some(json!({ "dest_addr": client.giver_address().await })),
         }),
     };
 
