@@ -120,9 +120,10 @@ impl DEngine {
         Ok(self.raw_abi.clone())
     }
 
-    async fn fetch_state(&mut self) -> Result<(), String> {
-        self.state = self.load_state(self.addr.clone()).await?;
+    async fn fetch_info(&mut self) -> Result<(), String> {
         let result = self.run_debot_get("getVersion", None).await?;
+        let req_interfaces = self.run_debot_get("getRequiredInterfaces", None).await?;
+        let debot_info = self.run_debot_get("getDebotInfo", None).await?;
 
         let name_hex = result["name"].as_str().unwrap();
         let ver_str = result["semver"].as_str().unwrap();
@@ -135,7 +136,11 @@ impl DEngine {
             (ver >> 8) as u8,
             ver as u8
         )).await;
+    }
 
+    async fn fetch_state(&mut self) -> Result<(), String> {
+        self.state = self.load_state(self.addr.clone()).await?;
+        self.fetch_info().await?;
         self.update_options().await?;
         let result = self.run_debot_get("fetch", None).await;
         let mut context_vec: Vec<DContext> = if let Ok(mut res) = result {
