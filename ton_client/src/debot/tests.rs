@@ -187,10 +187,15 @@ struct BrowserData {
     pub terminal: Mutex<Terminal>,
     pub echo: Echo,
     pub bots: Mutex<HashMap<String, RegisteredDebot>>,
+    pub info: DeBotInfo,
 }
 
 impl TestBrowser {
-    async fn fetch_debot(client: Arc<TestClient>, state: Arc<BrowserData>, address: String, start_function: &str) -> RegisteredDebot {
+    async fn fetch_debot(
+        client: Arc<TestClient>,
+        state: Arc<BrowserData>,
+        address: String,
+    ) -> RegisteredDebot {
         let state_copy = state.clone();
         let client_copy = client.clone();
         let callback = move |params, response_type| {
@@ -219,21 +224,38 @@ impl TestBrowser {
         };
 
         let handle: RegisteredDebot = client.request_async_callback(
-            start_function,
-            ParamsOfStart { address: address.clone() },
+            "debot.init",
+            ParamsOfInit { address: address.clone() },
             callback
         ).await.unwrap();
 
         let handle_copy = RegisteredDebot {
             debot_handle: handle.debot_handle.clone(),
             debot_abi: handle.debot_abi.clone(),
+            debot_info: handle.debot_info.clone(),
         };
         state.bots.lock().await.insert(address.clone(), handle_copy);
         handle
     }
 
-    pub async fn execute_from_state(client: Arc<TestClient>, state: Arc<BrowserData>, start_function: &str) {
-        let handle = Self::fetch_debot(client.clone(), state.clone(), state.address.clone(), start_function).await;
+    pub async fn execute_from_state(client: Arc<TestClient>, state: Arc<BrowserData>, call_start: bool) {
+        if call_start {
+            let res: ResultOfFetch = client.request_async(
+                "debot.fetch",
+                ParamsOfFetch { address: state.address.clone() },
+            ).await.unwrap();
+            assert_eq!(res.debot_info, state.info);
+        }
+        let handle = Self::fetch_debot(client.clone(), state.clone(), state.address.clone()).await;
+
+        if call_start {
+            let _: () = client.request_async(
+                "debot.start",
+                ParamsOfStart {
+                    debot_handle: handle.debot_handle.clone(),
+                }
+            ).await.unwrap();
+        }
 
         while !state.finished.load(Ordering::Relaxed) {
             Self::handle_message_queue(client.clone(), state.clone()).await;
@@ -285,17 +307,6 @@ impl TestBrowser {
         steps: Vec<DebotStep>,
         terminal_outputs: Vec<String>,
     ) {
-        Self::execute_with_func(client, address, keys, steps, terminal_outputs, "debot.start").await;
-    }
-
-    pub async fn execute_with_func(
-        client: Arc<TestClient>,
-        address: String,
-        keys: KeyPair,
-        steps: Vec<DebotStep>,
-        terminal_outputs: Vec<String>,
-        entry_function: &str,
-    ) {
         let state = Arc::new(BrowserData {
             current: Mutex::new(Default::default()),
             next: Mutex::new(steps),
@@ -308,9 +319,10 @@ impl TestBrowser {
             terminal: Mutex::new(Terminal::new(terminal_outputs)),
             echo: Echo::new(),
             bots: Mutex::new(HashMap::new()),
+            info: Default::default(),
         });
 
-        Self::execute_from_state(client, state, entry_function).await
+        Self::execute_from_state(client, state, true).await
     }
 
     async fn process_notification(state: &BrowserData, params: ParamsOfAppDebotBrowser) {
@@ -339,9 +351,11 @@ impl TestBrowser {
     }
 
     fn call_execute_boxed(
-        client: Arc<TestClient>, state: Arc<BrowserData>, start_function: &'static str
+        client: Arc<TestClient>,
+        state: Arc<BrowserData>,
+        call_start: bool,
     ) -> BoxFuture<'static, ()> {
-        Self::execute_from_state(client, state, start_function).boxed()
+        Self::execute_from_state(client, state, call_start).boxed()
     }
 
     async fn process_call(client: Arc<TestClient>, state: &BrowserData, params: ParamsOfAppDebotBrowser) -> ResultOfAppDebotBrowser {
@@ -378,8 +392,9 @@ impl TestBrowser {
                     terminal: Mutex::new(Terminal::new(vec![])),
                     echo: Echo::new(),
                     bots: Mutex::new(HashMap::new()),
+                    info: Default::default(),
                 });
-                Self::call_execute_boxed(client, state, "debot.fetch").await;
+                Self::call_execute_boxed(client, state, false).await;
                 ResultOfAppDebotBrowser::InvokeDebot
             },
             _ => panic!("invalid call {:#?}", params)
@@ -443,7 +458,6 @@ impl TestBrowser {
                         client.clone(),
                         state.clone(),
                         dest_addr.to_owned(),
-                        "debot.fetch",
                     ).await;
 
                 }

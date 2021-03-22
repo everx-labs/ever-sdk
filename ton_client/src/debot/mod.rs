@@ -119,6 +119,7 @@ pub struct ParamsOfStart {
 /// When the debot starts SDK registers `BrowserCallbacks` AppObject.
 /// Therefore when `debote.remove` is called the debot is being deleted and the callback is called
 /// with `finish`=`true` which indicates that it will never be used again.
+#[api_function]
 pub async fn start(
     context: Arc<ClientContext>,
     params: ParamsOfStart,
@@ -140,7 +141,7 @@ pub struct ParamsOfFetch {
 
 /// [UNSTABLE](UNSTABLE.md)
 #[derive(Serialize, Deserialize, Default, ApiType)]
-struct ResultOfFetch {
+pub struct ResultOfFetch {
     /// Debot metadata,
     pub debot_info: DeBotInfo,
 }
@@ -152,15 +153,14 @@ struct ResultOfFetch {
 ///
 /// # Remarks
 /// It does not switch debot to context 0. Browser Callbacks are not called.
+#[api_function]
 pub async fn fetch(
     context: Arc<ClientContext>,
     params: ParamsOfFetch,
-) -> ClientResult<ResultOfFetch>
-    let mut dengine =
-        DEngine::new_with_client(params.address, None, context.clone(), Arc::new(callbacks));
-    let debot_info = dengine.fetch().await.map_err(Error::fetch_failed)?;
-
-    Ok(ResultOfFetch { debot_info })
+) -> ClientResult<ResultOfFetch> {
+    Ok(ResultOfFetch {
+        debot_info : DEngine::fetch(context, params.address).await.map_err(Error::fetch_failed)?
+    })
 }
 
 /// [UNSTABLE](UNSTABLE.md) Parameters to fetch debot.
@@ -177,7 +177,7 @@ pub struct RegisteredDebot {
     pub debot_handle: DebotHandle,
     /// Debot abi as json string.
     pub debot_abi: String,
-
+    /// Debot metadata.
     pub debot_info: DeBotInfo,
 }
 
@@ -192,15 +192,15 @@ pub async fn init(
     context: Arc<ClientContext>,
     params: ParamsOfInit,
     callbacks: impl BrowserCallbacks + Send + Sync + 'static,
-) -> ClientResult<RegisteredDebot>
+) -> ClientResult<RegisteredDebot> {
     let mut dengine =
         DEngine::new_with_client(params.address, None, context.clone(), Arc::new(callbacks));
-    let debot_info = dengine.fetch().await.map_err(Error::fetch_failed)?;
+    let debot_info = dengine.init().await.map_err(Error::fetch_failed)?;
 
     let handle = context.get_next_id();
     context.debots.insert(handle, Mutex::new(dengine));
-
-    Ok(RegisteredDebot { debot_handle: handle, debot_info, debot_abi: debot_info.dabi })
+    let debot_abi = debot_info.dabi.clone();
+    Ok(RegisteredDebot { debot_handle: DebotHandle(handle), debot_info, debot_abi })
 }
 
 /// [UNSTABLE](UNSTABLE.md) Parameters for executing debot action.
