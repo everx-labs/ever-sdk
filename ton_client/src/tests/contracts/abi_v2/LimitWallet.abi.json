@@ -13,29 +13,6 @@
 			]
 		},
 		{
-			"name": "fallback",
-			"inputs": [
-			],
-			"outputs": [
-			]
-		},
-		{
-			"name": "setSubscriptionAccount",
-			"inputs": [
-				{"name":"addr","type":"address"}
-			],
-			"outputs": [
-			]
-		},
-		{
-			"name": "getSubscriptionAccount",
-			"inputs": [
-			],
-			"outputs": [
-				{"name":"value0","type":"address"}
-			]
-		},
-		{
 			"name": "createOperationLimit",
 			"inputs": [
 				{"name":"value","type":"uint256"}
@@ -98,12 +75,30 @@
 			]
 		},
 		{
+			"name": "setSubscriptionAccount",
+			"inputs": [
+				{"name":"addr","type":"address"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getSubscriptionAccount",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"value0","type":"address"}
+			]
+		},
+		{
 			"name": "constructor",
 			"inputs": [
 			],
 			"outputs": [
 			]
 		}
+	],
+	"data": [
 	],
 	"events": [
 	]

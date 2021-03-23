@@ -1,5 +1,4 @@
-pragma solidity >=0.6.0;
-pragma experimental ABIEncoderV2;
+pragma ton-solidity >= 0.38.0;
 pragma AbiHeader expire;
 import "./SubscrWallet.sol";
 
@@ -45,10 +44,9 @@ contract LimitWallet is SubscrWallet {
     /// @param dest Transfer target address.
     /// @param value Nanograms value to transfer.
     /// @param bounce Flag that enables bounce message in case of target contract error.
-    function sendTransaction(address dest, uint128 value, bool bounce) public checkOwnerAndAccept override {
-        tvm.commit();
+    function sendTransaction(address dest, uint128 value, bool bounce)  public  override  OnlyOwner  {
         require(_checkLimits(value) == false, 101);
-        tvm.transfer(dest, value, bounce, 3);
+        dest.transfer(value, bounce, 3);
     }
 
 
@@ -80,8 +78,9 @@ contract LimitWallet is SubscrWallet {
     /// @param value Limit value in nanograms.
     /// @param period Period in days.
     function changeLimit(uint64 limitId, uint256 value, uint32 period) public OnlyOwner {
-        (bool exists, Limit lim) = m_limits.fetch(limitId);
-        require(exists, 103);
+        optional(Limit) m_limit = m_limits.fetch(limitId);
+        require(m_limit.hasValue(), 103);
+        (Limit lim) = m_limit.get();
         _validate(value, period, lim.ltype);
         tvm.accept();
         lim.value = value;
@@ -93,8 +92,8 @@ contract LimitWallet is SubscrWallet {
     /// @param limitId Limit id
     function deleteLimit(uint64 limitId) public OnlyOwner {
         tvm.accept();
-        (bool exists, ) = m_limits.fetch(limitId);
-        if (exists) {
+        optional(Limit) m_limit = m_limits.fetch(limitId);
+        if (m_limit.hasValue()) {
             delete m_limits[limitId];
             m_limitCount -= 1;
         }
@@ -104,7 +103,7 @@ contract LimitWallet is SubscrWallet {
      Get methods
     */
 
-    function getLimit(uint64 limitId) public view returns (Limit memory) {
+    function getLimit(uint64 limitId) public view returns (Limit) {
         return m_limits[limitId];
     }
 
@@ -114,12 +113,13 @@ contract LimitWallet is SubscrWallet {
 
     /// @dev Allow to query all limits.
     /// @return limits - array of limits.
-    function getLimits() public view returns (Limit[] memory limits) {
+    function getLimits() public view returns (Limit[] limits) {
         mapping(uint64 => Limit) tmpLimits = m_limits;
-        (uint64 id, Limit lim, bool ok) = tmpLimits.min();
-        while(ok) {
+        optional (uint64, Limit) tmpLimit = tmpLimits.min();
+        while(tmpLimit.hasValue()) {
+            (uint64 id, Limit lim) = tmpLimit.get();
             limits.push(lim);
-            (id, lim, ok) = tmpLimits.next(id);
+            tmpLimit = tmpLimits.next(id);
         }
     }
 
@@ -133,8 +133,9 @@ contract LimitWallet is SubscrWallet {
     /// if returns 0 then some of the m_limits is exceded.
     function _checkLimits(uint256 value) private inline returns (bool) {
         bool overrun = false;
-        (uint64 id, Limit limit, bool ok) = m_limits.min();
-        while(ok) {
+        optional(uint64, Limit) m_limit = m_limits.min();
+        while(m_limit.hasValue()) {
+            (uint64 id, Limit limit) = m_limit.get();
             uint32 endTime = limit.start + limit.period * SECONDS_IN_DAY;
             uint32 nowTime = uint32(now);
             if (nowTime > endTime) {
@@ -150,7 +151,7 @@ contract LimitWallet is SubscrWallet {
                 break;
             }
             m_limits[id] = limit;
-            (id, limit, ok) = m_limits.next(id);
+            m_limit = m_limits.next(id);
         }
         return overrun;
     }
@@ -173,5 +174,5 @@ contract LimitWallet is SubscrWallet {
         return limitId;
     }
 
-    receive() external payable override {}
+    receive() external override {}
 }

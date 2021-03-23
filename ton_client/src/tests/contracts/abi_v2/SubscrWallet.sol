@@ -1,4 +1,4 @@
-pragma solidity >=0.6.0;
+pragma ton-solidity >= 0.38.0;
 pragma AbiHeader expire;
 import "./Wallet.sol";
 /// @title wallet with transfer delegation to so called subscription contract
@@ -42,5 +42,5 @@ contract SubscrWallet is Wallet {
         return subscription;
     }
 
-    receive() external payable virtual override {}
+    receive() external virtual override {}
 }

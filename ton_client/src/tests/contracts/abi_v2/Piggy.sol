@@ -1,4 +1,4 @@
-pragma solidity >=0.6.0;
+pragma ton-solidity >= 0.38.0;
 pragma AbiHeader time;
 pragma AbiHeader expire;
 
@@ -14,18 +14,18 @@ contract Piggy {
         _;
     }
 
-    constructor(uint64 amount, bytes memory goal) public {
+    constructor(uint64 amount, bytes goal) public {
         _owner = tvm.pubkey();
         targetAmount = amount;
         targetGoal = goal;
     }
 
-    function transfer(address payable to) public view onlyOwner {
+    function transfer(address to) public view onlyOwner {
         require(address(this).balance > targetAmount, 101);
-        tvm.transfer(to, targetAmount, false, 128);
+        to.transfer(targetAmount, false, 128);
     }
 
-    function getGoal() public view returns (bytes memory) {
+    function getGoal() public view returns (bytes) {
         return targetGoal;
     }
 
@@ -33,8 +33,7 @@ contract Piggy {
         return targetAmount;
     }
 
-    function sendAllMoney(address payable dest_addr) public onlyOwner {
-        tvm.accept();
+    function sendAllMoney(address dest_addr) public onlyOwner {
         selfdestruct(dest_addr);
     }
 }

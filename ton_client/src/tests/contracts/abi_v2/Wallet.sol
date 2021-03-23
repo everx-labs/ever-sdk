@@ -1,4 +1,4 @@
-pragma solidity >=0.6.0;
+pragma ton-solidity >= 0.38.0;
 pragma AbiHeader expire;
 
 /// @title Simple wallet
@@ -29,8 +29,8 @@ contract Wallet {
     /// @param bounce Flag that enables bounce message in case of target contract error.
     function sendTransaction(address dest, uint128 value, bool bounce) public checkOwnerAndAccept virtual {
         require(value > 0 && value < address(this).balance, 101);
-        tvm.transfer(dest, value, bounce, 3);
+        dest.transfer( value, bounce, 3);
     }
 
-    receive() external payable virtual {}
+    receive() external virtual {}
 }

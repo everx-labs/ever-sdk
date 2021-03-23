@@ -1,4 +1,4 @@
-pragma solidity >=0.5.0;
+pragma ton-solidity >= 0.38.0;
 pragma AbiHeader time;
 pragma AbiHeader expire;
 
@@ -30,7 +30,7 @@ contract HelloTON {
     }
     //Due to the modifier onlyOwner function sendAllMoney can be called only by the owner of the contract.
     //Function sendAllMoney send all contract's money to dest_addr.
-    function sendAllMoney(address payable dest_addr) public onlyOwner {
+    function sendAllMoney(address dest_addr) public pure onlyOwner {
         dest_addr.transfer(100000, false, 128|32);
     }
 }
