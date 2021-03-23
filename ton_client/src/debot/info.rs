@@ -1,49 +1,61 @@
-use super::context::{from_hex_to_utf8_str};
+use super::context::{str_hex_to_utf8};
 use serde::{de, Deserialize, Deserializer};
-use std::fmt::Display;
-use std::str::FromStr;
 use crate::encoding::account_decode;
 
-#[derive(Serialize, Deserialize, Default, Debug, Clone, ApiType, PartialEq)]
-pub struct DeBotInfo {
-    #[serde(deserialize_with = "from_hex_to_utf8_str")]
-    pub name: String,
-    #[serde(deserialize_with = "from_hex_to_utf8_str")]
-    pub version: String,
-    #[serde(deserialize_with = "from_hex_to_utf8_str")]
-    pub publisher: String,
-    #[serde(deserialize_with = "from_hex_to_utf8_str")]
-    pub key: String,
-    #[serde(deserialize_with = "from_hex_to_utf8_str")]
-    pub author: String,
+#[derive(Deserialize, Default, Debug, Clone)]
+pub struct DInfo {
+    #[serde(deserialize_with = "from_opt_hex_to_str")]
+    pub name: Option<String>,
+    #[serde(deserialize_with = "from_opt_hex_to_str")]
+    pub version: Option<String>,
+    #[serde(deserialize_with = "from_opt_hex_to_str")]
+    pub publisher: Option<String>,
+    #[serde(deserialize_with = "from_opt_hex_to_str")]
+    pub key: Option<String>,
+    #[serde(deserialize_with = "from_opt_hex_to_str")]
+    pub author: Option<String>,
     #[serde(deserialize_with = "validate_ton_address")]
-    pub support: String,
-    #[serde(deserialize_with = "from_hex_to_utf8_str")]
-    pub hello: String,
-    #[serde(deserialize_with = "from_hex_to_utf8_str")]
-    pub language: String,
-    #[serde(deserialize_with = "from_hex_to_utf8_str")]
-    pub dabi: String,
+    pub support: Option<String>,
+    #[serde(deserialize_with = "from_opt_hex_to_str")]
+    pub hello: Option<String>,
+    #[serde(deserialize_with = "from_opt_hex_to_str")]
+    pub language: Option<String>,
+    #[serde(deserialize_with = "from_opt_hex_to_str")]
+    pub dabi: Option<String>,
     #[serde(default)]
     pub interfaces: Vec<String>,
 }
 
-impl DeBotInfo {
+impl DInfo {
     pub fn validate(&self) -> Result<(), String> {
         Ok(())
     }
 }
 
-pub(super) fn validate_ton_address<'de, S, D>(des: D) -> Result<S, D::Error>
+fn validate_ton_address<'de, D>(des: D) -> Result<Option<String>, D::Error>
 where
-    S: FromStr,
-    S::Err: Display,
     D: Deserializer<'de>
 {
-    let s: String = Deserialize::deserialize(des)?;
-    if s.len() > 0 {
+    let s: Option<String> = Deserialize::deserialize(des)?;
+    if let Some(s) = s {
         let _ = account_decode(&s)
-            .map_err(|e| format!("failed to parse TON address: {}", e)).unwrap();
+            .map_err(serde::de::Error::custom)?;
+        Ok(Some(s))
+    } else {
+        Ok(None)
     }
-    S::from_str(&s).map_err(de::Error::custom)
+}
+
+fn from_opt_hex_to_str<'de, D>(des: D) -> Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>
+{
+    let s: Option<String> = Deserialize::deserialize(des)?;
+    if let Some(s) = s {
+        let utf8_str = str_hex_to_utf8(&s)
+            .ok_or(format!("failed to convert bytes to utf8 string")).unwrap();
+        Ok(Some(utf8_str))
+    } else {
+        Ok(None)
+    }
 }

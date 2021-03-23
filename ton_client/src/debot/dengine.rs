@@ -9,7 +9,7 @@ use super::calltype;
 use super::calltype::DebotCallType;
 use super::routines;
 use super::run_output::RunOutput;
-use super::{JsonValue, TonClient, DeBotInfo};
+use super::{JsonValue, TonClient, DInfo};
 use crate::abi::{
     decode_message_body, encode_message, encode_message_body, Abi, CallSet, DeploySet,
     ErrorCode, ParamsOfDecodeMessageBody, ParamsOfEncodeMessage, ParamsOfEncodeMessageBody, Signer,
@@ -76,7 +76,7 @@ pub struct DEngine {
     target_abi: Option<String>,
     browser: Arc<dyn BrowserCallbacks + Send + Sync>,
     builtin_interfaces: BuiltinInterfaces,
-    info: DeBotInfo,
+    info: DInfo,
 }
 
 impl DEngine {
@@ -116,12 +116,12 @@ impl DEngine {
         }
     }
 
-    pub async fn fetch(ton: TonClient, addr: String) -> Result<DeBotInfo, String> {
+    pub async fn fetch(ton: TonClient, addr: String) -> Result<DInfo, String> {
         let state = Self::load_state(ton.clone(), addr.clone()).await?;
         Self::fetch_info(ton, addr, state).await
     }
 
-    pub async fn init(&mut self) -> Result<DeBotInfo, String> {
+    pub async fn init(&mut self) -> Result<DInfo, String> {
         self.fetch_state().await?;
         self.prev_state = STATE_EXIT;
         Ok(self.info.clone())
@@ -133,7 +133,7 @@ impl DEngine {
         Ok(())
     }
 
-    async fn fetch_info(ton: TonClient, addr: String, state: String) -> Result<DeBotInfo, String> {
+    async fn fetch_info(ton: TonClient, addr: String, state: String) -> Result<DInfo, String> {
         let abi = load_abi(DEBOT_ABI).unwrap();
         let result = Self::run(
             ton.clone(),
@@ -154,20 +154,19 @@ impl DEngine {
             Err(_) => vec![],
         };
         let result = Self::run(ton.clone(), state.clone(), addr.clone(), abi.clone(), "getDebotInfo", None).await;
-        let mut info: DeBotInfo = match result {
+        let mut info: DInfo = match result {
             Ok(r) => {
                 let output = r.return_value.unwrap_or(json!({}));
+                println!("output = {}", output);
                 serde_json::from_value(output)
                     .map_err(|e| format!("failed to parse \"getDebotInfo\": {}", e) )?
             },
             Err(_) => Default::default(),
         };
         info.interfaces = interfaces;
-
-        println!("!!!!!!!!!!!!! {:?}", info);
         // TODO: for compatibility with previous debots that returns abi in
         // getDebotOptions. Remove later.
-        if info.dabi == "" {
+        if info.dabi.is_none() {
             let params = Self::run(ton, state, addr, abi, "getDebotOptions", None).await;
             if let Ok(params) = params {
                 let params = params.return_value.unwrap_or(json!({}));
@@ -176,7 +175,7 @@ impl DEngine {
                 if options & OPTION_ABI != 0 {
                     let abi_str = str_hex_to_utf8(params["debotAbi"].as_str().unwrap())
                         .ok_or("cannot convert hex string to debot abi")?;
-                    info.dabi = abi_str;
+                    info.dabi = Some(abi_str);
                 }
             }
         }

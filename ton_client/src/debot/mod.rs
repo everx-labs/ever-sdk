@@ -36,7 +36,7 @@ pub use context::{DContext, STATE_EXIT, STATE_ZERO};
 pub use dengine::DEngine;
 pub use dinterface::{DebotInterface, DebotInterfaceExecutor, InterfaceResult};
 pub use errors::{Error, ErrorCode};
-pub use info::DeBotInfo;
+use info::DInfo;
 use crate::error::ClientResult;
 use crate::ClientContext;
 use std::sync::Arc;
@@ -97,6 +97,37 @@ impl Into<DAction> for DebotAction {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
+pub struct DebotInfo {
+    pub name: Option<String>,
+    pub version: Option<String>,
+    pub publisher: Option<String>,
+    pub key: Option<String>,
+    pub author: Option<String>,
+    pub support: Option<String>,
+    pub hello: Option<String>,
+    pub language: Option<String>,
+    pub dabi: Option<String>,
+    pub interfaces: Vec<String>,
+}
+
+impl From<DInfo> for DebotInfo {
+    fn from(info: DInfo) -> Self {
+        Self {
+            name: info.name,
+            version: info.version,
+            publisher: info.publisher,
+            key: info.key,
+            author: info.author,
+            support: info.support,
+            hello: info.hello,
+            language: info.language,
+            dabi: info.dabi,
+            interfaces: info.interfaces,
+        }
+    }
+}
+
 /// [UNSTABLE](UNSTABLE.md) Parameters to start debot.
 #[derive(Serialize, Deserialize, Default, ApiType)]
 pub struct ParamsOfStart {
@@ -143,7 +174,7 @@ pub struct ParamsOfFetch {
 #[derive(Serialize, Deserialize, Default, ApiType)]
 pub struct ResultOfFetch {
     /// Debot metadata,
-    pub debot_info: DeBotInfo,
+    pub debot_info: DebotInfo,
 }
 
 /// [UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.
@@ -159,7 +190,7 @@ pub async fn fetch(
     params: ParamsOfFetch,
 ) -> ClientResult<ResultOfFetch> {
     Ok(ResultOfFetch {
-        debot_info : DEngine::fetch(context, params.address).await.map_err(Error::fetch_failed)?
+        debot_info : DEngine::fetch(context, params.address).await.map_err(Error::fetch_failed)?.into()
     })
 }
 
@@ -178,7 +209,7 @@ pub struct RegisteredDebot {
     /// Debot abi as json string.
     pub debot_abi: String,
     /// Debot metadata.
-    pub debot_info: DeBotInfo,
+    pub debot_info: DebotInfo,
 }
 
 /// [UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.
@@ -195,11 +226,11 @@ pub async fn init(
 ) -> ClientResult<RegisteredDebot> {
     let mut dengine =
         DEngine::new_with_client(params.address, None, context.clone(), Arc::new(callbacks));
-    let debot_info = dengine.init().await.map_err(Error::fetch_failed)?;
+    let debot_info: DebotInfo = dengine.init().await.map_err(Error::fetch_failed)?.into();
 
     let handle = context.get_next_id();
     context.debots.insert(handle, Mutex::new(dengine));
-    let debot_abi = debot_info.dabi.clone();
+    let debot_abi = debot_info.dabi.clone().unwrap_or(String::new());
     Ok(RegisteredDebot { debot_handle: DebotHandle(handle), debot_info, debot_abi })
 }
 

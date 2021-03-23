@@ -187,7 +187,7 @@ struct BrowserData {
     pub terminal: Mutex<Terminal>,
     pub echo: Echo,
     pub bots: Mutex<HashMap<String, RegisteredDebot>>,
-    pub info: DeBotInfo,
+    pub info: DebotInfo,
 }
 
 impl TestBrowser {
@@ -306,6 +306,35 @@ impl TestBrowser {
         keys: KeyPair,
         steps: Vec<DebotStep>,
         terminal_outputs: Vec<String>,
+        abi: String,
+    ) {
+        let mut info = DebotInfo::default();
+        info.dabi = Some(abi);
+        let state = Arc::new(BrowserData {
+            current: Mutex::new(Default::default()),
+            next: Mutex::new(steps),
+            client: client.clone(),
+            keys,
+            address: address.clone(),
+            finished: AtomicBool::new(false),
+            switch_started: AtomicBool::new(false),
+            msg_queue: Mutex::new(Default::default()),
+            terminal: Mutex::new(Terminal::new(terminal_outputs)),
+            echo: Echo::new(),
+            bots: Mutex::new(HashMap::new()),
+            info,
+        });
+
+        Self::execute_from_state(client, state, true).await
+    }
+
+    pub async fn execute_with_info(
+        client: Arc<TestClient>,
+        address: String,
+        keys: KeyPair,
+        steps: Vec<DebotStep>,
+        terminal_outputs: Vec<String>,
+        info: DebotInfo,
     ) {
         let state = Arc::new(BrowserData {
             current: Mutex::new(Default::default()),
@@ -319,7 +348,7 @@ impl TestBrowser {
             terminal: Mutex::new(Terminal::new(terminal_outputs)),
             echo: Echo::new(),
             bots: Mutex::new(HashMap::new()),
-            info: Default::default(),
+            info,
         });
 
         Self::execute_from_state(client, state, true).await
@@ -502,6 +531,7 @@ struct DebotData {
     debot_addr: String,
     target_addr: String,
     keys: KeyPair,
+    abi: String,
 }
 
 async fn init_debot(client: Arc<TestClient>) -> DebotData {
@@ -582,7 +612,8 @@ async fn init_debot(client: Arc<TestClient>) -> DebotData {
     let data = DebotData {
         debot_addr,
         target_addr,
-        keys
+        keys,
+        abi: debot_abi.json_string().unwrap(),
     };
     *debot = Some(data.clone());
     data
@@ -616,7 +647,7 @@ async fn init_debot2(client: Arc<TestClient>) -> DebotData {
         Signer::Keys { keys: keys.clone() },
     ).await.unwrap();
     let target_addr = String::new();
-    DebotData { debot_addr, target_addr, keys }
+    DebotData { debot_addr, target_addr, keys, abi: debot_abi.json_string().unwrap(), }
 }
 
 async fn init_debot4(client: Arc<TestClient>) -> DebotData {
@@ -672,18 +703,23 @@ async fn init_debot4(client: Arc<TestClient>) -> DebotData {
     DebotData {
         debot_addr,
         target_addr,
-        keys
+        keys,
+        abi: debot_abi.json_string().unwrap(),
     }
 }
 
 async fn init_debot3(client: Arc<TestClient>) -> DebotData {
+    init_simple_debot(client, TEST_DEBOT3).await
+}
+
+async fn init_simple_debot(client: Arc<TestClient>, name: &str) -> DebotData {
     let keys = client.generate_sign_keys();
-    let debot_abi = TestClient::abi(TEST_DEBOT3, Some(2));
+    let debot_abi = TestClient::abi(name, Some(2));
 
     let call_set = CallSet::some_with_function("constructor");
     let deploy_debot_params = ParamsOfEncodeMessage {
         abi: debot_abi.clone(),
-        deploy_set: DeploySet::some_with_tvc(TestClient::tvc(TEST_DEBOT3, Some(2))),
+        deploy_set: DeploySet::some_with_tvc(TestClient::tvc(name, Some(2))),
         signer: Signer::Keys { keys: keys.clone() },
         processing_try_index: None,
         address: None,
@@ -701,10 +737,11 @@ async fn init_debot3(client: Arc<TestClient>) -> DebotData {
         debot_addr,
         target_addr: String::new(),
         keys,
+        abi: debot_abi.json_string().unwrap(),
     }
 }
 
-async fn init_debot5(client: Arc<TestClient>, count: u32) -> String {
+async fn init_debot5(client: Arc<TestClient>, count: u32) -> (String, String) {
     let debot_abi = TestClient::abi(TEST_DEBOT5, Some(2));
     let debot5_tvc = TestClient::tvc(TEST_DEBOT5, Some(2));
 
@@ -745,10 +782,10 @@ async fn init_debot5(client: Arc<TestClient>, count: u32) -> String {
             ).await.unwrap();
         }
     }
-    addrs[0].clone()
+    (addrs[0].clone(), debot_abi.json_string().unwrap())
 }
 
-async fn init_debot_pair(client: Arc<TestClient>, debot1: &str, debot2: &str) -> (String, String) {
+async fn init_debot_pair(client: Arc<TestClient>, debot1: &str, debot2: &str) -> (String, String, String) {
     let keys = client.generate_sign_keys();
     let debot1_abi = TestClient::abi(debot1, Some(2));
     let debot2_abi = TestClient::abi(debot2, Some(2));
@@ -799,8 +836,11 @@ async fn init_debot_pair(client: Arc<TestClient>, debot1: &str, debot2: &str) ->
 
     let (_, _) = futures::join!(future1, future2);
 
-    (debot1_addr, debot2_addr)
+    (debot1_addr, debot2_addr, debot1_abi.json_string().unwrap())
+}
 
+async fn init_hello_debot(client: Arc<TestClient>) -> DebotData {
+    init_simple_debot(client, "helloDebot").await
 }
 
 const EXIT_CHOICE: u8 = 9;
@@ -808,7 +848,7 @@ const EXIT_CHOICE: u8 = 9;
 #[tokio::test(core_threads = 2)]
 async fn test_debot_goto() {
     let client = std::sync::Arc::new(TestClient::new());
-    let DebotData { debot_addr, target_addr: _, keys } = init_debot(client.clone()).await;
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_debot(client.clone()).await;
 
     let steps = json!([
         { "choice": 1, "inputs": [], "outputs": ["Test Goto Action"] },
@@ -821,13 +861,14 @@ async fn test_debot_goto() {
         keys.clone(),
         serde_json::from_value(steps).unwrap(),
         vec![],
+        abi
     ).await;
 }
 
 #[tokio::test(core_threads = 2)]
 async fn test_debot_print() {
     let client = std::sync::Arc::new(TestClient::new());
-    let DebotData { debot_addr, target_addr, keys } = init_debot(client.clone()).await;
+    let DebotData { debot_addr, target_addr, keys, abi } = init_debot(client.clone()).await;
 
     let steps = json!([
         { "choice": 2, "inputs": [], "outputs": ["Test Print Action", "test2: instant print", "test instant print"] },
@@ -842,13 +883,14 @@ async fn test_debot_print() {
         keys.clone(),
         serde_json::from_value(steps).unwrap(),
         vec![],
+        abi
     ).await;
 }
 
 #[tokio::test(core_threads = 2)]
 async fn test_debot_runact() {
     let client = std::sync::Arc::new(TestClient::new());
-    let DebotData { debot_addr, target_addr: _, keys } = init_debot(client.clone()).await;
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_debot(client.clone()).await;
 
     let steps = json!([
         { "choice": 3, "inputs": [], "outputs": ["Test Run Action"] },
@@ -864,14 +906,15 @@ async fn test_debot_runact() {
         debot_addr,
         keys,
         serde_json::from_value(steps).unwrap(),
-        vec![]
+        vec![],
+        abi
     ).await;
 }
 
 #[tokio::test(core_threads = 2)]
 async fn test_debot_run_method() {
     let client = std::sync::Arc::new(TestClient::new());
-    let DebotData { debot_addr, target_addr: _, keys } = init_debot(client.clone()).await;
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_debot(client.clone()).await;
 
     let steps = json!([
         { "choice": 4, "inputs": [], "outputs": ["Test Run Method Action"] },
@@ -885,14 +928,15 @@ async fn test_debot_run_method() {
         debot_addr,
         keys,
         serde_json::from_value(steps).unwrap(),
-        vec![]
+        vec![],
+        abi
     ).await;
 }
 
 #[tokio::test(core_threads = 2)]
 async fn test_debot_send_msg() {
     let client = std::sync::Arc::new(TestClient::new());
-    let DebotData { debot_addr, target_addr: _, keys } = init_debot(client.clone()).await;
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_debot(client.clone()).await;
 
     let steps = json!([
         { "choice": 5, "inputs": [], "outputs": ["Test Send Msg Action"] },
@@ -908,13 +952,14 @@ async fn test_debot_send_msg() {
         keys,
         serde_json::from_value(steps).unwrap(),
         vec![],
+        abi
     ).await;
 }
 
 #[tokio::test(core_threads = 2)]
 async fn test_debot_invoke_debot() {
     let client = std::sync::Arc::new(TestClient::new());
-    let DebotData { debot_addr, target_addr: _, keys } = init_debot(client.clone()).await;
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_debot(client.clone()).await;
 
     let steps = json!([
         { "choice": 6, "inputs": [debot_addr.clone()], "outputs": ["Test Invoke Debot Action", "enter debot address:"] },
@@ -934,14 +979,15 @@ async fn test_debot_invoke_debot() {
         debot_addr,
         keys,
         serde_json::from_value(steps).unwrap(),
-        vec![]
+        vec![],
+        abi
     ).await;
 }
 
 #[tokio::test(core_threads = 2)]
 async fn test_debot_engine_calls() {
     let client = std::sync::Arc::new(TestClient::new());
-    let DebotData { debot_addr, target_addr: _, keys } = init_debot(client.clone()).await;
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_debot(client.clone()).await;
 
     let steps = json!([
         { "choice": 7, "inputs": [], "outputs": ["Test Engine Calls"] },
@@ -958,14 +1004,15 @@ async fn test_debot_engine_calls() {
         debot_addr,
         keys,
         serde_json::from_value(steps).unwrap(),
-        vec![]
+        vec![],
+        abi
     ).await;
 }
 
 #[tokio::test(core_threads = 2)]
 async fn test_debot_interface_call() {
     let client = std::sync::Arc::new(TestClient::new());
-    let DebotData { debot_addr, target_addr: _, keys } = init_debot(client.clone()).await;
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_debot(client.clone()).await;
 
     let steps = json!([
         { "choice": 8, "inputs": [], "outputs": ["", "test1 - call interface"] },
@@ -978,13 +1025,14 @@ async fn test_debot_interface_call() {
         keys,
         serde_json::from_value(steps).unwrap(),
         vec![],
+        abi
     ).await;
 }
 
 #[tokio::test(core_threads = 2)]
 async fn test_debot_inner_interfaces() {
     let client = std::sync::Arc::new(TestClient::new());
-    let DebotData { debot_addr, target_addr: _, keys } = init_debot3(client.clone()).await;
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_debot3(client.clone()).await;
 
     let steps = serde_json::from_value(json!([])).unwrap();
     TestBrowser::execute(
@@ -1008,13 +1056,14 @@ async fn test_debot_inner_interfaces() {
             format!("test hex decode passed"),
             format!("test base64 decode passed"),
         ],
+        abi
     ).await;
 }
 
 #[tokio::test(core_threads = 2)]
 async fn test_debot_4() {
     let client = std::sync::Arc::new(TestClient::new());
-    let DebotData { debot_addr, target_addr, keys } = init_debot4(client.clone()).await;
+    let DebotData { debot_addr, target_addr, keys, abi } = init_debot4(client.clone()).await;
     let target_abi = TestClient::abi(TEST_DEBOT_TARGET, Some(2));
 
     let target_boc = download_account(&client, &target_addr).await.expect("account must exist");
@@ -1041,6 +1090,7 @@ async fn test_debot_4() {
             format!("Transaction succeeded"),
             format!("setData2(129)"),
         ],
+        abi
     ).await;
 
     let target_boc = download_account(&client, &target_addr).await.expect("account must exist");
@@ -1066,7 +1116,7 @@ async fn test_debot_4() {
 #[tokio::test(core_threads = 2)]
 async fn test_debot_msg_interface() {
     let client = std::sync::Arc::new(TestClient::new());
-    let DebotData { debot_addr, target_addr: _, keys } = init_debot2(client.clone()).await;
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_debot2(client.clone()).await;
     let debot_abi = TestClient::abi(TEST_DEBOT2, Some(2));
     let counter = 10;
     let counter_after = 15;
@@ -1091,6 +1141,7 @@ async fn test_debot_msg_interface() {
             format!("Increment succeeded"),
             format!("counter={}", counter_after),
         ],
+        abi
     ).await;
 
     assert_get_method(
@@ -1106,7 +1157,7 @@ async fn test_debot_msg_interface() {
 #[tokio::test(core_threads = 2)]
 async fn test_debot_invoke_msgs() {
     let client = std::sync::Arc::new(TestClient::new());
-    let (debot1, _) = init_debot_pair(client.clone(), TEST_DEBOTA, TEST_DEBOTB).await;
+    let (debot1, _, abi) = init_debot_pair(client.clone(), TEST_DEBOTA, TEST_DEBOTB).await;
     let keys = client.generate_sign_keys();
 
     let steps = serde_json::from_value(json!([])).unwrap();
@@ -1120,6 +1171,7 @@ async fn test_debot_invoke_msgs() {
             format!("DebotB receives question: What is your name?"),
             format!("DebotA receives answer: My name is DebotB"),
         ],
+        abi
     ).await;
 }
 
@@ -1129,7 +1181,7 @@ async fn test_debot_invoke_msgs() {
 async fn test_debot_sdk_get_accounts_by_hash() {
     let client = std::sync::Arc::new(TestClient::new());
     let count = 6;
-    let debot = init_debot5(client.clone(), count).await;
+    let (debot, abi) = init_debot5(client.clone(), count).await;
 
     let steps = serde_json::from_value(json!([])).unwrap();
     TestBrowser::execute(
@@ -1138,6 +1190,34 @@ async fn test_debot_sdk_get_accounts_by_hash() {
         KeyPair::default(),
         steps,
         vec![ format!("{} contracts.", count) ],
+        abi
+    ).await;
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_debot_getinfo() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_hello_debot(client.clone()).await;
+
+    let steps = serde_json::from_value(json!([])).unwrap();
+    TestBrowser::execute_with_info(
+        client.clone(),
+        debot_addr.clone(),
+        keys,
+        steps,
+        vec![format!("Hello, World!")],
+        DebotInfo {
+            name: Some("HelloWorld".to_owned()),
+            version: Some("0.2.0".to_owned()),
+            publisher: Some("TON Labs".to_owned()),
+            key: Some("Start develop DeBot from here".to_owned()),
+            author: Some("TON Labs".to_owned()),
+            support: Some("0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94".to_owned()),
+            hello: Some("Hello, i'am a helloworld DeBot.".to_owned()),
+            language: Some("en".to_owned()),
+            dabi: Some(abi),
+            interfaces: vec!["0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3".to_owned()],
+        },
     ).await;
 }
 
