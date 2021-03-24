@@ -1,5 +1,6 @@
 pragma ton-solidity >= 0.38.0;
 pragma AbiHeader time;
+pragma AbiHeader expire;
 pragma AbiHeader pubkey;
 
 contract Events {

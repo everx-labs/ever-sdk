@@ -1,6 +1,6 @@
 {
 	"ABI version": 2,
-	"header": ["pubkey", "time"],
+	"header": ["pubkey", "time", "expire"],
 	"functions": [
 		{
 			"name": "emitValue",
