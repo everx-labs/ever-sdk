@@ -11,24 +11,21 @@
 * limitations under the License.
 */
 
-use std::ops::RangeInclusive;
+use std::io::Cursor;
 
 use crate::ClientContext;
 use crate::error::ClientResult;
-use std::io::Cursor;
-
-const COMPRESSION_LEVELS: RangeInclusive<i32> = 0..=21;
 
 #[derive(Serialize, Deserialize, ApiType, Default, Debug)]
 pub struct ParamsOfCompressZstd {
     /// Uncompressed data. Must be encoded as base64.
     pub uncompressed: String,
-    /// Compression level, from 0 to 21.
+    /// Compression level, from 1 to 21.
     /// Where:
-    /// 0 - default compression level (currently `3`);
     /// 1 - lowest compression level (fastest compression);
     /// 21 - highest compression level (slowest compression).
-    pub level: i32,
+    /// If level is omitted, the default compression level is used (currently `3`).
+    pub level: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default, Debug)]
@@ -57,14 +54,18 @@ pub fn compress_zstd(
 }
 
 /// Compresses data using Zstandard algorithm. Useful for Rust API.
-pub fn compress_zstd_internal(uncompressed: &[u8], level: i32) -> ClientResult<Vec<u8>> {
-    if !COMPRESSION_LEVELS.contains(&level) {
-        return Err(
-            super::errors::Error::compression_error(
-                format!("Invalid compression level: {}", level)
-            )
-        );
-    }
+pub fn compress_zstd_internal(uncompressed: &[u8], level: Option<i32>) -> ClientResult<Vec<u8>> {
+    let level =  match level {
+        None => 0,
+        Some(level) => {
+            if !(1..=21).contains(&level) {
+                return Err(super::errors::Error::compression_error(
+                    format!("Invalid compression level: {}", level)
+                ));
+            }
+            level
+        }
+    };
 
     let mut compressed = Vec::new();
     zstd::stream::copy_encode(

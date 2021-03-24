@@ -99,7 +99,7 @@ fn test_compression() {
         "utils.compress_zstd",
         ParamsOfCompressZstd {
             uncompressed: base64::encode(uncompressed),
-            level: 21,
+            level: Some(21),
         }
     ).unwrap();
 
