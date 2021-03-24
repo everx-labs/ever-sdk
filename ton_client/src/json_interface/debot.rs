@@ -165,7 +165,7 @@ impl DebotBrowserAdapter {
     }
 }
 
-/// [UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.
+/// [UNSTABLE](UNSTABLE.md) Creates and instance of DeBot.
 ///
 /// Downloads debot smart contract (code and data) from blockchain and creates
 /// an instance of Debot Engine for it.
