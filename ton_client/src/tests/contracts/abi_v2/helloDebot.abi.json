@@ -11,6 +11,7 @@
 		},
 		{
 			"name": "getDebotInfo",
+			"id": "0xDEB",
 			"inputs": [
 			],
 			"outputs": [

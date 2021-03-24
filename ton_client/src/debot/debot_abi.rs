@@ -55,6 +55,7 @@ pub const DEBOT_ABI: &'static str = r#"{
 		},
         {
 			"name": "getDebotInfo",
+            "id": "0xDEB",
 			"inputs": [
 			],
 			"outputs": [
