@@ -91,6 +91,17 @@ const TERMINAL_ABI: &str = r#"
 			"outputs": [
 				{"name":"value","type":"int256"}
 			]
+		},
+        {
+			"name": "input",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"prompt","type":"bytes"},
+				{"name":"multiline","type":"bool"}
+			],
+			"outputs": [
+				{"name":"value","type":"bytes"}
+			]
 		}
 	],
 	"data": [],
@@ -151,7 +162,16 @@ impl Terminal {
                 let _ = self.print(answer_id, prompt);
                 // use test return value here.
                 (answer_id, json!({"value": 1}))
-            }
+            },
+            "input" => {
+                let answer_id = decode_abi_number::<u32>(args["answerId"].as_str().unwrap()).unwrap();
+                let prompt = hex::decode(args["prompt"].as_str().unwrap()).unwrap();
+                let message = std::str::from_utf8(&prompt).unwrap();
+                let _ = args["multiline"].as_bool().unwrap();
+                self.print(answer_id, message);
+                let value = "testinput";
+                (answer_id, json!({ "value": hex::encode(value.as_bytes()) }) )
+            },
             _ => panic!("interface function not found"),
         }
     }
@@ -1205,7 +1225,11 @@ async fn test_debot_getinfo() {
         debot_addr.clone(),
         keys,
         steps,
-        vec![format!("Hello, World!")],
+        vec![
+            format!("Hello, World!"),
+            format!("How is it going?"),
+            format!("You entered \"testinput\""),
+        ],
         DebotInfo {
             name: Some("HelloWorld".to_owned()),
             version: Some("0.2.0".to_owned()),

@@ -157,7 +157,6 @@ impl DEngine {
         let mut info: DInfo = match result {
             Ok(r) => {
                 let output = r.return_value.unwrap_or(json!({}));
-                println!("output = {}", output);
                 serde_json::from_value(output)
                     .map_err(|e| format!("failed to parse \"getDebotInfo\": {}", e) )?
             },
