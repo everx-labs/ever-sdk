@@ -20,7 +20,7 @@ use std::io::Cursor;
 const COMPRESSION_LEVELS: RangeInclusive<i32> = 0..=21;
 
 #[derive(Serialize, Deserialize, ApiType, Default, Debug)]
-pub struct ParamsOfCompress {
+pub struct ParamsOfCompressZstd {
     /// Uncompressed data. Must be encoded as base64.
     pub uncompressed: String,
     /// Compression level, from 0 to 21.
@@ -32,32 +32,32 @@ pub struct ParamsOfCompress {
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default, Debug)]
-pub struct ResultOfCompress {
+pub struct ResultOfCompressZstd {
     /// Compressed data. Must be encoded as base64.
     pub compressed: String,
 }
 
 /// Compresses data using Zstandard algorithm
 #[api_function]
-pub fn compress(
+pub fn compress_zstd(
     _context: std::sync::Arc<ClientContext>,
-    params: ParamsOfCompress,
-) -> ClientResult<ResultOfCompress> {
+    params: ParamsOfCompressZstd,
+) -> ClientResult<ResultOfCompressZstd> {
     let uncompressed = base64::decode(&params.uncompressed)
         .map_err(
             |err|
                 super::errors::Error::compression_error(format!("Unable to decode BASE64: {}", err))
         )?;
 
-    let compressed = compress_zstd(uncompressed.as_slice(), params.level)?;
+    let compressed = compress_zstd_internal(uncompressed.as_slice(), params.level)?;
 
-    Ok(ResultOfCompress {
+    Ok(ResultOfCompressZstd {
         compressed: base64::encode(&compressed),
     })
 }
 
 /// Compresses data using Zstandard algorithm. Useful for Rust API.
-pub fn compress_zstd(uncompressed: &[u8], level: i32) -> ClientResult<Vec<u8>> {
+pub fn compress_zstd_internal(uncompressed: &[u8], level: i32) -> ClientResult<Vec<u8>> {
     if !COMPRESSION_LEVELS.contains(&level) {
         return Err(
             super::errors::Error::compression_error(
@@ -77,38 +77,38 @@ pub fn compress_zstd(uncompressed: &[u8], level: i32) -> ClientResult<Vec<u8>> {
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default, Debug)]
-pub struct ParamsOfDecompress {
+pub struct ParamsOfDecompressZstd {
     /// Compressed data. Must be encoded as base64.
     pub compressed: String,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default, Debug)]
-pub struct ResultOfDecompress {
+pub struct ResultOfDecompressZstd {
     /// Decompressed data. Must be encoded as base64.
     pub decompressed: String,
 }
 
 /// Decompresses data using Zstandard algorithm
 #[api_function]
-pub fn decompress(
+pub fn decompress_zstd(
     _context: std::sync::Arc<ClientContext>,
-    params: ParamsOfDecompress,
-) -> ClientResult<ResultOfDecompress> {
+    params: ParamsOfDecompressZstd,
+) -> ClientResult<ResultOfDecompressZstd> {
     let compressed = base64::decode(&params.compressed)
         .map_err(
             |err|
                 super::errors::Error::decompression_error(format!("Unable to decode BASE64: {}", err))
         )?;
 
-    let decompressed = decompress_zstd(compressed.as_slice())?;
+    let decompressed = decompress_zstd_internal(compressed.as_slice())?;
 
-    Ok(ResultOfDecompress {
+    Ok(ResultOfDecompressZstd {
         decompressed: base64::encode(&decompressed),
     })
 }
 
 /// Decompresses data using Zstandard algorithm. Useful for Rust API.
-pub fn decompress_zstd(compressed: &[u8]) -> ClientResult<Vec<u8>> {
+pub fn decompress_zstd_internal(compressed: &[u8]) -> ClientResult<Vec<u8>> {
     let mut decompressed = Vec::new();
     zstd::stream::copy_decode(&mut Cursor::new(compressed), &mut decompressed)
         .map_err(|err| super::errors::Error::decompression_error(err))?;

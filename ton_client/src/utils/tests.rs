@@ -1,7 +1,7 @@
 use crate::{boc::tests::ACCOUNT, json_interface::modules::UtilsModule};
 use crate::tests::TestClient;
 use super::*;
-use crate::utils::compression::{ParamsOfCompress, ResultOfCompress, ResultOfDecompress, ParamsOfDecompress};
+use crate::utils::compression::{ParamsOfCompressZstd, ResultOfCompressZstd, ResultOfDecompressZstd, ParamsOfDecompressZstd};
 use api_info::ApiModule;
 
 #[tokio::test(core_threads = 2)]
@@ -95,9 +95,9 @@ fn test_compression() {
         Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit \
         anim id est laborum.";
 
-    let compressed: ResultOfCompress = client.request(
-        "utils.compress",
-        ParamsOfCompress {
+    let compressed: ResultOfCompressZstd = client.request(
+        "utils.compress_zstd",
+        ParamsOfCompressZstd {
             uncompressed: base64::encode(uncompressed),
             level: 21,
         }
@@ -112,14 +112,14 @@ fn test_compression() {
         YYplND4Uo"
     );
 
-    let decompressed: ResultOfDecompress = client.request(
-        "utils.decompress",
-        ParamsOfDecompress {
+    let decompressed: ResultOfDecompressZstd = client.request(
+        "utils.decompress_zstd",
+        ParamsOfDecompressZstd {
             compressed: compressed.compressed
         }
     ).unwrap();
 
     let decompressed = base64::decode(&decompressed.decompressed).unwrap();
 
-    assert_eq!(decompressed[..], uncompressed[..]);
+    assert_eq!(decompressed, uncompressed);
 }

@@ -26,5 +26,5 @@ pub use calc_storage_fee::{
 pub use conversion::{
     convert_address, AddressStringFormat, ParamsOfConvertAddress, ResultOfConvertAddress,
 };
-pub use compression::{compress, decompress, compress_zstd, decompress_zstd};
+pub use compression::{compress_zstd, decompress_zstd, compress_zstd_internal, decompress_zstd_internal};
 pub use errors::{Error, ErrorCode};
