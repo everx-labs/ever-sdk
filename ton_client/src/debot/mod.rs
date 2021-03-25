@@ -271,7 +271,7 @@ pub async fn execute(context: Arc<ClientContext>, params: ParamsOfExecute) -> Cl
 
 /// [UNSTABLE](UNSTABLE.md)
 #[derive(Serialize, Deserialize, ApiType, Default)]
-pub struct ParamsOfremove {
+pub struct ParamsOfRemove {
     /// Debot handle which references an instance of debot engine.
     pub debot_handle: DebotHandle,
 }
@@ -280,7 +280,7 @@ pub struct ParamsOfremove {
 ///
 /// Removes handle from Client Context and drops debot engine referenced by that handle.
 #[api_function]
-pub fn remove(context: Arc<ClientContext>, params: ParamsOfremove) -> ClientResult<()> {
+pub fn remove(context: Arc<ClientContext>, params: ParamsOfRemove) -> ClientResult<()> {
     context.debots.remove(&params.debot_handle.0);
     Ok(())
 }

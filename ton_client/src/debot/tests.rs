@@ -1228,7 +1228,7 @@ async fn test_debot_getinfo() {
         vec![
             format!("Hello, World!"),
             format!("How is it going?"),
-            format!("You entered \"testinput\""),
+            format!("You have entered \"testinput\""),
         ],
         DebotInfo {
             name: Some("HelloWorld".to_owned()),
@@ -1237,7 +1237,7 @@ async fn test_debot_getinfo() {
             key: Some("Start develop DeBot from here".to_owned()),
             author: Some("TON Labs".to_owned()),
             support: Some("0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94".to_owned()),
-            hello: Some("Hello, i'am a helloworld DeBot.".to_owned()),
+            hello: Some("Hello, i am a HelloWorld DeBot.".to_owned()),
             language: Some("en".to_owned()),
             dabi: Some(abi),
             interfaces: vec!["0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3".to_owned()],
