@@ -455,12 +455,12 @@ fn register_utils(handlers: &mut RuntimeHandlers) {
         crate::utils::calc_storage_fee::calc_storage_fee_api,
     );
     module.register_sync_fn(
-        crate::utils::compress_zstd,
-        crate::utils::compression::compress_zstd_api
+        super::utils::compress_zstd,
+        super::utils::compress_zstd_api
     );
     module.register_sync_fn(
-        crate::utils::decompress_zstd,
-        crate::utils::compression::decompress_zstd_api
+        super::utils::decompress_zstd,
+        super::utils::decompress_zstd_api
     );
     module.register();
 }

@@ -1,7 +1,9 @@
 use crate::{boc::tests::ACCOUNT, json_interface::modules::UtilsModule};
 use crate::tests::TestClient;
 use super::*;
-use crate::utils::compression::{ParamsOfCompressZstd, ResultOfCompressZstd, ResultOfDecompressZstd, ParamsOfDecompressZstd};
+use crate::json_interface::utils::{
+    ParamsOfCompressZstd, ResultOfCompressZstd, ResultOfDecompressZstd, ParamsOfDecompressZstd
+};
 use api_info::ApiModule;
 
 #[tokio::test(core_threads = 2)]
