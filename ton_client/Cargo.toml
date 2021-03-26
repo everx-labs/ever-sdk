@@ -57,6 +57,7 @@ futures = "0.3.4"
 tokio = { version = "0.2.13", features = ["sync", "stream"], default-features = false }
 lru = "0.6.3"
 lockfree = { git = "https://github.com/tonlabs/lockfree.git", package = "lockfree" }
+zstd = { git = "https://github.com/tonlabs/zstd-rs.git", default-features = false }
 
 # optional for std
 reqwest = { version = "0.10.4", optional = true }
@@ -66,7 +67,11 @@ tokio-tungstenite = { version =  "0.11.0", features = ["tls"], optional = true }
 wasm-bindgen = { version = "=0.2.65", features = ["serde-serialize"], optional = true }
 wasm-bindgen-futures = { version = "0.4.15", optional = true }
 js-sys = { version = "0.3", optional = true }
-web-sys = { version =  "0.3.42", optional = true, features = [
+
+[dependencies.web-sys]
+version =  "0.3.42"
+optional = true
+features = [
     "ErrorEvent",
     "FileReader",
     "Headers",
@@ -77,7 +82,7 @@ web-sys = { version =  "0.3.42", optional = true, features = [
     "Response",
     "Window",
     "WebSocket",
-    ] }
+]
 
 [dev-dependencies]
 log4rs = "^0"
@@ -88,4 +93,13 @@ pretty_assertions = "0.6.1"
 [features]
 default = ["std"]
 std = ["tokio/rt-threaded", "tokio/macros", "reqwest", "tokio-tungstenite"]
-wasm = ["wasm-bindgen", "wasm-bindgen-futures", "js-sys", "web-sys", "rand/wasm-bindgen", "chrono/wasmbind"]
+wasm = [
+    "wasm-bindgen",
+    "wasm-bindgen-futures",
+    "js-sys",
+    "web-sys",
+    "rand/wasm-bindgen",
+    "chrono/wasmbind",
+    "zstd/wasm",
+    "zstd/thin",
+]
