@@ -10,13 +10,13 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - **Debot Module**:
-    - [breaking] `fetch` function does't create an instance of debot. It returns DeBot metadata (`DeBotInfo`).
+    - [breaking] `fetch` function does't create an instance of debot. It returns DeBot metadata (`DebotInfo`).
     - [breaking] `start` function does't create an instance of debot. It accepts DeBot handle created in `init` function.
 
 ### New
 - **Debot module**:
     - `init` function that creates an instance of DeBot and returns DeBot metadata.
-    - Dengine fetches metadata form DeBot by calling 2 mandatory functions: `getRequiredInterfaces` and `getDeBotInfo`. This data is returned by `fetch` and `init` functions.
+    - Dengine fetches metadata form DeBot by calling 2 mandatory functions: `getRequiredInterfaces` and `getDebotInfo`. This data is returned by `fetch` and `init` functions.
 ## [1.11.1] – 2021-03-15
 
 ### New
