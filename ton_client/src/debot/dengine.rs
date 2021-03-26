@@ -9,7 +9,7 @@ use super::calltype;
 use super::calltype::DebotCallType;
 use super::routines;
 use super::run_output::RunOutput;
-use super::{JsonValue, TonClient};
+use super::{JsonValue, TonClient, DInfo};
 use crate::abi::{
     decode_message_body, encode_message, encode_message_body, Abi, CallSet, DeploySet,
     ErrorCode, ParamsOfDecodeMessageBody, ParamsOfEncodeMessage, ParamsOfEncodeMessageBody, Signer,
@@ -76,6 +76,7 @@ pub struct DEngine {
     target_abi: Option<String>,
     browser: Arc<dyn BrowserCallbacks + Send + Sync>,
     builtin_interfaces: BuiltinInterfaces,
+    info: DInfo,
 }
 
 impl DEngine {
@@ -111,35 +112,85 @@ impl DEngine {
             target_abi: None,
             browser: browser.clone(),
             builtin_interfaces: BuiltinInterfaces::new(ton),
+            info: Default::default(),
         }
     }
 
-    pub async fn fetch(&mut self) -> Result<String, String> {
+    pub async fn fetch(ton: TonClient, addr: String) -> Result<DInfo, String> {
+        let state = Self::load_state(ton.clone(), addr.clone()).await?;
+        Self::fetch_info(ton, addr, state).await
+    }
+
+    pub async fn init(&mut self) -> Result<DInfo, String> {
         self.fetch_state().await?;
         self.prev_state = STATE_EXIT;
-        Ok(self.raw_abi.clone())
+        Ok(self.info.clone())
+    }
+
+    pub async fn start(&mut self) -> Result<(), String> {
+        self.fetch_state().await?;
+        self.switch_state(STATE_ZERO, true).await?;
+        Ok(())
+    }
+
+    async fn fetch_info(ton: TonClient, addr: String, state: String) -> Result<DInfo, String> {
+        let abi = load_abi(DEBOT_ABI).unwrap();
+        let result = Self::run(
+            ton.clone(),
+            state.clone(),
+            addr.clone(),
+            abi.clone(),
+            "getRequiredInterfaces",
+            None
+        ).await;
+        let interfaces: Vec<String> = match result {
+            Ok(r) => {
+                let mut output = r.return_value.unwrap_or(json!({}));
+                serde_json::from_value(output["interfaces"].take())
+                .map_err(|e| format!(
+                    "failed to parse \"interfaces\" returned from \"getRequiredInterfaces\": {}", e
+                ))?
+            },
+            Err(_) => vec![],
+        };
+        let result = Self::run(ton.clone(), state.clone(), addr.clone(), abi.clone(), "getDebotInfo", None).await;
+        let mut info: DInfo = match result {
+            Ok(r) => {
+                let output = r.return_value.unwrap_or(json!({}));
+                serde_json::from_value(output)
+                    .map_err(|e| format!("failed to parse \"getDebotInfo\": {}", e) )?
+            },
+            Err(_) => Default::default(),
+        };
+        info.interfaces = interfaces;
+
+        // TODO: for compatibility with previous debots that returns abi in
+        // getDebotOptions. Remove later.
+        if info.dabi.is_none() {
+            let params = Self::run(ton, state, addr, abi, "getDebotOptions", None).await;
+            if let Ok(params) = params {
+                let params = params.return_value.unwrap_or(json!({}));
+                let opt_str = params["options"].as_str().unwrap_or("0");
+                let options = decode_abi_number::<u8>(opt_str).unwrap();
+                if options & OPTION_ABI != 0 {
+                    let abi_str = str_hex_to_utf8(params["debotAbi"].as_str().unwrap())
+                        .ok_or("cannot convert hex string to debot abi")?;
+                    info.dabi = Some(abi_str);
+                }
+            }
+        }
+
+        Ok(info)
     }
 
     async fn fetch_state(&mut self) -> Result<(), String> {
-        self.state = self.load_state(self.addr.clone()).await?;
-        let result = self.run_debot_get("getVersion", None).await?;
-
-        let name_hex = result["name"].as_str().unwrap();
-        let ver_str = result["semver"].as_str().unwrap();
-        let name = str_hex_to_utf8(name_hex).unwrap();
-        let ver = decode_abi_number::<u32>(ver_str).unwrap();
-        self.browser.log(format!(
-            "{}, version {}.{}.{}",
-            name,
-            (ver >> 16) as u8,
-            (ver >> 8) as u8,
-            ver as u8
-        )).await;
-
+        self.state = Self::load_state(self.ton.clone(), self.addr.clone()).await?;
+        self.info = Self::fetch_info(self.ton.clone(), self.addr.clone(), self.state.clone()).await?;
         self.update_options().await?;
-        let result = self.run_debot_get("fetch", None).await;
-        let mut context_vec: Vec<DContext> = if let Ok(mut res) = result {
-            serde_json::from_value(res["contexts"].take())
+        let result = self.run_debot_external("fetch", None).await;
+        let mut context_vec: Vec<DContext> = if let Ok(res) = result {
+            let mut output = res.return_value.unwrap_or(json!({}));
+            serde_json::from_value(output["contexts"].take())
                 .map_err(|e| {
                     format!("failed to parse \"contexts\" returned from \"fetch\": {}", e)
                 })?
@@ -160,19 +211,6 @@ impl DEngine {
         }
         self.state_machine = context_vec;
         Ok(())
-    }
-
-    pub async fn start(&mut self) -> Result<String, String> {
-        self.fetch_state().await?;
-        self.switch_state(STATE_ZERO, true).await?;
-        Ok(self.raw_abi.clone())
-    }
-
-    #[allow(dead_code)]
-    pub async fn version(&mut self) -> Result<String, String> {
-        self.run_debot_get("getVersion", None)
-            .await
-            .map(|res| res.to_string())
     }
 
     pub async fn execute_action(&mut self, act: &DAction) -> Result<(), String> {
@@ -458,54 +496,27 @@ impl DEngine {
         Ok(false)
     }
 
-    async fn run_debot_get(
-        &self,
-        func: &str,
-        args: Option<JsonValue>,
-    ) -> Result<JsonValue, String> {
-        self.run(
-            self.state.clone(),
-            self.addr.clone(),
-            self.abi.clone(),
-            func,
-            args,
-        )
-        .await
-        .map(|res| res.return_value.unwrap_or(json!({})))
-        .map_err(|e| format!("{}", e))
-    }
-
-    async fn run_get(
-        &self,
-        addr: String,
-        abi: Abi,
-        name: &str,
-        params: Option<JsonValue>,
-    ) -> Result<JsonValue, String> {
-        let state = self.load_state(addr.clone()).await?;
-        match self.run(state, addr, abi, name, params).await {
-            Ok(res) => Ok(res.return_value.unwrap_or(json!({}))),
-            Err(e) => {
-                error!("{:?}", e);
-                Err(self.handle_sdk_err(e).await)
-            },
-        }
-    }
-
     async fn run_debot_external(
         &mut self,
         name: &str,
         args: Option<JsonValue>,
     ) -> Result<RunOutput, String> {
         debug!("run_debot_external {}, args: {}", name, args.as_ref().unwrap_or(&json!({})));
-        let res = self.run(self.state.clone(), self.addr.clone(), self.abi.clone(), name, args).await;
+        let res = Self::run(
+            self.ton.clone(),
+            self.state.clone(),
+            self.addr.clone(),
+            self.abi.clone(),
+            name,
+            args
+        ).await;
         match res {
             Ok(res) => {
                 self.state = res.account.clone();
                 Ok(res)
-            }
+            },
             Err(e) => {
-                error!("{:?}", e);
+                error!("{}", e);
                 Err(self.handle_sdk_err(e).await)
             },
         }
@@ -572,14 +583,19 @@ impl DEngine {
             return Err(format!("target address is undefined"));
         }
         let (addr, abi) = self.get_target()?;
-        let result = self.run_get(addr, abi, getmethod, args).await?;
-        let result = self.run_debot_external(result_handler, Some(result)).await?;
+        let state = Self::load_state(self.ton.clone(), addr.clone()).await?;
+        let result = Self::run(self.ton.clone(), state, addr, abi, getmethod, args).await;
+        let result = match result {
+            Ok(r) => Ok(r.return_value),
+            Err(e) => Err(self.handle_sdk_err(e).await),
+        }?;
+        let result = self.run_debot_external(result_handler, result).await?;
         Ok(result.return_value)
     }
 
-    async fn load_state(&self, addr: String) -> Result<String, String> {
+    async fn load_state(ton: TonClient, addr: String) -> Result<String, String> {
         let account_request = query_collection(
-            self.ton.clone(),
+            ton,
             ParamsOfQueryCollection {
                 collection: "accounts".to_owned(),
                 filter: Some(serde_json::json!({
@@ -603,7 +619,8 @@ impl DEngine {
     }
 
     async fn update_options(&mut self) -> Result<(), String> {
-        let params = self.run_debot_get("getDebotOptions", None).await?;
+        let params = self.run_debot_external("getDebotOptions", None).await?.return_value;
+        let params = params.ok_or(format!("no return value"))?;
         let opt_str = params["options"].as_str().unwrap();
         let options = decode_abi_number::<u8>(opt_str).unwrap();
         if options & OPTION_ABI != 0 {
@@ -675,7 +692,7 @@ impl DEngine {
     }
 
     async fn run(
-        &self,
+        ton: TonClient,
         state: String,
         addr: String,
         abi: Abi,
@@ -686,7 +703,7 @@ impl DEngine {
 
         let msg_params = ParamsOfEncodeMessage {
             abi: abi.clone(),
-            address: Some(addr),
+            address: Some(addr.clone()),
             deploy_set: None,
             call_set: if args.is_none() {
                 CallSet::some_with_function(func)
@@ -697,10 +714,10 @@ impl DEngine {
             processing_try_index: None,
         };
 
-        let result = encode_message(self.ton.clone(), msg_params).await?;
+        let result = encode_message(ton.clone(), msg_params).await?;
 
         let result = run_tvm(
-            self.ton.clone(),
+            ton.clone(),
             ParamsOfRunTvm {
                 account: state,
                 message: result.message,
@@ -708,14 +725,19 @@ impl DEngine {
                 return_updated_account: Some(true),
                 ..Default::default()
             },
-        ).await?;
+        ).await;
 
-        RunOutput::new(
-            result.account,
-            self.addr.clone(),
-            result.decoded.and_then(|x| x.output),
-            result.out_messages,
-        )
+        match result {
+            Ok(res) => {
+                RunOutput::new(
+                    res.account,
+                    addr,
+                    res.decoded.and_then(|x| x.output),
+                    res.out_messages,
+                )
+            },
+            Err(e) => Err(e),
+        }
     }
 
     async fn call_target(
@@ -806,7 +828,7 @@ impl DEngine {
                 },
                 DebotCallType::GetMethod{msg, dest} => {
                     debug!("GetMethod call");
-                    let target_state = self.load_state(dest.clone()).await
+                    let target_state = Self::load_state(self.ton.clone(), dest.clone()).await
                         .map_err(|e| Error::execute_failed(e))?;
                     let answer_msg = calltype::run_get_method(
                         self.ton.clone(),
@@ -820,7 +842,7 @@ impl DEngine {
                 },
                 DebotCallType::External{msg, dest} => {
                     debug!("External call");
-                    let target_state = self.load_state(dest.clone()).await
+                    let target_state = Self::load_state(self.ton.clone(), dest.clone()).await
                         .map_err(|e| Error::execute_failed(e))?;
                     let signing_box = self.browser.get_signing_box().await
                         .map_err(|e| Error::external_call_failed(e))?;
@@ -854,17 +876,23 @@ impl DEngine {
         && err.code <  (ClientError::PROCESSING as u32) {
             // when debot function throws an exception
             if let Some(e) = err.data["exit_code"].as_i64() {
-                self.run_debot_get("getErrorDescription", Some(json!({ "error": e })))
-                    .await
-                    .ok()
-                    .and_then(|res| {
-                        res["desc"].as_str().and_then(|hex| {
-                            hex::decode(&hex)
-                                .ok()
-                                .and_then(|vec| String::from_utf8(vec).ok())
+                Self::run(
+                    self.ton.clone(),
+                    self.state.clone(),
+                    self.addr.clone(),
+                    self.abi.clone(),
+                    "getErrorDescription",
+                    Some(json!({ "error": e }))
+                ).await.ok().and_then(|res| {
+                    res.return_value.and_then(|v|
+                        v["desc"].as_str().and_then(|hex| {
+                        hex::decode(&hex)
+                            .ok()
+                            .and_then(|vec| String::from_utf8(vec).ok())
                         })
-                    })
-                    .unwrap_or(err.message)
+                    )
+                })
+                .unwrap_or(err.message)
             } else {
                 err.message
             }

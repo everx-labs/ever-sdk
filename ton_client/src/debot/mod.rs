@@ -22,6 +22,7 @@ mod dengine;
 mod dinterface;
 mod errors;
 mod helpers;
+mod info;
 mod msg_interface;
 mod routines;
 mod run_output;
@@ -35,7 +36,7 @@ pub use context::{DContext, STATE_EXIT, STATE_ZERO};
 pub use dengine::DEngine;
 pub use dinterface::{DebotInterface, DebotInterfaceExecutor, InterfaceResult};
 pub use errors::{Error, ErrorCode};
-
+use info::DInfo;
 use crate::error::ClientResult;
 use crate::ClientContext;
 use std::sync::Arc;
@@ -96,79 +97,150 @@ impl Into<DAction> for DebotAction {
     }
 }
 
-/// [UNSTABLE](UNSTABLE.md) Parameters to start debot.
-#[derive(Serialize, Deserialize, Default, ApiType)]
-pub struct ParamsOfStart {
-    /// Debot smart contract address
-    address: String,
+/// [UNSTABLE](UNSTABLE.md) Describes DeBot metadata.
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
+pub struct DebotInfo {
+    /// DeBot short name.
+    pub name: Option<String>,
+    /// DeBot semantic version.
+    pub version: Option<String>,
+    /// The name of DeBot deployer.
+    pub publisher: Option<String>,
+    /// Short info about DeBot.
+    pub key: Option<String>,
+    /// The name of DeBot developer.
+    pub author: Option<String>,
+    /// TON address of author for questions and donations.
+    pub support: Option<String>,
+    /// String with the first messsage from DeBot.
+    pub hello: Option<String>,
+    /// String with DeBot interface language (ISO-639).
+    pub language: Option<String>,
+    /// String with DeBot ABI.
+    pub dabi: Option<String>,
+    /// DeBot icon.
+    pub icon: Option<String>,
+    /// Vector with IDs of DInterfaces used by DeBot.
+    pub interfaces: Vec<String>,
 }
 
-/// [UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `start` and `fetch` functions.
+impl From<DInfo> for DebotInfo {
+    fn from(info: DInfo) -> Self {
+        Self {
+            name: info.name,
+            version: info.version,
+            publisher: info.publisher,
+            key: info.key,
+            author: info.author,
+            support: info.support,
+            hello: info.hello,
+            language: info.language,
+            dabi: info.dabi,
+            icon : info.icon,
+            interfaces: info.interfaces,
+        }
+    }
+}
+
+/// [UNSTABLE](UNSTABLE.md) Parameters to start DeBot.
+/// DeBot must be already initialized with init() function.
+#[derive(Serialize, Deserialize, Default, ApiType)]
+pub struct ParamsOfStart {
+    /// Debot handle which references an instance of debot engine.
+    debot_handle: DebotHandle,
+}
+
+/// [UNSTABLE](UNSTABLE.md) Starts the DeBot.
+///
+/// Downloads debot smart contract from blockchain and switches it to
+/// context zero.
+///
+/// This function must be used by Debot Browser to start a dialog with debot.
+/// While the function is executing, several Browser Callbacks can be called,
+/// since the debot tries to display all actions from the context 0 to the user.
+///
+/// When the debot starts SDK registers `BrowserCallbacks` AppObject.
+/// Therefore when `debote.remove` is called the debot is being deleted and the callback is called
+/// with `finish`=`true` which indicates that it will never be used again.
+#[api_function]
+pub async fn start(
+    context: Arc<ClientContext>,
+    params: ParamsOfStart,
+) -> ClientResult<()> {
+    let mutex = context
+        .debots
+        .get(&params.debot_handle.0)
+        .ok_or(Error::invalid_handle(params.debot_handle.0))?;
+    let mut dengine = mutex.1.lock().await;
+    dengine.start().await.map_err(Error::start_failed)
+}
+
+/// [UNSTABLE](UNSTABLE.md) Parameters to fetch DeBot metadata.
+#[derive(Serialize, Deserialize, Default, ApiType)]
+pub struct ParamsOfFetch {
+    /// Debot smart contract address.
+    pub address: String,
+}
+
+/// [UNSTABLE](UNSTABLE.md)
+#[derive(Serialize, Deserialize, Default, ApiType)]
+pub struct ResultOfFetch {
+    /// Debot metadata.
+    pub info: DebotInfo,
+}
+
+/// [UNSTABLE](UNSTABLE.md) Fetches DeBot metadata from blockchain.
+///
+/// Downloads DeBot from blockchain and creates and fetches its metadata.
+#[api_function]
+pub async fn fetch(
+    context: Arc<ClientContext>,
+    params: ParamsOfFetch,
+) -> ClientResult<ResultOfFetch> {
+    Ok(ResultOfFetch {
+        info : DEngine::fetch(context, params.address).await.map_err(Error::fetch_failed)?.into()
+    })
+}
+
+/// [UNSTABLE](UNSTABLE.md) Parameters to init DeBot.
+#[derive(Serialize, Deserialize, Default, ApiType)]
+pub struct ParamsOfInit {
+    /// Debot smart contract address
+    pub address: String,
+}
+
+/// [UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `init` function.
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct RegisteredDebot {
     /// Debot handle which references an instance of debot engine.
     pub debot_handle: DebotHandle,
     /// Debot abi as json string.
     pub debot_abi: String,
+    /// Debot metadata.
+    pub info: DebotInfo,
 }
 
-/// [UNSTABLE](UNSTABLE.md) Starts an instance of debot.
+/// [UNSTABLE](UNSTABLE.md) Creates an instance of DeBot.
 ///
-/// Downloads debot smart contract from blockchain and switches it to
-/// context zero.
-/// Returns a debot handle which can be used later in `execute` function.
-/// This function must be used by Debot Browser to start a dialog with debot.
-/// While the function is executing, several Browser Callbacks can be called,
-/// since the debot tries to display all actions from the context 0 to the user.
-///
-/// # Remarks
-/// `start` is equivalent to `fetch` + switch to context 0.
-///
-/// When the debot starts SDK registers `BrowserCallbacks` AppObject.
-/// Therefore when `debote.remove` is called the debot is being deleted and the callback is called
-/// with `finish`=`true` which indicates that it will never be used again.
-pub async fn start(
-    context: Arc<ClientContext>,
-    params: ParamsOfStart,
-    callbacks: impl BrowserCallbacks + Send + Sync + 'static,
-) -> ClientResult<RegisteredDebot> {
-    let mut dengine =
-        DEngine::new_with_client(params.address, None, context.clone(), Arc::new(callbacks));
-    let debot_abi = dengine.start().await.map_err(Error::start_failed)?;
-
-    let handle = context.get_next_id();
-    context.debots.insert(handle, Mutex::new(dengine));
-
-    Ok(RegisteredDebot { debot_handle: DebotHandle(handle), debot_abi })
-}
-
-/// [UNSTABLE](UNSTABLE.md) Parameters to fetch debot.
-#[derive(Serialize, Deserialize, Default, ApiType)]
-pub struct ParamsOfFetch {
-    /// Debot smart contract address
-    pub address: String,
-}
-
-/// [UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.
-///
-/// Downloads debot smart contract (code and data) from blockchain and creates
+/// Downloads DeBot smart contract (code and data) from blockchain and creates
 /// an instance of Debot Engine for it.
-///
+/// Returns a debot handle which can be used later in `start`, `execute` or `send` functions.
 /// # Remarks
 /// It does not switch debot to context 0. Browser Callbacks are not called.
-pub async fn fetch(
+/// Can be used to invoke DeBot without starting.
+pub async fn init(
     context: Arc<ClientContext>,
-    params: ParamsOfFetch,
+    params: ParamsOfInit,
     callbacks: impl BrowserCallbacks + Send + Sync + 'static,
 ) -> ClientResult<RegisteredDebot> {
     let mut dengine =
         DEngine::new_with_client(params.address, None, context.clone(), Arc::new(callbacks));
-    let debot_abi = dengine.fetch().await.map_err(Error::fetch_failed)?;
+    let info: DebotInfo = dengine.init().await.map_err(Error::fetch_failed)?.into();
 
     let handle = context.get_next_id();
     context.debots.insert(handle, Mutex::new(dengine));
-
-    Ok(RegisteredDebot { debot_handle: DebotHandle(handle), debot_abi })
+    let debot_abi = info.dabi.clone().unwrap_or(String::new());
+    Ok(RegisteredDebot { debot_handle: DebotHandle(handle), info, debot_abi })
 }
 
 /// [UNSTABLE](UNSTABLE.md) Parameters for executing debot action.
@@ -200,11 +272,18 @@ pub async fn execute(context: Arc<ClientContext>, params: ParamsOfExecute) -> Cl
         .map_err(Error::execute_failed)
 }
 
+/// [UNSTABLE](UNSTABLE.md)
+#[derive(Serialize, Deserialize, ApiType, Default)]
+pub struct ParamsOfRemove {
+    /// Debot handle which references an instance of debot engine.
+    pub debot_handle: DebotHandle,
+}
+
 /// [UNSTABLE](UNSTABLE.md) Destroys debot handle.
 ///
 /// Removes handle from Client Context and drops debot engine referenced by that handle.
 #[api_function]
-pub fn remove(context: Arc<ClientContext>, params: RegisteredDebot) -> ClientResult<()> {
+pub fn remove(context: Arc<ClientContext>, params: ParamsOfRemove) -> ClientResult<()> {
     context.debots.remove(&params.debot_handle.0);
     Ok(())
 }
