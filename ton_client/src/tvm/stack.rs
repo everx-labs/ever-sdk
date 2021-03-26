@@ -20,10 +20,8 @@ use serde_json::Value;
 use ton_types::BuilderData;
 use std::ops::Deref;
 use std::slice::Iter;
-use std::sync::Arc;
 use ton_vm::stack::{continuation::ContinuationData, integer::IntegerData};
 use ton_vm::stack::StackItem;
-use ton_vm::{boolean, int};
 
 enum ProcessingResult<'a> {
     Serialized(Value),
@@ -159,16 +157,16 @@ fn process_item(item: &StackItem) -> ClientResult<ProcessingResult> {
 pub fn deserialize_item(value: &Value) -> ClientResult<StackItem> {
     Ok(match value {
         Value::Null => StackItem::None,
-        Value::Bool(v) => boolean!(*v),
+        Value::Bool(v) => StackItem::boolean(*v),
         Value::Number(n) => {
             if let Some(i) = n.as_i64() {
-                int!(i)
+                StackItem::int(i)
             } else {
                 return Err(Error::invalid_input_stack("Invalid number value", value));
             }
         }
-        Value::String(s) => StackItem::Integer(Arc::new(parse_integer_data(&s)?)),
-        Value::Array(array) => StackItem::Tuple(deserialize_items(array.iter())?),
+        Value::String(s) => StackItem::integer(parse_integer_data(&s)?),
+        Value::Array(array) => StackItem::tuple(deserialize_items(array.iter())?),
         Value::Object(_) => {
             let object = serde_json::from_value(value.clone())
                 .map_err(|err| Error::invalid_input_stack(
@@ -176,24 +174,24 @@ pub fn deserialize_item(value: &Value) -> ClientResult<StackItem> {
             match object {
                 ComplexType::Builder(string) => {
                     let cell = deserialize_cell_from_base64(&string, "Builder")?.1;
-                    StackItem::Builder(Arc::new(BuilderData::from(&cell)))
+                    StackItem::builder(BuilderData::from(&cell))
                 }
                 ComplexType::Cell(string) => {
                     let cell = deserialize_cell_from_base64(&string, "Cell")?.1;
-                    StackItem::Cell(cell)
+                    StackItem::cell(cell)
                 }
                 ComplexType::Continuation(string) => {
                     let cell = deserialize_cell_from_base64(&string, "Continuation")?.1;
-                    StackItem::Continuation(Arc::new(ContinuationData::with_code(cell.into())))
+                    StackItem::continuation(ContinuationData::with_code(cell.into()))
                 }
                 ComplexType::Slice(string) => {
                     let cell = deserialize_cell_from_base64(&string, "Slice")?.1;
-                    StackItem::Slice(cell.into())
+                    StackItem::slice(cell.into())
                 }
                 ComplexType::List(mut vec) => {
                     let mut list = StackItem::None;
                     while let Some(item) = vec.pop() {
-                        list = StackItem::Tuple(vec![deserialize_item(&item)?, list]);
+                        list = StackItem::tuple(vec![deserialize_item(&item)?, list]);
                     }
                     list
                 }
