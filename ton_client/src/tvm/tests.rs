@@ -29,8 +29,7 @@ use api_info::ApiModule;
 use serde_json::Value;
 use ton_executor::BlockchainConfig;
 use ton_types::{BuilderData, Cell};
-use ton_vm::{boolean, stack::{StackItem, continuation::ContinuationData, integer::IntegerData}};
-use ton_vm::int;
+use ton_vm::stack::{StackItem, continuation::ContinuationData};
 use std::sync::Arc;
 
 const ELECTOR_ADDRESS: &str = "-1:3333333333333333333333333333333333333333333333333333333333333333";
@@ -535,34 +534,34 @@ fn test_stack_serialization() {
         ]),
     ]);
 
-    let list = StackItem::Tuple(vec![
-        int!(123),
-        StackItem::Tuple(vec![
-            int!(456),
-            StackItem::Tuple(vec![
-                int!(789),
+    let list = StackItem::tuple(vec![
+        StackItem::int(123),
+        StackItem::tuple(vec![
+            StackItem::int(456),
+            StackItem::tuple(vec![
+                StackItem::int(789),
                 StackItem::None,
             ])
         ])
     ]);
 
-    let extended_list = StackItem::Tuple(vec![
-        StackItem::Tuple(vec![
-            StackItem::Tuple(vec![int!(123), int!(456)]),
-            StackItem::Tuple(vec![
-                int!(123),
+    let extended_list = StackItem::tuple(vec![
+        StackItem::tuple(vec![
+            StackItem::tuple(vec![StackItem::int(123), StackItem::int(456)]),
+            StackItem::tuple(vec![
+                StackItem::int(123),
                 StackItem::None,
             ])
         ]),
-        StackItem::Tuple(vec![
-            StackItem::Tuple(vec![
-                StackItem::Tuple(vec![int!(123)]),
-                StackItem::Tuple(vec![
-                    int!(123),
-                    StackItem::Tuple(vec![
-                        int!(456),
-                        StackItem::Tuple(vec![
-                            int!(789),
+        StackItem::tuple(vec![
+            StackItem::tuple(vec![
+                StackItem::tuple(vec![StackItem::int(123)]),
+                StackItem::tuple(vec![
+                    StackItem::int(123),
+                    StackItem::tuple(vec![
+                        StackItem::int(456),
+                        StackItem::tuple(vec![
+                            StackItem::int(789),
                             StackItem::None
                         ])
                     ])
@@ -578,16 +577,16 @@ fn test_stack_serialization() {
         stack_items, 
         vec![
             StackItem::None,
-            int!(nan),
-            int!(123),
-            int!(parse_hex "456"),
-            boolean!(true),
-            boolean!(false),
-            StackItem::Cell(empty_cell.clone()),
-            StackItem::Builder(Arc::new(BuilderData::new())),
-            StackItem::Continuation(Arc::new(ContinuationData::with_code(empty_cell.clone().into()))),
-            StackItem::Slice(empty_cell.clone().into()),
-            StackItem::Tuple(vec![int!(123), int!(456)]),
+            StackItem::nan(),
+            StackItem::int(123),
+            StackItem::int(0x456),
+            StackItem::boolean(true),
+            StackItem::boolean(false),
+            StackItem::cell(empty_cell.clone()),
+            StackItem::builder(BuilderData::new()),
+            StackItem::continuation(ContinuationData::with_code(empty_cell.clone().into())),
+            StackItem::slice(empty_cell.clone().into()),
+            StackItem::tuple(vec![StackItem::int(123), StackItem::int(456)]),
             list.clone(),
             list.clone(),
             extended_list.clone(),

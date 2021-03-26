@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.2] – 2021-03-19
+
+### Refactor
+- Some internal refactor due to `ton-block` changes
+
 ## [1.11.1] – 2021-03-15
 
 ### New
