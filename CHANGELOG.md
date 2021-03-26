@@ -8,6 +8,11 @@ All notable changes to this project will be documented in this file.
 - [`utils.compress_zstd`](docs/mod_utils.md#compress_zstd) compresses data using Facebook's Zstandard algorithm.
 - [`utils.decompress_zstd`](docs/mod_utils.md#decompress_zstd) decompresses data using Facebook's Zstandard algorithm.
 
+## [1.11.2] – 2021-03-19
+
+### Refactor
+- Some internal refactor due to `ton-block` changes
+
 ## [1.11.1] – 2021-03-15
 
 ### New
