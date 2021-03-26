@@ -8,6 +8,10 @@ Misc utility Functions.
 
 [calc_storage_fee](#calc_storage_fee) – Calculates storage fee for an account over a specified time period
 
+[compress_zstd](#compress_zstd) – Compresses data using Zstandard algorithm
+
+[decompress_zstd](#decompress_zstd) – Decompresses data using Zstandard algorithm
+
 ## Types
 [AddressStringFormat](#AddressStringFormat)
 
@@ -18,6 +22,14 @@ Misc utility Functions.
 [ParamsOfCalcStorageFee](#ParamsOfCalcStorageFee)
 
 [ResultOfCalcStorageFee](#ResultOfCalcStorageFee)
+
+[ParamsOfCompressZstd](#ParamsOfCompressZstd)
+
+[ResultOfCompressZstd](#ResultOfCompressZstd)
+
+[ParamsOfDecompressZstd](#ParamsOfDecompressZstd)
+
+[ResultOfDecompressZstd](#ResultOfDecompressZstd)
 
 
 # Functions
@@ -75,6 +87,64 @@ function calc_storage_fee(
 ### Result
 
 - `fee`: _string_
+
+
+## compress_zstd
+
+Compresses data using Zstandard algorithm
+
+```ts
+type ParamsOfCompressZstd = {
+    uncompressed: string,
+    level?: number
+}
+
+type ResultOfCompressZstd = {
+    compressed: string
+}
+
+function compress_zstd(
+    params: ParamsOfCompressZstd,
+): Promise<ResultOfCompressZstd>;
+```
+### Parameters
+- `uncompressed`: _string_ – Uncompressed data.
+<br>Must be encoded as base64.
+- `level`?: _number_ – Compression level, from 1 to 21. Where: 1 - lowest compression level (fastest compression); 21 - highest compression level (slowest compression). If level is omitted, the default compression level is used (currently `3`).
+
+
+### Result
+
+- `compressed`: _string_ – Compressed data.
+<br>Must be encoded as base64.
+
+
+## decompress_zstd
+
+Decompresses data using Zstandard algorithm
+
+```ts
+type ParamsOfDecompressZstd = {
+    compressed: string
+}
+
+type ResultOfDecompressZstd = {
+    decompressed: string
+}
+
+function decompress_zstd(
+    params: ParamsOfDecompressZstd,
+): Promise<ResultOfDecompressZstd>;
+```
+### Parameters
+- `compressed`: _string_ – Compressed data.
+<br>Must be encoded as base64.
+
+
+### Result
+
+- `decompressed`: _string_ – Decompressed data.
+<br>Must be encoded as base64.
 
 
 # Types
@@ -153,5 +223,47 @@ type ResultOfCalcStorageFee = {
 }
 ```
 - `fee`: _string_
+
+
+## ParamsOfCompressZstd
+```ts
+type ParamsOfCompressZstd = {
+    uncompressed: string,
+    level?: number
+}
+```
+- `uncompressed`: _string_ – Uncompressed data.
+<br>Must be encoded as base64.
+- `level`?: _number_ – Compression level, from 1 to 21. Where: 1 - lowest compression level (fastest compression); 21 - highest compression level (slowest compression). If level is omitted, the default compression level is used (currently `3`).
+
+
+## ResultOfCompressZstd
+```ts
+type ResultOfCompressZstd = {
+    compressed: string
+}
+```
+- `compressed`: _string_ – Compressed data.
+<br>Must be encoded as base64.
+
+
+## ParamsOfDecompressZstd
+```ts
+type ParamsOfDecompressZstd = {
+    compressed: string
+}
+```
+- `compressed`: _string_ – Compressed data.
+<br>Must be encoded as base64.
+
+
+## ResultOfDecompressZstd
+```ts
+type ResultOfDecompressZstd = {
+    decompressed: string
+}
+```
+- `decompressed`: _string_ – Decompressed data.
+<br>Must be encoded as base64.
 
 

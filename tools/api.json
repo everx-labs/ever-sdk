@@ -6914,6 +6914,73 @@
           ],
           "summary": null,
           "description": null
+        },
+        {
+          "name": "ParamsOfCompressZstd",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "uncompressed",
+              "type": "String",
+              "summary": "Uncompressed data.",
+              "description": "Must be encoded as base64."
+            },
+            {
+              "name": "level",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "Int",
+                "number_size": 32
+              },
+              "summary": "Compression level, from 1 to 21. Where: 1 - lowest compression level (fastest compression); 21 - highest compression level (slowest compression). If level is omitted, the default compression level is used (currently `3`).",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfCompressZstd",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "compressed",
+              "type": "String",
+              "summary": "Compressed data.",
+              "description": "Must be encoded as base64."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfDecompressZstd",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "compressed",
+              "type": "String",
+              "summary": "Compressed data.",
+              "description": "Must be encoded as base64."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfDecompressZstd",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "decompressed",
+              "type": "String",
+              "summary": "Decompressed data.",
+              "description": "Must be encoded as base64."
+            }
+          ],
+          "summary": null,
+          "description": null
         }
       ],
       "functions": [
@@ -6988,6 +7055,82 @@
               {
                 "type": "Ref",
                 "ref_name": "utils.ResultOfCalcStorageFee"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "compress_zstd",
+          "summary": "Compresses data using Zstandard algorithm",
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "utils.ParamsOfCompressZstd",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "utils.ResultOfCompressZstd"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "decompress_zstd",
+          "summary": "Decompresses data using Zstandard algorithm",
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "utils.ParamsOfDecompressZstd",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "utils.ResultOfDecompressZstd"
               }
             ]
           },
