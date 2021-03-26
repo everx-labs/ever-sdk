@@ -118,6 +118,8 @@ pub struct DebotInfo {
     pub language: Option<String>,
     /// String with DeBot ABI.
     pub dabi: Option<String>,
+    /// DeBot icon.
+    pub icon: Option<String>,
     /// Vector with IDs of DInterfaces used by DeBot.
     pub interfaces: Vec<String>,
 }
@@ -134,6 +136,7 @@ impl From<DInfo> for DebotInfo {
             hello: info.hello,
             language: info.language,
             dabi: info.dabi,
+            icon : info.icon,
             interfaces: info.interfaces,
         }
     }
@@ -183,7 +186,7 @@ pub struct ParamsOfFetch {
 #[derive(Serialize, Deserialize, Default, ApiType)]
 pub struct ResultOfFetch {
     /// Debot metadata.
-    pub debot_info: DebotInfo,
+    pub info: DebotInfo,
 }
 
 /// [UNSTABLE](UNSTABLE.md) Fetches DeBot metadata from blockchain.
@@ -195,7 +198,7 @@ pub async fn fetch(
     params: ParamsOfFetch,
 ) -> ClientResult<ResultOfFetch> {
     Ok(ResultOfFetch {
-        debot_info : DEngine::fetch(context, params.address).await.map_err(Error::fetch_failed)?.into()
+        info : DEngine::fetch(context, params.address).await.map_err(Error::fetch_failed)?.into()
     })
 }
 
@@ -214,7 +217,7 @@ pub struct RegisteredDebot {
     /// Debot abi as json string.
     pub debot_abi: String,
     /// Debot metadata.
-    pub debot_info: DebotInfo,
+    pub info: DebotInfo,
 }
 
 /// [UNSTABLE](UNSTABLE.md) Creates an instance of DeBot.
@@ -232,12 +235,12 @@ pub async fn init(
 ) -> ClientResult<RegisteredDebot> {
     let mut dengine =
         DEngine::new_with_client(params.address, None, context.clone(), Arc::new(callbacks));
-    let debot_info: DebotInfo = dengine.init().await.map_err(Error::fetch_failed)?.into();
+    let info: DebotInfo = dengine.init().await.map_err(Error::fetch_failed)?.into();
 
     let handle = context.get_next_id();
     context.debots.insert(handle, Mutex::new(dengine));
-    let debot_abi = debot_info.dabi.clone().unwrap_or(String::new());
-    Ok(RegisteredDebot { debot_handle: DebotHandle(handle), debot_info, debot_abi })
+    let debot_abi = info.dabi.clone().unwrap_or(String::new());
+    Ok(RegisteredDebot { debot_handle: DebotHandle(handle), info, debot_abi })
 }
 
 /// [UNSTABLE](UNSTABLE.md) Parameters for executing debot action.

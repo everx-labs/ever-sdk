@@ -163,6 +163,7 @@ impl DEngine {
             Err(_) => Default::default(),
         };
         info.interfaces = interfaces;
+
         // TODO: for compatibility with previous debots that returns abi in
         // getDebotOptions. Remove later.
         if info.dabi.is_none() {

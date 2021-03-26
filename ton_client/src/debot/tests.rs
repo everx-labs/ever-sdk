@@ -252,7 +252,7 @@ impl TestBrowser {
         let handle_copy = RegisteredDebot {
             debot_handle: handle.debot_handle.clone(),
             debot_abi: handle.debot_abi.clone(),
-            debot_info: handle.debot_info.clone(),
+            info: handle.info.clone(),
         };
         state.bots.lock().await.insert(address.clone(), handle_copy);
         handle
@@ -264,7 +264,7 @@ impl TestBrowser {
                 "debot.fetch",
                 ParamsOfFetch { address: state.address.clone() },
             ).await.unwrap();
-            assert_eq!(res.debot_info, state.info);
+            assert_eq!(res.info, state.info);
         }
         let handle = Self::fetch_debot(client.clone(), state.clone(), state.address.clone()).await;
 
@@ -860,7 +860,16 @@ async fn init_debot_pair(client: Arc<TestClient>, debot1: &str, debot2: &str) ->
 }
 
 async fn init_hello_debot(client: Arc<TestClient>) -> DebotData {
-    init_simple_debot(client, "helloDebot").await
+    let data = init_simple_debot(client.clone(), "helloDebot").await;
+    let abi = Abi::Contract(serde_json::from_str(&data.abi).unwrap());
+    let _ = client.net_process_function(
+        data.debot_addr.clone(),
+        abi,
+        "setIcon",
+        json!({ "icon": TestClient::icon("helloDebot", Some(2)) }),
+        Signer::Keys { keys: data.keys.clone() },
+    ).await.unwrap();
+    data
 }
 
 const EXIT_CHOICE: u8 = 9;
@@ -1202,7 +1211,6 @@ async fn test_debot_sdk_get_accounts_by_hash() {
     let client = std::sync::Arc::new(TestClient::new());
     let count = 6;
     let (debot, abi) = init_debot5(client.clone(), count).await;
-
     let steps = serde_json::from_value(json!([])).unwrap();
     TestBrowser::execute(
         client.clone(),
@@ -1218,7 +1226,7 @@ async fn test_debot_sdk_get_accounts_by_hash() {
 async fn test_debot_getinfo() {
     let client = std::sync::Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_hello_debot(client.clone()).await;
-
+    let icon = TestClient::icon("helloDebot", Some(2));
     let steps = serde_json::from_value(json!([])).unwrap();
     TestBrowser::execute_with_info(
         client.clone(),
@@ -1240,6 +1248,7 @@ async fn test_debot_getinfo() {
             hello: Some("Hello, i am a HelloWorld DeBot.".to_owned()),
             language: Some("en".to_owned()),
             dabi: Some(abi),
+            icon: Some(icon),
             interfaces: vec!["0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3".to_owned()],
         },
     ).await;

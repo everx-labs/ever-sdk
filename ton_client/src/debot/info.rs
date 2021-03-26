@@ -22,6 +22,7 @@ pub struct DInfo {
     pub language: Option<String>,
     #[serde(deserialize_with = "from_opt_hex_to_str")]
     pub dabi: Option<String>,
+    pub icon: Option<String>,
     #[serde(default)]
     pub interfaces: Vec<String>,
 }
