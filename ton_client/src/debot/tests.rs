@@ -382,6 +382,10 @@ impl TestBrowser {
                 Self::call_execute_boxed(client, state, "debot.fetch").await;
                 ResultOfAppDebotBrowser::InvokeDebot
             },
+            ParamsOfAppDebotBrowser::Approve {activity} => {
+                println!("{:?}", activity);
+                ResultOfAppDebotBrowser::Approve{ approved: true }
+            },
             _ => panic!("invalid call {:#?}", params)
         }
     }
