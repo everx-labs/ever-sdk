@@ -593,7 +593,7 @@ impl DEngine {
         Ok(result.return_value)
     }
 
-    async fn load_state(ton: TonClient, addr: String) -> Result<String, String> {
+    pub(crate) async fn load_state(ton: TonClient, addr: String) -> Result<String, String> {
         let account_request = query_collection(
             ton,
             ParamsOfQueryCollection {

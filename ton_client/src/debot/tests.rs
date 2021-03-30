@@ -749,7 +749,7 @@ async fn init_simple_debot(client: Arc<TestClient>, name: &str) -> DebotData {
         address: None,
         call_set,
     };
-    let debot_addr = client.deploy_with_giver_async(deploy_debot_params, Some(1_000_000_000u64)).await;
+    let debot_addr = client.deploy_with_giver_async(deploy_debot_params, Some(100_000_000_000u64)).await;
     let _ = client.net_process_function(
         debot_addr.clone(),
         debot_abi.clone(),
@@ -1255,6 +1255,25 @@ async fn test_debot_getinfo() {
             icon: Some(icon),
             interfaces: vec!["0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3".to_owned()],
         },
+    ).await;
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_debot_approve() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot6").await;
+
+    let steps = serde_json::from_value(json!([])).unwrap();
+    TestBrowser::execute(
+        client.clone(),
+        debot_addr.clone(),
+        keys,
+        steps,
+        vec![
+            format!("Send1 succeeded"),
+            format!("Send2 rejected"),
+        ],
+        abi
     ).await;
 }
 

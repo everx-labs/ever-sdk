@@ -134,7 +134,7 @@ pub async fn send_ext_msg<'a>(
     .await?
     .pubkey;
     let activity =
-        emulate_transaction(ton.clone(), &fixed_msg, &dest_addr, target_state, pubkey).await?;
+        emulate_transaction(ton.clone(), &dest_addr, &fixed_msg, target_state, pubkey).await?;
     if !browser.approve(activity).await? {
         let error_body = build_onerror_body(onerror_id, Error::operation_rejected())?;
         return build_internal_message(&dest_addr, debot_addr, error_body);
@@ -372,7 +372,6 @@ async fn emulate_transaction(
         },
     )
     .await?;
-
     let mut out = vec![];
     for out_msg in result.out_messages {
         let parsed = parse_message(client.clone(), ParamsOfParse { boc: out_msg })
@@ -389,7 +388,6 @@ async fn emulate_transaction(
             });
         }
     }
-
     let fee = result.fees.total_account_fees;
 
     Ok(DebotActivity::Transaction {
