@@ -14,8 +14,9 @@
 
  use crate::client::{AppObject, ClientContext};
  use crate::error::ClientResult;
- use crate::debot::{DAction, DebotAction, BrowserCallbacks, ParamsOfFetch, 
-    ParamsOfStart, RegisteredDebot};
+ use crate::debot::Error;
+ use crate::debot::{DAction, DebotAction, BrowserCallbacks, ParamsOfFetch,
+    ParamsOfStart, RegisteredDebot, DebotActivity};
  use crate::crypto::SigningBoxHandle;
 
 /// [UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.
@@ -28,21 +29,24 @@ pub enum ResultOfAppDebotBrowser {
         value: String
     },
     /// Result of getting signing box.
-    GetSigningBox { 
+    GetSigningBox {
         /// Signing box for signing data requested by debot engine. Signing box is owned and disposed by debot engine
         signing_box: SigningBoxHandle
     },
     /// Result of debot invoking.
     InvokeDebot,
+    Approve {
+        approved: bool,
+    }
 }
 
 /// [UNSTABLE](UNSTABLE.md) Debot Browser callbacks
-/// 
+///
 /// Called by debot engine to communicate with debot browser.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 #[serde(tag="type")]
 pub enum ParamsOfAppDebotBrowser {
-    /// Print message to user. 
+    /// Print message to user.
     Log {
         /// A string that must be printed to user.
         msg: String
@@ -61,7 +65,7 @@ pub enum ParamsOfAppDebotBrowser {
         /// At least `description` property must be shown from [DebotAction] structure.
         action: DebotAction
     },
-    /// Request user input. 
+    /// Request user input.
     Input {
         /// A prompt string that must be printed to user before input request.
         prompt: String
@@ -77,32 +81,35 @@ pub enum ParamsOfAppDebotBrowser {
     },
     /// Used by Debot to call DInterface implemented by Debot Browser.
     Send {
-        /// Internal message to DInterface address. Message body contains 
+        /// Internal message to DInterface address. Message body contains
         /// interface function and parameters.
         message: String,
-    }
+    },
+    Approve {
+        activity: DebotActivity,
+    },
 }
- 
+
 /// Wrapper for native Debot Browser callbacks.
-/// 
+///
 /// Adapter between SDK application and low level debot interface.
 pub(crate) struct DebotBrowserAdapter {
     app_object: AppObject<ParamsOfAppDebotBrowser, ResultOfAppDebotBrowser>,
 }
- 
+
 impl DebotBrowserAdapter {
     pub fn new(app_object: AppObject<ParamsOfAppDebotBrowser, ResultOfAppDebotBrowser>) -> Self {
         Self { app_object }
     }
 }
- 
+
  #[async_trait::async_trait]
  impl BrowserCallbacks for DebotBrowserAdapter {
-     
+
      async fn log(&self, msg: String) {
          self.app_object.notify(ParamsOfAppDebotBrowser::Log { msg });
      }
- 
+
     async fn switch(&self, ctx_id: u8) {
          self.app_object.notify(ParamsOfAppDebotBrowser::Switch { context_id: ctx_id });
      }
@@ -110,11 +117,11 @@ impl DebotBrowserAdapter {
     async fn switch_completed(&self) {
         self.app_object.notify(ParamsOfAppDebotBrowser::SwitchCompleted);
     }
- 
+
      async fn show_action(&self, act: DAction) {
          self.app_object.notify(ParamsOfAppDebotBrowser::ShowAction { action: act.into() });
      }
- 
+
      async fn input(&self, prompt: &str, value: &mut String) {
          let response = self.app_object.call(ParamsOfAppDebotBrowser::Input {
                  prompt: prompt.to_owned(),
@@ -128,19 +135,19 @@ impl DebotBrowserAdapter {
              Err(e) => error!("debot browser failed to show action: {}", e),
          }
      }
- 
+
      async fn get_signing_box(&self) -> Result<SigningBoxHandle, String> {
          let response = self.app_object.call(ParamsOfAppDebotBrowser::GetSigningBox)
              .await
              .map_err(|err| format!("debot browser failed to load keys: {}", err))?;
- 
+
         match response {
             ResultOfAppDebotBrowser::GetSigningBox { signing_box } => Ok(signing_box),
             _ => Err(crate::client::Error::unexpected_callback_response(
                 "GetSigningBox", response).to_string()),
         }
      }
- 
+
      async fn invoke_debot(&self, debot: String, action: DAction) -> Result<(), String> {
          let response = self.app_object.call(ParamsOfAppDebotBrowser::InvokeDebot {
              debot_addr: debot,
@@ -148,33 +155,40 @@ impl DebotBrowserAdapter {
          })
          .await
          .map_err(|e| {
-             error!("debot browser failed to invoke debot: {}", e);
              format!("debot browser failed to invoke debot: {}", e)
          })?;
- 
-         match response {
-             ResultOfAppDebotBrowser::InvokeDebot => Ok(()),
-             _ => {
-                 error!("unexpected debot browser response: {:?}", response);
-                 Err(format!("unexpected debot browser response: {:?}", response))
-             },
-         }
+
+        match response {
+            ResultOfAppDebotBrowser::InvokeDebot => Ok(()),
+            _ => {
+                Err(format!("unexpected debot browser response: {:?}", response))
+            },
+        }
      }
 
     async fn send(&self, message: String) {
         self.app_object.notify(ParamsOfAppDebotBrowser::Send { message });
     }
+
+    async fn approve(&self, activity: DebotActivity) -> ClientResult<bool> {
+        let response = self.app_object.call(ParamsOfAppDebotBrowser::Approve { activity }).await?;
+
+        match response {
+            ResultOfAppDebotBrowser::Approve{approved} => Ok(approved),
+            _ => Err(Error::browser_callback_failed("unexpected response")),
+        }
+    }
  }
 
 /// [UNSTABLE](UNSTABLE.md) Starts an instance of debot.
-/// 
+///
 /// Downloads debot smart contract from blockchain and switches it to
 /// context zero.
 /// Returns a debot handle which can be used later in `execute` function.
 /// This function must be used by Debot Browser to start a dialog with debot.
 /// While the function is executing, several Browser Callbacks can be called,
 /// since the debot tries to display all actions from the context 0 to the user.
-/// 
+///
 /// # Remarks
 /// `start` is equivalent to `fetch` + switch to context 0.
 #[api_function]
@@ -188,10 +202,10 @@ pub(crate) async fn start(
 }
 
 /// [UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.
-/// 
-/// Downloads debot smart contract (code and data) from blockchain and creates 
+///
+/// Downloads debot smart contract (code and data) from blockchain and creates
 /// an instance of Debot Engine for it.
-/// 
+///
 /// # Remarks
 /// It does not switch debot to context 0. Browser Callbacks are not called.
 #[api_function]

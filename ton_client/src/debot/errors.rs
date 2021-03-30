@@ -26,6 +26,8 @@ pub enum ErrorCode {
     DebotGetMethodFailed = 808,
     DebotInvalidMsg = 809,
     DebotExternalCallFailed = 810,
+    DebotBrowserCallbackFailed = 811,
+    DebotOperationRejected = 812,
 }
 pub struct Error;
 
@@ -101,6 +103,20 @@ impl Error {
         error(
             ErrorCode::DebotExternalCallFailed,
             format!("external call failed: ({})", err),
+        )
+    }
+
+    pub fn operation_rejected() -> ClientError {
+        error(
+            ErrorCode::DebotOperationRejected,
+            format!("Debot operation was rejected by user"),
+        )
+    }
+
+    pub fn browser_callback_failed(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::DebotBrowserCallbackFailed,
+            format!("Debot browser callback failed: {}", err),
         )
     }
 }

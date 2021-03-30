@@ -12,6 +12,7 @@
 */
 
 mod action;
+mod activity;
 mod base64_interface;
 mod hex_interface;
 mod browser;
@@ -30,6 +31,7 @@ mod sdk_interface;
 mod tests;
 
 pub use action::DAction;
+pub use activity::{DebotActivity, Spending};
 pub use browser::BrowserCallbacks;
 pub use context::{DContext, STATE_EXIT, STATE_ZERO};
 pub use dengine::DEngine;

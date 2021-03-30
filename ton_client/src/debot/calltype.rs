@@ -1,20 +1,22 @@
 use super::errors::Error;
 use super::helpers::build_internal_message;
-use super::{BrowserCallbacks, TonClient};
+use super::{BrowserCallbacks, DebotActivity, Spending, TonClient};
 use crate::abi::Signer;
 use crate::boc::internal::{deserialize_object_from_base64, serialize_object_to_base64};
-use crate::crypto::SigningBoxHandle;
+use crate::boc::{parse_message, ParamsOfParse};
+use crate::crypto::{signing_box_get_public_key, RegisteredSigningBox, SigningBoxHandle};
+use crate::encoding::decode_abi_number;
 use crate::error::{ClientError, ClientResult};
 use crate::processing::{
     send_message, wait_for_transaction, ParamsOfSendMessage, ParamsOfWaitForTransaction,
     ProcessingEvent,
 };
-use crate::tvm::{run_tvm, ParamsOfRunTvm};
+use crate::tvm::{run_executor, run_tvm, AccountForExecutor, ParamsOfRunExecutor, ParamsOfRunTvm};
 use std::convert::TryFrom;
 use std::fmt::Display;
 use std::sync::Arc;
 use ton_block::{Message, MsgAddressExt};
-use ton_types::{BuilderData, Cell, IBitstring};
+use ton_types::{BuilderData, Cell, IBitstring, SliceData};
 
 const SUPPORTED_ABI_VERSION: u8 = 2;
 
@@ -111,17 +113,32 @@ pub async fn send_ext_msg<'a>(
     ton: TonClient,
     msg: String,
     signing_box: SigningBoxHandle,
-    _target_state: String,
+    target_state: String,
     debot_addr: &'a String,
 ) -> ClientResult<String> {
     let signer = Signer::SigningBox {
-        handle: signing_box,
+        handle: signing_box.clone(),
     };
 
     let (answer_id, onerror_id, func_id, dest_addr, fixed_msg) =
         decode_and_fix_ext_msg(ton.clone(), msg, signer)
             .await
             .map_err(|e| Error::external_call_failed(e))?;
+
+    let pubkey = signing_box_get_public_key(
+        ton.clone(),
+        RegisteredSigningBox {
+            handle: signing_box,
+        },
+    )
+    .await?
+    .pubkey;
+    let activity =
+        emulate_transaction(ton.clone(), &fixed_msg, &dest_addr, target_state, pubkey).await?;
+    if !browser.approve(activity).await? {
+        let error_body = build_onerror_body(onerror_id, Error::operation_rejected())?;
+        return build_internal_message(&dest_addr, debot_addr, error_body);
+    }
 
     let browser = browser.clone();
     let callback = move |event| {
@@ -182,19 +199,24 @@ pub async fn send_ext_msg<'a>(
         }
         Err(e) => {
             debug!("Transaction failed: {:?}", e);
-            let mut new_body = BuilderData::new();
-            new_body.append_u32(onerror_id).map_err(msg_err)?;
-            new_body.append_u32(e.code).map_err(msg_err)?;
-            let error_code = e
-                .data
-                .pointer("/local_error/data/exit_code")
-                .or(e.data.pointer("/exit_code"))
-                .and_then(|val| val.as_i64())
-                .unwrap_or(0);
-            new_body.append_u32(error_code as u32).map_err(msg_err)?;
-            build_internal_message(&dest_addr, debot_addr, new_body.into())
+            let error_body = build_onerror_body(onerror_id, e)?;
+            build_internal_message(&dest_addr, debot_addr, error_body)
         }
     }
+}
+
+fn build_onerror_body(onerror_id: u32, e: ClientError) -> ClientResult<SliceData> {
+    let mut new_body = BuilderData::new();
+    new_body.append_u32(onerror_id).map_err(msg_err)?;
+    new_body.append_u32(e.code).map_err(msg_err)?;
+    let error_code = e
+        .data
+        .pointer("/local_error/data/exit_code")
+        .or(e.data.pointer("/exit_code"))
+        .and_then(|val| val.as_i64())
+        .unwrap_or(0);
+    new_body.append_u32(error_code as u32).map_err(msg_err)?;
+    Ok(new_body.into())
 }
 
 async fn decode_and_fix_ext_msg(
@@ -325,4 +347,57 @@ fn build_answer_msg(
     }
 
     build_internal_message(dest_addr, debot_addr, new_body.into())
+}
+
+async fn emulate_transaction(
+    client: TonClient,
+    dst: &String,
+    msg: &String,
+    target_state: String,
+    signkey: String,
+) -> ClientResult<DebotActivity> {
+    let result = run_executor(
+        client.clone(),
+        ParamsOfRunExecutor {
+            message: msg.clone(),
+            account: AccountForExecutor::Account {
+                boc: target_state,
+                unlimited_balance: None,
+            },
+            execution_options: None,
+            abi: None,
+            skip_transaction_check: None,
+            boc_cache: None,
+            return_updated_account: Some(false),
+        },
+    )
+    .await?;
+
+    let mut out = vec![];
+    for out_msg in result.out_messages {
+        let parsed = parse_message(client.clone(), ParamsOfParse { boc: out_msg })
+            .await?
+            .parsed;
+        let msg_type = parsed["msg_type"].as_u64().unwrap();
+        // if internal message
+        if msg_type == 0 {
+            let out_dst = parsed["dst"].as_str().unwrap().to_owned();
+            let out_amount = decode_abi_number(parsed["value"].as_str().unwrap())?;
+            out.push(Spending {
+                dst: out_dst,
+                amount: out_amount,
+            });
+        }
+    }
+
+    let fee = result.fees.total_account_fees;
+
+    Ok(DebotActivity::Transaction {
+        msg: msg.clone(),
+        dst: dst.clone(),
+        out,
+        fee,
+        setcode: false,
+        signkey,
+    })
 }

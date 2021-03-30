@@ -1,5 +1,7 @@
+use super::DebotActivity;
 use super::action::DAction;
 use crate::crypto::SigningBoxHandle;
+use crate::error::ClientResult;
 
 /// Callbacks that are called by debot engine to communicate with Debot Browser.
 #[async_trait::async_trait]
@@ -23,4 +25,8 @@ pub trait BrowserCallbacks {
     /// Sends message with debot interface call to Browser.
     /// Message parameter is a BoC encoded as Base64.
     async fn send(&self, message: String);
+
+    /// Requests permission to execute DeBot operation
+    /// (e.g. sending messages to blockchain).
+    async fn approve(&self, activity: DebotActivity) -> ClientResult<bool>;
 }
