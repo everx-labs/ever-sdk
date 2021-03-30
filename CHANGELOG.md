@@ -7,6 +7,19 @@ All notable changes to this project will be documented in this file.
 ### New
 - [`utils.compress_zstd`](docs/mod_utils.md#compress_zstd) compresses data using Facebook's Zstandard algorithm.
 - [`utils.decompress_zstd`](docs/mod_utils.md#decompress_zstd) decompresses data using Facebook's Zstandard algorithm.
+- **Debot module**:
+    - `init` function that creates an instance of DeBot and returns DeBot metadata.
+    - Dengine fetches metadata form DeBot by calling 2 mandatory functions: `getRequiredInterfaces` and `getDebotInfo`. This data is returned by `fetch` and `init` functions.
+
+### Changed
+- **Debot Module**:
+    - [breaking] `fetch` function does't create an instance of debot. It returns DeBot metadata (`DebotInfo`).
+    - [breaking] `start` function does't create an instance of debot. It accepts DeBot handle created in `init` function.
+
+## [1.11.2] – 2021-03-19
+
+### Refactor
+- Some internal refactor due to `ton-block` changes
 
 ## [1.11.1] – 2021-03-15
 

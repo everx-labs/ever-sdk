@@ -12,12 +12,11 @@
  *
  */
 
- use crate::client::{AppObject, ClientContext};
- use crate::error::ClientResult;
- use crate::debot::Error;
- use crate::debot::{DAction, DebotAction, BrowserCallbacks, ParamsOfFetch,
-    ParamsOfStart, RegisteredDebot, DebotActivity};
- use crate::crypto::SigningBoxHandle;
+use crate::client::{AppObject, ClientContext};
+use crate::error::ClientResult;
+use crate::debot::Error;
+use crate::debot::{DAction, DebotAction, BrowserCallbacks, ParamsOfInit, RegisteredDebot, DebotActivity};
+use crate::crypto::SigningBoxHandle;
 
 /// [UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
@@ -158,12 +157,13 @@ impl DebotBrowserAdapter {
              format!("debot browser failed to invoke debot: {}", e)
          })?;
 
-        match response {
-            ResultOfAppDebotBrowser::InvokeDebot => Ok(()),
-            _ => {
-                Err(format!("unexpected debot browser response: {:?}", response))
-            },
-        }
+         match response {
+             ResultOfAppDebotBrowser::InvokeDebot => Ok(()),
+             _ => {
+                 error!("unexpected debot browser response: {:?}", response);
+                 Err(format!("unexpected debot browser response: {:?}", response))
+             },
+         }
      }
 
     async fn send(&self, message: String) {
@@ -178,30 +178,9 @@ impl DebotBrowserAdapter {
             _ => Err(Error::browser_callback_failed("unexpected response")),
         }
     }
- }
-
-/// [UNSTABLE](UNSTABLE.md) Starts an instance of debot.
-///
-/// Downloads debot smart contract from blockchain and switches it to
-/// context zero.
-/// Returns a debot handle which can be used later in `execute` function.
-/// This function must be used by Debot Browser to start a dialog with debot.
-/// While the function is executing, several Browser Callbacks can be called,
-/// since the debot tries to display all actions from the context 0 to the user.
-///
-/// # Remarks
-/// `start` is equivalent to `fetch` + switch to context 0.
-#[api_function]
-pub(crate) async fn start(
-    context: std::sync::Arc<ClientContext>,
-    params: ParamsOfStart,
-    app_object: AppObject<ParamsOfAppDebotBrowser, ResultOfAppDebotBrowser>,
-) -> ClientResult<RegisteredDebot> {
-    let browser_callbacks = DebotBrowserAdapter::new(app_object);
-    crate::debot::start(context, params, browser_callbacks).await
 }
 
-/// [UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.
+/// [UNSTABLE](UNSTABLE.md) Creates and instance of DeBot.
 ///
 /// Downloads debot smart contract (code and data) from blockchain and creates
 /// an instance of Debot Engine for it.
@@ -209,11 +188,11 @@ pub(crate) async fn start(
 /// # Remarks
 /// It does not switch debot to context 0. Browser Callbacks are not called.
 #[api_function]
-pub(crate) async fn fetch(
+pub(crate) async fn init(
     context: std::sync::Arc<ClientContext>,
-    params: ParamsOfFetch,
+    params: ParamsOfInit,
     app_object: AppObject<ParamsOfAppDebotBrowser, ResultOfAppDebotBrowser>,
 ) -> ClientResult<RegisteredDebot> {
     let browser_callbacks = DebotBrowserAdapter::new(app_object);
-    crate::debot::fetch(context, params, browser_callbacks).await
+    crate::debot::init(context, params, browser_callbacks).await
 }
