@@ -34,7 +34,9 @@ pub enum ResultOfAppDebotBrowser {
     },
     /// Result of debot invoking.
     InvokeDebot,
+    /// Result of `approve` callback.
     Approve {
+        /// Indicates whether the DeBot is allowed to perform the specified operation.
         approved: bool,
     }
 }
@@ -86,6 +88,7 @@ pub enum ParamsOfAppDebotBrowser {
     },
     /// Requests permission from DeBot Browser to execute DeBot operation.
     Approve {
+        /// DeBot activity details.
         activity: DebotActivity,
     },
 }

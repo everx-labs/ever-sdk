@@ -9,13 +9,13 @@ pub struct Spending {
     pub dst: String,
 }
 
-/// [UNSTABLE](UNSTABLE.md) Describes the operation that the bot wants to perform.
+/// [UNSTABLE](UNSTABLE.md) Describes the operation that the DeBot wants to perform.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 #[serde(tag="type")]
 pub enum DebotActivity {
-    /// Debots wants to create new transaction in blockchain.
+    /// DeBot wants to create new transaction in blockchain.
     Transaction {
-        /// External inbound message boc.
+        /// External inbound message BOC.
         msg: String,
         /// Target smart contract address.
         dst: String,
