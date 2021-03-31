@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 - **Debot module**:
     - `init` function that creates an instance of DeBot and returns DeBot metadata.
     - Dengine fetches metadata form DeBot by calling 2 mandatory functions: `getRequiredInterfaces` and `getDebotInfo`. This data is returned by `fetch` and `init` functions.
-    - `approve` DeBot Browser callback which called by DEngine to request permission for DeBot activities.
+    - `approve` DeBot Browser callback which is called by DEngine to request permission for DeBot activities.
 
 ### Changed
 - **Debot Module**:
