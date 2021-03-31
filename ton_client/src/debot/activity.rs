@@ -1,5 +1,5 @@
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Spending {
     pub amount: u64,
     pub dst: String,
