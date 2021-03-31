@@ -84,6 +84,7 @@ pub enum ParamsOfAppDebotBrowser {
         /// interface function and parameters.
         message: String,
     },
+    /// Requests permission from DeBot Browser to execute DeBot operation.
     Approve {
         activity: DebotActivity,
     },

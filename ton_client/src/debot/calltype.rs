@@ -134,11 +134,24 @@ pub async fn send_ext_msg<'a>(
     )
     .await?
     .pubkey;
-    let activity =
-        emulate_transaction(ton.clone(), &dest_addr, &fixed_msg, target_state, pubkey).await?;
-    if !browser.approve(activity).await? {
-        let error_body = build_onerror_body(onerror_id, Error::operation_rejected())?;
-        return build_internal_message(&dest_addr, debot_addr, error_body);
+    let activity = emulate_transaction(
+        ton.clone(),
+        dest_addr.clone(),
+        fixed_msg.clone(),
+        target_state,
+        pubkey
+    ).await;
+    match activity {
+        Ok(activity) => {
+            if !browser.approve(activity).await? {
+                let error_body = build_onerror_body(onerror_id, Error::operation_rejected())?;
+                return build_internal_message(&dest_addr, debot_addr, error_body);
+            }
+        },
+        Err(e) => {
+            let error_body = build_onerror_body(onerror_id, e)?;
+            return build_internal_message(&dest_addr, debot_addr, error_body);
+        },
     }
 
     let browser = browser.clone();
@@ -355,8 +368,8 @@ fn build_answer_msg(
 
 async fn emulate_transaction(
     client: TonClient,
-    dst: &String,
-    msg: &String,
+    dst: String,
+    msg: String,
     target_state: String,
     signkey: String,
 ) -> ClientResult<DebotActivity> {
@@ -368,11 +381,7 @@ async fn emulate_transaction(
                 boc: target_state,
                 unlimited_balance: None,
             },
-            execution_options: None,
-            abi: None,
-            skip_transaction_check: None,
-            boc_cache: None,
-            return_updated_account: Some(false),
+            ..Default::default()
         },
     )
     .await?;
@@ -392,13 +401,11 @@ async fn emulate_transaction(
             });
         }
     }
-    let fee = result.fees.total_account_fees;
-
     Ok(DebotActivity::Transaction {
         msg: msg.clone(),
         dst: dst.clone(),
         out,
-        fee,
+        fee: result.fees.total_account_fees,
         setcode: false,
         signkey,
     })
