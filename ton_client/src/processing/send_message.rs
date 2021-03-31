@@ -83,6 +83,7 @@ pub async fn send_message<F: futures::Future<Output = ()> + Send>(
     if params.send_events {
         callback(ProcessingEvent::WillFetchFirstBlock {}).await;
     }
+    context.get_server_link()?.get_endpoint_addresses();
     let shard_block_id = match find_last_shard_block(&context, &address).await {
         Ok(block) => block.to_string(),
         Err(err) => {

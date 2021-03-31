@@ -17,35 +17,15 @@ use crate::error::ClientResult;
 use crate::net::Error;
 use std::sync::Arc;
 
-pub(crate) struct ServerVersion {
-    pub version: u64,
-    pub supports_time: bool,
-    pub supports_endpoints: bool,
-}
-
-impl ServerVersion {
-    pub fn from_version(version: &str) -> ton_types::Result<Self> {
-        let mut vec: Vec<&str> = version.split(".").collect();
-        vec.resize(3, "0");
-        let version = u64::from_str_radix(vec[0], 10)? * 1000000
-            + u64::from_str_radix(vec[1], 10)? * 1000
-            + u64::from_str_radix(vec[2], 10)?;
-
-        Ok(ServerVersion {
-            version,
-            supports_time: version >= 26003,
-            supports_endpoints: version >= 30000,
-        })
-    }
-}
-
-pub(crate) struct ServerInfo {
+pub(crate) struct Endpoint {
     pub query_url: String,
     pub subscription_url: String,
-    pub server_version: ServerVersion,
+    pub server_version: u64,
+    pub server_supports_time: bool,
+    pub server_supports_endpoints: bool,
 }
 
-impl ServerInfo {
+impl Endpoint {
     pub fn http_headers() -> Vec<(String, String)> {
         vec![("tonclient-core-version".to_string(), core_version())]
     }
@@ -76,10 +56,6 @@ impl ServerInfo {
             Error::invalid_server_response(format!("No version in response: {}", response_body)),
         )?;
 
-        let server_version = ServerVersion::from_version(version).map_err(|err| {
-            Error::invalid_server_response(format!("Can not parse version {}: {}", version, err))
-        })?;
-
         let query_url = response
             .url
             .trim_end_matches("?query=%7Binfo%7Bversion%7D%7D")
@@ -88,10 +64,24 @@ impl ServerInfo {
             .replace("https://", "wss://")
             .replace("http://", "ws://");
 
+        let mut parts: Vec<&str> = version.split(".").collect();
+        parts.resize(3, "0");
+        let parse_part = |i: usize| {
+            u64::from_str_radix(parts[i], 10).map_err(|err| {
+                Error::invalid_server_response(format!(
+                    "Can not parse version {}: {}",
+                    version, err
+                ))
+            })
+        };
+        let version = parse_part(0)? * 1000000 + parse_part(1)? * 1000 + parse_part(2)?;
+
         Ok(Self {
             query_url,
             subscription_url,
-            server_version,
+            server_version: version,
+            server_supports_time: version >= 26003,
+            server_supports_endpoints: version >= 30000,
         })
     }
 }

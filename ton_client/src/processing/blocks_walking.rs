@@ -38,12 +38,11 @@ pub async fn find_last_shard_block(
     address: &MsgAddressInt,
 ) -> ClientResult<ton_sdk::BlockId> {
     let workchain = address.get_workchain_id();
-    let client = context.get_server_link()?;
+    let server_link = context.get_server_link()?;
 
     // if account resides in masterchain, then starting point is last masterchain block
     // generated before message was sent
-    let blocks = client
-        .query_collection(ParamsOfQueryCollection {
+    let blocks = server_link.query_collection(ParamsOfQueryCollection {
             collection: BLOCKS_TABLE_NAME.to_string(),
             filter: Some(json!({
                 "workchain_id": { "eq": MASTERCHAIN_ID }
@@ -72,8 +71,7 @@ pub async fn find_last_shard_block(
         // To obtain it we take masterchain block to get shards configuration and select matching shard
         if blocks[0].is_null() {
             // TON OS SE case - no masterchain, no sharding. Check that only one shard
-            let blocks = client
-                .query_collection(ParamsOfQueryCollection {
+            let blocks = server_link.query_collection(ParamsOfQueryCollection {
                     collection: BLOCKS_TABLE_NAME.to_string(),
                     filter: Some(json!({
                     "workchain_id": { "eq": workchain },
@@ -101,8 +99,7 @@ pub async fn find_last_shard_block(
             }
 
             // Take last block by seq_no
-            let blocks = client
-                .query_collection(ParamsOfQueryCollection {
+            let blocks = server_link.query_collection(ParamsOfQueryCollection {
                     collection: BLOCKS_TABLE_NAME.to_string(),
                     filter: Some(json!({
                     "workchain_id": { "eq": workchain },

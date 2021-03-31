@@ -15,7 +15,7 @@ use serde_json::Value;
 
 use crate::client::ClientContext;
 use crate::error::{AddNetworkUrl, ClientResult};
-use crate::net::{ParamsOfQueryCollection};
+use crate::net::ParamsOfQueryCollection;
 
 use super::Error;
 
@@ -42,17 +42,21 @@ pub async fn query(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfQuery,
 ) -> ClientResult<ResultOfQuery> {
-    let client = context.get_server_link()?;
-    let result = client
-        .query(&params.query, params.variables, None)
+    let server_link = context.get_server_link()?;
+    let query = GraphQLQuery {
+        query: params.query,
+        variables: params.variables,
+    };
+    let result = server_link
+        .query(query, None)
         .await
         .map_err(|err| Error::queries_query_failed(err))
-        .add_network_url(client)
+        .add_network_url(server_link)
         .await?;
 
     let result = serde_json::from_value(result)
         .map_err(|err| Error::queries_query_failed(format!("Can not parse result: {}", err)))
-        .add_network_url(client)
+        .add_network_url(server_link)
         .await?;
 
     Ok(ResultOfQuery { result })
@@ -139,6 +143,7 @@ pub async fn wait_for_collection(
 
 //--------------------------------------------------------------------------- aggregate_collection
 
+use crate::net::ton_gql::GraphQLQuery;
 use crate::net::ParamsOfAggregateCollection;
 
 #[derive(Serialize, Deserialize, ApiType, Default, Clone)]

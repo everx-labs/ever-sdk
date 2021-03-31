@@ -24,7 +24,7 @@ pub use subscriptions::{
     ResultOfSubscription, SubscriptionResponseType,
 };
 pub use ton_gql::{
-    AggregationFn, FieldAggregation, GraphQLOperationEvent, OrderBy,
+    AggregationFn, FieldAggregation, GraphQLQueryEvent, OrderBy,
     ParamsOfAggregateCollection, ParamsOfQueryCollection, ParamsOfQueryOperation, PostRequest,
     SortDirection,
 };
@@ -40,7 +40,7 @@ pub(crate) mod batch;
 mod errors;
 mod gql;
 pub(crate) mod queries;
-mod server_info;
+mod endpoint;
 mod server_link;
 pub(crate) mod subscriptions;
 mod ton_gql;
@@ -104,7 +104,7 @@ pub async fn fetch_endpoints(context: std::sync::Arc<ClientContext>) -> ClientRe
     let client = context.get_server_link()?;
 
     Ok(EndpointsSet {
-        endpoints: client.fetch_endpoints().await?,
+        endpoints: client.fetch_endpoint_addresses().await?,
     })
 }
 
