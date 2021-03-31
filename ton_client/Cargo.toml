@@ -57,7 +57,7 @@ futures = "0.3.4"
 tokio = { version = "0.2.13", features = ["sync", "stream"], default-features = false }
 lru = "0.6.3"
 lockfree = { git = "https://github.com/tonlabs/lockfree.git", package = "lockfree" }
-zstd = { git = "https://github.com/tonlabs/zstd-rs.git", default-features = false }
+zstd = { git = "https://github.com/gyscos/zstd-rs.git", default-features = false }
 
 # optional for std
 reqwest = { version = "0.10.4", optional = true }
