@@ -17,6 +17,7 @@ use crate::error::ClientResult;
 use crate::net::Error;
 use std::sync::Arc;
 
+#[derive(Clone)]
 pub(crate) struct Endpoint {
     pub query_url: String,
     pub subscription_url: String,
@@ -40,7 +41,7 @@ impl Endpoint {
         format!("{}/graphql", base_url.trim_end_matches("/"))
     }
 
-    pub async fn fetch(client_env: Arc<ClientEnv>, address: &str) -> ClientResult<Self> {
+    pub async fn resolve(client_env: Arc<ClientEnv>, address: &str) -> ClientResult<Self> {
         let response = client_env
             .fetch(
                 &format!("{}?query=%7Binfo%7Bversion%7D%7D", address),

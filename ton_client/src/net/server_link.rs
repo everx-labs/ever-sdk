@@ -17,8 +17,8 @@ use crate::net::endpoint::Endpoint;
 use crate::net::ton_gql::GraphQLQuery;
 use crate::net::websocket_link::WebsocketLink;
 use crate::net::{
-    Error, GraphQLQueryEvent, NetworkConfig, ParamsOfAggregateCollection,
-    ParamsOfQueryCollection, ParamsOfQueryOperation, ParamsOfWaitForCollection, PostRequest,
+    Error, GraphQLQueryEvent, NetworkConfig, ParamsOfAggregateCollection, ParamsOfQueryCollection,
+    ParamsOfQueryOperation, ParamsOfWaitForCollection, PostRequest,
 };
 use futures::{Future, Stream, StreamExt};
 use serde_json::Value;
@@ -215,7 +215,7 @@ impl NetworkState {
         for address in self.endpoint_addresses.read().await.iter() {
             let queries_server = Endpoint::expand_address(&address);
             futures.push(Box::pin(async move {
-                Endpoint::fetch(self.client_env.clone(), &queries_server).await
+                Endpoint::resolve(self.client_env.clone(), &queries_server).await
             }));
         }
 
@@ -366,8 +366,13 @@ impl ServerLink {
         &self,
         query: GraphQLQuery,
         timeout: Option<u32>,
+        endpoint: Option<Endpoint>,
     ) -> ClientResult<Value> {
-        let endpoint = self.state.get_query_endpoint().await?;
+        let endpoint = if let Some(endpoint) = endpoint {
+            Arc::new(endpoint)
+        } else {
+            self.state.get_query_endpoint().await?
+        };
 
         let request = json!({
             "query": query.query,
@@ -409,9 +414,9 @@ impl ServerLink {
         }
     }
 
-    pub async fn batch_query(&self, params: &[ParamsOfQueryOperation]) -> ClientResult<Vec<Value>> {
+    pub async fn batch_query(&self, params: &[ParamsOfQueryOperation], endpoint: Option<Endpoint>) -> ClientResult<Vec<Value>> {
         let op = GraphQLQuery::build(params, self.config.wait_for_timeout);
-        let result = self.query(op, None).await?;
+        let result = self.query(op, None, endpoint).await?;
         let data = &result["data"];
         let mut results = Vec::new();
         for i in 0..params.len() {
@@ -438,9 +443,13 @@ impl ServerLink {
         Ok(results)
     }
 
-    pub async fn query_collection(&self, params: ParamsOfQueryCollection) -> ClientResult<Value> {
+    pub async fn query_collection(
+        &self,
+        params: ParamsOfQueryCollection,
+        endpoint: Option<Endpoint>,
+    ) -> ClientResult<Value> {
         Ok(self
-            .batch_query(&[ParamsOfQueryOperation::QueryCollection(params)])
+            .batch_query(&[ParamsOfQueryOperation::QueryCollection(params)], endpoint)
             .await?
             .remove(0))
     }
@@ -448,9 +457,13 @@ impl ServerLink {
     pub async fn wait_for_collection(
         &self,
         params: ParamsOfWaitForCollection,
+        endpoint: Option<Endpoint>,
     ) -> ClientResult<Value> {
         Ok(self
-            .batch_query(&[ParamsOfQueryOperation::WaitForCollection(params)])
+            .batch_query(
+                &[ParamsOfQueryOperation::WaitForCollection(params)],
+                endpoint,
+            )
             .await?
             .remove(0))
     }
@@ -458,9 +471,13 @@ impl ServerLink {
     pub async fn aggregate_collection(
         &self,
         params: ParamsOfAggregateCollection,
+        endpoint: Option<Endpoint>,
     ) -> ClientResult<Value> {
         Ok(self
-            .batch_query(&[ParamsOfQueryOperation::AggregateCollection(params)])
+            .batch_query(
+                &[ParamsOfQueryOperation::AggregateCollection(params)],
+                endpoint,
+            )
             .await?
             .remove(0))
     }
@@ -470,6 +487,7 @@ impl ServerLink {
         &self,
         key: &[u8],
         value: &[u8],
+        endpoint: Option<Endpoint>,
     ) -> ClientResult<Option<ClientError>> {
         let request = PostRequest {
             id: base64::encode(key),
@@ -479,7 +497,7 @@ impl ServerLink {
         self.state.check_sync().await?;
 
         let result = self
-            .query(GraphQLQuery::with_post_requests(&[request]), None)
+            .query(GraphQLQuery::with_post_requests(&[request]), None, endpoint)
             .await;
 
         // send message is always successful in order to process case when server received message

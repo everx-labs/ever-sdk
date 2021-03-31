@@ -48,7 +48,7 @@ pub async fn query(
         variables: params.variables,
     };
     let result = server_link
-        .query(query, None)
+        .query(query, None, None)
         .await
         .map_err(|err| Error::queries_query_failed(err))
         .add_network_url(server_link)
@@ -82,7 +82,7 @@ pub async fn query_collection(
 ) -> ClientResult<ResultOfQueryCollection> {
     let client = context.get_server_link()?;
     let result = client
-        .query_collection(params)
+        .query_collection(params, None)
         .await
         .map_err(|err| Error::queries_query_failed(err))
         .add_network_url(client)
@@ -132,7 +132,7 @@ pub async fn wait_for_collection(
 ) -> ClientResult<ResultOfWaitForCollection> {
     let client = context.get_server_link()?;
     let result = client
-        .wait_for_collection(params)
+        .wait_for_collection(params, None)
         .await
         .map_err(|err| Error::queries_wait_for_failed(err))
         .add_network_url(client)
@@ -166,7 +166,7 @@ pub async fn aggregate_collection(
 ) -> ClientResult<ResultOfAggregateCollection> {
     let client = context.get_server_link()?;
     let values = client
-        .aggregate_collection(params)
+        .aggregate_collection(params, None)
         .await
         .map_err(|err| Error::queries_query_failed(err))
         .add_network_url(client)
