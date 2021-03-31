@@ -43,6 +43,13 @@ const TEST_DEBOT5: &'static str = "testDebot5";
 const TEST_DEBOTA: &'static str = "tda";
 const TEST_DEBOTB: &'static str = "tdb";
 
+struct ExpectedTransaction {
+    dst: String,
+    out: Vec<Spending>,
+    setcode: bool,
+    signkey: String,
+    approved: bool,
+}
 
 const SUPPORTED_INTERFACES: &[&str] = &[
     "f6927c0d4bdb69e1b52d27f018d156ff04152f00558042ff674f0fec32e4369d", // echo
@@ -208,7 +215,7 @@ struct BrowserData {
     pub echo: Echo,
     pub bots: Mutex<HashMap<String, RegisteredDebot>>,
     pub info: DebotInfo,
-    pub activity: Mutex<Vec<DebotActivity>>,
+    pub activity: Mutex<Vec<ExpectedTransaction>>,
 }
 
 impl TestBrowser {
@@ -357,7 +364,7 @@ impl TestBrowser {
         steps: Vec<DebotStep>,
         terminal_outputs: Vec<String>,
         info: DebotInfo,
-        activity: Vec<DebotActivity>,
+        activity: Vec<ExpectedTransaction>,
     ) {
         let state = Arc::new(BrowserData {
             current: Mutex::new(Default::default()),
@@ -452,31 +459,20 @@ impl TestBrowser {
                 ResultOfAppDebotBrowser::InvokeDebot
             },
             ParamsOfAppDebotBrowser::Approve {activity} => {
-                //println!("{:?}", activity);
-                if let Some(expected_activity) = state.activity.lock().await.pop() {
-                    //println!("{:?}", expected_activity);
-                    match expected_activity {
-                        DebotActivity::Transaction{
-                            msg: _,
-                            fee: _,
-                            dst: exp_dst,
-                            out: exp_out,
-                            setcode: exp_setcode,
-                            signkey: exp_signkey
-                        } => {
-                            match activity {
-                                DebotActivity::Transaction{msg: _, dst, out, fee, setcode, signkey} => {
-                                    assert_eq!(exp_dst, dst);
-                                    assert_eq!(exp_out, out);
-                                    assert_eq!(exp_setcode, setcode);
-                                    assert_eq!(exp_signkey, signkey);
-                                    assert!(fee > 0);
-                                },
-                            }
-                        }
+                let mut approved = true;
+                if let Some(expected) = state.activity.lock().await.pop() {
+                    approved = expected.approved;
+                    match activity {
+                        DebotActivity::Transaction{msg: _, dst, out, fee, setcode, signkey} => {
+                            assert_eq!(expected.dst, dst);
+                            assert_eq!(expected.out, out);
+                            assert_eq!(expected.setcode, setcode);
+                            assert_eq!(expected.signkey, signkey);
+                            assert!(fee > 0);
+                        },
                     }
                 }
-                ResultOfAppDebotBrowser::Approve{ approved: true }
+                ResultOfAppDebotBrowser::Approve{ approved }
             },
             _ => panic!("invalid call {:#?}", params)
         }
@@ -1305,26 +1301,24 @@ async fn test_debot_approve() {
         ],
         info,
         vec![
-            DebotActivity::Transaction {
-                msg: String::new(),
+            ExpectedTransaction {
                 dst: debot_addr.clone(),
                 out: vec![
                     Spending{amount: 10000000000, dst: debot_addr.clone()},
                 ],
-                fee: 0,
                 setcode: false,
                 signkey: keys.public.clone(),
+                approved: false,
             },
-            DebotActivity::Transaction {
-                msg: String::new(),
+            ExpectedTransaction {
                 dst: debot_addr.clone(),
                 out: vec![
                     Spending{amount: 2200000000, dst: debot_addr.clone()},
                     Spending{amount: 3500000000, dst: format!("0:{:064}", 0)},
                 ],
-                fee: 0,
                 setcode: false,
                 signkey: keys.public.clone(),
+                approved: true,
             },
         ],
     ).await;
