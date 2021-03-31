@@ -24,6 +24,13 @@
 			]
 		},
 		{
+			"name": "onSuccess3",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
 			"name": "onError1",
 			"inputs": [
 				{"name":"sdkError","type":"uint32"},
@@ -37,6 +44,22 @@
 			"inputs": [
 				{"name":"sdkError","type":"uint32"},
 				{"name":"exitCode","type":"uint32"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "onError3",
+			"inputs": [
+				{"name":"sdkError","type":"uint32"},
+				{"name":"exitCode","type":"uint32"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "send3",
+			"inputs": [
 			],
 			"outputs": [
 			]

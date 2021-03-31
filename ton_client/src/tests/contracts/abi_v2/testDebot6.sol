@@ -18,8 +18,8 @@ contract testDebot is Debot {
             time: 0,
             expire: 0,
             pubkey: pubkey,
-            onErrorId: tvm.functionId(onSuccess1),
-            callbackId: tvm.functionId(onError1)
+            callbackId: tvm.functionId(onSuccess1),
+            onErrorId: tvm.functionId(onError1)
         }(2.2 ton, 3.5 ton);
 
         this.send2{
@@ -29,8 +29,19 @@ contract testDebot is Debot {
             time: 0,
             expire: 0,
             pubkey: pubkey,
-            onErrorId: tvm.functionId(onSuccess2),
-            callbackId: tvm.functionId(onError2)
+            callbackId: tvm.functionId(onSuccess2),
+            onErrorId: tvm.functionId(onError2)
+        }();
+
+        this.send3{
+            abiVer: 2,
+            extMsg: true,
+            sign: true,
+            time: 0,
+            expire: 0,
+            pubkey: pubkey,
+            callbackId: tvm.functionId(onSuccess3),
+            onErrorId: tvm.functionId(onError3)
         }();
     }
 
@@ -38,11 +49,15 @@ contract testDebot is Debot {
         Terminal.print(0, "Send1 succeeded");
     }
 
-    function onSuccess2() public {
+    function onSuccess2() public pure {
         require(false, 201);
     }
 
-    function onError1(uint32 sdkError, uint32 exitCode) public {
+    function onSuccess3() public pure {
+        require(false, 304);
+    }
+
+    function onError1(uint32 sdkError, uint32 exitCode) public pure {
         sdkError = sdkError;
         exitCode = exitCode;
         require(false, 200);
@@ -54,18 +69,27 @@ contract testDebot is Debot {
         Terminal.print(0, "Send2 rejected");
     }
 
-    function send2() public {
+    function onError3(uint32 sdkError, uint32 exitCode) public pure {
+        require(sdkError == 414, 102);
+        require(exitCode == 303, 103);
+    }
+
+    function send3() public view {
+        require(false, 303);
+    }
+
+    function send2() public view {
         require(msg.pubkey() == tvm.pubkey(), 101);
         tvm.accept();
         address(this).transfer(10 ton, true, 1);
     }
 
-    function send1(uint64 value1, uint64 value2) public {
+    function send1(uint64 value1, uint64 value2) public view {
         require(msg.pubkey() == tvm.pubkey(), 101);
         tvm.accept();
         address(this).transfer(value1, true, 1);
         address addr = address.makeAddrStd(0, 0);
-        addr.transfer(value2, false, 0);
+        addr.transfer(value2, false, 1);
     }
 
     // @notice Define DeBot version and title here.

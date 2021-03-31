@@ -1303,6 +1303,13 @@ async fn test_debot_approve() {
         vec![
             ExpectedTransaction {
                 dst: debot_addr.clone(),
+                out: vec![],
+                setcode: false,
+                signkey: keys.public.clone(),
+                approved: true,
+            },
+            ExpectedTransaction {
+                dst: debot_addr.clone(),
                 out: vec![
                     Spending{amount: 10000000000, dst: debot_addr.clone()},
                 ],
