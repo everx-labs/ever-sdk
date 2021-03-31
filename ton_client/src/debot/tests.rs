@@ -791,21 +791,10 @@ async fn init_simple_debot(client: Arc<TestClient>, name: &str) -> DebotData {
 
 async fn init_debot5(client: Arc<TestClient>, count: u32) -> (String, String) {
     let debot_abi = TestClient::abi(TEST_DEBOT5, Some(2));
-    let debot5_tvc = TestClient::tvc(TEST_DEBOT5, Some(2));
-
-    let result: ResultOfGetCodeFromTvc = client.request_async(
-        "boc.get_code_from_tvc",
-        ParamsOfGetCodeFromTvc { tvc: debot5_tvc }
-    ).await.unwrap();
-
-    let result: ResultOfGetBocHash = client.request_async(
-        "boc.get_boc_hash",
-        ParamsOfGetBocHash { boc: result.code }
-    ).await.unwrap();
-
+    let hash_str = get_code_hash_from_tvc(client.clone(), TEST_DEBOT5).await;
     let call_set = CallSet::some_with_function_and_input(
         "constructor",
-        json!({ "codeHash": format!("0x{}", result.hash) }),
+        json!({ "codeHash": format!("0x{}", hash_str) }),
     );
     let mut deploy_debot_params = ParamsOfEncodeMessage {
         abi: debot_abi.clone(),
@@ -898,6 +887,41 @@ async fn init_hello_debot(client: Arc<TestClient>) -> DebotData {
         Signer::Keys { keys: data.keys.clone() },
     ).await.unwrap();
     data
+}
+
+async fn count_accounts_by_codehash(client: Arc<TestClient>, code_hash: String) -> u32 {
+    let res: ResultOfQueryCollection = client
+        .request_async(
+            "net.query_collection",
+            ParamsOfQueryCollection {
+                collection: "accounts".to_owned(),
+                filter: Some(json!({
+                    "code_hash": { "eq": code_hash}
+                })),
+                result: "id".to_owned(),
+                limit: None,
+                order: None,
+            },
+        )
+        .await
+        .unwrap();
+
+    res.result.len() as u32
+}
+
+async fn get_code_hash_from_tvc(client: Arc<TestClient>, name: &str) -> String {
+    let debot_tvc = TestClient::tvc(name, Some(2));
+    let result: ResultOfGetCodeFromTvc = client.request_async(
+        "boc.get_code_from_tvc",
+        ParamsOfGetCodeFromTvc { tvc: debot_tvc }
+    ).await.unwrap();
+
+    let result: ResultOfGetBocHash = client.request_async(
+        "boc.get_boc_hash",
+        ParamsOfGetBocHash { boc: result.code }
+    ).await.unwrap();
+
+    result.hash
 }
 
 const EXIT_CHOICE: u8 = 9;
@@ -1232,20 +1256,20 @@ async fn test_debot_invoke_msgs() {
     ).await;
 }
 
-// TODO: make test runnable not only once
-#[ignore]
 #[tokio::test(core_threads = 2)]
 async fn test_debot_sdk_get_accounts_by_hash() {
     let client = std::sync::Arc::new(TestClient::new());
-    let count = 6;
-    let (debot, abi) = init_debot5(client.clone(), count).await;
+    let deploy_count = 8;
+    let (debot, abi) = init_debot5(client.clone(), deploy_count).await;
+    let code_hash = get_code_hash_from_tvc(client.clone(), TEST_DEBOT5).await;
+    let total_count = count_accounts_by_codehash(client.clone(), code_hash).await;
     let steps = serde_json::from_value(json!([])).unwrap();
     TestBrowser::execute(
         client.clone(),
         debot.clone(),
         KeyPair::default(),
         steps,
-        vec![ format!("{} contracts.", count) ],
+        vec![ format!("{} contracts.", total_count) ],
         abi
     ).await;
 }
