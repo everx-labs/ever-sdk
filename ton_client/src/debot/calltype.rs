@@ -106,6 +106,7 @@ pub async fn run_get_method(
     }
     let out_msg = result.out_messages.pop().unwrap();
     build_answer_msg(&out_msg, answer_id, func_id, &dest_addr, debot_addr)
+        .ok_or(Error::get_method_failed("failed to build answer message"))
 }
 
 pub async fn send_ext_msg<'a>(
@@ -186,10 +187,10 @@ pub async fn send_ext_msg<'a>(
         Ok(res) => {
             for out_msg in &res.out_messages {
                 let res = build_answer_msg(out_msg, answer_id, func_id, &dest_addr, debot_addr);
-                if let Ok(answer_msg) = res {
+                if let Some(answer_msg) = res {
                     return Ok(answer_msg);
                 }
-                debug!("Skip outbound message :{}", res.unwrap_err());
+                debug!("Skip outbound message");
             }
             debug!("Build empty body");
             // answer message not found, build empty answer.
@@ -330,23 +331,26 @@ fn build_answer_msg(
     func_id: u32,
     dest_addr: &String,
     debot_addr: &String,
-) -> ClientResult<String> {
-    let out_message: Message = deserialize_object_from_base64(out_msg, "message")?.object;
+) -> Option<String> {
+    let out_message: Message = deserialize_object_from_base64(out_msg, "message").ok()?.object;
+    if out_message.is_internal() {
+        return None;
+    }
     let mut new_body = BuilderData::new();
-    new_body.append_u32(answer_id).map_err(msg_err)?;
+    new_body.append_u32(answer_id).ok()?;
 
     if let Some(body_slice) = out_message.body().as_mut() {
-        let response_id = body_slice.get_next_u32().map_err(msg_err)?;
+        let response_id = body_slice.get_next_u32().ok()?;
         let request_id = response_id & !(1u32 << 31);
         if func_id != request_id {
-            return Err(msg_err("incorrect response id"));
+            return None;
         }
         new_body
             .append_builder(&BuilderData::from_slice(&body_slice))
-            .map_err(msg_err)?;
+            .ok()?;
     }
 
-    build_internal_message(dest_addr, debot_addr, new_body.into())
+    build_internal_message(dest_addr, debot_addr, new_body.into()).ok()
 }
 
 async fn emulate_transaction(

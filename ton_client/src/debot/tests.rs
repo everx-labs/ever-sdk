@@ -1308,7 +1308,9 @@ async fn test_debot_approve() {
             DebotActivity::Transaction {
                 msg: String::new(),
                 dst: debot_addr.clone(),
-                out: vec![],
+                out: vec![
+                    Spending{amount: 10000000000, dst: debot_addr.clone()},
+                ],
                 fee: 0,
                 setcode: false,
                 signkey: keys.public.clone(),
