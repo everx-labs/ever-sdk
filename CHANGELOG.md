@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.12.0] – 2021-03-25
+## [1.12.0] – 2021-04-01
 
 ### New
 - [`utils.compress_zstd`](docs/mod_utils.md#compress_zstd) compresses data using Facebook's Zstandard algorithm.
