@@ -12,10 +12,11 @@
  *
  */
 
- use crate::client::{AppObject, ClientContext};
- use crate::error::ClientResult;
- use crate::debot::{DAction, DebotAction, BrowserCallbacks, ParamsOfInit, RegisteredDebot};
- use crate::crypto::SigningBoxHandle;
+use crate::client::{AppObject, ClientContext};
+use crate::error::ClientResult;
+use crate::debot::Error;
+use crate::debot::{DAction, DebotAction, BrowserCallbacks, ParamsOfInit, RegisteredDebot, DebotActivity};
+use crate::crypto::SigningBoxHandle;
 
 /// [UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
@@ -33,6 +34,11 @@ pub enum ResultOfAppDebotBrowser {
     },
     /// Result of debot invoking.
     InvokeDebot,
+    /// Result of `approve` callback.
+    Approve {
+        /// Indicates whether the DeBot is allowed to perform the specified operation.
+        approved: bool,
+    }
 }
 
 /// [UNSTABLE](UNSTABLE.md) Debot Browser callbacks
@@ -79,7 +85,12 @@ pub enum ParamsOfAppDebotBrowser {
         /// Internal message to DInterface address. Message body contains
         /// interface function and parameters.
         message: String,
-    }
+    },
+    /// Requests permission from DeBot Browser to execute DeBot operation.
+    Approve {
+        /// DeBot activity details.
+        activity: DebotActivity,
+    },
 }
 
 /// Wrapper for native Debot Browser callbacks.
@@ -147,7 +158,6 @@ impl DebotBrowserAdapter {
          })
          .await
          .map_err(|e| {
-             error!("debot browser failed to invoke debot: {}", e);
              format!("debot browser failed to invoke debot: {}", e)
          })?;
 
@@ -162,6 +172,15 @@ impl DebotBrowserAdapter {
 
     async fn send(&self, message: String) {
         self.app_object.notify(ParamsOfAppDebotBrowser::Send { message });
+    }
+
+    async fn approve(&self, activity: DebotActivity) -> ClientResult<bool> {
+        let response = self.app_object.call(ParamsOfAppDebotBrowser::Approve { activity }).await?;
+
+        match response {
+            ResultOfAppDebotBrowser::Approve{approved} => Ok(approved),
+            _ => Err(Error::browser_callback_failed("unexpected response")),
+        }
     }
 }
 

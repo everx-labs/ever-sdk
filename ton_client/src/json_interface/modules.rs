@@ -478,6 +478,8 @@ fn register_debot(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::debot::DebotAction>();
     module.register_type::<crate::debot::DebotHandle>();
     module.register_type::<crate::debot::DebotInfo>();
+    module.register_type::<crate::debot::DebotActivity>();
+    module.register_type::<crate::debot::Spending>();
     module.register_async_fn_with_app_object(
         crate::json_interface::debot::init,
         crate::json_interface::debot::init_api,
