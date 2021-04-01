@@ -23,6 +23,12 @@
 
 [DebotAction](#DebotAction) – [UNSTABLE](UNSTABLE.md) Describes a debot action in a Debot Context.
 
+[DebotInfo](#DebotInfo) – [UNSTABLE](UNSTABLE.md) Describes DeBot metadata.
+
+[DebotActivity](#DebotActivity) – [UNSTABLE](UNSTABLE.md) Describes the operation that the DeBot wants to perform.
+
+[Spending](#Spending) – [UNSTABLE](UNSTABLE.md) Describes how much funds will be debited from the target  contract balance as a result of the transaction.
+
 [ParamsOfInit](#ParamsOfInit) – [UNSTABLE](UNSTABLE.md) Parameters to init DeBot.
 
 [RegisteredDebot](#RegisteredDebot) – [UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `init` function.
@@ -81,7 +87,7 @@ function init(
 
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
 - `debot_abi`: _string_ – Debot abi as json string.
-- `info`: _DebotInfo_ – Debot metadata.
+- `info`: _[DebotInfo](mod_debot.md#DebotInfo)_ – Debot metadata.
 
 
 ## start
@@ -137,7 +143,7 @@ function fetch(
 
 ### Result
 
-- `info`: _DebotInfo_ – Debot metadata.
+- `info`: _[DebotInfo](mod_debot.md#DebotInfo)_ – Debot metadata.
 
 
 ## execute
@@ -218,7 +224,9 @@ enum DebotErrorCode {
     DebotInvalidAbi = 807,
     DebotGetMethodFailed = 808,
     DebotInvalidMsg = 809,
-    DebotExternalCallFailed = 810
+    DebotExternalCallFailed = 810,
+    DebotBrowserCallbackFailed = 811,
+    DebotOperationRejected = 812
 }
 ```
 One of the following value:
@@ -233,6 +241,8 @@ One of the following value:
 - `DebotGetMethodFailed = 808`
 - `DebotInvalidMsg = 809`
 - `DebotExternalCallFailed = 810`
+- `DebotBrowserCallbackFailed = 811`
+- `DebotOperationRejected = 812`
 
 
 ## DebotHandle
@@ -268,6 +278,85 @@ type DebotAction = {
 <br>Used by debot only.
 
 
+## DebotInfo
+[UNSTABLE](UNSTABLE.md) Describes DeBot metadata.
+
+```ts
+type DebotInfo = {
+    name?: string,
+    version?: string,
+    publisher?: string,
+    key?: string,
+    author?: string,
+    support?: string,
+    hello?: string,
+    language?: string,
+    dabi?: string,
+    icon?: string,
+    interfaces: string[]
+}
+```
+- `name`?: _string_ – DeBot short name.
+- `version`?: _string_ – DeBot semantic version.
+- `publisher`?: _string_ – The name of DeBot deployer.
+- `key`?: _string_ – Short info about DeBot.
+- `author`?: _string_ – The name of DeBot developer.
+- `support`?: _string_ – TON address of author for questions and donations.
+- `hello`?: _string_ – String with the first messsage from DeBot.
+- `language`?: _string_ – String with DeBot interface language (ISO-639).
+- `dabi`?: _string_ – String with DeBot ABI.
+- `icon`?: _string_ – DeBot icon.
+- `interfaces`: _string[]_ – Vector with IDs of DInterfaces used by DeBot.
+
+
+## DebotActivity
+[UNSTABLE](UNSTABLE.md) Describes the operation that the DeBot wants to perform.
+
+```ts
+type DebotActivity = {
+    type: 'Transaction'
+    msg: string,
+    dst: string,
+    out: Spending[],
+    fee: bigint,
+    setcode: boolean,
+    signkey: string
+}
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'Transaction'_
+
+DeBot wants to create new transaction in blockchain.
+
+
+- `msg`: _string_ – External inbound message BOC.
+- `dst`: _string_ – Target smart contract address.
+- `out`: _[Spending](mod_debot.md#Spending)[]_ – List of spendings as a result of transaction.
+- `fee`: _bigint_ – Transaction total fee.
+- `setcode`: _boolean_ – Indicates if target smart contract updates its code.
+- `signkey`: _string_ – Public key from keypair that was used to sign external message.
+
+
+Variant constructors:
+
+```ts
+function debotActivityTransaction(msg: string, dst: string, out: Spending[], fee: bigint, setcode: boolean, signkey: string): DebotActivity;
+```
+
+## Spending
+[UNSTABLE](UNSTABLE.md) Describes how much funds will be debited from the target  contract balance as a result of the transaction.
+
+```ts
+type Spending = {
+    amount: bigint,
+    dst: string
+}
+```
+- `amount`: _bigint_ – Amount of nanotokens that will be sent to `dst` address.
+- `dst`: _string_ – Destination address of recipient of funds.
+
+
 ## ParamsOfInit
 [UNSTABLE](UNSTABLE.md) Parameters to init DeBot.
 
@@ -291,7 +380,7 @@ type RegisteredDebot = {
 ```
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
 - `debot_abi`: _string_ – Debot abi as json string.
-- `info`: _DebotInfo_ – Debot metadata.
+- `info`: _[DebotInfo](mod_debot.md#DebotInfo)_ – Debot metadata.
 
 
 ## ParamsOfAppDebotBrowser
@@ -323,6 +412,9 @@ type ParamsOfAppDebotBrowser = {
 } | {
     type: 'Send'
     message: string
+} | {
+    type: 'Approve'
+    activity: DebotActivity
 }
 ```
 Depends on value of the  `type` field.
@@ -383,6 +475,13 @@ Used by Debot to call DInterface implemented by Debot Browser.
 - `message`: _string_ – Internal message to DInterface address.
 <br>Message body contains interface function and parameters.
 
+When _type_ is _'Approve'_
+
+Requests permission from DeBot Browser to execute DeBot operation.
+
+
+- `activity`: _[DebotActivity](mod_debot.md#DebotActivity)_ – DeBot activity details.
+
 
 Variant constructors:
 
@@ -395,6 +494,7 @@ function paramsOfAppDebotBrowserInput(prompt: string): ParamsOfAppDebotBrowser;
 function paramsOfAppDebotBrowserGetSigningBox(): ParamsOfAppDebotBrowser;
 function paramsOfAppDebotBrowserInvokeDebot(debot_addr: string, action: DebotAction): ParamsOfAppDebotBrowser;
 function paramsOfAppDebotBrowserSend(message: string): ParamsOfAppDebotBrowser;
+function paramsOfAppDebotBrowserApprove(activity: DebotActivity): ParamsOfAppDebotBrowser;
 ```
 
 ## ResultOfAppDebotBrowser
@@ -409,6 +509,9 @@ type ResultOfAppDebotBrowser = {
     signing_box: SigningBoxHandle
 } | {
     type: 'InvokeDebot'
+} | {
+    type: 'Approve'
+    approved: boolean
 }
 ```
 Depends on value of the  `type` field.
@@ -433,6 +536,13 @@ When _type_ is _'InvokeDebot'_
 Result of debot invoking.
 
 
+When _type_ is _'Approve'_
+
+Result of `approve` callback.
+
+
+- `approved`: _boolean_ – Indicates whether the DeBot is allowed to perform the specified operation.
+
 
 Variant constructors:
 
@@ -440,6 +550,7 @@ Variant constructors:
 function resultOfAppDebotBrowserInput(value: string): ResultOfAppDebotBrowser;
 function resultOfAppDebotBrowserGetSigningBox(signing_box: SigningBoxHandle): ResultOfAppDebotBrowser;
 function resultOfAppDebotBrowserInvokeDebot(): ResultOfAppDebotBrowser;
+function resultOfAppDebotBrowserApprove(approved: boolean): ResultOfAppDebotBrowser;
 ```
 
 ## ParamsOfStart
@@ -472,7 +583,7 @@ type ResultOfFetch = {
     info: DebotInfo
 }
 ```
-- `info`: _DebotInfo_ – Debot metadata.
+- `info`: _[DebotInfo](mod_debot.md#DebotInfo)_ – Debot metadata.
 
 
 ## ParamsOfExecute
@@ -549,6 +660,14 @@ type ParamsOfAppDebotBrowserSend = {
     message: string
 }
 
+type ParamsOfAppDebotBrowserApprove = {
+    activity: DebotActivity
+}
+
+type ResultOfAppDebotBrowserApprove = {
+    approved: boolean
+}
+
 export interface AppDebotBrowser {
     log(params: ParamsOfAppDebotBrowserLog): void,
     switch(params: ParamsOfAppDebotBrowserSwitch): void,
@@ -558,6 +677,7 @@ export interface AppDebotBrowser {
     get_signing_box(): Promise<ResultOfAppDebotBrowserGetSigningBox>,
     invoke_debot(params: ParamsOfAppDebotBrowserInvokeDebot): Promise<void>,
     send(params: ParamsOfAppDebotBrowserSend): void,
+    approve(params: ParamsOfAppDebotBrowserApprove): Promise<ResultOfAppDebotBrowserApprove>,
 }
 ```
 
@@ -703,5 +823,31 @@ function send(
 ### Parameters
 - `message`: _string_ – Internal message to DInterface address.
 <br>Message body contains interface function and parameters.
+
+
+## approve
+
+Requests permission from DeBot Browser to execute DeBot operation.
+
+```ts
+type ParamsOfAppDebotBrowserApprove = {
+    activity: DebotActivity
+}
+
+type ResultOfAppDebotBrowserApprove = {
+    approved: boolean
+}
+
+function approve(
+    params: ParamsOfAppDebotBrowserApprove,
+): Promise<ResultOfAppDebotBrowserApprove>;
+```
+### Parameters
+- `activity`: _[DebotActivity](mod_debot.md#DebotActivity)_ – DeBot activity details.
+
+
+### Result
+
+- `approved`: _boolean_ – Indicates whether the DeBot is allowed to perform the specified operation.
 
 
