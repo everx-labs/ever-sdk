@@ -4,9 +4,11 @@
 
 
 ## Functions
-[start](#start) – [UNSTABLE](UNSTABLE.md) Starts an instance of debot.
+[init](#init) – [UNSTABLE](UNSTABLE.md) Creates and instance of DeBot.
 
-[fetch](#fetch) – [UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.
+[start](#start) – [UNSTABLE](UNSTABLE.md) Starts the DeBot.
+
+[fetch](#fetch) – [UNSTABLE](UNSTABLE.md) Fetches DeBot metadata from blockchain.
 
 [execute](#execute) – [UNSTABLE](UNSTABLE.md) Executes debot action.
 
@@ -21,66 +23,33 @@
 
 [DebotAction](#DebotAction) – [UNSTABLE](UNSTABLE.md) Describes a debot action in a Debot Context.
 
-[ParamsOfStart](#ParamsOfStart) – [UNSTABLE](UNSTABLE.md) Parameters to start debot.
+[ParamsOfInit](#ParamsOfInit) – [UNSTABLE](UNSTABLE.md) Parameters to init DeBot.
 
-[RegisteredDebot](#RegisteredDebot) – [UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `start` and `fetch` functions.
+[RegisteredDebot](#RegisteredDebot) – [UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `init` function.
 
 [ParamsOfAppDebotBrowser](#ParamsOfAppDebotBrowser) – [UNSTABLE](UNSTABLE.md) Debot Browser callbacks
 
 [ResultOfAppDebotBrowser](#ResultOfAppDebotBrowser) – [UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.
 
-[ParamsOfFetch](#ParamsOfFetch) – [UNSTABLE](UNSTABLE.md) Parameters to fetch debot.
+[ParamsOfStart](#ParamsOfStart) – [UNSTABLE](UNSTABLE.md) Parameters to start DeBot. DeBot must be already initialized with init() function.
+
+[ParamsOfFetch](#ParamsOfFetch) – [UNSTABLE](UNSTABLE.md) Parameters to fetch DeBot metadata.
+
+[ResultOfFetch](#ResultOfFetch) – [UNSTABLE](UNSTABLE.md)
 
 [ParamsOfExecute](#ParamsOfExecute) – [UNSTABLE](UNSTABLE.md) Parameters for executing debot action.
 
 [ParamsOfSend](#ParamsOfSend) – [UNSTABLE](UNSTABLE.md) Parameters of `send` function.
 
+[ParamsOfRemove](#ParamsOfRemove) – [UNSTABLE](UNSTABLE.md)
+
 [AppDebotBrowser](#AppDebotBrowser)
 
 
 # Functions
-## start
+## init
 
-[UNSTABLE](UNSTABLE.md) Starts an instance of debot.
-
-Downloads debot smart contract from blockchain and switches it to
-context zero.
-Returns a debot handle which can be used later in `execute` function.
-This function must be used by Debot Browser to start a dialog with debot.
-While the function is executing, several Browser Callbacks can be called,
-since the debot tries to display all actions from the context 0 to the user.
-
-# Remarks
-`start` is equivalent to `fetch` + switch to context 0.
-
-```ts
-type ParamsOfStart = {
-    address: string
-}
-
-type RegisteredDebot = {
-    debot_handle: DebotHandle,
-    debot_abi: string
-}
-
-function start(
-    params: ParamsOfStart,
-    obj: AppDebotBrowser,
-): Promise<RegisteredDebot>;
-```
-### Parameters
-- `address`: _string_ – Debot smart contract address
-
-
-### Result
-
-- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
-- `debot_abi`: _string_ – Debot abi as json string.
-
-
-## fetch
-
-[UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.
+[UNSTABLE](UNSTABLE.md) Creates and instance of DeBot.
 
 Downloads debot smart contract (code and data) from blockchain and creates
 an instance of Debot Engine for it.
@@ -89,17 +58,18 @@ an instance of Debot Engine for it.
 It does not switch debot to context 0. Browser Callbacks are not called.
 
 ```ts
-type ParamsOfFetch = {
+type ParamsOfInit = {
     address: string
 }
 
 type RegisteredDebot = {
     debot_handle: DebotHandle,
-    debot_abi: string
+    debot_abi: string,
+    info: DebotInfo
 }
 
-function fetch(
-    params: ParamsOfFetch,
+function init(
+    params: ParamsOfInit,
     obj: AppDebotBrowser,
 ): Promise<RegisteredDebot>;
 ```
@@ -111,6 +81,63 @@ function fetch(
 
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
 - `debot_abi`: _string_ – Debot abi as json string.
+- `info`: _DebotInfo_ – Debot metadata.
+
+
+## start
+
+[UNSTABLE](UNSTABLE.md) Starts the DeBot.
+
+Downloads debot smart contract from blockchain and switches it to
+context zero.
+
+This function must be used by Debot Browser to start a dialog with debot.
+While the function is executing, several Browser Callbacks can be called,
+since the debot tries to display all actions from the context 0 to the user.
+
+When the debot starts SDK registers `BrowserCallbacks` AppObject.
+Therefore when `debote.remove` is called the debot is being deleted and the callback is called
+with `finish`=`true` which indicates that it will never be used again.
+
+```ts
+type ParamsOfStart = {
+    debot_handle: DebotHandle
+}
+
+function start(
+    params: ParamsOfStart,
+): Promise<void>;
+```
+### Parameters
+- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+
+
+## fetch
+
+[UNSTABLE](UNSTABLE.md) Fetches DeBot metadata from blockchain.
+
+Downloads DeBot from blockchain and creates and fetches its metadata.
+
+```ts
+type ParamsOfFetch = {
+    address: string
+}
+
+type ResultOfFetch = {
+    info: DebotInfo
+}
+
+function fetch(
+    params: ParamsOfFetch,
+): Promise<ResultOfFetch>;
+```
+### Parameters
+- `address`: _string_ – Debot smart contract address.
+
+
+### Result
+
+- `info`: _DebotInfo_ – Debot metadata.
 
 
 ## execute
@@ -166,18 +193,16 @@ function send(
 Removes handle from Client Context and drops debot engine referenced by that handle.
 
 ```ts
-type RegisteredDebot = {
-    debot_handle: DebotHandle,
-    debot_abi: string
+type ParamsOfRemove = {
+    debot_handle: DebotHandle
 }
 
 function remove(
-    params: RegisteredDebot,
+    params: ParamsOfRemove,
 ): Promise<void>;
 ```
 ### Parameters
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
-- `debot_abi`: _string_ – Debot abi as json string.
 
 
 # Types
@@ -243,11 +268,11 @@ type DebotAction = {
 <br>Used by debot only.
 
 
-## ParamsOfStart
-[UNSTABLE](UNSTABLE.md) Parameters to start debot.
+## ParamsOfInit
+[UNSTABLE](UNSTABLE.md) Parameters to init DeBot.
 
 ```ts
-type ParamsOfStart = {
+type ParamsOfInit = {
     address: string
 }
 ```
@@ -255,16 +280,18 @@ type ParamsOfStart = {
 
 
 ## RegisteredDebot
-[UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `start` and `fetch` functions.
+[UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `init` function.
 
 ```ts
 type RegisteredDebot = {
     debot_handle: DebotHandle,
-    debot_abi: string
+    debot_abi: string,
+    info: DebotInfo
 }
 ```
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
 - `debot_abi`: _string_ – Debot abi as json string.
+- `info`: _DebotInfo_ – Debot metadata.
 
 
 ## ParamsOfAppDebotBrowser
@@ -415,15 +442,37 @@ function resultOfAppDebotBrowserGetSigningBox(signing_box: SigningBoxHandle): Re
 function resultOfAppDebotBrowserInvokeDebot(): ResultOfAppDebotBrowser;
 ```
 
+## ParamsOfStart
+[UNSTABLE](UNSTABLE.md) Parameters to start DeBot. DeBot must be already initialized with init() function.
+
+```ts
+type ParamsOfStart = {
+    debot_handle: DebotHandle
+}
+```
+- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+
+
 ## ParamsOfFetch
-[UNSTABLE](UNSTABLE.md) Parameters to fetch debot.
+[UNSTABLE](UNSTABLE.md) Parameters to fetch DeBot metadata.
 
 ```ts
 type ParamsOfFetch = {
     address: string
 }
 ```
-- `address`: _string_ – Debot smart contract address
+- `address`: _string_ – Debot smart contract address.
+
+
+## ResultOfFetch
+[UNSTABLE](UNSTABLE.md)
+
+```ts
+type ResultOfFetch = {
+    info: DebotInfo
+}
+```
+- `info`: _DebotInfo_ – Debot metadata.
 
 
 ## ParamsOfExecute
@@ -450,6 +499,17 @@ type ParamsOfSend = {
 ```
 - `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
 - `message`: _string_ – BOC of internal message to debot encoded in base64 format.
+
+
+## ParamsOfRemove
+[UNSTABLE](UNSTABLE.md)
+
+```ts
+type ParamsOfRemove = {
+    debot_handle: DebotHandle
+}
+```
+- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
 
 
 ## AppDebotBrowser

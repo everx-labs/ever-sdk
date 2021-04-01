@@ -43,6 +43,13 @@ const TEST_DEBOT5: &'static str = "testDebot5";
 const TEST_DEBOTA: &'static str = "tda";
 const TEST_DEBOTB: &'static str = "tdb";
 
+struct ExpectedTransaction {
+    dst: String,
+    out: Vec<Spending>,
+    setcode: bool,
+    signkey: String,
+    approved: bool,
+}
 
 const SUPPORTED_INTERFACES: &[&str] = &[
     "f6927c0d4bdb69e1b52d27f018d156ff04152f00558042ff674f0fec32e4369d", // echo
@@ -208,6 +215,7 @@ struct BrowserData {
     pub echo: Echo,
     pub bots: Mutex<HashMap<String, RegisteredDebot>>,
     pub info: DebotInfo,
+    pub activity: Mutex<Vec<ExpectedTransaction>>,
 }
 
 impl TestBrowser {
@@ -343,18 +351,20 @@ impl TestBrowser {
             echo: Echo::new(),
             bots: Mutex::new(HashMap::new()),
             info,
+            activity: Mutex::new(vec![]),
         });
 
         Self::execute_from_state(client, state, true).await
     }
 
-    pub async fn execute_with_info(
+    pub async fn execute_with_details(
         client: Arc<TestClient>,
         address: String,
         keys: KeyPair,
         steps: Vec<DebotStep>,
         terminal_outputs: Vec<String>,
         info: DebotInfo,
+        activity: Vec<ExpectedTransaction>,
     ) {
         let state = Arc::new(BrowserData {
             current: Mutex::new(Default::default()),
@@ -369,6 +379,7 @@ impl TestBrowser {
             echo: Echo::new(),
             bots: Mutex::new(HashMap::new()),
             info,
+            activity: Mutex::new(activity),
         });
 
         Self::execute_from_state(client, state, true).await
@@ -442,9 +453,26 @@ impl TestBrowser {
                     echo: Echo::new(),
                     bots: Mutex::new(HashMap::new()),
                     info: Default::default(),
+                    activity: Mutex::new(vec![]),
                 });
                 Self::call_execute_boxed(client, state, false).await;
                 ResultOfAppDebotBrowser::InvokeDebot
+            },
+            ParamsOfAppDebotBrowser::Approve {activity} => {
+                let mut approved = true;
+                if let Some(expected) = state.activity.lock().await.pop() {
+                    approved = expected.approved;
+                    match activity {
+                        DebotActivity::Transaction{msg: _, dst, out, fee, setcode, signkey} => {
+                            assert_eq!(expected.dst, dst);
+                            assert_eq!(expected.out, out);
+                            assert_eq!(expected.setcode, setcode);
+                            assert_eq!(expected.signkey, signkey);
+                            assert!(fee > 0);
+                        },
+                    }
+                }
+                ResultOfAppDebotBrowser::Approve{ approved }
             },
             _ => panic!("invalid call {:#?}", params)
         }
@@ -745,7 +773,7 @@ async fn init_simple_debot(client: Arc<TestClient>, name: &str) -> DebotData {
         address: None,
         call_set,
     };
-    let debot_addr = client.deploy_with_giver_async(deploy_debot_params, Some(1_000_000_000u64)).await;
+    let debot_addr = client.deploy_with_giver_async(deploy_debot_params, Some(100_000_000_000u64)).await;
     let _ = client.net_process_function(
         debot_addr.clone(),
         debot_abi.clone(),
@@ -763,21 +791,10 @@ async fn init_simple_debot(client: Arc<TestClient>, name: &str) -> DebotData {
 
 async fn init_debot5(client: Arc<TestClient>, count: u32) -> (String, String) {
     let debot_abi = TestClient::abi(TEST_DEBOT5, Some(2));
-    let debot5_tvc = TestClient::tvc(TEST_DEBOT5, Some(2));
-
-    let result: ResultOfGetCodeFromTvc = client.request_async(
-        "boc.get_code_from_tvc",
-        ParamsOfGetCodeFromTvc { tvc: debot5_tvc }
-    ).await.unwrap();
-
-    let result: ResultOfGetBocHash = client.request_async(
-        "boc.get_boc_hash",
-        ParamsOfGetBocHash { boc: result.code }
-    ).await.unwrap();
-
+    let hash_str = get_code_hash_from_tvc(client.clone(), TEST_DEBOT5).await;
     let call_set = CallSet::some_with_function_and_input(
         "constructor",
-        json!({ "codeHash": format!("0x{}", result.hash) }),
+        json!({ "codeHash": format!("0x{}", hash_str) }),
     );
     let mut deploy_debot_params = ParamsOfEncodeMessage {
         abi: debot_abi.clone(),
@@ -870,6 +887,41 @@ async fn init_hello_debot(client: Arc<TestClient>) -> DebotData {
         Signer::Keys { keys: data.keys.clone() },
     ).await.unwrap();
     data
+}
+
+async fn count_accounts_by_codehash(client: Arc<TestClient>, code_hash: String) -> u32 {
+    let res: ResultOfQueryCollection = client
+        .request_async(
+            "net.query_collection",
+            ParamsOfQueryCollection {
+                collection: "accounts".to_owned(),
+                filter: Some(json!({
+                    "code_hash": { "eq": code_hash}
+                })),
+                result: "id".to_owned(),
+                limit: None,
+                order: None,
+            },
+        )
+        .await
+        .unwrap();
+
+    res.result.len() as u32
+}
+
+async fn get_code_hash_from_tvc(client: Arc<TestClient>, name: &str) -> String {
+    let debot_tvc = TestClient::tvc(name, Some(2));
+    let result: ResultOfGetCodeFromTvc = client.request_async(
+        "boc.get_code_from_tvc",
+        ParamsOfGetCodeFromTvc { tvc: debot_tvc }
+    ).await.unwrap();
+
+    let result: ResultOfGetBocHash = client.request_async(
+        "boc.get_boc_hash",
+        ParamsOfGetBocHash { boc: result.code }
+    ).await.unwrap();
+
+    result.hash
 }
 
 const EXIT_CHOICE: u8 = 9;
@@ -1204,20 +1256,20 @@ async fn test_debot_invoke_msgs() {
     ).await;
 }
 
-// TODO: make test runnable not only once
-#[ignore]
 #[tokio::test(core_threads = 2)]
 async fn test_debot_sdk_get_accounts_by_hash() {
     let client = std::sync::Arc::new(TestClient::new());
-    let count = 6;
-    let (debot, abi) = init_debot5(client.clone(), count).await;
+    let deploy_count = 8;
+    let (debot, abi) = init_debot5(client.clone(), deploy_count).await;
+    let code_hash = get_code_hash_from_tvc(client.clone(), TEST_DEBOT5).await;
+    let total_count = count_accounts_by_codehash(client.clone(), code_hash).await;
     let steps = serde_json::from_value(json!([])).unwrap();
     TestBrowser::execute(
         client.clone(),
         debot.clone(),
         KeyPair::default(),
         steps,
-        vec![ format!("{} contracts.", count) ],
+        vec![ format!("{} contracts.", total_count) ],
         abi
     ).await;
 }
@@ -1228,7 +1280,7 @@ async fn test_debot_getinfo() {
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_hello_debot(client.clone()).await;
     let icon = TestClient::icon("helloDebot", Some(2));
     let steps = serde_json::from_value(json!([])).unwrap();
-    TestBrowser::execute_with_info(
+    TestBrowser::execute_with_details(
         client.clone(),
         debot_addr.clone(),
         keys,
@@ -1251,6 +1303,55 @@ async fn test_debot_getinfo() {
             icon: Some(icon),
             interfaces: vec!["0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3".to_owned()],
         },
+        vec![],
+    ).await;
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_debot_approve() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot6").await;
+    let mut info = DebotInfo::default();
+    info.dabi = Some(abi);
+    let steps = serde_json::from_value(json!([])).unwrap();
+    TestBrowser::execute_with_details(
+        client.clone(),
+        debot_addr.clone(),
+        keys.clone(),
+        steps,
+        vec![
+            format!("Send1 succeeded"),
+            format!("Send2 rejected"),
+        ],
+        info,
+        vec![
+            ExpectedTransaction {
+                dst: debot_addr.clone(),
+                out: vec![],
+                setcode: false,
+                signkey: keys.public.clone(),
+                approved: true,
+            },
+            ExpectedTransaction {
+                dst: debot_addr.clone(),
+                out: vec![
+                    Spending{amount: 10000000000, dst: debot_addr.clone()},
+                ],
+                setcode: false,
+                signkey: keys.public.clone(),
+                approved: false,
+            },
+            ExpectedTransaction {
+                dst: debot_addr.clone(),
+                out: vec![
+                    Spending{amount: 2200000000, dst: debot_addr.clone()},
+                    Spending{amount: 3500000000, dst: format!("0:{:064}", 0)},
+                ],
+                setcode: false,
+                signkey: keys.public.clone(),
+                approved: true,
+            },
+        ],
     ).await;
 }
 
@@ -1275,7 +1376,14 @@ async fn download_account(client: &Arc<TestClient>, addr: &str) -> Option<String
         None
     }
 }
-async fn assert_get_method(client: &Arc<TestClient>, addr: &String, abi: &Abi, func: &str, params: Value, returns: Value) {
+async fn assert_get_method(
+    client: &Arc<TestClient>,
+    addr: &String,
+    abi: &Abi,
+    func: &str,
+    params: Value,
+    returns: Value
+) {
     let client = client.clone();
     let acc_boc = download_account(&client, &addr).await.expect("Account not found");
 

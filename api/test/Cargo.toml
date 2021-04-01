@@ -1,6 +1,6 @@
 [package]
 name = "api_test"
-version = "1.11.2"
+version = "1.13.0"
 authors = ["TON DEV SOLUTIONS LTD <support@tonlabs.io>"]
 edition = "2018"
 

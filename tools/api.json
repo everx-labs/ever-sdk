@@ -1,5 +1,5 @@
 {
-  "version": "1.11.1",
+  "version": "1.11.2",
   "modules": [
     {
       "name": "client",
@@ -8964,7 +8964,7 @@
           "description": null
         },
         {
-          "name": "ParamsOfStart",
+          "name": "ParamsOfInit",
           "type": "Struct",
           "struct_fields": [
             {
@@ -8974,7 +8974,7 @@
               "description": null
             }
           ],
-          "summary": "[UNSTABLE](UNSTABLE.md) Parameters to start debot.",
+          "summary": "[UNSTABLE](UNSTABLE.md) Parameters to init DeBot.",
           "description": null
         },
         {
@@ -8993,9 +8993,16 @@
               "type": "String",
               "summary": "Debot abi as json string.",
               "description": null
+            },
+            {
+              "name": "info",
+              "type": "Ref",
+              "ref_name": "DebotInfo",
+              "summary": "Debot metadata.",
+              "description": null
             }
           ],
-          "summary": "[UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `start` and `fetch` functions.",
+          "summary": "[UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `init` function.",
           "description": null
         },
         {
@@ -9159,17 +9166,47 @@
           "description": null
         },
         {
+          "name": "ParamsOfStart",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "debot_handle",
+              "type": "Ref",
+              "ref_name": "debot.DebotHandle",
+              "summary": "Debot handle which references an instance of debot engine.",
+              "description": null
+            }
+          ],
+          "summary": "[UNSTABLE](UNSTABLE.md) Parameters to start DeBot. DeBot must be already initialized with init() function.",
+          "description": null
+        },
+        {
           "name": "ParamsOfFetch",
           "type": "Struct",
           "struct_fields": [
             {
               "name": "address",
               "type": "String",
-              "summary": "Debot smart contract address",
+              "summary": "Debot smart contract address.",
               "description": null
             }
           ],
-          "summary": "[UNSTABLE](UNSTABLE.md) Parameters to fetch debot.",
+          "summary": "[UNSTABLE](UNSTABLE.md) Parameters to fetch DeBot metadata.",
+          "description": null
+        },
+        {
+          "name": "ResultOfFetch",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "info",
+              "type": "Ref",
+              "ref_name": "DebotInfo",
+              "summary": "Debot metadata.",
+              "description": null
+            }
+          ],
+          "summary": "[UNSTABLE](UNSTABLE.md)",
           "description": null
         },
         {
@@ -9214,13 +9251,28 @@
           ],
           "summary": "[UNSTABLE](UNSTABLE.md) Parameters of `send` function.",
           "description": null
+        },
+        {
+          "name": "ParamsOfRemove",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "debot_handle",
+              "type": "Ref",
+              "ref_name": "debot.DebotHandle",
+              "summary": "Debot handle which references an instance of debot engine.",
+              "description": null
+            }
+          ],
+          "summary": "[UNSTABLE](UNSTABLE.md)",
+          "description": null
         }
       ],
       "functions": [
         {
-          "name": "start",
-          "summary": "[UNSTABLE](UNSTABLE.md) Starts an instance of debot.",
-          "description": "Downloads debot smart contract from blockchain and switches it to\ncontext zero.\nReturns a debot handle which can be used later in `execute` function.\nThis function must be used by Debot Browser to start a dialog with debot.\nWhile the function is executing, several Browser Callbacks can be called,\nsince the debot tries to display all actions from the context 0 to the user.\n\n# Remarks\n`start` is equivalent to `fetch` + switch to context 0.",
+          "name": "init",
+          "summary": "[UNSTABLE](UNSTABLE.md) Creates and instance of DeBot.",
+          "description": "Downloads debot smart contract (code and data) from blockchain and creates\nan instance of Debot Engine for it.\n\n# Remarks\nIt does not switch debot to context 0. Browser Callbacks are not called.",
           "params": [
             {
               "name": "context",
@@ -9238,7 +9290,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "debot.ParamsOfStart",
+              "ref_name": "debot.ParamsOfInit",
               "summary": null,
               "description": null
             },
@@ -9273,9 +9325,46 @@
           "errors": null
         },
         {
+          "name": "start",
+          "summary": "[UNSTABLE](UNSTABLE.md) Starts the DeBot.",
+          "description": "Downloads debot smart contract from blockchain and switches it to\ncontext zero.\n\nThis function must be used by Debot Browser to start a dialog with debot.\nWhile the function is executing, several Browser Callbacks can be called,\nsince the debot tries to display all actions from the context 0 to the user.\n\nWhen the debot starts SDK registers `BrowserCallbacks` AppObject.\nTherefore when `debote.remove` is called the debot is being deleted and the callback is called\nwith `finish`=`true` which indicates that it will never be used again.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "debot.ParamsOfStart",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
           "name": "fetch",
-          "summary": "[UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.",
-          "description": "Downloads debot smart contract (code and data) from blockchain and creates\nan instance of Debot Engine for it.\n\n# Remarks\nIt does not switch debot to context 0. Browser Callbacks are not called.",
+          "summary": "[UNSTABLE](UNSTABLE.md) Fetches DeBot metadata from blockchain.",
+          "description": "Downloads DeBot from blockchain and creates and fetches its metadata.",
           "params": [
             {
               "name": "context",
@@ -9296,23 +9385,6 @@
               "ref_name": "debot.ParamsOfFetch",
               "summary": null,
               "description": null
-            },
-            {
-              "name": "app_object",
-              "type": "Generic",
-              "generic_name": "AppObject",
-              "generic_args": [
-                {
-                  "type": "Ref",
-                  "ref_name": "debot.ParamsOfAppDebotBrowser"
-                },
-                {
-                  "type": "Ref",
-                  "ref_name": "debot.ResultOfAppDebotBrowser"
-                }
-              ],
-              "summary": null,
-              "description": null
             }
           ],
           "result": {
@@ -9321,7 +9393,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "debot.RegisteredDebot"
+                "ref_name": "debot.ResultOfFetch"
               }
             ]
           },
@@ -9422,7 +9494,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "debot.RegisteredDebot",
+              "ref_name": "debot.ParamsOfRemove",
               "summary": null,
               "description": null
             }

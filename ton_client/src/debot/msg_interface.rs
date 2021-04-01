@@ -8,6 +8,8 @@ use crate::encoding::decode_abi_bigint;
 use serde_json::Value;
 use std::sync::Arc;
 use ton_abi::Contract;
+use crate::boc::{parse_message, ParamsOfParse};
+use crate::debot::DEngine;
 
 const ABI: &str = r#"
 {
@@ -68,12 +70,20 @@ impl MsgInterface {
             .await
             .map_err(|e| format!("{}", e))?
             .handle;
+        let parsed_msg = parse_message(self.ton.clone(), ParamsOfParse { boc: message.clone() })
+            .await
+            .map_err(|e| format!("{}", e))?
+            .parsed;
+        let dest = parsed_msg["dst"].as_str().ok_or(format!("failed to parse dst address"))?.to_owned();
+        let target_state = DEngine::load_state(self.ton.clone(), dest)
+            .await
+            .map_err(|e| format!("{}", e))?;
         let msg = send_ext_msg(
             self.browser.clone(),
             self.ton.clone(),
             message,
             signing_box,
-            String::new(),
+            target_state,
             &self.debot_addr,
         )
         .await

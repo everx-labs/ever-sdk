@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ### New
 - `net.query_counterparties` funtion for quering account counterparties and last messages info. Subscrition to counterparties collection is available via `net.subscribe_collection` function.
 
-## [1.12.0] – 2021-03-25
+## [1.12.0] – 2021-04-01
 
 ### New
 - [`utils.compress_zstd`](docs/mod_utils.md#compress_zstd) compresses data using Facebook's Zstandard algorithm.
@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - **Debot module**:
     - `init` function that creates an instance of DeBot and returns DeBot metadata.
     - Dengine fetches metadata form DeBot by calling 2 mandatory functions: `getRequiredInterfaces` and `getDebotInfo`. This data is returned by `fetch` and `init` functions.
+    - `approve` DeBot Browser callback which is called by DEngine to request permission for DeBot activities.
 
 ### Changed
 - **Debot Module**:

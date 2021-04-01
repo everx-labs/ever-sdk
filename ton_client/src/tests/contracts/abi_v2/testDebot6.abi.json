@@ -1,0 +1,123 @@
+{
+	"ABI version": 2,
+	"header": ["pubkey", "time", "expire"],
+	"functions": [
+		{
+			"name": "start",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "onSuccess1",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "onSuccess2",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "onSuccess3",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "onError1",
+			"inputs": [
+				{"name":"sdkError","type":"uint32"},
+				{"name":"exitCode","type":"uint32"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "onError2",
+			"inputs": [
+				{"name":"sdkError","type":"uint32"},
+				{"name":"exitCode","type":"uint32"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "onError3",
+			"inputs": [
+				{"name":"sdkError","type":"uint32"},
+				{"name":"exitCode","type":"uint32"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "send3",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "send2",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "send1",
+			"inputs": [
+				{"name":"value1","type":"uint64"},
+				{"name":"value2","type":"uint64"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getVersion",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"name","type":"bytes"},
+				{"name":"semver","type":"uint24"}
+			]
+		},
+		{
+			"name": "getDebotOptions",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"options","type":"uint8"},
+				{"name":"debotAbi","type":"bytes"},
+				{"name":"targetAbi","type":"bytes"},
+				{"name":"targetAddr","type":"address"}
+			]
+		},
+		{
+			"name": "setABI",
+			"inputs": [
+				{"name":"dabi","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "constructor",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		}
+	],
+	"data": [
+	],
+	"events": [
+	]
+}

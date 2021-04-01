@@ -197,9 +197,11 @@ Where:
 
 ## [debot](mod_debot.md) – [UNSTABLE](UNSTABLE.md) Module for working with debot.
 
-[start](mod_debot.md#start) – [UNSTABLE](UNSTABLE.md) Starts an instance of debot.
+[init](mod_debot.md#init) – [UNSTABLE](UNSTABLE.md) Creates and instance of DeBot.
 
-[fetch](mod_debot.md#fetch) – [UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.
+[start](mod_debot.md#start) – [UNSTABLE](UNSTABLE.md) Starts the DeBot.
+
+[fetch](mod_debot.md#fetch) – [UNSTABLE](UNSTABLE.md) Fetches DeBot metadata from blockchain.
 
 [execute](mod_debot.md#execute) – [UNSTABLE](UNSTABLE.md) Executes debot action.
 
