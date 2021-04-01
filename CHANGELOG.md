@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.0] – 2021-04-01
+
+### New
+- `net.query_counterparties` funtion for quering account counterparties and last messages info. Subscrition to counterparties collection is available via `net.subscribe_collection` function.
+
 ## [1.12.0] – 2021-03-25
 
 ### New
