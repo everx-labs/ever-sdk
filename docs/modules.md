@@ -157,6 +157,10 @@ Where:
 
 [calc_storage_fee](mod_utils.md#calc_storage_fee) – Calculates storage fee for an account over a specified time period
 
+[compress_zstd](mod_utils.md#compress_zstd) – Compresses data using Zstandard algorithm
+
+[decompress_zstd](mod_utils.md#decompress_zstd) – Decompresses data using Zstandard algorithm
+
 ## [tvm](mod_tvm.md)
 
 [run_executor](mod_tvm.md#run_executor) – Emulates all the phases of contract execution locally
@@ -193,9 +197,11 @@ Where:
 
 ## [debot](mod_debot.md) – [UNSTABLE](UNSTABLE.md) Module for working with debot.
 
-[start](mod_debot.md#start) – [UNSTABLE](UNSTABLE.md) Starts an instance of debot.
+[init](mod_debot.md#init) – [UNSTABLE](UNSTABLE.md) Creates and instance of DeBot.
 
-[fetch](mod_debot.md#fetch) – [UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.
+[start](mod_debot.md#start) – [UNSTABLE](UNSTABLE.md) Starts the DeBot.
+
+[fetch](mod_debot.md#fetch) – [UNSTABLE](UNSTABLE.md) Fetches DeBot metadata from blockchain.
 
 [execute](mod_debot.md#execute) – [UNSTABLE](UNSTABLE.md) Executes debot action.
 

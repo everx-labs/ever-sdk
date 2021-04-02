@@ -1,5 +1,5 @@
 {
-  "version": "1.11.1",
+  "version": "1.12.0",
   "modules": [
     {
       "name": "client",
@@ -6914,6 +6914,73 @@
           ],
           "summary": null,
           "description": null
+        },
+        {
+          "name": "ParamsOfCompressZstd",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "uncompressed",
+              "type": "String",
+              "summary": "Uncompressed data.",
+              "description": "Must be encoded as base64."
+            },
+            {
+              "name": "level",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "Int",
+                "number_size": 32
+              },
+              "summary": "Compression level, from 1 to 21. Where: 1 - lowest compression level (fastest compression); 21 - highest compression level (slowest compression). If level is omitted, the default compression level is used (currently `3`).",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfCompressZstd",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "compressed",
+              "type": "String",
+              "summary": "Compressed data.",
+              "description": "Must be encoded as base64."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfDecompressZstd",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "compressed",
+              "type": "String",
+              "summary": "Compressed data.",
+              "description": "Must be encoded as base64."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfDecompressZstd",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "decompressed",
+              "type": "String",
+              "summary": "Decompressed data.",
+              "description": "Must be encoded as base64."
+            }
+          ],
+          "summary": null,
+          "description": null
         }
       ],
       "functions": [
@@ -6988,6 +7055,82 @@
               {
                 "type": "Ref",
                 "ref_name": "utils.ResultOfCalcStorageFee"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "compress_zstd",
+          "summary": "Compresses data using Zstandard algorithm",
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "utils.ParamsOfCompressZstd",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "utils.ResultOfCompressZstd"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "decompress_zstd",
+          "summary": "Decompresses data using Zstandard algorithm",
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "utils.ParamsOfDecompressZstd",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "utils.ResultOfDecompressZstd"
               }
             ]
           },
@@ -8759,6 +8902,20 @@
               "value": "810",
               "summary": null,
               "description": null
+            },
+            {
+              "name": "DebotBrowserCallbackFailed",
+              "type": "Number",
+              "value": "811",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "DebotOperationRejected",
+              "type": "Number",
+              "value": "812",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -8821,7 +8978,194 @@
           "description": null
         },
         {
-          "name": "ParamsOfStart",
+          "name": "DebotInfo",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "name",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "DeBot short name.",
+              "description": null
+            },
+            {
+              "name": "version",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "DeBot semantic version.",
+              "description": null
+            },
+            {
+              "name": "publisher",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "The name of DeBot deployer.",
+              "description": null
+            },
+            {
+              "name": "key",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Short info about DeBot.",
+              "description": null
+            },
+            {
+              "name": "author",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "The name of DeBot developer.",
+              "description": null
+            },
+            {
+              "name": "support",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "TON address of author for questions and donations.",
+              "description": null
+            },
+            {
+              "name": "hello",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "String with the first messsage from DeBot.",
+              "description": null
+            },
+            {
+              "name": "language",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "String with DeBot interface language (ISO-639).",
+              "description": null
+            },
+            {
+              "name": "dabi",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "String with DeBot ABI.",
+              "description": null
+            },
+            {
+              "name": "icon",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "DeBot icon.",
+              "description": null
+            },
+            {
+              "name": "interfaces",
+              "type": "Array",
+              "array_item": {
+                "type": "String"
+              },
+              "summary": "Vector with IDs of DInterfaces used by DeBot.",
+              "description": null
+            }
+          ],
+          "summary": "[UNSTABLE](UNSTABLE.md) Describes DeBot metadata.",
+          "description": null
+        },
+        {
+          "name": "DebotActivity",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "Transaction",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "msg",
+                  "type": "String",
+                  "summary": "External inbound message BOC.",
+                  "description": null
+                },
+                {
+                  "name": "dst",
+                  "type": "String",
+                  "summary": "Target smart contract address.",
+                  "description": null
+                },
+                {
+                  "name": "out",
+                  "type": "Array",
+                  "array_item": {
+                    "type": "Ref",
+                    "ref_name": "debot.Spending"
+                  },
+                  "summary": "List of spendings as a result of transaction.",
+                  "description": null
+                },
+                {
+                  "name": "fee",
+                  "type": "BigInt",
+                  "number_type": "UInt",
+                  "number_size": 64,
+                  "summary": "Transaction total fee.",
+                  "description": null
+                },
+                {
+                  "name": "setcode",
+                  "type": "Boolean",
+                  "summary": "Indicates if target smart contract updates its code.",
+                  "description": null
+                },
+                {
+                  "name": "signkey",
+                  "type": "String",
+                  "summary": "Public key from keypair that was used to sign external message.",
+                  "description": null
+                }
+              ],
+              "summary": "DeBot wants to create new transaction in blockchain.",
+              "description": null
+            }
+          ],
+          "summary": "[UNSTABLE](UNSTABLE.md) Describes the operation that the DeBot wants to perform.",
+          "description": null
+        },
+        {
+          "name": "Spending",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "amount",
+              "type": "BigInt",
+              "number_type": "UInt",
+              "number_size": 64,
+              "summary": "Amount of nanotokens that will be sent to `dst` address.",
+              "description": null
+            },
+            {
+              "name": "dst",
+              "type": "String",
+              "summary": "Destination address of recipient of funds.",
+              "description": null
+            }
+          ],
+          "summary": "[UNSTABLE](UNSTABLE.md) Describes how much funds will be debited from the target  contract balance as a result of the transaction.",
+          "description": null
+        },
+        {
+          "name": "ParamsOfInit",
           "type": "Struct",
           "struct_fields": [
             {
@@ -8831,7 +9175,7 @@
               "description": null
             }
           ],
-          "summary": "[UNSTABLE](UNSTABLE.md) Parameters to start debot.",
+          "summary": "[UNSTABLE](UNSTABLE.md) Parameters to init DeBot.",
           "description": null
         },
         {
@@ -8850,9 +9194,16 @@
               "type": "String",
               "summary": "Debot abi as json string.",
               "description": null
+            },
+            {
+              "name": "info",
+              "type": "Ref",
+              "ref_name": "debot.DebotInfo",
+              "summary": "Debot metadata.",
+              "description": null
             }
           ],
-          "summary": "[UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `start` and `fetch` functions.",
+          "summary": "[UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `init` function.",
           "description": null
         },
         {
@@ -8966,6 +9317,21 @@
               ],
               "summary": "Used by Debot to call DInterface implemented by Debot Browser.",
               "description": null
+            },
+            {
+              "name": "Approve",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "activity",
+                  "type": "Ref",
+                  "ref_name": "debot.DebotActivity",
+                  "summary": "DeBot activity details.",
+                  "description": null
+                }
+              ],
+              "summary": "Requests permission from DeBot Browser to execute DeBot operation.",
+              "description": null
             }
           ],
           "summary": "[UNSTABLE](UNSTABLE.md) Debot Browser callbacks",
@@ -9010,9 +9376,38 @@
               "struct_fields": [],
               "summary": "Result of debot invoking.",
               "description": null
+            },
+            {
+              "name": "Approve",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "approved",
+                  "type": "Boolean",
+                  "summary": "Indicates whether the DeBot is allowed to perform the specified operation.",
+                  "description": null
+                }
+              ],
+              "summary": "Result of `approve` callback.",
+              "description": null
             }
           ],
           "summary": "[UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.",
+          "description": null
+        },
+        {
+          "name": "ParamsOfStart",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "debot_handle",
+              "type": "Ref",
+              "ref_name": "debot.DebotHandle",
+              "summary": "Debot handle which references an instance of debot engine.",
+              "description": null
+            }
+          ],
+          "summary": "[UNSTABLE](UNSTABLE.md) Parameters to start DeBot. DeBot must be already initialized with init() function.",
           "description": null
         },
         {
@@ -9022,11 +9417,26 @@
             {
               "name": "address",
               "type": "String",
-              "summary": "Debot smart contract address",
+              "summary": "Debot smart contract address.",
               "description": null
             }
           ],
-          "summary": "[UNSTABLE](UNSTABLE.md) Parameters to fetch debot.",
+          "summary": "[UNSTABLE](UNSTABLE.md) Parameters to fetch DeBot metadata.",
+          "description": null
+        },
+        {
+          "name": "ResultOfFetch",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "info",
+              "type": "Ref",
+              "ref_name": "debot.DebotInfo",
+              "summary": "Debot metadata.",
+              "description": null
+            }
+          ],
+          "summary": "[UNSTABLE](UNSTABLE.md)",
           "description": null
         },
         {
@@ -9071,13 +9481,28 @@
           ],
           "summary": "[UNSTABLE](UNSTABLE.md) Parameters of `send` function.",
           "description": null
+        },
+        {
+          "name": "ParamsOfRemove",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "debot_handle",
+              "type": "Ref",
+              "ref_name": "debot.DebotHandle",
+              "summary": "Debot handle which references an instance of debot engine.",
+              "description": null
+            }
+          ],
+          "summary": "[UNSTABLE](UNSTABLE.md)",
+          "description": null
         }
       ],
       "functions": [
         {
-          "name": "start",
-          "summary": "[UNSTABLE](UNSTABLE.md) Starts an instance of debot.",
-          "description": "Downloads debot smart contract from blockchain and switches it to\ncontext zero.\nReturns a debot handle which can be used later in `execute` function.\nThis function must be used by Debot Browser to start a dialog with debot.\nWhile the function is executing, several Browser Callbacks can be called,\nsince the debot tries to display all actions from the context 0 to the user.\n\n# Remarks\n`start` is equivalent to `fetch` + switch to context 0.",
+          "name": "init",
+          "summary": "[UNSTABLE](UNSTABLE.md) Creates and instance of DeBot.",
+          "description": "Downloads debot smart contract (code and data) from blockchain and creates\nan instance of Debot Engine for it.\n\n# Remarks\nIt does not switch debot to context 0. Browser Callbacks are not called.",
           "params": [
             {
               "name": "context",
@@ -9095,7 +9520,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "debot.ParamsOfStart",
+              "ref_name": "debot.ParamsOfInit",
               "summary": null,
               "description": null
             },
@@ -9130,9 +9555,46 @@
           "errors": null
         },
         {
+          "name": "start",
+          "summary": "[UNSTABLE](UNSTABLE.md) Starts the DeBot.",
+          "description": "Downloads debot smart contract from blockchain and switches it to\ncontext zero.\n\nThis function must be used by Debot Browser to start a dialog with debot.\nWhile the function is executing, several Browser Callbacks can be called,\nsince the debot tries to display all actions from the context 0 to the user.\n\nWhen the debot starts SDK registers `BrowserCallbacks` AppObject.\nTherefore when `debote.remove` is called the debot is being deleted and the callback is called\nwith `finish`=`true` which indicates that it will never be used again.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "debot.ParamsOfStart",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
           "name": "fetch",
-          "summary": "[UNSTABLE](UNSTABLE.md) Fetches debot from blockchain.",
-          "description": "Downloads debot smart contract (code and data) from blockchain and creates\nan instance of Debot Engine for it.\n\n# Remarks\nIt does not switch debot to context 0. Browser Callbacks are not called.",
+          "summary": "[UNSTABLE](UNSTABLE.md) Fetches DeBot metadata from blockchain.",
+          "description": "Downloads DeBot from blockchain and creates and fetches its metadata.",
           "params": [
             {
               "name": "context",
@@ -9153,23 +9615,6 @@
               "ref_name": "debot.ParamsOfFetch",
               "summary": null,
               "description": null
-            },
-            {
-              "name": "app_object",
-              "type": "Generic",
-              "generic_name": "AppObject",
-              "generic_args": [
-                {
-                  "type": "Ref",
-                  "ref_name": "debot.ParamsOfAppDebotBrowser"
-                },
-                {
-                  "type": "Ref",
-                  "ref_name": "debot.ResultOfAppDebotBrowser"
-                }
-              ],
-              "summary": null,
-              "description": null
             }
           ],
           "result": {
@@ -9178,7 +9623,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "debot.RegisteredDebot"
+                "ref_name": "debot.ResultOfFetch"
               }
             ]
           },
@@ -9279,7 +9724,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "debot.RegisteredDebot",
+              "ref_name": "debot.ParamsOfRemove",
               "summary": null,
               "description": null
             }

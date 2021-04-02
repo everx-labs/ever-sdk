@@ -53,13 +53,33 @@ pub const DEBOT_ABI: &'static str = r#"{
 				{"name":"targetAddr","type":"address"}
 			]
 		},
-		{
-			"name": "constructor",
+        {
+			"name": "getDebotInfo",
+            "id": "0xDEB",
 			"inputs": [
 			],
 			"outputs": [
+				{"name":"name","type":"bytes"},
+				{"name":"version","type":"bytes"},
+				{"name":"publisher","type":"bytes"},
+				{"name":"key","type":"bytes"},
+				{"name":"author","type":"bytes"},
+				{"name":"support","type":"address"},
+				{"name":"hello","type":"bytes"},
+				{"name":"language","type":"bytes"},
+				{"name":"dabi","type":"bytes"},
+				{"name":"icon","type":"bytes"}
+
 			]
-		}
+		},
+        {
+            "name": "getRequiredInterfaces",
+            "inputs": [
+            ],
+            "outputs": [
+                    {"name":"interfaces","type":"uint256[]"}
+            ]
+        }
 	],
 	"data": [
 	],
