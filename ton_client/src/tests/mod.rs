@@ -317,6 +317,12 @@ impl TestClient {
         )
     }
 
+    pub fn icon(name: &str, abi_version: Option<u8>) -> String {
+        hex::encode(
+            std::fs::read(format!("{}{}.tvc", Self::contracts_path(abi_version), name)).unwrap()
+        )
+    }
+
     pub fn package(name: &str, abi_version: Option<u8>) -> (Abi, String) {
         (Self::abi(name, abi_version), Self::tvc(name, abi_version))
     }
@@ -699,7 +705,7 @@ impl TestClient {
                 "client.resolve_app_request",
                 ParamsOfResolveAppRequest {
                     app_request_id,
-                    result: AppRequestResult::Ok { 
+                    result: AppRequestResult::Ok {
                         result: json!(result)
                     }
                 },

@@ -454,6 +454,14 @@ fn register_utils(handlers: &mut RuntimeHandlers) {
         crate::utils::calc_storage_fee,
         crate::utils::calc_storage_fee::calc_storage_fee_api,
     );
+    module.register_sync_fn(
+        super::utils::compress_zstd,
+        super::utils::compress_zstd_api
+    );
+    module.register_sync_fn(
+        super::utils::decompress_zstd,
+        super::utils::decompress_zstd_api
+    );
     module.register();
 }
 
@@ -469,14 +477,15 @@ fn register_debot(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::debot::DebotHandle>();
     module.register_type::<crate::debot::DebotAction>();
     module.register_type::<crate::debot::DebotHandle>();
+    module.register_type::<crate::debot::DebotInfo>();
+    module.register_type::<crate::debot::DebotActivity>();
+    module.register_type::<crate::debot::Spending>();
     module.register_async_fn_with_app_object(
-        crate::json_interface::debot::start,
-        crate::json_interface::debot::start_api,
+        crate::json_interface::debot::init,
+        crate::json_interface::debot::init_api,
     );
-    module.register_async_fn_with_app_object(
-        crate::json_interface::debot::fetch,
-        crate::json_interface::debot::fetch_api,
-    );
+    module.register_async_fn(crate::debot::start, crate::debot::start_api);
+    module.register_async_fn(crate::debot::fetch, crate::debot::fetch_api);
     module.register_async_fn(crate::debot::execute, crate::debot::execute_api);
     module.register_async_fn(crate::debot::send, crate::debot::send_api);
     module.register_sync_fn(crate::debot::remove, crate::debot::remove_api);
