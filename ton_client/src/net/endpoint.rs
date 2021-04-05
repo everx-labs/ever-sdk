@@ -31,7 +31,7 @@ impl Endpoint {
         vec![("tonclient-core-version".to_string(), core_version())]
     }
 
-    pub fn expand_address(base_url: &str) -> String {
+    fn expand_address(base_url: &str) -> String {
         let base_url = if base_url.starts_with("http://") || base_url.starts_with("https://") {
             base_url.to_owned()
         } else {
@@ -42,6 +42,7 @@ impl Endpoint {
     }
 
     pub async fn resolve(client_env: Arc<ClientEnv>, address: &str) -> ClientResult<Self> {
+        let address = Self::expand_address(address);
         let response = client_env
             .fetch(
                 &format!("{}?query=%7Binfo%7Bversion%7D%7D", address),

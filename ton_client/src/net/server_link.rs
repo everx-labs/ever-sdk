@@ -213,9 +213,9 @@ impl NetworkState {
     async fn find_fastest_endpoint(&self) -> ClientResult<Endpoint> {
         let mut futures = vec![];
         for address in self.endpoint_addresses.read().await.iter() {
-            let queries_server = Endpoint::expand_address(&address);
+            let address = address.clone();
             futures.push(Box::pin(async move {
-                Endpoint::resolve(self.client_env.clone(), &queries_server).await
+                Endpoint::resolve(self.client_env.clone(), &address).await
             }));
         }
 
