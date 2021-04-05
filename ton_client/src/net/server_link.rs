@@ -32,7 +32,6 @@ use tokio::sync::{watch, Mutex, RwLock};
 pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
 pub const MIN_RESUME_TIMEOUT: u32 = 500;
 pub const MAX_RESUME_TIMEOUT: u32 = 3000;
-pub const FETCH_ADDITIONAL_TIMEOUT: u32 = 5000;
 
 pub(crate) struct Subscription {
     pub unsubscribe: Pin<Box<dyn Future<Output = ()> + Send>>,
