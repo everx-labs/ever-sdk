@@ -32,6 +32,7 @@ use tokio::sync::{watch, Mutex, RwLock};
 pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
 pub const MIN_RESUME_TIMEOUT: u32 = 500;
 pub const MAX_RESUME_TIMEOUT: u32 = 3000;
+pub const FETCH_ADDITIONAL_TIMEOUT: u32 = 5000;
 
 pub(crate) struct Subscription {
     pub unsubscribe: Pin<Box<dyn Future<Output = ()> + Send>>,
@@ -413,9 +414,26 @@ impl ServerLink {
         }
     }
 
-    pub async fn batch_query(&self, params: &[ParamsOfQueryOperation], endpoint: Option<Endpoint>) -> ClientResult<Vec<Value>> {
+    pub async fn batch_query(
+        &self,
+        params: &[ParamsOfQueryOperation],
+        endpoint: Option<Endpoint>,
+    ) -> ClientResult<Vec<Value>> {
         let op = GraphQLQuery::build(params, self.config.wait_for_timeout);
-        let result = self.query(op, None, endpoint).await?;
+        let mut timeout = None;
+        for op in params {
+            if let ParamsOfQueryOperation::WaitForCollection(op) = op {
+                if let Some(op_timeout) = op.timeout {
+                    timeout = Some(match timeout {
+                        Some(timeout) => op_timeout.max(timeout),
+                        None => op_timeout,
+                    });
+                }
+            }
+        }
+        let result = self
+            .query(op, timeout.map(|x| x + FETCH_ADDITIONAL_TIMEOUT), endpoint)
+            .await?;
         let data = &result["data"];
         let mut results = Vec::new();
         for i in 0..params.len() {

@@ -16,7 +16,7 @@ use super::blocks_walking::find_last_shard_block;
 use crate::abi::Abi;
 use crate::boc::internal::{deserialize_object_from_boc, DeserializedObject};
 use crate::client::ClientContext;
-use crate::encoding::{hex_decode, base64_decode};
+use crate::encoding::{base64_decode, hex_decode};
 use crate::error::{AddNetworkUrl, ClientResult};
 use crate::net::Endpoint;
 use crate::processing::internal::get_message_expiration_time;
@@ -172,7 +172,9 @@ pub async fn send_message<F: futures::Future<Output = ()> + Send>(
     available_addresses.shuffle(&mut rand::thread_rng());
     let mut last_result = None;
 
-    for selected_addresses in available_addresses.chunks(2) {
+    for selected_addresses in
+        available_addresses.chunks(context.config.network.sending_endpoint_count as usize)
+    {
         let mut futures = vec![];
         for address in selected_addresses {
             let context = context.clone();
@@ -186,13 +188,14 @@ pub async fn send_message<F: futures::Future<Output = ()> + Send>(
                 message.send_to_endpoint(context, &address, callback).await
             }));
         }
-        let (result, _, _) = futures::future::select_all(futures).await;
-        if let Ok(result) = result {
-            return Ok(ResultOfSendMessage {
-                shard_block_id: result.shard_block_id,
-            });
+        match futures::future::select_ok(futures).await {
+            Ok((result, _)) => {
+                return Ok(result);
+            }
+            Err(err) => {
+                last_result = Some(Err(err));
+            }
         }
-        last_result = Some(result);
     }
     last_result.unwrap_or_else(|| Err(Error::block_not_found("no endpoints".to_string())))
 }
