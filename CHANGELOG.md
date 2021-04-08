@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - **Debot Module**:
-    - fixed getAccountsDataByHash function in sdk interface
+    - `Sdk.getAccountsDataByHash` function didn't find accounts by code_hash with leading zero.
 
 ## [1.12.0] – 2021-04-01
 
