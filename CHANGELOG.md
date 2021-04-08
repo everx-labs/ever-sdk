@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.0] 
+
+### Fixed
+
+- **Debot Module**:
+    - fixed getAccountsDataByHash function in sdk interface
+
 ## [1.12.0] – 2021-04-01
 
 ### New
