@@ -15,7 +15,7 @@ use serde_json::Value;
 
 use crate::client::ClientContext;
 use crate::error::{AddNetworkUrl, ClientResult};
-use crate::net::{ParamsOfQueryCollection};
+use crate::net::{ParamsOfQueryCollection, ParamsOfQueryCounterparties};
 
 use super::Error;
 
@@ -168,4 +168,30 @@ pub async fn aggregate_collection(
         .await?;
 
     Ok(ResultOfAggregateCollection { values })
+}
+
+/// Performs DAppServer GraphQL query.
+#[api_function]
+pub async fn query_counterparties(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfQueryCounterparties,
+) -> ClientResult<ResultOfQueryCollection> {
+    let client = context.get_server_link()?;
+
+    let result = client
+        .query_counterparties(params)
+        .await
+        .map_err(|err| Error::queries_query_failed(err))
+        .add_network_url(client)
+        .await?
+        .clone();
+
+    let result = serde_json::from_value(result)
+        .map_err(|err| Error::queries_query_failed(format!("Can not parse result: {}", err)))
+        .add_network_url(client)
+        .await?;
+
+    Ok(ResultOfQueryCollection {
+        result
+    })
 }
