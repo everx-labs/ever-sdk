@@ -2,11 +2,6 @@ use tokio::sync::Mutex;
 
 use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer};
 use crate::error::ClientError;
-use crate::net::{
-    Error, ParamsOfQueryCollection,
-    ParamsOfSubscribeCollection, ParamsOfWaitForCollection, ResultOfQueryCollection,
-    ResultOfSubscribeCollection, ResultOfSubscription, ResultOfWaitForCollection,
-};
 use crate::processing::ParamsOfProcessMessage;
 use crate::tests::{TestClient, HELLO};
 
@@ -501,4 +496,43 @@ async fn test_wait_resume() {
     let _: () = client.request_async("net.resume", ()).await.unwrap();
 
     assert!(duration.await.unwrap() > timeout as u128);
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_query_counterparties() {
+    let client = TestClient::new();
+
+    let account = client.giver_address().await;
+
+    let counterparties1: ResultOfQueryCollection = client
+        .request_async(
+            "net.query_counterparties",
+            ParamsOfQueryCounterparties {
+                account: account.clone(),
+                first: Some(5),
+                after: None,
+                result: "counterparty last_message_id cursor".to_owned()
+            },
+        )
+        .await
+        .unwrap();
+
+    assert!(counterparties1.result.len() <= 5);
+
+    if counterparties1.result.len() == 5 {
+        let counterparties2: ResultOfQueryCollection = client
+        .request_async(
+            "net.query_counterparties",
+            ParamsOfQueryCounterparties {
+                account: account.clone(),
+                first: Some(5),
+                after: Some(counterparties1.result[4]["cursor"].as_str().unwrap().to_owned()),
+                result: "counterparty last_message_id cursor".to_owned()
+            },
+        )
+        .await
+        .unwrap();
+
+        assert_ne!(counterparties1.result, counterparties2.result);
+    }
 }
