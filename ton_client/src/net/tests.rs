@@ -500,6 +500,10 @@ async fn test_wait_resume() {
 
 #[tokio::test(core_threads = 2)]
 async fn test_query_counterparties() {
+    if TestClient::node_se() {
+        return;
+    }
+    
     let client = TestClient::new();
 
     let account = client.giver_address().await;
