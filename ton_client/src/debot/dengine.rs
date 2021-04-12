@@ -29,6 +29,7 @@ use super::dinterface::{BuiltinInterfaces, DebotInterfaceExecutor};
 use super::DEBOT_WC;
 use super::helpers::build_internal_message;
 use super::msg_interface::MsgInterface;
+use super::json_interface::JsonInterface;
 
 const EMPTY_CELL: &'static str = "te6ccgEBAQEAAgAAAA==";
 
@@ -186,6 +187,21 @@ impl DEngine {
     async fn fetch_state(&mut self) -> Result<(), String> {
         self.state = Self::load_state(self.ton.clone(), self.addr.clone()).await?;
         self.info = Self::fetch_info(self.ton.clone(), self.addr.clone(), self.state.clone()).await?;
+        if let Some(dabi) = self.info.dabi.as_ref() {
+            self.raw_abi = dabi.clone();
+            self.abi = load_abi(&self.raw_abi)?;
+            self.builtin_interfaces.add(
+                Arc::new(MsgInterface::new(
+                    self.ton.clone(),
+                    self.addr.clone(),
+                    self.abi.clone(),
+                    self.browser.clone(),
+                ))
+            );
+            self.builtin_interfaces.add(
+                Arc::new(JsonInterface::new(&self.raw_abi))
+            );
+        }
         self.update_options().await?;
         let result = self.run_debot_external("fetch", None).await;
         let mut context_vec: Vec<DContext> = if let Ok(res) = result {
@@ -623,20 +639,6 @@ impl DEngine {
         let params = params.ok_or(format!("no return value"))?;
         let opt_str = params["options"].as_str().unwrap();
         let options = decode_abi_number::<u8>(opt_str).unwrap();
-        if options & OPTION_ABI != 0 {
-            let abi_str = str_hex_to_utf8(params["debotAbi"].as_str().unwrap())
-                .ok_or("cannot convert hex string to debot abi")?;
-            self.abi = load_abi(&abi_str)?;
-            self.raw_abi = abi_str;
-            self.builtin_interfaces.add(
-                Arc::new(MsgInterface::new(
-                    self.ton.clone(),
-                    self.addr.clone(),
-                    self.abi.clone(),
-                    self.browser.clone(),
-                ))
-            );
-        }
         if options & OPTION_TARGET_ABI != 0 {
             self.target_abi = str_hex_to_utf8(params["targetAbi"].as_str().unwrap());
         }
