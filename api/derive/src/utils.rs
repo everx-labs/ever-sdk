@@ -238,13 +238,13 @@ fn type_from_path(path: &Path) -> api_info::Type {
             return result;
         }
     }
-    panic!(format!(
+    panic!(
         "Unsupported type {:?}",
         path.segments
             .last()
             .map(|x| x.ident.to_string())
             .unwrap_or(String::new())
-    ))
+    )
 }
 
 fn resolve_type_name(name: String) -> api_info::Type {

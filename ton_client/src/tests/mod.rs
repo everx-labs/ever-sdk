@@ -444,7 +444,7 @@ impl TestClient {
         {
             (request.callback)(params_json, response_type).await
         } else {
-            panic!(format!("Unsupported response type: {}", response_type));
+            panic!("Unsupported response type: {}", response_type);
         }
 
         if finished {
