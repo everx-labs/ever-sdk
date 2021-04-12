@@ -26,10 +26,8 @@ pub use subscriptions::{
 };
 pub use ton_gql::{
     AggregationFn, FieldAggregation, GraphQLQueryEvent, OrderBy, ParamsOfAggregateCollection,
-    ParamsOfQueryCollection, ParamsOfQueryOperation, PostRequest, SortDirection,
-    AggregationFn, FieldAggregation, GraphQLOperationEvent, OrderBy,
-    ParamsOfAggregateCollection, ParamsOfQueryCollection, ParamsOfQueryCounterparties,
-    ParamsOfQueryOperation, PostRequest, SortDirection,
+    ParamsOfQueryCollection, ParamsOfQueryCounterparties, ParamsOfQueryOperation, PostRequest,
+    SortDirection,
 };
 pub use types::{
     NetworkConfig, BLOCKS_TABLE_NAME, CONTRACTS_TABLE_NAME, MESSAGES_TABLE_NAME,

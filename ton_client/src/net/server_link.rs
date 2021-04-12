@@ -17,9 +17,7 @@ use crate::net::endpoint::Endpoint;
 use crate::net::ton_gql::GraphQLQuery;
 use crate::net::websocket_link::WebsocketLink;
 use crate::net::{
-    Error, GraphQLQueryEvent, NetworkConfig, ParamsOfAggregateCollection, ParamsOfQueryCollection,
-    ParamsOfQueryOperation, ParamsOfWaitForCollection, PostRequest,
-    Error, GraphQLOperationEvent, NetworkConfig, ParamsOfAggregateCollection,
+    Error, GraphQLQueryEvent, NetworkConfig, ParamsOfAggregateCollection,
     ParamsOfQueryCollection, ParamsOfQueryCounterparties, ParamsOfQueryOperation,
     ParamsOfWaitForCollection, PostRequest,
 };
@@ -502,9 +500,12 @@ impl ServerLink {
             .remove(0))
     }
 
-    pub async fn query_counterparties(&self, params: ParamsOfQueryCounterparties) -> ClientResult<Value> {
+    pub async fn query_counterparties(
+        &self,
+        params: ParamsOfQueryCounterparties,
+    ) -> ClientResult<Value> {
         Ok(self
-            .batch_query(&[ParamsOfQueryOperation::QueryCounterparties(params)])
+            .batch_query(&[ParamsOfQueryOperation::QueryCounterparties(params)], None)
             .await?
             .remove(0))
     }
