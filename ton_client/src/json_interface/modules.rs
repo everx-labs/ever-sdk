@@ -384,6 +384,10 @@ fn register_net(handlers: &mut RuntimeHandlers) {
     );
     module.register_async_fn_no_args(crate::net::fetch_endpoints, crate::net::fetch_endpoints_api);
     module.register_async_fn(crate::net::set_endpoints, crate::net::set_endpoints_api);
+    module.register_async_fn(
+        crate::net::query_counterparties,
+        crate::net::queries::query_counterparties_api
+    );
     module.register();
 }
 

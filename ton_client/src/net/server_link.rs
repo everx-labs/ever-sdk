@@ -19,6 +19,9 @@ use crate::net::websocket_link::WebsocketLink;
 use crate::net::{
     Error, GraphQLQueryEvent, NetworkConfig, ParamsOfAggregateCollection, ParamsOfQueryCollection,
     ParamsOfQueryOperation, ParamsOfWaitForCollection, PostRequest,
+    Error, GraphQLOperationEvent, NetworkConfig, ParamsOfAggregateCollection,
+    ParamsOfQueryCollection, ParamsOfQueryCounterparties, ParamsOfQueryOperation,
+    ParamsOfWaitForCollection, PostRequest,
 };
 use futures::{Future, Stream, StreamExt};
 use serde_json::Value;
@@ -495,6 +498,13 @@ impl ServerLink {
                 &[ParamsOfQueryOperation::AggregateCollection(params)],
                 endpoint,
             )
+            .await?
+            .remove(0))
+    }
+
+    pub async fn query_counterparties(&self, params: ParamsOfQueryCounterparties) -> ClientResult<Value> {
+        Ok(self
+            .batch_query(&[ParamsOfQueryOperation::QueryCounterparties(params)])
             .await?
             .remove(0))
     }

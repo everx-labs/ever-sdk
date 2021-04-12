@@ -15,9 +15,9 @@ pub use batch::{batch_query, ParamsOfBatchQuery, ResultOfBatchQuery};
 pub(crate) use endpoint::Endpoint;
 pub use errors::{Error, ErrorCode};
 pub use queries::{
-    aggregate_collection, query, query_collection, wait_for_collection, ParamsOfQuery,
-    ParamsOfWaitForCollection, ResultOfAggregateCollection, ResultOfQuery, ResultOfQueryCollection,
-    ResultOfWaitForCollection,
+    aggregate_collection, query, query_collection, query_counterparties, wait_for_collection,
+    ParamsOfQuery, ParamsOfWaitForCollection, ResultOfAggregateCollection, ResultOfQuery,
+    ResultOfQueryCollection, ResultOfWaitForCollection,
 };
 pub(crate) use server_link::{ServerLink, MAX_TIMEOUT};
 pub use subscriptions::{
@@ -27,6 +27,9 @@ pub use subscriptions::{
 pub use ton_gql::{
     AggregationFn, FieldAggregation, GraphQLQueryEvent, OrderBy, ParamsOfAggregateCollection,
     ParamsOfQueryCollection, ParamsOfQueryOperation, PostRequest, SortDirection,
+    AggregationFn, FieldAggregation, GraphQLOperationEvent, OrderBy,
+    ParamsOfAggregateCollection, ParamsOfQueryCollection, ParamsOfQueryCounterparties,
+    ParamsOfQueryOperation, PostRequest, SortDirection,
 };
 pub use types::{
     NetworkConfig, BLOCKS_TABLE_NAME, CONTRACTS_TABLE_NAME, MESSAGES_TABLE_NAME,
