@@ -129,12 +129,7 @@ impl SendingMessage {
         Ok(shard_block_id)
     }
 
-    async fn send<F: futures::Future<Output = ()> + Send>(
-        &self,
-        context: &Arc<ClientContext>,
-        callback: Option<impl Fn(ProcessingEvent) -> F + Send + Sync>,
-        shard_block_id: &str,
-    ) -> ClientResult<()> {
+    async fn send(&self, context: &Arc<ClientContext>) -> ClientResult<()> {
         let mut available_addresses = context.get_server_link()?.get_endpoint_addresses().await;
         available_addresses.shuffle(&mut rand::thread_rng());
         let mut last_result = None::<ClientResult<()>>;
@@ -151,49 +146,24 @@ impl SendingMessage {
                 }));
             }
             for result in futures::future::join_all(futures).await {
-                match result {
-                    Ok(_) => {
-                        if let Some(callback) = &callback {
-                            callback(ProcessingEvent::DidSend {
-                                shard_block_id: shard_block_id.to_string(),
-                                message_id: self.id.clone(),
-                                message: self.serialized.clone(),
-                            })
-                            .await
-                        }
-                        return Ok(());
-                    }
-                    Err(_) => {
-                        // If one of the endpoints responds with clock out of sync error
-                        // we leave this error as a final error.
-                        // This is required by out of sync unit test.
-                        let last_result_is_out_of_sync = if let Some(Err(err)) = &last_result {
-                            err.code == crate::net::ErrorCode::ClockOutOfSync as u32
-                        } else {
-                            false
-                        };
-                        if !last_result_is_out_of_sync {
-                            last_result = Some(result);
-                        }
-                    }
+                if result.is_ok() {
+                    return Ok(());
+                }
+                // If one of the endpoints responds with clock out of sync error
+                // we leave this error as a final error.
+                // This is required by out of sync unit test.
+                let last_result_is_out_of_sync = if let Some(Err(err)) = &last_result {
+                    err.code == crate::net::ErrorCode::ClockOutOfSync as u32
+                } else {
+                    false
+                };
+                if !last_result_is_out_of_sync {
+                    last_result = Some(result);
                 }
             }
         }
 
-        let result =
-            last_result.unwrap_or_else(|| Err(Error::block_not_found("no endpoints".to_string())));
-        if let Some(callback) = &callback {
-            if let Err(err) = &result {
-                callback(ProcessingEvent::SendFailed {
-                    shard_block_id: shard_block_id.to_string(),
-                    message_id: self.id.clone(),
-                    message: self.serialized.clone(),
-                    error: Error::send_message_failed(err, &self.id, shard_block_id),
-                })
-                .await;
-            }
-        }
-        result
+        last_result.unwrap_or_else(|| Err(Error::block_not_found("no endpoints".to_string())))
     }
 
     async fn send_to_endpoint(
@@ -228,8 +198,22 @@ pub async fn send_message<F: futures::Future<Output = ()> + Send>(
     };
 
     let shard_block_id = message.prepare_to_send(&context, &callback).await?;
-    message
-        .send(&context, callback.clone(), &shard_block_id)
-        .await
-        .map(|_| ResultOfSendMessage { shard_block_id })
+    let result = message.send(&context).await;
+    if let Some(callback) = &callback {
+        callback(match &result {
+            Ok(_) => ProcessingEvent::DidSend {
+                shard_block_id: shard_block_id.to_string(),
+                message_id: message.id.clone(),
+                message: message.serialized.clone(),
+            },
+            Err(err) => ProcessingEvent::SendFailed {
+                shard_block_id: shard_block_id.to_string(),
+                message_id: message.id.clone(),
+                message: message.serialized.clone(),
+                error: Error::send_message_failed(err, &message.id, &shard_block_id),
+            },
+        })
+        .await;
+    }
+    result.map(|_| ResultOfSendMessage { shard_block_id })
 }

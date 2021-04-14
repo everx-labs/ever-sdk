@@ -17,9 +17,8 @@ use crate::net::endpoint::Endpoint;
 use crate::net::ton_gql::GraphQLQuery;
 use crate::net::websocket_link::WebsocketLink;
 use crate::net::{
-    Error, GraphQLQueryEvent, NetworkConfig, ParamsOfAggregateCollection,
-    ParamsOfQueryCollection, ParamsOfQueryCounterparties, ParamsOfQueryOperation,
-    ParamsOfWaitForCollection, PostRequest,
+    Error, GraphQLQueryEvent, NetworkConfig, ParamsOfAggregateCollection, ParamsOfQueryCollection,
+    ParamsOfQueryCounterparties, ParamsOfQueryOperation, ParamsOfWaitForCollection, PostRequest,
 };
 use futures::{Future, Stream, StreamExt};
 use serde_json::Value;
@@ -167,29 +166,16 @@ impl NetworkState {
             .map(|endpoint| endpoint.query_url.clone())
     }
 
-    async fn get_time_delta(&self, address: &str) -> ClientResult<i64> {
-        let start = self.client_env.now_ms() as i64;
-        let response = query_by_url(&self.client_env, address, "%7Binfo%7Btime%7D%7D").await?;
-        let end = self.client_env.now_ms() as i64;
-        let server_time =
-            response["data"]["info"]["time"]
-                .as_i64()
-                .ok_or(Error::invalid_server_response(format!(
-                    "No time in response: {}",
-                    response
-                )))?;
-
-        Ok(server_time - (start + (end - start) / 2))
-    }
-
     async fn check_time_delta(
         &self,
-        address: &str,
+        endpoint: &Endpoint,
         out_of_sync_threshold: u32,
     ) -> ClientResult<()> {
-        let delta = self.get_time_delta(address).await?;
-        if delta.abs() as u32 >= out_of_sync_threshold {
-            Err(Error::clock_out_of_sync(delta, out_of_sync_threshold))
+        if endpoint.server_time_delta.abs() as u32 >= out_of_sync_threshold {
+            Err(Error::clock_out_of_sync(
+                endpoint.server_time_delta,
+                out_of_sync_threshold,
+            ))
         } else {
             Ok(())
         }
@@ -201,10 +187,8 @@ impl NetworkState {
         }
 
         let endpoint = self.get_query_endpoint().await?;
-        if endpoint.server_supports_time {
-            self.check_time_delta(&endpoint.query_url, self.out_of_sync_threshold)
-                .await?;
-        }
+        self.check_time_delta(&endpoint, self.out_of_sync_threshold)
+            .await?;
 
         self.time_checked.store(true, Ordering::Relaxed);
 
@@ -549,10 +533,6 @@ impl ServerLink {
 
     pub async fn fetch_endpoint_addresses(&self) -> ClientResult<Vec<String>> {
         let endpoint = self.state.get_query_endpoint().await?;
-
-        if !endpoint.server_supports_endpoints {
-            return Err(Error::not_suppported("endpoints"));
-        }
 
         let result = query_by_url(
             &self.client_env,
