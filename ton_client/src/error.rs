@@ -13,24 +13,58 @@ pub type ClientResult<T> = Result<T, ClientError>;
 
 #[async_trait::async_trait]
 pub(crate) trait AddNetworkUrl {
-    async fn add_network_url(self, client: &crate::net::ServerLink) -> Self;
+    async fn add_endpoint(
+        self,
+        link: &crate::net::ServerLink,
+        endpoint: &crate::net::Endpoint,
+    ) -> Self;
+    async fn add_endpoint_from_context(
+        self,
+        context: &crate::ClientContext,
+        endpoint: &crate::net::Endpoint,
+    ) -> Self;
+    async fn add_network_url(self, link: &crate::net::ServerLink) -> Self;
     async fn add_network_url_from_context(self, client: &crate::ClientContext) -> Self;
 }
 
 #[async_trait::async_trait]
 impl<T: Send> AddNetworkUrl for ClientResult<T> {
+    async fn add_endpoint(
+        self,
+        link: &crate::net::ServerLink,
+        endpoint: &crate::net::Endpoint,
+    ) -> Self {
+        match self {
+            Err(mut err) => {
+                err.data["config_servers"] = link.config_servers().await.into();
+                err.data["endpoint"] = Value::String(endpoint.query_url.clone());
+                Err(err)
+            }
+            _ => self,
+        }
+    }
+
+    async fn add_endpoint_from_context(
+        self,
+        client: &crate::ClientContext,
+        endpoint: &crate::net::Endpoint,
+    ) -> Self {
+        if let Some(link) = &client.net.server_link {
+            self.add_endpoint(link, endpoint).await
+        } else {
+            self
+        }
+    }
     async fn add_network_url(self, client: &crate::net::ServerLink) -> Self {
         match self {
             Err(mut err) => {
                 err.data["config_servers"] = client.config_servers().await.into();
-    
                 if let Some(url) = client.query_url().await {
                     err.data["query_url"] = url.into();
                 }
-    
                 Err(err)
-            },
-            _ => self
+            }
+            _ => self,
         }
     }
 
