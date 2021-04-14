@@ -207,7 +207,7 @@ If you have TON OS SE running on another address or you need to run tests on a r
 environment variables to override the default parameters
 ```
 TON_USE_SE: true/false - flag defining if tests run against TON OS SE or a real network (DApp Server)
-TON_NETWORK_ADDRESS - Dapp server or TON OS SE address
+TON_NETWORK_ADDRESS - Dapp server or TON OS SE addresses separated by comma.
 TON_GIVER_SECRET - Giver secret key. If not defined, default TON OS SE giver keys are used
 TON_GIVER_ADDRESS - Address of the giver to use for prepaying accounts before deploying test contracts. If not defined, the address is calculated using `GiverV2.tvc` and configured public key
 ```
