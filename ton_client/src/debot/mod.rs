@@ -26,6 +26,7 @@ mod errors;
 mod helpers;
 mod info;
 mod msg_interface;
+mod network_interface;
 mod routines;
 mod run_output;
 mod sdk_interface;

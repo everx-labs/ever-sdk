@@ -1386,6 +1386,38 @@ async fn test_debot_json_interface() {
     ).await;
 }
 
+#[tokio::test(core_threads = 2)]
+async fn test_debot_network_interface() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot8").await;
+    let steps = serde_json::from_value(json!([])).unwrap();
+    TestBrowser::execute_with_details(
+        client.clone(),
+        debot_addr.clone(),
+        keys,
+        steps,
+        vec![],
+        DebotInfo {
+            name: Some("Test DeBot 8".to_owned()),
+            version: Some("0.1.0".to_owned()),
+            publisher: Some("TON Labs".to_owned()),
+            key: Some("Test for Network interface".to_owned()),
+            author: Some("TON Labs".to_owned()),
+            support: Some("0:0000000000000000000000000000000000000000000000000000000000000000".to_owned()),
+            hello: Some("Test DeBot 8".to_owned()),
+            language: Some("en".to_owned()),
+            dabi: Some(abi),
+            icon: Some(format!("")),
+            interfaces: vec![
+                "0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3".to_owned(),
+                "0xe38aed5884dc3e4426a87c083faaf4fa08109189fbc0c79281112f52e062d8ee".to_owned(),
+                "0x442288826041d564ccedc579674f17c1b0a3452df799656a9167a41ab270ec19".to_owned(),
+            ],
+        },
+        vec![],
+    ).await;
+}
+
 async fn download_account(client: &Arc<TestClient>, addr: &str) -> Option<String> {
     let client = client.clone();
     let accounts: ResultOfQueryCollection = client.request_async(

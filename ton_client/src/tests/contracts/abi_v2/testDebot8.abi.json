@@ -1,0 +1,107 @@
+{
+	"ABI version": 2,
+	"header": ["pubkey", "time", "expire"],
+	"functions": [
+		{
+			"name": "start",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setResponse",
+			"inputs": [
+				{"name":"statusCode","type":"int32"},
+				{"name":"retHeaders","type":"bytes[]"},
+				{"name":"content","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setGetResponse",
+			"inputs": [
+				{"name":"statusCode","type":"int32"},
+				{"name":"retHeaders","type":"bytes[]"},
+				{"name":"content","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setResult",
+			"inputs": [
+				{"name":"result","type":"bool"},
+				{"components":[{"components":[{"name":"ProviderCode","type":"uint32"},{"name":"CountryIso","type":"bytes"},{"name":"Name","type":"bytes"},{"name":"LogoUrl","type":"bytes"}],"name":"Result","type":"tuple[]"},{"name":"Status","type":"bytes"}],"name":"obj","type":"tuple"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setResult2",
+			"inputs": [
+				{"name":"result","type":"bool"},
+				{"components":[{"components":[{"name":"name1","type":"bytes"}],"name":"args","type":"tuple"},{"components":[{"name":"Accept","type":"bytes"},{"name":"Host","type":"bytes"},{"name":"X_Amzn_Trace_Id","type":"bytes"}],"name":"headers","type":"tuple"},{"name":"origin","type":"bytes"},{"name":"url","type":"bytes"}],"name":"obj","type":"tuple"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getRequiredInterfaces",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"interfaces","type":"uint256[]"}
+			]
+		},
+		{
+			"name": "getDebotInfo",
+			"id": "0xDEB",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"name","type":"bytes"},
+				{"name":"version","type":"bytes"},
+				{"name":"publisher","type":"bytes"},
+				{"name":"key","type":"bytes"},
+				{"name":"author","type":"bytes"},
+				{"name":"support","type":"address"},
+				{"name":"hello","type":"bytes"},
+				{"name":"language","type":"bytes"},
+				{"name":"dabi","type":"bytes"},
+				{"name":"icon","type":"bytes"}
+			]
+		},
+		{
+			"name": "getDebotOptions",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"options","type":"uint8"},
+				{"name":"debotAbi","type":"bytes"},
+				{"name":"targetAbi","type":"bytes"},
+				{"name":"targetAddr","type":"address"}
+			]
+		},
+		{
+			"name": "setABI",
+			"inputs": [
+				{"name":"dabi","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "constructor",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		}
+	],
+	"data": [
+	],
+	"events": [
+	]
+}
