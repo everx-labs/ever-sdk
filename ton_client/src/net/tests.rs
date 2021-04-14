@@ -188,7 +188,7 @@ async fn wait_for() {
 async fn subscribe_for_transactions_with_addresses() {
     let client = TestClient::new_with_config(json!({
         "network": {
-            "server_address": TestClient::network_address(),
+            "endpoints": TestClient::endpoints(),
         }
     }));
     let subscription_client = TestClient::new();

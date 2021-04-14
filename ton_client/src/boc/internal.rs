@@ -47,6 +47,7 @@ pub(crate) fn deserialize_object_from_cell<S: Deserializable>(
         .map_err(|err| Error::invalid_boc(format!("cannot deserialize {} from BOC: {}", name, err)))
 }
 
+#[derive(Clone)]
 pub(crate) enum DeserializedBoc {
     Cell(ton_types::Cell),
     Bytes(Vec<u8>),
@@ -61,6 +62,7 @@ impl DeserializedBoc {
     }
 }
 
+#[derive(Clone)]
 pub(crate) struct DeserializedObject<S: Deserializable> {
     pub boc: DeserializedBoc,
     pub cell: ton_types::Cell,
@@ -154,7 +156,7 @@ pub(crate) async fn serialize_cell_to_boc(
 }
 
 pub(crate) async fn serialize_object_to_boc<S: Serializable>(
-    context: &ClientContext, object: &S,name: &str, boc_cache: Option<BocCacheType>, 
+    context: &ClientContext, object: &S,name: &str, boc_cache: Option<BocCacheType>,
 ) -> ClientResult<String> {
     let cell = serialize_object_to_cell(object, name)?;
     serialize_cell_to_boc(context, cell, name, boc_cache).await

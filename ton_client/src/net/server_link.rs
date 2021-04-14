@@ -13,22 +13,21 @@
 
 use crate::client::{ClientEnv, FetchMethod};
 use crate::error::{AddNetworkUrl, ClientError, ClientResult};
-use crate::net::server_info::ServerInfo;
-use crate::net::ton_gql::GraphQLOperation;
+use crate::net::endpoint::Endpoint;
+use crate::net::ton_gql::GraphQLQuery;
 use crate::net::websocket_link::WebsocketLink;
 use crate::net::{
-    Error, GraphQLOperationEvent, NetworkConfig, ParamsOfAggregateCollection,
-    ParamsOfQueryCollection, ParamsOfQueryCounterparties, ParamsOfQueryOperation,
-    ParamsOfWaitForCollection, PostRequest,
+    Error, GraphQLQueryEvent, NetworkConfig, ParamsOfAggregateCollection, ParamsOfQueryCollection,
+    ParamsOfQueryCounterparties, ParamsOfQueryOperation, ParamsOfWaitForCollection, PostRequest,
 };
 use futures::{Future, Stream, StreamExt};
 use serde_json::Value;
 use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::pin::Pin;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
-use tokio::sync::{Mutex, RwLock, watch};
+use std::sync::Arc;
+use tokio::sync::{watch, Mutex, RwLock};
 
 pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
 pub const MIN_RESUME_TIMEOUT: u32 = 500;
@@ -48,11 +47,11 @@ struct SuspendRegulation {
 
 pub(crate) struct NetworkState {
     client_env: Arc<ClientEnv>,
-    endpoints: RwLock<Vec<String>>,
+    endpoint_addresses: RwLock<Vec<String>>,
     suspended: watch::Receiver<bool>,
     suspend_regulation: Arc<Mutex<SuspendRegulation>>,
     resume_timeout: AtomicU32,
-    server_info: RwLock<Option<Arc<ServerInfo>>>,
+    query_endpoint: RwLock<Option<Arc<Endpoint>>>,
     out_of_sync_threshold: u32,
     time_checked: AtomicBool,
 }
@@ -72,7 +71,11 @@ async fn query_by_url(client_env: &ClientEnv, address: &str, query: &str) -> Cli
 }
 
 impl NetworkState {
-    pub fn new(client_env: Arc<ClientEnv>, endpoints: Vec<String>, out_of_sync_threshold: u32) -> Self {
+    pub fn new(
+        client_env: Arc<ClientEnv>,
+        endpoint_addresses: Vec<String>,
+        out_of_sync_threshold: u32,
+    ) -> Self {
         let (sender, receiver) = watch::channel(false);
         let regulation = SuspendRegulation {
             sender,
@@ -81,11 +84,11 @@ impl NetworkState {
         };
         Self {
             client_env,
-            endpoints: RwLock::new(endpoints),
+            endpoint_addresses: RwLock::new(endpoint_addresses),
             suspended: receiver,
             suspend_regulation: Arc::new(Mutex::new(regulation)),
             resume_timeout: AtomicU32::new(0),
-            server_info: RwLock::new(None),
+            query_endpoint: RwLock::new(None),
             out_of_sync_threshold,
             time_checked: AtomicBool::new(false),
         }
@@ -94,7 +97,7 @@ impl NetworkState {
     async fn suspend(&self, sender: &watch::Sender<bool>) {
         if !*self.suspended.borrow() {
             let _ = sender.broadcast(true);
-            *self.server_info.write().await = None;
+            *self.query_endpoint.write().await = None;
         }
     }
 
@@ -143,42 +146,34 @@ impl NetworkState {
         });
     }
 
-    pub async fn set_endpoints(&self, endpoints: Vec<String>) {
-        *self.endpoints.write().await = endpoints;
+    pub async fn get_endpoint_addresses(&self) -> Vec<String> {
+        self.endpoint_addresses.read().await.clone()
+    }
+
+    pub async fn set_endpoint_addresses(&self, addresses: Vec<String>) {
+        *self.endpoint_addresses.write().await = addresses;
     }
 
     pub async fn config_servers(&self) -> Vec<String> {
-        self.endpoints.read().await.clone()
+        self.endpoint_addresses.read().await.clone()
     }
 
     pub async fn query_url(&self) -> Option<String> {
-        self.server_info
+        self.query_endpoint
             .read()
             .await
             .as_ref()
-            .map(|info| info.query_url.clone())
+            .map(|endpoint| endpoint.query_url.clone())
     }
 
-    async fn get_time_delta(&self, address: &str) -> ClientResult<i64> {
-        let start = self.client_env.now_ms() as i64;
-        let response = query_by_url(&self.client_env, address, "%7Binfo%7Btime%7D%7D").await?;
-        let end = self.client_env.now_ms() as i64;
-        let server_time =
-            response["data"]["info"]["time"]
-                .as_i64()
-                .ok_or(Error::invalid_server_response(format!(
-                    "No time in response: {}",
-                    response
-                )))?;
-
-        Ok(server_time - (start + (end - start) / 2))
-    }
-
-    async fn check_time_delta(&self, address: &str, out_of_sync_threshold: u32) -> ClientResult<()> {
-        let delta = self.get_time_delta(address).await?;
-        if delta.abs() as u32 >= out_of_sync_threshold {
+    async fn check_time_delta(
+        &self,
+        endpoint: &Endpoint,
+        out_of_sync_threshold: u32,
+    ) -> ClientResult<()> {
+        if endpoint.server_time_delta.abs() as u32 >= out_of_sync_threshold {
             Err(Error::clock_out_of_sync(
-                delta,
+                endpoint.server_time_delta,
                 out_of_sync_threshold,
             ))
         } else {
@@ -191,56 +186,53 @@ impl NetworkState {
             return Ok(());
         }
 
-        let info = self.get_info().await?;
-        if info.server_version.supports_time {
-            self.check_time_delta(&info.query_url, self.out_of_sync_threshold).await?;
-        }
+        let endpoint = self.get_query_endpoint().await?;
+        self.check_time_delta(&endpoint, self.out_of_sync_threshold)
+            .await?;
 
         self.time_checked.store(true, Ordering::Relaxed);
 
         Ok(())
     }
 
-    async fn init(&self) -> ClientResult<ServerInfo> {
+    async fn find_fastest_endpoint(&self) -> ClientResult<Endpoint> {
         let mut futures = vec![];
-        for address in self.endpoints.read().await.iter() {
-            let queries_server = ServerInfo::expand_address(&address);
+        for address in self.endpoint_addresses.read().await.iter() {
+            let address = address.clone();
             futures.push(Box::pin(async move {
-                ServerInfo::fetch(self.client_env.clone(), &queries_server).await
+                Endpoint::resolve(self.client_env.clone(), &address).await
             }));
         }
 
-        let mut server_info = Err(crate::client::Error::net_module_not_init());
+        let mut fastest_endpoint = Err(crate::client::Error::net_module_not_init());
         while futures.len() != 0 {
             let (result, _, remain_futures) = futures::future::select_all(futures).await;
             futures = remain_futures;
-            server_info = result;
-            if server_info.is_ok() {
+            fastest_endpoint = result;
+            if fastest_endpoint.is_ok() {
                 break;
             }
         }
-        server_info
+        fastest_endpoint
     }
 
-    pub async fn get_info(&self) -> ClientResult<Arc<ServerInfo>> {
+    pub async fn get_query_endpoint(&self) -> ClientResult<Arc<Endpoint>> {
         // wait for resume
         let mut suspended = self.suspended.clone();
         while Some(true) == suspended.recv().await {}
 
-        if let Some(info) = &*self.server_info.read().await {
-            return Ok(info.clone());
+        if let Some(endpoint) = &*self.query_endpoint.read().await {
+            return Ok(endpoint.clone());
         }
 
-        let mut data = self.server_info.write().await;
-        if let Some(info) = &*data {
-            return Ok(info.clone());
+        let mut locked_query_endpoint = self.query_endpoint.write().await;
+        if let Some(endpoint) = &*locked_query_endpoint {
+            return Ok(endpoint.clone());
         }
 
-        let inited_data = Arc::new(self.init().await?);
-
-        *data = Some(inited_data.clone());
-
-        Ok(inited_data)
+        let fastest = Arc::new(self.find_fastest_endpoint().await?);
+        *locked_query_endpoint = Some(fastest.clone());
+        Ok(fastest)
     }
 }
 
@@ -253,19 +245,19 @@ pub(crate) struct ServerLink {
 
 impl ServerLink {
     pub fn new(config: NetworkConfig, client_env: Arc<ClientEnv>) -> ClientResult<Self> {
-        let endpoints = config
+        let endpoint_addresses = config
             .endpoints
             .clone()
             .or(config.server_address.clone().map(|address| vec![address]))
             .ok_or(crate::client::Error::net_module_not_init())?;
-        if endpoints.len() == 0 {
+        if endpoint_addresses.len() == 0 {
             return Err(crate::client::Error::net_module_not_init());
         }
 
         let state = Arc::new(NetworkState::new(
             client_env.clone(),
-            endpoints,
-            config.out_of_sync_threshold
+            endpoint_addresses,
+            config.out_of_sync_threshold,
         ));
 
         Ok(ServerLink {
@@ -297,7 +289,7 @@ impl ServerLink {
     ) -> ClientResult<Subscription> {
         let event_receiver = self
             .websocket_link
-            .start_operation(GraphQLOperation::with_subscription(table, filter, fields))
+            .start_operation(GraphQLQuery::with_subscription(table, filter, fields))
             .await?;
 
         let operation_id = Arc::new(Mutex::new(0u32));
@@ -315,13 +307,13 @@ impl ServerLink {
             let collection_name = collection_name.clone();
             async move {
                 match event {
-                    GraphQLOperationEvent::Id(id) => {
+                    GraphQLQueryEvent::Id(id) => {
                         *operation_id.lock().await = id;
                         None
                     }
-                    GraphQLOperationEvent::Data(value) => Some(Ok(value[&collection_name].clone())),
-                    GraphQLOperationEvent::Error(error) => Some(Err(error)),
-                    GraphQLOperationEvent::Complete => Some(Ok(Value::Null)),
+                    GraphQLQueryEvent::Data(value) => Some(Ok(value[&collection_name].clone())),
+                    GraphQLQueryEvent::Error(error) => Some(Err(error)),
+                    GraphQLQueryEvent::Complete => Some(Ok(Value::Null)),
                 }
             }
         });
@@ -355,29 +347,34 @@ impl ServerLink {
         return None;
     }
 
-    async fn fetch_operation(
+    pub(crate) async fn query(
         &self,
-        operation: GraphQLOperation,
+        query: GraphQLQuery,
         timeout: Option<u32>,
+        endpoint: Option<Endpoint>,
     ) -> ClientResult<Value> {
-        let info = self.state.get_info().await?;
+        let endpoint = if let Some(endpoint) = endpoint {
+            Arc::new(endpoint)
+        } else {
+            self.state.get_query_endpoint().await?
+        };
 
         let request = json!({
-            "query": operation.query,
-            "variables": operation.variables,
+            "query": query.query,
+            "variables": query.variables,
         })
         .to_string();
 
         let mut headers = HashMap::new();
         headers.insert("content-type".to_owned(), "application/json".to_owned());
-        for (name, value) in ServerInfo::http_headers() {
+        for (name, value) in Endpoint::http_headers() {
             headers.insert(name, value);
         }
 
         let result = self
             .client_env
             .fetch(
-                &info.query_url,
+                &endpoint.query_url,
                 FetchMethod::Post,
                 Some(headers),
                 Some(request),
@@ -402,9 +399,26 @@ impl ServerLink {
         }
     }
 
-    pub async fn batch_query(&self, params: &[ParamsOfQueryOperation]) -> ClientResult<Vec<Value>> {
-        let op = GraphQLOperation::build(params, self.config.wait_for_timeout);
-        let result = self.fetch_operation(op, None).await?;
+    pub async fn batch_query(
+        &self,
+        params: &[ParamsOfQueryOperation],
+        endpoint: Option<Endpoint>,
+    ) -> ClientResult<Vec<Value>> {
+        let op = GraphQLQuery::build(params, self.config.wait_for_timeout);
+        let mut timeout = None;
+        for op in params {
+            if let ParamsOfQueryOperation::WaitForCollection(op) = op {
+                if let Some(op_timeout) = op.timeout {
+                    timeout = Some(match timeout {
+                        Some(timeout) => op_timeout.max(timeout),
+                        None => op_timeout,
+                    });
+                }
+            }
+        }
+        let result = self
+            .query(op, timeout.map(|x| x + FETCH_ADDITIONAL_TIMEOUT), endpoint)
+            .await?;
         let data = &result["data"];
         let mut results = Vec::new();
         for i in 0..params.len() {
@@ -431,9 +445,13 @@ impl ServerLink {
         Ok(results)
     }
 
-    pub async fn query_collection(&self, params: ParamsOfQueryCollection) -> ClientResult<Value> {
+    pub async fn query_collection(
+        &self,
+        params: ParamsOfQueryCollection,
+        endpoint: Option<Endpoint>,
+    ) -> ClientResult<Value> {
         Ok(self
-            .batch_query(&[ParamsOfQueryOperation::QueryCollection(params)])
+            .batch_query(&[ParamsOfQueryOperation::QueryCollection(params)], endpoint)
             .await?
             .remove(0))
     }
@@ -441,9 +459,13 @@ impl ServerLink {
     pub async fn wait_for_collection(
         &self,
         params: ParamsOfWaitForCollection,
+        endpoint: Option<Endpoint>,
     ) -> ClientResult<Value> {
         Ok(self
-            .batch_query(&[ParamsOfQueryOperation::WaitForCollection(params)])
+            .batch_query(
+                &[ParamsOfQueryOperation::WaitForCollection(params)],
+                endpoint,
+            )
             .await?
             .remove(0))
     }
@@ -451,35 +473,25 @@ impl ServerLink {
     pub async fn aggregate_collection(
         &self,
         params: ParamsOfAggregateCollection,
+        endpoint: Option<Endpoint>,
     ) -> ClientResult<Value> {
         Ok(self
-            .batch_query(&[ParamsOfQueryOperation::AggregateCollection(params)])
+            .batch_query(
+                &[ParamsOfQueryOperation::AggregateCollection(params)],
+                endpoint,
+            )
             .await?
             .remove(0))
     }
 
-    pub async fn query_counterparties(&self, params: ParamsOfQueryCounterparties) -> ClientResult<Value> {
-        Ok(self
-            .batch_query(&[ParamsOfQueryOperation::QueryCounterparties(params)])
-            .await?
-            .remove(0))
-    }
-
-    // Returns GraphQL query answer
-    pub async fn query(
+    pub async fn query_counterparties(
         &self,
-        query: &str,
-        variables: Option<Value>,
-        timeout: Option<u32>,
+        params: ParamsOfQueryCounterparties,
     ) -> ClientResult<Value> {
-        let query = GraphQLOperation {
-            query: query.into(),
-            variables,
-        };
-        Ok(self.fetch_operation(
-            query,
-            timeout.map(|value| value + FETCH_ADDITIONAL_TIMEOUT)
-        ).await?)
+        Ok(self
+            .batch_query(&[ParamsOfQueryOperation::QueryCounterparties(params)], None)
+            .await?
+            .remove(0))
     }
 
     // Sends message to node
@@ -487,6 +499,7 @@ impl ServerLink {
         &self,
         key: &[u8],
         value: &[u8],
+        endpoint: Option<Endpoint>,
     ) -> ClientResult<Option<ClientError>> {
         let request = PostRequest {
             id: base64::encode(key),
@@ -496,10 +509,7 @@ impl ServerLink {
         self.state.check_sync().await?;
 
         let result = self
-            .fetch_operation(
-                GraphQLOperation::with_post_requests(&[request]),
-                None,
-            )
+            .query(GraphQLQuery::with_post_requests(&[request]), None, endpoint)
             .await;
 
         // send message is always successful in order to process case when server received message
@@ -521,21 +531,17 @@ impl ServerLink {
         self.websocket_link.resume().await;
     }
 
-    pub async fn fetch_endpoints(&self) -> ClientResult<Vec<String>> {
-        let info = self.state.get_info().await?;
-
-        if !info.server_version.supports_endpoints {
-            return Err(Error::not_suppported("endpoints"));
-        }
+    pub async fn fetch_endpoint_addresses(&self) -> ClientResult<Vec<String>> {
+        let endpoint = self.state.get_query_endpoint().await?;
 
         let result = query_by_url(
-                &self.client_env,
-                &info.query_url,
-                "%7Binfo%7Bendpoints%7D%7D",
-            )
-            .await
-            .add_network_url(&self)
-            .await?;
+            &self.client_env,
+            &endpoint.query_url,
+            "%7Binfo%7Bendpoints%7D%7D",
+        )
+        .await
+        .add_network_url(&self)
+        .await?;
 
         serde_json::from_value(result["data"]["info"]["endpoints"].clone()).map_err(|_| {
             Error::invalid_server_response(format!(
@@ -545,7 +551,11 @@ impl ServerLink {
         })
     }
 
+    pub async fn get_endpoint_addresses(&self) -> Vec<String> {
+        self.state.get_endpoint_addresses().await
+    }
+
     pub async fn set_endpoints(&self, endpoints: Vec<String>) {
-        self.state.set_endpoints(endpoints).await;
+        self.state.set_endpoint_addresses(endpoints).await;
     }
 }

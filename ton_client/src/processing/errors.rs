@@ -78,7 +78,7 @@ impl Error {
         code: ErrorCode,
         message: String,
         message_id: &str,
-        shard_block_id: Option<&String>,
+        shard_block_id: Option<&str>,
     ) -> ClientError {
         let mut data = json!({
             "message_id": message_id,
@@ -114,7 +114,7 @@ impl Error {
     pub fn send_message_failed<E: std::fmt::Display>(
         err: E,
         message_id: &str,
-        shard_block_id: &String,
+        shard_block_id: &str,
     ) -> ClientError {
         Self::processing_error(
             ErrorCode::SendMessageFailed,

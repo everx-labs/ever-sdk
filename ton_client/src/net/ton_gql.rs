@@ -187,8 +187,8 @@ impl QueryOperationBuilder {
         }
     }
 
-    fn build(self) -> GraphQLOperation {
-        GraphQLOperation {
+    fn build(self) -> GraphQLQuery {
+        GraphQLQuery {
             query: format!(
                 "{}{} {{{}\n}}",
                 self.header,
@@ -338,16 +338,16 @@ impl QueryOperationBuilder {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct GraphQLOperation {
+pub(crate) struct GraphQLQuery {
     pub query: String,
     pub variables: Option<Value>,
 }
 
-impl GraphQLOperation {
+impl GraphQLQuery {
     pub fn build(
         params: &[ParamsOfQueryOperation],
         default_wait_for_timeout: u32,
-    ) -> GraphQLOperation {
+    ) -> GraphQLQuery {
         let mut builder = QueryOperationBuilder::new(params.len() > 1, default_wait_for_timeout);
         builder.add_operations(params);
         builder.build()
@@ -386,7 +386,7 @@ impl GraphQLOperation {
 }
 
 #[derive(Debug)]
-pub enum GraphQLOperationEvent {
+pub enum GraphQLQueryEvent {
     Id(u32),
     Data(Value),
     Error(ClientError),
