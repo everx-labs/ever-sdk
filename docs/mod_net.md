@@ -28,7 +28,7 @@ Network access.
 
 [set_endpoints](#set_endpoints) – Sets the list of endpoints to use on reinit
 
-[query_counterparties](#query_counterparties) – Performs DAppServer GraphQL query.
+[query_counterparties](#query_counterparties) – Allows to query and paginate through the list of accounts that the specified account has interacted with, sorted by the time of the last internal message between accounts
 
 ## Types
 [NetErrorCode](#NetErrorCode)
@@ -195,7 +195,7 @@ function aggregate_collection(
 ```
 ### Parameters
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
-- `filter`?: _any_ – Collection filter.
+- `filter`?: _any_ – Collection filter
 - `fields`?: _[FieldAggregation](mod_net.md#FieldAggregation)[]_ – Projection (result) string
 
 
@@ -418,7 +418,11 @@ function set_endpoints(
 
 ## query_counterparties
 
-Performs DAppServer GraphQL query.
+Allows to query and paginate through the list of accounts that the specified account has interacted with, sorted by the time of the last internal message between accounts
+
+*Attention* this query retrieves data from 'Counterparties' service which is not supported in
+the opensource version of DApp Server (and will not be supported) as well as in TON OS SE (will be supported in SE in future),
+but is always accessible via [TON OS Devnet/Mainnet Clouds](https://docs.ton.dev/86757ecb2/p/85c869-networks)
 
 ```ts
 type ParamsOfQueryCounterparties = {
@@ -437,9 +441,9 @@ function query_counterparties(
 ): Promise<ResultOfQueryCollection>;
 ```
 ### Parameters
-- `account`: _string_ – Account address.
+- `account`: _string_ – Account address
 - `result`: _string_ – Projection (result) string
-- `first`?: _number_ – Number of counterparties to return.
+- `first`?: _number_ – Number of counterparties to return
 - `after`?: _string_ – `cursor` field of the last received result
 
 
@@ -542,14 +546,14 @@ When _type_ is _'WaitForCollection'_
 When _type_ is _'AggregateCollection'_
 
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
-- `filter`?: _any_ – Collection filter.
+- `filter`?: _any_ – Collection filter
 - `fields`?: _[FieldAggregation](mod_net.md#FieldAggregation)[]_ – Projection (result) string
 
 When _type_ is _'QueryCounterparties'_
 
-- `account`: _string_ – Account address.
+- `account`: _string_ – Account address
 - `result`: _string_ – Projection (result) string
-- `first`?: _number_ – Number of counterparties to return.
+- `first`?: _number_ – Number of counterparties to return
 - `after`?: _string_ – `cursor` field of the last received result
 
 
@@ -667,7 +671,7 @@ type ParamsOfAggregateCollection = {
 }
 ```
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
-- `filter`?: _any_ – Collection filter.
+- `filter`?: _any_ – Collection filter
 - `fields`?: _[FieldAggregation](mod_net.md#FieldAggregation)[]_ – Projection (result) string
 
 
@@ -764,9 +768,9 @@ type ParamsOfQueryCounterparties = {
     after?: string
 }
 ```
-- `account`: _string_ – Account address.
+- `account`: _string_ – Account address
 - `result`: _string_ – Projection (result) string
-- `first`?: _number_ – Number of counterparties to return.
+- `first`?: _number_ – Number of counterparties to return
 - `after`?: _string_ – `cursor` field of the last received result
 
 
