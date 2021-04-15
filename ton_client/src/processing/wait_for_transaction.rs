@@ -148,17 +148,12 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
             .add_network_url_from_context(&context)
             .await;
             if let (Some(endpoints), Err(err)) = (&params.sending_endpoints, &resolved) {
-                context
-                    .get_server_link()?
-                    .update_stat(
-                        endpoints,
-                        if err.data["local_error"].is_null() {
-                            EndpointStat::MessageUndelivered
-                        } else {
-                            EndpointStat::MessageDelivered
-                        },
-                    )
-                    .await
+                if err.data["local_error"].is_null() {
+                    context
+                        .get_server_link()?
+                        .update_stat(endpoints, EndpointStat::MessageUndelivered)
+                        .await
+                }
             }
             resolved?;
         }
