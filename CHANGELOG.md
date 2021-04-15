@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### New
 
-- `net.query_counterparties` function for querying account counterparties and last messages info. 
+- [`net.query_counterparties`](docs/mod_net.md#query_counterparties) function for querying account counterparties and last messages info. 
   Subscription to counterparties collection is available via `net.subscribe_collection` function.
 
 - Blockchain interaction reliability improvement (broadcast): library sends message simultaneously 
