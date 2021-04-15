@@ -1,14 +1,8 @@
 # Release Notes
 
 All notable changes to this project will be documented in this file.
+
 ## [1.13.0] – 2021-04-15
-
-### New
-- **Debot module**:
-    - implementation of `Json` DeBot interface in DEngine.
-
-
-## [1.13.0] – 2021-04-01
 
 ### New
 
@@ -24,6 +18,9 @@ All notable changes to this project will be documented in this file.
 - blockchain interaction reliability improvement (bad delivery list): library tracks endpoints 
   with bad message delivery. These endpoints has lower priority when library chooses endpoints 
   to send message.
+  
+- **Debot module**:
+    - implementation of `Json` DeBot interface in DEngine.
 
 ### Fixed
 
