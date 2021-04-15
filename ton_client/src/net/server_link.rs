@@ -47,8 +47,8 @@ struct SuspendRegulation {
 }
 
 pub(crate) enum EndpointStat {
-    MessageSucceeded,
-    MessageExpired,
+    MessageDelivered,
+    MessageUndelivered,
 }
 
 pub(crate) struct NetworkState {
@@ -182,8 +182,8 @@ impl NetworkState {
         let bad_delivery = self.bad_delivery_addresses.read().await.clone();
         let addresses: HashSet<_> = addresses.iter().cloned().collect();
         let new_bad_delivery = match stat {
-            EndpointStat::MessageSucceeded => &bad_delivery - &addresses,
-            EndpointStat::MessageExpired => &bad_delivery | &addresses,
+            EndpointStat::MessageDelivered => &bad_delivery - &addresses,
+            EndpointStat::MessageUndelivered => &bad_delivery | &addresses,
         };
         if new_bad_delivery != bad_delivery {
             *self.bad_delivery_addresses.write().await = new_bad_delivery;

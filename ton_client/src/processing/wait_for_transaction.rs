@@ -105,7 +105,7 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
                 if let Some(endpoints) = &params.sending_endpoints {
                     context
                         .get_server_link()?
-                        .update_stat(endpoints, EndpointStat::MessageSucceeded)
+                        .update_stat(endpoints, EndpointStat::MessageDelivered)
                         .await;
                 }
                 return result;
@@ -120,12 +120,6 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
         if block.gen_utime as u64 * 1000 > max_block_time {
             let waiting_expiration_time = (max_block_time / 1000) as u32;
             let error = if message_expiration_time.is_some() {
-                if let Some(endpoints) = &params.sending_endpoints {
-                    context
-                        .get_server_link()?
-                        .update_stat(endpoints, EndpointStat::MessageExpired)
-                        .await;
-                }
                 Error::message_expired(
                     &message_id,
                     &shard_block_id,
@@ -143,7 +137,7 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
                     &address,
                 )
             };
-            resolve_error(
+            let resolved = resolve_error(
                 context.clone(),
                 &address,
                 params.message.clone(),
@@ -152,7 +146,21 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
             )
             .await
             .add_network_url_from_context(&context)
-            .await?;
+            .await;
+            if let (Some(endpoints), Err(err)) = (&params.sending_endpoints, &resolved) {
+                context
+                    .get_server_link()?
+                    .update_stat(
+                        endpoints,
+                        if err.data["local_error"].is_null() {
+                            EndpointStat::MessageUndelivered
+                        } else {
+                            EndpointStat::MessageDelivered
+                        },
+                    )
+                    .await
+            }
+            resolved?;
         }
 
         // We have successfully walked through the block.

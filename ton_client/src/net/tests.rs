@@ -207,7 +207,7 @@ async fn message_sending_addresses() {
     let link = client.get_server_link().unwrap();
     link.update_stat(
         &vec!["a".to_string(), "e".to_string()],
-        EndpointStat::MessageExpired,
+        EndpointStat::MessageUndelivered,
     )
     .await;
     let bad: HashSet<_> = vec!["a".to_string(), "e".to_string()].iter().cloned().collect();
@@ -218,7 +218,7 @@ async fn message_sending_addresses() {
     }
     link.update_stat(
         &vec!["a".to_string(), "e".to_string()],
-        EndpointStat::MessageSucceeded,
+        EndpointStat::MessageDelivered,
     )
     .await;
     let mut a_good = false;
