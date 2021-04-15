@@ -22,7 +22,6 @@ use crate::net::Endpoint;
 use crate::processing::internal::get_message_expiration_time;
 use crate::processing::types::ProcessingEvent;
 use crate::processing::Error;
-use rand::seq::SliceRandom;
 use std::sync::Arc;
 use ton_block::{Message, MsgAddressInt};
 
@@ -135,25 +134,26 @@ impl SendingMessage {
         Ok(shard_block_id)
     }
 
-    async fn send(&self, context: &Arc<ClientContext>) -> ClientResult<()> {
-        let mut available_addresses = context.get_server_link()?.get_endpoint_addresses().await;
-        available_addresses.shuffle(&mut rand::thread_rng());
-        let mut last_result = None::<ClientResult<()>>;
-
-        for selected_addresses in
-            available_addresses.chunks(context.config.network.sending_endpoint_count as usize)
-        {
+    async fn send(&self, context: &Arc<ClientContext>) -> ClientResult<Vec<String>> {
+        let addresses = context.get_server_link()?.get_addresses_for_sending().await;
+        let mut last_result = None::<ClientResult<String>>;
+        let succedeed_limit = context.config.network.sending_endpoint_count as usize;
+        let mut succeeded = Vec::new();
+        'sending: for selected_addresses in addresses.chunks(succedeed_limit) {
             let mut futures = vec![];
             for address in selected_addresses {
                 let context = context.clone();
                 let message = self.clone();
                 futures.push(Box::pin(async move {
-                    message.send_to_endpoint(context, &address).await
+                    message.send_to_address(context, &address).await
                 }));
             }
             for result in futures::future::join_all(futures).await {
-                if result.is_ok() {
-                    return Ok(());
+                if let Ok(address) = &result {
+                    succeeded.push(address.clone());
+                    if succeeded.len() >= succedeed_limit {
+                        break 'sending;
+                    }
                 }
                 // If one of the endpoints responds with clock out of sync error
                 // we leave this error as a final error.
@@ -168,16 +168,22 @@ impl SendingMessage {
                 }
             }
         }
-
-        last_result.unwrap_or_else(|| Err(Error::block_not_found("no endpoints".to_string())))
+        if succeeded.len() > 0 {
+            return Ok(succeeded);
+        }
+        Err(if let Some(Err(err)) = last_result {
+            err
+        } else {
+            Error::block_not_found("no endpoints".to_string())
+        })
     }
 
-    async fn send_to_endpoint(
+    async fn send_to_address(
         &self,
         context: Arc<ClientContext>,
-        endpoint_address: &str,
-    ) -> ClientResult<()> {
-        let endpoint = Endpoint::resolve(context.env.clone(), endpoint_address).await?;
+        address: &str,
+    ) -> ClientResult<String> {
+        let endpoint = Endpoint::resolve(context.env.clone(), address).await?;
 
         // Send
         context
@@ -186,7 +192,7 @@ impl SendingMessage {
             .await
             .add_endpoint_from_context(&context, &endpoint)
             .await
-            .map(|_| ())
+            .map(|_| address.to_string())
     }
 }
 
@@ -221,5 +227,8 @@ pub async fn send_message<F: futures::Future<Output = ()> + Send>(
         })
         .await;
     }
-    result.map(|_| ResultOfSendMessage { shard_block_id })
+    result.map(|sending_endpoints| ResultOfSendMessage {
+        shard_block_id,
+        sending_endpoints,
+    })
 }

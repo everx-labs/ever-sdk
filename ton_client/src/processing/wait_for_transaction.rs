@@ -2,6 +2,7 @@ use crate::abi::Abi;
 use crate::boc::internal::deserialize_object_from_boc;
 use crate::client::ClientContext;
 use crate::error::{AddNetworkUrl, ClientResult};
+use crate::net::EndpointStat;
 use crate::processing::internal::{get_message_expiration_time, resolve_error};
 use crate::processing::{fetching, internal, Error};
 use crate::processing::{ProcessingEvent, ResultOfProcessMessage};
@@ -101,6 +102,12 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
             .add_network_url_from_context(&context)
             .await;
             if result.is_ok() {
+                if let Some(endpoints) = &params.sending_endpoints {
+                    context
+                        .get_server_link()?
+                        .update_stat(endpoints, EndpointStat::MessageSucceeded)
+                        .await;
+                }
                 return result;
             }
             last_error = Some(result);
@@ -113,6 +120,12 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
         if block.gen_utime as u64 * 1000 > max_block_time {
             let waiting_expiration_time = (max_block_time / 1000) as u32;
             let error = if message_expiration_time.is_some() {
+                if let Some(endpoints) = &params.sending_endpoints {
+                    context
+                        .get_server_link()?
+                        .update_stat(endpoints, EndpointStat::MessageExpired)
+                        .await;
+                }
                 Error::message_expired(
                     &message_id,
                     &shard_block_id,

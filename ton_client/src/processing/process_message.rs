@@ -4,7 +4,7 @@ use crate::error::{AddNetworkUrl, ClientResult};
 use crate::processing::internal::can_retry_expired_message;
 use crate::processing::{
     send_message, wait_for_transaction, ErrorCode, ParamsOfSendMessage, ParamsOfWaitForTransaction,
-    ProcessingEvent, ResultOfProcessMessage,
+    ProcessingEvent, ResultOfProcessMessage, ResultOfSendMessage,
 };
 use crate::tvm::StdContractError;
 use std::sync::Arc;
@@ -35,7 +35,10 @@ pub async fn process_message<F: futures::Future<Output = ()> + Send>(
             .message;
 
         // Send
-        let shard_block_id = send_message(
+        let ResultOfSendMessage {
+            shard_block_id,
+            sending_endpoints,
+        } = send_message(
             context.clone(),
             ParamsOfSendMessage {
                 message: message.clone(),
@@ -46,8 +49,7 @@ pub async fn process_message<F: futures::Future<Output = ()> + Send>(
         )
         .await
         .add_network_url_from_context(&context)
-        .await?
-        .shard_block_id;
+        .await?;
 
         let wait_for = wait_for_transaction(
             context.clone(),
@@ -56,6 +58,7 @@ pub async fn process_message<F: futures::Future<Output = ()> + Send>(
                 send_events: params.send_events,
                 abi: Some(abi.clone()),
                 shard_block_id: shard_block_id.clone(),
+                sending_endpoints: Some(sending_endpoints),
             },
             &callback,
         )
