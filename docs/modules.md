@@ -195,6 +195,8 @@ Where:
 
 [set_endpoints](mod_net.md#set_endpoints) – Sets the list of endpoints to use on reinit
 
+[query_counterparties](mod_net.md#query_counterparties) – Performs DAppServer GraphQL query.
+
 ## [debot](mod_debot.md) – [UNSTABLE](UNSTABLE.md) Module for working with debot.
 
 [init](mod_debot.md#init) – [UNSTABLE](UNSTABLE.md) Creates and instance of DeBot.

@@ -28,6 +28,8 @@ Network access.
 
 [set_endpoints](#set_endpoints) – Sets the list of endpoints to use on reinit
 
+[query_counterparties](#query_counterparties) – Performs DAppServer GraphQL query.
+
 ## Types
 [NetErrorCode](#NetErrorCode)
 
@@ -70,6 +72,8 @@ Network access.
 [ResultOfFindLastShardBlock](#ResultOfFindLastShardBlock)
 
 [EndpointsSet](#EndpointsSet)
+
+[ParamsOfQueryCounterparties](#ParamsOfQueryCounterparties)
 
 
 # Functions
@@ -412,6 +416,38 @@ function set_endpoints(
 - `endpoints`: _string[]_ – List of endpoints provided by server
 
 
+## query_counterparties
+
+Performs DAppServer GraphQL query.
+
+```ts
+type ParamsOfQueryCounterparties = {
+    account: string,
+    result: string,
+    first?: number,
+    after?: string
+}
+
+type ResultOfQueryCollection = {
+    result: any[]
+}
+
+function query_counterparties(
+    params: ParamsOfQueryCounterparties,
+): Promise<ResultOfQueryCollection>;
+```
+### Parameters
+- `account`: _string_ – Account address.
+- `result`: _string_ – Projection (result) string
+- `first`?: _number_ – Number of counterparties to return.
+- `after`?: _string_ – `cursor` field of the last received result
+
+
+### Result
+
+- `result`: _any[]_ – Objects that match the provided criteria
+
+
 # Types
 ## NetErrorCode
 ```ts
@@ -482,7 +518,9 @@ type ParamsOfQueryOperation = ({
     type: 'WaitForCollection'
 } & ParamsOfWaitForCollection) | ({
     type: 'AggregateCollection'
-} & ParamsOfAggregateCollection)
+} & ParamsOfAggregateCollection) | ({
+    type: 'QueryCounterparties'
+} & ParamsOfQueryCounterparties)
 ```
 Depends on value of the  `type` field.
 
@@ -507,6 +545,13 @@ When _type_ is _'AggregateCollection'_
 - `filter`?: _any_ – Collection filter.
 - `fields`?: _[FieldAggregation](mod_net.md#FieldAggregation)[]_ – Projection (result) string
 
+When _type_ is _'QueryCounterparties'_
+
+- `account`: _string_ – Account address.
+- `result`: _string_ – Projection (result) string
+- `first`?: _number_ – Number of counterparties to return.
+- `after`?: _string_ – `cursor` field of the last received result
+
 
 Variant constructors:
 
@@ -514,6 +559,7 @@ Variant constructors:
 function paramsOfQueryOperationQueryCollection(params: ParamsOfQueryCollection): ParamsOfQueryOperation;
 function paramsOfQueryOperationWaitForCollection(params: ParamsOfWaitForCollection): ParamsOfQueryOperation;
 function paramsOfQueryOperationAggregateCollection(params: ParamsOfAggregateCollection): ParamsOfQueryOperation;
+function paramsOfQueryOperationQueryCounterparties(params: ParamsOfQueryCounterparties): ParamsOfQueryOperation;
 ```
 
 ## FieldAggregation
@@ -707,5 +753,20 @@ type EndpointsSet = {
 }
 ```
 - `endpoints`: _string[]_ – List of endpoints provided by server
+
+
+## ParamsOfQueryCounterparties
+```ts
+type ParamsOfQueryCounterparties = {
+    account: string,
+    result: string,
+    first?: number,
+    after?: string
+}
+```
+- `account`: _string_ – Account address.
+- `result`: _string_ – Projection (result) string
+- `first`?: _number_ – Number of counterparties to return.
+- `after`?: _string_ – `cursor` field of the last received result
 
 
