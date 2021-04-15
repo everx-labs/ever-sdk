@@ -46,7 +46,7 @@ async fn test_encode_boc() {
             value: Value::from(value),
         }
     }
-    fn write_i(value: Value, size: u8) -> BuilderOp {
+    fn write_i(value: Value, size: u32) -> BuilderOp {
         BuilderOp::Integer { size, value }
     }
     fn write_bitstring(value: &str) -> BuilderOp {
