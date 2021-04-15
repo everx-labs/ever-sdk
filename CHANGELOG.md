@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- `BuilderOp::Integer.size` type has changed from `u8` to `u32`.  
 - **Debot Module**:
     - `Sdk` interface function `getAccountsDataByHash` didn't find accounts by `code_hash` with leading zero.
 
