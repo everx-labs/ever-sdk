@@ -57,6 +57,12 @@ pub struct ResultOfSendMessage {
     /// This block id must be used as a parameter of the
     /// `wait_for_transaction`.
     pub shard_block_id: String,
+
+    /// The list of endpoints to which the message was sent.
+    ///
+    /// This list id must be used as a parameter of the
+    /// `wait_for_transaction`.
+    pub sending_endpoints: Vec<String>,
 }
 
 #[derive(Clone)]

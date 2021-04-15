@@ -29,6 +29,11 @@ pub struct ParamsOfWaitForTransaction {
 
     /// Flag that enables/disables intermediate events
     pub send_events: bool,
+
+    /// The list of endpoints to which the message was sent.
+    ///
+    /// You must provide the same value as the `send_message` has returned.
+    pub sending_endpoints: Option<Vec<String>>,
 }
 
 pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
