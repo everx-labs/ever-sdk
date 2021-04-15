@@ -21,9 +21,10 @@ use crate::net::{
     ParamsOfQueryCounterparties, ParamsOfQueryOperation, ParamsOfWaitForCollection, PostRequest,
 };
 use futures::{Future, Stream, StreamExt};
+use rand::seq::SliceRandom;
 use serde_json::Value;
 use std::cmp::{max, min};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Arc;
@@ -45,9 +46,15 @@ struct SuspendRegulation {
     external_suspend: bool,
 }
 
+pub(crate) enum EndpointStat {
+    MessageDelivered,
+    MessageUndelivered,
+}
+
 pub(crate) struct NetworkState {
     client_env: Arc<ClientEnv>,
     endpoint_addresses: RwLock<Vec<String>>,
+    bad_delivery_addresses: RwLock<HashSet<String>>,
     suspended: watch::Receiver<bool>,
     suspend_regulation: Arc<Mutex<SuspendRegulation>>,
     resume_timeout: AtomicU32,
@@ -85,6 +92,7 @@ impl NetworkState {
         Self {
             client_env,
             endpoint_addresses: RwLock::new(endpoint_addresses),
+            bad_delivery_addresses: RwLock::new(HashSet::new()),
             suspended: receiver,
             suspend_regulation: Arc::new(Mutex::new(regulation)),
             resume_timeout: AtomicU32::new(0),
@@ -146,12 +154,40 @@ impl NetworkState {
         });
     }
 
-    pub async fn get_endpoint_addresses(&self) -> Vec<String> {
-        self.endpoint_addresses.read().await.clone()
-    }
-
     pub async fn set_endpoint_addresses(&self, addresses: Vec<String>) {
         *self.endpoint_addresses.write().await = addresses;
+    }
+
+    pub async fn get_addresses_for_sending(&self) -> Vec<String> {
+        let mut addresses = self.endpoint_addresses.read().await.clone();
+        addresses.shuffle(&mut rand::thread_rng());
+        let bad_delivery = self.bad_delivery_addresses.read().await.clone();
+        if !bad_delivery.is_empty() {
+            let mut i = 0;
+            let mut processed = 0;
+            while processed < addresses.len() {
+                if bad_delivery.contains(&addresses[i]) {
+                    let address = addresses.remove(i);
+                    addresses.push(address);
+                } else {
+                    i += 1;
+                }
+                processed += 1;
+            }
+        }
+        addresses
+    }
+
+    pub async fn update_stat(&self, addresses: &Vec<String>, stat: EndpointStat) {
+        let bad_delivery = self.bad_delivery_addresses.read().await.clone();
+        let addresses: HashSet<_> = addresses.iter().cloned().collect();
+        let new_bad_delivery = match stat {
+            EndpointStat::MessageDelivered => &bad_delivery - &addresses,
+            EndpointStat::MessageUndelivered => &bad_delivery | &addresses,
+        };
+        if new_bad_delivery != bad_delivery {
+            *self.bad_delivery_addresses.write().await = new_bad_delivery;
+        }
     }
 
     pub async fn config_servers(&self) -> Vec<String> {
@@ -551,11 +587,15 @@ impl ServerLink {
         })
     }
 
-    pub async fn get_endpoint_addresses(&self) -> Vec<String> {
-        self.state.get_endpoint_addresses().await
-    }
-
     pub async fn set_endpoints(&self, endpoints: Vec<String>) {
         self.state.set_endpoint_addresses(endpoints).await;
+    }
+
+    pub async fn get_addresses_for_sending(&self) -> Vec<String> {
+        self.state.get_addresses_for_sending().await
+    }
+
+    pub async fn update_stat(&self, addresses: &Vec<String>, stat: EndpointStat) {
+        self.state.update_stat(addresses, stat).await
     }
 }

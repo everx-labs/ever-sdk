@@ -6,6 +6,8 @@ use crate::processing::ParamsOfProcessMessage;
 use crate::tests::{TestClient, HELLO};
 
 use super::*;
+use crate::ClientConfig;
+use std::collections::HashSet;
 
 #[tokio::test(core_threads = 2)]
 async fn batch_query() {
@@ -185,6 +187,56 @@ async fn wait_for() {
 }
 
 #[tokio::test(core_threads = 2)]
+async fn message_sending_addresses() {
+    let client = ClientContext::new(ClientConfig {
+        network: NetworkConfig {
+            endpoints: Some(vec![
+                "a".into(),
+                "b".into(),
+                "c".into(),
+                "d".into(),
+                "e".into(),
+                "f".into(),
+                "g".into(),
+                "h".into(),
+            ]),
+            ..Default::default()
+        },
+        ..Default::default()
+    }).unwrap();
+    let link = client.get_server_link().unwrap();
+    link.update_stat(
+        &vec!["a".to_string(), "e".to_string()],
+        EndpointStat::MessageUndelivered,
+    )
+    .await;
+    let bad: HashSet<_> = vec!["a".to_string(), "e".to_string()].iter().cloned().collect();
+    for _ in 0..100 {
+        let addresses = link.get_addresses_for_sending().await;
+        let tail: HashSet<_> = addresses[addresses.len() - 2..].iter().cloned().collect();
+        assert_eq!(tail, bad);
+    }
+    link.update_stat(
+        &vec!["a".to_string(), "e".to_string()],
+        EndpointStat::MessageDelivered,
+    )
+    .await;
+    let mut a_good = false;
+    let mut e_good = false;
+    for _ in 0..100 {
+        let addresses = link.get_addresses_for_sending().await;
+        let tail: HashSet<_> = addresses[addresses.len() - 2..].iter().cloned().collect();
+        if !tail.contains("a") {
+            a_good = true;
+        }
+        if !tail.contains("e") {
+            e_good = true;
+        }
+    }
+    assert!(a_good && e_good)
+}
+
+#[tokio::test(core_threads = 2)]
 async fn subscribe_for_transactions_with_addresses() {
     let client = TestClient::new_with_config(json!({
         "network": {
@@ -204,7 +256,10 @@ async fn subscribe_for_transactions_with_addresses() {
         address: None,
         call_set: CallSet::some_with_function("constructor"),
     };
-    let msg = subscription_client.encode_message(deploy_params.clone()).await.unwrap();
+    let msg = subscription_client
+        .encode_message(deploy_params.clone())
+        .await
+        .unwrap();
     let transactions = std::sync::Arc::new(Mutex::new(vec![]));
     let transactions_copy1 = transactions.clone();
     let transactions_copy2 = transactions.clone();
@@ -503,7 +558,7 @@ async fn test_query_counterparties() {
     if TestClient::node_se() {
         return;
     }
-    
+
     let client = TestClient::new();
 
     let account = client.giver_address().await;
@@ -515,7 +570,7 @@ async fn test_query_counterparties() {
                 account: account.clone(),
                 first: Some(5),
                 after: None,
-                result: "counterparty last_message_id cursor".to_owned()
+                result: "counterparty last_message_id cursor".to_owned(),
             },
         )
         .await
@@ -525,17 +580,22 @@ async fn test_query_counterparties() {
 
     if counterparties1.result.len() == 5 {
         let counterparties2: ResultOfQueryCollection = client
-        .request_async(
-            "net.query_counterparties",
-            ParamsOfQueryCounterparties {
-                account: account.clone(),
-                first: Some(5),
-                after: Some(counterparties1.result[4]["cursor"].as_str().unwrap().to_owned()),
-                result: "counterparty last_message_id cursor".to_owned()
-            },
-        )
-        .await
-        .unwrap();
+            .request_async(
+                "net.query_counterparties",
+                ParamsOfQueryCounterparties {
+                    account: account.clone(),
+                    first: Some(5),
+                    after: Some(
+                        counterparties1.result[4]["cursor"]
+                            .as_str()
+                            .unwrap()
+                            .to_owned(),
+                    ),
+                    result: "counterparty last_message_id cursor".to_owned(),
+                },
+            )
+            .await
+            .unwrap();
 
         assert_ne!(counterparties1.result, counterparties2.result);
     }

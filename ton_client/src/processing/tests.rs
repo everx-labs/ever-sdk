@@ -117,6 +117,7 @@ async fn test_wait_message() {
                 shard_block_id: result.shard_block_id,
                 send_events: true,
                 abi: Some(abi.clone()),
+                sending_endpoints: Some(result.sending_endpoints),
             },
             callback.clone(),
         )
