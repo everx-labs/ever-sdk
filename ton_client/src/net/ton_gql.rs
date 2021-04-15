@@ -65,7 +65,7 @@ pub struct PostRequest {
 pub struct ParamsOfAggregateCollection {
     /// Collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
-    /// Collection filter.
+    /// Collection filter
     pub filter: Option<serde_json::Value>,
     /// Projection (result) string
     pub fields: Option<Vec<FieldAggregation>>,
@@ -87,11 +87,11 @@ pub struct ParamsOfQueryCollection {
 
 #[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ParamsOfQueryCounterparties {
-    /// Account address.
+    /// Account address
     pub account: String,
     /// Projection (result) string
     pub result: String,
-    /// Number of counterparties to return.
+    /// Number of counterparties to return
     pub first: Option<u32>,
     /// `cursor` field of the last received result
     pub after: Option<String>,
