@@ -9,18 +9,18 @@ All notable changes to this project will be documented in this file.
 - `net.query_counterparties` function for querying account counterparties and last messages info. 
   Subscription to counterparties collection is available via `net.subscribe_collection` function.
 
-- blockchain interaction reliability improvement (broadcast): library sends message simultaneously 
+- Blockchain interaction reliability improvement (broadcast): library sends message simultaneously 
   to the N randomly chosen endpoints. If all N endpoints has fallen on sending then library repeats 
   sending with another random endpoints (except failed one). 
   If all available endpoints has fallen on sending then library throws error.
   The N parameter is taken from `config.network.sending_endpoint_count` (default is 2).
 
-- blockchain interaction reliability improvement (bad delivery list): library tracks endpoints 
+- Blockchain interaction reliability improvement (bad delivery list): library tracks endpoints 
   with bad message delivery. These endpoints has lower priority when library chooses endpoints 
   to send message.
   
 - **Debot module**:
-    - implementation of `Json` DeBot interface in DEngine.
+    - Implementation of `Json` DeBot interface in DEngine.
 
 ### Fixed
 
