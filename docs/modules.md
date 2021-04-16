@@ -195,6 +195,8 @@ Where:
 
 [set_endpoints](mod_net.md#set_endpoints) – Sets the list of endpoints to use on reinit
 
+[query_counterparties](mod_net.md#query_counterparties) – Allows to query and paginate through the list of accounts that the specified account has interacted with, sorted by the time of the last internal message between accounts
+
 ## [debot](mod_debot.md) – [UNSTABLE](UNSTABLE.md) Module for working with debot.
 
 [init](mod_debot.md#init) – [UNSTABLE](UNSTABLE.md) Creates and instance of DeBot.

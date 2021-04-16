@@ -1,5 +1,5 @@
 {
-  "version": "1.12.0",
+  "version": "1.13.0",
   "modules": [
     {
       "name": "client",
@@ -423,6 +423,17 @@
               },
               "summary": "Maximum time difference between server and client.",
               "description": "If client's device time is out of sync and difference is more than the threshold then error will occur. Also an error will occur if the specified threshold is more than\n`message_processing_timeout/2`.\nThe default value is 15 sec."
+            },
+            {
+              "name": "sending_endpoint_count",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 8
+              },
+              "summary": "Maximum number of randomly chosen endpoints the library uses to send message. The default value is 2 endpoints.",
+              "description": null
             },
             {
               "name": "access_key",
@@ -5590,7 +5601,7 @@
                   "name": "size",
                   "type": "Number",
                   "number_type": "UInt",
-                  "number_size": 8,
+                  "number_size": 32,
                   "summary": "Bit size of the value.",
                   "description": null
                 },
@@ -6572,6 +6583,15 @@
               "type": "String",
               "summary": "The last generated shard block of the message destination account before the message was sent.",
               "description": "This block id must be used as a parameter of the\n`wait_for_transaction`."
+            },
+            {
+              "name": "sending_endpoints",
+              "type": "Array",
+              "array_item": {
+                "type": "String"
+              },
+              "summary": "The list of endpoints to which the message was sent.",
+              "description": "This list id must be used as a parameter of the\n`wait_for_transaction`."
             }
           ],
           "summary": null,
@@ -6608,6 +6628,18 @@
               "type": "Boolean",
               "summary": "Flag that enables/disables intermediate events",
               "description": null
+            },
+            {
+              "name": "sending_endpoints",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "String"
+                }
+              },
+              "summary": "The list of endpoints to which the message was sent.",
+              "description": "You must provide the same value as the `send_message` has returned."
             }
           ],
           "summary": null,
@@ -7966,6 +7998,13 @@
               "ref_name": "net.ParamsOfAggregateCollection",
               "summary": null,
               "description": null
+            },
+            {
+              "name": "QueryCounterparties",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfQueryCounterparties",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -8194,7 +8233,7 @@
                 "type": "Ref",
                 "ref_name": "Value"
               },
-              "summary": "Collection filter.",
+              "summary": "Collection filter",
               "description": null
             },
             {
@@ -8370,6 +8409,46 @@
                 "type": "String"
               },
               "summary": "List of endpoints provided by server",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfQueryCounterparties",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "account",
+              "type": "String",
+              "summary": "Account address",
+              "description": null
+            },
+            {
+              "name": "result",
+              "type": "String",
+              "summary": "Projection (result) string",
+              "description": null
+            },
+            {
+              "name": "first",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Number of counterparties to return",
+              "description": null
+            },
+            {
+              "name": "after",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "`cursor` field of the last received result",
               "description": null
             }
           ],
@@ -8817,6 +8896,44 @@
             "generic_args": [
               {
                 "type": "None"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "query_counterparties",
+          "summary": "Allows to query and paginate through the list of accounts that the specified account has interacted with, sorted by the time of the last internal message between accounts",
+          "description": "*Attention* this query retrieves data from 'Counterparties' service which is not supported in\nthe opensource version of DApp Server (and will not be supported) as well as in TON OS SE (will be supported in SE in future),\nbut is always accessible via [TON OS Devnet/Mainnet Clouds](https://docs.ton.dev/86757ecb2/p/85c869-networks)",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfQueryCounterparties",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "net.ResultOfQueryCollection"
               }
             ]
           },

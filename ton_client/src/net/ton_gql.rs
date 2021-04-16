@@ -18,6 +18,8 @@ use crate::error::ClientError;
 use crate::net::gql::GraphQLMessageFromClient;
 use crate::net::ParamsOfWaitForCollection;
 
+const COUNTERPARTIES_COLLECTION: &str = "counterparties";
+
 #[derive(Serialize, Deserialize, Clone, ApiType)]
 pub enum SortDirection {
     ASC,
@@ -63,7 +65,7 @@ pub struct PostRequest {
 pub struct ParamsOfAggregateCollection {
     /// Collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
-    /// Collection filter.
+    /// Collection filter
     pub filter: Option<serde_json::Value>,
     /// Projection (result) string
     pub fields: Option<Vec<FieldAggregation>>,
@@ -83,12 +85,25 @@ pub struct ParamsOfQueryCollection {
     pub limit: Option<u32>,
 }
 
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
+pub struct ParamsOfQueryCounterparties {
+    /// Account address
+    pub account: String,
+    /// Projection (result) string
+    pub result: String,
+    /// Number of counterparties to return
+    pub first: Option<u32>,
+    /// `cursor` field of the last received result
+    pub after: Option<String>,
+}
+
 #[derive(Serialize, Deserialize, ApiType, Clone)]
 #[serde(tag = "type")]
 pub enum ParamsOfQueryOperation {
     QueryCollection(ParamsOfQueryCollection),
     WaitForCollection(ParamsOfWaitForCollection),
     AggregateCollection(ParamsOfAggregateCollection),
+    QueryCounterparties(ParamsOfQueryCounterparties),
 }
 
 impl ParamsOfQueryOperation {
@@ -97,6 +112,7 @@ impl ParamsOfQueryOperation {
             ParamsOfQueryOperation::AggregateCollection(p) => &p.collection,
             ParamsOfQueryOperation::QueryCollection(p) => &p.collection,
             ParamsOfQueryOperation::WaitForCollection(p) => &p.collection,
+            ParamsOfQueryOperation::QueryCounterparties(_) => COUNTERPARTIES_COLLECTION,
         }
     }
 
@@ -126,6 +142,7 @@ impl ParamsOfQueryOperation {
             }
             ParamsOfQueryOperation::QueryCollection(p) => p.collection.clone(),
             ParamsOfQueryOperation::WaitForCollection(p) => p.collection.clone(),
+            ParamsOfQueryOperation::QueryCounterparties(_) => COUNTERPARTIES_COLLECTION.to_owned(),
         }
     }
 
@@ -134,6 +151,7 @@ impl ParamsOfQueryOperation {
             ParamsOfQueryOperation::AggregateCollection(_) => "",
             ParamsOfQueryOperation::QueryCollection(p) => &p.result,
             ParamsOfQueryOperation::WaitForCollection(p) => &p.result,
+            ParamsOfQueryOperation::QueryCounterparties(p) => &p.result,
         }
     }
 }
@@ -169,8 +187,8 @@ impl QueryOperationBuilder {
         }
     }
 
-    fn build(self) -> GraphQLOperation {
-        GraphQLOperation {
+    fn build(self) -> GraphQLQuery {
+        GraphQLQuery {
             query: format!(
                 "{}{} {{{}\n}}",
                 self.header,
@@ -216,6 +234,9 @@ impl QueryOperationBuilder {
                     Some(1),
                     Some(p.timeout.unwrap_or(self.default_wait_for_timeout)),
                 );
+            }
+            ParamsOfQueryOperation::QueryCounterparties(ref p) => {
+                self.add_query_counterparties_op_params(&p.account, &p.first, &p.after);
             }
         }
         if self.op_param_count > 0 {
@@ -275,6 +296,21 @@ impl QueryOperationBuilder {
         }
     }
 
+    fn add_query_counterparties_op_params(
+        &mut self,
+        account: &str,
+        first: &Option<u32>,
+        after: &Option<String>,
+    ) {
+        self.add_op_param("account", "String!", &Value::from(account));
+        if let Some(first) = first {
+            self.add_op_param("first", "Int", &Value::from(*first));
+        }
+        if let Some(after) = after.as_ref() {
+            self.add_op_param("after", "String", &Value::from(after.as_str()));
+        }
+    }
+
     fn add_op_param(&mut self, name: &str, type_decl: &str, value: &Value) {
         self.add_header(if self.param_count == 0 { "(" } else { "," });
         self.param_count += 1;
@@ -302,16 +338,16 @@ impl QueryOperationBuilder {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct GraphQLOperation {
+pub(crate) struct GraphQLQuery {
     pub query: String,
     pub variables: Option<Value>,
 }
 
-impl GraphQLOperation {
+impl GraphQLQuery {
     pub fn build(
         params: &[ParamsOfQueryOperation],
         default_wait_for_timeout: u32,
-    ) -> GraphQLOperation {
+    ) -> GraphQLQuery {
         let mut builder = QueryOperationBuilder::new(params.len() > 1, default_wait_for_timeout);
         builder.add_operations(params);
         builder.build()
@@ -350,7 +386,7 @@ impl GraphQLOperation {
 }
 
 #[derive(Debug)]
-pub enum GraphQLOperationEvent {
+pub enum GraphQLQueryEvent {
     Id(u32),
     Data(Value),
     Error(ClientError),

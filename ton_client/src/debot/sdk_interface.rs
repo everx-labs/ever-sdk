@@ -571,7 +571,7 @@ impl SdkInterface {
             ParamsOfQueryCollection {
                 collection: "accounts".to_owned(),
                 filter: Some(json!({
-                    "code_hash": { "eq": format!("{:x}", code_hash) },
+                    "code_hash": { "eq": format!("{:064x}", code_hash) },
                     "id": {"gt": gt_addr }
                 })),
                 result: result.to_owned(),

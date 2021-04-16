@@ -574,7 +574,7 @@ fn test_stack_serialization() {
     let stack_items = stack::deserialize_items(input.as_array().unwrap().iter()).unwrap();
 
     assert_eq!(
-        stack_items, 
+        stack_items,
         vec![
             StackItem::None,
             StackItem::nan(),
@@ -593,7 +593,7 @@ fn test_stack_serialization() {
         ]
     );
 
-    
+
     let serialized = stack::serialize_items(Box::new(stack_items.iter()), true).unwrap();
 
     assert_eq!(
@@ -691,7 +691,7 @@ async fn test_resolve_blockchain_config() {
     }
 
     let mut config = crate::ClientConfig::default();
-    config.network.endpoints = Some(vec![TestClient::network_address()]);
+    config.network.endpoints = Some(TestClient::endpoints());
     let net_context = Arc::new(crate::ClientContext::new(config).unwrap());
 
     let local_context = Arc::new(crate::ClientContext::new(crate::ClientConfig::default()).unwrap());

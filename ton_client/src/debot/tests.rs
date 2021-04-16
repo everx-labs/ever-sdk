@@ -144,7 +144,8 @@ impl Terminal {
     fn print(&mut self, answer_id: u32, message: &str) -> (u32, JsonValue) {
         assert!(
             self.messages.len() > 0,
-            format!("Unexpected terminal message received: \"{}\"", message)
+            "Unexpected terminal message received: \"{}\"",
+            message
         );
         assert_eq!(
             self.messages.remove(0),
@@ -1352,6 +1353,37 @@ async fn test_debot_approve() {
                 approved: true,
             },
         ],
+    ).await;
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_debot_json_interface() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot7").await;
+    let steps = serde_json::from_value(json!([])).unwrap();
+    TestBrowser::execute_with_details(
+        client.clone(),
+        debot_addr.clone(),
+        keys,
+        steps,
+        vec![],
+        DebotInfo {
+            name: Some("Test DeBot 7".to_owned()),
+            version: Some("0.1.0".to_owned()),
+            publisher: Some("TON Labs".to_owned()),
+            key: Some("Test for Json interface".to_owned()),
+            author: Some("TON Labs".to_owned()),
+            support: Some("0:0000000000000000000000000000000000000000000000000000000000000000".to_owned()),
+            hello: Some("Test DeBot 7".to_owned()),
+            language: Some("en".to_owned()),
+            dabi: Some(abi),
+            icon: Some(format!("")),
+            interfaces: vec![
+                "0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3".to_owned(),
+                "0x442288826041d564ccedc579674f17c1b0a3452df799656a9167a41ab270ec19".to_owned(),
+            ],
+        },
+        vec![],
     ).await;
 }
 

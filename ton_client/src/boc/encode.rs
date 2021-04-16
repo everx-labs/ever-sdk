@@ -18,7 +18,7 @@ pub enum BuilderOp {
     /// Append integer to cell data.
     Integer {
         /// Bit size of the value.
-        size: u8,
+        size: u32,
         /// Value:
         /// - `Number` containing integer number. e.g. `123`, `-123`.
         /// - Decimal string. e.g. `"123"`, `"-123"`.

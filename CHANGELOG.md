@@ -2,9 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.0] – 2021-04-15
+
+### New
+
+- [`net.query_counterparties`](docs/mod_net.md#query_counterparties) function for querying account counterparties and last messages info. 
+  Subscription to counterparties collection is available via `net.subscribe_collection` function.
+
+- Blockchain interaction reliability improvement (broadcast): library sends message simultaneously 
+  to the N randomly chosen endpoints. If all N endpoints has fallen on sending then library repeats 
+  sending with another random endpoints (except failed one). 
+  If all available endpoints has fallen on sending then library throws error.
+  The N parameter is taken from `config.network.sending_endpoint_count` (default is 2).
+
+- Blockchain interaction reliability improvement (bad delivery list): library tracks endpoints 
+  with bad message delivery. These endpoints has lower priority when library chooses endpoints 
+  to send message.
+  
+- **Debot module**:
+    - Implementation of `Json` DeBot interface in DEngine.
+
+### Fixed
+
+- `BuilderOp::Integer.size` type has changed from `u8` to `u32`.  
+- **Debot Module**:
+    - `Sdk` interface function `getAccountsDataByHash` didn't find accounts by `code_hash` with leading zero.
+
 ## [1.12.0] – 2021-04-01
 
 ### New
+
 - [`utils.compress_zstd`](docs/mod_utils.md#compress_zstd) compresses data using Facebook's Zstandard algorithm.
 - [`utils.decompress_zstd`](docs/mod_utils.md#decompress_zstd) decompresses data using Facebook's Zstandard algorithm.
 - **Debot module**:
@@ -13,6 +40,7 @@ All notable changes to this project will be documented in this file.
     - `approve` DeBot Browser callback which is called by DEngine to request permission for DeBot activities.
 
 ### Changed
+
 - **Debot Module**:
     - [breaking] `fetch` function does't create an instance of debot. It returns DeBot metadata (`DebotInfo`).
     - [breaking] `start` function does't create an instance of debot. It accepts DeBot handle created in `init` function.

@@ -12,20 +12,21 @@
 */
 
 pub use batch::{batch_query, ParamsOfBatchQuery, ResultOfBatchQuery};
+pub(crate) use endpoint::Endpoint;
 pub use errors::{Error, ErrorCode};
 pub use queries::{
-    aggregate_collection, query, query_collection, wait_for_collection, ParamsOfQuery,
-    ParamsOfWaitForCollection, ResultOfAggregateCollection, ResultOfQuery, ResultOfQueryCollection,
-    ResultOfWaitForCollection,
+    aggregate_collection, query, query_collection, query_counterparties, wait_for_collection,
+    ParamsOfQuery, ParamsOfWaitForCollection, ResultOfAggregateCollection, ResultOfQuery,
+    ResultOfQueryCollection, ResultOfWaitForCollection,
 };
-pub(crate) use server_link::{ServerLink, MAX_TIMEOUT};
+pub(crate) use server_link::{ServerLink, EndpointStat, MAX_TIMEOUT};
 pub use subscriptions::{
     subscribe_collection, unsubscribe, ParamsOfSubscribeCollection, ResultOfSubscribeCollection,
     ResultOfSubscription, SubscriptionResponseType,
 };
 pub use ton_gql::{
-    AggregationFn, FieldAggregation, GraphQLOperationEvent, OrderBy,
-    ParamsOfAggregateCollection, ParamsOfQueryCollection, ParamsOfQueryOperation, PostRequest,
+    AggregationFn, FieldAggregation, GraphQLQueryEvent, OrderBy, ParamsOfAggregateCollection,
+    ParamsOfQueryCollection, ParamsOfQueryCounterparties, ParamsOfQueryOperation, PostRequest,
     SortDirection,
 };
 pub use types::{
@@ -37,10 +38,10 @@ use crate::client::ClientContext;
 use crate::error::ClientResult;
 
 pub(crate) mod batch;
+mod endpoint;
 mod errors;
 mod gql;
 pub(crate) mod queries;
-mod server_info;
 mod server_link;
 pub(crate) mod subscriptions;
 mod ton_gql;
@@ -85,7 +86,7 @@ pub async fn find_last_shard_block(
     let address = crate::encoding::account_decode(&params.address)?;
 
     let block_id =
-        crate::processing::blocks_walking::find_last_shard_block(&context, &address).await?;
+        crate::processing::blocks_walking::find_last_shard_block(&context, &address, None).await?;
 
     Ok(ResultOfFindLastShardBlock {
         block_id: block_id.to_string(),
@@ -104,7 +105,7 @@ pub async fn fetch_endpoints(context: std::sync::Arc<ClientContext>) -> ClientRe
     let client = context.get_server_link()?;
 
     Ok(EndpointsSet {
-        endpoints: client.fetch_endpoints().await?,
+        endpoints: client.fetch_endpoint_addresses().await?,
     })
 }
 

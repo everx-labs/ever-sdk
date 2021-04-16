@@ -120,7 +120,7 @@ pub(crate) async fn get_network_config(link: &ServerLink) -> ClientResult<Blockc
         order: Some(vec![OrderBy { path: "seq_no".to_owned(), direction: SortDirection::DESC }]),
         limit: Some(1),
         result: "boc".to_owned(),
-    }).await?;
+    }, None).await?;
 
     let config = if let Some(block_boc) = key_block[0]["boc"].as_str() {
         let block = deserialize_object_from_base64(block_boc, "block")?;
@@ -133,11 +133,11 @@ pub(crate) async fn get_network_config(link: &ServerLink) -> ClientResult<Blockc
             })),
             result: "boc".to_owned(),
             ..Default::default()
-        }).await?;
+        }, None).await?;
 
         let boc = zerostate[0]["boc"].as_str().ok_or(
             Error::can_not_read_blockchain_config("Can not find key block or zerostate"))?;
-        
+
         let zerostate = deserialize_object_from_base64(boc, "block")?;
         extract_config_from_zerostate(zerostate.object)?
     };

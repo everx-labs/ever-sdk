@@ -14,16 +14,18 @@
 
 use super::blocks_walking::find_last_shard_block;
 use crate::abi::Abi;
-use crate::boc::internal::deserialize_object_from_boc;
+use crate::boc::internal::{deserialize_object_from_boc, DeserializedObject};
 use crate::client::ClientContext;
-use crate::encoding::hex_decode;
+use crate::encoding::{base64_decode, hex_decode};
 use crate::error::{AddNetworkUrl, ClientResult};
+use crate::net::Endpoint;
 use crate::processing::internal::get_message_expiration_time;
 use crate::processing::types::ProcessingEvent;
 use crate::processing::Error;
 use std::sync::Arc;
+use ton_block::{Message, MsgAddressInt};
 
-#[derive(Serialize, Deserialize, ApiType, Default, Debug)]
+#[derive(Serialize, Deserialize, ApiType, Default, Debug, Clone)]
 pub struct ParamsOfSendMessage {
     /// Message BOC.
     pub message: String,
@@ -54,80 +56,179 @@ pub struct ResultOfSendMessage {
     /// This block id must be used as a parameter of the
     /// `wait_for_transaction`.
     pub shard_block_id: String,
+
+    /// The list of endpoints to which the message was sent.
+    ///
+    /// This list id must be used as a parameter of the
+    /// `wait_for_transaction`.
+    pub sending_endpoints: Vec<String>,
+}
+
+#[derive(Clone)]
+struct SendingMessage {
+    serialized: String,
+    deserialized: DeserializedObject<Message>,
+    id: String,
+    body: Vec<u8>,
+    dst: MsgAddressInt,
+}
+
+impl SendingMessage {
+    async fn new(
+        context: &Arc<ClientContext>,
+        serialized: &str,
+        abi: Option<&Abi>,
+    ) -> ClientResult<Self> {
+        // Check message
+        let deserialized =
+            deserialize_object_from_boc::<ton_block::Message>(&context, serialized, "message")
+                .await?;
+        let id = deserialized.cell.repr_hash().to_hex_string();
+        let dst = deserialized
+            .object
+            .dst()
+            .ok_or(Error::message_has_not_destination_address())?;
+
+        let message_expiration_time =
+            get_message_expiration_time(context.clone(), abi, &serialized).await?;
+        if let Some(message_expiration_time) = message_expiration_time {
+            if message_expiration_time <= context.env.now_ms() {
+                return Err(Error::message_already_expired());
+            }
+        }
+        let body = base64_decode(serialized)?;
+        Ok(Self {
+            serialized: serialized.to_string(),
+            deserialized,
+            id,
+            body,
+            dst,
+        })
+    }
+
+    async fn prepare_to_send<F: futures::Future<Output = ()> + Send>(
+        &self,
+        context: &Arc<ClientContext>,
+        callback: &Option<impl Fn(ProcessingEvent) -> F + Send + Sync>,
+    ) -> ClientResult<String> {
+        if let Some(callback) = callback {
+            callback(ProcessingEvent::WillFetchFirstBlock {}).await;
+        }
+        let shard_block_id = match find_last_shard_block(&context, &self.dst, None).await {
+            Ok(block) => block.to_string(),
+            Err(err) => {
+                if let Some(callback) = &callback {
+                    callback(ProcessingEvent::FetchFirstBlockFailed { error: err.clone() }).await;
+                }
+                return Err(Error::fetch_first_block_failed(err, &self.id));
+            }
+        };
+        if let Some(callback) = &callback {
+            callback(ProcessingEvent::WillSend {
+                shard_block_id: shard_block_id.clone(),
+                message_id: self.id.to_string(),
+                message: self.serialized.clone(),
+            })
+            .await;
+        }
+        Ok(shard_block_id)
+    }
+
+    async fn send(&self, context: &Arc<ClientContext>) -> ClientResult<Vec<String>> {
+        let addresses = context.get_server_link()?.get_addresses_for_sending().await;
+        let mut last_result = None::<ClientResult<String>>;
+        let succedeed_limit = context.config.network.sending_endpoint_count as usize;
+        let mut succeeded = Vec::new();
+        'sending: for selected_addresses in addresses.chunks(succedeed_limit) {
+            let mut futures = vec![];
+            for address in selected_addresses {
+                let context = context.clone();
+                let message = self.clone();
+                futures.push(Box::pin(async move {
+                    message.send_to_address(context, &address).await
+                }));
+            }
+            for result in futures::future::join_all(futures).await {
+                if let Ok(address) = &result {
+                    succeeded.push(address.clone());
+                    if succeeded.len() >= succedeed_limit {
+                        break 'sending;
+                    }
+                }
+                // If one of the endpoints responds with clock out of sync error
+                // we leave this error as a final error.
+                // This is required by out of sync unit test.
+                let last_result_is_out_of_sync = if let Some(Err(err)) = &last_result {
+                    err.code == crate::net::ErrorCode::ClockOutOfSync as u32
+                } else {
+                    false
+                };
+                if !last_result_is_out_of_sync {
+                    last_result = Some(result);
+                }
+            }
+        }
+        if succeeded.len() > 0 {
+            return Ok(succeeded);
+        }
+        Err(if let Some(Err(err)) = last_result {
+            err
+        } else {
+            Error::block_not_found("no endpoints".to_string())
+        })
+    }
+
+    async fn send_to_address(
+        &self,
+        context: Arc<ClientContext>,
+        address: &str,
+    ) -> ClientResult<String> {
+        let endpoint = Endpoint::resolve(context.env.clone(), address).await?;
+
+        // Send
+        context
+            .get_server_link()?
+            .send_message(&hex_decode(&self.id)?, &self.body, Some(endpoint.clone()))
+            .await
+            .add_endpoint_from_context(&context, &endpoint)
+            .await
+            .map(|_| address.to_string())
+    }
 }
 
 pub async fn send_message<F: futures::Future<Output = ()> + Send>(
     context: Arc<ClientContext>,
     params: ParamsOfSendMessage,
-    callback: impl Fn(ProcessingEvent) -> F + Send + Sync,
+    callback: impl Fn(ProcessingEvent) -> F + Send + Sync + Clone,
 ) -> ClientResult<ResultOfSendMessage> {
-    // Check message
-    let message = deserialize_object_from_boc::<ton_block::Message>(&context, &params.message, "message").await?;
-    let message_id = message.cell.repr_hash().to_hex_string();
+    let message = SendingMessage::new(&context, &params.message, params.abi.as_ref()).await?;
 
-    let address = message
-        .object
-        .dst()
-        .ok_or(Error::message_has_not_destination_address())?;
-
-    let message_expiration_time =
-        get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message).await?;
-
-    if let Some(message_expiration_time) = message_expiration_time {
-        if message_expiration_time <= context.env.now_ms() {
-            return Err(Error::message_already_expired());
-        }
-    }
-
-    // Fetch current shard block
-    if params.send_events {
-        callback(ProcessingEvent::WillFetchFirstBlock {}).await;
-    }
-    let shard_block_id = match find_last_shard_block(&context, &address).await {
-        Ok(block) => block.to_string(),
-        Err(err) => {
-            let error = Error::fetch_first_block_failed(err, &message_id);
-            if params.send_events {
-                callback(ProcessingEvent::FetchFirstBlockFailed {
-                    error: error.clone(),
-                })
-                .await;
-            }
-            return Err(error);
-        }
+    let callback = if params.send_events {
+        Some(callback)
+    } else {
+        None
     };
 
-    // Send
-    if params.send_events {
-        callback(ProcessingEvent::WillSend {
-            shard_block_id: shard_block_id.clone(),
-            message_id: message_id.clone(),
-            message: params.message.clone(),
+    let shard_block_id = message.prepare_to_send(&context, &callback).await?;
+    let result = message.send(&context).await;
+    if let Some(callback) = &callback {
+        callback(match &result {
+            Ok(_) => ProcessingEvent::DidSend {
+                shard_block_id: shard_block_id.to_string(),
+                message_id: message.id.clone(),
+                message: message.serialized.clone(),
+            },
+            Err(err) => ProcessingEvent::SendFailed {
+                shard_block_id: shard_block_id.to_string(),
+                message_id: message.id.clone(),
+                message: message.serialized.clone(),
+                error: Error::send_message_failed(err, &message.id, &shard_block_id),
+            },
         })
         .await;
     }
-    let send_result = context
-        .get_server_link()?
-        .send_message(&hex_decode(&message_id)?, &message.boc.bytes("message")?)
-        .await
-        .add_network_url_from_context(&context)
-        .await?;
-    if params.send_events {
-        let event = match send_result {
-            None => ProcessingEvent::DidSend {
-                shard_block_id: shard_block_id.clone(),
-                message_id: message_id.clone(),
-                message: params.message.clone(),
-            },
-            Some(error) => ProcessingEvent::SendFailed {
-                shard_block_id: shard_block_id.clone(),
-                message_id: message_id.clone(),
-                message: params.message.clone(),
-                error: Error::send_message_failed(error, &message_id, &shard_block_id),
-            },
-        };
-        callback(event).await;
-    }
-
-    Ok(ResultOfSendMessage { shard_block_id })
+    result.map(|sending_endpoints| ResultOfSendMessage {
+        shard_block_id,
+        sending_endpoints,
+    })
 }
