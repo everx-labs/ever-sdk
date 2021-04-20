@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.1] – 2021-04-21
+
+### Fixed
+
+- `processing.process_message` and `processing.wait_for_transaction` functions did not work on WASM
+
 ## [1.13.0] – 2021-04-15
 
 ### New
