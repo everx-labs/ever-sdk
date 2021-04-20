@@ -1,17 +1,22 @@
 # Release Notes
 
 All notable changes to this project will be documented in this file.
-## [1.13.0] –
+## [1.14.0] – 2021-04-20
 
 ### New
 - **Debot module**:
-    - implementation of `Json` DeBot interface in DEngine.
-
-
+    - implementation of Network DeBot interface in DEngine.
+### Fixed
+- **Debot module**:
+    - fixed bug in Json interface with supporting nested structures and arrays of structures.
+    - fixed bug in Json interface with keys containing hyphens.
 ## [1.13.0] – 2021-04-01
 
 ### New
 - `net.query_counterparties` funtion for quering account counterparties and last messages info. Subscrition to counterparties collection is available via `net.subscribe_collection` function.
+- **Debot module**:
+    - implementation of `Json` DeBot interface in DEngine.
+
 
 ### Fixed
 - **Debot Module**:
