@@ -13,12 +13,14 @@
 
 use super::{Error, FetchMethod, FetchResult, WebSocket};
 use crate::error::ClientResult;
+use std::pin::Pin;
 use futures::{Future, FutureExt, SinkExt, StreamExt};
+use futures::task::{Context, Poll};
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{Event, MessageEvent, Request, RequestInit, Response};
+use web_sys::{Event, MessageEvent, Request, RequestInit, Response, Window};
 
 fn js_value_to_value(js_value: JsValue) -> ClientResult<serde_json::Value> {
     js_value
@@ -57,6 +59,40 @@ where
         .map_err(|err| Error::can_not_receive_spawned_result(err))
 }
 
+struct Timer {
+    window: Window,
+    timer_id: i32,
+    future: Pin<Box<dyn Future<Output=ClientResult<()>> + 'static>>
+}
+
+impl Timer {
+    pub fn new(
+        window: Window,
+        timer_id: i32,
+        future: impl Future<Output=ClientResult<()>> + 'static
+    ) -> Self {
+        Self {
+            window,
+            timer_id,
+            future: Box::pin(future)
+        }
+    }
+}
+
+impl Future for Timer {
+    type Output = ClientResult<()>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        Future::poll(Pin::<&mut Timer>::into_inner(self).future.as_mut(), cx)
+    }
+}
+
+impl Drop for Timer {
+    fn drop(&mut self) {
+        self.window.clear_timeout_with_handle(self.timer_id);
+    }
+}
+
 pub(crate) struct ClientEnv {}
 
 impl ClientEnv {
@@ -74,18 +110,19 @@ impl ClientEnv {
             let _ = sender.send(());
         });
 
-        window
+        let timer_id = window
             .set_timeout_with_callback_and_timeout_and_arguments_0(
                 on_timer.as_ref().unchecked_ref(),
-                ms as i32,
+                std::cmp::min(ms, std::i32::MAX as u64) as i32,
             )
             .map_err(|_| Error::set_timer_error("Can not set timer"))?;
 
-        receiver
-            .await
-            .map_err(|_| Error::set_timer_error("Can not receiver timer result"))?;
-
-        Ok(())
+        Timer::new(
+            window,
+            timer_id,
+            receiver
+                .map(|val| val.map_err(|_| Error::set_timer_error("Can not receive timer result")))
+        ).await
     }
 
     /// Connects to the websocket endpoint
