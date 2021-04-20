@@ -192,6 +192,7 @@ pub async fn send_ext_msg<'a>(
             message: fixed_msg,
             shard_block_id: result.shard_block_id,
             send_events: true,
+            sending_endpoints: Some(result.sending_endpoints),
         },
         callback,
     )

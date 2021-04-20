@@ -14,9 +14,7 @@
 use super::Error;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
-use crate::net::{
-    OrderBy, ParamsOfQueryCollection, ParamsOfWaitForCollection, SortDirection, BLOCKS_TABLE_NAME,
-};
+use crate::net::{OrderBy, ParamsOfQueryCollection, ParamsOfWaitForCollection, SortDirection, BLOCKS_TABLE_NAME, Endpoint};
 use std::sync::Arc;
 use ton_block::MsgAddressInt;
 use ton_block::MASTERCHAIN_ID;
@@ -33,17 +31,17 @@ pub const BLOCK_FIELDS: &str = r#"
     }
 "#;
 
-pub async fn find_last_shard_block(
+pub(crate) async fn find_last_shard_block(
     context: &Arc<ClientContext>,
     address: &MsgAddressInt,
+    endpoint: Option<Endpoint>,
 ) -> ClientResult<ton_sdk::BlockId> {
     let workchain = address.get_workchain_id();
-    let client = context.get_server_link()?;
+    let server_link = context.get_server_link()?;
 
     // if account resides in masterchain, then starting point is last masterchain block
     // generated before message was sent
-    let blocks = client
-        .query_collection(ParamsOfQueryCollection {
+    let blocks = server_link.query_collection(ParamsOfQueryCollection {
             collection: BLOCKS_TABLE_NAME.to_string(),
             filter: Some(json!({
                 "workchain_id": { "eq": MASTERCHAIN_ID }
@@ -55,7 +53,7 @@ pub async fn find_last_shard_block(
                 direction: SortDirection::DESC,
             }]),
             limit: Some(1),
-        })
+        }, endpoint.clone())
         .await?;
     debug!("Last block {}", blocks[0]["id"]);
 
@@ -72,8 +70,7 @@ pub async fn find_last_shard_block(
         // To obtain it we take masterchain block to get shards configuration and select matching shard
         if blocks[0].is_null() {
             // TON OS SE case - no masterchain, no sharding. Check that only one shard
-            let blocks = client
-                .query_collection(ParamsOfQueryCollection {
+            let blocks = server_link.query_collection(ParamsOfQueryCollection {
                     collection: BLOCKS_TABLE_NAME.to_string(),
                     filter: Some(json!({
                     "workchain_id": { "eq": workchain },
@@ -84,7 +81,7 @@ pub async fn find_last_shard_block(
                         direction: SortDirection::DESC,
                     }]),
                     limit: Some(1),
-                })
+                }, endpoint.clone())
                 .await?;
 
             if blocks[0].is_null() {
@@ -101,8 +98,7 @@ pub async fn find_last_shard_block(
             }
 
             // Take last block by seq_no
-            let blocks = client
-                .query_collection(ParamsOfQueryCollection {
+            let blocks = server_link.query_collection(ParamsOfQueryCollection {
                     collection: BLOCKS_TABLE_NAME.to_string(),
                     filter: Some(json!({
                     "workchain_id": { "eq": workchain },
@@ -114,7 +110,7 @@ pub async fn find_last_shard_block(
                         direction: SortDirection::DESC,
                     }]),
                     limit: Some(1),
-                })
+                }, endpoint)
                 .await?;
             blocks[0]["id"]
                 .as_str()
@@ -172,7 +168,7 @@ pub async fn wait_next_block(
             })),
             result: BLOCK_FIELDS.to_string(),
             timeout,
-        })
+        }, None)
         .await?;
     debug!(
         "{}: block received {:#}",
@@ -192,7 +188,7 @@ pub async fn wait_next_block(
                 })),
                 result: BLOCK_FIELDS.to_string(),
                 timeout,
-            })
+            }, None)
             .await
             .and_then(|val| {
                 serde_json::from_value(val)

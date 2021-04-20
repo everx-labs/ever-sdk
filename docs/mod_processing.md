@@ -47,7 +47,8 @@ type ParamsOfSendMessage = {
 }
 
 type ResultOfSendMessage = {
-    shard_block_id: string
+    shard_block_id: string,
+    sending_endpoints: string[]
 }
 
 function send_message(
@@ -66,6 +67,8 @@ function send_message(
 
 - `shard_block_id`: _string_ – The last generated shard block of the message destination account before the message was sent.
 <br>This block id must be used as a parameter of the<br>`wait_for_transaction`.
+- `sending_endpoints`: _string[]_ – The list of endpoints to which the message was sent.
+<br>This list id must be used as a parameter of the<br>`wait_for_transaction`.
 
 
 ## wait_for_transaction
@@ -102,7 +105,8 @@ type ParamsOfWaitForTransaction = {
     abi?: Abi,
     message: string,
     shard_block_id: string,
-    send_events: boolean
+    send_events: boolean,
+    sending_endpoints?: string[]
 }
 
 type ResultOfProcessMessage = {
@@ -125,6 +129,8 @@ function wait_for_transaction(
 - `shard_block_id`: _string_ – The last generated block id of the destination account shard before the message was sent.
 <br>You must provide the same value as the `send_message` has returned.
 - `send_events`: _boolean_ – Flag that enables/disables intermediate events
+- `sending_endpoints`?: _string[]_ – The list of endpoints to which the message was sent.
+<br>You must provide the same value as the `send_message` has returned.
 - `responseHandler`?: _[ResponseHandler](modules.md#ResponseHandler)_ – additional responses handler.
 
 ### Result
@@ -416,11 +422,14 @@ type ParamsOfSendMessage = {
 ## ResultOfSendMessage
 ```ts
 type ResultOfSendMessage = {
-    shard_block_id: string
+    shard_block_id: string,
+    sending_endpoints: string[]
 }
 ```
 - `shard_block_id`: _string_ – The last generated shard block of the message destination account before the message was sent.
 <br>This block id must be used as a parameter of the<br>`wait_for_transaction`.
+- `sending_endpoints`: _string[]_ – The list of endpoints to which the message was sent.
+<br>This list id must be used as a parameter of the<br>`wait_for_transaction`.
 
 
 ## ParamsOfWaitForTransaction
@@ -429,7 +438,8 @@ type ParamsOfWaitForTransaction = {
     abi?: Abi,
     message: string,
     shard_block_id: string,
-    send_events: boolean
+    send_events: boolean,
+    sending_endpoints?: string[]
 }
 ```
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Optional ABI for decoding the transaction result.
@@ -439,6 +449,8 @@ type ParamsOfWaitForTransaction = {
 - `shard_block_id`: _string_ – The last generated block id of the destination account shard before the message was sent.
 <br>You must provide the same value as the `send_message` has returned.
 - `send_events`: _boolean_ – Flag that enables/disables intermediate events
+- `sending_endpoints`?: _string[]_ – The list of endpoints to which the message was sent.
+<br>You must provide the same value as the `send_message` has returned.
 
 
 ## ParamsOfProcessMessage

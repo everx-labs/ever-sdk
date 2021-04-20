@@ -3,7 +3,7 @@ use crate::abi::{Abi, ParamsOfDecodeMessage};
 use crate::client::ClientContext;
 use crate::error::{ClientError, ClientResult};
 use crate::processing::Error;
-use crate::tvm::{AccountForExecutor, ParamsOfRunExecutor, ExecutionOptions};
+use crate::tvm::{AccountForExecutor, ExecutionOptions, ParamsOfRunExecutor};
 use std::sync::Arc;
 use ton_block::MsgAddressInt;
 use ton_sdk::{Block, MessageId};
@@ -21,15 +21,16 @@ pub(crate) fn can_retry_expired_message(context: &Arc<ClientContext>, retries: u
     can_retry_more(retries, context.config.network.message_retries_count)
 }
 
-pub fn find_transaction(
+pub fn find_transactions(
     block: &Block,
     message_id: &str,
     shard_block_id: &String,
-) -> ClientResult<Option<String>> {
+) -> ClientResult<Vec<String>> {
+    let mut ids = Vec::new();
     let msg_id: MessageId = message_id.into();
     for msg_descr in &block.in_msg_descr {
         if Some(&msg_id) == msg_descr.msg_id.as_ref() {
-            return Ok(Some(
+            ids.push(
                 msg_descr
                     .transaction_id
                     .as_ref()
@@ -39,10 +40,10 @@ pub fn find_transaction(
                         shard_block_id,
                     ))?
                     .to_string(),
-            ));
+            );
         }
     }
-    Ok(None)
+    Ok(ids)
 }
 
 pub(crate) async fn get_message_expiration_time(
@@ -119,8 +120,8 @@ pub(crate) async fn resolve_error(
                 original_error.message.trim_end_matches("."),
                 err.message
             );
-            original_error.data["local_error"] = serde_json::to_value(err)
-                .map_err(crate::client::Error::cannot_serialize_result)?;
+            original_error.data["local_error"] =
+                serde_json::to_value(err).map_err(crate::client::Error::cannot_serialize_result)?;
             Err(original_error)
         }
         Ok(_) => {

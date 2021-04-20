@@ -28,6 +28,8 @@ Network access.
 
 [set_endpoints](#set_endpoints) – Sets the list of endpoints to use on reinit
 
+[query_counterparties](#query_counterparties) – Allows to query and paginate through the list of accounts that the specified account has interacted with, sorted by the time of the last internal message between accounts
+
 ## Types
 [NetErrorCode](#NetErrorCode)
 
@@ -70,6 +72,8 @@ Network access.
 [ResultOfFindLastShardBlock](#ResultOfFindLastShardBlock)
 
 [EndpointsSet](#EndpointsSet)
+
+[ParamsOfQueryCounterparties](#ParamsOfQueryCounterparties)
 
 
 # Functions
@@ -191,7 +195,7 @@ function aggregate_collection(
 ```
 ### Parameters
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
-- `filter`?: _any_ – Collection filter.
+- `filter`?: _any_ – Collection filter
 - `fields`?: _[FieldAggregation](mod_net.md#FieldAggregation)[]_ – Projection (result) string
 
 
@@ -412,6 +416,42 @@ function set_endpoints(
 - `endpoints`: _string[]_ – List of endpoints provided by server
 
 
+## query_counterparties
+
+Allows to query and paginate through the list of accounts that the specified account has interacted with, sorted by the time of the last internal message between accounts
+
+*Attention* this query retrieves data from 'Counterparties' service which is not supported in
+the opensource version of DApp Server (and will not be supported) as well as in TON OS SE (will be supported in SE in future),
+but is always accessible via [TON OS Devnet/Mainnet Clouds](https://docs.ton.dev/86757ecb2/p/85c869-networks)
+
+```ts
+type ParamsOfQueryCounterparties = {
+    account: string,
+    result: string,
+    first?: number,
+    after?: string
+}
+
+type ResultOfQueryCollection = {
+    result: any[]
+}
+
+function query_counterparties(
+    params: ParamsOfQueryCounterparties,
+): Promise<ResultOfQueryCollection>;
+```
+### Parameters
+- `account`: _string_ – Account address
+- `result`: _string_ – Projection (result) string
+- `first`?: _number_ – Number of counterparties to return
+- `after`?: _string_ – `cursor` field of the last received result
+
+
+### Result
+
+- `result`: _any[]_ – Objects that match the provided criteria
+
+
 # Types
 ## NetErrorCode
 ```ts
@@ -482,7 +522,9 @@ type ParamsOfQueryOperation = ({
     type: 'WaitForCollection'
 } & ParamsOfWaitForCollection) | ({
     type: 'AggregateCollection'
-} & ParamsOfAggregateCollection)
+} & ParamsOfAggregateCollection) | ({
+    type: 'QueryCounterparties'
+} & ParamsOfQueryCounterparties)
 ```
 Depends on value of the  `type` field.
 
@@ -504,8 +546,15 @@ When _type_ is _'WaitForCollection'_
 When _type_ is _'AggregateCollection'_
 
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
-- `filter`?: _any_ – Collection filter.
+- `filter`?: _any_ – Collection filter
 - `fields`?: _[FieldAggregation](mod_net.md#FieldAggregation)[]_ – Projection (result) string
+
+When _type_ is _'QueryCounterparties'_
+
+- `account`: _string_ – Account address
+- `result`: _string_ – Projection (result) string
+- `first`?: _number_ – Number of counterparties to return
+- `after`?: _string_ – `cursor` field of the last received result
 
 
 Variant constructors:
@@ -514,6 +563,7 @@ Variant constructors:
 function paramsOfQueryOperationQueryCollection(params: ParamsOfQueryCollection): ParamsOfQueryOperation;
 function paramsOfQueryOperationWaitForCollection(params: ParamsOfWaitForCollection): ParamsOfQueryOperation;
 function paramsOfQueryOperationAggregateCollection(params: ParamsOfAggregateCollection): ParamsOfQueryOperation;
+function paramsOfQueryOperationQueryCounterparties(params: ParamsOfQueryCounterparties): ParamsOfQueryOperation;
 ```
 
 ## FieldAggregation
@@ -621,7 +671,7 @@ type ParamsOfAggregateCollection = {
 }
 ```
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
-- `filter`?: _any_ – Collection filter.
+- `filter`?: _any_ – Collection filter
 - `fields`?: _[FieldAggregation](mod_net.md#FieldAggregation)[]_ – Projection (result) string
 
 
@@ -707,5 +757,20 @@ type EndpointsSet = {
 }
 ```
 - `endpoints`: _string[]_ – List of endpoints provided by server
+
+
+## ParamsOfQueryCounterparties
+```ts
+type ParamsOfQueryCounterparties = {
+    account: string,
+    result: string,
+    first?: number,
+    after?: string
+}
+```
+- `account`: _string_ – Account address
+- `result`: _string_ – Projection (result) string
+- `first`?: _number_ – Number of counterparties to return
+- `after`?: _string_ – `cursor` field of the last received result
 
 

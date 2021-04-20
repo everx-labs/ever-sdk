@@ -234,6 +234,7 @@ type NetworkConfig = {
     message_processing_timeout?: number,
     wait_for_timeout?: number,
     out_of_sync_threshold?: number,
+    sending_endpoint_count?: number,
     access_key?: string
 }
 ```
@@ -250,6 +251,7 @@ type NetworkConfig = {
 - `wait_for_timeout`?: _number_ – Maximum timeout that is used for query response. The default value is 40 sec.
 - `out_of_sync_threshold`?: _number_ – Maximum time difference between server and client.
 <br>If client's device time is out of sync and difference is more than the threshold then error will occur. Also an error will occur if the specified threshold is more than<br>`message_processing_timeout/2`.<br>The default value is 15 sec.
+- `sending_endpoint_count`?: _number_ – Maximum number of randomly chosen endpoints the library uses to send message. The default value is 2 endpoints.
 - `access_key`?: _string_ – Access key to GraphQL API.
 <br>At the moment is not used in production
 

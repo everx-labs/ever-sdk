@@ -41,7 +41,7 @@ pub async fn batch_query(
 ) -> ClientResult<ResultOfBatchQuery> {
     let client = context.get_server_link()?;
     let results = client
-        .batch_query(&params.operations)
+        .batch_query(&params.operations, None)
         .await
         .map_err(|err| Error::queries_query_failed(err))
         .add_network_url(client)

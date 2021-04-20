@@ -144,7 +144,8 @@ impl Terminal {
     fn print(&mut self, answer_id: u32, message: &str) -> (u32, JsonValue) {
         assert!(
             self.messages.len() > 0,
-            format!("Unexpected terminal message received: \"{}\"", message)
+            "Unexpected terminal message received: \"{}\"",
+            message
         );
         assert_eq!(
             self.messages.remove(0),

@@ -13,6 +13,38 @@ use crate::tvm::ErrorCode as TvmErrorCode;
 use crate::utils::conversion::abi_uint;
 use api_info::ApiModule;
 
+fn processing_event_name(e: Option<&ProcessingEvent>) -> &str {
+    if let Some(e) = e {
+        match e {
+            ProcessingEvent::DidSend { .. } => "DidSend",
+            ProcessingEvent::FetchFirstBlockFailed { .. } => "FetchFirstBlockFailed",
+            ProcessingEvent::FetchNextBlockFailed { .. } => "FetchNextBlockFailed",
+            ProcessingEvent::MessageExpired { .. } => "MessageExpired",
+            ProcessingEvent::SendFailed { .. } => "SendFailed",
+            ProcessingEvent::WillFetchFirstBlock { .. } => "WillFetchFirstBlock",
+            ProcessingEvent::WillFetchNextBlock { .. } => "WillFetchNextBlock",
+            ProcessingEvent::WillSend { .. } => "WillSend",
+        }
+    } else {
+        ""
+    }
+}
+
+fn assert_events(events: Vec<ProcessingEvent>, expected: Vec<&str>) {
+    let mut i = 0;
+    for expected in expected {
+        if let Some(name) = expected.strip_suffix("*") {
+            while i < events.len() && processing_event_name(events.get(i)) == name {
+                i += 1;
+            }
+        } else {
+            let event = events.get(i);
+            assert_eq!(processing_event_name(event), expected);
+            i += 1;
+        }
+    }
+}
+
 #[tokio::test(core_threads = 2)]
 async fn test_wait_message() {
     TestClient::init_log();
@@ -59,19 +91,13 @@ async fn test_wait_message() {
         processing_try_index: None,
     };
 
-    let encoded = client
-        .encode_message(encode_params.clone())
-        .await
-        .unwrap();
+    let encoded = client.encode_message(encode_params.clone()).await.unwrap();
 
     client
         .get_tokens_from_giver_async(&encoded.address, None)
         .await;
-    
-    let encoded = client
-        .encode_message(encode_params)
-        .await
-        .unwrap();
+
+    let encoded = client.encode_message(encode_params).await.unwrap();
     let result = send_message
         .call_with_callback(
             ParamsOfSendMessage {
@@ -91,6 +117,7 @@ async fn test_wait_message() {
                 shard_block_id: result.shard_block_id,
                 send_events: true,
                 abi: Some(abi.clone()),
+                sending_endpoints: Some(result.sending_endpoints),
             },
             callback.clone(),
         )
@@ -105,27 +132,16 @@ async fn test_wait_message() {
             output: None,
         })
     );
-    let events = events.lock().await.clone();
-    let mut events = events.iter();
-    assert!(match events.next() {
-        Some(ProcessingEvent::WillFetchFirstBlock {}) => true,
-        _ => false,
-    });
-    assert!(match events.next() {
-        Some(ProcessingEvent::WillSend { .. }) => true,
-        _ => false,
-    });
-    assert!(match events.next() {
-        Some(ProcessingEvent::DidSend { .. }) => true,
-        _ => false,
-    });
-    let mut evt = events.next();
-    while match evt {
-        Some(ProcessingEvent::WillFetchNextBlock { .. }) => true,
-        _ => false,
-    } {
-        evt = events.next();
-    }
+    assert_events(
+        events.lock().await.clone(),
+        vec![
+            "WillFetchFirstBlock",
+            "WillSend",
+            "WillSend*",
+            "DidSend",
+            "WillFetchNextBlock*",
+        ],
+    );
 }
 
 #[tokio::test(core_threads = 2)]
@@ -189,28 +205,16 @@ async fn test_process_message() {
             output: None,
         })
     );
-    let events = events.lock().await.clone();
-    let mut events = events.iter();
-    assert!(match events.next() {
-        Some(ProcessingEvent::WillFetchFirstBlock {}) => true,
-        _ => false,
-    });
-    assert!(match events.next() {
-        Some(ProcessingEvent::WillSend { .. }) => true,
-        _ => false,
-    });
-    assert!(match events.next() {
-        Some(ProcessingEvent::DidSend { .. }) => true,
-        _ => false,
-    });
-    let mut evt = events.next();
-    while match evt {
-        Some(ProcessingEvent::WillFetchNextBlock { .. }) => true,
-        _ => false,
-    } {
-        evt = events.next();
-    }
-
+    assert_events(
+        events.lock().await.clone(),
+        vec![
+            "WillFetchFirstBlock",
+            "WillSend",
+            "WillSend*",
+            "DidSend",
+            "WillFetchNextBlock*",
+        ],
+    );
     let events = std::sync::Arc::new(tokio::sync::Mutex::new(vec![]));
     let events_copy = events.clone();
     let callback = move |result: ProcessingEvent, response_type: ProcessingResponseType| {
@@ -267,27 +271,16 @@ async fn test_process_message() {
         })
     );
 
-    let events = events.lock().await.clone();
-    let mut events = events.iter();
-    assert!(match events.next() {
-        Some(ProcessingEvent::WillFetchFirstBlock {}) => true,
-        _ => false,
-    });
-    assert!(match events.next() {
-        Some(ProcessingEvent::WillSend { .. }) => true,
-        _ => false,
-    });
-    assert!(match events.next() {
-        Some(ProcessingEvent::DidSend { .. }) => true,
-        _ => false,
-    });
-    let mut evt = events.next();
-    while match evt {
-        Some(ProcessingEvent::WillFetchNextBlock { .. }) => true,
-        _ => false,
-    } {
-        evt = events.next();
-    }
+    assert_events(
+        events.lock().await.clone(),
+        vec![
+            "WillFetchFirstBlock",
+            "WillSend",
+            "WillSend*",
+            "DidSend",
+            "WillFetchNextBlock*",
+        ],
+    );
 }
 
 #[tokio::test(core_threads = 2)]
@@ -296,11 +289,11 @@ async fn test_error_resolving() {
     if TestClient::node_se() {
         return;
     }
-    
+
     let default_client = TestClient::new();
     let client = TestClient::new_with_config(json!({
         "network": {
-            "server_address": TestClient::network_address(),
+            "endpoints": TestClient::endpoints(),
             "message_processing_timeout": 10000,
             "message_retries_count": 0,
             "out_of_sync_threshold": 2500,
@@ -365,7 +358,10 @@ async fn test_error_resolving() {
         assert_eq!(result.code, TvmErrorCode::AccountMissing as u32);
     } else {
         assert_eq!(result.code, original_code);
-        assert_eq!(result.data["local_error"]["code"], TvmErrorCode::AccountMissing as u32);
+        assert_eq!(
+            result.data["local_error"]["code"],
+            TvmErrorCode::AccountMissing as u32
+        );
     }
 
     // deploy with low balance
@@ -389,7 +385,10 @@ async fn test_error_resolving() {
         assert_eq!(result.code, TvmErrorCode::LowBalance as u32);
     } else {
         assert_eq!(result.code, original_code);
-        assert_eq!(result.data["local_error"]["code"], TvmErrorCode::LowBalance as u32);
+        assert_eq!(
+            result.data["local_error"]["code"],
+            TvmErrorCode::LowBalance as u32
+        );
     }
 
     // ABI version 1 messages don't expire so previous deploy message can be processed after
@@ -413,13 +412,16 @@ async fn test_error_resolving() {
         )
         .await
         .unwrap_err();
-    
+
     log::debug!("{:#}", json!(result));
     if TestClient::node_se() {
         assert_eq!(result.code, TvmErrorCode::AccountCodeMissing as u32);
     } else {
         assert_eq!(result.code, original_code);
-        assert_eq!(result.data["local_error"]["code"], TvmErrorCode::AccountCodeMissing as u32);
+        assert_eq!(
+            result.data["local_error"]["code"],
+            TvmErrorCode::AccountCodeMissing as u32
+        );
     }
 
     // normal deploy
@@ -453,7 +455,10 @@ async fn test_error_resolving() {
         assert_eq!(result.data["exit_code"], 100);
     } else {
         assert_eq!(result.code, original_code);
-        assert_eq!(result.data["local_error"]["code"], TvmErrorCode::ContractExecutionError as u32);
+        assert_eq!(
+            result.data["local_error"]["code"],
+            TvmErrorCode::ContractExecutionError as u32
+        );
         assert_eq!(result.data["local_error"]["data"]["exit_code"], 100)
     }
 }
@@ -462,7 +467,7 @@ async fn test_error_resolving() {
 async fn test_retries() {
     let client = TestClient::new_with_config(json!({
         "network": {
-            "server_address": TestClient::network_address(),
+            "endpoints": TestClient::endpoints(),
             "message_retries_count": 10,
             "out_of_sync_threshold": 2500,
         },
@@ -495,19 +500,22 @@ async fn test_retries() {
         let keys = keys.clone();
         let client = client.clone();
         tasks.push(tokio::spawn(async move {
-                client.net_process_message(ParamsOfProcessMessage {
-                    message_encode_params: ParamsOfEncodeMessage {
-                        abi,
-                        address,
-                        call_set: CallSet::some_with_function("touch"),
-                        deploy_set: None,
-                        processing_try_index: None,
-                        signer: Signer::Keys { keys }
+            client
+                .net_process_message(
+                    ParamsOfProcessMessage {
+                        message_encode_params: ParamsOfEncodeMessage {
+                            abi,
+                            address,
+                            call_set: CallSet::some_with_function("touch"),
+                            deploy_set: None,
+                            processing_try_index: None,
+                            signer: Signer::Keys { keys },
+                        },
+                        send_events: false,
                     },
-                    send_events: false,
-                },
-                TestClient::default_callback
-            ).await
+                    TestClient::default_callback,
+                )
+                .await
         }));
     }
     for result in futures::future::join_all(tasks).await {

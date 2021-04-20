@@ -17,40 +17,20 @@ use crate::error::ClientResult;
 use crate::net::Error;
 use std::sync::Arc;
 
-pub(crate) struct ServerVersion {
-    pub version: u64,
-    pub supports_time: bool,
-    pub supports_endpoints: bool,
-}
-
-impl ServerVersion {
-    pub fn from_version(version: &str) -> ton_types::Result<Self> {
-        let mut vec: Vec<&str> = version.split(".").collect();
-        vec.resize(3, "0");
-        let version = u64::from_str_radix(vec[0], 10)? * 1000000
-            + u64::from_str_radix(vec[1], 10)? * 1000
-            + u64::from_str_radix(vec[2], 10)?;
-
-        Ok(ServerVersion {
-            version,
-            supports_time: version >= 26003,
-            supports_endpoints: version >= 30000,
-        })
-    }
-}
-
-pub(crate) struct ServerInfo {
+#[derive(Clone)]
+pub(crate) struct Endpoint {
     pub query_url: String,
     pub subscription_url: String,
-    pub server_version: ServerVersion,
+    pub server_version: u64,
+    pub server_time_delta: i64,
 }
 
-impl ServerInfo {
+impl Endpoint {
     pub fn http_headers() -> Vec<(String, String)> {
         vec![("tonclient-core-version".to_string(), core_version())]
     }
 
-    pub fn expand_address(base_url: &str) -> String {
+    fn expand_address(base_url: &str) -> String {
         let base_url = if base_url.starts_with("http://") || base_url.starts_with("https://") {
             base_url.to_owned()
         } else {
@@ -60,10 +40,12 @@ impl ServerInfo {
         format!("{}/graphql", base_url.trim_end_matches("/"))
     }
 
-    pub async fn fetch(client_env: Arc<ClientEnv>, address: &str) -> ClientResult<Self> {
+    pub async fn resolve(client_env: Arc<ClientEnv>, address: &str) -> ClientResult<Self> {
+        let address = Self::expand_address(address);
+        let start = client_env.now_ms() as i64;
         let response = client_env
             .fetch(
-                &format!("{}?query=%7Binfo%7Bversion%7D%7D", address),
+                &format!("{}?query=%7Binfo%7Bversion%20time%7D%7D", address),
                 FetchMethod::Get,
                 None,
                 None,
@@ -71,14 +53,16 @@ impl ServerInfo {
             )
             .await?;
         let response_body = response.body_as_json()?;
+        let end = client_env.now_ms() as i64;
 
-        let version = response_body["data"]["info"]["version"].as_str().ok_or(
+        let server_version = response_body["data"]["info"]["version"].as_str().ok_or(
             Error::invalid_server_response(format!("No version in response: {}", response_body)),
         )?;
+        let server_time = response_body["data"]["info"]["time"].as_i64().ok_or(
+            Error::invalid_server_response(format!("No time in response: {}", response_body)),
+        )?;
 
-        let server_version = ServerVersion::from_version(version).map_err(|err| {
-            Error::invalid_server_response(format!("Can not parse version {}: {}", version, err))
-        })?;
+        let server_time_delta = server_time - (start + (end - start) / 2);
 
         let query_url = response
             .url
@@ -88,9 +72,22 @@ impl ServerInfo {
             .replace("https://", "wss://")
             .replace("http://", "ws://");
 
+        let mut parts: Vec<&str> = server_version.split(".").collect();
+        parts.resize(3, "0");
+        let parse_part = |i: usize| {
+            u64::from_str_radix(parts[i], 10).map_err(|err| {
+                Error::invalid_server_response(format!(
+                    "Can not parse version {}: {}",
+                    server_version, err
+                ))
+            })
+        };
+        let server_version = parse_part(0)? * 1000000 + parse_part(1)? * 1000 + parse_part(2)?;
+
         Ok(Self {
             query_url,
             subscription_url,
+            server_time_delta,
             server_version,
         })
     }
