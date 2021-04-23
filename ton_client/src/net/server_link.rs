@@ -61,6 +61,7 @@ pub(crate) struct NetworkState {
     query_endpoint: RwLock<Option<Arc<Endpoint>>>,
     out_of_sync_threshold: u32,
     time_checked: AtomicBool,
+    network_retries_count: i8,
 }
 
 async fn query_by_url(client_env: &ClientEnv, address: &str, query: &str) -> ClientResult<Value> {
@@ -82,6 +83,7 @@ impl NetworkState {
         client_env: Arc<ClientEnv>,
         endpoint_addresses: Vec<String>,
         out_of_sync_threshold: u32,
+        network_retries_count: i8,
     ) -> Self {
         let (sender, receiver) = watch::channel(false);
         let regulation = SuspendRegulation {
@@ -98,6 +100,7 @@ impl NetworkState {
             resume_timeout: AtomicU32::new(0),
             query_endpoint: RwLock::new(None),
             out_of_sync_threshold,
+            network_retries_count,
             time_checked: AtomicBool::new(false),
         }
     }
@@ -231,25 +234,35 @@ impl NetworkState {
         Ok(())
     }
 
-    async fn find_fastest_endpoint(&self) -> ClientResult<Endpoint> {
-        let mut futures = vec![];
-        for address in self.endpoint_addresses.read().await.iter() {
-            let address = address.clone();
-            futures.push(Box::pin(async move {
-                Endpoint::resolve(self.client_env.clone(), &address).await
-            }));
-        }
+    async fn select_querying_endpoint(&self) -> ClientResult<Endpoint> {
+        let mut retry_count = 0i8;
+        loop {
+            let mut futures = vec![];
+            for address in self.endpoint_addresses.read().await.iter() {
+                let address = address.clone();
+                futures.push(Box::pin(async move {
+                    Endpoint::resolve(self.client_env.clone(), &address).await
+                }));
+            }
 
-        let mut fastest_endpoint = Err(crate::client::Error::net_module_not_init());
-        while futures.len() != 0 {
-            let (result, _, remain_futures) = futures::future::select_all(futures).await;
-            futures = remain_futures;
-            fastest_endpoint = result;
-            if fastest_endpoint.is_ok() {
-                break;
+            let mut selected_endpoint = Err(crate::client::Error::net_module_not_init());
+            while futures.len() != 0 {
+                let (result, _, remain_futures) = futures::future::select_all(futures).await;
+                if result.is_ok() {
+                    return result;
+                }
+                futures = remain_futures;
+                selected_endpoint = result;
+            }
+            retry_count += 1;
+            if retry_count > self.network_retries_count {
+                return selected_endpoint;
+            }
+            if retry_count > 1 {
+                let delay = (100 * (retry_count - 1) as u64).max(5000);
+                self.client_env.set_timer(delay).await;
             }
         }
-        fastest_endpoint
     }
 
     pub async fn get_query_endpoint(&self) -> ClientResult<Arc<Endpoint>> {
@@ -266,7 +279,7 @@ impl NetworkState {
             return Ok(endpoint.clone());
         }
 
-        let fastest = Arc::new(self.find_fastest_endpoint().await?);
+        let fastest = Arc::new(self.select_querying_endpoint().await?);
         *locked_query_endpoint = Some(fastest.clone());
         Ok(fastest)
     }
@@ -294,6 +307,7 @@ impl ServerLink {
             client_env.clone(),
             endpoint_addresses,
             config.out_of_sync_threshold,
+            config.network_retries_count,
         ));
 
         Ok(ServerLink {
@@ -389,12 +403,6 @@ impl ServerLink {
         timeout: Option<u32>,
         endpoint: Option<Endpoint>,
     ) -> ClientResult<Value> {
-        let endpoint = if let Some(endpoint) = endpoint {
-            Arc::new(endpoint)
-        } else {
-            self.state.get_query_endpoint().await?
-        };
-
         let request = json!({
             "query": query.query,
             "variables": query.variables,
@@ -407,31 +415,44 @@ impl ServerLink {
             headers.insert(name, value);
         }
 
-        let result = self
-            .client_env
-            .fetch(
-                &endpoint.query_url,
-                FetchMethod::Post,
-                Some(headers),
-                Some(request),
-                timeout,
-            )
-            .await;
+        let network_retries_count = self.config.network_retries_count;
+        let mut retry_count = 0;
+        'retries: loop {
+            let endpoint = if let Some(endpoint) = endpoint.clone() {
+                Arc::new(endpoint)
+            } else {
+                self.state.get_query_endpoint().await?
+            };
 
-        if let Err(err) = &result {
-            if crate::client::Error::is_network_error(err) {
-                self.state.internal_suspend().await;
-                self.websocket_link.suspend().await;
-                self.websocket_link.resume().await;
+            let result = self
+                .client_env
+                .fetch(
+                    &endpoint.query_url,
+                    FetchMethod::Post,
+                    Some(headers.clone()),
+                    Some(request.clone()),
+                    timeout,
+                )
+                .await;
+
+            if let Err(err) = &result {
+                if crate::client::Error::is_network_error(err) {
+                    self.state.internal_suspend().await;
+                    self.websocket_link.suspend().await;
+                    self.websocket_link.resume().await;
+                    retry_count += 1;
+                    if retry_count <= network_retries_count {
+                        continue 'retries;
+                    }
+                }
             }
-        }
+            let response = result?.body_as_json()?;
 
-        let response = result?.body_as_json()?;
-
-        if let Some(error) = Self::try_extract_error(&response) {
-            Err(error)
-        } else {
-            Ok(response)
+            return if let Some(error) = Self::try_extract_error(&response) {
+                Err(error)
+            } else {
+                Ok(response)
+            };
         }
     }
 

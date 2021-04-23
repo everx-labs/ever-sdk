@@ -22,7 +22,7 @@ pub(crate) struct WebSocket {
     pub receiver: Pin<Box<dyn Stream<Item = ClientResult<String>> + Send>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct FetchResult {
     pub status: u16,
     pub headers: HashMap<String, String>,
@@ -70,4 +70,11 @@ impl FetchMethod {
             FetchMethod::Trace => "TRACE",
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct TestFetch {
+    pub url: String,
+    pub delay: Option<u64>,
+    pub result: ClientResult<FetchResult>,
 }

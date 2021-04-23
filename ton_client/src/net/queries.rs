@@ -80,18 +80,17 @@ pub async fn query_collection(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfQueryCollection,
 ) -> ClientResult<ResultOfQueryCollection> {
-    let client = context.get_server_link()?;
-    let result = client
-        .query_collection(params, None)
+    let server_link = context.get_server_link()?;
+    let result = server_link.query_collection(params, None)
         .await
         .map_err(|err| Error::queries_query_failed(err))
-        .add_network_url(client)
+        .add_network_url(server_link)
         .await?
         .clone();
 
     let result = serde_json::from_value(result)
         .map_err(|err| Error::queries_query_failed(format!("Can not parse result: {}", err)))
-        .add_network_url(client)
+        .add_network_url(server_link)
         .await?;
 
     Ok(ResultOfQueryCollection { result })
@@ -175,11 +174,11 @@ pub async fn aggregate_collection(
     Ok(ResultOfAggregateCollection { values })
 }
 
-/// Allows to query and paginate through the list of accounts that the specified account 
-/// has interacted with, sorted by the time of the last internal message between accounts 
-/// 
-/// *Attention* this query retrieves data from 'Counterparties' service which is not supported in 
-/// the opensource version of DApp Server (and will not be supported) as well as in TON OS SE (will be supported in SE in future), 
+/// Allows to query and paginate through the list of accounts that the specified account
+/// has interacted with, sorted by the time of the last internal message between accounts
+///
+/// *Attention* this query retrieves data from 'Counterparties' service which is not supported in
+/// the opensource version of DApp Server (and will not be supported) as well as in TON OS SE (will be supported in SE in future),
 /// but is always accessible via [TON OS Devnet/Mainnet Clouds](https://docs.ton.dev/86757ecb2/p/85c869-networks)
 #[api_function]
 pub async fn query_counterparties(

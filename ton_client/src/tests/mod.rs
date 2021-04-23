@@ -118,6 +118,79 @@ lazy_static::lazy_static! {
     static ref TEST_RUNTIME: Mutex<TestRuntime> = Mutex::new(TestRuntime::new());
 }
 
+pub(crate) struct TestFetchQueue {
+    url: String,
+    repeat: Option<usize>,
+    delay: Option<u64>,
+    status: Option<u16>,
+    queue: Vec<TestFetch>,
+}
+
+impl TestFetchQueue {
+    pub fn new() -> Self {
+        Self {
+            url: String::default(),
+            repeat: None,
+            delay: None,
+            status: None,
+            queue: Vec::new(),
+        }
+    }
+
+    pub fn url(&mut self, url: &str) -> &mut Self {
+        self.url = url.to_string();
+        self
+    }
+
+    pub fn delay(&mut self, delay: u64) -> &mut Self {
+        self.delay = Some(delay);
+        self
+    }
+
+    pub fn status(&mut self, status: u16) -> &mut Self {
+        self.status = Some(status);
+        self
+    }
+
+    pub fn repeat(&mut self, repeat: usize) -> &mut Self {
+        self.repeat = Some(repeat);
+        self
+    }
+
+    fn push(&mut self, result: ClientResult<FetchResult>) -> &mut Self {
+        let repeat = self.repeat.take().unwrap_or(1);
+        let delay = self.delay.take();
+        self.status = None;
+        for _ in 0..repeat {
+            self.queue.push(TestFetch {
+                url: self.url.clone(),
+                delay,
+                result: result.clone(),
+            });
+        }
+        self
+    }
+
+    pub fn ok(&mut self, body: &str) -> &mut Self {
+        self.push(Ok(FetchResult {
+            url: self.url.clone(),
+            status: self.status.unwrap_or(200),
+            body: body.to_string(),
+            headers: HashMap::new(),
+        }))
+    }
+
+    pub fn network_err(&mut self) -> &mut Self {
+        self.push(Err(crate::client::Error::http_request_send_error(
+            "Network error",
+        )))
+    }
+
+    pub fn get_queue(&self) -> Vec<TestFetch> {
+        self.queue.clone()
+    }
+}
+
 pub(crate) struct TestClient {
     config: ClientConfig,
     context: ContextHandle,
@@ -296,7 +369,7 @@ impl TestClient {
             .split(",")
             .map(|x| x.trim())
             .filter(|x| !x.is_empty())
-            .map(|x|x.to_string())
+            .map(|x| x.to_string())
             .collect()
     }
 

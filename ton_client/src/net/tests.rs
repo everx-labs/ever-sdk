@@ -3,11 +3,13 @@ use tokio::sync::Mutex;
 use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer};
 use crate::error::ClientError;
 use crate::processing::ParamsOfProcessMessage;
-use crate::tests::{TestClient, HELLO};
+use crate::tests::{TestClient, TestFetchQueue, HELLO};
 
 use super::*;
 use crate::ClientConfig;
+use serde_json::Value;
 use std::collections::HashSet;
+use std::sync::Arc;
 
 #[tokio::test(core_threads = 2)]
 async fn batch_query() {
@@ -203,14 +205,18 @@ async fn message_sending_addresses() {
             ..Default::default()
         },
         ..Default::default()
-    }).unwrap();
+    })
+    .unwrap();
     let link = client.get_server_link().unwrap();
     link.update_stat(
         &vec!["a".to_string(), "e".to_string()],
         EndpointStat::MessageUndelivered,
     )
     .await;
-    let bad: HashSet<_> = vec!["a".to_string(), "e".to_string()].iter().cloned().collect();
+    let bad: HashSet<_> = vec!["a".to_string(), "e".to_string()]
+        .iter()
+        .cloned()
+        .collect();
     for _ in 0..100 {
         let addresses = link.get_addresses_for_sending().await;
         let tail: HashSet<_> = addresses[addresses.len() - 2..].iter().cloned().collect();
@@ -599,4 +605,77 @@ async fn test_query_counterparties() {
 
         assert_ne!(counterparties1.result, counterparties2.result);
     }
+}
+
+fn r_info(time: u64, block_time: u64) -> String {
+    json!({
+        "data": {
+            "info": {
+                "version": "0.37.0",
+                "time": time,
+                "lastBlockTime": block_time,
+            }
+        }
+    })
+    .to_string()
+}
+
+fn r_collection(collection: &str, item: Value) -> String {
+    json!({
+        "data": {
+            collection: vec![item]
+        }
+    })
+    .to_string()
+}
+
+#[tokio::test(core_threads = 2)]
+async fn retry_query_on_network_errors() {
+    let client = Arc::new(
+        ClientContext::new(ClientConfig {
+            network: NetworkConfig {
+                endpoints: Some(vec!["a".into()]),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .unwrap(),
+    );
+
+    let now = client.env.now_ms();
+    let queue = TestFetchQueue::new()
+        .url("a")
+        .ok(&r_info(now, now - 1000))
+        .repeat(2)
+        .network_err()
+        .ok(&r_info(now, now - 1000))
+        .ok(&r_collection("blocks", json!({"id":"1"})))
+        .repeat(5)
+        .network_err()
+        .ok(&r_info(now, now - 1000))
+        .ok(&r_collection("blocks", json!({"id":"2"})))
+        .get_queue();
+    client.env.set_test_fetch_queue(Some(queue)).await;
+    let result = crate::net::query_collection(
+        client.clone(),
+        ParamsOfQueryCollection {
+            collection: "blocks".to_string(),
+            result: "id".to_string(),
+            ..Default::default()
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(result.result[0]["id"].as_str().unwrap(), "1");
+    let result = crate::net::query_collection(
+        client.clone(),
+        ParamsOfQueryCollection {
+            collection: "blocks".to_string(),
+            result: "id id".to_string(),
+            ..Default::default()
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(result.result[0]["id"].as_str().unwrap(), "2");
 }

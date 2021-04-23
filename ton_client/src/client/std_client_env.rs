@@ -12,6 +12,7 @@
 */
 
 use super::{Error, FetchMethod, FetchResult, WebSocket};
+use crate::client::client_env::TestFetch;
 use crate::error::ClientResult;
 use futures::{Future, SinkExt, StreamExt};
 use reqwest::{
@@ -20,8 +21,9 @@ use reqwest::{
 };
 use std::collections::HashMap;
 use std::str::FromStr;
-use tokio_tungstenite::tungstenite::Message as WsMessage;
 use tokio::runtime::Runtime;
+use tokio::sync::RwLock;
+use tokio_tungstenite::tungstenite::Message as WsMessage;
 
 lazy_static! {
     static ref RUNTIME_CONTAINER: ClientResult<Runtime> = create_runtime();
@@ -36,9 +38,20 @@ fn create_runtime() -> ClientResult<Runtime> {
         .map_err(|err| Error::cannot_create_runtime(err))
 }
 
+pub(crate) struct TestEnv {
+    pub fetch_queue: Option<Vec<TestFetch>>,
+}
+
+impl TestEnv {
+    fn new() -> Self {
+        Self { fetch_queue: None }
+    }
+}
+
 pub(crate) struct ClientEnv {
     http_client: HttpClient,
     async_runtime_handle: tokio::runtime::Handle,
+    test: RwLock<TestEnv>,
 }
 
 impl ClientEnv {
@@ -49,19 +62,22 @@ impl ClientEnv {
 
         let async_runtime_handle = match tokio::runtime::Handle::try_current() {
             Ok(handle) => handle,
-            Err(_) => {
-                RUNTIME_CONTAINER
-                    .as_ref()
-                    .map_err(|err| err.clone())?
-                    .handle()
-                    .clone()
-            }
+            Err(_) => RUNTIME_CONTAINER
+                .as_ref()
+                .map_err(|err| err.clone())?
+                .handle()
+                .clone(),
         };
 
         Ok(Self {
             http_client: client,
-            async_runtime_handle
+            async_runtime_handle,
+            test: RwLock::new(TestEnv::new()),
         })
+    }
+
+    pub async fn set_test_fetch_queue(&self, queue: Option<Vec<TestFetch>>) {
+        self.test.write().await.fetch_queue = queue;
     }
 
     fn string_map_to_header_map(headers: HashMap<String, String>) -> ClientResult<HeaderMap> {
@@ -168,6 +184,55 @@ impl ClientEnv {
         body: Option<String>,
         timeout_ms: Option<u32>,
     ) -> ClientResult<FetchResult> {
+        #[cfg(test)]
+        {
+            fn same_endpoints(url1: &str, url2: &str) -> bool {
+                fn reduce_url(url: &str) -> String {
+                    let mut url = url.to_lowercase();
+                    if let Some(without_protocol) = url.strip_prefix("http://") {
+                        url = without_protocol.to_string();
+                    }
+                    if let Some(without_protocol) = url.strip_prefix("https://") {
+                        url = without_protocol.to_string();
+                    }
+                    url
+                }
+                let a = reduce_url(url1);
+                let b = reduce_url(url2);
+                return a.starts_with(&b) || b.starts_with(&a);
+            }
+            let test = &mut self.test.write().await;
+            if let Some(queue) = &mut test.fetch_queue {
+                let next_index = queue.iter().position(|x| same_endpoints(&x.url, url));
+                let result = match next_index {
+                    Some(index) => {
+                        let mut fetch = queue.remove(index);
+                        if let Some(delay) = fetch.delay {
+                            let _ = self.set_timer(delay).await;
+                        }
+                        if let Ok(result) = &mut fetch.result {
+                            result.url = url.split("?").next().unwrap_or("").to_string();
+                        }
+                        fetch.result
+                    }
+                    None => Err(crate::client::Error::http_request_send_error(
+                        "Test fetch queue is empty",
+                    )),
+                };
+                let mut log = format!("Fetch {}", url);
+                if let Some(body) = &body {
+                    log.push_str(&format!("\n  ⤷ {}", body));
+                }
+                match &result {
+                    Ok(ok) => log.push_str(&format!("\n  {:?}", ok).replace("FetchResult", "✅")),
+                    Err(err) => {
+                        log.push_str(&format!("\n  {:?}", err).replace("ClientError", "❌"))
+                    }
+                };
+                println!("{}", log);
+                return result;
+            }
+        }
         let method = Method::from_str(method.as_str())
             .map_err(|err| Error::http_request_create_error(err))?;
 
