@@ -177,6 +177,8 @@ async fn wait_for() {
         assert!(transactions.result["now"].as_u64().unwrap() > now as u64);
     });
 
+    tokio::time::delay_for(tokio::time::Duration::from_secs(1)).await;
+
     let client = TestClient::new();
 
     client
