@@ -18,7 +18,7 @@ use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{Event, MessageEvent, Request, RequestInit, Response};
+use web_sys::{Event, MessageEvent, Request, RequestInit, Response, Window};
 
 fn js_value_to_value(js_value: JsValue) -> ClientResult<serde_json::Value> {
     js_value
@@ -57,6 +57,54 @@ where
         .map_err(|err| Error::can_not_receive_spawned_result(err))
 }
 
+struct Timer{
+    window: Window,
+    timer_id: Option<i32>,
+    // keep closure to fix memory leak
+    _on_timer: Closure<dyn FnMut() -> ()>,
+}
+
+impl Timer {
+    pub fn new(timeout_ms: u64) -> ClientResult<(Self, impl Future<Output=ClientResult<()>>)> {
+        let window =
+            web_sys::window().ok_or_else(|| Error::set_timer_error("Can not get `window`"))?;
+
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        let on_timer = Closure::once(move || {
+            let _ = sender.send(());
+        });
+
+        let timer_id = window
+            .set_timeout_with_callback_and_timeout_and_arguments_0(
+                on_timer.as_ref().unchecked_ref(),
+                std::cmp::min(timeout_ms, std::i32::MAX as u64) as i32,
+            )
+            .map_err(|_| Error::set_timer_error("Can not set timer"))?;
+
+        Ok((
+            Self {
+                window,
+                timer_id: Some(timer_id),
+                _on_timer: on_timer,
+            },
+            receiver
+                .map(|val| val.map_err(|_| Error::set_timer_error("Can not receive timer result")))
+        ))
+    }
+
+    pub fn forget(&mut self) {
+        self.timer_id = None;
+    }
+}
+
+impl Drop for Timer {
+    fn drop(&mut self) {
+        if let Some(timer_id) = self.timer_id {
+            self.window.clear_timeout_with_handle(timer_id);
+        }
+    }
+}
+
 pub(crate) struct ClientEnv {}
 
 impl ClientEnv {
@@ -66,26 +114,9 @@ impl ClientEnv {
 
     /// Sets timer for provided time interval
     pub async fn set_timer_internal(ms: u64) -> ClientResult<()> {
-        let window =
-            web_sys::window().ok_or_else(|| Error::set_timer_error("Can not get `window`"))?;
-
-        let (sender, receiver) = tokio::sync::oneshot::channel();
-        let on_timer = Closure::once(move || {
-            let _ = sender.send(());
-        });
-
-        window
-            .set_timeout_with_callback_and_timeout_and_arguments_0(
-                on_timer.as_ref().unchecked_ref(),
-                ms as i32,
-            )
-            .map_err(|_| Error::set_timer_error("Can not set timer"))?;
-
-        receiver
-            .await
-            .map_err(|_| Error::set_timer_error("Can not receiver timer result"))?;
-
-        Ok(())
+        let (mut timer, future) = Timer::new(ms)?;
+        future.await?;
+        Ok(timer.forget())
     }
 
     /// Connects to the websocket endpoint

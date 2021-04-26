@@ -15,21 +15,22 @@ All notable changes to this project will be documented in this file.
     - fixed bug in Json interface with supporting nested structures and arrays of structures.
     - fixed bug in Json interface with keys containing hyphens.
 
-## [1.13.0] – 2021-04-15
+## [1.13.0] – 2021-04-23
 
 ### New
 
-- [`net.query_counterparties`](docs/mod_net.md#query_counterparties) function for querying account counterparties and last messages info. 
+- [`net.query_counterparties`](docs/mod_net.md#query_counterparties) - allows to query and paginate through the list of accounts that the specified account 
+ has interacted with, sorted by the time of the last internal message between accounts.   
   Subscription to counterparties collection is available via `net.subscribe_collection` function.
 
-- Blockchain interaction reliability improvement (broadcast): library sends message simultaneously 
-  to the N randomly chosen endpoints. If all N endpoints has fallen on sending then library repeats 
-  sending with another random endpoints (except failed one). 
-  If all available endpoints has fallen on sending then library throws error.
+- Blockchain interaction reliability improvement (broadcast): library sends external inbound messages simultaneously 
+  to the N randomly chosen endpoints. If all N endpoints failed to responce then library repeats 
+  sending to another random N endpoints (except the failed one). 
+  If all the available endpoints fail to respond then library throws error.
   The N parameter is taken from `config.network.sending_endpoint_count` (default is 2).
 
 - Blockchain interaction reliability improvement (bad delivery list): library tracks endpoints 
-  with bad message delivery. These endpoints has lower priority when library chooses endpoints 
+  with bad message delivery (expired messages). These endpoints have lower priority when library chooses endpoints 
   to send message.
   
 - **Debot module**:
