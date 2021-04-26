@@ -69,12 +69,15 @@ impl JsonInterface {
         Ok(())
     }
 
-    fn bypass_json(&self, pointer: &str, obj: &mut Value, p: Param) -> Result<(), String> {
-        let pointer = format!("{}/{}", pointer, p.name);
+    fn bypass_json(&self, top_pointer: &str, obj: &mut Value, p: Param) -> Result<(), String> {
+        let pointer = format!("{}/{}", top_pointer, p.name);
+        if let None = obj.pointer(&pointer) {
+            self.try_replace_hyphens(obj, top_pointer, &p.name)?;
+        }
         match p.kind {
             ParamType::Bytes => {
                 Self::string_to_hex(obj, &pointer)
-                .map_err(|e| format!("\"{}\": {}", e, p.name))?;
+                .map_err(|e| format!("{}: \"{}\"", e, p.name))?;
             },
             ParamType::Tuple(params) => {
                 for p in params {
@@ -82,14 +85,12 @@ impl JsonInterface {
                 }
             },
             ParamType::Array(ref elem_type) => {
-                if let ParamType::Bytes = **elem_type {
-                    let strings_count = obj.pointer(&pointer)
-                        .ok_or_else(|| format!("\"{}\" not found", pointer))?
-                        .as_array()
-                        .unwrap().len();
-                    for i in 0..strings_count {
-                        self.bypass_json(&pointer, obj, Param::new(&i.to_string(), ParamType::Bytes))?;
-                    }
+                let elem_count = obj.pointer(&pointer)
+                    .ok_or_else(|| format!("\"{}\" not found", pointer))?
+                    .as_array()
+                    .unwrap().len();
+                for i in 0..elem_count {
+                    self.bypass_json(&pointer, obj, Param::new(&i.to_string(), (**elem_type).clone()))?;
                 }
             },
             ParamType::Map(_, ref value) => {
@@ -118,10 +119,20 @@ impl JsonInterface {
         Ok(())
     }
 
-
-
-
-
+    fn try_replace_hyphens(&self, obj: &mut Value, pointer: &str, name: &str) -> Result<(), String> {
+        if name.contains('_') {
+            match obj.pointer_mut(pointer) {
+                Some(subobj) => {
+                    let map = subobj.as_object_mut().unwrap();
+                    if let Some(value) = map.remove(&name.replace('_', "-")) {
+                        map.insert(name.to_owned(), value);
+                    }
+                },
+                None => Err(format!("key not found: \"{}\"", name))?,
+            }
+        }
+        Ok(())
+    }
 }
 
 #[async_trait::async_trait]
