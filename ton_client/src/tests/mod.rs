@@ -331,9 +331,10 @@ impl TestClient {
     }
 
     pub fn icon(name: &str, abi_version: Option<u8>) -> String {
-        hex::encode(
-            std::fs::read(format!("{}{}.tvc", Self::contracts_path(abi_version), name)).unwrap(),
-        )
+        let image_base64 = base64::encode(
+            &std::fs::read(format!("{}{}.png", Self::contracts_path(abi_version), name)).unwrap(),
+        );
+        format!("data:image/png;base64,{}", image_base64)
     }
 
     pub fn package(name: &str, abi_version: Option<u8>) -> (Abi, String) {

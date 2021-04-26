@@ -884,7 +884,7 @@ async fn init_hello_debot(client: Arc<TestClient>) -> DebotData {
         data.debot_addr.clone(),
         abi,
         "setIcon",
-        json!({ "icon": TestClient::icon("helloDebot", Some(2)) }),
+        json!({ "icon": hex::encode(TestClient::icon("helloDebot", Some(2))) }),
         Signer::Keys { keys: data.keys.clone() },
     ).await.unwrap();
     data
@@ -1295,7 +1295,7 @@ async fn test_debot_getinfo() {
             name: Some("HelloWorld".to_owned()),
             version: Some("0.2.0".to_owned()),
             publisher: Some("TON Labs".to_owned()),
-            key: Some("Start develop DeBot from here".to_owned()),
+            caption: Some("Start develop DeBot from here".to_owned()),
             author: Some("TON Labs".to_owned()),
             support: Some("0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94".to_owned()),
             hello: Some("Hello, i am a HelloWorld DeBot.".to_owned()),
@@ -1371,7 +1371,7 @@ async fn test_debot_json_interface() {
             name: Some("Test DeBot 7".to_owned()),
             version: Some("0.1.0".to_owned()),
             publisher: Some("TON Labs".to_owned()),
-            key: Some("Test for Json interface".to_owned()),
+            caption: Some("Test for Json interface".to_owned()),
             author: Some("TON Labs".to_owned()),
             support: Some("0:0000000000000000000000000000000000000000000000000000000000000000".to_owned()),
             hello: Some("Test DeBot 7".to_owned()),
