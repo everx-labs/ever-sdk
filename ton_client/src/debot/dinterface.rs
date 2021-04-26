@@ -114,7 +114,7 @@ impl BuiltinInterfaces {
         let iface: Arc<dyn DebotInterface + Send + Sync> = Arc::new(HexInterface::new());
         interfaces.insert(iface.get_id(), iface);
 
-        let iface: Arc<dyn DebotInterface + Send + Sync> = Arc::new(NetworkInterface::new());
+        let iface: Arc<dyn DebotInterface + Send + Sync> = Arc::new(NetworkInterface::new(client.clone()));
         interfaces.insert(iface.get_id(), iface);
 
         let iface: Arc<dyn DebotInterface + Send + Sync> =
