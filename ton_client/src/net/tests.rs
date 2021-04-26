@@ -270,6 +270,7 @@ async fn subscribe_for_transactions_with_addresses() {
     let notifications_copy2 = notifications.clone();
     let address1 = msg.address.clone();
     let address2 = msg.address.clone();
+    println!("Account address {}", address1);
 
     let callback1 = move |result: serde_json::Value, response_type: SubscriptionResponseType| {
         let result = match response_type {
@@ -286,6 +287,7 @@ async fn subscribe_for_transactions_with_addresses() {
         async move {
             match result {
                 Ok(result) => {
+                    println!("Transaction 1 {}, {}",  result.result["id"], result.result["status"]);
                     assert_eq!(result.result["account_addr"], address1);
                     transactions_copy.lock().await.push(result.result);
                 }
@@ -305,7 +307,7 @@ async fn subscribe_for_transactions_with_addresses() {
                     "account_addr": { "eq": msg.address.clone() },
                     "status": { "eq": ton_sdk::json_helper::transaction_status_to_u8(ton_block::TransactionProcessingStatus::Finalized) }
                 })),
-                result: "id account_addr".to_owned(),
+                result: "id account_addr status".to_owned(),
             },
             callback1
         ).await.unwrap();
@@ -359,6 +361,7 @@ async fn subscribe_for_transactions_with_addresses() {
         async move {
             match result {
                 Ok(result) => {
+                    println!("Transaction 2 {}, {}",  result.result["id"], result.result["status"]);
                     assert_eq!(result.result["account_addr"], address2);
                     transactions_copy.lock().await.push(result.result);
                 }
@@ -378,7 +381,7 @@ async fn subscribe_for_transactions_with_addresses() {
                     "account_addr": { "eq": msg.address.clone() },
                     "status": { "eq": ton_sdk::json_helper::transaction_status_to_u8(ton_block::TransactionProcessingStatus::Finalized) }
                 })),
-                result: "id account_addr".to_owned(),
+                result: "id account_addr status".to_owned(),
             },
             callback2
         ).await.unwrap();
