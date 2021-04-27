@@ -1,9 +1,11 @@
 use super::dinterface::{
     decode_answer_id, get_array_strings, get_string_arg, DebotInterface, InterfaceResult,
 };
+use super::TonClient;
 use crate::abi::Abi;
+use crate::client::FetchMethod;
 use serde_json::Value;
-use std::str::FromStr;
+use std::collections::HashMap;
 
 const ABI: &str = r#"
 {
@@ -47,11 +49,13 @@ const ABI: &str = r#"
 
 const ID: &str = "e38aed5884dc3e4426a87c083faaf4fa08109189fbc0c79281112f52e062d8ee";
 
-pub struct NetworkInterface {}
+pub struct NetworkInterface {
+    client: TonClient,
+}
 
 impl NetworkInterface {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(client: TonClient) -> Self {
+        Self { client }
     }
 
     async fn post(&self, args: &Value) -> InterfaceResult {
@@ -71,43 +75,51 @@ impl NetworkInterface {
         Ok((answer_id, answer))
     }
 
-    async fn send(&self, url: String, headers: Vec<String>, body: Option<String>) -> Result<Value, String> {
-        let http_client = reqwest::Client::new();
-        let mut map = reqwest::header::HeaderMap::new();
+    async fn send(
+        &self,
+        url: String,
+        headers: Vec<String>,
+        body: Option<String>,
+    ) -> Result<Value, String> {
+        let mut header_map = HashMap::new();
         for h in headers {
             let mut iter = h.split(':');
             let key = iter.next();
             let value = iter.next();
             if key.is_some() && value.is_some() {
-                map.insert(
-                    reqwest::header::HeaderName::from_str(key.unwrap().trim()).unwrap(),
-                    value.unwrap().trim().parse().unwrap()
+                header_map.insert(
+                    key.unwrap().trim().to_owned(),
+                    value.unwrap().trim().to_owned(),
                 );
             }
         }
-        let response = match body {
-            Some(body) => {
-                http_client.post(&url)
-                    .headers(map)
-                    .body(body)
-                    .send()
-                    .await
-                    .map_err(|e| format!("{}", e))?
-            },
-            None => {
-                http_client.get(&url)
-                    .headers(map)
-                    .send()
-                    .await
-                    .map_err(|e| format!("{}", e))?
-            },
-        };
+        let response = self
+            .client
+            .env
+            .fetch(
+                &url,
+                if body.is_some() {
+                    FetchMethod::Post
+                } else {
+                    FetchMethod::Get
+                },
+                if header_map.len() > 0 {
+                    Some(header_map)
+                } else {
+                    None
+                },
+                body,
+                None,
+            )
+            .await
+            .map_err(|e| format!("{}", e))?;
+
         let mut ret_headers: Vec<String> = vec![];
-        for (k, v) in response.headers().iter() {
+        for (k, v) in response.headers.iter() {
             ret_headers.push(hex::encode(format!("{}: {:?}", k, v)));
         }
-        let status = response.status().as_str().to_owned();
-        let content = response.bytes().await.unwrap().to_vec();
+        let status = response.status;
+        let content = response.body;
         Ok(json!({
             "statusCode": status,
             "retHeaders": ret_headers,
