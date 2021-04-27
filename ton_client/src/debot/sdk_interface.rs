@@ -253,7 +253,25 @@ const ABI: &str = r#"
 				{"name":"publicKey","type":"uint256"},
 				{"name":"secretKey","type":"uint256"}
 			]
-		}
+		},
+        {
+			"name": "getAccountsDataByHash",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"codeHash","type":"uint256"},
+				{"name":"gt","type":"address"}
+			],
+			"outputs": [
+				{"components":[{"name":"id","type":"address"},{"name":"data","type":"cell"}],"name":"accounts","type":"tuple[]"}
+			]
+		},
+		{
+			"name": "constructor",
+			"inputs": [
+			],
+			"outputs": [
+			]
+        }
 	],
 	"data": [
 	],

@@ -150,7 +150,7 @@ impl SingingBoxInput {
         let box_handle = client.request_async::<_, RegisteredSigningBox>(
             "crypto.get_signing_box",
             keys,
-        ).await.unwrap().handle;
+        ).await.map(|x| x.handle).unwrap_or(SigningBoxHandle(0));
         Self{  box_handle }
     }
 
