@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - **Debot module**:
     - implementation of Network DeBot interface in DEngine.
-    
+    - implementation of `signHash` function in Sdk interface.
 ### Fixed
 
 - **Debot module**:
