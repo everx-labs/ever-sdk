@@ -1402,7 +1402,7 @@ async fn test_debot_network_interface() {
             name: Some("Test DeBot 8".to_owned()),
             version: Some("0.1.0".to_owned()),
             publisher: Some("TON Labs".to_owned()),
-            key: Some("Test for Network interface".to_owned()),
+            caption: Some("Test for Network interface".to_owned()),
             author: Some("TON Labs".to_owned()),
             support: Some("0:0000000000000000000000000000000000000000000000000000000000000000".to_owned()),
             hello: Some("Test DeBot 8".to_owned()),
