@@ -147,15 +147,10 @@ struct SingingBoxInput {
 
 impl SingingBoxInput {
     async fn new(client: Arc<TestClient>, keys: KeyPair) -> Self {
-
         let box_handle = client.request_async::<_, RegisteredSigningBox>(
             "crypto.get_signing_box",
             keys,
-        )
-        .await
-        .unwrap()
-        .handle;
-
+        ).await.unwrap().handle;
         Self{  box_handle }
     }
 

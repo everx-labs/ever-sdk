@@ -9,7 +9,7 @@ import "../Hex.sol";
 import "../Terminal.sol";
 import "../SigningBoxInput.sol";
 
-contract testDebot6 is Debot {
+contract testDebot3 is Debot {
 
     /*
         Storage
@@ -82,7 +82,6 @@ contract testDebot6 is Debot {
     function hdkeyDeriveFromXprvPathRes(string xprv) public{
         require(xprv=="xprvA5Hr4SR7z6JmHGYJmDJefc8PETc7JSEV7iQGmr1AxycsddzVvHeZPpomy4ygLDiUbUu7322yTba9JxomxPM3TNH4TVHx6ZDysE6WX3X5Ym9",132);
         Sdk.hdkeySecretFromXprv(tvm.functionId(hdkeySecretFromXprvRes),xprv);
-        //Sdk.hdkeyPublicFromXprv(tvm.functionId(hdkeyPublicFromXprvRes),xprv) ;
     }
 
     function hdkeySecretFromXprvRes(uint256 sec) public{
@@ -95,11 +94,6 @@ contract testDebot6 is Debot {
        require(sec==0xa2087ef167360868a5153cd84182221388a79a26fe5a8557da0430b354dcc096,135);
        Terminal.print(0, "test hdkeyXprv passed");
     }
-/*
-    function hdkeyPublicFromXprvRes(uint256 sec) public{
-        require(sec==0xa2087ef167360868a5153cd84182221388a79a26fe5a8557da0430b354dcc096,133);
-        Sdk.hdkeyPublicFromXprv(tvm.functionId(hdkeyPublicFromXprvRes),xprv)
-    }*/
 
     function testMnemonicDeriveSignKeys(uint32 index) public {
         index = index;
@@ -121,8 +115,6 @@ contract testDebot6 is Debot {
     }
 
     function genMnemonic(string phrase) public {
-        //Terminal.print(0, "mnemonicFromRandom> ");
-        //Terminal.print(0, phrase);
         Sdk.mnemonicVerify(tvm.functionId(verifyPhrase),phrase);
     }
 
@@ -287,5 +279,7 @@ contract testDebot6 is Debot {
     function setSignature(bytes signature) public {
         require(signature.length == 64, 200);
         Terminal.print(0,"test sign hash passed");
+        uint256 hash = sha256("test sign string");
+        require(tvm.checkSign(hash, signature.toSlice(), tvm.pubkey()), 201);
     }
 }
