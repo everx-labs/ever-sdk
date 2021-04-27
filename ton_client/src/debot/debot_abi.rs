@@ -62,7 +62,7 @@ pub const DEBOT_ABI: &'static str = r#"{
 				{"name":"name","type":"bytes"},
 				{"name":"version","type":"bytes"},
 				{"name":"publisher","type":"bytes"},
-				{"name":"key","type":"bytes"},
+				{"name":"caption","type":"bytes"},
 				{"name":"author","type":"bytes"},
 				{"name":"support","type":"address"},
 				{"name":"hello","type":"bytes"},

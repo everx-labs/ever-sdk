@@ -111,7 +111,7 @@ pub struct DebotInfo {
     /// The name of DeBot deployer.
     pub publisher: Option<String>,
     /// Short info about DeBot.
-    pub key: Option<String>,
+    pub caption: Option<String>,
     /// The name of DeBot developer.
     pub author: Option<String>,
     /// TON address of author for questions and donations.
@@ -134,7 +134,7 @@ impl From<DInfo> for DebotInfo {
             name: info.name,
             version: info.version,
             publisher: info.publisher,
-            key: info.key,
+            caption: info.caption,
             author: info.author,
             support: info.support,
             hello: info.hello,
