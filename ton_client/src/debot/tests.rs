@@ -16,7 +16,7 @@ use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer, Abi,
 use crate::boc::{ParamsOfParse, ResultOfParse, ParamsOfGetCodeFromTvc, ResultOfGetCodeFromTvc,
     ResultOfGetBocHash, ParamsOfGetBocHash};
 use crate::client::ParamsOfAppRequest;
-use crate::crypto::KeyPair;
+use crate::crypto::{KeyPair, SigningBoxHandle, RegisteredSigningBox};
 use crate::encoding::decode_abi_number;
 use crate::json_interface::debot::*;
 use crate::json_interface::interop::ResponseType;
@@ -54,6 +54,7 @@ struct ExpectedTransaction {
 const SUPPORTED_INTERFACES: &[&str] = &[
     "f6927c0d4bdb69e1b52d27f018d156ff04152f00558042ff674f0fec32e4369d", // echo
     "8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3", // terminal
+    "c13024e101c95e71afb1f5fa6d72f633d51e721de0320d73dfd6121a54e4d40a", // signing box input
 ];
 const ECHO_ABI: &str = r#"
 {
@@ -115,6 +116,59 @@ const TERMINAL_ABI: &str = r#"
 	"events": []
 }
 "#;
+
+const SIGNING_BOX_ABI: &str = r#"
+{
+	"ABI version": 2,
+	"header": ["time"],
+	"functions": [
+		{
+			"name": "get",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"prompt","type":"bytes"},
+				{"name":"possiblePublicKeys","type":"uint256[]"}
+			],
+			"outputs": [
+				{"name":"handle","type":"uint32"}
+			]
+		}
+	],
+	"data": [
+	],
+	"events": [
+	]
+}
+"#;
+
+struct SingingBoxInput {
+    box_handle: SigningBoxHandle,
+}
+
+impl SingingBoxInput {
+    async fn new(client: Arc<TestClient>, keys: KeyPair) -> Self {
+
+        let box_handle = client.request_async::<_, RegisteredSigningBox>(
+            "crypto.get_signing_box",
+            keys,
+        )
+        .await
+        .unwrap()
+        .handle;
+
+        Self{  box_handle }
+    }
+
+    fn call(&self, func: &str, args: &JsonValue) -> (u32, JsonValue) {
+        match func {
+            "get" => {
+                let answer_id = u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
+                ( answer_id, json!({ "handle": self.box_handle.clone() }) )
+            },
+            _ => panic!("interface function not found"),
+        }
+    }
+}
 
 struct Echo {}
 impl Echo {
@@ -214,6 +268,7 @@ struct BrowserData {
     pub msg_queue: Mutex<VecDeque<String>>,
     pub terminal: Mutex<Terminal>,
     pub echo: Echo,
+    pub sign_box_input: SingingBoxInput,
     pub bots: Mutex<HashMap<String, RegisteredDebot>>,
     pub info: DebotInfo,
     pub activity: Mutex<Vec<ExpectedTransaction>>,
@@ -343,13 +398,14 @@ impl TestBrowser {
             current: Mutex::new(Default::default()),
             next: Mutex::new(steps),
             client: client.clone(),
-            keys,
+            keys: keys.clone(),
             address: address.clone(),
             finished: AtomicBool::new(false),
             switch_started: AtomicBool::new(false),
             msg_queue: Mutex::new(Default::default()),
             terminal: Mutex::new(Terminal::new(terminal_outputs)),
             echo: Echo::new(),
+            sign_box_input: SingingBoxInput::new(client.clone(), keys.clone()).await,
             bots: Mutex::new(HashMap::new()),
             info,
             activity: Mutex::new(vec![]),
@@ -371,13 +427,14 @@ impl TestBrowser {
             current: Mutex::new(Default::default()),
             next: Mutex::new(steps),
             client: client.clone(),
-            keys,
+            keys: keys.clone(),
             address: address.clone(),
             finished: AtomicBool::new(false),
             switch_started: AtomicBool::new(false),
             msg_queue: Mutex::new(Default::default()),
             terminal: Mutex::new(Terminal::new(terminal_outputs)),
             echo: Echo::new(),
+            sign_box_input: SingingBoxInput::new(client.clone(), keys.clone()).await,
             bots: Mutex::new(HashMap::new()),
             info,
             activity: Mutex::new(activity),
@@ -452,6 +509,7 @@ impl TestBrowser {
                     msg_queue: Mutex::new(Default::default()),
                     terminal: Mutex::new(Terminal::new(vec![])),
                     echo: Echo::new(),
+                    sign_box_input: SingingBoxInput::new(client.clone(), state.keys.clone()).await,
                     bots: Mutex::new(HashMap::new()),
                     info: Default::default(),
                     activity: Mutex::new(vec![]),
@@ -503,6 +561,8 @@ impl TestBrowser {
                     Abi::Json(ECHO_ABI.to_owned())
                 } else if SUPPORTED_INTERFACES[1] == interface_id {
                     Abi::Json(TERMINAL_ABI.to_owned())
+                } else if SUPPORTED_INTERFACES[2] == interface_id {
+                    Abi::Json(SIGNING_BOX_ABI.to_owned())
                 } else {
                     panic!("unsupported interface");
                 };
@@ -515,8 +575,10 @@ impl TestBrowser {
                 let (func_id, return_args) =
                 if SUPPORTED_INTERFACES[0] == interface_id {
                     state.echo.call(&func, &args)
-                } else {
+                } else if SUPPORTED_INTERFACES[1] == interface_id {
                     state.terminal.lock().await.call(&func, &args)
+                } else {
+                    state.sign_box_input.call(&func, &args)
                 };
                 log::info!("response: {} ({})", func_id, return_args);
 
@@ -1117,9 +1179,10 @@ async fn test_debot_inner_interfaces() {
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_debot3(client.clone()).await;
 
     let steps = serde_json::from_value(json!([])).unwrap();
-    TestBrowser::execute(
+
+    TestBrowser::execute_with_details(
         client.clone(),
-        debot_addr,
+        debot_addr.clone(),
         keys,
         steps,
         vec![
@@ -1135,10 +1198,26 @@ async fn test_debot_inner_interfaces() {
             format!("test naclboxopen passed"),
             format!("test account passed"),
             format!("test hdkeyXprv passed"),
+            format!("test sign hash passed"),
             format!("test hex decode passed"),
             format!("test base64 decode passed"),
         ],
-        abi
+        DebotInfo {
+            name: Some("TestSdk".to_owned()),
+            version: Some("0.4.0".to_owned()),
+            publisher: Some("TON Labs".to_owned()),
+            caption: Some("Test for SDK interface".to_owned()),
+            author: Some("TON Labs".to_owned()),
+            support: Some("0:0000000000000000000000000000000000000000000000000000000000000000".to_owned()),
+            hello: Some("Hello, I'm a test.".to_owned()),
+            language: Some("en".to_owned()),
+            dabi: Some(abi),
+            icon: Some(format!("")),
+            interfaces: vec![
+                "0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3".to_owned(),
+            ],
+        },
+        vec![],
     ).await;
 }
 
@@ -1402,7 +1481,7 @@ async fn test_debot_network_interface() {
             name: Some("Test DeBot 8".to_owned()),
             version: Some("0.1.0".to_owned()),
             publisher: Some("TON Labs".to_owned()),
-            key: Some("Test for Network interface".to_owned()),
+            caption: Some("Test for Network interface".to_owned()),
             author: Some("TON Labs".to_owned()),
             support: Some("0:0000000000000000000000000000000000000000000000000000000000000000".to_owned()),
             hello: Some("Test DeBot 8".to_owned()),

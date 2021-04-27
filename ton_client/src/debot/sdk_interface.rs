@@ -14,7 +14,7 @@ use crate::crypto::{
     ParamsOfHDKeySecretFromXPrv, ParamsOfHDKeyXPrvFromMnemonic, ParamsOfMnemonicDeriveSignKeys,
     ParamsOfMnemonicFromRandom, ParamsOfMnemonicVerify, ParamsOfNaclBox,
     ParamsOfNaclBoxKeyPairFromSecret, ParamsOfNaclBoxOpen, ParamsOfNaclSignKeyPairFromSecret,
-    ParamsOfSigningBoxSign, ResultOfSigningBoxSign,
+    ParamsOfSigningBoxSign
 };
 use crate::encoding::decode_abi_bigint;
 use crate::net::{query_collection, OrderBy, ParamsOfQueryCollection, SortDirection};
