@@ -9,11 +9,12 @@ use crate::crypto::{
     chacha20, hdkey_derive_from_xprv, hdkey_derive_from_xprv_path, hdkey_public_from_xprv,
     hdkey_secret_from_xprv, hdkey_xprv_from_mnemonic, mnemonic_derive_sign_keys,
     mnemonic_from_random, mnemonic_verify, nacl_sign_keypair_from_secret_key, nacl_box,
-    nacl_box_open, nacl_box_keypair_from_secret_key, ParamsOfChaCha20,
+    nacl_box_open, nacl_box_keypair_from_secret_key, signing_box_sign,
+    ParamsOfChaCha20,
     ParamsOfHDKeyDeriveFromXPrv, ParamsOfHDKeyDeriveFromXPrvPath, ParamsOfHDKeyPublicFromXPrv,
     ParamsOfHDKeySecretFromXPrv, ParamsOfHDKeyXPrvFromMnemonic, ParamsOfMnemonicDeriveSignKeys,
     ParamsOfMnemonicFromRandom, ParamsOfMnemonicVerify, ParamsOfNaclSignKeyPairFromSecret,
-    ParamsOfNaclBox, ParamsOfNaclBoxOpen, ParamsOfNaclBoxKeyPairFromSecret,
+    ParamsOfNaclBox, ParamsOfNaclBoxOpen, ParamsOfNaclBoxKeyPairFromSecret, ParamsOfSigningBoxSign, ResultOfSigningBoxSign
 };
 use crate::net::{query_collection, ParamsOfQueryCollection, OrderBy, SortDirection};
 use crate::encoding::decode_abi_bigint;
@@ -70,6 +71,7 @@ const ABI: &str = r#"
 			"name": "signHash",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
+				{"name":"sbHandle","type":"uint32"},
 				{"name":"hash","type":"uint256"}
 			],
 			"outputs": [
@@ -214,8 +216,8 @@ const ABI: &str = r#"
 			"outputs": [
 				{"name":"substr","type":"bytes"}
 			]
-        },
-        {
+		},
+		{
 			"name": "naclBox",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
@@ -227,8 +229,8 @@ const ABI: &str = r#"
 			"outputs": [
 				{"name":"encrypted","type":"bytes"}
 			]
-        },
-        {
+		},
+		{
 			"name": "naclBoxOpen",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
@@ -250,24 +252,6 @@ const ABI: &str = r#"
 			"outputs": [
 				{"name":"publicKey","type":"uint256"},
 				{"name":"secretKey","type":"uint256"}
-			]
-        },
-        {
-			"name": "getAccountsDataByHash",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"codeHash","type":"uint256"},
-				{"name":"gt","type":"address"}
-			],
-			"outputs": [
-				{"components":[{"name":"id","type":"address"},{"name":"data","type":"cell"}],"name":"accounts","type":"tuple[]"}
-			]
-		},
-		{
-			"name": "constructor",
-			"inputs": [
-			],
-			"outputs": [
 			]
 		}
 	],
@@ -598,6 +582,28 @@ impl SdkInterface {
         let res = self.query_accounts(args,"id data").await.map_err(|e| format!("query account failed: {}", e))?;
         Ok(res)
     }
+
+    async fn sign_hash(&self, args: &Value) -> InterfaceResult {
+        let answer_id = decode_answer_id(args)?;
+        let box_handle = get_num_arg::<u32>(args, "sbHandle")?;
+        let hash_to_sign = decode_abi_bigint(&get_arg(&args, "hash")?).map_err(|e| e.to_string())?;
+
+        let signature = signing_box_sign(
+            self.ton.clone(),
+            ParamsOfSigningBoxSign{
+                signing_box: box_handle.into(),
+                unsigned: base64::encode(&hash_to_sign.to_bytes_be().1),
+            }
+        )
+        .await
+        .map_err(|e| format!("{}", e))?
+        .signature;
+
+        Ok((
+            answer_id,
+            json!({ "signature": signature })
+        ))
+    }
 }
 
 #[async_trait::async_trait]
@@ -631,6 +637,7 @@ impl DebotInterface for SdkInterface {
             "naclBoxOpen" => self.nacl_box_open(args),
             "naclKeypairFromSecret" => self.nacl_box_keypair_from_secret_key(args),
             "getAccountsDataByHash" => self.get_accounts_data_by_hash(args).await,
+            "signHash" => self.sign_hash(args).await,
             _ => Err(format!("function \"{}\" is not implemented", func)),
         }
     }
