@@ -14,11 +14,13 @@
 
 use serde_json::Value;
 
-use crate::error::ClientError;
+use crate::error::{ClientError, ClientResult};
+use crate::net::endpoint::ServerInfo;
 use crate::net::gql::GraphQLMessageFromClient;
 use crate::net::ParamsOfWaitForCollection;
 
 const COUNTERPARTIES_COLLECTION: &str = "counterparties";
+const FETCH_ADDITIONAL_TIMEOUT: u32 = 5000;
 
 #[derive(Serialize, Deserialize, Clone, ApiType)]
 pub enum SortDirection {
@@ -156,7 +158,7 @@ impl ParamsOfQueryOperation {
     }
 }
 
-struct QueryOperationBuilder {
+pub(crate) struct QueryOperationBuilder {
     is_batch: bool,
     default_wait_for_timeout: u32,
     param_count: u32,
@@ -165,10 +167,11 @@ struct QueryOperationBuilder {
     header: String,
     body: String,
     variables: Option<Value>,
+    timeout: Option<u32>,
 }
 
 impl QueryOperationBuilder {
-    fn new(is_batch: bool, default_wait_for_timeout: u32) -> Self {
+    pub fn new(is_batch: bool, default_wait_for_timeout: u32) -> Self {
         Self {
             is_batch,
             default_wait_for_timeout,
@@ -178,16 +181,17 @@ impl QueryOperationBuilder {
             header: String::new(),
             body: String::new(),
             variables: None,
+            timeout: None,
         }
     }
 
-    fn add_operations(&mut self, params: &[ParamsOfQueryOperation]) {
+    pub fn add_operations(&mut self, params: &[ParamsOfQueryOperation]) {
         for op in params {
             self.add_op(op);
         }
     }
 
-    fn build(self) -> GraphQLQuery {
+    pub fn build(self) -> GraphQLQuery {
         GraphQLQuery {
             query: format!(
                 "{}{} {{{}\n}}",
@@ -196,20 +200,14 @@ impl QueryOperationBuilder {
                 self.body
             ),
             variables: self.variables,
+            timeout: self.timeout.map(|x| x + FETCH_ADDITIONAL_TIMEOUT),
+            is_batch: self.is_batch,
         }
     }
 
-    fn add_op(&mut self, op: &ParamsOfQueryOperation) {
-        let query_name = op.query_name();
+    fn start_op(&mut self, name: &str) {
         if self.op_count == 0 {
-            self.header = format!(
-                "query {}",
-                if self.is_batch {
-                    "batch".to_string()
-                } else {
-                    query_name
-                }
-            );
+            self.header = format!("query {}", if self.is_batch { "batch" } else { name });
         }
         self.add_body("\n    ");
         self.op_count += 1;
@@ -217,7 +215,22 @@ impl QueryOperationBuilder {
         if self.is_batch {
             self.add_body(&format!("q{}: ", self.op_count));
         }
-        self.add_body(op.query_name().as_str());
+        self.add_body(name);
+    }
+
+    fn end_op(&mut self, result: &str) {
+        if self.op_param_count > 0 {
+            self.add_body(")");
+        }
+        if !result.is_empty() {
+            self.add_body(" { ");
+            self.add_body(result);
+            self.add_body(" }");
+        }
+    }
+
+    fn add_op(&mut self, op: &ParamsOfQueryOperation) {
+        self.start_op(&op.query_name());
         let filter_type = op.doc_type() + "Filter";
         match op {
             ParamsOfQueryOperation::AggregateCollection(ref p) => {
@@ -234,20 +247,22 @@ impl QueryOperationBuilder {
                     Some(1),
                     Some(p.timeout.unwrap_or(self.default_wait_for_timeout)),
                 );
+                self.timeout = match (self.timeout, p.timeout) {
+                    (Some(a), Some(b)) => Some(a.max(b)),
+                    (None, Some(b)) => Some(b),
+                    _ => self.timeout,
+                };
             }
             ParamsOfQueryOperation::QueryCounterparties(ref p) => {
                 self.add_query_counterparties_op_params(&p.account, &p.first, &p.after);
             }
         }
-        if self.op_param_count > 0 {
-            self.add_body(")");
-        }
-        let result = op.query_result();
-        if !result.is_empty() {
-            self.add_body(" { ");
-            self.add_body(result);
-            self.add_body(" }");
-        }
+        self.end_op(&op.query_result());
+    }
+
+    fn add_info(&mut self) {
+        self.start_op("info");
+        self.end_op("version time lastBlockTime");
     }
 
     fn add_agg_op_params(
@@ -341,16 +356,75 @@ impl QueryOperationBuilder {
 pub(crate) struct GraphQLQuery {
     pub query: String,
     pub variables: Option<Value>,
+    pub timeout: Option<u32>,
+    pub is_batch: bool,
 }
 
 impl GraphQLQuery {
     pub fn build(
         params: &[ParamsOfQueryOperation],
+        include_info: bool,
         default_wait_for_timeout: u32,
     ) -> GraphQLQuery {
-        let mut builder = QueryOperationBuilder::new(params.len() > 1, default_wait_for_timeout);
+        let param_count = params.len() + if include_info { 1 } else { 0 };
+        let mut builder = QueryOperationBuilder::new(param_count > 1, default_wait_for_timeout);
         builder.add_operations(params);
+        if include_info {
+            builder.add_info();
+        }
         builder.build()
+    }
+
+    pub fn get_result(
+        &self,
+        params: &[ParamsOfQueryOperation],
+        index: usize,
+        result: &Value,
+    ) -> ClientResult<Value> {
+        let param = params.get(index);
+        let result_name = if self.is_batch {
+            format!("q{}", index + 1)
+        } else if let Some(param) = param {
+            param.query_name()
+        } else {
+            "info".to_string()
+        };
+        let mut result_data = &result["data"][result_name.as_str()];
+        if result_data.is_null() {
+            return Err(crate::net::Error::invalid_server_response(format!(
+                "Missing data.{} in: {}",
+                result_name,
+                result
+            )));
+        }
+        if let Some(ParamsOfQueryOperation::WaitForCollection(_)) = param {
+            result_data = &result_data[0];
+            if result_data.is_null() {
+                return Err(crate::net::Error::wait_for_timeout());
+            }
+        }
+        Ok(result_data.clone())
+    }
+
+    pub fn get_results(
+        &self,
+        params: &[ParamsOfQueryOperation],
+        result: &Value,
+    ) -> ClientResult<Vec<Value>> {
+        let mut results = Vec::new();
+        for i in 0..params.len() {
+            results.push(self.get_result(params, i, result)?);
+        }
+        Ok(results)
+    }
+
+    pub fn get_latency(
+        &self,
+        params: &[ParamsOfQueryOperation],
+        result: &Value,
+    ) -> ClientResult<u64> {
+        let info = ServerInfo::parse(&self.get_result(params, params.len(), result)?)?;
+        Ok(info.latency())
     }
 
     pub fn get_start_message(&self, id: String) -> GraphQLMessageFromClient {
@@ -374,14 +448,24 @@ impl GraphQLQuery {
         let variables = Some(json!({
             "filter" : filter,
         }));
-        Self { query, variables }
+        Self {
+            query,
+            variables,
+            timeout: None,
+            is_batch: false,
+        }
     }
 
     pub fn with_post_requests(requests: &[PostRequest]) -> Self {
         let query = "mutation postRequests($requests:[Request]){postRequests(requests:$requests)}"
             .to_owned();
         let variables = Some(json!({ "requests": serde_json::json!(requests) }));
-        Self { query, variables }
+        Self {
+            query,
+            variables,
+            timeout: None,
+            is_batch: false,
+        }
     }
 }
 

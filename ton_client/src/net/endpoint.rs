@@ -14,15 +14,68 @@
 
 use crate::client::{core_version, ClientEnv, FetchMethod};
 use crate::error::ClientResult;
-use crate::net::Error;
+use crate::net::{Error, NetworkConfig};
+use serde_json::Value;
 use std::sync::Arc;
+
+pub(crate) struct ServerInfo {
+    pub time: i64,
+    pub last_block_time: i64,
+    pub version: u32,
+}
+
+impl ServerInfo {
+    pub fn parse(info: &Value) -> ClientResult<Self> {
+        let time = info["time"]
+            .as_i64()
+            .ok_or(Error::invalid_server_response(format!(
+                "No time in response: {}",
+                info
+            )))?;
+        let last_block_time =
+            info["lastBlockTime"]
+                .as_i64()
+                .ok_or(Error::invalid_server_response(format!(
+                    "No lastBlockTime in response: {}",
+                    info
+                )))?;
+        let version = info["version"]
+            .as_str()
+            .ok_or(Error::invalid_server_response(format!(
+                "No version in response: {}",
+                info
+            )))?;
+        let mut parts: Vec<&str> = version.split(".").collect();
+        parts.resize(3, "0");
+        let parse_part = |i: usize| {
+            u32::from_str_radix(parts[i], 10).map_err(|err| {
+                Error::invalid_server_response(format!(
+                    "Can not parse version {}: {}",
+                    version, err
+                ))
+            })
+        };
+        let version = parse_part(0)? * 1000000 + parse_part(1)? * 1000 + parse_part(2)?;
+        Ok(Self {
+            time,
+            last_block_time,
+            version,
+        })
+    }
+
+    pub fn latency(&self) -> u64 {
+        (self.time - self.last_block_time).abs() as u64
+    }
+}
 
 #[derive(Clone)]
 pub(crate) struct Endpoint {
     pub query_url: String,
     pub subscription_url: String,
-    pub server_version: u64,
+    pub server_version: u32,
     pub server_time_delta: i64,
+    pub latency: u64,
+    pub next_latency_detection_time: u64,
 }
 
 impl Endpoint {
@@ -40,12 +93,17 @@ impl Endpoint {
         format!("{}/graphql", base_url.trim_end_matches("/"))
     }
 
-    pub async fn resolve(client_env: Arc<ClientEnv>, address: &str) -> ClientResult<Self> {
+    pub async fn resolve(
+        client_env: Arc<ClientEnv>,
+        config: &NetworkConfig,
+        address: &str,
+    ) -> ClientResult<Self> {
         let address = Self::expand_address(address);
         let start = client_env.now_ms() as i64;
+        let query = "?query=%7Binfo%7Bversion%20time%20lastBlockTime%7D%7D";
         let response = client_env
             .fetch(
-                &format!("{}?query=%7Binfo%7Bversion%20time%7D%7D", address),
+                &format!("{}{}", address, query),
                 FetchMethod::Get,
                 None,
                 None,
@@ -54,41 +112,20 @@ impl Endpoint {
             .await?;
         let response_body = response.body_as_json()?;
         let end = client_env.now_ms() as i64;
-
-        let server_version = response_body["data"]["info"]["version"].as_str().ok_or(
-            Error::invalid_server_response(format!("No version in response: {}", response_body)),
-        )?;
-        let server_time = response_body["data"]["info"]["time"].as_i64().ok_or(
-            Error::invalid_server_response(format!("No time in response: {}", response_body)),
-        )?;
-
-        let server_time_delta = server_time - (start + (end - start) / 2);
-
-        let query_url = response
-            .url
-            .trim_end_matches("?query=%7Binfo%7Bversion%7D%7D")
-            .to_owned();
+        let info = ServerInfo::parse(&response_body["data"]["info"])?;
+        let server_time_delta = info.time - (start + (end - start) / 2);
+        let query_url = response.url.trim_end_matches(query).to_owned();
         let subscription_url = query_url
             .replace("https://", "wss://")
             .replace("http://", "ws://");
-
-        let mut parts: Vec<&str> = server_version.split(".").collect();
-        parts.resize(3, "0");
-        let parse_part = |i: usize| {
-            u64::from_str_radix(parts[i], 10).map_err(|err| {
-                Error::invalid_server_response(format!(
-                    "Can not parse version {}: {}",
-                    server_version, err
-                ))
-            })
-        };
-        let server_version = parse_part(0)? * 1000000 + parse_part(1)? * 1000 + parse_part(2)?;
-
+        let next_latency_detection_time = end as u64 + config.latency_detection_frequency as u64;
         Ok(Self {
             query_url,
             subscription_url,
             server_time_delta,
-            server_version,
+            server_version: info.version,
+            latency: info.latency(),
+            next_latency_detection_time,
         })
     }
 }

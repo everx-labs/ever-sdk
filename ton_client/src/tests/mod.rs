@@ -122,7 +122,6 @@ pub(crate) struct TestFetchQueue {
     url: String,
     repeat: Option<usize>,
     delay: Option<u64>,
-    status: Option<u16>,
     queue: Vec<TestFetch>,
 }
 
@@ -132,7 +131,6 @@ impl TestFetchQueue {
             url: String::default(),
             repeat: None,
             delay: None,
-            status: None,
             queue: Vec::new(),
         }
     }
@@ -147,11 +145,6 @@ impl TestFetchQueue {
         self
     }
 
-    pub fn status(&mut self, status: u16) -> &mut Self {
-        self.status = Some(status);
-        self
-    }
-
     pub fn repeat(&mut self, repeat: usize) -> &mut Self {
         self.repeat = Some(repeat);
         self
@@ -160,7 +153,6 @@ impl TestFetchQueue {
     fn push(&mut self, result: ClientResult<FetchResult>) -> &mut Self {
         let repeat = self.repeat.take().unwrap_or(1);
         let delay = self.delay.take();
-        self.status = None;
         for _ in 0..repeat {
             self.queue.push(TestFetch {
                 url: self.url.clone(),
@@ -174,7 +166,7 @@ impl TestFetchQueue {
     pub fn ok(&mut self, body: &str) -> &mut Self {
         self.push(Ok(FetchResult {
             url: self.url.clone(),
-            status: self.status.unwrap_or(200),
+            status: 200,
             body: body.to_string(),
             headers: HashMap::new(),
         }))
@@ -186,8 +178,25 @@ impl TestFetchQueue {
         )))
     }
 
-    pub fn get_queue(&self) -> Vec<TestFetch> {
-        self.queue.clone()
+    pub async fn reset_client(&self, client: &ClientContext) {
+        client
+            .get_server_link()
+            .unwrap()
+            .invalidate_querying_endpoint()
+            .await;
+        client
+            .env
+            .set_test_fetch_queue(Some(self.queue.clone()))
+            .await;
+    }
+
+    pub async fn get_len(client: &ClientContext) -> usize {
+        client
+            .env
+            .get_test_fetch_queue()
+            .await
+            .map(|x| x.len())
+            .unwrap_or(0)
     }
 }
 

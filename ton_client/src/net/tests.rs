@@ -7,7 +7,6 @@ use crate::tests::{TestClient, TestFetchQueue, HELLO};
 
 use super::*;
 use crate::ClientConfig;
-use serde_json::Value;
 use std::collections::HashSet;
 use std::sync::Arc;
 
@@ -620,13 +619,51 @@ fn r_info(time: u64, block_time: u64) -> String {
     .to_string()
 }
 
-fn r_collection(collection: &str, item: Value) -> String {
+fn r_blocks(id: &str) -> String {
     json!({
         "data": {
-            collection: vec![item]
+            "blocks": [{"id": id.to_string()}],
         }
     })
     .to_string()
+}
+
+async fn query_block_id(client: &Arc<ClientContext>) -> String {
+    crate::net::query_collection(
+        client.clone(),
+        ParamsOfQueryCollection {
+            collection: "blocks".to_string(),
+            result: "id".to_string(),
+            ..Default::default()
+        },
+    )
+    .await
+    .unwrap()
+    .result[0]["id"]
+        .as_str()
+        .unwrap()
+        .to_string()
+}
+
+async fn get_query_url(client: &Arc<ClientContext>) -> String {
+    let mut url = client
+        .get_server_link()
+        .unwrap()
+        .get_query_endpoint()
+        .await
+        .unwrap()
+        .query_url
+        .clone();
+    if let Some(stripped) = url.strip_prefix("http://") {
+        url = stripped.to_string();
+    }
+    if let Some(stripped) = url.strip_prefix("https://") {
+        url = stripped.to_string();
+    }
+    if let Some(stripped) = url.strip_suffix("/graphql") {
+        url = stripped.to_string();
+    }
+    url
 }
 
 #[tokio::test(core_threads = 2)]
@@ -643,30 +680,96 @@ async fn retry_query_on_network_errors() {
     );
 
     let now = client.env.now_ms();
-    let queue = TestFetchQueue::new()
+    TestFetchQueue::new()
         .url("a")
         .ok(&r_info(now, now - 1000))
         .repeat(2)
         .network_err()
         .ok(&r_info(now, now - 1000))
-        .ok(&r_collection("blocks", json!({"id":"1"})))
+        .ok(&r_blocks("1"))
         .repeat(5)
         .network_err()
         .ok(&r_info(now, now - 1000))
-        .ok(&r_collection("blocks", json!({"id":"2"})))
-        .get_queue();
-    client.env.set_test_fetch_queue(Some(queue)).await;
-    let result = crate::net::query_collection(
-        client.clone(),
-        ParamsOfQueryCollection {
-            collection: "blocks".to_string(),
-            result: "id".to_string(),
+        .ok(&r_blocks("2"))
+        .reset_client(&client)
+        .await;
+    assert_eq!(query_block_id(&client).await, "1");
+    assert_eq!(query_block_id(&client).await, "2");
+}
+
+#[tokio::test(core_threads = 2)]
+async fn querying_endpoint_selection() {
+    let client = Arc::new(
+        ClientContext::new(ClientConfig {
+            network: NetworkConfig {
+                endpoints: Some(vec!["a".into(), "b".into()]),
+                network_retries_count: 3,
+                max_latency: 1000,
+                ..Default::default()
+            },
             ..Default::default()
-        },
-    )
-    .await
-    .unwrap();
-    assert_eq!(result.result[0]["id"].as_str().unwrap(), "1");
+        })
+        .unwrap(),
+    );
+
+    // Check for the fastest
+    let now = client.env.now_ms();
+    TestFetchQueue::new()
+        .url("a")
+        .delay(200)
+        .ok(&r_info(now, now - 500))
+        .url("b")
+        .delay(100)
+        .ok(&r_info(now, now - 500))
+        .reset_client(&client)
+        .await;
+    assert_eq!(get_query_url(&client).await, "b");
+
+    println!("\nSkip endpoint with bad latency\n");
+    let now = client.env.now_ms();
+    TestFetchQueue::new()
+        .url("a")
+        .delay(100)
+        .ok(&r_info(now, now - 1500))
+        .url("b")
+        .delay(200)
+        .ok(&r_info(now, now - 500))
+        .reset_client(&client)
+        .await;
+    assert_eq!(get_query_url(&client).await, "b");
+
+    println!("\nSelect when all have bad latency\n");
+    let now = client.env.now_ms();
+    TestFetchQueue::new()
+        .url("a")
+        .delay(200)
+        .ok(&r_info(now, now - 1500)) // Slower but better latency
+        .url("b")
+        .delay(100)
+        .ok(&r_info(now, now - 2000)) // Faster but worse latency
+        .reset_client(&client)
+        .await;
+    assert_eq!(get_query_url(&client).await, "a");
+
+    println!("\nFailed Network\n");
+    let client = Arc::new(
+        ClientContext::new(ClientConfig {
+            network: NetworkConfig {
+                endpoints: Some(vec!["a".into()]),
+                network_retries_count: 2,
+                max_latency: 1000,
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .unwrap(),
+    );
+    TestFetchQueue::new()
+        .url("a")
+        .repeat(3)
+        .network_err()
+        .reset_client(&client)
+        .await;
     let result = crate::net::query_collection(
         client.clone(),
         ParamsOfQueryCollection {
@@ -675,7 +778,72 @@ async fn retry_query_on_network_errors() {
             ..Default::default()
         },
     )
-    .await
-    .unwrap();
-    assert_eq!(result.result[0]["id"].as_str().unwrap(), "2");
+    .await;
+
+    assert_eq!(
+        match &result {
+            Ok(_) => "ok",
+            Err(e) => &e.message,
+        },
+        "Query failed: Can not send http request: Network error"
+    );
+}
+
+#[tokio::test(core_threads = 2)]
+async fn latency_detection_with_queries() {
+    let client = Arc::new(
+        ClientContext::new(ClientConfig {
+            network: NetworkConfig {
+                endpoints: Some(vec!["a".into(), "b".into()]),
+                network_retries_count: 3,
+                max_latency: 600,
+                latency_detection_frequency: 100,
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .unwrap(),
+    );
+
+    // Check for the fastest
+    let now = client.env.now_ms();
+    TestFetchQueue::new()
+        .url("a")
+        .delay(10)
+        .ok(&r_info(now, now - 500)) // election, winner
+        .url("b")
+        .delay(20)
+        .ok(&r_info(now, now - 500)) // election, looser
+        .url("a")
+        .delay(200)
+        .ok(&r_blocks("1")) // query
+        .ok(&json!({
+            "data": {
+                "q1": [{
+                    "id": "2",
+                }],
+                "q2": {
+                    "version": "0.37.0",
+                    "time": 1000,
+                    "lastBlockTime": 100,
+                },
+            }
+        })
+        .to_string()) // query with latency checking, returns bad latency
+        .url("a")
+        .delay(20)
+        .ok(&r_info(now, now - 500)) // election, looser
+        .url("b")
+        .delay(10)
+        .ok(&r_info(now, now - 500)) // election, winner
+        .url("b")
+        .ok(&r_blocks("2")) // retry query
+        .reset_client(&client)
+        .await;
+
+    assert_eq!(get_query_url(&client).await, "a");
+    assert_eq!(query_block_id(&client).await, "1");
+    assert_eq!(query_block_id(&client).await, "2");
+    assert_eq!(TestFetchQueue::get_len(&client).await, 0);
+    assert_eq!(get_query_url(&client).await, "b");
 }

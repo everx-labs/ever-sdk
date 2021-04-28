@@ -33,7 +33,6 @@ use tokio::sync::{watch, Mutex, RwLock};
 pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
 pub const MIN_RESUME_TIMEOUT: u32 = 500;
 pub const MAX_RESUME_TIMEOUT: u32 = 3000;
-pub const FETCH_ADDITIONAL_TIMEOUT: u32 = 5000;
 
 pub(crate) struct Subscription {
     pub unsubscribe: Pin<Box<dyn Future<Output = ()> + Send>>,
@@ -53,15 +52,14 @@ pub(crate) enum EndpointStat {
 
 pub(crate) struct NetworkState {
     client_env: Arc<ClientEnv>,
+    config: NetworkConfig,
     endpoint_addresses: RwLock<Vec<String>>,
     bad_delivery_addresses: RwLock<HashSet<String>>,
     suspended: watch::Receiver<bool>,
     suspend_regulation: Arc<Mutex<SuspendRegulation>>,
     resume_timeout: AtomicU32,
     query_endpoint: RwLock<Option<Arc<Endpoint>>>,
-    out_of_sync_threshold: u32,
     time_checked: AtomicBool,
-    network_retries_count: i8,
 }
 
 async fn query_by_url(client_env: &ClientEnv, address: &str, query: &str) -> ClientResult<Value> {
@@ -81,9 +79,8 @@ async fn query_by_url(client_env: &ClientEnv, address: &str, query: &str) -> Cli
 impl NetworkState {
     pub fn new(
         client_env: Arc<ClientEnv>,
+        config: NetworkConfig,
         endpoint_addresses: Vec<String>,
-        out_of_sync_threshold: u32,
-        network_retries_count: i8,
     ) -> Self {
         let (sender, receiver) = watch::channel(false);
         let regulation = SuspendRegulation {
@@ -93,14 +90,13 @@ impl NetworkState {
         };
         Self {
             client_env,
+            config,
             endpoint_addresses: RwLock::new(endpoint_addresses),
             bad_delivery_addresses: RwLock::new(HashSet::new()),
             suspended: receiver,
             suspend_regulation: Arc::new(Mutex::new(regulation)),
             resume_timeout: AtomicU32::new(0),
             query_endpoint: RwLock::new(None),
-            out_of_sync_threshold,
-            network_retries_count,
             time_checked: AtomicBool::new(false),
         }
     }
@@ -193,6 +189,21 @@ impl NetworkState {
         }
     }
 
+    pub async fn invalidate_querying_endpoint(&self) {
+        *self.query_endpoint.write().await = None
+    }
+
+    pub async fn update_query_endpoint_latency(&self, latency: u64) {
+        let mut endpoint_guard = self.query_endpoint.write().await;
+        if let Some(old) = endpoint_guard.as_ref() {
+            let mut endpoint = old.as_ref().clone();
+            endpoint.latency = latency;
+            endpoint.next_latency_detection_time =
+                self.client_env.now_ms() + self.config.latency_detection_frequency as u64;
+            *endpoint_guard = Some(Arc::new(endpoint));
+        }
+    }
+
     pub async fn config_servers(&self) -> Vec<String> {
         self.endpoint_addresses.read().await.clone()
     }
@@ -226,7 +237,7 @@ impl NetworkState {
         }
 
         let endpoint = self.get_query_endpoint().await?;
-        self.check_time_delta(&endpoint, self.out_of_sync_threshold)
+        self.check_time_delta(&endpoint, self.config.out_of_sync_threshold)
             .await?;
 
         self.time_checked.store(true, Ordering::Relaxed);
@@ -235,32 +246,44 @@ impl NetworkState {
     }
 
     async fn select_querying_endpoint(&self) -> ClientResult<Endpoint> {
+        let is_better = |a: &ClientResult<Endpoint>, b: &ClientResult<Endpoint>| match (a, b) {
+            (Ok(a), Ok(b)) => a.latency < b.latency,
+            (Ok(_), Err(_)) => true,
+            (Err(_), Err(_)) => true,
+            _ => false,
+        };
         let mut retry_count = 0i8;
         loop {
             let mut futures = vec![];
             for address in self.endpoint_addresses.read().await.iter() {
                 let address = address.clone();
                 futures.push(Box::pin(async move {
-                    Endpoint::resolve(self.client_env.clone(), &address).await
+                    Endpoint::resolve(self.client_env.clone(), &self.config, &address).await
                 }));
             }
-
-            let mut selected_endpoint = Err(crate::client::Error::net_module_not_init());
+            let mut selected = Err(crate::client::Error::net_module_not_init());
             while futures.len() != 0 {
                 let (result, _, remain_futures) = futures::future::select_all(futures).await;
-                if result.is_ok() {
-                    return result;
+                if let Ok(endpoint) = &result {
+                    if endpoint.latency <= self.config.max_latency as u64 {
+                        return result;
+                    }
                 }
                 futures = remain_futures;
-                selected_endpoint = result;
+                if is_better(&result, &selected) {
+                    selected = result;
+                }
+            }
+            if selected.is_ok() {
+                return selected;
             }
             retry_count += 1;
-            if retry_count > self.network_retries_count {
-                return selected_endpoint;
+            if retry_count > self.config.network_retries_count {
+                return selected;
             }
             if retry_count > 1 {
                 let delay = (100 * (retry_count - 1) as u64).max(5000);
-                self.client_env.set_timer(delay).await;
+                let _ = self.client_env.set_timer(delay).await;
             }
         }
     }
@@ -305,9 +328,8 @@ impl ServerLink {
 
         let state = Arc::new(NetworkState::new(
             client_env.clone(),
+            config.clone(),
             endpoint_addresses,
-            config.out_of_sync_threshold,
-            config.network_retries_count,
         ));
 
         Ok(ServerLink {
@@ -399,9 +421,8 @@ impl ServerLink {
 
     pub(crate) async fn query(
         &self,
-        query: GraphQLQuery,
-        timeout: Option<u32>,
-        endpoint: Option<Endpoint>,
+        query: &GraphQLQuery,
+        endpoint: Option<&Endpoint>,
     ) -> ClientResult<Value> {
         let request = json!({
             "query": query.query,
@@ -418,8 +439,8 @@ impl ServerLink {
         let network_retries_count = self.config.network_retries_count;
         let mut retry_count = 0;
         'retries: loop {
-            let endpoint = if let Some(endpoint) = endpoint.clone() {
-                Arc::new(endpoint)
+            let endpoint = if let Some(endpoint) = endpoint {
+                Arc::new(endpoint.clone())
             } else {
                 self.state.get_query_endpoint().await?
             };
@@ -431,7 +452,7 @@ impl ServerLink {
                     FetchMethod::Post,
                     Some(headers.clone()),
                     Some(request.clone()),
-                    timeout,
+                    query.timeout,
                 )
                 .await;
 
@@ -461,45 +482,29 @@ impl ServerLink {
         params: &[ParamsOfQueryOperation],
         endpoint: Option<Endpoint>,
     ) -> ClientResult<Vec<Value>> {
-        let op = GraphQLQuery::build(params, self.config.wait_for_timeout);
-        let mut timeout = None;
-        for op in params {
-            if let ParamsOfQueryOperation::WaitForCollection(op) = op {
-                if let Some(op_timeout) = op.timeout {
-                    timeout = Some(match timeout {
-                        Some(timeout) => op_timeout.max(timeout),
-                        None => op_timeout,
-                    });
-                }
-            }
-        }
-        let result = self
-            .query(op, timeout.map(|x| x + FETCH_ADDITIONAL_TIMEOUT), endpoint)
-            .await?;
-        let data = &result["data"];
-        let mut results = Vec::new();
-        for i in 0..params.len() {
-            let result_name = if params.len() > 1 {
-                format!("q{}", i + 1)
+        let latency_detection_required = if endpoint.is_none() {
+            let endpoint = self.state.get_query_endpoint().await?;
+            self.client_env.now_ms() > endpoint.next_latency_detection_time
+        } else {
+            false
+        };
+        let mut query = GraphQLQuery::build(
+            params,
+            latency_detection_required,
+            self.config.wait_for_timeout,
+        );
+        let mut result = self.query(&query, endpoint.as_ref()).await?;
+        if latency_detection_required {
+            let latency = query.get_latency(params, &result)?;
+            if latency > self.config.max_latency as u64 {
+                self.invalidate_querying_endpoint().await;
+                query = GraphQLQuery::build(params, false, self.config.wait_for_timeout);
+                result = self.query(&query, endpoint.as_ref()).await?;
             } else {
-                params[0].query_name()
-            };
-            let mut result_data = &data[result_name.as_str()];
-            if result_data.is_null() {
-                return Err(Error::invalid_server_response(format!(
-                    "Invalid query answer: {}",
-                    result
-                )));
+                self.state.update_query_endpoint_latency(latency).await;
             }
-            if let ParamsOfQueryOperation::WaitForCollection(_) = params[i] {
-                result_data = &result_data[0];
-                if result_data.is_null() {
-                    return Err(Error::wait_for_timeout());
-                }
-            }
-            results.push(result_data.clone());
         }
-        Ok(results)
+        query.get_results(params, &result)
     }
 
     pub async fn query_collection(
@@ -566,7 +571,10 @@ impl ServerLink {
         self.state.check_sync().await?;
 
         let result = self
-            .query(GraphQLQuery::with_post_requests(&[request]), None, endpoint)
+            .query(
+                &GraphQLQuery::with_post_requests(&[request]),
+                endpoint.as_ref(),
+            )
             .await;
 
         // send message is always successful in order to process case when server received message
@@ -616,7 +624,15 @@ impl ServerLink {
         self.state.get_addresses_for_sending().await
     }
 
+    pub async fn get_query_endpoint(&self) -> ClientResult<Arc<Endpoint>> {
+        self.state.get_query_endpoint().await
+    }
+
     pub async fn update_stat(&self, addresses: &Vec<String>, stat: EndpointStat) {
         self.state.update_stat(addresses, stat).await
+    }
+
+    pub async fn invalidate_querying_endpoint(&self) {
+        self.state.invalidate_querying_endpoint().await
     }
 }

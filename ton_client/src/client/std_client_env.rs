@@ -46,6 +46,40 @@ impl TestEnv {
     fn new() -> Self {
         Self { fetch_queue: None }
     }
+
+    #[cfg(test)]
+    fn dequeue_fetch(&mut self, url: &str) -> Option<TestFetch> {
+        fn same_endpoints(url1: &str, url2: &str) -> bool {
+            fn reduce_url(url: &str) -> String {
+                let mut url = url.to_lowercase();
+                if let Some(without_protocol) = url.strip_prefix("http://") {
+                    url = without_protocol.to_string();
+                }
+                if let Some(without_protocol) = url.strip_prefix("https://") {
+                    url = without_protocol.to_string();
+                }
+                url
+            }
+            let a = reduce_url(url1);
+            let b = reduce_url(url2);
+            return a.starts_with(&b) || b.starts_with(&a);
+        }
+        if let Some(queue) = &mut self.fetch_queue {
+            let next_index = queue.iter().position(|x| same_endpoints(&x.url, url));
+            Some(match next_index {
+                Some(index) => queue.remove(index),
+                None => TestFetch {
+                    delay: None,
+                    url: url.to_string(),
+                    result: Err(crate::client::Error::http_request_send_error(
+                        "Test fetch queue is empty",
+                    )),
+                },
+            })
+        } else {
+            None
+        }
+    }
 }
 
 pub(crate) struct ClientEnv {
@@ -78,6 +112,10 @@ impl ClientEnv {
 
     pub async fn set_test_fetch_queue(&self, queue: Option<Vec<TestFetch>>) {
         self.test.write().await.fetch_queue = queue;
+    }
+
+    pub async fn get_test_fetch_queue(&self) -> Option<Vec<TestFetch>> {
+        self.test.read().await.fetch_queue.clone()
     }
 
     fn string_map_to_header_map(headers: HashMap<String, String>) -> ClientResult<HeaderMap> {
@@ -175,6 +213,43 @@ impl ClientEnv {
         })
     }
 
+    #[cfg(test)]
+    async fn get_next_test_fetch(
+        &self,
+        url: &str,
+        body: &Option<String>,
+    ) -> Option<ClientResult<FetchResult>> {
+        let fetch = { self.test.write().await.dequeue_fetch(url) };
+        if let Some(fetch) = fetch {
+            let delay_log = if let Some(delay) = fetch.delay {
+                let _ = self.set_timer(delay).await;
+                format!(" {} ms ", delay)
+            } else {
+                String::default()
+            };
+            let mut result = fetch.result;
+            if let Ok(result) = &mut result {
+                result.url = url.split("?").next().unwrap_or("").to_string();
+            }
+            let mut log = format!("Fetch {}", url);
+            if let Some(body) = &body {
+                log.push_str(&format!("\n  ⤷ {}", body));
+            }
+            match &result {
+                Ok(ok) => log.push_str(
+                    &format!("\n  {:?}", ok).replace("FetchResult", &format!("✅{}", delay_log)),
+                ),
+                Err(err) => log.push_str(
+                    &format!("\n  {:?}", err).replace("ClientError", &format!("❌{}", delay_log)),
+                ),
+            };
+            println!("{}", log);
+            Some(result)
+        } else {
+            None
+        }
+    }
+
     /// Executes http request
     pub async fn fetch(
         &self,
@@ -186,50 +261,7 @@ impl ClientEnv {
     ) -> ClientResult<FetchResult> {
         #[cfg(test)]
         {
-            fn same_endpoints(url1: &str, url2: &str) -> bool {
-                fn reduce_url(url: &str) -> String {
-                    let mut url = url.to_lowercase();
-                    if let Some(without_protocol) = url.strip_prefix("http://") {
-                        url = without_protocol.to_string();
-                    }
-                    if let Some(without_protocol) = url.strip_prefix("https://") {
-                        url = without_protocol.to_string();
-                    }
-                    url
-                }
-                let a = reduce_url(url1);
-                let b = reduce_url(url2);
-                return a.starts_with(&b) || b.starts_with(&a);
-            }
-            let test = &mut self.test.write().await;
-            if let Some(queue) = &mut test.fetch_queue {
-                let next_index = queue.iter().position(|x| same_endpoints(&x.url, url));
-                let result = match next_index {
-                    Some(index) => {
-                        let mut fetch = queue.remove(index);
-                        if let Some(delay) = fetch.delay {
-                            let _ = self.set_timer(delay).await;
-                        }
-                        if let Ok(result) = &mut fetch.result {
-                            result.url = url.split("?").next().unwrap_or("").to_string();
-                        }
-                        fetch.result
-                    }
-                    None => Err(crate::client::Error::http_request_send_error(
-                        "Test fetch queue is empty",
-                    )),
-                };
-                let mut log = format!("Fetch {}", url);
-                if let Some(body) = &body {
-                    log.push_str(&format!("\n  ⤷ {}", body));
-                }
-                match &result {
-                    Ok(ok) => log.push_str(&format!("\n  {:?}", ok).replace("FetchResult", "✅")),
-                    Err(err) => {
-                        log.push_str(&format!("\n  {:?}", err).replace("ClientError", "❌"))
-                    }
-                };
-                println!("{}", log);
+            if let Some(result) = self.get_next_test_fetch(url, &body).await {
                 return result;
             }
         }
