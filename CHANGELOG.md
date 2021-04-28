@@ -2,13 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.14.0] – 2021-04-20
+## [1.14.0] – 2021-04-28
 
 ### New
 
 - **Debot module**:
     - implementation of Network DeBot interface in DEngine.
     - implementation of `signHash` function in Sdk interface.
+
 ### Fixed
 
 - **Debot module**:
