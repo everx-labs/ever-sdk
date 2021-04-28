@@ -12,6 +12,7 @@
 */
 
 use super::{Error, FetchMethod, FetchResult, WebSocket};
+#[cfg(test)]
 use crate::client::client_env::TestFetch;
 use crate::error::ClientResult;
 use futures::{Future, SinkExt, StreamExt};
@@ -22,6 +23,7 @@ use reqwest::{
 use std::collections::HashMap;
 use std::str::FromStr;
 use tokio::runtime::Runtime;
+#[cfg(test)]
 use tokio::sync::RwLock;
 use tokio_tungstenite::tungstenite::Message as WsMessage;
 
@@ -38,10 +40,12 @@ fn create_runtime() -> ClientResult<Runtime> {
         .map_err(|err| Error::cannot_create_runtime(err))
 }
 
+#[cfg(test)]
 pub(crate) struct TestEnv {
     pub fetch_queue: Option<Vec<TestFetch>>,
 }
 
+#[cfg(test)]
 impl TestEnv {
     fn new() -> Self {
         Self { fetch_queue: None }
@@ -85,6 +89,7 @@ impl TestEnv {
 pub(crate) struct ClientEnv {
     http_client: HttpClient,
     async_runtime_handle: tokio::runtime::Handle,
+    #[cfg(test)]
     test: RwLock<TestEnv>,
 }
 
@@ -106,14 +111,17 @@ impl ClientEnv {
         Ok(Self {
             http_client: client,
             async_runtime_handle,
+            #[cfg(test)]
             test: RwLock::new(TestEnv::new()),
         })
     }
 
+    #[cfg(test)]
     pub async fn set_test_fetch_queue(&self, queue: Option<Vec<TestFetch>>) {
         self.test.write().await.fetch_queue = queue;
     }
 
+    #[cfg(test)]
     pub async fn get_test_fetch_queue(&self) -> Option<Vec<TestFetch>> {
         self.test.read().await.fetch_queue.clone()
     }

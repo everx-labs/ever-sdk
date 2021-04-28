@@ -43,6 +43,9 @@ use tokio::sync::{
     Mutex,
 };
 
+#[cfg(test)]
+use crate::client::TestFetch;
+
 mod common;
 
 const DEFAULT_TON_USE_SE: &str = "true";

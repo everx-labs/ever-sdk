@@ -624,6 +624,7 @@ impl ServerLink {
         self.state.get_addresses_for_sending().await
     }
 
+    #[cfg(test)]
     pub async fn get_query_endpoint(&self) -> ClientResult<Arc<Endpoint>> {
         self.state.get_query_endpoint().await
     }

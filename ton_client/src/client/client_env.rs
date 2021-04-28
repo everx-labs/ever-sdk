@@ -72,6 +72,7 @@ impl FetchMethod {
     }
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone)]
 pub(crate) struct TestFetch {
     pub url: String,

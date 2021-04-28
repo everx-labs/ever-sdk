@@ -24,12 +24,15 @@ mod wasm_client_env;
 pub(crate) use wasm_client_env::ClientEnv;
 
 #[cfg(test)]
+pub(crate) use client_env::TestFetch;
+
+#[cfg(test)]
 mod tests;
 
 pub use client::{ClientConfig, ClientContext};
 pub use errors::{Error, ErrorCode};
 
-pub(crate) use client_env::{FetchMethod, FetchResult, WebSocket, TestFetch};
+pub(crate) use client_env::{FetchMethod, FetchResult, WebSocket};
 pub(crate) use client::AppObject;
 
 use crate::error::ClientResult;
