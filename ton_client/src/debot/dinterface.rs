@@ -1,6 +1,7 @@
 use super::base64_interface::Base64Interface;
 use super::hex_interface::HexInterface;
 use super::sdk_interface::SdkInterface;
+use super::network_interface::NetworkInterface;
 use crate::abi::{decode_message_body, Abi, ParamsOfDecodeMessageBody};
 use crate::boc::{parse_message, ParamsOfParse};
 use crate::debot::TonClient;
@@ -71,14 +72,19 @@ pub trait DebotInterfaceExecutor {
             .as_str()
             .ok_or(format!("parsed message has no body"))?
             .to_owned();
-        debug!("call for interface {}", interface_id);
+        debug!("interface {} call", interface_id);
         match interfaces.get(interface_id) {
             Some(object) => {
                 let abi = object.get_abi();
                 let (func, args) = decode_msg(client.clone(), body, abi).await?;
-                object.call(&func, &args).await
+                object.call(&func, &args)
+                    .await
+                    .map_err(|e| format!("interface {}.{} failed: {}", interface_id, func, e))
             }
-            None => Ok((0, json!({}))),
+            None => {
+                debug!("interface {} not implemented", interface_id);
+                Ok((0, json!({})))
+            },
         }
     }
 }
@@ -106,6 +112,9 @@ impl BuiltinInterfaces {
         interfaces.insert(iface.get_id(), iface);
 
         let iface: Arc<dyn DebotInterface + Send + Sync> = Arc::new(HexInterface::new());
+        interfaces.insert(iface.get_id(), iface);
+
+        let iface: Arc<dyn DebotInterface + Send + Sync> = Arc::new(NetworkInterface::new(client.clone()));
         interfaces.insert(iface.get_id(), iface);
 
         let iface: Arc<dyn DebotInterface + Send + Sync> =
@@ -159,4 +168,20 @@ pub fn get_bool_arg(args: &Value, name: &str) -> Result<bool, String> {
     args[name]
         .as_bool()
         .ok_or(format!("\"{}\" not found", name))
+}
+
+pub fn get_array_strings(args: &Value, name: &str) -> Result<Vec<String>, String> {
+    let array = args[name]
+        .as_array()
+        .ok_or(format!("\"{}\" is invalid: must be array", name))?;
+    let mut strings = vec![];
+    for elem in array {
+        let string = hex::decode(
+            elem.as_str().ok_or_else(|| format!("array element is invalid: must be string"))?
+        ).map_err(|e| format!("{}", e))?;
+        strings.push(
+            std::str::from_utf8(&string).map_err(|e| format!("{}", e)).map(|x| x.to_string())?
+        );
+    }
+    Ok(strings)
 }

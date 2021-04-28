@@ -3,6 +3,7 @@ use serde::{Deserialize, Deserializer};
 use crate::encoding::account_decode;
 
 #[derive(Deserialize, Default, Debug, Clone)]
+#[serde(default)]
 pub struct DInfo {
     #[serde(deserialize_with = "from_opt_hex_to_str")]
     pub name: Option<String>,
@@ -11,7 +12,7 @@ pub struct DInfo {
     #[serde(deserialize_with = "from_opt_hex_to_str")]
     pub publisher: Option<String>,
     #[serde(deserialize_with = "from_opt_hex_to_str")]
-    pub key: Option<String>,
+    pub caption: Option<String>,
     #[serde(deserialize_with = "from_opt_hex_to_str")]
     pub author: Option<String>,
     #[serde(deserialize_with = "validate_ton_address")]
@@ -22,8 +23,8 @@ pub struct DInfo {
     pub language: Option<String>,
     #[serde(deserialize_with = "from_opt_hex_to_str")]
     pub dabi: Option<String>,
+    #[serde(deserialize_with = "from_opt_hex_to_str")]
     pub icon: Option<String>,
-    #[serde(default)]
     pub interfaces: Vec<String>,
 }
 
