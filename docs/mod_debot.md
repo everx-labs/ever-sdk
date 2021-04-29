@@ -286,7 +286,7 @@ type DebotInfo = {
     name?: string,
     version?: string,
     publisher?: string,
-    key?: string,
+    caption?: string,
     author?: string,
     support?: string,
     hello?: string,
@@ -299,7 +299,7 @@ type DebotInfo = {
 - `name`?: _string_ – DeBot short name.
 - `version`?: _string_ – DeBot semantic version.
 - `publisher`?: _string_ – The name of DeBot deployer.
-- `key`?: _string_ – Short info about DeBot.
+- `caption`?: _string_ – Short info about DeBot.
 - `author`?: _string_ – The name of DeBot developer.
 - `support`?: _string_ – TON address of author for questions and donations.
 - `hello`?: _string_ – String with the first messsage from DeBot.
