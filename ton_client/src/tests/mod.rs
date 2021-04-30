@@ -44,7 +44,7 @@ use tokio::sync::{
 };
 
 #[cfg(test)]
-use crate::client::TestFetch;
+use crate::client::{FetchMock, MessageMock};
 
 mod common;
 
@@ -121,20 +121,24 @@ lazy_static::lazy_static! {
     static ref TEST_RUNTIME: Mutex<TestRuntime> = Mutex::new(TestRuntime::new());
 }
 
-pub(crate) struct TestFetchQueue {
+pub(crate) struct NetworkMockBuilder {
+    last_id: usize,
     url: String,
     repeat: Option<usize>,
     delay: Option<u64>,
-    queue: Vec<TestFetch>,
+    fetches: Vec<FetchMock>,
+    messages: Vec<MessageMock>,
 }
 
-impl TestFetchQueue {
+impl NetworkMockBuilder {
     pub fn new() -> Self {
         Self {
+            last_id: 0,
             url: String::default(),
             repeat: None,
             delay: None,
-            queue: Vec::new(),
+            fetches: Vec::new(),
+            messages: Vec::new(),
         }
     }
 
@@ -153,11 +157,13 @@ impl TestFetchQueue {
         self
     }
 
-    fn push(&mut self, result: ClientResult<FetchResult>) -> &mut Self {
+    fn push_fetch(&mut self, result: ClientResult<FetchResult>) -> &mut Self {
         let repeat = self.repeat.take().unwrap_or(1);
         let delay = self.delay.take();
         for _ in 0..repeat {
-            self.queue.push(TestFetch {
+            self.last_id += 1;
+            self.fetches.push(FetchMock {
+                id: self.last_id,
                 url: self.url.clone(),
                 delay,
                 result: result.clone(),
@@ -166,8 +172,21 @@ impl TestFetchQueue {
         self
     }
 
+    pub fn ws(&mut self, message: &Value) -> &mut Self {
+        let repeat = self.repeat.take().unwrap_or(1);
+        let delay = self.delay.take();
+        for _ in 0..repeat {
+            self.messages.push(MessageMock {
+                url: self.url.clone(),
+                delay,
+                message: message.to_string(),
+            });
+        }
+        self
+    }
+
     pub fn ok(&mut self, body: &str) -> &mut Self {
-        self.push(Ok(FetchResult {
+        self.push_fetch(Ok(FetchResult {
             url: self.url.clone(),
             status: 200,
             body: body.to_string(),
@@ -176,7 +195,7 @@ impl TestFetchQueue {
     }
 
     pub fn network_err(&mut self) -> &mut Self {
-        self.push(Err(crate::client::Error::http_request_send_error(
+        self.push_fetch(Err(crate::client::Error::http_request_send_error(
             "Network error",
         )))
     }
@@ -187,17 +206,19 @@ impl TestFetchQueue {
             .unwrap()
             .invalidate_querying_endpoint()
             .await;
-        client
-            .env
-            .set_test_fetch_queue(Some(self.queue.clone()))
-            .await;
+        let mut network_mock = client.env.network_mock.write().await;
+        network_mock.fetches = Some(self.fetches.clone());
+        network_mock.messages = Some(self.messages.clone());
     }
 
     pub async fn get_len(client: &ClientContext) -> usize {
         client
             .env
-            .get_test_fetch_queue()
+            .network_mock
+            .read()
             .await
+            .fetches
+            .as_ref()
             .map(|x| x.len())
             .unwrap_or(0)
     }

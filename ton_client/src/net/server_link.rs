@@ -104,7 +104,10 @@ impl NetworkState {
     async fn suspend(&self, sender: &watch::Sender<bool>) {
         if !*self.suspended.borrow() {
             let _ = sender.broadcast(true);
-            *self.query_endpoint.write().await = None;
+            let mut e = self.query_endpoint.write().await;
+            if e.is_some() {
+                *e = None;
+            }
         }
     }
 
@@ -216,6 +219,10 @@ impl NetworkState {
             .map(|endpoint| endpoint.query_url.clone())
     }
 
+    pub async fn query_endpoint(&self) -> Option<Arc<Endpoint>> {
+        self.query_endpoint.read().await.clone()
+    }
+
     async fn check_time_delta(
         &self,
         endpoint: &Endpoint,
@@ -301,7 +308,6 @@ impl NetworkState {
         if let Some(endpoint) = &*locked_query_endpoint {
             return Ok(endpoint.clone());
         }
-
         let fastest = Arc::new(self.select_querying_endpoint().await?);
         *locked_query_endpoint = Some(fastest.clone());
         Ok(fastest)

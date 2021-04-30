@@ -24,10 +24,13 @@ mod wasm_client_env;
 pub(crate) use wasm_client_env::ClientEnv;
 
 #[cfg(test)]
-pub(crate) use client_env::TestFetch;
+pub(crate) use crate::client::network_mock::{FetchMock, MessageMock};
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod network_mock;
 
 pub use client::{ClientConfig, ClientContext};
 pub use errors::{Error, ErrorCode};

@@ -72,10 +72,3 @@ impl FetchMethod {
     }
 }
 
-#[cfg(test)]
-#[derive(Debug, Clone)]
-pub(crate) struct TestFetch {
-    pub url: String,
-    pub delay: Option<u64>,
-    pub result: ClientResult<FetchResult>,
-}

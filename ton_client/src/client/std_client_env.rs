@@ -13,7 +13,7 @@
 
 use super::{Error, FetchMethod, FetchResult, WebSocket};
 #[cfg(test)]
-use crate::client::client_env::TestFetch;
+use crate::client::network_mock::NetworkMock;
 use crate::error::ClientResult;
 use futures::{Future, SinkExt, StreamExt};
 use reqwest::{
@@ -40,57 +40,11 @@ fn create_runtime() -> ClientResult<Runtime> {
         .map_err(|err| Error::cannot_create_runtime(err))
 }
 
-#[cfg(test)]
-pub(crate) struct TestEnv {
-    pub fetch_queue: Option<Vec<TestFetch>>,
-}
-
-#[cfg(test)]
-impl TestEnv {
-    fn new() -> Self {
-        Self { fetch_queue: None }
-    }
-
-    #[cfg(test)]
-    fn dequeue_fetch(&mut self, url: &str) -> Option<TestFetch> {
-        fn same_endpoints(url1: &str, url2: &str) -> bool {
-            fn reduce_url(url: &str) -> String {
-                let mut url = url.to_lowercase();
-                if let Some(without_protocol) = url.strip_prefix("http://") {
-                    url = without_protocol.to_string();
-                }
-                if let Some(without_protocol) = url.strip_prefix("https://") {
-                    url = without_protocol.to_string();
-                }
-                url
-            }
-            let a = reduce_url(url1);
-            let b = reduce_url(url2);
-            return a.starts_with(&b) || b.starts_with(&a);
-        }
-        if let Some(queue) = &mut self.fetch_queue {
-            let next_index = queue.iter().position(|x| same_endpoints(&x.url, url));
-            Some(match next_index {
-                Some(index) => queue.remove(index),
-                None => TestFetch {
-                    delay: None,
-                    url: url.to_string(),
-                    result: Err(crate::client::Error::http_request_send_error(
-                        "Test fetch queue is empty",
-                    )),
-                },
-            })
-        } else {
-            None
-        }
-    }
-}
-
 pub(crate) struct ClientEnv {
     http_client: HttpClient,
     async_runtime_handle: tokio::runtime::Handle,
     #[cfg(test)]
-    test: RwLock<TestEnv>,
+    pub network_mock: RwLock<NetworkMock>,
 }
 
 impl ClientEnv {
@@ -112,18 +66,8 @@ impl ClientEnv {
             http_client: client,
             async_runtime_handle,
             #[cfg(test)]
-            test: RwLock::new(TestEnv::new()),
+            network_mock: RwLock::new(NetworkMock::new()),
         })
-    }
-
-    #[cfg(test)]
-    pub async fn set_test_fetch_queue(&self, queue: Option<Vec<TestFetch>>) {
-        self.test.write().await.fetch_queue = queue;
-    }
-
-    #[cfg(test)]
-    pub async fn get_test_fetch_queue(&self) -> Option<Vec<TestFetch>> {
-        self.test.read().await.fetch_queue.clone()
     }
 
     fn string_map_to_header_map(headers: HashMap<String, String>) -> ClientResult<HeaderMap> {
@@ -181,6 +125,18 @@ impl ClientEnv {
         url: &str,
         headers: Option<HashMap<String, String>>,
     ) -> ClientResult<WebSocket> {
+        #[cfg(test)]
+        {
+            if let Some(ws) = self
+                .network_mock
+                .write()
+                .await
+                .websocket_connect(&self.async_runtime_handle, url)
+                .await
+            {
+                return Ok(ws);
+            }
+        }
         let mut request = tokio_tungstenite::tungstenite::handshake::client::Request::builder()
             .method("GET")
             .uri(url);
@@ -221,43 +177,6 @@ impl ClientEnv {
         })
     }
 
-    #[cfg(test)]
-    async fn get_next_test_fetch(
-        &self,
-        url: &str,
-        body: &Option<String>,
-    ) -> Option<ClientResult<FetchResult>> {
-        let fetch = { self.test.write().await.dequeue_fetch(url) };
-        if let Some(fetch) = fetch {
-            let delay_log = if let Some(delay) = fetch.delay {
-                let _ = self.set_timer(delay).await;
-                format!(" {} ms ", delay)
-            } else {
-                String::default()
-            };
-            let mut result = fetch.result;
-            if let Ok(result) = &mut result {
-                result.url = url.split("?").next().unwrap_or("").to_string();
-            }
-            let mut log = format!("Fetch {}", url);
-            if let Some(body) = &body {
-                log.push_str(&format!("\n  ⤷ {}", body));
-            }
-            match &result {
-                Ok(ok) => log.push_str(
-                    &format!("\n  {:?}", ok).replace("FetchResult", &format!("✅{}", delay_log)),
-                ),
-                Err(err) => log.push_str(
-                    &format!("\n  {:?}", err).replace("ClientError", &format!("❌{}", delay_log)),
-                ),
-            };
-            println!("{}", log);
-            Some(result)
-        } else {
-            None
-        }
-    }
-
     /// Executes http request
     pub async fn fetch(
         &self,
@@ -269,8 +188,9 @@ impl ClientEnv {
     ) -> ClientResult<FetchResult> {
         #[cfg(test)]
         {
-            if let Some(result) = self.get_next_test_fetch(url, &body).await {
-                return result;
+            let fetch_mock = { self.network_mock.write().await.dequeue_fetch(url, &body) };
+            if let Some(fetch) = fetch_mock {
+                return fetch.get_result(&self, url).await;
             }
         }
         let method = Method::from_str(method.as_str())

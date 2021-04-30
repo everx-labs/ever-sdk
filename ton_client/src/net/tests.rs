@@ -3,7 +3,7 @@ use tokio::sync::Mutex;
 use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer};
 use crate::error::ClientError;
 use crate::processing::ParamsOfProcessMessage;
-use crate::tests::{TestClient, TestFetchQueue, HELLO};
+use crate::tests::{TestClient, NetworkMockBuilder, HELLO};
 
 use super::*;
 use crate::ClientConfig;
@@ -680,7 +680,7 @@ async fn retry_query_on_network_errors() {
     );
 
     let now = client.env.now_ms();
-    TestFetchQueue::new()
+    NetworkMockBuilder::new()
         .url("a")
         .ok(&r_info(now, now - 1000))
         .repeat(2)
@@ -714,7 +714,7 @@ async fn querying_endpoint_selection() {
 
     // Check for the fastest
     let now = client.env.now_ms();
-    TestFetchQueue::new()
+    NetworkMockBuilder::new()
         .url("a")
         .delay(200)
         .ok(&r_info(now, now - 500))
@@ -727,7 +727,7 @@ async fn querying_endpoint_selection() {
 
     println!("\nSkip endpoint with bad latency\n");
     let now = client.env.now_ms();
-    TestFetchQueue::new()
+    NetworkMockBuilder::new()
         .url("a")
         .delay(100)
         .ok(&r_info(now, now - 1500))
@@ -740,7 +740,7 @@ async fn querying_endpoint_selection() {
 
     println!("\nSelect when all have bad latency\n");
     let now = client.env.now_ms();
-    TestFetchQueue::new()
+    NetworkMockBuilder::new()
         .url("a")
         .delay(200)
         .ok(&r_info(now, now - 1500)) // Slower but better latency
@@ -764,7 +764,7 @@ async fn querying_endpoint_selection() {
         })
         .unwrap(),
     );
-    TestFetchQueue::new()
+    NetworkMockBuilder::new()
         .url("a")
         .repeat(3)
         .network_err()
@@ -807,7 +807,7 @@ async fn latency_detection_with_queries() {
 
     // Check for the fastest
     let now = client.env.now_ms();
-    TestFetchQueue::new()
+    NetworkMockBuilder::new()
         .url("a")
         .delay(10)
         .ok(&r_info(now, now - 500)) // election, winner
@@ -844,6 +844,70 @@ async fn latency_detection_with_queries() {
     assert_eq!(get_query_url(&client).await, "a");
     assert_eq!(query_block_id(&client).await, "1");
     assert_eq!(query_block_id(&client).await, "2");
-    assert_eq!(TestFetchQueue::get_len(&client).await, 0);
+    assert_eq!(NetworkMockBuilder::get_len(&client).await, 0);
+    assert_eq!(get_query_url(&client).await, "b");
+}
+
+#[tokio::test(core_threads = 2)]
+async fn latency_detection_with_websockets() {
+    let client = Arc::new(
+        ClientContext::new(ClientConfig {
+            network: NetworkConfig {
+                endpoints: Some(vec!["a".into(), "b".into()]),
+                network_retries_count: 3,
+                max_latency: 600,
+                latency_detection_frequency: 100,
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .unwrap(),
+    );
+
+    let ack_message = json!({"type":"connection_ack"});
+    let ka_message = json!({"type":"ka"});
+
+    // Check for the fastest
+    let now = client.env.now_ms();
+    NetworkMockBuilder::new()
+        .url("a")
+        .delay(10)
+        .ok(&r_info(now, now - 500)) // election, winner
+        .url("b")
+        .delay(20)
+        .ok(&r_info(now, now - 500)) // election, looser
+        .url("a")
+        .delay(100)
+        .ws(&ack_message)
+        .delay(200)
+        .ws(&ka_message)
+        .url("b")
+        .delay(10)
+        .ws(&ack_message)
+        .url("a")
+        .delay(20)
+        .ok(&r_info(now, now - 700)) // check latency, bad
+        .delay(20)
+        .ok(&r_info(now, now - 500)) // election, looser
+        .url("b")
+        .delay(10)
+        .ok(&r_info(now, now - 500)) // election, winner
+        .reset_client(&client)
+        .await;
+
+    assert_eq!(get_query_url(&client).await, "a");
+    let subscription = subscribe_collection(
+        client.clone(),
+        ParamsOfSubscribeCollection {
+            collection: "blocks".to_string(),
+            filter: None,
+            result: "id".to_string(),
+        },
+        |_| async {},
+    )
+    .await.unwrap();
+    let _ = client.env.set_timer(2000).await;
+    unsubscribe(client.clone(), subscription).await.unwrap();
+    assert_eq!(NetworkMockBuilder::get_len(&client).await, 0);
     assert_eq!(get_query_url(&client).await, "b");
 }
