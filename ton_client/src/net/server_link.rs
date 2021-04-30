@@ -104,10 +104,7 @@ impl NetworkState {
     async fn suspend(&self, sender: &watch::Sender<bool>) {
         if !*self.suspended.borrow() {
             let _ = sender.broadcast(true);
-            let mut e = self.query_endpoint.write().await;
-            if e.is_some() {
-                *e = None;
-            }
+            *self.query_endpoint.write().await = None;
         }
     }
 
