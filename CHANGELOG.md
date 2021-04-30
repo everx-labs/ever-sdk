@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.1] – 2021-04-29
+
+### Fixed
+
+- Fixed building under Rust versions older than 1.51.
+
 ## [1.14.0] – 2021-04-28
 
 ### New

@@ -43,9 +43,10 @@ impl Endpoint {
     pub async fn resolve(client_env: Arc<ClientEnv>, address: &str) -> ClientResult<Self> {
         let address = Self::expand_address(address);
         let start = client_env.now_ms() as i64;
+        let query = "?query=%7Binfo%7Bversion%20time%7D%7D";
         let response = client_env
             .fetch(
-                &format!("{}?query=%7Binfo%7Bversion%20time%7D%7D", address),
+                &format!("{}{}", address, query),
                 FetchMethod::Get,
                 None,
                 None,
@@ -66,7 +67,7 @@ impl Endpoint {
 
         let query_url = response
             .url
-            .trim_end_matches("?query=%7Binfo%7Bversion%7D%7D")
+            .trim_end_matches(query)
             .to_owned();
         let subscription_url = query_url
             .replace("https://", "wss://")

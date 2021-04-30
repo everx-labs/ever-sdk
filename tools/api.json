@@ -1,5 +1,5 @@
 {
-  "version": "1.14.0",
+  "version": "1.14.1",
   "modules": [
     {
       "name": "client",
@@ -9126,7 +9126,7 @@
               "description": null
             },
             {
-              "name": "key",
+              "name": "caption",
               "type": "Optional",
               "optional_inner": {
                 "type": "String"
