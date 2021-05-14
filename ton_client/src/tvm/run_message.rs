@@ -24,7 +24,6 @@ use crate::client::ClientContext;
 use crate::error::ClientResult;
 use crate::processing::{parsing::decode_output, DecodedOutput};
 use crate::tvm::{check_transaction::calc_transaction_fees, Error};
-use num_traits::ToPrimitive;
 use serde_json::Value;
 use std::sync::{atomic::AtomicU64, Arc};
 use ton_block::{Account, Message, Serializable, MsgAddressInt, CurrencyCollection, Transaction};
@@ -67,7 +66,7 @@ impl AccountForExecutor {
     ) -> ClientResult<(Cell, Option<CurrencyCollection>)> {
         match self {
             AccountForExecutor::None => {
-                let account = Account::AccountNone.write_to_new_cell().unwrap().into();
+                let account = Account::default().serialize().unwrap();
                 Ok((account, None))
             }
             AccountForExecutor::Uninit => {
@@ -235,20 +234,11 @@ pub async fn run_executor(
 
     let account_copy = account.clone();
     let contract_info = move || async move {
-        let account: Account =
-            deserialize_object_from_cell(account_copy.clone(), "account")?;
-        match account.stuff() {
-            Some(stuff) => {
-                let balance = stuff
-                    .storage()
-                    .balance()
-                    .grams
-                    .value()
-                    .to_u64()
-                    .unwrap_or_default();
-                Ok((stuff.addr().clone(), balance))
-            }
-            None => Ok((msg_address.clone(), 0)),
+        let account = deserialize_object_from_cell::<Account>(account_copy.clone(), "account")?;
+        if let (Some(addr), Some(balance)) = (account.get_addr(), account.balance()) {
+            Ok((addr.clone(), balance.grams.0 as u64))
+        } else {
+            Ok((msg_address.clone(), 0))
         }
     };
 
