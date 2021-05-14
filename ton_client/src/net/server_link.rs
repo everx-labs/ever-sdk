@@ -193,27 +193,15 @@ impl NetworkState {
         *self.query_endpoint.write().await = None
     }
 
-    pub async fn update_query_endpoint_latency(&self, latency: u64) {
-        let mut endpoint_guard = self.query_endpoint.write().await;
-        if let Some(old) = endpoint_guard.as_ref() {
-            let mut endpoint = old.as_ref().clone();
-            endpoint.latency = latency;
-            endpoint.next_latency_detection_time =
-                self.client_env.now_ms() + self.config.latency_detection_frequency as u64;
-            *endpoint_guard = Some(Arc::new(endpoint));
+    pub async fn refresh_query_endpoint(&self) {
+        let endpoint_guard = self.query_endpoint.write().await;
+        if let Some(endpoint) = endpoint_guard.as_ref() {
+            let _ = endpoint.refresh(&self.client_env, &self.config).await;
         }
     }
 
     pub async fn config_servers(&self) -> Vec<String> {
         self.endpoint_addresses.read().await.clone()
-    }
-
-    pub async fn query_url(&self) -> Option<String> {
-        self.query_endpoint
-            .read()
-            .await
-            .as_ref()
-            .map(|endpoint| endpoint.query_url.clone())
     }
 
     pub async fn query_endpoint(&self) -> Option<Arc<Endpoint>> {
@@ -225,9 +213,10 @@ impl NetworkState {
         endpoint: &Endpoint,
         out_of_sync_threshold: u32,
     ) -> ClientResult<()> {
-        if endpoint.server_time_delta.abs() as u32 >= out_of_sync_threshold {
+        let server_time_delta = endpoint.time_delta().abs();
+        if server_time_delta >= out_of_sync_threshold as i64 {
             Err(Error::clock_out_of_sync(
-                endpoint.server_time_delta,
+                server_time_delta,
                 out_of_sync_threshold,
             ))
         } else {
@@ -251,7 +240,7 @@ impl NetworkState {
 
     async fn select_querying_endpoint(&self) -> ClientResult<Endpoint> {
         let is_better = |a: &ClientResult<Endpoint>, b: &ClientResult<Endpoint>| match (a, b) {
-            (Ok(a), Ok(b)) => a.latency < b.latency,
+            (Ok(a), Ok(b)) => a.latency() < b.latency(),
             (Ok(_), Err(_)) => true,
             (Err(_), Err(_)) => true,
             _ => false,
@@ -262,14 +251,14 @@ impl NetworkState {
             for address in self.endpoint_addresses.read().await.iter() {
                 let address = address.clone();
                 futures.push(Box::pin(async move {
-                    Endpoint::resolve(self.client_env.clone(), &self.config, &address).await
+                    Endpoint::resolve(&self.client_env, &self.config, &address).await
                 }));
             }
             let mut selected = Err(crate::client::Error::net_module_not_init());
             while futures.len() != 0 {
                 let (result, _, remain_futures) = futures::future::select_all(futures).await;
                 if let Ok(endpoint) = &result {
-                    if endpoint.latency <= self.config.max_latency as u64 {
+                    if endpoint.latency() <= self.config.max_latency as u64 {
                         return result;
                     }
                 }
@@ -308,6 +297,10 @@ impl NetworkState {
         let fastest = Arc::new(self.select_querying_endpoint().await?);
         *locked_query_endpoint = Some(fastest.clone());
         Ok(fastest)
+    }
+
+    pub async fn get_all_endpoint_addresses(&self) -> ClientResult<Vec<String>> {
+        Ok(self.endpoint_addresses.read().await.clone())
     }
 }
 
@@ -351,8 +344,8 @@ impl ServerLink {
         self.state.config_servers().await
     }
 
-    pub async fn query_url(&self) -> Option<String> {
-        self.state.query_url().await
+    pub async fn query_endpoint(&self) -> Option<Arc<Endpoint>> {
+        self.state.query_endpoint().await
     }
 
     // Returns Stream with updates database fields by provided filter
@@ -440,12 +433,14 @@ impl ServerLink {
         }
 
         let network_retries_count = self.config.network_retries_count;
+        let mut current_endpoint: Option<Arc<Endpoint>>;
         let mut retry_count = 0;
         'retries: loop {
             let endpoint = if let Some(endpoint) = endpoint {
-                Arc::new(endpoint.clone())
+                endpoint
             } else {
-                self.state.get_query_endpoint().await?
+                current_endpoint = Some(self.state.get_query_endpoint().await?.clone());
+                current_endpoint.as_ref().unwrap()
             };
 
             let result = self
@@ -487,7 +482,7 @@ impl ServerLink {
     ) -> ClientResult<Vec<Value>> {
         let latency_detection_required = if endpoint.is_none() {
             let endpoint = self.state.get_query_endpoint().await?;
-            self.client_env.now_ms() > endpoint.next_latency_detection_time
+            self.client_env.now_ms() > endpoint.next_latency_detection_time()
         } else {
             false
         };
@@ -496,15 +491,24 @@ impl ServerLink {
             latency_detection_required,
             self.config.wait_for_timeout,
         );
+        let info_request_time = self.client_env.now_ms();
         let mut result = self.query(&query, endpoint.as_ref()).await?;
         if latency_detection_required {
-            let latency = query.get_latency(params, &result)?;
-            if latency > self.config.max_latency as u64 {
+            let current_endpoint = self.state.get_query_endpoint().await?;
+            let server_info = query.get_server_info(&params, &result)?;
+            current_endpoint.apply_server_info(
+                &self.client_env,
+                &self.config,
+                info_request_time,
+                &server_info,
+            )?;
+            current_endpoint
+                .refresh(&self.client_env, &self.config)
+                .await?;
+            if current_endpoint.latency() > self.config.max_latency as u64 {
                 self.invalidate_querying_endpoint().await;
                 query = GraphQLQuery::build(params, false, self.config.wait_for_timeout);
                 result = self.query(&query, endpoint.as_ref()).await?;
-            } else {
-                self.state.update_query_endpoint_latency(latency).await;
             }
         }
         query.get_results(params, &result)
@@ -627,9 +631,12 @@ impl ServerLink {
         self.state.get_addresses_for_sending().await
     }
 
-    #[cfg(test)]
     pub async fn get_query_endpoint(&self) -> ClientResult<Arc<Endpoint>> {
         self.state.get_query_endpoint().await
+    }
+
+    pub async fn get_all_endpoint_addresses(&self) -> ClientResult<Vec<String>> {
+        self.state.get_all_endpoint_addresses().await
     }
 
     pub async fn update_stat(&self, addresses: &Vec<String>, stat: EndpointStat) {

@@ -405,23 +405,23 @@ impl LinkHandler {
         } else {
             return None;
         };
-        let env = self.client_env.clone();
-        if env.now_ms() < current.next_latency_detection_time {
+        if self.client_env.now_ms() < current.next_latency_detection_time() {
             return None;
         }
-        let resolved = Endpoint::resolve(env, &self.config, &current.query_url).await;
-        match resolved.map(|x| x.latency) {
+        let resolved = Endpoint::resolve(&self.client_env, &self.config, &current.query_url).await;
+        match resolved.map(|x| x.latency()) {
             Ok(latency) if latency <= self.config.max_latency as u64 => {
-                self.state.update_query_endpoint_latency(latency).await;
+                self.state.refresh_query_endpoint().await;
                 None
             }
-            _ => Some(
+            Ok(_) => Some(
                 self.handle_network_error(
-                    Error::websocket_disconnected("Bad latency detected"),
+                    Error::websocket_disconnected("Current endpoint has a critical sync latency."),
                     false,
                 )
                 .await,
             ),
+            Err(err) => Some(self.handle_network_error(err, false).await),
         }
     }
 

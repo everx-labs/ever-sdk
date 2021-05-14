@@ -28,6 +28,7 @@ pub(crate) struct FetchResult {
     pub headers: HashMap<String, String>,
     pub body: String,
     pub url: String,
+    pub remote_address: Option<String>,
 }
 
 impl FetchResult {
@@ -71,4 +72,3 @@ impl FetchMethod {
         }
     }
 }
-

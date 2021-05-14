@@ -126,3 +126,22 @@ pub async fn set_endpoints(
 
     Ok(())
 }
+
+#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
+pub struct ResultOfGetEndpoints {
+    /// Current query endpoint
+    pub query: String,
+    /// List of all endpoints used by client
+    pub endpoints: Vec<String>,
+}
+
+/// Requests the list of alternative endpoints from server
+#[api_function]
+pub async fn get_endpoints(context: std::sync::Arc<ClientContext>) -> ClientResult<ResultOfGetEndpoints> {
+    let server_link = context.get_server_link()?;
+    Ok(ResultOfGetEndpoints {
+        query: server_link.get_query_endpoint().await?.query_url.clone(),
+        endpoints: server_link.get_all_endpoint_addresses().await?,
+    })
+}
+

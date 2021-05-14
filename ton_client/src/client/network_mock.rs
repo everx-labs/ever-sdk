@@ -14,7 +14,11 @@
 
 use crate::client::{FetchResult, WebSocket};
 use crate::error::ClientResult;
+use crate::ClientContext;
 use futures::SinkExt;
+use serde_json::Value;
+use std::collections::HashMap;
+
 #[derive(Debug, Clone)]
 pub(crate) struct FetchMock {
     pub id: usize,
@@ -42,8 +46,8 @@ impl FetchMock {
             result.url = url.split("?").next().unwrap_or("").to_string();
         }
         let (text, find, replace_with) = match &result {
-            Ok(ok) => (format!("  {:?}", ok), "FetchResult", "✅"),
-            Err(err) => (format!("  {:?}", err), "ClientError", "❌"),
+            Ok(ok) => (format!("{:?}", ok), "FetchResult", "✅"),
+            Err(err) => (format!("{:?}", err), "ClientError", "❌"),
         };
         println!("{}", text.replace(find, &format!("{}{}", replace_with, id)));
         result
@@ -72,6 +76,10 @@ fn same_endpoints(url1: &str, url2: &str) -> bool {
 }
 
 impl NetworkMock {
+    pub(crate) fn build() -> NetworkMockBuilder {
+        NetworkMockBuilder::new()
+    }
+
     pub(crate) fn new() -> Self {
         Self {
             fetches: None,
@@ -143,7 +151,7 @@ impl NetworkMock {
                     )),
                 },
             };
-            let mut log = "Fetch".to_string();
+            let mut log = "❔".to_string();
             if fetch.id != 0 {
                 log.push_str(&format!(" {}", fetch.id));
             }
@@ -160,5 +168,159 @@ impl NetworkMock {
         } else {
             None
         }
+    }
+
+    pub async fn get_len(client: &ClientContext) -> usize {
+        client
+            .env
+            .network_mock
+            .read()
+            .await
+            .fetches
+            .as_ref()
+            .map(|x| x.len())
+            .unwrap_or(0)
+    }
+}
+
+pub(crate) struct NetworkMockBuilder {
+    last_id: usize,
+    url: String,
+    repeat: Option<usize>,
+    delay: Option<u64>,
+    fetches: Vec<FetchMock>,
+    messages: Vec<MessageMock>,
+}
+
+impl NetworkMockBuilder {
+    fn new() -> Self {
+        Self {
+            last_id: 0,
+            url: String::default(),
+            repeat: None,
+            delay: None,
+            fetches: Vec::new(),
+            messages: Vec::new(),
+        }
+    }
+
+    pub fn url(&mut self, url: &str) -> &mut Self {
+        self.url = url.to_string();
+        self
+    }
+
+    pub fn delay(&mut self, delay: u64) -> &mut Self {
+        self.delay = Some(delay);
+        self
+    }
+
+    pub fn repeat(&mut self, repeat: usize) -> &mut Self {
+        self.repeat = Some(repeat);
+        self
+    }
+
+    fn push_fetch(&mut self, result: ClientResult<FetchResult>) -> &mut Self {
+        let repeat = self.repeat.take().unwrap_or(1);
+        let delay = self.delay.take();
+        for _ in 0..repeat {
+            self.last_id += 1;
+            self.fetches.push(FetchMock {
+                id: self.last_id,
+                url: self.url.clone(),
+                delay,
+                result: result.clone(),
+            });
+        }
+        self
+    }
+
+    pub fn ws(&mut self, message: &Value) -> &mut Self {
+        let repeat = self.repeat.take().unwrap_or(1);
+        let delay = self.delay.take();
+        for _ in 0..repeat {
+            self.messages.push(MessageMock {
+                url: self.url.clone(),
+                delay,
+                message: message.to_string(),
+            });
+        }
+        self
+    }
+
+    pub fn ws_ack(&mut self) -> &mut Self {
+        self.ws(&json!({"type":"connection_ack"}))
+    }
+
+    pub fn ws_ka(&mut self) -> &mut Self {
+        self.ws(&json!({"type":"ka"}))
+    }
+
+    pub fn ok(&mut self, body: &str) -> &mut Self {
+        self.push_fetch(Ok(FetchResult {
+            url: self.url.clone(),
+            status: 200,
+            body: body.to_string(),
+            headers: HashMap::new(),
+            remote_address: None,
+        }))
+    }
+
+    pub fn network_err(&mut self) -> &mut Self {
+        self.push_fetch(Err(crate::client::Error::http_request_send_error(
+            "Network error",
+        )))
+    }
+
+    pub async fn reset_client(&self, client: &ClientContext) {
+        client
+            .get_server_link()
+            .unwrap()
+            .invalidate_querying_endpoint()
+            .await;
+        let mut network_mock = client.env.network_mock.write().await;
+        network_mock.fetches = Some(self.fetches.clone());
+        network_mock.messages = Some(self.messages.clone());
+    }
+
+    pub fn schema(&mut self, time: u64) -> &mut Self {
+        self.ok(&json!({
+            "data": {
+                "info": {
+                    "version": "0.37.0",
+                    "time": time,
+                }
+            }
+        })
+        .to_string())
+    }
+
+    pub fn metrics(&mut self, time: u64, block_time: u64) -> &mut Self {
+        self.ok(&json!({
+            "data": {
+                "info": {
+                    "version": "0.37.0",
+                    "time": time,
+                    "lastBlockTime": block_time,
+                }
+            }
+        })
+        .to_string())
+    }
+
+    pub fn election(&mut self, time: u64, block_time: u64) -> &mut Self {
+        self.schema(time).metrics(time, block_time)
+    }
+
+    pub fn election_loose(&mut self, time: u64) -> &mut Self {
+        self.schema(time)
+    }
+
+    pub fn blocks(&mut self, id: &str) -> &mut Self {
+        self.ok(&json!({
+            "data": {
+                "blocks": [{"id": id.to_string()}],
+            }
+        })
+        .to_string())
     }
 }

@@ -16,67 +16,38 @@ use crate::client::{core_version, ClientEnv, FetchMethod};
 use crate::error::ClientResult;
 use crate::net::{Error, NetworkConfig};
 use serde_json::Value;
-use std::sync::Arc;
+use std::sync::atomic::{AtomicI64, AtomicU32, AtomicU64, Ordering};
 
-pub(crate) struct ServerInfo {
-    pub time: i64,
-    pub last_block_time: i64,
-    pub version: u32,
-}
+const V_0_37_0: u32 = 37000;
 
-impl ServerInfo {
-    pub fn parse(info: &Value) -> ClientResult<Self> {
-        let time = info["time"]
-            .as_i64()
-            .ok_or(Error::invalid_server_response(format!(
-                "No time in response: {}",
-                info
-            )))?;
-        let last_block_time =
-            info["lastBlockTime"]
-                .as_i64()
-                .ok_or(Error::invalid_server_response(format!(
-                    "No lastBlockTime in response: {}",
-                    info
-                )))?;
-        let version = info["version"]
-            .as_str()
-            .ok_or(Error::invalid_server_response(format!(
-                "No version in response: {}",
-                info
-            )))?;
-        let mut parts: Vec<&str> = version.split(".").collect();
-        parts.resize(3, "0");
-        let parse_part = |i: usize| {
-            u32::from_str_radix(parts[i], 10).map_err(|err| {
-                Error::invalid_server_response(format!(
-                    "Can not parse version {}: {}",
-                    version, err
-                ))
-            })
-        };
-        let version = parse_part(0)? * 1000000 + parse_part(1)? * 1000 + parse_part(2)?;
-        Ok(Self {
-            time,
-            last_block_time,
-            version,
-        })
-    }
-
-    pub fn latency(&self) -> u64 {
-        (self.time - self.last_block_time).abs() as u64
-    }
-}
-
-#[derive(Clone)]
 pub(crate) struct Endpoint {
     pub query_url: String,
     pub subscription_url: String,
-    pub server_version: u32,
-    pub server_time_delta: i64,
-    pub latency: u64,
-    pub next_latency_detection_time: u64,
+    pub ip_address: Option<String>,
+    pub server_version: AtomicU32,
+    pub server_time_delta: AtomicI64,
+    pub server_latency: AtomicU64,
+    pub next_latency_detection_time: AtomicU64,
 }
+
+impl Clone for Endpoint {
+    fn clone(&self) -> Self {
+        Self {
+            query_url: self.query_url.clone(),
+            subscription_url: self.subscription_url.clone(),
+            ip_address: self.ip_address.clone(),
+            server_version: AtomicU32::new(self.server_version.load(Ordering::Relaxed)),
+            server_time_delta: AtomicI64::new(self.server_time_delta.load(Ordering::Relaxed)),
+            server_latency: AtomicU64::new(self.server_latency.load(Ordering::Relaxed)),
+            next_latency_detection_time: AtomicU64::new(
+                self.next_latency_detection_time.load(Ordering::Relaxed),
+            ),
+        }
+    }
+}
+
+const QUERY_INFO_SCHEMA: &str = "?query=%7Binfo%7Bversion%20time%7D%7D";
+const QUERY_INFO_METRICS: &str = "?query=%7Binfo%7Bversion%20time%20lastBlockTime%7D%7D";
 
 impl Endpoint {
     pub fn http_headers() -> Vec<(String, String)> {
@@ -93,39 +64,121 @@ impl Endpoint {
         format!("{}/graphql", base_url.trim_end_matches("/"))
     }
 
-    pub async fn resolve(
-        client_env: Arc<ClientEnv>,
-        config: &NetworkConfig,
-        address: &str,
-    ) -> ClientResult<Self> {
-        let address = Self::expand_address(address);
-        let start = client_env.now_ms() as i64;
-        let query = "?query=%7Binfo%7Bversion%20time%20lastBlockTime%7D%7D";
+    async fn fetch_info_with_url(
+        client_env: &ClientEnv,
+        query_url: &str,
+        query: &str,
+    ) -> ClientResult<(Value, String, Option<String>)> {
         let response = client_env
             .fetch(
-                &format!("{}{}", address, query),
+                &format!("{}{}", query_url, query),
                 FetchMethod::Get,
                 None,
                 None,
                 None,
             )
             .await?;
-        let response_body = response.body_as_json()?;
-        let end = client_env.now_ms() as i64;
-        let info = ServerInfo::parse(&response_body["data"]["info"])?;
-        let server_time_delta = info.time - (start + (end - start) / 2);
         let query_url = response.url.trim_end_matches(query).to_owned();
+        let info = response.body_as_json()?["data"]["info"].to_owned();
+        Ok((info, query_url, response.remote_address))
+    }
+
+    pub async fn resolve(
+        client_env: &ClientEnv,
+        config: &NetworkConfig,
+        address: &str,
+    ) -> ClientResult<Self> {
+        let address = Self::expand_address(address);
+        let info_request_time = client_env.now_ms();
+        let (info, query_url, ip_address) =
+            Self::fetch_info_with_url(client_env, &address, QUERY_INFO_SCHEMA).await?;
         let subscription_url = query_url
             .replace("https://", "wss://")
             .replace("http://", "ws://");
-        let next_latency_detection_time = end as u64 + config.latency_detection_frequency as u64;
-        Ok(Self {
+        let endpoint = Self {
             query_url,
             subscription_url,
-            server_time_delta,
-            server_version: info.version,
-            latency: info.latency(),
-            next_latency_detection_time,
-        })
+            ip_address,
+            server_time_delta: AtomicI64::default(),
+            server_version: AtomicU32::default(),
+            server_latency: AtomicU64::default(),
+            next_latency_detection_time: AtomicU64::default(),
+        };
+        endpoint.apply_server_info(client_env, config, info_request_time, &info)?;
+        endpoint.refresh(client_env, config).await?;
+        Ok(endpoint)
+    }
+
+    pub async fn refresh(
+        &self,
+        client_env: &ClientEnv,
+        config: &NetworkConfig,
+    ) -> ClientResult<()> {
+        if self.version() >= V_0_37_0 {
+            let info_request_time = client_env.now_ms();
+            let (info, _, _) =
+                Self::fetch_info_with_url(client_env, &self.query_url, QUERY_INFO_METRICS).await?;
+            self.apply_server_info(client_env, config, info_request_time, &info)?;
+        }
+        Ok(())
+    }
+
+    pub fn apply_server_info(
+        &self,
+        client_env: &ClientEnv,
+        config: &NetworkConfig,
+        info_request_time: u64,
+        info: &Value,
+    ) -> ClientResult<()> {
+        if let Some(version) = info["version"].as_str() {
+            let mut parts: Vec<&str> = version.split(".").collect();
+            parts.resize(3, "0");
+            let parse_part = |i: usize| {
+                u32::from_str_radix(parts[i], 10).map_err(|err| {
+                    Error::invalid_server_response(format!(
+                        "Can not parse version {}: {}",
+                        version, err
+                    ))
+                })
+            };
+            self.server_version.store(
+                parse_part(0)? * 1000000 + parse_part(1)? * 1000 + parse_part(2)?,
+                Ordering::Relaxed,
+            );
+        }
+        if let Some(server_time) = info["time"].as_i64() {
+            let now = client_env.now_ms();
+            self.server_time_delta.store(
+                server_time - ((info_request_time + now) / 2) as i64,
+                Ordering::Relaxed,
+            );
+            if let Some(last_block_time) = info["lastBlockTime"].as_i64() {
+                self.server_latency.store(
+                    (server_time - last_block_time).abs() as u64,
+                    Ordering::Relaxed,
+                );
+                self.next_latency_detection_time.store(
+                    now as u64 + config.latency_detection_interval as u64,
+                    Ordering::Relaxed,
+                );
+            }
+        }
+        Ok(())
+    }
+
+    pub fn latency(&self) -> u64 {
+        self.server_latency.load(Ordering::Relaxed)
+    }
+
+    pub fn version(&self) -> u32 {
+        self.server_version.load(Ordering::Relaxed)
+    }
+
+    pub fn time_delta(&self) -> i64 {
+        self.server_time_delta.load(Ordering::Relaxed)
+    }
+
+    pub fn next_latency_detection_time(&self) -> u64 {
+        self.next_latency_detection_time.load(Ordering::Relaxed)
     }
 }

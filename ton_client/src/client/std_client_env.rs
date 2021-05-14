@@ -217,6 +217,7 @@ impl ClientEnv {
             headers: Self::header_map_to_string_map(response.headers()),
             status: response.status().as_u16(),
             url: response.url().to_string(),
+            remote_address: response.remote_addr().map(|x| x.to_string()),
             body: response
                 .text()
                 .await

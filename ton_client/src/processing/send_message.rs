@@ -184,7 +184,7 @@ impl SendingMessage {
         address: &str,
     ) -> ClientResult<String> {
         let endpoint =
-            Endpoint::resolve(context.env.clone(), &context.config.network, address).await?;
+            Endpoint::resolve(&context.env, &context.config.network, address).await?;
 
         // Send
         context

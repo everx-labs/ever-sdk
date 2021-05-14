@@ -24,7 +24,7 @@ mod wasm_client_env;
 pub(crate) use wasm_client_env::ClientEnv;
 
 #[cfg(test)]
-pub(crate) use crate::client::network_mock::{FetchMock, MessageMock};
+pub(crate) use crate::client::network_mock::{NetworkMock};
 
 #[cfg(test)]
 mod tests;

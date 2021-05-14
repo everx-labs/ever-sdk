@@ -366,8 +366,8 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": "Maximum time for sequential reconnections in ms.",
-              "description": "Default value is 120000 (2 min)"
+              "summary": "Maximum time for sequential reconnections.",
+              "description": "Must be specified in milliseconds. Default is 120000 (2 min)."
             },
             {
               "name": "reconnect_timeout",
@@ -388,8 +388,8 @@
                 "number_type": "Int",
                 "number_size": 8
               },
-              "summary": "The number of automatic message processing retries that SDK performs in case of `Message Expired (507)` error - but only for those messages which local emulation was successful or failed with replay protection error. The default value is 5.",
-              "description": null
+              "summary": "The number of automatic message processing retries that SDK performs in case of `Message Expired (507)` error - but only for those messages which local emulation was successful or failed with replay protection error.",
+              "description": "Default is 5."
             },
             {
               "name": "message_processing_timeout",
@@ -400,7 +400,7 @@
                 "number_size": 32
               },
               "summary": "Timeout that is used to process message delivery for the contracts which ABI does not include \"expire\" header. If the message is not delivered within the specified timeout the appropriate error occurs.",
-              "description": null
+              "description": "Must be specified in milliseconds. Default is 40000 (40 sec)."
             },
             {
               "name": "wait_for_timeout",
@@ -410,8 +410,8 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": "Maximum timeout that is used for query response. The default value is 40 sec.",
-              "description": null
+              "summary": "Maximum timeout that is used for query response.",
+              "description": "Must be specified in milliseconds. Default is 40000 (40 sec)."
             },
             {
               "name": "out_of_sync_threshold",
@@ -422,7 +422,7 @@
                 "number_size": 32
               },
               "summary": "Maximum time difference between server and client.",
-              "description": "If client's device time is out of sync and difference is more than the threshold then error will occur. Also an error will occur if the specified threshold is more than\n`message_processing_timeout/2`.\nThe default value is 15 sec."
+              "description": "If client's device time is out of sync and difference is more than the threshold then error will occur. Also an error will occur if the specified threshold is more than\n`message_processing_timeout/2`.\n\nMust be specified in milliseconds. Default is 15000 (15 sec)."
             },
             {
               "name": "sending_endpoint_count",
@@ -432,8 +432,30 @@
                 "number_type": "UInt",
                 "number_size": 8
               },
-              "summary": "Maximum number of randomly chosen endpoints the library uses to send message. The default value is 2 endpoints.",
-              "description": null
+              "summary": "Maximum number of randomly chosen endpoints the library uses to send message.",
+              "description": "Default is 2."
+            },
+            {
+              "name": "latency_detection_frequency",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Frequency of sync latency detection.",
+              "description": "Library periodically performs checking for the server sync latency on current endpoint.\nIf the latency is less then the maximum allowed then library\nselects new current endpoint.\n\nMust be specified in milliseconds. Default is 60000 (1 min)."
+            },
+            {
+              "name": "max_latency",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Maximum value for the server sync latency.",
+              "description": "Library periodically performs checking for the server sync latency on current endpoint.\nIf the latency is less then the maximum allowed then library\nselects new current endpoint.\n\nMust be specified in milliseconds. Default is 60000 (1 min)."
             },
             {
               "name": "access_key",
@@ -442,7 +464,7 @@
                 "type": "String"
               },
               "summary": "Access key to GraphQL API.",
-              "description": "At the moment is not used in production"
+              "description": "At the moment is not used in production."
             }
           ],
           "summary": null,
@@ -8416,6 +8438,29 @@
           "description": null
         },
         {
+          "name": "ResultOfGetEndpoints",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "query",
+              "type": "String",
+              "summary": "Current query endpoint",
+              "description": null
+            },
+            {
+              "name": "endpoints",
+              "type": "Array",
+              "array_item": {
+                "type": "String"
+              },
+              "summary": "List of all endpoints used by client",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfQueryCounterparties",
           "type": "Struct",
           "struct_fields": [
@@ -8896,6 +8941,37 @@
             "generic_args": [
               {
                 "type": "None"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "get_endpoints",
+          "summary": "Requests the list of alternative endpoints from server",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "net.ResultOfGetEndpoints"
               }
             ]
           },

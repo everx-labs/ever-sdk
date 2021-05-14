@@ -213,7 +213,7 @@ pub struct NetworkConfig {
         default = "default_latency_detection_frequency",
         deserialize_with = "deserialize_latency_detection_frequency"
     )]
-    pub latency_detection_frequency: u32,
+    pub latency_detection_interval: u32,
 
     /// Maximum value for the server sync latency. Library periodically performs
     /// checking for the server sync latency on current endpoint.
@@ -244,7 +244,7 @@ impl Default for NetworkConfig {
             wait_for_timeout: default_wait_for_timeout(),
             out_of_sync_threshold: default_out_of_sync_threshold(),
             sending_endpoint_count: default_sending_endpoint_count(),
-            latency_detection_frequency: default_latency_detection_frequency(),
+            latency_detection_interval: default_latency_detection_frequency(),
             max_latency: default_max_latency(),
             access_key: None,
         }

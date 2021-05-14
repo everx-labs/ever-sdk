@@ -15,7 +15,6 @@
 use serde_json::Value;
 
 use crate::error::{ClientError, ClientResult};
-use crate::net::endpoint::ServerInfo;
 use crate::net::gql::GraphQLMessageFromClient;
 use crate::net::ParamsOfWaitForCollection;
 
@@ -262,7 +261,7 @@ impl QueryOperationBuilder {
 
     fn add_info(&mut self) {
         self.start_op("info");
-        self.end_op("version time lastBlockTime");
+        self.end_op("version time");
     }
 
     fn add_agg_op_params(
@@ -418,13 +417,12 @@ impl GraphQLQuery {
         Ok(results)
     }
 
-    pub fn get_latency(
+    pub fn get_server_info(
         &self,
         params: &[ParamsOfQueryOperation],
         result: &Value,
-    ) -> ClientResult<u64> {
-        let info = ServerInfo::parse(&self.get_result(params, params.len(), result)?)?;
-        Ok(info.latency())
+    ) -> ClientResult<Value> {
+        self.get_result(params, params.len(), result)
     }
 
     pub fn get_start_message(&self, id: String) -> GraphQLMessageFromClient {
